@@ -7,6 +7,7 @@ import {
   PLURAL_CONTROL_PROPS,
 } from '../../utils/constants/gt/constants';
 import { OTHER_IDENTIFIERS_ENUM } from '../../utils/constants/other/constants';
+import { REACT_FUNTIONS } from '../../utils/constants/react/constants';
 import { isReactJsxFunction } from '../../utils/constants/resolveIdentifier/isReactJsxFunction';
 import {
   resolveFirstArgGTName,
@@ -130,7 +131,27 @@ function processJsxNode({
 
   // Branch/Plural/Derive/Static → opaque for static JSX, dynamic props get _Var
   if (isGTBranchComponent(firstArgPath) || isGTDeriveComponent(firstArgPath)) {
-    processOpaqueComponentProps({ jsxCallPath: path, insideAutoT, state });
+    // Process props BEFORE wrapping — path still points to the opaque component
+    processOpaqueComponentProps({
+      jsxCallPath: path,
+      insideAutoT: !insideAutoT ? true : insideAutoT,
+      state,
+    });
+    if (!insideAutoT) {
+      // Root-level opaque component — wrap in _T (single child → use singleCallee)
+      const callee =
+        state.calleeInfo.singleCallee ??
+        state.calleeInfo.multiCallee ??
+        REACT_FUNTIONS.jsx;
+      const tWrapped = wrapInT(
+        path.node,
+        t.identifier(callee),
+        state.calleeInfo
+      );
+      state.processedNodes.add(tWrapped);
+      path.replaceWith(tWrapped);
+      state.statistics.jsxInsertionsCount++;
+    }
     return;
   }
 
@@ -206,7 +227,7 @@ function processSingleChild({
 
   // _Var always has a single child → use singleCallee
   if (insideAutoT && needsVarWrapping(childPath)) {
-    const callee = state.calleeInfo.singleCallee ?? 'jsx';
+    const callee = state.calleeInfo.singleCallee ?? REACT_FUNTIONS.jsx;
     const wrapped = wrapInVar(
       childPath.node,
       t.identifier(callee),
@@ -480,7 +501,7 @@ function processOpaqueComponentProps({
       state.processedNodes.add(valuePath.node);
       walkAndMark({ exprPath: valuePath, state });
     } else if (insideAutoT && needsVarWrapping(valuePath)) {
-      const callee = state.calleeInfo.singleCallee ?? 'jsx';
+      const callee = state.calleeInfo.singleCallee ?? REACT_FUNTIONS.jsx;
       const wrapped = wrapInVar(
         valuePath.node,
         t.identifier(callee),

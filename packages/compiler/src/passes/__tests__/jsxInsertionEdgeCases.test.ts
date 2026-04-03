@@ -135,16 +135,19 @@ describe('jsxInsertionPass edge cases', () => {
       expect(gtVarCalls).toHaveLength(0);
     });
 
-    it('Derive wrapping Branch — Derive opaque, Branch inside untouched', () => {
+    it('Derive wrapping Branch — Babel visitor independently wraps Branch in _T', () => {
       // BEFORE JSX:  <div>Hello <Derive><Branch branch="x">fb</Branch></Derive></div>
-      // AFTER JSX:   <div><_T>Hello <Derive><Branch branch="x">fb</Branch></Derive></_T></div>
+      // AFTER JSX:   <div><_T>Hello <Derive><_T><Branch branch="x">fb</Branch></_T></Derive></_T></div>
+      // The compiler can't know Branch is inside Derive — it wraps Branch in _T.
+      // removeInjectedT strips the inner _T at runtime.
       const code = `
         import { jsx, jsxs } from 'react/jsx-runtime';
         import { Derive, Branch } from 'gt-react';
         jsxs("div", { children: ["Hello ", jsx(Derive, { children: jsx(Branch, { branch: "x", children: "fb" }) })] });
       `;
       const { gtTranslateCalls, gtVarCalls } = transform(code);
-      expect(gtTranslateCalls).toHaveLength(1);
+      // 2 _T: one at div, one wrapping Branch inside Derive
+      expect(gtTranslateCalls).toHaveLength(2);
       expect(gtVarCalls).toHaveLength(0);
     });
   });
@@ -590,9 +593,11 @@ describe('jsxInsertionPass edge cases', () => {
       expect(gtVarCalls).toHaveLength(1);
     });
 
-    it('nested Derive — outer opaque stops all descendant processing', () => {
+    it('nested Derive — inner Derive gets _T from Babel visitor independently', () => {
       // BEFORE JSX:  <div>Hello <Derive><Derive>{getInner()}</Derive></Derive></div>
-      // AFTER JSX:   <div><_T>Hello <Derive><Derive>{getInner()}</Derive></Derive></_T></div>
+      // AFTER JSX:   <div><_T>Hello <Derive><_T><Derive>{getInner()}</Derive></_T></Derive></_T></div>
+      // The compiler can't know inner Derive is inside outer Derive.
+      // removeInjectedT strips the inner _T at runtime.
       const code = `
         import { jsx, jsxs } from 'react/jsx-runtime';
         import { Derive } from 'gt-react';
@@ -602,7 +607,7 @@ describe('jsxInsertionPass edge cases', () => {
         ] });
       `;
       const { gtTranslateCalls, gtVarCalls } = transform(code);
-      expect(gtTranslateCalls).toHaveLength(1);
+      expect(gtTranslateCalls).toHaveLength(2);
       expect(gtVarCalls).toHaveLength(0);
     });
 
@@ -642,9 +647,10 @@ describe('jsxInsertionPass edge cases', () => {
   // ===== 16. Cross-component interactions =====
 
   describe('cross-component interactions', () => {
-    it('Plural inside Derive — Derive opaque, Plural not processed', () => {
+    it('Plural inside Derive — Babel visitor independently wraps Plural in _T', () => {
       // BEFORE JSX:  <div>Hello <Derive><Plural n={count} one="item" other="items" /></Derive></div>
-      // AFTER JSX:   <div><_T>Hello <Derive><Plural n={count} one="item" other="items" /></Derive></_T></div>
+      // AFTER JSX:   <div><_T>Hello <Derive><_T><Plural n={count} one="item" other="items" /></_T></Derive></_T></div>
+      // The compiler can't know Plural is inside Derive. removeInjectedT strips it at runtime.
       const code = `
         import { jsx, jsxs } from 'react/jsx-runtime';
         import { Derive, Plural } from 'gt-react';
@@ -654,7 +660,7 @@ describe('jsxInsertionPass edge cases', () => {
         ] });
       `;
       const { gtTranslateCalls, gtVarCalls } = transform(code);
-      expect(gtTranslateCalls).toHaveLength(1);
+      expect(gtTranslateCalls).toHaveLength(2);
       expect(gtVarCalls).toHaveLength(0);
     });
 

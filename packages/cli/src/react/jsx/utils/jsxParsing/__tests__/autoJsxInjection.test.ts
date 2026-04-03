@@ -938,6 +938,57 @@ describe('auto JSX injection simulation', () => {
   });
 
   // ================================================================ //
+  //  8b2. ROOT-LEVEL OPAQUE GT COMPONENT
+  // ================================================================ //
+
+  describe('root-level opaque GT component', () => {
+    it('wraps root-level Plural in _T and extracts correctly', () => {
+      // SOURCE: <Plural n={n} one={<><strong>one</strong></>}><>other</></Plural>
+      // Plural is the root element — no parent to claim _T.
+      // Auto-injection should wrap Plural itself in _T.
+      // EXPECTED: no errors, at least 1 update extracted
+      const code = `
+        import { Plural } from "gt-react/browser";
+        export default function Page() {
+          const n = 1;
+          return <Plural n={n} one={<><strong>one</strong></>}><>other</></Plural>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('wraps root-level Derive in _T and extracts with resolved content', () => {
+      // SOURCE:
+      //   function getUserName2() {
+      //     return <Derive><>other some other examples</></Derive>;
+      //   }
+      //   // getUserName2() called somewhere that triggers extraction
+      //
+      // Derive is the root element — auto-injection should wrap it in _T.
+      // EXPECTED jsxChildren:
+      //   { "t": "Derive", "i": 1, "c": { "t": "C2", "i": 2, "c": "other some other examples" } }
+      const code = `
+        import { Derive } from "gt-react/browser";
+        export default function Page() {
+          return <Derive><>other some other examples</></Derive>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+
+      const expected = {
+        t: 'Derive',
+        i: 1,
+        c: { t: 'C2', i: 2, c: 'other some other examples' },
+      };
+      expect(result.updates[0].source).toEqual(expected);
+    });
+  });
+
+  // ================================================================ //
   //  8c. DERIVE EXTRACTION WITH AUTO-INJECTION
   // ================================================================ //
 

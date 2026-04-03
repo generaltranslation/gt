@@ -984,6 +984,33 @@ describe('jsxInsertionPass', () => {
     expect(gtVarCalls).toHaveLength(0);
   });
 
+  // ===== Root-level opaque GT component =====
+
+  it('wraps root-level Plural in _T', () => {
+    // BEFORE JSX:  <Plural n={n} one={<strong>one</strong>}>other</Plural>
+    // AFTER JSX:   <_T><Plural n={n} one={<strong>one</strong>}>other</Plural></_T>
+    // Plural is the root element — no parent to claim _T, so _T must wrap Plural itself.
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Plural } from 'gt-react';
+      jsx(Plural, { n: n, one: jsx("strong", { children: "one" }), children: "other" });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+  });
+
+  it('wraps root-level Branch in _T', () => {
+    // BEFORE JSX:  <Branch branch="x" a="A">Default</Branch>
+    // AFTER JSX:   <_T><Branch branch="x" a="A">Default</Branch></_T>
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Branch } from 'gt-react';
+      jsx(Branch, { branch: "x", a: "A", children: "Default" });
+    `;
+    const { gtTranslateCalls } = transform(code);
+    expect(gtTranslateCalls).toHaveLength(1);
+  });
+
   // ===== Branch prop value with dynamic content gets _Var =====
 
   it('inserts _Var inside Branch prop value that has dynamic content alongside text', () => {

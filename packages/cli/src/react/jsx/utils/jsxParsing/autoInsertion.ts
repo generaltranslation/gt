@@ -165,28 +165,35 @@ function processJsxElement({
     return;
   }
 
-  // User Var/Num/Currency/DateTime → mark descendants, hands off
-  if (canonicalName && VARIABLE_COMPONENTS.includes(canonicalName)) {
-    markDescendantJsx(path, processedNodes);
-    return;
-  }
-
   // Branch/Plural/Derive/Static → opaque, process props for dynamic Var
+  // Must be checked BEFORE user variable check because Derive/Static are in VARIABLE_COMPONENTS
   if (
     canonicalName === BRANCH_COMPONENT ||
     canonicalName === PLURAL_COMPONENT ||
     canonicalName === DERIVE_COMPONENT ||
     canonicalName === STATIC_COMPONENT
   ) {
+    if (!insideAutoT) {
+      // Root-level opaque component — wrap in _T
+      const tWrapper = createTWrapper([path.node], tLocalName);
+      processedNodes.add(tWrapper);
+      path.replaceWith(tWrapper);
+    }
     processOpaqueComponentProps({
       path,
-      insideAutoT,
+      insideAutoT: true,
       importAliases,
       processedNodes,
       tLocalName,
       varLocalName,
       canonicalName,
     });
+    return;
+  }
+
+  // User Var/Num/Currency/DateTime → mark descendants, hands off
+  if (canonicalName && VARIABLE_COMPONENTS.includes(canonicalName)) {
+    markDescendantJsx(path, processedNodes);
     return;
   }
 
