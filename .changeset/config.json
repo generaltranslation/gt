@@ -20,6 +20,8 @@
     "next-pages-router",
     "vite-create-app",
     "cli-test-app",
-    "compiler-cli-parity"
+    "compiler-cli-parity",
+    "next-ssg",
+    "gt-next-middleware-e2e"
   ]
 }
