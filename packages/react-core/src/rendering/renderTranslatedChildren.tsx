@@ -161,10 +161,15 @@ export default function renderTranslatedChildren({
       (sourceChild): sourceChild is TaggedElement => {
         if (React.isValidElement(sourceChild)) {
           if (isVariableElementProps(sourceChild.props)) {
-            const { variableName, variableValue, variableOptions } =
-              getVariableProps(sourceChild.props);
+            const {
+              variableName,
+              variableValue,
+              variableOptions,
+              injectionType,
+            } = getVariableProps(sourceChild.props);
             variables[variableName] = variableValue;
             variablesOptions[variableName] = variableOptions;
+            variableInjectionTypes[variableName] = injectionType;
           } else {
             return true;
           }

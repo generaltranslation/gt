@@ -29,7 +29,20 @@ function GtInternalDateTime({
   return result;
 }
 
-/** @internal _gtt - The GT transformation for the component. */
-GtInternalDateTime._gtt = 'variable-datetime';
+/**
+ * User facing component for the `<DateTime>` variable
+ */
+function DateTime(props: {
+  children: Date | null | undefined;
+  locales?: string[];
+  options?: Intl.DateTimeFormatOptions;
+  name?: string;
+}): string | null {
+  return GtInternalDateTime(props);
+}
 
-export { GtInternalDateTime, GtInternalDateTime as DateTime };
+/** @internal _gtt - The GT transformation for the component. */
+GtInternalDateTime._gtt = 'variable-datetime-automatic';
+DateTime._gtt = 'variable-datetime';
+
+export { GtInternalDateTime, DateTime };

@@ -34,7 +34,21 @@ function GtInternalCurrency({
   return formattedCurrency;
 }
 
-/** @internal _gtt - The GT transformation for the component. */
-GtInternalCurrency._gtt = 'variable-currency';
+/**
+ * User facing component for the `<Currency>` variable
+ */
+function Currency(props: {
+  children: number | string | null | undefined;
+  currency?: string;
+  options?: Intl.NumberFormatOptions;
+  locales?: string[];
+  name?: string;
+}): string | null {
+  return GtInternalCurrency(props);
+}
 
-export { GtInternalCurrency, GtInternalCurrency as Currency };
+/** @internal _gtt - The GT transformation for the component. */
+GtInternalCurrency._gtt = 'variable-currency-automatic';
+Currency._gtt = 'variable-currency';
+
+export { GtInternalCurrency, Currency };

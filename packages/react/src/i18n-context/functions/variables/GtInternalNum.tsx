@@ -29,7 +29,20 @@ function GtInternalNum({
   return formattedNumber;
 }
 
-/** @internal _gtt - The GT transformation for the component. */
-GtInternalNum._gtt = 'variable-number';
+/**
+ * User facing component for the `<Num>` variable
+ */
+function Num(props: {
+  children: number | string | null | undefined;
+  options?: Intl.NumberFormatOptions;
+  locales?: string[];
+  name?: string;
+}): string | null {
+  return GtInternalNum(props);
+}
 
-export { GtInternalNum, GtInternalNum as Num };
+/** @internal _gtt - The GT transformation for the component. */
+GtInternalNum._gtt = 'variable-number-automatic';
+Num._gtt = 'variable-number';
+
+export { GtInternalNum, Num };

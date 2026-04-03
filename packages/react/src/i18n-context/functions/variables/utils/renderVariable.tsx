@@ -32,15 +32,31 @@ export const renderVariable: RenderVariable = ({
   switch (variableType) {
     case 'n':
       const Num = injectionType === 'automatic' ? GtExternalNum : GtInternalNum;
-      return <Num options={variableOptions}>{variableValue}</Num>;
+      return (
+        <Num options={variableOptions as Intl.NumberFormatOptions | undefined}>
+          {variableValue}
+        </Num>
+      );
     case 'd':
       const DateTime =
         injectionType === 'automatic' ? GtExternalDateTime : GtInternalDateTime;
-      return <DateTime options={variableOptions}>{variableValue}</DateTime>;
+      return (
+        <DateTime
+          options={variableOptions as Intl.DateTimeFormatOptions | undefined}
+        >
+          {variableValue}
+        </DateTime>
+      );
     case 'c':
       const Currency =
         injectionType === 'automatic' ? GtExternalCurrency : GtInternalCurrency;
-      return <Currency options={variableOptions}>{variableValue}</Currency>;
+      return (
+        <Currency
+          options={variableOptions as Intl.NumberFormatOptions | undefined}
+        >
+          {variableValue}
+        </Currency>
+      );
     case 'v':
     default:
       // If we have auto injected a variable, then remove it at runtime
