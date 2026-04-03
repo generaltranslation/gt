@@ -7,6 +7,7 @@ import {
   cloneElement,
   Children,
 } from 'react';
+import { warnNestedInternalTComponent } from '../errors-dir/createErrors';
 
 /**
  * Remove injected _T components at runtime. This is only for i18n-context T components to use.
@@ -107,8 +108,6 @@ function handleSingleChildElement(
     }
 
     // (4) If the element is a translation component, remove _T if within a derivation context, just return the children
-    // Note: componentType === 'translate' && derivationDepth === 0: A resolution may fail if there is an auto-injected _T component
-    // Note: componentType === 'translate' && injectionType === 'manual': means that there is a <T> inside of a <T>/<_T>
     else if (
       componentType === 'translate' &&
       injectionType === 'automatic' &&
@@ -117,6 +116,11 @@ function handleSingleChildElement(
       return 'children' in elementProps
         ? handleChildren(elementProps.children as ReactNode, derivationDepth)
         : undefined;
+    }
+
+    // Note: componentType === 'translate': means that there is a <_T> inside of a <T>/<_T>
+    else if (componentType === 'translate' && injectionType === 'automatic') {
+      console.warn(warnNestedInternalTComponent);
     }
   }
 
