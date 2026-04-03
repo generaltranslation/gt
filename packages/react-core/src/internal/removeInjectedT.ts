@@ -43,12 +43,9 @@ function handleSingleChildElement(
 ): ReactNode {
   const { type: elementType, props: elementProps } = child;
   const transformation = getTransformation(elementType);
+  // unlikely edge case: encountered an element with props that cannot be processed
   if (typeof elementProps !== 'object' || elementProps === null) {
-    // TODO: gracefully fail + warn here
-    throw new Error(
-      'DEBUG: handleSingleChildElement - encountered an element with props that cannot be processed'
-    );
-    // return child;
+    return child;
   }
 
   if (transformation) {
@@ -110,6 +107,8 @@ function handleSingleChildElement(
     }
 
     // (4) If the element is a translation component, remove _T if within a derivation context, just return the children
+    // Note: componentType === 'translate' && derivationDepth === 0: A resolution may fail if there is an auto-injected _T component
+    // Note: componentType === 'translate' && injectionType === 'manual': means that there is a <T> inside of a <T>/<_T>
     else if (
       componentType === 'translate' &&
       injectionType === 'automatic' &&
@@ -118,16 +117,6 @@ function handleSingleChildElement(
       return 'children' in elementProps
         ? handleChildren(elementProps.children as ReactNode, derivationDepth)
         : undefined;
-    } else if (componentType === 'translate' && injectionType === 'manual') {
-      // TODO: remove
-      console.warn(
-        `DEBUG: removeInjectedT - found a ${injectionType} <${injectionType === 'manual' ? 'T' : '_T'}> component as a child of a <T> or <_T> component`
-      );
-    } else if (componentType === 'translate' && derivationDepth === 0) {
-      // TODO: gracefully fail
-      throw new Error(
-        'DEBUG: removeInjectedT - encountered an injected <T> component that was not inside of a <Derive> context. This is a bug in the compiler.'
-      );
     }
   }
 
