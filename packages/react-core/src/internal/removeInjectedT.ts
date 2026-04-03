@@ -80,7 +80,7 @@ function handleSingleChildElement(
       const newProps = Object.entries(elementProps).reduce<
         Record<string, unknown>
       >((acc, [branchName, branch]) => {
-        if (isAcceptedPluralForm(branchName)) {
+        if (isAcceptedPluralForm(branchName) || branchName === 'children') {
           acc[branchName] = handleSingleChild(branch, derivationDepth);
         } else {
           // Skip Recursion on non-translated branches
