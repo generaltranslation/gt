@@ -171,10 +171,7 @@ export default [
         sourcemap: true,
       },
     ],
-    plugins: [
-      ...baseConfig.plugins,
-      terser(),
-    ],
+    plugins: [...baseConfig.plugins, terser()],
     external: baseConfig.external,
   },
 
