@@ -216,7 +216,7 @@ function buildJSXTree({
   config: ConfigOptions;
   state: StateTracker;
   output: OutputCollector;
-}): JsxTree | MultiplicationNode {
+}): JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[] {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
     if (t.isJSXEmptyExpression(node.expression)) {
@@ -309,16 +309,17 @@ function buildJSXTree({
           output,
         });
         if (result !== null) {
-          childResults.push(result);
+          if (Array.isArray(result)) {
+            childResults.push(...result);
+          } else {
+            childResults.push(result);
+          }
         }
       }
       if (childResults.length === 0) return null;
       if (childResults.length === 1) return childResults[0];
-      return {
-        nodeType: 'element' as const,
-        type: '',
-        props: { children: childResults },
-      };
+      // Return array — callers flatten this into parent's children
+      return childResults;
     }
 
     if (
@@ -458,7 +459,12 @@ function buildJSXTree({
             state,
             output,
           });
-          childrenArray.push(result);
+          // Flatten array results from _T transparency unwrap inside Derive
+          if (Array.isArray(result)) {
+            childrenArray.push(...result);
+          } else {
+            childrenArray.push(result);
+          }
         }
         if (childrenArray.length) {
           results.props.children = childrenArray;
@@ -476,8 +482,8 @@ function buildJSXTree({
     }
 
     const children: (JsxTree | MultiplicationNode)[] = element.children
-      .map((child, index) =>
-        buildJSXTree({
+      .flatMap((child, index) => {
+        const result = buildJSXTree({
           node: child,
           insideT: true,
           inDerive: inDerive,
@@ -486,8 +492,11 @@ function buildJSXTree({
           config,
           state,
           output,
-        })
-      )
+        });
+        // Flatten array results from _T transparency unwrap inside Derive
+        if (Array.isArray(result)) return result;
+        return [result];
+      })
       .filter(
         (child): child is JsxTree | MultiplicationNode =>
           child !== null && child !== ''
@@ -510,8 +519,8 @@ function buildJSXTree({
   // If it's a JSX fragment
   else if (t.isJSXFragment(node)) {
     const children = node.children
-      .map((child: JSXChildNode, index: number) =>
-        buildJSXTree({
+      .flatMap((child: JSXChildNode, index: number) => {
+        const result = buildJSXTree({
           node: child,
           insideT: true,
           inDerive: inDerive,
@@ -520,8 +529,11 @@ function buildJSXTree({
           config,
           state,
           output,
-        })
-      )
+        });
+        // Flatten array results from _T transparency unwrap inside Derive
+        if (Array.isArray(result)) return result;
+        return [result];
+      })
       .filter(
         (child): child is JsxTree | MultiplicationNode =>
           child !== null && child !== ''
@@ -763,8 +775,11 @@ function parseJSXElement({
     // existing behavior where importAliases may be incomplete.
     const gtVariableNames = config.enableAutoJsxInjection
       ? new Set(
-          Object.values(config.importAliases).filter((name) =>
-            VARIABLE_COMPONENTS.includes(name)
+          Object.values(config.importAliases).filter(
+            (name) =>
+              VARIABLE_COMPONENTS.includes(name) &&
+              name !== DERIVE_COMPONENT &&
+              name !== STATIC_COMPONENT
           )
         )
       : undefined;
@@ -1172,15 +1187,18 @@ function processFunctionDeclarationNodePath({
       if (!returnNodePath.isExpression()) {
         return;
       }
-      result.branches.push(
-        processDeriveExpression({
-          config,
-          state,
-          output,
-          expressionNodePath: returnNodePath,
-          scopeNode: returnPath,
-        })
-      );
+      const deriveResult = processDeriveExpression({
+        config,
+        state,
+        output,
+        expressionNodePath: returnNodePath,
+        scopeNode: returnPath,
+      });
+      if (Array.isArray(deriveResult)) {
+        result.branches.push(...deriveResult);
+      } else {
+        result.branches.push(deriveResult);
+      }
     },
   });
   if (result.branches.length === 0) {
@@ -1229,15 +1247,18 @@ function processVariableDeclarationNodePath({
   const bodyNodePath = arrowFunctionPath.get('body');
   if (bodyNodePath.isExpression()) {
     // process expression return
-    result.branches.push(
-      processDeriveExpression({
-        config,
-        state,
-        output,
-        expressionNodePath: bodyNodePath,
-        scopeNode: arrowFunctionPath,
-      })
-    );
+    const deriveResult = processDeriveExpression({
+      config,
+      state,
+      output,
+      expressionNodePath: bodyNodePath,
+      scopeNode: arrowFunctionPath,
+    });
+    if (Array.isArray(deriveResult)) {
+      result.branches.push(...deriveResult);
+    } else {
+      result.branches.push(deriveResult);
+    }
   } else {
     // search for a return statement
     bodyNodePath.traverse({
@@ -1249,15 +1270,18 @@ function processVariableDeclarationNodePath({
         if (!returnNodePath.isExpression()) {
           return;
         }
-        result.branches.push(
-          processDeriveExpression({
-            config,
-            state,
-            output,
-            expressionNodePath: returnNodePath,
-            scopeNode: returnPath,
-          })
-        );
+        const deriveResult = processDeriveExpression({
+          config,
+          state,
+          output,
+          expressionNodePath: returnNodePath,
+          scopeNode: returnPath,
+        });
+        if (Array.isArray(deriveResult)) {
+          result.branches.push(...deriveResult);
+        } else {
+          result.branches.push(deriveResult);
+        }
       },
     });
   }
@@ -1290,7 +1314,7 @@ function processDeriveExpression({
   output: OutputCollector;
   expressionNodePath: NodePath<t.Expression>;
   scopeNode: NodePath;
-}): JsxTree | MultiplicationNode {
+}): JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[] {
   // Mark the derivable tracker as true
   state.derivableTracker.isDerivable = true;
 
@@ -1377,15 +1401,17 @@ function processDeriveExpression({
     const alternateNodePath = expressionNodePath.get('alternate');
     const result: MultiplicationNode = {
       nodeType: 'multiplication' as const,
-      branches: [consequentNodePath, alternateNodePath].map(
-        (expressionNodePath) =>
-          processDeriveExpression({
+      branches: [consequentNodePath, alternateNodePath].flatMap(
+        (expressionNodePath) => {
+          const r = processDeriveExpression({
             config,
             state,
             output,
             scopeNode,
             expressionNodePath,
-          })
+          });
+          return Array.isArray(r) ? r : [r];
+        }
       ),
     };
     return result;

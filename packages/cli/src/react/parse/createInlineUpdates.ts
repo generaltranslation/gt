@@ -139,6 +139,15 @@ export async function createInlineUpdates(
         // Re-collect with updated AST
         const refreshed = getPathsAndAliases(ast, pkgs);
 
+        // Add translation component names to refreshed aliases so parseJsx
+        // can recognize GtInternalTranslateJsx inside Derive for transparent unwrap
+        for (const {
+          localName: tLocalName,
+          originalName: tOrigName,
+        } of refreshed.translationComponentPaths) {
+          refreshed.importAliases[tLocalName] = tOrigName;
+        }
+
         // Extract only from auto-injected GtInternalTranslateJsx — never re-extract user T
         for (const {
           localName,

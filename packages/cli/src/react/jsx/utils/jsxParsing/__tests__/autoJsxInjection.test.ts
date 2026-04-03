@@ -1151,6 +1151,149 @@ describe('auto JSX injection simulation', () => {
   });
 
   // ================================================================ //
+  //  8g. Derive resolution must produce the same structure with auto-injected _T as with user T
+  // ================================================================ //
+
+  describe('Derive resolution parity between user T and auto-injected T', () => {
+    it('auto-injected _T with Derive produces Derive element with resolved children', () => {
+      // SOURCE:
+      //   function getUserName() { return <>User name is <b>Brian</b></>; }
+      //   <>Here is the user name: <Derive>{getUserName()}</Derive></>
+      //
+      // EXPECTED jsxChildren for the main entry:
+      //   [
+      //     "Here is the user name: ",
+      //     {
+      //       "t": "Derive",
+      //       "i": 1,
+      //       "c": {
+      //         "t": "C2",
+      //         "i": 2,
+      //         "c": [
+      //           "User name is ",
+      //           { "t": "b", "i": 3, "c": "Brian" }
+      //         ]
+      //       }
+      //     }
+      //   ]
+      const code = `
+        import { Derive } from "gt-react/browser";
+        function getUserName() {
+          return <>User name is <b>Brian</b></>;
+        }
+        export default function Page() {
+          return <>Here is the user name: <Derive>{getUserName()}</Derive></>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+
+      const mainUpdate = result.updates.find((u) => {
+        const src = u.source;
+        return (
+          Array.isArray(src) &&
+          JSON.stringify(src).includes('Here is the user name')
+        );
+      });
+      expect(mainUpdate).toBeDefined();
+
+      const expectedSource = [
+        'Here is the user name: ',
+        {
+          t: 'Derive',
+          i: 1,
+          c: {
+            t: 'C2',
+            i: 2,
+            c: ['User name is ', { t: 'b', i: 3, c: 'Brian' }],
+          },
+        },
+      ];
+
+      expect(mainUpdate!.source).toEqual(expectedSource);
+    });
+  });
+
+  // ================================================================ //
+  //  8h. Regression: flatMap change must not break non-Derive paths
+  // ================================================================ //
+
+  describe('flatMap regression — non-Derive paths unchanged', () => {
+    it('user T with fragment containing multiple children — no unwrapping', () => {
+      // SOURCE: <T><>Hello <b>World</b></></T>
+      // User T does NOT go through the transparency unwrap.
+      // EXPECTED: { "t": "C1", "i": 1, "c": ["Hello ", { "t": "b", "i": 2, "c": "World" }] }
+      const code = `
+        import { T } from "gt-react/browser";
+        export default function Page() {
+          return <T><>Hello <b>World</b></></T>;
+        }
+      `;
+      const result = extractUserT(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates).toHaveLength(1);
+      const expected = {
+        t: 'C1',
+        i: 1,
+        c: ['Hello ', { t: 'b', i: 2, c: 'World' }],
+      };
+      expect(result.updates[0].source).toEqual(expected);
+    });
+
+    it('auto-injected T (not inside Derive) with fragment — no unwrapping', () => {
+      // SOURCE: <>Hello <b>World</b></>  (no Derive context)
+      // Auto-inserted _T wraps the content. Not inside Derive, so no transparency unwrap.
+      // EXPECTED: ["Hello ", { "t": "b", "i": 1, "c": "World" }]
+      const code = `
+        import { T } from "gt-react/browser";
+        export default function Page() {
+          return <>Hello <b>World</b></>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      const mainUpdate = result.updates.find((u) => {
+        const src = u.source;
+        return Array.isArray(src) && JSON.stringify(src).includes('Hello');
+      });
+      expect(mainUpdate).toBeDefined();
+      const expected = ['Hello ', { t: 'b', i: 1, c: 'World' }];
+      expect(mainUpdate!.source).toEqual(expected);
+    });
+
+    it('user T with Derive — baseline still works', () => {
+      // SOURCE: <T>Label: <Derive>{getUserName()}</Derive></T>
+      // where getUserName() returns <>User name is <b>Brian</b></>
+      // User T path — no auto-inserted _T inside the function.
+      const code = `
+        import { T, Derive } from "gt-react/browser";
+        function getUserName() {
+          return <>User name is <b>Brian</b></>;
+        }
+        export default function Page() {
+          return <T>Label: <Derive>{getUserName()}</Derive></T>;
+        }
+      `;
+      const result = extractUserT(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+      const expected = [
+        'Label: ',
+        {
+          t: 'Derive',
+          i: 1,
+          c: {
+            t: 'C2',
+            i: 2,
+            c: ['User name is ', { t: 'b', i: 3, c: 'Brian' }],
+          },
+        },
+      ];
+      expect(result.updates[0].source).toEqual(expected);
+    });
+  });
+
+  // ================================================================ //
   //  9. NESTED DYNAMIC CONTENT (Rule 12)
   // ================================================================ //
 
