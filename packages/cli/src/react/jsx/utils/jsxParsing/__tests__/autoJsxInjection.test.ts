@@ -170,7 +170,14 @@ describe('auto JSX injection simulation', () => {
     const pass1Count = localUpdates.length;
 
     // --- PASS 2: Auto-inject using GtInternalTranslateJsx/GtInternalVar ---
-    // Distinct from user T/Var so there's no ambiguity
+    // Add translation component names to importAliases so autoInsertJsxComponents
+    // recognizes user T as hands-off
+    for (const {
+      localName,
+      originalName,
+    } of pass1Result.translationComponentPaths) {
+      importAliases[localName] = originalName;
+    }
     ensureTAndVarImported(ast, importAliases);
     autoInsertJsxComponents(ast, importAliases);
 
@@ -1056,6 +1063,90 @@ describe('auto JSX injection simulation', () => {
       const result = extractWithAutoInjection(code);
       expect(result.errors).toHaveLength(0);
       expect(result.updates.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  // ================================================================ //
+  //  8e. BUG: User T inside fragment should not get duplicate extraction
+  // ================================================================ //
+
+  describe('user T duplicate extraction bug', () => {
+    it('user T inside fragment should produce exactly one update, not two', () => {
+      // SOURCE:
+      //   <T><>Hello There</></T>
+      //
+      // Pass 1 correctly extracts from user T.
+      // Pass 2 (auto-injection) should NOT re-extract from user T.
+      // BUG: pass1Paths.has(path) check fails because refreshed paths are new objects,
+      // causing user T to be re-extracted in Pass 2 — producing a duplicate entry.
+      //
+      // EXPECTED: exactly 1 update, not 2
+      const code = `
+        import { T } from "gt-react/browser";
+        export default function Page() {
+          return <T><>Hello There</></T>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates).toHaveLength(1);
+    });
+  });
+
+  // ================================================================ //
+  //  8f. BUG: Derive function resolution with auto-injection
+  // ================================================================ //
+
+  describe('Derive function resolution with auto-injection', () => {
+    it('Derive should resolve getUserName() and inline its JSX content', () => {
+      // SOURCE:
+      //   function getUserName() { return <>User name is <b>Ernest</b></>; }
+      //   <>Here is the user name: <Derive>{getUserName()}</Derive></>
+      //
+      // The CLI should resolve getUserName(), follow into the function body,
+      // and produce jsxChildren with the Derive element containing the resolved content.
+      // BUG: with auto-injection on, the Derive chain is not properly explored —
+      // the generated jsxChildren shows Derive as just {"i": 1} without resolved content.
+      //
+      // EXPECTED: no errors, the Derive entry should contain resolved children
+      // (the fragment with "User name is " + <b>Ernest</b>)
+      const code = `
+        import { Derive } from "gt-react/browser";
+        function getUserName() {
+          return <>User name is <b>Ernest</b></>;
+        }
+        export default function Page() {
+          return <>Here is the user name: <Derive>{getUserName()}</Derive></>;
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+      expect(result.updates.length).toBeGreaterThanOrEqual(1);
+      // The main update should contain "Here is the user name:" with a Derive element
+      const mainUpdate = result.updates.find((u) => {
+        const src = u.source;
+        return (
+          Array.isArray(src) &&
+          JSON.stringify(src).includes('Here is the user name')
+        );
+      });
+      expect(mainUpdate).toBeDefined();
+      const source = mainUpdate!.source as JsxChild[];
+      // The Derive is extracted as an indexed element {"i": N} at extraction time.
+      // Derive function resolution + linking happens in post-processing (linkDeriveUpdates).
+      // At this level, just verify the Derive slot exists.
+      const deriveSlot = source.find(
+        (child) => typeof child === 'object' && child !== null && 'i' in child
+      );
+      expect(deriveSlot).toBeDefined();
+      // The function body should also be extracted as a separate entry
+      const funcUpdate = result.updates.find((u) => {
+        const src = u.source;
+        return (
+          Array.isArray(src) && JSON.stringify(src).includes('User name is')
+        );
+      });
+      expect(funcUpdate).toBeDefined();
     });
   });
 

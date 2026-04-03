@@ -13,7 +13,7 @@ import {
 import { renderVariable } from '../variables/utils/renderVariable';
 import { requiresTranslation } from 'generaltranslation';
 import { getDefaultLocale, getLocale } from '../locale-operations';
-import { JsxChildren } from 'generaltranslation/src/types';
+import { JsxChildren } from 'generaltranslation/types';
 import { TaggedChildren } from '@generaltranslation/react-core/types';
 
 /**

@@ -27,6 +27,7 @@ import {
   ensureTAndVarImported,
   autoInsertJsxComponents,
 } from '../jsx/utils/jsxParsing/autoInsertion.js';
+import { INTERNAL_TRANSLATION_COMPONENT } from '../jsx/utils/constants.js';
 import traverseModule from '@babel/traverse';
 const traverse = traverseModule.default || traverseModule;
 
@@ -116,9 +117,11 @@ export async function createInlineUpdates(
 
       // PASS 2: Auto-inject GtInternalTranslateJsx and GtInternalVar and extract (flag-gated)
       if (parsingFlags.enableAutoJsxInjection) {
-        const pass1Paths = new Set(
-          translationComponentPaths.map((p) => p.path)
-        );
+        // Add translation component names to importAliases so autoInsertJsxComponents
+        // recognizes user T as hands-off (getPathsAndAliases separates them out)
+        for (const { localName, originalName } of translationComponentPaths) {
+          importAliases[localName] = originalName;
+        }
 
         // Ensure GtInternalTranslateJsx and GtInternalVar are imported in the AST
         ensureTAndVarImported(ast, importAliases);
@@ -136,9 +139,13 @@ export async function createInlineUpdates(
         // Re-collect with updated AST
         const refreshed = getPathsAndAliases(ast, pkgs);
 
-        // Extract only new T components (skip Pass 1)
-        for (const { localName, path } of refreshed.translationComponentPaths) {
-          if (pass1Paths.has(path)) continue;
+        // Extract only from auto-injected GtInternalTranslateJsx — never re-extract user T
+        for (const {
+          localName,
+          path,
+          originalName,
+        } of refreshed.translationComponentPaths) {
+          if (originalName !== INTERNAL_TRANSLATION_COMPONENT) continue;
           parseTranslationComponent({
             originalName: localName,
             localName,
