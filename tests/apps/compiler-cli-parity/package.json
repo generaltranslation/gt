@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "test": "tsx scripts/check-parity.ts",
     "check-parity": "tsx scripts/check-parity.ts"
   },
   "dependencies": {
