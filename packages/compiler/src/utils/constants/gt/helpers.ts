@@ -105,8 +105,6 @@ export function isVariableComponent(name: string): name is GT_COMPONENT_TYPES {
       GT_COMPONENT_TYPES.Currency,
       GT_COMPONENT_TYPES.DateTime,
       GT_COMPONENT_TYPES.RelativeTime,
-      GT_COMPONENT_TYPES.Derive,
-      GT_COMPONENT_TYPES.Static,
       GT_COMPONENT_TYPES.GtInternalVar,
       GT_COMPONENT_TYPES.GtInternalNum,
       GT_COMPONENT_TYPES.GtInternalCurrency,

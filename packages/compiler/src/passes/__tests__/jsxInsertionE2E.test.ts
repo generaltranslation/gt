@@ -33,8 +33,10 @@ function fullPipeline(code: string): {
   code: string | null;
   errors: string[];
   hasCollectionContent: boolean;
+  manifest: Record<string, unknown>;
 } {
   const state = initializeState({ enableAutoJsxInjection: true }, 'test.tsx');
+  state.debugManifest = new Map<string, unknown>();
 
   const ast = parser.parse(code, {
     sourceType: 'module',
@@ -50,9 +52,11 @@ function fullPipeline(code: string): {
   const errors = state.errorTracker.getErrors();
   const hasCollectionContent = state.stringCollector.hasContent();
 
+  const manifest = Object.fromEntries(state.debugManifest!);
+
   // Don't throw — capture errors for assertions
   if (errors.length > 0) {
-    return { code: null, errors, hasCollectionContent };
+    return { code: null, errors, hasCollectionContent, manifest };
   }
 
   // Pass 3: Injection
@@ -62,11 +66,11 @@ function fullPipeline(code: string): {
 
   // Generate
   if (!hasCollectionContent && state.statistics.jsxInsertionsCount === 0) {
-    return { code: null, errors, hasCollectionContent };
+    return { code: null, errors, hasCollectionContent, manifest };
   }
 
   const output = generate(ast, { retainLines: true, compact: false });
-  return { code: output.code, errors, hasCollectionContent };
+  return { code: output.code, errors, hasCollectionContent, manifest };
 }
 
 // --- Tests ---
@@ -232,5 +236,37 @@ describe('JSX insertion → collection E2E (no soft locks)', () => {
     const result = fullPipeline(code);
     expect(result.errors).toHaveLength(0);
     expect(result.code).not.toBeNull();
+  });
+
+  // ===== Derive representation in jsxChildren =====
+
+  it('Derive is represented as an element in jsxChildren, not a variable', () => {
+    // Derive should appear as { "t": "Derive", "i": N, "c": ... } in jsxChildren,
+    // NOT as { "i": N, "k": "...", "v": "s" } (a variable slot).
+    // The compiler currently incorrectly treats Derive as a variable.
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { Derive } from 'gt-react';
+      jsxs("div", { children: ["Hello ", jsx(Derive, { children: getX() })] });
+    `;
+    const result = fullPipeline(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.code).not.toBeNull();
+
+    // Find the manifest entry containing "Hello "
+    const entries = Object.values(result.manifest);
+    const mainEntry = entries.find(
+      (e) => Array.isArray(e) && JSON.stringify(e).includes('Hello')
+    ) as unknown[];
+    expect(mainEntry).toBeDefined();
+
+    // The Derive element should have "t" (type), not "v" (variable type)
+    const deriveEl = mainEntry!.find(
+      (child) => typeof child === 'object' && child !== null && 'i' in child
+    ) as Record<string, unknown>;
+    expect(deriveEl).toBeDefined();
+    const deriveJson = JSON.stringify(deriveEl);
+    expect(deriveJson).not.toContain('"v"');
+    expect(deriveEl).toHaveProperty('t');
   });
 });
