@@ -1,5 +1,16 @@
 # @generaltranslation/compiler
 
+## 1.3.0
+
+### Minor Changes
+
+- [#1158](https://github.com/generaltranslation/gt/pull/1158) [`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto injection for jsx translation
+
+### Patch Changes
+
+- Updated dependencies [[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:
+  - generaltranslation@8.2.2
+
 ## 1.2.1
 
 ### Patch Changes
