@@ -1666,7 +1666,10 @@ describe('auto JSX injection simulation', () => {
       const pkgs = [Libraries.GT_NEXT, Libraries.GT_REACT];
       const pass1Result = getPathsAndAliases(ast, pkgs);
       const importAliases = { ...pass1Result.importAliases };
-      for (const { localName, originalName } of pass1Result.translationComponentPaths) {
+      for (const {
+        localName,
+        originalName,
+      } of pass1Result.translationComponentPaths) {
         importAliases[localName] = originalName;
       }
 
@@ -1684,12 +1687,17 @@ describe('auto JSX injection simulation', () => {
 
       // The binding for GtInternalTranslateJsx should include inner _T refs
       let refCount = 0;
-      for (const { path, originalName, localName } of refreshed.translationComponentPaths) {
+      for (const {
+        path,
+        originalName,
+        localName,
+      } of refreshed.translationComponentPaths) {
         if (originalName !== INTERNAL_TRANSLATION_COMPONENT) continue;
         const binding = path.scope.bindings[localName];
-        refCount = binding?.referencePaths?.filter(
-          (r) => t.isJSXOpeningElement(r.parent)
-        ).length ?? 0;
+        refCount =
+          binding?.referencePaths?.filter((r) =>
+            t.isJSXOpeningElement(r.parent)
+          ).length ?? 0;
       }
 
       // 3 opening elements: outer _T + inner _T(Option A) + inner _T(Option B)
@@ -1868,7 +1876,9 @@ describe('auto JSX injection simulation', () => {
           typeof child === 'object' &&
           child !== null &&
           'c' in child &&
-          JSON.stringify((child as Record<string, unknown>).c).includes('Last saved')
+          JSON.stringify((child as Record<string, unknown>).c).includes(
+            'Last saved'
+          )
       ) as Record<string, unknown>;
       expect(siblingSpan).toBeDefined();
       expect(siblingSpan.i).toBe(2);
