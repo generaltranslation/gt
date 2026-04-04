@@ -1812,4 +1812,112 @@ describe('auto JSX injection simulation', () => {
       expect(pluralUpdate).toBeDefined();
     });
   });
+
+  // ================================================================ //
+  //  11. BRANCHING INDEX INDEPENDENCE — siblings after Branch/Plural
+  // ================================================================ //
+
+  describe('branching index independence', () => {
+    it('Branch children use independent index — sibling after Branch gets i:2 not i:3', () => {
+      // SOURCE:
+      //   <div>
+      //     <Branch branch={status} draft={<span>Draft</span>}>
+      //       <span>Unknown</span>
+      //     </Branch>
+      //     <span>Last saved {lastSaved}</span>
+      //   </div>
+      //
+      // The <div> has an opaque child (Branch) → _T wraps at div.
+      // Inside the _T:
+      //   - Branch gets i:1
+      //   - Branch props and children independently use i:2
+      //   - The SIBLING <span>Last saved...</span> should also get i:2
+      //     (not i:3), because Branch children use an independent counter
+      //
+      // BUG: CLI advances the shared counter through Branch children,
+      // causing the sibling span to get i:3 instead of i:2.
+      const code = `
+        import { Branch } from "gt-react";
+        export default function Page() {
+          const status = "draft";
+          const lastSaved = "2 min ago";
+          return (
+            <div>
+              <Branch branch={status} draft={<span>Draft</span>}>
+                <span>Unknown</span>
+              </Branch>
+              <span>Last saved {lastSaved}</span>
+            </div>
+          );
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+
+      // Find the entry that contains both Branch and "Last saved"
+      const mainUpdate = result.updates.find((u) => {
+        const s = JSON.stringify(u.source);
+        return s.includes('Branch') && s.includes('Last saved');
+      });
+      expect(mainUpdate).toBeDefined();
+
+      const source = mainUpdate!.source as unknown[];
+      // The sibling span should have i:2, not i:3
+      const siblingSpan = source.find(
+        (child) =>
+          typeof child === 'object' &&
+          child !== null &&
+          'c' in child &&
+          JSON.stringify((child as Record<string, unknown>).c).includes('Last saved')
+      ) as Record<string, unknown>;
+      expect(siblingSpan).toBeDefined();
+      expect(siblingSpan.i).toBe(2);
+    });
+
+    it('Plural children use independent index — sibling after Plural gets i:2 not i:3', () => {
+      // Same principle but with Plural.
+      //
+      // SOURCE:
+      //   <div>
+      //     <Plural n={count} one={<span>one</span>}>
+      //       <span>other</span>
+      //     </Plural>
+      //     <span>Total: {total}</span>
+      //   </div>
+      const code = `
+        import { Plural } from "gt-react";
+        export default function Page() {
+          const count = 3;
+          const total = 42;
+          return (
+            <div>
+              <Plural n={count} one={<span>one</span>}>
+                <span>other</span>
+              </Plural>
+              <span>Total: {total}</span>
+            </div>
+          );
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+
+      const mainUpdate = result.updates.find((u) => {
+        const s = JSON.stringify(u.source);
+        return s.includes('Plural') && s.includes('Total');
+      });
+      expect(mainUpdate).toBeDefined();
+
+      const source = mainUpdate!.source as unknown[];
+      const siblingSpan = source.find(
+        (child) =>
+          typeof child === 'object' &&
+          child !== null &&
+          'c' in child &&
+          JSON.stringify((child as Record<string, unknown>).c).includes('Total')
+      ) as Record<string, unknown>;
+      expect(siblingSpan).toBeDefined();
+      expect(siblingSpan.i).toBe(2);
+    });
+  });
 });

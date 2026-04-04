@@ -11,7 +11,11 @@ import {
 } from '../../../utils/getVariableName.js';
 import { isAcceptedPluralForm, JsxChild } from 'generaltranslation/internal';
 import { MultipliedTreeNode } from './types.js';
-import { DATA_ATTR_PREFIX } from '../constants.js';
+import {
+  DATA_ATTR_PREFIX,
+  BRANCH_COMPONENT,
+  PLURAL_COMPONENT,
+} from '../constants.js';
 
 /**
  * Construct the data-_gt prop
@@ -36,7 +40,7 @@ function constructGTProp(
   }, {});
 
   // Plural
-  if (type === 'Plural') {
+  if (type === PLURAL_COMPONENT) {
     const pluralBranches = Object.entries(props).reduce(
       (acc: Record<string, JsxChildren>, [branchName, branch]) => {
         if (isAcceptedPluralForm(branchName)) {
@@ -53,7 +57,7 @@ function constructGTProp(
     }
 
     // Branch
-  } else if (type === 'Branch') {
+  } else if (type === BRANCH_COMPONENT) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
     const { children, branch, ...allBranches } = props;
     // Filter out data-* attributes injected by build tools
@@ -144,11 +148,25 @@ export default function addGTIdentifierToSyntaxTree(
         indexObject.index
       );
 
-      // Save current index and recurse
+      // Save current index and recurse.
+      // For Branch/Plural, children use an independent index counter
+      // (same as branch props) so they don't inflate sibling indices.
+      // This matches the compiler's id.copy() behavior.
       const currentIndex = indexObject.index;
-      const children = handleChildren(
-        props?.children === undefined ? null : props?.children
-      );
+      const isBranching =
+        type === BRANCH_COMPONENT || type === PLURAL_COMPONENT;
+      let children: JsxChildren;
+      if (isBranching) {
+        const savedIndex = indexObject.index;
+        children = handleChildren(
+          props?.children === undefined ? null : props?.children
+        );
+        indexObject.index = savedIndex;
+      } else {
+        children = handleChildren(
+          props?.children === undefined ? null : props?.children
+        );
+      }
 
       // Enforce boolean rendering behavior
       // <T>{true}</T> -> true <- this is a boolean value, not a string
