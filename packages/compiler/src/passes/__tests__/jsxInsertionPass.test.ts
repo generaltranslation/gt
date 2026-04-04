@@ -60,15 +60,22 @@ describe('jsxInsertionPass', () => {
     expect(out).toContain('GtInternalTranslateJsx');
   });
 
-  it('wraps numeric children in _T', () => {
+  it('does NOT wrap numeric-only children in _T (numbers are data, not translatable text)', () => {
     // BEFORE JSX:  <span>{42}</span>
-    // AFTER JSX:   <span><_T>{42}</_T></span>
+    // AFTER JSX:   <span>{42}</span>  (unchanged)
+    //
+    // Rule 5: Numeric literals alone are NOT translatable text.
+    // They are data, not content a translator would touch.
+    // The CLI correctly ignores this — the compiler should too.
+    //
+    // BUG: The compiler currently wraps {42} in _T, producing a
+    // standalone "42" hash entry that the CLI doesn't produce.
     const code = `
       import { jsx } from 'react/jsx-runtime';
       jsx("span", { children: 42 });
     `;
     const { gtTranslateCalls } = transform(code);
-    expect(gtTranslateCalls).toHaveLength(1);
+    expect(gtTranslateCalls).toHaveLength(0);
   });
 
   // ===== Var wrapping =====

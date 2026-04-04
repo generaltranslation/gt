@@ -287,7 +287,6 @@ function isJsxCallPath(callPath: NodePath<t.CallExpression>): boolean {
 function hasNonWhitespaceText(childrenPath: NodePath<t.Expression>): boolean {
   const isText = (p: NodePath): boolean => {
     if (p.isStringLiteral()) return p.node.value.trim().length > 0;
-    if (p.isNumericLiteral()) return true;
     if (p.isTemplateLiteral()) {
       return (
         p.node.expressions.length === 0 &&
