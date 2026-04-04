@@ -9,7 +9,7 @@
  * 4. Compares manifests with Derive filtering
  * 5. Reports results, exits 1 on mismatch
  */
-import { execSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -96,7 +96,7 @@ function main() {
   console.log('\n📝 Running gt generate...\n');
   const MONOREPO_ROOT = path.resolve(ROOT, '..', '..', '..');
   const gtMain = path.join(MONOREPO_ROOT, 'packages', 'cli', 'dist', 'main.js');
-  execSync(`node ${gtMain} generate`, { cwd: ROOT, stdio: 'inherit' });
+  execFileSync('node', [gtMain, 'generate'], { cwd: ROOT, stdio: 'inherit' });
 
   // 4. Load manifests
   if (!fs.existsSync(COMPILER_MANIFEST)) {
