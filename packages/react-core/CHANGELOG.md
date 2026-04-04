@@ -1,5 +1,16 @@
 # @generaltranslation/react-core
 
+## 1.7.2
+
+### Patch Changes
+
+- [#1158](https://github.com/generaltranslation/gt/pull/1158) [`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto injection for jsx translation
+
+- Updated dependencies [[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:
+  - @generaltranslation/supported-locales@2.0.60
+  - generaltranslation@8.2.2
+  - gt-i18n@0.7.10
+
 ## 1.7.1
 
 ### Patch Changes
