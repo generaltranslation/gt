@@ -5,7 +5,7 @@
  *
  * 1. Cleans previous outputs
  * 2. Runs `pnpm vite build` (produces _gt_debug_hash_manifest.json)
- * 3. Runs `pnpm exec gt generate` (produces src/_gt/en.json)
+ * 3. Runs `gt generate` (produces src/_gt/en.json)
  * 4. Compares manifests with Derive filtering
  * 5. Reports results, exits 1 on mismatch
  */
@@ -94,7 +94,8 @@ function main() {
 
   // 3. Run CLI (gt generate)
   console.log('\n📝 Running gt generate...\n');
-  execSync('pnpm exec gt generate', { cwd: ROOT, stdio: 'inherit' });
+  const gtBin = path.join(ROOT, 'node_modules', '.bin', 'gt');
+  execSync(`${gtBin} generate`, { cwd: ROOT, stdio: 'inherit' });
 
   // 4. Load manifests
   if (!fs.existsSync(COMPILER_MANIFEST)) {
