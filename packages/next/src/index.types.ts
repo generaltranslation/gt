@@ -223,6 +223,8 @@ Var._gtt = 'variable-variable';
 export const Derive: typeof _Derive = () => {
   throw new Error(typesFileError);
 };
+/** @internal _gtt - The GT transformation for the component. */
+Derive._gtt = 'derive';
 
 /**
  * @deprecated Use `<Derive>` instead.
@@ -251,6 +253,8 @@ export const Derive: typeof _Derive = () => {
 export const Static: typeof _Static = () => {
   throw new Error(typesFileError);
 };
+/** @internal _gtt - The GT transformation for the component. */
+Static._gtt = 'derive';
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.

@@ -28,7 +28,7 @@ export default function addGTIdentifier(
   const createGTTag = (child: ReactElement<any>): GTTag => {
     const { type, props } = child;
     index += 1;
-    const result: GTTag = { id: index };
+    const result: GTTag = { id: index, injectionType: 'manual' };
     let transformation: Transformation | undefined;
     try {
       transformation =
@@ -38,6 +38,14 @@ export default function addGTIdentifier(
     }
     if (transformation) {
       const transformationParts = transformation.split('-');
+      // If the component was inserted automatically by the compiler
+      if (
+        transformationParts[1] === 'automatic' ||
+        transformationParts[2] === 'automatic'
+      ) {
+        result.injectionType = 'automatic';
+      }
+
       if (transformationParts[0] === 'translate') {
         // Convert nested <T> to fragments
         // This will nullify translation specific attributes of child, i.e. id, context, etc.

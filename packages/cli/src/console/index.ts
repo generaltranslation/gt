@@ -100,6 +100,16 @@ export const warnNestedTComponent = (file: string, location?: string): string =>
     location
   );
 
+export const warnNestedInternalTComponent = (
+  file: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `DEBUG: Found nested <GtInternalTranslateJsx> component. <GtInternalTranslateJsx> components cannot be directly nested.`,
+    location
+  );
+
 export const warnNonStaticExpressionSync = (
   file: string,
   attrName: string,

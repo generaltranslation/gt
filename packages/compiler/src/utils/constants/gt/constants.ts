@@ -23,6 +23,11 @@ export enum GT_COMPONENT_TYPES {
   Branch = 'Branch',
   Plural = 'Plural',
   LocaleSelector = 'LocaleSelector',
+  GtInternalTranslateJsx = 'GtInternalTranslateJsx',
+  GtInternalVar = 'GtInternalVar',
+  GtInternalNum = 'GtInternalNum',
+  GtInternalCurrency = 'GtInternalCurrency',
+  GtInternalDateTime = 'GtInternalDateTime',
 }
 
 /**
@@ -112,6 +117,19 @@ export enum GT_IMPORT_SOURCES {
 }
 
 /**
+ * Branch control props — not translatable content.
+ * `branch` is the selector key; `data-*` props are HTML attributes ignored at runtime.
+ * `data-*` is handled as a prefix check, not listed here.
+ */
+export const BRANCH_CONTROL_PROPS = new Set(['branch']);
+
+/**
+ * Plural control props — not translatable content.
+ * `n` is the count, `locales` is the locale hint.
+ */
+export const PLURAL_CONTROL_PROPS = new Set(['n', 'locales']);
+
+/**
  * Set of valid plural forms for Plural components
  */
 export const PLURAL_FORMS = new Set([
@@ -142,9 +160,13 @@ export enum USEGT_CALLBACK_OPTIONS {
  */
 export const MINIFY_CANONICAL_NAME_MAP = {
   [GT_COMPONENT_TYPES.Var]: 'v',
+  [GT_COMPONENT_TYPES.GtInternalVar]: 'v',
   [GT_COMPONENT_TYPES.Num]: 'n',
+  [GT_COMPONENT_TYPES.GtInternalNum]: 'n',
   [GT_COMPONENT_TYPES.Currency]: 'c',
+  [GT_COMPONENT_TYPES.GtInternalCurrency]: 'c',
   [GT_COMPONENT_TYPES.DateTime]: 'd',
+  [GT_COMPONENT_TYPES.GtInternalDateTime]: 'd',
   [GT_COMPONENT_TYPES.RelativeTime]: 'rt',
   [GT_COMPONENT_TYPES.Static]: 's',
   [GT_COMPONENT_TYPES.Derive]: 's',

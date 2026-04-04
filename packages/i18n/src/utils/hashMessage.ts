@@ -1,21 +1,23 @@
 import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
-import { InlineTranslationOptions } from '../translation-functions/types/options';
+import { ResolutionOptions } from '../translation-functions/types/options';
+import { Translation } from '../types';
 
 /**
  * Hash a message string
  */
 export function hashMessage(
-  message: string,
-  options?: InlineTranslationOptions
+  message: Translation,
+  options: ResolutionOptions
 ): string {
   return hashSource({
-    source: indexVars(message),
+    source: options.$format === 'JSX' ? message : indexVars(message as string),
     ...(options?.$context && { context: options.$context }),
     ...(options?.$id && { id: options.$id }),
-    ...(options?.$maxChars != null && {
-      maxChars: Math.abs(options.$maxChars),
-    }),
-    dataFormat: options?.$format || 'ICU',
+    ...('$maxChars' in options &&
+      options.$maxChars != null && {
+        $maxChars: Math.abs(options.$maxChars),
+      }),
+    dataFormat: options.$format,
   });
 }

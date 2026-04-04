@@ -1,6 +1,8 @@
+import { JsxChildren } from 'generaltranslation/types';
 import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
+  JsxTranslationOptions,
   RuntimeTranslationOptions,
 } from './options';
 
@@ -81,3 +83,14 @@ export type TxFunctionType = (
   message: string,
   options?: RuntimeTranslationOptions
 ) => Promise<string>;
+
+/**
+ * Type for the resolveJsxTranslation() function
+ * @param {JsxChildren} children - The children to resolve the translation for.
+ * @param {JsxTranslationOptions} options - The options for the translation.
+ * @returns {JsxChildren} The resolved translation.
+ */
+export type ResolveJsxTranslationFunction = (
+  children: JsxChildren,
+  options?: JsxTranslationOptions
+) => JsxChildren | undefined;

@@ -4,6 +4,7 @@ import {
   TransformationPrefix,
   GTProp,
   VariableType,
+  InjectionType,
 } from 'generaltranslation/types';
 import React from 'react';
 
@@ -20,6 +21,7 @@ export type {
  */
 export type GTTag = {
   id: number;
+  injectionType: InjectionType;
   transformation?: TransformationPrefix;
   branches?: Record<string, TaggedChildren>;
   variableType?: VariableTransformationSuffix;
@@ -57,6 +59,8 @@ export type FlattenedDictionary = {
 
 /**
  * Translated content types
+ * TODO: move these types to JsxElement etc from generaltranslation/types
+ * remember to omit the t property (tag name) from the translated element
  */
 export type TranslatedElement = {
   i?: number;
@@ -95,6 +99,7 @@ export type CustomLoader = (locale: string) => Promise<any>;
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 
 export type VariableProps = {
+  /** Whether the variable was automatically injected by the compiler */
   variableType: VariableType;
   variableValue: any;
   variableOptions:
@@ -105,6 +110,7 @@ export type VariableProps = {
         baseDate?: Date;
       });
   variableName: string;
+  injectionType: InjectionType;
 };
 
 export type RenderVariable = ({
@@ -112,9 +118,10 @@ export type RenderVariable = ({
   variableValue,
   variableOptions,
   locales,
+  injectionType,
 }: Omit<VariableProps, 'variableName'> & {
   locales: string[];
-}) => React.JSX.Element;
+}) => React.ReactNode;
 
 export type _Message = {
   message: string;

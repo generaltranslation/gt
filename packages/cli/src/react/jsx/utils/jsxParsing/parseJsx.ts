@@ -17,6 +17,7 @@ import {
   warnInvalidDeriveInitSync,
   warnRecursiveFunctionCallSync,
   warnDataAttrOnBranch,
+  warnNestedInternalTComponent,
 } from '../../../../console/index.js';
 import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
@@ -25,6 +26,7 @@ import {
   STATIC_COMPONENT,
   DERIVE_COMPONENT,
   TRANSLATION_COMPONENT,
+  INTERNAL_TRANSLATION_COMPONENT,
   VARIABLE_COMPONENTS,
 } from '../constants.js';
 import { Metadata, HTML_CONTENT_PROPS } from 'generaltranslation/types';
@@ -40,6 +42,10 @@ import { handleChildrenWhitespace } from './handleChildrenWhitespace.js';
 import { MultiplicationNode, JsxTree, isElementNode } from './types.js';
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
+import {
+  ensureTAndVarImported,
+  autoInsertJsxComponents,
+} from './autoInsertion.js';
 import { GTLibrary } from '../../../../types/libraries.js';
 import path from 'node:path';
 import { extractSourceCode } from '../extractSourceCode.js';
@@ -88,6 +94,7 @@ type ConfigOptions = {
   pkgs: GTLibrary[];
   file: string;
   includeSourceCodeContext?: boolean;
+  enableAutoJsxInjection?: boolean;
 };
 
 /**
@@ -209,7 +216,7 @@ function buildJSXTree({
   config: ConfigOptions;
   state: StateTracker;
   output: OutputCollector;
-}): JsxTree | MultiplicationNode {
+}): JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[] {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
     if (t.isJSXEmptyExpression(node.expression)) {
@@ -276,7 +283,50 @@ function buildJSXTree({
     // Convert from alias to original name
     const componentType = config.importAliases[typeName ?? ''];
 
-    if (componentType === TRANSLATION_COMPONENT && insideT) {
+    // When enableAutoJsxInjection is on and we're inside a Derive context,
+    // any auto-inserted T component will be stripped at runtime by
+    // removeInjectedT. Unwrap it transparently — process the T's children
+    // as if the T wasn't there. Check this BEFORE the nested-T warning
+    // so we don't emit spurious errors for expected auto-inserted nesting.
+    if (
+      componentType === INTERNAL_TRANSLATION_COMPONENT &&
+      inDerive &&
+      config.enableAutoJsxInjection
+    ) {
+      const childResults: (JsxTree | MultiplicationNode)[] = [];
+      const helperChildren = helperPath.get('children');
+      for (let i = 0; i < element.children.length; i++) {
+        const child = element.children[i];
+        const helperChild = helperChildren[i];
+        const result = buildJSXTree({
+          node: child,
+          helperPath: helperChild,
+          scopeNode,
+          insideT: true,
+          inDerive: true,
+          config,
+          state,
+          output,
+        });
+        if (result !== null) {
+          if (Array.isArray(result)) {
+            childResults.push(...result);
+          } else {
+            childResults.push(result);
+          }
+        }
+      }
+      if (childResults.length === 0) return null;
+      if (childResults.length === 1) return childResults[0];
+      // Return array — callers flatten this into parent's children
+      return childResults;
+    }
+
+    if (
+      (componentType === TRANSLATION_COMPONENT ||
+        componentType === INTERNAL_TRANSLATION_COMPONENT) &&
+      insideT
+    ) {
       // Add warning: Nested <T> components are allowed, but they are advised against
       output.warnings.add(
         warnNestedTComponent(
@@ -284,6 +334,14 @@ function buildJSXTree({
           `${element.loc?.start?.line}:${element.loc?.start?.column}`
         )
       );
+      if (componentType === INTERNAL_TRANSLATION_COMPONENT) {
+        output.errors.push(
+          warnNestedInternalTComponent(
+            config.file,
+            `${element.loc?.start?.line}:${element.loc?.start?.column}`
+          )
+        );
+      }
     }
 
     // If this JSXElement is one of the recognized variable components,
@@ -401,7 +459,12 @@ function buildJSXTree({
             state,
             output,
           });
-          childrenArray.push(result);
+          // Flatten array results from _T transparency unwrap inside Derive
+          if (Array.isArray(result)) {
+            childrenArray.push(...result);
+          } else {
+            childrenArray.push(result);
+          }
         }
         if (childrenArray.length) {
           results.props.children = childrenArray;
@@ -419,8 +482,8 @@ function buildJSXTree({
     }
 
     const children: (JsxTree | MultiplicationNode)[] = element.children
-      .map((child, index) =>
-        buildJSXTree({
+      .flatMap((child, index) => {
+        const result = buildJSXTree({
           node: child,
           insideT: true,
           inDerive: inDerive,
@@ -429,8 +492,11 @@ function buildJSXTree({
           config,
           state,
           output,
-        })
-      )
+        });
+        // Flatten array results from _T transparency unwrap inside Derive
+        if (Array.isArray(result)) return result;
+        return [result];
+      })
       .filter(
         (child): child is JsxTree | MultiplicationNode =>
           child !== null && child !== ''
@@ -453,8 +519,8 @@ function buildJSXTree({
   // If it's a JSX fragment
   else if (t.isJSXFragment(node)) {
     const children = node.children
-      .map((child: JSXChildNode, index: number) =>
-        buildJSXTree({
+      .flatMap((child: JSXChildNode, index: number) => {
+        const result = buildJSXTree({
           node: child,
           insideT: true,
           inDerive: inDerive,
@@ -463,8 +529,11 @@ function buildJSXTree({
           config,
           state,
           output,
-        })
-      )
+        });
+        // Flatten array results from _T transparency unwrap inside Derive
+        if (Array.isArray(result)) return result;
+        return [result];
+      })
       .filter(
         (child): child is JsxTree | MultiplicationNode =>
           child !== null && child !== ''
@@ -606,7 +675,11 @@ function parseJSXElement({
   // Only proceed if it's <T> ...
   // TODO: i don't think this condition is needed anymore
   if (
-    !(name.type === 'JSXIdentifier' && originalName === TRANSLATION_COMPONENT)
+    !(
+      name.type === 'JSXIdentifier' &&
+      (originalName === TRANSLATION_COMPONENT ||
+        originalName === INTERNAL_TRANSLATION_COMPONENT)
+    )
   ) {
     return;
   }
@@ -697,7 +770,24 @@ function parseJSXElement({
   // TODO: do this in parallel
   const minifiedTress: JsxChildren[] = [];
   for (const multipliedTree of multipliedTrees) {
-    const minifiedTree = addGTIdentifierToSyntaxTree(multipliedTree);
+    // Build set of confirmed GT variable names from importAliases.
+    // Only pass when enableAutoJsxInjection is on, to avoid breaking
+    // existing behavior where importAliases may be incomplete.
+    const gtVariableNames = config.enableAutoJsxInjection
+      ? new Set(
+          Object.values(config.importAliases).filter(
+            (name) =>
+              VARIABLE_COMPONENTS.includes(name) &&
+              name !== DERIVE_COMPONENT &&
+              name !== STATIC_COMPONENT
+          )
+        )
+      : undefined;
+    const minifiedTree = addGTIdentifierToSyntaxTree(
+      multipliedTree,
+      0,
+      gtVariableNames
+    );
     minifiedTress.push(
       Array.isArray(minifiedTree) && minifiedTree.length === 1
         ? minifiedTree[0]
@@ -911,7 +1001,23 @@ function processFunctionInFile({
       plugins: ['jsx', 'typescript'],
     });
 
-    const { importAliases } = getPathsAndAliases(ast, config.pkgs);
+    const pathsResult = getPathsAndAliases(ast, config.pkgs);
+    const importAliases = { ...pathsResult.importAliases };
+    // Merge translation component names into importAliases so
+    // autoInsertJsxComponents can recognize user T/Var and skip them
+    for (const {
+      localName,
+      originalName,
+    } of pathsResult.translationComponentPaths) {
+      importAliases[localName] = originalName;
+    }
+
+    // Auto-inject T/Var into the cross-file AST when enabled,
+    // so that Derive extraction sees the same structure as same-file
+    if (config.enableAutoJsxInjection) {
+      ensureTAndVarImported(ast, importAliases);
+      autoInsertJsxComponents(ast, importAliases);
+    }
 
     // Collect all imports in this file to track cross-file function calls
     let importedFunctionsMap: Map<string, string> = new Map();
@@ -944,6 +1050,7 @@ function processFunctionInFile({
               parsingOptions: config.parsingOptions,
               pkgs: config.pkgs,
               file: filePath,
+              enableAutoJsxInjection: config.enableAutoJsxInjection,
             },
             state: {
               ...state,
@@ -970,6 +1077,7 @@ function processFunctionInFile({
               parsingOptions: config.parsingOptions,
               pkgs: config.pkgs,
               file: filePath,
+              enableAutoJsxInjection: config.enableAutoJsxInjection,
             },
             state: {
               ...state,
@@ -1023,6 +1131,7 @@ function processFunctionInFile({
               parsingOptions: config.parsingOptions,
               pkgs: config.pkgs,
               file: filePath,
+              enableAutoJsxInjection: config.enableAutoJsxInjection,
             },
             state: {
               ...state,
@@ -1078,15 +1187,18 @@ function processFunctionDeclarationNodePath({
       if (!returnNodePath.isExpression()) {
         return;
       }
-      result.branches.push(
-        processDeriveExpression({
-          config,
-          state,
-          output,
-          expressionNodePath: returnNodePath,
-          scopeNode: returnPath,
-        })
-      );
+      const deriveResult = processDeriveExpression({
+        config,
+        state,
+        output,
+        expressionNodePath: returnNodePath,
+        scopeNode: returnPath,
+      });
+      if (Array.isArray(deriveResult)) {
+        result.branches.push(...deriveResult);
+      } else {
+        result.branches.push(deriveResult);
+      }
     },
   });
   if (result.branches.length === 0) {
@@ -1135,15 +1247,18 @@ function processVariableDeclarationNodePath({
   const bodyNodePath = arrowFunctionPath.get('body');
   if (bodyNodePath.isExpression()) {
     // process expression return
-    result.branches.push(
-      processDeriveExpression({
-        config,
-        state,
-        output,
-        expressionNodePath: bodyNodePath,
-        scopeNode: arrowFunctionPath,
-      })
-    );
+    const deriveResult = processDeriveExpression({
+      config,
+      state,
+      output,
+      expressionNodePath: bodyNodePath,
+      scopeNode: arrowFunctionPath,
+    });
+    if (Array.isArray(deriveResult)) {
+      result.branches.push(...deriveResult);
+    } else {
+      result.branches.push(deriveResult);
+    }
   } else {
     // search for a return statement
     bodyNodePath.traverse({
@@ -1155,15 +1270,18 @@ function processVariableDeclarationNodePath({
         if (!returnNodePath.isExpression()) {
           return;
         }
-        result.branches.push(
-          processDeriveExpression({
-            config,
-            state,
-            output,
-            expressionNodePath: returnNodePath,
-            scopeNode: returnPath,
-          })
-        );
+        const deriveResult = processDeriveExpression({
+          config,
+          state,
+          output,
+          expressionNodePath: returnNodePath,
+          scopeNode: returnPath,
+        });
+        if (Array.isArray(deriveResult)) {
+          result.branches.push(...deriveResult);
+        } else {
+          result.branches.push(deriveResult);
+        }
       },
     });
   }
@@ -1196,7 +1314,7 @@ function processDeriveExpression({
   output: OutputCollector;
   expressionNodePath: NodePath<t.Expression>;
   scopeNode: NodePath;
-}): JsxTree | MultiplicationNode {
+}): JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[] {
   // Mark the derivable tracker as true
   state.derivableTracker.isDerivable = true;
 
@@ -1283,15 +1401,17 @@ function processDeriveExpression({
     const alternateNodePath = expressionNodePath.get('alternate');
     const result: MultiplicationNode = {
       nodeType: 'multiplication' as const,
-      branches: [consequentNodePath, alternateNodePath].map(
-        (expressionNodePath) =>
-          processDeriveExpression({
+      branches: [consequentNodePath, alternateNodePath].flatMap(
+        (expressionNodePath) => {
+          const r = processDeriveExpression({
             config,
             state,
             output,
             scopeNode,
             expressionNodePath,
-          })
+          });
+          return Array.isArray(r) ? r : [r];
+        }
       ),
     };
     return result;

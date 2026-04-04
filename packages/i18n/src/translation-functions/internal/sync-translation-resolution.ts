@@ -16,7 +16,10 @@ export const resolveTranslationSync: SyncResolutionFunction = (
   options = {}
 ) => {
   const i18nManager = getI18nManager();
-  const translation = i18nManager.resolveTranslationSync(message, options);
+  const translation = i18nManager.resolveTranslationSync<string>(message, {
+    $format: 'ICU',
+    ...options,
+  });
   if (!translation) return undefined;
   return interpolateMessage(translation, {
     $_locales: i18nManager.getLocale(),

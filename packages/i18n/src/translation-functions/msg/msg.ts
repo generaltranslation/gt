@@ -91,7 +91,12 @@ export function msg(
 
   // Encode options
   const $_source = message;
-  const $_hash = options.$_hash || hashMessage(message, options);
+  const $_hash =
+    options.$_hash ||
+    hashMessage(message, {
+      $format: 'ICU',
+      ...options,
+    });
 
   const encodedOptions: EncodedTranslationOptions = {
     ...options,

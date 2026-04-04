@@ -4,12 +4,18 @@ import { TranslationsManager } from './translations-manager/TranslationsManager'
 import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
 import { StorageAdapterType } from './storage-adapter/types';
 import { validateConfig } from './validation/validateConfig';
-import { Translations } from './translations-manager/utils/types/translation-data';
+import {
+  Translation,
+  Translations,
+} from './translations-manager/utils/types/translation-data';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT, standardizeLocale } from 'generaltranslation';
 import { CustomMapping } from 'generaltranslation/types';
-import { InlineTranslationOptions } from '../translation-functions/types/options';
+import {
+  InlineTranslationOptions,
+  ResolutionOptions,
+} from '../translation-functions/types/options';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import { hashMessage } from '../utils/hashMessage';
@@ -17,14 +23,21 @@ import { TranslationsLoader } from './translations-manager/translations-loaders/
 
 /**
  * Class for managing translation functionality
+ * @template T - The type of the storage adapter
+ * @template U - The type of the translation that will be cached
+ *
+ * TODO: next major version, move U to the first generic and make it a required parameter, no default value
  */
-class I18nManager<T extends StorageAdapter = StorageAdapter> {
+class I18nManager<
+  T extends StorageAdapter = StorageAdapter,
+  U extends Translation = Translation,
+> {
   protected config: I18nManagerConfig;
 
   /**
    * Cache for translations
    */
-  private translationsManager: TranslationsManager;
+  private translationsManager: TranslationsManager<U>;
 
   /**
    * Store adapter
@@ -140,15 +153,18 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   /**
    * Get the translations (error on unloaded translations)
    * @param {string} message - The message to get the translation for
-   * @param {InlineTranslationOptions} [options] - The options for the translation
-   * @returns {string | undefined} The translation for the given message and options synchronously
+   * @param {ResolutionOptions} [options] - The options for the translation
+   * @returns {U | undefined} The translation for the given message and options synchronously
    */
-  resolveTranslationSync: TranslationResolver = (message, options) => {
+  resolveTranslationSync: TranslationResolver<U> = <T extends U = U>(
+    message: T,
+    options: ResolutionOptions
+  ) => {
     const locale = this.getLocale();
     const translations = this.translationsManager.getTranslationsSync(locale);
     if (!translations) return undefined;
     const hash = hashMessage(message, options);
-    return translations[hash] as string;
+    return translations[hash] as T;
   };
 
   // ----- Async Operations ----- //
@@ -158,7 +174,7 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
    */
   async getTranslations(
     locale: string = this.getLocale()
-  ): Promise<Translations> {
+  ): Promise<Translations<U>> {
     if (!this.config.locales.includes(locale)) {
       throw new Error(`Locale ${locale} not found in config`);
     }
@@ -175,25 +191,28 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
    */
   async getTranslationResolver(
     locale: string = this.getLocale()
-  ): Promise<TranslationResolver> {
+  ): Promise<TranslationResolver<U>> {
     // Early return if i18n is disabled or default locale
     if (
       this.config.enableI18n === false ||
       locale === this.config.defaultLocale
     ) {
-      return (message: string) => message;
+      return <T extends U = U>(message: T): T | undefined => message;
     }
 
     // Get translations
     const translations = await this.translationsManager.getTranslations(locale);
 
     // Create translation resolver
-    return (message: string, options?: InlineTranslationOptions) => {
+    return <T extends U = U>(
+      message: T,
+      options: ResolutionOptions
+    ): T | undefined => {
       // Calculate hash
       const hash = hashMessage(message, options);
 
       // Return translation or undefined
-      return translations[hash] as unknown as string | undefined;
+      return translations[hash] as T;
     };
   }
 
@@ -333,14 +352,15 @@ function standardizeLocales(config: {
 }
 
 /**
- * Type definition for a synchronous translation resolution given a hashable message and options
- * @template T - The type of the message (default: string)
- * @template U - The type of the translation (default: string | undefined)
- * @param {T} message - The message to get the translation for
- * @param {InlineTranslationOptions} [options] - The options for the translation
- * @returns {U} The translation for the given message and options
+ * Type definition for a translation resolver
+ * @template U - The type of the translation (default: Translation)
+ * @param {U} message - The message to get the translation for
+ * @param {ResolutionOptions} [options] - The options for the translation
+ * @returns {U | undefined} The translation for the given message and options or undefined if the translation is not found
  */
-type TranslationResolver<
-  T extends unknown = string,
-  U extends unknown = string | undefined,
-> = (message: T, options?: InlineTranslationOptions) => U;
+type TranslationResolver<U extends Translation = Translation> = <
+  T extends U = U,
+>(
+  message: T,
+  options: ResolutionOptions
+) => T | undefined;

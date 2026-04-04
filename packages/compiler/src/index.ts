@@ -12,6 +12,7 @@ import { injectionPass } from './passes/injectionPass';
 import { macroExpansionPass } from './passes/macroExpansionPass';
 import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
+import { jsxInsertionPass } from './passes/jsxInsertionPass';
 
 /**
  * Architecture:
@@ -70,6 +71,11 @@ export interface GTUnpluginOptions extends PluginConfig {
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}) => {
+    // Debug manifest: accumulates hash → jsxChildren across all files
+    const debugManifest = options._debugHashManifest
+      ? new Map<string, unknown>()
+      : undefined;
+
     return {
       name: '@generaltranslation/GT_PLUGIN',
       transformInclude(id: string) {
@@ -84,6 +90,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       transform(code: string, id: string) {
         // Initialize processing state
         const state = initializeState(options, id);
+        if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
           if (
@@ -101,12 +108,17 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             allowReturnOutsideFunction: true,
           });
 
-          // Pass 0: Macro expansion
+          // Pass 1: Jsx insertion
+          if (state.settings.enableAutoJsxInjection) {
+            traverse(ast, jsxInsertionPass(state));
+          }
+
+          // Pass 2: Macro expansion
           if (state.settings.enableMacroTransform) {
             traverse(ast, macroExpansionPass(state));
           }
 
-          // Pass 1: Collection
+          // Pass 3: Collection
           traverse(ast, collectionPass(state));
 
           // Handle errors
@@ -114,7 +126,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
-          // Pass 2: Injection
+          // Pass 4: Injection
           const hasCollectionContent = state.stringCollector.hasContent();
 
           if (hasCollectionContent) {
@@ -124,7 +136,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           // Generate code if any pass modified the AST
           if (
             !hasCollectionContent &&
-            state.statistics.macroExpansionsCount === 0
+            state.statistics.macroExpansionsCount === 0 &&
+            state.statistics.jsxInsertionsCount === 0
           ) {
             return null;
           }
@@ -142,6 +155,21 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           // Otherwise, log the error
           state.logger.logError(`Error processing ${id}: ${error}`);
           return null;
+        }
+      },
+      buildEnd() {
+        if (debugManifest && debugManifest.size > 0) {
+          const fs = require('fs');
+          const path = require('path');
+          const outPath = path.resolve(
+            process.cwd(),
+            '_gt_debug_hash_manifest.json'
+          );
+          const manifest = Object.fromEntries(debugManifest);
+          fs.writeFileSync(outPath, JSON.stringify(manifest, null, 2));
+          console.log(
+            `[gt-compiler] Debug hash manifest written to ${outPath} (${debugManifest.size} entries)`
+          );
         }
       },
     };

@@ -6,8 +6,9 @@ import { BaseParsingFlags, GTParsingFlags } from '../types/parsing.js';
  * @property {boolean} includeSourceCodeContext - Include surrounding source code lines as context for translations.
  */
 export const GT_PARSING_FLAGS_DEFAULT: GTParsingFlags = {
-  autoDerive: true,
+  autoDerive: false,
   includeSourceCodeContext: false,
+  enableAutoJsxInjection: false,
 };
 
 /**

@@ -142,3 +142,6 @@ export const createStringRenderWarning = (
   id: string | undefined
 ) =>
   `${PACKAGE_NAME} Warning: failed to render string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
+
+// Unlikely edge case: A <_T> component was injected outside of a <Derive> boundary. This would be caused by the compiler overeagerly injecting <_T> components.
+export const warnNestedInternalTComponent = `${PACKAGE_NAME} Warning: A <_T> component was found injected outside of a <Derive> boundary. This may affect translation resolution for this component.`;

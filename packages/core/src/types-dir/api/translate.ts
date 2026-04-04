@@ -18,6 +18,8 @@ export type TranslationResultReference = {
  */
 export type TypedResult =
   | {
+      // TODO: omit the t property (tag name) from the translated element
+      // I have to double check that this is the case, but I think it is
       translation: JsxChildren;
       dataFormat: 'JSX';
     }

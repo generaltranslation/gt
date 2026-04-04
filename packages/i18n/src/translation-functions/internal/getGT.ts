@@ -37,7 +37,10 @@ export async function getGT(): Promise<GTFunctionType> {
     message: string,
     options: InlineTranslationOptions = {}
   ) => {
-    const translation = resolveTranslation(message, options);
+    const translation = resolveTranslation(message, {
+      $format: 'ICU',
+      ...options,
+    });
     if (translation) {
       return interpolateMessage(translation, {
         ...options,

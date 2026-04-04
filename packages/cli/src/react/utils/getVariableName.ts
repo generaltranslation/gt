@@ -5,15 +5,19 @@ import { VariableType } from 'generaltranslation/types';
  */
 export const defaultVariableNames = {
   Var: 'value',
+  GtInternalVar: 'value',
   Num: 'n',
   DateTime: 'date',
+  RelativeTime: 'time',
   Currency: 'cost',
 } as const;
 
 const minifyVariableTypeMap = {
   Var: 'v',
+  GtInternalVar: 'v',
   Num: 'n',
   DateTime: 'd',
+  RelativeTime: 'rt',
   Currency: 'c',
 } as const;
 

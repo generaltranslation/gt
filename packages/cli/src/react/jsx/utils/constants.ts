@@ -18,6 +18,9 @@ export const TRANSLATION_COMPONENT = 'T';
 export const STATIC_COMPONENT = 'Static';
 export const DERIVE_COMPONENT = 'Derive';
 export const BRANCH_COMPONENT = 'Branch';
+export const DEFAULT_GT_IMPORT_SOURCE = 'gt-react/browser';
+export const INTERNAL_TRANSLATION_COMPONENT = 'GtInternalTranslateJsx';
+export const INTERNAL_VAR_COMPONENT = 'GtInternalVar';
 
 // Variable components
 export const VAR_COMPONENT = 'Var';
@@ -47,6 +50,8 @@ export const GT_TRANSLATION_FUNCS = [
   CURRENCY_COMPONENT,
   NUM_COMPONENT,
   BRANCH_COMPONENT,
+  INTERNAL_TRANSLATION_COMPONENT,
+  INTERNAL_VAR_COMPONENT,
   PLURAL_COMPONENT,
 ];
 // GT String translation functions
@@ -70,6 +75,7 @@ export const VARIABLE_COMPONENTS = [
   NUM_COMPONENT,
   STATIC_COMPONENT,
   DERIVE_COMPONENT,
+  INTERNAL_VAR_COMPONENT,
 ];
 
 export const GT_ATTRIBUTES_WITH_SUGAR = [
@@ -88,6 +94,12 @@ export const GT_ATTRIBUTES = [
 
 // Data attribute prefix injected by build tools
 export const DATA_ATTR_PREFIX = 'data-' as const;
+
+/** Branch control props — not translatable content. */
+export const BRANCH_CONTROL_PROPS = new Set(['branch']);
+
+/** Plural control props — not translatable content. */
+export const PLURAL_CONTROL_PROPS = new Set(['n', 'locales']);
 
 // demarcation for global t macro
 export const T_GLOBAL_REGISTRATION_FUNCTION_MARKER =

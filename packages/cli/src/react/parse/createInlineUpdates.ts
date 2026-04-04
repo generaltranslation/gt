@@ -23,6 +23,13 @@ import {
   dedupeUpdates,
   linkDeriveUpdates,
 } from '../../extraction/postProcess.js';
+import {
+  ensureTAndVarImported,
+  autoInsertJsxComponents,
+} from '../jsx/utils/jsxParsing/autoInsertion.js';
+import { INTERNAL_TRANSLATION_COMPONENT } from '../jsx/utils/constants.js';
+import traverseModule from '@babel/traverse';
+const traverse = traverseModule.default || traverseModule;
 
 export async function createInlineUpdates(
   pkg: GTLibrary,
@@ -85,7 +92,7 @@ export async function createInlineUpdates(
       );
     }
 
-    // Parse <T> components
+    // Parse <T> components — PASS 1: user-written T
     if (REACT_LIBRARIES.includes(pkg as ReactLibrary)) {
       for (const { localName, path } of translationComponentPaths) {
         parseTranslationComponent({
@@ -106,6 +113,68 @@ export async function createInlineUpdates(
             unwrappedExpressions: [],
           },
         });
+      }
+
+      // PASS 2: Auto-inject GtInternalTranslateJsx and GtInternalVar and extract (flag-gated)
+      if (parsingFlags.enableAutoJsxInjection) {
+        // Add translation component names to importAliases so autoInsertJsxComponents
+        // recognizes user T as hands-off (getPathsAndAliases separates them out)
+        for (const { localName, originalName } of translationComponentPaths) {
+          importAliases[localName] = originalName;
+        }
+
+        // Ensure GtInternalTranslateJsx and GtInternalVar are imported in the AST
+        ensureTAndVarImported(ast, importAliases);
+
+        // Insert T/Var into the AST
+        autoInsertJsxComponents(ast, importAliases);
+
+        // Refresh scope to pick up new T references
+        traverse(ast, {
+          Program(programPath) {
+            programPath.scope.crawl();
+          },
+        });
+
+        // Re-collect with updated AST
+        const refreshed = getPathsAndAliases(ast, pkgs);
+
+        // Add translation component names to refreshed aliases so parseJsx
+        // can recognize GtInternalTranslateJsx inside Derive for transparent unwrap
+        for (const {
+          localName: tLocalName,
+          originalName: tOrigName,
+        } of refreshed.translationComponentPaths) {
+          refreshed.importAliases[tLocalName] = tOrigName;
+        }
+
+        // Extract only from auto-injected GtInternalTranslateJsx — never re-extract user T
+        for (const {
+          localName,
+          path,
+          originalName,
+        } of refreshed.translationComponentPaths) {
+          if (originalName !== INTERNAL_TRANSLATION_COMPONENT) continue;
+          parseTranslationComponent({
+            originalName: localName,
+            localName,
+            path,
+            updates,
+            config: {
+              importAliases: refreshed.importAliases,
+              parsingOptions,
+              pkgs,
+              file,
+              includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
+              enableAutoJsxInjection: true,
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
+          });
+        }
       }
     }
   }

@@ -1,17 +1,20 @@
 // ========== Translation Data Types ========== //
 // TODO: reduce duplication between this file and packages/react-core/src/types-dir/types.ts
 
+import { Content } from 'generaltranslation/types';
+
 /**
  * A single string translation
- * Unknown represents JSX translations which are out of scope for the `gt-i18n` package
+ * TODO: remove this type and use Content everywhere instead
  */
-export type Translation = string | unknown;
+export type Translation = Content;
 
 /**
  * Object containing translations for a single locale
+ * TODO: when done, make the generic default to Translation
  */
-export type Translations = {
-  [hash: string]: Translation;
+export type Translations<T extends Translation | unknown = Translation> = {
+  [hash: string]: T;
 };
 
 /**
@@ -20,10 +23,10 @@ export type Translations = {
  * @property {Promise<Translations>} promise - The promise for the translations object.
  * @property {number} expiresAt - The timestamp when the translations will expire.
  */
-export type TranslationsMap = Map<
+export type TranslationsMap<T extends Translation> = Map<
   string,
   {
-    promise: Promise<Translations>;
+    promise: Promise<Translations<T>>;
     expiresAt: number;
   }
 >;
@@ -32,4 +35,7 @@ export type TranslationsMap = Map<
  * A mapping between locales and their {@link Translations} objects
  * Maps locale to translations object
  */
-export type ResolvedTranslationsMap = Map<string, Translations>;
+export type ResolvedTranslationsMap<T extends Translation> = Map<
+  string,
+  Translations<T>
+>;

@@ -5,6 +5,7 @@ import {
   TranslatedChildren,
   RenderVariable,
   TranslatedElement,
+  VariableProps,
 } from '../types-dir/types';
 import getVariableProps, {
   isVariableElementProps,
@@ -15,6 +16,8 @@ import getPluralBranch from '../branches/plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
+  Variable,
+  InjectionType,
 } from 'generaltranslation/types';
 import getGTTag from './getGTTag';
 
@@ -143,18 +146,30 @@ export default function renderTranslatedChildren({
   // Multiple children
   if (Array.isArray(source) && Array.isArray(target)) {
     // Track the variables
-    const variables: Record<string, any> = {};
-    const variablesOptions: Record<string, any> = {};
+    const variables: Record<string, VariableProps['variableValue']> = {};
+    const variablesOptions: Record<string, VariableProps['variableOptions']> =
+      {};
+    const variableInjectionTypes: Record<
+      string,
+      VariableProps['injectionType']
+    > = {};
 
-    // Extract variable props from source elements, and filter out variable elements
+    // Extract source elements
+    // Extract variable props
+    // Filter out variable elements
     const sourceElements: TaggedElement[] = source.filter(
       (sourceChild): sourceChild is TaggedElement => {
         if (React.isValidElement(sourceChild)) {
           if (isVariableElementProps(sourceChild.props)) {
-            const { variableName, variableValue, variableOptions } =
-              getVariableProps(sourceChild.props);
+            const {
+              variableName,
+              variableValue,
+              variableOptions,
+              injectionType,
+            } = getVariableProps(sourceChild.props);
             variables[variableName] = variableValue;
             variablesOptions[variableName] = variableOptions;
+            variableInjectionTypes[variableName] = injectionType;
           } else {
             return true;
           }
@@ -163,6 +178,7 @@ export default function renderTranslatedChildren({
       }
     );
 
+    // TODO: pre-index these to avoid O(n/2) lookups
     const findMatchingSourceElement = (
       targetElement: TranslatedElement
     ): TaggedElement | undefined => {
@@ -195,6 +211,7 @@ export default function renderTranslatedChildren({
               variableValue: variables[targetChild.k],
               variableOptions: variablesOptions[targetChild.k],
               locales,
+              injectionType: variableInjectionTypes[targetChild.k] || 'manual',
             })}
           </React.Fragment>
         );
@@ -204,17 +221,17 @@ export default function renderTranslatedChildren({
       const matchingSourceElement = findMatchingSourceElement(
         targetChild as TranslatedElement
       );
-      if (matchingSourceElement)
-        return (
-          <React.Fragment key={`element_${index}`}>
-            {renderTranslatedElement({
-              sourceElement: matchingSourceElement,
-              targetElement: targetChild,
-              locales,
-              renderVariable,
-            })}
-          </React.Fragment>
-        );
+      if (!matchingSourceElement) return null;
+      return (
+        <React.Fragment key={`element_${index}`}>
+          {renderTranslatedElement({
+            sourceElement: matchingSourceElement,
+            targetElement: targetChild,
+            locales,
+            renderVariable,
+          })}
+        </React.Fragment>
+      );
     });
   }
 
@@ -236,13 +253,14 @@ export default function renderTranslatedChildren({
 
       // Render variable
       if (isVariableElementProps(source.props)) {
-        const { variableValue, variableOptions, variableType } =
+        const { variableValue, variableOptions, variableType, injectionType } =
           getVariableProps(source.props);
         return renderVariable({
           variableType,
           variableValue,
           variableOptions,
           locales,
+          injectionType,
         });
       }
     }

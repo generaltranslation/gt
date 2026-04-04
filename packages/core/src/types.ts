@@ -121,6 +121,7 @@ export type {
   Transformation,
   TransformationPrefix,
   VariableTransformationSuffix,
+  InjectionType,
 } from './types-dir/transformations';
 
 export type Metadata = {

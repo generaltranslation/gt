@@ -6,6 +6,7 @@ import {
 } from './translations-loaders/types';
 import {
   ResolvedTranslationsMap,
+  Translation,
   Translations,
   TranslationsMap,
 } from './utils/types/translation-data';
@@ -21,16 +22,16 @@ import { CustomMapping } from 'generaltranslation/types';
 /**
  * TranslationsManager is responsible for loading and caching translations
  */
-class TranslationsManager {
+class TranslationsManager<T extends Translation> {
   /**
    * Translation loader function
    */
-  private translationLoader: SafeTranslationsLoader;
+  private translationLoader: SafeTranslationsLoader<T>;
 
   /**
    * Cache of translations
    */
-  private cache: TranslationsMap = new Map();
+  private cache: TranslationsMap<T> = new Map();
 
   /**
    * Cache entry time to live (negative value means never expires)
@@ -40,7 +41,7 @@ class TranslationsManager {
   /**
    * Resolved cache for sync operations
    */
-  private resolvedCache: ResolvedTranslationsMap = new Map();
+  private resolvedCache: ResolvedTranslationsMap<T> = new Map();
 
   /**
    * Constructor
@@ -71,18 +72,18 @@ class TranslationsManager {
    */
   private protectTranslationLoader(
     unsafeTranslationLoader: TranslationsLoader
-  ): SafeTranslationsLoader {
-    return async (locale: string): Promise<Translations> => {
+  ): SafeTranslationsLoader<T> {
+    return async (locale: string): Promise<Translations<T>> => {
       try {
         const translations = ((await unsafeTranslationLoader(locale)) ||
-          {}) as Translations;
+          {}) as Translations<T>;
         return translations;
       } catch (error) {
         // TODO: centralized logging system
         logger.error('Failed to load translations ' + error);
         // Delete failed promise entry from cache to avoid persisting failed promises
         this.cache.delete(locale);
-        return {} as Translations;
+        return {} as Translations<T>;
       }
     };
   }
@@ -91,9 +92,9 @@ class TranslationsManager {
    * Wrap translation loader to record items to resolved cache for sync operations
    */
   private attachResolveCaptureToTranslationLoader(
-    translationLoader: SafeTranslationsLoader
-  ): SafeTranslationsLoader {
-    return async (locale: string): Promise<Translations> => {
+    translationLoader: SafeTranslationsLoader<T>
+  ): SafeTranslationsLoader<T> {
+    return async (locale: string): Promise<Translations<T>> => {
       const translations = await translationLoader(locale);
       this.resolvedCache.set(locale, translations);
       return translations;
@@ -104,7 +105,7 @@ class TranslationsManager {
    * Handle cache miss for the locale
    * @param locale Handle cache miss for the locale
    */
-  private async handleCacheMiss(locale: string): Promise<Translations> {
+  private async handleCacheMiss(locale: string): Promise<Translations<T>> {
     // Fetch translations
     const promise = this.translationLoader(locale);
 
@@ -141,7 +142,7 @@ class TranslationsManager {
   /**
    * Get translations for a given locale
    */
-  async getTranslations(locale: string): Promise<Translations> {
+  async getTranslations(locale: string): Promise<Translations<T>> {
     // Cache hit
     if (this.isCacheHit(locale)) {
       return this.cache.get(locale)!.promise;
@@ -155,7 +156,7 @@ class TranslationsManager {
    * Get translations for a given locale
    * @note This method does not account for cache expiry
    */
-  getTranslationsSync(locale: string): Translations | undefined {
+  getTranslationsSync(locale: string): Translations<T> | undefined {
     return this.resolvedCache.get(locale);
   }
 
