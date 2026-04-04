@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775163031970,
+  "lastUpdate": 1775268285624,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -2320,6 +2320,122 @@ window.BENCHMARK_DATA = {
             "value": 134,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.1\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "24e4cdd3656f330fc05686c5094547d1eb264a2d",
+          "message": "[ci] release (#1170)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## @generaltranslation/compiler@1.3.0\n\n### Minor Changes\n\n- [#1158](https://github.com/generaltranslation/gt/pull/1158)\n[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto\ninjection for jsx translation\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   generaltranslation@8.2.2\n\n## gt-react@10.17.0\n\n### Minor Changes\n\n- [#1158](https://github.com/generaltranslation/gt/pull/1158)\n[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto\ninjection for jsx translation\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   @generaltranslation/supported-locales@2.0.60\n    -   @generaltranslation/react-core@1.7.2\n    -   generaltranslation@8.2.2\n    -   gt-i18n@0.7.10\n\n## gt@2.14.4\n\n### Patch Changes\n\n- [#1158](https://github.com/generaltranslation/gt/pull/1158)\n[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto\ninjection for jsx translation\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   generaltranslation@8.2.2\n    -   @generaltranslation/python-extractor@0.2.6\n\n## generaltranslation@8.2.2\n\n### Patch Changes\n\n- [#1158](https://github.com/generaltranslation/gt/pull/1158)\n[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto\ninjection for jsx translation\n\n## gtx-cli@2.14.4\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   gt@2.14.4\n\n## gt-i18n@0.7.10\n\n### Patch Changes\n\n- [#1158](https://github.com/generaltranslation/gt/pull/1158)\n[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto\ninjection for jsx translation\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   @generaltranslation/supported-locales@2.0.60\n    -   generaltranslation@8.2.2\n\n## locadex@1.0.139\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   gt@2.14.4\n\n## gt-next@6.15.2\n\n### Patch Changes\n\n- [#1158](https://github.com/generaltranslation/gt/pull/1158)\n[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto\ninjection for jsx translation\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   gt-react@10.17.0\n    -   @generaltranslation/supported-locales@2.0.60\n    -   @generaltranslation/compiler@1.3.0\n    -   generaltranslation@8.2.2\n    -   gt-i18n@0.7.10\n\n## @generaltranslation/gt-next-lint@13.0.2\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   gt-next@6.15.2\n\n## gt-node@0.4.10\n\n### Patch Changes\n\n- [#1158](https://github.com/generaltranslation/gt/pull/1158)\n[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto\ninjection for jsx translation\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   generaltranslation@8.2.2\n    -   gt-i18n@0.7.10\n\n## @generaltranslation/python-extractor@0.2.6\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   generaltranslation@8.2.2\n\n## @generaltranslation/react-core@1.7.2\n\n### Patch Changes\n\n- [#1158](https://github.com/generaltranslation/gt/pull/1158)\n[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto\ninjection for jsx translation\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   @generaltranslation/supported-locales@2.0.60\n    -   generaltranslation@8.2.2\n    -   gt-i18n@0.7.10\n\n## gt-sanity@2.0.2\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   generaltranslation@8.2.2\n\n## @generaltranslation/supported-locales@2.0.60\n\n### Patch Changes\n\n- [#1158](https://github.com/generaltranslation/gt/pull/1158)\n[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto\ninjection for jsx translation\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   generaltranslation@8.2.2\n\n## gt-tanstack-start@0.3.2\n\n### Patch Changes\n\n- [#1158](https://github.com/generaltranslation/gt/pull/1158)\n[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto\ninjection for jsx translation\n\n- Updated dependencies\n\\[[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:\n    -   gt-react@10.17.0\n    -   @generaltranslation/react-core@1.7.2\n    -   generaltranslation@8.2.2\n    -   gt-i18n@0.7.10\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-04-04T01:53:58Z",
+          "url": "https://github.com/generaltranslation/gt/commit/24e4cdd3656f330fc05686c5094547d1eb264a2d"
+        },
+        "date": 1775268285271,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.040967495370749576,
+            "range": "±0.0234",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.2636285893516053,
+            "range": "±0.0773",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.4622802412199642,
+            "range": "±0.0814",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.4496725863309253,
+            "range": "±0.0592",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 243.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 285.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 401.0999999999767,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 162,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 18.099999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 28.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 152.89999999996508,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 592,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 10.700000000011642,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 22.70000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 149.89999999996508,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.15.2\"\n}"
           }
         ]
       }
