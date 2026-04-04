@@ -94,8 +94,9 @@ function main() {
 
   // 3. Run CLI (gt generate)
   console.log('\n📝 Running gt generate...\n');
-  const gtBin = path.join(ROOT, 'node_modules', '.bin', 'gt');
-  execSync(`${gtBin} generate`, { cwd: ROOT, stdio: 'inherit' });
+  const MONOREPO_ROOT = path.resolve(ROOT, '..', '..', '..');
+  const gtMain = path.join(MONOREPO_ROOT, 'packages', 'cli', 'dist', 'main.js');
+  execSync(`node ${gtMain} generate`, { cwd: ROOT, stdio: 'inherit' });
 
   // 4. Load manifests
   if (!fs.existsSync(COMPILER_MANIFEST)) {
