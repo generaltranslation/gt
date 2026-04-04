@@ -443,8 +443,27 @@ function processOpaqueComponentProps({
   }
 
   // Mark remaining descendant JSX as processed, but skip auto-inserted nodes
-  // so the top-level visitor can still discover JSX inside _Var wrappers
-  markDescendantJsx(path, processedNodes);
+  // so the top-level visitor can still discover JSX inside _Var wrappers.
+  // For Derive/Static, only mark props — leave children unmarked so the
+  // top-level visitor can independently process them (e.g. Branch/Plural
+  // inside Derive should get their own _T, matching compiler behavior).
+  if (
+    canonicalName === DERIVE_COMPONENT ||
+    canonicalName === STATIC_COMPONENT
+  ) {
+    for (const attrPath of path.get('openingElement').get('attributes')) {
+      attrPath.traverse({
+        JSXElement(childPath) {
+          processedNodes.add(childPath.node);
+        },
+        JSXFragment(childPath) {
+          processedNodes.add(childPath.node);
+        },
+      });
+    }
+  } else {
+    markDescendantJsx(path, processedNodes);
+  }
 }
 
 function isControlProp(

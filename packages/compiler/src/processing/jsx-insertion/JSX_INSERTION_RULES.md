@@ -487,12 +487,48 @@ The function uses a `derivationDepth` counter:
 
 A similar issue exists with \_Var. Auto-injected \_Var wrappers could break user logic if left in the tree (e.g., a component expecting a plain string child gets a \_Var element instead). The `renderVariable()` function handles this by unwrapping auto-injected \_Var components during the render phase, reinserting the original value back to its original place.
 
+### Opaque GT components inside Derive produce independent entries
+
+When Branch, Plural, or other opaque GT components appear inside Derive's children, they get their own independent \_T and produce standalone hash entries. This is correct and intentional — the same JSX could appear inside a function definition that is invoked by Derive, where the compiler cannot know it's in a Derive context.
+
+```jsx
+// Direct child of Derive:
+<div>Hello <Derive><Branch branch="x">fallback</Branch></Derive></div>
+
+// After injection:
+<div>
+  <_T>Hello <Derive><_T><Branch branch="x">fallback</Branch></_T></Derive></_T>
+</div>
+
+// Produces 2 hash entries:
+//   1. ["Hello ", { t: "Derive", i: 1 }]  (outer _T — contains Derive)
+//   2. { t: "Branch", i: 1, c: "fallback" }  (inner _T — standalone Branch)
+//
+// At runtime, removeInjectedT strips the inner _T, but the standalone hash
+// entry is still needed for translation resolution.
+```
+
+This is consistent with the function-definition case:
+
+```jsx
+// Function that returns Branch:
+function getNav() {
+  return <Branch branch="x">fallback</Branch>;
+}
+// The compiler inserts _T inside getNav(), producing the same standalone Branch entry.
+// If this function is called inside <Derive>{getNav()}</Derive>, the inner _T is
+// removed at runtime — but the hash entry must exist for both cases to work.
+```
+
+**Both the compiler and CLI must produce these standalone entries** for opaque GT components inside Derive, to ensure hash agreement.
+
 ### Why this matters for CLI extraction
 
 The CLI extraction tool must be aware that:
 1. The compiler **will** produce nested \_T in Derive cases — this is expected, not a bug
 2. The runtime removes these nested \_T before hash computation, so the **effective** structure (after removal) is what the hash is computed against
 3. The CLI must simulate the same removal when computing hashes from source to maintain agreement
+4. Opaque GT components (Branch, Plural) inside Derive must produce their own standalone hash entries, matching what the compiler produces
 
 ---
 

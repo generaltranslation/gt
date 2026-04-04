@@ -1729,4 +1729,87 @@ describe('auto JSX injection simulation', () => {
       expect(sources).toContain('solo');
     });
   });
+
+  // ================================================================ //
+  //  10. OPAQUE GT COMPONENTS INSIDE DERIVE — independent extraction
+  // ================================================================ //
+
+  describe('opaque GT components inside Derive', () => {
+    it('Branch inside Derive children — Branch gets independent _T and extraction', () => {
+      // SOURCE:
+      //   <div>
+      //     Hello <Derive><Branch branch="x">fallback</Branch></Derive>
+      //   </div>
+      //
+      // The insertion pass wraps <div> in _T (opaque child Derive).
+      // The Branch inside Derive is a direct child JSX element.
+      //
+      // The compiler's Babel visitor independently encounters <Branch> and
+      // wraps it in _T, producing a standalone entry:
+      //   { "t": "Branch", "i": 1, "c": "fallback" }
+      //
+      // This is correct and generalizable: if the same Branch were inside a
+      // function definition invoked by Derive (e.g. <Derive>{fn()}</Derive>
+      // where fn returns <Branch>), the compiler would also produce the
+      // standalone entry. The rules should be consistent regardless of
+      // whether the JSX is inline or inside a function call.
+      //
+      // BUG: The CLI does not produce this standalone Branch entry.
+      // It treats Branch as part of the Derive structure without extracting
+      // it independently.
+      //
+      // EXPECTED: 2 entries:
+      //   1. The outer _T (Derive structure — skipped in parity due to Derive)
+      //   2. Standalone Branch entry: { "t": "Branch", "i": 1, "c": "fallback" }
+      const code = `
+        import { Derive, Branch } from "gt-react";
+        export default function Page() {
+          return (
+            <div>
+              Hello <Derive><Branch branch="x">fallback</Branch></Derive>
+            </div>
+          );
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+
+      // Should have at least 2 entries — the outer _T and the standalone Branch
+      expect(result.updates.length).toBeGreaterThanOrEqual(2);
+
+      // Find the standalone Branch entry
+      const branchUpdate = result.updates.find((u) => {
+        if (typeof u.source === 'string') return false;
+        const s = JSON.stringify(u.source);
+        return s.includes('"t":"Branch"') && s.includes('"c":"fallback"');
+      });
+      expect(branchUpdate).toBeDefined();
+    });
+
+    it('Plural inside Derive children — Plural gets independent _T and extraction', () => {
+      // Same principle: Plural inside Derive should produce its own entry.
+      const code = `
+        import { Derive, Plural } from "gt-react";
+        export default function Page() {
+          const n = 3;
+          return (
+            <div>
+              Hello <Derive><Plural n={n} one="item" other="items" /></Derive>
+            </div>
+          );
+        }
+      `;
+      const result = extractWithAutoInjection(code);
+      expect(result.errors).toHaveLength(0);
+
+      expect(result.updates.length).toBeGreaterThanOrEqual(2);
+
+      const pluralUpdate = result.updates.find((u) => {
+        if (typeof u.source === 'string') return false;
+        const s = JSON.stringify(u.source);
+        return s.includes('"t":"Plural"');
+      });
+      expect(pluralUpdate).toBeDefined();
+    });
+  });
 });
