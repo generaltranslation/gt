@@ -391,9 +391,7 @@ t(f"The {derive(get_gender(variant))}")`;
 
       // Both should share the same staticId
       expect(results[0].metadata.staticId).toBeDefined();
-      expect(results[0].metadata.staticId).toBe(
-        results[1].metadata.staticId
-      );
+      expect(results[0].metadata.staticId).toBe(results[1].metadata.staticId);
     });
 
     it('should produce cross-product when both content and context use derive', async () => {
@@ -417,9 +415,7 @@ t(f"The {derive(get_gender(variant))}")`;
       // All 4 should share the same staticId
       const staticId = results[0].metadata.staticId;
       expect(staticId).toBeDefined();
-      expect(results.every((r) => r.metadata.staticId === staticId)).toBe(
-        true
-      );
+      expect(results.every((r) => r.metadata.staticId === staticId)).toBe(true);
     });
 
     it('should produce 2 results with inline ternary context', async () => {

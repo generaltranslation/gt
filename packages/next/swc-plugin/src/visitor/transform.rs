@@ -171,7 +171,7 @@ impl TransformVisitor {
     let options = call_expr.args.get(1);
 
     // Get context and id
-    let (context, id, max_chars, _format, has_derive_context) = extract_id_and_context_from_options(options);
+    let (id, context, max_chars, _format, has_derive_context) = extract_id_and_context_from_options(options);
 
     // Calculate hash for the call expression
     let (hash, _) = self.calculate_hash_for_call_expr(string, options);
