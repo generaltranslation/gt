@@ -694,6 +694,121 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.context).toBe('greeting');
       });
     });
+
+    describe('derive in context', () => {
+      it('should not error when $context contains a derive() call', () => {
+        const deriveCall = t.callExpression(
+          t.identifier(GT_OTHER_FUNCTIONS.derive),
+          [t.callExpression(t.identifier('getFormality'), [])]
+        );
+
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          t.stringLiteral('Hello'),
+          t.objectExpression([
+            t.objectProperty(t.identifier('$context'), deriveCall),
+          ]),
+        ]);
+
+        const result = validateUseGTCallback(callExpr, state);
+
+        expect(result.errors).toHaveLength(0);
+        expect(result.content).toBe('Hello');
+      });
+
+      it('should not error when $context contains derive() wrapping a ternary', () => {
+        const deriveCall = t.callExpression(
+          t.identifier(GT_OTHER_FUNCTIONS.derive),
+          [
+            t.conditionalExpression(
+              t.identifier('isFormal'),
+              t.stringLiteral('formal'),
+              t.stringLiteral('casual')
+            ),
+          ]
+        );
+
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          t.stringLiteral('Hello'),
+          t.objectExpression([
+            t.objectProperty(t.identifier('$context'), deriveCall),
+          ]),
+        ]);
+
+        const result = validateUseGTCallback(callExpr, state);
+
+        expect(result.errors).toHaveLength(0);
+        expect(result.content).toBe('Hello');
+      });
+
+      it('should not error when $context contains derive() in string concatenation', () => {
+        const deriveCall = t.callExpression(
+          t.identifier(GT_OTHER_FUNCTIONS.derive),
+          [t.callExpression(t.identifier('getFormality'), [])]
+        );
+
+        const concatExpr = t.binaryExpression(
+          '+',
+          t.stringLiteral('prefix-'),
+          deriveCall
+        );
+
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          t.stringLiteral('Hello'),
+          t.objectExpression([
+            t.objectProperty(t.identifier('$context'), concatExpr),
+          ]),
+        ]);
+
+        const result = validateUseGTCallback(callExpr, state);
+
+        expect(result.errors).toHaveLength(0);
+        expect(result.content).toBe('Hello');
+      });
+
+      it('should not error when $context contains derive() in template literal', () => {
+        const deriveCall = t.callExpression(
+          t.identifier(GT_OTHER_FUNCTIONS.derive),
+          [t.callExpression(t.identifier('getFormality'), [])]
+        );
+
+        const templateLiteral = t.templateLiteral(
+          [
+            t.templateElement({ raw: 'prefix-', cooked: 'prefix-' }),
+            t.templateElement({ raw: '', cooked: '' }),
+          ],
+          [deriveCall]
+        );
+
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          t.stringLiteral('Hello'),
+          t.objectExpression([
+            t.objectProperty(t.identifier('$context'), templateLiteral),
+          ]),
+        ]);
+
+        const result = validateUseGTCallback(callExpr, state);
+
+        expect(result.errors).toHaveLength(0);
+        expect(result.content).toBe('Hello');
+      });
+
+      it('should still accept static string $context (regression)', () => {
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          t.stringLiteral('Hello'),
+          t.objectExpression([
+            t.objectProperty(
+              t.identifier('$context'),
+              t.stringLiteral('greeting')
+            ),
+          ]),
+        ]);
+
+        const result = validateUseGTCallback(callExpr, state);
+
+        expect(result.errors).toHaveLength(0);
+        expect(result.context).toBe('greeting');
+      });
+    });
   });
 
   describe('validateUseTranslationsCallback', () => {
