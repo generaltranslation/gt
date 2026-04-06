@@ -1,3 +1,4 @@
+use crate::visitor::expr_utils::contains_derive_call;
 use swc_core::ecma::ast::*;
 
 pub fn extract_template_string(tpl: &Tpl) -> Option<String> {
@@ -103,6 +104,24 @@ pub fn extract_max_chars_from_jsx_attr(
     } else {
       None
     }
+  })
+}
+
+/// Checks if a JSX attribute's expression value contains a derive()/declareStatic() call
+pub fn jsx_attr_contains_derive_call(element: &JSXElement, attr_name: &str) -> bool {
+  element.opening.attrs.iter().any(|attr| {
+    if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+      if let JSXAttrName::Ident(ident) = &jsx_attr.name {
+        if ident.sym.as_ref() == attr_name {
+          if let Some(JSXAttrValue::JSXExprContainer(expr_container)) = &jsx_attr.value {
+            if let JSXExpr::Expr(expr) = &expr_container.expr {
+              return contains_derive_call(expr);
+            }
+          }
+        }
+      }
+    }
+    false
   })
 }
 

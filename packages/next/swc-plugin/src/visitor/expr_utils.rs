@@ -101,17 +101,45 @@ pub fn extract_number_from_expr(expr: &Expr) -> Option<i32> {
   }
 }
 
+/// Checks if an expression is a derive()/declareStatic() call by name
+fn is_derive_call_expr(expr: &Expr) -> bool {
+  if let Expr::Call(call_expr) = expr {
+    if let Callee::Expr(callee_expr) = &call_expr.callee {
+      if let Expr::Ident(ident) = callee_expr.as_ref() {
+        return matches!(ident.sym.as_str(), "derive" | "declareStatic");
+      }
+    }
+  }
+  false
+}
+
+/// Recursively checks if an expression contains a derive()/declareStatic() call.
+/// Handles: bare call, binary concat ("a" + derive(fn())), template literal (`a${derive(fn())}`)
+pub fn contains_derive_call(expr: &Expr) -> bool {
+  match expr {
+    Expr::Call(_) => is_derive_call_expr(expr),
+    Expr::Bin(bin_expr) => {
+      contains_derive_call(&bin_expr.left) || contains_derive_call(&bin_expr.right)
+    }
+    Expr::Tpl(tpl) => tpl.exprs.iter().any(|e| contains_derive_call(e)),
+    Expr::Paren(paren) => contains_derive_call(&paren.expr),
+    _ => false,
+  }
+}
+
 // Helper function to extract id, context, maxChars, and format from options
+// Returns (id, context, maxChars, format, has_derive_context)
 pub fn extract_id_and_context_from_options(
   options: Option<&ExprOrSpread>,
-) -> (Option<String>, Option<String>, Option<i32>, Option<String>) {
-  let (id, context, max_chars, format) = match options {
+) -> (Option<String>, Option<String>, Option<i32>, Option<String>, bool) {
+  let (id, context, max_chars, format, has_derive_context) = match options {
     Some(options) => match options.expr.as_ref() {
       Expr::Object(obj) => {
         let mut id_value = None;
         let mut context_value = None;
         let mut max_chars_value = None;
         let mut format_value = None;
+        let mut has_derive_context = false;
 
         for prop in &obj.props {
           if let PropOrSpread::Prop(prop) = prop {
@@ -123,6 +151,9 @@ pub fn extract_id_and_context_from_options(
                   }
                   "$context" => {
                     context_value = extract_string_from_expr(&key_value.value);
+                    if context_value.is_none() && contains_derive_call(&key_value.value) {
+                      has_derive_context = true;
+                    }
                   }
                   "$maxChars" => {
                     max_chars_value = extract_number_from_expr(&key_value.value);
@@ -137,13 +168,13 @@ pub fn extract_id_and_context_from_options(
           }
         }
 
-        (id_value, context_value, max_chars_value, format_value)
+        (id_value, context_value, max_chars_value, format_value, has_derive_context)
       }
-      _ => (None, None, None, None),
+      _ => (None, None, None, None, false),
     },
-    None => (None, None, None, None),
+    None => (None, None, None, None, false),
   };
-  (id, context, max_chars, format)
+  (id, context, max_chars, format, has_derive_context)
 }
 
 pub fn create_string_prop(key: &str, value: &str, span: Span) -> PropOrSpread {

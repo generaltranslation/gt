@@ -557,7 +557,7 @@ mod tests {
     #[test]
     fn test_extract_format_from_options() {
         let options = make_options_arg(vec![("$format", str_expr("STRING"))]);
-        let (id, context, max_chars, format) =
+        let (id, context, max_chars, format, _has_derive_context) =
             extract_id_and_context_from_options(Some(&options));
         assert_eq!(format, Some("STRING".to_string()));
         assert_eq!(id, None);
@@ -568,7 +568,7 @@ mod tests {
     #[test]
     fn test_extract_format_none_when_absent() {
         let options = make_options_arg(vec![("$context", str_expr("greeting"))]);
-        let (_id, _context, _max_chars, format) =
+        let (_id, _context, _max_chars, format, _has_derive_context) =
             extract_id_and_context_from_options(Some(&options));
         assert_eq!(format, None);
     }
@@ -580,7 +580,7 @@ mod tests {
             ("$context", str_expr("greeting")),
             ("$format", str_expr("I18NEXT")),
         ]);
-        let (id, context, _max_chars, format) =
+        let (id, context, _max_chars, format, _has_derive_context) =
             extract_id_and_context_from_options(Some(&options));
         assert_eq!(id, Some("hello".to_string()));
         assert_eq!(context, Some("greeting".to_string()));
@@ -589,7 +589,7 @@ mod tests {
 
     #[test]
     fn test_extract_format_none_when_no_options() {
-        let (_id, _context, _max_chars, format) =
+        let (_id, _context, _max_chars, format, _has_derive_context) =
             extract_id_and_context_from_options(None);
         assert_eq!(format, None);
     }

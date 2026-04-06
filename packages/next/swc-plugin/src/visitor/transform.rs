@@ -171,12 +171,14 @@ impl TransformVisitor {
     let options = call_expr.args.get(1);
 
     // Get context and id
-    let (context, id, max_chars, _format) = extract_id_and_context_from_options(options);
+    let (context, id, max_chars, _format, has_derive_context) = extract_id_and_context_from_options(options);
 
     // Calculate hash for the call expression
     let (hash, _) = self.calculate_hash_for_call_expr(string, options);
 
     if let Some(message) = extract_string_from_expr(string.expr.as_ref()) {
+      // If context contains derive(), skip hashing (empty hash) — CLI handles resolution
+      let hash = if has_derive_context { Some(String::new()) } else { hash };
       if let Some(hash) = hash {
         // Construct the translation content object
         let translation_content =
@@ -432,7 +434,12 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
     }
 
     // Extract the options content
-    let (id, context, max_chars, format) = extract_id_and_context_from_options(options);
+    let (id, context, max_chars, format, has_derive_context) = extract_id_and_context_from_options(options);
+
+    // If context contains derive(), skip hashing — CLI handles resolution
+    if has_derive_context {
+      return (Some(String::new()), None);
+    }
 
     // Construct the json object
     use crate::hash::{SanitizedChild, SanitizedChildren, SanitizedData};
