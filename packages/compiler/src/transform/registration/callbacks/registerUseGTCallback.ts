@@ -25,8 +25,8 @@ export function registerUseGTCallback({
   hash?: string;
   format?: string;
 }): void {
-  // Calculate hash for the call expression
-  hash ||= hashSource({
+  // Calculate hash for the call expression (skip if already set, including empty string for derive context)
+  hash ??= hashSource({
     source: content,
     id,
     context,

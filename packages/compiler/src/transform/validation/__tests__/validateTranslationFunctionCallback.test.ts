@@ -715,16 +715,10 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.content).toBe('Hello');
       });
 
-      it('should not error when $context contains derive() wrapping a ternary', () => {
+      it('should not error when $context contains derive() wrapping a function call', () => {
         const deriveCall = t.callExpression(
           t.identifier(GT_OTHER_FUNCTIONS.derive),
-          [
-            t.conditionalExpression(
-              t.identifier('isFormal'),
-              t.stringLiteral('formal'),
-              t.stringLiteral('casual')
-            ),
-          ]
+          [t.callExpression(t.identifier('getTone'), [])]
         );
 
         const callExpr = t.callExpression(t.identifier('useGT_callback'), [

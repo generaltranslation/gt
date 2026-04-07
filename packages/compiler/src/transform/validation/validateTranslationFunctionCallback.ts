@@ -24,6 +24,7 @@ export function validateUseGTCallback(
   id?: string;
   maxChars?: number;
   format?: string;
+  hasDeriveContext?: boolean;
 } {
   const errors: string[] = [];
 
@@ -51,7 +52,7 @@ export function validateUseGTCallback(
 
   if (content === undefined) {
     // expression is not a string literal. Check if it contains a derive() function invocation
-    validateDeclareStatic(callExpr.arguments[0], state, errors);
+    validateDerive(callExpr.arguments[0], state, errors);
     if (errors.length > 0) {
       errors.push(...validatedContent.errors);
       errors.push(
@@ -66,6 +67,7 @@ export function validateUseGTCallback(
   let hash: string | undefined;
   let maxChars: number | undefined;
   let format: string | undefined;
+  let hasDeriveContext: boolean | undefined;
   if (callExpr.arguments.length === 1) {
     return { errors, content };
   }
@@ -73,10 +75,12 @@ export function validateUseGTCallback(
     const contextProperty = validatePropertyFromObjectExpression(
       callExpr.arguments[1],
       USEGT_CALLBACK_OPTIONS.$context,
-      'string'
+      'string-or-derive',
+      state
     );
     errors.push(...contextProperty.errors);
-    context = contextProperty.value;
+    context = contextProperty.value as string | undefined;
+    hasDeriveContext = contextProperty.hasDeriveExpression;
     const idProperty = validatePropertyFromObjectExpression(
       callExpr.arguments[1],
       USEGT_CALLBACK_OPTIONS.$id,
@@ -107,7 +111,16 @@ export function validateUseGTCallback(
     format = formatProperty.value;
   }
 
-  return { errors, content, context, id, hash, maxChars, format };
+  return {
+    errors,
+    content,
+    context,
+    id,
+    hash,
+    maxChars,
+    format,
+    hasDeriveContext,
+  };
 }
 
 /**
@@ -157,9 +170,24 @@ function validatePropertyFromObjectExpression(
 function validatePropertyFromObjectExpression(
   objExpr: t.ObjectExpression,
   name: string,
-  type: 'string' | 'number'
-): { errors: string[]; value?: string | number } {
-  const result: { errors: string[]; value?: string | number } = { errors: [] };
+  type: 'string-or-derive',
+  state: TransformState
+): { errors: string[]; value?: string; hasDeriveExpression?: boolean };
+function validatePropertyFromObjectExpression(
+  objExpr: t.ObjectExpression,
+  name: string,
+  type: 'string' | 'number' | 'string-or-derive',
+  state?: TransformState
+): {
+  errors: string[];
+  value?: string | number;
+  hasDeriveExpression?: boolean;
+} {
+  const result: {
+    errors: string[];
+    value?: string | number;
+    hasDeriveExpression?: boolean;
+  } = { errors: [] };
   let value: t.ObjectProperty | undefined;
   for (const property of objExpr.properties) {
     if (!t.isObjectProperty(property)) {
@@ -189,12 +217,30 @@ function validatePropertyFromObjectExpression(
   }
 
   // extract value
-  const validatedValue =
-    type === 'string'
-      ? validateExpressionIsStringLiteral(value.value)
-      : validateExpressionIsNumericLiteral(value.value);
-  result.errors.push(...validatedValue.errors);
-  result.value = validatedValue.value;
+  if (type === 'string-or-derive') {
+    const stringValidation = validateExpressionIsStringLiteral(value.value);
+    if (stringValidation.value !== undefined) {
+      result.value = stringValidation.value;
+    } else if (state) {
+      // String validation failed — check if it's a valid derive() expression
+      const deriveErrors: string[] = [];
+      validateDerive(value.value, state, deriveErrors);
+      if (deriveErrors.length === 0) {
+        result.hasDeriveExpression = true;
+      } else {
+        result.errors.push(...stringValidation.errors);
+      }
+    } else {
+      result.errors.push(...stringValidation.errors);
+    }
+  } else {
+    const validatedValue =
+      type === 'string'
+        ? validateExpressionIsStringLiteral(value.value)
+        : validateExpressionIsNumericLiteral(value.value);
+    result.errors.push(...validatedValue.errors);
+    result.value = validatedValue.value;
+  }
 
   return result;
 }
@@ -218,7 +264,7 @@ function validateExpressionIsStringLiteral(expr: t.Expression): {
 /**
  * Validates if an expression uses the derive() function correctly
  */
-function validateDeclareStatic(
+export function validateDerive(
   expr: t.Expression,
   state: TransformState,
   errors: string[]
@@ -262,8 +308,8 @@ function validateDeclareStatic(
       errors.push('Operands must be expressions');
       return { errors };
     }
-    validateDeclareStatic(expr.right, state, errors);
-    validateDeclareStatic(expr.left, state, errors);
+    validateDerive(expr.right, state, errors);
+    validateDerive(expr.left, state, errors);
     return { errors };
   }
 
@@ -273,7 +319,7 @@ function validateDeclareStatic(
       !expr.expressions.some(
         (expression) =>
           t.isExpression(expression) &&
-          validateDeclareStatic(expression, state, errors).errors.length === 0
+          validateDerive(expression, state, errors).errors.length === 0
       )
     ) {
       errors.push('Expression does not use an allowed call expression');
