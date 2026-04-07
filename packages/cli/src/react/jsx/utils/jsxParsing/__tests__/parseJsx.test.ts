@@ -2213,4 +2213,379 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       expect(updates[0].metadata.context).toBe('greeting');
     });
   });
+
+  describe('Derive inside Plural/Branch named props', () => {
+    it('should multiply when Derive is inside a single Plural prop', () => {
+      const pageFile = `
+        import { T, Derive, Plural } from "gt-next";
+
+        function getAnimal() {
+          if (Math.random() > 0.5) return "cat";
+          return "dog";
+        }
+
+        export default function Page() {
+          return (
+            <T>
+              <Plural
+                n={count}
+                one={<><Derive>{getAnimal()}</Derive> is here</>}
+                other="animals"
+              />
+            </T>
+          );
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                importAliases[spec.local.name] = spec.imported.name;
+                if (spec.imported.name === 'T') tLocalName = spec.local.name;
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-plural-single/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(2); // 2 branches from getAnimal()
+    });
+
+    it('should produce cross-product when Derive is in both Plural props', () => {
+      const pageFile = `
+        import { T, Derive, Plural } from "gt-next";
+
+        function getAnimal() {
+          if (Math.random() > 0.5) return "cat";
+          if (Math.random() > 0.5) return "dog";
+          return "bird";
+        }
+
+        export default function Page() {
+          return (
+            <T>
+              <Plural
+                n={count}
+                one={<><Derive>{getAnimal()}</Derive> is here</>}
+                other={<><Derive>{getAnimal()}</Derive> are here</>}
+              />
+            </T>
+          );
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                importAliases[spec.local.name] = spec.imported.name;
+                if (spec.imported.name === 'T') tLocalName = spec.local.name;
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-plural-cross/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(9); // 3 x 3 cross-product
+    });
+
+    it('should multiply when Derive is inside a Branch prop', () => {
+      const pageFile = `
+        import { T, Derive, Branch } from "gt-next";
+
+        function getGreeting() {
+          if (isFormal) return "Good day";
+          return "Hey";
+        }
+
+        export default function Page() {
+          return (
+            <T>
+              <Branch
+                branch={mode}
+                formal={<><Derive>{getGreeting()}</Derive>, welcome</>}
+                casual="What's up"
+              />
+            </T>
+          );
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                importAliases[spec.local.name] = spec.imported.name;
+                if (spec.imported.name === 'T') tLocalName = spec.local.name;
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-branch/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(2); // 2 branches from getGreeting()
+    });
+
+    it('should produce 9 entries for user scenario: getSubject() in both Plural props', () => {
+      const pageFile = `
+        import { T, Derive, Plural, Num } from "gt-next";
+
+        function getSubject() {
+          const subject = Math.random() > 0.5 ? 'man' : 'woman';
+          if (subject === 'man') return <Plural n={count} one='man' other='men' />;
+          if (subject === 'woman') return <Plural n={count} one='woman' other='women' />;
+          return <Plural n={count} one='child' other='children' />;
+        }
+
+        export default function Page() {
+          return (
+            <T>
+              <p>
+                <Plural
+                  n={count}
+                  one={<>Here is <Num>{count}</Num> <Derive>{getSubject()}</Derive> who is a racing driver</>}
+                  other={<>Here are <Num>{count}</Num> <Derive>{getSubject()}</Derive> who are racing drivers</>}
+                />
+                .
+              </p>
+            </T>
+          );
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                importAliases[spec.local.name] = spec.imported.name;
+                if (spec.imported.name === 'T') tLocalName = spec.local.name;
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-plural-user-scenario/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(9); // 3 x 3 cross-product
+    });
+
+    it('should cross-multiply Derive in Branch children (fallback) and named props', () => {
+      const pageFile = `
+        import { T, Derive, Branch } from "gt-next";
+
+        function getGreeting() {
+          if (isFormal) return "Good day";
+          return "Hey";
+        }
+
+        function getDefault() {
+          if (isNight) return "Good night";
+          if (isMorning) return "Good morning";
+          return "Hello";
+        }
+
+        export default function Page() {
+          return (
+            <T>
+              <Branch
+                branch={mode}
+                formal={<><Derive>{getGreeting()}</Derive>, welcome</>}
+              >
+                <Derive>{getDefault()}</Derive> there
+              </Branch>
+            </T>
+          );
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                importAliases[spec.local.name] = spec.imported.name;
+                if (spec.imported.name === 'T') tLocalName = spec.local.name;
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-branch-children-and-props/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(6); // 2 (formal) x 3 (children fallback)
+    });
+  });
 });
