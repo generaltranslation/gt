@@ -413,7 +413,8 @@ export class BaseCLI {
               : null;
 
           // Build defaults description based on detected framework
-          const defaultTranslationsDir = framework.name === 'vite' ? './src/_gt' : './public/_gt';
+          const defaultTranslationsDir =
+            framework.name === 'vite' ? './src/_gt' : './public/_gt';
 
           const defaultsDescription =
             framework.type === 'react'
@@ -454,7 +455,11 @@ export class BaseCLI {
             logger.startCommand('Setting up project config...');
           }
           // Configure gt.config.json
-          await this.handleInitCommand(ranReactSetup, useDefaults, framework.name === 'vite');
+          await this.handleInitCommand(
+            ranReactSetup,
+            useDefaults,
+            framework.name === 'vite'
+          );
 
           logger.endCommand(
             'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
@@ -567,7 +572,8 @@ export class BaseCLI {
         : null;
 
     // Determine final translations directory with fallback
-    const finalTranslationsDir = translationsDir?.trim() || defaultTranslationsDir;
+    const finalTranslationsDir =
+      translationsDir?.trim() || defaultTranslationsDir;
 
     if (isUsingGT && !usingCDN) {
       // Create loadTranslations.js file for local translations
