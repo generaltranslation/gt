@@ -1,5 +1,11 @@
 # @generaltranslation/compiler
 
+## 1.3.1
+
+### Patch Changes
+
+- [#1173](https://github.com/generaltranslation/gt/pull/1173) [`6b0b56b`](https://github.com/generaltranslation/gt/commit/6b0b56b2253e389913fe67eb19f0ba6ebf2c7a53) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - add context derivation
+
 ## 1.3.0
 
 ### Minor Changes

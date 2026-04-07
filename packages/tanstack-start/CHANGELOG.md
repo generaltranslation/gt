@@ -1,5 +1,18 @@
 # gt-tanstack-start
 
+## 0.4.0
+
+### Minor Changes
+
+- [#1173](https://github.com/generaltranslation/gt/pull/1173) [`6b0b56b`](https://github.com/generaltranslation/gt/commit/6b0b56b2253e389913fe67eb19f0ba6ebf2c7a53) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - add context derivation
+
+### Patch Changes
+
+- Updated dependencies [[`6b0b56b`](https://github.com/generaltranslation/gt/commit/6b0b56b2253e389913fe67eb19f0ba6ebf2c7a53)]:
+  - gt-i18n@0.8.0
+  - gt-react@10.18.0
+  - @generaltranslation/react-core@1.8.0
+
 ## 0.3.2
 
 ### Patch Changes
