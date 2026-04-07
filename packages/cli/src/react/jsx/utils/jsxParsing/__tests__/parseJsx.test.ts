@@ -2018,10 +2018,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         ImportDeclaration(path) {
           if (path.node.source.value === 'gt-next') {
             path.node.specifiers.forEach((spec) => {
-              if (
-                t.isImportSpecifier(spec) &&
-                t.isIdentifier(spec.imported)
-              ) {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
                 if (spec.imported.name === 'T') {
                   tLocalName = spec.local.name;
                   importAliases[tLocalName] = 'T';
@@ -2060,16 +2057,12 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       expect(errors).toHaveLength(0);
       expect(updates).toHaveLength(2);
 
-      const contexts = updates
-        .map((u) => u.metadata.context)
-        .sort();
+      const contexts = updates.map((u) => u.metadata.context).sort();
       expect(contexts).toEqual(['casual', 'formal']);
 
       // Both should have same staticId
       expect(updates[0].metadata.staticId).toBeDefined();
-      expect(updates[0].metadata.staticId).toBe(
-        updates[1].metadata.staticId
-      );
+      expect(updates[0].metadata.staticId).toBe(updates[1].metadata.staticId);
     });
 
     it('should produce cross-product when both content and context use derive', () => {
@@ -2109,10 +2102,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
         ImportDeclaration(path) {
           if (path.node.source.value === 'gt-next') {
             path.node.specifiers.forEach((spec) => {
-              if (
-                t.isImportSpecifier(spec) &&
-                t.isIdentifier(spec.imported)
-              ) {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
                 if (spec.imported.name === 'T') {
                   tLocalName = spec.local.name;
                   importAliases[tLocalName] = 'T';
@@ -2156,9 +2146,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       // All 4 should share same staticId
       const staticId = updates[0].metadata.staticId;
       expect(staticId).toBeDefined();
-      expect(updates.every((u) => u.metadata.staticId === staticId)).toBe(
-        true
-      );
+      expect(updates.every((u) => u.metadata.staticId === staticId)).toBe(true);
     });
 
     it('should still work with static string context (regression)', () => {
