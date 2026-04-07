@@ -80,7 +80,6 @@ export function findMultiplicationNode(
       if (elementIsPlural || elementIsBranch) {
         for (const [propKey, propValue] of Object.entries(curr.props)) {
           if (propKey === 'children') continue;
-          if (typeof propValue === 'string') continue;
           if (elementIsPlural && !isAcceptedPluralForm(propKey)) continue;
           if (elementIsBranch && BRANCH_CONTROL_PROPS.has(propKey)) continue;
           if (propValue && typeof propValue === 'object') {
