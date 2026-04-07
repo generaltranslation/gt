@@ -1,4 +1,8 @@
 import { Command } from 'commander';
+import {
+  DEFAULT_TRANSLATIONS_DIR,
+  DEFAULT_VITE_TRANSLATIONS_DIR,
+} from '../utils/constants.js';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import findFilepath from '../fs/findFilepath.js';
 import {
@@ -413,10 +417,15 @@ export class BaseCLI {
               : null;
 
           // Build defaults description based on detected framework
+          const defaultTranslationsDir =
+            framework.name === 'vite'
+              ? DEFAULT_VITE_TRANSLATIONS_DIR
+              : DEFAULT_TRANSLATIONS_DIR;
+
           const defaultsDescription =
             framework.type === 'react'
-              ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ./public/_gt`
-              : 'Files saved locally in ./public/_gt';
+              ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
+              : `Files saved locally in ${defaultTranslationsDir}`;
 
           // Ask if user wants to use defaults
           const useDefaults = await promptConfirm({
@@ -452,7 +461,11 @@ export class BaseCLI {
             logger.startCommand('Setting up project config...');
           }
           // Configure gt.config.json
-          await this.handleInitCommand(ranReactSetup, useDefaults);
+          await this.handleInitCommand(
+            ranReactSetup,
+            useDefaults,
+            framework.name === 'vite'
+          );
 
           logger.endCommand(
             'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
@@ -475,7 +488,8 @@ export class BaseCLI {
         );
 
         // Configure gt.config.json
-        await this.handleInitCommand(false);
+        const framework = await detectFramework();
+        await this.handleInitCommand(false, false, framework.name === 'vite');
 
         logger.endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
@@ -522,7 +536,8 @@ export class BaseCLI {
   // Wizard for configuring gt.config.json
   protected async handleInitCommand(
     ranReactSetup: boolean,
-    useDefaults: boolean = false
+    useDefaults: boolean = false,
+    isVite: boolean = false
   ): Promise<void> {
     const { defaultLocale, locales } = await getDesiredLocales(); // Locales should still be asked for even if using defaults
 
@@ -549,20 +564,25 @@ export class BaseCLI {
       return selectedValue === 'cdn';
     })();
 
+    const defaultTranslationsDir = isVite
+      ? DEFAULT_VITE_TRANSLATIONS_DIR
+      : DEFAULT_TRANSLATIONS_DIR;
+
     // Ask where the translations are stored
     const translationsDir =
       isUsingGT && !usingCDN
         ? useDefaults
-          ? './public/_gt'
+          ? defaultTranslationsDir
           : await promptText({
               message:
                 'What is the path to the directory where you would like to store your translation files?',
-              defaultValue: './public/_gt',
+              defaultValue: defaultTranslationsDir,
             })
         : null;
 
     // Determine final translations directory with fallback
-    const finalTranslationsDir = translationsDir?.trim() || './public/_gt';
+    const finalTranslationsDir =
+      translationsDir?.trim() || defaultTranslationsDir;
 
     if (isUsingGT && !usingCDN) {
       // Create loadTranslations.js file for local translations
