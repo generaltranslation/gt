@@ -174,8 +174,7 @@ async function processCall(
     }
 
     // Extract static metadata and check for derive in _context
-    const preErrors = errors.length;
-    const metadata = extractKwargs(argsNode, errors, callNode);
+    const metadata = extractKwargs(argsNode, errors, callNode, imports);
     const contextVariants = await extractDeriveContext(
       argsNode,
       imports,
@@ -183,11 +182,6 @@ async function processCall(
       rootNode,
       errors
     );
-
-    // If context has derive variants, remove the static context error that extractKwargs added
-    if (contextVariants) {
-      errors.length = preErrors;
-    }
 
     const staticId = `static-temp-id-${randomUUID()}`;
 
@@ -252,8 +246,7 @@ async function processCall(
   }
 
   // Extract keyword arguments and check for derive in _context
-  const preErrors = errors.length;
-  const metadata = extractKwargs(argsNode, errors, callNode);
+  const metadata = extractKwargs(argsNode, errors, callNode, imports);
 
   const rootNode = callNode.tree?.rootNode;
   const contextVariants = rootNode
@@ -261,8 +254,6 @@ async function processCall(
     : null;
 
   if (contextVariants) {
-    // Remove the static context error that extractKwargs added
-    errors.length = preErrors;
     const staticId = `static-temp-id-${randomUUID()}`;
     for (const context of contextVariants) {
       calls.push({
@@ -287,7 +278,8 @@ async function processCall(
 function extractKwargs(
   argsNode: SyntaxNode,
   errors: string[],
-  callNode: SyntaxNode
+  callNode: SyntaxNode,
+  imports?: ImportAlias[]
 ): { id?: string; context?: string; maxChars?: number } {
   const result: { id?: string; context?: string; maxChars?: number } = {};
 
@@ -320,6 +312,12 @@ function extractKwargs(
           if (metadataKey === 'id') result.id = value;
           else if (metadataKey === 'context') result.context = value;
         }
+      } else if (
+        metadataKey === 'context' &&
+        imports &&
+        containsStaticCalls(valueNode, imports)
+      ) {
+        // _context contains derive() — skip error, caller handles derivation
       } else {
         errors.push(
           `${locationStr(callNode)}: _${metadataKey} must be a string literal`

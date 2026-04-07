@@ -460,6 +460,19 @@ t(f"The {derive(get_gender(variant))}")`;
       expect(contexts).toEqual(['prefix-casual', 'prefix-formal']);
     });
 
+    it('should preserve unrelated kwarg errors when derive context resolves', async () => {
+      const code = `from gt_flask import t, derive\nt("Hello", _context=derive("formal" if x else "casual"), _max_chars=some_var)`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      // Context should resolve to 2 variants
+      expect(results).toHaveLength(2);
+      // But _max_chars error should NOT be silently discarded
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.includes('_max_chars'))).toBe(true);
+    });
+
     it('should still work with static _context (regression)', async () => {
       const code = `from gt_flask import t\nt("Hello", _context="greeting")`;
       const { results, errors } = await extractFromPythonSource(
