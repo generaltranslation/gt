@@ -10,13 +10,13 @@ import { InitializeGTParams } from './types';
  * @example
  * import gtConfig from '../gt.config.json';
  *
- * function getTranslations(locale: string) {
- *   return import(`./_gt/${locale}.json`);
+ * async function loadTranslations(locale: string) {
+ *   return (await import(`./_gt/${locale}.json`)).default;
  * }
  *
  * await bootstrap({
  *   ...gtConfig,
- *   getTranslations,
+ *   loadTranslations,
  * });
  *
  * await import('./main.tsx')
