@@ -1,5 +1,8 @@
 import * as t from '@babel/types';
 
+const UNKNOWN_NAMESPACE = '_gt_unknown_namespace';
+const UNKNOWN_FUNCTION = '_gt_unknown_function';
+
 /**
  * Get the callee name from an expression: ... = useGT();
  * Rule of thumb, only call on expressions with parentheses
@@ -24,6 +27,11 @@ export function getCalleeNameFromJsxExpressionParam(expr: t.Expression): {
       return {
         namespaceName: expr.object.name,
         functionName: expr.property.name,
+      };
+    } else {
+      return {
+        namespaceName: UNKNOWN_NAMESPACE,
+        functionName: UNKNOWN_FUNCTION,
       };
     }
   }

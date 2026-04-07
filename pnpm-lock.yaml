@@ -953,9 +953,6 @@ importers:
       lodash.merge:
         specifier: ^4.6.2
         version: 4.6.2
-      sanity-plugin-internationalized-array:
-        specifier: '>=5.0.0'
-        version: 5.1.0(97a085cb45d4e610dda649a5d0001302)
     devDependencies:
       '@portabletext/types':
         specifier: ^2.0.15
