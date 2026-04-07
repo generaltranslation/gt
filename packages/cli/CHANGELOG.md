@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.5
+
+### Patch Changes
+
+- [#1174](https://github.com/generaltranslation/gt/pull/1174) [`4730814`](https://github.com/generaltranslation/gt/commit/4730814799ba5487b45477094c6ca581ac56c3ff) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: recursive string translation function resolution
+
 ## 2.14.4
 
 ### Patch Changes
