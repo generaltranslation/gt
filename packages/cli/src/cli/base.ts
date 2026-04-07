@@ -488,7 +488,8 @@ export class BaseCLI {
         );
 
         // Configure gt.config.json
-        await this.handleInitCommand(false);
+        const framework = await detectFramework();
+        await this.handleInitCommand(false, false, framework.name === 'vite');
 
         logger.endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
