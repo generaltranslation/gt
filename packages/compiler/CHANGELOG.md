@@ -1,5 +1,11 @@
 # @generaltranslation/compiler
 
+## 1.3.2
+
+### Patch Changes
+
+- [#1182](https://github.com/generaltranslation/gt/pull/1182) [`80fe63f`](https://github.com/generaltranslation/gt/commit/80fe63fa349f8ece0871ba455f16dae614327fdd) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: handle member expressions without throwing errors
+
 ## 1.3.1
 
 ### Patch Changes

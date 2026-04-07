@@ -1,5 +1,7 @@
 # gtx-cli
 
+## 2.14.7
+
 ## 2.14.6
 
 ### Patch Changes
