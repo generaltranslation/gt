@@ -2,10 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
 import chalk from 'chalk';
+import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
 
 export async function createLoadTranslationsFile(
   appDirectory: string,
-  translationsDir: string = './public/_gt',
+  translationsDir: string = DEFAULT_TRANSLATIONS_DIR,
   locales: string[]
 ) {
   const usingSrcDirectory = fs.existsSync(path.join(appDirectory, 'src'));

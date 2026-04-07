@@ -1,4 +1,8 @@
 import { Command } from 'commander';
+import {
+  DEFAULT_TRANSLATIONS_DIR,
+  DEFAULT_VITE_TRANSLATIONS_DIR,
+} from '../utils/constants.js';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import findFilepath from '../fs/findFilepath.js';
 import {
@@ -414,7 +418,9 @@ export class BaseCLI {
 
           // Build defaults description based on detected framework
           const defaultTranslationsDir =
-            framework.name === 'vite' ? './src/_gt' : './public/_gt';
+            framework.name === 'vite'
+              ? DEFAULT_VITE_TRANSLATIONS_DIR
+              : DEFAULT_TRANSLATIONS_DIR;
 
           const defaultsDescription =
             framework.type === 'react'
@@ -557,7 +563,9 @@ export class BaseCLI {
       return selectedValue === 'cdn';
     })();
 
-    const defaultTranslationsDir = isVite ? './src/_gt' : './public/_gt';
+    const defaultTranslationsDir = isVite
+      ? DEFAULT_VITE_TRANSLATIONS_DIR
+      : DEFAULT_TRANSLATIONS_DIR;
 
     // Ask where the translations are stored
     const translationsDir =
