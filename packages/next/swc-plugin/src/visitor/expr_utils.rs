@@ -123,6 +123,9 @@ pub fn contains_derive_call(expr: &Expr) -> bool {
     }
     Expr::Tpl(tpl) => tpl.exprs.iter().any(|e| contains_derive_call(e)),
     Expr::Paren(paren) => contains_derive_call(&paren.expr),
+    Expr::Cond(cond) => {
+      contains_derive_call(&cond.cons) || contains_derive_call(&cond.alt)
+    }
     _ => false,
   }
 }

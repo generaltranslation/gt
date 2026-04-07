@@ -750,4 +750,33 @@ mod tests {
             "template literal with derive() in $context should set has_derive_context to true"
         );
     }
+
+    #[test]
+    fn test_derive_in_context_ternary_outer() {
+        // { $context: cond ? derive(getFormality()) : "fallback" }
+        let cond_expr = Box::new(Expr::Cond(CondExpr {
+            span: DUMMY_SP,
+            test: Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: Atom::new("cond"),
+                optional: false,
+                ctxt: SyntaxContext::empty(),
+            })),
+            cons: make_derive_call(),
+            alt: Box::new(Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: Atom::new("fallback").into(),
+                raw: None,
+            }))),
+        }));
+
+        let options = make_options_arg(vec![("$context", cond_expr)]);
+        let (_id, _context, _max_chars, _format, has_derive_context) =
+            extract_id_and_context_from_options(Some(&options));
+
+        assert!(
+            has_derive_context,
+            "ternary with derive() in one branch of $context should set has_derive_context to true"
+        );
+    }
 }
