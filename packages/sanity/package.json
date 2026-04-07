@@ -65,6 +65,7 @@
     "generaltranslation": "workspace:*",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
+    "@sanity/document-internationalization": "^6.0.6",
     "lodash.merge": "^4.6.2"
   },
   "devDependencies": {
