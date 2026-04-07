@@ -122,7 +122,8 @@ function handleFunctionCall(
   tPath: NodePath,
   config: ParsingConfig,
   state: ParsingState,
-  output: ParsingOutput
+  output: ParsingOutput,
+  visitedFunctions: Set<t.Node>
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
@@ -157,7 +158,8 @@ function handleFunctionCall(
           functionPath.node,
           functionPath,
           config,
-          output
+          output,
+          visitedFunctions
         );
       }
       // Handle arrow functions assigned to variables: const getData = (t) => {...}
@@ -175,7 +177,8 @@ function handleFunctionCall(
           calleeBinding.path.node.init,
           initPath,
           config,
-          output
+          output,
+          visitedFunctions
         );
       }
       // If not found locally, check if it's an imported function
@@ -214,16 +217,28 @@ function processFunctionIfMatches(
   functionNode: t.Function,
   functionPath: NodePath,
   config: ParsingConfig,
-  output: ParsingOutput
+  output: ParsingOutput,
+  visitedFunctions: Set<t.Node>
 ): void {
+  if (visitedFunctions.has(functionNode)) return;
+  visitedFunctions.add(functionNode);
+
   if (functionNode.params.length > argIndex) {
     const param = functionNode.params[argIndex];
     const paramName = extractParameterName(param);
 
     if (paramName) {
-      findFunctionParameterUsage(functionPath, paramName, config, output);
+      findFunctionParameterUsage(
+        functionPath,
+        paramName,
+        config,
+        output,
+        visitedFunctions
+      );
     }
   }
+
+  visitedFunctions.delete(functionNode);
 }
 
 /**
@@ -238,7 +253,8 @@ function findFunctionParameterUsage(
   functionPath: NodePath,
   parameterName: string,
   config: ParsingConfig,
-  output: ParsingOutput
+  output: ParsingOutput,
+  visitedFunctions: Set<t.Node>
 ): void {
   // Look for the function body and find all usages of the parameter
   if (functionPath.isFunction()) {
@@ -264,7 +280,8 @@ function findFunctionParameterUsage(
             refPath,
             config,
             { visited: new Set(), importMap },
-            output
+            output,
+            visitedFunctions
           );
         });
       }
@@ -312,6 +329,9 @@ function processFunctionInFile(
 
     let found = false;
     const reExports: string[] = [];
+    // Fresh set per cross-file parse — node identity is only stable within a single parse.
+    // Cross-file cycles are already guarded by processFunctionCache above.
+    const visitedFunctions = new Set<t.Node>();
 
     traverse(ast, {
       // Handle function declarations: function getInfo(t) { ... }
@@ -324,7 +344,8 @@ function processFunctionInFile(
             path.node,
             path,
             config,
-            output
+            output,
+            visitedFunctions
           );
         }
       },
@@ -345,7 +366,8 @@ function processFunctionInFile(
             path.node.init,
             initPath,
             config,
-            output
+            output,
+            visitedFunctions
           );
         }
       },
@@ -598,6 +620,7 @@ export function parseStrings(
         );
 
         // Process references for all translation function names and their aliases
+        const visitedFunctions = new Set<t.Node>();
         allTranslationNames.forEach((name) => {
           const tReferencePaths =
             variableScope.bindings[name]?.referencePaths || [];
@@ -607,7 +630,8 @@ export function parseStrings(
               tPath,
               hookConfig,
               { visited: new Set(), importMap },
-              output
+              output,
+              visitedFunctions
             );
           }
         });
