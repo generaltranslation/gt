@@ -552,20 +552,22 @@ export class BaseCLI {
       return selectedValue === 'cdn';
     })();
 
+    const defaultTranslationsDir = isVite ? './src/_gt' : './public/_gt';
+
     // Ask where the translations are stored
     const translationsDir =
       isUsingGT && !usingCDN
         ? useDefaults
-          ? (isVite ? './src/_gt' : './public/_gt')
+          ? defaultTranslationsDir
           : await promptText({
               message:
                 'What is the path to the directory where you would like to store your translation files?',
-              defaultValue: isVite ? './src/_gt' : './public/_gt',
+              defaultValue: defaultTranslationsDir,
             })
         : null;
 
     // Determine final translations directory with fallback
-    const finalTranslationsDir = translationsDir?.trim() || (isVite ? './src/_gt' : './public/_gt');
+    const finalTranslationsDir = translationsDir?.trim() || defaultTranslationsDir;
 
     if (isUsingGT && !usingCDN) {
       // Create loadTranslations.js file for local translations
