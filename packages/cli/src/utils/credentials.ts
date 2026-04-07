@@ -157,7 +157,7 @@ export async function setCredentials(
     if (apiKey.type === 'development') {
       envContent += `${prefix || ''}GT_DEV_API_KEY=${apiKey.key}\n`;
     } else {
-      envContent += `${prefix || ''}GT_API_KEY=${apiKey.key}\n`;
+      envContent += `GT_API_KEY=${apiKey.key}\n`;
     }
   }
 
