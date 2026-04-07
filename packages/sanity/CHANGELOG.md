@@ -1,5 +1,11 @@
 # gt-sanity
 
+## 2.0.3
+
+### Patch Changes
+
+- [#1177](https://github.com/generaltranslation/gt/pull/1177) [`190914f`](https://github.com/generaltranslation/gt/commit/190914fb4d5f88a98469f1c6f7d3b1608d39ad41) Thanks [@brian-lou](https://github.com/brian-lou)! - Add @sanity/document-internationalization as a dep
+
 ## 2.0.2
 
 ### Patch Changes
