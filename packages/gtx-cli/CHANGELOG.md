@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.14.7
+
+### Patch Changes
+
+- [#1179](https://github.com/generaltranslation/gt/pull/1179) [`8db46eb`](https://github.com/generaltranslation/gt/commit/8db46ebc61932c42d0ab08e4846ff625f71b3d35) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fixed setup wizard to not prefix GT*API_KEY with framework-specific prefixes (VITE*, NEXT*PUBLIC*, etc.) since production API keys should never be exposed to the client bundle.
+
+- Updated dependencies []:
+  - gt@2.14.7
+
 ## 2.14.6
 
 ### Patch Changes
