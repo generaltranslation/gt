@@ -1987,4 +1987,242 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       expect.any(Map)
     );
   });
+
+  describe('derive in context', () => {
+    it('should produce 2 updates when context uses derive with a function', () => {
+      const pageFile = `
+        import { T, derive } from "gt-next";
+
+        function getFormality() {
+          if (isFormal) {
+            return "formal";
+          } else {
+            return "casual";
+          }
+        }
+
+        export default function Page() {
+          return <T context={derive(getFormality())}>Hello</T>;
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (
+                t.isImportSpecifier(spec) &&
+                t.isIdentifier(spec.imported)
+              ) {
+                if (spec.imported.name === 'T') {
+                  tLocalName = spec.local.name;
+                  importAliases[tLocalName] = 'T';
+                }
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-context/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(2);
+
+      const contexts = updates
+        .map((u) => u.metadata.context)
+        .sort();
+      expect(contexts).toEqual(['casual', 'formal']);
+
+      // Both should have same staticId
+      expect(updates[0].metadata.staticId).toBeDefined();
+      expect(updates[0].metadata.staticId).toBe(
+        updates[1].metadata.staticId
+      );
+    });
+
+    it('should produce cross-product when both content and context use derive', () => {
+      const pageFile = `
+        import { T, Derive, derive } from "gt-next";
+
+        function getFormality() {
+          if (isFormal) {
+            return "formal";
+          } else {
+            return "casual";
+          }
+        }
+
+        function getGreeting() {
+          if (isMorning) {
+            return "Good morning";
+          } else {
+            return "Good evening";
+          }
+        }
+
+        export default function Page() {
+          return <T context={derive(getFormality())}><Derive>{getGreeting()}</Derive></T>;
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (
+                t.isImportSpecifier(spec) &&
+                t.isIdentifier(spec.imported)
+              ) {
+                if (spec.imported.name === 'T') {
+                  tLocalName = spec.local.name;
+                  importAliases[tLocalName] = 'T';
+                } else if (spec.imported.name === 'Derive') {
+                  importAliases[spec.local.name] = 'Derive';
+                }
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-context-cross/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(4); // 2 content × 2 context
+
+      // All 4 should share same staticId
+      const staticId = updates[0].metadata.staticId;
+      expect(staticId).toBeDefined();
+      expect(updates.every((u) => u.metadata.staticId === staticId)).toBe(
+        true
+      );
+    });
+
+    it('should still work with static string context (regression)', () => {
+      const pageFile = `
+        import { T } from "gt-next";
+
+        export default function Page() {
+          return <T context="greeting">Hello</T>;
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (
+                t.isImportSpecifier(spec) &&
+                t.isIdentifier(spec.imported) &&
+                spec.imported.name === 'T'
+              ) {
+                tLocalName = spec.local.name;
+                importAliases[tLocalName] = 'T';
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-context-regression/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(1);
+      expect(updates[0].metadata.context).toBe('greeting');
+    });
+  });
 });
