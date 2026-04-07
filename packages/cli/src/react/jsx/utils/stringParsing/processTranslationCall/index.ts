@@ -4,6 +4,8 @@ import { ParsingOutput } from '../types.js';
 import { routeTranslationCall } from './routeTranslationCall.js';
 import { extractStringEntryMetadata } from './extractStringEntryMetadata.js';
 import { SURROUNDING_LINE_COUNT } from '../../../../../utils/constants.js';
+import { handleDerivation } from '../derivation/handleDerivation.js';
+import { nodeToStrings } from '../../parseString.js';
 
 /**
  * Processes a single translation function call (e.g., t('hello world', { id: 'greeting' })).
@@ -44,6 +46,23 @@ export function processTranslationCall(
     surroundingLineCount: SURROUNDING_LINE_COUNT,
   });
 
+  // Resolve derive context variants if present
+  let contextVariants: string[] | undefined;
+  if (metadata.contextDeriveExpr) {
+    const contextNode = handleDerivation({
+      expr: metadata.contextDeriveExpr,
+      tPath,
+      file: config.file,
+      parsingOptions: config.parsingOptions,
+      errors: output.errors,
+      warnings: output.warnings,
+    });
+    if (contextNode) {
+      contextVariants = nodeToStrings(contextNode);
+    }
+    delete metadata.contextDeriveExpr;
+  }
+
   // Route tx call to appropriate handler
   routeTranslationCall({
     tPath,
@@ -51,5 +70,6 @@ export function processTranslationCall(
     output,
     arg,
     metadata,
+    contextVariants,
   });
 }

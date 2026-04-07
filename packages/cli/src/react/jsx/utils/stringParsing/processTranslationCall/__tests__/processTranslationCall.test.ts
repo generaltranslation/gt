@@ -298,7 +298,7 @@ describe('$format option support', () => {
 describe('derive in context', () => {
   it('should produce 2 updates when $context uses derive with ternary', () => {
     const code = `
-      import { derive } from 'generaltranslation';
+      import { derive } from 'gt-react';
       t("Hello", { $context: derive(x ? "formal" : "casual") })
     `;
     const output = runProcessTranslationCall(code);
@@ -322,7 +322,7 @@ describe('derive in context', () => {
 
   it('should produce cross-product when both content and context use derive', () => {
     const code = `
-      import { derive } from 'generaltranslation';
+      import { derive } from 'gt-react';
       t(derive(x ? "Hello" : "Hi"), { $context: derive(y ? "formal" : "casual") })
     `;
     const output = runProcessTranslationCall(code);
@@ -363,7 +363,7 @@ describe('derive in context', () => {
 
   it('should produce N updates when context derives a function with N return variants', () => {
     const code = `
-      import { derive } from 'generaltranslation';
+      import { derive } from 'gt-react';
       function getFormality() {
         if (isFormal) {
           return "formal";
@@ -392,7 +392,7 @@ describe('derive in context', () => {
 
   it('should handle derive in context via string concatenation', () => {
     const code = `
-      import { derive } from 'generaltranslation';
+      import { derive } from 'gt-react';
       t("Hello", { $context: "prefix-" + derive(x ? "formal" : "casual") })
     `;
     const output = runProcessTranslationCall(code);
@@ -406,7 +406,7 @@ describe('derive in context', () => {
 
   it('should handle derive in context via template literal', () => {
     const code = `
-      import { derive } from 'generaltranslation';
+      import { derive } from 'gt-react';
       t("Hello", { $context: \`prefix-\${derive(x ? "formal" : "casual")}\` })
     `;
     const output = runProcessTranslationCall(code);

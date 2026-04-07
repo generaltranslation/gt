@@ -21,6 +21,7 @@ export function handleDeriveTranslationCall({
   config,
   output,
   index,
+  contextVariants,
 }: {
   arg: t.Expression;
   metadata: InlineMetadata;
@@ -28,6 +29,7 @@ export function handleDeriveTranslationCall({
   config: ParsingConfig;
   output: ParsingOutput;
   index?: number;
+  contextVariants?: string[];
 }): void {
   deriveExpression({
     tPath,
@@ -36,5 +38,6 @@ export function handleDeriveTranslationCall({
     config,
     output,
     index,
+    contextVariants,
   });
 }

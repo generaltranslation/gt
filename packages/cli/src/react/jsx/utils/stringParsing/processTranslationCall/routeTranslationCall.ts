@@ -26,6 +26,7 @@ export function routeTranslationCall({
   arg,
   metadata,
   index,
+  contextVariants,
 }: {
   tPath: NodePath;
   config: ParsingConfig;
@@ -33,6 +34,7 @@ export function routeTranslationCall({
   arg: t.CallExpression['arguments'][number];
   metadata: InlineMetadata;
   index?: number;
+  contextVariants?: string[];
 }): void {
   if (
     t.isArrayExpression(arg) &&
@@ -50,6 +52,7 @@ export function routeTranslationCall({
         arg: element,
         index: i,
         metadata,
+        contextVariants,
       });
     }
   } else if (
@@ -65,6 +68,7 @@ export function routeTranslationCall({
       config,
       output,
       index,
+      contextVariants,
     });
   } else if (
     arg.type === 'StringLiteral' ||
@@ -77,6 +81,7 @@ export function routeTranslationCall({
       config,
       output,
       index,
+      contextVariants,
     });
   } else {
     // error on invalid translation call

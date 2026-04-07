@@ -35,6 +35,7 @@ export function deriveExpression({
   output,
   index,
   enableRuntimeInterpolation = false,
+  contextVariants,
 }: {
   tPath: NodePath;
   expr: t.Expression;
@@ -43,6 +44,7 @@ export function deriveExpression({
   output: ParsingOutput;
   index?: number;
   enableRuntimeInterpolation?: boolean;
+  contextVariants?: string[];
 }) {
   // parse derivable expression
   const stringNode = handleDerivation({
@@ -90,16 +92,21 @@ export function deriveExpression({
   }
 
   const temporaryDeriveId = `derive-temp-id-${randomUUID()}`;
+  const contexts = contextVariants ?? [metadata.context];
   for (const string of strings) {
-    output.updates.push({
-      dataFormat: (metadata.format || 'ICU') as DataFormat,
-      source: string,
-      metadata: {
-        ...metadata,
-        // Add the index if an id and index is provided (for handling when registering an array of strings)
-        ...(metadata.id && index != null && { id: `${metadata.id}.${index}` }),
-        staticId: temporaryDeriveId,
-      },
-    });
+    for (const context of contexts) {
+      output.updates.push({
+        dataFormat: (metadata.format || 'ICU') as DataFormat,
+        source: string,
+        metadata: {
+          ...metadata,
+          ...(context != null && { context }),
+          // Add the index if an id and index is provided (for handling when registering an array of strings)
+          ...(metadata.id &&
+            index != null && { id: `${metadata.id}.${index}` }),
+          staticId: temporaryDeriveId,
+        },
+      });
+    }
   }
 }
