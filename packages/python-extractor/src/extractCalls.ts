@@ -173,17 +173,48 @@ async function processCall(
       return;
     }
 
+    // Extract static metadata and check for derive in _context
+    const preErrors = errors.length;
     const metadata = extractKwargs(argsNode, errors, callNode);
+    const contextVariants = await extractDeriveContext(
+      argsNode,
+      imports,
+      filePath,
+      rootNode,
+      errors
+    );
+
+    // If context has derive variants, remove the static context error that extractKwargs added
+    if (contextVariants) {
+      errors.length = preErrors;
+    }
+
     const staticId = `static-temp-id-${randomUUID()}`;
 
-    for (const source of strings) {
-      calls.push({
-        source,
-        ...metadata,
-        staticId,
-        line: callNode.startPosition.row + 1,
-        column: callNode.startPosition.column,
-      });
+    if (contextVariants) {
+      // Cross-product: content variants × context variants
+      for (const source of strings) {
+        for (const context of contextVariants) {
+          calls.push({
+            source,
+            ...metadata,
+            context,
+            staticId,
+            line: callNode.startPosition.row + 1,
+            column: callNode.startPosition.column,
+          });
+        }
+      }
+    } else {
+      for (const source of strings) {
+        calls.push({
+          source,
+          ...metadata,
+          staticId,
+          line: callNode.startPosition.row + 1,
+          column: callNode.startPosition.column,
+        });
+      }
     }
     return;
   }
@@ -220,15 +251,37 @@ async function processCall(
     return;
   }
 
-  // Extract keyword arguments
+  // Extract keyword arguments and check for derive in _context
+  const preErrors = errors.length;
   const metadata = extractKwargs(argsNode, errors, callNode);
 
-  calls.push({
-    source,
-    ...metadata,
-    line: callNode.startPosition.row + 1,
-    column: callNode.startPosition.column,
-  });
+  const rootNode = callNode.tree?.rootNode;
+  const contextVariants = rootNode
+    ? await extractDeriveContext(argsNode, imports, filePath, rootNode, errors)
+    : null;
+
+  if (contextVariants) {
+    // Remove the static context error that extractKwargs added
+    errors.length = preErrors;
+    const staticId = `static-temp-id-${randomUUID()}`;
+    for (const context of contextVariants) {
+      calls.push({
+        source,
+        ...metadata,
+        context,
+        staticId,
+        line: callNode.startPosition.row + 1,
+        column: callNode.startPosition.column,
+      });
+    }
+  } else {
+    calls.push({
+      source,
+      ...metadata,
+      line: callNode.startPosition.row + 1,
+      column: callNode.startPosition.column,
+    });
+  }
 }
 
 function extractKwargs(
@@ -276,6 +329,43 @@ function extractKwargs(
   }
 
   return result;
+}
+
+/**
+ * Finds the _context keyword argument node and, if it contains a derive() call,
+ * parses it into context variants. Returns null if _context is static or absent.
+ */
+async function extractDeriveContext(
+  argsNode: SyntaxNode,
+  imports: ImportAlias[],
+  filePath: string,
+  rootNode: SyntaxNode,
+  errors: string[]
+): Promise<string[] | null> {
+  // Find _context kwarg
+  for (let i = 0; i < argsNode.childCount; i++) {
+    const child = argsNode.child(i);
+    if (!child || child.type !== 'keyword_argument') continue;
+
+    const nameNode = child.childForFieldName('name');
+    const valueNode = child.childForFieldName('value');
+    if (!nameNode || !valueNode) continue;
+    if (nameNode.text !== '_context') continue;
+
+    // Check if value contains derive()
+    if (!containsStaticCalls(valueNode, imports)) return null;
+
+    const contextNode = await parseStringExpression(valueNode, {
+      rootNode,
+      imports,
+      filePath,
+      errors,
+    });
+    if (!contextNode) return null;
+
+    return nodeToStrings(contextNode);
+  }
+  return null;
 }
 
 function isFString(stringNode: SyntaxNode): boolean {
