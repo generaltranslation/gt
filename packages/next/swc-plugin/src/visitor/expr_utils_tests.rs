@@ -557,7 +557,7 @@ mod tests {
     #[test]
     fn test_extract_format_from_options() {
         let options = make_options_arg(vec![("$format", str_expr("STRING"))]);
-        let (id, context, max_chars, format) =
+        let (id, context, max_chars, format, _has_derive_context) =
             extract_id_and_context_from_options(Some(&options));
         assert_eq!(format, Some("STRING".to_string()));
         assert_eq!(id, None);
@@ -568,7 +568,7 @@ mod tests {
     #[test]
     fn test_extract_format_none_when_absent() {
         let options = make_options_arg(vec![("$context", str_expr("greeting"))]);
-        let (_id, _context, _max_chars, format) =
+        let (_id, _context, _max_chars, format, _has_derive_context) =
             extract_id_and_context_from_options(Some(&options));
         assert_eq!(format, None);
     }
@@ -580,7 +580,7 @@ mod tests {
             ("$context", str_expr("greeting")),
             ("$format", str_expr("I18NEXT")),
         ]);
-        let (id, context, _max_chars, format) =
+        let (id, context, _max_chars, format, _has_derive_context) =
             extract_id_and_context_from_options(Some(&options));
         assert_eq!(id, Some("hello".to_string()));
         assert_eq!(context, Some("greeting".to_string()));
@@ -589,8 +589,194 @@ mod tests {
 
     #[test]
     fn test_extract_format_none_when_no_options() {
-        let (_id, _context, _max_chars, format) =
+        let (_id, _context, _max_chars, format, _has_derive_context) =
             extract_id_and_context_from_options(None);
         assert_eq!(format, None);
+    }
+
+    // --- derive in context tests ---
+
+    fn make_derive_call() -> Box<Expr> {
+        Box::new(Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            ctxt: SyntaxContext::empty(),
+            callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: Atom::new("derive"),
+                optional: false,
+                ctxt: SyntaxContext::empty(),
+            }))),
+            args: vec![ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Call(CallExpr {
+                    span: DUMMY_SP,
+                    ctxt: SyntaxContext::empty(),
+                    callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: Atom::new("getFormality"),
+                        optional: false,
+                        ctxt: SyntaxContext::empty(),
+                    }))),
+                    args: vec![],
+                    type_args: None,
+                })),
+            }],
+            type_args: None,
+        }))
+    }
+
+    #[test]
+    fn test_derive_call_in_context_is_recognized() {
+        // { $context: derive(getFormality()) }
+        let options = make_options_arg(vec![("$context", make_derive_call())]);
+        let (_id, _context, _max_chars, _format, has_derive_context) =
+            extract_id_and_context_from_options(Some(&options));
+
+        assert!(
+            has_derive_context,
+            "derive() in $context should set has_derive_context to true"
+        );
+    }
+
+    #[test]
+    fn test_static_string_context_still_works() {
+        // { $context: "greeting" } — regression check
+        let options = make_options_arg(vec![("$context", str_expr("greeting"))]);
+        let (_id, context, _max_chars, _format, has_derive_context) =
+            extract_id_and_context_from_options(Some(&options));
+        assert_eq!(context, Some("greeting".to_string()));
+        assert!(!has_derive_context, "static string context should not set has_derive_context");
+    }
+
+    #[test]
+    fn test_derive_ternary_in_context() {
+        // { $context: derive(x ? "formal" : "casual") }
+        let derive_call = Box::new(Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            ctxt: SyntaxContext::empty(),
+            callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: Atom::new("derive"),
+                optional: false,
+                ctxt: SyntaxContext::empty(),
+            }))),
+            args: vec![ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Cond(CondExpr {
+                    span: DUMMY_SP,
+                    test: Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        sym: Atom::new("x"),
+                        optional: false,
+                        ctxt: SyntaxContext::empty(),
+                    })),
+                    cons: Box::new(Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        value: Atom::new("formal").into(),
+                        raw: None,
+                    }))),
+                    alt: Box::new(Expr::Lit(Lit::Str(Str {
+                        span: DUMMY_SP,
+                        value: Atom::new("casual").into(),
+                        raw: None,
+                    }))),
+                })),
+            }],
+            type_args: None,
+        }));
+
+        let options = make_options_arg(vec![("$context", derive_call)]);
+        let (_id, _context, _max_chars, _format, has_derive_context) =
+            extract_id_and_context_from_options(Some(&options));
+
+        assert!(
+            has_derive_context,
+            "derive(ternary) in $context should set has_derive_context to true"
+        );
+    }
+
+    #[test]
+    fn test_derive_in_context_concat() {
+        // { $context: "prefix-" + derive(getFormality()) }
+        let concat_expr = Box::new(Expr::Bin(BinExpr {
+            span: DUMMY_SP,
+            op: BinaryOp::Add,
+            left: Box::new(Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: Atom::new("prefix-").into(),
+                raw: None,
+            }))),
+            right: make_derive_call(),
+        }));
+
+        let options = make_options_arg(vec![("$context", concat_expr)]);
+        let (_id, _context, _max_chars, _format, has_derive_context) =
+            extract_id_and_context_from_options(Some(&options));
+
+        assert!(
+            has_derive_context,
+            "string concat with derive() in $context should set has_derive_context to true"
+        );
+    }
+
+    #[test]
+    fn test_derive_in_context_template_literal() {
+        // { $context: `prefix-${derive(getFormality())}` }
+        let template_expr = Box::new(Expr::Tpl(Tpl {
+            span: DUMMY_SP,
+            exprs: vec![make_derive_call()],
+            quasis: vec![
+                TplElement {
+                    span: DUMMY_SP,
+                    tail: false,
+                    cooked: Some(Atom::new("prefix-").into()),
+                    raw: Atom::new("prefix-").into(),
+                },
+                TplElement {
+                    span: DUMMY_SP,
+                    tail: true,
+                    cooked: Some(Atom::new("").into()),
+                    raw: Atom::new("").into(),
+                },
+            ],
+        }));
+
+        let options = make_options_arg(vec![("$context", template_expr)]);
+        let (_id, _context, _max_chars, _format, has_derive_context) =
+            extract_id_and_context_from_options(Some(&options));
+
+        assert!(
+            has_derive_context,
+            "template literal with derive() in $context should set has_derive_context to true"
+        );
+    }
+
+    #[test]
+    fn test_derive_in_context_ternary_outer() {
+        // { $context: cond ? derive(getFormality()) : "fallback" }
+        let cond_expr = Box::new(Expr::Cond(CondExpr {
+            span: DUMMY_SP,
+            test: Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: Atom::new("cond"),
+                optional: false,
+                ctxt: SyntaxContext::empty(),
+            })),
+            cons: make_derive_call(),
+            alt: Box::new(Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: Atom::new("fallback").into(),
+                raw: None,
+            }))),
+        }));
+
+        let options = make_options_arg(vec![("$context", cond_expr)]);
+        let (_id, _context, _max_chars, _format, has_derive_context) =
+            extract_id_and_context_from_options(Some(&options));
+
+        assert!(
+            has_derive_context,
+            "ternary with derive() in one branch of $context should set has_derive_context to true"
+        );
     }
 }

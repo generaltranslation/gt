@@ -140,6 +140,11 @@ function handleUseGTCallback(
   }
 
   // Track the function call
+  // When context contains derive(), skip hash calculation (CLI handles resolution)
+  const hash = useGTCallbackParams.hasDeriveContext
+    ? ''
+    : useGTCallbackParams.hash;
+
   registerUseGTCallback({
     identifier,
     state,
@@ -147,7 +152,7 @@ function handleUseGTCallback(
     context: useGTCallbackParams.context,
     id: useGTCallbackParams.id,
     maxChars: useGTCallbackParams.maxChars,
-    hash: useGTCallbackParams.hash,
+    hash,
     format: useGTCallbackParams.format,
   });
 }
@@ -252,7 +257,7 @@ function handleReactInvocation(
   }
 
   // Validate the arguments
-  const { errors, _hash, id, context, children, maxChars } =
+  const { errors, _hash, id, context, children, maxChars, hasDeriveContext } =
     validateTranslationComponentArgs(callExpr, canonicalName, state);
 
   if (errors.length > 0) {
@@ -260,16 +265,17 @@ function handleReactInvocation(
     return;
   }
 
-  // Calculate hash
-  const hash =
-    _hash ||
-    hashSource({
-      source: children!,
-      ...(context && { context }),
-      ...(id && { id }),
-      ...(maxChars != null && { maxChars }),
-      dataFormat: 'JSX',
-    });
+  // Calculate hash (skip when context contains derive — CLI handles resolution)
+  const hash = hasDeriveContext
+    ? ''
+    : _hash ||
+      hashSource({
+        source: children!,
+        ...(context && { context }),
+        ...(id && { id }),
+        ...(maxChars != null && { maxChars }),
+        dataFormat: 'JSX',
+      });
 
   // Debug: record hash → children mapping
   if (state.debugManifest) {

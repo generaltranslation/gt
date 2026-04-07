@@ -50,6 +50,8 @@ import { GTLibrary } from '../../../../types/libraries.js';
 import path from 'node:path';
 import { extractSourceCode } from '../extractSourceCode.js';
 import { SURROUNDING_LINE_COUNT } from '../../../../utils/constants.js';
+import { handleDerivation } from '../stringParsing/derivation/handleDerivation.js';
+import { nodeToStrings } from '../parseString.js';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -811,20 +813,54 @@ function parseJSXElement({
   // Create a temporary unique flag for derivable content
   const temporaryDeriveId = `derive-temp-id-${randomUUID()}`;
 
+  // Resolve derive context variants if present
+  let contextVariants: string[] | undefined;
+  if (metadata._contextDeriveExpr) {
+    const contextExpr = metadata._contextDeriveExpr as t.Expression;
+    delete metadata._contextDeriveExpr;
+
+    const contextNode = handleDerivation({
+      expr: contextExpr,
+      tPath: scopeNode,
+      file: config.file,
+      parsingOptions: config.parsingOptions,
+      errors: componentErrors,
+      warnings: componentWarnings,
+    });
+    if (contextNode) {
+      contextVariants = nodeToStrings(contextNode);
+    }
+  }
+
   // <T> is valid here
   for (const minifiedTree of minifiedTress) {
     // Clean the tree by removing null 'c' fields from JsxElements
     const cleanedTree = removeNullChildrenFields(minifiedTree);
 
-    updates.push({
-      dataFormat: 'JSX',
-      source: cleanedTree,
-      metadata: {
-        // eslint-disable-next-line no-undef
-        ...structuredClone(metadata),
-        ...(derivableTracker.isDerivable && { staticId: temporaryDeriveId }),
-      },
-    });
+    if (contextVariants) {
+      for (const context of contextVariants) {
+        updates.push({
+          dataFormat: 'JSX',
+          source: cleanedTree,
+          metadata: {
+            // eslint-disable-next-line no-undef
+            ...structuredClone(metadata),
+            context,
+            staticId: temporaryDeriveId,
+          },
+        });
+      }
+    } else {
+      updates.push({
+        dataFormat: 'JSX',
+        source: cleanedTree,
+        metadata: {
+          // eslint-disable-next-line no-undef
+          ...structuredClone(metadata),
+          ...(derivableTracker.isDerivable && { staticId: temporaryDeriveId }),
+        },
+      });
+    }
   }
 }
 

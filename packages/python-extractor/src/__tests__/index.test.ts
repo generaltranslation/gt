@@ -370,6 +370,122 @@ t(f"The {derive(get_gender(variant))}")`;
     });
   });
 
+  // ===== derive in context tests ===== //
+
+  describe('derive in context', () => {
+    it('should produce 2 results when _context uses derive with ternary', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('derive_context_ternary.py'),
+        'derive_context_ternary.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+
+      // Both results should have the same source
+      expect(results[0].source).toBe('Hello');
+      expect(results[1].source).toBe('Hello');
+
+      // Contexts should be the two ternary branches
+      const contexts = results.map((r) => r.metadata.context).sort();
+      expect(contexts).toEqual(['casual', 'formal']);
+
+      // Both should share the same staticId
+      expect(results[0].metadata.staticId).toBeDefined();
+      expect(results[0].metadata.staticId).toBe(results[1].metadata.staticId);
+    });
+
+    it('should produce cross-product when both content and context use derive', async () => {
+      const { results, errors } = await extractFromPythonSource(
+        fixture('derive_context_cross_product.py'),
+        path.join(__dirname, 'fixtures', 'derive_context_cross_product.py')
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(4);
+
+      const pairs = results
+        .map((r) => `${r.source}|${r.metadata.context}`)
+        .sort();
+      expect(pairs).toEqual([
+        'It is day!|casual',
+        'It is day!|formal',
+        'It is night!|casual',
+        'It is night!|formal',
+      ]);
+
+      // All 4 should share the same staticId
+      const staticId = results[0].metadata.staticId;
+      expect(staticId).toBeDefined();
+      expect(results.every((r) => r.metadata.staticId === staticId)).toBe(true);
+    });
+
+    it('should produce 2 results with inline ternary context', async () => {
+      const code = `from gt_flask import t, derive\nt("Hello", _context=derive("formal" if x else "casual"))`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+
+      const contexts = results.map((r) => r.metadata.context).sort();
+      expect(contexts).toEqual(['casual', 'formal']);
+
+      expect(results[0].source).toBe('Hello');
+      expect(results[1].source).toBe('Hello');
+    });
+
+    it('should handle derive in context via string concatenation', async () => {
+      const code = `from gt_flask import t, derive\nt("Hello", _context="prefix-" + derive("formal" if x else "casual"))`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+
+      const contexts = results.map((r) => r.metadata.context).sort();
+      expect(contexts).toEqual(['prefix-casual', 'prefix-formal']);
+    });
+
+    it('should handle derive in context via f-string', async () => {
+      const code = `from gt_flask import t, derive\nt("Hello", _context=f"prefix-{derive('formal' if x else 'casual')}")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(2);
+
+      const contexts = results.map((r) => r.metadata.context).sort();
+      expect(contexts).toEqual(['prefix-casual', 'prefix-formal']);
+    });
+
+    it('should preserve unrelated kwarg errors when derive context resolves', async () => {
+      const code = `from gt_flask import t, derive\nt("Hello", _context=derive("formal" if x else "casual"), _max_chars=some_var)`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      // Context should resolve to 2 variants
+      expect(results).toHaveLength(2);
+      // But _max_chars error should NOT be silently discarded
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.includes('_max_chars'))).toBe(true);
+    });
+
+    it('should still work with static _context (regression)', async () => {
+      const code = `from gt_flask import t\nt("Hello", _context="greeting")`;
+      const { results, errors } = await extractFromPythonSource(
+        code,
+        'test.py'
+      );
+      expect(errors).toEqual([]);
+      expect(results).toHaveLength(1);
+      expect(results[0].source).toBe('Hello');
+      expect(results[0].metadata.context).toBe('greeting');
+    });
+  });
+
   // ===== declare_static tests (backwards compatibility) ===== //
 
   describe('declare_static (backwards compatibility)', () => {

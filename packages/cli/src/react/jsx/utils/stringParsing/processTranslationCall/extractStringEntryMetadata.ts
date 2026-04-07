@@ -6,6 +6,7 @@ import { warnInvalidMaxCharsSync } from '../../../../../console/index.js';
 import { warnInvalidFormatSync } from '../../../../../console/index.js';
 import { warnNonStaticExpressionSync } from '../../../../../console/index.js';
 import { GT_ATTRIBUTES_WITH_SUGAR } from '../../constants.js';
+import { containsDeriveCall } from '../derivation/containsDeriveCall.js';
 import generateModule from '@babel/generator';
 import { mapAttributeName } from '../../mapAttributeName.js';
 import pathModule from 'node:path';
@@ -28,6 +29,7 @@ export type InlineMetadata = {
   format?: string;
   filePaths?: string[];
   sourceCode?: Record<string, SourceCode[]>;
+  contextDeriveExpr?: t.Expression;
 };
 
 /**
@@ -112,6 +114,7 @@ function extractInlineMetadata({
   config: ParsingConfig;
 }): InlineMetadata {
   const metadata: Record<string, string | number | string[]> = {};
+  let contextDeriveExpr: t.Expression | undefined;
   if (options && options.type === 'ObjectExpression') {
     options.properties.forEach((prop) => {
       if (prop.type === 'ObjectProperty' && prop.key.type === 'Identifier') {
@@ -124,14 +127,19 @@ function extractInlineMetadata({
         ) {
           const result = isStaticExpression(prop.value);
           if (!result.isStatic) {
-            output.errors.push(
-              warnNonStaticExpressionSync(
-                config.file,
-                attribute,
-                generate(prop.value).code,
-                `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
-              )
-            );
+            const mappedKey = mapAttributeName(attribute);
+            if (mappedKey === 'context' && containsDeriveCall(prop.value)) {
+              contextDeriveExpr = prop.value;
+            } else {
+              output.errors.push(
+                warnNonStaticExpressionSync(
+                  config.file,
+                  attribute,
+                  generate(prop.value).code,
+                  `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                )
+              );
+            }
           }
           if (
             result.isStatic &&
@@ -186,5 +194,8 @@ function extractInlineMetadata({
     });
   }
 
-  return metadata;
+  return {
+    ...metadata,
+    ...(contextDeriveExpr && { contextDeriveExpr }),
+  };
 }

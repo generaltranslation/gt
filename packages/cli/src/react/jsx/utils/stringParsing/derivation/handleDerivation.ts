@@ -361,15 +361,31 @@ function getDeriveVariants<T extends t.CallExpression = t.CallExpression>({
       warnings
     );
   }
-  // Resolve the inner call's possible string outcomes
-  return resolveCallStringVariants(
-    arg,
+  // Handle call expression: derive(time())
+  if (t.isCallExpression(arg)) {
+    return resolveCallStringVariants(
+      arg,
+      tPath,
+      file,
+      parsingOptions,
+      errors,
+      warnings
+    );
+  }
+  // Handle other expressions (ternary, string literal, etc.) by recursing into handleDerivation
+  const node = handleDerivation({
+    expr: arg,
     tPath,
     file,
     parsingOptions,
     errors,
-    warnings
-  );
+    warnings,
+    skipDeriveInvocation: true,
+  });
+  if (node) {
+    return nodeToStrings(node);
+  }
+  return null;
 }
 
 function resolveCallStringVariants(

@@ -7,7 +7,7 @@ use crate::hash::{
   HtmlContentProps, SanitizedChild, SanitizedChildren, SanitizedElement, SanitizedGtProp,
   SanitizedVariable, VariableType,
 };
-use crate::visitor::jsx_utils::{extract_attribute_from_jsx_attr, extract_max_chars_from_jsx_attr};
+use crate::visitor::jsx_utils::{extract_attribute_from_jsx_attr, extract_max_chars_from_jsx_attr, jsx_attr_contains_derive_call};
 use crate::TransformVisitor;
 use std::collections::BTreeMap;
 use swc_core::ecma::{ast::*, atoms::Atom};
@@ -54,9 +54,10 @@ impl<'a> JsxTraversal<'a> {
       let max_chars = extract_max_chars_from_jsx_attr(element, "maxChars")
         .or_else(|| extract_max_chars_from_jsx_attr(element, "$maxChars"));
 
-      // Get the id from the element
-      // Check if sanitized children contain static components - if so, return empty hash
-      let has_static = JsxHasher::contains_static(&sanitized_children);
+      // Check if sanitized children contain static components or context contains derive - if so, return empty hash
+      let has_derive_in_context = jsx_attr_contains_derive_call(element, "context")
+        || jsx_attr_contains_derive_call(element, "$context");
+      let has_static = JsxHasher::contains_static(&sanitized_children) || has_derive_in_context;
       
       // Create the full SanitizedData structure to match TypeScript implementation
       use crate::hash::SanitizedData;

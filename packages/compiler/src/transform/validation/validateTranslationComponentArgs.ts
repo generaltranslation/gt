@@ -7,6 +7,7 @@ import { JsxChildren } from 'generaltranslation/types';
 import { constructJsxChildren } from '../jsx-children';
 import { validateChildrenPropertyFromObjectExpression } from '../../utils/validation/validateChildrenFromObjectExpression';
 import { validateExpressionIsNumericLiteral } from '../../utils/validation/validateExpressionIsNumericLiteral';
+import { validateDerive } from './validateTranslationFunctionCallback';
 /**
  * Given a translation component, validate the arguments
  */
@@ -21,6 +22,7 @@ export function validateTranslationComponentArgs(
   context?: string;
   maxChars?: number;
   children?: JsxChildren;
+  hasDeriveContext?: boolean;
 } {
   // Check that there are at least 2 arguments (identifier, args)
   if (callExpr.arguments.length < 2) {
@@ -66,6 +68,7 @@ function validateTComponentArgs(
   context?: string;
   maxChars?: number;
   children?: JsxChildren;
+  hasDeriveContext?: boolean;
 } {
   const errors: string[] = [];
 
@@ -74,10 +77,11 @@ function validateTComponentArgs(
   errors.push(...idValidation.errors);
   const id = idValidation.value;
 
-  // Validate context
-  const contextValidation = validateStringProperty(args, 'context');
+  // Validate context (with derive fallback)
+  const contextValidation = validateStringProperty(args, 'context', state);
   errors.push(...contextValidation.errors);
   const context = contextValidation.value;
+  const hasDeriveContext = contextValidation.hasDeriveExpression;
 
   // Validate maxChars
   const maxCharsValidation = validateNumberProperty(args, 'maxChars');
@@ -94,7 +98,7 @@ function validateTComponentArgs(
   errors.push(...childrenValidation.errors);
   const children = childrenValidation.value;
 
-  return { errors, id, context, _hash, maxChars, children };
+  return { errors, id, context, _hash, maxChars, children, hasDeriveContext };
 }
 
 /**
@@ -137,10 +141,12 @@ export function validateChildrenProperty(
  */
 function validateStringProperty(
   args: t.ObjectExpression,
-  name: string
+  name: string,
+  state?: TransformState
 ): {
   errors: string[];
   value?: string;
+  hasDeriveExpression?: boolean;
 } {
   const errors: string[] = [];
 
@@ -154,10 +160,22 @@ function validateStringProperty(
 
   // Validate property
   const validation = validateObjectPropertyIsStringLiteral(property, name);
-  errors.push(...validation.errors);
-  const value = validation.value;
+  if (validation.errors.length === 0) {
+    return { errors, value: validation.value };
+  }
 
-  return { errors, value };
+  // String validation failed — check if it's a valid derive() expression
+  if (state && t.isObjectProperty(property) && t.isExpression(property.value)) {
+    const deriveErrors: string[] = [];
+    validateDerive(property.value, state, deriveErrors);
+    if (deriveErrors.length === 0) {
+      return { errors, hasDeriveExpression: true };
+    }
+  }
+
+  // Neither string nor derive — return original errors
+  errors.push(...validation.errors);
+  return { errors };
 }
 
 /**
