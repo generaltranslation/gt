@@ -12,6 +12,7 @@ import {
   warnVariablePropSync,
 } from '../../../../console/index.js';
 import { isNumberLiteral } from '../isNumberLiteral.js';
+import { containsDeriveCall } from '../stringParsing/derivation/containsDeriveCall.js';
 
 // Parse the props of a <T> component
 export function parseTProps({
@@ -46,14 +47,22 @@ export function parseTProps({
         ) {
           const staticAnalysis = isStaticExpression(expr);
           if (!staticAnalysis.isStatic) {
-            componentErrors.push(
-              warnVariablePropSync(
-                file,
-                attrName,
-                code,
-                `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
-              )
-            );
+            if (
+              mapAttributeName(attrName) === 'context' &&
+              t.isExpression(expr) &&
+              containsDeriveCall(expr)
+            ) {
+              metadata._contextDeriveExpr = expr;
+            } else {
+              componentErrors.push(
+                warnVariablePropSync(
+                  file,
+                  attrName,
+                  code,
+                  `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
+                )
+              );
+            }
           }
           // Use the derived value if available
           if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
