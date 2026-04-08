@@ -26,6 +26,15 @@ describe('validateTranslationFunctionCallback', () => {
       logLevel: 'silent',
       compileTimeHash: false,
       disableBuildChecks: false,
+      enableMacroTransform: true,
+      stringTranslationMacro: GT_OTHER_FUNCTIONS.t,
+      enableTaggedTemplate: true,
+      enableTemplateLiteralArg: true,
+      enableConcatenationArg: true,
+      enableMacroImportInjection: true,
+      enableAutoJsxInjection: false,
+      autoDerive: false,
+      _debugHashManifest: false,
     };
 
     state = {
@@ -38,6 +47,7 @@ describe('validateTranslationFunctionCallback', () => {
         jsxElementCount: 0,
         dynamicContentViolations: 0,
         macroExpansionsCount: 0,
+        jsxInsertionsCount: 0,
       },
     };
 
@@ -905,7 +915,15 @@ describe('validateTranslationFunctionCallback', () => {
         logLevel: 'silent',
         compileTimeHash: false,
         disableBuildChecks: false,
+        enableMacroTransform: true,
+        stringTranslationMacro: GT_OTHER_FUNCTIONS.t,
+        enableTaggedTemplate: true,
+        enableTemplateLiteralArg: true,
+        enableConcatenationArg: true,
+        enableMacroImportInjection: true,
+        enableAutoJsxInjection: false,
         autoDerive: true,
+        _debugHashManifest: false,
       };
 
       autoDeriveState = {
@@ -918,6 +936,7 @@ describe('validateTranslationFunctionCallback', () => {
           jsxElementCount: 0,
           dynamicContentViolations: 0,
           macroExpansionsCount: 0,
+          jsxInsertionsCount: 0,
         },
       };
 
