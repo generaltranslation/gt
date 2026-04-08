@@ -7,7 +7,6 @@ import {
   INLINE_MESSAGE_HOOK_ASYNC,
   STRING_REGISTRATION_FUNCS,
   T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
-  T_REGISTRATION_FUNCTION,
 } from './constants.js';
 import { warnAsyncUseGT, warnSyncGetGT } from '../../../console/index.js';
 
