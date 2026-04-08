@@ -11,6 +11,8 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js
 import { UploadOptions } from '../base.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../../formats/json/parseJson.js';
+import { detectUnsupportedJsonFields } from '../../formats/json/utils.js';
+import path from 'node:path';
 import { runUploadFilesWorkflow } from '../../workflows/upload.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
@@ -49,6 +51,18 @@ export async function upload(
 
     const jsonFiles = filePaths.json.map((filePath) => {
       const content = readFile(filePath);
+
+      // Detect unsupported fields in Mintlify docs.json
+      if (
+        settings.framework === 'mintlify' &&
+        path.basename(filePath) === 'docs.json'
+      ) {
+        try {
+          detectUnsupportedJsonFields(JSON.parse(content), filePath);
+        } catch {
+          // JSON parse errors are handled below by parseJson
+        }
+      }
 
       const parsedJson = parseJson(
         content,

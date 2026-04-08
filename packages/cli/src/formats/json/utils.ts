@@ -9,6 +9,7 @@ import {
   SourceObjectOptions,
 } from '../../types/index.js';
 import { flattenJson } from './flattenJson.js';
+import chalk from 'chalk';
 import path from 'node:path';
 import micromatch from 'micromatch';
 const { isMatch } = micromatch;
@@ -214,6 +215,73 @@ export function generateSourceObjectPointers(
     {}
   );
   return sourceObjectPointers;
+}
+
+const UNSUPPORTED_JSON_FIELDS = ['$ref'];
+
+/**
+ * Recursively traverse a JSON value and collect all objects whose key
+ * matches one of the unsupported field names.
+ */
+function findUnsupportedFields(
+  value: any,
+  fieldNames: string[],
+  pointer: string = ''
+): { pointer: string; field: string; fieldValue: string }[] {
+  if (value === null || typeof value !== 'object') return [];
+  if (Array.isArray(value)) {
+    const results: { pointer: string; field: string; fieldValue: string }[] =
+      [];
+    for (let i = 0; i < value.length; i++) {
+      results.push(
+        ...findUnsupportedFields(value[i], fieldNames, `${pointer}/${i}`)
+      );
+    }
+    return results;
+  }
+  // Check if this object contains an unsupported field
+  for (const field of fieldNames) {
+    if (typeof value[field] === 'string') {
+      return [{ pointer, field, fieldValue: value[field] }];
+    }
+  }
+  // Recurse into child properties
+  const results: { pointer: string; field: string; fieldValue: string }[] = [];
+  for (const key of Object.keys(value)) {
+    results.push(
+      ...findUnsupportedFields(value[key], fieldNames, `${pointer}/${key}`)
+    );
+  }
+  return results;
+}
+
+/**
+ * Detect unsupported fields (e.g. $ref) anywhere in the JSON data structure.
+ * Logs a warning listing the fields found.
+ */
+export function detectUnsupportedJsonFields(
+  json: any,
+  filePath: string
+): void {
+  const unsupported = findUnsupportedFields(json, UNSUPPORTED_JSON_FIELDS);
+
+  if (unsupported.length > 0) {
+    const fileName = path.basename(filePath);
+    const lines = unsupported
+      .map(
+        (u) =>
+          chalk.yellow('• ') +
+          chalk.white(
+            `${u.pointer.replace(/\//g, '.').replace(/^\./, '')}: ${u.fieldValue}`
+          )
+      )
+      .join('\n');
+    logger.warn(
+      chalk.yellow(
+        `Mintlify config splitting is not yet supported. The following \`$ref\` fields were detected in \`${fileName}\` and will not be resolved:\n`
+      ) + lines
+    );
+  }
 }
 
 export function validateJsonSchema(
