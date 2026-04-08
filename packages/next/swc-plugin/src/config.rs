@@ -12,15 +12,18 @@ pub struct PluginSettings {
   pub filename: Option<String>,
   /// Disable dynamic content check
   pub disable_build_checks: bool,
+  /// When true, bare variables/calls in template literals and concatenations are allowed
+  pub auto_derive: bool,
 }
 
 impl PluginSettings {
-  pub fn new(log_level: LogLevel, compile_time_hash: bool, filename: Option<String>, disable_build_checks: bool) -> Self {
+  pub fn new(log_level: LogLevel, compile_time_hash: bool, filename: Option<String>, disable_build_checks: bool, auto_derive: bool) -> Self {
     Self {
       log_level,
       compile_time_hash,
       filename,
       disable_build_checks,
+      auto_derive,
     }
   }
 }
@@ -37,6 +40,8 @@ pub struct PluginConfig {
   pub filename: Option<String>,
   #[serde(default)]
   pub disable_build_checks: bool,
+  #[serde(default)]
+  pub auto_derive: bool,
 }
 
 impl Default for PluginConfig {
@@ -46,6 +51,7 @@ impl Default for PluginConfig {
       compile_time_hash: false,
       filename: None,
       disable_build_checks: false,
+      auto_derive: false,
     }
   }
 }

@@ -93,6 +93,8 @@ export function withGTConfig(
   props: withGTConfigProps = {}
 ) {
   // ---------- LOAD GT CONFIG FILE ---------- //
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let rawConfig: any = {};
   let loadedConfig: Partial<withGTConfigProps> = {};
   try {
     let configPath: string | undefined;
@@ -109,7 +111,8 @@ export function withGTConfig(
     }
     if (typeof configPath === 'string' && fs.existsSync(configPath)) {
       const fileContent = fs.readFileSync(configPath, 'utf-8');
-      loadedConfig = JSON.parse(fileContent);
+      rawConfig = JSON.parse(fileContent);
+      loadedConfig = rawConfig;
     }
   } catch (error) {
     console.error('Error reading GT config file:', error);
@@ -527,9 +530,12 @@ export function withGTConfig(
   const { type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
 
+  // Read autoDerive from parsingFlags (single source of truth shared with CLI)
+  const autoDerive = rawConfig?.files?.gt?.parsingFlags?.autoDerive === true;
+
   const swcPluginEntry =
     mergedConfig.experimentalCompilerOptions?.type === 'swc'
-      ? [resolvedWasmFilePath, compilerOptions]
+      ? [resolvedWasmFilePath, { ...compilerOptions, autoDerive }]
       : null;
 
   const turboAliases = {

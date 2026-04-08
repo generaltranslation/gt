@@ -34,7 +34,7 @@ pub struct TransformVisitor {
 
 impl Default for TransformVisitor {
   fn default() -> Self {
-    Self::new(LogLevel::Warn, false, None, false, StringCollector::new())
+    Self::new(LogLevel::Warn, false, None, false, false, StringCollector::new())
   }
 }
 
@@ -44,6 +44,7 @@ impl TransformVisitor {
     compile_time_hash: bool,
     filename: Option<String>,
     disable_build_checks: bool,
+    auto_derive: bool,
     mut string_collector: StringCollector,
   ) -> Self {
     // Reset the counter to 0
@@ -52,7 +53,7 @@ impl TransformVisitor {
       traversal_state: TraversalState::default(),
       statistics: Statistics::default(),
       import_tracker: ImportTracker::new(),
-      settings: PluginSettings::new(log_level.clone(), compile_time_hash, filename.clone(), disable_build_checks),
+      settings: PluginSettings::new(log_level.clone(), compile_time_hash, filename.clone(), disable_build_checks, auto_derive),
       logger: Logger::new(log_level),
       string_collector,
     }
@@ -319,7 +320,7 @@ impl TransformVisitor {
     self.validate_string_literal_or_declare_static(arg.expr.as_ref(), &mut errors);
 
     if !errors.is_empty() {
-      if !self.settings.disable_build_checks {
+      if !self.settings.disable_build_checks && !self.settings.auto_derive {
         self.statistics.dynamic_content_violations += 1;
         // Use the first error message for the violation type
         let default_error = &"invalid expression".to_string();
@@ -768,7 +769,7 @@ mod tests {
 
   // Helper to create a test visitor with specific imports
   fn create_visitor_with_imports() -> TransformVisitor {
-    let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+    let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
 
     // Add some test imports using the scope tracker
     visitor
@@ -938,6 +939,7 @@ mod tests {
         true,
         Some("test.tsx".to_string()),
         false,
+        false,
         StringCollector::new(),
       );
 
@@ -1025,7 +1027,7 @@ mod tests {
 
     #[test]
     fn creates_dynamic_content_warning_without_filename() {
-      TransformVisitor::new(LogLevel::Warn, false, None, false, StringCollector::new());
+      TransformVisitor::new(LogLevel::Warn, false, None, false, false, StringCollector::new());
       let warning = create_dynamic_content_warning(None, "T");
 
       assert!(warning.contains("gt-next"));
@@ -1041,6 +1043,7 @@ mod tests {
         false,
         Some("components/Test.tsx".to_string()),
         false,
+        false,
         StringCollector::new(),
       );
       let warning = create_dynamic_content_warning(Some("components/Test.tsx"), "T");
@@ -1051,7 +1054,7 @@ mod tests {
 
     #[test]
     fn creates_dynamic_function_warning_without_filename() {
-      TransformVisitor::new(LogLevel::Warn, false, None, false, StringCollector::new());
+      TransformVisitor::new(LogLevel::Warn, false, None, false, false, StringCollector::new());
       let warning = create_dynamic_function_warning(None, "useGT", "template literals");
 
       assert!(warning.contains("gt-next"));
@@ -1066,6 +1069,7 @@ mod tests {
         LogLevel::Warn,
         false,
         Some("hooks/useTranslation.ts".to_string()),
+        false,
         false,
         StringCollector::new(),
       );
@@ -1086,7 +1090,7 @@ mod tests {
     #[test]
     fn processes_gt_next_named_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
       let import_decl = create_import_decl(
         "gt-next",
         vec![
@@ -1119,7 +1123,7 @@ mod tests {
     #[test]
     fn processes_namespace_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
       let import_decl = create_import_decl("gt-next", vec![create_namespace_import("GT")]);
 
       visitor.process_gt_import_declaration(&import_decl);
@@ -1133,7 +1137,7 @@ mod tests {
     #[test]
     fn processes_gt_next_client_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
       let import_decl = create_import_decl("gt-next/client", vec![create_named_import("T", None)]);
 
       visitor.process_gt_import_declaration(&import_decl);
@@ -1148,7 +1152,7 @@ mod tests {
     #[test]
     fn ignores_non_gt_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
       let import_decl = create_import_decl("react", vec![create_named_import("React", None)]);
 
       visitor.process_gt_import_declaration(&import_decl);
@@ -1772,7 +1776,7 @@ mod tests {
     /// Creates a visitor with auto_derive enabled and standard imports tracked
     fn create_visitor_with_auto_derive() -> TransformVisitor {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
       visitor.settings.auto_derive = true;
 
       // Track standard gt-next imports
@@ -2141,7 +2145,7 @@ mod tests {
     #[test]
     fn calculates_hash_for_empty_element() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
       let element = create_jsx_element("T", vec![]);
 
       let mut traversal = crate::ast::JsxTraversal::new(&mut visitor);
@@ -2155,7 +2159,7 @@ mod tests {
     #[test]
     fn hash_changes_with_different_content() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
 
       let element1 = create_jsx_element("T", vec![]);
       let mut element2 = create_jsx_element("T", vec![]);
@@ -2185,6 +2189,7 @@ mod tests {
         LogLevel::Silent,
         false,
         Some("test.tsx".to_string()),
+        false,
         false,
         StringCollector::new(),
       );
