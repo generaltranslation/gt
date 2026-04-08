@@ -133,6 +133,24 @@ describe('static-string rule', () => {
     });
   });
 
+  it('should allow derive() as equivalent to declareStatic()', () => {
+    ruleTester.run('static-string', staticString, {
+      valid: [
+        {
+          code: `
+            import { useGT, derive } from '@generaltranslation/react-core';
+            function Component() {
+              const gt = useGT();
+              return gt("Hello " + derive("world"));
+            }
+          `,
+          options: [{ libs: ['@generaltranslation/react-core'] }],
+        },
+      ],
+      invalid: [],
+    });
+  });
+
   it('should NOT allow gt() with arrays', () => {
     ruleTester.run('static-string', staticString, {
       valid: [],

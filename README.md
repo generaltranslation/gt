@@ -1,8 +1,8 @@
 <div align="center">
   <a href="https://generaltranslation.com">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/gt-logo-dark.svg">
-      <img alt="General Translation" src="https://generaltranslation.com/gt-logo-light.svg" height="128">
+      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/brand/gt-logo-dark.svg">
+      <img alt="General Translation" src="https://generaltranslation.com/brand/gt-logo-light.svg" height="64">
     </picture>
   </a>
   <h1>General Translation</h1>
@@ -15,6 +15,10 @@
 </div>
 
 ## Getting Started
+
+```bash
+npx gt@latest
+```
 
 General Translation is a fully integrated suite of internationalization (i18n) tools for React apps. Translate entire React components—not just strings—with a simple `<T>` wrapper. No refactoring into dictionaries. Just write your content and let GT handle the rest.
 

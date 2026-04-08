@@ -107,6 +107,11 @@
                 "public/i18n/[locale].json",
                 "translations/[locale].json"
               ]
+            },
+            "includeSourceCodeContext": {
+              "type": "boolean",
+              "description": "Include surrounding source code lines as context for translations. Only applies to library users that send GT JSON for translation.",
+              "default": false
             }
           },
           "required": ["output"],

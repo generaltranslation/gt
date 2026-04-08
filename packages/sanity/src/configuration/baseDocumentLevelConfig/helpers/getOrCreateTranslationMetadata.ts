@@ -6,6 +6,7 @@ import {
   SanityClient,
   SanityDocumentLike,
 } from 'sanity';
+import { randomKey } from '../../../utils/randomKey';
 
 type TranslationReference = KeyedObject & {
   _type: 'internationalizedArrayReferenceValue';
@@ -22,7 +23,7 @@ export const getOrCreateTranslationMetadata = async (
   const existingMetadata = await client.fetch(
     `*[
         _type == 'translation.metadata' &&
-        translations[_key == $baseLanguage][0].value._ref == $id
+        translations[language == $baseLanguage][0].value._ref == $id
       ][0]`,
     { baseLanguage, id: documentId.replace('drafts.', '') }
   );
@@ -33,7 +34,8 @@ export const getOrCreateTranslationMetadata = async (
 
   // If no metadata exists, create it atomically
   const baseLangEntry: TranslationReference = {
-    _key: baseLanguage,
+    _key: randomKey(),
+    language: baseLanguage,
     _type: 'internationalizedArrayReferenceValue',
     value: {
       _type: 'reference',
@@ -65,7 +67,7 @@ export const getOrCreateTranslationMetadata = async (
     const metadata = await client.fetch(
       `*[
           _type == 'translation.metadata' &&
-          translations[_key == $baseLanguage][0].value._ref == $id
+          translations[language == $baseLanguage][0].value._ref == $id
         ][0]`,
       { baseLanguage, id: documentId.replace('drafts.', '') }
     );

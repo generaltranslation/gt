@@ -819,6 +819,40 @@ describe('extractJson', () => {
       );
     });
 
+    it('should handle string sourceItem in object composite schema', () => {
+      const localContent = JSON.stringify({
+        content: {
+          en: 'Contact name, phone number, email, 2',
+          es: 'Nombre del contacto, número de teléfono, email, 2',
+        },
+      });
+
+      const result = extractJson(
+        localContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.content': {
+                  type: 'object',
+                  include: ['$.*'],
+                },
+              },
+            },
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(result).not.toBeNull();
+      const parsed = JSON.parse(result!);
+      expect(parsed['/content']).toBe(
+        'Nombre del contacto, número de teléfono, email, 2'
+      );
+    });
+
     it('should handle empty translations object', () => {
       const localContent = JSON.stringify({
         translations: {},

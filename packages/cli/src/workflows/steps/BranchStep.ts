@@ -116,7 +116,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     } else {
       if (!current) {
         return logErrorAndExit(
-          'Failed to determine the current branch. Please specify a custom branch or enable automatic branch detection.'
+          'Failed to determine the current branch. Specify a custom branch or enable automatic branch detection.'
         );
       }
       const currentBranch = branchData.branches.find(
@@ -132,7 +132,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
         } catch (error) {
           if (error instanceof ApiError && error.code === 403) {
             logger.warn(
-              'To enable translation branching, please upgrade your plan. Falling back to default branch.'
+              'To enable translation branching, upgrade your plan. Falling back to default branch.'
             );
             // retry with default branch
             try {
@@ -151,7 +151,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
 
     if (this.branchData.currentBranch.id === '') {
       return logErrorAndExit(
-        'Something went wrong while resolving branch information. Please try again.'
+        'Something went wrong while resolving branch information. Try again.'
       );
     }
 

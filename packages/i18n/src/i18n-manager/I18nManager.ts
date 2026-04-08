@@ -4,12 +4,18 @@ import { TranslationsManager } from './translations-manager/TranslationsManager'
 import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
 import { StorageAdapterType } from './storage-adapter/types';
 import { validateConfig } from './validation/validateConfig';
-import { Translations } from './translations-manager/utils/types/translation-data';
+import {
+  Translation,
+  Translations,
+} from './translations-manager/utils/types/translation-data';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT, standardizeLocale } from 'generaltranslation';
 import { CustomMapping } from 'generaltranslation/types';
-import { InlineTranslationOptions } from '../translation-functions/types/options';
+import {
+  InlineTranslationOptions,
+  ResolutionOptions,
+} from '../translation-functions/types/options';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import { hashMessage } from '../utils/hashMessage';
@@ -17,14 +23,21 @@ import { TranslationsLoader } from './translations-manager/translations-loaders/
 
 /**
  * Class for managing translation functionality
+ * @template T - The type of the storage adapter
+ * @template U - The type of the translation that will be cached
+ *
+ * TODO: next major version, move U to the first generic and make it a required parameter, no default value
  */
-class I18nManager<T extends StorageAdapter = StorageAdapter> {
+class I18nManager<
+  T extends StorageAdapter = StorageAdapter,
+  U extends Translation = Translation,
+> {
   protected config: I18nManagerConfig;
 
   /**
    * Cache for translations
    */
-  private translationsManager: TranslationsManager;
+  private translationsManager: TranslationsManager<U>;
 
   /**
    * Store adapter
@@ -47,22 +60,6 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
     this.storeAdapter =
       (params.storeAdapter as T) ?? new FallbackStorageAdapter();
     this.translationsManager = new TranslationsManager(params);
-  }
-
-  // ========== Translations ========== //
-
-  /**
-   * Get the translations
-   */
-  async getTranslations(): Promise<Translations> {
-    return this.translationsManager.getTranslations(this.getLocale());
-  }
-
-  /**
-   * Get the translation loader function
-   */
-  getTranslationLoader(): TranslationsLoader {
-    return this.translationsManager.getTranslationLoader();
   }
 
   // ========== Getters and Setters ========== //
@@ -110,35 +107,10 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   }
 
   /**
-   * Get translation for a given locale and message
-   *
-   * @param {string} [locale] - The locale to get the translation for (if not provided, will use the current locale)
-   * @returns A function that resolves the translations for a given message and options synchronously
-   *
-   * Note: we can assume that the translation is a string because we are passing a string
+   * Get the version ID
    */
-  async getTranslationResolver(
-    locale: string = this.getLocale()
-  ): Promise<TranslationResolver> {
-    // Early return if i18n is disabled or default locale
-    if (
-      this.config.enableI18n === false ||
-      locale === this.config.defaultLocale
-    ) {
-      return (message: string) => message;
-    }
-
-    // Get translations
-    const translations = await this.translationsManager.getTranslations(locale);
-
-    // Create translation resolver
-    return (message: string, options?: InlineTranslationOptions) => {
-      // Calculate hash
-      const hash = hashMessage(message, options);
-
-      // Return translation or undefined
-      return translations[hash] as unknown as string | undefined;
-    };
+  getVersionId(): string | undefined {
+    return this.config._versionId;
   }
 
   /**
@@ -159,11 +131,50 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   }
 
   /**
-   * Get translation for a given locale
-   * @param {string} locale - The locale to get the translation for
-   * @returns {Promise<Translations>} The translation for the given locale
+   * Is translation enabled?
    */
-  async getTranslation(locale: string): Promise<Translations> {
+  isTranslationEnabled(): boolean {
+    return this.config.enableI18n;
+  }
+
+  // ========== Translation Loading ========== //
+
+  /**
+   * Get the translation loader function
+   */
+  getTranslationLoader(): TranslationsLoader {
+    return this.translationsManager.getTranslationLoader();
+  }
+
+  // ========== Translation Resolution ========== //
+
+  // ----- Sync Operations ----- //
+
+  /**
+   * Get the translations (error on unloaded translations)
+   * @param {string} message - The message to get the translation for
+   * @param {ResolutionOptions} [options] - The options for the translation
+   * @returns {U | undefined} The translation for the given message and options synchronously
+   */
+  resolveTranslationSync: TranslationResolver<U> = <T extends U = U>(
+    message: T,
+    options: ResolutionOptions
+  ) => {
+    const locale = this.getLocale();
+    const translations = this.translationsManager.getTranslationsSync(locale);
+    if (!translations) return undefined;
+    const hash = hashMessage(message, options);
+    return translations[hash] as T;
+  };
+
+  // ----- Async Operations ----- //
+
+  /**
+   * Get the translations
+   */
+  async getTranslations(
+    locale: string = this.getLocale()
+  ): Promise<Translations<U>> {
     if (!this.config.locales.includes(locale)) {
       throw new Error(`Locale ${locale} not found in config`);
     }
@@ -171,10 +182,38 @@ class I18nManager<T extends StorageAdapter = StorageAdapter> {
   }
 
   /**
-   * Is translation enabled?
+   * Get translation for a given locale and message
+   *
+   * @param {string} [locale] - The locale to get the translation for (if not provided, will use the current locale)
+   * @returns A function that resolves the translations for a given message and options synchronously
+   *
+   * Note: we can assume that the translation is a string because we are passing a string
    */
-  isTranslationEnabled(): boolean {
-    return this.config.enableI18n;
+  async getTranslationResolver(
+    locale: string = this.getLocale()
+  ): Promise<TranslationResolver<U>> {
+    // Early return if i18n is disabled or default locale
+    if (
+      this.config.enableI18n === false ||
+      locale === this.config.defaultLocale
+    ) {
+      return <T extends U = U>(message: T): T | undefined => message;
+    }
+
+    // Get translations
+    const translations = await this.translationsManager.getTranslations(locale);
+
+    // Create translation resolver
+    return <T extends U = U>(
+      message: T,
+      options: ResolutionOptions
+    ): T | undefined => {
+      // Calculate hash
+      const hash = hashMessage(message, options);
+
+      // Return translation or undefined
+      return translations[hash] as T;
+    };
   }
 
   // ========== Metadata ========== //
@@ -235,6 +274,7 @@ function standardizeConfig<T extends StorageAdapter>(
     devApiKey: config.devApiKey,
     apiKey: config.apiKey,
     runtimeUrl: config.runtimeUrl,
+    _versionId: config._versionId,
     ...(gtServicesEnabled
       ? standardizeLocales(dedupedLocales)
       : dedupedLocales),
@@ -312,12 +352,15 @@ function standardizeLocales(config: {
 }
 
 /**
- * Type definition for a synchronous translation resolver function
- * @param {string} message - The message to get the translation for
- * @param {InlineTranslationOptions} [options] - The options for the translation
- * @returns {string | undefined} The translation for the given message and options
+ * Type definition for a translation resolver
+ * @template U - The type of the translation (default: Translation)
+ * @param {U} message - The message to get the translation for
+ * @param {ResolutionOptions} [options] - The options for the translation
+ * @returns {U | undefined} The translation for the given message and options or undefined if the translation is not found
  */
-type TranslationResolver = (
-  message: string,
-  options?: InlineTranslationOptions
-) => string | undefined;
+type TranslationResolver<U extends Translation = Translation> = <
+  T extends U = U,
+>(
+  message: T,
+  options: ResolutionOptions
+) => T | undefined;

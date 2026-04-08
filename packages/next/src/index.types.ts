@@ -10,6 +10,7 @@ import {
   useLocaleProperties as _useLocaleProperties,
   Currency as _Currency,
   DateTime as _DateTime,
+  RelativeTime as _RelativeTime,
   Num as _Num,
   Var as _Var,
   Branch as _Branch,
@@ -17,21 +18,25 @@ import {
   LocaleSelector as _LocaleSelector,
   RegionSelector as _RegionSelector,
   useLocaleDirection as _useLocaleDirection,
+  useVersionId as _useVersionId,
 } from 'gt-react/client';
 import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
+import type { StringFormat } from 'generaltranslation/types';
 import {
   msg,
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
   _Messages,
   Static as _Static,
+  Derive as _Derive,
   mFallback,
   gtFallback,
 } from 'gt-react/internal';
@@ -129,6 +134,28 @@ export const DateTime: typeof _DateTime = () => {
 DateTime._gtt = 'variable-datetime';
 
 /**
+ * The `<RelativeTime>` component renders a localized relative time string
+ * (e.g., "2 hours ago", "in 3 days") using `Intl.RelativeTimeFormat`.
+ *
+ * @example
+ * ```jsx
+ * <RelativeTime date={someDate} />
+ * ```
+ *
+ * @param {Date} [date] - A date to compute relative time from now.
+ * @param {number} [value] - Explicit numeric value. Requires `unit`.
+ * @param {Intl.RelativeTimeFormatUnit} [unit] - The unit of time.
+ * @param {Date} [baseDate] - Base date for computing relative time. Defaults to `new Date()` at render time. Required for hydration safety.
+ * @param {Intl.RelativeTimeFormatOptions} [options={}] - Formatting options.
+ * @returns {Promise<React.JSX.Element>} The formatted relative time component.
+ */
+export const RelativeTime: typeof _RelativeTime = () => {
+  throw new Error(typesFileError);
+};
+/** @internal _gtt - The GT transformation for the component. */
+RelativeTime._gtt = 'variable-relative-time';
+
+/**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
  * It formats the number according to the current locale and optionally passed formatting options.
  *
@@ -172,6 +199,36 @@ export const Var: typeof _Var = () => {
 Var._gtt = 'variable-variable';
 
 /**
+ * `<Derive>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
+ *
+ * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
+ *
+ * @example
+ * ```jsx
+ * function getSubject() {
+ *   return (Math.random() > 0.5) ? "Alice" : "Brian";
+ * }
+ * ...
+ * <T>
+ *   <Derive>
+ *      {getSubject()}
+ *   </Derive>
+ *   is going to school today.
+ * </T>
+ * ```
+ *
+ * @param {T extends React.ReactNode} children - Derived content to render.
+ * @returns {T} The result of the function invocation.
+ */
+export const Derive: typeof _Derive = () => {
+  throw new Error(typesFileError);
+};
+/** @internal _gtt - The GT transformation for the component. */
+Derive._gtt = 'derive';
+
+/**
+ * @deprecated Use `<Derive>` instead.
+ *
  * `<Static>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
  *
  * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
@@ -190,12 +247,14 @@ Var._gtt = 'variable-variable';
  * </T>
  * ```
  *
- * @param {T extends React.ReactNode} children - Static content to render.
+ * @param {T extends React.ReactNode} children - Derived content to render.
  * @returns {T} The result of the function invocation.
  */
 export const Static: typeof _Static = () => {
   throw new Error(typesFileError);
 };
+/** @internal _gtt - The GT transformation for the component. */
+Static._gtt = 'derive';
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -272,6 +331,11 @@ export const LocaleSelector: typeof _LocaleSelector = () => {
  * Returns the string translation function `t`.
  *
  * @returns {Function} A translation function that accepts an ICU format string and returns that ICU format string translated.
+ * @param {InlineTranslationOptions} [options] - Translation options including variables and special `$`-prefixed options.
+ * @param {string} [options.$context] - Additional context for the translation.
+ * @param {string} [options.$id] - Optional identifier for the translation string.
+ * @param {number} [options.$maxChars] - Maximum number of characters for the translated message.
+ * @param {StringFormat} [options.$format] - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
  *
  * @example
  * const t = useGT();
@@ -296,6 +360,9 @@ export const useGT: (
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
+ * The returned function accepts `DictionaryTranslationOptions` which includes:
+ * - `$format` - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
+ * - `$maxChars` - Maximum number of characters for the translated message.
  *
  * @example
  * const t = useTranslations('user');
@@ -393,6 +460,19 @@ export const useLocaleDirection: typeof _useLocaleDirection = () => {
 };
 
 /**
+ * Returns the version ID for the current source, if set.
+ *
+ * @returns {string | undefined} The version ID.
+ *
+ * @example
+ * const versionId = useVersionId();
+ * console.log(versionId); // 'abc123'
+ */
+export const useVersionId: typeof _useVersionId = () => {
+  throw new Error(typesFileError);
+};
+
+/**
  * A dropdown component that allows users to select a region.
  *
  * @param {string[]} [regions] - An optional array of ISO 3166 region codes to display. If not provided, regions are inferred from supported locales in the `<GTProvider>` context.
@@ -464,13 +544,18 @@ export {
   RuntimeTranslationOptions,
 };
 
+export type { StringFormat };
+
 export {
   msg,
   decodeMsg,
   decodeOptions,
   mFallback,
   gtFallback,
-  declareStatic,
+  derive,
   declareVar,
   decodeVars,
 };
+
+/** @deprecated Use derive() instead. */
+export { declareStatic };

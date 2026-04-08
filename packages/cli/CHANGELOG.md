@@ -1,5 +1,286 @@
 # gtx-cli
 
+## 2.14.7
+
+## 2.14.6
+
+### Patch Changes
+
+- [#1173](https://github.com/generaltranslation/gt/pull/1173) [`6b0b56b`](https://github.com/generaltranslation/gt/commit/6b0b56b2253e389913fe67eb19f0ba6ebf2c7a53) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - add context derivation
+
+- Updated dependencies [[`6b0b56b`](https://github.com/generaltranslation/gt/commit/6b0b56b2253e389913fe67eb19f0ba6ebf2c7a53)]:
+  - @generaltranslation/python-extractor@0.2.7
+
+## 2.14.5
+
+### Patch Changes
+
+- [#1174](https://github.com/generaltranslation/gt/pull/1174) [`4730814`](https://github.com/generaltranslation/gt/commit/4730814799ba5487b45477094c6ca581ac56c3ff) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: recursive string translation function resolution
+
+## 2.14.4
+
+### Patch Changes
+
+- [#1158](https://github.com/generaltranslation/gt/pull/1158) [`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto injection for jsx translation
+
+- Updated dependencies [[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:
+  - generaltranslation@8.2.2
+  - @generaltranslation/python-extractor@0.2.6
+
+## 2.14.3
+
+### Patch Changes
+
+- [#1168](https://github.com/generaltranslation/gt/pull/1168) [`55d7ccd`](https://github.com/generaltranslation/gt/commit/55d7ccd82683992f8d9a0cfa9d380dd95b24b85e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Record re-merged files for postprocessing
+
+## 2.14.2
+
+### Patch Changes
+
+- [#1161](https://github.com/generaltranslation/gt/pull/1161) [`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update logo blocks in READMEs
+
+- Updated dependencies [[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:
+  - gt-remark@1.0.7
+  - generaltranslation@8.2.1
+  - @generaltranslation/python-extractor@0.2.5
+
+## 2.14.1
+
+### Patch Changes
+
+- [#1162](https://github.com/generaltranslation/gt/pull/1162) [`faa90dc`](https://github.com/generaltranslation/gt/commit/faa90dca8f855712f0f99cd9c9644fb2cf69524f) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Make `git` tagging command default behavior
+
+## 2.14.0
+
+### Minor Changes
+
+- [#1153](https://github.com/generaltranslation/gt/pull/1153) [`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add `<RelativeTime>` component for localized relative time formatting
+  - New `<RelativeTime>` component with two usage modes:
+    - Auto-select unit from a Date: `<RelativeTime>{someDate}</RelativeTime>` → "2 hours ago"
+    - Explicit value + unit: `<RelativeTime value={-1} unit="day" />` → "yesterday"
+  - Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds → minutes → hours → days → weeks → months → years)
+  - Core: `formatRelativeTimeFromDate()` standalone function and `GT.formatRelativeTimeFromDate()` class method
+  - Week unit included in auto-selection thresholds (7-27 days)
+  - CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a variable component
+
+### Patch Changes
+
+- [#1160](https://github.com/generaltranslation/gt/pull/1160) [`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding translation tagging
+
+- Updated dependencies [[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290), [`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:
+  - generaltranslation@8.2.0
+  - @generaltranslation/python-extractor@0.2.4
+
+## 2.13.3
+
+### Patch Changes
+
+- [#1156](https://github.com/generaltranslation/gt/pull/1156) [`0606939`](https://github.com/generaltranslation/gt/commit/0606939da3b78c7423688fd8ee5cbb6af035c193) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add branch ID to lockfile during staging
+
+## 2.13.2
+
+### Patch Changes
+
+- [#1147](https://github.com/generaltranslation/gt/pull/1147) [`d7d9b99`](https://github.com/generaltranslation/gt/commit/d7d9b9952f3a96dde2b89f206d47c491d503727f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: add support for multiple format types
+
+- Updated dependencies [[`d7d9b99`](https://github.com/generaltranslation/gt/commit/d7d9b9952f3a96dde2b89f206d47c491d503727f)]:
+  - generaltranslation@8.1.23
+  - @generaltranslation/python-extractor@0.2.3
+
+## 2.13.1
+
+### Patch Changes
+
+- [#1145](https://github.com/generaltranslation/gt/pull/1145) [`16521f8`](https://github.com/generaltranslation/gt/commit/16521f83be814ca75be7956b00fc644e60f72e8e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add string datatype formatting
+
+- Updated dependencies [[`16521f8`](https://github.com/generaltranslation/gt/commit/16521f83be814ca75be7956b00fc644e60f72e8e)]:
+  - generaltranslation@8.1.22
+  - @generaltranslation/python-extractor@0.2.2
+
+## 2.13.0
+
+### Minor Changes
+
+- [#1141](https://github.com/generaltranslation/gt/pull/1141) [`4820643`](https://github.com/generaltranslation/gt/commit/4820643665d5aecacc34c52707c0c81bf4da18ca) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: auto derive for the t() function
+
+## 2.12.1
+
+### Patch Changes
+
+- [#1140](https://github.com/generaltranslation/gt/pull/1140) [`46e089c`](https://github.com/generaltranslation/gt/commit/46e089c63725acc2c478a4c1965bebd6f2d2cc0e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding staged status to `gt-lock.json`, adding `useLatestAvailableVersion` flag to core download
+
+- Updated dependencies [[`d688831`](https://github.com/generaltranslation/gt/commit/d688831d124f9719357100a93e5a7c37729e751e), [`46e089c`](https://github.com/generaltranslation/gt/commit/46e089c63725acc2c478a4c1965bebd6f2d2cc0e)]:
+  - generaltranslation@8.1.21
+  - @generaltranslation/python-extractor@0.2.1
+
+## 2.12.0
+
+### Minor Changes
+
+- [#1137](https://github.com/generaltranslation/gt/pull/1137) [`f8993aa`](https://github.com/generaltranslation/gt/commit/f8993aabe07acdfaf8a97177f038c408a8fc4c45) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: object derivation
+
+### Patch Changes
+
+- Updated dependencies [[`f8993aa`](https://github.com/generaltranslation/gt/commit/f8993aabe07acdfaf8a97177f038c408a8fc4c45)]:
+  - @generaltranslation/python-extractor@0.2.0
+
+## 2.11.3
+
+### Patch Changes
+
+- [#1133](https://github.com/generaltranslation/gt/pull/1133) [`4de22d7`](https://github.com/generaltranslation/gt/commit/4de22d7548b5d34c0d7e465132878d192c2f41e0) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Extending publish step to save-local and upload commands
+
+## 2.11.2
+
+### Patch Changes
+
+- [#1125](https://github.com/generaltranslation/gt/pull/1125) [`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo URLs in README files (updated to `/brand/gt-logo-*.svg`)
+
+- [#1132](https://github.com/generaltranslation/gt/pull/1132) [`a83a130`](https://github.com/generaltranslation/gt/commit/a83a130944193ec4b9784fb7687808936e175d19) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Make CDN unpublish behavior opt-in
+
+- Updated dependencies [[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:
+  - generaltranslation@8.1.20
+  - gt-remark@1.0.6
+  - @generaltranslation/python-extractor@0.1.6
+
+## 2.11.1
+
+### Patch Changes
+
+- [#1129](https://github.com/generaltranslation/gt/pull/1129) [`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: derivation support for the t macro
+
+- Updated dependencies [[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281), [`84c1443`](https://github.com/generaltranslation/gt/commit/84c1443bda85ccbd8d8dbf56ede341de974db522)]:
+  - @generaltranslation/python-extractor@0.1.5
+  - generaltranslation@8.1.19
+
+## 2.11.0
+
+### Minor Changes
+
+- [#1122](https://github.com/generaltranslation/gt/pull/1122) [`6d516a7`](https://github.com/generaltranslation/gt/commit/6d516a784f1192f7758689fcf4557e8a19de740a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding CDN publishing for all file types
+
+### Patch Changes
+
+- Updated dependencies [[`6d516a7`](https://github.com/generaltranslation/gt/commit/6d516a784f1192f7758689fcf4557e8a19de740a)]:
+  - generaltranslation@8.1.18
+  - @generaltranslation/python-extractor@0.1.4
+
+## 2.10.8
+
+### Patch Changes
+
+- [#1123](https://github.com/generaltranslation/gt/pull/1123) [`3f6242c`](https://github.com/generaltranslation/gt/commit/3f6242cd5775ff894fecffe4c8279059eebf008a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Move includeSourceCodeContext flag into files.gt
+
+## 2.10.7
+
+### Patch Changes
+
+- [#1118](https://github.com/generaltranslation/gt/pull/1118) [`de6a2d1`](https://github.com/generaltranslation/gt/commit/de6a2d1caa150383c70844b3ee6b9b2e66f77769) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add t macro
+
+## 2.10.6
+
+### Patch Changes
+
+- [#1062](https://github.com/generaltranslation/gt/pull/1062) [`2274e23`](https://github.com/generaltranslation/gt/commit/2274e23d448c8a96d661d30e5c7fc737814c1fb0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: rename static to derive, and deprecate static
+
+- Updated dependencies [[`2274e23`](https://github.com/generaltranslation/gt/commit/2274e23d448c8a96d661d30e5c7fc737814c1fb0)]:
+  - generaltranslation@8.1.17
+  - @generaltranslation/python-extractor@0.1.3
+
+## 2.10.5
+
+### Patch Changes
+
+- [#1116](https://github.com/generaltranslation/gt/pull/1116) [`31d7229`](https://github.com/generaltranslation/gt/commit/31d7229e3893b712e2007369e8b3d219bcc9bde8) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding v2 of `gt-lock.json`
+
+## 2.10.4
+
+### Patch Changes
+
+- [#1113](https://github.com/generaltranslation/gt/pull/1113) [`7e2bbc5`](https://github.com/generaltranslation/gt/commit/7e2bbc575d9d2bcc358bfa11c880a7bf4aac8636) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add string translation function t()
+
+## 2.10.3
+
+### Patch Changes
+
+- [#1110](https://github.com/generaltranslation/gt/pull/1110) [`38ecda0`](https://github.com/generaltranslation/gt/commit/38ecda003b6873464e350aff0463a8dc64030565) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding monorepo GT package version check, remove writing to agent files
+
+## 2.10.2
+
+### Patch Changes
+
+- [#1108](https://github.com/generaltranslation/gt/pull/1108) [`2dff603`](https://github.com/generaltranslation/gt/commit/2dff6036382040438a3fa8bbd4c2475da7617f93) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix string behavior
+
+## 2.10.1
+
+### Patch Changes
+
+- [#1105](https://github.com/generaltranslation/gt/pull/1105) [`952a515`](https://github.com/generaltranslation/gt/commit/952a51528c298ad2466ca6cb73302eae06f56c45) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix --force behavior
+
+## 2.10.0
+
+### Minor Changes
+
+- [#1104](https://github.com/generaltranslation/gt/pull/1104) [`51430bd`](https://github.com/generaltranslation/gt/commit/51430bd1d85a4937ff3b4dcd0090d79e3b4c1504) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding metadata support for keyed file types
+
+### Patch Changes
+
+- [#1101](https://github.com/generaltranslation/gt/pull/1101) [`437a389`](https://github.com/generaltranslation/gt/commit/437a3898f1daa0a40ac033c2cc1bb94b4a0fd86b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: remove tw content json from init
+
+- [#1103](https://github.com/generaltranslation/gt/pull/1103) [`7164ceb`](https://github.com/generaltranslation/gt/commit/7164ceb9785863cdf4dc659fe5bd0f87511a5bed) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Extract code metadata
+
+## 2.9.0
+
+### Minor Changes
+
+- [#1099](https://github.com/generaltranslation/gt/pull/1099) [`e364093`](https://github.com/generaltranslation/gt/commit/e3640931cf0ca2df08dcadbae30b1668e14a3ed8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add twilio json support for cli
+
+### Patch Changes
+
+- Updated dependencies [[`e364093`](https://github.com/generaltranslation/gt/commit/e3640931cf0ca2df08dcadbae30b1668e14a3ed8)]:
+  - generaltranslation@8.1.16
+  - @generaltranslation/python-extractor@0.1.2
+
+## 2.8.2
+
+### Patch Changes
+
+- [#1098](https://github.com/generaltranslation/gt/pull/1098) [`612ace4`](https://github.com/generaltranslation/gt/commit/612ace4bb30aaa3406b949931c8ffdb3f43ebd9f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: upload supporting composite json
+
+- Updated dependencies [[`1793010`](https://github.com/generaltranslation/gt/commit/1793010ea33ceceba307832195433ff3b7f1143e)]:
+  - generaltranslation@8.1.15
+  - @generaltranslation/python-extractor@0.1.1
+
+## 2.8.1
+
+### Patch Changes
+
+- [#1093](https://github.com/generaltranslation/gt/pull/1093) [`69a13a5`](https://github.com/generaltranslation/gt/commit/69a13a5791254ebb4a2679321d24fecebb1fef11) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: support for temporary structural transforms
+
+## 2.8.0
+
+### Minor Changes
+
+- [#1088](https://github.com/generaltranslation/gt/pull/1088) [`2cad388`](https://github.com/generaltranslation/gt/commit/2cad38875e4dccdd7d90de3eba6997eb75371db3) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add python support for registration
+
+### Patch Changes
+
+- Updated dependencies [[`2cad388`](https://github.com/generaltranslation/gt/commit/2cad38875e4dccdd7d90de3eba6997eb75371db3)]:
+  - @generaltranslation/python-extractor@0.1.0
+
+## 2.7.1
+
+### Patch Changes
+
+- [#1085](https://github.com/generaltranslation/gt/pull/1085) [`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76) Thanks [@brian-lou](https://github.com/brian-lou)! - feat: Auth wizard supports both types of key creation
+
+- [#1082](https://github.com/generaltranslation/gt/pull/1082) [`3cb3bbd`](https://github.com/generaltranslation/gt/commit/3cb3bbd13046e6c1f6f9d4b5286669b96b4a85b2) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Bumping CLI timeouts
+
+- [#1076](https://github.com/generaltranslation/gt/pull/1076) [`19ae4eb`](https://github.com/generaltranslation/gt/commit/19ae4eb0baf7e6f15d19f9fad384621d38d73d57) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Apply style guide to error messages and warnings: remove "Please", simplify verbose phrasing, fix `in-line` → `inline`.
+
+- Updated dependencies [[`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76)]:
+  - generaltranslation@8.1.14
+
 ## 2.7.0
 
 ### Minor Changes

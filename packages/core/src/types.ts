@@ -14,6 +14,7 @@ import {
   HTML_CONTENT_PROPS,
   DataFormat,
   Content,
+  StringFormat,
 } from './types-dir/jsx/content';
 import {
   ActionType,
@@ -41,6 +42,7 @@ export {
   EntryMetadata,
   TranslateManyEntry,
   Content,
+  StringFormat,
   HashMetadata,
 };
 
@@ -62,6 +64,7 @@ export type {
   EnqueueFilesResult,
   Updates,
 } from './types-dir/api/enqueueFiles';
+export type { CreateTagOptions, CreateTagResult } from './translate/createTag';
 export type { FileToUpload } from './types-dir/api/file';
 export type { FileUpload } from './types-dir/api/uploadFiles';
 export type {
@@ -69,6 +72,10 @@ export type {
   EnqueueEntriesResult,
 } from './types-dir/api/enqueueEntries';
 export type { FileReference } from './types-dir/api/file';
+export type {
+  PublishFileEntry,
+  PublishFilesResult,
+} from './translate/publishFiles';
 export type { DownloadedFile } from './types-dir/api/downloadFileBatch';
 export type { DownloadFileOptions } from './types-dir/api/downloadFile';
 export type { FileFormat } from './types-dir/api/file';
@@ -96,6 +103,11 @@ export type {
   CheckJobStatusResult,
 } from './translate/checkJobStatus';
 export type {
+  AwaitJobsOptions,
+  AwaitJobsResult,
+  JobResult,
+} from './translate/awaitJobs';
+export type {
   SubmitUserEditDiff,
   SubmitUserEditDiffsPayload,
 } from './translate/submitUserEditDiffs';
@@ -109,6 +121,7 @@ export type {
   Transformation,
   TransformationPrefix,
   VariableTransformationSuffix,
+  InjectionType,
 } from './types-dir/transformations';
 
 export type Metadata = {

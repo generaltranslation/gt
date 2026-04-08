@@ -26,14 +26,14 @@ export default function renderDefaultChildren({
 
     // Variable
     if (isVariableElementProps(child.props)) {
-      const { variableType, variableValue, variableOptions } = getVariableProps(
-        child.props
-      );
+      const { variableType, variableValue, variableOptions, injectionType } =
+        getVariableProps(child.props);
       return renderVariable({
         variableType,
         variableValue,
         variableOptions,
         locales: [defaultLocale],
+        injectionType,
       });
     }
 

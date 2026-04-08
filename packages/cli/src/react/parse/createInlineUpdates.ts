@@ -2,13 +2,15 @@ import fs from 'node:fs';
 import { Updates } from '../../types/index.js';
 
 import { parse } from '@babel/parser';
-import { hashSource, hashString } from 'generaltranslation/id';
 import { parseTranslationComponent } from '../jsx/utils/jsxParsing/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { logger } from '../../console/logger.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
-import type { ParsingConfigOptions } from '../../types/parsing.js';
+import type {
+  ParsingConfigOptions,
+  GTParsingFlags,
+} from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 import {
   GTLibrary,
@@ -16,11 +18,24 @@ import {
   REACT_LIBRARIES,
   ReactLibrary,
 } from '../../types/libraries.js';
+import {
+  calculateHashes,
+  dedupeUpdates,
+  linkDeriveUpdates,
+} from '../../extraction/postProcess.js';
+import {
+  ensureTAndVarImported,
+  autoInsertJsxComponents,
+} from '../jsx/utils/jsxParsing/autoInsertion.js';
+import { INTERNAL_TRANSLATION_COMPONENT } from '../jsx/utils/constants.js';
+import traverseModule from '@babel/traverse';
+const traverse = traverseModule.default || traverseModule;
 
 export async function createInlineUpdates(
   pkg: GTLibrary,
   validate: boolean,
   filePatterns: string[] | undefined,
+  parsingFlags: GTParsingFlags,
   parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
@@ -67,12 +82,17 @@ export async function createInlineUpdates(
           ignoreDynamicContent: false,
           ignoreInvalidIcu: false,
           ignoreInlineListContent: false,
+          includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
+          ignoreTaggedTemplates: false,
+          ignoreGlobalTaggedTemplates: false,
+          // User configurable, otherwise default to AUTO
+          autoDeriveMethod: parsingFlags.autoDerive ? 'AUTO' : 'DISABLED',
         },
         { updates, errors, warnings }
       );
     }
 
-    // Parse <T> components
+    // Parse <T> components — PASS 1: user-written T
     if (REACT_LIBRARIES.includes(pkg as ReactLibrary)) {
       for (const { localName, path } of translationComponentPaths) {
         parseTranslationComponent({
@@ -85,6 +105,7 @@ export async function createInlineUpdates(
             parsingOptions,
             pkgs,
             file,
+            includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
           },
           output: {
             errors,
@@ -93,13 +114,75 @@ export async function createInlineUpdates(
           },
         });
       }
+
+      // PASS 2: Auto-inject GtInternalTranslateJsx and GtInternalVar and extract (flag-gated)
+      if (parsingFlags.enableAutoJsxInjection) {
+        // Add translation component names to importAliases so autoInsertJsxComponents
+        // recognizes user T as hands-off (getPathsAndAliases separates them out)
+        for (const { localName, originalName } of translationComponentPaths) {
+          importAliases[localName] = originalName;
+        }
+
+        // Ensure GtInternalTranslateJsx and GtInternalVar are imported in the AST
+        ensureTAndVarImported(ast, importAliases);
+
+        // Insert T/Var into the AST
+        autoInsertJsxComponents(ast, importAliases);
+
+        // Refresh scope to pick up new T references
+        traverse(ast, {
+          Program(programPath) {
+            programPath.scope.crawl();
+          },
+        });
+
+        // Re-collect with updated AST
+        const refreshed = getPathsAndAliases(ast, pkgs);
+
+        // Add translation component names to refreshed aliases so parseJsx
+        // can recognize GtInternalTranslateJsx inside Derive for transparent unwrap
+        for (const {
+          localName: tLocalName,
+          originalName: tOrigName,
+        } of refreshed.translationComponentPaths) {
+          refreshed.importAliases[tLocalName] = tOrigName;
+        }
+
+        // Extract only from auto-injected GtInternalTranslateJsx — never re-extract user T
+        for (const {
+          localName,
+          path,
+          originalName,
+        } of refreshed.translationComponentPaths) {
+          if (originalName !== INTERNAL_TRANSLATION_COMPONENT) continue;
+          parseTranslationComponent({
+            originalName: localName,
+            localName,
+            path,
+            updates,
+            config: {
+              importAliases: refreshed.importAliases,
+              parsingOptions,
+              pkgs,
+              file,
+              includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
+              enableAutoJsxInjection: true,
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
+          });
+        }
+      }
     }
   }
 
   // Post processing steps:
   await calculateHashes(updates);
   dedupeUpdates(updates);
-  linkStaticUpdates(updates);
+  linkDeriveUpdates(updates);
 
   return { updates, errors, warnings: [...warnings] };
 }
@@ -111,101 +194,6 @@ export async function createInlineUpdates(
  */
 function getUpstreamPackages(pkg: GTLibrary): GTLibrary[] {
   return GT_LIBRARIES_UPSTREAM[pkg];
-}
-
-/**
- * Calculate hashes
- */
-async function calculateHashes(updates: Updates): Promise<void> {
-  // parallel calculation of hashes
-  await Promise.all(
-    updates.map(async (update) => {
-      const hash = hashSource({
-        source: update.source,
-        ...(update.metadata.context && { context: update.metadata.context }),
-        ...(update.metadata.id && { id: update.metadata.id }),
-        ...(update.metadata.maxChars != null && {
-          maxChars: update.metadata.maxChars,
-        }),
-        dataFormat: update.dataFormat,
-      });
-      update.metadata.hash = hash;
-    })
-  );
-}
-
-/**
- * Dedupe entries
- */
-function dedupeUpdates(updates: Updates): void {
-  const mergedByHash = new Map<string, (typeof updates)[number]>();
-  const noHashUpdates: (typeof updates)[number][] = [];
-
-  for (const update of updates) {
-    const hash = update.metadata.hash;
-    if (!hash) {
-      noHashUpdates.push(update);
-      continue;
-    }
-
-    const existing = mergedByHash.get(hash);
-    if (!existing) {
-      mergedByHash.set(hash, update);
-      continue;
-    }
-
-    const existingPaths = Array.isArray(existing.metadata.filePaths)
-      ? existing.metadata.filePaths.slice()
-      : [];
-    const newPaths = Array.isArray(update.metadata.filePaths)
-      ? update.metadata.filePaths
-      : [];
-
-    for (const p of newPaths) {
-      if (!existingPaths.includes(p)) {
-        existingPaths.push(p);
-      }
-    }
-
-    if (existingPaths.length) {
-      existing.metadata.filePaths = existingPaths;
-    }
-  }
-
-  const mergedUpdates = [...mergedByHash.values(), ...noHashUpdates];
-  updates.splice(0, updates.length, ...mergedUpdates);
-}
-
-/**
- * Mark static updates as the related by attaching a shared id to static content
- * Id is calculated as the hash of the static children's combined hashes
- */
-function linkStaticUpdates(updates: Updates): void {
-  // construct map of temporary static ids to updates
-  const temporaryStaticIdToUpdates = updates.reduce(
-    (acc: Record<string, Updates[number][]>, update: Updates[number]) => {
-      if (update.metadata.staticId) {
-        if (!acc[update.metadata.staticId]) {
-          acc[update.metadata.staticId] = [];
-        }
-        acc[update.metadata.staticId].push(update);
-      }
-      return acc;
-    },
-    {} as Record<string, Updates[number][]>
-  );
-
-  // Calculate shared static ids
-  Object.values(temporaryStaticIdToUpdates).forEach((staticUpdates) => {
-    const hashes = staticUpdates
-      .map((update) => update.metadata.hash)
-      .sort()
-      .join('-');
-    const sharedStaticId = hashString(hashes);
-    staticUpdates.forEach((update) => {
-      update.metadata.staticId = sharedStaticId;
-    });
-  });
 }
 
 export { dedupeUpdates as _test_dedupeUpdates };

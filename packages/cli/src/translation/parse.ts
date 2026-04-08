@@ -4,11 +4,12 @@ import { logger } from '../console/logger.js';
 import loadJSON from '../fs/loadJSON.js';
 import { createDictionaryUpdates } from '../react/parse/createDictionaryUpdates.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
+import { createPythonInlineUpdates } from '../python/parse/createPythonInlineUpdates.js';
 import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
-import type { ParsingConfigOptions } from '../types/parsing.js';
+import type { ParsingConfigOptions, GTParsingFlags } from '../types/parsing.js';
 import { exitSync } from '../console/logging.js';
-import { InlineLibrary } from '../types/libraries.js';
+import { InlineLibrary, isPythonLibrary } from '../types/libraries.js';
 
 /**
  * Searches for gt-react or gt-next dictionary files and creates updates for them,
@@ -25,6 +26,7 @@ export async function createUpdates(
   sourceDictionary: string | undefined,
   pkg: InlineLibrary,
   validate: boolean,
+  parsingFlags: GTParsingFlags,
   parsingOptions: ParsingConfigOptions
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   let updates: Updates = [];
@@ -67,12 +69,20 @@ export async function createUpdates(
       ];
     }
   }
-  // Scan through project for <T> tags
+  // Scan through project for translatable content
   const {
     updates: newUpdates,
     errors: newErrors,
     warnings: newWarnings,
-  } = await createInlineUpdates(pkg, validate, src, parsingOptions);
+  } = isPythonLibrary(pkg)
+    ? await createPythonInlineUpdates(src)
+    : await createInlineUpdates(
+        pkg,
+        validate,
+        src,
+        parsingFlags,
+        parsingOptions
+      );
 
   errors = [...errors, ...newErrors];
   warnings = [...warnings, ...newWarnings];

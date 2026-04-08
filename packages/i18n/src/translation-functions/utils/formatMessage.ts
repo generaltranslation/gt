@@ -1,5 +1,6 @@
+import { StringFormat } from 'generaltranslation/types';
 import logger from '../../logs/logger';
-import { interpolationFailureMessage } from './messages';
+import { createInterpolationFailureMessage } from './messages';
 import { formatMessage as _formatMessage } from 'generaltranslation';
 
 /**
@@ -11,12 +12,14 @@ import { formatMessage as _formatMessage } from 'generaltranslation';
  */
 export function formatMessage(
   encodedMsg: string,
-  variables: Record<string, string>
+  variables: Record<string, string>,
+  locales?: string | string[],
+  dataFormat?: StringFormat
 ): string {
   try {
-    return _formatMessage(encodedMsg, { variables });
-  } catch (error) {
-    logger.warn(interpolationFailureMessage + ' Error: ' + error);
+    return _formatMessage(encodedMsg, { variables, locales, dataFormat });
+  } catch {
+    logger.warn(createInterpolationFailureMessage(encodedMsg));
     return encodedMsg;
   }
 }

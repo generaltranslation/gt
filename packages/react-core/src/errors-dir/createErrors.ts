@@ -9,7 +9,7 @@ export const devApiKeyProductionError = `${PACKAGE_NAME} Error: Production envir
 
 export const apiKeyInProductionError = `${PACKAGE_NAME} Error: Production environments cannot include an api key.`;
 
-export const createNoAuthError = `${PACKAGE_NAME} Error: Configuration is missing a projectId and/or devApiKey. Please add these values to your environment or pass them to the <GTProvider> directly.`;
+export const createNoAuthError = `${PACKAGE_NAME} Error: Configuration is missing a projectId and/or devApiKey. Add these values to your environment or pass them to <GTProvider> directly.`;
 
 export const createPluralMissingError = (children: any) =>
   `${PACKAGE_NAME} Error: <Plural> component with children "${children}" requires "n" option.`;
@@ -37,10 +37,10 @@ export const createGenericRuntimeTranslationError = (
 export const runtimeTranslationError = `${PACKAGE_NAME} Error: Runtime translation failed: `;
 
 export const customLoadTranslationsError = (locale: string = '') =>
-  `${PACKAGE_NAME} Error: fetching locally stored translations. If you are using a custom loadTranslations(${locale}), make sure it is correctly implemented.`;
+  `${PACKAGE_NAME} Error: Failed to fetch locally stored translations. If using a custom loadTranslations(${locale}), make sure it is correctly implemented.`;
 
 export const customLoadDictionaryWarning = (locale: string = '') =>
-  `${PACKAGE_NAME} Error: fetching locally stored dictionary. If you are using a custom loadDictionary(${locale}), make sure it is correctly implemented.`;
+  `${PACKAGE_NAME} Error: Failed to fetch locally stored dictionary. If using a custom loadDictionary(${locale}), make sure it is correctly implemented.`;
 
 export const missingVariablesError = (variables: string[], message: string) =>
   `${PACKAGE_NAME} Error: missing variables: "${variables.join('", "')}" in message: "${message}"`;
@@ -61,12 +61,12 @@ export const createStringTranslationError = (
   } could not locate translation.`;
 
 export const invalidLocalesError = (locales: string[]) =>
-  `${PACKAGE_NAME} Error: You are using invalid locale codes in your configuration. ` +
-  `You must either specify a list of valid locales or use "customMapping" to ` +
-  `specify aliases for the following invalid locales: ${locales.join(', ')}.`;
+  `${PACKAGE_NAME} Error: Invalid locale codes in your configuration. ` +
+  `Specify a list of valid locales or use "customMapping" to ` +
+  `define aliases for the following invalid locales: ${locales.join(', ')}.`;
 
 export const invalidCanonicalLocalesError = (locales: string[]) =>
-  `${PACKAGE_NAME} Error: You are using invalid canonical locale codes in your configuration: ${locales.join(', ')}.`;
+  `${PACKAGE_NAME} Error: Invalid canonical locale codes in your configuration: ${locales.join(', ')}.`;
 
 export const createEmptyIdError = () =>
   `${PACKAGE_NAME} Error: You cannot provide an empty id to t.obj()`;
@@ -129,8 +129,8 @@ export const createUnsupportedLocaleWarning = (
   packageName: string = PACKAGE_NAME
 ) => {
   return (
-    `${packageName} Warning: You are trying to switch to "${newLocale}" which is not supported.  ` +
-    `Update the list of supported locales through your dashboard or your config.json file if you are using a config file. ` +
+    `${packageName} Warning: "${newLocale}" is not a supported locale. ` +
+    `Update supported locales in your dashboard or gt.config.json. ` +
     `Falling back to "${validatedLocale}".`
   );
 };
@@ -142,3 +142,6 @@ export const createStringRenderWarning = (
   id: string | undefined
 ) =>
   `${PACKAGE_NAME} Warning: failed to render string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
+
+// Unlikely edge case: A <_T> component was injected outside of a <Derive> boundary. This would be caused by the compiler overeagerly injecting <_T> components.
+export const warnNestedInternalTComponent = `${PACKAGE_NAME} Warning: A <_T> component was found injected outside of a <Derive> boundary. This may affect translation resolution for this component.`;

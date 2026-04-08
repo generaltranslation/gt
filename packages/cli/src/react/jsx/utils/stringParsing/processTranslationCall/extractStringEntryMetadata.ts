@@ -3,12 +3,17 @@ import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { isStaticExpression } from '../../../evaluateJsx.js';
 import { warnInvalidMaxCharsSync } from '../../../../../console/index.js';
+import { warnInvalidFormatSync } from '../../../../../console/index.js';
 import { warnNonStaticExpressionSync } from '../../../../../console/index.js';
 import { GT_ATTRIBUTES_WITH_SUGAR } from '../../constants.js';
+import { containsDeriveCall } from '../derivation/containsDeriveCall.js';
 import generateModule from '@babel/generator';
 import { mapAttributeName } from '../../mapAttributeName.js';
 import pathModule from 'node:path';
 import { isNumberLiteral } from '../../isNumberLiteral.js';
+import { extractSourceCode } from '../../extractSourceCode.js';
+import type { SourceCode } from '../../extractSourceCode.js';
+import { SURROUNDING_LINE_COUNT } from '../../../../../utils/constants.js';
 
 // Handle CommonJS/ESM interop
 const generate = generateModule.default || generateModule;
@@ -21,7 +26,10 @@ export type InlineMetadata = {
   context?: string;
   id?: string;
   hash?: string;
+  format?: string;
   filePaths?: string[];
+  sourceCode?: Record<string, SourceCode[]>;
+  contextDeriveExpr?: t.Expression;
 };
 
 /**
@@ -39,10 +47,17 @@ export function extractStringEntryMetadata({
   options,
   output,
   config,
+  nodeLoc,
+  surroundingLineCount = SURROUNDING_LINE_COUNT,
 }: {
   options?: t.CallExpression['arguments'][number];
   output: ParsingOutput;
   config: ParsingConfig;
+  nodeLoc?: {
+    start?: { line: number } | null;
+    end?: { line: number } | null;
+  } | null;
+  surroundingLineCount?: number;
 }): InlineMetadata {
   // extract filepath for entry
   const relativeFilepath = pathModule.relative(process.cwd(), config.file);
@@ -54,9 +69,28 @@ export function extractStringEntryMetadata({
     config,
   });
 
+  // extract surrounding lines from source file
+  let sourceCode: Record<string, SourceCode[]> | undefined;
+  if (
+    config.includeSourceCodeContext &&
+    nodeLoc?.start?.line &&
+    nodeLoc?.end?.line
+  ) {
+    const entry = extractSourceCode(
+      config.file,
+      nodeLoc.start.line,
+      nodeLoc.end.line,
+      surroundingLineCount
+    );
+    if (entry && relativeFilepath) {
+      sourceCode = { [relativeFilepath]: [entry] };
+    }
+  }
+
   return {
     ...inlineMetadata,
     filePaths: relativeFilepath ? [relativeFilepath] : undefined,
+    ...(sourceCode && { sourceCode }),
   };
 }
 
@@ -80,6 +114,7 @@ function extractInlineMetadata({
   config: ParsingConfig;
 }): InlineMetadata {
   const metadata: Record<string, string | number | string[]> = {};
+  let contextDeriveExpr: t.Expression | undefined;
   if (options && options.type === 'ObjectExpression') {
     options.properties.forEach((prop) => {
       if (prop.type === 'ObjectProperty' && prop.key.type === 'Identifier') {
@@ -92,14 +127,19 @@ function extractInlineMetadata({
         ) {
           const result = isStaticExpression(prop.value);
           if (!result.isStatic) {
-            output.errors.push(
-              warnNonStaticExpressionSync(
-                config.file,
-                attribute,
-                generate(prop.value).code,
-                `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
-              )
-            );
+            const mappedKey = mapAttributeName(attribute);
+            if (mappedKey === 'context' && containsDeriveCall(prop.value)) {
+              contextDeriveExpr = prop.value;
+            } else {
+              output.errors.push(
+                warnNonStaticExpressionSync(
+                  config.file,
+                  attribute,
+                  generate(prop.value).code,
+                  `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                )
+              );
+            }
           }
           if (
             result.isStatic &&
@@ -126,6 +166,23 @@ function extractInlineMetadata({
                 // Add the maxChars value to the metadata
                 metadata[mappedKey] = Math.abs(Number(result.value));
               }
+            } else if (mappedKey === 'format') {
+              // Handle format attribute - validate allowed values
+              const validFormats = ['ICU', 'STRING', 'I18NEXT'];
+              if (
+                typeof result.value === 'string' &&
+                validFormats.includes(result.value)
+              ) {
+                metadata[mappedKey] = result.value;
+              } else {
+                output.warnings.add(
+                  warnInvalidFormatSync(
+                    config.file,
+                    String(result.value),
+                    `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                  )
+                );
+              }
             } else {
               // Add the $context or $id or other attributes value to the metadata
               // TODO: why are we including everything? arent we only interested in relevant inline metadata?
@@ -137,5 +194,8 @@ function extractInlineMetadata({
     });
   }
 
-  return metadata;
+  return {
+    ...metadata,
+    ...(contextDeriveExpr && { contextDeriveExpr }),
+  };
 }

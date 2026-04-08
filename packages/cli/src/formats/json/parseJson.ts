@@ -1,5 +1,5 @@
 import { AdditionalOptions, SourceObjectOptions } from '../../types/index.js';
-import { flattenJsonWithStringFilter } from './flattenJson.js';
+import { flattenJson, flattenJsonWithStringFilter } from './flattenJson.js';
 import { JSONPath } from 'jsonpath-plus';
 import { exitSync } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
@@ -9,13 +9,15 @@ import {
   generateSourceObjectPointers,
   validateJsonSchema,
 } from './utils.js';
+import { applyStructuralTransforms } from './transformJson.js';
 
 // Parse a JSON file according to a JSON schema
 export function parseJson(
   content: string,
   filePath: string,
   options: AdditionalOptions,
-  defaultLocale: string
+  defaultLocale: string,
+  filterStrings: boolean = true
 ): string {
   const jsonSchema = validateJsonSchema(options, filePath);
   if (!jsonSchema) {
@@ -30,9 +32,18 @@ export function parseJson(
     return exitSync(1);
   }
 
+  if (jsonSchema.structuralTransform && jsonSchema.composite) {
+    applyStructuralTransforms(
+      json,
+      jsonSchema.structuralTransform,
+      jsonSchema.composite
+    );
+  }
+
   // Handle include
   if (jsonSchema.include) {
-    const flattenedJson = flattenJsonWithStringFilter(json, jsonSchema.include);
+    const flatten = filterStrings ? flattenJsonWithStringFilter : flattenJson;
+    const flattenedJson = flatten(json, jsonSchema.include);
     return JSON.stringify(flattenedJson);
   }
 
@@ -51,7 +62,7 @@ export function parseJson(
   // Construct lvl 2
   const sourceObjectsToTranslate: Record<
     string,
-    Record<string, Record<string, string>>
+    Record<string, Record<string, string>> | string
   > = {};
   for (const [
     sourceObjectPointer,
@@ -82,7 +93,7 @@ export function parseJson(
       );
       if (!Object.keys(matchingItems).length) {
         logger.error(
-          `Matching sourceItem not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Please check your JSON schema`
+          `Matching sourceItem not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Check your JSON schema`
         );
         return exitSync(1);
       }
@@ -152,11 +163,15 @@ export function parseJson(
       }
       const { sourceItem } = matchingItem;
 
+      // If the source item is a string, use it directly
+      if (typeof sourceItem === 'string') {
+        sourceObjectsToTranslate[sourceObjectPointer] = sourceItem;
+        continue;
+      }
+
       // Get the fields to translate from the includes
-      const itemsToTranslate = flattenJsonWithStringFilter(
-        sourceItem,
-        sourceObjectOptions.include
-      );
+      const flatten = filterStrings ? flattenJsonWithStringFilter : flattenJson;
+      const itemsToTranslate = flatten(sourceItem, sourceObjectOptions.include);
 
       // Add the items to translate to the result
       sourceObjectsToTranslate[sourceObjectPointer] = itemsToTranslate;

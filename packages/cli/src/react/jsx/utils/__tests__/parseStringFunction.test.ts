@@ -49,6 +49,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -99,6 +102,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -142,6 +148,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -195,6 +204,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -244,6 +256,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -292,6 +307,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -335,6 +353,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -379,6 +400,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -423,6 +447,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -470,6 +497,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -524,6 +554,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -579,6 +612,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -628,6 +664,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -678,6 +717,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -727,6 +769,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -778,6 +823,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -826,6 +874,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -874,6 +925,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -923,6 +977,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -974,6 +1031,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1027,6 +1087,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1077,6 +1140,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1119,6 +1185,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1173,6 +1242,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1233,6 +1305,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1310,6 +1385,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1399,6 +1477,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1465,6 +1546,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1520,6 +1604,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1577,6 +1664,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1658,6 +1748,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1708,6 +1801,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1760,6 +1856,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1804,6 +1903,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1853,6 +1955,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1900,6 +2005,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1942,6 +2050,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -1985,6 +2096,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2031,6 +2145,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2078,6 +2195,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2140,6 +2260,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2188,6 +2311,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: false,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2235,6 +2361,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2284,6 +2413,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2331,6 +2463,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2379,6 +2514,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2422,6 +2560,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2467,6 +2608,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2512,6 +2656,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2556,6 +2703,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2600,6 +2750,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2647,6 +2800,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2701,6 +2857,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2748,6 +2907,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2797,6 +2959,9 @@ describe('parseStrings', () => {
               ignoreDynamicContent: false,
               ignoreInvalidIcu: false,
               ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoDeriveMethod: 'DISABLED',
             },
             {
               updates: params.updates,
@@ -2845,6 +3010,9 @@ describe('parseStrings', () => {
                 ignoreDynamicContent: false,
                 ignoreInvalidIcu: false,
                 ignoreInlineListContent: false,
+                ignoreTaggedTemplates: false,
+                ignoreGlobalTaggedTemplates: false,
+                autoDeriveMethod: 'DISABLED',
               },
               {
                 updates: params.updates,
@@ -3033,6 +3201,322 @@ describe('parseStrings', () => {
       expect(params.updates).toHaveLength(1);
       expect(params.updates[0]).toMatchObject({ source: 'hello' });
       expect(params.errors.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('auto-derive for string registration and hook functions', () => {
+    const runParseStrings = (
+      code: string,
+      functionName: string,
+      params: ReturnType<typeof createMockParams>
+    ) => {
+      const ast = parseCode(code);
+      traverse(ast, {
+        ImportSpecifier(path) {
+          if (
+            t.isIdentifier(path.node.imported) &&
+            path.node.imported.name === functionName &&
+            t.isIdentifier(path.node.local)
+          ) {
+            parseStrings(
+              path.node.local.name,
+              functionName,
+              path,
+              {
+                parsingOptions: params.parsingOptions,
+                file: params.file,
+                ignoreInlineMetadata: false,
+                ignoreDynamicContent: false,
+                ignoreInvalidIcu: false,
+                ignoreInlineListContent: true,
+                ignoreTaggedTemplates: false,
+                ignoreGlobalTaggedTemplates: false,
+                autoDeriveMethod: 'AUTO',
+              },
+              {
+                updates: params.updates,
+                errors: params.errors,
+                warnings: params.warnings,
+              }
+            );
+          }
+        },
+      });
+    };
+
+    it('should auto-derive t() with template literal interpolation', () => {
+      const code = `
+        import { t } from 'gt-react/browser';
+        const name = "John";
+        t(\`Hello, \${name}\`);
+      `;
+      const params = createMockParams();
+      runParseStrings(code, 't', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should auto-derive t() with concatenation', () => {
+      const code = `
+        import { t } from 'gt-react/browser';
+        const name = "John";
+        t("Hello, " + name);
+      `;
+      const params = createMockParams();
+      runParseStrings(code, 't', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should auto-derive msg() with template literal interpolation', () => {
+      const code = `
+        import { msg } from 'gt-react';
+        const name = "John";
+        msg(\`Hello, \${name}\`);
+      `;
+      const params = createMockParams();
+      runParseStrings(code, 'msg', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should auto-derive msg() with concatenation', () => {
+      const code = `
+        import { msg } from 'gt-react';
+        const name = "John";
+        msg("Hello, " + name);
+      `;
+      const params = createMockParams();
+      runParseStrings(code, 'msg', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should auto-derive gt() from useGT() with template literal interpolation', () => {
+      const code = `
+        import { useGT } from 'gt-react';
+        const name = "John";
+        const gt = useGT();
+        gt(\`Hello, \${name}\`);
+      `;
+      const params = createMockParams();
+      runParseStrings(code, 'useGT', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should auto-derive gt() from useGT() with concatenation', () => {
+      const code = `
+        import { useGT } from 'gt-react';
+        const name = "John";
+        const gt = useGT();
+        gt("Hello, " + name);
+      `;
+      const params = createMockParams();
+      runParseStrings(code, 'useGT', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should auto-derive gt() from getGT() with template literal interpolation', () => {
+      const code = `
+        import { getGT } from 'gt-react';
+        const name = "John";
+        async function test() {
+          const gt = await getGT();
+          gt(\`Hello, \${name}\`);
+        }
+      `;
+      const params = createMockParams();
+      runParseStrings(code, 'getGT', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+  });
+
+  describe('recursive callback function resolution', () => {
+    const runUseGTParseStrings = (
+      code: string,
+      params: ReturnType<typeof createMockParams>
+    ) => {
+      const ast = parseCode(code);
+      traverse(ast, {
+        ImportSpecifier(path) {
+          if (
+            t.isIdentifier(path.node.imported) &&
+            path.node.imported.name === 'useGT' &&
+            t.isIdentifier(path.node.local)
+          ) {
+            parseStrings(
+              path.node.local.name,
+              'useGT',
+              path,
+              {
+                parsingOptions: params.parsingOptions,
+                file: params.file,
+                ignoreInlineMetadata: false,
+                ignoreDynamicContent: false,
+                ignoreInvalidIcu: false,
+                ignoreInlineListContent: true,
+                ignoreTaggedTemplates: false,
+                ignoreGlobalTaggedTemplates: false,
+                autoDeriveMethod: 'DISABLED',
+              },
+              {
+                updates: params.updates,
+                errors: params.errors,
+                warnings: params.warnings,
+              }
+            );
+          }
+        },
+      });
+    };
+
+    it('should handle a directly recursive function that passes gt to itself', () => {
+      const code = `
+        import { useGT } from 'generaltranslation';
+
+        function renderTree(gt, nodes) {
+          gt('leaf node', { $id: 'leaf' });
+          gt('branch node', { $id: 'branch' });
+          for (const child of nodes) {
+            renderTree(gt, child.children);
+          }
+        }
+
+        const gt = useGT();
+        renderTree(gt, tree);
+      `;
+      const params = createMockParams();
+      runUseGTParseStrings(code, params);
+
+      expect(params.updates).toHaveLength(2);
+      const sources = params.updates.map((u) => u.source);
+      expect(sources).toContain('leaf node');
+      expect(sources).toContain('branch node');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should handle mutually recursive functions that pass gt', () => {
+      const code = `
+        import { useGT } from 'generaltranslation';
+
+        function processEven(gt, n) {
+          gt('even case', { $id: 'even' });
+          if (n > 0) processOdd(gt, n - 1);
+        }
+
+        function processOdd(gt, n) {
+          gt('odd case', { $id: 'odd' });
+          if (n > 0) processEven(gt, n - 1);
+        }
+
+        const gt = useGT();
+        processEven(gt, 10);
+      `;
+      const params = createMockParams();
+      runUseGTParseStrings(code, params);
+
+      expect(params.updates).toHaveLength(2);
+      const sources = params.updates.map((u) => u.source);
+      expect(sources).toContain('even case');
+      expect(sources).toContain('odd case');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should handle recursive arrow function that passes gt', () => {
+      const code = `
+        import { useGT } from 'generaltranslation';
+
+        const traverse = (gt, node) => {
+          gt('visiting node', { $id: 'visit' });
+          node.children.forEach(child => traverse(gt, child));
+        };
+
+        const gt = useGT();
+        traverse(gt, root);
+      `;
+      const params = createMockParams();
+      runUseGTParseStrings(code, params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0]).toMatchObject({
+        source: 'visiting node',
+        metadata: { id: 'visit' },
+      });
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should register all strings in a recursive function with multiple gt calls', () => {
+      const code = `
+        import { useGT } from 'generaltranslation';
+
+        function walkMenu(gt, items) {
+          gt('menu header', { $id: 'header' });
+          gt('menu item', { $id: 'item' });
+          gt('menu footer', { $id: 'footer' });
+          items.forEach(item => {
+            if (item.submenu) {
+              walkMenu(gt, item.submenu);
+            }
+          });
+        }
+
+        const gt = useGT();
+        walkMenu(gt, menuData);
+      `;
+      const params = createMockParams();
+      runUseGTParseStrings(code, params);
+
+      expect(params.updates).toHaveLength(3);
+      const sources = params.updates.map((u) => u.source);
+      expect(sources).toContain('menu header');
+      expect(sources).toContain('menu item');
+      expect(sources).toContain('menu footer');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should handle recursive function that also passes gt to a non-recursive helper', () => {
+      const code = `
+        import { useGT } from 'generaltranslation';
+
+        function formatLabel(gt) {
+          return gt('label text', { $id: 'label' });
+        }
+
+        function walkTree(gt, node) {
+          gt('tree node', { $id: 'node' });
+          formatLabel(gt);
+          if (node.left) walkTree(gt, node.left);
+          if (node.right) walkTree(gt, node.right);
+        }
+
+        const gt = useGT();
+        walkTree(gt, binaryTree);
+      `;
+      const params = createMockParams();
+      runUseGTParseStrings(code, params);
+
+      expect(params.updates).toHaveLength(2);
+      const sources = params.updates.map((u) => u.source);
+      expect(sources).toContain('tree node');
+      expect(sources).toContain('label text');
+      expect(params.errors).toHaveLength(0);
     });
   });
 });

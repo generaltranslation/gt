@@ -3,6 +3,7 @@ import {
   exitSync,
   logErrorAndExit,
   warnApiKeyInConfig,
+  warnDeprecatedField,
 } from '../console/logging.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
 import { FilesOptions, Settings, SupportedFrameworks } from '../types/index.js';
@@ -19,17 +20,31 @@ import {
   GT_DASHBOARD_URL,
 } from '../utils/constants.js';
 import { resolveProjectId } from '../fs/utils.js';
+import crypto from 'node:crypto';
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
 import { gt } from '../utils/gt.js';
 import { generatePreset } from './optionPresets.js';
+import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
 
 export const DEFAULT_SRC_PATTERNS = [
   'src/**/*.{js,jsx,ts,tsx}',
   'app/**/*.{js,jsx,ts,tsx}',
   'pages/**/*.{js,jsx,ts,tsx}',
   'components/**/*.{js,jsx,ts,tsx}',
+];
+
+export const DEFAULT_PYTHON_SRC_PATTERNS = ['**/*.py'];
+export const DEFAULT_PYTHON_SRC_EXCLUDES = [
+  'venv/**',
+  '.venv/**',
+  '__pycache__/**',
+  '**/migrations/**',
+  '**/tests/**',
+  '**/test_*.py',
+  '**/*_test.py',
 ];
 
 /**
@@ -73,7 +88,7 @@ export async function generateSettings(
     gtConfig.projectId !== flags.projectId
   ) {
     logErrorAndExit(
-      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(flags.projectId)}! Please use the same projectId in all configs.`
+      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(flags.projectId)}! Use the same projectId in all configs.`
     );
   } else if (
     gtConfig.projectId &&
@@ -81,7 +96,7 @@ export async function generateSettings(
     gtConfig.projectId !== projectIdEnv
   ) {
     logErrorAndExit(
-      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(projectIdEnv)}! Please use the same projectId in all configs.`
+      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(projectIdEnv)}! Use the same projectId in all configs.`
     );
   }
 
@@ -111,6 +126,14 @@ export async function generateSettings(
         );
       }
     }
+  }
+
+  // Warn on deprecated includeSourceCodeContext
+  if (gtConfig.files?.gt?.includeSourceCodeContext != null) {
+    warnDeprecatedField(
+      'files.gt.includeSourceCodeContext',
+      'files.gt.parsingFlags.includeSourceCodeContext'
+    );
   }
 
   // merge options
@@ -155,11 +178,19 @@ export async function generateSettings(
   // For human review, always stage the project
   mergedOptions.stageTranslations = mergedOptions.stageTranslations ?? false;
 
-  // Add publish if not provided
-  mergedOptions.publish = (gtConfig.publish || flags.publish) ?? false;
+  // Add publish — only set if explicitly configured or passed via flag.
+  // When neither is set, leave undefined so the publish step knows
+  // there is no global publish intent.
+  if (flags.publish) {
+    mergedOptions.publish = true;
+  } else if (gtConfig.publish !== undefined) {
+    mergedOptions.publish = gtConfig.publish;
+  } else {
+    mergedOptions.publish = undefined;
+  }
 
-  // Populate src if not provided
-  mergedOptions.src = mergedOptions.src || DEFAULT_SRC_PATTERNS;
+  // Don't default src here — each pipeline (JS/Python) has its own defaults.
+  // Only set src if the user explicitly provided it via flags or config.
 
   // Resolve all glob patterns in the files object
   const compositePatterns = [
@@ -175,7 +206,17 @@ export async function generateSettings(
         cwd,
         compositePatterns
       )
-    : { resolvedPaths: {}, placeholderPaths: {}, transformPaths: {} };
+    : {
+        resolvedPaths: {},
+        placeholderPaths: {},
+        transformPaths: {},
+        publishPaths: new Set<string>(),
+        unpublishPaths: new Set<string>(),
+        parsingFlags: {},
+        gtJson: {
+          parsingFlags: GT_PARSING_FLAGS_DEFAULT,
+        },
+      };
 
   mergedOptions.options = {
     ...(mergedOptions.options || {}),
@@ -262,6 +303,32 @@ export async function generateSettings(
     gtConfig.branchOptions?.remoteName ??
     DEFAULT_GIT_REMOTE_NAME;
   mergedOptions.branchOptions = branchOptions;
+
+  // Map -m/--message flag to tagMessage
+  if (flags.message) {
+    mergedOptions.tagMessage = flags.message;
+  }
+
+  // Resolve tag:
+  // --tag (bare) or -m without --tag: try git SHA, fall back to random hex
+  // --tag <value>: use as-is
+  // No flags: no tag
+  if (flags.tag === true || (!flags.tag && mergedOptions.tagMessage)) {
+    try {
+      mergedOptions.tag = execSync('git rev-parse --short HEAD', {
+        encoding: 'utf-8',
+      }).trim();
+      // If no message provided, use git commit message
+      if (!mergedOptions.tagMessage) {
+        mergedOptions.tagMessage = execSync('git log -1 --format=%s', {
+          encoding: 'utf-8',
+        }).trim();
+      }
+    } catch {
+      // Not in a git repo or git unavailable — fall back to random hex
+      mergedOptions.tag = crypto.randomBytes(4).toString('hex');
+    }
+  }
 
   // if there's no existing config file, creates one
   // does not include the API key to avoid exposing it

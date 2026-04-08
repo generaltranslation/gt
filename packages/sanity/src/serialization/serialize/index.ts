@@ -145,7 +145,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     } catch (err) {
       //eslint-disable-next-line no-console -- this is a warning
       console.warn(
-        `Had issues serializing block of type "${obj._type}". Please specify a serialization method for this block in your serialization config. Received error: ${err}`
+        `Had issues serializing block of type "${obj._type}". Specify a serialization method for this block in your serialization config. Received error: ${err}`
       );
     }
 
@@ -209,7 +209,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     //otherwise, we can refer to the schema and a list of stop types
     //to determine what should not be sent
     else {
-      filteredObj = fieldFilter(doc, schema.fields, stopTypes);
+      filteredObj = fieldFilter(doc, schema?.fields ?? [], stopTypes);
     }
 
     const serializedFields: Record<string, any> = {};

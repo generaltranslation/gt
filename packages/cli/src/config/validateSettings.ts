@@ -35,7 +35,7 @@ export function validateSettings(settings: Settings) {
       isSupersetLocale(settings.defaultLocale, locale)
     );
     return logErrorAndExit(
-      `defaultLocale: ${settings.defaultLocale} is a superset of another locale (${locale})! Please change the defaultLocale to a more specific locale.`
+      `defaultLocale: ${settings.defaultLocale} is a superset of another locale (${locale})! Change the defaultLocale to a more specific locale.`
     );
   }
 }

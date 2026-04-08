@@ -1,5 +1,23 @@
 # @generaltranslation/mcp
 
+## 1.0.7
+
+### Patch Changes
+
+- [#1161](https://github.com/generaltranslation/gt/pull/1161) [`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update logo blocks in READMEs
+
+## 1.0.6
+
+### Patch Changes
+
+- [#1125](https://github.com/generaltranslation/gt/pull/1125) [`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo URLs in README files (updated to `/brand/gt-logo-*.svg`)
+
+## 1.0.5
+
+### Patch Changes
+
+- [#1073](https://github.com/generaltranslation/gt/pull/1073) [`3f4d746`](https://github.com/generaltranslation/gt/commit/3f4d7461fdf59afee4fd1d9b8e3d35769acc03e8) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix docs URLs
+
 ## 1.0.4
 
 ### Patch Changes

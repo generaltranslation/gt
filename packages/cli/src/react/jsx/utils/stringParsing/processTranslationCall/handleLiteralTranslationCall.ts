@@ -1,9 +1,11 @@
 import * as t from '@babel/types';
+import type { DataFormat } from 'generaltranslation/types';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { isValidIcu } from '../../../evaluateJsx.js';
 import { warnInvalidIcuSync } from '../../../../../console/index.js';
 import { InlineMetadata } from './extractStringEntryMetadata.js';
+import { randomUUID } from 'node:crypto';
 
 /**
  * For the processTranslationCall function, this function handles the case where a string literal or template literal is used.
@@ -12,6 +14,7 @@ import { InlineMetadata } from './extractStringEntryMetadata.js';
  * @param config - The configuration to use
  * @param output - The output to use
  * @param index - The index of the argument
+ * @param contextVariants - Optional derive context variants for cross-product
  */
 export function handleLiteralTranslationCall({
   arg,
@@ -19,19 +22,24 @@ export function handleLiteralTranslationCall({
   config,
   output,
   index,
+  contextVariants,
 }: {
   arg: t.StringLiteral | t.TemplateLiteral;
   metadata: InlineMetadata;
   config: ParsingConfig;
   output: ParsingOutput;
   index?: number;
+  contextVariants?: string[];
 }): void {
   // ignore dynamic content flag is triggered, check strings are valid ICU
   const source =
     arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
 
-  // Validate is ICU
-  if (!config.ignoreInvalidIcu) {
+  // Validate is ICU — skip for non-ICU formats
+  if (
+    !config.ignoreInvalidIcu &&
+    (!metadata.format || metadata.format === 'ICU')
+  ) {
     const { isValid, error } = isValidIcu(source);
     if (!isValid) {
       output.warnings.add(
@@ -46,13 +54,30 @@ export function handleLiteralTranslationCall({
     }
   }
 
-  output.updates.push({
-    dataFormat: 'ICU',
-    source,
-    metadata: {
-      ...metadata,
-      // Add the index if an id and index is provided (for handling when registering an array of strings)
-      ...(metadata.id && index != null && { id: `${metadata.id}.${index}` }),
-    },
-  });
+  if (contextVariants) {
+    const staticId = `derive-temp-id-${randomUUID()}`;
+    for (const context of contextVariants) {
+      output.updates.push({
+        dataFormat: (metadata.format || 'ICU') as DataFormat,
+        source,
+        metadata: {
+          ...metadata,
+          context,
+          ...(metadata.id &&
+            index != null && { id: `${metadata.id}.${index}` }),
+          staticId,
+        },
+      });
+    }
+  } else {
+    output.updates.push({
+      dataFormat: (metadata.format || 'ICU') as DataFormat,
+      source,
+      metadata: {
+        ...metadata,
+        // Add the index if an id and index is provided (for handling when registering an array of strings)
+        ...(metadata.id && index != null && { id: `${metadata.id}.${index}` }),
+      },
+    });
+  }
 }

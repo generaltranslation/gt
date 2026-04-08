@@ -4,16 +4,22 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { Settings, SupportedFrameworks } from '../types/index.js';
 import chalk from 'chalk';
+import apiRequest from './fetch.js';
 // Type for credentials returned from the dashboard
 type Credentials = {
-  apiKey: string;
+  apiKeys: ApiKey[];
   projectId: string;
+};
+
+type ApiKey = {
+  key: string;
+  type: 'development' | 'production';
 };
 
 // Fetches project ID and API key by opening the dashboard in the browser
 export async function retrieveCredentials(
   settings: Settings,
-  keyType: 'development' | 'production'
+  keyType: 'development' | 'production' | 'all'
 ): Promise<Credentials> {
   // Generate a session ID
   const { sessionId } = await generateCredentialsSession(
@@ -42,18 +48,17 @@ export async function retrieveCredentials(
       const interval = setInterval(async () => {
         // Ping the dashboard to see if the credentials are set
         try {
-          const res = await fetch(
-            `${settings.baseUrl}/cli/wizard/${sessionId}`,
-            {
-              method: 'GET',
-            }
+          const res = await apiRequest(
+            settings.baseUrl,
+            `/cli/wizard/${sessionId}`,
+            { method: 'GET' }
           );
           if (res.status === 200) {
             const data = await res.json();
             resolve(data as Credentials);
             clearInterval(interval);
             clearTimeout(timeout);
-            fetch(`${settings.baseUrl}/cli/wizard/${sessionId}`, {
+            apiRequest(settings.baseUrl, `/cli/wizard/${sessionId}`, {
               method: 'DELETE',
             });
           }
@@ -78,18 +83,12 @@ export async function retrieveCredentials(
 
 export async function generateCredentialsSession(
   url: string,
-  keyType: 'development' | 'production'
+  keyType: 'development' | 'production' | 'all'
 ): Promise<{
   sessionId: string;
 }> {
-  const res = await fetch(`${url}/cli/wizard/session`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      keyType,
-    }),
+  const res = await apiRequest(url, '/cli/wizard/session', {
+    body: { keyType },
   });
   if (!res.ok) {
     logErrorAndExit('Failed to generate credentials session');
@@ -99,13 +98,15 @@ export async function generateCredentialsSession(
 
 // Checks if the credentials are set in the environment variables
 export function areCredentialsSet() {
-  return process.env.GT_PROJECT_ID && process.env.GT_API_KEY;
+  return (
+    process.env.GT_PROJECT_ID &&
+    (process.env.GT_API_KEY || process.env.GT_DEV_API_KEY)
+  );
 }
 
 // Sets the credentials in .env.local file
 export async function setCredentials(
   credentials: Credentials,
-  type: 'development' | 'production',
   framework?: SupportedFrameworks,
   cwd: string = process.cwd()
 ) {
@@ -151,10 +152,13 @@ export async function setCredentials(
   }
 
   envContent += `\n${prefix}GT_PROJECT_ID=${credentials.projectId}\n`;
-  if (type === 'development') {
-    envContent += `${prefix || ''}GT_DEV_API_KEY=${credentials.apiKey}\n`;
-  } else {
-    envContent += `GT_API_KEY=${credentials.apiKey}\n`;
+
+  for (const apiKey of credentials.apiKeys) {
+    if (apiKey.type === 'development') {
+      envContent += `${prefix || ''}GT_DEV_API_KEY=${apiKey.key}\n`;
+    } else {
+      envContent += `GT_API_KEY=${apiKey.key}\n`;
+    }
   }
 
   // Ensure we don't have excessive newlines

@@ -4,6 +4,7 @@ import Var from './variables/Var';
 import Num from './variables/Num';
 import Currency from './variables/Currency';
 import DateTime from './variables/DateTime';
+import RelativeTime from './variables/RelativeTime';
 import T from './server-dir/buildtime/T';
 import Branch from './branches/Branch';
 import Plural from './branches/Plural';
@@ -20,7 +21,9 @@ import {
   declareVar,
   decodeVars,
   declareStatic,
+  derive,
   Static,
+  Derive,
   mFallback,
   gtFallback,
 } from 'gt-react/internal';
@@ -53,6 +56,10 @@ export function useDefaultLocale() {
   return getI18NConfig().getDefaultLocale();
 }
 
+export function useVersionId() {
+  return getI18NConfig().getVersionId();
+}
+
 export {
   GTProvider,
   T,
@@ -64,7 +71,9 @@ export {
   Num,
   Currency,
   DateTime,
+  RelativeTime,
   Static,
+  Derive,
   Branch,
   Plural,
   useGT,
@@ -79,6 +88,7 @@ export {
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
   mFallback,

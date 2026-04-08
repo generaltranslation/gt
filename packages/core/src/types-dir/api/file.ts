@@ -10,30 +10,41 @@ export type FileFormat =
   | 'TS'
   | 'JS'
   | 'HTML'
-  | 'TXT';
+  | 'TXT'
+  | 'TWILIO_CONTENT_JSON';
+
+/**
+ * Metadata for files or entries
+ */
+type FormatMetadata = Record<string, any> | Updates[number]['metadata'];
 
 /**
  * File object structure for uploading files
- * @param content - Content of the file
- * @param fileName - Unique identifier for the file (such as the file path + file name)
- * @param fileFormat - The format of the file (JSON, MDX, MD, etc.)
- * @param formatMetadata - Optional metadata for the file, specific to the format of the file
- * @param dataFormat - Optional format of the data within the file
+ * @see {@link FileReferenceOptionalBranchId}
+ * @property {string} content - Content of the file
+ * @property {string} locale - The locale of the file (e.g. 'en', 'de', 'es', etc.)
+ * @property {FormatMetadata} [formatMetadata] - Optional metadata for the file, specific to the format of the file
+ * @property {string} [incomingBranchId] - The ID of the incoming branch of the file
+ * @property {string} [checkedOutBranchId] - The ID of the checked out branch of the file
  */
-export type FileToUpload = {
+export type FileToUpload = Omit<FileReference, 'branchId'> & {
   content: string;
-  formatMetadata?: Record<string, any> | Updates[number]['metadata'];
+  locale: string;
+  formatMetadata?: FormatMetadata;
+  branchId?: string;
   incomingBranchId?: string;
   checkedOutBranchId?: string;
-  locale: string;
-} & Omit<FileReference, 'branchId'> & { branchId?: string };
+};
 
 /**
  * File object structure for referencing files
- * @param fileId - The ID of the file
- * @param versionId - The ID of the version of the file
- * @param branchId - The ID of the branch of the file
- * @param locale - The locale of the file ()
+ * @property {string} fileId - The ID of the file
+ * @property {string} versionId - The ID of the version of the file
+ * @property {string} branchId - The ID of the branch of the file
+ * @property {string} locale - The locale of the file (e.g. 'en', 'de', 'es', etc.)
+ * @property {string} fileName - The name of the file
+ * @property {FileFormat} fileFormat - The format of the file (JSON, MDX, MD, etc.)
+ * @property {DataFormat} [dataFormat] - Optional format of the data within the file
  */
 export type FileReference = {
   fileId: string;
@@ -41,5 +52,20 @@ export type FileReference = {
   branchId: string;
   fileName: string;
   fileFormat: FileFormat;
+  dataFormat?: DataFormat;
+};
+
+/**
+ * File reference object structure for referencing files
+ * @see {@link FileReference}
+ * @property {string} [branchId] - The ID of the branch of the file
+ */
+export type FileReferenceIds = Omit<
+  FileReference,
+  'branchId' | 'fileName' | 'fileFormat' | 'dataFormat'
+> & {
+  branchId?: string;
+  fileName?: string;
+  fileFormat?: FileFormat;
   dataFormat?: DataFormat;
 };

@@ -41,7 +41,7 @@ export function createRemoteTranslationLoader(
     if (!response.ok) {
       throw new Error(`Failed to load translations from ${url}`);
     }
-    return (await response.json()) as Translations;
+    return (await response.json()) as Translations<unknown>;
   };
 
   return loader;

@@ -1,8 +1,8 @@
 import * as fs from 'node:fs';
 import {
-  ensureNestedObject,
-  getDownloadedVersions,
-  saveDownloadedVersions,
+  findOrCreateEntry,
+  readLockfile,
+  writeLockfile,
 } from '../fs/config/downloadedVersions.js';
 import { hashStringSync } from './hash.js';
 import type { Settings } from '../types/index.js';
@@ -26,7 +26,7 @@ export function persistPostProcessHashes(
     return;
   }
 
-  const downloadedVersions = getDownloadedVersions(settings.configDirectory);
+  const { data, entryMap, originalV1 } = readLockfile(settings);
   let lockUpdated = false;
 
   for (const filePath of includeFiles) {
@@ -37,22 +37,17 @@ export function persistPostProcessHashes(
     const content = fs.readFileSync(filePath, 'utf8');
     const hash = hashStringSync(content);
 
-    ensureNestedObject(downloadedVersions.entries, [
-      meta.branchId,
+    const entry = findOrCreateEntry(
+      entryMap,
+      data.entries,
       meta.fileId,
-      meta.versionId,
-      meta.locale,
-    ]);
+      meta.versionId
+    );
 
-    const existing =
-      downloadedVersions.entries[meta.branchId][meta.fileId][meta.versionId][
-        meta.locale
-      ] || {};
+    const existing = entry.translations[meta.locale] || {};
 
     if (existing.postProcessHash !== hash) {
-      downloadedVersions.entries[meta.branchId][meta.fileId][meta.versionId][
-        meta.locale
-      ] = {
+      entry.translations[meta.locale] = {
         ...existing,
         postProcessHash: hash,
       };
@@ -61,6 +56,6 @@ export function persistPostProcessHashes(
   }
 
   if (lockUpdated) {
-    saveDownloadedVersions(settings.configDirectory, downloadedVersions);
+    writeLockfile(data, originalV1);
   }
 }

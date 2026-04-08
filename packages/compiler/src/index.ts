@@ -6,28 +6,21 @@ import traverse from '@babel/traverse';
 // Core modules
 import { PluginConfig } from './config';
 
-// Import transformation functions
-import { processCallExpression as processCallExpressionFirstPass } from './processing/first-pass/processCallExpression';
-import { processCallExpression as processCallExpressionSecondPass } from './processing/second-pass/processCallExpression';
-import { basePass } from './passes/basePass';
-import { handleErrors } from './passes/handleErrors';
-import { processVariableDeclarator as processVariableDeclaratorFirstPass } from './processing/first-pass/processVariableDeclarator';
-import { processVariableDeclarator as processVariableDeclaratorSecondPass } from './processing/second-pass/processVariableDeclarator';
-import { InvalidLibraryUsageError } from './passes/handleErrors';
+// Import passes
+import { collectionPass } from './passes/collectionPass';
+import { injectionPass } from './passes/injectionPass';
+import { macroExpansionPass } from './passes/macroExpansionPass';
+import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
+import { jsxInsertionPass } from './passes/jsxInsertionPass';
 
 /**
- *
- * First Pass:
- * - Collect + calculate all data
- * - Check for violations
- * - "Register" - collect data to inject
- * - "Track" - track a function call/variable assignment
- *
- * Second Pass:
- * - Inject all data
- *
  * Architecture:
+ *
+ * Pass Pipeline:
+ * - Pass 0: Macro expansion — transforms t`...` tagged templates and t(`...`) template/concatenation args
+ * - Pass 1: Collection — collect + calculate all data, check for violations, register + track
+ * - Pass 2: Injection — inject all data (hashes, messages, etc.)
  *
  * Babel functions:
  * - 1-to-1 relationship with processing functions
@@ -35,16 +28,16 @@ import { initializeState } from './state/utils/initializeState';
  * - ex) JSXElement()
  *
  * Processing functions:
- * - Are dependent on the pass, so they have three categories: (1) first pass, (2) second pass, (3) shared/general
+ * - Are dependent on the pass, so they have three categories: (1) collection, (2) injection, (3) shared/general
  * - Invoke transformation functions and utility functions
  * - ex) processJSXElement()
  * - Has the following file structure:
  * + processing
  * | sharedProcessingFunction.ts
- * | + first-pass
- * | | firstPassProcessingFunction.ts
- * | + second-pass
- * | | secondPassProcessingFunction.ts
+ * | + collection
+ * | | collectionProcessingFunction.ts
+ * | + injection
+ * | | injectionProcessingFunction.ts
  *
  * Transformation functions:
  * - Are AGNOSTIC to pass number
@@ -75,12 +68,14 @@ export interface GTUnpluginOptions extends PluginConfig {
  *
  * Universal plugin for compile-time optimization of GT translation components
  * that works across webpack, Vite, Rollup, and other bundlers.
- *
- * First pass: construct all information. no replacements, lest we lose our the monkey patching
- * Second pass: inject all information (hashes, messages, etc.)
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}) => {
+    // Debug manifest: accumulates hash → jsxChildren across all files
+    const debugManifest = options._debugHashManifest
+      ? new Map<string, unknown>()
+      : undefined;
+
     return {
       name: '@generaltranslation/GT_PLUGIN',
       transformInclude(id: string) {
@@ -95,6 +90,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       transform(code: string, id: string) {
         // Initialize processing state
         const state = initializeState(options, id);
+        if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
           if (
@@ -112,36 +108,40 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             allowReturnOutsideFunction: true,
           });
 
-          // PASS 1: Collection phase - collect translation data without transforming
-          traverse(ast, {
-            // Base configuration
-            ...basePass(state),
-            // const gt = useGT();
-            CallExpression: processCallExpressionFirstPass(state),
-            // let T = ...
-            VariableDeclarator: processVariableDeclaratorFirstPass(state),
-          });
+          // Pass 1: Jsx insertion
+          if (state.settings.enableAutoJsxInjection) {
+            traverse(ast, jsxInsertionPass(state));
+          }
+
+          // Pass 2: Macro expansion
+          if (state.settings.enableMacroTransform) {
+            traverse(ast, macroExpansionPass(state));
+          }
+
+          // Pass 3: Collection
+          traverse(ast, collectionPass(state));
 
           // Handle errors
           if (handleErrors(state)) {
             return null;
           }
 
-          // PASS 2: Transformation phase - apply collected data to generate hashes and content arrays
-          if (!state.stringCollector.hasContent()) {
+          // Pass 4: Injection
+          const hasCollectionContent = state.stringCollector.hasContent();
+
+          if (hasCollectionContent) {
+            traverse(ast, injectionPass(state));
+          }
+
+          // Generate code if any pass modified the AST
+          if (
+            !hasCollectionContent &&
+            state.statistics.macroExpansionsCount === 0 &&
+            state.statistics.jsxInsertionsCount === 0
+          ) {
             return null;
           }
 
-          // Complete second-pass traversal matching Rust Fold trait
-          traverse(ast, {
-            ...basePass(state),
-            // const gt = useGT();
-            CallExpression: processCallExpressionSecondPass(state),
-            // let T = ...
-            VariableDeclarator: processVariableDeclaratorSecondPass(state),
-          });
-
-          // Generate code
           return generate(ast, {
             retainLines: true,
             compact: false,
@@ -155,6 +155,21 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           // Otherwise, log the error
           state.logger.logError(`Error processing ${id}: ${error}`);
           return null;
+        }
+      },
+      buildEnd() {
+        if (debugManifest && debugManifest.size > 0) {
+          const fs = require('fs');
+          const path = require('path');
+          const outPath = path.resolve(
+            process.cwd(),
+            '_gt_debug_hash_manifest.json'
+          );
+          const manifest = Object.fromEntries(debugManifest);
+          fs.writeFileSync(outPath, JSON.stringify(manifest, null, 2));
+          console.log(
+            `[gt-compiler] Debug hash manifest written to ${outPath} (${debugManifest.size} entries)`
+          );
         }
       },
     };

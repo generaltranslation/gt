@@ -1,6 +1,11 @@
 import { CustomMapping } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
-import { ParsingConfigOptions } from './parsing.js';
+import {
+  ParsingConfigOptions,
+  GTParsingFlags,
+  BaseParsingFlags,
+  ParseFlagsByFileType,
+} from './parsing.js';
 import { Libraries, InlineLibrary } from './libraries.js';
 
 export type { Updates } from 'generaltranslation/types';
@@ -67,6 +72,8 @@ export type TranslateFlags = SharedFlags & {
   publish?: boolean;
   force?: boolean;
   forceDownload?: boolean;
+  tag?: string;
+  message?: string;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
@@ -174,16 +181,27 @@ export type TransformFiles = {
   [K in SupportedFileExtension]?: TransformOption | string | TransformOption[]; // if a string, only transform the file name
 };
 
+// Include patterns can be plain strings or objects with a publish flag
+export type IncludePattern = string | { pattern: string; publish?: boolean };
+
 // Update FilesOptions to fix the error
 export type FilesOptions = {
   [K in SupportedFileExtension]?: {
-    include: string[];
+    include: IncludePattern[];
     exclude?: string[];
     transform?: string | TransformOption | TransformOption[];
+    parsingFlags?: BaseParsingFlags; // Flags for parsing inline content
   };
 } & {
   gt?: {
     output: string; // Output glob: /path/[locale].json
+    publish?: boolean; // if true, publish gtjson translations to the CDN
+    parsingFlags?: Partial<GTParsingFlags>; // Flags for parsing inline content
+    /**
+     * @deprecated
+     * use `files.gt.parsingFlags.includeSourceCodeContext` instead
+     */
+    includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
   };
 };
 
@@ -202,16 +220,31 @@ export type Settings = {
     resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale
     placeholderPaths: ResolvedFiles; // Absolute placeholder paths for all locales containing [locale]
     transformPaths: TransformFiles; // Absolute transform paths for all locales containing [locale]
+    publishPaths: Set<string>; // Absolute paths explicitly opted IN to publishing
+    unpublishPaths: Set<string>; // Absolute paths explicitly opted OUT of publishing
+    parsingFlags: ParseFlagsByFileType;
+    gtJson: {
+      publish?: boolean; // if true, publish gtjson translations to the CDN
+      parsingFlags: GTParsingFlags; // Flags for parsing inline content
+      /**
+       * @deprecated
+       * use {@link files.gt.GTParsingFlags.parsingFlags.includeSourceCodeContext} instead
+       */
+      includeSourceCodeContext?: boolean; // Include surrounding source code lines as context for translations (default: false)
+    };
   };
   stageTranslations: boolean; // if true, always stage the project during translate command
-  publish: boolean; // if true, publish the translations to the CDN
+  publish?: boolean; // if true, publish the translations to the CDN; undefined means no global publish intent
   _versionId?: string; // internal use only
+  _branchId?: string; // internal use only
   version?: string; // for specifying a custom version id to use. Should be unique
   description?: string;
-  src: string[]; // list of glob patterns for gt-next and gt-react
+  src?: string[]; // list of glob patterns for source file scanning
   framework?: SupportedFrameworks;
   options?: AdditionalOptions;
   modelProvider?: string;
+  tag?: string;
+  tagMessage?: string;
   parsingOptions: ParsingConfigOptions;
   branchOptions: BranchOptions;
   // Optional shared static assets config
@@ -271,8 +304,14 @@ export type SharedStaticAssetsConfig = {
   mirrorToLocales?: boolean;
 };
 
+export type StructuralTransform = {
+  sourcePointer: string; // e.g., "/msg"
+  destinationPointer: string; // e.g., "/translations/en"
+};
+
 export type JsonSchema = {
   preset?: 'mintlify' | 'openapi';
+  structuralTransform?: StructuralTransform[];
 
   // exactly 1 of include or composite must be provided; not both
 

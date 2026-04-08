@@ -19,6 +19,7 @@ import {
   CustomLoader,
   _Message,
   _Messages,
+  TaggedChildren,
 } from './types-dir/types';
 import { GTContextType } from './types-dir/context';
 
@@ -75,4 +76,5 @@ export {
   UseEnableI18nParams,
   UseEnableI18nReturn,
   GTConfig,
+  TaggedChildren,
 };

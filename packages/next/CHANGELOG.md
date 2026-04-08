@@ -1,5 +1,248 @@
 # gt-next
 
+## 6.16.1
+
+### Patch Changes
+
+- Updated dependencies [[`80fe63f`](https://github.com/generaltranslation/gt/commit/80fe63fa349f8ece0871ba455f16dae614327fdd)]:
+  - @generaltranslation/compiler@1.3.2
+
+## 6.16.0
+
+### Minor Changes
+
+- [#1173](https://github.com/generaltranslation/gt/pull/1173) [`6b0b56b`](https://github.com/generaltranslation/gt/commit/6b0b56b2253e389913fe67eb19f0ba6ebf2c7a53) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - add context derivation
+
+### Patch Changes
+
+- Updated dependencies [[`6b0b56b`](https://github.com/generaltranslation/gt/commit/6b0b56b2253e389913fe67eb19f0ba6ebf2c7a53)]:
+  - gt-i18n@0.8.0
+  - gt-react@10.18.0
+  - @generaltranslation/compiler@1.3.1
+
+## 6.15.2
+
+### Patch Changes
+
+- [#1158](https://github.com/generaltranslation/gt/pull/1158) [`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto injection for jsx translation
+
+- Updated dependencies [[`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8)]:
+  - gt-react@10.17.0
+  - @generaltranslation/supported-locales@2.0.60
+  - @generaltranslation/compiler@1.3.0
+  - generaltranslation@8.2.2
+  - gt-i18n@0.7.10
+
+## 6.15.1
+
+### Patch Changes
+
+- [#1161](https://github.com/generaltranslation/gt/pull/1161) [`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update logo blocks in READMEs
+
+- Updated dependencies [[`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f)]:
+  - gt-react@10.16.1
+  - gt-i18n@0.7.9
+  - generaltranslation@8.2.1
+  - @generaltranslation/compiler@1.2.1
+  - @generaltranslation/next-internal@0.1.2
+  - @generaltranslation/supported-locales@2.0.59
+
+## 6.15.0
+
+### Minor Changes
+
+- [#1153](https://github.com/generaltranslation/gt/pull/1153) [`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add `<RelativeTime>` component for localized relative time formatting
+  - New `<RelativeTime>` component with two usage modes:
+    - Auto-select unit from a Date: `<RelativeTime>{someDate}</RelativeTime>` → "2 hours ago"
+    - Explicit value + unit: `<RelativeTime value={-1} unit="day" />` → "yesterday"
+  - Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds → minutes → hours → days → weeks → months → years)
+  - Core: `formatRelativeTimeFromDate()` standalone function and `GT.formatRelativeTimeFromDate()` class method
+  - Week unit included in auto-selection thresholds (7-27 days)
+  - CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a variable component
+
+### Patch Changes
+
+- Updated dependencies [[`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290), [`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc)]:
+  - generaltranslation@8.2.0
+  - gt-react@10.16.0
+  - @generaltranslation/compiler@1.2.0
+  - gt-i18n@0.7.8
+  - @generaltranslation/supported-locales@2.0.58
+
+## 6.14.8
+
+### Patch Changes
+
+- Updated dependencies [[`10a0f2e`](https://github.com/generaltranslation/gt/commit/10a0f2ef28003c2767129ba8ba88a61f8d6c3f04)]:
+  - gt-i18n@0.7.7
+  - gt-react@10.15.6
+
+## 6.14.7
+
+### Patch Changes
+
+- [#1147](https://github.com/generaltranslation/gt/pull/1147) [`d7d9b99`](https://github.com/generaltranslation/gt/commit/d7d9b9952f3a96dde2b89f206d47c491d503727f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: add support for multiple format types
+
+- Updated dependencies [[`d7d9b99`](https://github.com/generaltranslation/gt/commit/d7d9b9952f3a96dde2b89f206d47c491d503727f)]:
+  - @generaltranslation/compiler@1.1.36
+  - generaltranslation@8.1.23
+  - gt-i18n@0.7.6
+  - gt-react@10.15.5
+  - @generaltranslation/supported-locales@2.0.57
+
+## 6.14.6
+
+### Patch Changes
+
+- Updated dependencies [[`16521f8`](https://github.com/generaltranslation/gt/commit/16521f83be814ca75be7956b00fc644e60f72e8e)]:
+  - generaltranslation@8.1.22
+  - @generaltranslation/compiler@1.1.35
+  - gt-i18n@0.7.5
+  - gt-react@10.15.4
+  - @generaltranslation/supported-locales@2.0.56
+
+## 6.14.5
+
+### Patch Changes
+
+- Updated dependencies [[`4820643`](https://github.com/generaltranslation/gt/commit/4820643665d5aecacc34c52707c0c81bf4da18ca)]:
+  - @generaltranslation/compiler@1.1.34
+
+## 6.14.4
+
+### Patch Changes
+
+- Updated dependencies [[`d688831`](https://github.com/generaltranslation/gt/commit/d688831d124f9719357100a93e5a7c37729e751e), [`46e089c`](https://github.com/generaltranslation/gt/commit/46e089c63725acc2c478a4c1965bebd6f2d2cc0e)]:
+  - generaltranslation@8.1.21
+  - @generaltranslation/compiler@1.1.33
+  - gt-i18n@0.7.4
+  - gt-react@10.15.3
+  - @generaltranslation/supported-locales@2.0.55
+
+## 6.14.3
+
+### Patch Changes
+
+- Updated dependencies [[`881edc4`](https://github.com/generaltranslation/gt/commit/881edc4ccb5c9685c137da98aa5123b0e645686c)]:
+  - @generaltranslation/supported-locales@2.0.54
+  - gt-i18n@0.7.3
+  - gt-react@10.15.2
+
+## 6.14.2
+
+### Patch Changes
+
+- [#1125](https://github.com/generaltranslation/gt/pull/1125) [`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo URLs in README files (updated to `/brand/gt-logo-*.svg`)
+
+- Updated dependencies [[`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8)]:
+  - @generaltranslation/compiler@1.1.32
+  - generaltranslation@8.1.20
+  - gt-i18n@0.7.2
+  - @generaltranslation/next-internal@0.1.1
+  - gt-react@10.15.1
+  - @generaltranslation/supported-locales@2.0.53
+
+## 6.14.1
+
+### Patch Changes
+
+- [#1129](https://github.com/generaltranslation/gt/pull/1129) [`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: derivation support for the t macro
+
+- Updated dependencies [[`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281)]:
+  - gt-react@10.15.0
+  - @generaltranslation/supported-locales@2.0.52
+  - @generaltranslation/compiler@1.1.31
+  - generaltranslation@8.1.19
+  - gt-i18n@0.7.1
+
+## 6.14.0
+
+### Minor Changes
+
+- [#1121](https://github.com/generaltranslation/gt/pull/1121) [`b6a58de`](https://github.com/generaltranslation/gt/commit/b6a58de76998b28ce3247aa1a7005fffaeb210a5) Thanks [@pie575](https://github.com/pie575)! - Added a versionId hook for users to better access what Version their GT translations are on
+
+### Patch Changes
+
+- Updated dependencies [[`b6a58de`](https://github.com/generaltranslation/gt/commit/b6a58de76998b28ce3247aa1a7005fffaeb210a5), [`6d516a7`](https://github.com/generaltranslation/gt/commit/6d516a784f1192f7758689fcf4557e8a19de740a)]:
+  - gt-react@10.14.0
+  - gt-i18n@0.7.0
+  - generaltranslation@8.1.18
+  - @generaltranslation/compiler@1.1.30
+  - @generaltranslation/supported-locales@2.0.51
+
+## 6.13.11
+
+### Patch Changes
+
+- Updated dependencies [[`de6a2d1`](https://github.com/generaltranslation/gt/commit/de6a2d1caa150383c70844b3ee6b9b2e66f77769)]:
+  - gt-react@10.13.0
+  - @generaltranslation/compiler@1.1.29
+  - gt-i18n@0.6.2
+
+## 6.13.10
+
+### Patch Changes
+
+- [#1062](https://github.com/generaltranslation/gt/pull/1062) [`2274e23`](https://github.com/generaltranslation/gt/commit/2274e23d448c8a96d661d30e5c7fc737814c1fb0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: rename static to derive, and deprecate static
+
+- Updated dependencies [[`2274e23`](https://github.com/generaltranslation/gt/commit/2274e23d448c8a96d661d30e5c7fc737814c1fb0)]:
+  - @generaltranslation/compiler@1.1.28
+  - gt-react@10.12.1
+  - generaltranslation@8.1.17
+  - gt-i18n@0.6.1
+  - @generaltranslation/supported-locales@2.0.50
+
+## 6.13.9
+
+### Patch Changes
+
+- Updated dependencies [[`7e2bbc5`](https://github.com/generaltranslation/gt/commit/7e2bbc575d9d2bcc358bfa11c880a7bf4aac8636)]:
+  - gt-react@10.12.0
+  - gt-i18n@0.6.0
+
+## 6.13.8
+
+### Patch Changes
+
+- Updated dependencies [[`e364093`](https://github.com/generaltranslation/gt/commit/e3640931cf0ca2df08dcadbae30b1668e14a3ed8)]:
+  - generaltranslation@8.1.16
+  - @generaltranslation/compiler@1.1.27
+  - gt-i18n@0.5.2
+  - gt-react@10.11.7
+  - @generaltranslation/supported-locales@2.0.49
+
+## 6.13.7
+
+### Patch Changes
+
+- Updated dependencies [[`1793010`](https://github.com/generaltranslation/gt/commit/1793010ea33ceceba307832195433ff3b7f1143e)]:
+  - generaltranslation@8.1.15
+  - @generaltranslation/compiler@1.1.26
+  - gt-i18n@0.5.1
+  - gt-react@10.11.6
+  - @generaltranslation/supported-locales@2.0.48
+
+## 6.13.6
+
+### Patch Changes
+
+- Updated dependencies [[`7846d06`](https://github.com/generaltranslation/gt/commit/7846d0672ba357081793706fdf55313b4f5428e0)]:
+  - gt-i18n@0.5.0
+  - gt-react@10.11.5
+
+## 6.13.5
+
+### Patch Changes
+
+- [#1076](https://github.com/generaltranslation/gt/pull/1076) [`19ae4eb`](https://github.com/generaltranslation/gt/commit/19ae4eb0baf7e6f15d19f9fad384621d38d73d57) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Apply style guide to error messages and warnings: remove "Please", simplify verbose phrasing, fix `in-line` → `inline`.
+
+- Updated dependencies [[`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76), [`19ae4eb`](https://github.com/generaltranslation/gt/commit/19ae4eb0baf7e6f15d19f9fad384621d38d73d57)]:
+  - generaltranslation@8.1.14
+  - @generaltranslation/compiler@1.1.25
+  - gt-i18n@0.4.2
+  - gt-react@10.11.4
+  - @generaltranslation/supported-locales@2.0.47
+
 ## 6.13.4
 
 ### Patch Changes

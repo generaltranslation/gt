@@ -1,11 +1,12 @@
 import { NodePath, Scope, Binding } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
-  MSG_REGISTRATION_FUNCTION,
   INLINE_TRANSLATION_HOOK,
   INLINE_TRANSLATION_HOOK_ASYNC,
   INLINE_MESSAGE_HOOK,
   INLINE_MESSAGE_HOOK_ASYNC,
+  STRING_REGISTRATION_FUNCS,
+  T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
 } from './constants.js';
 import { warnAsyncUseGT, warnSyncGetGT } from '../../../console/index.js';
 
@@ -23,6 +24,7 @@ import type {
 import { resolveImportPath } from './resolveImportPath.js';
 import { buildImportMap } from './buildImportMap.js';
 import { processTranslationCall } from './stringParsing/processTranslationCall/index.js';
+import { processTaggedTemplateCall } from './stringParsing/processTaggedTemplateCall/index.js';
 
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
@@ -112,14 +114,15 @@ export function resolveVariableAliases(
 
 /**
  * Handles how translation callbacks are used within code.
- * This covers both direct translation calls (t('hello')) and prop drilling
- * where the translation callback is passed to other functions (getData(t)).
+ * This covers both direct translation calls (gt('hello')) and prop drilling
+ * where the translation callback is passed to other functions (getData(gt)).
  */
 function handleFunctionCall(
   tPath: NodePath,
   config: ParsingConfig,
   state: ParsingState,
-  output: ParsingOutput
+  output: ParsingOutput,
+  visitedFunctions: Set<t.Node>
 ): void {
   if (
     tPath.parent.type === 'CallExpression' &&
@@ -127,6 +130,13 @@ function handleFunctionCall(
   ) {
     // Direct translation call: t('hello')
     processTranslationCall(tPath, config, output);
+  } else if (
+    !config.ignoreTaggedTemplates &&
+    tPath.parent.type === 'TaggedTemplateExpression' &&
+    tPath.parent.tag === tPath.node
+  ) {
+    // Tagged template: t`hello ${name}`
+    processTaggedTemplateCall(tPath, config, output);
   } else if (
     tPath.parent.type === 'CallExpression' &&
     t.isExpression(tPath.node) &&
@@ -147,7 +157,8 @@ function handleFunctionCall(
           functionPath.node,
           functionPath,
           config,
-          output
+          output,
+          visitedFunctions
         );
       }
       // Handle arrow functions assigned to variables: const getData = (t) => {...}
@@ -165,7 +176,8 @@ function handleFunctionCall(
           calleeBinding.path.node.init,
           initPath,
           config,
-          output
+          output,
+          visitedFunctions
         );
       }
       // If not found locally, check if it's an imported function
@@ -204,16 +216,28 @@ function processFunctionIfMatches(
   functionNode: t.Function,
   functionPath: NodePath,
   config: ParsingConfig,
-  output: ParsingOutput
+  output: ParsingOutput,
+  visitedFunctions: Set<t.Node>
 ): void {
+  if (visitedFunctions.has(functionNode)) return;
+  visitedFunctions.add(functionNode);
+
   if (functionNode.params.length > argIndex) {
     const param = functionNode.params[argIndex];
     const paramName = extractParameterName(param);
 
     if (paramName) {
-      findFunctionParameterUsage(functionPath, paramName, config, output);
+      findFunctionParameterUsage(
+        functionPath,
+        paramName,
+        config,
+        output,
+        visitedFunctions
+      );
     }
   }
+
+  visitedFunctions.delete(functionNode);
 }
 
 /**
@@ -228,7 +252,8 @@ function findFunctionParameterUsage(
   functionPath: NodePath,
   parameterName: string,
   config: ParsingConfig,
-  output: ParsingOutput
+  output: ParsingOutput,
+  visitedFunctions: Set<t.Node>
 ): void {
   // Look for the function body and find all usages of the parameter
   if (functionPath.isFunction()) {
@@ -254,7 +279,8 @@ function findFunctionParameterUsage(
             refPath,
             config,
             { visited: new Set(), importMap },
-            output
+            output,
+            visitedFunctions
           );
         });
       }
@@ -302,6 +328,9 @@ function processFunctionInFile(
 
     let found = false;
     const reExports: string[] = [];
+    // Fresh set per cross-file parse — node identity is only stable within a single parse.
+    // Cross-file cycles are already guarded by processFunctionCache above.
+    const visitedFunctions = new Set<t.Node>();
 
     traverse(ast, {
       // Handle function declarations: function getInfo(t) { ... }
@@ -314,7 +343,8 @@ function processFunctionInFile(
             path.node,
             path,
             config,
-            output
+            output,
+            visitedFunctions
           );
         }
       },
@@ -335,7 +365,8 @@ function processFunctionInFile(
             path.node.init,
             initPath,
             config,
-            output
+            output,
+            visitedFunctions
           );
         }
       },
@@ -400,13 +431,13 @@ function processFunctionInFile(
  * Main entry point for parsing translation strings from useGT() and getGT() calls.
  *
  * Supports complex patterns including:
- * 1. Direct calls: const t = useGT(); t('hello');
- * 2. Translation callback prop drilling: const t = useGT(); getInfo(t); where getInfo uses t() internally
+ * 1. Direct calls: const gt = useGT(); gt('hello');
+ * 2. Translation callback prop drilling: const gt = useGT(); getInfo(gt); where getInfo uses gt() internally
  * 3. Cross-file function calls: imported functions that receive the translation callback as a parameter
  *
  * Example flow:
- * - const t = useGT();
- * - const { home } = getInfo(t); // getInfo is imported from './constants'
+ * - const gt = useGT();
+ * - const { home } = getInfo(gt); // getInfo is imported from './constants'
  * - This will parse constants.ts to find translation calls within getInfo function
  */
 export function parseStrings(
@@ -416,29 +447,91 @@ export function parseStrings(
   config: ParsingConfig,
   output: ParsingOutput
 ): void {
+  // Handle global t macro directly — path is already the tag identifier
+  // NOTE: if we decide to add support for a global t() function in addition to the macro,
+  // then we need to add support for skipDeriveInvocation here
+  if (originalName === T_GLOBAL_REGISTRATION_FUNCTION_MARKER) {
+    if (!config.ignoreGlobalTaggedTemplates) {
+      processTaggedTemplateCall(
+        path,
+        {
+          ...config,
+          autoDeriveMethod:
+            config.autoDeriveMethod === 'AUTO'
+              ? 'DISABLED'
+              : config.autoDeriveMethod,
+        },
+        output
+      );
+    }
+    return;
+  }
+
   // First, collect all imports in this file to track cross-file function calls
   const importMap = buildImportMap(path.scope.getProgramParent().path);
 
   const referencePaths = path.scope.bindings[importName]?.referencePaths || [];
 
   for (const refPath of referencePaths) {
-    // Handle msg() calls directly without variable assignment
-    if (originalName === MSG_REGISTRATION_FUNCTION) {
-      const msgConfig: ParsingConfig = {
+    // Handle msg(), t() calls directly without variable assignment
+    if (
+      STRING_REGISTRATION_FUNCS.includes(
+        originalName as (typeof STRING_REGISTRATION_FUNCS)[number]
+      )
+    ) {
+      const stringRegistrationConfig: ParsingConfig = {
         parsingOptions: config.parsingOptions,
         file: config.file,
         ignoreInlineMetadata: false,
         ignoreDynamicContent: false,
         ignoreInvalidIcu: false,
         ignoreInlineListContent: false,
+        includeSourceCodeContext: config.includeSourceCodeContext,
+        ignoreTaggedTemplates: false,
+        ignoreGlobalTaggedTemplates: false,
+        // User configurable, otherwise default to AUTO
+        autoDeriveMethod:
+          config.autoDeriveMethod === 'AUTO'
+            ? 'DISABLED'
+            : config.autoDeriveMethod,
       };
 
-      // Check if this is a direct call to msg('string')
+      // Check if this is a direct call to msg('string') or t('string')
       if (
         refPath.parent.type === 'CallExpression' &&
         refPath.parent.callee === refPath.node
       ) {
-        processTranslationCall(refPath, msgConfig, output);
+        /**
+         * CASE: Auto-derive t() and msg() function
+         * The t() function, will treat variable content as if it was marked for derivation
+         * without explicit calls to derive().
+         *
+         * @example
+         * const derivedValue = 'John';
+         * const interpolatedValue = "Ernest"
+         * t(
+         *   "Hello, " + derivedValue + "! My name is {interpolatedValue}",
+         *   { interpolatedValue }
+         * );
+         * // "Hello, John! My name is {interpolatedValue}"
+         */
+        processTranslationCall(
+          refPath,
+          config.autoDeriveMethod === 'AUTO'
+            ? {
+                ...stringRegistrationConfig,
+                autoDeriveMethod: 'ENABLED',
+              }
+            : stringRegistrationConfig,
+          output
+        );
+      } else if (
+        !stringRegistrationConfig.ignoreTaggedTemplates &&
+        refPath.parent.type === 'TaggedTemplateExpression' &&
+        refPath.parent.tag === refPath.node
+      ) {
+        // Tagged template: t`hello ${name}`
+        processTaggedTemplateCall(refPath, stringRegistrationConfig, output);
       }
       continue;
     }
@@ -491,6 +584,16 @@ export function parseStrings(
         ignoreInvalidIcu: isMessageHook,
         // TODO: when we add support for array content in gt function, this should just always be false
         ignoreInlineListContent: isInlineGT,
+        includeSourceCodeContext: config.includeSourceCodeContext,
+        ignoreTaggedTemplates: false,
+        ignoreGlobalTaggedTemplates: false,
+        // User configurable, otherwise default to DISABLED
+        autoDeriveMethod:
+          config.autoDeriveMethod === 'AUTO'
+            ? isInlineGT
+              ? 'ENABLED'
+              : 'DISABLED'
+            : config.autoDeriveMethod,
       };
 
       const effectiveParent =
@@ -514,6 +617,7 @@ export function parseStrings(
         );
 
         // Process references for all translation function names and their aliases
+        const visitedFunctions = new Set<t.Node>();
         allTranslationNames.forEach((name) => {
           const tReferencePaths =
             variableScope.bindings[name]?.referencePaths || [];
@@ -523,7 +627,8 @@ export function parseStrings(
               tPath,
               hookConfig,
               { visited: new Set(), importMap },
-              output
+              output,
+              visitedFunctions
             );
           }
         });

@@ -16,6 +16,8 @@ function createConfig(overrides?: Partial<ParsingConfig>): ParsingConfig {
     ignoreDynamicContent: false,
     ignoreInvalidIcu: false,
     ignoreInlineListContent: false,
+    ignoreTaggedTemplates: false,
+    ignoreGlobalTaggedTemplates: false,
     ...overrides,
   };
 }
@@ -205,5 +207,214 @@ describe('processTranslationCall - array support', () => {
     expect(output.updates).toHaveLength(1);
     expect(output.updates[0]).toMatchObject({ source: 'hello' });
     expect(output.errors.length).toBeGreaterThan(0);
+  });
+});
+
+describe('$format option support', () => {
+  it('should extract $format from options and set dataFormat', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello", { $format: "STRING" })`
+    );
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'STRING',
+      source: 'Hello',
+    });
+    expect(output.errors).toHaveLength(0);
+  });
+
+  it('should default to ICU when $format is not provided', () => {
+    const output = runProcessTranslationCall(`t("Hello")`);
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'ICU',
+      source: 'Hello',
+    });
+  });
+
+  it('should extract $format alongside other metadata', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello", { $id: "greeting", $context: "home", $format: "I18NEXT" })`
+    );
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'I18NEXT',
+      source: 'Hello',
+      metadata: { id: 'greeting', context: 'home' },
+    });
+  });
+
+  it('should warn on invalid $format value', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello", { $format: "INVALID" })`
+    );
+    expect(output.updates).toHaveLength(1);
+    // Invalid format should fall back to ICU
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'ICU',
+      source: 'Hello',
+    });
+    // Should produce a warning
+    expect(output.warnings.size).toBeGreaterThan(0);
+  });
+
+  it('should extract $format for array of strings', () => {
+    const output = runProcessTranslationCall(
+      `t(["Hello", "World"], { $format: "STRING" })`
+    );
+    expect(output.updates).toHaveLength(2);
+    expect(output.updates[0]).toMatchObject({ dataFormat: 'STRING' });
+    expect(output.updates[1]).toMatchObject({ dataFormat: 'STRING' });
+  });
+
+  it('should not warn on invalid ICU when $format is STRING', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello {{plain}} string", { $format: "STRING" })`
+    );
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'STRING',
+      source: 'Hello {{plain}} string',
+    });
+    expect(output.errors).toHaveLength(0);
+    expect(output.warnings.size).toBe(0);
+  });
+
+  it('should still warn on invalid ICU when $format is ICU', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello {{plain}} string", { $format: "ICU" })`
+    );
+    expect(output.updates).toHaveLength(0);
+    expect(output.warnings.size).toBeGreaterThan(0);
+  });
+
+  it('should still warn on invalid ICU when no $format specified', () => {
+    const output = runProcessTranslationCall(`t("Hello {{plain}} string")`);
+    expect(output.updates).toHaveLength(0);
+    expect(output.warnings.size).toBeGreaterThan(0);
+  });
+});
+
+describe('derive in context', () => {
+  it('should produce 2 updates when $context uses derive with ternary', () => {
+    const code = `
+      import { derive } from 'gt-react';
+      t("Hello", { $context: derive(x ? "formal" : "casual") })
+    `;
+    const output = runProcessTranslationCall(code);
+
+    expect(output.errors).toHaveLength(0);
+    expect(output.updates).toHaveLength(2);
+
+    const contexts = output.updates.map((u) => u.metadata.context).sort();
+    expect(contexts).toEqual(['casual', 'formal']);
+
+    // Both should have the same source
+    expect(output.updates[0].source).toBe('Hello');
+    expect(output.updates[1].source).toBe('Hello');
+
+    // Both should share the same staticId
+    expect(output.updates[0].metadata.staticId).toBeDefined();
+    expect(output.updates[0].metadata.staticId).toBe(
+      output.updates[1].metadata.staticId
+    );
+  });
+
+  it('should produce cross-product when both content and context use derive', () => {
+    const code = `
+      import { derive } from 'gt-react';
+      t(derive(x ? "Hello" : "Hi"), { $context: derive(y ? "formal" : "casual") })
+    `;
+    const output = runProcessTranslationCall(code);
+
+    expect(output.errors).toHaveLength(0);
+    expect(output.updates).toHaveLength(4);
+
+    const pairs = output.updates
+      .map((u) => `${u.source}|${u.metadata.context}`)
+      .sort();
+    expect(pairs).toEqual([
+      'Hello|casual',
+      'Hello|formal',
+      'Hi|casual',
+      'Hi|formal',
+    ]);
+
+    // All 4 should share the same staticId
+    const staticId = output.updates[0].metadata.staticId;
+    expect(staticId).toBeDefined();
+    expect(output.updates.every((u) => u.metadata.staticId === staticId)).toBe(
+      true
+    );
+  });
+
+  it('should still work with static string $context (regression)', () => {
+    const output = runProcessTranslationCall(
+      `t("Hello", { $context: "greeting" })`
+    );
+
+    expect(output.errors).toHaveLength(0);
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0]).toMatchObject({
+      source: 'Hello',
+      metadata: { context: 'greeting' },
+    });
+  });
+
+  it('should produce N updates when context derives a function with N return variants', () => {
+    const code = `
+      import { derive } from 'gt-react';
+      function getFormality() {
+        if (isFormal) {
+          return "formal";
+        } else {
+          return "casual";
+        }
+      }
+      t("Hello", { $context: derive(getFormality()) })
+    `;
+    const output = runProcessTranslationCall(code);
+
+    expect(output.errors).toHaveLength(0);
+    expect(output.updates).toHaveLength(2);
+
+    const contexts = output.updates.map((u) => u.metadata.context).sort();
+    expect(contexts).toEqual(['casual', 'formal']);
+
+    expect(output.updates[0].source).toBe('Hello');
+    expect(output.updates[1].source).toBe('Hello');
+
+    expect(output.updates[0].metadata.staticId).toBeDefined();
+    expect(output.updates[0].metadata.staticId).toBe(
+      output.updates[1].metadata.staticId
+    );
+  });
+
+  it('should handle derive in context via string concatenation', () => {
+    const code = `
+      import { derive } from 'gt-react';
+      t("Hello", { $context: "prefix-" + derive(x ? "formal" : "casual") })
+    `;
+    const output = runProcessTranslationCall(code);
+
+    expect(output.errors).toHaveLength(0);
+    expect(output.updates).toHaveLength(2);
+
+    const contexts = output.updates.map((u) => u.metadata.context).sort();
+    expect(contexts).toEqual(['prefix-casual', 'prefix-formal']);
+  });
+
+  it('should handle derive in context via template literal', () => {
+    const code = `
+      import { derive } from 'gt-react';
+      t("Hello", { $context: \`prefix-\${derive(x ? "formal" : "casual")}\` })
+    `;
+    const output = runProcessTranslationCall(code);
+
+    expect(output.errors).toHaveLength(0);
+    expect(output.updates).toHaveLength(2);
+
+    const contexts = output.updates.map((u) => u.metadata.context).sort();
+    expect(contexts).toEqual(['prefix-casual', 'prefix-formal']);
   });
 });

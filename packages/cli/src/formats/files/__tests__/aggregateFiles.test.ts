@@ -5,7 +5,7 @@ import { readFile, getRelative } from '../../../fs/findFilepath.js';
 import { parseJson } from '../../json/parseJson.js';
 import parseYaml from '../../yaml/parseYaml.js';
 import sanitizeFileContent from '../../../utils/sanitizeFileContent.js';
-import { determineLibrary } from '../../../fs/determineFramework.js';
+import { determineLibrary } from '../../../fs/determineFramework/index.js';
 import { isValidMdx } from '../../../utils/validateMdx.js';
 
 vi.mock('../../../console/logger.js', () => ({
@@ -18,7 +18,7 @@ vi.mock('../../../fs/findFilepath.js');
 vi.mock('../../json/parseJson.js');
 vi.mock('../../yaml/parseYaml.js');
 vi.mock('../../../utils/sanitizeFileContent.js');
-vi.mock('../../../fs/determineFramework.js');
+vi.mock('../../../fs/determineFramework/index.js');
 vi.mock('../../../utils/validateMdx.js');
 
 const mockLogWarning = vi.mocked(logger.warn);
@@ -88,7 +88,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce('') // empty file
         .mockReturnValueOnce('{"key": "value"}'); // valid file
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
         'Skipping empty.json: JSON file is not parsable'
@@ -113,7 +113,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce('   \n\t  ') // whitespace only
         .mockReturnValueOnce('{"key": "value"}'); // valid file
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
         'Skipping whitespace.json: JSON file is not parsable'
@@ -140,7 +140,7 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       mockReadFile.mockReturnValueOnce('{ invalid json');
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).not.toHaveBeenCalled();
       expect(result).toHaveLength(1);
@@ -163,7 +163,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce(null as any) // null content
         .mockReturnValueOnce('{"key": "value"}'); // valid file
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
         'Skipping null.json: JSON file is empty'
@@ -189,7 +189,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce('') // empty file
         .mockReturnValueOnce('key: value'); // valid file
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
         'Skipping empty.yaml: YAML file is empty'
@@ -213,7 +213,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce('   \n\t  ') // whitespace only
         .mockReturnValueOnce('key: value'); // valid file
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
         'Skipping whitespace.yml: YAML file is empty'
@@ -239,7 +239,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce('') // empty file
         .mockReturnValueOnce('# Valid MDX'); // valid file
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
         'Skipping empty.mdx: File is empty after sanitization'
@@ -269,7 +269,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         error: 'bad',
       });
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(mockIsValidMdx).not.toHaveBeenCalled();
       expect(mockLogWarning).not.toHaveBeenCalled();
@@ -298,7 +298,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         '---\nsummary: "Hello"\n---\n\n# Content'
       );
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(result).toHaveLength(1);
       expect(result[0].content).toMatch(/title:\s*"?My File"?/);
@@ -330,7 +330,7 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       mockReadFile.mockReturnValueOnce(content);
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(result).toHaveLength(1);
       expect(result[0].content).toBe(content);
@@ -357,7 +357,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         '---\nsummary: "Hello"\n---\n\n# Content'
       );
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(result).toHaveLength(1);
       expect(result[0].content).toMatch(/title:\s*"?Getting Started"?/);
@@ -384,7 +384,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         '---\nsummary: "Hello"\n---\n\n# Content'
       );
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(result).toHaveLength(1);
       expect(result[0].content).toMatch(/title:\s*"?Index"?/);
@@ -409,7 +409,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce('') // empty after sanitization
         .mockReturnValueOnce('# Valid content'); // valid after sanitization
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
         'Skipping sanitized-empty.md: File is empty after sanitization'
@@ -440,13 +440,112 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce('   \n\t  ') // whitespace only after sanitization
         .mockReturnValueOnce('export const Component = () => "Hello"'); // valid after sanitization
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
         'Skipping whitespace-after-sanitization.ts: File is empty after sanitization'
       );
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.ts');
+    });
+  });
+
+  describe('Twilio Content JSON files', () => {
+    it('should process valid Twilio Content JSON files with correct fileFormat', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            twilioContentJson: ['/full/path/content.json'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce('{"key": "value"}');
+
+      const { files: result } = await aggregateFiles(settings as any);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].fileFormat).toBe('TWILIO_CONTENT_JSON');
+      expect(result[0].dataFormat).toBe('STRING');
+      expect(result[0].fileName).toBe('content.json');
+    });
+
+    it('should skip empty Twilio Content JSON files and log warning', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            twilioContentJson: [
+              '/full/path/empty.json',
+              '/full/path/valid.json',
+            ],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile
+        .mockReturnValueOnce('') // empty file
+        .mockReturnValueOnce('{"key": "value"}'); // valid file
+
+      const { files: result } = await aggregateFiles(settings as any);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.json: JSON file is not parsable'
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('valid.json');
+    });
+
+    it('should skip unparsable Twilio Content JSON files', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            twilioContentJson: ['/full/path/invalid.json'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce('{ invalid json');
+
+      const { files: result } = await aggregateFiles(settings as any);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping invalid.json: JSON file is not parsable'
+      );
+      expect(result).toHaveLength(0);
+    });
+
+    it('should allow invalid JSON when validation is skipped', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            twilioContentJson: ['/full/path/invalid.json'],
+          },
+          placeholderPaths: {},
+        },
+        options: {
+          skipFileValidation: {
+            json: true,
+          },
+        },
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce('{ invalid json');
+
+      const { files: result } = await aggregateFiles(settings as any);
+
+      expect(mockLogWarning).not.toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('invalid.json');
     });
   });
 
@@ -457,6 +556,7 @@ describe('aggregateFiles - Empty File Handling', () => {
           resolvedPaths: {
             json: ['/full/path/empty.json', '/full/path/valid.json'],
             yaml: ['/full/path/empty.yaml'],
+            twilioContentJson: ['/full/path/valid-twilio.json'],
             md: ['/full/path/valid.md'],
           },
           placeholderPaths: {},
@@ -469,9 +569,10 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce('') // empty JSON
         .mockReturnValueOnce('{"key": "value"}') // valid JSON
         .mockReturnValueOnce('') // empty YAML
+        .mockReturnValueOnce('{"twilio": "content"}') // valid Twilio Content JSON
         .mockReturnValueOnce('# Valid markdown'); // valid MD
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       // Check that warnings were logged for empty files
       expect(mockLogWarning).toHaveBeenCalledWith(
@@ -481,12 +582,13 @@ describe('aggregateFiles - Empty File Handling', () => {
         'Skipping empty.yaml: YAML file is empty'
       );
 
-      // Should have 2 valid files
-      expect(result).toHaveLength(2);
+      // Should have 3 valid files
+      expect(result).toHaveLength(3);
 
-      // Check the file names are correct (JSON processed first, then MD after YAML)
+      // Check the file names are correct
       const fileNames = result.map((f) => f.fileName);
       expect(fileNames).toContain('valid.json');
+      expect(fileNames).toContain('valid-twilio.json');
       expect(fileNames).toContain('valid.md');
     });
   });
@@ -514,7 +616,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce('') // empty file 2 - will return null from map
         .mockReturnValueOnce('{"key": "value"}'); // valid file
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
         'Skipping empty1.json: JSON file is not parsable'
@@ -549,7 +651,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce('') // empty after parsing - gets filtered out
         .mockReturnValueOnce('parsed content'); // valid after parsing
 
-      const result = await aggregateFiles(settings as any);
+      const { files: result } = await aggregateFiles(settings as any);
 
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('valid.json');

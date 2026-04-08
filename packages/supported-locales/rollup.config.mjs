@@ -1,7 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
-import terser from "@rollup/plugin-terser";
-import { dts } from "rollup-plugin-dts";
+import terser from '@rollup/plugin-terser';
+import { dts } from 'rollup-plugin-dts';
 
 export default [
   // Bundling for the main library (index.ts)
@@ -26,9 +26,9 @@ export default [
       commonjs(), // Handle CommonJS dependencies
       terser(), // Minification
     ],
-    external: ['generaltranslation']
+    external: ['generaltranslation'],
   },
-  
+
   // TypeScript declarations
   {
     input: 'src/index.ts',
@@ -37,5 +37,5 @@ export default [
       format: 'es',
     },
     plugins: [dts()],
-  }
+  },
 ];

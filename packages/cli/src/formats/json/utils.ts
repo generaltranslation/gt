@@ -217,73 +217,13 @@ export function generateSourceObjectPointers(
   return sourceObjectPointers;
 }
 
-const UNSUPPORTED_JSON_FIELDS = ['$ref'];
-
 /**
- * Recursively traverse a JSON value and collect all objects whose key
- * matches one of the unsupported field names.
+ * Validate the json schema for composite or include schemas
+ * @param options - Additional options containing jsonSchema config
+ * @param filePath - The path to the file (used for matching jsonSchema)
+ * @returns The json schema, or null if no schema is found
+ * @returns exitSync(1) if the json schema is invalid
  */
-function findMintlifyUnsupportedFields(
-  value: any,
-  fieldNames: string[],
-  pointer: string = ''
-): { pointer: string; field: string; fieldValue: string }[] {
-  if (value === null || typeof value !== 'object') return [];
-  if (Array.isArray(value)) {
-    const results: { pointer: string; field: string; fieldValue: string }[] =
-      [];
-    for (let i = 0; i < value.length; i++) {
-      results.push(
-        ...findMintlifyUnsupportedFields(value[i], fieldNames, `${pointer}/${i}`)
-      );
-    }
-    return results;
-  }
-  // Check if this object contains an unsupported field
-  for (const field of fieldNames) {
-    if (typeof value[field] === 'string') {
-      return [{ pointer, field, fieldValue: value[field] }];
-    }
-  }
-  // Recurse into child properties
-  const results: { pointer: string; field: string; fieldValue: string }[] = [];
-  for (const key of Object.keys(value)) {
-    results.push(
-      ...findMintlifyUnsupportedFields(value[key], fieldNames, `${pointer}/${key}`)
-    );
-  }
-  return results;
-}
-
-/**
- * Detect unsupported fields (e.g. $ref) anywhere in the JSON data structure.
- * Logs a warning listing the fields found.
- */
-export function detectMintlifyUnsupportedFields(
-  json: any,
-  filePath: string
-): void {
-  const unsupported = findMintlifyUnsupportedFields(json, UNSUPPORTED_JSON_FIELDS);
-
-  if (unsupported.length > 0) {
-    const fileName = path.basename(filePath);
-    const lines = unsupported
-      .map(
-        (u) =>
-          chalk.yellow('• ') +
-          chalk.white(
-            `${u.pointer.replace(/\//g, '.').replace(/^\./, '')}: ${u.fieldValue}`
-          )
-      )
-      .join('\n');
-    logger.warn(
-      chalk.yellow(
-        `Mintlify config splitting is not yet supported. The following \`$ref\` fields were detected in \`${fileName}\` and will not be resolved:\n`
-      ) + lines
-    );
-  }
-}
-
 export function validateJsonSchema(
   options: AdditionalOptions,
   filePath: string
@@ -311,6 +251,14 @@ export function validateJsonSchema(
 
   if (!jsonSchema.include && !jsonSchema.composite) {
     logger.error('No include or composite property found in JSON schema');
+    return exitSync(1);
+    return null;
+  }
+
+  if (jsonSchema.structuralTransform && !jsonSchema.composite) {
+    logger.error(
+      'structuralTransform requires composite to be defined in the JSON schema'
+    );
     return exitSync(1);
     return null;
   }

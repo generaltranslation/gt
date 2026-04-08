@@ -1,4 +1,8 @@
 import { Command } from 'commander';
+import {
+  DEFAULT_TRANSLATIONS_DIR,
+  DEFAULT_VITE_TRANSLATIONS_DIR,
+} from '../utils/constants.js';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import findFilepath from '../fs/findFilepath.js';
 import {
@@ -43,7 +47,10 @@ import {
   handleTranslate,
   postProcessTranslations,
 } from './commands/translate.js';
-import { getDownloaded, clearDownloaded } from '../state/recentDownloads.js';
+import {
+  getNeedsPostprocessing,
+  clearDownloaded,
+} from '../state/recentDownloads.js';
 import { clearWarnings } from '../state/translateWarnings.js';
 import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
@@ -58,15 +65,6 @@ import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
 } from '../setup/frameworkUtils.js';
-import {
-  findAgentFiles,
-  findAgentFilesWithInstructions,
-  hasCursorRulesDir,
-  CURSOR_GT_RULES_FILE,
-  getAgentInstructions,
-  appendAgentInstructions,
-} from '../setup/agentInstructions.js';
-import { determineLibrary } from '../fs/determineFramework.js';
 import { INLINE_LIBRARIES } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 
@@ -78,7 +76,8 @@ export type UploadOptions = {
 };
 
 export type LoginOptions = {
-  keyType?: 'development' | 'production';
+  config?: string;
+  keyType?: 'development' | 'production' | 'all';
 };
 
 export class BaseCLI {
@@ -94,12 +93,17 @@ export class BaseCLI {
     this.program = program;
     this.library = library;
     this.additionalModules = additionalModules || [];
+
+    this.program.option(
+      '--skip-version-check',
+      'Skip the monorepo GT package version consistency check'
+    );
+
     this.setupInitCommand();
     this.setupConfigureCommand();
     this.setupUploadCommand();
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
-    this.setupUpdateInstructionsCommand();
   }
   // Init is never called in a child class
   public init() {
@@ -200,12 +204,14 @@ export class BaseCLI {
         .description(
           'Save local edits for all configured files by sending diffs (no translation enqueued)'
         )
-    ).action(async (initOptions: SharedFlags) => {
-      displayHeader('Saving local edits...');
-      const settings = await generateSettings(initOptions);
-      await saveLocalEdits(settings);
-      logger.endCommand('Saved local edits');
-    });
+    )
+      .option('--publish', 'Publish translations to the CDN', false)
+      .action(async (initOptions: SharedFlags) => {
+        displayHeader('Saving local edits...');
+        const settings = await generateSettings(initOptions);
+        await saveLocalEdits(settings);
+        logger.endCommand('Saved local edits');
+      });
   }
 
   protected async handleSetupProject(
@@ -274,14 +280,15 @@ export class BaseCLI {
           settings,
           results.fileVersionData,
           results.jobData,
-          results.branchData
+          results.branchData,
+          results.publishMap
         );
       }
     } else {
       await handleDownload(initOptions, settings, this.library);
     }
     // Only postprocess files downloaded in this run
-    const include = getDownloaded();
+    const include = getNeedsPostprocessing();
     if (include.size > 0) {
       await postProcessTranslations(settings, include);
     }
@@ -313,7 +320,7 @@ export class BaseCLI {
   protected setupLoginCommand(): void {
     this.program
       .command('auth')
-      .description('Generate a General Translation API key and project ID')
+      .description('Generate General Translation API keys and project ID')
       .option(
         '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
@@ -321,33 +328,36 @@ export class BaseCLI {
       )
       .option(
         '-t, --key-type <type>',
-        'Type of key to generate, production | development'
+        'Type of key to generate, production | development | all'
       )
       .action(async (options: LoginOptions) => {
         displayHeader('Authenticating with General Translation...');
         if (!options.keyType) {
-          const packageJson = await searchForPackageJson();
-          if (
-            packageJson &&
-            INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson))
-          ) {
-            options.keyType = 'development';
-          } else {
-            options.keyType = 'production';
-          }
+          options.keyType = await promptSelect<
+            'development' | 'production' | 'all'
+          >({
+            message: 'What type of API key would you like to generate?',
+            options: [
+              { value: 'development', label: 'Development' },
+              { value: 'production', label: 'Production' },
+              { value: 'all', label: 'Both' },
+            ],
+            defaultValue: 'all',
+          });
         } else {
           if (
             options.keyType !== 'development' &&
-            options.keyType !== 'production'
+            options.keyType !== 'production' &&
+            options.keyType !== 'all'
           ) {
             logErrorAndExit(
-              'Invalid key type, must be development or production'
+              'Invalid key type, must be development, production, or all'
             );
           }
         }
         await this.handleLoginCommand(options);
         logger.endCommand(
-          `Done! A ${options.keyType} key has been generated and saved to your .env.local file.`
+          `Done! ${options.keyType} keys have been generated and saved to your .env.local file.`
         );
       });
   }
@@ -392,7 +402,6 @@ export class BaseCLI {
 
         if (useAgent) {
           await setupLocadex(settings);
-          await this.promptAgentInstructions();
           logger.endCommand(
             'Once installed, Locadex will open a PR to your repository. See the docs for more information: https://generaltranslation.com/docs/locadex'
           );
@@ -408,10 +417,15 @@ export class BaseCLI {
               : null;
 
           // Build defaults description based on detected framework
+          const defaultTranslationsDir =
+            framework.name === 'vite'
+              ? DEFAULT_VITE_TRANSLATIONS_DIR
+              : DEFAULT_TRANSLATIONS_DIR;
+
           const defaultsDescription =
             framework.type === 'react'
-              ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ./public/_gt`
-              : 'Files saved locally in ./public/_gt';
+              ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
+              : `Files saved locally in ${defaultTranslationsDir}`;
 
           // Ask if user wants to use defaults
           const useDefaults = await promptConfirm({
@@ -447,9 +461,11 @@ export class BaseCLI {
             logger.startCommand('Setting up project config...');
           }
           // Configure gt.config.json
-          await this.handleInitCommand(ranReactSetup, useDefaults);
-
-          await this.promptAgentInstructions(useDefaults);
+          await this.handleInitCommand(
+            ranReactSetup,
+            useDefaults,
+            framework.name === 'vite'
+          );
 
           logger.endCommand(
             'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
@@ -472,7 +488,8 @@ export class BaseCLI {
         );
 
         // Configure gt.config.json
-        await this.handleInitCommand(false);
+        const framework = await detectFramework();
+        await this.handleInitCommand(false, false, framework.name === 'vite');
 
         logger.endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
@@ -519,7 +536,8 @@ export class BaseCLI {
   // Wizard for configuring gt.config.json
   protected async handleInitCommand(
     ranReactSetup: boolean,
-    useDefaults: boolean = false
+    useDefaults: boolean = false,
+    isVite: boolean = false
   ): Promise<void> {
     const { defaultLocale, locales } = await getDesiredLocales(); // Locales should still be asked for even if using defaults
 
@@ -546,20 +564,25 @@ export class BaseCLI {
       return selectedValue === 'cdn';
     })();
 
+    const defaultTranslationsDir = isVite
+      ? DEFAULT_VITE_TRANSLATIONS_DIR
+      : DEFAULT_TRANSLATIONS_DIR;
+
     // Ask where the translations are stored
     const translationsDir =
       isUsingGT && !usingCDN
         ? useDefaults
-          ? './public/_gt'
+          ? defaultTranslationsDir
           : await promptText({
               message:
                 'What is the path to the directory where you would like to store your translation files?',
-              defaultValue: './public/_gt',
+              defaultValue: defaultTranslationsDir,
             })
         : null;
 
     // Determine final translations directory with fallback
-    const finalTranslationsDir = translationsDir?.trim() || './public/_gt';
+    const finalTranslationsDir =
+      translationsDir?.trim() || defaultTranslationsDir;
 
     if (isUsingGT && !usingCDN) {
       // Create loadTranslations.js file for local translations
@@ -592,6 +615,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
               { value: 'ts', label: FILE_EXT_TO_EXT_LABEL.ts },
               { value: 'js', label: FILE_EXT_TO_EXT_LABEL.js },
               { value: 'yaml', label: FILE_EXT_TO_EXT_LABEL.yaml },
+              // TWILIO_CONTENT_JSON not supported in CLI init as its too niche
             ],
             required: !isUsingGT,
           });
@@ -599,7 +623,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     const files: FilesOptions = {};
     for (const fileExtension of fileExtensions) {
       const paths = await promptText({
-        message: `${chalk.cyan(FILE_EXT_TO_EXT_LABEL[fileExtension])}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_EXT_LABEL[fileExtension]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
+        message: `${chalk.cyan(FILE_EXT_TO_EXT_LABEL[fileExtension])}: Enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_EXT_LABEL[fileExtension]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
         defaultValue: `./**/[locale]/*.${fileExtension}`,
       });
 
@@ -654,107 +678,32 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       const loginQuestion = useDefaults
         ? true
         : await promptConfirm({
-            message: `Would you like the wizard to automatically generate a ${
-              isUsingGT ? 'development' : 'production'
-            } API key and project ID for you?`,
+            message:
+              'Would you like the wizard to automatically generate API keys and a project ID for you?',
             defaultValue: true,
           });
       if (loginQuestion) {
         const settings = await generateSettings({});
-        const keyType = isUsingGT ? 'development' : 'production';
+        const keyType = useDefaults
+          ? 'all'
+          : await promptSelect<'development' | 'production' | 'all'>({
+              message: 'What type of API key would you like to generate?',
+              options: [
+                { value: 'development', label: 'Development' },
+                { value: 'production', label: 'Production' },
+                { value: 'all', label: 'Both' },
+              ],
+              defaultValue: 'all',
+            });
         const credentials = await retrieveCredentials(settings, keyType);
-        await setCredentials(credentials, keyType, settings.framework);
+        await setCredentials(credentials, settings.framework);
       }
     }
   }
   protected async handleLoginCommand(options: LoginOptions): Promise<void> {
-    const settings = await generateSettings({});
-    const keyType = options.keyType || 'production';
+    const settings = await generateSettings({ config: options.config });
+    const keyType = options.keyType || 'all';
     const credentials = await retrieveCredentials(settings, keyType);
-    await setCredentials(credentials, keyType, settings.framework);
-  }
-
-  protected setupUpdateInstructionsCommand(): void {
-    this.program
-      .command('update-instructions')
-      .description('Update GT usage instructions in AI agent files')
-      .option(
-        '--new',
-        'Add instructions to all agent files, even those without existing GT instructions'
-      )
-      .action(async (options: { new?: boolean }) => {
-        const agentFiles = options.new
-          ? findAgentFiles()
-          : findAgentFilesWithInstructions();
-
-        if (
-          options.new &&
-          hasCursorRulesDir() &&
-          !agentFiles.includes(CURSOR_GT_RULES_FILE)
-        ) {
-          agentFiles.push(CURSOR_GT_RULES_FILE);
-        }
-
-        if (agentFiles.length === 0) {
-          logger.warn(
-            options.new
-              ? 'No agent files found. Create a CLAUDE.md or similar agent file first.'
-              : 'No agent files with GT instructions found. Use --new to add instructions to existing agent files.'
-          );
-          return;
-        }
-
-        const { library } = determineLibrary();
-        const instructions = getAgentInstructions(library);
-        let updatedCount = 0;
-        for (const file of agentFiles) {
-          if (appendAgentInstructions(file, instructions)) {
-            updatedCount++;
-          }
-        }
-
-        if (updatedCount > 0) {
-          logger.success(
-            `Updated GT instructions in ${updatedCount} file${updatedCount > 1 ? 's' : ''}.`
-          );
-        } else {
-          logger.info('All agent instruction files are already up to date.');
-        }
-      });
-  }
-
-  protected async promptAgentInstructions(
-    useDefaults: boolean = false
-  ): Promise<void> {
-    const agentFiles = findAgentFiles();
-
-    // Include .cursor/rules/gt-i18n.mdc if the directory exists but the file doesn't yet
-    if (hasCursorRulesDir() && !agentFiles.includes(CURSOR_GT_RULES_FILE)) {
-      agentFiles.push(CURSOR_GT_RULES_FILE);
-    }
-
-    if (agentFiles.length === 0) return;
-
-    const addInstructions = useDefaults
-      ? true
-      : await promptConfirm({
-          message: `Found AI agent instruction files (${agentFiles.map((f) => path.basename(f)).join(', ')}). Would you like to add GT usage instructions?`,
-          defaultValue: true,
-        });
-
-    if (addInstructions) {
-      // Re-detect library since packages may have been installed during init
-      const { library } = determineLibrary();
-      const instructions = getAgentInstructions(library);
-      let updatedCount = 0;
-      for (const file of agentFiles) {
-        if (appendAgentInstructions(file, instructions)) {
-          updatedCount++;
-        }
-      }
-      if (updatedCount > 0) {
-        logger.success('Added GT instructions to agent files.');
-      }
-    }
+    await setCredentials(credentials, settings.framework);
   }
 }

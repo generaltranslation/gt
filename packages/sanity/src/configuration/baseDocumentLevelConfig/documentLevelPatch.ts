@@ -55,7 +55,7 @@ export const documentLevelPatch = async (
   //the id of the translated document should be on the metadata if it exists
   const i18nDocId = (
     translationMetadata.translations as Array<Record<string, any>>
-  ).find((translation) => translation._key === localeId)?.value?._ref;
+  ).find((translation) => translation.language === localeId)?.value?._ref;
 
   if (i18nDocId) {
     //get draft or published

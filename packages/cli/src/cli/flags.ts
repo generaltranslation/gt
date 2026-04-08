@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import findFilepath from '../fs/findFilepath.js';
 import { DEFAULT_GIT_REMOTE_NAME } from '../utils/constants.js';
 
-const DEFAULT_TIMEOUT = 600;
+const DEFAULT_TIMEOUT = 900;
 
 export function attachSharedFlags(command: Command) {
   command
@@ -107,6 +107,14 @@ export function attachTranslateFlags(command: Command) {
       '--remote-name <name>',
       'Specify a custom remote name to use for branch detection',
       DEFAULT_GIT_REMOTE_NAME
+    )
+    .option(
+      '--tag [value]',
+      'Tag this translation run (auto-resolves from git if no value provided)'
+    )
+    .option(
+      '-m, --message <message>',
+      'Message to attach to the translation tag'
     );
   return command;
 }

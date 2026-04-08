@@ -1,12 +1,11 @@
 import { TranslationRequestConfig, EnqueueFilesResult } from '../types';
 import apiRequest from './utils/apiRequest';
-import type { FileReference } from '../types-dir/api/file';
+import type { FileReferenceIds } from '../types-dir/api/file';
 import { processBatches } from './utils/batch';
 
 export type EnqueueOptions = {
-  sourceLocale: string;
+  sourceLocale?: string;
   targetLocales: string[];
-  publish?: boolean;
   requireApproval?: boolean;
   modelProvider?: string;
   force?: boolean;
@@ -22,7 +21,7 @@ export type EnqueueOptions = {
  * @returns The result of the API call
  */
 export default async function _enqueueFiles(
-  files: FileReference[],
+  files: FileReferenceIds[],
   options: EnqueueOptions,
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {
@@ -38,7 +37,6 @@ export default async function _enqueueFiles(
         })),
         targetLocales: options.targetLocales,
         sourceLocale: options.sourceLocale,
-        publish: options.publish,
         requireApproval: options.requireApproval,
         modelProvider: options.modelProvider,
         force: options.force,

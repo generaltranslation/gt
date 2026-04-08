@@ -1,1 +1,2 @@
-export const interpolationFailureMessage = `String interpolation failed.`;
+export const createInterpolationFailureMessage = (message: string) =>
+  `String interpolation failed for message: "${message}".`;

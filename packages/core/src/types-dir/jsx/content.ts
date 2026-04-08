@@ -38,9 +38,14 @@ export type JsxElement = {
 export type JsxChild = string | JsxElement | Variable;
 
 /**
+ * The format of the string content
+ */
+export type StringFormat = 'ICU' | 'I18NEXT' | 'STRING';
+
+/**
  * The format of the content
  */
-export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT' | 'STRING';
+export type DataFormat = 'JSX' | StringFormat;
 
 /**
  * A content type representing JSX, ICU, and I18next messages

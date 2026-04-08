@@ -34,7 +34,7 @@ pub struct TransformVisitor {
 
 impl Default for TransformVisitor {
   fn default() -> Self {
-    Self::new(LogLevel::Warn, false, None, false, StringCollector::new())
+    Self::new(LogLevel::Warn, false, None, false, false, StringCollector::new())
   }
 }
 
@@ -44,6 +44,7 @@ impl TransformVisitor {
     compile_time_hash: bool,
     filename: Option<String>,
     disable_build_checks: bool,
+    auto_derive: bool,
     mut string_collector: StringCollector,
   ) -> Self {
     // Reset the counter to 0
@@ -52,7 +53,7 @@ impl TransformVisitor {
       traversal_state: TraversalState::default(),
       statistics: Statistics::default(),
       import_tracker: ImportTracker::new(),
-      settings: PluginSettings::new(log_level.clone(), compile_time_hash, filename.clone(), disable_build_checks),
+      settings: PluginSettings::new(log_level.clone(), compile_time_hash, filename.clone(), disable_build_checks, auto_derive),
       logger: Logger::new(log_level),
       string_collector,
     }
@@ -171,12 +172,14 @@ impl TransformVisitor {
     let options = call_expr.args.get(1);
 
     // Get context and id
-    let (context, id, max_chars) = extract_id_and_context_from_options(options);
+    let (id, context, max_chars, _format, has_derive_context) = extract_id_and_context_from_options(options);
 
     // Calculate hash for the call expression
     let (hash, _) = self.calculate_hash_for_call_expr(string, options);
 
     if let Some(message) = extract_string_from_expr(string.expr.as_ref()) {
+      // If context contains derive(), skip hashing (empty hash) — CLI handles resolution
+      let hash = if has_derive_context { Some(String::new()) } else { hash };
       if let Some(hash) = hash {
         // Construct the translation content object
         let translation_content =
@@ -317,7 +320,7 @@ impl TransformVisitor {
     self.validate_string_literal_or_declare_static(arg.expr.as_ref(), &mut errors);
 
     if !errors.is_empty() {
-      if !self.settings.disable_build_checks {
+      if !self.settings.disable_build_checks && !self.settings.auto_derive {
         self.statistics.dynamic_content_violations += 1;
         // Use the first error message for the violation type
         let default_error = &"invalid expression".to_string();
@@ -337,7 +340,7 @@ impl TransformVisitor {
 /**
  * Validates if an expression is composed only of:
  * - String literals (including static strings)
- * - declareStatic() function calls
+ * - declareStatic()/derive() function calls
  * - Combinations of the above using string concatenation or template literals
  *
  * Valid examples:
@@ -380,19 +383,19 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
             validate_declare_static(call_expr, errors);
           } else {
             errors.push(format!(
-              "Only declareStatic() function calls are allowed, found: {}()",
+              "Only declareStatic()/derive() function calls are allowed, found: {}()",
               ident.sym
             ));
           }
           // If it's declareStatic, it's valid
         } else {
           errors.push(
-            "Only declareStatic() function calls are allowed".to_string()
+            "Only declareStatic()/derive() function calls are allowed".to_string()
           );
         }
       } else {
         errors.push(
-          "Only declareStatic() function calls are allowed".to_string()
+          "Only declareStatic()/derive() function calls are allowed".to_string()
         );
       }
     }
@@ -405,7 +408,7 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
     // Variables are not allowed
     Expr::Ident(ident) => {
       errors.push(format!(
-        "Variables are not allowed. Use a string literal or declareStatic() instead. Found: {}",
+        "Variables are not allowed. Use a string literal or declareStatic()/derive() instead. Found: {}",
         ident.sym
       ));
     }
@@ -413,7 +416,7 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
     // Any other expression type is invalid
     _ => {
       errors.push(
-        "Expression must be a string literal, declareStatic() call, or a combination of both".to_string()
+        "Expression must be a string literal, declareStatic()/derive() call, or a combination of both".to_string()
       );
     }
   }
@@ -432,7 +435,12 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
     }
 
     // Extract the options content
-    let (id, context, max_chars) = extract_id_and_context_from_options(options);
+    let (id, context, max_chars, format, has_derive_context) = extract_id_and_context_from_options(options);
+
+    // If context contains derive(), skip hashing — CLI handles resolution
+    if has_derive_context {
+      return (Some(String::new()), None);
+    }
 
     // Construct the json object
     use crate::hash::{SanitizedChild, SanitizedChildren, SanitizedData};
@@ -443,7 +451,7 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
       id,
       context,
       max_chars,
-      data_format: Some("ICU".to_string()),
+      data_format: Some(format.unwrap_or_else(|| "ICU".to_string())),
     };
     // Calculate hash using stable stringify (like TypeScript fast-json-stable-stringify)
     use crate::hash::JsxHasher;
@@ -761,7 +769,7 @@ mod tests {
 
   // Helper to create a test visitor with specific imports
   fn create_visitor_with_imports() -> TransformVisitor {
-    let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+    let mut visitor = TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
 
     // Add some test imports using the scope tracker
     visitor
@@ -931,6 +939,7 @@ mod tests {
         true,
         Some("test.tsx".to_string()),
         false,
+        false,
         StringCollector::new(),
       );
 
@@ -1018,7 +1027,7 @@ mod tests {
 
     #[test]
     fn creates_dynamic_content_warning_without_filename() {
-      TransformVisitor::new(LogLevel::Warn, false, None, false, StringCollector::new());
+      TransformVisitor::new(LogLevel::Warn, false, None, false, false, StringCollector::new());
       let warning = create_dynamic_content_warning(None, "T");
 
       assert!(warning.contains("gt-next"));
@@ -1034,6 +1043,7 @@ mod tests {
         false,
         Some("components/Test.tsx".to_string()),
         false,
+        false,
         StringCollector::new(),
       );
       let warning = create_dynamic_content_warning(Some("components/Test.tsx"), "T");
@@ -1044,7 +1054,7 @@ mod tests {
 
     #[test]
     fn creates_dynamic_function_warning_without_filename() {
-      TransformVisitor::new(LogLevel::Warn, false, None, false, StringCollector::new());
+      TransformVisitor::new(LogLevel::Warn, false, None, false, false, StringCollector::new());
       let warning = create_dynamic_function_warning(None, "useGT", "template literals");
 
       assert!(warning.contains("gt-next"));
@@ -1059,6 +1069,7 @@ mod tests {
         LogLevel::Warn,
         false,
         Some("hooks/useTranslation.ts".to_string()),
+        false,
         false,
         StringCollector::new(),
       );
@@ -1079,7 +1090,7 @@ mod tests {
     #[test]
     fn processes_gt_next_named_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
       let import_decl = create_import_decl(
         "gt-next",
         vec![
@@ -1112,7 +1123,7 @@ mod tests {
     #[test]
     fn processes_namespace_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
       let import_decl = create_import_decl("gt-next", vec![create_namespace_import("GT")]);
 
       visitor.process_gt_import_declaration(&import_decl);
@@ -1126,7 +1137,7 @@ mod tests {
     #[test]
     fn processes_gt_next_client_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
       let import_decl = create_import_decl("gt-next/client", vec![create_named_import("T", None)]);
 
       visitor.process_gt_import_declaration(&import_decl);
@@ -1141,7 +1152,7 @@ mod tests {
     #[test]
     fn ignores_non_gt_imports() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
       let import_decl = create_import_decl("react", vec![create_named_import("React", None)]);
 
       visitor.process_gt_import_declaration(&import_decl);
@@ -1759,6 +1770,304 @@ mod tests {
     }
   }
 
+  mod auto_derive_violations {
+    use super::*;
+
+    /// Creates a visitor with auto_derive enabled and standard imports tracked
+    fn create_visitor_with_auto_derive() -> TransformVisitor {
+      let mut visitor =
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
+      visitor.settings.auto_derive = true;
+
+      // Track standard gt-next imports
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_translation_variable(Atom::new("T"), Atom::new("T"), 0);
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_translation_variable(Atom::new("useGT"), Atom::new("useGT"), 0);
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_translation_variable(Atom::new("gt"), Atom::new("gt"), 0);
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_translation_variable(Atom::new("t"), Atom::new("t"), 0);
+
+      visitor
+    }
+
+    fn create_call_expr(function_name: &str, arg: Expr) -> CallExpr {
+      CallExpr {
+        span: DUMMY_SP,
+        callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: Atom::new(function_name),
+          optional: false,
+          ctxt: SyntaxContext::empty(),
+        }))),
+        args: vec![ExprOrSpread {
+          spread: None,
+          expr: Box::new(arg),
+        }],
+        type_args: None,
+        ctxt: SyntaxContext::empty(),
+      }
+    }
+
+    /// `Hello ${name}` — template literal with bare variable interpolation
+    fn create_template_literal_with_variable() -> Expr {
+      Expr::Tpl(Tpl {
+        span: DUMMY_SP,
+        exprs: vec![Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: Atom::new("name"),
+          optional: false,
+          ctxt: SyntaxContext::empty(),
+        }))],
+        quasis: vec![
+          TplElement {
+            span: DUMMY_SP,
+            tail: false,
+            cooked: Some(Atom::new("Hello ").into()),
+            raw: Atom::new("Hello "),
+          },
+          TplElement {
+            span: DUMMY_SP,
+            tail: true,
+            cooked: Some(Atom::new("!").into()),
+            raw: Atom::new("!"),
+          },
+        ],
+      })
+    }
+
+    /// "Hello " + name — string concatenation with bare variable
+    fn create_string_concat_with_variable() -> Expr {
+      Expr::Bin(BinExpr {
+        span: DUMMY_SP,
+        op: BinaryOp::Add,
+        left: Box::new(Expr::Lit(Lit::Str(Str {
+          span: DUMMY_SP,
+          value: Atom::new("Hello ").into(),
+          raw: None,
+        }))),
+        right: Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: Atom::new("name"),
+          optional: false,
+          ctxt: SyntaxContext::empty(),
+        })),
+      })
+    }
+
+    /// `Hello ${getName()}` — template literal with bare function call
+    fn create_template_literal_with_function_call() -> Expr {
+      Expr::Tpl(Tpl {
+        span: DUMMY_SP,
+        exprs: vec![Box::new(Expr::Call(CallExpr {
+          span: DUMMY_SP,
+          callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("getName"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }))),
+          args: vec![],
+          type_args: None,
+          ctxt: SyntaxContext::empty(),
+        }))],
+        quasis: vec![
+          TplElement {
+            span: DUMMY_SP,
+            tail: false,
+            cooked: Some(Atom::new("Hello ").into()),
+            raw: Atom::new("Hello "),
+          },
+          TplElement {
+            span: DUMMY_SP,
+            tail: true,
+            cooked: Some(Atom::new("!").into()),
+            raw: Atom::new("!"),
+          },
+        ],
+      })
+    }
+
+    // ── Auto-derive ON: should NOT produce violations ──
+
+    // gt(`Hello ${name}!`)  →  treated as gt(`Hello ${derive(name)}!`)
+    #[test]
+    fn auto_derive_on_allows_template_literal_with_bare_variable() {
+      let mut visitor = create_visitor_with_auto_derive();
+      let call_expr = create_call_expr("gt", create_template_literal_with_variable());
+
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "gt");
+      }
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    // gt("Hello " + name)  →  treated as gt("Hello " + derive(name))
+    #[test]
+    fn auto_derive_on_allows_concatenation_with_bare_variable() {
+      let mut visitor = create_visitor_with_auto_derive();
+      let call_expr = create_call_expr("gt", create_string_concat_with_variable());
+
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "gt");
+      }
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    // gt(`Hello ${getName()}!`)  →  treated as gt(`Hello ${derive(getName())}!`)
+    #[test]
+    fn auto_derive_on_allows_template_literal_with_bare_function_call() {
+      let mut visitor = create_visitor_with_auto_derive();
+      let call_expr = create_call_expr("gt", create_template_literal_with_function_call());
+
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "gt");
+      }
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    // ── Auto-derive OFF: should produce violations (existing behavior) ──
+
+    // gt(`Hello ${name}!`)  →  ERROR: bare variable without derive()
+    #[test]
+    fn auto_derive_off_rejects_template_literal_with_bare_variable() {
+      let mut visitor = create_visitor_with_imports(); // auto_derive defaults to false
+      let call_expr = create_call_expr("gt", create_template_literal_with_variable());
+
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "gt");
+      }
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 1);
+    }
+
+    // gt("Hello " + name)  →  ERROR: bare variable without derive()
+    #[test]
+    fn auto_derive_off_rejects_concatenation_with_bare_variable() {
+      let mut visitor = create_visitor_with_imports(); // auto_derive defaults to false
+      let call_expr = create_call_expr("gt", create_string_concat_with_variable());
+
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "gt");
+      }
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 1);
+    }
+
+    // ── Existing behavior preserved regardless of auto-derive flag ──
+
+    // gt(`Hello ${derive(getName())}`)  →  explicit derive() always works
+    #[test]
+    fn explicit_derive_works_with_auto_derive_on() {
+      let mut visitor = create_visitor_with_auto_derive();
+      // Also track derive import
+      visitor
+        .import_tracker
+        .scope_tracker
+        .track_translation_variable(Atom::new("derive"), Atom::new("declareStatic"), 0);
+
+      let template_expr = Expr::Tpl(Tpl {
+        span: DUMMY_SP,
+        exprs: vec![Box::new(Expr::Call(CallExpr {
+          span: DUMMY_SP,
+          callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("derive"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }))),
+          args: vec![ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Call(CallExpr {
+              span: DUMMY_SP,
+              callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: Atom::new("getName"),
+                optional: false,
+                ctxt: SyntaxContext::empty(),
+              }))),
+              args: vec![],
+              type_args: None,
+              ctxt: SyntaxContext::empty(),
+            })),
+          }],
+          type_args: None,
+          ctxt: SyntaxContext::empty(),
+        }))],
+        quasis: vec![
+          TplElement {
+            span: DUMMY_SP,
+            tail: false,
+            cooked: Some(Atom::new("Hello ").into()),
+            raw: Atom::new("Hello "),
+          },
+          TplElement {
+            span: DUMMY_SP,
+            tail: true,
+            cooked: Some(Atom::new("").into()),
+            raw: Atom::new(""),
+          },
+        ],
+      });
+
+      let call_expr = create_call_expr("gt", template_expr);
+
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "gt");
+      }
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    // gt("Hello world")  →  plain string literal always passes
+    #[test]
+    fn plain_string_literal_works_with_auto_derive_on() {
+      let mut visitor = create_visitor_with_auto_derive();
+      let string_literal = Expr::Lit(Lit::Str(Str {
+        span: DUMMY_SP,
+        value: Atom::new("Hello world").into(),
+        raw: None,
+      }));
+      let call_expr = create_call_expr("gt", string_literal);
+
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "gt");
+      }
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    // gt("Hello world")  →  plain string literal always passes
+    #[test]
+    fn plain_string_literal_works_with_auto_derive_off() {
+      let mut visitor = create_visitor_with_imports(); // auto_derive defaults to false
+      let string_literal = Expr::Lit(Lit::Str(Str {
+        span: DUMMY_SP,
+        value: Atom::new("Hello world").into(),
+        raw: None,
+      }));
+      let call_expr = create_call_expr("gt", string_literal);
+
+      if let Some(first_arg) = call_expr.args.first() {
+        visitor.check_call_expr_for_violations(first_arg, "gt");
+      }
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+  }
+
   mod variable_assignment_tracking {
     use super::*;
 
@@ -1836,7 +2145,7 @@ mod tests {
     #[test]
     fn calculates_hash_for_empty_element() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
       let element = create_jsx_element("T", vec![]);
 
       let mut traversal = crate::ast::JsxTraversal::new(&mut visitor);
@@ -1850,7 +2159,7 @@ mod tests {
     #[test]
     fn hash_changes_with_different_content() {
       let mut visitor =
-        TransformVisitor::new(LogLevel::Silent, false, None, false, StringCollector::new());
+        TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
 
       let element1 = create_jsx_element("T", vec![]);
       let mut element2 = create_jsx_element("T", vec![]);
@@ -1880,6 +2189,7 @@ mod tests {
         LogLevel::Silent,
         false,
         Some("test.tsx".to_string()),
+        false,
         false,
         StringCollector::new(),
       );

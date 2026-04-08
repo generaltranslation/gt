@@ -112,7 +112,7 @@ export function handleChildrenWhitespace(
  * @param currentTree - The current tree to handle
  * @returns The processed tree with whitespace handled
  *
- * For unresolved functions, we just make it so that Static has no children
+ * For unresolved functions, we just make it so that Derive has no children
  *
  * The typing was so much worse before this. Don't come for me. All I did was enforce the typing.
  */

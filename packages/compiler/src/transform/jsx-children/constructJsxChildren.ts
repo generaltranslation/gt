@@ -23,6 +23,7 @@ import {
   defaultVariableNames,
   getVariableName,
   isBranchComponent,
+  isDeriveComponent,
   isGTComponent,
   isVariableComponent,
   minifyCanonicalName,
@@ -247,6 +248,14 @@ function constructJsxElement(
       );
       return { errors };
     }
+    // Derive/Static — opaque element, skip children validation
+    // The compiler doesn't resolve Derive functions; the CLI handles that.
+    if (isDeriveComponent(canonicalName)) {
+      return {
+        errors,
+        value: { t: canonicalName, i: idNumber },
+      };
+    }
     // Get the name of the component
     componentName = canonicalName;
   } else if (canonicalName && type === 'react') {
@@ -277,10 +286,12 @@ function constructJsxElement(
   }
 
   // Construct JsxChildren
+  // For branching components (Branch/Plural), use id.copy() so children and
+  // branch props start counting from the same base independently.
   const jsxChildrenValidation = constructJsxChildrenForJsxElement(
     childrenValidation.value,
     state,
-    id
+    isBranchComponent(canonicalName ?? '') ? id.copy() : id
   );
   errors.push(...jsxChildrenValidation.errors);
   if (jsxChildrenValidation.errors.length > 0) {

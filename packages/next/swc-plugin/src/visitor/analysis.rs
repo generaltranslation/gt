@@ -7,7 +7,7 @@ pub fn is_translation_component_name(name: &Atom) -> bool {
 
 /// Check if a component name matches known gt-next variable components
 pub fn is_variable_component_name(name: &Atom) -> bool {
-  matches!(name.as_ref(), "Var" | "Num" | "Currency" | "DateTime" | "Static")
+  matches!(name.as_ref(), "Var" | "Num" | "Currency" | "DateTime" | "RelativeTime" | "Static" | "Derive")
 }
 
 /// Check if a name is a GT branch
@@ -25,9 +25,9 @@ pub fn is_translation_function_callback(name: &Atom) -> bool {
   matches!(name.as_ref(), "useGT_callback" | "getGT_callback")
 }
 
-/// Check if a name is declareStatic
+/// Check if a name is declareStatic or derive
 pub fn is_declare_static_name(name: &Atom) -> bool {
-  matches!(name.as_ref(), "declareStatic")
+  matches!(name.as_ref(), "declareStatic" | "derive")
 }
 
 #[cfg(test)]
@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn recognizes_all_variable_components() {
-      let valid_components = ["Var", "Num", "Currency", "DateTime", "Static"];
+      let valid_components = ["Var", "Num", "Currency", "DateTime", "RelativeTime", "Static", "Derive"];
       for component in &valid_components {
         let name = Atom::new(*component);
         assert!(
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn no_overlap_between_categories() {
       let all_names = [
-        "T", "Var", "Num", "Currency", "Static", "DateTime", "Branch", "Plural", "useGT", "getGT",
+        "T", "Var", "Num", "Currency", "Static", "Derive", "DateTime", "RelativeTime", "Branch", "Plural", "useGT", "getGT",
       ];
 
       for name_str in &all_names {

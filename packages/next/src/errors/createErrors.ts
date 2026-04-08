@@ -7,10 +7,10 @@ export const remoteTranslationsError =
   'gt-next Error: fetching remote translation.';
 
 export const customLoadTranslationsError = (locale: string = '') =>
-  `gt-next Error: fetching locally stored translations. If you are using a custom loadTranslations("${locale}"), make sure it is correctly implemented.`;
+  `gt-next Error: Failed to fetch locally stored translations. If using a custom loadTranslations("${locale}"), make sure it is correctly implemented.`;
 
 export const customLoadDictionaryWarning = (locale: string = '') =>
-  `gt-next Warning: fetching locally stored translation dictionary. If you are using a custom loadDictionary("${locale}"), make sure it is correctly implemented.`;
+  `gt-next Warning: Failed to fetch locally stored translation dictionary. If using a custom loadDictionary("${locale}"), make sure it is correctly implemented.`;
 
 export const createUnresolvedNextVersionError = (error: Error) =>
   `gt-next Error: Unable to resolve next version. ${error.message}`;
@@ -31,14 +31,14 @@ export const createDictionaryTranslationError = (id: string) =>
   `gt-next Error: Dictionary translation entry with id: ${id} could not be found.`;
 
 export const createRequiredPrefixError = (id: string, requiredPrefix: string) =>
-  `gt-next Error: You are using <GTProvider> with a provided prefix id: "${requiredPrefix}", but one of the children of <GTProvider> has the id "${id}". Change the <GTProvider> id prop or your dictionary structure to proceed.`;
+  `gt-next Error: <GTProvider> has prefix id "${requiredPrefix}", but a child has id "${id}". Change the <GTProvider> id prop or your dictionary structure to proceed.`;
 
-export const devApiKeyIncludedInProductionError = `gt-next Error: You are attempting a production build using a development API key. Replace this API key with a production API key when you build your app for production.`;
+export const devApiKeyIncludedInProductionError = `gt-next Error: Production builds cannot use a development API key. Replace it with a production API key.`;
 
 export const createDictionarySubsetError = (id: string, functionName: string) =>
-  `gt-next Error: ${functionName} with id: "${id}". Invalid dictionary entry detected. Make sure you are navigating to the correct subroute of the dictionary with the ID you provide.`;
+  `gt-next Error: ${functionName} with id: "${id}". Invalid dictionary entry. Make sure the ID maps to the correct subroute of the dictionary.`;
 
-export const dictionaryDisabledError = `gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs`;
+export const dictionaryDisabledError = `gt-next Error: Dictionaries require the withGTConfig() plugin. Add withGTConfig() to your app. For more information, visit generaltranslation.com/docs`;
 
 export const unresolvedCustomLoadDictionaryError = `gt-next Error: loadDictionary() was resolved by plug-in but could not be resolved at run time. This usually means that the file was found, but the loadDictionary() function itself could not be resolved.`;
 
@@ -56,7 +56,7 @@ export const unresolvedGetLocaleBuildError = (path: string) =>
 export const conflictingConfigurationBuildError = (conflicts: string[]) =>
   `gt-next Error: Conflicting configuration${
     conflicts.length > 1 ? 's' : ''
-  } detected. Please resolve the following conflicts before building your app:\n${conflicts.join(
+  } detected. Resolve the following conflicts before building your app:\n${conflicts.join(
     '\n'
   )}`;
 
@@ -82,12 +82,12 @@ export const createStringRenderError = (
   `gt-next Error: error rendering string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
 
 export const invalidLocalesError = (locales: string[]) =>
-  `gt-next Error: You are using invalid locale codes in your configuration. ` +
-  `You must either specify a list of valid locales or use "customMapping" to ` +
-  `specify aliases for the following invalid locales: ${locales.join(', ')}.`;
+  `gt-next Error: Invalid locale codes in your configuration. ` +
+  `Specify a list of valid locales or use "customMapping" to ` +
+  `define aliases for the following invalid locales: ${locales.join(', ')}.`;
 
 export const invalidCanonicalLocalesError = (locales: string[]) =>
-  `gt-next Error: You are using invalid canonical locale codes in your configuration: ${locales.join(', ')}.`;
+  `gt-next Error: Invalid canonical locale codes in your configuration: ${locales.join(', ')}.`;
 
 export const createInvalidIcuDictionaryEntryError = (id: string) =>
   `gt-next Error: Invalid ICU string dictionary entry found for id: "${id}"`;
@@ -98,7 +98,7 @@ export const createInvalidIcuDictionaryEntryWarning = (id: string) =>
   `gt-next: Invalid ICU string dictionary entry found for id: "${id}"`;
 
 export const createBadFilepathWarning = (filename: string, dir: string[]) =>
-  `gt-next: Found ${filename} in ${dir.join(' or ')} directory. This is not supported. Please move it to your root directory.`;
+  `gt-next: Found ${filename} in ${dir.join(' or ')} directory. This is not supported. Move it to your root directory.`;
 
 export const usingDefaultsWarning =
   'gt-next: Unable to access gt-next configuration. Using defaults.';
@@ -174,7 +174,7 @@ export const createGTCompilerUnavailableWarning = (type: 'babel' | 'swc') =>
     ? `gt-next (plugin): The GT swc compiler is compatible with < next@${SWC_PLUGIN_SUPPORT}. Skipping compiler optimizations.`
     : `gt-next (plugin): The GT babel compiler is compatible with turbopack or < react@${BABEL_PLUGIN_SUPPORT}. Skipping compiler optimizations.`;
 
-export const disablingCompileTimeHashWarning = `gt-next (plugin): You are disabling compile time hash. This will disable the compiler optimizations.`;
+export const disablingCompileTimeHashWarning = `gt-next (plugin): Compile-time hash is disabled. Compiler optimizations are inactive.`;
 
 export const createStringRenderWarning = (
   message: string,
@@ -182,4 +182,4 @@ export const createStringRenderWarning = (
 ) =>
   `gt-next: failed to render string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
 
-export const swcPluginCompatibilityChangeWarning = `gt-next (plugin): As of gt-next@6.12.4, SWC plugin support has been disabled for all versions of Next.js prior to ${SWC_PLUGIN_SUPPORT}. Please update to the latest version of Next.js.`;
+export const swcPluginCompatibilityChangeWarning = `gt-next (plugin): As of gt-next@6.12.4, SWC plugin support is disabled for Next.js versions prior to ${SWC_PLUGIN_SUPPORT}. Update to the latest version of Next.js.`;

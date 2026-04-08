@@ -206,7 +206,7 @@ export function warnApiKeyInConfig(optionsFilepath: string) {
   logger.warn(
     `Found ${chalk.cyan('apiKey')} in "${chalk.green(optionsFilepath)}". ` +
       chalk.white(
-        'Your API key is exposed! Please remove it from the file and include it as an environment variable.'
+        'Your API key is exposed! Remove it from the file and include it as an environment variable.'
       )
   );
 }
@@ -244,17 +244,6 @@ export function warnHasUnwrappedExpression(
   );
 }
 
-export function warnNonStaticExpression(
-  file: string,
-  attrName: string,
-  value: string
-) {
-  logger.warn(
-    `Found non-static expression in ${chalk.cyan(file)} for attribute ${attrName}: "${chalk.white(value)}". ` +
-      `Change "${attrName}" to ensure this content is translated.`
-  );
-}
-
 export function warnTemplateLiteral(file: string, value: string) {
   logger.warn(
     `Found template literal with quasis (${value}) in ${chalk.cyan(file)}. ` +
@@ -268,6 +257,16 @@ export function warnTernary(file: string) {
   logger.warn(
     `Found ternary expression in ${chalk.cyan(file)}. ` +
       chalk.white('A Branch component may be more appropriate here.')
+  );
+}
+
+export function warnDeprecatedField(
+  deprecatedField: string,
+  replacement: string
+) {
+  logger.warn(
+    `${chalk.green(deprecatedField)} is deprecated. ` +
+      chalk.white(`Use ${chalk.green(replacement)} instead.`)
   );
 }
 

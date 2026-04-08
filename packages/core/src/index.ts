@@ -10,10 +10,13 @@ import {
   _formatCurrency,
   _formatList,
   _formatRelativeTime,
+  _formatRelativeTimeFromDate,
+  _selectRelativeTimeUnit,
   _formatDateTime,
-  _formatMessage,
+  _formatMessageICU,
   _formatListToParts,
   _formatCutoff,
+  _formatMessageString,
 } from './formatting/format';
 import {
   CustomMapping,
@@ -55,6 +58,10 @@ import _setupProject, {
   SetupProjectOptions,
 } from './translate/setupProject';
 import _enqueueFiles, { EnqueueOptions } from './translate/enqueueFiles';
+import _createTag, {
+  CreateTagOptions,
+  CreateTagResult,
+} from './translate/createTag';
 import _downloadFileBatch from './translate/downloadFileBatch';
 import {
   FileQuery,
@@ -85,6 +92,10 @@ import {
   _checkJobStatus,
   CheckJobStatusResult,
 } from './translate/checkJobStatus';
+import _awaitJobs, {
+  AwaitJobsOptions,
+  AwaitJobsResult,
+} from './translate/awaitJobs';
 import type { FileDataQuery, FileDataResult } from './translate/queryFileData';
 import _queryFileData from './translate/queryFileData';
 import type { BranchQuery } from './translate/queryBranchData';
@@ -95,7 +106,7 @@ import type {
   CreateBranchResult,
 } from './translate/createBranch';
 import _createBranch from './translate/createBranch';
-import type { FileReference } from './types-dir/api/file';
+import type { FileReference, FileReferenceIds } from './types-dir/api/file';
 import _processFileMoves, {
   type MoveMapping,
   type ProcessMovesResponse,
@@ -104,8 +115,14 @@ import _processFileMoves, {
 import _getOrphanedFiles, {
   type GetOrphanedFilesResult,
 } from './translate/getOrphanedFiles';
+import _publishFiles, {
+  type PublishFileEntry,
+  type PublishFilesResult,
+} from './translate/publishFiles';
 import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import { TranslateOptions } from './types-dir/api/entry';
+import { API_VERSION as _API_VERSION } from './translate/api';
+import { StringFormat } from './types-dir/jsx/content';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -269,8 +286,7 @@ export class GT {
       this.reverseCustomMapping = Object.fromEntries(
         Object.entries(customMapping)
           .filter(
-            ([_, value]) =>
-              value && typeof value === 'object' && 'code' in value
+            ([, value]) => value && typeof value === 'object' && 'code' in value
           )
           .map(([key, value]) => [(value as { code: string }).code, key])
       );
@@ -437,6 +453,25 @@ export class GT {
   }
 
   /**
+   * Polls job statuses until all jobs from enqueueFiles are finished or the timeout is reached.
+   *
+   * @param {EnqueueFilesResult} enqueueResult - The result returned from enqueueFiles
+   * @param {AwaitJobsOptions} [options] - Polling configuration (interval, timeout)
+   * @returns {Promise<AwaitJobsResult>} The final status of all jobs and whether they all completed
+   */
+  async awaitJobs(
+    enqueueResult: EnqueueFilesResult,
+    options?: AwaitJobsOptions
+  ): Promise<AwaitJobsResult> {
+    this._validateAuth('awaitJobs');
+    return await _awaitJobs(
+      enqueueResult,
+      options,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
    * Enqueues translation jobs for previously uploaded source files.
    *
    * This method creates translation jobs that will process existing source files
@@ -445,12 +480,12 @@ export class GT {
    * uploadSourceFiles. The translation jobs are queued for processing and will
    * generate translated content based on the source files and target locales provided.
    *
-   * @param {FileReference[]} files - Array of file references containing IDs of previously uploaded source files
+   * @param {FileReferenceIds[]} files - Array of file references containing IDs of previously uploaded source files
    * @param {EnqueueOptions} options - Configuration options including source locale, target locales, and job settings
    * @returns {Promise<EnqueueFilesResult>} Result containing job IDs, queue status, and processing information
    */
   async enqueueFiles(
-    files: FileReference[],
+    files: FileReferenceIds[],
     options: EnqueueOptions
   ): Promise<EnqueueFilesResult> {
     // Validation
@@ -493,6 +528,29 @@ export class GT {
       mergedOptions,
       this._getTranslationConfig()
     );
+  }
+
+  /**
+   * Creates or upserts a file tag, associating a set of source files
+   * with a user-defined tag ID and optional message.
+   *
+   * @param {CreateTagOptions} options - Tag creation options including tagId, sourceFileIds, and optional message
+   * @returns {Promise<CreateTagResult>} The created or updated tag
+   */
+  async createTag(options: CreateTagOptions): Promise<CreateTagResult> {
+    this._validateAuth('createTag');
+    return await _createTag(options, this._getTranslationConfig());
+  }
+
+  /**
+   * Publishes or unpublishes files on the CDN.
+   *
+   * @param {PublishFileEntry[]} files - Array of file entries with publish flags
+   * @returns {Promise<PublishFilesResult>} Result containing per-file success/failure
+   */
+  async publishFiles(files: PublishFileEntry[]): Promise<PublishFilesResult> {
+    this._validateAuth('publishFiles');
+    return await _publishFiles(files, this._getTranslationConfig());
   }
 
   /**
@@ -673,6 +731,7 @@ export class GT {
       branchId?: string;
       locale?: string;
       versionId?: string;
+      useLatestAvailableVersion?: boolean;
     },
     options: DownloadFileOptions = {}
   ): Promise<string> {
@@ -684,14 +743,17 @@ export class GT {
         {
           fileId: file.fileId,
           branchId: file.branchId,
-          locale: this.resolveCanonicalLocale(file.locale),
+          locale: file.locale
+            ? this.resolveCanonicalLocale(file.locale)
+            : undefined,
           versionId: file.versionId,
+          useLatestAvailableVersion: file.useLatestAvailableVersion,
         },
       ],
       options,
       this._getTranslationConfig()
     );
-    return result.data[0].data;
+    return result.data?.[0]?.data ?? '';
   }
 
   /**
@@ -719,7 +781,9 @@ export class GT {
 
     requests = requests.map((request) => ({
       ...request,
-      locale: this.resolveCanonicalLocale(request.locale),
+      locale: request.locale
+        ? this.resolveCanonicalLocale(request.locale)
+        : undefined,
     }));
 
     // Request the batch download
@@ -732,7 +796,9 @@ export class GT {
     return {
       files: result.data.map((file) => ({
         ...file,
-        ...(file.locale && { locale: this.resolveAliasLocale(file.locale) }),
+        ...(file.locale && {
+          locale: this.resolveAliasLocale(file.locale),
+        }),
       })),
       count: result.count,
     };
@@ -1034,6 +1100,7 @@ export class GT {
    * @param {string} message - The message to format.
    * @param {string | string[]} [locales='en'] - The locales to use for formatting.
    * @param {FormatVariables} [variables={}] - The variables to use for formatting.
+   * @param {StringFormat} [dataFormat='ICU'] - The format of the message.
    * @returns {string} The formatted message.
    *
    * @example
@@ -1048,6 +1115,7 @@ export class GT {
     options?: {
       locales?: string | string[];
       variables?: FormatVariables;
+      dataFormat?: StringFormat;
     }
   ): string {
     return formatMessage(message, {
@@ -1209,6 +1277,32 @@ export class GT {
       ...options,
     });
   }
+
+  /**
+   * Formats a relative time string from a Date, automatically selecting the best unit.
+   *
+   * @param {Date} date - The date to format relative to now
+   * @param {Object} [options] - Additional options for relative time formatting
+   * @param {string | string[]} [options.locales] - The locales to use for formatting
+   * @returns {string} The formatted relative time string (e.g., "2 hours ago", "in 3 days")
+   *
+   * @example
+   * gt.formatRelativeTimeFromDate(new Date(Date.now() - 3600000));
+   * // Returns: "1 hour ago"
+   */
+  formatRelativeTimeFromDate(
+    date: Date,
+    options?: {
+      locales?: string | string[];
+      baseDate?: Date;
+    } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
+  ): string {
+    return formatRelativeTimeFromDate(date, {
+      locales: this._renderingLocales,
+      ...options,
+    });
+  }
+
   // -------------- Locale Properties -------------- //
 
   /**
@@ -1596,6 +1690,7 @@ export function formatCutoff(
  * @param {string} message - The message to format.
  * @param {string | string[]} [locales='en'] - The locales to use for formatting.
  * @param {FormatVariables} [variables={}] - The variables to use for formatting.
+ * @param {StringFormat} [dataFormat='ICU'] - The format of the message. (When STRING, the message is returned as is)
  * @returns {string} The formatted message.
  *
  * @example
@@ -1610,9 +1705,15 @@ export function formatMessage(
   options?: {
     locales?: string | string[];
     variables?: FormatVariables;
+    dataFormat?: StringFormat;
   }
 ): string {
-  return _formatMessage(message, options?.locales, options?.variables);
+  switch (options?.dataFormat) {
+    case 'STRING':
+      return _formatMessageString(message);
+    default:
+      return _formatMessageICU(message, options?.locales, options?.variables);
+  }
 }
 
 /**
@@ -1746,6 +1847,31 @@ export function formatRelativeTime(
     options,
   });
 }
+
+/**
+ * Formats a relative time string from a Date, automatically selecting the best unit.
+ * @param {Date} date - The date to format relative to now.
+ * @param {Object} options - Formatting options.
+ * @param {string | string[]} options.locales - The locales to use for formatting.
+ * @param {Intl.RelativeTimeFormatOptions} [options] - Additional Intl.RelativeTimeFormat options.
+ * @returns {string} The formatted relative time string (e.g., "2 hours ago", "in 3 days").
+ */
+export function formatRelativeTimeFromDate(
+  date: Date,
+  options: {
+    locales: string | string[];
+    baseDate?: Date;
+  } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
+): string {
+  const { locales, baseDate, ...intlOptions } = options;
+  return _formatRelativeTimeFromDate({
+    date,
+    baseDate: baseDate ?? new Date(),
+    locales,
+    options: intlOptions,
+  });
+}
+
 // -------------- Locale Properties -------------- //
 
 /**
@@ -1996,3 +2122,5 @@ export function isSupersetLocale(
 ): boolean {
   return _isSupersetLocale(superLocale, subLocale);
 }
+
+export const API_VERSION = _API_VERSION;

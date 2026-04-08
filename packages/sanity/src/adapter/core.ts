@@ -1,7 +1,11 @@
 import { GT } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { Secrets } from '../types';
-import type { TranslateDocumentFilter, IgnoreFields } from './types';
+import type {
+  TranslateDocumentFilter,
+  IgnoreFields,
+  SkipFields,
+} from './types';
 import { SECRETS_NAMESPACE } from '../utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 export const gt = new GT();
@@ -21,6 +25,7 @@ export class GTConfig {
   singletons: string[];
   singletonMapping: (sourceDocumentId: string, locale: string) => string;
   ignoreFields: IgnoreFields[];
+  skipFields: SkipFields[];
   translateDocuments: TranslateDocumentFilter[];
   additionalStopTypes: string[];
   additionalSerializers: Partial<PortableTextHtmlComponents>;
@@ -36,6 +41,7 @@ export class GTConfig {
     singletons: string[],
     singletonMapping: (sourceDocumentId: string, locale: string) => string,
     ignoreFields: IgnoreFields[],
+    skipFields: SkipFields[],
     translateDocuments: TranslateDocumentFilter[],
     additionalStopTypes: string[] = [],
     additionalSerializers: Partial<PortableTextHtmlComponents> = {},
@@ -49,6 +55,7 @@ export class GTConfig {
     this.singletons = singletons;
     this.singletonMapping = singletonMapping;
     this.ignoreFields = ignoreFields;
+    this.skipFields = skipFields;
     this.translateDocuments = translateDocuments;
     this.additionalStopTypes = additionalStopTypes;
     this.additionalSerializers = additionalSerializers;
@@ -68,6 +75,7 @@ export class GTConfig {
         [],
         [],
         [],
+        [],
         {},
         {},
         []
@@ -84,6 +92,7 @@ export class GTConfig {
     singletons: string[],
     singletonMapping: (sourceDocumentId: string, locale: string) => string,
     ignoreFields: IgnoreFields[],
+    skipFields: SkipFields[],
     translateDocuments: TranslateDocumentFilter[],
     additionalStopTypes: string[] = [],
     additionalSerializers: Partial<PortableTextHtmlComponents> = {},
@@ -97,6 +106,7 @@ export class GTConfig {
     this.singletons = singletons;
     this.singletonMapping = singletonMapping;
     this.ignoreFields = ignoreFields;
+    this.skipFields = skipFields;
     this.translateDocuments = translateDocuments;
     this.additionalStopTypes = additionalStopTypes;
     this.additionalSerializers = additionalSerializers;
@@ -126,6 +136,9 @@ export class GTConfig {
   }
   getIgnoreFields() {
     return this.ignoreFields;
+  }
+  getSkipFields() {
+    return this.skipFields;
   }
   getTranslateDocuments() {
     return this.translateDocuments;

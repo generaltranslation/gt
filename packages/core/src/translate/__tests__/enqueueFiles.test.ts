@@ -29,7 +29,6 @@ describe('_enqueueFiles', () => {
   ): EnqueueOptions => ({
     sourceLocale: 'en',
     targetLocales: ['es', 'fr'],
-    publish: true,
     ...overrides,
   });
 
@@ -87,7 +86,6 @@ describe('_enqueueFiles', () => {
           ],
           targetLocales: ['es', 'fr'],
           sourceLocale: 'en',
-          publish: true,
           requireApproval: undefined,
           modelProvider: undefined,
           force: undefined,
@@ -131,7 +129,6 @@ describe('_enqueueFiles', () => {
   it('should handle all optional parameters', async () => {
     const mockFiles = [createMockFile()];
     const mockOptions = createMockOptions({
-      publish: false,
       requireApproval: true,
       modelProvider: 'openai',
       force: true,
@@ -164,7 +161,6 @@ describe('_enqueueFiles', () => {
       expect.any(String),
       expect.objectContaining({
         body: expect.objectContaining({
-          publish: false,
           requireApproval: true,
           modelProvider: 'openai',
           force: true,

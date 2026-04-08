@@ -1,5 +1,96 @@
 # generaltranslation
 
+## 8.2.2
+
+### Patch Changes
+
+- [#1158](https://github.com/generaltranslation/gt/pull/1158) [`5b85ccd`](https://github.com/generaltranslation/gt/commit/5b85ccd80b93b91eae9c873b258a13b6a57443c8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - add auto injection for jsx translation
+
+## 8.2.1
+
+### Patch Changes
+
+- [#1161](https://github.com/generaltranslation/gt/pull/1161) [`eca3d8d`](https://github.com/generaltranslation/gt/commit/eca3d8d8298969258bb4ab576b698c48cfbc318f) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Update logo blocks in READMEs
+
+## 8.2.0
+
+### Minor Changes
+
+- [#1153](https://github.com/generaltranslation/gt/pull/1153) [`df6bea8`](https://github.com/generaltranslation/gt/commit/df6bea819a4274018d6d99c7d3e00e7c5372ccbc) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Add `<RelativeTime>` component for localized relative time formatting
+  - New `<RelativeTime>` component with two usage modes:
+    - Auto-select unit from a Date: `<RelativeTime>{someDate}</RelativeTime>` → "2 hours ago"
+    - Explicit value + unit: `<RelativeTime value={-1} unit="day" />` → "yesterday"
+  - Core: `_selectRelativeTimeUnit()` auto-selects the best unit (seconds → minutes → hours → days → weeks → months → years)
+  - Core: `formatRelativeTimeFromDate()` standalone function and `GT.formatRelativeTimeFromDate()` class method
+  - Week unit included in auto-selection thresholds (7-27 days)
+  - CLI, compiler, and SWC plugin updated to recognize `RelativeTime` as a variable component
+
+### Patch Changes
+
+- [#1160](https://github.com/generaltranslation/gt/pull/1160) [`9d2349c`](https://github.com/generaltranslation/gt/commit/9d2349cfc41862d9e3d8364659b678055b9fa290) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding translation tagging
+
+## 8.1.23
+
+### Patch Changes
+
+- [#1147](https://github.com/generaltranslation/gt/pull/1147) [`d7d9b99`](https://github.com/generaltranslation/gt/commit/d7d9b9952f3a96dde2b89f206d47c491d503727f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: add support for multiple format types
+
+## 8.1.22
+
+### Patch Changes
+
+- [#1145](https://github.com/generaltranslation/gt/pull/1145) [`16521f8`](https://github.com/generaltranslation/gt/commit/16521f83be814ca75be7956b00fc644e60f72e8e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add string datatype formatting
+
+## 8.1.21
+
+### Patch Changes
+
+- [#1142](https://github.com/generaltranslation/gt/pull/1142) [`d688831`](https://github.com/generaltranslation/gt/commit/d688831d124f9719357100a93e5a7c37729e751e) Thanks [@brian-lou](https://github.com/brian-lou)! - Add new helper awaitJobs() function
+
+- [#1140](https://github.com/generaltranslation/gt/pull/1140) [`46e089c`](https://github.com/generaltranslation/gt/commit/46e089c63725acc2c478a4c1965bebd6f2d2cc0e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding staged status to `gt-lock.json`, adding `useLatestAvailableVersion` flag to core download
+
+## 8.1.20
+
+### Patch Changes
+
+- [#1125](https://github.com/generaltranslation/gt/pull/1125) [`c3f8a78`](https://github.com/generaltranslation/gt/commit/c3f8a782f692fd69998a44b8116a3adfab6ea7c8) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix logo URLs in README files (updated to `/brand/gt-logo-*.svg`)
+
+## 8.1.19
+
+### Patch Changes
+
+- [#1129](https://github.com/generaltranslation/gt/pull/1129) [`aabe764`](https://github.com/generaltranslation/gt/commit/aabe76422bfbba80ed3453667f82f01b1a195281) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: derivation support for the t macro
+
+## 8.1.18
+
+### Patch Changes
+
+- [#1122](https://github.com/generaltranslation/gt/pull/1122) [`6d516a7`](https://github.com/generaltranslation/gt/commit/6d516a784f1192f7758689fcf4557e8a19de740a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding CDN publishing for all file types
+
+## 8.1.17
+
+### Patch Changes
+
+- [#1062](https://github.com/generaltranslation/gt/pull/1062) [`2274e23`](https://github.com/generaltranslation/gt/commit/2274e23d448c8a96d661d30e5c7fc737814c1fb0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: rename static to derive, and deprecate static
+
+## 8.1.16
+
+### Patch Changes
+
+- [#1099](https://github.com/generaltranslation/gt/pull/1099) [`e364093`](https://github.com/generaltranslation/gt/commit/e3640931cf0ca2df08dcadbae30b1668e14a3ed8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add twilio json support for cli
+
+## 8.1.15
+
+### Patch Changes
+
+- [#1096](https://github.com/generaltranslation/gt/pull/1096) [`1793010`](https://github.com/generaltranslation/gt/commit/1793010ea33ceceba307832195433ff3b7f1143e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: remove required branchId field for enqueue
+
+## 8.1.14
+
+### Patch Changes
+
+- [#1085](https://github.com/generaltranslation/gt/pull/1085) [`dad7824`](https://github.com/generaltranslation/gt/commit/dad78246d164b201d4fc14c89213cc04f21c8b76) Thanks [@brian-lou](https://github.com/brian-lou)! - feat: Auth wizard supports both types of key creation
+
 ## 8.1.13
 
 ### Patch Changes

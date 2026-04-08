@@ -7,7 +7,11 @@ import {
   INLINE_MESSAGE_HOOK,
   INLINE_MESSAGE_HOOK_ASYNC,
   MSG_REGISTRATION_FUNCTION,
+  T_REGISTRATION_FUNCTION,
   TRANSLATION_COMPONENT,
+  INTERNAL_TRANSLATION_COMPONENT,
+  T_GLOBAL_REGISTRATION_FUNCTION,
+  T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
 } from '../../jsx/utils/constants.js';
 import { GTLibrary } from '../../../types/libraries.js';
 import { extractImportName } from './parseAst.js';
@@ -53,6 +57,21 @@ export function getPathsAndAliases(
   }> = [];
 
   traverse(ast, {
+    // extract global t tagged template
+    TaggedTemplateExpression(path) {
+      if (
+        t.isIdentifier(path.node.tag, {
+          name: T_GLOBAL_REGISTRATION_FUNCTION,
+        }) &&
+        !path.scope.hasBinding(T_GLOBAL_REGISTRATION_FUNCTION)
+      ) {
+        inlineTranslationPaths.push({
+          localName: T_GLOBAL_REGISTRATION_FUNCTION,
+          path: path.get('tag') as NodePath,
+          originalName: T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
+        });
+      }
+    },
     ImportDeclaration(path) {
       if (pkgs.some((pkg) => path.node.source.value.startsWith(pkg))) {
         const importName = extractImportName(
@@ -66,14 +85,18 @@ export function getPathsAndAliases(
             name.original === INLINE_TRANSLATION_HOOK_ASYNC ||
             name.original === INLINE_MESSAGE_HOOK ||
             name.original === INLINE_MESSAGE_HOOK_ASYNC ||
-            name.original === MSG_REGISTRATION_FUNCTION
+            name.original === MSG_REGISTRATION_FUNCTION ||
+            name.original === T_REGISTRATION_FUNCTION
           ) {
             inlineTranslationPaths.push({
               localName: name.local,
               path,
               originalName: name.original,
             });
-          } else if (name.original === TRANSLATION_COMPONENT) {
+          } else if (
+            name.original === TRANSLATION_COMPONENT ||
+            name.original === INTERNAL_TRANSLATION_COMPONENT
+          ) {
             translationComponentPaths.push({
               localName: name.local,
               path,
@@ -118,7 +141,10 @@ export function getPathsAndAliases(
                   path: parentPath,
                   originalName: name.original,
                 });
-              } else if (name.original === TRANSLATION_COMPONENT) {
+              } else if (
+                name.original === TRANSLATION_COMPONENT ||
+                name.original === INTERNAL_TRANSLATION_COMPONENT
+              ) {
                 translationComponentPaths.push({
                   localName: name.local,
                   path: parentPath,

@@ -1,6 +1,6 @@
-import { GTProvider } from './provider/GTProvider';
-import LocaleSelector from './ui/LocaleSelector';
-import RegionSelector from './ui/RegionSelector';
+import { GTProvider } from './react-context/provider/GTProvider';
+import LocaleSelector from './react-context/ui/LocaleSelector';
+import RegionSelector from './react-context/ui/RegionSelector';
 
 import {
   T,
@@ -13,7 +13,9 @@ import {
   Num,
   Currency,
   DateTime,
+  RelativeTime,
   Static,
+  Derive,
   Plural,
   Branch,
   useLocales,
@@ -23,11 +25,13 @@ import {
   useLocaleProperties,
   useRegionSelector,
   useLocaleDirection,
+  useVersionId,
   useMessages,
   msg,
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
   mFallback,
@@ -44,7 +48,9 @@ export {
   Num,
   Currency,
   DateTime,
+  RelativeTime,
   Static,
+  Derive,
   T,
   GTProvider,
   Plural,
@@ -61,6 +67,7 @@ export {
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
+  useVersionId,
   LocaleSelector,
   RegionSelector,
   DictionaryTranslationOptions,
@@ -70,6 +77,7 @@ export {
   decodeMsg,
   decodeOptions,
   declareStatic,
+  derive,
   declareVar,
   decodeVars,
   useMessages,

@@ -24,6 +24,25 @@ export type ParsingConfig = {
    * eg msg(['hello', 'world', 'foo', 'bar']) will not be registered
    */
   ignoreInlineListContent: boolean;
+  /**
+   * If true, include surrounding source code lines as context for translations
+   */
+  includeSourceCodeContext?: boolean;
+  /**
+   * If true, ignore tagged template expressions (e.g., t`hello ${name}`)
+   */
+  ignoreTaggedTemplates: boolean;
+  /**
+   * If true, ignore global tagged template expressions (t`hello` without import)
+   */
+  ignoreGlobalTaggedTemplates: boolean;
+  /**
+   * Skip requirement for a derive() invocation to trigger derivation
+   * - ENABLED: Always auto-derive
+   * - DISABLED: Never auto-derive
+   * - AUTO: Only auto-derive for the t() function
+   */
+  autoDeriveMethod: 'ENABLED' | 'DISABLED' | 'AUTO';
 };
 
 /**

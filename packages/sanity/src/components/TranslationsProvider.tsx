@@ -221,10 +221,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
       const query = `*[
         _type == 'translation.metadata' &&
-        translations[_key == $sourceLocale][0].value._ref in $documentIds
+        translations[language == $sourceLocale][0].value._ref in $documentIds
       ] {
-        'sourceDocId': translations[_key == $sourceLocale][0].value._ref,
-        'existingTranslations': translations[_key in $localeIds]._key
+        'sourceDocId': translations[language == $sourceLocale][0].value._ref,
+        'existingTranslations': translations[language in $localeIds].language
       }`;
 
       const existingMetadata = await client.fetch(query, {
@@ -265,10 +265,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
       const transformedDocuments = documents
         .map((doc) => {
-          delete doc[pluginConfig.getLanguageField()];
+          const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
           const baseLanguage = pluginConfig.getSourceLocale();
           try {
-            const serialized = serializeDocument(doc, schema, baseLanguage);
+            const serialized = serializeDocument(
+              cleanDoc as typeof doc,
+              schema,
+              baseLanguage
+            );
             return {
               info: {
                 documentId: doc._id?.replace('drafts.', '') || doc._id,
@@ -391,11 +395,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
       const query = `*[
       _type == 'translation.metadata' &&
-      translations[_key == $sourceLocale][0].value._ref in $documentIds
+      translations[language == $sourceLocale][0].value._ref in $documentIds
     ] {
       _rev,
-      'sourceDocId': translations[_key == $sourceLocale][0].value._ref,
-      'existingTranslations': translations[_key in $localeIds]._key
+      'sourceDocId': translations[language == $sourceLocale][0].value._ref,
+      'existingTranslations': translations[language in $localeIds].language
     }`;
 
       const existingMetadata = await client.fetch(query, {
@@ -829,10 +833,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
       const query = `*[
         _type == 'translation.metadata' &&
-        translations[_key == $sourceLocale][0].value._ref in $publishedDocumentIds
+        translations[language == $sourceLocale][0].value._ref in $publishedDocumentIds
       ] {
-        'sourceDocId': translations[_key == $sourceLocale][0].value._ref,
-        'translationDocs': translations[_key != $sourceLocale && defined(value._ref)]{
+        'sourceDocId': translations[language == $sourceLocale][0].value._ref,
+        'translationDocs': translations[language != $sourceLocale && defined(value._ref)]{
           _key,
           'docId': value._ref
         }
@@ -927,9 +931,12 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setImportedTranslations(new Set(downloadStatus.downloaded));
   }, [downloadStatus.downloaded]);
 
-  if (secrets) {
-    handleGetBranchId(secrets);
-  }
+  useEffect(() => {
+    if (secrets) {
+      handleGetBranchId(secrets);
+    }
+  }, [secrets, handleGetBranchId]);
+
   const contextValue: TranslationsContextType = {
     // State
     isBusy,

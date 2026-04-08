@@ -39,20 +39,20 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     vi.restoreAllMocks();
   });
 
-  it('should resolve functions across multiple files with re-exports', () => {
+  it('should resolve functions across multiple files with re-exports using Derive', () => {
     // Mock the file contents based on the playground scenario
     const pageFile = `
-      import { T, Static } from "gt-next";
+      import { T, Derive } from "gt-next";
       import { utils1 } from "./libs/utils1";
 
-      function getStatic() {
+      function getDerived() {
         return 1 ? "static" : "dynamic";
       }
 
       export default function Page() {
         return (
           <>
-            <T>test <Static>{utils1()}</Static></T>
+            <T>test <Derive>{utils1()}</Derive></T>
           </>
         );
       }
@@ -146,9 +146,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             if (
               t.isImportSpecifier(spec) &&
               t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
+              spec.imported.name === 'Derive'
             ) {
-              importAliases[spec.local.name] = 'Static';
+              importAliases[spec.local.name] = 'Derive';
             }
           });
         }
@@ -251,7 +251,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update837.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils3-a',
       },
@@ -261,7 +261,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update6c4.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils3-b',
       },
@@ -271,7 +271,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update40d.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils1-a',
       },
@@ -281,7 +281,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update081.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils1-b',
       },
@@ -345,25 +345,25 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     );
 
     // Verify all expected content variations are present
-    const staticContents = hashedUpdates.map(
+    const deriveContents = hashedUpdates.map(
       (u) => (u.source[1] as { c: string }).c
     );
-    expect(staticContents).toContain('utils3-a');
-    expect(staticContents).toContain('utils3-b');
-    expect(staticContents).toContain('utils1-a');
-    expect(staticContents).toContain('utils1-b');
+    expect(deriveContents).toContain('utils3-a');
+    expect(deriveContents).toContain('utils3-b');
+    expect(deriveContents).toContain('utils1-a');
+    expect(deriveContents).toContain('utils1-b');
   });
 
-  it('should detect direct self-recursion and throw error', () => {
+  it('should detect direct self-recursion and throw error with Derive', () => {
     // Mock the file contents with utils3 calling itself
     const pageFile = `
-      import { T, Static } from "gt-next";
+      import { T, Derive } from "gt-next";
       import { utils1 } from "./libs/utils1";
 
       export default function Page() {
         return (
           <>
-            <T>test <Static>{utils1()}</Static></T>
+            <T>test <Derive>{utils1()}</Derive></T>
           </>
         );
       }
@@ -453,9 +453,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             if (
               t.isImportSpecifier(spec) &&
               t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
+              spec.imported.name === 'Derive'
             ) {
-              importAliases[spec.local.name] = 'Static';
+              importAliases[spec.local.name] = 'Derive';
             }
           });
         }
@@ -499,22 +499,22 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(
       errors.some((error) =>
         error.includes(
-          'A static function cannot use recursive calls to construct its result'
+          'A derivable (statically analyzable) function cannot use recursive calls to construct its result'
         )
       )
     ).toBe(true);
   });
 
-  it('should detect cross-function recursion and throw error', () => {
+  it('should detect cross-function recursion and throw error with Derive', () => {
     // Mock the file contents with utils3 calling utils1 (creating a cycle)
     const pageFile = `
-      import { T, Static } from "gt-next";
+      import { T, Derive } from "gt-next";
       import { utils1 } from "./libs/utils1";
 
       export default function Page() {
         return (
           <>
-            <T>test <Static>{utils1()}</Static></T>
+            <T>test <Derive>{utils1()}</Derive></T>
           </>
         );
       }
@@ -604,9 +604,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             if (
               t.isImportSpecifier(spec) &&
               t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
+              spec.imported.name === 'Derive'
             ) {
-              importAliases[spec.local.name] = 'Static';
+              importAliases[spec.local.name] = 'Derive';
             }
           });
         }
@@ -650,22 +650,22 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(
       errors.some((error) =>
         error.includes(
-          'A static function cannot use recursive calls to construct its result'
+          'A derivable (statically analyzable) function cannot use recursive calls to construct its result'
         )
       )
     ).toBe(true);
   });
 
-  it('should handle circular imports without infinite loop', () => {
+  it('should handle circular imports without infinite loop when using Derive', () => {
     // Mock the file contents with circular imports but no function recursion
     const pageFile = `
-      import { T, Static } from "gt-next";
+      import { T, Derive } from "gt-next";
       import { utils1 } from "./libs/utils1";
 
       export default function Page() {
         return (
           <>
-            <T>test <Static>{utils1()}</Static></T>
+            <T>test <Derive>{utils1()}</Derive></T>
           </>
         );
       }
@@ -756,9 +756,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             if (
               t.isImportSpecifier(spec) &&
               t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
+              spec.imported.name === 'Derive'
             ) {
-              importAliases[spec.local.name] = 'Static';
+              importAliases[spec.local.name] = 'Derive';
             }
           });
         }
@@ -803,30 +803,30 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       expect(update.source).toHaveLength(2);
       expect(update.source[0]).toBe('test ');
 
-      const staticComponent = update.source[1] as any;
-      expect(staticComponent.t).toBe('Static');
-      expect(staticComponent.i).toBe(1);
-      expect(staticComponent.c).toMatch(/^(utils3-[ab]|utils1-[ab])$/);
+      const deriveComponent = update.source[1] as any;
+      expect(deriveComponent.t).toBe('Derive');
+      expect(deriveComponent.i).toBe(1);
+      expect(deriveComponent.c).toMatch(/^(utils3-[ab]|utils1-[ab])$/);
     });
 
     // Verify specific content variations exist
-    const staticContents = updates.map((u) => (u.source[1] as { c: string }).c);
-    expect(staticContents).toContain('utils3-a');
-    expect(staticContents).toContain('utils3-b');
-    expect(staticContents).toContain('utils1-a');
-    expect(staticContents).toContain('utils1-b');
+    const deriveContents = updates.map((u) => (u.source[1] as { c: string }).c);
+    expect(deriveContents).toContain('utils3-a');
+    expect(deriveContents).toContain('utils3-b');
+    expect(deriveContents).toContain('utils1-a');
+    expect(deriveContents).toContain('utils1-b');
   });
 
-  it('should handle function resolution failure when import chain is broken', () => {
+  it('should handle function resolution failure when import chain is broken for Derive', () => {
     // Mock the file contents with broken import chain
     const pageFile = `
-      import { T, Static } from "gt-next";
+      import { T, Derive } from "gt-next";
       import { utils1 } from "./libs/utils1";
 
       export default function Page() {
         return (
           <>
-            <T>test <Static>{utils1()}</Static></T>
+            <T>test <Derive>{utils1()}</Derive></T>
           </>
         );
       }
@@ -912,9 +912,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             if (
               t.isImportSpecifier(spec) &&
               t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
+              spec.imported.name === 'Derive'
             ) {
-              importAliases[spec.local.name] = 'Static';
+              importAliases[spec.local.name] = 'Derive';
             }
           });
         }
@@ -965,9 +965,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(updates.length).toBeGreaterThan(0);
 
     // Verify that utils1 was still processed despite utils3 resolution failure
-    const staticContents = updates.map((u) => (u.source[1] as { c: string }).c);
-    expect(staticContents).toContain('utils1-a');
-    expect(staticContents).toContain('utils1-b');
+    const deriveContents = updates.map((u) => (u.source[1] as { c: string }).c);
+    expect(deriveContents).toContain('utils1-a');
+    expect(deriveContents).toContain('utils1-b');
 
     // Verify that files were attempted to be read
     expect(mockFs.readFileSync).toHaveBeenCalledWith(
@@ -980,20 +980,20 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     );
   });
 
-  it('should handle undefined function binding and generate warning', () => {
+  it('should handle undefined function binding and generate warning for Derive', () => {
     // Mock the file contents with undefined function call
     const pageFile = `
-      import { T, Static } from "gt-next";
+      import { T, Derive } from "gt-next";
       import { utils1, otherUtils } from "./libs/utils1";
 
-      function getStatic() {
+      function getDerived() {
         return 1 ? "static" : "dynamic";
       }
 
       export default function Page() {
         return (
           <>
-            <T>test <Static>{glorb()}</Static></T>
+            <T>test <Derive>{glorb()}</Derive></T>
           </>
         );
       }
@@ -1054,9 +1054,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             if (
               t.isImportSpecifier(spec) &&
               t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
+              spec.imported.name === 'Derive'
             ) {
-              importAliases[spec.local.name] = 'Static';
+              importAliases[spec.local.name] = 'Derive';
             }
           });
         }
@@ -1108,29 +1108,29 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       )
     ).toBe(true);
 
-    // Should still create an update but with empty/null content for the Static component
+    // Should still create an update but with empty/null content for the Derive component
     expect(updates.length).toBeGreaterThanOrEqual(1);
 
-    // The Static component should be processed but the glorb() call should be null/empty
+    // The Derive component should be processed but the glorb() call should be null/empty
     const update = updates[0];
     expect(update.dataFormat).toBe('JSX');
     expect(update.source).toBeDefined();
   });
 
-  it('should handle import aliases correctly', () => {
+  it('should handle Derive import aliases correctly', () => {
     // Mock the file contents with import aliases
     const pageFile = `
-      import { T, Static } from "gt-next";
+      import { T, Derive } from "gt-next";
       import { utils1 as aliasUtils1, otherUtils } from "./libs/utils1";
 
-      function getStatic() {
+      function getDerived() {
         return 1 ? "static" : "dynamic";
       }
 
       export default function Page() {
         return (
           <>
-            <T>test <Static>{aliasUtils1()}</Static></T>
+            <T>test <Derive>{aliasUtils1()}</Derive></T>
           </>
         );
       }
@@ -1194,9 +1194,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             if (
               t.isImportSpecifier(spec) &&
               t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
+              spec.imported.name === 'Derive'
             ) {
-              importAliases[spec.local.name] = 'Static';
+              importAliases[spec.local.name] = 'Derive';
             }
           });
         }
@@ -1251,7 +1251,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       '40d52de32ba666ce': [
         'test ',
         {
-          t: 'Static',
+          t: 'Derive',
           i: 1,
           c: 'utils1-a',
         },
@@ -1259,7 +1259,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       '081fa70a614caa27': [
         'test ',
         {
-          t: 'Static',
+          t: 'Derive',
           i: 1,
           c: 'utils1-b',
         },
@@ -1280,7 +1280,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update40d.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils1-a',
       },
@@ -1290,7 +1290,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(update081.source).toEqual([
       'test ',
       {
-        t: 'Static',
+        t: 'Derive',
         i: 1,
         c: 'utils1-b',
       },
@@ -1324,17 +1324,17 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     );
 
     // Verify specific content variations exist
-    const staticContents = hashedUpdates.map(
+    const deriveContents = hashedUpdates.map(
       (u) => (u.source[1] as { c: string }).c
     );
-    expect(staticContents).toContain('utils1-a');
-    expect(staticContents).toContain('utils1-b');
+    expect(deriveContents).toContain('utils1-a');
+    expect(deriveContents).toContain('utils1-b');
   });
 
-  it('should prioritize local function definitions over imports with same name', () => {
+  it('should prioritize local function definitions over imports with same name for Derive', () => {
     // Test for the shadowing bug fix where local definitions should take precedence
     const pageFile = `
-      import { T, Static } from "gt-next";
+      import { T, Derive } from "gt-next";
       import { getGreeting as importedGreeting } from "./libs/utils1";
 
       // Local function shadows if same name is used
@@ -1345,7 +1345,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       export default function Page() {
         return (
           <>
-            <T>test <Static>{getGreeting()}</Static></T>
+            <T>test <Derive>{getGreeting()}</Derive></T>
           </>
         );
       }
@@ -1402,9 +1402,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             if (
               t.isImportSpecifier(spec) &&
               t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
+              spec.imported.name === 'Derive'
             ) {
-              importAliases[spec.local.name] = 'Static';
+              importAliases[spec.local.name] = 'Derive';
             }
           });
         }
@@ -1443,11 +1443,11 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     expect(updates).toHaveLength(2); // Should have 2 branches from LOCAL function
 
     // Verify it used the LOCAL function (local-a, local-b) not the imported one
-    const staticContents = updates.map((u) => (u.source[1] as { c: string }).c);
-    expect(staticContents).toContain('local-a');
-    expect(staticContents).toContain('local-b');
-    expect(staticContents).not.toContain('imported-a');
-    expect(staticContents).not.toContain('imported-b');
+    const deriveContents = updates.map((u) => (u.source[1] as { c: string }).c);
+    expect(deriveContents).toContain('local-a');
+    expect(deriveContents).toContain('local-b');
+    expect(deriveContents).not.toContain('imported-a');
+    expect(deriveContents).not.toContain('imported-b');
 
     // The imported file should NOT be read because local function shadows it
     expect(mockFs.readFileSync).not.toHaveBeenCalledWith(
@@ -1456,16 +1456,16 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     );
   });
 
-  it('should handle named re-exports with renaming (export { fn1 as fn2 } from ...)', () => {
+  it('should handle named re-exports with renaming (export { fn1 as fn2 } from ...) using Derive', () => {
     // Test for named re-exports with renaming
     const pageFile = `
-      import { T, Static } from "gt-next";
+      import { T, Derive } from "gt-next";
       import { renamedFn } from "./libs/utils2";
 
       export default function Page() {
         return (
           <>
-            <T>test <Static>{renamedFn()}</Static></T>
+            <T>test <Derive>{renamedFn()}</Derive></T>
           </>
         );
       }
@@ -1531,9 +1531,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             if (
               t.isImportSpecifier(spec) &&
               t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
+              spec.imported.name === 'Derive'
             ) {
-              importAliases[spec.local.name] = 'Static';
+              importAliases[spec.local.name] = 'Derive';
             }
           });
         }
@@ -1596,8 +1596,149 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     );
   });
 
-  it('should handle declareStatic imported with alias', () => {
-    // Test for declareStatic import aliasing - used within Static component
+  it('should resolve functions across multiple files with re-exports using Static for backwards compatibility', () => {
+    // Same as the first test but confirms the deprecated Static component still works
+    const pageFile = `
+      import { T, Static } from "gt-next";
+      import { utils1 } from "./libs/utils1";
+
+      function getStatic() {
+        return 1 ? "static" : "dynamic";
+      }
+
+      export default function Page() {
+        return (
+          <>
+            <T>test <Static>{utils1()}</Static></T>
+          </>
+        );
+      }
+    `;
+
+    const utils1File = `
+      import { utils3 } from "./utils2";
+
+      export function utils1() {
+        if (Math.random() > 0.5) {
+          return utils3();
+        }
+        return 1 ? "utils1-a" : "utils1-b";
+      }
+    `;
+
+    const utils2File = `
+      export * from "./utils3";
+    `;
+
+    const utils3File = `
+      import { utils1 } from "./utils1";
+      export function utils3() {
+        if (Math.random() > 0.5) {
+        }
+        return 1 ? "utils3-a" : "utils3-b";
+      }
+    `;
+
+    // Set up file system mocks
+    mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+      switch (path) {
+        case '/test/static/libs/utils1.ts':
+          return utils1File;
+        case '/test/static/libs/utils2.ts':
+          return utils2File;
+        case '/test/static/libs/utils3.ts':
+          return utils3File;
+        default:
+          throw new Error(`File not found: ${path}`);
+      }
+    });
+
+    mockResolveImportPath.mockImplementation(
+      (_currentFile: string, importPath: string) => {
+        if (importPath === './libs/utils1')
+          return '/test/static/libs/utils1.ts';
+        if (importPath === './utils2') return '/test/static/libs/utils2.ts';
+        if (importPath === './utils3') return '/test/static/libs/utils3.ts';
+        if (importPath === './utils1') return '/test/static/libs/utils1.ts';
+        return null;
+      }
+    );
+
+    const ast = parse(pageFile, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+
+    let tLocalName = '';
+    const importAliases: Record<string, string> = {};
+
+    traverse(ast, {
+      ImportDeclaration(path) {
+        if (path.node.source.value === 'gt-next') {
+          path.node.specifiers.forEach((spec) => {
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'T'
+            ) {
+              tLocalName = spec.local.name;
+              importAliases[tLocalName] = 'T';
+            }
+            if (
+              t.isImportSpecifier(spec) &&
+              t.isIdentifier(spec.imported) &&
+              spec.imported.name === 'Static'
+            ) {
+              importAliases[spec.local.name] = 'Static';
+            }
+          });
+        }
+      },
+    });
+
+    traverse(ast, {
+      Program(programPath) {
+        const tBinding = programPath.scope.getBinding(tLocalName);
+        if (tBinding) {
+          parseTranslationComponent({
+            originalName: 'T',
+            localName: tLocalName,
+            path: tBinding.path,
+            updates,
+            config: {
+              importAliases,
+              parsingOptions,
+              pkgs: [Libraries.GT_NEXT],
+              file: '/test/static/page.tsx',
+            },
+            output: {
+              errors,
+              warnings,
+              unwrappedExpressions: [],
+            },
+          });
+        }
+      },
+    });
+
+    // Static usage should still be fully supported
+    expect(errors).toHaveLength(0);
+    expect(updates).toHaveLength(4);
+
+    const staticContents = updates.map((u) => (u.source[1] as { c: string }).c);
+    expect(staticContents).toContain('utils3-a');
+    expect(staticContents).toContain('utils3-b');
+    expect(staticContents).toContain('utils1-a');
+    expect(staticContents).toContain('utils1-b');
+
+    // Static should still produce the legacy Static type internally
+    updates.forEach((update) => {
+      expect((update.source[1] as any).t).toBe('Static');
+    });
+  });
+
+  it('should handle declareStatic imported with alias for backwards compatibility', () => {
+    // Test for declareStatic import aliasing while using the legacy Static component
     const pageFile = `
       import { T, Static } from "gt-next";
       import { declareStatic as ds } from "gt-react";
@@ -1686,16 +1827,16 @@ describe('parseTranslationComponent with cross-file resolution', () => {
     }
   });
 
-  it('should handle multiple levels of re-exports', () => {
+  it('should handle multiple levels of re-exports using Derive', () => {
     // Test for chained re-exports: page -> utils3 -> utils2 -> utils1
     const pageFile = `
-      import { T, Static } from "gt-next";
+      import { T, Derive } from "gt-next";
       import { deepFn } from "./libs/utils3";
 
       export default function Page() {
         return (
           <>
-            <T>test <Static>{deepFn()}</Static></T>
+            <T>test <Derive>{deepFn()}</Derive></T>
           </>
         );
       }
@@ -1770,9 +1911,9 @@ describe('parseTranslationComponent with cross-file resolution', () => {
             if (
               t.isImportSpecifier(spec) &&
               t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
+              spec.imported.name === 'Derive'
             ) {
-              importAliases[spec.local.name] = 'Static';
+              importAliases[spec.local.name] = 'Derive';
             }
           });
         }
@@ -1845,5 +1986,606 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       parsingOptions,
       expect.any(Map)
     );
+  });
+
+  describe('derive in context', () => {
+    it('should produce 2 updates when context uses derive with a function', () => {
+      const pageFile = `
+        import { T, derive } from "gt-next";
+
+        function getFormality() {
+          if (isFormal) {
+            return "formal";
+          } else {
+            return "casual";
+          }
+        }
+
+        export default function Page() {
+          return <T context={derive(getFormality())}>Hello</T>;
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                if (spec.imported.name === 'T') {
+                  tLocalName = spec.local.name;
+                  importAliases[tLocalName] = 'T';
+                }
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-context/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(2);
+
+      const contexts = updates.map((u) => u.metadata.context).sort();
+      expect(contexts).toEqual(['casual', 'formal']);
+
+      // Both should have same staticId
+      expect(updates[0].metadata.staticId).toBeDefined();
+      expect(updates[0].metadata.staticId).toBe(updates[1].metadata.staticId);
+    });
+
+    it('should produce cross-product when both content and context use derive', () => {
+      const pageFile = `
+        import { T, Derive, derive } from "gt-next";
+
+        function getFormality() {
+          if (isFormal) {
+            return "formal";
+          } else {
+            return "casual";
+          }
+        }
+
+        function getGreeting() {
+          if (isMorning) {
+            return "Good morning";
+          } else {
+            return "Good evening";
+          }
+        }
+
+        export default function Page() {
+          return <T context={derive(getFormality())}><Derive>{getGreeting()}</Derive></T>;
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                if (spec.imported.name === 'T') {
+                  tLocalName = spec.local.name;
+                  importAliases[tLocalName] = 'T';
+                } else if (spec.imported.name === 'Derive') {
+                  importAliases[spec.local.name] = 'Derive';
+                }
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-context-cross/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(4); // 2 content × 2 context
+
+      // All 4 should share same staticId
+      const staticId = updates[0].metadata.staticId;
+      expect(staticId).toBeDefined();
+      expect(updates.every((u) => u.metadata.staticId === staticId)).toBe(true);
+    });
+
+    it('should still work with static string context (regression)', () => {
+      const pageFile = `
+        import { T } from "gt-next";
+
+        export default function Page() {
+          return <T context="greeting">Hello</T>;
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (
+                t.isImportSpecifier(spec) &&
+                t.isIdentifier(spec.imported) &&
+                spec.imported.name === 'T'
+              ) {
+                tLocalName = spec.local.name;
+                importAliases[tLocalName] = 'T';
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-context-regression/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(1);
+      expect(updates[0].metadata.context).toBe('greeting');
+    });
+  });
+
+  describe('Derive inside Plural/Branch named props', () => {
+    it('should multiply when Derive is inside a single Plural prop', () => {
+      const pageFile = `
+        import { T, Derive, Plural } from "gt-next";
+
+        function getAnimal() {
+          if (Math.random() > 0.5) return "cat";
+          return "dog";
+        }
+
+        export default function Page() {
+          return (
+            <T>
+              <Plural
+                n={count}
+                one={<><Derive>{getAnimal()}</Derive> is here</>}
+                other="animals"
+              />
+            </T>
+          );
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                importAliases[spec.local.name] = spec.imported.name;
+                if (spec.imported.name === 'T') tLocalName = spec.local.name;
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-plural-single/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(2); // 2 branches from getAnimal()
+    });
+
+    it('should produce cross-product when Derive is in both Plural props', () => {
+      const pageFile = `
+        import { T, Derive, Plural } from "gt-next";
+
+        function getAnimal() {
+          if (Math.random() > 0.5) return "cat";
+          if (Math.random() > 0.5) return "dog";
+          return "bird";
+        }
+
+        export default function Page() {
+          return (
+            <T>
+              <Plural
+                n={count}
+                one={<><Derive>{getAnimal()}</Derive> is here</>}
+                other={<><Derive>{getAnimal()}</Derive> are here</>}
+              />
+            </T>
+          );
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                importAliases[spec.local.name] = spec.imported.name;
+                if (spec.imported.name === 'T') tLocalName = spec.local.name;
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-plural-cross/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(9); // 3 x 3 cross-product
+    });
+
+    it('should multiply when Derive is inside a Branch prop', () => {
+      const pageFile = `
+        import { T, Derive, Branch } from "gt-next";
+
+        function getGreeting() {
+          if (isFormal) return "Good day";
+          return "Hey";
+        }
+
+        export default function Page() {
+          return (
+            <T>
+              <Branch
+                branch={mode}
+                formal={<><Derive>{getGreeting()}</Derive>, welcome</>}
+                casual="What's up"
+              />
+            </T>
+          );
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                importAliases[spec.local.name] = spec.imported.name;
+                if (spec.imported.name === 'T') tLocalName = spec.local.name;
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-branch/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(2); // 2 branches from getGreeting()
+    });
+
+    it('should produce 9 entries for user scenario: getSubject() in both Plural props', () => {
+      const pageFile = `
+        import { T, Derive, Plural, Num } from "gt-next";
+
+        function getSubject() {
+          const subject = Math.random() > 0.5 ? 'man' : 'woman';
+          if (subject === 'man') return <Plural n={count} one='man' other='men' />;
+          if (subject === 'woman') return <Plural n={count} one='woman' other='women' />;
+          return <Plural n={count} one='child' other='children' />;
+        }
+
+        export default function Page() {
+          return (
+            <T>
+              <p>
+                <Plural
+                  n={count}
+                  one={<>Here is <Num>{count}</Num> <Derive>{getSubject()}</Derive> who is a racing driver</>}
+                  other={<>Here are <Num>{count}</Num> <Derive>{getSubject()}</Derive> who are racing drivers</>}
+                />
+                .
+              </p>
+            </T>
+          );
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                importAliases[spec.local.name] = spec.imported.name;
+                if (spec.imported.name === 'T') tLocalName = spec.local.name;
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-plural-user-scenario/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(9); // 3 x 3 cross-product
+    });
+
+    it('should cross-multiply Derive in Branch children (fallback) and named props', () => {
+      const pageFile = `
+        import { T, Derive, Branch } from "gt-next";
+
+        function getGreeting() {
+          if (isFormal) return "Good day";
+          return "Hey";
+        }
+
+        function getDefault() {
+          if (isNight) return "Good night";
+          if (isMorning) return "Good morning";
+          return "Hello";
+        }
+
+        export default function Page() {
+          return (
+            <T>
+              <Branch
+                branch={mode}
+                formal={<><Derive>{getGreeting()}</Derive>, welcome</>}
+              >
+                <Derive>{getDefault()}</Derive> there
+              </Branch>
+            </T>
+          );
+        }
+      `;
+
+      const ast = parse(pageFile, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      let tLocalName = '';
+      const importAliases: Record<string, string> = {};
+
+      traverse(ast, {
+        ImportDeclaration(path) {
+          if (path.node.source.value === 'gt-next') {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+                importAliases[spec.local.name] = spec.imported.name;
+                if (spec.imported.name === 'T') tLocalName = spec.local.name;
+              }
+            });
+          }
+        },
+      });
+
+      traverse(ast, {
+        Program(programPath) {
+          const tBinding = programPath.scope.getBinding(tLocalName);
+          if (tBinding) {
+            parseTranslationComponent({
+              originalName: 'T',
+              localName: tLocalName,
+              path: tBinding.path,
+              updates,
+              config: {
+                importAliases,
+                parsingOptions,
+                pkgs: [Libraries.GT_NEXT],
+                file: '/test/derive-branch-children-and-props/page.tsx',
+              },
+              output: {
+                errors,
+                warnings,
+                unwrappedExpressions: [],
+              },
+            });
+          }
+        },
+      });
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(6); // 2 (formal) x 3 (children fallback)
+    });
   });
 });

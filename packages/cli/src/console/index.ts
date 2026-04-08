@@ -12,17 +12,17 @@ import { formatCodeClamp } from './formatting.js';
 const withWillErrorInNextVersion = (message: string): string =>
   `${message} (This will become an error in the next major version of the CLI.)`;
 
-// Static function related errors
-const withStaticError = (message: string): string =>
-  `<Static> rules violation: ${message}`;
+// Derive function related errors
+const withDeriveComponentError = (message: string): string =>
+  `<Derive> rules violation: ${message}`;
 
-const withDeclareStaticError = (message: string): string =>
-  `declareStatic() rules violation: ${message}`;
+const withDeriveFunctionError = (message: string): string =>
+  `derive() rules violation: ${message}`;
 // Synchronous wrappers for backward compatibility
 export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>
   `${colorizeFilepath(
     optionsFilepath
-  )}: Your API key is exposed! Please remove it from the file and include it as an environment variable.`;
+  )}: Your API key is exposed! Remove it from the file and include it as an environment variable.`;
 
 export const warnVariablePropSync = (
   file: string,
@@ -46,8 +46,8 @@ export const warnInvalidReturnSync = (
 ): string =>
   withLocation(
     file,
-    withStaticError(
-      `Function ${colorizeFunctionName(functionName)} does not return a static expression. ${colorizeFunctionName(functionName)} must return either (1) a static string literal, (2) another static function invocation, (3) static JSX content, or (4) a ternary expression. Instead got:\n${colorizeContent(expression)}`
+    withDeriveComponentError(
+      `Function ${colorizeFunctionName(functionName)} does not return a derivable (statically analyzable) expression. ${colorizeFunctionName(functionName)} must return either (1) a derivable string literal, (2) another derivable function invocation, (3) derivable JSX content, or (4) a ternary expression. Instead got:\n${colorizeContent(expression)}`
     ),
     location
   );
@@ -60,7 +60,7 @@ export const warnMissingReturnSync = (
 ): string =>
   withLocation(
     file,
-    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Static>')} tags but does have an explicit return statement. Static functions must have an explicit return statment.`,
+    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Derive>')} (formerly ${colorizeComponent('<Static>')}) tags but does not have an explicit return statement. Derivable functions must have an explicit return statement.`,
     location
   );
 
@@ -100,6 +100,16 @@ export const warnNestedTComponent = (file: string, location?: string): string =>
     location
   );
 
+export const warnNestedInternalTComponent = (
+  file: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `DEBUG: Found nested <GtInternalTranslateJsx> component. <GtInternalTranslateJsx> components cannot be directly nested.`,
+    location
+  );
+
 export const warnNonStaticExpressionSync = (
   file: string,
   attrName: string,
@@ -122,6 +132,17 @@ export const warnInvalidMaxCharsSync = (
   withLocation(
     file,
     `Found invalid maxChars value: ${colorizeContent(value)}. Change the value to a valid number to ensure this content is translated.`,
+    location
+  );
+
+export const warnInvalidFormatSync = (
+  file: string,
+  value: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Found invalid $format value: ${colorizeContent(value)}. Must be one of: 'ICU', 'STRING', 'I18NEXT'.`,
     location
   );
 
@@ -207,7 +228,7 @@ export const warnInvalidDeclareVarNameSync = (
 ): string =>
   withLocation(
     file,
-    `Found invalid declareVar() $name tag. Must be a static expression. Received: ${colorizeContent(value)}.`,
+    `Found invalid declareVar() $name tag. Must be a derivable (statically analyzable) expression. Received: ${colorizeContent(value)}.`,
     location
   );
 
@@ -222,15 +243,15 @@ export const warnDuplicateFunctionDefinitionSync = (
     location
   );
 
-export const warnInvalidStaticInitSync = (
+export const warnInvalidDeriveInitSync = (
   file: string,
   functionName: string,
   location?: string
 ): string =>
   withLocation(
     file,
-    withStaticError(
-      `The definition for ${colorizeFunctionName(functionName)} could not be resolved. When using arrow syntax to define a static function, the right hand side or the assignment MUST only contain the arrow function itself and no other expressions.
+    withDeriveComponentError(
+      `The definition for ${colorizeFunctionName(functionName)} could not be resolved. When using arrow syntax to define a derivable (statically analyzable) function, the right hand side or the assignment MUST only contain the arrow function itself and no other expressions.
 Example: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = () => { ... }`)}
 Invalid: ${colorizeContent(`const ${colorizeFunctionName(functionName)} = [() => { ... }][0]`)}`
     ),
@@ -255,46 +276,123 @@ export const warnRecursiveFunctionCallSync = (
 ): string =>
   withLocation(
     file,
-    withStaticError(
-      `Recursive function call detected: ${colorizeFunctionName(functionName)}. A static function cannot use recursive calls to construct its result.`
+    withDeriveComponentError(
+      `Recursive function call detected: ${colorizeFunctionName(functionName)}. A derivable (statically analyzable) function cannot use recursive calls to construct its result.`
     ),
     location
   );
 
-export const warnDeclareStaticNotWrappedSync = (
+export const warnDeriveFunctionNotWrappedSync = (
   file: string,
   functionName: string,
   location?: string
 ): string =>
   withLocation(
     file,
-    withDeclareStaticError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in declareStatic(). Ensure the function is properly wrapped with declareStatic() and does not have circular import dependencies.`
+    withDeriveFunctionError(
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in derive() (formerly declareStatic()). Ensure the function is properly wrapped with derive() and does not have circular import dependencies.`
     ),
     location
   );
 
-export const warnDeclareStaticNoResultsSync = (
+export const warnDeriveNonConstVariableSync = (
+  file: string,
+  varName: string,
+  kind: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Variable ${colorizeFunctionName(varName)} is declared with '${kind}' but only 'const' declarations can be resolved statically. Change it to 'const'.`
+    ),
+    location
+  );
+
+export const warnDeriveFunctionNoResultsSync = (
   file: string,
   functionName: string,
   location?: string
 ): string =>
   withLocation(
     file,
-    withDeclareStaticError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. DeclareStatic can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
+    withDeriveFunctionError(
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. derive() (formerly declareStatic()) can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
+    ),
+    location
+  );
+
+export const warnAutoDeriveNoResultsSync = (
+  file: string,
+  expression: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Auto-derive could not resolve ${colorizeFunctionName(formatCodeClamp(expression))}. Only function calls with statically determinable return values can be used directly in t(). Consider wrapping with derive() for explicit derivation, or use an interpolation variable instead.`,
+    location
+  );
+
+export const warnDeriveUnresolvableValueSync = (
+  file: string,
+  key: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Object property ${colorizeFunctionName(formatCodeClamp(key))} could not be resolved to a static string value. Only string literals, template literals, conditionals, and function calls returning strings are supported.`
+    ),
+    location
+  );
+
+export const warnDeriveCircularSpreadSync = (
+  file: string,
+  varName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Circular spread detected involving ${colorizeFunctionName(varName)}. Spread references that form a cycle cannot be resolved statically.`
+    ),
+    location
+  );
+
+export const warnDeriveDestructuringSync = (
+  file: string,
+  varName: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Variable ${colorizeFunctionName(varName)} uses destructuring syntax, which is not yet supported in derive(). Assign the value to a const variable directly instead.`
+    ),
+    location
+  );
+
+export const warnDeriveOptionalChainingSync = (
+  file: string,
+  code: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    withDeriveFunctionError(
+      `Optional chaining (${colorizeFunctionName(formatCodeClamp(code))}) is not supported in derive(). Optional chaining implies the value could be undefined, which cannot be resolved statically. Use a non-optional access instead.`
     ),
     location
   );
 
 // Re-export error messages
-export const noLocalesError = `No locales found! Please provide a list of locales for translation, or specify them in your gt.config.json file.`;
-export const noDefaultLocaleError = `No default locale found! Please provide a default locale, or specify it in your gt.config.json file.`;
-export const noFilesError = `Incorrect or missing files configuration! Please make sure your files are configured correctly in your gt.config.json file.`;
-export const noSourceFileError = `No source file found! Please double check your translations directory and default locale.`;
-export const noSupportedFormatError = `Unsupported data format! Please make sure your translationsDir parameter ends with a supported file extension.`;
-export const noApiKeyError = `No API key found! Please provide an API key using the --api-key flag or set the GT_API_KEY environment variable.`;
-export const devApiKeyError = `You are using a development API key. Please use a production API key to use the General Translation API.\nYou can generate a production API key with the command: npx gt auth -t production`;
-export const noProjectIdError = `No project ID found! Please provide a project ID using the --project-id flag, specify it in your gt.config.json file, or set the GT_PROJECT_ID environment variable.`;
-export const noVersionIdError = `No version ID found! Please provide a version ID using the --version-id flag or specify it in your gt.config.json file as the _versionId property.`;
-export const invalidConfigurationError = `Invalid files configuration! Please either provide a valid configuration to download local translations or set the --publish flag to true to upload translations to the CDN.`;
+export const noLocalesError = `No locales found! Provide a list of locales for translation, or specify them in your gt.config.json file.`;
+export const noDefaultLocaleError = `No default locale found! Provide a default locale, or specify it in your gt.config.json file.`;
+export const noFilesError = `Incorrect or missing files configuration! Make sure your files are configured correctly in your gt.config.json file.`;
+export const noSourceFileError = `No source file found! Double-check your translations directory and default locale.`;
+export const noSupportedFormatError = `Unsupported data format! Make sure your translationsDir parameter ends with a supported file extension.`;
+export const noApiKeyError = `No API key found! Provide an API key using the --api-key flag or set the GT_API_KEY environment variable.`;
+export const devApiKeyError = `Development API keys cannot be used with the General Translation API. Use a production API key instead.\nGenerate a production API key with: npx gt auth -t production`;
+export const noProjectIdError = `No project ID found! Provide a project ID using the --project-id flag, specify it in your gt.config.json file, or set the GT_PROJECT_ID environment variable.`;
+export const noVersionIdError = `No version ID found! Provide a version ID using the --version-id flag or specify it in your gt.config.json file as the _versionId property.`;
+export const invalidConfigurationError = `Invalid files configuration! Provide a valid configuration to download local translations or set the --publish flag to true to upload translations to the CDN.`;

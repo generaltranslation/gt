@@ -12,7 +12,7 @@ export async function setupLocadex(settings: Settings): Promise<void> {
 
   logger.message(
     `${chalk.dim(
-      `If the browser window didn't open automatically, please open the following link:`
+      `If the browser window didn't open automatically, open the following link:`
     )}\n\n${chalk.cyan(urlToOpen)}`
   );
 }
