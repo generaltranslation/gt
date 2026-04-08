@@ -3299,6 +3299,123 @@ describe('parseStrings', () => {
     });
   });
 
+  describe('auto-derive for msg() and hook functions', () => {
+    const runParseStringsAutoDeriveForFunc = (
+      code: string,
+      functionName: string,
+      params: ReturnType<typeof createMockParams>
+    ) => {
+      const ast = parseCode(code);
+      traverse(ast, {
+        ImportSpecifier(path) {
+          if (
+            t.isIdentifier(path.node.imported) &&
+            path.node.imported.name === functionName &&
+            t.isIdentifier(path.node.local)
+          ) {
+            parseStrings(
+              path.node.local.name,
+              functionName,
+              path,
+              {
+                parsingOptions: params.parsingOptions,
+                file: params.file,
+                ignoreInlineMetadata: false,
+                ignoreDynamicContent: false,
+                ignoreInvalidIcu: false,
+                ignoreInlineListContent: true,
+                ignoreTaggedTemplates: false,
+                ignoreGlobalTaggedTemplates: false,
+                autoDeriveMethod: 'AUTO',
+              },
+              {
+                updates: params.updates,
+                errors: params.errors,
+                warnings: params.warnings,
+              }
+            );
+          }
+        },
+      });
+    };
+
+    it('should auto-derive msg() with template literal interpolation', () => {
+      const code = `
+        import { msg } from 'gt-react';
+        const name = "John";
+        msg(\`Hello, \${name}\`);
+      `;
+      const params = createMockParams();
+      runParseStringsAutoDeriveForFunc(code, 'msg', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should auto-derive msg() with concatenation', () => {
+      const code = `
+        import { msg } from 'gt-react';
+        const name = "John";
+        msg("Hello, " + name);
+      `;
+      const params = createMockParams();
+      runParseStringsAutoDeriveForFunc(code, 'msg', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should auto-derive gt() from useGT() with template literal interpolation', () => {
+      const code = `
+        import { useGT } from 'gt-react';
+        const name = "John";
+        const gt = useGT();
+        gt(\`Hello, \${name}\`);
+      `;
+      const params = createMockParams();
+      runParseStringsAutoDeriveForFunc(code, 'useGT', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should auto-derive gt() from useGT() with concatenation', () => {
+      const code = `
+        import { useGT } from 'gt-react';
+        const name = "John";
+        const gt = useGT();
+        gt("Hello, " + name);
+      `;
+      const params = createMockParams();
+      runParseStringsAutoDeriveForFunc(code, 'useGT', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+    it('should auto-derive gt() from getGT() with template literal interpolation', () => {
+      const code = `
+        import { getGT } from 'gt-react';
+        const name = "John";
+        async function test() {
+          const gt = await getGT();
+          gt(\`Hello, \${name}\`);
+        }
+      `;
+      const params = createMockParams();
+      runParseStringsAutoDeriveForFunc(code, 'getGT', params);
+
+      expect(params.updates).toHaveLength(1);
+      expect(params.updates[0].source).toBe('Hello, John');
+      expect(params.errors).toHaveLength(0);
+    });
+
+  });
+
   describe('recursive callback function resolution', () => {
     const runUseGTParseStrings = (
       code: string,
