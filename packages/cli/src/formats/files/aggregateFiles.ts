@@ -5,7 +5,7 @@ import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
-import { detectUnsupportedJsonFields } from '../json/utils.js';
+import { detectMintlifyUnsupportedFields } from '../json/utils.js';
 import path from 'node:path';
 import parseYaml from '../yaml/parseYaml.js';
 import YAML from 'yaml';
@@ -74,7 +74,7 @@ export async function aggregateFiles(
           path.basename(filePath) === 'docs.json'
         ) {
           try {
-            detectUnsupportedJsonFields(JSON.parse(content), filePath);
+            detectMintlifyUnsupportedFields(JSON.parse(content), filePath);
           } catch {
             // JSON parse errors are handled below by parseJson
           }

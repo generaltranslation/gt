@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { detectUnsupportedJsonFields } from '../utils';
+import { detectMintlifyUnsupportedFields } from '../utils';
 import { logger } from '../../../console/logger.js';
 
 vi.mock('../../../console/logger.js');
 
 const mockLogWarn = vi.spyOn(logger, 'warn');
 
-describe('detectUnsupportedJsonFields', () => {
+describe('detectMintlifyUnsupportedFields', () => {
   beforeEach(() => {
     mockLogWarn.mockClear();
   });
@@ -23,7 +23,7 @@ describe('detectUnsupportedJsonFields', () => {
         ],
       },
     };
-    detectUnsupportedJsonFields(json, 'docs.json');
+    detectMintlifyUnsupportedFields(json, 'docs.json');
     expect(mockLogWarn).not.toHaveBeenCalled();
   });
 
@@ -31,7 +31,7 @@ describe('detectUnsupportedJsonFields', () => {
     const json = {
       navigation: { $ref: './config/navigation.json' },
     };
-    detectUnsupportedJsonFields(json, 'docs.json');
+    detectMintlifyUnsupportedFields(json, 'docs.json');
     expect(mockLogWarn).toHaveBeenCalledWith(
       expect.stringContaining('Mintlify config splitting is not yet supported')
     );
@@ -52,7 +52,7 @@ describe('detectUnsupportedJsonFields', () => {
         ],
       },
     };
-    detectUnsupportedJsonFields(json, 'docs.json');
+    detectMintlifyUnsupportedFields(json, 'docs.json');
     expect(mockLogWarn).toHaveBeenCalledWith(
       expect.stringContaining('./config/pages.json')
     );
@@ -64,7 +64,7 @@ describe('detectUnsupportedJsonFields', () => {
         languages: { $ref: './config/nav.json' },
       },
     };
-    detectUnsupportedJsonFields(json, 'docs.json');
+    detectMintlifyUnsupportedFields(json, 'docs.json');
     const warnMsg = mockLogWarn.mock.calls[0][0] as string;
     expect(warnMsg).toContain('navigation.languages');
     expect(warnMsg).not.toContain('/navigation/languages');
@@ -75,7 +75,7 @@ describe('detectUnsupportedJsonFields', () => {
       navigation: { $ref: './config/navigation.json' },
       redirects: { $ref: './config/redirects.json' },
     };
-    detectUnsupportedJsonFields(json, 'docs.json');
+    detectMintlifyUnsupportedFields(json, 'docs.json');
     expect(mockLogWarn).toHaveBeenCalledTimes(1);
     const warnMsg = mockLogWarn.mock.calls[0][0] as string;
     expect(warnMsg).toContain('./config/navigation.json');
@@ -94,7 +94,7 @@ describe('detectUnsupportedJsonFields', () => {
         ],
       },
     };
-    detectUnsupportedJsonFields(json, 'docs.json');
+    detectMintlifyUnsupportedFields(json, 'docs.json');
     expect(mockLogWarn).not.toHaveBeenCalled();
   });
 
@@ -104,15 +104,15 @@ describe('detectUnsupportedJsonFields', () => {
       { $ref: './pages/page2.json' },
       { title: 'Page 3' },
     ];
-    detectUnsupportedJsonFields(json, 'pages.json');
+    detectMintlifyUnsupportedFields(json, 'pages.json');
     expect(mockLogWarn).toHaveBeenCalledWith(
       expect.stringContaining('./pages/page2.json')
     );
   });
 
   it('should not warn for empty objects or arrays', () => {
-    detectUnsupportedJsonFields({}, 'empty.json');
-    detectUnsupportedJsonFields([], 'empty.json');
+    detectMintlifyUnsupportedFields({}, 'empty.json');
+    detectMintlifyUnsupportedFields([], 'empty.json');
     expect(mockLogWarn).not.toHaveBeenCalled();
   });
 
@@ -120,7 +120,7 @@ describe('detectUnsupportedJsonFields', () => {
     const json = {
       navigation: { $ref: './config/nav.json' },
     };
-    detectUnsupportedJsonFields(json, '/path/to/docs.json');
+    detectMintlifyUnsupportedFields(json, '/path/to/docs.json');
     expect(mockLogWarn).toHaveBeenCalledWith(
       expect.stringContaining('`docs.json`')
     );

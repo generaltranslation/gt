@@ -223,7 +223,7 @@ const UNSUPPORTED_JSON_FIELDS = ['$ref'];
  * Recursively traverse a JSON value and collect all objects whose key
  * matches one of the unsupported field names.
  */
-function findUnsupportedFields(
+function findMintlifyUnsupportedFields(
   value: any,
   fieldNames: string[],
   pointer: string = ''
@@ -234,7 +234,7 @@ function findUnsupportedFields(
       [];
     for (let i = 0; i < value.length; i++) {
       results.push(
-        ...findUnsupportedFields(value[i], fieldNames, `${pointer}/${i}`)
+        ...findMintlifyUnsupportedFields(value[i], fieldNames, `${pointer}/${i}`)
       );
     }
     return results;
@@ -249,7 +249,7 @@ function findUnsupportedFields(
   const results: { pointer: string; field: string; fieldValue: string }[] = [];
   for (const key of Object.keys(value)) {
     results.push(
-      ...findUnsupportedFields(value[key], fieldNames, `${pointer}/${key}`)
+      ...findMintlifyUnsupportedFields(value[key], fieldNames, `${pointer}/${key}`)
     );
   }
   return results;
@@ -259,11 +259,11 @@ function findUnsupportedFields(
  * Detect unsupported fields (e.g. $ref) anywhere in the JSON data structure.
  * Logs a warning listing the fields found.
  */
-export function detectUnsupportedJsonFields(
+export function detectMintlifyUnsupportedFields(
   json: any,
   filePath: string
 ): void {
-  const unsupported = findUnsupportedFields(json, UNSUPPORTED_JSON_FIELDS);
+  const unsupported = findMintlifyUnsupportedFields(json, UNSUPPORTED_JSON_FIELDS);
 
   if (unsupported.length > 0) {
     const fileName = path.basename(filePath);
