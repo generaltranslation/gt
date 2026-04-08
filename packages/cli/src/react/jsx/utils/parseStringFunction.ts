@@ -503,7 +503,7 @@ export function parseStrings(
         refPath.parent.callee === refPath.node
       ) {
         /**
-         * SPECIAL CASE: Auto-derive t() function
+         * CASE: Auto-derive t() and msg() function
          * The t() function, will treat variable content as if it was marked for derivation
          * without explicit calls to derive().
          *
@@ -516,20 +516,16 @@ export function parseStrings(
          * );
          * // "Hello, John! My name is {interpolatedValue}"
          */
-        if (originalName === T_REGISTRATION_FUNCTION) {
-          processTranslationCall(
-            refPath,
-            config.autoDeriveMethod === 'AUTO'
-              ? {
-                  ...stringRegistrationConfig,
-                  autoDeriveMethod: 'ENABLED',
-                }
-              : stringRegistrationConfig,
-            output
-          );
-        } else {
-          processTranslationCall(refPath, stringRegistrationConfig, output);
-        }
+        processTranslationCall(
+          refPath,
+          config.autoDeriveMethod === 'AUTO'
+            ? {
+                ...stringRegistrationConfig,
+                autoDeriveMethod: 'ENABLED',
+              }
+            : stringRegistrationConfig,
+          output
+        );
       } else if (
         !stringRegistrationConfig.ignoreTaggedTemplates &&
         refPath.parent.type === 'TaggedTemplateExpression' &&
@@ -595,7 +591,9 @@ export function parseStrings(
         // User configurable, otherwise default to DISABLED
         autoDeriveMethod:
           config.autoDeriveMethod === 'AUTO'
-            ? 'DISABLED'
+            ? isInlineGT
+              ? 'ENABLED'
+              : 'DISABLED'
             : config.autoDeriveMethod,
       };
 
