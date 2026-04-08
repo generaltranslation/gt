@@ -36,7 +36,7 @@ describe('detectMintlifyUnsupportedFields', () => {
       expect.stringContaining('Mintlify config splitting is not yet supported')
     );
     expect(mockLogWarn).toHaveBeenCalledWith(
-      expect.stringContaining('./config/navigation.json')
+      expect.stringContaining('navigation.$ref')
     );
   });
 
@@ -54,7 +54,7 @@ describe('detectMintlifyUnsupportedFields', () => {
     };
     detectMintlifyUnsupportedFields(json, 'docs.json');
     expect(mockLogWarn).toHaveBeenCalledWith(
-      expect.stringContaining('./config/pages.json')
+      expect.stringContaining('navigation.languages.0.pages.$ref')
     );
   });
 
@@ -78,8 +78,8 @@ describe('detectMintlifyUnsupportedFields', () => {
     detectMintlifyUnsupportedFields(json, 'docs.json');
     expect(mockLogWarn).toHaveBeenCalledTimes(1);
     const warnMsg = mockLogWarn.mock.calls[0][0] as string;
-    expect(warnMsg).toContain('./config/navigation.json');
-    expect(warnMsg).toContain('./config/redirects.json');
+    expect(warnMsg).toContain('navigation.$ref');
+    expect(warnMsg).toContain('redirects.$ref');
   });
 
   it('should not flag string values that happen to contain $ref text', () => {
@@ -106,7 +106,7 @@ describe('detectMintlifyUnsupportedFields', () => {
     ];
     detectMintlifyUnsupportedFields(json, 'pages.json');
     expect(mockLogWarn).toHaveBeenCalledWith(
-      expect.stringContaining('./pages/page2.json')
+      expect.stringContaining('1.$ref')
     );
   });
 

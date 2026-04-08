@@ -331,7 +331,7 @@ export function detectMintlifyUnsupportedFields(
         (u) =>
           chalk.yellow('• ') +
           chalk.white(
-            `${u.pointer.replace(/\//g, '.').replace(/^\./, '')}: ${u.fieldValue}`
+            `${u.pointer.replace(/\//g, '.').replace(/^\./, '')}.${u.field}`
           )
       )
       .join('\n');
