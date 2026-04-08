@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   enableConcatenationArg: true,
   enableMacroImportInjection: true,
   enableAutoJsxInjection: false,
+  autoDerive: false,
   _debugHashManifest: false,
 };
 

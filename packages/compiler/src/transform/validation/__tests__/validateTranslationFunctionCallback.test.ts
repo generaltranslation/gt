@@ -1069,6 +1069,23 @@ describe('validateTranslationFunctionCallback', () => {
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
     });
+
+    it('should still reject bare variable in $context when autoDerive is enabled', () => {
+      // autoDerive only applies to content, not $context
+      const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+        t.stringLiteral('Hello'),
+        t.objectExpression([
+          t.objectProperty(
+            t.identifier('$context'),
+            t.identifier('contextVar')
+          ),
+        ]),
+      ]);
+
+      const result = validateUseGTCallback(callExpr, autoDeriveState);
+
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
   });
 
   describe('$format option', () => {
