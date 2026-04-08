@@ -1,2 +1,2 @@
 // This file is auto-generated. Do not edit manually.
-export const PACKAGE_VERSION = '2.14.6';
+export const PACKAGE_VERSION = '2.14.7';
