@@ -93,6 +93,7 @@ export function withGTConfig(
   props: withGTConfigProps = {}
 ) {
   // ---------- LOAD GT CONFIG FILE ---------- //
+
   let loadedConfig: Partial<withGTConfigProps> = {};
   try {
     let configPath: string | undefined;
@@ -527,9 +528,12 @@ export function withGTConfig(
   const { type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
 
+  // Read autoDerive from parsingFlags (single source of truth shared with CLI)
+  const autoDerive = loadedConfig?.files?.gt?.parsingFlags?.autoDerive === true;
+
   const swcPluginEntry =
     mergedConfig.experimentalCompilerOptions?.type === 'swc'
-      ? [resolvedWasmFilePath, compilerOptions]
+      ? [resolvedWasmFilePath, { ...compilerOptions, autoDerive }]
       : null;
 
   const turboAliases = {
