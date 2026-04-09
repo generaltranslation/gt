@@ -380,7 +380,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     config.compile_time_hash,
     filename.clone(),
     config.disable_build_checks,
-    config.auto_derive,
+    config.autoderive,
     string_collector,
   );
   program.visit_mut_with(&mut visitor);
@@ -398,7 +398,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     config.compile_time_hash,
     filename,
     config.disable_build_checks,
-    config.auto_derive,
+    config.autoderive,
     collected_data,
   );
   program.fold_with(&mut visitor)

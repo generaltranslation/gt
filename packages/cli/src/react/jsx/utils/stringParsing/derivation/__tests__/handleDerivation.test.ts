@@ -246,7 +246,7 @@ describe('handleDerivation', () => {
     });
   });
 
-  describe('auto-derive (skipDeriveInvocation: true)', () => {
+  describe('autoderive (skipDeriveInvocation: true)', () => {
     /**
      * Runs handleDerivation with skipDeriveInvocation: true.
      */

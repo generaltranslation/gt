@@ -12,6 +12,9 @@ type GTConfig = {
     gt?: {
       parsingFlags?: {
         enableAutoJsxInjection?: boolean;
+        autoderive?: boolean;
+        /** @deprecated Use `autoderive` instead */
+        autoDerive?: boolean;
       };
     };
   };
@@ -36,6 +39,8 @@ export interface PluginConfig {
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection?: boolean;
   /** Automatically treat interpolated/concatenated values as derive() calls */
+  autoderive?: boolean;
+  /** @deprecated Use `autoderive` instead */
   autoDerive?: boolean;
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest?: boolean;
@@ -58,7 +63,7 @@ export interface PluginSettings {
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection: boolean;
   /** Automatically treat interpolated/concatenated values as derive() calls */
-  autoDerive: boolean;
+  autoderive: boolean;
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest: boolean;
 }

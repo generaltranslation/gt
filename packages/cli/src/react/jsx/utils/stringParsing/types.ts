@@ -38,11 +38,11 @@ export type ParsingConfig = {
   ignoreGlobalTaggedTemplates: boolean;
   /**
    * Skip requirement for a derive() invocation to trigger derivation
-   * - ENABLED: Always auto-derive
-   * - DISABLED: Never auto-derive
-   * - AUTO: Only auto-derive for the t() function
+   * - ENABLED: Always autoderive
+   * - DISABLED: Never autoderive
+   * - AUTO: Only autoderive for the t() function
    */
-  autoDeriveMethod: 'ENABLED' | 'DISABLED' | 'AUTO';
+  autoderiveMethod: 'ENABLED' | 'DISABLED' | 'AUTO';
 };
 
 /**

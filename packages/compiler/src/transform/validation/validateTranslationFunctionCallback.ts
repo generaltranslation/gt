@@ -50,8 +50,8 @@ export function validateUseGTCallback(
   );
   const content = validatedContent.value;
 
-  if (content === undefined && !state.settings.autoDerive) {
-    // Check if it contains a derive() function invocation (no requirement for derive() invoc with autoDerive)
+  if (content === undefined && !state.settings.autoderive) {
+    // Check if it contains a derive() function invocation (no requirement for derive() invoc with autoderive)
     validateDerive(callExpr.arguments[0], state, errors);
     if (errors.length > 0) {
       errors.push(...validatedContent.errors);
@@ -64,10 +64,10 @@ export function validateUseGTCallback(
 
   // TODO: hasDeriveContext should be refactored to enforce no hash generated HERE in this function
   // instead of passing that information outside of this function.
-  // We skip hash gen with autoDerive, derive in content, and derive in $context. This flag is being
+  // We skip hash gen with autoderive, derive in content, and derive in $context. This flag is being
   // reused for all 3 cases.
-  const contentHasAutoDerive =
-    state.settings.autoDerive && content === undefined;
+  const contentHasAutoderive =
+    state.settings.autoderive && content === undefined;
 
   // Validate second argument
   let context: string | undefined;
@@ -80,7 +80,7 @@ export function validateUseGTCallback(
     return {
       errors,
       content,
-      hasDeriveContext: contentHasAutoDerive || undefined,
+      hasDeriveContext: contentHasAutoderive || undefined,
     };
   }
   if (t.isObjectExpression(callExpr.arguments[1])) {
@@ -93,7 +93,7 @@ export function validateUseGTCallback(
     errors.push(...contextProperty.errors);
     context = contextProperty.value as string | undefined;
     hasDeriveContext =
-      contentHasAutoDerive || contextProperty.hasDeriveExpression;
+      contentHasAutoderive || contextProperty.hasDeriveExpression;
     const idProperty = validatePropertyFromObjectExpression(
       callExpr.arguments[1],
       USEGT_CALLBACK_OPTIONS.$id,

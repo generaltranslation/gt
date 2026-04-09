@@ -44,7 +44,7 @@ impl TransformVisitor {
     compile_time_hash: bool,
     filename: Option<String>,
     disable_build_checks: bool,
-    auto_derive: bool,
+    autoderive: bool,
     mut string_collector: StringCollector,
   ) -> Self {
     // Reset the counter to 0
@@ -53,7 +53,7 @@ impl TransformVisitor {
       traversal_state: TraversalState::default(),
       statistics: Statistics::default(),
       import_tracker: ImportTracker::new(),
-      settings: PluginSettings::new(log_level.clone(), compile_time_hash, filename.clone(), disable_build_checks, auto_derive),
+      settings: PluginSettings::new(log_level.clone(), compile_time_hash, filename.clone(), disable_build_checks, autoderive),
       logger: Logger::new(log_level),
       string_collector,
     }
@@ -320,7 +320,7 @@ impl TransformVisitor {
     self.validate_string_literal_or_declare_static(arg.expr.as_ref(), &mut errors);
 
     if !errors.is_empty() {
-      if !self.settings.disable_build_checks && !self.settings.auto_derive {
+      if !self.settings.disable_build_checks && !self.settings.autoderive {
         self.statistics.dynamic_content_violations += 1;
         // Use the first error message for the violation type
         let default_error = &"invalid expression".to_string();
@@ -1770,14 +1770,14 @@ mod tests {
     }
   }
 
-  mod auto_derive_violations {
+  mod autoderive_violations {
     use super::*;
 
-    /// Creates a visitor with auto_derive enabled and standard imports tracked
-    fn create_visitor_with_auto_derive() -> TransformVisitor {
+    /// Creates a visitor with autoderive enabled and standard imports tracked
+    fn create_visitor_with_autoderive() -> TransformVisitor {
       let mut visitor =
         TransformVisitor::new(LogLevel::Silent, false, None, false, false, StringCollector::new());
-      visitor.settings.auto_derive = true;
+      visitor.settings.autoderive = true;
 
       // Track standard gt-next imports
       visitor
@@ -1897,12 +1897,12 @@ mod tests {
       })
     }
 
-    // ── Auto-derive ON: should NOT produce violations ──
+    // ── Autoderive ON: should NOT produce violations ──
 
     // gt(`Hello ${name}!`)  →  treated as gt(`Hello ${derive(name)}!`)
     #[test]
-    fn auto_derive_on_allows_template_literal_with_bare_variable() {
-      let mut visitor = create_visitor_with_auto_derive();
+    fn autoderive_on_allows_template_literal_with_bare_variable() {
+      let mut visitor = create_visitor_with_autoderive();
       let call_expr = create_call_expr("gt", create_template_literal_with_variable());
 
       if let Some(first_arg) = call_expr.args.first() {
@@ -1914,8 +1914,8 @@ mod tests {
 
     // gt("Hello " + name)  →  treated as gt("Hello " + derive(name))
     #[test]
-    fn auto_derive_on_allows_concatenation_with_bare_variable() {
-      let mut visitor = create_visitor_with_auto_derive();
+    fn autoderive_on_allows_concatenation_with_bare_variable() {
+      let mut visitor = create_visitor_with_autoderive();
       let call_expr = create_call_expr("gt", create_string_concat_with_variable());
 
       if let Some(first_arg) = call_expr.args.first() {
@@ -1927,8 +1927,8 @@ mod tests {
 
     // gt(`Hello ${getName()}!`)  →  treated as gt(`Hello ${derive(getName())}!`)
     #[test]
-    fn auto_derive_on_allows_template_literal_with_bare_function_call() {
-      let mut visitor = create_visitor_with_auto_derive();
+    fn autoderive_on_allows_template_literal_with_bare_function_call() {
+      let mut visitor = create_visitor_with_autoderive();
       let call_expr = create_call_expr("gt", create_template_literal_with_function_call());
 
       if let Some(first_arg) = call_expr.args.first() {
@@ -1938,12 +1938,12 @@ mod tests {
       assert_eq!(visitor.statistics.dynamic_content_violations, 0);
     }
 
-    // ── Auto-derive OFF: should produce violations (existing behavior) ──
+    // ── Autoderive OFF: should produce violations (existing behavior) ──
 
     // gt(`Hello ${name}!`)  →  ERROR: bare variable without derive()
     #[test]
-    fn auto_derive_off_rejects_template_literal_with_bare_variable() {
-      let mut visitor = create_visitor_with_imports(); // auto_derive defaults to false
+    fn autoderive_off_rejects_template_literal_with_bare_variable() {
+      let mut visitor = create_visitor_with_imports(); // autoderive defaults to false
       let call_expr = create_call_expr("gt", create_template_literal_with_variable());
 
       if let Some(first_arg) = call_expr.args.first() {
@@ -1955,8 +1955,8 @@ mod tests {
 
     // gt("Hello " + name)  →  ERROR: bare variable without derive()
     #[test]
-    fn auto_derive_off_rejects_concatenation_with_bare_variable() {
-      let mut visitor = create_visitor_with_imports(); // auto_derive defaults to false
+    fn autoderive_off_rejects_concatenation_with_bare_variable() {
+      let mut visitor = create_visitor_with_imports(); // autoderive defaults to false
       let call_expr = create_call_expr("gt", create_string_concat_with_variable());
 
       if let Some(first_arg) = call_expr.args.first() {
@@ -1966,12 +1966,12 @@ mod tests {
       assert_eq!(visitor.statistics.dynamic_content_violations, 1);
     }
 
-    // ── Existing behavior preserved regardless of auto-derive flag ──
+    // ── Existing behavior preserved regardless of autoderive flag ──
 
     // gt(`Hello ${derive(getName())}`)  →  explicit derive() always works
     #[test]
-    fn explicit_derive_works_with_auto_derive_on() {
-      let mut visitor = create_visitor_with_auto_derive();
+    fn explicit_derive_works_with_autoderive_on() {
+      let mut visitor = create_visitor_with_autoderive();
       // Also track derive import
       visitor
         .import_tracker
@@ -2033,8 +2033,8 @@ mod tests {
 
     // gt("Hello world")  →  plain string literal always passes
     #[test]
-    fn plain_string_literal_works_with_auto_derive_on() {
-      let mut visitor = create_visitor_with_auto_derive();
+    fn plain_string_literal_works_with_autoderive_on() {
+      let mut visitor = create_visitor_with_autoderive();
       let string_literal = Expr::Lit(Lit::Str(Str {
         span: DUMMY_SP,
         value: Atom::new("Hello world").into(),
@@ -2051,8 +2051,8 @@ mod tests {
 
     // gt("Hello world")  →  plain string literal always passes
     #[test]
-    fn plain_string_literal_works_with_auto_derive_off() {
-      let mut visitor = create_visitor_with_imports(); // auto_derive defaults to false
+    fn plain_string_literal_works_with_autoderive_off() {
+      let mut visitor = create_visitor_with_imports(); // autoderive defaults to false
       let string_literal = Expr::Lit(Lit::Str(Str {
         span: DUMMY_SP,
         value: Atom::new("Hello world").into(),
