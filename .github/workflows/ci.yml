@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 jobs:
-  tests:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -44,6 +44,34 @@ jobs:
 
       - name: Run lint
         run: pnpm exec turbo lint --filter='...[origin/${{ github.base_ref }}]'
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Rebuild packages
+        run: pnpm rebuild --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Build packages
         run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e'
@@ -254,7 +282,7 @@ jobs:
         run: cd tests/apps/cli-test-app && pnpm install && pnpm gtx-cli --help
 
   run-tests:
-    needs: [tests, test-builds, test-cli-binaries, test-gtx-cli-binaries]
+    needs: [lint, tests, test-builds, test-cli-binaries, test-gtx-cli-binaries]
     runs-on: ubuntu-latest
     steps:
       - run: echo "All tests passed"
