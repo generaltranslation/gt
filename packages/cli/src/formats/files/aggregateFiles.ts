@@ -5,6 +5,8 @@ import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
+import { detectMintlifyUnsupportedFields } from '../json/utils.js';
+import path from 'node:path';
 import parseYaml from '../yaml/parseYaml.js';
 import { validateYamlSchema } from '../yaml/utils.js';
 import { flattenJson } from '../json/flattenJson.js';
@@ -95,6 +97,18 @@ export async function aggregateFiles(
               'JSON file is not parsable'
             );
             return null;
+          }
+        }
+
+        // Detect unsupported fields in Mintlify docs.json
+        if (
+          settings.framework === 'mintlify' &&
+          path.basename(filePath) === 'docs.json'
+        ) {
+          try {
+            detectMintlifyUnsupportedFields(JSON.parse(content), filePath);
+          } catch {
+            // JSON parse errors are handled below by parseJson
           }
         }
 
