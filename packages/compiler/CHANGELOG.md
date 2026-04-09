@@ -1,5 +1,11 @@
 # @generaltranslation/compiler
 
+## 1.3.3
+
+### Patch Changes
+
+- [#1188](https://github.com/generaltranslation/gt/pull/1188) [`a76a386`](https://github.com/generaltranslation/gt/commit/a76a38624a2defbfd8d0540ccb74bb264079f61a) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix(compiler): extend autoderive gt msg
+
 ## 1.3.2
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # locadex
 
+## 1.0.143
+
+### Patch Changes
+
+- Updated dependencies [[`9281fe5`](https://github.com/generaltranslation/gt/commit/9281fe5d9c2f3e35b67ccedb9c444aebbb6a8bd1), [`121be24`](https://github.com/generaltranslation/gt/commit/121be24def7f9dc464b8589bf0be14d04ac3e6e1), [`7a3c7de`](https://github.com/generaltranslation/gt/commit/7a3c7de8e5d5103bd9fec893a677a13068f822e6)]:
+  - gt@2.14.8
+
 ## 1.0.142
 
 ### Patch Changes

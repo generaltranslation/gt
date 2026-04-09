@@ -1,5 +1,15 @@
 # gtx-cli
 
+## 2.14.8
+
+### Patch Changes
+
+- [#1187](https://github.com/generaltranslation/gt/pull/1187) [`9281fe5`](https://github.com/generaltranslation/gt/commit/9281fe5d9c2f3e35b67ccedb9c444aebbb6a8bd1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix(cli): extend autoderive gt msg
+
+- [#1185](https://github.com/generaltranslation/gt/pull/1185) [`121be24`](https://github.com/generaltranslation/gt/commit/121be24def7f9dc464b8589bf0be14d04ac3e6e1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: exploration of properties for Branch and Plural during multiplication step
+
+- [#1186](https://github.com/generaltranslation/gt/pull/1186) [`7a3c7de`](https://github.com/generaltranslation/gt/commit/7a3c7de8e5d5103bd9fec893a677a13068f822e6) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Warn when Mintlify docs.json contains unsupported $ref fields
+
 ## 2.14.7
 
 ## 2.14.6
