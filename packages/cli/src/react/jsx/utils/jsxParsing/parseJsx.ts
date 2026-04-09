@@ -99,6 +99,7 @@ type ConfigOptions = {
   file: string;
   includeSourceCodeContext?: boolean;
   enableAutoJsxInjection?: boolean;
+  autoderive?: boolean;
 };
 
 /**
@@ -730,7 +731,7 @@ function parseJSXElement({
     node,
     scopeNode,
     insideT: false,
-    inDerive: false,
+    inDerive: config.autoderive ?? false,
     helperPath: scopeNode,
     config,
     state: {

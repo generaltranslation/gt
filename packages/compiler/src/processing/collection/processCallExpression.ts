@@ -278,8 +278,11 @@ function handleReactInvocation(
       });
 
   // Debug: record hash → children mapping
+  // Note: children may be undefined when autoderive filters all dynamic-content
+  // errors (the early return in _constructJsxChildren means value is never set).
+  // This is intentional — the compiler signals CLI resolution via hash=''.
   if (state.debugManifest) {
-    state.debugManifest.set(hash, children!);
+    state.debugManifest.set(hash, children ?? null);
   }
 
   // Track the component (increment counter, initialize aggregator, set hash)
