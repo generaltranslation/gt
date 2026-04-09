@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm run:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm --filter:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm changeset:*)",
+      "Bash(pnpm format:*)",
+      "Bash(npm test)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx prettier:*)",
+      "Bash(npx eslint:*)",
+      "Bash(node:*)",
+      "Bash(turbo:*)",
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)"
+    ],
+    "deny": ["Bash(rm -rf *)", "Edit(.env*)"]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | xargs -I {} sh -c 'echo \"{}\" | grep -qE \"\\.(js|jsx|ts|tsx|json|md|yml|yaml)$\" && npx prettier --write \"{}\" 2>/dev/null || true'",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": ["generaltranslation"]
+}

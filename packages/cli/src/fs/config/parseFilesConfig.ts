@@ -155,13 +155,23 @@ export function resolveFiles(
     publishPaths,
     unpublishPaths,
     parsingFlags,
-    gtJson: {
-      publish: files.gt?.publish,
-      parsingFlags: {
-        ...GT_PARSING_FLAGS_DEFAULT,
-        ...(files.gt?.parsingFlags || {}),
-      },
-    },
+    gtJson: (() => {
+      const rawGtFlags = (files.gt?.parsingFlags || {}) as Record<
+        string,
+        unknown
+      >;
+      if ('autoDerive' in rawGtFlags && !('autoderive' in rawGtFlags)) {
+        rawGtFlags.autoderive = rawGtFlags.autoDerive;
+        delete rawGtFlags.autoDerive;
+      }
+      return {
+        publish: files.gt?.publish,
+        parsingFlags: {
+          ...GT_PARSING_FLAGS_DEFAULT,
+          ...rawGtFlags,
+        },
+      };
+    })(),
   };
 }
 

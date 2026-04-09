@@ -528,12 +528,14 @@ export function withGTConfig(
   const { type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
 
-  // Read autoDerive from parsingFlags (single source of truth shared with CLI)
-  const autoDerive = loadedConfig?.files?.gt?.parsingFlags?.autoDerive === true;
+  // Read autoderive from parsingFlags (single source of truth shared with CLI)
+  const autoderive =
+    loadedConfig?.files?.gt?.parsingFlags?.autoderive === true ||
+    loadedConfig?.files?.gt?.parsingFlags?.autoDerive === true;
 
   const swcPluginEntry =
     mergedConfig.experimentalCompilerOptions?.type === 'swc'
-      ? [resolvedWasmFilePath, { ...compilerOptions, autoDerive }]
+      ? [resolvedWasmFilePath, { ...compilerOptions, autoderive }]
       : null;
 
   const turboAliases = {

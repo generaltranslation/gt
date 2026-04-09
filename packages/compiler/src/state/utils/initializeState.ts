@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   enableConcatenationArg: true,
   enableMacroImportInjection: true,
   enableAutoJsxInjection: false,
-  autoDerive: false,
+  autoderive: false,
   _debugHashManifest: false,
 };
 
@@ -33,13 +33,23 @@ export function initializeState(
   const gtConfig = options.gtConfig;
   const enableAutoJsxInjection =
     gtConfig?.files?.gt?.parsingFlags?.enableAutoJsxInjection ?? false;
+  const autoderive =
+    gtConfig?.files?.gt?.parsingFlags?.autoderive ??
+    gtConfig?.files?.gt?.parsingFlags?.autoDerive ??
+    false;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
     enableAutoJsxInjection, // can be overridden by options.enableAutoJsxInjection
+    autoderive,
     ...options,
     filename,
   };
+
+  // Backwards compat: normalize deprecated autoDerive → autoderive
+  if (options.autoDerive !== undefined && options.autoderive === undefined) {
+    settings.autoderive = options.autoDerive;
+  }
 
   return {
     settings,

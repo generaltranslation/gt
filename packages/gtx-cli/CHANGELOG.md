@@ -1,5 +1,12 @@
 # gtx-cli
 
+## 2.14.10
+
+### Patch Changes
+
+- Updated dependencies [[`2090de3`](https://github.com/generaltranslation/gt/commit/2090de3613b9684fd43adc3b83f677bc33c1d9a6)]:
+  - gt@2.14.10
+
 ## 2.14.9
 
 ### Patch Changes

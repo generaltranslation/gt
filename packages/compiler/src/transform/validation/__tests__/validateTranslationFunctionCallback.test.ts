@@ -33,7 +33,7 @@ describe('validateTranslationFunctionCallback', () => {
       enableConcatenationArg: true,
       enableMacroImportInjection: true,
       enableAutoJsxInjection: false,
-      autoDerive: false,
+      autoderive: false,
       _debugHashManifest: false,
     };
 
@@ -885,8 +885,8 @@ describe('validateTranslationFunctionCallback', () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should not error on template literal with bare variable when autoDerive is enabled', () => {
-      // msg(`Hello, ${name}`) — should pass regardless of autoDerive
+    it('should not error on template literal with bare variable when autoderive is enabled', () => {
+      // msg(`Hello, ${name}`) — should pass regardless of autoderive
       const callExpr = t.callExpression(t.identifier('useMessages_callback'), [
         t.templateLiteral(
           [
@@ -903,8 +903,8 @@ describe('validateTranslationFunctionCallback', () => {
     });
   });
 
-  describe('autoDerive', () => {
-    let autoDeriveState: TransformState;
+  describe('autoderive', () => {
+    let autoderiveState: TransformState;
 
     beforeEach(() => {
       const stringCollector = new StringCollector();
@@ -922,11 +922,11 @@ describe('validateTranslationFunctionCallback', () => {
         enableConcatenationArg: true,
         enableMacroImportInjection: true,
         enableAutoJsxInjection: false,
-        autoDerive: true,
+        autoderive: true,
         _debugHashManifest: false,
       };
 
-      autoDeriveState = {
+      autoderiveState = {
         settings,
         stringCollector,
         scopeTracker,
@@ -947,7 +947,7 @@ describe('validateTranslationFunctionCallback', () => {
       );
     });
 
-    it('should accept template literal with bare variable when autoDerive is enabled', () => {
+    it('should accept template literal with bare variable when autoderive is enabled', () => {
       // gt(`Hello, ${name}`)
       const callExpr = t.callExpression(t.identifier('useGT_callback'), [
         t.templateLiteral(
@@ -959,13 +959,13 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoDeriveState);
+      const result = validateUseGTCallback(callExpr, autoderiveState);
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
     });
 
-    it('should accept concatenation with bare variable when autoDerive is enabled', () => {
+    it('should accept concatenation with bare variable when autoderive is enabled', () => {
       // gt("Hello, " + name)
       const callExpr = t.callExpression(t.identifier('useGT_callback'), [
         t.binaryExpression(
@@ -975,13 +975,13 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoDeriveState);
+      const result = validateUseGTCallback(callExpr, autoderiveState);
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
     });
 
-    it('should accept template literal with bare function call when autoDerive is enabled', () => {
+    it('should accept template literal with bare function call when autoderive is enabled', () => {
       // gt(`Hello, ${getName()}`)
       const callExpr = t.callExpression(t.identifier('useGT_callback'), [
         t.templateLiteral(
@@ -993,13 +993,13 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoDeriveState);
+      const result = validateUseGTCallback(callExpr, autoderiveState);
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
     });
 
-    it('should accept concatenation with bare function call when autoDerive is enabled', () => {
+    it('should accept concatenation with bare function call when autoderive is enabled', () => {
       // gt("Hello, " + getName())
       const callExpr = t.callExpression(t.identifier('useGT_callback'), [
         t.binaryExpression(
@@ -1009,14 +1009,14 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoDeriveState);
+      const result = validateUseGTCallback(callExpr, autoderiveState);
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
     });
 
-    it('should reject template literal with bare variable when autoDerive is disabled', () => {
-      // gt(`Hello, ${name}`) with autoDerive off (default state)
+    it('should reject template literal with bare variable when autoderive is disabled', () => {
+      // gt(`Hello, ${name}`) with autoderive off (default state)
       const callExpr = t.callExpression(t.identifier('useGT_callback'), [
         t.templateLiteral(
           [
@@ -1032,8 +1032,8 @@ describe('validateTranslationFunctionCallback', () => {
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
-    it('should reject concatenation with bare variable when autoDerive is disabled', () => {
-      // gt("Hello, " + name) with autoDerive off (default state)
+    it('should reject concatenation with bare variable when autoderive is disabled', () => {
+      // gt("Hello, " + name) with autoderive off (default state)
       const callExpr = t.callExpression(t.identifier('useGT_callback'), [
         t.binaryExpression(
           '+',
@@ -1047,7 +1047,7 @@ describe('validateTranslationFunctionCallback', () => {
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
-    it('should accept mixed explicit derive and bare variable when autoDerive is enabled', () => {
+    it('should accept mixed explicit derive and bare variable when autoderive is enabled', () => {
       // gt(`Hello, ${derive(getName())} and ${name}`)
       const deriveCall = t.callExpression(
         t.identifier(GT_OTHER_FUNCTIONS.derive),
@@ -1065,13 +1065,13 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoDeriveState);
+      const result = validateUseGTCallback(callExpr, autoderiveState);
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
     });
 
-    it('should accept getGT_callback with template literal and bare variable when autoDerive is enabled', () => {
+    it('should accept getGT_callback with template literal and bare variable when autoderive is enabled', () => {
       // const gt = getGT(); gt(`Hello, ${name}`)
       const callExpr = t.callExpression(t.identifier('getGT_callback'), [
         t.templateLiteral(
@@ -1083,14 +1083,14 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoDeriveState);
+      const result = validateUseGTCallback(callExpr, autoderiveState);
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
     });
 
-    it('should still reject bare variable in $context when autoDerive is enabled', () => {
-      // autoDerive only applies to content, not $context
+    it('should still reject bare variable in $context when autoderive is enabled', () => {
+      // autoderive only applies to content, not $context
       const callExpr = t.callExpression(t.identifier('useGT_callback'), [
         t.stringLiteral('Hello'),
         t.objectExpression([
@@ -1101,7 +1101,7 @@ describe('validateTranslationFunctionCallback', () => {
         ]),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoDeriveState);
+      const result = validateUseGTCallback(callExpr, autoderiveState);
 
       expect(result.errors.length).toBeGreaterThan(0);
     });

@@ -456,10 +456,10 @@ export function parseStrings(
         path,
         {
           ...config,
-          autoDeriveMethod:
-            config.autoDeriveMethod === 'AUTO'
+          autoderiveMethod:
+            config.autoderiveMethod === 'AUTO'
               ? 'DISABLED'
-              : config.autoDeriveMethod,
+              : config.autoderiveMethod,
         },
         output
       );
@@ -490,10 +490,10 @@ export function parseStrings(
         ignoreTaggedTemplates: false,
         ignoreGlobalTaggedTemplates: false,
         // User configurable, otherwise default to AUTO
-        autoDeriveMethod:
-          config.autoDeriveMethod === 'AUTO'
+        autoderiveMethod:
+          config.autoderiveMethod === 'AUTO'
             ? 'DISABLED'
-            : config.autoDeriveMethod,
+            : config.autoderiveMethod,
       };
 
       // Check if this is a direct call to msg('string') or t('string')
@@ -502,7 +502,7 @@ export function parseStrings(
         refPath.parent.callee === refPath.node
       ) {
         /**
-         * CASE: Auto-derive t() and msg() function
+         * CASE: Autoderive t() and msg() function
          * The t() function, will treat variable content as if it was marked for derivation
          * without explicit calls to derive().
          *
@@ -517,10 +517,10 @@ export function parseStrings(
          */
         processTranslationCall(
           refPath,
-          config.autoDeriveMethod === 'AUTO'
+          config.autoderiveMethod === 'AUTO'
             ? {
                 ...stringRegistrationConfig,
-                autoDeriveMethod: 'ENABLED',
+                autoderiveMethod: 'ENABLED',
               }
             : stringRegistrationConfig,
           output
@@ -588,12 +588,12 @@ export function parseStrings(
         ignoreTaggedTemplates: false,
         ignoreGlobalTaggedTemplates: false,
         // User configurable, otherwise default to DISABLED
-        autoDeriveMethod:
-          config.autoDeriveMethod === 'AUTO'
+        autoderiveMethod:
+          config.autoderiveMethod === 'AUTO'
             ? isInlineGT
               ? 'ENABLED'
               : 'DISABLED'
-            : config.autoDeriveMethod,
+            : config.autoderiveMethod,
       };
 
       const effectiveParent =
