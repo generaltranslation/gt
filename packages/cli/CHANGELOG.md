@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.9
+
+### Patch Changes
+
+- [#1191](https://github.com/generaltranslation/gt/pull/1191) [`0c24b75`](https://github.com/generaltranslation/gt/commit/0c24b7563005a967a2b8916fabf60ee203466087) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: Derive JSX tracing behavior for variable declarations
+
 ## 2.14.8
 
 ### Patch Changes
