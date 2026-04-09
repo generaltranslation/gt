@@ -146,7 +146,7 @@ impl VisitMut for TransformVisitor {
     // Only check for violations if we're in a translation component and NOT in a JSX attribute
     if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
       // Check if the expression is allowed dynamic content
-      if !self.settings.disable_build_checks && !self.settings.autoderive && !is_allowed_dynamic_content(&expr_container.expr) {
+      if !self.settings.disable_build_checks && !self.settings.autoderive_jsx && !is_allowed_dynamic_content(&expr_container.expr) {
         self.statistics.dynamic_content_violations += 1;
         let warning = create_dynamic_content_warning(self.settings.filename.as_deref(), "T");
         self.logger.log_error(&warning);
@@ -380,7 +380,8 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     config.compile_time_hash,
     filename.clone(),
     config.disable_build_checks,
-    config.autoderive,
+    config.autoderive_jsx,
+    config.autoderive_strings,
     string_collector,
   );
   program.visit_mut_with(&mut visitor);
@@ -398,7 +399,8 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     config.compile_time_hash,
     filename,
     config.disable_build_checks,
-    config.autoderive,
+    config.autoderive_jsx,
+    config.autoderive_strings,
     collected_data,
   );
   program.fold_with(&mut visitor)

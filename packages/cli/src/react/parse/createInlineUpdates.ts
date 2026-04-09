@@ -11,6 +11,7 @@ import type {
   ParsingConfigOptions,
   GTParsingFlags,
 } from '../../types/parsing.js';
+import { resolveAutoderive } from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 import {
   GTLibrary,
@@ -44,6 +45,8 @@ export async function createInlineUpdates(
   const warnings: Set<string> = new Set();
 
   const pkgs = getUpstreamPackages(pkg);
+
+  const autoderive = resolveAutoderive(parsingFlags.autoderive);
 
   // Use the provided app directory or default to the current directory
   const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
@@ -86,7 +89,7 @@ export async function createInlineUpdates(
           ignoreTaggedTemplates: false,
           ignoreGlobalTaggedTemplates: false,
           // User configurable, otherwise default to AUTO
-          autoderiveMethod: parsingFlags.autoderive ? 'AUTO' : 'DISABLED',
+          autoderiveMethod: autoderive.strings ? 'AUTO' : 'DISABLED',
         },
         { updates, errors, warnings }
       );
@@ -106,7 +109,7 @@ export async function createInlineUpdates(
             pkgs,
             file,
             includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
-            autoderive: parsingFlags.autoderive,
+            autoderive: autoderive.jsx,
           },
           output: {
             errors,
@@ -168,7 +171,7 @@ export async function createInlineUpdates(
               file,
               includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
               enableAutoJsxInjection: true,
-              autoderive: parsingFlags.autoderive,
+              autoderive: autoderive.jsx,
             },
             output: {
               errors,

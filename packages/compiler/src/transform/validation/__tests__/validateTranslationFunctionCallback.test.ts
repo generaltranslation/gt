@@ -33,7 +33,7 @@ describe('validateTranslationFunctionCallback', () => {
       enableConcatenationArg: true,
       enableMacroImportInjection: true,
       enableAutoJsxInjection: false,
-      autoderive: false,
+      autoderive: { jsx: false, strings: false },
       _debugHashManifest: false,
     };
 
@@ -922,7 +922,7 @@ describe('validateTranslationFunctionCallback', () => {
         enableConcatenationArg: true,
         enableMacroImportInjection: true,
         enableAutoJsxInjection: false,
-        autoderive: true,
+        autoderive: { jsx: true, strings: true },
         _debugHashManifest: false,
       };
 
@@ -1164,6 +1164,154 @@ describe('validateTranslationFunctionCallback', () => {
       ]);
       const result = validateUseGTCallback(callExpr, state);
       expect(result.errors.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('selective autoderive — { jsx: true, strings: false }', () => {
+    let jsxOnlyState: TransformState;
+
+    beforeEach(() => {
+      const stringCollector = new StringCollector();
+      const logger = new Logger('silent');
+      const errorTracker = new ErrorTracker();
+      const scopeTracker = new ScopeTracker();
+      const settings: PluginSettings = {
+        logLevel: 'silent',
+        compileTimeHash: false,
+        disableBuildChecks: false,
+        enableMacroTransform: true,
+        stringTranslationMacro: GT_OTHER_FUNCTIONS.t,
+        enableTaggedTemplate: true,
+        enableTemplateLiteralArg: true,
+        enableConcatenationArg: true,
+        enableMacroImportInjection: true,
+        enableAutoJsxInjection: false,
+        autoderive: { jsx: true, strings: false },
+        _debugHashManifest: false,
+      };
+
+      jsxOnlyState = {
+        settings,
+        stringCollector,
+        scopeTracker,
+        logger,
+        errorTracker,
+        statistics: {
+          jsxElementCount: 0,
+          dynamicContentViolations: 0,
+          macroExpansionsCount: 0,
+          jsxInsertionsCount: 0,
+        },
+      };
+
+      scopeTracker.trackTranslationVariable(
+        GT_OTHER_FUNCTIONS.derive,
+        GT_OTHER_FUNCTIONS.derive,
+        0
+      );
+    });
+
+    it('should reject template literal with bare variable (strings disabled)', () => {
+      const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+        t.templateLiteral(
+          [
+            t.templateElement({ raw: 'Hello, ', cooked: 'Hello, ' }),
+            t.templateElement({ raw: '', cooked: '' }),
+          ],
+          [t.identifier('name')]
+        ),
+      ]);
+
+      const result = validateUseGTCallback(callExpr, jsxOnlyState);
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should reject concatenation with bare variable (strings disabled)', () => {
+      const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+        t.binaryExpression(
+          '+',
+          t.stringLiteral('Hello, '),
+          t.identifier('name')
+        ),
+      ]);
+
+      const result = validateUseGTCallback(callExpr, jsxOnlyState);
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('selective autoderive — { jsx: false, strings: true }', () => {
+    let stringsOnlyState: TransformState;
+
+    beforeEach(() => {
+      const stringCollector = new StringCollector();
+      const logger = new Logger('silent');
+      const errorTracker = new ErrorTracker();
+      const scopeTracker = new ScopeTracker();
+      const settings: PluginSettings = {
+        logLevel: 'silent',
+        compileTimeHash: false,
+        disableBuildChecks: false,
+        enableMacroTransform: true,
+        stringTranslationMacro: GT_OTHER_FUNCTIONS.t,
+        enableTaggedTemplate: true,
+        enableTemplateLiteralArg: true,
+        enableConcatenationArg: true,
+        enableMacroImportInjection: true,
+        enableAutoJsxInjection: false,
+        autoderive: { jsx: false, strings: true },
+        _debugHashManifest: false,
+      };
+
+      stringsOnlyState = {
+        settings,
+        stringCollector,
+        scopeTracker,
+        logger,
+        errorTracker,
+        statistics: {
+          jsxElementCount: 0,
+          dynamicContentViolations: 0,
+          macroExpansionsCount: 0,
+          jsxInsertionsCount: 0,
+        },
+      };
+
+      scopeTracker.trackTranslationVariable(
+        GT_OTHER_FUNCTIONS.derive,
+        GT_OTHER_FUNCTIONS.derive,
+        0
+      );
+    });
+
+    it('should accept template literal with bare variable (strings enabled)', () => {
+      const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+        t.templateLiteral(
+          [
+            t.templateElement({ raw: 'Hello, ', cooked: 'Hello, ' }),
+            t.templateElement({ raw: '', cooked: '' }),
+          ],
+          [t.identifier('name')]
+        ),
+      ]);
+
+      const result = validateUseGTCallback(callExpr, stringsOnlyState);
+      expect(result.errors).toHaveLength(0);
+      expect(result.hasDeriveContext).toBe(true);
+    });
+
+    it('should accept concatenation with bare variable (strings enabled)', () => {
+      const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+        t.binaryExpression(
+          '+',
+          t.stringLiteral('Hello, '),
+          t.identifier('name')
+        ),
+      ]);
+
+      const result = validateUseGTCallback(callExpr, stringsOnlyState);
+      expect(result.errors).toHaveLength(0);
+      expect(result.hasDeriveContext).toBe(true);
     });
   });
 });

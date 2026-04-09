@@ -12,7 +12,7 @@ type GTConfig = {
     gt?: {
       parsingFlags?: {
         enableAutoJsxInjection?: boolean;
-        autoderive?: boolean;
+        autoderive?: boolean | { jsx?: boolean; strings?: boolean };
         /** @deprecated Use `autoderive` instead */
         autoDerive?: boolean;
       };
@@ -39,7 +39,7 @@ export interface PluginConfig {
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection?: boolean;
   /** Automatically treat interpolated/concatenated values as derive() calls */
-  autoderive?: boolean;
+  autoderive?: boolean | { jsx?: boolean; strings?: boolean };
   /** @deprecated Use `autoderive` instead */
   autoDerive?: boolean;
   /** Debug: write a hash → jsxChildren manifest file on build */
@@ -63,7 +63,22 @@ export interface PluginSettings {
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection: boolean;
   /** Automatically treat interpolated/concatenated values as derive() calls */
-  autoderive: boolean;
+  autoderive: { jsx: boolean; strings: boolean };
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest: boolean;
+}
+
+/**
+ * Resolves the autoderive config value into separate jsx and strings flags.
+ * - `true` enables both (backward compatible)
+ * - `false` disables both (backward compatible)
+ * - `{ jsx?: boolean; strings?: boolean }` enables selectively (missing keys default to false)
+ */
+export function resolveAutoderive(
+  value: boolean | { jsx?: boolean; strings?: boolean }
+): { jsx: boolean; strings: boolean } {
+  if (typeof value === 'boolean') {
+    return { jsx: value, strings: value };
+  }
+  return { jsx: value.jsx ?? false, strings: value.strings ?? false };
 }

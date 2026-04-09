@@ -35,15 +35,30 @@ export type BaseParsingFlags = Record<string, unknown>;
  * parsing features depending on the function being parsed. Parsing flags is for users to override
  * some of these defaults or enable/disable other features.
  *
- * @property {boolean} autoderive - Whether to enable autoderive for the t() function. (true -> 'AUTO', false -> 'DISABLED' {@link ParsingConfig['autoderiveMethod']})
+ * @property {boolean | { jsx?: boolean; strings?: boolean }} autoderive - Whether to enable autoderive. A plain boolean enables/disables both JSX and strings. An object enables selectively.
  * @property {boolean} includeSourceCodeContext - Include surrounding source code lines as context for translations.
  * @property {boolean} enableAutoJsxInjection - Whether to enable auto-jsx injection for the internal <_T> and <_Var> components.
  */
 export type GTParsingFlags = BaseParsingFlags & {
-  autoderive: boolean;
+  autoderive: boolean | { jsx?: boolean; strings?: boolean };
   includeSourceCodeContext: boolean;
   enableAutoJsxInjection: boolean;
 };
+
+/**
+ * Resolves the autoderive config value into separate jsx and strings flags.
+ * - `true` enables both (backward compatible)
+ * - `false` disables both (backward compatible)
+ * - `{ jsx?: boolean; strings?: boolean }` enables selectively (missing keys default to false)
+ */
+export function resolveAutoderive(
+  value: boolean | { jsx?: boolean; strings?: boolean } | undefined
+): { jsx: boolean; strings: boolean } {
+  if (value === undefined || typeof value === 'boolean') {
+    return { jsx: !!value, strings: !!value };
+  }
+  return { jsx: value.jsx ?? false, strings: value.strings ?? false };
+}
 
 /**
  * Flags for parsing content with each filetype having its own flags
