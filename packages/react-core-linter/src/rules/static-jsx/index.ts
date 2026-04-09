@@ -66,30 +66,39 @@ export const staticJsx = createRule({
     ) {
       const fixes: ReturnType<RuleFixer['replaceText']>[] = [];
 
-      // Find the GT import declaration
-      const gtImportDecl = context.sourceCode.ast.body.find(
+      // Find all GT import declarations
+      const gtImportDecls = context.sourceCode.ast.body.filter(
         (stmt): stmt is TSESTree.ImportDeclaration =>
           stmt.type === TSESTree.AST_NODE_TYPES.ImportDeclaration &&
           libs.includes(stmt.source.value as string)
       );
 
-      // Check if Var is already imported and resolve its local name
+      // Check across all GT imports if Var is already imported
       let tagName = VAR_COMPONENT_NAME;
-      if (gtImportDecl) {
-        const varSpecifier = gtImportDecl.specifiers.find(
+      let varSpecifier: TSESTree.ImportSpecifier | undefined;
+      for (const decl of gtImportDecls) {
+        varSpecifier = decl.specifiers.find(
           (spec): spec is TSESTree.ImportSpecifier =>
             spec.type === TSESTree.AST_NODE_TYPES.ImportSpecifier &&
             spec.imported.type === TSESTree.AST_NODE_TYPES.Identifier &&
             spec.imported.name === VAR_COMPONENT_NAME
         );
+        if (varSpecifier) break;
+      }
 
-        if (varSpecifier) {
-          // Var is already imported — use its local name (handles aliases)
-          tagName = varSpecifier.local.name;
-        } else if (gtImportDecl.specifiers.length > 0) {
-          // Var is not imported — add it to the existing import
+      if (varSpecifier) {
+        // Var is already imported — use its local name (handles aliases)
+        tagName = varSpecifier.local.name;
+      } else if (gtImportDecls.length > 0) {
+        // Var is not imported — add it to the first GT import
+        const targetDecl = gtImportDecls[0];
+        const namedSpecifiers = targetDecl.specifiers.filter(
+          (s): s is TSESTree.ImportSpecifier =>
+            s.type === TSESTree.AST_NODE_TYPES.ImportSpecifier
+        );
+        if (namedSpecifiers.length > 0) {
           const lastSpecifier =
-            gtImportDecl.specifiers[gtImportDecl.specifiers.length - 1];
+            namedSpecifiers[namedSpecifiers.length - 1];
           fixes.push(
             fixer.insertTextAfter(lastSpecifier, `, ${VAR_COMPONENT_NAME}`)
           );
