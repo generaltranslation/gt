@@ -6,13 +6,11 @@ import {
   warnDeprecatedField,
 } from '../console/logging.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
-import { FilesOptions, Settings, SupportedFrameworks } from '../types/index.js';
+import { FilesOptions, Settings } from '../types/index.js';
 import {
   defaultBaseUrl,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
-import fs from 'node:fs';
-import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
 import { validateSettings } from './validateSettings.js';
 import {
@@ -328,18 +326,6 @@ export async function generateSettings(
       // Not in a git repo or git unavailable — fall back to random hex
       mergedOptions.tag = crypto.randomBytes(4).toString('hex');
     }
-  }
-
-  // if there's no existing config file, creates one
-  // does not include the API key to avoid exposing it
-  if (!fs.existsSync(mergedOptions.config)) {
-    await createOrUpdateConfig(mergedOptions.config, {
-      projectId: mergedOptions.projectId as string,
-      defaultLocale: mergedOptions.defaultLocale as string,
-      locales:
-        mergedOptions.locales?.length > 0 ? mergedOptions.locales : undefined,
-      framework: mergedOptions.framework as SupportedFrameworks,
-    });
   }
 
   mergedOptions.configDirectory = path.join(cwd, '.gt');

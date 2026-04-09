@@ -33,10 +33,6 @@ vi.mock('../../fs/config/parseGTConfig.js', () => ({
   }),
 }));
 
-vi.mock('../../fs/config/setupConfig.js', () => ({
-  createOrUpdateConfig: vi.fn(),
-}));
-
 vi.mock('../validateSettings.js', () => ({
   validateSettings: vi.fn(),
 }));
@@ -63,12 +59,6 @@ vi.mock('../../utils/gt.js', () => ({
 
 vi.mock('../optionPresets.js', () => ({
   generatePreset: vi.fn(),
-}));
-
-vi.mock('node:fs', () => ({
-  default: {
-    existsSync: vi.fn().mockReturnValue(false),
-  },
 }));
 
 describe('generateSettings - composite patterns', () => {
