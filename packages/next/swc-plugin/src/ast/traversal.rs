@@ -40,6 +40,11 @@ impl<'a> JsxTraversal<'a> {
   pub fn calculate_element_hash(&mut self, element: &JSXElement) -> (String, String) {
     use crate::hash::JsxHasher;
 
+    // Autoderive: if element or any descendant has dynamic expressions, produce empty hash
+    if self.visitor.settings.autoderive && has_dynamic_content_recursive(&element.children) {
+      return (String::new(), String::new());
+    }
+
     // Build sanitized children directly from JSX children
     if let Some(sanitized_children) = self.build_sanitized_children(&element.children) {
       // Get the id from the element
@@ -725,6 +730,24 @@ impl<'a> JsxTraversal<'a> {
       }
     }
   }
+}
+
+use crate::visitor::expr_utils::is_allowed_dynamic_content;
+
+/// Recursively check if any JSX descendant contains a dynamic expression
+fn has_dynamic_content_recursive(children: &[JSXElementChild]) -> bool {
+  children.iter().any(|child| match child {
+    JSXElementChild::JSXExprContainer(container) => {
+      !is_allowed_dynamic_content(&container.expr)
+    }
+    JSXElementChild::JSXElement(element) => {
+      has_dynamic_content_recursive(&element.children)
+    }
+    JSXElementChild::JSXFragment(fragment) => {
+      has_dynamic_content_recursive(&fragment.children)
+    }
+    _ => false,
+  })
 }
 
 impl Default for HtmlContentProps {

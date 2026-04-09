@@ -106,6 +106,7 @@ export async function createInlineUpdates(
             pkgs,
             file,
             includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
+            autoderive: parsingFlags.autoderive,
           },
           output: {
             errors,
@@ -167,6 +168,7 @@ export async function createInlineUpdates(
               file,
               includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
               enableAutoJsxInjection: true,
+              autoderive: parsingFlags.autoderive,
             },
             output: {
               errors,

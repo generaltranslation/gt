@@ -8,6 +8,7 @@ import { constructJsxChildren } from '../jsx-children';
 import { validateChildrenPropertyFromObjectExpression } from '../../utils/validation/validateChildrenFromObjectExpression';
 import { validateExpressionIsNumericLiteral } from '../../utils/validation/validateExpressionIsNumericLiteral';
 import { validateDerive } from './validateTranslationFunctionCallback';
+import { JsxValidationError } from '../jsx-children/errors';
 /**
  * Given a translation component, validate the arguments
  */
@@ -81,8 +82,6 @@ function validateTComponentArgs(
   const contextValidation = validateStringProperty(args, 'context', state);
   errors.push(...contextValidation.errors);
   const context = contextValidation.value;
-  const hasDeriveContext = contextValidation.hasDeriveExpression;
-
   // Validate maxChars
   const maxCharsValidation = validateNumberProperty(args, 'maxChars');
   errors.push(...maxCharsValidation.errors);
@@ -98,6 +97,9 @@ function validateTComponentArgs(
   errors.push(...childrenValidation.errors);
   const children = childrenValidation.value;
 
+  const hasDeriveContext =
+    contextValidation.hasDeriveExpression || childrenValidation.hasAutoderive;
+
   return { errors, id, context, _hash, maxChars, children, hasDeriveContext };
 }
 
@@ -110,6 +112,7 @@ export function validateChildrenProperty(
 ): {
   errors: string[];
   value?: JsxChildren;
+  hasAutoderive?: boolean;
 } {
   const errors: string[] = [];
 
@@ -125,12 +128,24 @@ export function validateChildrenProperty(
     return { errors };
   }
 
-  // Validate that the children property is a string literal
+  // constructJsxChildren now returns JsxValidationError[]
   const validation = constructJsxChildren(children, state);
-  errors.push(...validation.errors);
+
+  // Autoderive: filter out dynamic-content errors
+  let hasAutoderive = false;
+  let filteredErrors: JsxValidationError[] = validation.errors;
+  if (state.settings.autoderive) {
+    filteredErrors = validation.errors.filter(
+      (e) => e.type !== 'dynamic-content'
+    );
+    hasAutoderive = filteredErrors.length < validation.errors.length;
+  }
+
+  // Convert structured errors back to strings
+  errors.push(...filteredErrors.map((e) => e.message));
   const value = validation.value;
 
-  return { errors, value };
+  return { errors, value, hasAutoderive };
 }
 
 // String Literal Functions

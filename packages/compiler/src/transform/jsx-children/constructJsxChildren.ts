@@ -38,6 +38,11 @@ import {
   generateDynamicContentErrorMessage,
 } from '../../utils/errors';
 import { validateJsxCall } from './validation/validateJsxCall';
+import {
+  JsxValidationError,
+  dynamicContentError,
+  structuralError,
+} from './errors';
 
 /**
  * Given the children of a <T> component, constructs a JsxChildren object
@@ -51,8 +56,8 @@ export function _constructJsxChildren(
   children: t.Expression | undefined,
   state: TransformState,
   id: IdObject = new IdObject()
-): { errors: string[]; value?: JsxChildren } {
-  const errors: string[] = [];
+): { errors: JsxValidationError[]; value?: JsxChildren } {
+  const errors: JsxValidationError[] = [];
 
   // Skip if no children
   if (!children) {
@@ -68,8 +73,10 @@ export function _constructJsxChildren(
       // Validate child
       if (!validateChildrenElement(child)) {
         errors.push(
-          generateDynamicContentErrorMessage() +
-            (child && createErrorLocation(child))
+          dynamicContentError(
+            generateDynamicContentErrorMessage() +
+              (child && createErrorLocation(child))
+          )
         );
         return { errors };
       }
@@ -110,8 +117,8 @@ function constructJsxChild(
   child: Exclude<t.Expression, t.ArrayExpression>,
   state: TransformState,
   id: IdObject
-): { errors: string[]; value?: JsxChild } {
-  const errors: string[] = [];
+): { errors: JsxValidationError[]; value?: JsxChild } {
+  const errors: JsxValidationError[] = [];
   let value: JsxChild | undefined;
 
   if (t.isCallExpression(child)) {
@@ -126,7 +133,7 @@ function constructJsxChild(
     value = child.value;
   } else if (t.isTemplateLiteral(child)) {
     const validation = validateTemplateLiteral(child);
-    errors.push(...validation.errors);
+    errors.push(...validation.errors.map((msg) => dynamicContentError(msg)));
     if (errors.length > 0) {
       return { errors };
     }
@@ -139,7 +146,7 @@ function constructJsxChild(
     value = null as unknown as JsxChild;
   } else if (t.isUnaryExpression(child)) {
     const validation = validateUnaryExpression(child);
-    errors.push(...validation.errors);
+    errors.push(...validation.errors.map((msg) => structuralError(msg)));
     if (errors.length > 0) {
       return { errors };
     }
@@ -147,7 +154,7 @@ function constructJsxChild(
   } else if (t.isIdentifier(child)) {
     // <T>{name}</T> or <T>{undefined}</T>
     const validation = validateIdentifier(child, state);
-    errors.push(...validation.errors);
+    errors.push(...validation.errors.map((msg) => dynamicContentError(msg)));
     if (errors.length > 0) {
       return { errors };
     }
@@ -155,7 +162,9 @@ function constructJsxChild(
   } else {
     // Other cases fail
     errors.push(
-      generateDynamicContentErrorMessage() + createErrorLocation(child)
+      dynamicContentError(
+        generateDynamicContentErrorMessage() + createErrorLocation(child)
+      )
     );
     return { errors };
   }
@@ -171,12 +180,12 @@ function constructJsxElement(
   callExpr: t.CallExpression,
   state: TransformState,
   id: IdObject
-): { errors: string[]; value?: JsxElement | Variable } {
-  const errors: string[] = [];
+): { errors: JsxValidationError[]; value?: JsxElement | Variable } {
+  const errors: JsxValidationError[] = [];
 
   // Validate that this is a jsx call
   const jsxValidation = validateJsxCall(callExpr, state);
-  errors.push(...jsxValidation);
+  errors.push(...jsxValidation.map((msg) => dynamicContentError(msg)));
   if (jsxValidation.length > 0) {
     return { errors };
   }
@@ -191,8 +200,10 @@ function constructJsxElement(
   const firstArg = callExpr.arguments[0];
   if (!t.isExpression(firstArg)) {
     errors.push(
-      `Failed to construct JsxElement! First argument must be an expression` +
-        createErrorLocation(callExpr.arguments[0])
+      structuralError(
+        `Failed to construct JsxElement! First argument must be an expression` +
+          createErrorLocation(callExpr.arguments[0])
+      )
     );
     return { errors };
   }
@@ -202,8 +213,10 @@ function constructJsxElement(
     getCalleeNameFromJsxExpressionParam(firstArg);
   if (!functionName) {
     errors.push(
-      `Failed to construct JsxElement! First argument must be a valid function` +
-        createErrorLocation(callExpr.arguments[0])
+      structuralError(
+        `Failed to construct JsxElement! First argument must be a valid function` +
+          createErrorLocation(callExpr.arguments[0])
+      )
     );
     return { errors };
   }
@@ -226,7 +239,9 @@ function constructJsxElement(
       callExpr.arguments,
       id
     );
-    errors.push(...variableValidation.errors);
+    errors.push(
+      ...variableValidation.errors.map((msg) => structuralError(msg))
+    );
     if (variableValidation.errors.length > 0) {
       return { errors };
     }
@@ -243,8 +258,10 @@ function constructJsxElement(
     // Check that this is a gt component
     if (!isGTComponent(canonicalName)) {
       errors.push(
-        `Failed to construct JsxElement! ${canonicalName} is not a valid GT component` +
-          createErrorLocation(callExpr.arguments[0])
+        structuralError(
+          `Failed to construct JsxElement! ${canonicalName} is not a valid GT component` +
+            createErrorLocation(callExpr.arguments[0])
+        )
       );
       return { errors };
     }
@@ -262,8 +279,10 @@ function constructJsxElement(
     // Handle fragment + special react components
     if (!isReactComponent(canonicalName)) {
       errors.push(
-        `Failed to construct JsxElement! ${canonicalName} is not a valid React component` +
-          createErrorLocation(callExpr.arguments[0])
+        structuralError(
+          `Failed to construct JsxElement! ${canonicalName} is not a valid React component` +
+            createErrorLocation(callExpr.arguments[0])
+        )
       );
       return { errors };
     }
@@ -281,7 +300,9 @@ function constructJsxElement(
   // Get children from args
   const childrenValidation = validateChildrenFromArgs(callExpr.arguments);
   if (childrenValidation.errors.length > 0) {
-    errors.push(...childrenValidation.errors);
+    errors.push(
+      ...childrenValidation.errors.map((msg) => structuralError(msg))
+    );
     return { errors };
   }
 
@@ -331,8 +352,8 @@ function constructJsxChildrenForJsxElement(
   children: t.Expression | undefined,
   state: TransformState,
   id: IdObject
-): { errors: string[]; value?: JsxChildren } {
-  const errors: string[] = [];
+): { errors: JsxValidationError[]; value?: JsxChildren } {
+  const errors: JsxValidationError[] = [];
 
   // Special children edge cases: nullLiteral, booleanLiteral
   if (t.isNullLiteral(children)) {
@@ -358,23 +379,27 @@ function constructGTProp(
   state: TransformState,
   canonicalName?: string,
   type?: VariableType
-): { errors: string[]; value?: GTProp } {
-  const errors: string[] = [];
+): { errors: JsxValidationError[]; value?: GTProp } {
+  const errors: JsxValidationError[] = [];
   const value: GTProp = {};
 
   // Validate Parameters
   if (args.length < 2) {
     errors.push(
-      'Failed to construct GTProp! Missing parameters' +
-        createErrorLocation(args[0])
+      structuralError(
+        'Failed to construct GTProp! Missing parameters' +
+          createErrorLocation(args[0])
+      )
     );
     return { errors };
   }
   const parameters = args[1];
   if (!t.isObjectExpression(parameters)) {
     errors.push(
-      'Failed to construct GTProp! Parameter field must be an object expression' +
-        createErrorLocation(args[1])
+      structuralError(
+        'Failed to construct GTProp! Parameter field must be an object expression' +
+          createErrorLocation(args[1])
+      )
     );
     return { errors };
   }
@@ -424,7 +449,7 @@ function constructGTProp(
     Object.entries(HTML_CONTENT_PROPS).forEach(([prop, name]) => {
       const validation = validateStringLiteralPropertyFromArg(parameters, name);
       if (validation.errors.length > 0) {
-        errors.push(...validation.errors);
+        errors.push(...validation.errors.map((msg) => structuralError(msg)));
         return { errors };
       }
       if (validation.value === undefined) return;
