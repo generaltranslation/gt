@@ -73,7 +73,7 @@ export async function generateSettings(
       flags.config = config.path;
     } else {
       if (options?.requireConfig) {
-        logErrorAndExit(
+        return logErrorAndExit(
           'No gt.config.json file found. Run `npx gt init` to create one, or use --config to specify a path.'
         );
       }
