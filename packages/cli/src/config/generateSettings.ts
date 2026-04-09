@@ -74,7 +74,7 @@ export async function generateSettings(
     } else {
       if (options?.requireConfig) {
         logErrorAndExit(
-          'No gt.config.json file found. Run `gtx init` to create one, or use --config to specify a path.'
+          'No gt.config.json file found. Run `npx gt init` to create one, or use --config to specify a path.'
         );
       }
       gtConfig = {};
