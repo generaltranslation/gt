@@ -6,13 +6,11 @@ import {
   warnDeprecatedField,
 } from '../console/logging.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
-import { FilesOptions, Settings, SupportedFrameworks } from '../types/index.js';
+import { FilesOptions, Settings } from '../types/index.js';
 import {
   defaultBaseUrl,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
-import fs from 'node:fs';
-import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
 import { validateSettings } from './validateSettings.js';
 import {
@@ -51,11 +49,14 @@ export const DEFAULT_PYTHON_SRC_EXCLUDES = [
  * Generates settings from any
  * @param flags - The CLI flags to generate settings from
  * @param cwd - The current working directory
+ * @param options - Additional options
+ * @param options.requireConfig - If true, exit with an error when no config file is found
  * @returns The generated settings
  */
 export async function generateSettings(
   flags: Record<string, any>,
-  cwd: string = process.cwd()
+  cwd: string = process.cwd(),
+  options?: { requireConfig?: boolean }
 ): Promise<Settings> {
   // Load config file
   let gtConfig: Record<string, any> = {};
@@ -71,6 +72,11 @@ export async function generateSettings(
       gtConfig = config.config;
       flags.config = config.path;
     } else {
+      if (options?.requireConfig) {
+        return logErrorAndExit(
+          'No gt.config.json file found. Run `npx gt init` to create one, or use --config to specify a path.'
+        );
+      }
       gtConfig = {};
     }
   }
@@ -167,9 +173,12 @@ export async function generateSettings(
   // Add locales if not provided
   mergedOptions.locales = mergedOptions.locales || [];
 
-  // Add default config file name if not provided
-  mergedOptions.config =
-    mergedOptions.config || path.join(cwd, 'gt.config.json');
+  // Only set config path if one was actually found or explicitly provided.
+  // Do not default to a phantom path — that would cause downstream writes
+  // (e.g. updateConfig) to silently create a config file.
+  if (!mergedOptions.config) {
+    mergedOptions.config = '';
+  }
 
   // Display projectId if present
   if (mergedOptions.projectId) displayProjectId(mergedOptions.projectId);
@@ -328,18 +337,6 @@ export async function generateSettings(
       // Not in a git repo or git unavailable — fall back to random hex
       mergedOptions.tag = crypto.randomBytes(4).toString('hex');
     }
-  }
-
-  // if there's no existing config file, creates one
-  // does not include the API key to avoid exposing it
-  if (!fs.existsSync(mergedOptions.config)) {
-    await createOrUpdateConfig(mergedOptions.config, {
-      projectId: mergedOptions.projectId as string,
-      defaultLocale: mergedOptions.defaultLocale as string,
-      locales:
-        mergedOptions.locales?.length > 0 ? mergedOptions.locales : undefined,
-      framework: mergedOptions.framework as SupportedFrameworks,
-    });
   }
 
   mergedOptions.configDirectory = path.join(cwd, '.gt');
