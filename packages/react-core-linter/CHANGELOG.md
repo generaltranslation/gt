@@ -1,5 +1,11 @@
 # @generaltranslation/react-core-linter
 
+## 0.1.7
+
+### Patch Changes
+
+- [#1190](https://github.com/generaltranslation/gt/pull/1190) [`828bd73`](https://github.com/generaltranslation/gt/commit/828bd73235e9f3aea234e53b9ca258b7829b1008) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: auto var wrapping
+
 ## 0.1.6
 
 ### Patch Changes
