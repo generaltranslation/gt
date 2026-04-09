@@ -107,7 +107,9 @@ export class InlineCLI extends BaseCLI {
   protected async handleGenerateSourceCommand(
     initOptions: TranslateFlags
   ): Promise<void> {
-    const settings = await generateSettings(initOptions, undefined, { requireConfig: true });
+    const settings = await generateSettings(initOptions, undefined, {
+      requireConfig: true,
+    });
 
     const updates = await aggregateInlineTranslations(
       initOptions,
@@ -168,7 +170,9 @@ export class InlineCLI extends BaseCLI {
     initOptions: Options,
     files?: string[]
   ): Promise<void> {
-    const settings = await generateSettings(initOptions, undefined, { requireConfig: true });
+    const settings = await generateSettings(initOptions, undefined, {
+      requireConfig: true,
+    });
 
     // First run the base class's handleTranslate method
     const options = { ...initOptions, ...settings };

@@ -208,7 +208,9 @@ export class BaseCLI {
       .option('--publish', 'Publish translations to the CDN', false)
       .action(async (initOptions: SharedFlags) => {
         displayHeader('Saving local edits...');
-        const settings = await generateSettings(initOptions, undefined, { requireConfig: true });
+        const settings = await generateSettings(initOptions, undefined, {
+          requireConfig: true,
+        });
         await saveLocalEdits(settings);
         logger.endCommand('Saved local edits');
       });
@@ -217,7 +219,9 @@ export class BaseCLI {
   protected async handleSetupProject(
     initOptions: TranslateFlags
   ): Promise<void> {
-    const settings = await generateSettings(initOptions, undefined, { requireConfig: true });
+    const settings = await generateSettings(initOptions, undefined, {
+      requireConfig: true,
+    });
 
     // Preprocess shared static assets if configured (move + rewrite sources)
     await processSharedStaticAssets(settings);
@@ -226,7 +230,9 @@ export class BaseCLI {
   }
 
   protected async handleStage(initOptions: TranslateFlags): Promise<void> {
-    const settings = await generateSettings(initOptions, undefined, { requireConfig: true });
+    const settings = await generateSettings(initOptions, undefined, {
+      requireConfig: true,
+    });
 
     // Preprocess shared static assets if configured (move + rewrite sources)
     await processSharedStaticAssets(settings);
@@ -247,7 +253,9 @@ export class BaseCLI {
    * @returns The results of the command
    */
   protected async handleEnqueue(initOptions: TranslateFlags): Promise<void> {
-    const settings = await generateSettings(initOptions, undefined, { requireConfig: true });
+    const settings = await generateSettings(initOptions, undefined, {
+      requireConfig: true,
+    });
     await handleEnqueue(initOptions, settings, this.library);
   }
 
@@ -257,12 +265,16 @@ export class BaseCLI {
    * @returns The results of the command
    */
   protected async handleDownload(initOptions: TranslateFlags): Promise<void> {
-    const settings = await generateSettings(initOptions, undefined, { requireConfig: true });
+    const settings = await generateSettings(initOptions, undefined, {
+      requireConfig: true,
+    });
     await handleDownload(initOptions, settings, this.library);
   }
 
   protected async handleTranslate(initOptions: TranslateFlags): Promise<void> {
-    const settings = await generateSettings(initOptions, undefined, { requireConfig: true });
+    const settings = await generateSettings(initOptions, undefined, {
+      requireConfig: true,
+    });
 
     // Preprocess shared static assets if configured (move + rewrite sources)
     await processSharedStaticAssets(settings);
@@ -308,7 +320,9 @@ export class BaseCLI {
         )
     ).action(async (initOptions: UploadOptions) => {
       displayHeader('Starting upload...');
-      const settings = await generateSettings(initOptions, undefined, { requireConfig: true });
+      const settings = await generateSettings(initOptions, undefined, {
+        requireConfig: true,
+      });
 
       const options = { ...initOptions, ...settings };
 
