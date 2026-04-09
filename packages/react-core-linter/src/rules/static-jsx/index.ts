@@ -97,8 +97,7 @@ export const staticJsx = createRule({
             s.type === TSESTree.AST_NODE_TYPES.ImportSpecifier
         );
         if (namedSpecifiers.length > 0) {
-          const lastSpecifier =
-            namedSpecifiers[namedSpecifiers.length - 1];
+          const lastSpecifier = namedSpecifiers[namedSpecifiers.length - 1];
           fixes.push(
             fixer.insertTextAfter(lastSpecifier, `, ${VAR_COMPONENT_NAME}`)
           );
