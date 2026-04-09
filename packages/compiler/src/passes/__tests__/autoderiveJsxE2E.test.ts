@@ -186,3 +186,138 @@ describe('Autoderive JSX E2E — <T> with dynamic content', () => {
     expect(result.errors.length).toBeGreaterThan(0);
   });
 });
+
+describe('Autoderive JSX E2E — edge cases', () => {
+  // ── Expression types, autoderive ON ──
+
+  it('conditional expression as child — no errors', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsx(T, { children: condition ? "yes" : "no" });
+    `;
+    const result = fullPipelineAutoderive(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+  });
+
+  it('function call as child — no errors', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsx(T, { children: getName() });
+    `;
+    const result = fullPipelineAutoderive(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+  });
+
+  it('member expression as child — no errors', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsx(T, { children: user.name });
+    `;
+    const result = fullPipelineAutoderive(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+  });
+
+  it('template literal with interpolation — no errors', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsx(T, { children: \`Hello \${name}\` });
+    `;
+    const result = fullPipelineAutoderive(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+  });
+
+  it('multiple dynamic children — no errors, empty hash', () => {
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsxs(T, { children: [firstName, " ", lastName] });
+    `;
+    const result = fullPipelineAutoderive(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+    expect(result.manifest).toHaveProperty('');
+  });
+
+  it('mix of static and dynamic children — no errors, empty hash', () => {
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsxs(T, { children: ["Hello ", name, " welcome"] });
+    `;
+    const result = fullPipelineAutoderive(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+    expect(result.manifest).toHaveProperty('');
+  });
+
+  // ── Nesting ──
+
+  it('triple nesting — no errors', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsx(T, { children: jsx("div", { children: jsx("span", { children: name }) }) });
+    `;
+    const result = fullPipelineAutoderive(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+  });
+
+  // ── Static hashing preserved ──
+
+  it('static nested content — non-empty hash', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsx(T, { children: jsx("b", { children: "Bold text" }) });
+    `;
+    const result = fullPipelineAutoderive(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+    const hashes = Object.keys(result.manifest);
+    expect(hashes.every((h) => h.length > 0)).toBe(true);
+  });
+
+  it('static array children — non-empty hash', () => {
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsxs(T, { children: ["Hello ", jsx("b", { children: "World" })] });
+    `;
+    const result = fullPipelineAutoderive(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+    const hashes = Object.keys(result.manifest);
+    expect(hashes.every((h) => h.length > 0)).toBe(true);
+  });
+
+  // ── Autoderive OFF control ──
+
+  it('conditional expression, autoderive OFF — errors', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsx(T, { children: condition ? "yes" : "no" });
+    `;
+    const result = fullPipelineDefault(code);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('multiple dynamic children, autoderive OFF — errors', () => {
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsxs(T, { children: [firstName, " ", lastName] });
+    `;
+    const result = fullPipelineDefault(code);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+});

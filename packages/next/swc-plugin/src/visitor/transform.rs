@@ -2369,6 +2369,285 @@ mod tests {
         "expected hash to contain only hex characters, got: {hash}"
       );
     }
+
+    // ── Edge case validation tests ──
+
+    #[test]
+    fn autoderive_on_allows_ternary_in_jsx_expr_container() {
+      let mut visitor = create_visitor_with_autoderive();
+      visitor.traversal_state.in_translation_component = true;
+
+      let mut expr_container = JSXExprContainer {
+        span: DUMMY_SP,
+        expr: JSXExpr::Expr(Box::new(Expr::Cond(CondExpr {
+          span: DUMMY_SP,
+          test: Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP, sym: Atom::new("condition"), optional: false, ctxt: SyntaxContext::empty(),
+          })),
+          cons: Box::new(Expr::Lit(Lit::Str(Str {
+            span: DUMMY_SP, value: Atom::new("yes").into(), raw: None,
+          }))),
+          alt: Box::new(Expr::Lit(Lit::Str(Str {
+            span: DUMMY_SP, value: Atom::new("no").into(), raw: None,
+          }))),
+        }))),
+      };
+      visitor.visit_mut_jsx_expr_container(&mut expr_container);
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    #[test]
+    fn autoderive_on_allows_member_expression_in_jsx_expr_container() {
+      let mut visitor = create_visitor_with_autoderive();
+      visitor.traversal_state.in_translation_component = true;
+
+      let mut expr_container = JSXExprContainer {
+        span: DUMMY_SP,
+        expr: JSXExpr::Expr(Box::new(Expr::Member(MemberExpr {
+          span: DUMMY_SP,
+          obj: Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP, sym: Atom::new("user"), optional: false, ctxt: SyntaxContext::empty(),
+          })),
+          prop: MemberProp::Ident(IdentName { span: DUMMY_SP, sym: Atom::new("name") }),
+        }))),
+      };
+      visitor.visit_mut_jsx_expr_container(&mut expr_container);
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    #[test]
+    fn autoderive_off_string_literal_still_allowed() {
+      let mut visitor = create_visitor_with_imports();
+      visitor.traversal_state.in_translation_component = true;
+
+      let mut expr_container = JSXExprContainer {
+        span: DUMMY_SP,
+        expr: JSXExpr::Expr(Box::new(Expr::Lit(Lit::Str(Str {
+          span: DUMMY_SP, value: Atom::new("static").into(), raw: None,
+        })))),
+      };
+      visitor.visit_mut_jsx_expr_container(&mut expr_container);
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    #[test]
+    fn autoderive_off_number_literal_still_allowed() {
+      let mut visitor = create_visitor_with_imports();
+      visitor.traversal_state.in_translation_component = true;
+
+      let mut expr_container = JSXExprContainer {
+        span: DUMMY_SP,
+        expr: JSXExpr::Expr(Box::new(Expr::Lit(Lit::Num(Number {
+          span: DUMMY_SP, value: 42.0, raw: None,
+        })))),
+      };
+      visitor.visit_mut_jsx_expr_container(&mut expr_container);
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    #[test]
+    fn autoderive_off_counts_multiple_violations() {
+      let mut visitor = create_visitor_with_imports();
+      visitor.traversal_state.in_translation_component = true;
+
+      let mut expr1 = JSXExprContainer {
+        span: DUMMY_SP,
+        expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP, sym: Atom::new("firstName"), optional: false, ctxt: SyntaxContext::empty(),
+        }))),
+      };
+      let mut expr2 = JSXExprContainer {
+        span: DUMMY_SP,
+        expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP, sym: Atom::new("lastName"), optional: false, ctxt: SyntaxContext::empty(),
+        }))),
+      };
+      visitor.visit_mut_jsx_expr_container(&mut expr1);
+      visitor.visit_mut_jsx_expr_container(&mut expr2);
+      assert_eq!(visitor.statistics.dynamic_content_violations, 2);
+    }
+
+    #[test]
+    fn autoderive_on_multiple_expressions_zero_violations() {
+      let mut visitor = create_visitor_with_autoderive();
+      visitor.traversal_state.in_translation_component = true;
+
+      let mut expr1 = JSXExprContainer {
+        span: DUMMY_SP,
+        expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP, sym: Atom::new("firstName"), optional: false, ctxt: SyntaxContext::empty(),
+        }))),
+      };
+      let mut expr2 = JSXExprContainer {
+        span: DUMMY_SP,
+        expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP, sym: Atom::new("lastName"), optional: false, ctxt: SyntaxContext::empty(),
+        }))),
+      };
+      visitor.visit_mut_jsx_expr_container(&mut expr1);
+      visitor.visit_mut_jsx_expr_container(&mut expr2);
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    #[test]
+    fn autoderive_on_not_in_translation_component_no_violation() {
+      let mut visitor = create_visitor_with_autoderive();
+      // in_translation_component is false by default
+
+      let mut expr_container = JSXExprContainer {
+        span: DUMMY_SP,
+        expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP, sym: Atom::new("name"), optional: false, ctxt: SyntaxContext::empty(),
+        }))),
+      };
+      visitor.visit_mut_jsx_expr_container(&mut expr_container);
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    #[test]
+    fn autoderive_on_in_jsx_attribute_no_violation() {
+      let mut visitor = create_visitor_with_autoderive();
+      visitor.traversal_state.in_translation_component = true;
+      visitor.traversal_state.in_jsx_attribute = true;
+
+      let mut expr_container = JSXExprContainer {
+        span: DUMMY_SP,
+        expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP, sym: Atom::new("name"), optional: false, ctxt: SyntaxContext::empty(),
+        }))),
+      };
+      visitor.visit_mut_jsx_expr_container(&mut expr_container);
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    // ── Edge case hash tests ──
+
+    #[test]
+    fn autoderive_on_mixed_static_and_dynamic_produces_empty_hash() {
+      let mut visitor = TransformVisitor::new(
+        LogLevel::Silent, true, None, false, true, StringCollector::new(),
+      );
+      visitor.import_tracker.scope_tracker
+        .track_translation_variable(Atom::new("T"), Atom::new("T"), 0);
+
+      let mut element = JSXElement {
+        span: DUMMY_SP,
+        opening: JSXOpeningElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident { span: DUMMY_SP, sym: Atom::new("T"), optional: false, ctxt: SyntaxContext::empty() }),
+          attrs: vec![], self_closing: false, type_args: None,
+        },
+        children: vec![
+          JSXElementChild::JSXText(JSXText { span: DUMMY_SP, value: Atom::new("Hello "), raw: Atom::new("Hello ") }),
+          JSXElementChild::JSXExprContainer(JSXExprContainer {
+            span: DUMMY_SP,
+            expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident { span: DUMMY_SP, sym: Atom::new("name"), optional: false, ctxt: SyntaxContext::empty() }))),
+          }),
+        ],
+        closing: Some(JSXClosingElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident { span: DUMMY_SP, sym: Atom::new("T"), optional: false, ctxt: SyntaxContext::empty() }),
+        }),
+      };
+
+      visitor.track_hash_attributes(&mut element);
+      let counter_id = visitor.string_collector.get_counter();
+      let translation_jsx = visitor.string_collector.get_translation_jsx(counter_id);
+      assert!(translation_jsx.is_some());
+      assert_eq!(translation_jsx.unwrap().hash, "");
+    }
+
+    #[test]
+    fn autoderive_on_number_literal_child_produces_nonempty_hash() {
+      let mut visitor = TransformVisitor::new(
+        LogLevel::Silent, true, None, false, true, StringCollector::new(),
+      );
+      visitor.import_tracker.scope_tracker
+        .track_translation_variable(Atom::new("T"), Atom::new("T"), 0);
+
+      let mut element = JSXElement {
+        span: DUMMY_SP,
+        opening: JSXOpeningElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident { span: DUMMY_SP, sym: Atom::new("T"), optional: false, ctxt: SyntaxContext::empty() }),
+          attrs: vec![], self_closing: false, type_args: None,
+        },
+        children: vec![
+          JSXElementChild::JSXExprContainer(JSXExprContainer {
+            span: DUMMY_SP,
+            expr: JSXExpr::Expr(Box::new(Expr::Lit(Lit::Num(Number { span: DUMMY_SP, value: 42.0, raw: None })))),
+          }),
+        ],
+        closing: Some(JSXClosingElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident { span: DUMMY_SP, sym: Atom::new("T"), optional: false, ctxt: SyntaxContext::empty() }),
+        }),
+      };
+
+      visitor.track_hash_attributes(&mut element);
+      let counter_id = visitor.string_collector.get_counter();
+      let translation_jsx = visitor.string_collector.get_translation_jsx(counter_id);
+      assert!(translation_jsx.is_some());
+      let hash = &translation_jsx.unwrap().hash;
+      assert!(!hash.is_empty(), "number literal is allowed content — should produce non-empty hash");
+      assert_eq!(hash.len(), 16);
+    }
+
+    #[test]
+    fn autoderive_on_3_level_deep_nesting_produces_empty_hash() {
+      let mut visitor = TransformVisitor::new(
+        LogLevel::Silent, true, None, false, true, StringCollector::new(),
+      );
+      visitor.import_tracker.scope_tracker
+        .track_translation_variable(Atom::new("T"), Atom::new("T"), 0);
+
+      let mut element = JSXElement {
+        span: DUMMY_SP,
+        opening: JSXOpeningElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident { span: DUMMY_SP, sym: Atom::new("T"), optional: false, ctxt: SyntaxContext::empty() }),
+          attrs: vec![], self_closing: false, type_args: None,
+        },
+        children: vec![JSXElementChild::JSXElement(Box::new(JSXElement {
+          span: DUMMY_SP,
+          opening: JSXOpeningElement {
+            span: DUMMY_SP,
+            name: JSXElementName::Ident(Ident { span: DUMMY_SP, sym: Atom::new("div"), optional: false, ctxt: SyntaxContext::empty() }),
+            attrs: vec![], self_closing: false, type_args: None,
+          },
+          children: vec![JSXElementChild::JSXElement(Box::new(JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+              span: DUMMY_SP,
+              name: JSXElementName::Ident(Ident { span: DUMMY_SP, sym: Atom::new("span"), optional: false, ctxt: SyntaxContext::empty() }),
+              attrs: vec![], self_closing: false, type_args: None,
+            },
+            children: vec![JSXElementChild::JSXExprContainer(JSXExprContainer {
+              span: DUMMY_SP,
+              expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident { span: DUMMY_SP, sym: Atom::new("name"), optional: false, ctxt: SyntaxContext::empty() }))),
+            })],
+            closing: Some(JSXClosingElement {
+              span: DUMMY_SP,
+              name: JSXElementName::Ident(Ident { span: DUMMY_SP, sym: Atom::new("span"), optional: false, ctxt: SyntaxContext::empty() }),
+            }),
+          }))],
+          closing: Some(JSXClosingElement {
+            span: DUMMY_SP,
+            name: JSXElementName::Ident(Ident { span: DUMMY_SP, sym: Atom::new("div"), optional: false, ctxt: SyntaxContext::empty() }),
+          }),
+        }))],
+        closing: Some(JSXClosingElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident { span: DUMMY_SP, sym: Atom::new("T"), optional: false, ctxt: SyntaxContext::empty() }),
+        }),
+      };
+
+      visitor.track_hash_attributes(&mut element);
+      let counter_id = visitor.string_collector.get_counter();
+      let translation_jsx = visitor.string_collector.get_translation_jsx(counter_id);
+      assert!(translation_jsx.is_some());
+      assert_eq!(translation_jsx.unwrap().hash, "");
+    }
   }
 
   mod variable_assignment_tracking {
