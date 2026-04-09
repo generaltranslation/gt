@@ -105,9 +105,7 @@ describe('detectMintlifyUnsupportedFields', () => {
       { title: 'Page 3' },
     ];
     detectMintlifyUnsupportedFields(json, 'pages.json');
-    expect(mockLogWarn).toHaveBeenCalledWith(
-      expect.stringContaining('1.$ref')
-    );
+    expect(mockLogWarn).toHaveBeenCalledWith(expect.stringContaining('1.$ref'));
   });
 
   it('should not warn for empty objects or arrays', () => {
