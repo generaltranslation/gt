@@ -26,11 +26,6 @@ export default async function updateConfig(
   configFilepath: string,
   options: UpdateConfigOptions
 ): Promise<void> {
-  // Skip if no config file path or file doesn't exist
-  if (!configFilepath || !fs.existsSync(configFilepath)) {
-    return;
-  }
-
   // Filter out empty string values from the config object
   const { projectId, _versionId, _branchId, stageTranslations } = options;
   const newContent = {
