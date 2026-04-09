@@ -1496,6 +1496,7 @@ function processDeriveExpression({
       }
 
       // Resolve via parseStringExpression (handles all derivable expression types)
+      const errorsBefore = output.errors.length;
       const stringNode = parseStringExpression(
         binding.path.node.init,
         binding.path,
@@ -1506,15 +1507,21 @@ function processDeriveExpression({
       );
       if (stringNode) {
         const strings = nodeToStrings(stringNode);
+        if (strings.length === 0) {
+          return null;
+        }
         if (strings.length === 1) {
           return strings[0];
         }
-        if (strings.length > 1) {
-          return {
-            nodeType: 'multiplication' as const,
-            branches: strings.map((s) => s),
-          };
-        }
+        return {
+          nodeType: 'multiplication' as const,
+          branches: strings.map((s) => s),
+        };
+      }
+      // parseStringExpression returned null — if it already pushed errors,
+      // avoid double-reporting by skipping the buildJSXTree fallthrough.
+      if (output.errors.length > errorsBefore) {
+        return null;
       }
     }
 

@@ -107,10 +107,9 @@ describe('Derive with variable declarations in JSX', () => {
 
       const { updates, errors } = parseDerive(source);
 
-      // Currently fails: the identifier is not resolved, producing an error
-      // like "unwrapped expression" because processDeriveExpression does not
-      // handle Identifier nodes — it falls through to buildJSXTree which
-      // treats it as a generic expression.
+      // This test verifies the fix: the identifier is now resolved via the
+      // VariableDeclarator binding, so no errors are produced and the two
+      // ternary branches are extracted as separate updates.
       expect(errors).toHaveLength(0);
       expect(updates).toHaveLength(2);
 
