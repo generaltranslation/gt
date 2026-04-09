@@ -165,9 +165,12 @@ export async function generateSettings(
   // Add locales if not provided
   mergedOptions.locales = mergedOptions.locales || [];
 
-  // Add default config file name if not provided
-  mergedOptions.config =
-    mergedOptions.config || path.join(cwd, 'gt.config.json');
+  // Only set config path if one was actually found or explicitly provided.
+  // Do not default to a phantom path — that would cause downstream writes
+  // (e.g. updateConfig) to silently create a config file.
+  if (!mergedOptions.config) {
+    mergedOptions.config = '';
+  }
 
   // Display projectId if present
   if (mergedOptions.projectId) displayProjectId(mergedOptions.projectId);
