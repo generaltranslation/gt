@@ -11,7 +11,6 @@ vi.mock('../../fs/config/parseFilesConfig', () => ({
 vi.mock('../../console/logging.js', () => ({
   logErrorAndExit: vi.fn(),
   displayProjectId: vi.fn(),
-  displayCreatedConfigFile: vi.fn(),
   warnApiKeyInConfig: vi.fn(),
 }));
 vi.mock('../../console/logger.js', () => ({
