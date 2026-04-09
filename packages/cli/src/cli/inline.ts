@@ -16,7 +16,6 @@ import { saveJSON } from '../fs/saveJSON.js';
 import loadJSON from '../fs/loadJSON.js';
 import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
-import { validateConfigExists } from '../config/validateSettings.js';
 import { validateProject } from '../translation/validate.js';
 import { Libraries, InlineLibrary } from '../types/libraries.js';
 
@@ -108,7 +107,7 @@ export class InlineCLI extends BaseCLI {
   protected async handleGenerateSourceCommand(
     initOptions: TranslateFlags
   ): Promise<void> {
-    const settings = await generateSettings(initOptions);
+    const settings = await generateSettings(initOptions, undefined, { requireConfig: true });
 
     const updates = await aggregateInlineTranslations(
       initOptions,
@@ -169,8 +168,7 @@ export class InlineCLI extends BaseCLI {
     initOptions: Options,
     files?: string[]
   ): Promise<void> {
-    validateConfigExists();
-    const settings = await generateSettings(initOptions);
+    const settings = await generateSettings(initOptions, undefined, { requireConfig: true });
 
     // First run the base class's handleTranslate method
     const options = { ...initOptions, ...settings };

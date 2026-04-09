@@ -49,11 +49,14 @@ export const DEFAULT_PYTHON_SRC_EXCLUDES = [
  * Generates settings from any
  * @param flags - The CLI flags to generate settings from
  * @param cwd - The current working directory
+ * @param options - Additional options
+ * @param options.requireConfig - If true, exit with an error when no config file is found
  * @returns The generated settings
  */
 export async function generateSettings(
   flags: Record<string, any>,
-  cwd: string = process.cwd()
+  cwd: string = process.cwd(),
+  options?: { requireConfig?: boolean }
 ): Promise<Settings> {
   // Load config file
   let gtConfig: Record<string, any> = {};
@@ -69,6 +72,11 @@ export async function generateSettings(
       gtConfig = config.config;
       flags.config = config.path;
     } else {
+      if (options?.requireConfig) {
+        logErrorAndExit(
+          'No gt.config.json file found. Run `gtx init` to create one, or use --config to specify a path.'
+        );
+      }
       gtConfig = {};
     }
   }
