@@ -177,6 +177,26 @@ describe('Autoderive JSX: <T> implicitly acts as <Derive>', () => {
     expect(sources).toContainEqual(['Hello ', 'girl']);
   });
 
+  it('should resolve a ternary variable nested inside child elements', () => {
+    const source = `
+      import { T } from "gt-next";
+
+      export default function Page() {
+        const label = condition ? "boy" : "girl";
+        return <T>Hello <b>{label}</b></T>;
+      }
+    `;
+
+    const { updates, errors } = parseAutoderive(source);
+
+    expect(errors).toHaveLength(0);
+    expect(updates).toHaveLength(2);
+
+    const sources = updates.map((u) => u.source);
+    expect(sources).toContainEqual(['Hello ', { t: 'b', i: 1, c: 'boy' }]);
+    expect(sources).toContainEqual(['Hello ', { t: 'b', i: 1, c: 'girl' }]);
+  });
+
   it('should leave static content unaffected by autoderive', () => {
     const source = `
       import { T } from "gt-next";

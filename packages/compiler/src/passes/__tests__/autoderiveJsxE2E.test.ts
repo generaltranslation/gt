@@ -132,6 +132,26 @@ describe('Autoderive JSX E2E — <T> with dynamic content', () => {
     expect(result.errors).toHaveLength(0);
     expect(result.code).not.toBeNull();
     expect(result.hasCollectionContent).toBe(true);
+    // Hash must be empty string — dynamic content cannot be statically hashed
+    expect(result.manifest).toHaveProperty('');
+  });
+
+  it('dynamic content nested in child element — no errors with autoderive', () => {
+    // SOURCE: <T>Hello <b>{name}</b></T>
+    // COMPILED JSX: jsx(T, { children: jsxs("b", { children: ["Hello ", name] }) })
+    // The bare identifier `name` is nested inside a <b> element.
+    // With autoderive, it should still be allowed — not just direct children of <T>.
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsx(T, { children: jsxs("b", { children: ["Hello ", name] }) });
+    `;
+    const result = fullPipelineAutoderive(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.code).not.toBeNull();
+    expect(result.hasCollectionContent).toBe(true);
+    // Hash must be empty string — nested dynamic content also skips hashing
+    expect(result.manifest).toHaveProperty('');
   });
 
   it('static content in <T> — normal behavior with autoderive', () => {
@@ -146,6 +166,10 @@ describe('Autoderive JSX E2E — <T> with dynamic content', () => {
     const result = fullPipelineAutoderive(code);
     expect(result.errors).toHaveLength(0);
     expect(result.hasCollectionContent).toBe(true);
+    // Hash must be non-empty — static content hashes normally even with autoderive
+    const hashes = Object.keys(result.manifest);
+    expect(hashes.length).toBeGreaterThan(0);
+    expect(hashes.every((h) => h.length > 0)).toBe(true);
   });
 
   it('dynamic content WITHOUT autoderive — errors (control)', () => {
