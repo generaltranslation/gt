@@ -18,6 +18,8 @@ import {
   warnRecursiveFunctionCallSync,
   warnDataAttrOnBranch,
   warnNestedInternalTComponent,
+  warnDeriveNonConstVariableSync,
+  warnDeriveDestructuringSync,
 } from '../../../../console/index.js';
 import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
@@ -51,7 +53,7 @@ import path from 'node:path';
 import { extractSourceCode } from '../extractSourceCode.js';
 import { SURROUNDING_LINE_COUNT } from '../../../../utils/constants.js';
 import { handleDerivation } from '../stringParsing/derivation/handleDerivation.js';
-import { nodeToStrings } from '../parseString.js';
+import { parseStringExpression, nodeToStrings } from '../parseString.js';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -1451,6 +1453,89 @@ function processDeriveExpression({
       ),
     };
     return result;
+  } else if (t.isIdentifier(expressionNodePath.node)) {
+    // Resolve variable declarations: const label = cond ? "boy" : "girl"
+    const name = expressionNodePath.node.name;
+    const binding = scopeNode.scope.getBinding(name);
+
+    if (
+      binding &&
+      binding.path.isVariableDeclarator() &&
+      binding.path.node.init
+    ) {
+      // Reject destructuring patterns
+      if (
+        t.isObjectPattern(binding.path.node.id) ||
+        t.isArrayPattern(binding.path.node.id)
+      ) {
+        output.errors.push(
+          warnDeriveDestructuringSync(
+            config.file,
+            name,
+            `${expressionNodePath.node.loc?.start?.line}:${expressionNodePath.node.loc?.start?.column}`
+          )
+        );
+        return null;
+      }
+
+      // Enforce const-only
+      const declaration = binding.path.parentPath;
+      if (
+        declaration?.isVariableDeclaration() &&
+        declaration.node.kind !== 'const'
+      ) {
+        output.warnings.add(
+          warnDeriveNonConstVariableSync(
+            config.file,
+            name,
+            declaration.node.kind,
+            `${expressionNodePath.node.loc?.start?.line}:${expressionNodePath.node.loc?.start?.column}`
+          )
+        );
+        return null;
+      }
+
+      // Resolve via parseStringExpression (handles all derivable expression types)
+      const errorsBefore = output.errors.length;
+      const stringNode = parseStringExpression(
+        binding.path.node.init,
+        binding.path,
+        config.file,
+        config.parsingOptions,
+        output.warnings,
+        output.errors
+      );
+      if (stringNode) {
+        const strings = nodeToStrings(stringNode);
+        if (strings.length === 0) {
+          return null;
+        }
+        if (strings.length === 1) {
+          return strings[0];
+        }
+        return {
+          nodeType: 'multiplication' as const,
+          branches: strings.map((s) => s),
+        };
+      }
+      // parseStringExpression returned null — if it already pushed errors,
+      // avoid double-reporting by skipping the buildJSXTree fallthrough.
+      if (output.errors.length > errorsBefore) {
+        return null;
+      }
+    }
+
+    // Not resolvable — fall through to existing buildJSXTree behavior
+    return buildJSXTree({
+      node: expressionNodePath.node,
+      helperPath: expressionNodePath,
+      scopeNode,
+      insideT: true,
+      inDerive: true,
+      config,
+      state,
+      output,
+    });
   } else {
     return buildJSXTree({
       node: expressionNodePath.node,
