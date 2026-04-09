@@ -1,13 +1,11 @@
 import { ESLintUtils, TSESTree } from '@typescript-eslint/utils';
-import type {
-  RuleFixer,
-  RuleContext,
-} from '@typescript-eslint/utils/ts-eslint';
+import type { RuleFixer } from '@typescript-eslint/utils/ts-eslint';
 import {
   ALLOWED_BRANCH_ATTRIBUTE_JSX_EXPRESSIONS,
   ALLOWED_JSX_EXPRESSIONS,
   GT_LIBRARIES,
   RULE_URL,
+  VAR_COMPONENT_NAME,
 } from '../../utils/constants.js';
 import {
   isBranchComponent,
@@ -18,21 +16,6 @@ import {
 } from '../../utils/isGTFunction.js';
 import { isContentBranch } from '../../utils/branching-utils.js';
 import { ScopeStack } from './ScopeStack.js';
-
-/**
- * Creates a fixer that wraps a JSX expression container in a <Var> component
- */
-function createVarWrapperFix(
-  context: RuleContext<any, any>,
-  fixer: RuleFixer,
-  node: TSESTree.JSXExpressionContainer
-) {
-  // Get the source code of the expression container
-  const sourceCode = context.sourceCode.getText(node);
-  // Wrap in <Var> component
-  const fixedCode = `<Var>${sourceCode}</Var>`;
-  return fixer.replaceText(node, fixedCode);
-}
 
 /**
  * Static JSX applies to children of the <T> component
@@ -73,6 +56,62 @@ export const staticJsx = createRule({
   create(context, [options]) {
     const { libs = GT_LIBRARIES } = options;
 
+    /**
+     * Creates a fixer that wraps a JSX expression container in a <Var> component
+     * and adds the Var import to the existing GT import declaration if needed.
+     */
+    function createVarWrapperFix(
+      fixer: RuleFixer,
+      node: TSESTree.JSXExpressionContainer
+    ) {
+      const fixes: ReturnType<RuleFixer['replaceText']>[] = [];
+
+      // Find all GT import declarations
+      const gtImportDecls = context.sourceCode.ast.body.filter(
+        (stmt): stmt is TSESTree.ImportDeclaration =>
+          stmt.type === TSESTree.AST_NODE_TYPES.ImportDeclaration &&
+          libs.includes(stmt.source.value as string)
+      );
+
+      // Check across all GT imports if Var is already imported
+      let tagName = VAR_COMPONENT_NAME;
+      let varSpecifier: TSESTree.ImportSpecifier | undefined;
+      for (const decl of gtImportDecls) {
+        varSpecifier = decl.specifiers.find(
+          (spec): spec is TSESTree.ImportSpecifier =>
+            spec.type === TSESTree.AST_NODE_TYPES.ImportSpecifier &&
+            spec.imported.type === TSESTree.AST_NODE_TYPES.Identifier &&
+            spec.imported.name === VAR_COMPONENT_NAME
+        );
+        if (varSpecifier) break;
+      }
+
+      if (varSpecifier) {
+        // Var is already imported — use its local name (handles aliases)
+        tagName = varSpecifier.local.name;
+      } else if (gtImportDecls.length > 0) {
+        // Var is not imported — add it to the first GT import
+        const targetDecl = gtImportDecls[0];
+        const namedSpecifiers = targetDecl.specifiers.filter(
+          (s): s is TSESTree.ImportSpecifier =>
+            s.type === TSESTree.AST_NODE_TYPES.ImportSpecifier
+        );
+        if (namedSpecifiers.length > 0) {
+          const lastSpecifier = namedSpecifiers[namedSpecifiers.length - 1];
+          fixes.push(
+            fixer.insertTextAfter(lastSpecifier, `, ${VAR_COMPONENT_NAME}`)
+          );
+        }
+      }
+
+      // Wrap the expression in <Var> (or its alias)
+      const sourceCode = context.sourceCode.getText(node);
+      const fixedCode = `<${tagName}>${sourceCode}</${tagName}>`;
+      fixes.push(fixer.replaceText(node, fixedCode));
+
+      return fixes;
+    }
+
     // Track the T component stack
     const scopeStack = new ScopeStack();
     return {
@@ -89,7 +128,7 @@ export const staticJsx = createRule({
               node,
               messageId: 'dynamicContent',
               fix(fixer) {
-                return createVarWrapperFix(context, fixer, node);
+                return createVarWrapperFix(fixer, node);
               },
             });
           }
@@ -106,7 +145,7 @@ export const staticJsx = createRule({
               node,
               messageId: 'dynamicContent',
               fix(fixer) {
-                return createVarWrapperFix(context, fixer, node);
+                return createVarWrapperFix(fixer, node);
               },
             });
           }
