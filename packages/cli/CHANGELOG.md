@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.10
+
+### Patch Changes
+
+- [#1195](https://github.com/generaltranslation/gt/pull/1195) [`2090de3`](https://github.com/generaltranslation/gt/commit/2090de3613b9684fd43adc3b83f677bc33c1d9a6) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: standardize naming convention for "autoderive"
+
 ## 2.14.9
 
 ### Patch Changes
