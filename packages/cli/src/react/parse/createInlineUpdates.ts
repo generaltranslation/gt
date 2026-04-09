@@ -86,7 +86,7 @@ export async function createInlineUpdates(
           ignoreTaggedTemplates: false,
           ignoreGlobalTaggedTemplates: false,
           // User configurable, otherwise default to AUTO
-          autoDeriveMethod: parsingFlags.autoDerive ? 'AUTO' : 'DISABLED',
+          autoderiveMethod: parsingFlags.autoderive ? 'AUTO' : 'DISABLED',
         },
         { updates, errors, warnings }
       );

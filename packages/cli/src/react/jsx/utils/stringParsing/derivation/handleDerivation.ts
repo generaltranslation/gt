@@ -11,7 +11,7 @@ import {
   warnFunctionNotFoundSync,
   warnDeriveFunctionNoResultsSync,
   warnDeriveFunctionNotWrappedSync,
-  warnAutoDeriveNoResultsSync,
+  warnAutoderiveNoResultsSync,
 } from '../../../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
@@ -281,10 +281,10 @@ export function handleDerivation({
         nodes: variants.map((v) => ({ type: 'text', text: v })),
       };
     }
-    // Auto-derive had no resolvable results
+    // Autoderive had no resolvable results
     const code = generate(expr).code;
     errors.push(
-      warnAutoDeriveNoResultsSync(
+      warnAutoderiveNoResultsSync(
         file,
         code,
         `${expr.loc?.start?.line}:${expr.loc?.start?.column}`

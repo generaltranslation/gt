@@ -35,12 +35,12 @@ export type BaseParsingFlags = Record<string, unknown>;
  * parsing features depending on the function being parsed. Parsing flags is for users to override
  * some of these defaults or enable/disable other features.
  *
- * @property {boolean} autoDerive - Whether to enable auto-derive for the t() function. (true -> 'AUTO', false -> 'DISABLED' {@link ParsingConfig['autoDeriveMethod']})
+ * @property {boolean} autoderive - Whether to enable autoderive for the t() function. (true -> 'AUTO', false -> 'DISABLED' {@link ParsingConfig['autoderiveMethod']})
  * @property {boolean} includeSourceCodeContext - Include surrounding source code lines as context for translations.
  * @property {boolean} enableAutoJsxInjection - Whether to enable auto-jsx injection for the internal <_T> and <_Var> components.
  */
 export type GTParsingFlags = BaseParsingFlags & {
-  autoDerive: boolean;
+  autoderive: boolean;
   includeSourceCodeContext: boolean;
   enableAutoJsxInjection: boolean;
 };

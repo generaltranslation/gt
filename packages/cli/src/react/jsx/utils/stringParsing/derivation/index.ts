@@ -57,7 +57,7 @@ export function deriveExpression({
     runtimeInterpolationState: enableRuntimeInterpolation
       ? { index: 0 }
       : undefined,
-    skipDeriveInvocation: config.autoDeriveMethod === 'ENABLED',
+    skipDeriveInvocation: config.autoderiveMethod === 'ENABLED',
   });
 
   // Nothing returned, push error
