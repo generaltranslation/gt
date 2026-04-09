@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.16.2
+
+### Patch Changes
+
+- [#1189](https://github.com/generaltranslation/gt/pull/1189) [`7efceb8`](https://github.com/generaltranslation/gt/commit/7efceb83796f975eed9354b1e706853dd4e06aef) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat(swc): support autoDerive flag in SWC plugin to allow bare variables and function calls in gt() template literals and concatenations
+
+- Updated dependencies [[`a76a386`](https://github.com/generaltranslation/gt/commit/a76a38624a2defbfd8d0540ccb74bb264079f61a)]:
+  - @generaltranslation/compiler@1.3.3
+
 ## 6.16.1
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.14.8
+
+### Patch Changes
+
+- [#1180](https://github.com/generaltranslation/gt/pull/1180) [`04c142e`](https://github.com/generaltranslation/gt/commit/04c142e0a45ba1a433c53bcb6dab08bb6e5658b1) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Changed default translation output directory for Vite projects from `./public/_gt` to `./src/_gt` in the setup wizard.
+
+- Updated dependencies [[`9281fe5`](https://github.com/generaltranslation/gt/commit/9281fe5d9c2f3e35b67ccedb9c444aebbb6a8bd1), [`121be24`](https://github.com/generaltranslation/gt/commit/121be24def7f9dc464b8589bf0be14d04ac3e6e1), [`7a3c7de`](https://github.com/generaltranslation/gt/commit/7a3c7de8e5d5103bd9fec893a677a13068f822e6)]:
+  - gt@2.14.8
+
 ## 2.14.7
 
 ### Patch Changes
