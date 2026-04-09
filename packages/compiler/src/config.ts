@@ -75,10 +75,10 @@ export interface PluginSettings {
  * - `{ jsx?: boolean; strings?: boolean }` enables selectively (missing keys default to false)
  */
 export function resolveAutoderive(
-  value: boolean | { jsx?: boolean; strings?: boolean }
+  value: boolean | { jsx?: boolean; strings?: boolean } | undefined
 ): { jsx: boolean; strings: boolean } {
-  if (typeof value === 'boolean') {
-    return { jsx: value, strings: value };
+  if (value === undefined || typeof value === 'boolean') {
+    return { jsx: !!value, strings: !!value };
   }
   return { jsx: value.jsx ?? false, strings: value.strings ?? false };
 }
