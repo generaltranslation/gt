@@ -11,7 +11,9 @@ _test_cli
 _testing
 dist/
 .turbo
-.claude/
+.claude/settings.local.json
+.claude/mcp.json
+CLAUDE.local.md
 tsconfig.tsbuildinfo
 target/
 .rollup.cache
