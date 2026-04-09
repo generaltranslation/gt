@@ -746,6 +746,7 @@ fn has_dynamic_content_recursive(children: &[JSXElementChild]) -> bool {
     JSXElementChild::JSXFragment(fragment) => {
       has_dynamic_content_recursive(&fragment.children)
     }
+    JSXElementChild::JSXSpreadChild(_) => true,
     _ => false,
   })
 }
@@ -1409,6 +1410,290 @@ mod tests {
       assert_eq!(branches.len(), 2);
       assert!(branches.contains_key("database"));
       assert!(branches.contains_key("dataSource"));
+    }
+  }
+
+  mod has_dynamic_content_recursive_tests {
+    use super::*;
+
+    fn create_jsx_expr_container(expr: JSXExpr) -> JSXElementChild {
+      JSXElementChild::JSXExprContainer(JSXExprContainer {
+        span: DUMMY_SP,
+        expr,
+      })
+    }
+
+    fn create_ident_expr(name: &str) -> JSXExpr {
+      JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+        span: DUMMY_SP,
+        sym: Atom::new(name),
+        optional: false,
+        ctxt: SyntaxContext::empty(),
+      })))
+    }
+
+    fn create_spread_child(name: &str) -> JSXElementChild {
+      JSXElementChild::JSXSpreadChild(JSXSpreadChild {
+        span: DUMMY_SP,
+        expr: Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: Atom::new(name),
+          optional: false,
+          ctxt: SyntaxContext::empty(),
+        })),
+      })
+    }
+
+    fn create_fragment_child(children: Vec<JSXElementChild>) -> JSXElementChild {
+      JSXElementChild::JSXFragment(JSXFragment {
+        span: DUMMY_SP,
+        opening: JSXOpeningFragment { span: DUMMY_SP },
+        closing: JSXClosingFragment { span: DUMMY_SP },
+        children,
+      })
+    }
+
+    fn create_element_child(tag: &str, children: Vec<JSXElementChild>) -> JSXElementChild {
+      JSXElementChild::JSXElement(Box::new(JSXElement {
+        span: DUMMY_SP,
+        opening: JSXOpeningElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new(tag),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }),
+          attrs: vec![],
+          self_closing: false,
+          type_args: None,
+        },
+        children,
+        closing: Some(JSXClosingElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new(tag),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }),
+        }),
+      }))
+    }
+
+    #[test]
+    fn empty_children_not_dynamic() {
+      assert!(!has_dynamic_content_recursive(&[]));
+    }
+
+    #[test]
+    fn text_only_not_dynamic() {
+      let children = vec![create_jsx_text_child("Hello world")];
+      assert!(!has_dynamic_content_recursive(&children));
+    }
+
+    #[test]
+    fn allowed_expr_not_dynamic() {
+      // String literal in expression container is allowed (not dynamic)
+      let expr = JSXExpr::Expr(Box::new(Expr::Lit(Lit::Str(Str {
+        span: DUMMY_SP,
+        value: Atom::new("static").into(),
+        raw: None,
+      }))));
+      let children = vec![create_jsx_expr_container(expr)];
+      assert!(!has_dynamic_content_recursive(&children));
+    }
+
+    #[test]
+    fn identifier_expr_is_dynamic() {
+      // A bare identifier like {someVar} is dynamic
+      let children = vec![create_jsx_expr_container(create_ident_expr("someVar"))];
+      assert!(has_dynamic_content_recursive(&children));
+    }
+
+    #[test]
+    fn spread_child_is_dynamic() {
+      // {...items} should be treated as dynamic
+      let children = vec![create_spread_child("items")];
+      assert!(has_dynamic_content_recursive(&children));
+    }
+
+    #[test]
+    fn spread_child_among_text_is_dynamic() {
+      let children = vec![
+        create_jsx_text_child("Hello "),
+        create_spread_child("items"),
+        create_jsx_text_child(" world"),
+      ];
+      assert!(has_dynamic_content_recursive(&children));
+    }
+
+    #[test]
+    fn spread_child_nested_in_element_is_dynamic() {
+      // <div>{...items}</div> nested inside parent
+      let children = vec![
+        create_element_child("div", vec![create_spread_child("items")]),
+      ];
+      assert!(has_dynamic_content_recursive(&children));
+    }
+
+    #[test]
+    fn spread_child_nested_in_fragment_is_dynamic() {
+      // <>{...items}</> nested inside parent
+      let children = vec![
+        create_fragment_child(vec![create_spread_child("items")]),
+      ];
+      assert!(has_dynamic_content_recursive(&children));
+    }
+
+    #[test]
+    fn nested_static_elements_not_dynamic() {
+      let children = vec![
+        create_element_child("div", vec![create_jsx_text_child("text")]),
+        create_fragment_child(vec![create_jsx_text_child("more text")]),
+      ];
+      assert!(!has_dynamic_content_recursive(&children));
+    }
+  }
+
+  mod autoderive_spread_child_hash_tests {
+    use super::*;
+
+    fn create_autoderive_visitor() -> TransformVisitor {
+      TransformVisitor {
+        statistics: Statistics::default(),
+        traversal_state: TraversalState::default(),
+        import_tracker: ImportTracker::default(),
+        settings: PluginSettings::new(LogLevel::Silent, false, None, false, true),
+        logger: Logger::new(LogLevel::Silent),
+        string_collector: crate::ast::StringCollector::new(),
+      }
+    }
+
+    fn create_jsx_element_with_children(tag_name: &str, children: Vec<JSXElementChild>) -> JSXElement {
+      JSXElement {
+        span: DUMMY_SP,
+        opening: JSXOpeningElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new(tag_name),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }),
+          attrs: vec![],
+          self_closing: false,
+          type_args: None,
+        },
+        children,
+        closing: Some(JSXClosingElement {
+          span: DUMMY_SP,
+          name: JSXElementName::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new(tag_name),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }),
+        }),
+      }
+    }
+
+    #[test]
+    fn autoderive_spread_child_produces_empty_hash() {
+      let visitor = create_autoderive_visitor();
+      let mut traversal = JsxTraversal::new(&visitor);
+
+      let element = create_jsx_element_with_children("T", vec![
+        create_jsx_text_child("Hello "),
+        JSXElementChild::JSXSpreadChild(JSXSpreadChild {
+          span: DUMMY_SP,
+          expr: Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("items"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          })),
+        }),
+      ]);
+
+      let (hash, json_string) = traversal.calculate_element_hash(&element);
+      assert!(hash.is_empty(), "Spread child with autoderive should produce empty hash");
+      assert!(json_string.is_empty(), "Spread child with autoderive should produce empty json");
+    }
+
+    #[test]
+    fn autoderive_text_only_produces_nonempty_hash() {
+      let visitor = create_autoderive_visitor();
+      let mut traversal = JsxTraversal::new(&visitor);
+
+      let element = create_jsx_element_with_children("T", vec![
+        create_jsx_text_child("Hello world"),
+      ]);
+
+      let (hash, _) = traversal.calculate_element_hash(&element);
+      assert!(!hash.is_empty(), "Text-only content with autoderive should still produce a hash");
+    }
+
+    #[test]
+    fn no_autoderive_spread_child_produces_nonempty_hash() {
+      // Without autoderive, spread children don't trigger the empty-hash path
+      let visitor = create_test_visitor(); // autoderive=false
+      let mut traversal = JsxTraversal::new(&visitor);
+
+      let element = create_jsx_element_with_children("T", vec![
+        create_jsx_text_child("Hello "),
+        JSXElementChild::JSXSpreadChild(JSXSpreadChild {
+          span: DUMMY_SP,
+          expr: Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("items"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          })),
+        }),
+      ]);
+
+      let (hash, _) = traversal.calculate_element_hash(&element);
+      assert!(!hash.is_empty(), "Without autoderive, spread child should not trigger empty hash");
+    }
+
+    #[test]
+    fn autoderive_expr_container_and_spread_child_both_produce_empty_hash() {
+      let visitor = create_autoderive_visitor();
+
+      // Expression container with dynamic ident
+      let mut traversal1 = JsxTraversal::new(&visitor);
+      let expr_element = create_jsx_element_with_children("T", vec![
+        JSXElementChild::JSXExprContainer(JSXExprContainer {
+          span: DUMMY_SP,
+          expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("count"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }))),
+        }),
+      ]);
+
+      // Spread child
+      let mut traversal2 = JsxTraversal::new(&visitor);
+      let spread_element = create_jsx_element_with_children("T", vec![
+        JSXElementChild::JSXSpreadChild(JSXSpreadChild {
+          span: DUMMY_SP,
+          expr: Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("items"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          })),
+        }),
+      ]);
+
+      let (expr_hash, _) = traversal1.calculate_element_hash(&expr_element);
+      let (spread_hash, _) = traversal2.calculate_element_hash(&spread_element);
+
+      assert!(expr_hash.is_empty(), "Dynamic expr container should produce empty hash");
+      assert!(spread_hash.is_empty(), "Spread child should produce empty hash");
     }
   }
 }
