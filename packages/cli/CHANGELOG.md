@@ -1,5 +1,15 @@
 # gtx-cli
 
+## 2.14.11
+
+### Patch Changes
+
+- [#1196](https://github.com/generaltranslation/gt/pull/1196) [`cf8bee6`](https://github.com/generaltranslation/gt/commit/cf8bee67159eeafccf22ac06861905b0a672f64a) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix CLI silently creating `gt.config.json` when running commands like `gt stage` in directories without a config file. Commands that require a config now exit with a clear error message pointing users to `gt init`. Config creation is only handled by the init/setup wizard.
+
+- [#1199](https://github.com/generaltranslation/gt/pull/1199) [`1828cd4`](https://github.com/generaltranslation/gt/commit/1828cd4eafb1f3ea868b437b914c844670d2c50f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: enable autoderive for jsx
+
+- [#1201](https://github.com/generaltranslation/gt/pull/1201) [`fbb9d26`](https://github.com/generaltranslation/gt/commit/fbb9d268dbee58142e305b9076e44000205d5437) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: customize autoderive
+
 ## 2.14.10
 
 ### Patch Changes
