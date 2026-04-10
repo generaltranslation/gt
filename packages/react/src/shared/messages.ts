@@ -5,6 +5,8 @@ export const PACKAGE_NAME = 'gt-react';
 export const BROWSER_ENVIRONMENT_ERROR = `${PACKAGE_NAME}/browser Error: The ${PACKAGE_NAME}/browser module requires a browser environment`;
 export const GENERIC_BROWSER_ENVIRONMENT_ERROR = `${PACKAGE_NAME} Error: You are trying to import a browser-only module into a non-browser environment.`;
 export const BROWSER_I18N_MANAGER_NOT_INITIALIZED_ERROR = `${PACKAGE_NAME} Error: BrowserI18nManager not initialized. Invoke initializeGT() to initialize.`;
+export const createInvalidLocaleError = (locale: string) =>
+  `${PACKAGE_NAME} Error: "${locale}" is not a valid locale.`;
 
 // ---- Warnings ---- //
 

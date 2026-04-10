@@ -24,5 +24,10 @@ import { InitializeGTParams } from './types';
 export async function bootstrap(params: InitializeGTParams): Promise<void> {
   initializeGT(params);
   const i18nManager = getBrowserI18nManager();
+
+  // Update the html tag
+  i18nManager.updateHtmlTag();
+
+  // Load translations
   await i18nManager.loadTranslations();
 }
