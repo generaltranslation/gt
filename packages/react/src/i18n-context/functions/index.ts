@@ -4,3 +4,4 @@ export * from './translation';
 export * from './variables';
 export * from './locale-operations';
 export * from './versionId';
+export * from './html-tag-operations';

@@ -98,6 +98,10 @@ export type CustomLoader = (locale: string) => Promise<any>;
 
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 
+export type RelativeTimeFormatOptions = Intl.RelativeTimeFormatOptions & {
+  unit?: Intl.RelativeTimeFormatUnit;
+  baseDate?: Date;
+};
 export type VariableProps = {
   /** Whether the variable was automatically injected by the compiler */
   variableType: VariableType;
@@ -105,10 +109,7 @@ export type VariableProps = {
   variableOptions:
     | Intl.NumberFormatOptions
     | Intl.DateTimeFormatOptions
-    | (Intl.RelativeTimeFormatOptions & {
-        unit?: Intl.RelativeTimeFormatUnit;
-        baseDate?: Date;
-      });
+    | RelativeTimeFormatOptions;
   variableName: string;
   injectionType: InjectionType;
 };
