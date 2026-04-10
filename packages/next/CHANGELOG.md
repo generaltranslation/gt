@@ -1,5 +1,19 @@
 # gt-next
 
+## 6.16.4
+
+### Patch Changes
+
+- [#1199](https://github.com/generaltranslation/gt/pull/1199) [`1828cd4`](https://github.com/generaltranslation/gt/commit/1828cd4eafb1f3ea868b437b914c844670d2c50f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: enable autoderive for jsx
+
+- [#1200](https://github.com/generaltranslation/gt/pull/1200) [`223fc66`](https://github.com/generaltranslation/gt/commit/223fc66506e7ec1dc4d6261d9003e6c377d4f5e5) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: spread derivation
+
+- [#1201](https://github.com/generaltranslation/gt/pull/1201) [`fbb9d26`](https://github.com/generaltranslation/gt/commit/fbb9d268dbee58142e305b9076e44000205d5437) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: customize autoderive
+
+- Updated dependencies [[`1828cd4`](https://github.com/generaltranslation/gt/commit/1828cd4eafb1f3ea868b437b914c844670d2c50f), [`0a1aef8`](https://github.com/generaltranslation/gt/commit/0a1aef8da966c4c02557dc834f1bc7c6822e55be), [`fbb9d26`](https://github.com/generaltranslation/gt/commit/fbb9d268dbee58142e305b9076e44000205d5437)]:
+  - @generaltranslation/compiler@1.3.5
+  - gt-react@10.18.1
+
 ## 6.16.3
 
 ### Patch Changes

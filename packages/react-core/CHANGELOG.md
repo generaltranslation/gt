@@ -1,5 +1,11 @@
 # @generaltranslation/react-core
 
+## 1.8.1
+
+### Patch Changes
+
+- [#1202](https://github.com/generaltranslation/gt/pull/1202) [`0a1aef8`](https://github.com/generaltranslation/gt/commit/0a1aef8da966c4c02557dc834f1bc7c6822e55be) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: update html langtag for i18n-context
+
 ## 1.8.0
 
 ### Minor Changes
