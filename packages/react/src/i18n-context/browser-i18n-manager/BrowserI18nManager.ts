@@ -95,7 +95,6 @@ export class BrowserI18nManager extends I18nManager<
 
     // Merge options
     const mergedHtmlTagOptions = {
-      ...DEFAULT_HTML_TAG_OPTIONS,
       ...this.htmlTagOptions,
       ...htmlTagOptions,
     };
