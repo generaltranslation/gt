@@ -10,7 +10,11 @@ import { getBrowserI18nManager } from '../browser-i18n-manager/singleton-operati
  */
 export function updateHtmlTagLang(locale: string): void {
   const i18nManager = getBrowserI18nManager();
-  i18nManager.updateHtmlTag({ lang: locale });
+  i18nManager.updateHtmlTag({
+    lang: locale,
+    updateHtmlLangTag: true,
+    updateHtmlDirTag: false,
+  });
 }
 
 /**
@@ -23,5 +27,9 @@ export function updateHtmlTagLang(locale: string): void {
  */
 export function updateHtmlTagDir(dir: 'ltr' | 'rtl'): void {
   const i18nManager = getBrowserI18nManager();
-  i18nManager.updateHtmlTag({ dir });
+  i18nManager.updateHtmlTag({
+    dir,
+    updateHtmlLangTag: false,
+    updateHtmlDirTag: true,
+  });
 }

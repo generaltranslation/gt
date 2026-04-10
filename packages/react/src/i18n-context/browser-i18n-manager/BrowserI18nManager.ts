@@ -3,10 +3,7 @@ import type { I18nManagerConstructorParams } from 'gt-i18n/internal/types';
 import type { BrowserStorageAdapter } from './BrowserStorageAdapter';
 import type { HtmlTagOptions } from './utils/types';
 import { determineLocale as gtDetermineLocale } from 'generaltranslation';
-import {
-  createInvalidLocaleError,
-  createInvalidLocaleWarning,
-} from '../../shared/messages';
+import { createInvalidLocaleWarning } from '../../shared/messages';
 import { Translation } from 'gt-i18n/types';
 import { DEFAULT_HTML_TAG_OPTIONS } from './utils/constants';
 
@@ -90,7 +87,8 @@ export class BrowserI18nManager extends I18nManager<
 
     // Validate parameters
     if (!gtInstance.isValidLocale(canonicalLocale)) {
-      throw new Error(createInvalidLocaleError(locale));
+      console.warn(createInvalidLocaleWarning(locale));
+      return;
     }
 
     // Merge options
