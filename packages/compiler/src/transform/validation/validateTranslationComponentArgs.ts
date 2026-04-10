@@ -134,7 +134,7 @@ export function validateChildrenProperty(
   // Autoderive: filter out dynamic-content errors
   let hasAutoderive = false;
   let filteredErrors: JsxValidationError[] = validation.errors;
-  if (state.settings.autoderive) {
+  if (state.settings.autoderive.jsx) {
     filteredErrors = validation.errors.filter(
       (e) => e.type !== 'dynamic-content'
     );

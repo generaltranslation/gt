@@ -50,7 +50,7 @@ export function validateUseGTCallback(
   );
   const content = validatedContent.value;
 
-  if (content === undefined && !state.settings.autoderive) {
+  if (content === undefined && !state.settings.autoderive.strings) {
     // Check if it contains a derive() function invocation (no requirement for derive() invoc with autoderive)
     validateDerive(callExpr.arguments[0], state, errors);
     if (errors.length > 0) {
@@ -67,7 +67,7 @@ export function validateUseGTCallback(
   // We skip hash gen with autoderive, derive in content, and derive in $context. This flag is being
   // reused for all 3 cases.
   const contentHasAutoderive =
-    state.settings.autoderive && content === undefined;
+    state.settings.autoderive.strings && content === undefined;
 
   // Validate second argument
   let context: string | undefined;

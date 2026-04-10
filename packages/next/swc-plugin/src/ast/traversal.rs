@@ -41,7 +41,7 @@ impl<'a> JsxTraversal<'a> {
     use crate::hash::JsxHasher;
 
     // Autoderive: if element or any descendant has dynamic expressions, produce empty hash
-    if self.visitor.settings.autoderive && has_dynamic_content_recursive(&element.children) {
+    if self.visitor.settings.autoderive_jsx && has_dynamic_content_recursive(&element.children) {
       return (String::new(), String::new());
     }
 
@@ -779,7 +779,7 @@ mod tests {
       statistics: Statistics::default(),
       traversal_state: TraversalState::default(),
       import_tracker: ImportTracker::default(),
-      settings: PluginSettings::new(LogLevel::Silent, false, None, false, false),
+      settings: PluginSettings::new(LogLevel::Silent, false, None, false, false, false),
       logger: Logger::new(LogLevel::Silent),
       string_collector: crate::ast::StringCollector::new(),
     }
@@ -1564,7 +1564,7 @@ mod tests {
         statistics: Statistics::default(),
         traversal_state: TraversalState::default(),
         import_tracker: ImportTracker::default(),
-        settings: PluginSettings::new(LogLevel::Silent, false, None, false, true),
+        settings: PluginSettings::new(LogLevel::Silent, false, None, false, true, false),
         logger: Logger::new(LogLevel::Silent),
         string_collector: crate::ast::StringCollector::new(),
       }

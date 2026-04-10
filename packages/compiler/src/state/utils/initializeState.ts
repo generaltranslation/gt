@@ -1,6 +1,6 @@
 import { GTUnpluginOptions } from '../..';
 import { TransformState } from '../types';
-import { PluginSettings } from '../../config';
+import { PluginSettings, resolveAutoderive } from '../../config';
 import { StringCollector } from '../StringCollector';
 import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   enableConcatenationArg: true,
   enableMacroImportInjection: true,
   enableAutoJsxInjection: false,
-  autoderive: false,
+  autoderive: { jsx: false, strings: false },
   _debugHashManifest: false,
 };
 
@@ -33,23 +33,28 @@ export function initializeState(
   const gtConfig = options.gtConfig;
   const enableAutoJsxInjection =
     gtConfig?.files?.gt?.parsingFlags?.enableAutoJsxInjection ?? false;
-  const autoderive =
+  const rawAutoderive =
     gtConfig?.files?.gt?.parsingFlags?.autoderive ??
     gtConfig?.files?.gt?.parsingFlags?.autoDerive ??
     false;
+
+  // Backwards compat: normalize deprecated autoDerive → autoderive from options
+  const rawOptionsAutoderive =
+    options.autoderive ?? options.autoDerive ?? undefined;
+
+  const autoderive = resolveAutoderive(rawOptionsAutoderive ?? rawAutoderive);
+
+  // Spread options but exclude autoderive/autoDerive (already resolved above)
+  // eslint-disable-next-line no-unused-vars
+  const { autoderive: _a, autoDerive: _b, ...restOptions } = options;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
     enableAutoJsxInjection, // can be overridden by options.enableAutoJsxInjection
     autoderive,
-    ...options,
+    ...restOptions,
     filename,
   };
-
-  // Backwards compat: normalize deprecated autoDerive → autoderive
-  if (options.autoDerive !== undefined && options.autoderive === undefined) {
-    settings.autoderive = options.autoDerive;
-  }
 
   return {
     settings,

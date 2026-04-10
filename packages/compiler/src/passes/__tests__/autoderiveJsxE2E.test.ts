@@ -321,3 +321,156 @@ describe('Autoderive JSX E2E — edge cases', () => {
     expect(result.errors.length).toBeGreaterThan(0);
   });
 });
+
+// --- Selective autoderive tests ---
+
+/**
+ * Runs the pipeline with autoderive: { jsx: true, strings: false }.
+ * JSX dynamic content should be allowed, but string function violations
+ * are not tested here (no string functions in this E2E file).
+ */
+function fullPipelineAutoderiveJsxOnly(code: string): {
+  code: string | null;
+  errors: string[];
+  hasCollectionContent: boolean;
+  manifest: Record<string, unknown>;
+} {
+  const state = initializeState(
+    { autoderive: { jsx: true, strings: false } },
+    'test.tsx'
+  );
+  state.debugManifest = new Map<string, unknown>();
+
+  const ast = parser.parse(code, {
+    sourceType: 'module',
+    plugins: ['typescript'],
+  });
+
+  traverse(ast, jsxInsertionPass(state));
+  traverse(ast, collectionPass(state));
+
+  const errors = state.errorTracker.getErrors();
+  const hasCollectionContent = state.stringCollector.hasContent();
+  const manifest = Object.fromEntries(state.debugManifest!);
+
+  if (errors.length > 0) {
+    return { code: null, errors, hasCollectionContent, manifest };
+  }
+
+  if (hasCollectionContent) {
+    traverse(ast, injectionPass(state));
+  }
+
+  if (!hasCollectionContent && state.statistics.jsxInsertionsCount === 0) {
+    return { code: null, errors, hasCollectionContent, manifest };
+  }
+
+  const output = generate(ast, { retainLines: true, compact: false });
+  return { code: output.code, errors, hasCollectionContent, manifest };
+}
+
+/**
+ * Runs the pipeline with autoderive: { jsx: false, strings: true }.
+ * JSX dynamic content should still error.
+ */
+function fullPipelineAutoderiveStringsOnly(code: string): {
+  code: string | null;
+  errors: string[];
+  hasCollectionContent: boolean;
+  manifest: Record<string, unknown>;
+} {
+  const state = initializeState(
+    { autoderive: { jsx: false, strings: true } },
+    'test.tsx'
+  );
+  state.debugManifest = new Map<string, unknown>();
+
+  const ast = parser.parse(code, {
+    sourceType: 'module',
+    plugins: ['typescript'],
+  });
+
+  traverse(ast, jsxInsertionPass(state));
+  traverse(ast, collectionPass(state));
+
+  const errors = state.errorTracker.getErrors();
+  const hasCollectionContent = state.stringCollector.hasContent();
+  const manifest = Object.fromEntries(state.debugManifest!);
+
+  if (errors.length > 0) {
+    return { code: null, errors, hasCollectionContent, manifest };
+  }
+
+  if (hasCollectionContent) {
+    traverse(ast, injectionPass(state));
+  }
+
+  if (!hasCollectionContent && state.statistics.jsxInsertionsCount === 0) {
+    return { code: null, errors, hasCollectionContent, manifest };
+  }
+
+  const output = generate(ast, { retainLines: true, compact: false });
+  return { code: output.code, errors, hasCollectionContent, manifest };
+}
+
+describe('Selective autoderive — { jsx: true, strings: false }', () => {
+  it('dynamic content in <T> — no errors (jsx enabled)', () => {
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsxs(T, { children: ["Hello ", name] });
+    `;
+    const result = fullPipelineAutoderiveJsxOnly(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+    expect(result.manifest).toHaveProperty('');
+  });
+
+  it('static content still hashes normally', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsx(T, { children: "Hello world" });
+    `;
+    const result = fullPipelineAutoderiveJsxOnly(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+    const hashes = Object.keys(result.manifest);
+    expect(hashes.every((h) => h.length > 0)).toBe(true);
+  });
+});
+
+describe('Selective autoderive — { jsx: false, strings: true }', () => {
+  it('dynamic content in <T> — errors (jsx disabled)', () => {
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsxs(T, { children: ["Hello ", name] });
+    `;
+    const result = fullPipelineAutoderiveStringsOnly(code);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+});
+
+describe('Selective autoderive — backward compatibility', () => {
+  it('autoderive: true still allows dynamic JSX content', () => {
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsxs(T, { children: ["Hello ", name] });
+    `;
+    const result = fullPipelineAutoderive(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.hasCollectionContent).toBe(true);
+  });
+
+  it('autoderive: false still rejects dynamic JSX content', () => {
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsxs(T, { children: ["Hello ", name] });
+    `;
+    const result = fullPipelineDefault(code);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+});
