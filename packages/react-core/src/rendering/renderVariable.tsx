@@ -3,7 +3,7 @@ import Var from '../variables/Var';
 import Currency from '../variables/Currency';
 import DateTime from '../variables/DateTime';
 import RelativeTime from '../variables/RelativeTime';
-import { RenderVariable } from '../types-dir/types';
+import { RelativeTimeFormatOptions, RenderVariable } from '../types-dir/types';
 
 const renderVariable: RenderVariable = ({
   variableType,
@@ -11,22 +11,32 @@ const renderVariable: RenderVariable = ({
   variableOptions,
 }) => {
   if (variableType === 'n') {
-    return <Num options={variableOptions}>{variableValue}</Num>;
+    const numOptions = variableOptions as Intl.NumberFormatOptions | undefined;
+    return <Num options={numOptions}>{variableValue}</Num>;
   } else if (variableType === 'd') {
-    return <DateTime options={variableOptions}>{variableValue}</DateTime>;
+    const dateTimeOptions = variableOptions as
+      | Intl.DateTimeFormatOptions
+      | undefined;
+    return <DateTime options={dateTimeOptions}>{variableValue}</DateTime>;
   } else if (variableType === 'c') {
-    return <Currency options={variableOptions}>{variableValue}</Currency>;
+    const currencyOptions = variableOptions as
+      | Intl.NumberFormatOptions
+      | undefined;
+    return <Currency options={currencyOptions}>{variableValue}</Currency>;
   } else if (variableType === 'rt') {
     // RelativeTime supports two modes:
     // 1. value + unit (e.g., value=-3, unit="hour") — explicit relative time
     // 2. date (Date object) — auto-select unit from date difference
-    if (typeof variableValue === 'number' && variableOptions?.unit) {
+    const relativeTimeOptions = variableOptions as
+      | RelativeTimeFormatOptions
+      | undefined;
+    if (typeof variableValue === 'number' && relativeTimeOptions?.unit) {
       return (
         <RelativeTime
           value={variableValue}
-          unit={variableOptions.unit}
-          baseDate={variableOptions?.baseDate}
-          options={variableOptions}
+          unit={relativeTimeOptions.unit}
+          baseDate={relativeTimeOptions?.baseDate}
+          options={relativeTimeOptions}
         />
       );
     }
@@ -39,8 +49,8 @@ const renderVariable: RenderVariable = ({
     return (
       <RelativeTime
         date={dateValue && !isNaN(dateValue.getTime()) ? dateValue : undefined}
-        baseDate={variableOptions?.baseDate}
-        options={variableOptions}
+        baseDate={relativeTimeOptions?.baseDate}
+        options={relativeTimeOptions}
       />
     );
   }
