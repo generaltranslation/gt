@@ -85,7 +85,8 @@ export class BrowserI18nManager extends I18nManager<
     const locale = htmlTagOptions?.lang || this.getLocale();
     const gtInstance = this.getGTClass();
     const canonicalLocale = gtInstance.resolveCanonicalLocale(locale);
-    const localeDirection = gtInstance.getLocaleDirection(locale);
+    const localeDirection =
+      htmlTagOptions?.dir || gtInstance.getLocaleDirection(locale);
 
     // Validate parameters
     if (!gtInstance.isValidLocale(canonicalLocale)) {
