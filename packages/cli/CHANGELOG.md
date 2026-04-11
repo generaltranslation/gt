@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.12
+
+### Patch Changes
+
+- [#1205](https://github.com/generaltranslation/gt/pull/1205) [`aea881c`](https://github.com/generaltranslation/gt/commit/aea881c7009eea528338872da9afe175484cec8d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Hash postprocessed source content
+
 ## 2.14.11
 
 ### Patch Changes
