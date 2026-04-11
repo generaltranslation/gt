@@ -11,13 +11,7 @@ import {
   TranslationsMap,
 } from './utils/types/translation-data';
 import { TranslationsManagerConfig } from './utils/types/translations-manager';
-import { createRemoteTranslationLoader } from './translations-loaders/createRemoteTranslationLoader';
-import { createFallbackTranslationLoader } from './translations-loaders/createFallbackTranslationLoader';
-import {
-  getLoadTranslationsType,
-  LoadTranslationsType,
-} from '../utils/getLoadTranslationsType';
-import { CustomMapping } from 'generaltranslation/types';
+import { determineTranslationLoader } from './utils/determineTranslationLoader';
 
 /**
  * TranslationsManager is responsible for loading and caching translations
@@ -171,41 +165,3 @@ class TranslationsManager<T extends Translation> {
 }
 
 export { TranslationsManager };
-
-// ===== HELPER FUNCTIONS ===== //
-
-/**
- * determine the correct translation loader to use
- */
-function determineTranslationLoader(config: {
-  projectId?: string;
-  cacheUrl?: string | null;
-  _versionId?: string;
-  _branchId?: string;
-  loadTranslations?: TranslationsLoader;
-  customMapping?: CustomMapping;
-}): TranslationsLoader {
-  const loadTranslationsType = getLoadTranslationsType(config);
-  if (loadTranslationsType === LoadTranslationsType.DISABLED) {
-    // TODO: move this warning to validation layer
-    logger.warn(
-      'I18nManager: No translation loader found. No translations will be loaded.'
-    );
-  }
-
-  switch (loadTranslationsType) {
-    case LoadTranslationsType.REMOTE:
-    case LoadTranslationsType.GT_REMOTE:
-      return createRemoteTranslationLoader({
-        cacheUrl: config.cacheUrl!,
-        projectId: config.projectId!,
-        _versionId: config._versionId,
-        _branchId: config._branchId,
-        customMapping: config.customMapping,
-      });
-    case LoadTranslationsType.CUSTOM:
-      return config.loadTranslations!;
-    case LoadTranslationsType.DISABLED:
-      return createFallbackTranslationLoader();
-  }
-}
