@@ -18,12 +18,12 @@ export type Translations<T extends Translation | unknown = Translation> = {
 };
 
 /**
- * A mapping between locales and their {@link Translations} objects along with an expiry timestamp
+ * A mapping between locales and their {@link Translations} objects as promises along with an expiry timestamp
  * @typedef {Object} TranslationsMapEntry
  * @property {Promise<Translations>} promise - The promise for the translations object.
  * @property {number} expiresAt - The timestamp when the translations will expire.
  */
-export type TranslationsMap<T extends Translation> = Map<
+export type TranslationPromises<T extends Translation> = Map<
   string,
   {
     promise: Promise<Translations<T>>;
@@ -35,7 +35,7 @@ export type TranslationsMap<T extends Translation> = Map<
  * A mapping between locales and their {@link Translations} objects
  * Maps locale to translations object
  */
-export type ResolvedTranslationsMap<T extends Translation> = Map<
+export type TranslationsCache<T extends Translation> = Map<
   string,
   Translations<T>
 >;

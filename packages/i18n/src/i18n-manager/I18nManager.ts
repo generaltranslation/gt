@@ -12,10 +12,7 @@ import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT, standardizeLocale } from 'generaltranslation';
 import { CustomMapping } from 'generaltranslation/types';
-import {
-  InlineTranslationOptions,
-  ResolutionOptions,
-} from '../translation-functions/types/options';
+import { ResolutionOptions } from '../translation-functions/types/options';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import { hashMessage } from '../utils/hashMessage';
@@ -161,7 +158,7 @@ class I18nManager<
     options: ResolutionOptions
   ) => {
     const locale = this.getLocale();
-    const translations = this.translationsManager.getTranslationsSync(locale);
+    const translations = this.translationsManager.getTranslations(locale);
     if (!translations) return undefined;
     const hash = hashMessage(message, options);
     return translations[hash] as T;
@@ -178,7 +175,7 @@ class I18nManager<
     if (!this.config.locales.includes(locale)) {
       throw new Error(`Locale ${locale} not found in config`);
     }
-    return this.translationsManager.getTranslations(locale);
+    return this.translationsManager.getTranslationsPromise(locale);
   }
 
   /**
@@ -201,7 +198,8 @@ class I18nManager<
     }
 
     // Get translations
-    const translations = await this.translationsManager.getTranslations(locale);
+    const translations =
+      await this.translationsManager.getTranslationsPromise(locale);
 
     // Create translation resolver
     return <T extends U = U>(
@@ -352,7 +350,7 @@ function standardizeLocales(config: {
 }
 
 /**
- * Type definition for a translation resolver
+ * A translation resolver is a function that synchronously resolves a translation
  * @template U - The type of the translation (default: Translation)
  * @param {U} message - The message to get the translation for
  * @param {ResolutionOptions} [options] - The options for the translation

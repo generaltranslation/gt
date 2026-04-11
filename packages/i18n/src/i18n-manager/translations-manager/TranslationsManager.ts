@@ -5,10 +5,10 @@ import {
   TranslationsLoader,
 } from './translations-loaders/types';
 import {
-  ResolvedTranslationsMap,
+  TranslationsCache,
   Translation,
   Translations,
-  TranslationsMap,
+  TranslationPromises,
 } from './utils/types/translation-data';
 import { TranslationsManagerConfig } from './utils/types/translations-manager';
 import { determineTranslationLoader } from './utils/determineTranslationLoader';
@@ -25,7 +25,7 @@ class TranslationsManager<T extends Translation> {
   /**
    * Cache of translations
    */
-  private cache: TranslationsMap<T> = new Map();
+  private translationPromises: TranslationPromises<T> = new Map();
 
   /**
    * Cache entry time to live (negative value means never expires)
@@ -35,7 +35,7 @@ class TranslationsManager<T extends Translation> {
   /**
    * Resolved cache for sync operations
    */
-  private resolvedCache: ResolvedTranslationsMap<T> = new Map();
+  private translationCache: TranslationsCache<T> = new Map();
 
   /**
    * Constructor
@@ -76,7 +76,7 @@ class TranslationsManager<T extends Translation> {
         // TODO: centralized logging system
         logger.error('Failed to load translations ' + error);
         // Delete failed promise entry from cache to avoid persisting failed promises
-        this.cache.delete(locale);
+        this.translationPromises.delete(locale);
         return {} as Translations<T>;
       }
     };
@@ -90,7 +90,7 @@ class TranslationsManager<T extends Translation> {
   ): SafeTranslationsLoader<T> {
     return async (locale: string): Promise<Translations<T>> => {
       const translations = await translationLoader(locale);
-      this.resolvedCache.set(locale, translations);
+      this.translationCache.set(locale, translations);
       return translations;
     };
   }
@@ -111,7 +111,7 @@ class TranslationsManager<T extends Translation> {
 
     // Cache the promise and expiry timestamp
     const entry = { promise, expiresAt };
-    this.cache.set(locale, entry);
+    this.translationPromises.set(locale, entry);
 
     return promise;
   }
@@ -124,9 +124,9 @@ class TranslationsManager<T extends Translation> {
    * - Time-stamp (never expires if negative)
    */
   private isCacheHit(locale: string): boolean {
-    if (!this.cache.has(locale)) return false;
+    if (!this.translationPromises.has(locale)) return false;
 
-    const { expiresAt } = this.cache.get(locale)!;
+    const { expiresAt } = this.translationPromises.get(locale)!;
     if (expiresAt < 0 || expiresAt > Date.now()) return true;
     return false;
   }
@@ -136,10 +136,10 @@ class TranslationsManager<T extends Translation> {
   /**
    * Get translations for a given locale
    */
-  async getTranslations(locale: string): Promise<Translations<T>> {
+  async getTranslationsPromise(locale: string): Promise<Translations<T>> {
     // Cache hit
     if (this.isCacheHit(locale)) {
-      return this.cache.get(locale)!.promise;
+      return this.translationPromises.get(locale)!.promise;
     }
 
     // Cache miss
@@ -150,8 +150,8 @@ class TranslationsManager<T extends Translation> {
    * Get translations for a given locale
    * @note This method does not account for cache expiry
    */
-  getTranslationsSync(locale: string): Translations<T> | undefined {
-    return this.resolvedCache.get(locale);
+  getTranslations(locale: string): Translations<T> | undefined {
+    return this.translationCache.get(locale);
   }
 
   // ----- Utilities ----- //
