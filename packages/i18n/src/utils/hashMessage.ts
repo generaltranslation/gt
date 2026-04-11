@@ -6,8 +6,8 @@ import { Translation } from '../types';
 /**
  * Hash a message string
  */
-export function hashMessage(
-  message: Translation,
+export function hashMessage<T extends Translation | unknown = Translation>(
+  message: T,
   options: ResolutionOptions
 ): string {
   return hashSource({

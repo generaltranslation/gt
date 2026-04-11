@@ -39,6 +39,7 @@ export function interpolateMessage<T extends string | null | undefined>(
       : encodedMsg;
 
     // Interpolate the message
+    // TODO: do we need to call indexVars here??
     const interpolatedMessage = formatMessage(
       message,
       {
