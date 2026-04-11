@@ -358,7 +358,7 @@ export async function aggregateFiles(
             fileName: relativePath,
             fileFormat: fileType.toUpperCase() as FileFormat,
             fileId: hashStringSync(relativePath),
-            versionId: hashStringSync(content),
+            versionId: hashStringSync(processed),
             locale: settings.defaultLocale,
           } satisfies FileToUpload;
         })
