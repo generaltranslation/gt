@@ -7,6 +7,7 @@ import {
   Content,
   EntryMetadata,
   TranslateManyEntry,
+  TranslationResult,
 } from 'generaltranslation/types';
 import logger from '../../../logs/logger';
 
@@ -29,7 +30,7 @@ type TranslationKey<TranslationValue extends Translation | unknown> = {
 /**
  * Just a way to be more explicit about what "hash" is
  */
-type Hash = string;
+export type Hash = string;
 
 /**
  * A queue entry for batching, used to also handle reject and resolve
@@ -45,7 +46,7 @@ type QueueEntry<TranslationValue extends Translation | unknown> = {
 /**
  * TranslateMany call signature
  */
-type TranslateManyCallSignature = (
+export type TranslateMany = (
   sources: Parameters<GT['translateMany']>[0],
   timeout?: Parameters<GT['translateMany']>[2]
 ) => ReturnType<GT['translateMany']>;
@@ -53,7 +54,7 @@ type TranslateManyCallSignature = (
 /**
  * A cache for a single locale's translations
  */
-export class LocaleTranslationCache<
+export class LocaleTranslationsCache<
   TranslationValue extends Translation | unknown = Translation,
 > extends Cache<TranslationKey<TranslationValue>, Hash, TranslationValue> {
   /**
@@ -77,7 +78,7 @@ export class LocaleTranslationCache<
    * TODO: omit the targetLocale requirement from the second argument, this can be supplied
    * on instantiation
    */
-  private _translateMany: TranslateManyCallSignature;
+  private _translateMany: TranslateMany;
 
   /**
    * Constructor
@@ -90,17 +91,40 @@ export class LocaleTranslationCache<
     translateMany,
   }: {
     init: Record<Hash, TranslationValue>;
-    translateMany: TranslateManyCallSignature;
+    translateMany: TranslateMany;
   }) {
     super(init);
     this._translateMany = translateMany;
   }
 
-  genKey(key: TranslationKey<TranslationValue>): Hash {
+  /**
+   * Get the translation value for a given key
+   * @param key - The translation key
+   * @returns The translation value
+   */
+  public get(
+    key: TranslationKey<TranslationValue>
+  ): TranslationValue | undefined {
+    return this.getCache(key);
+  }
+
+  /**
+   * Generate a key for the cache
+   * @param key - The translation key
+   * @returns The key
+   */
+  protected genKey(key: TranslationKey<TranslationValue>): Hash {
     return hashMessage(key.message, key.options);
   }
 
-  fallback(key: TranslationKey<TranslationValue>): Promise<TranslationValue> {
+  /**
+   * Get the fallback value for a cache miss
+   * @param key - The translation key
+   * @returns The fallback value
+   */
+  protected fallback(
+    key: TranslationKey<TranslationValue>
+  ): Promise<TranslationValue> {
     // Add translation request to queue
     const translationPromise = this._enqueueTranslation(key);
 
@@ -116,58 +140,7 @@ export class LocaleTranslationCache<
 
   // ===== PRIVATE METHODS ===== //
 
-  /**
-   * Send a batch request for translations
-   * @param {QueueEntry<TranslationValue>[]} batch - The batch of requests to send
-   */
-  private async _sendBatchRequest(
-    batch: QueueEntry<TranslationValue>[]
-  ): Promise<void> {
-    this._activeRequests++;
-
-    try {
-      // --- Preprocess requests --- //
-      const requests: Record<string, TranslateManyEntry> = batch.reduce<
-        Record<string, TranslateManyEntry>
-      >((acc, entry) => {
-        acc[entry.key] = {
-          source: entry.source as Content,
-          metadata: entry.metadata,
-        };
-        return acc;
-      }, {});
-
-      // --- Send request --- //
-      const response = await this._translateMany(requests);
-
-      // --- Process response --- //
-      for (const entry of batch) {
-        const { key } = entry;
-        const result = response[key];
-        if (result && result.success) {
-          const translation = result.translation as TranslationValue;
-          this.setWithCacheKey(key, translation);
-          entry.resolve(translation);
-        } else {
-          entry.reject(result?.error);
-        }
-      }
-    } catch (error) {
-      // Log error
-      if (error instanceof Error && error.name === 'AbortError') {
-        logger.warn('Translation request timed out');
-      } else {
-        logger.error(String(error));
-      }
-
-      // Reject all promises
-      for (const entry of batch) {
-        entry.reject(error);
-      }
-    } finally {
-      this._activeRequests--;
-    }
-  }
+  // --- QUEUE MANAGEMENT --- //
 
   /**
    * Flush the queue now
@@ -218,10 +191,11 @@ export class LocaleTranslationCache<
   private _enqueueTranslation(
     key: TranslationKey<TranslationValue>
   ): Promise<TranslationValue> {
+    const cacheKey = this.genKey(key);
     const options = key.options;
     return new Promise<TranslationValue>((resolve, reject) => {
       this._queue.push({
-        key: this.genKey(key),
+        key: cacheKey,
         source: key.message,
         metadata: {
           ...(options?.$context && { context: options.$context }),
@@ -237,4 +211,85 @@ export class LocaleTranslationCache<
       });
     });
   }
+
+  // --- SEND REQUESTS --- //
+
+  /**
+   * Send a batch request for translations
+   * @param {QueueEntry<TranslationValue>[]} batch - The batch of requests to send
+   */
+  private async _sendBatchRequest(
+    batch: QueueEntry<TranslationValue>[]
+  ): Promise<void> {
+    this._activeRequests++;
+
+    const requests = convertBatchToTranslateManyParams(batch);
+    const response = await this._sendBatchRequestWithErrorHandling(
+      batch,
+      requests
+    );
+    if (response) {
+      this._handleTranslationResponse(batch, response);
+    }
+
+    this._activeRequests--;
+  }
+
+  /**
+   * Send a translation request with error handling
+   */
+  private async _sendBatchRequestWithErrorHandling(
+    batch: QueueEntry<TranslationValue>[],
+    requests: Record<Hash, TranslateManyEntry>
+  ): Promise<ReturnType<TranslateMany> | undefined> {
+    try {
+      return await this._translateMany(requests);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        logger.warn('Translation request timed out');
+      } else {
+        logger.error(String(error));
+      }
+
+      for (const entry of batch) {
+        entry.reject(error);
+      }
+      return undefined;
+    }
+  }
+
+  /**
+   * Handle a translation response
+   */
+  private _handleTranslationResponse(
+    batch: QueueEntry<TranslationValue>[],
+    response: Awaited<ReturnType<TranslateMany>>
+  ): void {
+    for (const entry of batch) {
+      const { key } = entry;
+      const result = response[key];
+      if (result && result.success) {
+        const translation = result.translation as TranslationValue;
+        this.setCache(key, translation);
+        entry.resolve(translation);
+      } else {
+        entry.reject(result?.error);
+      }
+    }
+  }
+}
+
+/**
+ * Convert a TranslationKey to a TranslateManyEntry
+ */
+function convertBatchToTranslateManyParams<
+  TranslationValue extends Translation | unknown,
+>(batch: QueueEntry<TranslationValue>[]): Record<Hash, TranslateManyEntry> {
+  return batch.reduce<Record<Hash, TranslateManyEntry>>((acc, entry) => {
+    acc[entry.key] = {
+      source: entry.source as Content,
+      metadata: entry.metadata,
+    };
+    return acc;
+  }, {});
 }

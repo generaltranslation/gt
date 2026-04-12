@@ -11,7 +11,7 @@ import { CustomMapping } from 'generaltranslation/types';
  * @param _versionId - The version id
  * @param _branchId - The branch id
  */
-type CreateRemoteTranslationLoaderParams = {
+export type CreateRemoteTranslationLoaderParams = {
   cacheUrl: string;
   projectId: string;
   _versionId?: string;
