@@ -107,6 +107,17 @@ export class LocaleTranslationsCache<
   }
 
   /**
+   * Miss the cache
+   * @param key - The translation key
+   * @returns The translation value
+   */
+  public miss(
+    key: TranslationKey<TranslationValue>
+  ): Promise<TranslationValue | undefined> {
+    return this.missCache(key);
+  }
+
+  /**
    * Generate a key for the cache
    * @param key - The translation key
    * @returns The key

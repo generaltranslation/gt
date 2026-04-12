@@ -2,6 +2,8 @@
  * Cache class
  * This is designed in such a way that it is the responsibility of the client
  * to invoke the cache miss method when a cache miss occurs.
+ *
+ * TODO: maybe add "OutputValue" as a reflection of "InputKey"
  */
 abstract class Cache<InputKey, CacheKey extends string, CacheValue> {
   /**
@@ -47,7 +49,7 @@ abstract class Cache<InputKey, CacheKey extends string, CacheValue> {
    * Fallback to the value from the fallback function on a cache miss
    * @important assumes that the fallback error handling done upstream
    */
-  public async miss(key: InputKey): Promise<CacheValue | undefined> {
+  protected async missCache(key: InputKey): Promise<CacheValue | undefined> {
     // Check for inflight fallback
     const cacheKey = this.genKey(key);
     if (this.fallbackPromises[cacheKey] !== undefined) {
@@ -80,7 +82,12 @@ abstract class Cache<InputKey, CacheKey extends string, CacheValue> {
    * Lookup a value in the cache
    * This abstract method allows for manipulation of the cache value before the return
    */
-  public abstract get(key: InputKey): unknown;
+  public abstract get(key: InputKey): unknown | undefined;
+
+  /**
+   * Miss the cache
+   */
+  protected abstract miss(key: InputKey): Promise<unknown | undefined>;
 }
 
 export { Cache };

@@ -201,6 +201,20 @@ class I18nManager<
     return translations[hash] as T;
   };
 
+  /**
+   * New version of {@link resolveTranslationSync}
+   * Just performs a hash lookup, no fallback
+   */
+  lookupTranslation<T extends U = U>(
+    message: T,
+    options: ResolutionOptions
+  ): T | undefined {
+    const locale = this.getLocale();
+    const localeCache = this.translationsCache.get(locale);
+    if (!localeCache) return undefined;
+    return localeCache.get({ message, options }) as T | undefined;
+  }
+
   // ----- Async Operations ----- //
 
   /**
@@ -248,6 +262,39 @@ class I18nManager<
 
       // Return translation or undefined
       return translations[hash] as T;
+    };
+  }
+
+  /**
+   * New version of {@link getLookupTranslation}
+   * Loads during invocation, returns a lookup function
+   *
+   * TODO: type should be named LookupTranslation
+   */
+  async getLookupTranslation(
+    locale: string = this.getLocale()
+  ): Promise<TranslationResolver<U>> {
+    // Early return if i18n is disabled or default locale
+    if (
+      this.config.enableI18n === false ||
+      locale === this.config.defaultLocale
+    ) {
+      return <T extends U = U>(message: T): T | undefined => message;
+    }
+
+    // Get Locale Cache
+    const localeCache =
+      this.translationsCache.get(locale) ||
+      (await this.translationsCache.miss(locale));
+    if (!localeCache) return () => undefined;
+
+    // Create translation resolver
+    return <T extends U = U>(
+      message: T,
+      options: ResolutionOptions
+    ): T | undefined => {
+      // Calculate hash
+      return localeCache.get({ message, options }) as T | undefined;
     };
   }
 

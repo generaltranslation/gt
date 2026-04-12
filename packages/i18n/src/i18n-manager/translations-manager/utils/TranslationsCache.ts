@@ -77,22 +77,6 @@ export class TranslationsCache<
 
     this._translationLoader = loadTranslations;
     this._createTranslateMany = createTranslateMany;
-
-    // // Set up translation loader
-    // // TODO: update determineTranslationLoader to accept a different parameter type
-    // // to make this cleaner
-    // const config = {
-    //   ...remoteTranslationLoaderParams,
-    //   loadTranslations,
-    // };
-
-    // // TODO: abstract this into a separate utility function
-    // const unsafeTranslationLoader = determineTranslationLoader(config);
-    // this._translationLoader = async (locale) =>
-    //   ((await unsafeTranslationLoader(locale)) || {}) as Record<
-    //     Hash,
-    //     TranslationValue
-    //   >;
   }
 
   /**
@@ -109,6 +93,21 @@ export class TranslationsCache<
       return undefined;
     }
     return entry.localeCache;
+  }
+
+  /**
+   * Miss the cache
+   * @param key - The locale
+   * @returns The translations cache
+   */
+  public async miss(
+    key: Locale
+  ): Promise<CacheEntry<TranslationValue>['localeCache'] | undefined> {
+    const cacheValue = await this.missCache(key);
+    if (!cacheValue) {
+      return undefined;
+    }
+    return cacheValue.localeCache;
   }
 
   /**
