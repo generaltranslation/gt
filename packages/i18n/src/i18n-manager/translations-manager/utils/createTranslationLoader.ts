@@ -1,14 +1,8 @@
 import { CustomMapping } from 'generaltranslation/types';
 import { TranslationsLoader } from '../translations-loaders/types';
-import {
-  getLoadTranslationsType,
-  LoadTranslationsType,
-} from '../../utils/getLoadTranslationsType';
+import { LoadTranslationsType } from '../../utils/getLoadTranslationsType';
 import logger from '../../../logs/logger';
-import {
-  createRemoteTranslationLoader,
-  CreateRemoteTranslationLoaderParams,
-} from '../translations-loaders/createRemoteTranslationLoader';
+import { createRemoteTranslationLoader } from '../translations-loaders/createRemoteTranslationLoader';
 import { createFallbackTranslationLoader } from '../translations-loaders/createFallbackTranslationLoader';
 
 /**
@@ -25,7 +19,13 @@ export function createTranslationLoader({
   loadTranslations,
 }: {
   type: LoadTranslationsType;
-  remoteTranslationLoaderParams: CreateRemoteTranslationLoaderParams;
+  remoteTranslationLoaderParams: {
+    cacheUrl?: string | null;
+    projectId?: string;
+    _versionId?: string;
+    _branchId?: string;
+    customMapping?: CustomMapping;
+  };
   loadTranslations?: TranslationsLoader;
 }): TranslationsLoader {
   if (type === LoadTranslationsType.DISABLED) {
@@ -42,8 +42,8 @@ export function createTranslationLoader({
     case LoadTranslationsType.REMOTE:
     case LoadTranslationsType.GT_REMOTE:
       return createRemoteTranslationLoader({
-        cacheUrl,
-        projectId,
+        cacheUrl: cacheUrl || '',
+        projectId: projectId || '',
         _versionId,
         _branchId,
         customMapping,

@@ -1,20 +1,13 @@
 import { Cache } from './Cache';
-import {
-  Hash,
-  LocaleTranslationsCache,
-  TranslateMany,
-} from './LocaleTranslationCache';
+import { Hash, LocaleTranslationsCache } from './LocaleTranslationCache';
 import { Translation } from './types/translation-data';
-import { CreateRemoteTranslationLoaderParams } from '../translations-loaders/createRemoteTranslationLoader';
-import { determineTranslationLoader } from './determineTranslationLoader';
-import logger from '../../../logs/logger';
 import { DEFAULT_CACHE_EXPIRY_TIME } from './constants';
-import { GT } from 'generaltranslation';
+import { CreateTranslateMany } from './createTranslateMany';
 
 /**
  * Just being explicit about the purpose of this type
  */
-type Locale = string;
+export type Locale = string;
 
 /**
  * Cache entry
@@ -29,18 +22,13 @@ type CacheEntry<TranslationValue extends Translation | unknown = Translation> =
   };
 
 /**
- * Translations loader function type
- */
-type TranslationsLoader = (locale: Locale) => Promise<unknown>;
-
-/**
  * Safe translations loader function type
  * @returns A promise that resolves to a mapping of strings to {@link Translation}
  * TODO: rename this because we are no longer doing try/catch around the translation loader
  */
-type SafeTranslationsLoader<TranslationValue extends Translation | unknown> = (
-  locale: string
-) => Promise<Record<Hash, TranslationValue>>;
+export type SafeTranslationsLoader<
+  TranslationValue extends Translation | unknown,
+> = (locale: string) => Promise<Record<Hash, TranslationValue>>;
 
 /**
  * Cache for translations
@@ -56,7 +44,7 @@ export class TranslationsCache<
   /**
    * Translate many function
    */
-  private _translateMany: TranslateMany;
+  private _createTranslateMany: CreateTranslateMany;
 
   /**
    * Time to live for cache entries
@@ -72,46 +60,39 @@ export class TranslationsCache<
    * @param {TranslationsLoader} params.loadTranslations - The translation loader function
    */
   constructor({
-    init,
-    remoteTranslationLoaderParams,
+    init = {},
     ttl,
     loadTranslations,
-    translateMany,
+    createTranslateMany,
   }: {
-    init: Record<string, CacheEntry<TranslationValue>>;
-    // TODO: perhaps we can find a way to create it and pass this
-    // as a "defaultLoadTranslations"
-    remoteTranslationLoaderParams: CreateRemoteTranslationLoaderParams;
+    init?: Record<string, CacheEntry<TranslationValue>>;
     ttl?: number | null;
-    loadTranslations?: TranslationsLoader;
-    translateMany?: TranslateMany;
+    createTranslateMany: CreateTranslateMany;
+    loadTranslations: SafeTranslationsLoader<TranslationValue>;
   }) {
     super(init);
 
     // Set time to live
     this.ttl = ttl === null ? -1 : (ttl ?? DEFAULT_CACHE_EXPIRY_TIME);
 
-    // Set translate many function
-    if (!translateMany) {
-      throw new Error('TranslationsCache: Translate many function is not set');
-    }
-    this._translateMany = translateMany;
+    this._translationLoader = loadTranslations;
+    this._createTranslateMany = createTranslateMany;
 
-    // Set up translation loader
-    // TODO: update determineTranslationLoader to accept a different parameter type
-    // to make this cleaner
-    const config = {
-      ...remoteTranslationLoaderParams,
-      loadTranslations,
-    };
+    // // Set up translation loader
+    // // TODO: update determineTranslationLoader to accept a different parameter type
+    // // to make this cleaner
+    // const config = {
+    //   ...remoteTranslationLoaderParams,
+    //   loadTranslations,
+    // };
 
-    // TODO: abstract this into a separate utility function
-    const unsafeTranslationLoader = determineTranslationLoader(config);
-    this._translationLoader = async (locale) =>
-      ((await unsafeTranslationLoader(locale)) || {}) as Record<
-        Hash,
-        TranslationValue
-      >;
+    // // TODO: abstract this into a separate utility function
+    // const unsafeTranslationLoader = determineTranslationLoader(config);
+    // this._translationLoader = async (locale) =>
+    //   ((await unsafeTranslationLoader(locale)) || {}) as Record<
+    //     Hash,
+    //     TranslationValue
+    //   >;
   }
 
   /**
@@ -158,35 +139,12 @@ export class TranslationsCache<
     // Cache the promise and expiry timestamp
     const localeCache = new LocaleTranslationsCache<TranslationValue>({
       init: await translationsPromise,
-      translateMany: this._createTranslateManyFunction(locale),
+      translateMany: this._createTranslateMany(locale),
     });
     const entry = { localeCache, expiresAt };
     const cacheKey = this.genKey(locale);
     this.setCache(cacheKey, entry);
 
     return entry;
-  }
-
-  // ===== PRIVATE METHODS ===== //
-
-  /**
-   * Creates a translate many function, used for cache misses for {@link LocaleTranslationsCache}
-   * @param locale - The locale
-   * @returns The translate many function
-   *
-   * TODO: abstract this into a separate utility function
-   */
-  private _createTranslateManyFunction(locale: Locale): TranslateMany {
-    return async (
-      sources: Parameters<TranslateMany>[0],
-      timeout?: Parameters<TranslateMany>[1]
-    ) => {
-      // TODO: error handling
-      return await this._translateMany(
-        sources,
-        { targetLocale: locale },
-        timeout
-      );
-    };
   }
 }

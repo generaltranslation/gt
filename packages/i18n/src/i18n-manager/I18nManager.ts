@@ -16,7 +16,17 @@ import { ResolutionOptions } from '../translation-functions/types/options';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import { hashMessage } from '../utils/hashMessage';
-import { TranslationsLoader } from './translations-manager/translations-loaders/types';
+import {
+  SafeTranslationsLoader,
+  TranslationsLoader,
+} from './translations-manager/translations-loaders/types';
+import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
+import { createTranslationLoader } from './translations-manager/utils/createTranslationLoader';
+import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
+import { TranslationsCache } from './translations-manager/utils/TranslationsCache';
+
+// TODO: this is a placeholder, find a precedent for this value
+const DEFAULT_TRANSLATION_TIMEOUT = 8_000; // 8 seconds
 
 /**
  * Class for managing translation functionality
@@ -42,6 +52,11 @@ class I18nManager<
   protected storeAdapter: T;
 
   /**
+   * Cache for translations
+   */
+  private translationsCache: TranslationsCache<U>;
+
+  /**
    * Creates an instance of I18nManager.
    * TODO: resolve gtConfig from just file path
    * @param params - The parameters for the I18nManager constructor
@@ -57,6 +72,28 @@ class I18nManager<
     this.storeAdapter =
       (params.storeAdapter as T) ?? new FallbackStorageAdapter();
     this.translationsManager = new TranslationsManager(params);
+
+    // Setup translations cache
+    const createTranslateMany = createTranslateManyFactory(
+      this.getGTClass(),
+      DEFAULT_TRANSLATION_TIMEOUT
+    );
+    const loadTranslations = createTranslationLoader({
+      loadTranslations: params.loadTranslations,
+      type: getLoadTranslationsType(params),
+      remoteTranslationLoaderParams: {
+        cacheUrl: params.cacheUrl,
+        projectId: params.projectId,
+        _versionId: params._versionId,
+        _branchId: params._branchId,
+        customMapping: params.customMapping,
+      },
+    }) as SafeTranslationsLoader<U>;
+
+    this.translationsCache = new TranslationsCache<U>({
+      createTranslateMany,
+      loadTranslations,
+    });
   }
 
   // ========== Getters and Setters ========== //

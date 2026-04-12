@@ -7,7 +7,6 @@ import {
   Content,
   EntryMetadata,
   TranslateManyEntry,
-  TranslationResult,
 } from 'generaltranslation/types';
 import logger from '../../../logs/logger';
 
@@ -47,8 +46,7 @@ type QueueEntry<TranslationValue extends Translation | unknown> = {
  * TranslateMany call signature
  */
 export type TranslateMany = (
-  sources: Parameters<GT['translateMany']>[0],
-  timeout?: Parameters<GT['translateMany']>[2]
+  sources: Parameters<GT['translateMany']>[0]
 ) => ReturnType<GT['translateMany']>;
 
 /**
