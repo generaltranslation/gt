@@ -46,10 +46,20 @@ abstract class Cache<InputKey, CacheKey extends string, CacheValue> {
   }
 
   /**
+   * Get the internal cache
+   * @returns The internal cache
+   *
+   * @internal
+   */
+  public getInternalCache(): Record<CacheKey, CacheValue> {
+    return this.cache;
+  }
+
+  /**
    * Fallback to the value from the fallback function on a cache miss
    * @important assumes that the fallback error handling done upstream
    */
-  protected async missCache(key: InputKey): Promise<CacheValue | undefined> {
+  protected async missCache(key: InputKey): Promise<CacheValue> {
     // Check for inflight fallback
     const cacheKey = this.genKey(key);
     if (this.fallbackPromises[cacheKey] !== undefined) {

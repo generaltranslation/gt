@@ -100,10 +100,10 @@ export class LocaleTranslationsCache<
    * @param key - The translation key
    * @returns The translation value
    */
-  public get(
-    key: TranslationKey<TranslationValue>
-  ): TranslationValue | undefined {
-    return this.getCache(key);
+  public get<T extends TranslationValue = TranslationValue>(
+    key: TranslationKey<T>
+  ): T | undefined {
+    return this.getCache(key) as T | undefined;
   }
 
   /**
@@ -111,10 +111,10 @@ export class LocaleTranslationsCache<
    * @param key - The translation key
    * @returns The translation value
    */
-  public miss(
-    key: TranslationKey<TranslationValue>
-  ): Promise<TranslationValue | undefined> {
-    return this.missCache(key);
+  public miss<T extends TranslationValue = TranslationValue>(
+    key: TranslationKey<T>
+  ): Promise<T | undefined> {
+    return this.missCache(key) as Promise<T | undefined>;
   }
 
   /**

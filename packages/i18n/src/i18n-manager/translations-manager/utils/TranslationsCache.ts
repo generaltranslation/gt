@@ -102,11 +102,8 @@ export class TranslationsCache<
    */
   public async miss(
     key: Locale
-  ): Promise<CacheEntry<TranslationValue>['localeCache'] | undefined> {
+  ): Promise<CacheEntry<TranslationValue>['localeCache']> {
     const cacheValue = await this.missCache(key);
-    if (!cacheValue) {
-      return undefined;
-    }
     return cacheValue.localeCache;
   }
 

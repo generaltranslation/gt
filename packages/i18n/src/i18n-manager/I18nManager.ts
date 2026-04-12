@@ -24,6 +24,7 @@ import { createTranslateManyFactory } from './translations-manager/utils/createT
 import { createTranslationLoader } from './translations-manager/utils/createTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { TranslationsCache } from './translations-manager/utils/TranslationsCache';
+import { Hash } from './translations-manager/utils/LocaleTranslationCache';
 
 // TODO: this is a placeholder, find a precedent for this value
 const DEFAULT_TRANSLATION_TIMEOUT = 8_000; // 8 seconds
@@ -185,6 +186,104 @@ class I18nManager<
 
   // ========== Translation Resolution ========== //
 
+  // ----- New Operations ----- //
+
+  /**
+   * Get translations
+   * Loads in translations for a given locale
+   *
+   * This is used by gt-tanstack-start to access the translations object directly
+   */
+  async getTranslationsObject(
+    locale: string = this.getLocale()
+  ): Promise<Record<Hash, TranslationType>> {
+    // Get the locale cache
+    let localeCache = this.translationsCache.get(locale);
+    if (!localeCache) localeCache = await this.translationsCache.miss(locale);
+
+    // Get the translations
+    const translations = localeCache.getInternalCache();
+    return translations;
+  }
+
+  /**
+   * Just lookup a translation
+   */
+  lookupTranslation<T extends TranslationType = TranslationType>(
+    message: T,
+    options: ResolutionOptions
+  ): T | undefined {
+    const locale = this.getLocale();
+
+    // Get the locale cache
+    const localeCache = this.translationsCache.get(locale);
+    if (!localeCache) return undefined;
+
+    // Get the translation
+    return localeCache.get({ message, options });
+  }
+
+  /**
+   * Look up a translation
+   * If it's not found, use the fallback (runtime translate)
+   */
+  async lookupTranslationWithFallback<
+    T extends TranslationType = TranslationType,
+  >(message: T, options: ResolutionOptions): Promise<T | undefined> {
+    const locale = options.$locale ?? this.getLocale();
+
+    // Get the locale cache
+    let localeCache = this.translationsCache.get(locale);
+    if (!localeCache) localeCache = await this.translationsCache.miss(locale);
+
+    // Get the translation (falling back to runtime translate)
+    let translation = localeCache.get({ message, options });
+    if (!translation)
+      translation = await localeCache.miss({ message, options });
+    return translation;
+  }
+
+  /**
+   * Saves a current lookup translation function immune to expiry
+   * Useful for operations involving lookup callbacks like useGT()
+   * @param locale - The locale to get the lookup translation for
+   * @param prefetchEntries - Any entries we want to prefetch during the async period
+   * @returns A lookup translation function
+   */
+  async getLookupTranslation(
+    locale: string = this.getLocale(),
+    prefetchEntries: {
+      message: TranslationType;
+      options: ResolutionOptions;
+    }[] = []
+  ): Promise<TranslationResolver<TranslationType>> {
+    // Early return if i18n is disabled or default locale
+    if (
+      this.config.enableI18n === false ||
+      locale === this.config.defaultLocale
+    ) {
+      return (message) => message;
+    }
+
+    // Get Locale Cache
+    let localeCache = this.translationsCache.get(locale);
+    if (!localeCache) localeCache = await this.translationsCache.miss(locale);
+    if (!localeCache) return () => undefined;
+
+    // Prefetch any entries during async block
+    await Promise.all(
+      prefetchEntries
+        .filter((entry) => !localeCache.get(entry))
+        .map((entry) => localeCache.miss(entry))
+    );
+
+    // Create translation resolver
+    return (message, options: ResolutionOptions) => {
+      // Calculate hash
+      return localeCache.get({ message, options });
+    };
+  }
+
   // ----- Sync Operations ----- //
 
   /**
@@ -205,20 +304,6 @@ class I18nManager<
     const hash = hashMessage(message, options);
     return translations[hash] as T;
   };
-
-  /**
-   * New version of {@link resolveTranslationSync}
-   * Just performs a hash lookup, no fallback
-   */
-  lookupTranslation<T extends TranslationType = TranslationType>(
-    message: T,
-    options: ResolutionOptions
-  ): T | undefined {
-    const locale = this.getLocale();
-    const localeCache = this.translationsCache.get(locale);
-    if (!localeCache) return undefined;
-    return localeCache.get({ message, options }) as T | undefined;
-  }
 
   // ----- Async Operations ----- //
 
@@ -269,41 +354,6 @@ class I18nManager<
 
       // Return translation or undefined
       return translations[hash] as T;
-    };
-  }
-
-  /**
-   * New version of {@link getLookupTranslation}
-   * Loads during invocation, returns a lookup function
-   *
-   * TODO: type should be named LookupTranslation
-   */
-  async getLookupTranslation(
-    locale: string = this.getLocale()
-  ): Promise<TranslationResolver<TranslationType>> {
-    // Early return if i18n is disabled or default locale
-    if (
-      this.config.enableI18n === false ||
-      locale === this.config.defaultLocale
-    ) {
-      return <T extends TranslationType = TranslationType>(
-        message: T
-      ): T | undefined => message;
-    }
-
-    // Get Locale Cache
-    const localeCache =
-      this.translationsCache.get(locale) ||
-      (await this.translationsCache.miss(locale));
-    if (!localeCache) return () => undefined;
-
-    // Create translation resolver
-    return <T extends TranslationType = TranslationType>(
-      message: T,
-      options: ResolutionOptions
-    ): T | undefined => {
-      // Calculate hash
-      return localeCache.get({ message, options }) as T | undefined;
     };
   }
 

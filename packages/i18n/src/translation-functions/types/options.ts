@@ -65,7 +65,9 @@ export type JsxTranslationOptions = {
 export type ResolutionOptions =
   | (Omit<InlineTranslationOptions, '$format'> & {
       $format: StringFormat;
+      $locale?: string;
     })
   | (JsxTranslationOptions & {
       $format: 'JSX';
+      $locale?: string;
     });
