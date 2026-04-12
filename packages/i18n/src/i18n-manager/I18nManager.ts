@@ -30,31 +30,31 @@ const DEFAULT_TRANSLATION_TIMEOUT = 8_000; // 8 seconds
 
 /**
  * Class for managing translation functionality
- * @template T - The type of the storage adapter
- * @template U - The type of the translation that will be cached
+ * @template StorageAdapterInstanceType - The type of the storage adapter
+ * @template TranslationType - The type of the translation that will be cached
  *
  * TODO: next major version, move U to the first generic and make it a required parameter, no default value
  */
 class I18nManager<
-  T extends StorageAdapter = StorageAdapter,
-  U extends Translation = Translation,
+  StorageAdapterInstanceType extends StorageAdapter = StorageAdapter,
+  TranslationType extends Translation = Translation,
 > {
   protected config: I18nManagerConfig;
 
   /**
    * Cache for translations
    */
-  private translationsManager: TranslationsManager<U>;
+  private translationsManager: TranslationsManager<TranslationType>;
 
   /**
    * Store adapter
    */
-  protected storeAdapter: T;
+  protected storeAdapter: StorageAdapterInstanceType;
 
   /**
    * Cache for translations
    */
-  private translationsCache: TranslationsCache<U>;
+  private translationsCache: TranslationsCache<TranslationType>;
 
   /**
    * Creates an instance of I18nManager.
@@ -62,7 +62,9 @@ class I18nManager<
    * @param params - The parameters for the I18nManager constructor
    * @param params.config - The configuration for the I18nManager
    */
-  constructor(params: I18nManagerConstructorParams<T>) {
+  constructor(
+    params: I18nManagerConstructorParams<StorageAdapterInstanceType>
+  ) {
     // Validation
     const validationResults = validateConfig(params);
     publishValidationResults(validationResults, 'I18nManager: ');
@@ -70,7 +72,8 @@ class I18nManager<
     // Setup
     this.config = standardizeConfig(params);
     this.storeAdapter =
-      (params.storeAdapter as T) ?? new FallbackStorageAdapter();
+      (params.storeAdapter as StorageAdapterInstanceType) ??
+      new FallbackStorageAdapter();
     this.translationsManager = new TranslationsManager(params);
 
     // Setup translations cache
@@ -88,9 +91,9 @@ class I18nManager<
         _branchId: params._branchId,
         customMapping: params.customMapping,
       },
-    }) as SafeTranslationsLoader<U>;
+    }) as SafeTranslationsLoader<TranslationType>;
 
-    this.translationsCache = new TranslationsCache<U>({
+    this.translationsCache = new TranslationsCache<TranslationType>({
       createTranslateMany,
       loadTranslations,
     });
@@ -188,9 +191,11 @@ class I18nManager<
    * Get the translations (error on unloaded translations)
    * @param {string} message - The message to get the translation for
    * @param {ResolutionOptions} [options] - The options for the translation
-   * @returns {U | undefined} The translation for the given message and options synchronously
+   * @returns {TranslationType | undefined} The translation for the given message and options synchronously
    */
-  resolveTranslationSync: TranslationResolver<U> = <T extends U = U>(
+  resolveTranslationSync: TranslationResolver<TranslationType> = <
+    T extends TranslationType = TranslationType,
+  >(
     message: T,
     options: ResolutionOptions
   ) => {
@@ -205,7 +210,7 @@ class I18nManager<
    * New version of {@link resolveTranslationSync}
    * Just performs a hash lookup, no fallback
    */
-  lookupTranslation<T extends U = U>(
+  lookupTranslation<T extends TranslationType = TranslationType>(
     message: T,
     options: ResolutionOptions
   ): T | undefined {
@@ -222,7 +227,7 @@ class I18nManager<
    */
   async getTranslations(
     locale: string = this.getLocale()
-  ): Promise<Translations<U>> {
+  ): Promise<Translations<TranslationType>> {
     if (!this.config.locales.includes(locale)) {
       throw new Error(`Locale ${locale} not found in config`);
     }
@@ -239,13 +244,15 @@ class I18nManager<
    */
   async getTranslationResolver(
     locale: string = this.getLocale()
-  ): Promise<TranslationResolver<U>> {
+  ): Promise<TranslationResolver<TranslationType>> {
     // Early return if i18n is disabled or default locale
     if (
       this.config.enableI18n === false ||
       locale === this.config.defaultLocale
     ) {
-      return <T extends U = U>(message: T): T | undefined => message;
+      return <T extends TranslationType = TranslationType>(
+        message: T
+      ): T | undefined => message;
     }
 
     // Get translations
@@ -253,7 +260,7 @@ class I18nManager<
       await this.translationsManager.getTranslationsPromise(locale);
 
     // Create translation resolver
-    return <T extends U = U>(
+    return <T extends TranslationType = TranslationType>(
       message: T,
       options: ResolutionOptions
     ): T | undefined => {
@@ -273,13 +280,15 @@ class I18nManager<
    */
   async getLookupTranslation(
     locale: string = this.getLocale()
-  ): Promise<TranslationResolver<U>> {
+  ): Promise<TranslationResolver<TranslationType>> {
     // Early return if i18n is disabled or default locale
     if (
       this.config.enableI18n === false ||
       locale === this.config.defaultLocale
     ) {
-      return <T extends U = U>(message: T): T | undefined => message;
+      return <T extends TranslationType = TranslationType>(
+        message: T
+      ): T | undefined => message;
     }
 
     // Get Locale Cache
@@ -289,7 +298,7 @@ class I18nManager<
     if (!localeCache) return () => undefined;
 
     // Create translation resolver
-    return <T extends U = U>(
+    return <T extends TranslationType = TranslationType>(
       message: T,
       options: ResolutionOptions
     ): T | undefined => {
