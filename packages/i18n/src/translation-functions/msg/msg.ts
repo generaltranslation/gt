@@ -45,6 +45,8 @@ import { RegisterableMessages } from '../types/message';
  * const messages = msg(['Hello, Alice!', 'Hello, Bob!'], { $id: 'greetings' });
  * // "Hello, Alice!" id: "greetings.0"
  * // "Hello, Bob!" id: "greetings.1"
+ *
+ * @important Internal note: until other packages are updated to use i18n-context practices, msg cannot use any functions that use i18nManager at all!
  */
 export function msg<T extends RegisterableMessages>(message: T): T;
 export function msg<T extends RegisterableMessages>(
