@@ -49,7 +49,7 @@ abstract class Cache<InputKey, CacheKey extends string, CacheValue> {
    * Get the internal cache
    * @returns The internal cache
    *
-   * @internal
+   * @internal - used by gt-tanstack-start
    */
   public getInternalCache(): Record<CacheKey, CacheValue> {
     return this.cache;

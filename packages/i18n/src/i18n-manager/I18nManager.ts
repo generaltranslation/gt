@@ -16,14 +16,39 @@ import {
   TranslationsLoader,
 } from './translations-manager/translations-loaders/types';
 import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
-// TODO: rename
-import { routeCreateTranslationLoader as _createTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
+import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
 
 // TODO: this is a placeholder, find a precedent for this value
 const DEFAULT_TRANSLATION_TIMEOUT = 8_000; // 8 seconds
+
+/**
+ * A translation resolver is a function that synchronously resolves a translation
+ * @template U - The type of the translation (default: Translation)
+ * @param {U} message - The message to get the translation for
+ * @param {LookupOptions} [options] - The options for the translation
+ * @returns {U | undefined} The translation for the given message and options or undefined if the translation is not found
+ */
+type TranslationResolver<U extends Translation = Translation> = <
+  T extends U = U,
+>(
+  message: T,
+  options: LookupOptions
+) => T | undefined;
+
+/**
+ * A prefetch entry is an entry that we want to prefetch during the async period
+ * @template TranslationType - The type of the translation
+ * @param {TranslationType} message - The message to prefetch
+ * @param {LookupOptions} options - The options for the prefetch
+ * @returns {PrefetchEntry<TranslationType>} The prefetch entry
+ */
+type PrefetchEntry<TranslationType extends Translation> = {
+  message: TranslationType;
+  options: LookupOptions;
+};
 
 /**
  * Class for managing translation functionality
@@ -66,7 +91,6 @@ class I18nManager<
     this.storeAdapter =
       (params.storeAdapter as StorageAdapterInstanceType) ??
       new FallbackStorageAdapter();
-    // this.translationsManager = new TranslationsManager(params);
 
     // Create cache miss handlers
     const loadTranslations = createTranslationLoader<TranslationValue>(params);
@@ -499,32 +523,6 @@ function standardizeLocales(config: {
 }
 
 /**
- * A translation resolver is a function that synchronously resolves a translation
- * @template U - The type of the translation (default: Translation)
- * @param {U} message - The message to get the translation for
- * @param {LookupOptions} [options] - The options for the translation
- * @returns {U | undefined} The translation for the given message and options or undefined if the translation is not found
- */
-type TranslationResolver<U extends Translation = Translation> = <
-  T extends U = U,
->(
-  message: T,
-  options: LookupOptions
-) => T | undefined;
-
-/**
- * A prefetch entry is an entry that we want to prefetch during the async period
- * @template TranslationType - The type of the translation
- * @param {TranslationType} message - The message to prefetch
- * @param {LookupOptions} options - The options for the prefetch
- * @returns {PrefetchEntry<TranslationType>} The prefetch entry
- */
-type PrefetchEntry<TranslationType extends Translation> = {
-  message: TranslationType;
-  options: LookupOptions;
-};
-
-/**
  * Filter prefetch entries by locale
  * @template TranslationType - The type of the translation
  * @param {PrefetchEntry<TranslationType>[]} prefetchEntries - The prefetch entries to filter
@@ -542,7 +540,7 @@ function filterPrefetchEntriesByLocale<TranslationType extends Translation>(
 }
 
 /**
- * TODO: abstract this into a separate file
+ * Helper function for creating a translation loader
  */
 function createTranslationLoader<
   TranslationType extends Translation,
@@ -550,7 +548,7 @@ function createTranslationLoader<
 >(
   params: I18nManagerConstructorParams<StorageAdapterInstanceType>
 ): SafeTranslationsLoader<TranslationType> {
-  return _createTranslationLoader({
+  return routeCreateTranslationLoader({
     loadTranslations: params.loadTranslations,
     type: getLoadTranslationsType(params),
     remoteTranslationLoaderParams: {
