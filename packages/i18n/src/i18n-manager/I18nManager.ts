@@ -206,6 +206,14 @@ class I18nManager<
     locale: string = this.getLocale()
   ): Promise<Record<Hash, TranslationValue>> {
     try {
+      // Validate
+      if (!this.getGTClass().isValidLocale(locale)) {
+        console.warn(
+          `I18nManager: loadTranslations(): locale ${locale} is not valid`
+        );
+        return {};
+      }
+
       // Get the locale cache
       let txCache = this.localesCache.get(locale);
       if (!txCache) txCache = await this.localesCache.miss(locale);
