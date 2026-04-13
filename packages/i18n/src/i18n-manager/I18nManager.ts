@@ -21,8 +21,10 @@ import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
 
-// TODO: this is a placeholder, find a precedent for this value
-const DEFAULT_TRANSLATION_TIMEOUT = 8_000; // 8 seconds
+/**
+ * Default translation timeout in milliseconds for a runtime translation request
+ */
+const DEFAULT_TRANSLATION_TIMEOUT = 12_000; // 12 seconds
 
 /**
  * A translation resolver is a function that synchronously resolves a translation
@@ -306,7 +308,7 @@ class I18nManager<
 
       // Prefetch any entries during async block
       await Promise.all(
-        prefetchEntries
+        filteredPrefetchEntries
           .filter((entry) => !txCache.get(entry))
           .map((entry) => txCache.miss(entry))
       );
