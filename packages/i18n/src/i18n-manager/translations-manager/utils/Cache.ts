@@ -71,11 +71,18 @@ abstract class Cache<InputKey, CacheKey extends string, CacheValue> {
     this.fallbackPromises[cacheKey] = fallbackPromise;
 
     // Wait for fallback to complete
-    const value = await fallbackPromise;
+    try {
+      // Wait for fallback to complete
+      const value = await fallbackPromise;
 
-    // Update cache
-    this.cache[cacheKey] = value;
-    return value;
+      // Update cache
+      this.cache[cacheKey] = value;
+      return value;
+    } catch (error) {
+      throw error;
+    } finally {
+      delete this.fallbackPromises[cacheKey];
+    }
   }
 
   /**

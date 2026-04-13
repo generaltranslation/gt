@@ -15,7 +15,7 @@ import { interpolateMessage } from '../utils/interpolateMessage';
 export async function getGT(): Promise<GTFunctionType> {
   // Get the translation resolver
   const i18nManager = getI18nManager();
-  const resolveTranslation = await i18nManager.getTranslationResolver();
+  const lookupTranslation = await i18nManager.getLookupTranslation();
 
   /**
    * Registers a message at build time and resolves its translation at runtime.
@@ -37,7 +37,7 @@ export async function getGT(): Promise<GTFunctionType> {
     message: string,
     options: InlineTranslationOptions = {}
   ) => {
-    const translation = resolveTranslation(message, {
+    const translation = lookupTranslation(message, {
       $format: 'ICU',
       ...options,
     });

@@ -29,7 +29,7 @@ export class TanstackI18nManager extends I18nManager<
       locales: this.config.locales,
       customMapping: this.config.customMapping,
       enableI18n: this.config.enableI18n,
-      loadTranslations: this.getTranslationLoader(),
+      loadTranslations: (locale: string) => this.loadTranslations(locale),
       _versionId: this.config._versionId,
     };
   }

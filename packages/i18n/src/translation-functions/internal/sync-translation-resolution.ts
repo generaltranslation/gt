@@ -16,7 +16,7 @@ export const resolveTranslationSync: SyncResolutionFunction = (
   options = {}
 ) => {
   const i18nManager = getI18nManager();
-  const translation = i18nManager.resolveTranslationSync<string>(message, {
+  const translation = i18nManager.lookupTranslation<string>(message, {
     $format: 'ICU',
     ...options,
   });

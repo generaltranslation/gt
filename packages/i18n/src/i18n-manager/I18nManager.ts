@@ -15,13 +15,13 @@ import { CustomMapping } from 'generaltranslation/types';
 import { ResolutionOptions } from '../translation-functions/types/options';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
-import { hashMessage } from '../utils/hashMessage';
 import {
   SafeTranslationsLoader,
   TranslationsLoader,
 } from './translations-manager/translations-loaders/types';
 import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
-import { createTranslationLoader } from './translations-manager/utils/createTranslationLoader';
+// TODO: rename
+import { createTranslationLoader as _createTranslationLoader } from './translations-manager/utils/createTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { TranslationsCache } from './translations-manager/utils/TranslationsCache';
 import { Hash } from './translations-manager/utils/LocaleTranslationCache';
@@ -44,6 +44,7 @@ class I18nManager<
 
   /**
    * Cache for translations
+   * @deprecated use translationsCache instead
    */
   private translationsManager: TranslationsManager<TranslationType>;
 
@@ -77,26 +78,17 @@ class I18nManager<
       new FallbackStorageAdapter();
     this.translationsManager = new TranslationsManager(params);
 
-    // Setup translations cache
+    // Create cache miss handlers
+    const loadTranslations = createTranslationLoader<TranslationType>(params);
     const createTranslateMany = createTranslateManyFactory(
       this.getGTClass(),
       DEFAULT_TRANSLATION_TIMEOUT
     );
-    const loadTranslations = createTranslationLoader({
-      loadTranslations: params.loadTranslations,
-      type: getLoadTranslationsType(params),
-      remoteTranslationLoaderParams: {
-        cacheUrl: params.cacheUrl,
-        projectId: params.projectId,
-        _versionId: params._versionId,
-        _branchId: params._branchId,
-        customMapping: params.customMapping,
-      },
-    }) as SafeTranslationsLoader<TranslationType>;
 
+    // Setup translations cache
     this.translationsCache = new TranslationsCache<TranslationType>({
-      createTranslateMany,
       loadTranslations,
+      createTranslateMany,
     });
   }
 
@@ -179,9 +171,10 @@ class I18nManager<
 
   /**
    * Get the translation loader function
+   * @deprecated wrap a cb around loadTranslations instead
    */
   getTranslationLoader(): TranslationsLoader {
-    return this.translationsManager.getTranslationLoader();
+    return (locale: string) => this.loadTranslations(locale);
   }
 
   // ========== Translation Resolution ========== //
@@ -189,12 +182,10 @@ class I18nManager<
   // ----- New Operations ----- //
 
   /**
-   * Get translations
    * Loads in translations for a given locale
-   *
-   * This is used by gt-tanstack-start to access the translations object directly
+   * Edge case usage: access the translations object directly
    */
-  async getTranslationsObject(
+  async loadTranslations(
     locale: string = this.getLocale()
   ): Promise<Record<Hash, TranslationType>> {
     // Get the locale cache
@@ -213,7 +204,7 @@ class I18nManager<
     message: T,
     options: ResolutionOptions
   ): T | undefined {
-    const locale = this.getLocale();
+    const locale = options.$locale ?? this.getLocale();
 
     // Get the locale cache
     const localeCache = this.translationsCache.get(locale);
@@ -249,6 +240,8 @@ class I18nManager<
    * @param locale - The locale to get the lookup translation for
    * @param prefetchEntries - Any entries we want to prefetch during the async period
    * @returns A lookup translation function
+   *
+   * @important prefetchEntries must all be the same locale
    */
   async getLookupTranslation(
     locale: string = this.getLocale(),
@@ -263,6 +256,17 @@ class I18nManager<
       locale === this.config.defaultLocale
     ) {
       return (message) => message;
+    }
+
+    // Invariant: all prefetchEntries must be the same locale
+    const filteredPrefetchEntries = filterPrefetchEntriesByLocale(
+      prefetchEntries,
+      locale
+    );
+    if (filteredPrefetchEntries.length !== prefetchEntries.length) {
+      console.warn(
+        `I18nManager: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${locale}`
+      );
     }
 
     // Get Locale Cache
@@ -291,6 +295,7 @@ class I18nManager<
    * @param {string} message - The message to get the translation for
    * @param {ResolutionOptions} [options] - The options for the translation
    * @returns {TranslationType | undefined} The translation for the given message and options synchronously
+   * @deprecated use lookupTranslation instead
    */
   resolveTranslationSync: TranslationResolver<TranslationType> = <
     T extends TranslationType = TranslationType,
@@ -298,17 +303,14 @@ class I18nManager<
     message: T,
     options: ResolutionOptions
   ) => {
-    const locale = this.getLocale();
-    const translations = this.translationsManager.getTranslations(locale);
-    if (!translations) return undefined;
-    const hash = hashMessage(message, options);
-    return translations[hash] as T;
+    return this.lookupTranslation(message, options);
   };
 
   // ----- Async Operations ----- //
 
   /**
    * Get the translations
+   * @deprecated use loadTranslations instead
    */
   async getTranslations(
     locale: string = this.getLocale()
@@ -316,7 +318,7 @@ class I18nManager<
     if (!this.config.locales.includes(locale)) {
       throw new Error(`Locale ${locale} not found in config`);
     }
-    return this.translationsManager.getTranslationsPromise(locale);
+    return this.loadTranslations(locale);
   }
 
   /**
@@ -326,35 +328,13 @@ class I18nManager<
    * @returns A function that resolves the translations for a given message and options synchronously
    *
    * Note: we can assume that the translation is a string because we are passing a string
+   *
+   * @deprecated use getLookupTranslation instead
    */
   async getTranslationResolver(
     locale: string = this.getLocale()
   ): Promise<TranslationResolver<TranslationType>> {
-    // Early return if i18n is disabled or default locale
-    if (
-      this.config.enableI18n === false ||
-      locale === this.config.defaultLocale
-    ) {
-      return <T extends TranslationType = TranslationType>(
-        message: T
-      ): T | undefined => message;
-    }
-
-    // Get translations
-    const translations =
-      await this.translationsManager.getTranslationsPromise(locale);
-
-    // Create translation resolver
-    return <T extends TranslationType = TranslationType>(
-      message: T,
-      options: ResolutionOptions
-    ): T | undefined => {
-      // Calculate hash
-      const hash = hashMessage(message, options);
-
-      // Return translation or undefined
-      return translations[hash] as T;
-    };
+    return this.getLookupTranslation(locale);
   }
 
   // ========== Metadata ========== //
@@ -505,3 +485,54 @@ type TranslationResolver<U extends Translation = Translation> = <
   message: T,
   options: ResolutionOptions
 ) => T | undefined;
+
+/**
+ * A prefetch entry is an entry that we want to prefetch during the async period
+ * @template TranslationType - The type of the translation
+ * @param {TranslationType} message - The message to prefetch
+ * @param {ResolutionOptions} options - The options for the prefetch
+ * @returns {PrefetchEntry<TranslationType>} The prefetch entry
+ */
+type PrefetchEntry<TranslationType extends Translation> = {
+  message: TranslationType;
+  options: ResolutionOptions;
+};
+
+/**
+ * Filter prefetch entries by locale
+ * @template TranslationType - The type of the translation
+ * @param {PrefetchEntry<TranslationType>[]} prefetchEntries - The prefetch entries to filter
+ * @param {string} locale - The locale to filter by
+ * @returns {PrefetchEntry<TranslationType>[]} The filtered prefetch entries
+ */
+function filterPrefetchEntriesByLocale<TranslationType extends Translation>(
+  prefetchEntries: PrefetchEntry<TranslationType>[],
+  locale: string
+): PrefetchEntry<TranslationType>[] {
+  const filteredEntries = prefetchEntries.filter(
+    (entry) => entry.options.$locale && entry.options.$locale === locale
+  );
+  return filteredEntries;
+}
+
+/**
+ * TODO: abstract this into a separate file
+ */
+function createTranslationLoader<
+  TranslationType extends Translation,
+  StorageAdapterInstanceType extends StorageAdapter = StorageAdapter,
+>(
+  params: I18nManagerConstructorParams<StorageAdapterInstanceType>
+): SafeTranslationsLoader<TranslationType> {
+  return _createTranslationLoader({
+    loadTranslations: params.loadTranslations,
+    type: getLoadTranslationsType(params),
+    remoteTranslationLoaderParams: {
+      cacheUrl: params.cacheUrl,
+      projectId: params.projectId,
+      _versionId: params._versionId,
+      _branchId: params._branchId,
+      customMapping: params.customMapping,
+    },
+  }) as SafeTranslationsLoader<TranslationType>;
+}

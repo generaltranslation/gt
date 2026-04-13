@@ -9,7 +9,7 @@ export const resolveJsxTranslation: ResolveJsxTranslationFunction = (
   options = {}
 ) => {
   const i18nManager = getI18nManager();
-  const translation = i18nManager.resolveTranslationSync(children, {
+  const translation = i18nManager.lookupTranslation(children, {
     $format: 'JSX',
     ...options,
   });

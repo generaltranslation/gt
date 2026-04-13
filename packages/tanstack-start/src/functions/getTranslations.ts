@@ -12,5 +12,5 @@ export async function getTranslations(): Promise<Translations | undefined> {
   const i18nManager = getI18nManager();
   // TODO: improve types by TranslationManager overrides
   // need to cast b/c gt-i18n assumes string only translation
-  return (await i18nManager.getTranslations(locale)) as Translations;
+  return (await i18nManager.loadTranslations(locale)) as Translations;
 }

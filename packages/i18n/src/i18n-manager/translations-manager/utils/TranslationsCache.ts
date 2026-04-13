@@ -15,11 +15,10 @@ export type Locale = string;
  * @property {number} expiresAt - The time at which the cache entry expires.
  * @property {LocaleTranslationsCache<TranslationValue>} translations - The translations cache for the locale.
  */
-type CacheEntry<TranslationValue extends Translation | unknown = Translation> =
-  {
-    expiresAt: number;
-    localeCache: LocaleTranslationsCache<TranslationValue>;
-  };
+type CacheEntry<TranslationValue extends Translation | unknown> = {
+  expiresAt: number;
+  localeCache: LocaleTranslationsCache<TranslationValue>;
+};
 
 /**
  * Safe translations loader function type
@@ -34,7 +33,7 @@ export type SafeTranslationsLoader<
  * Cache for translations
  */
 export class TranslationsCache<
-  TranslationValue extends Translation | unknown = Translation,
+  TranslationValue extends Translation | unknown,
 > extends Cache<Locale, Locale, CacheEntry<TranslationValue>> {
   /**
    * Translation loader function

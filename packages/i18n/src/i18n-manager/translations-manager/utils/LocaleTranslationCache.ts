@@ -38,7 +38,7 @@ type QueueEntry<TranslationValue extends Translation | unknown> = {
   key: Hash;
   source: TranslationValue;
   metadata: EntryMetadata;
-  resolve: (value: TranslationValue) => void;
+  resolve: (value: Translation | unknown) => void;
   reject: (reason?: unknown) => void;
 };
 
@@ -53,7 +53,7 @@ export type TranslateMany = (
  * A cache for a single locale's translations
  */
 export class LocaleTranslationsCache<
-  TranslationValue extends Translation | unknown = Translation,
+  TranslationValue extends Translation | unknown,
 > extends Cache<TranslationKey<TranslationValue>, Hash, TranslationValue> {
   /**
    * Queue of translation requests
@@ -100,7 +100,7 @@ export class LocaleTranslationsCache<
    * @param key - The translation key
    * @returns The translation value
    */
-  public get<T extends TranslationValue = TranslationValue>(
+  public get<T extends TranslationValue>(
     key: TranslationKey<T>
   ): T | undefined {
     return this.getCache(key) as T | undefined;
@@ -111,7 +111,7 @@ export class LocaleTranslationsCache<
    * @param key - The translation key
    * @returns The translation value
    */
-  public miss<T extends TranslationValue = TranslationValue>(
+  public miss<T extends TranslationValue>(
     key: TranslationKey<T>
   ): Promise<T | undefined> {
     return this.missCache(key) as Promise<T | undefined>;
@@ -215,7 +215,7 @@ export class LocaleTranslationsCache<
             }),
           dataFormat: options.$format,
         },
-        resolve,
+        resolve: (value) => resolve(value as TranslationValue),
         reject,
       });
     });
