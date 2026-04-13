@@ -78,8 +78,6 @@ abstract class Cache<InputKey, CacheKey extends string, CacheValue> {
       // Update cache
       this.cache[cacheKey] = value;
       return value;
-    } catch (error) {
-      throw error;
     } finally {
       delete this.fallbackPromises[cacheKey];
     }

@@ -188,13 +188,18 @@ class I18nManager<
   async loadTranslations(
     locale: string = this.getLocale()
   ): Promise<Record<Hash, TranslationType>> {
-    // Get the locale cache
-    let localeCache = this.translationsCache.get(locale);
-    if (!localeCache) localeCache = await this.translationsCache.miss(locale);
+    try {
+      // Get the locale cache
+      let localeCache = this.translationsCache.get(locale);
+      if (!localeCache) localeCache = await this.translationsCache.miss(locale);
 
-    // Get the translations
-    const translations = localeCache.getInternalCache();
-    return translations;
+      // Get the translations
+      const translations = localeCache.getInternalCache();
+      return translations;
+    } catch (error) {
+      this.handleError(error);
+      return {};
+    }
   }
 
   /**
@@ -204,14 +209,19 @@ class I18nManager<
     message: T,
     options: ResolutionOptions
   ): T | undefined {
-    const locale = options.$locale ?? this.getLocale();
+    try {
+      const locale = options.$locale ?? this.getLocale();
 
-    // Get the locale cache
-    const localeCache = this.translationsCache.get(locale);
-    if (!localeCache) return undefined;
+      // Get the locale cache
+      const localeCache = this.translationsCache.get(locale);
+      if (!localeCache) return undefined;
 
-    // Get the translation
-    return localeCache.get({ message, options });
+      // Get the translation
+      return localeCache.get({ message, options });
+    } catch (error) {
+      this.handleError(error);
+      return undefined;
+    }
   }
 
   /**
@@ -221,17 +231,22 @@ class I18nManager<
   async lookupTranslationWithFallback<
     T extends TranslationType = TranslationType,
   >(message: T, options: ResolutionOptions): Promise<T | undefined> {
-    const locale = options.$locale ?? this.getLocale();
+    try {
+      const locale = options.$locale ?? this.getLocale();
 
-    // Get the locale cache
-    let localeCache = this.translationsCache.get(locale);
-    if (!localeCache) localeCache = await this.translationsCache.miss(locale);
+      // Get the locale cache
+      let localeCache = this.translationsCache.get(locale);
+      if (!localeCache) localeCache = await this.translationsCache.miss(locale);
 
-    // Get the translation (falling back to runtime translate)
-    let translation = localeCache.get({ message, options });
-    if (!translation)
-      translation = await localeCache.miss({ message, options });
-    return translation;
+      // Get the translation (falling back to runtime translate)
+      let translation = localeCache.get({ message, options });
+      if (!translation)
+        translation = await localeCache.miss({ message, options });
+      return translation;
+    } catch (error) {
+      this.handleError(error);
+      return undefined;
+    }
   }
 
   /**
@@ -250,42 +265,47 @@ class I18nManager<
       options: ResolutionOptions;
     }[] = []
   ): Promise<TranslationResolver<TranslationType>> {
-    // Early return if i18n is disabled or default locale
-    if (
-      this.config.enableI18n === false ||
-      locale === this.config.defaultLocale
-    ) {
+    try {
+      // Early return if i18n is disabled or default locale
+      if (
+        this.config.enableI18n === false ||
+        locale === this.config.defaultLocale
+      ) {
+        return (message) => message;
+      }
+
+      // Invariant: all prefetchEntries must be the same locale
+      const filteredPrefetchEntries = filterPrefetchEntriesByLocale(
+        prefetchEntries,
+        locale
+      );
+      if (filteredPrefetchEntries.length !== prefetchEntries.length) {
+        console.warn(
+          `I18nManager: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${locale}`
+        );
+      }
+
+      // Get Locale Cache
+      let localeCache = this.translationsCache.get(locale);
+      if (!localeCache) localeCache = await this.translationsCache.miss(locale);
+      if (!localeCache) return () => undefined;
+
+      // Prefetch any entries during async block
+      await Promise.all(
+        prefetchEntries
+          .filter((entry) => !localeCache.get(entry))
+          .map((entry) => localeCache.miss(entry))
+      );
+
+      // Create translation resolver
+      return (message, options: ResolutionOptions) => {
+        // Calculate hash
+        return localeCache.get({ message, options });
+      };
+    } catch (error) {
+      this.handleError(error);
       return (message) => message;
     }
-
-    // Invariant: all prefetchEntries must be the same locale
-    const filteredPrefetchEntries = filterPrefetchEntriesByLocale(
-      prefetchEntries,
-      locale
-    );
-    if (filteredPrefetchEntries.length !== prefetchEntries.length) {
-      console.warn(
-        `I18nManager: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${locale}`
-      );
-    }
-
-    // Get Locale Cache
-    let localeCache = this.translationsCache.get(locale);
-    if (!localeCache) localeCache = await this.translationsCache.miss(locale);
-    if (!localeCache) return () => undefined;
-
-    // Prefetch any entries during async block
-    await Promise.all(
-      prefetchEntries
-        .filter((entry) => !localeCache.get(entry))
-        .map((entry) => localeCache.miss(entry))
-    );
-
-    // Create translation resolver
-    return (message, options: ResolutionOptions) => {
-      // Calculate hash
-      return localeCache.get({ message, options });
-    };
   }
 
   // ----- Sync Operations ----- //
@@ -367,6 +387,21 @@ class I18nManager<
       gt.isSameLanguage(defaultLocale, locale)
     );
   }
+
+  /**
+   * Handle errors
+   * Soft error in production, throw in development
+   */
+  private handleError(error: unknown): void {
+    switch (this.config.environment) {
+      case 'development':
+        throw error;
+      case 'production':
+      default:
+        logger.error('I18nManager' + error);
+        break;
+    }
+  }
 }
 
 export { I18nManager };
@@ -390,6 +425,7 @@ function standardizeConfig<T extends StorageAdapter>(
   });
 
   return {
+    environment: config.environment || 'production',
     enableI18n: config.enableI18n !== undefined ? config.enableI18n : true,
     projectId: config.projectId,
     devApiKey: config.devApiKey,

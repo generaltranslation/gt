@@ -254,12 +254,6 @@ export class LocaleTranslationsCache<
     try {
       return await this._translateMany(requests);
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        logger.warn('Translation request timed out');
-      } else {
-        logger.error(String(error));
-      }
-
       for (const entry of batch) {
         entry.reject(error);
       }
