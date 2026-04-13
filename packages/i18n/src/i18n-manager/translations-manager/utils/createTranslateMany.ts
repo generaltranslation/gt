@@ -1,5 +1,5 @@
-import type { Locale } from './TranslationsCache';
-import { TranslateMany } from './LocaleTranslationCache';
+import type { Locale } from '../TranslationsCache';
+import { TranslateMany } from '../LocaleTranslationCache';
 import type { GT } from 'generaltranslation';
 
 /**

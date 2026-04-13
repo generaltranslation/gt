@@ -1,8 +1,8 @@
-import { LookupOptions } from '../../../translation-functions/types/options';
+import { LookupOptions } from '../../translation-functions/types/options';
 import { Cache } from './Cache';
-import { Translation } from './types/translation-data';
+import { Translation } from './utils/types/translation-data';
 import type { GT } from 'generaltranslation';
-import { hashMessage } from '../../../utils/hashMessage';
+import { hashMessage } from '../../utils/hashMessage';
 import {
   Content,
   EntryMetadata,

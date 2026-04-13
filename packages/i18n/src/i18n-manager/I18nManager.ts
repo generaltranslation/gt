@@ -1,6 +1,5 @@
 import { publishValidationResults } from './validation/publishValidationResults';
 import logger from '../logs/logger';
-import { TranslationsManager } from './translations-manager/TranslationsManager';
 import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
 import { StorageAdapterType } from './storage-adapter/types';
 import { validateConfig } from './validation/validateConfig';
@@ -21,10 +20,10 @@ import {
 } from './translations-manager/translations-loaders/types';
 import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
 // TODO: rename
-import { createTranslationLoader as _createTranslationLoader } from './translations-manager/utils/createTranslationLoader';
+import { routeCreateTranslationLoader as _createTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
-import { TranslationsCache } from './translations-manager/utils/TranslationsCache';
-import { Hash } from './translations-manager/utils/LocaleTranslationCache';
+import { TranslationsCache } from './translations-manager/TranslationsCache';
+import { Hash } from './translations-manager/LocaleTranslationCache';
 
 // TODO: this is a placeholder, find a precedent for this value
 const DEFAULT_TRANSLATION_TIMEOUT = 8_000; // 8 seconds
@@ -546,7 +545,7 @@ function filterPrefetchEntriesByLocale<TranslationType extends Translation>(
   locale: string
 ): PrefetchEntry<TranslationType>[] {
   const filteredEntries = prefetchEntries.filter(
-    (entry) => entry.options.$locale && entry.options.$locale === locale
+    (entry) => entry.options.$locale == null || entry.options.$locale === locale
   );
   return filteredEntries;
 }

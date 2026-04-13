@@ -1,8 +1,8 @@
 import { Cache } from './Cache';
 import { Hash, LocaleTranslationsCache } from './LocaleTranslationCache';
-import { Translation } from './types/translation-data';
-import { DEFAULT_CACHE_EXPIRY_TIME } from './constants';
-import { CreateTranslateMany } from './createTranslateMany';
+import { Translation } from './utils/types/translation-data';
+import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
+import { CreateTranslateMany } from './utils/createTranslateMany';
 
 /**
  * Just being explicit about the purpose of this type

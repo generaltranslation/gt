@@ -1,9 +1,9 @@
 import { CustomMapping } from 'generaltranslation/types';
-import { TranslationsLoader } from '../translations-loaders/types';
+import { TranslationsLoader } from './types';
 import { LoadTranslationsType } from '../../utils/getLoadTranslationsType';
 import logger from '../../../logs/logger';
-import { createRemoteTranslationLoader } from '../translations-loaders/createRemoteTranslationLoader';
-import { createFallbackTranslationLoader } from '../translations-loaders/createFallbackTranslationLoader';
+import { createRemoteTranslationLoader } from './createRemoteTranslationLoader';
+import { createFallbackTranslationLoader } from './createFallbackTranslationLoader';
 
 /**
  * Creates a translation loader function that loads translations from a remote store (CDN or other)
@@ -13,7 +13,7 @@ import { createFallbackTranslationLoader } from '../translations-loaders/createF
  * @param params.loadTranslations - The custom translations loader function
  * @returns A translation loader function
  */
-export function createTranslationLoader({
+export function routeCreateTranslationLoader({
   type,
   remoteTranslationLoaderParams,
   loadTranslations,
