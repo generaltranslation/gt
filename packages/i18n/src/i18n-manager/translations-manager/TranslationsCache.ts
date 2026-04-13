@@ -51,7 +51,7 @@ export type TranslateMany = (
 /**
  * A cache for a single locale's translations
  */
-export class _LocaleTranslationsCache<
+export class TranslationsCache<
   TranslationValue extends Translation,
 > extends Cache<TranslationKey<TranslationValue>, Hash, TranslationValue> {
   /**

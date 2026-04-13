@@ -23,7 +23,7 @@ import { createTranslateManyFactory } from './translations-manager/utils/createT
 import { routeCreateTranslationLoader as _createTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { LocalesCache } from './translations-manager/LocalesCache';
-import { Hash } from './translations-manager/_LocaleTranslationCache';
+import { Hash } from './translations-manager/TranslationsCache';
 
 // TODO: this is a placeholder, find a precedent for this value
 const DEFAULT_TRANSLATION_TIMEOUT = 8_000; // 8 seconds
