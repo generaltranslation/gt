@@ -48,9 +48,14 @@ export type StringFormat = 'ICU' | 'I18NEXT' | 'STRING';
 export type DataFormat = 'JSX' | StringFormat;
 
 /**
+ * String format content
+ */
+export type StringContent = IcuMessage | StringMessage | I18nextMessage;
+
+/**
  * A content type representing JSX, ICU, and I18next messages
  */
-export type Content = JsxChildren | IcuMessage | StringMessage | I18nextMessage;
+export type Content = JsxChildren | StringContent;
 
 /**
  * A content type representing JSX elements

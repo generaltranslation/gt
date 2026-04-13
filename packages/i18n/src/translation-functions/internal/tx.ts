@@ -1,7 +1,7 @@
-import { RuntimeTranslationOptions } from '../types/options';
-import { TxFunctionType } from '../types/functions';
+import { LookupOptions, RuntimeTranslationOptions } from '../types/options';
 import { getI18nManager } from '../../i18n-manager/singleton-operations';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
+import { DataFormat, JsxChildren } from 'generaltranslation/types';
 
 /**
  * Translates a message at runtime.
@@ -15,31 +15,45 @@ import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
  *
  * @example
  * // Runtime translation with interpolation
- * const progress = await tx(`Processing ${status}`, { locale: 'es-MX' });
+ * const progress = await tx(`Processing ${status}`, { $locale: 'es-MX' });
  */
+export async function tx(
+  content: string,
+  options?: RuntimeTranslationOptions
+): Promise<string>;
 
-export const tx: TxFunctionType = async (
-  message: string,
-  options: RuntimeTranslationOptions = {}
-): Promise<string> => {
-  const $format = options.$format ?? 'STRING';
+export async function tx(
+  content: JsxChildren,
+  options?: RuntimeTranslationOptions & { $format: 'JSX' }
+): Promise<JsxChildren>;
+
+export async function tx<T extends DataFormat>(
+  content: T extends 'JSX' ? JsxChildren : string,
+  options?: T extends 'JSX'
+    ? RuntimeTranslationOptions & { $format: 'JSX' }
+    : RuntimeTranslationOptions
+): Promise<T extends 'JSX' ? JsxChildren : string> {
+  const resolutionOptions: LookupOptions = {
+    $format: 'STRING',
+    ...options,
+  };
+
+  // Lookup translation
   const i18nManager = getI18nManager();
-  const translation = await i18nManager.lookupTranslationWithFallback(message, {
-    $format,
-    ...options,
-  });
-  if (translation) {
-    return interpolateMessage(translation, {
-      ...options,
-      $format,
-      $locale: i18nManager.getLocale(),
-      $_fallback: message,
-    });
+  const translation = await i18nManager.lookupTranslationWithFallback(
+    content,
+    resolutionOptions
+  );
+
+  // No interpolation for JSX
+  if (resolutionOptions.$format === 'JSX') {
+    return translation ?? content;
   }
-  return interpolateMessage(message, {
-    ...options,
-    $format,
-    $locale: i18nManager.getDefaultLocale(),
-    $_fallback: message,
+
+  // Format result
+  return interpolateMessage({
+    source: content as string,
+    target: translation as string | undefined,
+    options: resolutionOptions,
   });
-};
+}

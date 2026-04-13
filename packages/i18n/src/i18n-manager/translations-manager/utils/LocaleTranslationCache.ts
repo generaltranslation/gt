@@ -1,4 +1,4 @@
-import { ResolutionOptions } from '../../../translation-functions/types/options';
+import { LookupOptions } from '../../../translation-functions/types/options';
 import { Cache } from './Cache';
 import { Translation } from './types/translation-data';
 import type { GT } from 'generaltranslation';
@@ -8,7 +8,6 @@ import {
   EntryMetadata,
   TranslateManyEntry,
 } from 'generaltranslation/types';
-import logger from '../../../logs/logger';
 
 // See gt-next
 const MAX_BATCH_SIZE = 25;
@@ -19,11 +18,11 @@ const BATCH_INTERVAL = 50;
  * InputKey type for lookups
  * @typedef {Object} TranslationKey
  * @property {TranslationValue} message - The message from the source
- * @property {ResolutionOptions} options - The options for the translation
+ * @property {LookupOptions} options - The options for the translation
  */
-type TranslationKey<TranslationValue extends Translation | unknown> = {
+type TranslationKey<TranslationValue extends Translation> = {
   message: TranslationValue;
-  options: ResolutionOptions;
+  options: LookupOptions;
 };
 
 /**
@@ -34,11 +33,11 @@ export type Hash = string;
 /**
  * A queue entry for batching, used to also handle reject and resolve
  */
-type QueueEntry<TranslationValue extends Translation | unknown> = {
+type QueueEntry<TranslationValue extends Translation> = {
   key: Hash;
   source: TranslationValue;
   metadata: EntryMetadata;
-  resolve: (value: Translation | unknown) => void;
+  resolve: (value: Translation) => void;
   reject: (reason?: unknown) => void;
 };
 
@@ -53,7 +52,7 @@ export type TranslateMany = (
  * A cache for a single locale's translations
  */
 export class LocaleTranslationsCache<
-  TranslationValue extends Translation | unknown,
+  TranslationValue extends Translation,
 > extends Cache<TranslationKey<TranslationValue>, Hash, TranslationValue> {
   /**
    * Queue of translation requests
@@ -286,7 +285,7 @@ export class LocaleTranslationsCache<
  * Convert a TranslationKey to a TranslateManyEntry
  */
 function convertBatchToTranslateManyParams<
-  TranslationValue extends Translation | unknown,
+  TranslationValue extends Translation,
 >(batch: QueueEntry<TranslationValue>[]): Record<Hash, TranslateManyEntry> {
   return batch.reduce<Record<Hash, TranslateManyEntry>>((acc, entry) => {
     acc[entry.key] = {

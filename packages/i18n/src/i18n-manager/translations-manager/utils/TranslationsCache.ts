@@ -15,7 +15,7 @@ export type Locale = string;
  * @property {number} expiresAt - The time at which the cache entry expires.
  * @property {LocaleTranslationsCache<TranslationValue>} translations - The translations cache for the locale.
  */
-type CacheEntry<TranslationValue extends Translation | unknown> = {
+type CacheEntry<TranslationValue extends Translation> = {
   expiresAt: number;
   localeCache: LocaleTranslationsCache<TranslationValue>;
 };
@@ -25,15 +25,15 @@ type CacheEntry<TranslationValue extends Translation | unknown> = {
  * @returns A promise that resolves to a mapping of strings to {@link Translation}
  * TODO: rename this because we are no longer doing try/catch around the translation loader
  */
-export type SafeTranslationsLoader<
-  TranslationValue extends Translation | unknown,
-> = (locale: string) => Promise<Record<Hash, TranslationValue>>;
+export type SafeTranslationsLoader<TranslationValue extends Translation> = (
+  locale: string
+) => Promise<Record<Hash, TranslationValue>>;
 
 /**
  * Cache for translations
  */
 export class TranslationsCache<
-  TranslationValue extends Translation | unknown,
+  TranslationValue extends Translation,
 > extends Cache<Locale, Locale, CacheEntry<TranslationValue>> {
   /**
    * Translation loader function

@@ -12,7 +12,7 @@ import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT, standardizeLocale } from 'generaltranslation';
 import { CustomMapping } from 'generaltranslation/types';
-import { ResolutionOptions } from '../translation-functions/types/options';
+import { LookupOptions } from '../translation-functions/types/options';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import {
@@ -32,13 +32,13 @@ const DEFAULT_TRANSLATION_TIMEOUT = 8_000; // 8 seconds
 /**
  * Class for managing translation functionality
  * @template StorageAdapterInstanceType - The type of the storage adapter
- * @template TranslationType - The type of the translation that will be cached
+ * @template TranslationValue - The type of the translation that will be cached
  *
  * TODO: next major version, move U to the first generic and make it a required parameter, no default value
  */
 class I18nManager<
   StorageAdapterInstanceType extends StorageAdapter = StorageAdapter,
-  TranslationType extends Translation = Translation,
+  TranslationValue extends Translation = Translation,
 > {
   protected config: I18nManagerConfig;
 
@@ -46,7 +46,7 @@ class I18nManager<
    * Cache for translations
    * @deprecated use translationsCache instead
    */
-  private translationsManager: TranslationsManager<TranslationType>;
+  // private translationsManager: TranslationsManager<TranslationType>;
 
   /**
    * Store adapter
@@ -56,7 +56,7 @@ class I18nManager<
   /**
    * Cache for translations
    */
-  private translationsCache: TranslationsCache<TranslationType>;
+  private translationsCache: TranslationsCache<TranslationValue>;
 
   /**
    * Creates an instance of I18nManager.
@@ -76,17 +76,17 @@ class I18nManager<
     this.storeAdapter =
       (params.storeAdapter as StorageAdapterInstanceType) ??
       new FallbackStorageAdapter();
-    this.translationsManager = new TranslationsManager(params);
+    // this.translationsManager = new TranslationsManager(params);
 
     // Create cache miss handlers
-    const loadTranslations = createTranslationLoader<TranslationType>(params);
+    const loadTranslations = createTranslationLoader<TranslationValue>(params);
     const createTranslateMany = createTranslateManyFactory(
       this.getGTClass(),
       DEFAULT_TRANSLATION_TIMEOUT
     );
 
     // Setup translations cache
-    this.translationsCache = new TranslationsCache<TranslationType>({
+    this.translationsCache = new TranslationsCache<TranslationValue>({
       loadTranslations,
       createTranslateMany,
     });
@@ -187,7 +187,7 @@ class I18nManager<
    */
   async loadTranslations(
     locale: string = this.getLocale()
-  ): Promise<Record<Hash, TranslationType>> {
+  ): Promise<Record<Hash, TranslationValue>> {
     try {
       // Get the locale cache
       let localeCache = this.translationsCache.get(locale);
@@ -205,9 +205,9 @@ class I18nManager<
   /**
    * Just lookup a translation
    */
-  lookupTranslation<T extends TranslationType = TranslationType>(
+  lookupTranslation<T extends TranslationValue = TranslationValue>(
     message: T,
-    options: ResolutionOptions
+    options: LookupOptions
   ): T | undefined {
     try {
       const locale = options.$locale ?? this.getLocale();
@@ -229,8 +229,8 @@ class I18nManager<
    * If it's not found, use the fallback (runtime translate)
    */
   async lookupTranslationWithFallback<
-    T extends TranslationType = TranslationType,
-  >(message: T, options: ResolutionOptions): Promise<T | undefined> {
+    T extends TranslationValue = TranslationValue,
+  >(message: T, options: LookupOptions): Promise<T | undefined> {
     try {
       const locale = options.$locale ?? this.getLocale();
 
@@ -261,10 +261,10 @@ class I18nManager<
   async getLookupTranslation(
     locale: string = this.getLocale(),
     prefetchEntries: {
-      message: TranslationType;
-      options: ResolutionOptions;
+      message: TranslationValue;
+      options: LookupOptions;
     }[] = []
-  ): Promise<TranslationResolver<TranslationType>> {
+  ): Promise<TranslationResolver<TranslationValue>> {
     try {
       // Early return if i18n is disabled or default locale
       if (
@@ -298,7 +298,7 @@ class I18nManager<
       );
 
       // Create translation resolver
-      return (message, options: ResolutionOptions) => {
+      return (message, options: LookupOptions) => {
         // Calculate hash
         return localeCache.get({ message, options });
       };
@@ -313,15 +313,15 @@ class I18nManager<
   /**
    * Get the translations (error on unloaded translations)
    * @param {string} message - The message to get the translation for
-   * @param {ResolutionOptions} [options] - The options for the translation
-   * @returns {TranslationType | undefined} The translation for the given message and options synchronously
+   * @param {LookupOptions} [options] - The options for the translation
+   * @returns {TranslationValue | undefined} The translation for the given message and options synchronously
    * @deprecated use lookupTranslation instead
    */
-  resolveTranslationSync: TranslationResolver<TranslationType> = <
-    T extends TranslationType = TranslationType,
+  resolveTranslationSync: TranslationResolver<TranslationValue> = <
+    T extends TranslationValue = TranslationValue,
   >(
     message: T,
-    options: ResolutionOptions
+    options: LookupOptions
   ) => {
     return this.lookupTranslation(message, options);
   };
@@ -334,7 +334,7 @@ class I18nManager<
    */
   async getTranslations(
     locale: string = this.getLocale()
-  ): Promise<Translations<TranslationType>> {
+  ): Promise<Translations<TranslationValue>> {
     if (!this.config.locales.includes(locale)) {
       throw new Error(`Locale ${locale} not found in config`);
     }
@@ -353,7 +353,7 @@ class I18nManager<
    */
   async getTranslationResolver(
     locale: string = this.getLocale()
-  ): Promise<TranslationResolver<TranslationType>> {
+  ): Promise<TranslationResolver<TranslationValue>> {
     return this.getLookupTranslation(locale);
   }
 
@@ -512,26 +512,26 @@ function standardizeLocales(config: {
  * A translation resolver is a function that synchronously resolves a translation
  * @template U - The type of the translation (default: Translation)
  * @param {U} message - The message to get the translation for
- * @param {ResolutionOptions} [options] - The options for the translation
+ * @param {LookupOptions} [options] - The options for the translation
  * @returns {U | undefined} The translation for the given message and options or undefined if the translation is not found
  */
 type TranslationResolver<U extends Translation = Translation> = <
   T extends U = U,
 >(
   message: T,
-  options: ResolutionOptions
+  options: LookupOptions
 ) => T | undefined;
 
 /**
  * A prefetch entry is an entry that we want to prefetch during the async period
  * @template TranslationType - The type of the translation
  * @param {TranslationType} message - The message to prefetch
- * @param {ResolutionOptions} options - The options for the prefetch
+ * @param {LookupOptions} options - The options for the prefetch
  * @returns {PrefetchEntry<TranslationType>} The prefetch entry
  */
 type PrefetchEntry<TranslationType extends Translation> = {
   message: TranslationType;
-  options: ResolutionOptions;
+  options: LookupOptions;
 };
 
 /**

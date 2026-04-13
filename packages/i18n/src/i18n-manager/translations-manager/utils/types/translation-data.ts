@@ -13,7 +13,7 @@ export type Translation = Content;
  * Object containing translations for a single locale
  * TODO: when done, make the generic default to Translation
  */
-export type Translations<T extends Translation | unknown = Translation> = {
+export type Translations<T extends Translation = Translation> = {
   [hash: string]: T;
 };
 

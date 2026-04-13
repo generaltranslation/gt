@@ -1,17 +1,17 @@
 import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
-import { ResolutionOptions } from '../translation-functions/types/options';
+import { LookupOptions } from '../translation-functions/types/options';
 import { Translation } from '../types';
 
 /**
  * Hash a message string
  */
-export function hashMessage<T extends Translation | unknown = Translation>(
+export function hashMessage<T extends Translation>(
   message: T,
-  options: ResolutionOptions
+  options: LookupOptions
 ): string {
   return hashSource({
-    source: options.$format === 'JSX' ? message : indexVars(message as string),
+    source: options.$format === 'ICU' ? indexVars(message as string) : message,
     ...(options?.$context && { context: options.$context }),
     ...(options?.$id && { id: options.$id }),
     ...('$maxChars' in options &&

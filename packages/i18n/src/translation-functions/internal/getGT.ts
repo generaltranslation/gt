@@ -1,7 +1,7 @@
 import { getI18nManager } from '../../i18n-manager/singleton-operations';
-import { InlineTranslationOptions } from '../types/options';
+import { InlineTranslationOptions, LookupOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
-import { interpolateIcuMessage } from '../utils/interpolation/interpolateIcuMessage';
+import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
@@ -37,21 +37,19 @@ export async function getGT(): Promise<GTFunctionType> {
     message: string,
     options: InlineTranslationOptions = {}
   ) => {
-    const translation = lookupTranslation(message, {
+    const resolutionOptions: LookupOptions = {
       $format: 'ICU',
       ...options,
-    });
-    if (translation) {
-      return interpolateIcuMessage(translation, {
-        ...options,
-        $locale: i18nManager.getLocale(),
-        $_fallback: message,
-      });
-    }
-    return interpolateIcuMessage(message, {
-      ...options,
-      $locale: i18nManager.getDefaultLocale(),
-      $_fallback: message,
+    };
+
+    // Lookup translation
+    const translation = lookupTranslation(message, resolutionOptions);
+
+    // Format result
+    return interpolateMessage({
+      source: message,
+      target: translation,
+      options: resolutionOptions,
     });
   };
 

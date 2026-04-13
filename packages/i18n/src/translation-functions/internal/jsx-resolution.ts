@@ -3,6 +3,7 @@ import { ResolveJsxTranslationFunction } from '../types/functions';
 
 /**
  * Given a JsxChildren and any associated metadata needed for a hash calculation, resolve the associated translation.
+ * @deprecated use resolveTranslation instead
  */
 export const resolveJsxTranslation: ResolveJsxTranslationFunction = (
   children,
