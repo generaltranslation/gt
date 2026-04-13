@@ -87,7 +87,7 @@ export class TranslationsCache<
     key: Locale
   ): CacheEntry<TranslationValue>['localeCache'] | undefined {
     const entry = this.getCache(key);
-    if (!entry || entry.expiresAt < Date.now()) {
+    if (!entry || (entry.expiresAt > 0 && entry.expiresAt < Date.now())) {
       // TODO: should we invalidate associated promises here?
       return undefined;
     }
