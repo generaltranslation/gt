@@ -1,5 +1,5 @@
 import { Cache } from './Cache';
-import { Hash, LocaleTranslationsCache } from './LocaleTranslationCache';
+import { Hash, _LocaleTranslationsCache } from './_LocaleTranslationCache';
 import { Translation } from './utils/types/translation-data';
 import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
 import { CreateTranslateMany } from './utils/createTranslateMany';
@@ -13,11 +13,11 @@ export type Locale = string;
  * Cache entry
  * @typedef {Object} CacheEntry
  * @property {number} expiresAt - The time at which the cache entry expires.
- * @property {LocaleTranslationsCache<TranslationValue>} translations - The translations cache for the locale.
+ * @property {_LocaleTranslationsCache<TranslationValue>} translations - The translations cache for the locale.
  */
 type CacheEntry<TranslationValue extends Translation> = {
   expiresAt: number;
-  localeCache: LocaleTranslationsCache<TranslationValue>;
+  localeCache: _LocaleTranslationsCache<TranslationValue>;
 };
 
 /**
@@ -30,11 +30,13 @@ export type SafeTranslationsLoader<TranslationValue extends Translation> = (
 ) => Promise<Record<Hash, TranslationValue>>;
 
 /**
- * Cache for translations
+ * Cache for looking up translations by locale
  */
-export class TranslationsCache<
-  TranslationValue extends Translation,
-> extends Cache<Locale, Locale, CacheEntry<TranslationValue>> {
+export class LocalesCache<TranslationValue extends Translation> extends Cache<
+  Locale,
+  Locale,
+  CacheEntry<TranslationValue>
+> {
   /**
    * Translation loader function
    */
@@ -132,7 +134,7 @@ export class TranslationsCache<
     const expiresAt = this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
 
     // Cache the promise and expiry timestamp
-    const localeCache = new LocaleTranslationsCache<TranslationValue>({
+    const localeCache = new _LocaleTranslationsCache<TranslationValue>({
       init: await translationsPromise,
       translateMany: this._createTranslateMany(locale),
     });

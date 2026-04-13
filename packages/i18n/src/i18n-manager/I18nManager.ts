@@ -22,8 +22,8 @@ import { createTranslateManyFactory } from './translations-manager/utils/createT
 // TODO: rename
 import { routeCreateTranslationLoader as _createTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
-import { TranslationsCache } from './translations-manager/TranslationsCache';
-import { Hash } from './translations-manager/LocaleTranslationCache';
+import { LocalesCache } from './translations-manager/LocalesCache';
+import { Hash } from './translations-manager/_LocaleTranslationCache';
 
 // TODO: this is a placeholder, find a precedent for this value
 const DEFAULT_TRANSLATION_TIMEOUT = 8_000; // 8 seconds
@@ -55,7 +55,7 @@ class I18nManager<
   /**
    * Cache for translations
    */
-  private translationsCache: TranslationsCache<TranslationValue>;
+  private localesCache: LocalesCache<TranslationValue>;
 
   /**
    * Creates an instance of I18nManager.
@@ -85,7 +85,7 @@ class I18nManager<
     );
 
     // Setup translations cache
-    this.translationsCache = new TranslationsCache<TranslationValue>({
+    this.localesCache = new LocalesCache<TranslationValue>({
       loadTranslations,
       createTranslateMany,
     });
@@ -189,11 +189,11 @@ class I18nManager<
   ): Promise<Record<Hash, TranslationValue>> {
     try {
       // Get the locale cache
-      let localeCache = this.translationsCache.get(locale);
-      if (!localeCache) localeCache = await this.translationsCache.miss(locale);
+      let txCache = this.localesCache.get(locale);
+      if (!txCache) txCache = await this.localesCache.miss(locale);
 
       // Get the translations
-      const translations = localeCache.getInternalCache();
+      const translations = txCache.getInternalCache();
       return translations;
     } catch (error) {
       this.handleError(error);
@@ -212,11 +212,11 @@ class I18nManager<
       const locale = options.$locale ?? this.getLocale();
 
       // Get the locale cache
-      const localeCache = this.translationsCache.get(locale);
-      if (!localeCache) return undefined;
+      const txCache = this.localesCache.get(locale);
+      if (!txCache) return undefined;
 
       // Get the translation
-      return localeCache.get({ message, options });
+      return txCache.get({ message, options });
     } catch (error) {
       this.handleError(error);
       return undefined;
@@ -234,13 +234,12 @@ class I18nManager<
       const locale = options.$locale ?? this.getLocale();
 
       // Get the locale cache
-      let localeCache = this.translationsCache.get(locale);
-      if (!localeCache) localeCache = await this.translationsCache.miss(locale);
+      let txCache = this.localesCache.get(locale);
+      if (!txCache) txCache = await this.localesCache.miss(locale);
 
       // Get the translation (falling back to runtime translate)
-      let translation = localeCache.get({ message, options });
-      if (!translation)
-        translation = await localeCache.miss({ message, options });
+      let translation = txCache.get({ message, options });
+      if (!translation) translation = await txCache.miss({ message, options });
       return translation;
     } catch (error) {
       this.handleError(error);
@@ -285,21 +284,21 @@ class I18nManager<
       }
 
       // Get Locale Cache
-      let localeCache = this.translationsCache.get(locale);
-      if (!localeCache) localeCache = await this.translationsCache.miss(locale);
-      if (!localeCache) return () => undefined;
+      let txCache = this.localesCache.get(locale);
+      if (!txCache) txCache = await this.localesCache.miss(locale);
+      if (!txCache) return () => undefined;
 
       // Prefetch any entries during async block
       await Promise.all(
         prefetchEntries
-          .filter((entry) => !localeCache.get(entry))
-          .map((entry) => localeCache.miss(entry))
+          .filter((entry) => !txCache.get(entry))
+          .map((entry) => txCache.miss(entry))
       );
 
       // Create translation resolver
       return (message, options: LookupOptions) => {
         // Calculate hash
-        return localeCache.get({ message, options });
+        return txCache.get({ message, options });
       };
     } catch (error) {
       this.handleError(error);
