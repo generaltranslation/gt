@@ -1,14 +1,14 @@
-import { extractVariables } from '../../utils/extractVariables';
-import { formatMessage } from './formatMessage';
+import { extractVariables } from '../../../utils/extractVariables';
+import { formatMessage } from '../formatMessage';
 import {
   VAR_IDENTIFIER,
   extractVars,
   condenseVars,
 } from 'generaltranslation/internal';
 import { formatCutoff } from 'generaltranslation';
-import logger from '../../logs/logger';
-import { createInterpolationFailureMessage } from './messages';
-import type { InlineTranslationOptions } from '../types/options';
+import logger from '../../../logs/logger';
+import { createInterpolationFailureMessage } from '../messages';
+import type { InlineTranslationOptions } from '../../types/options';
 
 /**
  * Applies string interpolation and cutoff formatting. Fallsback to the original message if interpolation fails.
@@ -16,7 +16,7 @@ import type { InlineTranslationOptions } from '../types/options';
  * @param {InlineTranslationOptions} options - The options to interpolate.
  * @returns {string} - The interpolated message.
  */
-export function interpolateMessage<T extends string | null | undefined>(
+export function interpolateIcuMessage<T extends string | null | undefined>(
   encodedMsg: T,
   options: InlineTranslationOptions
 ): T extends string ? string : T {
@@ -47,7 +47,7 @@ export function interpolateMessage<T extends string | null | undefined>(
         ...declaredVars,
         [VAR_IDENTIFIER]: 'other',
       },
-      options.$_locales,
+      options.$locale ?? options.$_locales,
       options.$format
     );
     // Apply cutoff formatting
@@ -59,8 +59,8 @@ export function interpolateMessage<T extends string | null | undefined>(
     logger.warn(createInterpolationFailureMessage(encodedMsg));
 
     // If formatting the translation failed and we have a fallback, try formatting the source instead
-    if (source != null) {
-      return interpolateMessage(source, {
+    if (options.$_fallback != null) {
+      return interpolateIcuMessage(options.$_fallback, {
         ...options,
         $_fallback: undefined,
       }) as T extends string ? string : T;

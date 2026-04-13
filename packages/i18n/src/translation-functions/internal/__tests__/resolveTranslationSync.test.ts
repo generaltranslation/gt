@@ -25,7 +25,7 @@ describe('resolveTranslationSync', () => {
     resolveTranslationSync(message, options);
 
     expect(interpolateMessage).toHaveBeenCalledWith('Bonjour {name} !', {
-      $_locales: 'fr',
+      $locale: 'fr',
       name: 'Alice',
       $_fallback: 'Hello {name}!',
     });
@@ -59,7 +59,7 @@ describe('resolveTranslationSync', () => {
     resolveTranslationSync(message, options);
 
     expect(interpolateMessage).toHaveBeenCalledWith('Translated', {
-      $_locales: 'es',
+      $locale: 'es',
       name: 'Bob',
       $context: 'greeting',
       $id: 'hello-msg',
@@ -80,7 +80,7 @@ describe('resolveTranslationSync', () => {
     resolveTranslationSync(message, options);
 
     expect(interpolateMessage).toHaveBeenCalledWith('Translated', {
-      $_locales: 'fr',
+      $locale: 'fr',
       name: 'Alice',
       $format: 'STRING',
       $_fallback: 'Hello {name}!',

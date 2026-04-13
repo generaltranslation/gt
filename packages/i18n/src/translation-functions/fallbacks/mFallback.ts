@@ -3,7 +3,7 @@ import { InlineResolveOptions } from '../types/options';
 import { MFunctionType } from '../types/functions';
 import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
-import { interpolateMessage } from '../utils/interpolateMessage';
+import { interpolateIcuMessage } from '../utils/interpolation/interpolateIcuMessage';
 
 /**
  * A fallback function for the m() function that decodes and interpolates.
@@ -47,5 +47,5 @@ export const mFallback: MFunctionType = <T extends string | null | undefined>(
   }
 
   // Not using decoded options to match behavior in @gt/react-core
-  return interpolateMessage(encodedMsg, options);
+  return interpolateIcuMessage(encodedMsg, options);
 };

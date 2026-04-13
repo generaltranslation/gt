@@ -1,7 +1,7 @@
 import { getI18nManager } from '../../i18n-manager/singleton-operations';
 import { InlineTranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
-import { interpolateMessage } from '../utils/interpolateMessage';
+import { interpolateIcuMessage } from '../utils/interpolation/interpolateIcuMessage';
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
@@ -42,15 +42,15 @@ export async function getGT(): Promise<GTFunctionType> {
       ...options,
     });
     if (translation) {
-      return interpolateMessage(translation, {
+      return interpolateIcuMessage(translation, {
         ...options,
-        $_locales: i18nManager.getLocale(),
+        $locale: i18nManager.getLocale(),
         $_fallback: message,
       });
     }
-    return interpolateMessage(message, {
+    return interpolateIcuMessage(message, {
       ...options,
-      $_locales: i18nManager.getDefaultLocale(),
+      $locale: i18nManager.getDefaultLocale(),
       $_fallback: message,
     });
   };

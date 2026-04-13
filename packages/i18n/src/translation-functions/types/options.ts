@@ -1,4 +1,4 @@
-import { StringFormat } from 'generaltranslation/types';
+import { Content, StringFormat } from 'generaltranslation/types';
 
 // TODO: next major version, this should be Record<string, string>
 export type BaseTranslationOptions = Record<string, any>;
@@ -15,6 +15,11 @@ export type InlineTranslationOptions = BaseTranslationOptions & {
   $id?: string;
   /** The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'. */
   $format?: StringFormat;
+  /** The locale to use for formatting the message. Defaults to the current locale. Determines the formatting behavior. */
+  $locale?: string;
+  /**
+   * @deprecated use {@link $locale} instead
+   */
   $_locales?: string | string[];
   $_hash?: string;
   $maxChars?: number;
@@ -47,7 +52,7 @@ export type EncodedTranslationOptions = BaseTranslationOptions & {
  * Used by the tx() function
  */
 export type RuntimeTranslationOptions = {
-  locale?: string;
+  $locale?: string;
 } & Omit<InlineTranslationOptions, 'id'>;
 
 /**
@@ -66,6 +71,9 @@ export type ResolutionOptions =
   | (Omit<InlineTranslationOptions, '$format'> & {
       $format: StringFormat;
       $locale?: string;
+    })
+  | (RuntimeTranslationOptions & {
+      $format: Content;
     })
   | (JsxTranslationOptions & {
       $format: 'JSX';

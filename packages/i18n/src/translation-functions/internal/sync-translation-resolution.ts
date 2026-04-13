@@ -3,7 +3,7 @@ import {
   SyncResolutionFunction,
   SyncResolutionFunctionWithFallback,
 } from '../types/functions';
-import { interpolateMessage } from '../utils/interpolateMessage';
+import { interpolateIcuMessage } from '../utils/interpolation/interpolateIcuMessage';
 
 /**
  * Synchronously resolve a translation for a given message and options
@@ -21,8 +21,8 @@ export const resolveTranslationSync: SyncResolutionFunction = (
     ...options,
   });
   if (!translation) return undefined;
-  return interpolateMessage(translation, {
-    $_locales: i18nManager.getLocale(),
+  return interpolateIcuMessage(translation, {
+    $locale: i18nManager.getLocale(),
     ...options,
     $_fallback: message,
   });
@@ -39,8 +39,8 @@ export const resolveTranslationSyncWithFallback: SyncResolutionFunctionWithFallb
     const translation = resolveTranslationSync(message, options);
     if (translation) return translation;
     const i18nManager = getI18nManager();
-    return interpolateMessage(message, {
-      $_locales: i18nManager.getDefaultLocale(),
+    return interpolateIcuMessage(message, {
+      $locale: i18nManager.getDefaultLocale(),
       ...options,
       $_fallback: message,
     });
