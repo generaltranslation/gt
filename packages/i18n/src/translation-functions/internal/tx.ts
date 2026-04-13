@@ -1,7 +1,6 @@
-import { LookupOptions, RuntimeTranslationOptions } from '../types/options';
-import { getI18nManager } from '../../i18n-manager/singleton-operations';
-import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
-import { DataFormat, JsxChildren } from 'generaltranslation/types';
+import { RuntimeTranslationOptions } from '../types/options';
+import { StringFormat } from 'generaltranslation/types';
+import { resolveStringContentWithRuntimeFallback } from './helpers';
 
 /**
  * Translates a message at runtime.
@@ -19,41 +18,12 @@ import { DataFormat, JsxChildren } from 'generaltranslation/types';
  */
 export async function tx(
   content: string,
-  options?: RuntimeTranslationOptions
-): Promise<string>;
-
-export async function tx(
-  content: JsxChildren,
-  options?: RuntimeTranslationOptions & { $format: 'JSX' }
-): Promise<JsxChildren>;
-
-export async function tx<T extends DataFormat>(
-  content: T extends 'JSX' ? JsxChildren : string,
-  options?: T extends 'JSX'
-    ? RuntimeTranslationOptions & { $format: 'JSX' }
-    : RuntimeTranslationOptions
-): Promise<T extends 'JSX' ? JsxChildren : string> {
-  const resolutionOptions: LookupOptions = {
-    $format: 'STRING',
-    ...options,
-  };
-
-  // Lookup translation
-  const i18nManager = getI18nManager();
-  const translation = await i18nManager.lookupTranslationWithFallback(
-    content,
-    resolutionOptions
-  );
-
-  // No interpolation for JSX
-  if (resolutionOptions.$format === 'JSX') {
-    return translation ?? content;
+  options?: Omit<RuntimeTranslationOptions, '$format'> & {
+    $format?: StringFormat;
   }
-
-  // Format result
-  return interpolateMessage({
-    source: content as string,
-    target: translation as string | undefined,
-    options: resolutionOptions,
+): Promise<string> {
+  return resolveStringContentWithRuntimeFallback(content, {
+    $format: 'ICU',
+    ...options,
   });
 }

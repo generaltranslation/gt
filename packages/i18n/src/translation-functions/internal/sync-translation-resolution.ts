@@ -1,11 +1,12 @@
-import { getI18nManager } from '../../i18n-manager/singleton-operations';
-import { LookupOptions } from '../types/options';
 import {
   SyncResolutionFunction,
   SyncResolutionFunctionWithFallback,
 } from '../types/functions';
-import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
-import { resolveTranslation } from './resolveTranslation';
+import { InlineTranslationOptions } from '../types/options';
+import {
+  resolveStringContent,
+  resolveStringContentWithFallback,
+} from './helpers';
 
 /**
  * Synchronously resolve a translation for a given message and options
@@ -16,9 +17,9 @@ import { resolveTranslation } from './resolveTranslation';
  */
 export const resolveTranslationSync: SyncResolutionFunction = (
   message,
-  options
+  options: InlineTranslationOptions = {}
 ) => {
-  return resolveTranslation(message, { $format: 'ICU', ...options });
+  return resolveStringContent(message, { $format: 'ICU', ...options });
 };
 
 /**
@@ -30,18 +31,8 @@ export const resolveTranslationSync: SyncResolutionFunction = (
  */
 export const resolveTranslationSyncWithFallback: SyncResolutionFunctionWithFallback =
   (message, options = {}) => {
-    const resolutionOptions: LookupOptions = {
+    return resolveStringContentWithFallback(message, {
       $format: 'ICU',
       ...options,
-    };
-    const i18nManager = getI18nManager();
-    const translation = i18nManager.lookupTranslation(
-      message,
-      resolutionOptions
-    );
-    return interpolateMessage({
-      source: message,
-      target: translation,
-      options: resolutionOptions,
     });
   };

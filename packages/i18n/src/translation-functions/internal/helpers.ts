@@ -16,7 +16,7 @@ import {
 /**
  * Just do a simple lookup of the translation
  */
-function resolveJsx(
+export function resolveJsx(
   content: JsxChildren,
   options: ResolutionOptions<'JSX'>
 ): JsxChildren | undefined {
@@ -29,7 +29,7 @@ function resolveJsx(
 /**
  * Lookup translation, fallback to source
  */
-function resolveJsxWithFallback(
+export function resolveJsxWithFallback(
   content: JsxChildren,
   options: ResolutionOptions<'JSX'>
 ): JsxChildren {
@@ -42,7 +42,7 @@ function resolveJsxWithFallback(
  * fallback to runtime translate
  * Fallback to source
  */
-async function resolveJsxWithRuntimeFallback(
+export async function resolveJsxWithRuntimeFallback(
   content: JsxChildren,
   options: ResolutionOptions<'JSX'>
 ): Promise<JsxChildren> {
@@ -61,7 +61,7 @@ async function resolveJsxWithRuntimeFallback(
  * Just do a simple lookup of the translation
  * And interpolate
  */
-function resolveStringContent(
+export function resolveStringContent(
   content: StringContent,
   options: ResolutionOptions<StringFormat>
 ): StringContent | undefined {
@@ -79,7 +79,7 @@ function resolveStringContent(
 /**
  * Lookup translation, fallback to source
  */
-function resolveStringContentWithFallback(
+export function resolveStringContentWithFallback(
   content: StringContent,
   options: ResolutionOptions<StringFormat>
 ): StringContent {
@@ -98,7 +98,7 @@ function resolveStringContentWithFallback(
  * fallback to runtime translate
  * Fallback to source
  */
-async function resolveStringContentWithRuntimeFallback(
+export async function resolveStringContentWithRuntimeFallback(
   content: StringContent,
   options: ResolutionOptions<StringFormat>
 ): Promise<StringContent> {
