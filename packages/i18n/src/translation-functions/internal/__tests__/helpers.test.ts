@@ -35,8 +35,6 @@ describe('translation helpers', () => {
       lookupTranslationWithFallback: vi
         .fn()
         .mockResolvedValue('Bonjour {name} !'),
-      getLocale: vi.fn().mockReturnValue('fr'),
-      getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
     vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
 
@@ -53,8 +51,6 @@ describe('translation helpers', () => {
   it('resolveStringContentWithFallback interpolates source when no translation found', () => {
     const mockManager = {
       lookupTranslation: vi.fn().mockReturnValue(undefined),
-      getLocale: vi.fn().mockReturnValue('fr'),
-      getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
     vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
 
