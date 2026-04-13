@@ -48,8 +48,8 @@ import { RegisterableMessages } from '../types/message';
  *
  * @important Internal note: until other packages are updated to use i18n-context practices, msg cannot use any functions that use i18nManager at all!
  */
-export function msg<T extends RegisterableMessages>(message: T): T;
-export function msg<T extends RegisterableMessages>(
+export function msg<T extends RegisterableMessages = string>(message: T): T;
+export function msg<T extends RegisterableMessages = string>(
   message: T,
   options?: InlineTranslationOptions
 ): T extends string ? string : string[];

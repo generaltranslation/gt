@@ -3,10 +3,7 @@ import logger from '../logs/logger';
 import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
 import { StorageAdapterType } from './storage-adapter/types';
 import { validateConfig } from './validation/validateConfig';
-import {
-  Translation,
-  Translations,
-} from './translations-manager/utils/types/translation-data';
+import { Translation } from './translations-manager/utils/types/translation-data';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT, standardizeLocale } from 'generaltranslation';
@@ -40,12 +37,6 @@ class I18nManager<
   TranslationValue extends Translation = Translation,
 > {
   protected config: I18nManagerConfig;
-
-  /**
-   * Cache for translations
-   * @deprecated use translationsCache instead
-   */
-  // private translationsManager: TranslationsManager<TranslationType>;
 
   /**
    * Store adapter
@@ -86,7 +77,8 @@ class I18nManager<
 
     // Setup translations cache
     this.localesCache = new LocalesCache<TranslationValue>({
-      loadTranslations,
+      loadTranslations:
+        loadTranslations as SafeTranslationsLoader<TranslationValue>,
       createTranslateMany,
     });
   }
@@ -332,7 +324,7 @@ class I18nManager<
    */
   async getTranslations(
     locale: string = this.getLocale()
-  ): Promise<Translations<TranslationValue>> {
+  ): Promise<Record<Hash, TranslationValue>> {
     if (!this.config.locales.includes(locale)) {
       throw new Error(`Locale ${locale} not found in config`);
     }

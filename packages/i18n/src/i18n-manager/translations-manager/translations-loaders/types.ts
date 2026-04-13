@@ -1,4 +1,5 @@
-import { Translation, Translations } from '../utils/types/translation-data';
+import { Translation } from '../utils/types/translation-data';
+import { Hash } from '../TranslationsCache';
 
 /**
  * Translations loader function type
@@ -11,4 +12,4 @@ export type TranslationsLoader = (locale: string) => Promise<unknown>;
  */
 export type SafeTranslationsLoader<T extends Translation> = (
   locale: string
-) => Promise<Translations<T>>;
+) => Promise<Record<Hash, T>>;

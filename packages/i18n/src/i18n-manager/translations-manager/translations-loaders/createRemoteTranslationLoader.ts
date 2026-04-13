@@ -1,7 +1,7 @@
 import { resolveCanonicalLocale } from 'generaltranslation';
 import { TranslationsLoader } from './types';
 import { defaultCacheUrl } from 'generaltranslation/internal';
-import { Translations } from '../utils/types/translation-data';
+import { Translation } from '../utils/types/translation-data';
 import { CustomMapping } from 'generaltranslation/types';
 
 /**
@@ -41,7 +41,7 @@ export function createRemoteTranslationLoader(
     if (!response.ok) {
       throw new Error(`Failed to load translations from ${url}`);
     }
-    return (await response.json()) as Translations<unknown>;
+    return (await response.json()) as Record<string, Translation>;
   };
 
   return loader;

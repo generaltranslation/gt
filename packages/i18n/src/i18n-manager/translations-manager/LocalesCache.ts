@@ -13,11 +13,11 @@ export type Locale = string;
  * Cache entry
  * @typedef {Object} CacheEntry
  * @property {number} expiresAt - The time at which the cache entry expires.
- * @property {TranslationsCache<TranslationValue>} translations - The translations cache for the locale.
+ * @property {TranslationsCache<TranslationValue>} translationsCache - The translations cache for the locale.
  */
 type CacheEntry<TranslationValue extends Translation> = {
   expiresAt: number;
-  localeCache: TranslationsCache<TranslationValue>;
+  translationsCache: TranslationsCache<TranslationValue>;
 };
 
 /**
@@ -56,9 +56,9 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    * Constructor
    * @param {Object} params - The parameters for the cache
    * @param {Record<string, CacheEntry<TranslationValue>>} params.init - The initial cache
-   * @param {CreateRemoteTranslationLoaderParams} params.remoteTranslationLoaderParams - The parameters for the remote translation loader
    * @param {number | null} params.ttl - The time to live for cache entries
-   * @param {TranslationsLoader} params.loadTranslations - The translation loader function
+   * @param {SafeTranslationsLoader<TranslationValue>} params.loadTranslations - The translation loader function
+   * @param {CreateTranslateMany} params.createTranslateMany - Factory function for creating a translate many function
    */
   constructor({
     init = {},
@@ -87,13 +87,13 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    */
   public get(
     key: Locale
-  ): CacheEntry<TranslationValue>['localeCache'] | undefined {
+  ): CacheEntry<TranslationValue>['translationsCache'] | undefined {
     const entry = this.getCache(key);
     if (!entry || (entry.expiresAt > 0 && entry.expiresAt < Date.now())) {
       // TODO: should we invalidate associated promises here?
       return undefined;
     }
-    return entry.localeCache;
+    return entry.translationsCache;
   }
 
   /**
@@ -103,9 +103,9 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    */
   public async miss(
     key: Locale
-  ): Promise<CacheEntry<TranslationValue>['localeCache']> {
+  ): Promise<CacheEntry<TranslationValue>['translationsCache']> {
     const cacheValue = await this.missCache(key);
-    return cacheValue.localeCache;
+    return cacheValue.translationsCache;
   }
 
   /**
@@ -134,11 +134,11 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
     const expiresAt = this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
 
     // Cache the promise and expiry timestamp
-    const localeCache = new TranslationsCache<TranslationValue>({
+    const translationsCache = new TranslationsCache<TranslationValue>({
       init: await translationsPromise,
       translateMany: this._createTranslateMany(locale),
     });
-    const entry = { localeCache, expiresAt };
+    const entry = { translationsCache, expiresAt };
     const cacheKey = this.genKey(locale);
     this.setCache(cacheKey, entry);
 

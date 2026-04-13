@@ -8,34 +8,3 @@ import { Content } from 'generaltranslation/types';
  * TODO: remove this type and use Content everywhere instead
  */
 export type Translation = Content;
-
-/**
- * Object containing translations for a single locale
- * TODO: when done, make the generic default to Translation
- */
-export type Translations<T extends Translation = Translation> = {
-  [hash: string]: T;
-};
-
-/**
- * A mapping between locales and their {@link Translations} objects as promises along with an expiry timestamp
- * @typedef {Object} TranslationsMapEntry
- * @property {Promise<Translations>} promise - The promise for the translations object.
- * @property {number} expiresAt - The timestamp when the translations will expire.
- */
-export type TranslationPromises<T extends Translation> = Map<
-  string,
-  {
-    promise: Promise<Translations<T>>;
-    expiresAt: number;
-  }
->;
-
-/**
- * A mapping between locales and their {@link Translations} objects
- * Maps locale to translations object
- */
-export type TranslationsCache<T extends Translation> = Map<
-  string,
-  Translations<T>
->;
