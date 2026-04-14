@@ -1,7 +1,7 @@
 import { I18nManager } from 'gt-i18n/internal';
 import { AsyncStorageAdapter } from './AsyncStorageAdapter';
 import { I18nManagerConstructorParams } from 'gt-i18n/internal/types';
-import { determineLocale, isValidLocale } from 'generaltranslation';
+import { determineLocale } from 'generaltranslation';
 
 /**
  * I18nManager implementation that uses AsyncStorage as the storage adapter.
@@ -22,32 +22,16 @@ export class AsyncStorageI18nManager extends I18nManager<
    * Create the context for the given locale using the store adapter
    */
   run<T>(locale: string, fn: () => T): T {
-    this.validateLocale(locale);
     return this.storeAdapter.run(
       {
-        locale: determineLocale(
-          locale,
-          this.config.locales,
-          this.config.customMapping
-        )!,
+        locale:
+          determineLocale(
+            locale,
+            this.config.locales,
+            this.config.customMapping
+          ) || this.config.defaultLocale,
       },
       fn
     );
-  }
-
-  // ----- PRIVATE METHODS ----- //
-
-  /**
-   * Validate locale
-   */
-  protected validateLocale(locale: string): void {
-    if (
-      !isValidLocale(locale, this.config.customMapping) ||
-      !determineLocale(locale, this.config.locales, this.config.customMapping)
-    ) {
-      throw new Error(
-        `I18nManager: validateLocale(): locale ${locale} is not valid`
-      );
-    }
   }
 }

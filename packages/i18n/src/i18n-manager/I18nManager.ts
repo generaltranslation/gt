@@ -444,7 +444,7 @@ class I18nManager<
   /**
    * Validate locale
    */
-  protected validateLocale(locale: string): void {
+  private validateLocale(locale: string): void {
     const gtInstance = this.getGTClass();
     if (
       !gtInstance.isValidLocale(locale) ||
