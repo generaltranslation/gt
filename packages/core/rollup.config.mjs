@@ -55,15 +55,16 @@ export default [
         format: 'es',
         exports: 'named',
         sourcemap: true,
-        interop: 'auto',
       },
     ],
     plugins: [
+      resolve({ extensions: ['.js', '.mjs', '.ts'] }),
       typescript({ tsconfig: './tsconfig.json' }),
       commonjs(),
       terser(),
     ],
-    external: ['crypto-js', 'fast-json-stable-stringify'], // External dependencies not bundled in
+    // Bundling CJS deps (crypto-js, fast-json-stable-stringify) to avoid ESM default import errors in downstream bundlers like Vite/Bun
+    // external: ['crypto-js', 'fast-json-stable-stringify'],
   },
 
   // TypeScript declarations for the id module
@@ -91,22 +92,23 @@ export default [
         format: 'es',
         exports: 'named',
         sourcemap: true,
-        interop: 'auto',
       },
     ],
     plugins: [
+      resolve({ extensions: ['.js', '.mjs', '.ts'] }),
       typescript({ tsconfig: './tsconfig.json' }),
       commonjs(),
       terser(),
     ],
-    external: [
-      'crypto-js',
-      'fast-json-stable-stringify',
-      'intl-messageformat',
-      '@formatjs/icu-messageformat-parser',
-      '@formatjs/icu-messageformat-parser/types.js',
-      '@formatjs/icu-messageformat-parser/printer.js',
-    ], // External dependencies not bundled in
+    // Bundling CJS deps (crypto-js, fast-json-stable-stringify) to avoid ESM default import errors in downstream bundlers like Vite/Bun
+    // external: [
+    //   'crypto-js',
+    //   'fast-json-stable-stringify',
+    //   'intl-messageformat',
+    //   '@formatjs/icu-messageformat-parser',
+    //   '@formatjs/icu-messageformat-parser/types.js',
+    //   '@formatjs/icu-messageformat-parser/printer.js',
+    // ],
   },
 
   // TypeScript declarations for the internal module
