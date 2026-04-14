@@ -53,7 +53,7 @@ describe('I18nManager', () => {
     const manager = createManager();
 
     await expect(manager.getTranslations('zh')).rejects.toThrow(
-      'Locale zh not found in config'
+      'validateLocale()'
     );
   });
 

@@ -139,9 +139,6 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
       translateMany: this._createTranslateMany(locale),
     });
     const entry = { translationsCache, expiresAt };
-    const cacheKey = this.genKey(locale);
-    this.setCache(cacheKey, entry);
-
     return entry;
   }
 }

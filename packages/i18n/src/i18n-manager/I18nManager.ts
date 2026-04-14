@@ -309,7 +309,7 @@ class I18nManager<
         locale
       );
       if (filteredPrefetchEntries.length !== prefetchEntries.length) {
-        console.warn(
+        logger.warn(
           `I18nManager: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${locale}`
         );
       }
@@ -426,7 +426,7 @@ class I18nManager<
         throw error;
       case 'production':
       default:
-        logger.error('I18nManager' + error);
+        logger.error('I18nManager: ' + error);
         break;
     }
   }
