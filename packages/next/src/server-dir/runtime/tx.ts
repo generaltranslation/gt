@@ -9,6 +9,7 @@ import {
   indexVars,
   VAR_IDENTIFIER,
 } from 'generaltranslation/internal';
+import { StringFormat } from 'generaltranslation/types';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -45,7 +46,9 @@ import {
  */
 export default async function tx(
   message: string,
-  options: RuntimeTranslationOptions = {}
+  options: Omit<RuntimeTranslationOptions, '$format'> & {
+    $format?: StringFormat;
+  } = {}
 ): Promise<string> {
   if (!message || typeof message !== 'string') return '';
 
