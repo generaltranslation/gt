@@ -79,7 +79,7 @@ export default async function tx(
           ...declaredVars,
           [VAR_IDENTIFIER]: 'other',
         },
-        dataFormat: format,
+        dataFormat: format === 'JSX' ? undefined : format,
       }
     );
     const cutoffMessage = gt.formatCutoff(formattedMessage, {
