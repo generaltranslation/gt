@@ -9,9 +9,6 @@ export type { MFunctionType } from 'gt-i18n/types';
 // T Function Type
 export type { TFunctionType } from 'gt-i18n/types';
 
-// Tx Function Type
-export type { TxFunctionType } from 'gt-i18n/types';
-
 // --- Options Types --- //
 
 // Inline Translation Options Type

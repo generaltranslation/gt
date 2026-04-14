@@ -97,7 +97,7 @@ class I18nManager<
     // Create cache miss handlers
     const loadTranslations = createTranslationLoader<TranslationValue>(params);
     const createTranslateMany = createTranslateManyFactory(
-      this.getGTClass(),
+      this.getGTClassClean(),
       DEFAULT_TRANSLATION_TIMEOUT
     );
 
@@ -136,7 +136,9 @@ class I18nManager<
    * Set the locale
    */
   setLocale(locale: string): void {
-    this.storeAdapter.setItem('locale', locale);
+    this.validateLocale(locale);
+    const gtInstance = this.getGTClass();
+    this.storeAdapter.setItem('locale', gtInstance.determineLocale(locale)!);
   }
 
   /**
@@ -165,16 +167,7 @@ class I18nManager<
    * TODO: keep a cache to avoid creating new instances unnecessarily
    */
   getGTClass(): GT {
-    return new GT({
-      sourceLocale: this.config.defaultLocale,
-      targetLocale: this.getLocale(),
-      locales: this.config.locales,
-      customMapping: this.config.customMapping,
-      projectId: this.config.projectId,
-      baseUrl: this.config.runtimeUrl || undefined,
-      apiKey: this.config.apiKey,
-      devApiKey: this.config.devApiKey,
-    });
+    return this.getGTClassClean(this.getLocale());
   }
 
   /**
@@ -207,10 +200,8 @@ class I18nManager<
   ): Promise<Record<Hash, TranslationValue>> {
     try {
       // Validate
-      if (!this.getGTClass().isValidLocale(locale)) {
-        console.warn(
-          `I18nManager: loadTranslations(): locale ${locale} is not valid`
-        );
+      this.validateLocale(locale);
+      if (!this.requiresTranslation(locale)) {
         return {};
       }
 
@@ -235,7 +226,14 @@ class I18nManager<
     options: LookupOptions
   ): T | undefined {
     try {
+      // Validate
       const locale = options.$locale ?? this.getLocale();
+      this.validateLocale(locale);
+
+      // Early return if in default locale
+      if (!this.requiresTranslation(locale)) {
+        return message;
+      }
 
       // Get the locale cache
       const txCache = this.localesCache.get(locale);
@@ -257,7 +255,14 @@ class I18nManager<
     T extends TranslationValue = TranslationValue,
   >(message: T, options: LookupOptions): Promise<T | undefined> {
     try {
+      // Validate
       const locale = options.$locale ?? this.getLocale();
+      this.validateLocale(locale);
+
+      // Early return if in default locale
+      if (!this.requiresTranslation(locale)) {
+        return message;
+      }
 
       // Get the locale cache
       let txCache = this.localesCache.get(locale);
@@ -290,11 +295,11 @@ class I18nManager<
     }[] = []
   ): Promise<TranslationResolver<TranslationValue>> {
     try {
+      // Validate
+      this.validateLocale(locale);
+
       // Early return if i18n is disabled or default locale
-      if (
-        this.config.enableI18n === false ||
-        locale === this.config.defaultLocale
-      ) {
+      if (!this.requiresTranslation(locale)) {
         return (message) => message;
       }
 
@@ -359,9 +364,8 @@ class I18nManager<
   async getTranslations(
     locale: string = this.getLocale()
   ): Promise<Record<Hash, TranslationValue>> {
-    if (!this.config.locales.includes(locale)) {
-      throw new Error(`Locale ${locale} not found in config`);
-    }
+    // Validate
+    this.validateLocale(locale);
     return this.loadTranslations(locale);
   }
 
@@ -390,11 +394,11 @@ class I18nManager<
    */
   requiresTranslation(locale: string = this.getLocale()): boolean {
     const defaultLocale = this.getDefaultLocale();
-    const gt = this.getGTClass();
+    const gtInstance = this.getGTClass();
     const locales = this.getLocales();
     return (
-      this.config.enableI18n &&
-      gt.requiresTranslation(defaultLocale, locale, locales)
+      this.isTranslationEnabled() &&
+      gtInstance.requiresTranslation(defaultLocale, locale, locales)
     );
   }
 
@@ -425,6 +429,39 @@ class I18nManager<
         logger.error('I18nManager' + error);
         break;
     }
+  }
+
+  /**
+   * Validate locale
+   */
+  protected validateLocale(locale: string): void {
+    const gtInstance = this.getGTClass();
+    if (
+      !gtInstance.isValidLocale(locale) ||
+      !gtInstance.determineLocale(locale)
+    ) {
+      throw new Error(
+        `I18nManager: validateLocale(): locale ${locale} is not valid`
+      );
+    }
+  }
+
+  /**
+   * A helper function to create a gt class that is locale agnostic
+   * This is helpful for when our getLocale function is bound to a
+   * specifica context
+   */
+  private getGTClassClean(locale?: string): GT {
+    return new GT({
+      sourceLocale: this.config.defaultLocale,
+      targetLocale: locale,
+      locales: this.config.locales,
+      customMapping: this.config.customMapping,
+      projectId: this.config.projectId,
+      baseUrl: this.config.runtimeUrl || undefined,
+      apiKey: this.config.apiKey,
+      devApiKey: this.config.devApiKey,
+    });
   }
 }
 
