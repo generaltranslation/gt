@@ -1,5 +1,17 @@
 # gt-react
 
+## 10.18.2
+
+### Patch Changes
+
+- [#1207](https://github.com/generaltranslation/gt/pull/1207) [`792f96d`](https://github.com/generaltranslation/gt/commit/792f96d92386985f424bd40f678564b2371b8b47) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: runtime translation
+
+- Updated dependencies [[`792f96d`](https://github.com/generaltranslation/gt/commit/792f96d92386985f424bd40f678564b2371b8b47)]:
+  - generaltranslation@8.2.3
+  - gt-i18n@0.8.1
+  - @generaltranslation/react-core@1.8.2
+  - @generaltranslation/supported-locales@2.0.61
+
 ## 10.18.1
 
 ### Patch Changes

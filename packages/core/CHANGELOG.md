@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.2.3
+
+### Patch Changes
+
+- [#1207](https://github.com/generaltranslation/gt/pull/1207) [`792f96d`](https://github.com/generaltranslation/gt/commit/792f96d92386985f424bd40f678564b2371b8b47) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: runtime translation
+
 ## 8.2.2
 
 ### Patch Changes

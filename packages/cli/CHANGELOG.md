@@ -1,5 +1,15 @@
 # gtx-cli
 
+## 2.14.13
+
+### Patch Changes
+
+- [#1207](https://github.com/generaltranslation/gt/pull/1207) [`792f96d`](https://github.com/generaltranslation/gt/commit/792f96d92386985f424bd40f678564b2371b8b47) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: runtime translation
+
+- Updated dependencies [[`792f96d`](https://github.com/generaltranslation/gt/commit/792f96d92386985f424bd40f678564b2371b8b47)]:
+  - generaltranslation@8.2.3
+  - @generaltranslation/python-extractor@0.2.8
+
 ## 2.14.12
 
 ### Patch Changes
