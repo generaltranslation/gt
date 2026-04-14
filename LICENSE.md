@@ -6,7 +6,7 @@ FSL-1.1-ALv2
 
 ## Notice
 
-Copyright 2025 General Translation, Inc.
+Copyright 2026 General Translation, Inc.
 
 ## Terms and Conditions
 
