@@ -1,5 +1,5 @@
 ---
-'gt-tanstack-start': minor
+'gt-tanstack-start': patch
 'gt-react': patch
 'gt-node': minor
 'generaltranslation': patch

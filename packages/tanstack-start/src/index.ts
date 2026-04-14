@@ -6,4 +6,4 @@ export { getTranslations } from './functions/getTranslations';
 export { T, Var, LocaleSelector, RelativeTime } from 'gt-react';
 export { getLocale } from './functions/getLocale';
 export { getVersionId } from './functions/getVersionId';
-export { getGT, getMessages, tx } from 'gt-i18n/internal';
+export { getGT, getMessages } from 'gt-i18n/internal';
