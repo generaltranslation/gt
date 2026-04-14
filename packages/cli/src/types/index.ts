@@ -116,7 +116,8 @@ export type GenerateSourceOptions = {
 export type Framework =
   | typeof Libraries.GT_NEXT
   | typeof Libraries.GT_REACT
-  | typeof Libraries.GT_REACT_NATIVE;
+  | typeof Libraries.GT_REACT_NATIVE
+  | typeof Libraries.GT_TANSTACK_START;
 
 export type FrameworkObject =
   | {
