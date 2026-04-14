@@ -49,12 +49,11 @@ describe('I18nManager', () => {
     expect(result).toBe(translatedString);
   });
 
-  it('getTranslations throws for locale not in config', async () => {
+  it('getTranslations returns empty object for invalid locale', async () => {
     const manager = createManager();
 
-    await expect(manager.getTranslations('zh')).rejects.toThrow(
-      'validateLocale()'
-    );
+    const result = await manager.getTranslations('zh');
+    expect(result).toEqual({});
   });
 
   it('getTranslationResolver returns a working resolver function', async () => {
