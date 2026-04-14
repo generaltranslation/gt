@@ -136,9 +136,13 @@ class I18nManager<
    * Set the locale
    */
   setLocale(locale: string): void {
-    this.validateLocale(locale);
-    const gtInstance = this.getGTClass();
-    this.storeAdapter.setItem('locale', gtInstance.determineLocale(locale)!);
+    try {
+      this.validateLocale(locale);
+      const gtInstance = this.getGTClass();
+      this.storeAdapter.setItem('locale', gtInstance.determineLocale(locale)!);
+    } catch (error) {
+      this.handleError(error);
+    }
   }
 
   /**
@@ -365,9 +369,14 @@ class I18nManager<
   async getTranslations(
     locale: string = this.getLocale()
   ): Promise<Record<Hash, TranslationValue>> {
-    // Validate
-    this.validateLocale(locale);
-    return this.loadTranslations(locale);
+    try {
+      // Validate
+      this.validateLocale(locale);
+      return this.loadTranslations(locale);
+    } catch (error) {
+      this.handleError(error);
+      return {};
+    }
   }
 
   /**

@@ -99,7 +99,7 @@ export default async function tx(
   // ----- CALCULATE HASH ----- //
 
   const hash = hashSource({
-    source: indexVars(message),
+    source: format === 'ICU' ? indexVars(message) : message,
     ...(context && { context }),
     ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
     dataFormat: format || 'ICU',
