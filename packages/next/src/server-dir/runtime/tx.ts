@@ -9,6 +9,7 @@ import {
   indexVars,
   VAR_IDENTIFIER,
 } from 'generaltranslation/internal';
+import { StringFormat } from 'generaltranslation/types';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -45,7 +46,9 @@ import {
  */
 export default async function tx(
   message: string,
-  options: RuntimeTranslationOptions = {}
+  options: Omit<RuntimeTranslationOptions, '$format'> & {
+    $format?: StringFormat;
+  } = {}
 ): Promise<string> {
   if (!message || typeof message !== 'string') return '';
 
@@ -96,7 +99,7 @@ export default async function tx(
   // ----- CALCULATE HASH ----- //
 
   const hash = hashSource({
-    source: indexVars(message),
+    source: format === 'ICU' ? indexVars(message) : message,
     ...(context && { context }),
     ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
     dataFormat: format || 'ICU',

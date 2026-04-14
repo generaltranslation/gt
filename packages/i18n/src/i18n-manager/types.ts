@@ -12,12 +12,14 @@ export type I18nManagerConstructorParams<
 > = GTConfig & {
   loadTranslations?: TranslationsLoader;
   storeAdapter?: T;
+  environment?: 'development' | 'production';
 };
 
 /**
  * I18nManager class configuration
  */
 export type I18nManagerConfig = {
+  environment: 'development' | 'production';
   defaultLocale: string;
   locales: string[];
   customMapping: CustomMapping;

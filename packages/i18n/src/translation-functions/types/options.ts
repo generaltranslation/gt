@@ -1,4 +1,4 @@
-import { StringFormat } from 'generaltranslation/types';
+import { DataFormat, StringFormat } from 'generaltranslation/types';
 
 // TODO: next major version, this should be Record<string, string>
 export type BaseTranslationOptions = Record<string, any>;
@@ -15,6 +15,11 @@ export type InlineTranslationOptions = BaseTranslationOptions & {
   $id?: string;
   /** The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'. */
   $format?: StringFormat;
+  /** The locale to use for formatting the message. Defaults to the current locale. Determines the formatting behavior. */
+  $locale?: string;
+  /**
+   * @deprecated use {@link $locale} instead
+   */
   $_locales?: string | string[];
   $_hash?: string;
   $maxChars?: number;
@@ -47,8 +52,9 @@ export type EncodedTranslationOptions = BaseTranslationOptions & {
  * Used by the tx() function
  */
 export type RuntimeTranslationOptions = {
-  locale?: string;
-} & Omit<InlineTranslationOptions, 'id'>;
+  $locale?: string;
+  $format?: DataFormat;
+} & Omit<InlineTranslationOptions, '$id' | '$format'>;
 
 /**
  * Options for JSX translation
@@ -62,10 +68,26 @@ export type JsxTranslationOptions = {
 /**
  * Resolution options - options needed to perform a resolution for a given content
  */
-export type ResolutionOptions =
+export type LookupOptions =
   | (Omit<InlineTranslationOptions, '$format'> & {
       $format: StringFormat;
+      $locale?: string;
     })
   | (JsxTranslationOptions & {
       $format: 'JSX';
+      $locale?: string;
+    });
+
+export type ResolutionOptions<T extends DataFormat> = {
+  /**
+   * The locale to use for formatting looking up and formatting the message.
+   * Defaults to the current locale. Determines the formatting behavior.
+   */
+  $locale?: string;
+} & (T extends 'JSX'
+  ? JsxTranslationOptions & {
+      $format?: 'JSX';
+    }
+  : Omit<InlineTranslationOptions, '$format'> & {
+      $format?: T;
     });

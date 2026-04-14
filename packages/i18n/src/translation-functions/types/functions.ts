@@ -1,10 +1,16 @@
-import { JsxChildren } from 'generaltranslation/types';
+import {
+  Content,
+  DataFormat,
+  JsxChildren,
+  StringFormat,
+} from 'generaltranslation/types';
 import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   JsxTranslationOptions,
   RuntimeTranslationOptions,
 } from './options';
+import { Translation } from '../../i18n-manager/translations-manager/utils/types/translation-data';
 
 /**
  * Synchronous resolution function type
@@ -71,18 +77,6 @@ export type TFunctionType = (
   id: string,
   options?: DictionaryTranslationOptions
 ) => string;
-
-/**
- * Internal tx() function type
- * @param {string} message - The message to translate.
- * @param {RuntimeTranslationOptions} options - The options for the translation.
- * @returns {string} The translated message.
- * TODO: next major version, remove the "...type" suffix, it's redundant
- */
-export type TxFunctionType = (
-  message: string,
-  options?: RuntimeTranslationOptions
-) => Promise<string>;
 
 /**
  * Type for the resolveJsxTranslation() function

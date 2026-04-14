@@ -19,7 +19,8 @@ export function extractVariables<T extends BaseTranslationOptions>(
         key !== '$_source' &&
         key !== '$_fallback' &&
         key !== '$format' &&
-        key !== '$_locales'
+        key !== '$_locales' &&
+        key !== '$locale'
     )
   );
 }

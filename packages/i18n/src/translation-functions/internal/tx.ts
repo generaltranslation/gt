@@ -1,7 +1,6 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { RuntimeTranslationOptions } from '../types/options';
-import { TxFunctionType } from '../types/functions';
+import { StringFormat } from 'generaltranslation/types';
+import { resolveStringContentWithRuntimeFallback } from './helpers';
 
 /**
  * Translates a message at runtime.
@@ -9,23 +8,22 @@ import { TxFunctionType } from '../types/functions';
  * @param {RuntimeTranslationOptions} options - The options for the translation.
  * @returns {Promise<string>} The translated message.
  *
- * @deprecated not yet supported
- *
- * This is a placeholder for the tx() function.
- * TODO: Implement the tx() function.
- *
  * @example
  * // Simple runtime translation without interpolation
  * const status = await tx('Processing complete');
  *
  * @example
  * // Runtime translation with interpolation
- * const progress = await tx(`Processing ${status}`, { locale: 'es-MX' });
+ * const progress = await tx(`Processing ${status}`, { $locale: 'es-MX' });
  */
-
-export const tx: TxFunctionType = async (
-  message: string,
-  options?: RuntimeTranslationOptions
-): Promise<string> => {
-  throw new Error('tx() is not implemented');
-};
+export async function tx(
+  content: string,
+  options?: Omit<RuntimeTranslationOptions, '$format'> & {
+    $format?: StringFormat;
+  }
+): Promise<string> {
+  return resolveStringContentWithRuntimeFallback(content, {
+    $format: 'ICU',
+    ...options,
+  });
+}

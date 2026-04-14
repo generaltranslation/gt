@@ -1,4 +1,15 @@
-import { resolveTranslationSyncWithFallback } from './internal/sync-translation-resolution';
+import { resolveStringContentWithFallback } from './internal/helpers';
+import { SyncResolutionFunctionWithFallback } from './types/functions';
 
-// User facing export
-export { resolveTranslationSyncWithFallback as t };
+/**
+ * Translate a message
+ * @param {string} message - The message to translate.
+ * @param {InlineTranslationOptions} options - The options for the translation.
+ * @returns The translated message.
+ */
+export const t: SyncResolutionFunctionWithFallback = (message, options) => {
+  return resolveStringContentWithFallback(message, {
+    $format: 'ICU',
+    ...options,
+  });
+};

@@ -9,6 +9,7 @@ import { VAR_IDENTIFIER } from './utils/constants';
 import { traverseIcu } from './utils/traverseIcu';
 import { GTUnindexedSelectElement } from './utils/types';
 import { isGTUnindexedSelectElement } from './utils/traverseHelpers';
+import { IcuMessage } from '../types-dir/jsx/content';
 
 // Used for temporarily tracking variable indices in the AST
 const VAR_FLAG_SUFFIX = '_flag';
@@ -33,7 +34,7 @@ type Location = {
  * Given an ICU string adds identifiers to each _gt_ placeholder
  * indexVars('Hello {_gt_} {_gt_} World') => 'Hello {_gt_1_} {_gt_2_} World'
  */
-export function indexVars(icuString: string): string {
+export function indexVars(icuString: IcuMessage): string {
   // Check if the string contains _gt_
   if (!icuString.includes(VAR_IDENTIFIER)) {
     return icuString;

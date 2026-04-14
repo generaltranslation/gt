@@ -15,10 +15,10 @@ export { declareStatic, derive, declareVar } from 'gt-i18n';
 // Decoding Functions
 export { decodeVars, decodeMsg, decodeOptions } from 'gt-i18n';
 
+// Tx Function
+export { tx } from 'gt-i18n/internal';
+
 // --- TODO: Add the following functions --- //
 
 // // Get Translations Function
 // export { getTranslations } from 'gt-i18n/internal';
-
-// // Tx Function
-// export { tx } from 'gt-i18n/internal';
