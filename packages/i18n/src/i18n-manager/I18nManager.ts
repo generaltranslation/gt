@@ -270,7 +270,8 @@ class I18nManager<
 
       // Get the translation (falling back to runtime translate)
       let translation = txCache.get({ message, options });
-      if (!translation) translation = await txCache.miss({ message, options });
+      if (translation == null)
+        translation = await txCache.miss({ message, options });
       return translation;
     } catch (error) {
       this.handleError(error);
@@ -322,7 +323,7 @@ class I18nManager<
       // Prefetch any entries during async block
       await Promise.all(
         filteredPrefetchEntries
-          .filter((entry) => !txCache.get(entry))
+          .filter((entry) => txCache.get(entry) == null)
           .map((entry) => txCache.miss(entry))
       );
 
