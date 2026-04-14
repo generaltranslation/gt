@@ -55,6 +55,7 @@ export default [
         format: 'es',
         exports: 'named',
         sourcemap: true,
+        interop: 'auto',
       },
     ],
     plugins: [
@@ -90,6 +91,7 @@ export default [
         format: 'es',
         exports: 'named',
         sourcemap: true,
+        interop: 'auto',
       },
     ],
     plugins: [
