@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.2.4
+
+### Patch Changes
+
+- [#1214](https://github.com/generaltranslation/gt/pull/1214) [`151f516`](https://github.com/generaltranslation/gt/commit/151f51686e52e70176f659a5d297a074a17fe20f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: bundle deps to support gt-tanstack-start
+
 ## 8.2.3
 
 ### Patch Changes
