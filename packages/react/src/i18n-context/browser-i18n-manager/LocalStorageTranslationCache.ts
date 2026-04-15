@@ -94,6 +94,17 @@ export class LocalStorageTranslationCache {
     this._scheduleFlush();
   }
 
+  /**
+   * Remove specific entries from the cache by hash.
+   */
+  purge(hashes: string[]): void {
+    const cache = this._readFromStorage();
+    for (const hash of hashes) {
+      delete cache[hash];
+    }
+    this._writeRaw(JSON.stringify(cache));
+  }
+
   // ===== Private Methods ===== //
 
   /**
