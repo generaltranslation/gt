@@ -173,7 +173,6 @@ function getNewLocale({
     cookieLocale !== newLocale &&
     typeof document !== 'undefined'
   ) {
-    console.log('setting cookie2', localeCookieName, newLocale);
     document.cookie = `${localeCookieName}=${newLocale};path=/`;
   }
 
@@ -232,7 +231,6 @@ function createSetLocale({
     newLocale = resolveAliasLocale(newLocale);
     const validatedLocale = setLocaleWithoutSettingCookie(newLocale);
     if (typeof document !== 'undefined') {
-      console.log('setting cookie1', localeCookieName, validatedLocale);
       document.cookie = `${localeCookieName}=${validatedLocale};path=/`;
     }
 
