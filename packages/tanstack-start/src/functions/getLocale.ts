@@ -1,5 +1,4 @@
 import { getI18nManager } from 'gt-i18n/internal';
-import { determineLocale } from './determineLocale';
 
 /**
  * Returns the user's current locale.
