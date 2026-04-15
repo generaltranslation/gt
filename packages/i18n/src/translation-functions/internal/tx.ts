@@ -23,7 +23,7 @@ export async function tx(
   }
 ): Promise<string> {
   return resolveStringContentWithRuntimeFallback(content, {
-    $format: 'ICU',
+    $format: 'STRING',
     ...options,
   });
 }
