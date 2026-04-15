@@ -19,6 +19,8 @@ export interface TranslationContent {
   context?: string;
   /** Optional maxChars from options: t("text", {maxChars: 10}) → 10 */
   maxChars?: number;
+  /** Optional format from options: t("text", {$format: "STRING"}) → "STRING" */
+  format?: string;
 }
 
 /**
@@ -27,6 +29,12 @@ export interface TranslationContent {
 export interface TranslationJsx {
   /** Pre-calculated hash for this JSX content */
   hash: string;
+  /** JSX children structure (serializable) */
+  children?: unknown;
+  /** Optional ID from props */
+  id?: string;
+  /** Optional context from props */
+  context?: string;
 }
 
 /**
@@ -169,6 +177,20 @@ export class StringCollector {
         this.hashAggregators.size >
       0
     );
+  }
+
+  /**
+   * Get all translation content entries (flattened across all aggregators)
+   */
+  getAllTranslationContent(): TranslationContent[] {
+    return Array.from(this.contentAggregators.values()).flat();
+  }
+
+  /**
+   * Get all translation JSX entries
+   */
+  getAllTranslationJsx(): TranslationJsx[] {
+    return Array.from(this.jsxAggregators.values());
   }
 
   /**

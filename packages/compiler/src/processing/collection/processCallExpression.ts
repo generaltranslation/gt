@@ -286,5 +286,5 @@ function handleReactInvocation(
   }
 
   // Track the component (increment counter, initialize aggregator, set hash)
-  registerTranslationComponent(state, hash);
+  registerTranslationComponent(state, hash, { children, id, context });
 }

@@ -20,6 +20,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   enableAutoJsxInjection: false,
   autoderive: { jsx: false, strings: false },
   _debugHashManifest: false,
+  devHotReloadEnabled: false,
 };
 
 /**
@@ -33,6 +34,8 @@ export function initializeState(
   const gtConfig = options.gtConfig;
   const enableAutoJsxInjection =
     gtConfig?.files?.gt?.parsingFlags?.enableAutoJsxInjection ?? false;
+  const devHotReloadEnabled =
+    gtConfig?.files?.gt?.parsingFlags?.devHotReloadEnabled ?? false;
   const rawAutoderive =
     gtConfig?.files?.gt?.parsingFlags?.autoderive ??
     gtConfig?.files?.gt?.parsingFlags?.autoDerive ??
@@ -51,6 +54,7 @@ export function initializeState(
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
     enableAutoJsxInjection, // can be overridden by options.enableAutoJsxInjection
+    devHotReloadEnabled, // can be overridden by options.devHotReloadEnabled
     autoderive,
     ...restOptions,
     filename,
@@ -67,6 +71,7 @@ export function initializeState(
       dynamicContentViolations: 0,
       macroExpansionsCount: 0,
       jsxInsertionsCount: 0,
+      runtimeTranslateCount: 0,
     },
   };
 }

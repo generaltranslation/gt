@@ -6,12 +6,20 @@ import { TransformState } from '../../state/types';
  */
 export function registerTranslationComponent(
   state: TransformState,
-  hash: string
+  hash: string,
+  options?: {
+    children?: unknown;
+    id?: string;
+    context?: string;
+  }
 ): void {
   // Increment counter
   const identifier = state.stringCollector.incrementCounter();
   // Add the translation content to the string collector
   state.stringCollector.setTranslationJsx(identifier, {
     hash,
+    children: options?.children,
+    id: options?.id,
+    context: options?.context,
   });
 }

@@ -41,6 +41,7 @@ export function registerUseGTCallback({
     id,
     context,
     maxChars,
+    format,
   });
 
   // Increment counter so we can revisit this same invocation on second pass

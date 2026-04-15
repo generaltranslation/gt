@@ -15,6 +15,8 @@ type GTConfig = {
         autoderive?: boolean | { jsx?: boolean; strings?: boolean };
         /** @deprecated Use `autoderive` instead */
         autoDerive?: boolean;
+        /** Enable dev hot reload runtime translate injection */
+        devHotReloadEnabled?: boolean;
       };
     };
   };
@@ -44,6 +46,8 @@ export interface PluginConfig {
   autoDerive?: boolean;
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest?: boolean;
+  /** Enable dev hot reload runtime translate injection */
+  devHotReloadEnabled?: boolean;
 }
 
 /**
@@ -66,6 +70,8 @@ export interface PluginSettings {
   autoderive: { jsx: boolean; strings: boolean };
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest: boolean;
+  /** Enable dev hot reload runtime translate injection */
+  devHotReloadEnabled: boolean;
 }
 
 /**
