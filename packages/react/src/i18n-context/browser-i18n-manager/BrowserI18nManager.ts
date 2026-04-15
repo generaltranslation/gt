@@ -2,6 +2,7 @@ import { I18nManager } from 'gt-i18n/internal';
 import type {
   I18nManagerConstructorParams,
   TranslationsLoader,
+  LifecycleCallbacks,
 } from 'gt-i18n/internal/types';
 import type { BrowserStorageAdapter } from './BrowserStorageAdapter';
 import type { HtmlTagOptions } from './utils/types';
@@ -33,26 +34,15 @@ export class BrowserI18nManager extends I18nManager<
   private _localStorageCaches!: Record<string, LocalStorageTranslationCache>;
 
   constructor(config: BrowserI18nManagerConstructorParams) {
-    // Create the map before super() — can't access `this` yet.
-    // The closure captures this object so the loader wrapper and
-    // this._localStorageCaches share the same reference after assignment.
+    // Must be initialized  before super()
     const localStorageCaches: Record<string, LocalStorageTranslationCache> = {};
 
-    if (import.meta.env.DEV && config.loadTranslations) {
-      super({
-        ...config,
-        loadTranslations: wrapLoaderWithLocalStorage(
-          config.loadTranslations,
-          localStorageCaches
-        ),
-        onTranslationsCacheMiss: (_locale, _inputKey, hash, translation) => {
-          const cache = localStorageCaches[_locale];
-          if (cache) cache.write(hash, translation as Translation);
-        },
-      });
-    } else {
-      super(config);
-    }
+    // Initialize the I18nManager
+    super({
+      ...config,
+      ...(isDevHotReloadEnabled(config) &&
+        createDevHotReloadConfig(config.loadTranslations!, localStorageCaches)),
+    });
 
     this._localStorageCaches = localStorageCaches;
     this.storeAdapter.setConfig({
@@ -149,6 +139,21 @@ export class BrowserI18nManager extends I18nManager<
 // ===== Helper Functions ===== //
 
 /**
+ * Creates the dev hot reload config
+ */
+function createDevHotReloadConfig(
+  loadTranslations: TranslationsLoader,
+  localStorageCaches: Record<string, LocalStorageTranslationCache>
+): I18nManagerConstructorParams<BrowserStorageAdapter> {
+  return {
+    loadTranslations: wrapLoaderWithLocalStorage(
+      loadTranslations,
+      localStorageCaches
+    ),
+    lifecycle: createLifecycleCallbacks(localStorageCaches),
+  };
+}
+/**
  * Wraps a translation loader to merge localStorage translations in dev mode.
  * On each call: runs the original loader, seeds a LocalStorageTranslationCache
  * with the result (loader wins over stale localStorage), and returns the merged
@@ -166,4 +171,56 @@ function wrapLoaderWithLocalStorage(
     );
     return localStorageCaches[locale].getInternalCache();
   };
+}
+
+/**
+ * Creates the lifecycle callbacks for the BrowserI18nManager
+ * @param localStorageCaches - The localStorage caches
+ * @returns The lifecycle callbacks
+ */
+function createLifecycleCallbacks(
+  localStorageCaches: Record<string, LocalStorageTranslationCache>
+): LifecycleCallbacks<Translation> {
+  return {
+    onTranslationsCacheMiss: ({ locale, hash, value }) => {
+      const cache = localStorageCaches[locale];
+      if (cache) {
+        cache.write(hash, value);
+      } else {
+        localStorageCaches[locale] = new LocalStorageTranslationCache(locale, {
+          [hash]: value,
+        });
+      }
+    },
+  };
+}
+
+/**
+ * Determines if dev hot reload is enabled
+ * @param config - The configuration
+ * @returns True if dev hot reload is enabled, false otherwise
+ */
+function isDevHotReloadEnabled(
+  config: BrowserI18nManagerConstructorParams
+): boolean {
+  // TODO: this only works when you've defined a custom loadTranslations function
+  // meaning CDN users will not have access to this feature
+  const requirements: Record<string, boolean> = {
+    environment: !!import.meta.env.DEV,
+    customLoadTranslations: !!config.loadTranslations,
+    projectId: !!config.projectId,
+    devApiKey: !!config.devApiKey,
+  };
+  const requirementsMet = Object.values(requirements).every(Boolean);
+  const flag = config.devHotReloadEnabled ?? false;
+  // Only want this to log in development
+  if (import.meta.env.DEV && flag && !requirementsMet) {
+    const missingRequirements = Object.keys(requirements).filter(
+      (key) => !requirements[key]
+    );
+    console.warn(
+      `Dev hot reload is enabled, but the requirements are not met: ${missingRequirements.join(', ')}`
+    );
+  }
+  return requirements && flag;
 }

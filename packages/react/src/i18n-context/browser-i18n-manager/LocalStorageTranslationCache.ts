@@ -11,14 +11,10 @@ const FLUSH_INTERVAL = 500;
  * A localStorage-backed translation cache for a single locale.
  * Used in development mode only to persist runtime translations across page refreshes.
  *
- * Does NOT extend Cache from gt-i18n — that class is designed for in-memory caching
- * with async fallback, which doesn't apply here. Instead, we match the interface
- * contract (getInternalCache()) for duck-type compatibility.
+ * TODO: copy localstorage to make an in-memory cache for faster access
  */
 export class LocalStorageTranslationCache {
-  private _locale: string;
   private _storageKey: string;
-  private _cache: Record<string, Translation>;
   private _writeBuffer: Record<string, Translation> = {};
   // eslint-disable-next-line no-undef
   private _flushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -29,16 +25,11 @@ export class LocalStorageTranslationCache {
    *               init values take priority over stale localStorage entries.
    */
   constructor(locale: string, init?: Record<string, Translation>) {
-    this._locale = locale;
     this._storageKey = `${STORAGE_KEY_PREFIX}${locale}`;
-
-    // Read existing data from localStorage
-    this._cache = this._readFromStorage();
 
     // Merge init values on top (init wins on conflict)
     if (init) {
-      this._cache = { ...this._cache, ...init };
-      this._writeToStorage();
+      this._writeToStorage(init);
     }
   }
 
@@ -47,10 +38,9 @@ export class LocalStorageTranslationCache {
    * Buffer entries take priority over cache entries.
    */
   getInternalCache(): Record<string, Translation> {
-    if (Object.keys(this._writeBuffer).length === 0) {
-      return this._cache;
-    }
-    return { ...this._cache, ...this._writeBuffer };
+    const cache = this._readFromStorage();
+    Object.assign(cache, this._writeBuffer);
+    return cache;
   }
 
   /**
@@ -82,9 +72,8 @@ export class LocalStorageTranslationCache {
    */
   private _flush(): void {
     if (Object.keys(this._writeBuffer).length === 0) return;
-    Object.assign(this._cache, this._writeBuffer);
+    this._writeToStorage(this._writeBuffer);
     this._writeBuffer = {};
-    this._writeToStorage();
   }
 
   /**
@@ -106,10 +95,12 @@ export class LocalStorageTranslationCache {
    * Persist the current cache to localStorage.
    * No-ops on any error (quota exceeded, unavailable, etc.)
    */
-  private _writeToStorage(): void {
+  private _writeToStorage(buffer: Record<string, Translation>): void {
     try {
+      const cache = this._readFromStorage();
+      Object.assign(cache, buffer);
       // eslint-disable-next-line no-undef
-      localStorage.setItem(this._storageKey, JSON.stringify(this._cache));
+      localStorage.setItem(this._storageKey, JSON.stringify(cache));
     } catch {
       // Silently fail — localStorage may be unavailable or full
     }

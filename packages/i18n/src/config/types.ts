@@ -47,4 +47,9 @@ export type GTConfig = {
 
   // other
   localeCookieName?: string;
+
+  /**
+   * Flag to enable dev hot reload, gt-react/browser only
+   */
+  devHotReloadEnabled?: boolean;
 };

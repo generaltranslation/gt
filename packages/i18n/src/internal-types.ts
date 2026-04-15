@@ -4,6 +4,7 @@ export type {
   TranslationsLoader,
   I18nManagerConfig,
   StorageAdapter,
+  LifecycleCallbacks,
 } from './i18n-manager/types';
 
 // Translation Options (Function types exported by /types)
