@@ -1,21 +1,7 @@
-/**
- * Lifecycle callback
- */
-export type LifecycleCallback<InputKey, CacheKey, CacheValue, OutputValue> =
-  (params: {
-    inputKey: InputKey;
-    cacheKey: CacheKey;
-    cacheValue: CacheValue;
-    outputValue: OutputValue;
-  }) => void;
-
-/**
- * Lifecycle param
- */
-export type LifecycleParam<InputKey, CacheKey, CacheValue, OutputValue> = {
-  onHit?: LifecycleCallback<InputKey, CacheKey, CacheValue, OutputValue>;
-  onMiss?: LifecycleCallback<InputKey, CacheKey, CacheValue, OutputValue>;
-};
+import type {
+  LifecycleCallback,
+  LifecycleParam,
+} from '../lifecycle-hooks/types';
 
 /**
  * Cache class

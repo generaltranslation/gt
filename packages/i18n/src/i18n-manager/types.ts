@@ -1,25 +1,10 @@
-import { StorageAdapterType } from './storage-adapter/types';
 import { CustomMapping } from 'generaltranslation/types';
 import { GTConfig } from '../config/types';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
+import { StorageAdapterType } from './storage-adapter/types';
 import { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import { Translation } from './translations-manager/utils/types/translation-data';
-import { Hash } from './translations-manager/TranslationsCache';
-import { Locale } from './translations-manager/LocalesCache';
-
-/**
- * Lifecycle callback definitions
- */
-type LocaleCacheLifecycleCallback<TranslationValue extends Translation> =
-  (params: { locale: Locale; value: Record<Hash, TranslationValue> }) => void;
-type TranslationsCacheLifecycleCallback<TranslationValue extends Translation> =
-  (params: { locale: Locale; hash: Hash; value: TranslationValue }) => void;
-export type LifecycleCallbacks<TranslationValue extends Translation> = {
-  onTranslationsCacheHit?: TranslationsCacheLifecycleCallback<TranslationValue>;
-  onTranslationsCacheMiss?: TranslationsCacheLifecycleCallback<TranslationValue>;
-  onLocalesCacheHit?: LocaleCacheLifecycleCallback<TranslationValue>;
-  onLocalesCacheMiss?: LocaleCacheLifecycleCallback<TranslationValue>;
-};
+import type { LifecycleCallbacks } from './lifecycle-hooks/types';
 
 /**
  * Parameters for the I18nManager constructor
@@ -32,7 +17,7 @@ export type I18nManagerConstructorParams<
   storeAdapter?: T;
   environment?: 'development' | 'production';
   // Cache lifecycle hooks
-  lifecycle: LifecycleCallbacks<TranslationValue>;
+  lifecycle?: LifecycleCallbacks<TranslationValue>;
 };
 
 /**
@@ -51,4 +36,9 @@ export type I18nManagerConfig = {
   _versionId?: string;
 };
 
-export type { TranslationsLoader, StorageAdapter, StorageAdapterType };
+export type {
+  TranslationsLoader,
+  StorageAdapter,
+  StorageAdapterType,
+  LifecycleCallbacks,
+};

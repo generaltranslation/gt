@@ -1,5 +1,6 @@
 import { LookupOptions } from '../../translation-functions/types/options';
-import { Cache, LifecycleParam } from './Cache';
+import { Cache } from './Cache';
+import type { LifecycleParam } from '../lifecycle-hooks/types';
 import { Translation } from './utils/types/translation-data';
 import type { GT } from 'generaltranslation';
 import { hashMessage } from '../../utils/hashMessage';

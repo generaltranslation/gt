@@ -1,46 +1,13 @@
-import { Cache, LifecycleCallback, LifecycleParam } from './Cache';
+import { Cache } from './Cache';
 import { Hash, TranslationKey, TranslationsCache } from './TranslationsCache';
 import { Translation } from './utils/types/translation-data';
 import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
 import { CreateTranslateMany } from './utils/createTranslateMany';
-
-/**
- * Locales cache lifecycle callback
- */
-export type LocalesCacheLifecycleCallback<
-  TranslationValue extends Translation,
-> = LifecycleCallback<
-  Locale,
-  Locale,
-  CacheEntry<TranslationValue>,
-  CacheEntry<TranslationValue>['translationsCache']
->;
-
-/**
- * Translations cache lifecycle callback with locale embedded as first param.
- * Uses base Translation type to avoid generic variance issues.
- */
-export type TranslationsCacheLifecycleCallback<
-  TranslationValue extends Translation,
-> = (params: {
-  locale: Locale;
-  inputKey: TranslationKey<TranslationValue>;
-  cacheKey: Hash;
-  cacheValue: TranslationValue;
-  outputValue: TranslationValue;
-}) => void;
-
-/**
- * Locales cache lifecycle callbacks
- */
-export type LocalesCacheLifecycleCallbacks<
-  TranslationValue extends Translation,
-> = {
-  onLocalesCacheHit?: LocalesCacheLifecycleCallback<TranslationValue>;
-  onLocalesCacheMiss?: LocalesCacheLifecycleCallback<TranslationValue>;
-  onTranslationsCacheHit?: TranslationsCacheLifecycleCallback<TranslationValue>;
-  onTranslationsCacheMiss?: TranslationsCacheLifecycleCallback<TranslationValue>;
-};
+import type {
+  LifecycleParam,
+  LocalesCacheLifecycleCallbacks,
+  TranslationsCacheLifecycleCallback,
+} from '../lifecycle-hooks/types';
 
 /**
  * Just being explicit about the purpose of this type
@@ -53,7 +20,7 @@ export type Locale = string;
  * @property {number} expiresAt - The time at which the cache entry expires.
  * @property {TranslationsCache<TranslationValue>} translationsCache - The translations cache for the locale.
  */
-type CacheEntry<TranslationValue extends Translation> = {
+export type CacheEntry<TranslationValue extends Translation> = {
   expiresAt: number;
   translationsCache: TranslationsCache<TranslationValue>;
 };

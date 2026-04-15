@@ -1,10 +1,6 @@
 import { publishValidationResults } from './validation/publishValidationResults';
 import logger from '../logs/logger';
-import {
-  I18nManagerConfig,
-  I18nManagerConstructorParams,
-  LifecycleCallbacks,
-} from './types';
+import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
 import { StorageAdapterType } from './storage-adapter/types';
 import { validateConfig } from './validation/validateConfig';
 import { Translation } from './translations-manager/utils/types/translation-data';
@@ -22,13 +18,9 @@ import {
 import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
 import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
-import {
-  Locale,
-  LocalesCache,
-  LocalesCacheLifecycleCallback,
-  LocalesCacheLifecycleCallbacks,
-} from './translations-manager/LocalesCache';
+import { LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
+import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -115,7 +107,9 @@ class I18nManager<
       loadTranslations:
         loadTranslations as SafeTranslationsLoader<TranslationValue>,
       createTranslateMany,
-      lifecycle: createLifecycleCallbacks<TranslationValue>(params.lifecycle),
+      lifecycle: createLifecycleCallbacks<TranslationValue>(
+        params.lifecycle ?? {}
+      ),
     });
   }
 
@@ -626,43 +620,4 @@ function createTranslationLoader<
       customMapping: params.customMapping,
     },
   }) as SafeTranslationsLoader<TranslationType>;
-}
-
-/**
- * Helper function for creating life cycle callbacks
- */
-function createLifecycleCallbacks<TranslationValue extends Translation>({
-  onLocalesCacheHit,
-  onLocalesCacheMiss,
-  onTranslationsCacheHit,
-  onTranslationsCacheMiss,
-}: LifecycleCallbacks<TranslationValue>): LocalesCacheLifecycleCallbacks<TranslationValue> {
-  return {
-    onLocalesCacheHit: (params) => {
-      onLocalesCacheHit?.({
-        locale: params.inputKey,
-        value: params.outputValue.getInternalCache(),
-      });
-    },
-    onLocalesCacheMiss: (params) => {
-      onLocalesCacheMiss?.({
-        locale: params.inputKey,
-        value: params.outputValue.getInternalCache(),
-      });
-    },
-    onTranslationsCacheHit: (params) => {
-      onTranslationsCacheHit?.({
-        locale: params.locale,
-        hash: params.cacheKey,
-        value: params.outputValue,
-      });
-    },
-    onTranslationsCacheMiss: (params) => {
-      onTranslationsCacheMiss?.({
-        locale: params.locale,
-        hash: params.cacheKey,
-        value: params.outputValue,
-      });
-    },
-  };
 }
