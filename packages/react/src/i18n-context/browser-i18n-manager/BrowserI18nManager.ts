@@ -41,7 +41,11 @@ export class BrowserI18nManager extends I18nManager<
     super({
       ...config,
       ...(isDevHotReloadEnabled(config) &&
-        createDevHotReloadConfig(config.loadTranslations!, localStorageCaches)),
+        createDevHotReloadConfig(
+          config.loadTranslations!,
+          config.projectId!,
+          localStorageCaches
+        )),
     });
 
     this._localStorageCaches = localStorageCaches;
@@ -93,10 +97,11 @@ export class BrowserI18nManager extends I18nManager<
     if (!import.meta.env.DEV) return undefined;
 
     if (!this._localStorageCaches[locale]) {
-      this._localStorageCaches[locale] = new LocalStorageTranslationCache(
+      this._localStorageCaches[locale] = new LocalStorageTranslationCache({
         locale,
-        init
-      );
+        projectId: this.config.projectId!,
+        init,
+      });
     }
     return this._localStorageCaches[locale];
   }
@@ -143,14 +148,16 @@ export class BrowserI18nManager extends I18nManager<
  */
 function createDevHotReloadConfig(
   loadTranslations: TranslationsLoader,
+  projectId: string,
   localStorageCaches: Record<string, LocalStorageTranslationCache>
 ): I18nManagerConstructorParams<BrowserStorageAdapter> {
   return {
     loadTranslations: wrapLoaderWithLocalStorage(
       loadTranslations,
+      projectId,
       localStorageCaches
     ),
-    lifecycle: createLifecycleCallbacks(localStorageCaches),
+    lifecycle: createLifecycleCallbacks(projectId, localStorageCaches),
   };
 }
 /**
@@ -161,14 +168,16 @@ function createDevHotReloadConfig(
  */
 function wrapLoaderWithLocalStorage(
   originalLoader: TranslationsLoader,
+  projectId: string,
   localStorageCaches: Record<string, LocalStorageTranslationCache>
 ): TranslationsLoader {
   return async (locale: string) => {
     const loaderTranslations = await originalLoader(locale);
-    localStorageCaches[locale] ||= new LocalStorageTranslationCache(
+    localStorageCaches[locale] ||= new LocalStorageTranslationCache({
       locale,
-      loaderTranslations as Record<string, Translation>
-    );
+      projectId,
+      init: loaderTranslations as Record<string, Translation>,
+    });
     return localStorageCaches[locale].getInternalCache();
   };
 }
@@ -179,6 +188,7 @@ function wrapLoaderWithLocalStorage(
  * @returns The lifecycle callbacks
  */
 function createLifecycleCallbacks(
+  projectId: string,
   localStorageCaches: Record<string, LocalStorageTranslationCache>
 ): LifecycleCallbacks<Translation> {
   return {
@@ -187,7 +197,9 @@ function createLifecycleCallbacks(
       if (cache) {
         cache.write(hash, value);
       } else {
-        localStorageCaches[locale] = new LocalStorageTranslationCache(locale, {
+        localStorageCaches[locale] = new LocalStorageTranslationCache({
+          locale,
+          projectId,
           [hash]: value,
         });
       }

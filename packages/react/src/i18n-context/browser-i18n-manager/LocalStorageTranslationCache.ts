@@ -10,8 +10,6 @@ const FLUSH_INTERVAL = 500;
 /**
  * A localStorage-backed translation cache for a single locale.
  * Used in development mode only to persist runtime translations across page refreshes.
- *
- * TODO: copy localstorage to make an in-memory cache for faster access
  */
 export class LocalStorageTranslationCache {
   private _storageKey: string;
@@ -24,8 +22,16 @@ export class LocalStorageTranslationCache {
    * @param init - Optional initial translations to merge on top of localStorage data.
    *               init values take priority over stale localStorage entries.
    */
-  constructor(locale: string, init?: Record<string, Translation>) {
-    this._storageKey = `${STORAGE_KEY_PREFIX}${locale}`;
+  constructor({
+    locale,
+    projectId,
+    init,
+  }: {
+    locale: string;
+    projectId: string;
+    init?: Record<string, Translation>;
+  }) {
+    this._storageKey = `${STORAGE_KEY_PREFIX}:${projectId}:${locale}`;
 
     // Merge init values on top (init wins on conflict)
     if (init) {
