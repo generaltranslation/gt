@@ -29,6 +29,8 @@ export function determineLibrary(): {
       // Check for gt-next or gt-react in dependencies
       if (dependencies[Libraries.GT_NEXT]) {
         library = Libraries.GT_NEXT;
+      } else if (dependencies[Libraries.GT_TANSTACK_START]) {
+        library = Libraries.GT_TANSTACK_START;
       } else if (dependencies[Libraries.GT_REACT]) {
         library = Libraries.GT_REACT;
       } else if (dependencies[Libraries.GT_REACT_NATIVE]) {

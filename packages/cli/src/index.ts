@@ -16,7 +16,8 @@ export function main(program: Command) {
     cli = new NextCLI(program, library, additionalModules);
   } else if (
     library === Libraries.GT_REACT ||
-    library === Libraries.GT_REACT_NATIVE
+    library === Libraries.GT_REACT_NATIVE ||
+    library === Libraries.GT_TANSTACK_START
   ) {
     cli = new ReactCLI(program, library, additionalModules);
   } else if (library === Libraries.GT_NODE) {
