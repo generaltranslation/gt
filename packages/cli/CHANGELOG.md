@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.15
+
+### Patch Changes
+
+- [#1213](https://github.com/generaltranslation/gt/pull/1213) [`38e21c1`](https://github.com/generaltranslation/gt/commit/38e21c10bcbd2c5b767793b9659583cf6d03c867) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Fix inline content extraction for gt-tanstack-start projects. The CLI now correctly detects gt-tanstack-start in package.json, routes it to ReactCLI, and scans imports from gt-tanstack-start for translatable content like `<T>` components.
+
 ## 2.14.14
 
 ### Patch Changes
