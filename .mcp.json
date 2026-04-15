@@ -2,16 +2,7 @@
   "mcpServers": {
     "generaltranslation": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@generaltranslation/mcp@latest"
-      ]
-    },
-    "executor": {
-      "command": "executor",
-      "args": [
-        "mcp"
-      ]
+      "args": ["-y", "@generaltranslation/mcp@latest"]
     }
   }
 }
