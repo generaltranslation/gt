@@ -11,10 +11,16 @@ type CachedEntry = { t: Translation; exp: number };
 // ===== Constants ===== //
 
 const STORAGE_KEY_PREFIX = 'gt:tx:';
+const PURGE_TIMESTAMP_PREFIX = 'gt:tx:purge:';
 const FLUSH_INTERVAL = 500;
 const DEFAULT_MAX_SIZE = 1_000_000; // ~1M characters (localStorage uses UTF-16)
 const DEFAULT_TTL_MS = 86_400_000; // 24 hours
+const DEFAULT_PURGE_INTERVAL_MS = 300_000; // 5 minutes
 const PURGE_TARGET_RATIO = 0.8; // purge down to 80% of max
+
+// Prevents interval leaks on HMR — keyed by storage key
+// eslint-disable-next-line no-undef
+const activeIntervals = new Map<string, ReturnType<typeof setInterval>>();
 
 // ===== Class ===== //
 
@@ -33,6 +39,8 @@ export class LocalStorageTranslationCache {
   private _estimatedSize: number = 0;
   private _maxSize: number;
   private _ttl: number;
+  private _purgeInterval: number;
+  private _purgeTimestampKey: string;
 
   /**
    * @param locale - The locale this cache is for
@@ -41,6 +49,7 @@ export class LocalStorageTranslationCache {
    *               init values take priority over stale localStorage entries.
    * @param maxSize - Maximum cache size in characters (default: ~1M)
    * @param ttl - TTL in milliseconds for each entry (default: 24 hours)
+   * @param purgeInterval - Background purge check interval in ms (default: 5 min)
    */
   constructor({
     locale,
@@ -48,21 +57,37 @@ export class LocalStorageTranslationCache {
     init,
     maxSize,
     ttl,
+    purgeInterval,
   }: {
     locale: string;
     projectId: string;
     init?: Record<string, Translation>;
     maxSize?: number;
     ttl?: number;
+    purgeInterval?: number;
   }) {
     this._storageKey = `${STORAGE_KEY_PREFIX}${projectId}:${locale}`;
+    this._purgeTimestampKey = `${PURGE_TIMESTAMP_PREFIX}${projectId}:${locale}`;
     this._maxSize = maxSize ?? DEFAULT_MAX_SIZE;
     this._ttl = ttl ?? DEFAULT_TTL_MS;
+    this._purgeInterval = purgeInterval ?? DEFAULT_PURGE_INTERVAL_MS;
 
     // Merge init values on top (init wins on conflict)
     if (init) {
       this.initStorage(init);
     }
+
+    // Start background purge interval (clears any existing interval for HMR safety)
+    if (activeIntervals.has(this._storageKey)) {
+      // eslint-disable-next-line no-undef
+      clearInterval(activeIntervals.get(this._storageKey)!);
+    }
+    // eslint-disable-next-line no-undef
+    const intervalId = setInterval(
+      () => this._backgroundPurge(),
+      this._purgeInterval
+    );
+    activeIntervals.set(this._storageKey, intervalId);
   }
 
   /**
@@ -162,11 +187,7 @@ export class LocalStorageTranslationCache {
     const avgEntrySize = this._estimatedSize / keysBeforePurge.length;
 
     // Phase 1: Remove expired entries
-    for (const key of keysBeforePurge) {
-      if (cache[key].exp <= now) {
-        delete cache[key];
-      }
-    }
+    deleteExpiredEntries(cache, now);
 
     // Phase 2: If still over target, drop oldest entries
     const targetSize = this._maxSize * PURGE_TARGET_RATIO;
@@ -179,6 +200,41 @@ export class LocalStorageTranslationCache {
       for (let i = 0; i < toDrop; i++) {
         delete cache[remaining[i][0]];
       }
+    }
+  }
+
+  /**
+   * Background purge triggered by setInterval.
+   * Checks the last purge timestamp to avoid redundant work across tabs,
+   * then removes expired entries. Only writes back if something changed.
+   * Timestamp is updated after the purge completes.
+   */
+  private _backgroundPurge(): void {
+    try {
+      // Check if a purge is needed (another tab may have purged recently)
+      // eslint-disable-next-line no-undef
+      const raw = localStorage.getItem(this._purgeTimestampKey);
+      const lastPurge = raw ? parseInt(raw, 10) : 0;
+      const now = Date.now();
+
+      if (now - lastPurge < this._purgeInterval) return;
+
+      // Run TTL purge
+      const cache = this._readFromStorage();
+      const keysBefore = Object.keys(cache).length;
+
+      deleteExpiredEntries(cache, now);
+
+      // Only write back if something was actually purged
+      if (Object.keys(cache).length < keysBefore) {
+        this._writeRaw(JSON.stringify(cache));
+      }
+
+      // Update timestamp after purge completes
+      // eslint-disable-next-line no-undef
+      localStorage.setItem(this._purgeTimestampKey, String(now));
+    } catch {
+      // Silently fail
     }
   }
 
@@ -232,6 +288,22 @@ export class LocalStorageTranslationCache {
       this._estimatedSize = serialized.length;
     } catch {
       // Silently fail — localStorage may be unavailable or full
+    }
+  }
+}
+
+// ===== Helper Functions ===== //
+
+/**
+ * Helper function deletes expired entries from a cache in place.
+ */
+function deleteExpiredEntries(
+  cache: Record<string, CachedEntry>,
+  now: number = Date.now()
+): void {
+  for (const key of Object.keys(cache)) {
+    if (cache[key].exp <= now) {
+      delete cache[key];
     }
   }
 }
