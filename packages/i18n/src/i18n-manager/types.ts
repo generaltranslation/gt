@@ -3,6 +3,7 @@ import { CustomMapping } from 'generaltranslation/types';
 import { GTConfig } from '../config/types';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { TranslationsLoader } from './translations-manager/translations-loaders/types';
+import { CreateTranslateMany } from './translations-manager/utils/createTranslateMany';
 
 /**
  * Parameters for the I18nManager constructor
@@ -13,6 +14,9 @@ export type I18nManagerConstructorParams<
   loadTranslations?: TranslationsLoader;
   storeAdapter?: T;
   environment?: 'development' | 'production';
+  wrapCreateTranslateMany?: (
+    defaultFactory: CreateTranslateMany
+  ) => CreateTranslateMany;
 };
 
 /**

@@ -96,10 +96,13 @@ class I18nManager<
 
     // Create cache miss handlers
     const loadTranslations = createTranslationLoader<TranslationValue>(params);
-    const createTranslateMany = createTranslateManyFactory(
+    const defaultCreateTranslateMany = createTranslateManyFactory(
       this.getGTClassClean(),
       DEFAULT_TRANSLATION_TIMEOUT
     );
+    const createTranslateMany = params.wrapCreateTranslateMany
+      ? params.wrapCreateTranslateMany(defaultCreateTranslateMany)
+      : defaultCreateTranslateMany;
 
     // Setup translations cache
     this.localesCache = new LocalesCache<TranslationValue>({

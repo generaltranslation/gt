@@ -1,11 +1,16 @@
 import { I18nManager } from 'gt-i18n/internal';
-import type { I18nManagerConstructorParams } from 'gt-i18n/internal/types';
+import type {
+  I18nManagerConstructorParams,
+  TranslationsLoader,
+  CreateTranslateMany,
+} from 'gt-i18n/internal/types';
 import type { BrowserStorageAdapter } from './BrowserStorageAdapter';
 import type { HtmlTagOptions } from './utils/types';
 import { determineLocale as gtDetermineLocale } from 'generaltranslation';
 import { createInvalidLocaleWarning } from '../../shared/messages';
 import { Translation } from 'gt-i18n/types';
 import { DEFAULT_HTML_TAG_OPTIONS } from './utils/constants';
+import { LocalStorageTranslationCache } from './LocalStorageTranslationCache';
 
 /**
  * The configuration for the BrowserI18nManager
@@ -25,8 +30,30 @@ export class BrowserI18nManager extends I18nManager<
   /** Customize browser-related behavior */
   private htmlTagOptions?: HtmlTagOptions;
 
+  /** Per-locale localStorage translation caches (dev mode only) */
+  private _localStorageCaches!: Record<string, LocalStorageTranslationCache>;
+
   constructor(config: BrowserI18nManagerConstructorParams) {
-    super(config);
+    // Create the map before super() — can't access `this` yet.
+    // The closure captures this object so the loader wrapper and
+    // this._localStorageCaches share the same reference after assignment.
+    const localStorageCaches: Record<string, LocalStorageTranslationCache> = {};
+
+    if (import.meta.env.DEV && config.loadTranslations) {
+      super({
+        ...config,
+        loadTranslations: wrapLoaderWithLocalStorage(
+          config.loadTranslations,
+          localStorageCaches
+        ),
+        wrapCreateTranslateMany:
+          wrapTranslateManyWithLocalStorage(localStorageCaches),
+      });
+    } else {
+      super(config);
+    }
+
+    this._localStorageCaches = localStorageCaches;
     this.storeAdapter.setConfig({
       defaultLocale: this.getDefaultLocale(),
       locales: this.getLocales(),
@@ -64,6 +91,26 @@ export class BrowserI18nManager extends I18nManager<
   }
 
   /**
+   * Get or create a LocalStorageTranslationCache for the given locale.
+   * Instances are lazily created and cached per locale.
+   * Returns undefined if not in development mode.
+   */
+  getLocalStorageTranslationCache(
+    locale: string,
+    init?: Record<string, Translation>
+  ): LocalStorageTranslationCache | undefined {
+    if (!import.meta.env.DEV) return undefined;
+
+    if (!this._localStorageCaches[locale]) {
+      this._localStorageCaches[locale] = new LocalStorageTranslationCache(
+        locale,
+        init
+      );
+    }
+    return this._localStorageCaches[locale];
+  }
+
+  /**
    * Update the html tag (lang, dir)
    */
   updateHtmlTag(
@@ -96,4 +143,51 @@ export class BrowserI18nManager extends I18nManager<
       document.documentElement.dir = localeDirection;
     }
   }
+}
+
+// ===== Helper Functions ===== //
+
+/**
+ * Wraps a translation loader to merge localStorage translations in dev mode.
+ * On each call: runs the original loader, seeds a LocalStorageTranslationCache
+ * with the result (loader wins over stale localStorage), and returns the merged
+ * translations — preserving runtime tx() translations from previous sessions.
+ */
+function wrapLoaderWithLocalStorage(
+  originalLoader: TranslationsLoader,
+  localStorageCaches: Record<string, LocalStorageTranslationCache>
+): TranslationsLoader {
+  return async (locale: string) => {
+    const loaderTranslations = await originalLoader(locale);
+    localStorageCaches[locale] ||= new LocalStorageTranslationCache(
+      locale,
+      loaderTranslations as Record<string, Translation>
+    );
+    return localStorageCaches[locale].getInternalCache();
+  };
+}
+
+/**
+ * Wraps the createTranslateMany factory to persist runtime translations
+ * to localStorage. Intercepts each TranslateMany response and writes
+ * successful translations to the locale's localStorage cache.
+ */
+function wrapTranslateManyWithLocalStorage(
+  localStorageCaches: Record<string, LocalStorageTranslationCache>
+): (defaultFactory: CreateTranslateMany) => CreateTranslateMany {
+  return (defaultFactory) => (locale) => {
+    const defaultFn = defaultFactory(locale);
+    return async (sources) => {
+      const results = await defaultFn(sources);
+      const cache = localStorageCaches[locale];
+      if (cache) {
+        for (const [hash, result] of Object.entries(results)) {
+          if (result && 'translation' in result && result.translation != null) {
+            cache.write(hash, result.translation as Translation);
+          }
+        }
+      }
+      return results;
+    };
+  };
 }

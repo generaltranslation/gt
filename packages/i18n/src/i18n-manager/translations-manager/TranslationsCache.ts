@@ -50,6 +50,11 @@ export type TranslateMany = (
 
 /**
  * A cache for a single locale's translations
+ *
+ * Principles:
+ * - This class is language agnostic, and should never store the locale code as a parameter.
+ *   Locale logic is handled at the LocalesCache level. Use a callback function that has the
+ *   locale parameter embedded if you wish to use the locale code.
  */
 export class TranslationsCache<
   TranslationValue extends Translation,
@@ -72,8 +77,6 @@ export class TranslationsCache<
 
   /**
    * Translate many function
-   * TODO: omit the targetLocale requirement from the second argument, this can be supplied
-   * on instantiation
    */
   private _translateMany: TranslateMany;
 
