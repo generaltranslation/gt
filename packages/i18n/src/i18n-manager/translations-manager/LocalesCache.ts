@@ -1,8 +1,46 @@
-import { Cache } from './Cache';
-import { Hash, TranslationsCache } from './TranslationsCache';
+import { Cache, LifecycleCallback, LifecycleParam } from './Cache';
+import { Hash, TranslationKey, TranslationsCache } from './TranslationsCache';
 import { Translation } from './utils/types/translation-data';
 import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
 import { CreateTranslateMany } from './utils/createTranslateMany';
+
+/**
+ * Locales cache lifecycle callback
+ */
+export type LocalesCacheLifecycleCallback<
+  TranslationValue extends Translation,
+> = LifecycleCallback<
+  Locale,
+  Locale,
+  CacheEntry<TranslationValue>,
+  CacheEntry<TranslationValue>['translationsCache']
+>;
+
+/**
+ * Translations cache lifecycle callback with locale embedded as first param.
+ * Uses base Translation type to avoid generic variance issues.
+ */
+export type TranslationsCacheLifecycleCallback<
+  TranslationValue extends Translation,
+> = (params: {
+  locale: Locale;
+  inputKey: TranslationKey<TranslationValue>;
+  cacheKey: Hash;
+  cacheValue: TranslationValue;
+  outputValue: TranslationValue;
+}) => void;
+
+/**
+ * Locales cache lifecycle callbacks
+ */
+export type LocalesCacheLifecycleCallbacks<
+  TranslationValue extends Translation,
+> = {
+  onLocalesCacheHit?: LocalesCacheLifecycleCallback<TranslationValue>;
+  onLocalesCacheMiss?: LocalesCacheLifecycleCallback<TranslationValue>;
+  onTranslationsCacheHit?: TranslationsCacheLifecycleCallback<TranslationValue>;
+  onTranslationsCacheMiss?: TranslationsCacheLifecycleCallback<TranslationValue>;
+};
 
 /**
  * Just being explicit about the purpose of this type
@@ -35,7 +73,8 @@ export type SafeTranslationsLoader<TranslationValue extends Translation> = (
 export class LocalesCache<TranslationValue extends Translation> extends Cache<
   Locale,
   Locale,
-  CacheEntry<TranslationValue>
+  CacheEntry<TranslationValue>,
+  CacheEntry<TranslationValue>['translationsCache']
 > {
   /**
    * Translation loader function
@@ -53,6 +92,12 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
   private ttl: number = DEFAULT_CACHE_EXPIRY_TIME;
 
   /**
+   * Translations cache lifecycle callbacks (locale embedded)
+   */
+  private _onTranslationsCacheHit?: TranslationsCacheLifecycleCallback<TranslationValue>;
+  private _onTranslationsCacheMiss?: TranslationsCacheLifecycleCallback<TranslationValue>;
+
+  /**
    * Constructor
    * @param {Object} params - The parameters for the cache
    * @param {Record<string, CacheEntry<TranslationValue>>} params.init - The initial cache
@@ -65,19 +110,28 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
     ttl,
     loadTranslations,
     createTranslateMany,
+    lifecycle: {
+      onLocalesCacheHit: onHit,
+      onLocalesCacheMiss: onMiss,
+      onTranslationsCacheHit,
+      onTranslationsCacheMiss,
+    },
   }: {
     init?: Record<string, CacheEntry<TranslationValue>>;
     ttl?: number | null;
     createTranslateMany: CreateTranslateMany;
     loadTranslations: SafeTranslationsLoader<TranslationValue>;
+    lifecycle: LocalesCacheLifecycleCallbacks<TranslationValue>;
   }) {
-    super(init);
+    super(init, { onHit, onMiss });
 
     // Set time to live
     this.ttl = ttl === null ? -1 : (ttl ?? DEFAULT_CACHE_EXPIRY_TIME);
 
     this._translationLoader = loadTranslations;
     this._createTranslateMany = createTranslateMany;
+    this._onTranslationsCacheHit = onTranslationsCacheHit;
+    this._onTranslationsCacheMiss = onTranslationsCacheMiss;
   }
 
   /**
@@ -88,12 +142,24 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
   public get(
     key: Locale
   ): CacheEntry<TranslationValue>['translationsCache'] | undefined {
+    // Get the cache entry
     const entry = this.getCache(key);
     if (!entry || (entry.expiresAt > 0 && entry.expiresAt < Date.now())) {
-      // TODO: should we invalidate associated promises here?
       return undefined;
     }
-    return entry.translationsCache;
+    const value = entry.translationsCache;
+
+    // Life cycle callback
+    if (value != null && this.onHit) {
+      this.onHit({
+        inputKey: key,
+        cacheKey: this.genKey(key),
+        cacheValue: entry,
+        outputValue: value,
+      });
+    }
+
+    return value;
   }
 
   /**
@@ -104,8 +170,21 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
   public async miss(
     key: Locale
   ): Promise<CacheEntry<TranslationValue>['translationsCache']> {
+    // Miss the cache
     const cacheValue = await this.missCache(key);
-    return cacheValue.translationsCache;
+
+    // Life cycle callback
+    const value = cacheValue.translationsCache;
+    if (value != null && this.onMiss) {
+      this.onMiss({
+        inputKey: key,
+        cacheKey: this.genKey(key),
+        cacheValue: cacheValue,
+        outputValue: value,
+      });
+    }
+
+    return value;
   }
 
   /**
@@ -136,9 +215,43 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
     // Cache the promise and expiry timestamp
     const translationsCache = new TranslationsCache<TranslationValue>({
       init: await translationsPromise,
+      lifecycle: this._createTranslationsCacheLifecycle(locale),
       translateMany: this._createTranslateMany(locale),
     });
-    const entry = { translationsCache, expiresAt };
-    return entry;
+
+    return { translationsCache, expiresAt };
+  }
+
+  // ===== PRIVATE METHODS ===== //
+
+  /**
+   * Create the translations cache lifecycle
+   * @param locale - The locale
+   * @returns The translations cache lifecycle
+   */
+  private _createTranslationsCacheLifecycle(
+    locale: Locale
+  ): LifecycleParam<
+    TranslationKey<TranslationValue>,
+    Hash,
+    TranslationValue,
+    TranslationValue
+  > {
+    return {
+      onHit: this._onTranslationsCacheHit
+        ? (params) =>
+            this._onTranslationsCacheHit!({
+              locale,
+              ...params,
+            })
+        : undefined,
+      onMiss: this._onTranslationsCacheMiss
+        ? (params) =>
+            this._onTranslationsCacheMiss!({
+              locale,
+              ...params,
+            })
+        : undefined,
+    };
   }
 }

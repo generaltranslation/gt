@@ -2,7 +2,6 @@ import { I18nManager } from 'gt-i18n/internal';
 import type {
   I18nManagerConstructorParams,
   TranslationsLoader,
-  CreateTranslateMany,
 } from 'gt-i18n/internal/types';
 import type { BrowserStorageAdapter } from './BrowserStorageAdapter';
 import type { HtmlTagOptions } from './utils/types';
@@ -46,8 +45,10 @@ export class BrowserI18nManager extends I18nManager<
           config.loadTranslations,
           localStorageCaches
         ),
-        wrapCreateTranslateMany:
-          wrapTranslateManyWithLocalStorage(localStorageCaches),
+        onTranslationsCacheMiss: (_locale, _inputKey, hash, translation) => {
+          const cache = localStorageCaches[_locale];
+          if (cache) cache.write(hash, translation as Translation);
+        },
       });
     } else {
       super(config);
@@ -164,30 +165,5 @@ function wrapLoaderWithLocalStorage(
       loaderTranslations as Record<string, Translation>
     );
     return localStorageCaches[locale].getInternalCache();
-  };
-}
-
-/**
- * Wraps the createTranslateMany factory to persist runtime translations
- * to localStorage. Intercepts each TranslateMany response and writes
- * successful translations to the locale's localStorage cache.
- */
-function wrapTranslateManyWithLocalStorage(
-  localStorageCaches: Record<string, LocalStorageTranslationCache>
-): (defaultFactory: CreateTranslateMany) => CreateTranslateMany {
-  return (defaultFactory) => (locale) => {
-    const defaultFn = defaultFactory(locale);
-    return async (sources) => {
-      const results = await defaultFn(sources);
-      const cache = localStorageCaches[locale];
-      if (cache) {
-        for (const [hash, result] of Object.entries(results)) {
-          if (result && 'translation' in result && result.translation != null) {
-            cache.write(hash, result.translation as Translation);
-          }
-        }
-      }
-      return results;
-    };
   };
 }

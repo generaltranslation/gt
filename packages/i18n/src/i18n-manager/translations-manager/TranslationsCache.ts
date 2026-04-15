@@ -1,5 +1,5 @@
 import { LookupOptions } from '../../translation-functions/types/options';
-import { Cache } from './Cache';
+import { Cache, LifecycleParam } from './Cache';
 import { Translation } from './utils/types/translation-data';
 import type { GT } from 'generaltranslation';
 import { hashMessage } from '../../utils/hashMessage';
@@ -20,7 +20,7 @@ const BATCH_INTERVAL = 50;
  * @property {TranslationValue} message - The message from the source
  * @property {LookupOptions} options - The options for the translation
  */
-type TranslationKey<TranslationValue extends Translation> = {
+export type TranslationKey<TranslationValue extends Translation> = {
   message: TranslationValue;
   options: LookupOptions;
 };
@@ -58,7 +58,12 @@ export type TranslateMany = (
  */
 export class TranslationsCache<
   TranslationValue extends Translation,
-> extends Cache<TranslationKey<TranslationValue>, Hash, TranslationValue> {
+> extends Cache<
+  TranslationKey<TranslationValue>,
+  Hash,
+  TranslationValue,
+  TranslationValue
+> {
   /**
    * Queue of translation requests
    */
@@ -89,11 +94,18 @@ export class TranslationsCache<
   constructor({
     init,
     translateMany,
+    lifecycle,
   }: {
     init: Record<Hash, TranslationValue>;
     translateMany: TranslateMany;
+    lifecycle: LifecycleParam<
+      TranslationKey<TranslationValue>,
+      Hash,
+      TranslationValue,
+      TranslationValue
+    >;
   }) {
-    super(init);
+    super(init, lifecycle);
     this._translateMany = translateMany;
   }
 
@@ -105,7 +117,16 @@ export class TranslationsCache<
   public get<T extends TranslationValue>(
     key: TranslationKey<T>
   ): T | undefined {
-    return this.getCache(key) as T | undefined;
+    const value = this.getCache(key) as T | undefined;
+    if (value != null && this.onHit) {
+      this.onHit({
+        inputKey: key,
+        cacheKey: this.genKey(key),
+        cacheValue: value,
+        outputValue: value,
+      });
+    }
+    return value;
   }
 
   /**
@@ -113,10 +134,19 @@ export class TranslationsCache<
    * @param key - The translation key
    * @returns The translation value
    */
-  public miss<T extends TranslationValue>(
+  public async miss<T extends TranslationValue>(
     key: TranslationKey<T>
   ): Promise<T | undefined> {
-    return this.missCache(key) as Promise<T | undefined>;
+    const value = await this.missCache(key);
+    if (value != null && this.onMiss) {
+      this.onMiss({
+        inputKey: key,
+        cacheKey: this.genKey(key),
+        cacheValue: value,
+        outputValue: value,
+      });
+    }
+    return value as T | undefined;
   }
 
   /**
