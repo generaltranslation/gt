@@ -63,8 +63,6 @@ export default [
       commonjs(),
       terser(),
     ],
-    // Bundling CJS deps (crypto-js, fast-json-stable-stringify) to avoid ESM default import errors in downstream bundlers like Vite/Bun
-    // external: ['crypto-js', 'fast-json-stable-stringify'],
   },
 
   // TypeScript declarations for the id module
@@ -100,15 +98,6 @@ export default [
       commonjs(),
       terser(),
     ],
-    // Bundling CJS deps (crypto-js, fast-json-stable-stringify) to avoid ESM default import errors in downstream bundlers like Vite/Bun
-    // external: [
-    //   'crypto-js',
-    //   'fast-json-stable-stringify',
-    //   'intl-messageformat',
-    //   '@formatjs/icu-messageformat-parser',
-    //   '@formatjs/icu-messageformat-parser/types.js',
-    //   '@formatjs/icu-messageformat-parser/printer.js',
-    // ],
   },
 
   // TypeScript declarations for the internal module
