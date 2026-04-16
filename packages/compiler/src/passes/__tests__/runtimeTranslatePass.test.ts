@@ -6,8 +6,10 @@ import * as t from '@babel/types';
 import { collectionPass } from '../collectionPass';
 import { macroExpansionPass } from '../macroExpansionPass';
 import { runtimeTranslatePass } from '../runtimeTranslatePass';
+import { injectionPass } from '../injectionPass';
 import { initializeState } from '../../state/utils/initializeState';
 import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
+import { resolveDevHotReload } from '../../config';
 
 // --- Helpers ---
 
@@ -625,6 +627,154 @@ describe('runtimeTranslatePass', () => {
       const messages = runtimeCalls.map((c) => getMessageString(c));
       expect(messages).toContain('Callback string');
       expect(messages).toContain('Registration string');
+    });
+  });
+
+  // ===== resolveDevHotReload unit tests =====
+
+  describe('resolveDevHotReload', () => {
+    // resolveDevHotReload(true) → { strings: true, jsx: false }
+    // jsx disabled by default — handled at runtime via Suspense, no compiler injection needed
+    it('boolean true enables strings only', () => {
+      expect(resolveDevHotReload(true)).toEqual({
+        strings: true,
+        jsx: false,
+      });
+    });
+
+    // resolveDevHotReload(false) → { strings: false, jsx: false }
+    it('boolean false disables both', () => {
+      expect(resolveDevHotReload(false)).toEqual({
+        strings: false,
+        jsx: false,
+      });
+    });
+
+    // resolveDevHotReload(undefined) → { strings: false, jsx: false }
+    it('undefined disables both', () => {
+      expect(resolveDevHotReload(undefined)).toEqual({
+        strings: false,
+        jsx: false,
+      });
+    });
+
+    // resolveDevHotReload({ strings: true }) → { strings: true, jsx: false }
+    it('object with strings only', () => {
+      expect(resolveDevHotReload({ strings: true })).toEqual({
+        strings: true,
+        jsx: false,
+      });
+    });
+
+    // resolveDevHotReload({ jsx: true }) → { strings: false, jsx: true }
+    it('object with jsx only', () => {
+      expect(resolveDevHotReload({ jsx: true })).toEqual({
+        strings: false,
+        jsx: true,
+      });
+    });
+
+    // resolveDevHotReload({ strings: true, jsx: true }) → { strings: true, jsx: true }
+    it('object with both', () => {
+      expect(resolveDevHotReload({ strings: true, jsx: true })).toEqual({
+        strings: true,
+        jsx: true,
+      });
+    });
+
+    // resolveDevHotReload({}) → { strings: false, jsx: false }
+    it('empty object disables both', () => {
+      expect(resolveDevHotReload({})).toEqual({
+        strings: false,
+        jsx: false,
+      });
+    });
+  });
+
+  // ===== E2E pipeline tests =====
+
+  describe('E2E pipeline', () => {
+    // Full pipeline: collection → injection → runtime translate
+    // Verifies devHotReload: true injects GtInternalRuntimeTranslateString
+    // AND injection pass still works (hashes injected into useGT callbacks)
+    it('full pipeline with devHotReload: true produces runtime translate calls and preserves injection', () => {
+      const state = initializeState({ devHotReload: true }, 'test.tsx');
+      const code = `
+        import { useGT } from 'gt-react';
+        const t = useGT();
+        const msg = t("Hello world");
+      `;
+      const ast = parser.parse(code, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      // Run full pipeline
+      traverse(ast, collectionPass(state));
+      traverse(ast, injectionPass(state));
+      traverse(ast, runtimeTranslatePass(state));
+
+      const output = generate(ast, { retainLines: true, compact: false }).code;
+
+      // Runtime translate call was injected
+      expect(output).toContain('GtInternalRuntimeTranslateString');
+      expect(output).toContain('Promise.all');
+
+      // Injection pass still ran — $_hash was injected into the callback
+      expect(output).toContain('$_hash');
+    });
+
+    // devHotReload: false — no runtime translate calls injected at all
+    it('devHotReload: false produces no runtime translate calls', () => {
+      const state = initializeState({ devHotReload: false }, 'test.tsx');
+      const code = `
+        import { useGT } from 'gt-react';
+        const t = useGT();
+        const msg = t("Hello world");
+      `;
+      const ast = parser.parse(code, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      traverse(ast, collectionPass(state));
+      traverse(ast, injectionPass(state));
+      // Runtime translate pass would be skipped by index.ts when devHotReload is false
+      // We simulate that by not calling it
+
+      const output = generate(ast, { retainLines: true, compact: false }).code;
+      expect(output).not.toContain('GtInternalRuntimeTranslateString');
+      expect(output).not.toContain('Promise.all');
+    });
+
+    // devHotReload: { strings: true } — only strings injected, no JSX
+    it('devHotReload strings-only does not inject JSX runtime translate calls', () => {
+      const state = initializeState(
+        { devHotReload: { strings: true } },
+        'test.tsx'
+      );
+      const code = `
+        import { jsx as _jsx } from 'react/jsx-runtime';
+        import { useGT, T } from 'gt-react';
+        const t = useGT();
+        const msg = t("Hello");
+        const el = _jsx(T, { children: "World" });
+      `;
+      const ast = parser.parse(code, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+
+      traverse(ast, collectionPass(state));
+      traverse(ast, injectionPass(state));
+      traverse(ast, runtimeTranslatePass(state));
+
+      const output = generate(ast, { retainLines: true, compact: false }).code;
+
+      // String runtime translate injected
+      expect(output).toContain('GtInternalRuntimeTranslateString');
+      // JSX runtime translate NOT injected
+      expect(output).not.toContain('GtInternalRuntimeTranslateJsx');
     });
   });
 });
