@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.17
+
+### Patch Changes
+
+- [#1220](https://github.com/generaltranslation/gt/pull/1220) [`d5bfe1d`](https://github.com/generaltranslation/gt/commit/d5bfe1d0768006eda5842a548651c6be73d69a55) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: cross file resolution failure on relative imports
+
 ## 2.14.16
 
 ### Patch Changes
