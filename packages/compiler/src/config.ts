@@ -15,8 +15,8 @@ type GTConfig = {
         autoderive?: boolean | { jsx?: boolean; strings?: boolean };
         /** @deprecated Use `autoderive` instead */
         autoDerive?: boolean;
-        /** Enable dev hot reload runtime translate injection */
-        devHotReloadEnabled?: boolean;
+        /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
+        devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
       };
     };
   };
@@ -46,8 +46,8 @@ export interface PluginConfig {
   autoDerive?: boolean;
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest?: boolean;
-  /** Enable dev hot reload runtime translate injection */
-  devHotReloadEnabled?: boolean;
+  /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
+  devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
 }
 
 /**
@@ -70,8 +70,8 @@ export interface PluginSettings {
   autoderive: { jsx: boolean; strings: boolean };
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest: boolean;
-  /** Enable dev hot reload runtime translate injection */
-  devHotReloadEnabled: boolean;
+  /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
+  devHotReload: { strings: boolean; jsx: boolean };
 }
 
 /**
@@ -87,4 +87,19 @@ export function resolveAutoderive(
     return { jsx: !!value, strings: !!value };
   }
   return { jsx: value.jsx ?? false, strings: value.strings ?? false };
+}
+
+/**
+ * Resolves the devHotReload config value into separate strings and jsx flags.
+ * - `true` enables strings only (JSX is handled at runtime via Suspense, no compiler injection needed)
+ * - `false` disables both
+ * - `{ strings?: boolean; jsx?: boolean }` enables selectively (missing keys default to false)
+ */
+export function resolveDevHotReload(
+  value: boolean | { strings?: boolean; jsx?: boolean } | undefined
+): { strings: boolean; jsx: boolean } {
+  if (value === undefined || typeof value === 'boolean') {
+    return { strings: !!value, jsx: false };
+  }
+  return { strings: value.strings ?? false, jsx: value.jsx ?? false };
 }

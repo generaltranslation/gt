@@ -24,14 +24,18 @@ export function processProgram({
 }): VisitNode<t.Node, t.Program> {
   return {
     exit(path) {
-      // Read all collected content (counter-based callbacks + runtime-only t/msg/tagged templates)
-      const allStrings = [
-        ...state.stringCollector.getAllTranslationContent(),
-        ...state.stringCollector.getRuntimeOnlyContent(),
-      ].filter((entry) => entry.hash !== '');
-      const allJsx = state.stringCollector
-        .getAllTranslationJsx()
-        .filter((entry) => entry.hash !== '');
+      // Read collected content, filtered by granular devHotReload config
+      const allStrings = state.settings.devHotReload.strings
+        ? [
+            ...state.stringCollector.getAllTranslationContent(),
+            ...state.stringCollector.getRuntimeOnlyContent(),
+          ].filter((entry) => entry.hash !== '')
+        : [];
+      const allJsx = state.settings.devHotReload.jsx
+        ? state.stringCollector
+            .getAllTranslationJsx()
+            .filter((entry) => entry.hash !== '')
+        : [];
 
       // Nothing to inject
       if (allStrings.length === 0 && allJsx.length === 0) return;

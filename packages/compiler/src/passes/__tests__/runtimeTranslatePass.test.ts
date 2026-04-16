@@ -26,7 +26,7 @@ function transform(
   overrides: Record<string, unknown> = {}
 ): TransformResult {
   const state = initializeState(
-    { devHotReloadEnabled: true, ...overrides },
+    { devHotReload: true, ...overrides },
     'test.tsx'
   );
 
@@ -76,7 +76,7 @@ function transformWithMacro(
   overrides: Record<string, unknown> = {}
 ): TransformResult {
   const state = initializeState(
-    { devHotReloadEnabled: true, ...overrides },
+    { devHotReload: true, ...overrides },
     'test.tsx'
   );
 
@@ -247,11 +247,14 @@ describe('runtimeTranslatePass', () => {
 
   describe('jsx', () => {
     it('injects GtInternalRuntimeTranslateJsx for a T component', () => {
-      const { runtimeCalls } = transform(`
+      const { runtimeCalls } = transform(
+        `
         import { jsx as _jsx } from 'react/jsx-runtime';
         import { T } from 'gt-react';
         const el = _jsx(T, { children: "Hello" });
-      `);
+      `,
+        { devHotReload: { jsx: true } }
+      );
 
       const jsxCalls = runtimeCalls.filter((c) =>
         t.isIdentifier(c.callee, {
@@ -262,11 +265,14 @@ describe('runtimeTranslatePass', () => {
     });
 
     it('passes $context and $id for JSX', () => {
-      const { runtimeCalls } = transform(`
+      const { runtimeCalls } = transform(
+        `
         import { jsx as _jsx } from 'react/jsx-runtime';
         import { T } from 'gt-react';
         const el = _jsx(T, { context: "nav", id: "greeting", children: "Hello" });
-      `);
+      `,
+        { devHotReload: { jsx: true } }
+      );
 
       const jsxCalls = runtimeCalls.filter((c) =>
         t.isIdentifier(c.callee, {
@@ -283,7 +289,8 @@ describe('runtimeTranslatePass', () => {
     // → GtInternalRuntimeTranslateJsx(children, { $context: "...", $id: undefined })
     //   with a non-empty hash computed from children + context
     it('extracts context, id, and hash from <T> component props', () => {
-      const { runtimeCalls } = transform(`
+      const { runtimeCalls } = transform(
+        `
         import { jsx as _jsx } from 'react/jsx-runtime';
         import { T } from 'gt-react';
         const el = _jsx(T, {
@@ -291,7 +298,9 @@ describe('runtimeTranslatePass', () => {
           id: "formal_hello",
           children: "Hello this is a greeting"
         });
-      `);
+      `,
+        { devHotReload: { jsx: true } }
+      );
 
       const jsxCalls = runtimeCalls.filter((c) =>
         t.isIdentifier(c.callee, {
@@ -320,13 +329,16 @@ describe('runtimeTranslatePass', () => {
 
   describe('combined', () => {
     it('batches strings and JSX into a single Promise.all', () => {
-      const { code, runtimeCalls } = transform(`
+      const { code, runtimeCalls } = transform(
+        `
         import { jsx as _jsx } from 'react/jsx-runtime';
         import { useGT, T } from 'gt-react';
         const t = useGT();
         const msg = t("Hello");
         const el = _jsx(T, { children: "World" });
-      `);
+      `,
+        { devHotReload: { strings: true, jsx: true } }
+      );
 
       expect(runtimeCalls.length).toBeGreaterThanOrEqual(2);
       const promiseAllCount = (code.match(/Promise\.all/g) || []).length;
@@ -388,14 +400,14 @@ describe('runtimeTranslatePass', () => {
       );
     });
 
-    it('respects devHotReloadEnabled from gtConfig', () => {
+    it('respects devHotReload from gtConfig', () => {
       const state = initializeState(
         {
           gtConfig: {
             files: {
               gt: {
                 parsingFlags: {
-                  devHotReloadEnabled: true,
+                  devHotReload: true,
                 },
               },
             },
@@ -403,18 +415,21 @@ describe('runtimeTranslatePass', () => {
         },
         'test.tsx'
       );
-      expect(state.settings.devHotReloadEnabled).toBe(true);
+      expect(state.settings.devHotReload).toEqual({
+        strings: true,
+        jsx: false,
+      });
     });
 
     it('direct option overrides gtConfig', () => {
       const state = initializeState(
         {
-          devHotReloadEnabled: true,
+          devHotReload: { strings: true },
           gtConfig: {
             files: {
               gt: {
                 parsingFlags: {
-                  devHotReloadEnabled: false,
+                  devHotReload: false,
                 },
               },
             },
@@ -422,7 +437,21 @@ describe('runtimeTranslatePass', () => {
         },
         'test.tsx'
       );
-      expect(state.settings.devHotReloadEnabled).toBe(true);
+      expect(state.settings.devHotReload).toEqual({
+        strings: true,
+        jsx: false,
+      });
+    });
+
+    it('supports granular devHotReload config', () => {
+      const state = initializeState(
+        { devHotReload: { jsx: true } },
+        'test.tsx'
+      );
+      expect(state.settings.devHotReload).toEqual({
+        strings: false,
+        jsx: true,
+      });
     });
   });
 

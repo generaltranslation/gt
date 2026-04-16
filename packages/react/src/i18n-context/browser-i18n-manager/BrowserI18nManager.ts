@@ -33,9 +33,15 @@ export class BrowserI18nManager extends I18nManager<
   /** Per-locale localStorage translation caches (dev mode only) */
   private _localStorageCaches!: Record<string, LocalStorageTranslationCache>;
 
+  /** Whether dev hot reload JSX (Suspense-based <T>) is active */
+  private _devHotReloadJsx = false;
+
   constructor(config: BrowserI18nManagerConstructorParams) {
     // Must be initialized  before super()
     const localStorageCaches: Record<string, LocalStorageTranslationCache> = {};
+    const resolved = resolveDevHotReload(
+      config.files?.gt?.parsingFlags?.devHotReload
+    );
 
     // Initialize the I18nManager
     super({
@@ -49,6 +55,7 @@ export class BrowserI18nManager extends I18nManager<
     });
 
     this._localStorageCaches = localStorageCaches;
+    this._devHotReloadJsx = isDevHotReloadEnabled(config) && resolved.jsx;
     this.storeAdapter.setConfig({
       defaultLocale: this.getDefaultLocale(),
       locales: this.getLocales(),
@@ -59,6 +66,13 @@ export class BrowserI18nManager extends I18nManager<
       ...DEFAULT_HTML_TAG_OPTIONS,
       ...config.htmlTagOptions,
     };
+  }
+
+  /**
+   * Whether dev hot reload JSX (Suspense-based <T>) is active
+   */
+  isDevHotReloadJsx(): boolean {
+    return this._devHotReloadJsx;
   }
 
   /**
@@ -208,7 +222,19 @@ function createLifecycleCallbacks(
 }
 
 /**
- * Determines if dev hot reload is enabled
+ * Resolve the devHotReload config into { strings, jsx } flags.
+ */
+function resolveDevHotReload(
+  value: boolean | { strings?: boolean; jsx?: boolean } | undefined
+): { strings: boolean; jsx: boolean } {
+  if (value === undefined || typeof value === 'boolean') {
+    return { strings: !!value, jsx: !!value };
+  }
+  return { strings: value.strings ?? false, jsx: value.jsx ?? false };
+}
+
+/**
+ * Determines if dev hot reload is enabled (any flag)
  * @param config - The configuration
  * @returns True if dev hot reload is enabled, false otherwise
  */
@@ -224,9 +250,12 @@ function isDevHotReloadEnabled(
     devApiKey: !!config.devApiKey,
   };
   const requirementsMet = Object.values(requirements).every(Boolean);
-  const flag = config.devHotReloadEnabled ?? false;
+  const resolved = resolveDevHotReload(
+    config.files?.gt?.parsingFlags?.devHotReload
+  );
+  const anyEnabled = resolved.strings || resolved.jsx;
   // Only want this to log in development
-  if (import.meta.env.DEV && flag && !requirementsMet) {
+  if (import.meta.env.DEV && anyEnabled && !requirementsMet) {
     const missingRequirements = Object.keys(requirements).filter(
       (key) => !requirements[key]
     );
@@ -234,5 +263,5 @@ function isDevHotReloadEnabled(
       `Dev hot reload is enabled, but the requirements are not met: ${missingRequirements.join(', ')}`
     );
   }
-  return requirementsMet && flag;
+  return requirementsMet && anyEnabled;
 }

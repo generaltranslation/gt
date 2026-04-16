@@ -1,11 +1,14 @@
-import { ReactNode, useCallback, useMemo } from 'react';
-import { resolveJsxTranslation } from 'gt-i18n/internal';
+import { ReactNode, Suspense, use, useCallback, useMemo } from 'react';
+import { resolveJsx, resolveJsxWithRuntimeFallback } from 'gt-i18n/internal';
 import {
   writeChildrenAsObjects,
   addGTIdentifier,
   removeInjectedT,
 } from '@generaltranslation/react-core/internal';
-import { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
+import {
+  JsxTranslationOptions as JsxTranslationOptionsWithSugar,
+  ResolutionOptions,
+} from 'gt-i18n/types';
 import {
   renderDefaultChildren,
   renderTranslatedChildren,
@@ -15,6 +18,7 @@ import { requiresTranslation } from 'generaltranslation';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 import { JsxChildren } from 'generaltranslation/types';
 import { TaggedChildren } from '@generaltranslation/react-core/types';
+import { getBrowserI18nManager } from '../../browser-i18n-manager/singleton-operations';
 
 /**
  * Equivalent to the `<T>` component, but used for auto insertion
@@ -66,27 +70,36 @@ function computeT({
   // --- (1) Check if translation is even required --- //
   const targetLocale = getLocale();
   const defaultLocale = getDefaultLocale();
-  const translationRequired = requiresTranslation(defaultLocale, targetLocale);
-  if (!translationRequired) {
+  if (!requiresTranslation(defaultLocale, targetLocale)) {
     return renderSourceChildren();
   }
 
-  // --- (2) Convert source children to jsx children --- //
-  // Resolve the translation
-  const resolvedTranslation = resolveJsxTranslation(sourceJsxChildren, options);
-  // Signal failure if no translation was found
-  if (!resolvedTranslation) {
-    return renderSourceChildren();
+  // --- (2) Try sync cache lookup (shared by both dev and prod paths) --- //
+  const targetJsxChildren = resolveJsx(sourceJsxChildren, options);
+  if (targetJsxChildren) {
+    return renderTranslatedChildren({
+      source: taggedSourceChildren,
+      target: targetJsxChildren,
+      locales: [targetLocale],
+      renderVariable,
+    });
   }
 
-  // --- (3) Convert the resolved jsx children back to a react node --- //
-  const translatedChildren = renderTranslatedChildren({
-    source: taggedSourceChildren,
-    target: resolvedTranslation,
-    locales: [targetLocale],
-    renderVariable,
-  });
-  return translatedChildren;
+  // --- (3) Cache miss: dev hot reload suspends, prod falls back to source --- //
+  if (getBrowserI18nManager().isDevHotReloadJsx()) {
+    return (
+      <Suspense fallback={renderSourceChildren()}>
+        <DevTranslationResolver
+          sourceJsxChildren={sourceJsxChildren}
+          taggedSourceChildren={taggedSourceChildren}
+          options={options}
+          targetLocale={targetLocale}
+        />
+      </Suspense>
+    );
+  }
+
+  return renderSourceChildren();
 }
 
 /**
@@ -136,6 +149,58 @@ function normalizeParameters(parameters: {
     $_hash: parameters._hash,
     ...parameters,
   };
+}
+
+// ----- Dev Hot Reload ----- //
+
+/**
+ * Promise cache for use() stability — same hash returns same promise across re-renders.
+ * React's use() requires referentially stable promises to avoid infinite suspend loops.
+ */
+const jsxPromiseCache = new Map<string, Promise<JsxChildren>>();
+
+/**
+ * Get a cached promise for async JSX translation resolution.
+ * Reuses resolveJsxWithRuntimeFallback which goes through the i18n manager's
+ * deduped batch translation system.
+ */
+function getJsxTranslationPromise(
+  children: JsxChildren,
+  options: ResolutionOptions<'JSX'>
+): Promise<JsxChildren> {
+  const key = options.$_hash || JSON.stringify({ children, options });
+  if (jsxPromiseCache.has(key)) {
+    return jsxPromiseCache.get(key)!;
+  }
+  const promise = resolveJsxWithRuntimeFallback(children, options);
+  jsxPromiseCache.set(key, promise);
+  return promise;
+}
+
+/**
+ * Dev-only translation resolver that uses React Suspense.
+ * Sync cache check already happened in computeT() — this only handles cache misses.
+ * use() suspends until the async translation resolves.
+ */
+function DevTranslationResolver({
+  sourceJsxChildren,
+  taggedSourceChildren,
+  options,
+  targetLocale,
+}: {
+  sourceJsxChildren: JsxChildren;
+  taggedSourceChildren: TaggedChildren;
+  options: JsxTranslationOptionsWithSugar;
+  targetLocale: string;
+}): ReactNode {
+  const translation = use(getJsxTranslationPromise(sourceJsxChildren, options));
+
+  return renderTranslatedChildren({
+    source: taggedSourceChildren,
+    target: translation,
+    locales: [targetLocale],
+    renderVariable,
+  });
 }
 
 // ----- Types ----- //

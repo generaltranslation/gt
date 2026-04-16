@@ -135,7 +135,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
 
           // Pass 5: Runtime translate (dev hot reload)
-          if (state.settings.devHotReloadEnabled && hasCollectionContent) {
+          const devHotReloadActive =
+            state.settings.devHotReload.strings ||
+            state.settings.devHotReload.jsx;
+          if (devHotReloadActive && hasCollectionContent) {
             traverse(ast, runtimeTranslatePass(state));
           }
 
