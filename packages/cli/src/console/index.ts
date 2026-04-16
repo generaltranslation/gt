@@ -385,6 +385,18 @@ export const warnDeriveOptionalChainingSync = (
     location
   );
 
+export const warnUnresolvedImportSync = (
+  file: string,
+  functionName: string,
+  importPath: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Could not resolve import ${colorizeFunctionName(importPath)} for function ${colorizeFunctionName(functionName)}. Translation strings inside this function will not be extracted.`,
+    location
+  );
+
 // Re-export error messages
 export const noLocalesError = `No locales found! Provide a list of locales for translation, or specify them in your gt.config.json file.`;
 export const noDefaultLocaleError = `No default locale found! Provide a default locale, or specify it in your gt.config.json file.`;
