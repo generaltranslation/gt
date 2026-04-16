@@ -129,7 +129,7 @@ describe('parseStrings — cross-file gt parameter tracing', () => {
     expect(ids).toContain('label');
   });
 
-  it('should fail to trace 3-file chain when config.file is not updated (regression guard)', () => {
+  it('should correctly trace a 3-file chain by updating config.file at each file boundary (regression guard)', () => {
     // This test verifies that resolveImportPath is called with the correct
     // currentFile for nested cross-file resolution.
     const file1 = `
