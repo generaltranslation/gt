@@ -134,7 +134,9 @@ export class LocalStorageTranslationCache {
 
   /**
    * Schedule a flush of the write buffer.
-   * Uses a debounce — resets the timer on each call.
+   * Uses a leading throttle — the first write in a burst schedules a flush
+   * after FLUSH_INTERVAL ms; subsequent writes before the timer fires are
+   * batched into the same flush.
    */
   private _scheduleFlush(): void {
     if (this._flushTimer) return; // already scheduled

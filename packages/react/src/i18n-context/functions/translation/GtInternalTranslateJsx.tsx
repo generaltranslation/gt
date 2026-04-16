@@ -134,7 +134,18 @@ function usePrepSourceRender({
       renderVariable,
     });
   }, [taggedSourceChildren]);
-  const options = useMemo(() => normalizeParameters(params), [params]);
+  const options = useMemo(
+    () => normalizeParameters(params),
+    [
+      params.context,
+      params.id,
+      params._hash,
+      params.$format,
+      params.$context,
+      params.$id,
+      params.$_hash,
+    ]
+  );
   return {
     taggedSourceChildren,
     sourceJsxChildren,
