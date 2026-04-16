@@ -19,6 +19,7 @@ export interface TransformState {
     dynamicContentViolations: number;
     macroExpansionsCount: number;
     jsxInsertionsCount: number;
+    runtimeTranslateCount: number;
   };
   /** Debug: shared manifest map for hash → jsxChildren mapping (accumulated across files) */
   debugManifest?: Map<string, unknown>;

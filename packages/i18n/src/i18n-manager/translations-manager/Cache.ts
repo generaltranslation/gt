@@ -1,3 +1,8 @@
+import type {
+  LifecycleCallback,
+  LifecycleParam,
+} from '../lifecycle-hooks/types';
+
 /**
  * Cache class
  * This is designed in such a way that it is the responsibility of the client
@@ -5,7 +10,12 @@
  *
  * TODO: maybe add "OutputValue" as a reflection of "InputKey"
  */
-abstract class Cache<InputKey, CacheKey extends string, CacheValue> {
+abstract class Cache<
+  InputKey,
+  CacheKey extends string,
+  CacheValue,
+  OutputValue extends unknown,
+> {
   /**
    * Cache of items
    */
@@ -21,13 +31,37 @@ abstract class Cache<InputKey, CacheKey extends string, CacheValue> {
     {} as Record<CacheKey, Promise<CacheValue>>;
 
   /**
+   * Lifecycle callbacks - invoked in implementation of the abstract methods
+   * - onHit: invoked when a cache hit occurs
+   * - onMiss: invoked when a cache miss occurs
+   */
+  protected onHit?: LifecycleCallback<
+    InputKey,
+    CacheKey,
+    CacheValue,
+    OutputValue
+  >;
+  protected onMiss?: LifecycleCallback<
+    InputKey,
+    CacheKey,
+    CacheValue,
+    OutputValue
+  >;
+
+  /**
    * Constructor
    * @param {Object} params - The parameters for the cache
    * @param {Record<CacheKey, CacheValue>} params.init - The initial cache
+   * @param {CacheLifecycle} [lifecycle] - Optional lifecycle callbacks
    */
-  constructor(init: Record<CacheKey, CacheValue>) {
+  constructor(
+    init: Record<CacheKey, CacheValue>,
+    lifecycle?: LifecycleParam<InputKey, CacheKey, CacheValue, OutputValue>
+  ) {
     // eslint-disable-next-line no-undef
     this.cache = structuredClone(init);
+    this.onHit = lifecycle?.onHit;
+    this.onMiss = lifecycle?.onMiss;
   }
 
   /**
@@ -83,6 +117,8 @@ abstract class Cache<InputKey, CacheKey extends string, CacheValue> {
     }
   }
 
+  // ===== Abstract Methods ===== //
+
   /**
    * Customizable helper function that calculates the cache key from an input key
    */
@@ -95,14 +131,13 @@ abstract class Cache<InputKey, CacheKey extends string, CacheValue> {
 
   /**
    * Lookup a value in the cache
-   * This abstract method allows for manipulation of the cache value before the return
    */
-  public abstract get(key: InputKey): unknown | undefined;
+  public abstract get(key: InputKey): OutputValue | undefined;
 
   /**
    * Miss the cache
    */
-  protected abstract miss(key: InputKey): Promise<unknown | undefined>;
+  public abstract miss(key: InputKey): Promise<OutputValue | undefined>;
 }
 
 export { Cache };

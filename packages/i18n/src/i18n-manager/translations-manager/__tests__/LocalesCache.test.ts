@@ -26,6 +26,7 @@ describe('LocalesCache', () => {
     return new LocalesCache<string>({
       loadTranslations: mockLoadTranslations as SafeTranslationsLoader<string>,
       createTranslateMany: mockCreateTranslateMany as CreateTranslateMany,
+      lifecycle: {},
       ...(opts?.ttl !== undefined ? { ttl: opts.ttl } : {}),
     });
   }

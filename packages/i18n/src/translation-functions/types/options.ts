@@ -61,8 +61,11 @@ export type RuntimeTranslationOptions = {
  * Used by the resolveJsxTranslation() function
  */
 export type JsxTranslationOptions = {
+  // TODO: make this required, but internally, not user facing
+  $format?: 'JSX';
   $context?: string;
   $id?: string;
+  $_hash?: string;
 };
 
 /**

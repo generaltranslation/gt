@@ -13,6 +13,7 @@ import { macroExpansionPass } from './passes/macroExpansionPass';
 import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
+import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 
 /**
  * Architecture:
@@ -133,11 +134,20 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, injectionPass(state));
           }
 
+          // Pass 5: Runtime translate (dev hot reload)
+          const devHotReloadActive =
+            state.settings.devHotReload.strings ||
+            state.settings.devHotReload.jsx;
+          if (devHotReloadActive && hasCollectionContent) {
+            traverse(ast, runtimeTranslatePass(state));
+          }
+
           // Generate code if any pass modified the AST
           if (
             !hasCollectionContent &&
             state.statistics.macroExpansionsCount === 0 &&
-            state.statistics.jsxInsertionsCount === 0
+            state.statistics.jsxInsertionsCount === 0 &&
+            state.statistics.runtimeTranslateCount === 0
           ) {
             return null;
           }

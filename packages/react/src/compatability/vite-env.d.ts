@@ -3,6 +3,7 @@
  * This avoids adding an extra dependency on vite/client
  */
 interface ImportMetaEnv {
+  readonly DEV: boolean;
   readonly VITE_GT_PROJECT_ID: string;
   readonly VITE_GT_API_KEY: string;
   readonly VITE_GT_DEV_API_KEY: string;

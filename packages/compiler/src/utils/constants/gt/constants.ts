@@ -50,6 +50,8 @@ export enum GT_OTHER_FUNCTIONS {
   declareStatic = 'declareStatic',
   t = 't',
   derive = 'derive',
+  GtInternalRuntimeTranslateString = 'GtInternalRuntimeTranslateString',
+  GtInternalRuntimeTranslateJsx = 'GtInternalRuntimeTranslateJsx',
 }
 
 /**

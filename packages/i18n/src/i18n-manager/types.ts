@@ -1,18 +1,23 @@
-import { StorageAdapterType } from './storage-adapter/types';
 import { CustomMapping } from 'generaltranslation/types';
 import { GTConfig } from '../config/types';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
+import { StorageAdapterType } from './storage-adapter/types';
 import { TranslationsLoader } from './translations-manager/translations-loaders/types';
+import { Translation } from './translations-manager/utils/types/translation-data';
+import type { LifecycleCallbacks } from './lifecycle-hooks/types';
 
 /**
  * Parameters for the I18nManager constructor
  */
 export type I18nManagerConstructorParams<
   T extends StorageAdapter = StorageAdapter,
+  TranslationValue extends Translation = Translation,
 > = GTConfig & {
   loadTranslations?: TranslationsLoader;
   storeAdapter?: T;
   environment?: 'development' | 'production';
+  // Cache lifecycle hooks
+  lifecycle?: LifecycleCallbacks<TranslationValue>;
 };
 
 /**
@@ -31,4 +36,9 @@ export type I18nManagerConfig = {
   _versionId?: string;
 };
 
-export type { TranslationsLoader, StorageAdapter, StorageAdapterType };
+export type {
+  TranslationsLoader,
+  StorageAdapter,
+  StorageAdapterType,
+  LifecycleCallbacks,
+};

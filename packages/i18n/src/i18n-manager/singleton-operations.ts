@@ -25,7 +25,7 @@ export function getI18nManager<
     logger.warn(
       'getI18nManager(): Translation failed because I18nManager not initialized.'
     );
-    i18nManager = new I18nManager<T, U>({
+    i18nManager = new I18nManager({
       defaultLocale: libraryDefaultLocale,
       locales: [libraryDefaultLocale],
     });

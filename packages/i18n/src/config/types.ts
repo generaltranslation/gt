@@ -47,4 +47,18 @@ export type GTConfig = {
 
   // other
   localeCookieName?: string;
+
+  // parsing options (shared with compiler via gt.config.json)
+  files?: {
+    gt?: {
+      parsingFlags?: {
+        /**
+         * Dev hot reload config, gt-react/browser only.
+         * - `true` enables strings hot reload (jsx handled at runtime via Suspense)
+         * - `{ strings?: boolean; jsx?: boolean }` enables selectively
+         */
+        devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
+      };
+    };
+  };
 };

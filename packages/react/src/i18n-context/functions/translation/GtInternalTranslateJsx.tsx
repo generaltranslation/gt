@@ -1,5 +1,5 @@
-import { ReactNode, useCallback, useMemo } from 'react';
-import { resolveJsxTranslation } from 'gt-i18n/internal';
+import { ReactNode, Suspense, use, useCallback, useMemo } from 'react';
+import { resolveJsx, resolveJsxWithRuntimeFallback } from 'gt-i18n/internal';
 import {
   writeChildrenAsObjects,
   addGTIdentifier,
@@ -15,6 +15,7 @@ import { requiresTranslation } from 'generaltranslation';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 import { JsxChildren } from 'generaltranslation/types';
 import { TaggedChildren } from '@generaltranslation/react-core/types';
+import { getBrowserI18nManager } from '../../browser-i18n-manager/singleton-operations';
 
 /**
  * Equivalent to the `<T>` component, but used for auto insertion
@@ -51,40 +52,54 @@ export { GtInternalTranslateJsx, T };
  */
 function computeT({
   children: sourceChildren,
-  ...options
+  ...params
 }: {
   children: ReactNode;
 } & JsxTranslationOptions): ReactNode {
   // --- (0) Prepare our source children for rendering --- //
-  const { taggedSourceChildren, sourceJsxChildren, renderSourceChildren } =
-    usePrepSourceRender({
-      sourceChildren,
-    });
+  const {
+    taggedSourceChildren,
+    sourceJsxChildren,
+    renderSourceChildren,
+    options,
+  } = usePrepSourceRender({
+    sourceChildren,
+    params,
+  });
 
   // --- (1) Check if translation is even required --- //
   const targetLocale = getLocale();
   const defaultLocale = getDefaultLocale();
-  const translationRequired = requiresTranslation(defaultLocale, targetLocale);
-  if (!translationRequired) {
+  if (!requiresTranslation(defaultLocale, targetLocale)) {
     return renderSourceChildren();
   }
 
-  // --- (2) Convert source children to jsx children --- //
-  // Resolve the translation
-  const resolvedTranslation = resolveJsxTranslation(sourceJsxChildren, options);
-  // Signal failure if no translation was found
-  if (!resolvedTranslation) {
-    return renderSourceChildren();
+  // --- (2) Try sync cache lookup (shared by both dev and prod paths) --- //
+  const targetJsxChildren = resolveJsx(sourceJsxChildren, options);
+  if (targetJsxChildren) {
+    return renderTranslatedChildren({
+      source: taggedSourceChildren,
+      target: targetJsxChildren,
+      locales: [targetLocale],
+      renderVariable,
+    });
   }
 
-  // --- (3) Convert the resolved jsx children back to a react node --- //
-  const translatedChildren = renderTranslatedChildren({
-    source: taggedSourceChildren,
-    target: resolvedTranslation,
-    locales: [targetLocale],
-    renderVariable,
-  });
-  return translatedChildren;
+  // --- (3) Cache miss: dev hot reload suspends, prod falls back to source --- //
+  if (getBrowserI18nManager().isDevHotReloadJsx()) {
+    return (
+      <Suspense fallback={renderSourceChildren()}>
+        <DevTranslationResolver
+          sourceJsxChildren={sourceJsxChildren}
+          taggedSourceChildren={taggedSourceChildren}
+          options={options}
+          targetLocale={targetLocale}
+        />
+      </Suspense>
+    );
+  }
+
+  return renderSourceChildren();
 }
 
 /**
@@ -92,12 +107,15 @@ function computeT({
  */
 function usePrepSourceRender({
   sourceChildren,
+  params,
 }: {
   sourceChildren: ReactNode;
+  params: JsxTranslationOptions;
 }): {
   taggedSourceChildren: TaggedChildren;
   sourceJsxChildren: JsxChildren;
   renderSourceChildren: () => ReactNode;
+  options: JsxTranslationOptionsWithSugar;
 } {
   // Remove any injected _T components after a derive invocation
   // Add GT identifying tags for easy analysis
@@ -116,7 +134,72 @@ function usePrepSourceRender({
       renderVariable,
     });
   }, [taggedSourceChildren]);
-  return { taggedSourceChildren, sourceJsxChildren, renderSourceChildren };
+  const options = useMemo(
+    () => normalizeParameters(params),
+    [
+      params.context,
+      params.id,
+      params._hash,
+      params.$format,
+      params.$context,
+      params.$id,
+      params.$_hash,
+    ]
+  );
+  return {
+    taggedSourceChildren,
+    sourceJsxChildren,
+    renderSourceChildren,
+    options,
+  };
+}
+
+/**
+ * Normalizes the parameters into a lookup options object.
+ */
+function normalizeParameters(parameters: {
+  context?: string;
+  id?: string;
+  _hash?: string;
+}): JsxTranslationOptionsWithSugar {
+  return {
+    $format: 'JSX',
+    $context: parameters.context,
+    $id: parameters.id,
+    $_hash: parameters._hash,
+    ...parameters,
+  };
+}
+
+// ----- Dev Hot Reload ----- //
+
+/**
+ * Dev-only translation resolver that uses React Suspense.
+ * Sync cache check already happened in computeT() — this only handles cache misses.
+ * use() suspends until the async translation resolves.
+ * Promise dedup is handled by Cache.missCache() via fallbackPromises.
+ */
+function DevTranslationResolver({
+  sourceJsxChildren,
+  taggedSourceChildren,
+  options,
+  targetLocale,
+}: {
+  sourceJsxChildren: JsxChildren;
+  taggedSourceChildren: TaggedChildren;
+  options: JsxTranslationOptionsWithSugar;
+  targetLocale: string;
+}): ReactNode {
+  const translation = use(
+    resolveJsxWithRuntimeFallback(sourceJsxChildren, options)
+  );
+
+  return renderTranslatedChildren({
+    source: taggedSourceChildren,
+    target: translation,
+    locales: [targetLocale],
+    renderVariable,
+  });
 }
 
 // ----- Types ----- //

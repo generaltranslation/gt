@@ -1,6 +1,10 @@
 import { GTUnpluginOptions } from '../..';
 import { TransformState } from '../types';
-import { PluginSettings, resolveAutoderive } from '../../config';
+import {
+  PluginSettings,
+  resolveAutoderive,
+  resolveDevHotReload,
+} from '../../config';
 import { StringCollector } from '../StringCollector';
 import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
@@ -20,6 +24,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   enableAutoJsxInjection: false,
   autoderive: { jsx: false, strings: false },
   _debugHashManifest: false,
+  devHotReload: { strings: false, jsx: false },
 };
 
 /**
@@ -33,6 +38,8 @@ export function initializeState(
   const gtConfig = options.gtConfig;
   const enableAutoJsxInjection =
     gtConfig?.files?.gt?.parsingFlags?.enableAutoJsxInjection ?? false;
+  const rawDevHotReload =
+    gtConfig?.files?.gt?.parsingFlags?.devHotReload ?? false;
   const rawAutoderive =
     gtConfig?.files?.gt?.parsingFlags?.autoderive ??
     gtConfig?.files?.gt?.parsingFlags?.autoDerive ??
@@ -44,14 +51,26 @@ export function initializeState(
 
   const autoderive = resolveAutoderive(rawOptionsAutoderive ?? rawAutoderive);
 
-  // Spread options but exclude autoderive/autoDerive (already resolved above)
+  // Resolve devHotReload (options override gtConfig)
+  const rawOptionsDevHotReload = options.devHotReload ?? undefined;
+  const devHotReload = resolveDevHotReload(
+    rawOptionsDevHotReload ?? rawDevHotReload
+  );
+
+  // Spread options but exclude already-resolved fields
   // eslint-disable-next-line no-unused-vars
-  const { autoderive: _a, autoDerive: _b, ...restOptions } = options;
+  const {
+    autoderive: _a,
+    autoDerive: _b,
+    devHotReload: _c,
+    ...restOptions
+  } = options;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
     enableAutoJsxInjection, // can be overridden by options.enableAutoJsxInjection
     autoderive,
+    devHotReload,
     ...restOptions,
     filename,
   };
@@ -67,6 +86,7 @@ export function initializeState(
       dynamicContentViolations: 0,
       macroExpansionsCount: 0,
       jsxInsertionsCount: 0,
+      runtimeTranslateCount: 0,
     },
   };
 }

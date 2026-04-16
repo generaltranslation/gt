@@ -20,6 +20,7 @@ import { routeCreateTranslationLoader } from './translations-manager/translation
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
+import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -106,6 +107,9 @@ class I18nManager<
       loadTranslations:
         loadTranslations as SafeTranslationsLoader<TranslationValue>,
       createTranslateMany,
+      lifecycle: createLifecycleCallbacks<TranslationValue>(
+        params.lifecycle ?? {}
+      ),
     });
   }
 
