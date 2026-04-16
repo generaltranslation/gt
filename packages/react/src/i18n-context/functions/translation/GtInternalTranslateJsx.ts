@@ -51,10 +51,12 @@ export { GtInternalTranslateJsx, T };
  */
 function computeT({
   children: sourceChildren,
-  ...options
+  ...params
 }: {
   children: ReactNode;
 } & JsxTranslationOptions): ReactNode {
+  const options = normalizeParameters(params);
+
   // --- (0) Prepare our source children for rendering --- //
   const { taggedSourceChildren, sourceJsxChildren, renderSourceChildren } =
     usePrepSourceRender({
@@ -117,6 +119,23 @@ function usePrepSourceRender({
     });
   }, [taggedSourceChildren]);
   return { taggedSourceChildren, sourceJsxChildren, renderSourceChildren };
+}
+
+/**
+ * Normalizes the parameters into a lookup options object.
+ */
+function normalizeParameters(parameters: {
+  context?: string;
+  id?: string;
+  _hash?: string;
+}): JsxTranslationOptionsWithSugar {
+  return {
+    $format: 'JSX',
+    $context: parameters.context,
+    $id: parameters.id,
+    $_hash: parameters._hash,
+    ...parameters,
+  };
 }
 
 // ----- Types ----- //

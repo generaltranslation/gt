@@ -55,6 +55,8 @@ export class StringCollector {
   private hashAggregators: Map<number, TranslationHash> = new Map();
   /** Global counter incremented for each useGT/getGT call encountered */
   private globalCallCounter: number = 0;
+  /** Runtime-only entries for t(), msg(), tagged templates — bypasses the counter system */
+  private runtimeOnlyEntries: TranslationContent[] = [];
 
   /**
    * Increment counter and return the current counter ID for a useGT/getGT call
@@ -157,6 +159,7 @@ export class StringCollector {
     this.contentAggregators.clear();
     this.jsxAggregators.clear();
     this.hashAggregators.clear();
+    this.runtimeOnlyEntries = [];
     this.globalCallCounter = 0;
   }
 
@@ -174,7 +177,8 @@ export class StringCollector {
     return (
       this.contentAggregators.size +
         this.jsxAggregators.size +
-        this.hashAggregators.size >
+        this.hashAggregators.size +
+        this.runtimeOnlyEntries.length >
       0
     );
   }
@@ -191,6 +195,21 @@ export class StringCollector {
    */
   getAllTranslationJsx(): TranslationJsx[] {
     return Array.from(this.jsxAggregators.values());
+  }
+
+  /**
+   * Add a runtime-only translation entry (for t(), msg(), tagged templates).
+   * These bypass the counter system and are only consumed by the runtime translate pass.
+   */
+  pushRuntimeOnlyContent(content: TranslationContent): void {
+    this.runtimeOnlyEntries.push(content);
+  }
+
+  /**
+   * Get all runtime-only translation entries
+   */
+  getRuntimeOnlyContent(): TranslationContent[] {
+    return this.runtimeOnlyEntries;
   }
 
   /**

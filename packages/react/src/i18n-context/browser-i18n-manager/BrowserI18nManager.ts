@@ -234,5 +234,5 @@ function isDevHotReloadEnabled(
       `Dev hot reload is enabled, but the requirements are not met: ${missingRequirements.join(', ')}`
     );
   }
-  return requirements && flag;
+  return requirementsMet && flag;
 }

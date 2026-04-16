@@ -24,10 +24,11 @@ export function processProgram({
 }): VisitNode<t.Node, t.Program> {
   return {
     exit(path) {
-      // Read all collected content
-      const allStrings = state.stringCollector
-        .getAllTranslationContent()
-        .filter((entry) => entry.hash !== '');
+      // Read all collected content (counter-based callbacks + runtime-only t/msg/tagged templates)
+      const allStrings = [
+        ...state.stringCollector.getAllTranslationContent(),
+        ...state.stringCollector.getRuntimeOnlyContent(),
+      ].filter((entry) => entry.hash !== '');
       const allJsx = state.stringCollector
         .getAllTranslationJsx()
         .filter((entry) => entry.hash !== '');

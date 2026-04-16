@@ -119,6 +119,7 @@ export class TranslationsCache<
     key: TranslationKey<T>
   ): T | undefined {
     const value = this.getCache(key) as T | undefined;
+    console.log('this.genKey(key)', this.genKey(key), 'value', value);
     if (value != null && this.onHit) {
       this.onHit({
         inputKey: key,
