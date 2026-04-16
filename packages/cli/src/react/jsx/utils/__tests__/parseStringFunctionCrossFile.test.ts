@@ -278,4 +278,115 @@ describe('parseStrings — cross-file gt parameter tracing', () => {
     expect(ids).toContain('direct');
     expect(ids).toContain('formatted');
   });
+
+  describe('warnUnresolvedImportSync', () => {
+    it('should warn when an imported function receiving gt cannot be resolved', () => {
+      const file1 = `
+        import { useGT } from 'gt-react';
+        import { getData } from '@app/data';
+
+        function Component() {
+          const gt = useGT();
+          getData(gt);
+        }
+      `;
+
+      // Resolve returns null for @app/data
+      mockResolveImportPath.mockReturnValue(null);
+
+      extractStrings(file1, '/app/page.tsx');
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(0);
+      expect(warnings.size).toBe(1);
+      const warning = [...warnings][0];
+      expect(warning).toContain('getData');
+      expect(warning).toContain('@app/data');
+    });
+
+    it('should warn when a nested cross-file import cannot be resolved', () => {
+      const file1 = `
+        import { useGT } from 'gt-react';
+        import { outer } from '@pkg/outer';
+
+        function Component() {
+          const gt = useGT();
+          outer(gt);
+        }
+      `;
+
+      const file2 = `
+        import { inner } from './missing-file';
+
+        export function outer(gt) {
+          gt('found', { $id: 'found' });
+          inner(gt);
+        }
+      `;
+
+      mockFs.readFileSync.mockImplementation(
+        (path: fs.PathOrFileDescriptor) => {
+          if (path === '/pkg/src/outer.ts') return file2;
+          throw new Error(`File not found: ${path}`);
+        }
+      );
+      mockResolveImportPath.mockImplementation(
+        (_currentFile: string, importPath: string) => {
+          if (importPath === '@pkg/outer') return '/pkg/src/outer.ts';
+          // ./missing-file cannot be resolved
+          if (importPath === './missing-file') return null;
+          return null;
+        }
+      );
+
+      extractStrings(file1, '/app/page.tsx');
+
+      expect(errors).toHaveLength(0);
+      // Should still extract the string from file2
+      expect(updates).toHaveLength(1);
+      expect(updates[0].metadata.id).toBe('found');
+      // Should warn about the unresolved inner import
+      expect(warnings.size).toBe(1);
+      const warning = [...warnings][0];
+      expect(warning).toContain('inner');
+      expect(warning).toContain('./missing-file');
+    });
+
+    it('should not warn when all imports resolve successfully', () => {
+      const file1 = `
+        import { useGT } from 'gt-react';
+        import { helper } from '@app/helper';
+
+        function Component() {
+          const gt = useGT();
+          helper(gt);
+        }
+      `;
+
+      const file2 = `
+        export function helper(gt) {
+          gt('works', { $id: 'works' });
+        }
+      `;
+
+      mockFs.readFileSync.mockImplementation(
+        (path: fs.PathOrFileDescriptor) => {
+          if (path === '/app/src/helper.ts') return file2;
+          throw new Error(`File not found: ${path}`);
+        }
+      );
+      mockResolveImportPath.mockImplementation(
+        (_currentFile: string, importPath: string) => {
+          if (importPath === '@app/helper') return '/app/src/helper.ts';
+          return null;
+        }
+      );
+
+      extractStrings(file1, '/app/page.tsx');
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(1);
+      expect(warnings.size).toBe(0);
+    });
+  });
 });
