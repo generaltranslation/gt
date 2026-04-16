@@ -8,7 +8,11 @@ import {
   STRING_REGISTRATION_FUNCS,
   T_GLOBAL_REGISTRATION_FUNCTION_MARKER,
 } from './constants.js';
-import { warnAsyncUseGT, warnSyncGetGT } from '../../../console/index.js';
+import {
+  warnAsyncUseGT,
+  warnSyncGetGT,
+  warnUnresolvedImportSync,
+} from '../../../console/index.js';
 
 import traverseModule from '@babel/traverse';
 // Handle CommonJS/ESM interop
@@ -199,6 +203,17 @@ function handleFunctionCall(
             state,
             output
           );
+        } else {
+          output.warnings.add(
+            warnUnresolvedImportSync(
+              config.file,
+              callee.name,
+              importPath,
+              tPath.node.loc
+                ? `${tPath.node.loc.start.line}:${tPath.node.loc.start.column}`
+                : undefined
+            )
+          );
         }
       }
     }
@@ -331,6 +346,8 @@ function processFunctionInFile(
     // Fresh set per cross-file parse — node identity is only stable within a single parse.
     // Cross-file cycles are already guarded by processFunctionCache above.
     const visitedFunctions = new Set<t.Node>();
+    // Update config.file so relative imports in the target file resolve correctly
+    const crossFileConfig: ParsingConfig = { ...config, file: filePath };
 
     traverse(ast, {
       // Handle function declarations: function getInfo(t) { ... }
@@ -342,7 +359,7 @@ function processFunctionInFile(
             argIndex,
             path.node,
             path,
-            config,
+            crossFileConfig,
             output,
             visitedFunctions
           );
@@ -364,7 +381,7 @@ function processFunctionInFile(
             argIndex,
             path.node.init,
             initPath,
-            config,
+            crossFileConfig,
             output,
             visitedFunctions
           );
