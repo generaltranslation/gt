@@ -214,7 +214,7 @@ function createLifecycleCallbacks(
         localStorageCaches[locale] = new LocalStorageTranslationCache({
           locale,
           projectId,
-          [hash]: value,
+          init: { [hash]: value },
         });
       }
     },

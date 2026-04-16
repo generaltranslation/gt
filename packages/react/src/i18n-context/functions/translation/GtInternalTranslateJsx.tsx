@@ -5,10 +5,7 @@ import {
   addGTIdentifier,
   removeInjectedT,
 } from '@generaltranslation/react-core/internal';
-import {
-  JsxTranslationOptions as JsxTranslationOptionsWithSugar,
-  ResolutionOptions,
-} from 'gt-i18n/types';
+import { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import {
   renderDefaultChildren,
   renderTranslatedChildren,
@@ -59,13 +56,16 @@ function computeT({
 }: {
   children: ReactNode;
 } & JsxTranslationOptions): ReactNode {
-  const options = normalizeParameters(params);
-
   // --- (0) Prepare our source children for rendering --- //
-  const { taggedSourceChildren, sourceJsxChildren, renderSourceChildren } =
-    usePrepSourceRender({
-      sourceChildren,
-    });
+  const {
+    taggedSourceChildren,
+    sourceJsxChildren,
+    renderSourceChildren,
+    options,
+  } = usePrepSourceRender({
+    sourceChildren,
+    params,
+  });
 
   // --- (1) Check if translation is even required --- //
   const targetLocale = getLocale();
@@ -107,12 +107,15 @@ function computeT({
  */
 function usePrepSourceRender({
   sourceChildren,
+  params,
 }: {
   sourceChildren: ReactNode;
+  params: JsxTranslationOptions;
 }): {
   taggedSourceChildren: TaggedChildren;
   sourceJsxChildren: JsxChildren;
   renderSourceChildren: () => ReactNode;
+  options: JsxTranslationOptionsWithSugar;
 } {
   // Remove any injected _T components after a derive invocation
   // Add GT identifying tags for easy analysis
@@ -131,7 +134,13 @@ function usePrepSourceRender({
       renderVariable,
     });
   }, [taggedSourceChildren]);
-  return { taggedSourceChildren, sourceJsxChildren, renderSourceChildren };
+  const options = useMemo(() => normalizeParameters(params), [params]);
+  return {
+    taggedSourceChildren,
+    sourceJsxChildren,
+    renderSourceChildren,
+    options,
+  };
 }
 
 /**
@@ -154,33 +163,10 @@ function normalizeParameters(parameters: {
 // ----- Dev Hot Reload ----- //
 
 /**
- * Promise cache for use() stability — same hash returns same promise across re-renders.
- * React's use() requires referentially stable promises to avoid infinite suspend loops.
- */
-const jsxPromiseCache = new Map<string, Promise<JsxChildren>>();
-
-/**
- * Get a cached promise for async JSX translation resolution.
- * Reuses resolveJsxWithRuntimeFallback which goes through the i18n manager's
- * deduped batch translation system.
- */
-function getJsxTranslationPromise(
-  children: JsxChildren,
-  options: ResolutionOptions<'JSX'>
-): Promise<JsxChildren> {
-  const key = options.$_hash || JSON.stringify({ children, options });
-  if (jsxPromiseCache.has(key)) {
-    return jsxPromiseCache.get(key)!;
-  }
-  const promise = resolveJsxWithRuntimeFallback(children, options);
-  jsxPromiseCache.set(key, promise);
-  return promise;
-}
-
-/**
  * Dev-only translation resolver that uses React Suspense.
  * Sync cache check already happened in computeT() — this only handles cache misses.
  * use() suspends until the async translation resolves.
+ * Promise dedup is handled by Cache.missCache() via fallbackPromises.
  */
 function DevTranslationResolver({
   sourceJsxChildren,
@@ -193,7 +179,9 @@ function DevTranslationResolver({
   options: JsxTranslationOptionsWithSugar;
   targetLocale: string;
 }): ReactNode {
-  const translation = use(getJsxTranslationPromise(sourceJsxChildren, options));
+  const translation = use(
+    resolveJsxWithRuntimeFallback(sourceJsxChildren, options)
+  );
 
   return renderTranslatedChildren({
     source: taggedSourceChildren,

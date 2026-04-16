@@ -7,7 +7,7 @@ const GtInternalRuntimeTranslateJsx: typeof resolveJsxWithRuntimeFallback = (
   content,
   options
 ) => {
-  // Mark as ICU because that is the default format used for compiler collected translations (gt, t, msg)
+  // Mark as JSX because that is the default format used for compiler collected T-component translations
   return resolveJsxWithRuntimeFallback(content, { $format: 'JSX', ...options });
 };
 
