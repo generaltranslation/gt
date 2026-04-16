@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.2.5
+
+### Patch Changes
+
+- [#1218](https://github.com/generaltranslation/gt/pull/1218) [`02ef6fc`](https://github.com/generaltranslation/gt/commit/02ef6fcbd979247b9157e768e5a07b3285aaa6ec) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat(react/browser): dev hot reload
+
 ## 8.2.4
 
 ### Patch Changes
