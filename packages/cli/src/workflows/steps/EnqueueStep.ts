@@ -7,11 +7,11 @@ import type { FileReference } from 'generaltranslation/types';
 import { ApiError } from 'generaltranslation/errors';
 import chalk from 'chalk';
 
-const EMPTY_ENQUEUE_RESULT: EnqueueFilesResult = {
+const EMPTY_ENQUEUE_RESULT = (): EnqueueFilesResult => ({
   jobData: {},
   locales: [],
   message: 'Enqueue skipped due to insufficient credits.',
-};
+});
 
 export class EnqueueStep extends WorkflowStep<
   FileReference[],
@@ -48,7 +48,7 @@ export class EnqueueStep extends WorkflowStep<
         error.code === 402
       ) {
         this.skippedDueToPayment = true;
-        this.result = EMPTY_ENQUEUE_RESULT;
+        this.result = EMPTY_ENQUEUE_RESULT();
         return this.result;
       }
       throw error;
