@@ -34,7 +34,12 @@ export async function runEnqueueWorkflow({
     // Create workflow with steps
     const branchStep = new BranchStep(gt, settings);
     // const queryFileDataStep = new QueryFileDataStep(gt);
-    const enqueueStep = new EnqueueStep(gt, settings, options.force, options.skipOnPaymentError);
+    const enqueueStep = new EnqueueStep(
+      gt,
+      settings,
+      options.force,
+      options.skipOnPaymentError
+    );
 
     // (1) run the branch step
     const branchData = await branchStep.run();
