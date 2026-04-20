@@ -84,6 +84,11 @@ export function attachTranslateFlags(command: Command) {
       false
     )
     .option(
+      '--skip-on-payment-error',
+      'Skip enqueue gracefully when the account has insufficient credits, instead of failing the command.',
+      false
+    )
+    .option(
       '--force-download',
       'Force download and overwrite local files, bypassing gt-lock.json checks.',
       false

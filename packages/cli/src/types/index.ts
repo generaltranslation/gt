@@ -72,6 +72,7 @@ export type TranslateFlags = SharedFlags & {
   publish?: boolean;
   force?: boolean;
   forceDownload?: boolean;
+  skipOnPaymentError?: boolean;
   tag?: string;
   message?: string;
   experimentalLocalizeStaticUrls?: boolean;

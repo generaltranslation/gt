@@ -43,7 +43,7 @@ export async function runStageFilesWorkflow({
     const uploadStep = new UploadSourcesStep(gt, settings);
     const userEditDiffsStep = new UserEditDiffsStep(settings);
     const setupStep = new SetupStep(gt, settings, timeoutMs);
-    const enqueueStep = new EnqueueStep(gt, settings, options.force);
+    const enqueueStep = new EnqueueStep(gt, settings, options.force, options.skipOnPaymentError);
 
     // first run the branch step
     const branchData = await branchStep.run();
