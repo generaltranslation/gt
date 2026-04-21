@@ -1,5 +1,11 @@
 # @generaltranslation/react-core-linter
 
+## 0.1.8
+
+### Patch Changes
+
+- [#1223](https://github.com/generaltranslation/gt/pull/1223) [`7459ab0`](https://github.com/generaltranslation/gt/commit/7459ab0a1038bac3557865cf2fa640422a2c26ad) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add branch insertion
+
 ## 0.1.7
 
 ### Patch Changes
