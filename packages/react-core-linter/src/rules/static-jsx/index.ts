@@ -3,6 +3,7 @@ import type { RuleFixer } from '@typescript-eslint/utils/ts-eslint';
 import {
   ALLOWED_BRANCH_ATTRIBUTE_JSX_EXPRESSIONS,
   ALLOWED_JSX_EXPRESSIONS,
+  BRANCH_COMPONENT_NAME,
   GT_LIBRARIES,
   RULE_URL,
   VAR_COMPONENT_NAME,
@@ -15,6 +16,15 @@ import {
   isVariableComponent,
 } from '../../utils/isGTFunction.js';
 import { isContentBranch } from '../../utils/branching-utils.js';
+import {
+  getGTImportDecls,
+  addComponentImport,
+} from '../../utils/import-utils.js';
+import {
+  isBranchableConditional,
+  isBranchableLogicalAnd,
+} from '../../utils/expression-utils.js';
+import { generateBranch, generateLogicalAnd } from './branch-fix.js';
 import { ScopeStack } from './ScopeStack.js';
 
 /**
@@ -56,59 +66,62 @@ export const staticJsx = createRule({
   create(context, [options]) {
     const { libs = GT_LIBRARIES } = options;
 
-    /**
-     * Creates a fixer that wraps a JSX expression container in a <Var> component
-     * and adds the Var import to the existing GT import declaration if needed.
-     */
-    function createVarWrapperFix(
+    function createWrapperFix(
       fixer: RuleFixer,
       node: TSESTree.JSXExpressionContainer
     ) {
       const fixes: ReturnType<RuleFixer['replaceText']>[] = [];
+      const gtImportDecls = getGTImportDecls(context.sourceCode, libs);
+      const expr = node.expression as TSESTree.Expression;
 
-      // Find all GT import declarations
-      const gtImportDecls = context.sourceCode.ast.body.filter(
-        (stmt): stmt is TSESTree.ImportDeclaration =>
-          stmt.type === TSESTree.AST_NODE_TYPES.ImportDeclaration &&
-          libs.includes(stmt.source.value as string)
+      if (isBranchableConditional(expr)) {
+        // { cond ? "yes" : "no" }
+        // Import Branch Component
+        const branchTag = addComponentImport(
+          gtImportDecls,
+          BRANCH_COMPONENT_NAME,
+          fixes,
+          fixer
+        );
+        fixes.push(
+          fixer.replaceText(
+            node,
+            generateBranch(expr, branchTag, context.sourceCode)
+          )
+        );
+        return fixes;
+      }
+
+      if (isBranchableLogicalAnd(expr)) {
+        // { x && "Active" }
+        // Import Branch Component
+        const branchTag = addComponentImport(
+          gtImportDecls,
+          BRANCH_COMPONENT_NAME,
+          fixes,
+          fixer
+        );
+        fixes.push(
+          fixer.replaceText(
+            node,
+            generateLogicalAnd(expr, branchTag, context.sourceCode)
+          )
+        );
+        return fixes;
+      }
+
+      // { Math.random() }
+      // Import Var Component
+      const varTag = addComponentImport(
+        gtImportDecls,
+        VAR_COMPONENT_NAME,
+        fixes,
+        fixer
       );
-
-      // Check across all GT imports if Var is already imported
-      let tagName = VAR_COMPONENT_NAME;
-      let varSpecifier: TSESTree.ImportSpecifier | undefined;
-      for (const decl of gtImportDecls) {
-        varSpecifier = decl.specifiers.find(
-          (spec): spec is TSESTree.ImportSpecifier =>
-            spec.type === TSESTree.AST_NODE_TYPES.ImportSpecifier &&
-            spec.imported.type === TSESTree.AST_NODE_TYPES.Identifier &&
-            spec.imported.name === VAR_COMPONENT_NAME
-        );
-        if (varSpecifier) break;
-      }
-
-      if (varSpecifier) {
-        // Var is already imported — use its local name (handles aliases)
-        tagName = varSpecifier.local.name;
-      } else if (gtImportDecls.length > 0) {
-        // Var is not imported — add it to the first GT import
-        const targetDecl = gtImportDecls[0];
-        const namedSpecifiers = targetDecl.specifiers.filter(
-          (s): s is TSESTree.ImportSpecifier =>
-            s.type === TSESTree.AST_NODE_TYPES.ImportSpecifier
-        );
-        if (namedSpecifiers.length > 0) {
-          const lastSpecifier = namedSpecifiers[namedSpecifiers.length - 1];
-          fixes.push(
-            fixer.insertTextAfter(lastSpecifier, `, ${VAR_COMPONENT_NAME}`)
-          );
-        }
-      }
-
-      // Wrap the expression in <Var> (or its alias)
       const sourceCode = context.sourceCode.getText(node);
-      const fixedCode = `<${tagName}>${sourceCode}</${tagName}>`;
-      fixes.push(fixer.replaceText(node, fixedCode));
-
+      fixes.push(
+        fixer.replaceText(node, `<${varTag}>${sourceCode}</${varTag}>`)
+      );
       return fixes;
     }
 
@@ -128,7 +141,7 @@ export const staticJsx = createRule({
               node,
               messageId: 'dynamicContent',
               fix(fixer) {
-                return createVarWrapperFix(fixer, node);
+                return createWrapperFix(fixer, node);
               },
             });
           }
@@ -145,7 +158,7 @@ export const staticJsx = createRule({
               node,
               messageId: 'dynamicContent',
               fix(fixer) {
-                return createVarWrapperFix(fixer, node);
+                return createWrapperFix(fixer, node);
               },
             });
           }

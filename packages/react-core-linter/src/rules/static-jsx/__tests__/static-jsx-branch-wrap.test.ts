@@ -210,7 +210,7 @@ describe('static-jsx: nested ternary with equality → collapsed Branch props', 
   });
 });
 
-describe('static-jsx: one branch translatable, other dynamic → Branch', () => {
+describe('static-jsx: one branch translatable, other dynamic → Branch (dynamic becomes children)', () => {
   ruleTester.run('one-branch-translatable', staticJsx, {
     valid: [],
     invalid: [
@@ -223,12 +223,20 @@ describe('static-jsx: one branch translatable, other dynamic → Branch', () => 
         `,
         options: [{ libs: ['gt-react'] }],
         errors: [{ messageId: 'dynamicContent' }],
-        output: `
+        output: [
+          `
           import { T, Branch } from 'gt-react';
           function Component({ cond, someVar }) {
             return <T><Branch branch={cond} true="yes">{someVar}</Branch></T>;
           }
         `,
+          `
+          import { T, Branch, Var } from 'gt-react';
+          function Component({ cond, someVar }) {
+            return <T><Branch branch={cond} true="yes"><Var>{someVar}</Var></Branch></T>;
+          }
+        `,
+        ],
       },
     ],
   });
@@ -668,7 +676,7 @@ describe('static-jsx: equality with == operator → Branch', () => {
   });
 });
 
-describe('static-jsx: ternary with JSX containing dynamic content → Branch (inner Var on next pass)', () => {
+describe('static-jsx: ternary with JSX containing dynamic content → Branch (inner Var first, then Branch)', () => {
   ruleTester.run('ternary-jsx-with-dynamic', staticJsx, {
     valid: [],
     invalid: [
@@ -680,13 +688,24 @@ describe('static-jsx: ternary with JSX containing dynamic content → Branch (in
           }
         `,
         options: [{ libs: ['gt-react'] }],
-        errors: [{ messageId: 'dynamicContent' }],
-        output: `
-          import { T, Branch } from 'gt-react';
+        errors: [
+          { messageId: 'dynamicContent' },
+          { messageId: 'dynamicContent' },
+        ],
+        output: [
+          `
+          import { T, Var } from 'gt-react';
           function Component({ cond, name }) {
-            return <T><Branch branch={cond} true={<span>{name}</span>}><span>Guest</span></Branch></T>;
+            return <T>{cond ? <span><Var>{name}</Var></span> : <span>Guest</span>}</T>;
           }
         `,
+          `
+          import { T, Var, Branch } from 'gt-react';
+          function Component({ cond, name }) {
+            return <T><Branch branch={cond} true={<span><Var>{name}</Var></span>}><span>Guest</span></Branch></T>;
+          }
+        `,
+        ],
       },
     ],
   });
