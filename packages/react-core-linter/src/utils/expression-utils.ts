@@ -20,7 +20,7 @@ export function staticStringValue(expr: TSESTree.Expression): string | null {
     expr.type === TSESTree.AST_NODE_TYPES.TemplateLiteral &&
     expr.expressions.length === 0
   )
-    return expr.quasis[0].value.raw;
+    return expr.quasis[0].value.cooked ?? expr.quasis[0].value.raw;
   return null;
 }
 

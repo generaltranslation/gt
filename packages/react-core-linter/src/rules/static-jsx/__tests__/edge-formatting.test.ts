@@ -1348,20 +1348,12 @@ describe('edge-formatting: alternate string with curly braces as children', () =
         `,
         options: [{ libs: ['gt-react'] }],
         errors: [{ messageId: 'dynamicContent' }],
-        output: [
-          `
+        output: `
           import { T, Branch } from 'gt-react';
           function C({ cond }) {
-            return <T><Branch branch={cond} true="text">{braces}</Branch></T>;
+            return <T><Branch branch={cond} true="text">&#123;braces&#125;</Branch></T>;
           }
         `,
-          `
-          import { T, Branch, Var } from 'gt-react';
-          function C({ cond }) {
-            return <T><Branch branch={cond} true="text"><Var>{braces}</Var></Branch></T>;
-          }
-        `,
-        ],
       },
     ],
   });

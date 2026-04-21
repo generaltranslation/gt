@@ -47,6 +47,12 @@ export function findImportedSpecifier(
  * Returns the local tag name for `componentName`. If the component is
  * already imported (possibly aliased), returns the alias. Otherwise
  * appends an import-fix to `fixes` and returns the canonical name.
+ *
+ * NOTE: If the GT import has no named specifiers (e.g. namespace import
+ * `import * as GT from 'gt-react'`), no import fix is emitted. The
+ * generated JSX will reference the canonical name without a matching
+ * import — this is acceptable because namespace imports don't currently
+ * trigger the rule's component detection via `isGTFunction`.
  */
 export function addComponentImport(
   gtImportDecls: TSESTree.ImportDeclaration[],

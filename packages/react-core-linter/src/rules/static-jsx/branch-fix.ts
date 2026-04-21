@@ -90,7 +90,10 @@ export function formatAsPropValue(
   sourceCode: SourceCode
 ): string {
   const str = staticStringValue(expr);
-  if (str !== null) return `"${str}"`;
+  if (str !== null) {
+    if (str.includes('"')) return `{${JSON.stringify(str)}}`;
+    return `"${str}"`;
+  }
   if (isBranchableConditional(expr))
     return `{${generateBranch(expr, branchTag, sourceCode)}}`;
   if (isBranchableLogicalAnd(expr))
@@ -111,7 +114,12 @@ export function formatAsChildren(
   if (expr.type === TSESTree.AST_NODE_TYPES.Literal && expr.value === null)
     return null;
   const str = staticStringValue(expr);
-  if (str !== null) return str;
+  if (str !== null)
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/{/g, '&#123;')
+      .replace(/}/g, '&#125;');
   if (
     expr.type === TSESTree.AST_NODE_TYPES.JSXElement ||
     expr.type === TSESTree.AST_NODE_TYPES.JSXFragment
