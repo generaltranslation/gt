@@ -202,7 +202,7 @@ describe('static-jsx: nested ternary with equality → collapsed Branch props', 
         output: `
           import { T, Branch } from 'gt-react';
           function Component({ temp }) {
-            return <T><Branch branch={temp} a="A"><Branch branch={temp} b="B">other</Branch></Branch></T>;
+            return <T><Branch branch={temp} a="A" b="B">other</Branch></T>;
           }
         `,
       },

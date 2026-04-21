@@ -134,7 +134,10 @@ export function formatAsChildren(
 
 /**
  * Generates <Branch branch={expr} propName=value>children</Branch> source text
- * from a ConditionalExpression. Recursively handles nested ternaries.
+ * from a ConditionalExpression. When chained ternaries share the same branch
+ * variable, collapses them into a single Branch with multiple props:
+ *   status === "a" ? "A" : status === "b" ? "B" : "other"
+ *   → <Branch branch={status} a="A" b="B">other</Branch>
  */
 export function generateBranch(
   expr: TSESTree.ConditionalExpression,
@@ -147,11 +150,36 @@ export function generateBranch(
   );
   const consequent = swap ? expr.alternate : expr.consequent;
   const alternate = swap ? expr.consequent : expr.alternate;
-  const propValue = formatAsPropValue(consequent, branchTag, sourceCode);
-  const children = formatAsChildren(alternate, branchTag, sourceCode);
+
+  // Collect props by walking chained ternaries that share the same branchExpr
+  const props: { name: string; value: string }[] = [
+    {
+      name: propName,
+      value: formatAsPropValue(consequent, branchTag, sourceCode),
+    },
+  ];
+  let tail: TSESTree.Expression = alternate;
+
+  while (
+    tail.type === TSESTree.AST_NODE_TYPES.ConditionalExpression &&
+    isBranchableConditional(tail)
+  ) {
+    const innerInfo = extractBranchInfo(tail.test, sourceCode);
+    if (innerInfo.branchExpr !== branchExpr) break;
+    const innerConsequent = innerInfo.swap ? tail.alternate : tail.consequent;
+    const innerAlternate = innerInfo.swap ? tail.consequent : tail.alternate;
+    props.push({
+      name: innerInfo.propName,
+      value: formatAsPropValue(innerConsequent, branchTag, sourceCode),
+    });
+    tail = innerAlternate;
+  }
+
+  const propsStr = props.map((p) => `${p.name}=${p.value}`).join(' ');
+  const children = formatAsChildren(tail, branchTag, sourceCode);
   if (children === null)
-    return `<${branchTag} branch={${branchExpr}} ${propName}=${propValue} />`;
-  return `<${branchTag} branch={${branchExpr}} ${propName}=${propValue}>${children}</${branchTag}>`;
+    return `<${branchTag} branch={${branchExpr}} ${propsStr} />`;
+  return `<${branchTag} branch={${branchExpr}} ${propsStr}>${children}</${branchTag}>`;
 }
 
 /**
