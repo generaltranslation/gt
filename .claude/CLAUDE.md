@@ -66,6 +66,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `transpile`, `build:clean`, `b
 - **Internal subpaths:** Packages expose `/internal` subpaths for cross-package use. These are not part of the public API.
 - **React i18n-context:** `packages/react/src/i18n-context/` has restricted imports from `gt-i18n` (only `/types`, `/internal`, `/internal/types`). This is enforced by ESLint.
 - **CLI version generation:** `packages/cli` has a pre-commit hook that runs `node scripts/generate-version.js` to keep `src/generated/version.ts` in sync.
+- **gt-react / gt-react-native parity:** These two packages are fixed-version siblings (released together via changesets). When a feature is added to one, the equivalent should be added to the other unless it's platform-specific (e.g., DOM-only UI components). Compare their `index.ts`/`index.tsx` exports to verify parity.
 
 ## MCP Server
 
