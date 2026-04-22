@@ -1,0 +1,88 @@
+buildscript {
+  ext.getExtOrDefault = {name ->
+    return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties['GtReactNative_' + name]
+  }
+
+  repositories {
+    google()
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath "com.android.tools.build:gradle:8.7.2"
+    // noinspection DifferentKotlinGradleVersion
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${getExtOrDefault('kotlinVersion')}"
+  }
+}
+
+def isNewArchitectureEnabled() {
+    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+if (isNewArchitectureEnabled()) {
+    apply plugin: "com.facebook.react"
+}
+
+def getExtOrIntegerDefault(name) {
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["GtReactNative_" + name]).toInteger()
+}
+
+android {
+  namespace "com.gtreactnative"
+
+  compileSdkVersion getExtOrIntegerDefault("compileSdkVersion")
+
+  defaultConfig {
+    buildConfigField("boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString())
+    minSdkVersion getExtOrIntegerDefault("minSdkVersion")
+    targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
+  }
+
+  buildFeatures {
+    buildConfig true
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled false
+    }
+  }
+
+  lintOptions {
+    disable "GradleCompatible"
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+
+  sourceSets {
+    main {
+      java.srcDirs += [
+        "generated/java",
+        "generated/jni"
+      ]
+      if (isNewArchitectureEnabled()) {
+        java.srcDirs += ["src/newarch"]
+      } else {
+        java.srcDirs += ["src/oldarch"]
+      }
+    }
+  }
+}
+
+repositories {
+  mavenCentral()
+  google()
+}
+
+def kotlin_version = getExtOrDefault("kotlinVersion")
+
+dependencies {
+  implementation "com.facebook.react:react-android"
+  implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+}
