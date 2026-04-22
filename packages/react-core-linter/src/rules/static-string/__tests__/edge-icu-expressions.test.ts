@@ -572,7 +572,7 @@ describe('edge-icu: empty string parts in concatenation', () => {
 // ===================================================================
 
 // gt("it's " + name)
-// → gt("it's {var0}", { var0: name })
+// → gt("it''s {var0}", { var0: name })
 describe('edge-icu: apostrophe in static text preserved', () => {
   ruleTester.run('apostrophe-static', staticString, {
     valid: [],
@@ -591,7 +591,7 @@ describe('edge-icu: apostrophe in static text preserved', () => {
           import { useGT } from 'gt-react';
           function Component() {
             const gt = useGT();
-            return gt("it's {var0}", { var0: name });
+            return gt("it''s {var0}", { var0: name });
           }
         `,
       },

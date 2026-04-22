@@ -19,8 +19,8 @@ const ruleTester = new RuleTester({
 // ===================================================================
 
 // gt("it's " + name)
-// → gt("it's {var0}", { var0: name })
-// Single quotes don't need escaping in double-quoted output
+// → gt("it''s {var0}", { var0: name })
+// Single quotes (apostrophes) are escaped for ICU (doubled)
 describe('escaping: single quotes in concat do not need escaping', () => {
   ruleTester.run('escape-single-quotes-concat', staticString, {
     valid: [],
@@ -39,7 +39,7 @@ describe('escaping: single quotes in concat do not need escaping', () => {
           import { useGT } from 'gt-react';
           function C() {
             const gt = useGT();
-            return gt("it's {var0}", { var0: name });
+            return gt("it''s {var0}", { var0: name });
           }
         `,
       },
@@ -227,11 +227,9 @@ describe('escaping: unicode in static concat passes through', () => {
 // ===================================================================
 
 // gt("use {braces} like " + name)
-// → gt("use {braces} like {var0}", { var0: name })
-// The static text "{braces}" ends up in the ICU string unescaped.
-// ICU parsers would interpret {braces} as a variable placeholder.
-// This is a potential bug — the literal text is indistinguishable from
-// a real ICU variable reference. For now, test what actually happens.
+// → gt("use '{braces}' like {var0}", { var0: name })
+// The static text "{braces}" has its braces escaped for ICU using
+// apostrophe quoting: { becomes '{ and } becomes }'.
 describe('escaping: literal braces in static text become ICU-like', () => {
   ruleTester.run('escape-literal-braces', staticString, {
     valid: [],
@@ -250,7 +248,7 @@ describe('escaping: literal braces in static text become ICU-like', () => {
           import { useGT } from 'gt-react';
           function C() {
             const gt = useGT();
-            return gt("use {braces} like {var0}", { var0: name });
+            return gt("use '{braces}' like {var0}", { var0: name });
           }
         `,
       },
@@ -263,8 +261,8 @@ describe('escaping: literal braces in static text become ICU-like', () => {
 // ===================================================================
 
 // gt("a`b" + derive(x) + "c${d}" + derive(y) + name)
-// → gt(`a\`b${derive(x)}c\${d}${derive(y)}{var0}`, { var0: name })
-// Both backtick and ${ in static text with derive path
+// → gt(`a\`b${derive(x)}c$'{d}'${derive(y)}{var0}`, { var0: name })
+// Backtick is escaped for template literal; braces in static text use ICU apostrophe quoting
 describe('escaping: backtick and ${ in static text with derive path', () => {
   ruleTester.run('escape-special-chars-derive', staticString, {
     valid: [],
@@ -283,7 +281,7 @@ describe('escaping: backtick and ${ in static text with derive path', () => {
           import { useGT, derive } from 'gt-react';
           function C() {
             const gt = useGT();
-            return gt(\`a\\\`b\${derive(x)}c\\\${d}\${derive(y)}{var0}\`, { var0: name });
+            return gt(\`a\\\`b\${derive(x)}c\$'{d}'\${derive(y)}{var0}\`, { var0: name });
           }
         `,
       },
@@ -329,8 +327,8 @@ describe('escaping: empty string static parts cause no issues', () => {
 // ===================================================================
 
 // gt('The user\'s profile says "Hello, world!" and it\'s ' + status)
-// → gt("The user's profile says \\"Hello, world!\\" and it's {var0}", { var0: status })
-// Apostrophes pass through, double quotes get escaped
+// → gt("The user''s profile says \\"Hello, world!\\" and it''s {var0}", { var0: status })
+// Apostrophes are doubled for ICU escaping, double quotes get escaped for JS
 describe('escaping: realistic text with apostrophes and quotes', () => {
   ruleTester.run('escape-realistic-text', staticString, {
     valid: [],
@@ -349,7 +347,7 @@ describe('escaping: realistic text with apostrophes and quotes', () => {
           import { useGT } from 'gt-react';
           function C() {
             const gt = useGT();
-            return gt("The user's profile says \\"Hello, world!\\" and it's {var0}", { var0: status });
+            return gt("The user''s profile says \\"Hello, world!\\" and it''s {var0}", { var0: status });
           }
         `,
       },

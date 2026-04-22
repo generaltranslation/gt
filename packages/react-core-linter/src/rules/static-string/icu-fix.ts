@@ -22,6 +22,14 @@ import type { GTLibrary } from '../../utils/constants.js';
 /** ICU select keys must be simple identifier-like tokens (no whitespace or braces). */
 const VALID_ICU_SELECT_KEY = /^\S+$/;
 
+/**
+ * Escapes ICU special characters in literal text using ICU apostrophe-quoting.
+ * `'` → `''`, `{` → `'{'`, `}` → `'}'`
+ */
+function escapeICUText(str: string): string {
+  return str.replace(/'/g, "''").replace(/\{/g, "'{").replace(/\}/g, "}'");
+}
+
 export type SelectBranch = { key: string; value: string };
 
 /** Recursive type: the "other" of a select can itself be a nested select. */
@@ -107,6 +115,9 @@ function extractSelectInfo(
     }
   }
 
+  // Non-equality tests (e.g. count > 5, fn(), a ?? b) fall through here.
+  // The select uses key "true", so at runtime the "other" branch matches
+  // most values. This is intentional — it preserves the ternary semantics.
   return {
     variable: sourceCode.getText(test),
     key: 'true',
@@ -299,11 +310,13 @@ function resolveVarName(sourceText: string, state: VarState): string {
 function renderSelect(node: SelectNode, state: VarState): string {
   const varName = resolveVarName(node.variable, state);
 
-  const branchStr = node.branches.map((b) => `${b.key} {${b.value}}`).join(' ');
+  const branchStr = node.branches
+    .map((b) => `${b.key} {${escapeICUText(b.value)}}`)
+    .join(' ');
 
   let otherContent: string;
   if (typeof node.other === 'string') {
-    otherContent = node.other;
+    otherContent = escapeICUText(node.other);
   } else {
     otherContent = `{${renderSelect(node.other, state)}}`;
   }
@@ -333,7 +346,7 @@ export function generateICUReplacement(
   for (const part of parts) {
     switch (part.kind) {
       case 'static':
-        icuString += part.value;
+        icuString += escapeICUText(part.value);
         break;
       case 'dynamic': {
         const sourceText = sourceCode.getText(part.node);
@@ -384,7 +397,7 @@ export function generateTemplateLiteralReplacement(
   for (const part of parts) {
     switch (part.kind) {
       case 'static':
-        templateString += escapeTemplateLiteral(part.value);
+        templateString += escapeTemplateLiteral(escapeICUText(part.value));
         break;
       case 'dynamic': {
         const sourceText = sourceCode.getText(part.node);

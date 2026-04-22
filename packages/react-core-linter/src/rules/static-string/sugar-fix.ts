@@ -133,6 +133,8 @@ export function validateSugarVariables(
   }
 
   for (const prop of secondArg.properties) {
+    // Computed keys like { ["$context"]: val } and spread elements are
+    // intentionally skipped — only plain identifier keys are checked.
     if (
       prop.type !== TSESTree.AST_NODE_TYPES.Property ||
       prop.key.type !== TSESTree.AST_NODE_TYPES.Identifier
