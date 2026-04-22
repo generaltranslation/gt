@@ -6,6 +6,8 @@ import type {
   UseDetermineLocaleParams,
   UseDetermineLocaleReturn,
 } from '@generaltranslation/react-core/types';
+import { createUnsupportedLocaleWarning } from '@generaltranslation/react-core/errors';
+import { PACKAGE_NAME } from '../../../errors-dir/constants';
 import { getNativeLocales } from '../../../utils/getNativeLocales';
 import { nativeStoreGet, nativeStoreSet } from '../../../utils/nativeStore';
 
@@ -78,7 +80,6 @@ export function useDetermineLocale({
     defaultLocale,
     localeCookieName,
     customMapping,
-    setLocaleWithoutPersist,
     enableI18n,
   ]);
 
@@ -193,7 +194,7 @@ function createSetLocale({
     );
     if (validatedLocale !== newLocale) {
       console.warn(
-        `[gt-react-native] Unsupported locale: ${validatedLocale} -> ${newLocale}`
+        createUnsupportedLocaleWarning(validatedLocale, newLocale, PACKAGE_NAME)
       );
     }
     // persist locale
@@ -207,7 +208,6 @@ function createSetLocale({
       return;
     }
     newLocale = resolveAliasLocale(newLocale, customMapping);
-    setLocaleWithoutPersist(newLocale);
     const validatedLocale = setLocaleWithoutPersist(newLocale);
     nativeStoreSet(localeCookieName, validatedLocale);
   };

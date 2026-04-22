@@ -7,11 +7,11 @@ import React from 'react';
 async function loadTranslations(locale: string) {
   switch (locale) {
     case 'zh':
-      return import('../src/_gt/zh.json');
+      return import('./_gt/zh.json');
     case 'es':
-      return import('../src/_gt/es.json');
+      return import('./_gt/es.json');
     case 'fr':
-      return import('../src/_gt/fr.json');
+      return import('./_gt/fr.json');
   }
 }
 

@@ -118,7 +118,7 @@ export function testLocalePolyfill(locale = libraryDefaultLocale) {
 
   try {
     example.number = new Intl.NumberFormat(locale).format(1234.5);
-  } catch (e) {
+  } catch {
     example.number = 'ERROR';
   }
 
@@ -126,7 +126,7 @@ export function testLocalePolyfill(locale = libraryDefaultLocale) {
     example.date = new Intl.DateTimeFormat(locale, {
       dateStyle: 'long',
     }).format(new Date('2020-01-02'));
-  } catch (e) {
+  } catch {
     example.date = 'ERROR';
   }
 
@@ -134,13 +134,13 @@ export function testLocalePolyfill(locale = libraryDefaultLocale) {
     example.weekday = new Intl.DateTimeFormat(locale, {
       weekday: 'long',
     }).format(new Date('2020-01-02'));
-  } catch (e) {
+  } catch {
     example.weekday = 'ERROR';
   }
 
   try {
     example.pluralRule = new Intl.PluralRules(locale).select(5);
-  } catch (e) {
+  } catch {
     example.pluralRule = 'ERROR';
   }
 
@@ -149,7 +149,7 @@ export function testLocalePolyfill(locale = libraryDefaultLocale) {
       -1,
       'day'
     );
-  } catch (e) {
+  } catch {
     example.relativeTime = 'ERROR';
   }
 
@@ -159,7 +159,7 @@ export function testLocalePolyfill(locale = libraryDefaultLocale) {
       'orange',
       'banana',
     ]);
-  } catch (e) {
+  } catch {
     example.list = 'ERROR';
   }
 
@@ -167,13 +167,13 @@ export function testLocalePolyfill(locale = libraryDefaultLocale) {
     example.displayName =
       new Intl.DisplayNames(locale, { type: 'language' }).of('en') ||
       'UNDEFINED';
-  } catch (e) {
+  } catch {
     example.displayName = 'ERROR';
   }
 
   try {
     example.locale = new Intl.Locale(locale).language;
-  } catch (e) {
+  } catch {
     example.locale = 'ERROR';
   }
 
@@ -185,9 +185,7 @@ export function testLocalePolyfill(locale = libraryDefaultLocale) {
     example,
   };
 
-  if (result.ok) {
-    console.log(`✅ Locale polyfill looks OK for ${locale}`, example);
-  } else {
+  if (!result.ok) {
     console.warn(
       `❌ Locale polyfill check failed for ${locale}:`,
       problems,

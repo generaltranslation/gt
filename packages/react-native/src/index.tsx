@@ -1,9 +1,4 @@
-import GtReactNative from './NativeGtReactNative';
-
 import { GTProvider } from './provider/GTProvider';
-export function multiply(a: number, b: number): number {
-  return GtReactNative.multiply(a, b);
-}
 
 import {
   T,

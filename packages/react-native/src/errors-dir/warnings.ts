@@ -12,3 +12,5 @@ export const couldNotLocateConfigWarning = (filePath: string) =>
 
 export const invalidLocalesWarning = (invalidLocales: string[]) =>
   `${PACKAGE_NAME}: Invalid locales found in GT Config: ${invalidLocales.join(', ')}.`;
+
+export const ssrUnsupportedWarning = `${PACKAGE_NAME}: Server-side environments are not explicitly supported. Some features may not work as expected.`;
