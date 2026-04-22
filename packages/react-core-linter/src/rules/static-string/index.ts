@@ -244,9 +244,12 @@ export const staticString = createRule({
                 templateString: null,
               };
 
+          const escapedICU = icuString
+            .replace(/\\/g, '\\\\')
+            .replace(/"/g, '\\"');
           const replacementStr = containsDerive
             ? templateString!
-            : `"${icuString}"`;
+            : `"${escapedICU}"`;
 
           const optionsStr = icuOptions
             .map((o) => `${o.key}: ${o.value}`)

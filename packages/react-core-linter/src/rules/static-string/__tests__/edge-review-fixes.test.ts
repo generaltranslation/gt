@@ -344,3 +344,65 @@ describe('review: template literal with empty options object', () => {
     ],
   });
 });
+
+// ===================================================================
+// 4. Quotes and backslashes escaped in ICU string output
+// ===================================================================
+
+// gt('She said "hi" to ' + name)
+// → gt("She said \\"hi\\" to {var0}", { var0: name })
+// Double quotes in static text must be escaped in the generated string literal
+describe('review: double quotes in static text escaped in ICU output', () => {
+  ruleTester.run('escape-double-quotes', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt('She said "hi" to ' + name);
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("She said \\"hi\\" to {var0}", { var0: name });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt("a\\b" + name)  — string value is a\b
+// → gt("a\\b{var0}", { var0: name })
+// Backslash in static text is escaped for the double-quoted output
+describe('review: backslash in static text escaped in ICU output', () => {
+  ruleTester.run('escape-backslash', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("a\\\\b" + name);
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("a\\\\b{var0}", { var0: name });
+          }
+        `,
+      },
+    ],
+  });
+});
