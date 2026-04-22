@@ -490,7 +490,8 @@ describe('static-string: dynamic content with valid sugar → content error only
   });
 });
 
-// gt("Hello " + name, { $context: ctx })  — content error + sugar error (both reported)
+// gt("Hello " + name, { $context: ctx })  — content error (with fix) + sugar error (no fix)
+// → gt("Hello {var0}", { $context: ctx, var0: name })  (content fixed, $context still invalid)
 describe('static-string: dynamic content with dynamic sugar → both errors', () => {
   ruleTester.run('content-and-sugar-errors', staticString, {
     valid: [],
@@ -508,6 +509,13 @@ describe('static-string: dynamic content with dynamic sugar → both errors', ()
           { messageId: 'variableInterpolationRequired' },
           { messageId: 'sugarVariableMustBeStatic' },
         ],
+        output: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello {var0}", { $context: ctx, var0: name });
+          }
+        `,
       },
     ],
   });

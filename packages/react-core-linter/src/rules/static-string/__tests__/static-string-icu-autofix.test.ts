@@ -759,7 +759,95 @@ describe('static-string: msg() with $format "STRING" → no auto-fix, still repo
 });
 
 // ===================================================================
-// 15. @generaltranslation/react-core library support
+// 15. Chained ternaries → collapsed ICU select
+// ===================================================================
+
+// gt("Hello " + name + ", you are " + (isAdmin === 'admin' ? "admin" : isAdmin === 'user' ? "user" : "unknown"))
+// → gt("Hello {var0}, you are {var1, select, admin {admin} user {user} other {unknown}}", { var0: name, var1: isAdmin })
+describe('static-string: chained equality ternaries in concatenation → collapsed ICU select', () => {
+  ruleTester.run('concat-chained-ternary', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello " + name + ", you are " + (isAdmin === 'admin' ? "admin" : isAdmin === 'user' ? "user" : "unknown"));
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello {var0}, you are {var1, select, admin {admin} user {user} other {unknown}}", { var0: name, var1: isAdmin });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt(`Role: ${role === 'admin' ? "Administrator" : role === 'mod' ? "Moderator" : role === 'user' ? "User" : "Guest"}`)
+// → gt("Role: {var0, select, admin {Administrator} mod {Moderator} user {User} other {Guest}}", { var0: role })
+describe('static-string: chained equality ternaries in template literal → collapsed ICU select', () => {
+  ruleTester.run('template-chained-ternary', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(\`Role: \${role === 'admin' ? "Administrator" : role === 'mod' ? "Moderator" : role === 'user' ? "User" : "Guest"}\`);
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Role: {var0, select, admin {Administrator} mod {Moderator} user {User} other {Guest}}", { var0: role });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt("Status: " + (x === 'a' ? "A" : y === 'b' ? "B" : "C"))
+// Different variables break the chain — only first branch collapses, rest becomes plain variable
+describe('static-string: chained ternaries with different variables → stops collapsing at mismatch', () => {
+  ruleTester.run('concat-chained-different-vars', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Status: " + (x === 'a' ? "A" : y === 'b' ? "B" : "C"));
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Status: {var0}", { var0: x === 'a' ? "A" : y === 'b' ? "B" : "C" });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// ===================================================================
+// 16. @generaltranslation/react-core library support
 // ===================================================================
 
 // gt("Hello " + name)  [via @generaltranslation/react-core]
