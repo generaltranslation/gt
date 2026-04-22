@@ -8,7 +8,9 @@
 
 import { parse } from '@formatjs/icu-messageformat-parser';
 
-// Returns null if the string is valid ICU, or an error message if not.
+/**
+ * Returns null if the string is valid ICU, or an error message if not.
+ */
 export function validateICU(str: string): string | null {
   try {
     parse(str);

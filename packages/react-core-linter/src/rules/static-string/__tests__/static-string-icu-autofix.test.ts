@@ -909,7 +909,7 @@ describe('static-string: works with @generaltranslation/react-core imports', () 
 });
 
 // ===================================================================
-// 15. Aliased import support
+// 17. Aliased import support
 // ===================================================================
 
 // t("Hello " + name)  [via import { useGT as useTranslation }]

@@ -33,7 +33,9 @@ function isStaticString(node: TSESTree.Expression): boolean {
   }
 }
 
-// Accepts number literals and unary +/- on number literals (e.g. -5, +10).
+/**
+ * Accepts number literals and unary +/- on number literals (e.g. -5, +10).
+ */
 function isStaticNumber(node: TSESTree.Expression): boolean {
   if (
     node.type === TSESTree.AST_NODE_TYPES.Literal &&
@@ -52,7 +54,9 @@ function isStaticNumber(node: TSESTree.Expression): boolean {
   return false;
 }
 
-// $context allows static strings, derive()/declareStatic(), and concatenation of those.
+/**
+ * $context allows static strings, derive()/declareStatic(), and concatenation of those.
+ */
 function isStaticOrDerive(
   expr: TSESTree.Expression,
   context: Readonly<RuleContext<string, readonly unknown[]>>,
@@ -77,7 +81,9 @@ function isStaticOrDerive(
   return false;
 }
 
-// Reads the $format value from a call's options object, or null if absent/dynamic.
+/**
+ * Reads the $format value from a call's options object, or null if absent/dynamic.
+ */
 export function getFormatOption(
   callNode: TSESTree.CallExpression
 ): string | null {
@@ -102,13 +108,17 @@ export function getFormatOption(
   return null;
 }
 
-// Returns true if the call uses ICU format (the default when $format is absent).
+/**
+ * Returns true if the call uses ICU format (the default when $format is absent).
+ */
 export function isICUFormat(callNode: TSESTree.CallExpression): boolean {
   const format = getFormatOption(callNode);
   return format === null || format === ICU_FORMAT;
 }
 
-// Reports errors for any sugar variable that isn't static.
+/**
+ * Reports errors for any sugar variable that isn't static.
+ */
 export function validateSugarVariables(
   callNode: TSESTree.CallExpression,
   context: Readonly<RuleContext<string, readonly unknown[]>>,
@@ -161,7 +171,7 @@ export function validateSugarVariables(
       continue;
     }
 
-    // $id, $format — must be static string
+    /* $id, $format — must be static string */
     if (!isStaticString(value)) {
       context.report({
         node: value,

@@ -19,9 +19,12 @@ import type { RuleContext } from '@typescript-eslint/utils/ts-eslint';
 import { isDeriveFunction } from '../../utils/isGTFunction.js';
 import type { GTLibrary } from '../../utils/constants.js';
 
+/** ICU select keys must be simple identifier-like tokens (no whitespace or braces). */
+const VALID_ICU_SELECT_KEY = /^\S+$/;
+
 export type SelectBranch = { key: string; value: string };
 
-// Recursive type: the "other" of a select can itself be a nested select.
+/** Recursive type: the "other" of a select can itself be a nested select. */
 export type SelectNode = {
   variable: string;
   branches: SelectBranch[];
@@ -40,7 +43,9 @@ type ClassifyContext = {
   sourceCode: SourceCode;
 };
 
-// Determines what kind of ICU part a single expression becomes.
+/**
+ * Determines what kind of ICU part a single expression becomes.
+ */
 function classifyExpression(
   expr: TSESTree.Expression,
   ctx: ClassifyContext
@@ -70,9 +75,12 @@ type SelectInfo = {
   key: string;
 };
 
-// Extracts the select variable and key from a ternary test.
-// For equality (x === "val"), returns { variable: "x", key: "val" }.
-// For boolean (cond), returns { variable: "cond", key: "true" }.
+/**
+ * Extracts the select variable and key from a ternary test.
+ * For equality (x === "val"), returns { variable: "x", key: "val" }.
+ * For boolean (cond), returns { variable: "cond", key: "true" }.
+ * Rejects keys with whitespace (invalid in ICU select syntax).
+ */
 function extractSelectInfo(
   test: TSESTree.Expression,
   sourceCode: SourceCode
@@ -88,7 +96,8 @@ function extractSelectInfo(
     for (const [variable, literal] of sides) {
       if (
         literal.type === TSESTree.AST_NODE_TYPES.Literal &&
-        typeof literal.value === 'string'
+        typeof literal.value === 'string' &&
+        VALID_ICU_SELECT_KEY.test(literal.value)
       ) {
         return {
           variable: sourceCode.getText(variable),
@@ -104,11 +113,13 @@ function extractSelectInfo(
   };
 }
 
-// Attempts to build a select FlatPart from a ternary expression.
-// Walks chained ternaries that share the same variable, collapsing them
-// into a single select with multiple branches.
-// When the chain breaks (different variable), recursively builds a nested select.
-// Returns null if any consequent is non-static.
+/**
+ * Attempts to build a select FlatPart from a ternary expression.
+ * Walks chained ternaries that share the same variable, collapsing them
+ * into a single select with multiple branches.
+ * When the chain breaks (different variable), recursively builds a nested select.
+ * @returns null if any consequent is non-static.
+ */
 function tryBuildSelect(
   expr: TSESTree.ConditionalExpression,
   sourceCode: SourceCode
@@ -122,7 +133,6 @@ function tryBuildSelect(
   ];
   let tail: TSESTree.Expression = expr.alternate;
 
-  // Walk chained ternaries as long as they test the same variable
   while (tail.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) {
     const innerInfo = extractSelectInfo(tail.test, sourceCode);
     if (innerInfo.variable !== firstInfo.variable) break;
@@ -132,7 +142,6 @@ function tryBuildSelect(
     tail = tail.alternate;
   }
 
-  // Resolve the "other" value: static string, or recurse into a nested select
   let other: string | SelectNode;
   const otherStr = staticStringValue(tail);
   if (otherStr !== null) {
@@ -157,7 +166,9 @@ function tryBuildSelect(
   };
 }
 
-// Flattens a nested binary "+" tree into a left-to-right array of typed parts.
+/**
+ * Flattens a nested binary "+" tree into a left-to-right array of typed parts.
+ */
 export function flattenConcat(
   expr: TSESTree.Expression,
   ctx: ClassifyContext
@@ -174,7 +185,9 @@ export function flattenConcat(
   return [classifyExpression(expr, ctx)];
 }
 
-// Checks whether a binary "+" tree contains a derive()/declareStatic() call.
+/**
+ * Checks whether a binary "+" tree contains a derive()/declareStatic() call.
+ */
 function concatContainsDerive(
   expr: TSESTree.Expression,
   ctx: ClassifyContext
@@ -197,11 +210,13 @@ function concatContainsDerive(
   return false;
 }
 
-// Converts a template literal into the same FlatPart[] format as flattenConcat.
-// Template expressions that contain "+" with derive() are recursively flattened
-// so that `Hello ${name + derive(x) + last}` produces the same parts as
-// "Hello " + name + derive(x) + last.
-// Pure dynamic concat like `${first + last}` stays as a single variable.
+/**
+ * Converts a template literal into the same FlatPart[] format as flattenConcat.
+ * Template expressions that contain "+" with derive() are recursively flattened
+ * so that `Hello ${name + derive(x) + last}` produces the same parts as
+ * "Hello " + name + derive(x) + last.
+ * Pure dynamic concat like `${first + last}` stays as a single variable.
+ */
 export function flattenTemplateLiteral(
   expr: TSESTree.TemplateLiteral,
   ctx: ClassifyContext
@@ -229,7 +244,9 @@ export function flattenTemplateLiteral(
   return parts;
 }
 
-// Returns true if the parts contain dynamic/select content that can be auto-fixed.
+/**
+ * Returns true if the parts contain dynamic/select content that can be auto-fixed.
+ */
 export function isFixable(parts: FlatPart[]): boolean {
   let hasDynamic = false;
   for (const part of parts) {
@@ -238,7 +255,9 @@ export function isFixable(parts: FlatPart[]): boolean {
   return hasDynamic;
 }
 
-// Returns true if any part is a derive() call.
+/**
+ * Returns true if any part is a derive() call.
+ */
 export function hasDerive(parts: FlatPart[]): boolean {
   return parts.some((p) => p.kind === 'derive');
 }
@@ -252,22 +271,31 @@ type VarState = {
   counter: number;
   options: { key: string; value: string }[];
   seen: Map<string, string>;
+  reserved: Set<string>;
 };
 
-// Resolves a variable name for a given source text value.
-// Reuses an existing name if the same source text was already assigned.
+/**
+ * Resolves a variable name for a given source text value.
+ * Reuses an existing name if the same source text was already assigned.
+ * Skips names that collide with reserved (pre-existing) option keys.
+ */
 function resolveVarName(sourceText: string, state: VarState): string {
   const existing = state.seen.get(sourceText);
   if (existing) return existing;
-  const varName = `var${state.counter++}`;
+  let varName = `var${state.counter++}`;
+  while (state.reserved.has(varName)) {
+    varName = `var${state.counter++}`;
+  }
   state.seen.set(sourceText, varName);
   state.options.push({ key: varName, value: sourceText });
   return varName;
 }
 
-// Renders a SelectNode (potentially nested) into an ICU select string,
-// appending variables to the shared state with incrementing varN names.
-// Reuses variable names when the same source text appears multiple times.
+/**
+ * Renders a SelectNode (potentially nested) into an ICU select string,
+ * appending variables to the shared state with incrementing varN names.
+ * Reuses variable names when the same source text appears multiple times.
+ */
 function renderSelect(node: SelectNode, state: VarState): string {
   const varName = resolveVarName(node.variable, state);
 
@@ -283,18 +311,23 @@ function renderSelect(node: SelectNode, state: VarState): string {
   return `${varName}, select, ${branchStr} other {${otherContent}}`;
 }
 
-// Builds an ICU string and options object from classified parts.
-// Variables are named var0, var1, ... incrementing left-to-right.
-// Reuses variable names when the same expression appears multiple times.
+/**
+ * Builds an ICU string and options object from classified parts.
+ * Variables are named var0, var1, ... incrementing left-to-right.
+ * Reuses variable names when the same expression appears multiple times.
+ * Skips names in `reservedKeys` to avoid colliding with existing option keys.
+ */
 export function generateICUReplacement(
   parts: FlatPart[],
-  sourceCode: SourceCode
+  sourceCode: SourceCode,
+  reservedKeys: Set<string> = new Set()
 ): ICUResult {
   let icuString = '';
   const state: VarState = {
     counter: 0,
     options: [],
     seen: new Map(),
+    reserved: reservedKeys,
   };
 
   for (const part of parts) {
@@ -320,18 +353,22 @@ export function generateICUReplacement(
   return { icuString, options: state.options };
 }
 
-// Builds a template literal string with ICU placeholders for dynamic parts
-// and ${} interpolations for derive() calls.
-// e.g. `{var0}${derive(blah)}{var1}` from parts [dynamic, derive, dynamic]
+/**
+ * Builds a template literal string with ICU placeholders for dynamic parts
+ * and ${} interpolations for derive() calls.
+ * e.g. `{var0}${derive(blah)}{var1}` from parts [dynamic, derive, dynamic]
+ */
 export function generateTemplateLiteralReplacement(
   parts: FlatPart[],
-  sourceCode: SourceCode
+  sourceCode: SourceCode,
+  reservedKeys: Set<string> = new Set()
 ): ICUResult & { templateString: string } {
   let templateString = '`';
   const state: VarState = {
     counter: 0,
     options: [],
     seen: new Map(),
+    reserved: reservedKeys,
   };
 
   for (const part of parts) {

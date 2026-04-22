@@ -209,14 +209,38 @@ export const staticString = createRule({
         messageId: 'variableInterpolationRequired',
         fix(fixer: RuleFixer) {
           const containsDerive = hasDerive(parts);
+
+          const secondArg = callNode.arguments[1];
+
+          // Collect existing option keys to avoid collisions
+          const reservedKeys = new Set<string>();
+          if (secondArg?.type === TSESTree.AST_NODE_TYPES.ObjectExpression) {
+            for (const prop of secondArg.properties) {
+              if (
+                prop.type === TSESTree.AST_NODE_TYPES.Property &&
+                prop.key.type === TSESTree.AST_NODE_TYPES.Identifier
+              ) {
+                reservedKeys.add(prop.key.name);
+              }
+            }
+          }
+
           const {
             options: icuOptions,
             templateString,
             icuString,
           } = containsDerive
-            ? generateTemplateLiteralReplacement(parts, context.sourceCode)
+            ? generateTemplateLiteralReplacement(
+                parts,
+                context.sourceCode,
+                reservedKeys
+              )
             : {
-                ...generateICUReplacement(parts, context.sourceCode),
+                ...generateICUReplacement(
+                  parts,
+                  context.sourceCode,
+                  reservedKeys
+                ),
                 templateString: null,
               };
 
@@ -227,8 +251,6 @@ export const staticString = createRule({
           const optionsStr = icuOptions
             .map((o) => `${o.key}: ${o.value}`)
             .join(', ');
-
-          const secondArg = callNode.arguments[1];
 
           // Merge ICU vars into existing options object
           if (
