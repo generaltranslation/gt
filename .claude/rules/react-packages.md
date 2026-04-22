@@ -2,6 +2,7 @@
 paths:
   - 'packages/react/**'
   - 'packages/react-core/**'
+  - 'packages/react-native/**'
   - 'packages/next/**'
   - 'packages/tanstack-start/**'
 ---

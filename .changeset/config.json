@@ -5,7 +5,10 @@
     { "repo": "generaltranslation/gt" }
   ],
   "commit": false,
-  "fixed": [["gt", "gtx-cli"]],
+  "fixed": [
+    ["gt", "gtx-cli"],
+    ["gt-react", "gt-react-native"]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
@@ -22,6 +25,7 @@
     "cli-test-app",
     "compiler-cli-parity",
     "next-ssg",
-    "gt-next-middleware-e2e"
+    "gt-next-middleware-e2e",
+    "gt-react-native-example"
   ]
 }
