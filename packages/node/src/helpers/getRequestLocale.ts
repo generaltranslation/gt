@@ -24,9 +24,10 @@ function parseAcceptLanguage(header: string): string[] {
     .map((entry) => {
       const [locale, quality] = entry.trim().split(';');
       const qPart = quality?.split('=')[1];
+      const q = qPart !== undefined ? parseFloat(qPart) : 1;
       return {
         locale: locale.trim(),
-        quality: qPart !== undefined ? parseFloat(qPart) || 1 : 1,
+        quality: isNaN(q) ? 1 : q,
       };
     })
     .sort((a, b) => b.quality - a.quality)

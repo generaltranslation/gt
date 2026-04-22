@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { initializeGT } from '../setup/initializeGT';
-import { getRequestLocale } from './getRequestLocale';
+import { initializeGT } from '../../setup/initializeGT';
+import { getRequestLocale } from '../getRequestLocale';
 
 describe('getLocale', () => {
   beforeEach(() => {
