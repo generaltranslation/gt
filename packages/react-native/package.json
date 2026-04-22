@@ -1,0 +1,139 @@
+{
+  "name": "gt-react-native",
+  "version": "0.0.17",
+  "description": "An i18n package for React Native",
+  "main": "./dist/commonjs/index.js",
+  "module": "./dist/module/index.js",
+  "types": "./dist/typescript/module/src/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.tsx",
+      "types": "./dist/typescript/module/src/index.d.ts",
+      "default": "./dist/module/index.js"
+    },
+    "./plugin": {
+      "source": "./src/plugin.ts",
+      "types": "./dist/typescript/module/src/plugin.d.ts",
+      "require": "./dist/commonjs/plugin.js",
+      "import": "./dist/module/plugin.js",
+      "default": "./dist/commonjs/plugin.js"
+    },
+    "./internal": {
+      "source": "./src/internal.ts",
+      "types": "./dist/typescript/module/src/internal.d.ts",
+      "default": "./dist/module/internal.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "plugin": [
+        "./dist/typescript/module/src/plugin.d.ts"
+      ],
+      "internal": [
+        "./dist/typescript/module/src/internal.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "src",
+    "dist",
+    "android",
+    "ios",
+    "*.podspec",
+    "!ios/build",
+    "!android/build",
+    "!android/gradle",
+    "!android/gradlew",
+    "!android/gradlew.bat",
+    "!android/local.properties",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__",
+    "!**/.*"
+  ],
+  "scripts": {
+    "build": "bob build",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "clean": "del-cli android/build dist",
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "transpile": "tsc",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest"
+  },
+  "keywords": [
+    "react-native",
+    "translation",
+    "internationalization",
+    "localization",
+    "i18n",
+    "ios",
+    "android"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "author": "General Translation, Inc.",
+  "license": "FSL-1.1-ALv2",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "dependencies": {
+    "@formatjs/intl-datetimeformat": "^6.18.2",
+    "@formatjs/intl-displaynames": "^6.8.13",
+    "@formatjs/intl-getcanonicallocales": "^2.5.6",
+    "@formatjs/intl-listformat": "^7.7.13",
+    "@formatjs/intl-locale": "^4.2.13",
+    "@formatjs/intl-numberformat": "^8.15.6",
+    "@formatjs/intl-pluralrules": "^5.4.6",
+    "@formatjs/intl-relativetimeformat": "^11.4.13",
+    "@generaltranslation/react-core": "workspace:*",
+    "@generaltranslation/supported-locales": "workspace:*",
+    "generaltranslation": "workspace:*"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.4",
+    "@babel/types": "^7.28.4",
+    "@react-native/babel-preset": "0.81.1",
+    "@types/babel__core": "^7.20.5",
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.1.0",
+    "del-cli": "^6.0.0",
+    "react": "19.1.0",
+    "react-native": "0.81.1",
+    "react-native-builder-bob": "^0.40.13",
+    "typescript": "^5.9.2"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "dist",
+    "targets": [
+      ["commonjs"],
+      ["module", { "esm": true }],
+      ["typescript", { "project": "tsconfig.build.json" }]
+    ]
+  },
+  "codegenConfig": {
+    "name": "GtReactNativeSpec",
+    "type": "modules",
+    "jsSrcsDir": "./src",
+    "android": {
+      "javaPackageName": "com.gtreactnative"
+    }
+  }
+}
