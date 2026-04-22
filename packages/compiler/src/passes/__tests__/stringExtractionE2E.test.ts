@@ -282,6 +282,107 @@ describe('t() string extraction E2E', () => {
 });
 
 // ─────────────────────────────────────────────────────
+// t`` — tagged template (collection pass extraction)
+//
+// Unlike gt()/msg()/t(), tagged templates convert dynamic
+// expressions into ICU {0} placeholders rather than rejecting them.
+// The collection pass extracts via processTaggedTemplateExpression
+// for unbound t or t imported from gt-react/browser.
+// ─────────────────────────────────────────────────────
+
+describe('t`` tagged template extraction E2E', () => {
+  it('extracts simple tagged template: t`Hello`', () => {
+    const state = collect('t`Hello`;');
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('Hello');
+    expect(content[0].hash).toBeTruthy();
+  });
+
+  it('extracts tagged template with dynamic expression as ICU placeholder: t`Hello ${name}`', () => {
+    const state = collect('const name = "World";\nt`Hello ${name}`;');
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('Hello {0}');
+  });
+
+  it('extracts tagged template with multiple dynamic expressions: t`${greeting} ${name}!`', () => {
+    const state = collect(
+      'const greeting = "Hi";\nconst name = "World";\nt`${greeting} ${name}!`;'
+    );
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('{0} {1}!');
+  });
+
+  it('extracts tagged template with static string expression collapsed: t`Hello ${"World"}`', () => {
+    const state = collect('t`Hello ${"World"}`;');
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('Hello World');
+  });
+
+  it('extracts tagged template with nested static template: t`A ${`B`}`', () => {
+    const state = collect('t`A ${`B`}`;');
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('A B');
+  });
+
+  it('extracts tagged template with static concat in expression: t`Hello ${"Wo" + "rld"}`', () => {
+    const state = collect('t`Hello ${"Wo" + "rld"}`;');
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('Hello World');
+  });
+
+  it('extracts tagged template with numeric literal collapsed: t`Count: ${5}`', () => {
+    const state = collect('t`Count: ${5}`;');
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('Count: 5');
+  });
+
+  it('extracts tagged template with mixed static and dynamic: t`Hello ${"World"}, ${name}!`', () => {
+    const state = collect('const name = "X";\nt`Hello ${"World"}, ${name}!`;');
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('Hello World, {0}!');
+  });
+
+  it('extracts tagged template imported from gt-react/browser', () => {
+    const state = collect(`import { t } from 'gt-react/browser';\nt\`Hello\`;`);
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('Hello');
+  });
+
+  it('does not extract tagged template imported from non-GT source', () => {
+    const state = collect(`import { t } from 'i18next';\nt\`Hello\`;`);
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(0);
+  });
+
+  it('skips tagged template containing derive() (returns TemplateLiteral)', () => {
+    const state = collect(
+      `import { derive } from 'gt-react/browser';\nt\`Hello \${derive(getName())}\`;`
+    );
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(0);
+  });
+
+  it('produces same hash as gt() for purely static content', () => {
+    const gtCode = `import { useGT } from 'gt-next';\nconst gt = useGT();\ngt("Hello World");`;
+    const taggedCode = `t\`Hello World\`;`;
+    const gtState = collect(gtCode);
+    const taggedState = collect(taggedCode);
+    const gtHash = getCallbackContent(gtState)[0].hash;
+    const taggedHash = getRuntimeContent(taggedState)[0].hash;
+    expect(gtHash).toBe(taggedHash);
+  });
+});
+
+// ─────────────────────────────────────────────────────
 // Cross-function consistency
 // ─────────────────────────────────────────────────────
 
