@@ -227,9 +227,8 @@ describe('escaping: unicode in static concat passes through', () => {
 // ===================================================================
 
 // gt("use {braces} like " + name)
-// → gt("use '{braces}' like {var0}", { var0: name })
-// The static text "{braces}" has its braces escaped for ICU using
-// apostrophe quoting: { becomes '{ and } becomes }'.
+// → gt("use '{'braces'}' like {var0}", { var0: name })
+// Each brace independently ICU-quoted with self-contained apostrophes
 describe('escaping: literal braces in static text become ICU-like', () => {
   ruleTester.run('escape-literal-braces', staticString, {
     valid: [],
@@ -248,7 +247,7 @@ describe('escaping: literal braces in static text become ICU-like', () => {
           import { useGT } from 'gt-react';
           function C() {
             const gt = useGT();
-            return gt("use '{braces}' like {var0}", { var0: name });
+            return gt("use '{'braces'}' like {var0}", { var0: name });
           }
         `,
       },
@@ -261,8 +260,8 @@ describe('escaping: literal braces in static text become ICU-like', () => {
 // ===================================================================
 
 // gt("a`b" + derive(x) + "c${d}" + derive(y) + name)
-// → gt(`a\`b${derive(x)}c$'{d}'${derive(y)}{var0}`, { var0: name })
-// Backtick is escaped for template literal; braces in static text use ICU apostrophe quoting
+// → gt(`a\`b${derive(x)}c$'{'d'}'${derive(y)}{var0}`, { var0: name })
+// Backtick escaped for template literal; braces self-contained ICU-quoted
 describe('escaping: backtick and ${ in static text with derive path', () => {
   ruleTester.run('escape-special-chars-derive', staticString, {
     valid: [],
@@ -281,7 +280,7 @@ describe('escaping: backtick and ${ in static text with derive path', () => {
           import { useGT, derive } from 'gt-react';
           function C() {
             const gt = useGT();
-            return gt(\`a\\\`b\${derive(x)}c\$'{d}'\${derive(y)}{var0}\`, { var0: name });
+            return gt(\`a\\\`b\${derive(x)}c\$'{'d'}'\${derive(y)}{var0}\`, { var0: name });
           }
         `,
       },

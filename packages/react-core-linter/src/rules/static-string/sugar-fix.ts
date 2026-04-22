@@ -22,6 +22,44 @@ import {
 import type { GTLibrary } from '../../utils/constants.js';
 import { isDeriveFunction } from '../../utils/isGTFunction.js';
 
+/**
+ * Extracts the property key name from Identifier or string Literal keys.
+ * Returns null for computed keys or non-string literals.
+ */
+function getPropertyKeyName(
+  key: TSESTree.Expression | TSESTree.PrivateIdentifier
+): string | null {
+  if (key.type === TSESTree.AST_NODE_TYPES.Identifier) {
+    return key.name;
+  }
+  if (
+    key.type === TSESTree.AST_NODE_TYPES.Literal &&
+    typeof key.value === 'string'
+  ) {
+    return key.value;
+  }
+  return null;
+}
+
+/**
+ * Extracts a static string value from a Literal or no-interpolation TemplateLiteral.
+ */
+function getStaticStringValue(node: TSESTree.Expression): string | null {
+  if (
+    node.type === TSESTree.AST_NODE_TYPES.Literal &&
+    typeof node.value === 'string'
+  ) {
+    return node.value;
+  }
+  if (
+    node.type === TSESTree.AST_NODE_TYPES.TemplateLiteral &&
+    node.expressions.length === 0
+  ) {
+    return node.quasis[0].value.cooked ?? node.quasis[0].value.raw;
+  }
+  return null;
+}
+
 function isStaticString(node: TSESTree.Expression): boolean {
   switch (node.type) {
     case TSESTree.AST_NODE_TYPES.Literal:
@@ -95,15 +133,13 @@ export function getFormatOption(
     return null;
   }
   for (const prop of secondArg.properties) {
-    if (
-      prop.type === TSESTree.AST_NODE_TYPES.Property &&
-      prop.key.type === TSESTree.AST_NODE_TYPES.Identifier &&
-      prop.key.name === FORMAT_OPTION_NAME &&
-      prop.value.type === TSESTree.AST_NODE_TYPES.Literal &&
-      typeof prop.value.value === 'string'
-    ) {
-      return prop.value.value;
+    if (prop.type !== TSESTree.AST_NODE_TYPES.Property || prop.computed) {
+      continue;
     }
+    const keyName = getPropertyKeyName(prop.key);
+    if (keyName !== FORMAT_OPTION_NAME) continue;
+    const value = getStaticStringValue(prop.value as TSESTree.Expression);
+    if (value !== null) return value;
   }
   return null;
 }
@@ -134,16 +170,14 @@ export function validateSugarVariables(
 
   for (const prop of secondArg.properties) {
     // Computed keys like { ["$context"]: val } and spread elements are
-    // intentionally skipped — only plain identifier keys are checked.
-    if (
-      prop.type !== TSESTree.AST_NODE_TYPES.Property ||
-      prop.key.type !== TSESTree.AST_NODE_TYPES.Identifier
-    ) {
+    // intentionally skipped — only identifier and string-literal keys are checked.
+    if (prop.type !== TSESTree.AST_NODE_TYPES.Property || prop.computed) {
       continue;
     }
 
-    const key = prop.key.name;
+    const key = getPropertyKeyName(prop.key);
     if (
+      !key ||
       !SUGAR_VARIABLE_NAMES.includes(
         key as (typeof SUGAR_VARIABLE_NAMES)[number]
       )

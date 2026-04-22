@@ -404,8 +404,8 @@ describe('review: multiple vars into empty options object', () => {
 });
 
 // gt("Use ${varName} syntax " + derive(x) + name)
-// → gt(`Use $'{varName}' syntax ${derive(x)}{var0}`, { var0: name })
-// Static text containing { and } uses ICU apostrophe quoting in template literal output
+// → gt(`Use $'{'varName'}' syntax ${derive(x)}{var0}`, { var0: name })
+// Static text containing { and } uses self-contained ICU apostrophe quoting
 describe('review: static text with ${ escaped in template literal output', () => {
   ruleTester.run('escape-template-interpolation', staticString, {
     valid: [],
@@ -424,7 +424,7 @@ describe('review: static text with ${ escaped in template literal output', () =>
           import { useGT, derive } from 'gt-react';
           function C() {
             const gt = useGT();
-            return gt(\`Use \$'{varName}' syntax \${derive(x)}{var0}\`, { var0: name });
+            return gt(\`Use \$'{'varName'}' syntax \${derive(x)}{var0}\`, { var0: name });
           }
         `,
       },

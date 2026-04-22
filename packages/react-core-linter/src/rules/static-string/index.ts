@@ -258,6 +258,14 @@ export const staticString = createRule({
             .map((o) => `${o.key}: ${o.value}`)
             .join(', ');
 
+          // Non-object second argument — can't safely merge, skip fix
+          if (
+            secondArg &&
+            secondArg.type !== TSESTree.AST_NODE_TYPES.ObjectExpression
+          ) {
+            return null;
+          }
+
           // Merge ICU vars into existing options object
           if (
             secondArg &&

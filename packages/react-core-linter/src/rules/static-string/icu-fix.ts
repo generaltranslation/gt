@@ -27,7 +27,7 @@ const VALID_ICU_SELECT_KEY = /^[^\s{},'#]+$/;
  * `'` → `''`, `{` → `'{'`, `}` → `'}'`
  */
 function escapeICUText(str: string): string {
-  return str.replace(/'/g, "''").replace(/\{/g, "'{").replace(/\}/g, "}'");
+  return str.replace(/'/g, "''").replace(/\{/g, "'{'").replace(/\}/g, "'}'");
 }
 
 export type SelectBranch = { key: string; value: string };
