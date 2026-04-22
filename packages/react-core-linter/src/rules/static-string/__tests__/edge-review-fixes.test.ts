@@ -258,6 +258,64 @@ describe('review: multiple vars into empty options object', () => {
   });
 });
 
+// gt("Use ${varName} syntax " + derive(x) + name)
+// → gt(`Use \${varName} syntax ${derive(x)}{var0}`, { var0: name })
+// Static text containing ${ must be escaped in the generated template literal
+describe('review: static text with ${ escaped in template literal output', () => {
+  ruleTester.run('escape-template-interpolation', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT, derive } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("Use \${varName} syntax " + derive(x) + name);
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT, derive } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt(\`Use \\\${varName} syntax \${derive(x)}{var0}\`, { var0: name });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt("Hello `world` " + derive(x) + name)
+// → gt(`Hello \`world\` ${derive(x)}{var0}`, { var0: name })
+// Static text containing backticks must be escaped
+describe('review: static text with backticks escaped in template literal output', () => {
+  ruleTester.run('escape-backtick', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT, derive } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("Hello \`world\` " + derive(x) + name);
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT, derive } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt(\`Hello \\\`world\\\` \${derive(x)}{var0}\`, { var0: name });
+          }
+        `,
+      },
+    ],
+  });
+});
+
 // gt(`Hello ${name}`, {})
 // → gt("Hello {var0}", { var0: name })
 // Template literal with empty options object

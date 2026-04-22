@@ -354,6 +354,16 @@ export function generateICUReplacement(
 }
 
 /**
+ * Escapes characters that are special inside template literals.
+ */
+function escapeTemplateLiteral(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/`/g, '\\`')
+    .replace(/\$\{/g, '\\${');
+}
+
+/**
  * Builds a template literal string with ICU placeholders for dynamic parts
  * and ${} interpolations for derive() calls.
  * e.g. `{var0}${derive(blah)}{var1}` from parts [dynamic, derive, dynamic]
@@ -374,7 +384,7 @@ export function generateTemplateLiteralReplacement(
   for (const part of parts) {
     switch (part.kind) {
       case 'static':
-        templateString += part.value;
+        templateString += escapeTemplateLiteral(part.value);
         break;
       case 'dynamic': {
         const sourceText = sourceCode.getText(part.node);
