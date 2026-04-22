@@ -25,6 +25,8 @@ import {
 } from './icu-fix.js';
 import type { FlatPart } from './icu-fix.js';
 import { isICUFormat, validateSugarVariables } from './sugar-fix.js';
+import { validateICU } from './icu-validate.js';
+import { staticStringValue } from '../../utils/expression-utils.js';
 
 const createRule = ESLintUtils.RuleCreator((name) => `${RULE_URL}${name}`);
 
@@ -73,11 +75,44 @@ export const staticString = createRule({
         'Missing a variable in interpolation. Any variable supplied to the ICU-string, must be provided as a key in the options object.',
       sugarVariableMustBeStatic:
         'Sugar variables must be static strings. For example: gt("Hello!", { $context: "A greeting" }).',
+      invalidICUFormat: 'Invalid ICU message format: {{ error }}',
     },
   },
   defaultOptions: [{ libs: GT_LIBRARIES }],
   create(context, [options]) {
     const { libs = GT_LIBRARIES } = options;
+
+    // Validates a static string as ICU if the format is ICU.
+    function checkICUValidity(
+      str: string,
+      node: TSESTree.Expression,
+      callNode: TSESTree.CallExpression
+    ) {
+      if (!isICUFormat(callNode)) return;
+      const error = validateICU(str);
+      if (error) {
+        context.report({
+          node,
+          messageId: 'invalidICUFormat',
+          data: { error },
+        });
+      }
+    }
+
+    // Collects the full string value from a concat tree of only static parts.
+    // Returns null if any part is non-static.
+    function collectStaticConcat(expr: TSESTree.Expression): string | null {
+      if (
+        expr.type === TSESTree.AST_NODE_TYPES.BinaryExpression &&
+        expr.operator === '+'
+      ) {
+        const left = collectStaticConcat(expr.left);
+        const right = collectStaticConcat(expr.right);
+        if (left !== null && right !== null) return left + right;
+        return null;
+      }
+      return staticStringValue(expr);
+    }
 
     // Validates the first argument (content string) of a gt()/msg() call.
     // Attempts ICU auto-fix for fixable dynamic expressions.
@@ -86,7 +121,12 @@ export const staticString = createRule({
       allowArrays: boolean,
       callNode: TSESTree.CallExpression
     ) {
-      if (isStaticString(expression)) return;
+      // Single static string — validate ICU format
+      if (isStaticString(expression)) {
+        const str = staticStringValue(expression);
+        if (str !== null) checkICUValidity(str, expression, callNode);
+        return;
+      }
 
       // Array of static strings — only for msg() currently
       if (
@@ -125,6 +165,13 @@ export const staticString = createRule({
         expression.type === TSESTree.AST_NODE_TYPES.BinaryExpression &&
         expression.operator === '+'
       ) {
+        // Check if it's all static concat (no dynamic, no derive) — validate ICU
+        const fullStatic = collectStaticConcat(expression);
+        if (fullStatic !== null) {
+          checkICUValidity(fullStatic, expression, callNode);
+          return;
+        }
+
         parts = flattenConcat(expression, {
           context,
           libs,
