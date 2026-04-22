@@ -1,5 +1,7 @@
 # gt-react
 
+## 10.19.1
+
 ## 10.19.0
 
 ### Minor Changes
