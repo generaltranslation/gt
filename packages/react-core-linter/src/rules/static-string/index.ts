@@ -267,6 +267,8 @@ export const staticString = createRule({
                   `, ${optionsStr}`
                 )
               );
+            } else {
+              fixes.push(fixer.replaceText(secondArg, `{ ${optionsStr} }`));
             }
             return fixes;
           }

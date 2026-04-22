@@ -195,3 +195,94 @@ describe('review: sugar var keys do not collide with generated var names', () =>
     ],
   });
 });
+
+// ===================================================================
+// 3. Empty options object — vars inserted correctly
+// ===================================================================
+
+// gt("Hello " + name, {})
+// → gt("Hello {var0}", { var0: name })
+// Empty object gets replaced entirely with the generated vars
+describe('review: empty options object gets replaced with vars', () => {
+  ruleTester.run('empty-options-obj', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("Hello " + name, {});
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("Hello {var0}", { var0: name });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt(a + " " + b, {})
+// → gt("{var0} {var1}", { var0: a, var1: b })
+// Multiple vars into empty object
+describe('review: multiple vars into empty options object', () => {
+  ruleTester.run('empty-options-multi', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt(a + " " + b, {});
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("{var0} {var1}", { var0: a, var1: b });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt(`Hello ${name}`, {})
+// → gt("Hello {var0}", { var0: name })
+// Template literal with empty options object
+describe('review: template literal with empty options object', () => {
+  ruleTester.run('empty-options-template', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt(\`Hello \${name}\`, {});
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("Hello {var0}", { var0: name });
+          }
+        `,
+      },
+    ],
+  });
+});
