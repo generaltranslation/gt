@@ -246,7 +246,10 @@ export const staticString = createRule({
 
           const escapedICU = icuString
             .replace(/\\/g, '\\\\')
-            .replace(/"/g, '\\"');
+            .replace(/"/g, '\\"')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\r')
+            .replace(/\t/g, '\\t');
           const replacementStr = containsDerive
             ? templateString!
             : `"${escapedICU}"`;
