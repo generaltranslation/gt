@@ -169,10 +169,12 @@ describe('derive interactions: static + derive + static is valid', () => {
 });
 
 // ===================================================================
-// 8. derive + dynamic: derive blocks ICU auto-fix, reports staticStringRequired
+// 8. derive + dynamic: produces template literal with ICU vars + derive interpolation
 // ===================================================================
 
-describe('derive interactions: derive + dynamic = error with no fix (staticStringRequired)', () => {
+// gt(derive(x) + " " + name)
+// → gt(`${derive(x)} {var0}`, { var0: name })
+describe('derive interactions: derive + dynamic = template literal fix', () => {
   ruleTester.run('derive-plus-dynamic', staticString, {
     valid: [],
     invalid: [
@@ -185,18 +187,26 @@ describe('derive interactions: derive + dynamic = error with no fix (staticStrin
           }
         `,
         options: [{ libs: ['gt-react'] }],
-        errors: [{ messageId: 'staticStringRequired' }],
-        // No output — derive presence disables ICU auto-fix
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT, derive } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(\`\${derive(x)} {var0}\`, { var0: name });
+          }
+        `,
       },
     ],
   });
 });
 
 // ===================================================================
-// 9. Static + derive + dynamic: same as above but with leading static text
+// 9. Static + derive + dynamic: template literal preserves all parts
 // ===================================================================
 
-describe('derive interactions: static + derive + dynamic = error with no fix', () => {
+// gt("Hello " + derive(x) + " " + name)
+// → gt(`Hello \${derive(x)} {var0}`, { var0: name })
+describe('derive interactions: static + derive + dynamic = template literal fix', () => {
   ruleTester.run('static-derive-dynamic', staticString, {
     valid: [],
     invalid: [
@@ -209,17 +219,26 @@ describe('derive interactions: static + derive + dynamic = error with no fix', (
           }
         `,
         options: [{ libs: ['gt-react'] }],
-        errors: [{ messageId: 'staticStringRequired' }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT, derive } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(\`Hello \${derive(x)} {var0}\`, { var0: name });
+          }
+        `,
       },
     ],
   });
 });
 
 // ===================================================================
-// 10. dynamic + derive: dynamic before derive, still no auto-fix
+// 10. dynamic + derive: dynamic before derive
 // ===================================================================
 
-describe('derive interactions: dynamic + derive = error with no fix', () => {
+// gt(name + " " + derive(x))
+// → gt(`{var0} \${derive(x)}`, { var0: name })
+describe('derive interactions: dynamic + derive = template literal fix', () => {
   ruleTester.run('dynamic-plus-derive', staticString, {
     valid: [],
     invalid: [
@@ -232,7 +251,14 @@ describe('derive interactions: dynamic + derive = error with no fix', () => {
           }
         `,
         options: [{ libs: ['gt-react'] }],
-        errors: [{ messageId: 'staticStringRequired' }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT, derive } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(\`{var0} \${derive(x)}\`, { var0: name });
+          }
+        `,
       },
     ],
   });
@@ -296,11 +322,12 @@ describe('derive interactions: derive in template literal is valid', () => {
 });
 
 // ===================================================================
-// 13. derive + dynamic in template literal: derive blocks auto-fix,
-//     reports staticStringRequired with no fix
+// 13. derive + dynamic in template literal: template literal fix
 // ===================================================================
 
-describe('derive interactions: derive + dynamic in template literal = error with no fix', () => {
+// gt(`${derive(x)} ${name}`)
+// → gt(`${derive(x)} {var0}`, { var0: name })
+describe('derive interactions: derive + dynamic in template literal = template literal fix', () => {
   ruleTester.run('derive-dynamic-template', staticString, {
     valid: [],
     invalid: [
@@ -313,7 +340,14 @@ describe('derive interactions: derive + dynamic in template literal = error with
           }
         `,
         options: [{ libs: ['gt-react'] }],
-        errors: [{ messageId: 'staticStringRequired' }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT, derive } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(\`\${derive(x)} {var0}\`, { var0: name });
+          }
+        `,
       },
     ],
   });
@@ -353,6 +387,87 @@ describe('derive interactions: msg() with derive in content is valid', () => {
         code: `
           import { msg, derive } from 'gt-react';
           const greeting = msg("Hello " + derive(x));
+        `,
+        options: [{ libs: ['gt-react'] }],
+      },
+    ],
+    invalid: [],
+  });
+});
+
+// ===================================================================
+// 16. Concat inside template expression: + within ${} is flattened
+// ===================================================================
+
+// gt(`Hello ${name + derive(variable) + lastname}.`)
+// → gt(`Hello {var0}${derive(variable)}{var1}.`, { var0: name, var1: lastname })
+describe('derive interactions: concat inside template expression with derive + dynamic', () => {
+  ruleTester.run('template-expr-concat-derive-dynamic', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT, derive } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(\`Hello \${name + derive(variable) + lastname}.\`);
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT, derive } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(\`Hello {var0}\${derive(variable)}{var1}.\`, { var0: name, var1: lastname });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt(`Hello ${first + last}.`)
+// Pure dynamic concat inside template expression → single ICU var (not split)
+// → gt("Hello {var0}.", { var0: first + last })
+describe('derive interactions: concat inside template expression without derive → single ICU var', () => {
+  ruleTester.run('template-expr-concat-dynamic', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(\`Hello \${first + last}.\`);
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello {var0}.", { var0: first + last });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt(`Hello ${derive(greeting)}.`)
+// Pure derive inside template expression → valid (static + derive, no dynamic)
+describe('derive interactions: derive only inside template expression → valid', () => {
+  ruleTester.run('template-expr-derive-only', staticString, {
+    valid: [
+      {
+        code: `
+          import { useGT, derive } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(\`Hello \${derive(greeting)}.\`);
+          }
         `,
         options: [{ libs: ['gt-react'] }],
       },

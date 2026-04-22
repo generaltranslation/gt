@@ -19,7 +19,9 @@ import {
   flattenConcat,
   flattenTemplateLiteral,
   isFixable,
+  hasDerive,
   generateICUReplacement,
+  generateTemplateLiteralReplacement,
 } from './icu-fix.js';
 import type { FlatPart } from './icu-fix.js';
 import { isICUFormat, validateSugarVariables } from './sugar-fix.js';
@@ -142,14 +144,7 @@ export const staticString = createRule({
         });
       }
 
-      // derive() mixed with dynamic parts — report error but no auto-fix
       if (!isFixable(parts)) {
-        if (parts.some((p) => p.kind === 'dynamic' || p.kind === 'select')) {
-          return context.report({
-            node: expression,
-            messageId: 'staticStringRequired',
-          });
-        }
         return;
       }
 
@@ -166,10 +161,21 @@ export const staticString = createRule({
         node: expression,
         messageId: 'variableInterpolationRequired',
         fix(fixer: RuleFixer) {
-          const { icuString, options: icuOptions } = generateICUReplacement(
-            parts,
-            context.sourceCode
-          );
+          const containsDerive = hasDerive(parts);
+          const {
+            options: icuOptions,
+            templateString,
+            icuString,
+          } = containsDerive
+            ? generateTemplateLiteralReplacement(parts, context.sourceCode)
+            : {
+                ...generateICUReplacement(parts, context.sourceCode),
+                templateString: null,
+              };
+
+          const replacementStr = containsDerive
+            ? templateString!
+            : `"${icuString}"`;
 
           const optionsStr = icuOptions
             .map((o) => `${o.key}: ${o.value}`)
@@ -184,7 +190,7 @@ export const staticString = createRule({
           ) {
             const existingProps = secondArg.properties;
             const fixes: ReturnType<RuleFixer['replaceText']>[] = [];
-            fixes.push(fixer.replaceText(expression, `"${icuString}"`));
+            fixes.push(fixer.replaceText(expression, replacementStr));
             if (existingProps.length > 0) {
               fixes.push(
                 fixer.insertTextAfter(
@@ -199,7 +205,7 @@ export const staticString = createRule({
           // No existing second argument — create one
           return fixer.replaceText(
             expression,
-            `"${icuString}", { ${optionsStr} }`
+            `${replacementStr}, { ${optionsStr} }`
           );
         },
       });

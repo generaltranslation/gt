@@ -174,7 +174,34 @@ export function flattenConcat(
   return [classifyExpression(expr, ctx)];
 }
 
+// Checks whether a binary "+" tree contains a derive()/declareStatic() call.
+function concatContainsDerive(
+  expr: TSESTree.Expression,
+  ctx: ClassifyContext
+): boolean {
+  if (
+    expr.type === TSESTree.AST_NODE_TYPES.CallExpression &&
+    isDeriveFunction({ context: ctx.context, node: expr, libs: ctx.libs })
+  ) {
+    return true;
+  }
+  if (
+    expr.type === TSESTree.AST_NODE_TYPES.BinaryExpression &&
+    expr.operator === '+'
+  ) {
+    return (
+      concatContainsDerive(expr.left, ctx) ||
+      concatContainsDerive(expr.right, ctx)
+    );
+  }
+  return false;
+}
+
 // Converts a template literal into the same FlatPart[] format as flattenConcat.
+// Template expressions that contain "+" with derive() are recursively flattened
+// so that `Hello ${name + derive(x) + last}` produces the same parts as
+// "Hello " + name + derive(x) + last.
+// Pure dynamic concat like `${first + last}` stays as a single variable.
 export function flattenTemplateLiteral(
   expr: TSESTree.TemplateLiteral,
   ctx: ClassifyContext
@@ -187,23 +214,33 @@ export function flattenTemplateLiteral(
       parts.push({ kind: 'static', value: text });
     }
     if (i < expr.expressions.length) {
-      parts.push(
-        classifyExpression(expr.expressions[i] as TSESTree.Expression, ctx)
-      );
+      const exprNode = expr.expressions[i] as TSESTree.Expression;
+      if (
+        exprNode.type === TSESTree.AST_NODE_TYPES.BinaryExpression &&
+        exprNode.operator === '+' &&
+        concatContainsDerive(exprNode, ctx)
+      ) {
+        parts.push(...flattenConcat(exprNode, ctx));
+      } else {
+        parts.push(classifyExpression(exprNode, ctx));
+      }
     }
   }
   return parts;
 }
 
-// Returns true if the parts contain dynamic/select content and no derive() calls.
-// derive() mixed with dynamic is too complex for auto-fix; we skip those.
+// Returns true if the parts contain dynamic/select content that can be auto-fixed.
 export function isFixable(parts: FlatPart[]): boolean {
   let hasDynamic = false;
   for (const part of parts) {
-    if (part.kind === 'derive') return false;
     if (part.kind === 'dynamic' || part.kind === 'select') hasDynamic = true;
   }
   return hasDynamic;
+}
+
+// Returns true if any part is a derive() call.
+export function hasDerive(parts: FlatPart[]): boolean {
+  return parts.some((p) => p.kind === 'derive');
 }
 
 type ICUResult = {
@@ -211,15 +248,28 @@ type ICUResult = {
   options: { key: string; value: string }[];
 };
 
+type VarState = {
+  counter: number;
+  options: { key: string; value: string }[];
+  seen: Map<string, string>;
+};
+
+// Resolves a variable name for a given source text value.
+// Reuses an existing name if the same source text was already assigned.
+function resolveVarName(sourceText: string, state: VarState): string {
+  const existing = state.seen.get(sourceText);
+  if (existing) return existing;
+  const varName = `var${state.counter++}`;
+  state.seen.set(sourceText, varName);
+  state.options.push({ key: varName, value: sourceText });
+  return varName;
+}
+
 // Renders a SelectNode (potentially nested) into an ICU select string,
-// appending variables to the shared options array with incrementing varN names.
-function renderSelect(
-  node: SelectNode,
-  options: { key: string; value: string }[],
-  counter: { value: number }
-): string {
-  const varName = `var${counter.value++}`;
-  options.push({ key: varName, value: node.variable });
+// appending variables to the shared state with incrementing varN names.
+// Reuses variable names when the same source text appears multiple times.
+function renderSelect(node: SelectNode, state: VarState): string {
+  const varName = resolveVarName(node.variable, state);
 
   const branchStr = node.branches.map((b) => `${b.key} {${b.value}}`).join(' ');
 
@@ -227,7 +277,7 @@ function renderSelect(
   if (typeof node.other === 'string') {
     otherContent = node.other;
   } else {
-    otherContent = `{${renderSelect(node.other, options, counter)}}`;
+    otherContent = `{${renderSelect(node.other, state)}}`;
   }
 
   return `${varName}, select, ${branchStr} other {${otherContent}}`;
@@ -235,13 +285,17 @@ function renderSelect(
 
 // Builds an ICU string and options object from classified parts.
 // Variables are named var0, var1, ... incrementing left-to-right.
+// Reuses variable names when the same expression appears multiple times.
 export function generateICUReplacement(
   parts: FlatPart[],
   sourceCode: SourceCode
 ): ICUResult {
   let icuString = '';
-  const options: { key: string; value: string }[] = [];
-  const counter = { value: 0 };
+  const state: VarState = {
+    counter: 0,
+    options: [],
+    seen: new Map(),
+  };
 
   for (const part of parts) {
     switch (part.kind) {
@@ -249,13 +303,13 @@ export function generateICUReplacement(
         icuString += part.value;
         break;
       case 'dynamic': {
-        const varName = `var${counter.value++}`;
+        const sourceText = sourceCode.getText(part.node);
+        const varName = resolveVarName(sourceText, state);
         icuString += `{${varName}}`;
-        options.push({ key: varName, value: sourceCode.getText(part.node) });
         break;
       }
       case 'select': {
-        icuString += `{${renderSelect(part, options, counter)}}`;
+        icuString += `{${renderSelect(part, state)}}`;
         break;
       }
       case 'derive':
@@ -263,5 +317,49 @@ export function generateICUReplacement(
     }
   }
 
-  return { icuString, options };
+  return { icuString, options: state.options };
+}
+
+// Builds a template literal string with ICU placeholders for dynamic parts
+// and ${} interpolations for derive() calls.
+// e.g. `{var0}${derive(blah)}{var1}` from parts [dynamic, derive, dynamic]
+export function generateTemplateLiteralReplacement(
+  parts: FlatPart[],
+  sourceCode: SourceCode
+): ICUResult & { templateString: string } {
+  let templateString = '`';
+  const state: VarState = {
+    counter: 0,
+    options: [],
+    seen: new Map(),
+  };
+
+  for (const part of parts) {
+    switch (part.kind) {
+      case 'static':
+        templateString += part.value;
+        break;
+      case 'dynamic': {
+        const sourceText = sourceCode.getText(part.node);
+        const varName = resolveVarName(sourceText, state);
+        templateString += `{${varName}}`;
+        break;
+      }
+      case 'select': {
+        templateString += `{${renderSelect(part, state)}}`;
+        break;
+      }
+      case 'derive':
+        templateString += `\${${sourceCode.getText(part.node)}}`;
+        break;
+    }
+  }
+
+  templateString += '`';
+
+  return {
+    icuString: '',
+    options: state.options,
+    templateString,
+  };
 }

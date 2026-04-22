@@ -598,3 +598,91 @@ describe('edge-icu: apostrophe in static text preserved', () => {
     ],
   });
 });
+
+// ===================================================================
+// 19. Same expression reuses variable name
+// ===================================================================
+
+// gt(a + " blah " + a)
+// → gt("{var0} blah {var0}", { var0: a })
+describe('edge-icu: same variable in concat reuses ICU var name', () => {
+  ruleTester.run('reuse-var-concat', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(a + " blah " + a);
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("{var0} blah {var0}", { var0: a });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt(`${name} and ${name}`)
+// → gt("{var0} and {var0}", { var0: name })
+describe('edge-icu: same variable in template literal reuses ICU var name', () => {
+  ruleTester.run('reuse-var-template', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(\`\${name} and \${name}\`);
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("{var0} and {var0}", { var0: name });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt(a + " " + b + " " + a + " " + b)
+// → gt("{var0} {var1} {var0} {var1}", { var0: a, var1: b })
+describe('edge-icu: multiple repeated variables reuse names correctly', () => {
+  ruleTester.run('reuse-var-multiple', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt(a + " " + b + " " + a + " " + b);
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("{var0} {var1} {var0} {var1}", { var0: a, var1: b });
+          }
+        `,
+      },
+    ],
+  });
+});
