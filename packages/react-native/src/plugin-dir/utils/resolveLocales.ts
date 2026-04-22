@@ -86,6 +86,7 @@ function resolveLocalesFromConfig(configFilePath: string | undefined) {
           ...(resolvedConfig.locales || []),
         ])
       );
+      break;
     } catch (error) {
       console.error(failedToReadConfigFileError(filePath), error);
       break;

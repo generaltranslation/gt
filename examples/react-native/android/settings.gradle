@@ -1,0 +1,9 @@
+pluginManagement {
+    def rnGradlePlugin = ["node", "--print", "require('path').dirname(require.resolve('@react-native/gradle-plugin/package.json', {paths: [require.resolve('react-native/package.json')]}))"].execute(null, settings.settingsDir.parentFile).text.trim()
+    includeBuild(rnGradlePlugin)
+}
+plugins { id("com.facebook.react.settings") }
+extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+rootProject.name = 'gtreactnative.example'
+include ':app'
+includeBuild(new File(["node", "--print", "require('path').dirname(require.resolve('@react-native/gradle-plugin/package.json', {paths: [require.resolve('react-native/package.json')]}))"].execute(null, settings.settingsDir.parentFile).text.trim()))
