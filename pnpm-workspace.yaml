@@ -2,6 +2,7 @@ packages:
   - packages/*
   - tests/apps/**/*
   - examples/next-ssg
+  - examples/react-native
 
 minimumReleaseAge: 1440
 
@@ -16,6 +17,7 @@ minimumReleaseAgeExclude:
   - generaltranslation
   - next
   - '@next/*'
+  - gt-react-native
   - 'react'
   - 'react-dom'
 

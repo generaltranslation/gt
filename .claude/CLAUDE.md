@@ -38,6 +38,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `transpile`, `build:clean`, `b
 | `@generaltranslation/react-core`        | `packages/react-core`        | Pure React i18n primitives (no framework deps)                    |
 | `gt-next`                               | `packages/next`              | Next.js integration (server/client split, SWC plugin, middleware) |
 | `gt-node`                               | `packages/node`              | Node.js backend translation utilities                             |
+| `gt-react-native`                       | `packages/react-native`      | React Native i18n with native module support                      |
 | `gt-tanstack-start`                     | `packages/tanstack-start`    | TanStack Start integration                                        |
 | `gt-sanity`                             | `packages/sanity`            | Sanity CMS plugin                                                 |
 | `@generaltranslation/compiler`          | `packages/compiler`          | Build plugin (webpack, Vite, Rollup, esbuild) via unplugin        |
