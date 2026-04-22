@@ -1,5 +1,11 @@
 # @generaltranslation/react-core-linter
 
+## 0.1.9
+
+### Patch Changes
+
+- [#1226](https://github.com/generaltranslation/gt/pull/1226) [`19a0175`](https://github.com/generaltranslation/gt/commit/19a0175101c9478876fd014c749108709559bae0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: some quality of life improvements for string linting (auto fix, edge case handling)
+
 ## 0.1.8
 
 ### Patch Changes
