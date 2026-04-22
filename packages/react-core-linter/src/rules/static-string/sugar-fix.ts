@@ -33,11 +33,23 @@ function isStaticString(node: TSESTree.Expression): boolean {
   }
 }
 
+// Accepts number literals and unary +/- on number literals (e.g. -5, +10).
 function isStaticNumber(node: TSESTree.Expression): boolean {
-  return (
+  if (
     node.type === TSESTree.AST_NODE_TYPES.Literal &&
     typeof node.value === 'number'
-  );
+  ) {
+    return true;
+  }
+  if (
+    node.type === TSESTree.AST_NODE_TYPES.UnaryExpression &&
+    (node.operator === '-' || node.operator === '+') &&
+    node.argument.type === TSESTree.AST_NODE_TYPES.Literal &&
+    typeof node.argument.value === 'number'
+  ) {
+    return true;
+  }
+  return false;
 }
 
 // $context allows static strings, derive()/declareStatic(), and concatenation of those.
