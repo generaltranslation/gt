@@ -1,5 +1,11 @@
 # gt-node
 
+## 0.6.3
+
+### Patch Changes
+
+- [#1225](https://github.com/generaltranslation/gt/pull/1225) [`f769750`](https://github.com/generaltranslation/gt/commit/f769750d813293c5978ad975f7cc338f836e0aa6) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: utility function for extracting a request locale
+
 ## 0.6.2
 
 ### Patch Changes
