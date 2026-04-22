@@ -1,3 +1,10 @@
+/**
+ * Note to reader:
+ * Feel free to ignore/remove this file. This is a custom Metro
+ * config to allow us to link this example project to local development
+ * builds of gt-react-native.
+ */
+
 const path = require('path');
 const fs = require('fs');
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
