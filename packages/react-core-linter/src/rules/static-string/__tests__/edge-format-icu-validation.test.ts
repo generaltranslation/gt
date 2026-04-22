@@ -50,8 +50,8 @@ describe('format-gating: $format as template literal `ICU` → auto-fix applies,
 });
 
 // ===================================================================
-// 2. $format as computed value — getFormatOption returns null,
-//    isICUFormat returns true. Dynamic concat → variableInterpolationRequired.
+// 2. $format as computed value — getFormatOption returns undefined (present but dynamic),
+//    isICUFormat returns false. Dynamic concat → staticStringRequired (no ICU auto-fix).
 //    The computed $format value also triggers sugarVariableMustBeStatic.
 // ===================================================================
 
@@ -69,16 +69,9 @@ describe('format-gating: $format as computed value getFormat() → errors for dy
         `,
         options: [{ libs: ['gt-react'] }],
         errors: [
-          { messageId: 'variableInterpolationRequired' },
+          { messageId: 'staticStringRequired' },
           { messageId: 'sugarVariableMustBeStatic' },
         ],
-        output: `
-          import { useGT } from 'gt-react';
-          function C() {
-            const gt = useGT();
-            return gt("Hello {var0}", { $format: getFormat(), var0: name });
-          }
-        `,
       },
     ],
   });

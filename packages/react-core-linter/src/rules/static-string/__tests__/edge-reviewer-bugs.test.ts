@@ -327,3 +327,55 @@ describe('bug: function call second argument — no auto-fix', () => {
     ],
   });
 });
+
+// ===================================================================
+// Bug 5: Dynamic $format should not trigger ICU validation on content
+// ===================================================================
+
+// gt("Hello {}", { $format: dynamicVar })
+// Should only report sugarVariableMustBeStatic on dynamicVar,
+// NOT invalidICUFormat on the content (format is unknown, not necessarily ICU)
+describe('bug: dynamic $format should not trigger ICU validation on content', () => {
+  ruleTester.run('dynamic-format-no-icu-validation', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("Hello {}", { $format: dynamicVar });
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'sugarVariableMustBeStatic' }],
+      },
+    ],
+  });
+});
+
+// gt("Hello " + name, { $format: dynamicVar })
+// Dynamic format + dynamic content: should report variableInterpolationRequired
+// (auto-fix applied since format is unknown, defaulting to ICU is wrong)
+// Actually should report staticStringRequired with no fix since format is uncertain
+describe('bug: dynamic $format with dynamic content — no ICU auto-fix', () => {
+  ruleTester.run('dynamic-format-dynamic-content', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("Hello " + name, { $format: dynamicVar });
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [
+          { messageId: 'staticStringRequired' },
+          { messageId: 'sugarVariableMustBeStatic' },
+        ],
+      },
+    ],
+  });
+});

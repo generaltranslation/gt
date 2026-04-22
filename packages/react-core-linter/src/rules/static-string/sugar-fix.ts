@@ -94,11 +94,12 @@ function isStaticOrDerive(
 }
 
 /**
- * Reads the $format value from a call's options object, or null if absent/dynamic.
+ * Reads the $format value from a call's options object.
+ * @returns the static string value, null if key is absent, undefined if present but dynamic.
  */
 export function getFormatOption(
   callNode: TSESTree.CallExpression
-): string | null {
+): string | null | undefined {
   const secondArg = callNode.arguments[1];
   if (
     !secondArg ||
@@ -113,16 +114,18 @@ export function getFormatOption(
     const keyName = getPropertyKeyName(prop.key);
     if (keyName !== FORMAT_OPTION_NAME) continue;
     const value = staticStringValue(prop.value as TSESTree.Expression);
-    if (value !== null) return value;
+    return value ?? undefined;
   }
   return null;
 }
 
 /**
  * Returns true if the call uses ICU format (the default when $format is absent).
+ * Returns false when $format is present but dynamic (unknown format).
  */
 export function isICUFormat(callNode: TSESTree.CallExpression): boolean {
   const format = getFormatOption(callNode);
+  if (format === undefined) return false;
   return format === null || format === ICU_FORMAT;
 }
 
