@@ -192,6 +192,16 @@ export const staticString = createRule({
       }
 
       if (!isFixable(parts)) {
+        // All parts are static/derive — validate merged string as ICU
+        if (!hasDerive(parts)) {
+          const merged = parts
+            .filter(
+              (p): p is FlatPart & { kind: 'static' } => p.kind === 'static'
+            )
+            .map((p) => p.value)
+            .join('');
+          if (merged) checkICUValidity(merged, expression, callNode);
+        }
         return;
       }
 

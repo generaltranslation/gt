@@ -281,3 +281,40 @@ describe('icu-validation: array of strings validates each element', () => {
     ],
   });
 });
+
+// ===================================================================
+// 6. Template literal with static expressions — ICU validation applies
+// ===================================================================
+
+// gt(`${"hello {unclosed"}`)  — all expressions are static, merged string is invalid ICU
+describe('icu-validation: template literal with static expression validates ICU', () => {
+  ruleTester.run('template-static-expr-icu', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() { const gt = useGT(); return gt(\`\${"hello {unclosed"}\`); }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'invalidICUFormat' }],
+      },
+    ],
+  });
+});
+
+// gt(`${"Hello "} ${"world"}`)  — all static expressions, valid merged string
+describe('icu-validation: template literal with all-static expressions and valid ICU passes', () => {
+  ruleTester.run('template-static-expr-valid', staticString, {
+    valid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() { const gt = useGT(); return gt(\`\${"Hello "} \${"world"}\`); }
+        `,
+        options: [{ libs: ['gt-react'] }],
+      },
+    ],
+    invalid: [],
+  });
+});
