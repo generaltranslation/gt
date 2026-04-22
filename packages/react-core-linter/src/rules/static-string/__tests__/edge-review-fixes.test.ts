@@ -106,6 +106,151 @@ describe('review: select key without spaces works normally', () => {
   });
 });
 
+// gt("val: " + (x === "done,failed" ? "A" : "B"))
+// → gt("val: {var0, select, true {A} other {B}}", { var0: x === "done,failed" })
+// Comma in key is an ICU structural char — falls back to boolean key
+describe('review: select key with comma falls back to boolean key', () => {
+  ruleTester.run('select-key-comma', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("val: " + (x === "done,failed" ? "A" : "B"));
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("val: {var0, select, true {A} other {B}}", { var0: x === "done,failed" });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt("val: " + (x === "a{b}" ? "A" : "B"))
+// → gt("val: {var0, select, true {A} other {B}}", { var0: x === "a{b}" })
+// Braces in key are ICU structural chars — falls back to boolean key
+describe('review: select key with braces falls back to boolean key', () => {
+  ruleTester.run('select-key-braces', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("val: " + (x === "a{b}" ? "A" : "B"));
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("val: {var0, select, true {A} other {B}}", { var0: x === "a{b}" });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt("val: " + (x === "it's" ? "A" : "B"))
+// → gt("val: {var0, select, true {A} other {B}}", { var0: x === "it's" })
+// Apostrophe in key is an ICU structural char — falls back to boolean key
+describe('review: select key with apostrophe falls back to boolean key', () => {
+  ruleTester.run('select-key-apostrophe', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("val: " + (x === "it's" ? "A" : "B"));
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("val: {var0, select, true {A} other {B}}", { var0: x === "it's" });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt("val: " + (x === "a#b" ? "A" : "B"))
+// → gt("val: {var0, select, true {A} other {B}}", { var0: x === "a#b" })
+// Hash in key is an ICU structural char — falls back to boolean key
+describe('review: select key with hash falls back to boolean key', () => {
+  ruleTester.run('select-key-hash', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("val: " + (x === "a#b" ? "A" : "B"));
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("val: {var0, select, true {A} other {B}}", { var0: x === "a#b" });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt("val: " + (x === "valid-key_123" ? "A" : "B"))
+// → gt("val: {var0, select, valid-key_123 {A} other {B}}", { var0: x })
+// Hyphens, underscores, digits are all valid ICU key characters
+describe('review: select key with hyphens/underscores/digits works normally', () => {
+  ruleTester.run('select-key-valid-chars', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("val: " + (x === "valid-key_123" ? "A" : "B"));
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function C() {
+            const gt = useGT();
+            return gt("val: {var0, select, valid-key_123 {A} other {B}}", { var0: x });
+          }
+        `,
+      },
+    ],
+  });
+});
+
 // ===================================================================
 // 2. Var name collision with existing option keys
 // ===================================================================

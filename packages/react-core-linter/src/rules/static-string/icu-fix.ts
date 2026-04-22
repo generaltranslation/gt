@@ -19,8 +19,8 @@ import type { RuleContext } from '@typescript-eslint/utils/ts-eslint';
 import { isDeriveFunction } from '../../utils/isGTFunction.js';
 import type { GTLibrary } from '../../utils/constants.js';
 
-/** ICU select keys must be simple identifier-like tokens (no whitespace or braces). */
-const VALID_ICU_SELECT_KEY = /^\S+$/;
+/** ICU select keys must not contain whitespace or ICU structural characters. */
+const VALID_ICU_SELECT_KEY = /^[^\s{},'#]+$/;
 
 /**
  * Escapes ICU special characters in literal text using ICU apostrophe-quoting.
