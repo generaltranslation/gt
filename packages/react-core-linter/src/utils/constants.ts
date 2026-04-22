@@ -76,5 +76,21 @@ export const ALLOWED_BRANCH_ATTRIBUTE_JSX_EXPRESSIONS = [
   TSESTree.AST_NODE_TYPES.JSXFragment,
 ];
 
+// Sugar variables (options object metadata keys)
+export const CONTEXT_OPTION_NAME = '$context';
+export const ID_OPTION_NAME = '$id';
+export const FORMAT_OPTION_NAME = '$format';
+export const MAX_CHARS_OPTION_NAME = '$maxChars';
+
+export const SUGAR_VARIABLE_NAMES = [
+  CONTEXT_OPTION_NAME,
+  ID_OPTION_NAME,
+  FORMAT_OPTION_NAME,
+  MAX_CHARS_OPTION_NAME,
+] as const;
+
+// Format option values
+export const ICU_FORMAT = 'ICU';
+
 export const RULE_URL =
   'https://generaltranslation.com/docs/react-core-linter/rules/';

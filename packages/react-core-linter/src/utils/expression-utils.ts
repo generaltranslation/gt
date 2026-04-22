@@ -6,6 +6,14 @@
 import { TSESTree } from '@typescript-eslint/utils';
 
 /**
+ * Returns true if the expression is a static string
+ * (string literal or template literal without interpolation).
+ */
+export function isStaticString(expr: TSESTree.Expression): boolean {
+  return staticStringValue(expr) !== null;
+}
+
+/**
  * Returns the raw string value of a static string expression
  * (string literal or template literal without interpolation),
  * or null for anything else.
