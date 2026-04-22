@@ -2,32 +2,48 @@
  * ICU auto-fix: converts dynamic concat/template expressions into ICU-formatted strings.
  *
  * Handles:
- * - Concatenation:      gt("Hello " + name)                → gt("Hello {var0}", { var0: name })
- * - Template literals:  gt(`Hello ${name}!`)                → gt("Hello {var0}!", { var0: name })
- * - Ternaries:          gt("Hi " + (c ? "A" : "B"))        → gt("Hi {var0, select, true {A} other {B}}", { var0: c })
- * - Equality select:    gt("" + (x === "a" ? "A" : "B"))   → gt("{var0, select, a {A} other {B}}", { var0: x })
+ * - Concatenation:      gt("Hello " + name)                -> gt("Hello {var0}", { var0: name })
+ * - Template literals:  gt(`Hello ${name}!`)                -> gt("Hello {var0}!", { var0: name })
+ * - Ternaries:          gt("Hi " + (c ? "A" : "B"))        -> gt("Hi {var0, select, true {A} other {B}}", { var0: c })
+ * - Equality select:    gt("" + (x === "a" ? "A" : "B"))   -> gt("{var0, select, a {A} other {B}}", { var0: x })
  * - Chained ternaries:  gt("" + (x === "a" ? "A" : x === "b" ? "B" : "C"))
- *                       → gt("{var0, select, a {A} b {B} other {C}}", { var0: x })
+ *                       -> gt("{var0, select, a {A} b {B} other {C}}", { var0: x })
  * - Nested selects:     gt("" + (x === "a" ? "A" : y === "b" ? "B" : "C"))
- *                       → gt("{var0, select, a {A} other {{var1, select, b {B} other {C}}}}", { var0: x, var1: y })
+ *                       -> gt("{var0, select, a {A} other {{var1, select, b {B} other {C}}}}", { var0: x, var1: y })
  */
 
 import { TSESTree } from '@typescript-eslint/utils';
-import type { SourceCode } from '@typescript-eslint/utils/ts-eslint';
-import { staticStringValue } from '../../utils/expression-utils.js';
-import type { RuleContext } from '@typescript-eslint/utils/ts-eslint';
-import { isDeriveFunction } from '../../utils/isGTFunction.js';
+import type {
+  ReportFixFunction,
+  RuleContext,
+  RuleFixer,
+  SourceCode,
+} from '@typescript-eslint/utils/ts-eslint';
 import type { GTLibrary } from '../../utils/constants.js';
+import { staticStringValue } from '../../utils/expression-utils.js';
+import { isDeriveFunction } from '../../utils/isGTFunction.js';
 
 /** ICU select keys must not contain whitespace or ICU structural characters. */
 const VALID_ICU_SELECT_KEY = /^[^\s{},'#]+$/;
 
 /**
  * Escapes ICU special characters in literal text using ICU apostrophe-quoting.
- * `'` → `''`, `{` → `'{'`, `}` → `'}'`
+ * `'` -> `''`, `{` -> `'{'`, `}` -> `'}'`
  */
 function escapeICUText(str: string): string {
   return str.replace(/'/g, "''").replace(/\{/g, "'{'").replace(/\}/g, "'}'");
+}
+
+/**
+ * Escapes characters for embedding an ICU string inside a JS double-quoted string literal.
+ */
+export function escapeJSString(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
 }
 
 export type SelectBranch = { key: string; value: string };
@@ -117,7 +133,7 @@ function extractSelectInfo(
 
   // Non-equality tests (e.g. count > 5, fn(), a ?? b) fall through here.
   // The select uses key "true", so at runtime the "other" branch matches
-  // most values. This is intentional — it preserves the ternary semantics.
+  // most values. This is intentional -- it preserves the ternary semantics.
   return {
     variable: sourceCode.getText(test),
     key: 'true',
@@ -273,6 +289,19 @@ export function hasDerive(parts: FlatPart[]): boolean {
   return parts.some((p) => p.kind === 'derive');
 }
 
+/**
+ * Returns the merged string value if all parts are static (no derive, no dynamic/select),
+ * or null otherwise.
+ */
+export function mergeStaticParts(parts: FlatPart[]): string | null {
+  let result = '';
+  for (const part of parts) {
+    if (part.kind !== 'static') return null;
+    result += part.value;
+  }
+  return result || null;
+}
+
 type ICUResult = {
   icuString: string;
   options: { key: string; value: string }[];
@@ -421,5 +450,86 @@ export function generateTemplateLiteralReplacement(
     icuString: '',
     options: state.options,
     templateString,
+  };
+}
+
+/**
+ * Builds the fixer function for an ICU auto-fix.
+ * Returns a function suitable for passing to `context.report({ fix: ... })`.
+ */
+export function buildICUFix(
+  expression: TSESTree.Expression,
+  callNode: TSESTree.CallExpression,
+  parts: FlatPart[],
+  sourceCode: SourceCode
+): ReportFixFunction {
+  return (fixer: RuleFixer) => {
+    const containsDerive = hasDerive(parts);
+
+    const secondArg = callNode.arguments[1];
+
+    // Collect existing option keys to avoid collisions
+    const reservedKeys = new Set<string>();
+    if (secondArg?.type === TSESTree.AST_NODE_TYPES.ObjectExpression) {
+      for (const prop of secondArg.properties) {
+        if (
+          prop.type === TSESTree.AST_NODE_TYPES.Property &&
+          prop.key.type === TSESTree.AST_NODE_TYPES.Identifier
+        ) {
+          reservedKeys.add(prop.key.name);
+        }
+      }
+    }
+
+    const {
+      options: icuOptions,
+      templateString,
+      icuString,
+    } = containsDerive
+      ? generateTemplateLiteralReplacement(parts, sourceCode, reservedKeys)
+      : {
+          ...generateICUReplacement(parts, sourceCode, reservedKeys),
+          templateString: null,
+        };
+
+    const escapedICU = escapeJSString(icuString);
+    const replacementStr = containsDerive ? templateString! : `"${escapedICU}"`;
+
+    const optionsStr = icuOptions.map((o) => `${o.key}: ${o.value}`).join(', ');
+
+    // Non-object second argument -- can't safely merge, skip fix
+    if (
+      secondArg &&
+      secondArg.type !== TSESTree.AST_NODE_TYPES.ObjectExpression
+    ) {
+      return null;
+    }
+
+    // Merge ICU vars into existing options object
+    if (
+      secondArg &&
+      secondArg.type === TSESTree.AST_NODE_TYPES.ObjectExpression
+    ) {
+      const existingProps = secondArg.properties;
+      const fixes: ReturnType<RuleFixer['replaceText']>[] = [];
+      fixes.push(fixer.replaceText(expression, replacementStr));
+      if (existingProps.length > 0) {
+        fixes.push(
+          fixer.insertTextAfter(
+            existingProps[existingProps.length - 1],
+            `, ${optionsStr}`
+          )
+        );
+      } else {
+        fixes.push(fixer.replaceText(secondArg, `{ ${optionsStr} }`));
+      }
+      return fixes;
+    }
+
+    // No existing second argument -- create one
+    return fixer.replaceText(
+      expression,
+      `${replacementStr}, { ${optionsStr} }`
+    );
   };
 }

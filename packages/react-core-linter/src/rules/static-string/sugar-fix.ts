@@ -21,6 +21,10 @@ import {
 } from '../../utils/constants.js';
 import type { GTLibrary } from '../../utils/constants.js';
 import { isDeriveFunction } from '../../utils/isGTFunction.js';
+import {
+  isStaticString,
+  staticStringValue,
+} from '../../utils/expression-utils.js';
 
 /**
  * Extracts the property key name from Identifier or string Literal keys.
@@ -39,36 +43,6 @@ function getPropertyKeyName(
     return key.value;
   }
   return null;
-}
-
-/**
- * Extracts a static string value from a Literal or no-interpolation TemplateLiteral.
- */
-function getStaticStringValue(node: TSESTree.Expression): string | null {
-  if (
-    node.type === TSESTree.AST_NODE_TYPES.Literal &&
-    typeof node.value === 'string'
-  ) {
-    return node.value;
-  }
-  if (
-    node.type === TSESTree.AST_NODE_TYPES.TemplateLiteral &&
-    node.expressions.length === 0
-  ) {
-    return node.quasis[0].value.cooked ?? node.quasis[0].value.raw;
-  }
-  return null;
-}
-
-function isStaticString(node: TSESTree.Expression): boolean {
-  switch (node.type) {
-    case TSESTree.AST_NODE_TYPES.Literal:
-      return typeof node.value === 'string';
-    case TSESTree.AST_NODE_TYPES.TemplateLiteral:
-      return node.expressions.length === 0;
-    default:
-      return false;
-  }
 }
 
 /**
@@ -138,7 +112,7 @@ export function getFormatOption(
     }
     const keyName = getPropertyKeyName(prop.key);
     if (keyName !== FORMAT_OPTION_NAME) continue;
-    const value = getStaticStringValue(prop.value as TSESTree.Expression);
+    const value = staticStringValue(prop.value as TSESTree.Expression);
     if (value !== null) return value;
   }
   return null;

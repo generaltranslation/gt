@@ -8,38 +8,29 @@
  */
 
 import { ESLintUtils, TSESTree } from '@typescript-eslint/utils';
-import type { RuleFixer } from '@typescript-eslint/utils/ts-eslint';
 import { GT_LIBRARIES, RULE_URL } from '../../utils/constants.js';
+import {
+  isStaticString,
+  staticStringValue,
+} from '../../utils/expression-utils.js';
 import {
   isDeriveFunction,
   isGTCallbackFunction,
   isMsgFunction,
 } from '../../utils/isGTFunction.js';
 import {
+  buildICUFix,
   flattenConcat,
   flattenTemplateLiteral,
-  isFixable,
   hasDerive,
-  generateICUReplacement,
-  generateTemplateLiteralReplacement,
+  isFixable,
+  mergeStaticParts,
 } from './icu-fix.js';
 import type { FlatPart } from './icu-fix.js';
-import { isICUFormat, validateSugarVariables } from './sugar-fix.js';
 import { validateICU } from './icu-validate.js';
-import { staticStringValue } from '../../utils/expression-utils.js';
+import { isICUFormat, validateSugarVariables } from './sugar-fix.js';
 
 const createRule = ESLintUtils.RuleCreator((name) => `${RULE_URL}${name}`);
-
-function isStaticString(node: TSESTree.Expression): boolean {
-  switch (node.type) {
-    case TSESTree.AST_NODE_TYPES.Literal:
-      return typeof node.value === 'string';
-    case TSESTree.AST_NODE_TYPES.TemplateLiteral:
-      return node.expressions.length === 0;
-    default:
-      return false;
-  }
-}
 
 export const staticString = createRule({
   name: 'static-string',
@@ -99,21 +90,6 @@ export const staticString = createRule({
       }
     }
 
-    // Collects the full string value from a concat tree of only static parts.
-    // Returns null if any part is non-static.
-    function collectStaticConcat(expr: TSESTree.Expression): string | null {
-      if (
-        expr.type === TSESTree.AST_NODE_TYPES.BinaryExpression &&
-        expr.operator === '+'
-      ) {
-        const left = collectStaticConcat(expr.left);
-        const right = collectStaticConcat(expr.right);
-        if (left !== null && right !== null) return left + right;
-        return null;
-      }
-      return staticStringValue(expr);
-    }
-
     // Validates the first argument (content string) of a gt()/msg() call.
     // Attempts ICU auto-fix for fixable dynamic expressions.
     function validateContentString(
@@ -165,18 +141,18 @@ export const staticString = createRule({
         expression.type === TSESTree.AST_NODE_TYPES.BinaryExpression &&
         expression.operator === '+'
       ) {
-        // Check if it's all static concat (no dynamic, no derive) — validate ICU
-        const fullStatic = collectStaticConcat(expression);
-        if (fullStatic !== null) {
-          checkICUValidity(fullStatic, expression, callNode);
-          return;
-        }
-
         parts = flattenConcat(expression, {
           context,
           libs,
           sourceCode: context.sourceCode,
         });
+
+        // Check if it's all static (no dynamic, no derive) — validate ICU
+        const fullStatic = mergeStaticParts(parts);
+        if (fullStatic !== null) {
+          checkICUValidity(fullStatic, expression, callNode);
+          return;
+        }
       } else {
         // Standalone derive() is valid
         if (
@@ -194,12 +170,7 @@ export const staticString = createRule({
       if (!isFixable(parts)) {
         // All parts are static/derive — validate merged string as ICU
         if (!hasDerive(parts)) {
-          const merged = parts
-            .filter(
-              (p): p is FlatPart & { kind: 'static' } => p.kind === 'static'
-            )
-            .map((p) => p.value)
-            .join('');
+          const merged = mergeStaticParts(parts);
           if (merged) checkICUValidity(merged, expression, callNode);
         }
         return;
@@ -217,92 +188,7 @@ export const staticString = createRule({
       context.report({
         node: expression,
         messageId: 'variableInterpolationRequired',
-        fix(fixer: RuleFixer) {
-          const containsDerive = hasDerive(parts);
-
-          const secondArg = callNode.arguments[1];
-
-          // Collect existing option keys to avoid collisions
-          const reservedKeys = new Set<string>();
-          if (secondArg?.type === TSESTree.AST_NODE_TYPES.ObjectExpression) {
-            for (const prop of secondArg.properties) {
-              if (
-                prop.type === TSESTree.AST_NODE_TYPES.Property &&
-                prop.key.type === TSESTree.AST_NODE_TYPES.Identifier
-              ) {
-                reservedKeys.add(prop.key.name);
-              }
-            }
-          }
-
-          const {
-            options: icuOptions,
-            templateString,
-            icuString,
-          } = containsDerive
-            ? generateTemplateLiteralReplacement(
-                parts,
-                context.sourceCode,
-                reservedKeys
-              )
-            : {
-                ...generateICUReplacement(
-                  parts,
-                  context.sourceCode,
-                  reservedKeys
-                ),
-                templateString: null,
-              };
-
-          const escapedICU = icuString
-            .replace(/\\/g, '\\\\')
-            .replace(/"/g, '\\"')
-            .replace(/\n/g, '\\n')
-            .replace(/\r/g, '\\r')
-            .replace(/\t/g, '\\t');
-          const replacementStr = containsDerive
-            ? templateString!
-            : `"${escapedICU}"`;
-
-          const optionsStr = icuOptions
-            .map((o) => `${o.key}: ${o.value}`)
-            .join(', ');
-
-          // Non-object second argument — can't safely merge, skip fix
-          if (
-            secondArg &&
-            secondArg.type !== TSESTree.AST_NODE_TYPES.ObjectExpression
-          ) {
-            return null;
-          }
-
-          // Merge ICU vars into existing options object
-          if (
-            secondArg &&
-            secondArg.type === TSESTree.AST_NODE_TYPES.ObjectExpression
-          ) {
-            const existingProps = secondArg.properties;
-            const fixes: ReturnType<RuleFixer['replaceText']>[] = [];
-            fixes.push(fixer.replaceText(expression, replacementStr));
-            if (existingProps.length > 0) {
-              fixes.push(
-                fixer.insertTextAfter(
-                  existingProps[existingProps.length - 1],
-                  `, ${optionsStr}`
-                )
-              );
-            } else {
-              fixes.push(fixer.replaceText(secondArg, `{ ${optionsStr} }`));
-            }
-            return fixes;
-          }
-
-          // No existing second argument — create one
-          return fixer.replaceText(
-            expression,
-            `${replacementStr}, { ${optionsStr} }`
-          );
-        },
+        fix: buildICUFix(expression, callNode, parts, context.sourceCode),
       });
     }
 
