@@ -1,4 +1,5 @@
 // Locale Utilities
+export { getRequestLocale } from './getRequestLocale';
 export {
   getLocale,
   getLocales,
