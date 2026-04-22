@@ -372,9 +372,9 @@ describe('edge-icu-select: empty string branch is still static and produces sele
 // ===================================================================
 
 // gt("" + (x === "a" ? "A" : x === "b" ? "B" : cond ? "C" : "D"))
-// → gt("{var0}", { var0: x === "a" ? "A" : x === "b" ? "B" : cond ? "C" : "D" })
-// Different variable (cond vs x) breaks chain; tail is a ConditionalExpression (not static), so tryBuildSelect returns null
-describe('edge-icu-select: chained ternary with different variable at end becomes plain var', () => {
+// → gt("{var0, select, a {A} b {B} other {{var1, select, true {C} other {D}}}}", { var0: x, var1: cond })
+// Different variable (cond vs x) produces nested selects
+describe('edge-icu-select: chained ternary with different variable at end produces nested select', () => {
   ruleTester.run('chained-different-var-end', staticString, {
     valid: [],
     invalid: [
@@ -392,7 +392,7 @@ describe('edge-icu-select: chained ternary with different variable at end become
           import { useGT } from 'gt-react';
           function Component() {
             const gt = useGT();
-            return gt("{var0}", { var0: x === "a" ? "A" : x === "b" ? "B" : cond ? "C" : "D" });
+            return gt("{var0, select, a {A} b {B} other {{var1, select, true {C} other {D}}}}", { var0: x, var1: cond });
           }
         `,
       },

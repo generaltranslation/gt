@@ -819,8 +819,9 @@ describe('static-string: chained equality ternaries in template literal → coll
 });
 
 // gt("Status: " + (x === 'a' ? "A" : y === 'b' ? "B" : "C"))
-// Different variables break the chain — only first branch collapses, rest becomes plain variable
-describe('static-string: chained ternaries with different variables → stops collapsing at mismatch', () => {
+// → gt("Status: {var0, select, a {A} other {{var1, select, b {B} other {C}}}}", { var0: x, var1: y })
+// Different variables produce nested selects
+describe('static-string: chained ternaries with different variables → nested ICU selects', () => {
   ruleTester.run('concat-chained-different-vars', staticString, {
     valid: [],
     invalid: [
@@ -838,7 +839,36 @@ describe('static-string: chained ternaries with different variables → stops co
           import { useGT } from 'gt-react';
           function Component() {
             const gt = useGT();
-            return gt("Status: {var0}", { var0: x === 'a' ? "A" : y === 'b' ? "B" : "C" });
+            return gt("Status: {var0, select, a {A} other {{var1, select, b {B} other {C}}}}", { var0: x, var1: y });
+          }
+        `,
+      },
+    ],
+  });
+});
+
+// gt("Hello " + name + ", you are " + (cond1 === 'admin' ? "admin" : cond2 === 'user' ? "user" : "unknown"))
+// → gt("Hello {var0}, you are {var1, select, admin {admin} other {{var2, select, user {user} other {unknown}}}}", { var0: name, var1: cond1, var2: cond2 })
+// Different variables (cond1 vs cond2) produce nested selects
+describe('static-string: chained ternary with different variables + dynamic var in same concat', () => {
+  ruleTester.run('concat-mixed-var-chain-break', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello " + name + ", you are " + (cond1 === 'admin' ? "admin" : cond2 === 'user' ? "user" : "unknown"));
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'variableInterpolationRequired' }],
+        output: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello {var0}, you are {var1, select, admin {admin} other {{var2, select, user {user} other {unknown}}}}", { var0: name, var1: cond1, var2: cond2 });
           }
         `,
       },

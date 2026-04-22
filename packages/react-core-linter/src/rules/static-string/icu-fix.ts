@@ -8,6 +8,8 @@
  * - Equality select:    gt("" + (x === "a" ? "A" : "B"))   → gt("{var0, select, a {A} other {B}}", { var0: x })
  * - Chained ternaries:  gt("" + (x === "a" ? "A" : x === "b" ? "B" : "C"))
  *                       → gt("{var0, select, a {A} b {B} other {C}}", { var0: x })
+ * - Nested selects:     gt("" + (x === "a" ? "A" : y === "b" ? "B" : "C"))
+ *                       → gt("{var0, select, a {A} other {{var1, select, b {B} other {C}}}}", { var0: x, var1: y })
  */
 
 import { TSESTree } from '@typescript-eslint/utils';
@@ -19,16 +21,18 @@ import type { GTLibrary } from '../../utils/constants.js';
 
 export type SelectBranch = { key: string; value: string };
 
+// Recursive type: the "other" of a select can itself be a nested select.
+export type SelectNode = {
+  variable: string;
+  branches: SelectBranch[];
+  other: string | SelectNode;
+};
+
 export type FlatPart =
   | { kind: 'static'; value: string }
   | { kind: 'derive'; node: TSESTree.CallExpression }
   | { kind: 'dynamic'; node: TSESTree.Expression }
-  | {
-      kind: 'select';
-      variable: string;
-      branches: SelectBranch[];
-      other: string;
-    };
+  | ({ kind: 'select' } & SelectNode);
 
 type ClassifyContext = {
   context: Readonly<RuleContext<string, readonly unknown[]>>;
@@ -103,7 +107,8 @@ function extractSelectInfo(
 // Attempts to build a select FlatPart from a ternary expression.
 // Walks chained ternaries that share the same variable, collapsing them
 // into a single select with multiple branches.
-// Returns null if any branch has non-static content.
+// When the chain breaks (different variable), recursively builds a nested select.
+// Returns null if any consequent is non-static.
 function tryBuildSelect(
   expr: TSESTree.ConditionalExpression,
   sourceCode: SourceCode
@@ -127,14 +132,28 @@ function tryBuildSelect(
     tail = tail.alternate;
   }
 
+  // Resolve the "other" value: static string, or recurse into a nested select
+  let other: string | SelectNode;
   const otherStr = staticStringValue(tail);
-  if (otherStr === null) return null;
+  if (otherStr !== null) {
+    other = otherStr;
+  } else if (tail.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) {
+    const nested = tryBuildSelect(tail, sourceCode);
+    if (nested === null || nested.kind !== 'select') return null;
+    other = {
+      variable: nested.variable,
+      branches: nested.branches,
+      other: nested.other,
+    };
+  } else {
+    return null;
+  }
 
   return {
     kind: 'select',
     variable: firstInfo.variable,
     branches,
-    other: otherStr,
+    other,
   };
 }
 
@@ -187,15 +206,42 @@ export function isFixable(parts: FlatPart[]): boolean {
   return hasDynamic;
 }
 
+type ICUResult = {
+  icuString: string;
+  options: { key: string; value: string }[];
+};
+
+// Renders a SelectNode (potentially nested) into an ICU select string,
+// appending variables to the shared options array with incrementing varN names.
+function renderSelect(
+  node: SelectNode,
+  options: { key: string; value: string }[],
+  counter: { value: number }
+): string {
+  const varName = `var${counter.value++}`;
+  options.push({ key: varName, value: node.variable });
+
+  const branchStr = node.branches.map((b) => `${b.key} {${b.value}}`).join(' ');
+
+  let otherContent: string;
+  if (typeof node.other === 'string') {
+    otherContent = node.other;
+  } else {
+    otherContent = `{${renderSelect(node.other, options, counter)}}`;
+  }
+
+  return `${varName}, select, ${branchStr} other {${otherContent}}`;
+}
+
 // Builds an ICU string and options object from classified parts.
 // Variables are named var0, var1, ... incrementing left-to-right.
 export function generateICUReplacement(
   parts: FlatPart[],
   sourceCode: SourceCode
-): { icuString: string; options: { key: string; value: string }[] } {
+): ICUResult {
   let icuString = '';
   const options: { key: string; value: string }[] = [];
-  let varCounter = 0;
+  const counter = { value: 0 };
 
   for (const part of parts) {
     switch (part.kind) {
@@ -203,18 +249,13 @@ export function generateICUReplacement(
         icuString += part.value;
         break;
       case 'dynamic': {
-        const varName = `var${varCounter++}`;
+        const varName = `var${counter.value++}`;
         icuString += `{${varName}}`;
         options.push({ key: varName, value: sourceCode.getText(part.node) });
         break;
       }
       case 'select': {
-        const varName = `var${varCounter++}`;
-        const branchStr = part.branches
-          .map((b) => `${b.key} {${b.value}}`)
-          .join(' ');
-        icuString += `{${varName}, select, ${branchStr} other {${part.other}}}`;
-        options.push({ key: varName, value: part.variable });
+        icuString += `{${renderSelect(part, options, counter)}}`;
         break;
       }
       case 'derive':
