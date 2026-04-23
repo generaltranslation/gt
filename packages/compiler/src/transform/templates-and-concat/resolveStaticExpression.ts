@@ -31,14 +31,19 @@ export function resolveStaticExpression(expr: t.Expression): {
   if (t.isTemplateLiteral(expr)) {
     let result = '';
     for (let i = 0; i < expr.quasis.length; i++) {
-      const { cooked, raw } = expr.quasis[i].value;
-      result += cooked ?? raw;
+      const cooked = expr.quasis[i].value.cooked;
+      if (cooked == null) {
+        return {
+          errors: ['Template literal contains an invalid escape sequence'],
+        };
+      }
+      result += cooked;
       if (i < expr.expressions.length) {
         const resolved = resolveStaticExpression(
           expr.expressions[i] as t.Expression
         );
         if (resolved.errors.length || resolved.value == null) return resolved;
-        result += resolved.value ?? '';
+        result += resolved.value;
       }
     }
     return { errors: [], value: result };
@@ -49,7 +54,7 @@ export function resolveStaticExpression(expr: t.Expression): {
     if (left.errors.length || left.value == null) return left;
     const right = resolveStaticExpression(expr.right as t.Expression);
     if (right.errors.length || right.value == null) return right;
-    return { errors: [], value: (left.value ?? '') + (right.value ?? '') };
+    return { errors: [], value: left.value + right.value };
   }
 
   return { errors: ['Expression is not a static string'] };

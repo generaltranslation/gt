@@ -10,9 +10,9 @@ import { resolveStaticExpression } from '../templates-and-concat/resolveStaticEx
 
 /**
  * Validate useGT_callback / getGT_callback
- * - first argument must be a string literal
+ * - first argument must be a statically resolvable string expression
+ *   (string literal, template literal, binary '+' concatenation, or derive() call)
  * - second argument, if present, $id field + $context field must be a string literal
- * TODO: Add maxChars validation
  */
 export function validateUseGTCallback(
   callExpr: t.CallExpression,
