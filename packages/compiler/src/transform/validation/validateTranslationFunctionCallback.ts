@@ -232,20 +232,20 @@ function validatePropertyFromObjectExpression(
 
   // extract value
   if (type === 'string-or-derive') {
-    const stringValidation = validateExpressionIsStringLiteral(value.value);
-    if (stringValidation.value !== undefined) {
-      result.value = stringValidation.value;
+    const resolved = resolveStaticExpression(value.value);
+    if (resolved.value !== undefined) {
+      result.value = resolved.value;
     } else if (state) {
-      // String validation failed — check if it's a valid derive() expression
+      // Static resolution failed — check if it's a valid derive() expression
       const deriveErrors: string[] = [];
       validateDerive(value.value, state, deriveErrors);
       if (deriveErrors.length === 0) {
         result.hasDeriveExpression = true;
       } else {
-        result.errors.push(...stringValidation.errors);
+        result.errors.push(...resolved.errors);
       }
     } else {
-      result.errors.push(...stringValidation.errors);
+      result.errors.push(...resolved.errors);
     }
   } else {
     const validatedValue =
@@ -327,8 +327,11 @@ export function validateDerive(
     return { errors };
   }
 
-  // 3. Template literal: `Hello there ${derive(getName())}`
+  // 3. Template literal: `Hello there ${derive(getName())}` or `static text`
   if (t.isTemplateLiteral(expr)) {
+    if (expr.expressions.length === 0) {
+      return { errors };
+    }
     if (
       !expr.expressions.some(
         (expression) =>
@@ -343,8 +346,20 @@ export function validateDerive(
     };
   }
 
-  // 4. String literal / number literal
+  // 4. Static literals (string, number, boolean, null)
   if (t.isStringLiteral(expr)) {
+    return { errors };
+  }
+
+  if (t.isNumericLiteral(expr)) {
+    return { errors };
+  }
+
+  if (t.isBooleanLiteral(expr)) {
+    return { errors };
+  }
+
+  if (t.isNullLiteral(expr)) {
     return { errors };
   }
 

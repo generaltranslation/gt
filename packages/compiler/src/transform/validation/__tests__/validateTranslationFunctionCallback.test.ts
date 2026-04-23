@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as t from '@babel/types';
-import generate from '@babel/generator';
 import {
   validateUseGTCallback,
   validateUseTranslationsCallback,
@@ -35,6 +34,7 @@ describe('validateTranslationFunctionCallback', () => {
       enableAutoJsxInjection: false,
       autoderive: { jsx: false, strings: false },
       _debugHashManifest: false,
+      devHotReload: { strings: false, jsx: false },
     };
 
     state = {
@@ -46,6 +46,7 @@ describe('validateTranslationFunctionCallback', () => {
       statistics: {
         jsxElementCount: 0,
         dynamicContentViolations: 0,
+        runtimeTranslateCount: 0,
         macroExpansionsCount: 0,
         jsxInsertionsCount: 0,
       },
@@ -585,7 +586,7 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.context).toBe('greeting');
       });
 
-      it('should return error when $context is not a string literal', () => {
+      it('should return error when $context is not a static expression', () => {
         const callExpr = t.callExpression(t.identifier('useGT_callback'), [
           t.stringLiteral('Hello'),
           t.objectExpression([
@@ -599,9 +600,6 @@ describe('validateTranslationFunctionCallback', () => {
         const result = validateUseGTCallback(callExpr, state);
 
         expect(result.errors.length).toBeGreaterThan(0);
-        expect(result.errors.some((e) => e.includes('string literal'))).toBe(
-          true
-        );
       });
 
       it('should return error when $id is not a string literal', () => {
@@ -924,6 +922,7 @@ describe('validateTranslationFunctionCallback', () => {
         enableAutoJsxInjection: false,
         autoderive: { jsx: true, strings: true },
         _debugHashManifest: false,
+        devHotReload: { strings: false, jsx: false },
       };
 
       autoderiveState = {
@@ -937,6 +936,7 @@ describe('validateTranslationFunctionCallback', () => {
           dynamicContentViolations: 0,
           macroExpansionsCount: 0,
           jsxInsertionsCount: 0,
+          runtimeTranslateCount: 0,
         },
       };
 
@@ -1188,6 +1188,7 @@ describe('validateTranslationFunctionCallback', () => {
         enableAutoJsxInjection: false,
         autoderive: { jsx: true, strings: false },
         _debugHashManifest: false,
+        devHotReload: { strings: false, jsx: false },
       };
 
       jsxOnlyState = {
@@ -1201,6 +1202,7 @@ describe('validateTranslationFunctionCallback', () => {
           dynamicContentViolations: 0,
           macroExpansionsCount: 0,
           jsxInsertionsCount: 0,
+          runtimeTranslateCount: 0,
         },
       };
 
@@ -1261,6 +1263,7 @@ describe('validateTranslationFunctionCallback', () => {
         enableAutoJsxInjection: false,
         autoderive: { jsx: false, strings: true },
         _debugHashManifest: false,
+        devHotReload: { strings: false, jsx: false },
       };
 
       stringsOnlyState = {
@@ -1274,6 +1277,7 @@ describe('validateTranslationFunctionCallback', () => {
           dynamicContentViolations: 0,
           macroExpansionsCount: 0,
           jsxInsertionsCount: 0,
+          runtimeTranslateCount: 0,
         },
       };
 
