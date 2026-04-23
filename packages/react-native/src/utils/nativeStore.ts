@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import GtReactNative from '../NativeGtReactNative';
+import { ssrUnsupportedWarning } from '../errors-dir/warnings';
 
 /**
  * Native store interface, used to replace cookie behavior from gt-react
@@ -12,6 +13,12 @@ import GtReactNative from '../NativeGtReactNative';
  */
 export function nativeStoreGet(key: string): string | null {
   if (Platform.OS === 'web') {
+    if (typeof localStorage === 'undefined') {
+      // eslint-disable-next-line no-console
+      console.warn(ssrUnsupportedWarning);
+      return null;
+    }
+    // eslint-disable-next-line no-undef
     return localStorage.getItem(key);
   }
   return GtReactNative.nativeStoreGet(key);
@@ -24,6 +31,12 @@ export function nativeStoreGet(key: string): string | null {
  */
 export function nativeStoreSet(key: string, value: string): void {
   if (Platform.OS === 'web') {
+    if (typeof localStorage === 'undefined') {
+      // eslint-disable-next-line no-console
+      console.warn(ssrUnsupportedWarning);
+      return;
+    }
+    // eslint-disable-next-line no-undef
     localStorage.setItem(key, value);
     return;
   }
