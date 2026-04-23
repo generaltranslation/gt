@@ -96,6 +96,38 @@ describe('gt() string extraction E2E', () => {
     expect(content[0].context).toBe('greeting');
   });
 
+  it('extracts $context from string concatenation: "section" + ".title"', () => {
+    const state = collect(
+      prefix + 'gt("Hello", { $context: "section" + ".title" });'
+    );
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].context).toBe('section.title');
+  });
+
+  it('extracts $context from string + numeric: "section" + 1', () => {
+    const state = collect(prefix + 'gt("Hello", { $context: "section" + 1 });');
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].context).toBe('section1');
+  });
+
+  it('extracts $context from template literal: `section.title`', () => {
+    const state = collect(
+      prefix + 'gt("Hello", { $context: `section.title` });'
+    );
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].context).toBe('section.title');
+  });
+
+  it('rejects $context with dynamic variable', () => {
+    const state = collect(prefix + 'gt("Hello", { $context: contextVar });');
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(0);
+    expect(state.errorTracker.getErrors().length).toBeGreaterThan(0);
+  });
+
   it('extracts multiple calls independently', () => {
     const state = collect(
       prefix + `gt("Hello" + " World");\ngt(\`Foo \${"Bar"}\`);`
