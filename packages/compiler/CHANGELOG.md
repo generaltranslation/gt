@@ -1,5 +1,11 @@
 # @generaltranslation/compiler
 
+## 1.3.9
+
+### Patch Changes
+
+- [#1233](https://github.com/generaltranslation/gt/pull/1233) [`2e1869d`](https://github.com/generaltranslation/gt/commit/2e1869d464714427e018911c61bd06b2cf5bb900) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: more robust string extraction
+
 ## 1.3.8
 
 ### Patch Changes
