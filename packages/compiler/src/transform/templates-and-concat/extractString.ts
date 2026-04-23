@@ -20,7 +20,6 @@ type Part =
  * When derive is true, parts will only be composed of dynamic and static parts
  */
 export function extractString(
-  // expr: t.Expression,
   path: NodePath<t.Expression>,
   derive: boolean = false
 ): { value?: ResolutionNode<Part>[]; errors: string[] } {
@@ -128,21 +127,27 @@ function createDerivePart(node: t.Expression): Part {
 }
 
 /**
+ * Checks if a part is a static part
+ * @param part - The part to check
+ * @returns Whether the part is a static part
+ */
+function isStaticPart(
+  part: ResolutionNode<Part>
+): part is { type: 'static'; content: string } {
+  return part != null && !isChoiceNode(part) && part.type === 'static';
+}
+
+/**
  * Adds a part to the result
  * @param result - The result to add the part to
  * @param part - The part to add
  */
 function addPart(result: ResolutionNode<Part>[], part: ResolutionNode<Part>) {
   const current = result[result.length - 1];
-  if (
-    current == null ||
-    isChoiceNode(current) ||
-    current.type !== 'static' ||
-    isChoiceNode(part)
-  ) {
-    result.push(part);
-  } else {
+  if (isStaticPart(current) && isStaticPart(part)) {
     current.content += part.content;
+  } else {
+    result.push(part);
   }
 }
 
