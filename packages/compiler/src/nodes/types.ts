@@ -1,5 +1,4 @@
 import * as t from '@babel/types';
-
 import type {
   HtmlContentPropKeysRecord,
   Variable,
@@ -79,36 +78,12 @@ export type ExtractionGTProp = {
   t?: 'p' | 'b';
 } & HtmlContentPropKeysRecord;
 
-// // ===== String Extraction Types ===== //
+// ===== String Extraction Types ===== //
 
-// /**
-//  * A node representing a static string.
-//  */
-// export type StaticStringNode = {
-//   __gt_type: 'static_string';
-//   content: string;
-// };
-
-// /**
-//  * A node representing a dynamic string.
-//  */
-// export type DynamicStringNode = {
-//   __gt_type: 'dynamic_string';
-//   content: t.Expression;
-// };
-
-// /**
-//  * A node representing a derive string.
-//  */
-// export type DeriveStringNode = {
-//   __gt_type: 'derive_string';
-//   content: t.Expression;
-// };
-
-// /**
-//  * A node representing a string.
-//  */
-// export type StringNode =
-//   | StaticStringNode
-//   | DynamicStringNode
-//   | DeriveStringNode;
+/**
+ * Extraction units
+ */
+export type StringPart =
+  | { type: 'static'; content: string }
+  | { type: 'derive'; content: t.Expression }
+  | { type: 'dynamic'; content: t.Expression };

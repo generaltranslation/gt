@@ -2,14 +2,13 @@ import { ResolutionNode, isChoiceNode } from '../../nodes';
 import * as t from '@babel/types';
 import { isDeriveInvocation } from '../../utils/parsing/isDeriveInvocation';
 import { NodePath } from '@babel/traverse';
+import { StringPart } from '../../nodes/types';
 
-/**
- * Extraction units
- */
-type Part =
-  | { type: 'static'; content: string }
-  | { type: 'derive'; content: t.Expression }
-  | { type: 'dynamic'; content: t.Expression };
+type Metadata = {
+  hasDynamic: boolean;
+  hasDerive: boolean;
+  hasStatic: boolean;
+};
 
 /**
  * Extracts a string and variables from expression
@@ -17,55 +16,119 @@ type Part =
  * @param scope - The scope to use for the extraction
  * @param derive - Whether to perform derivation
  *
+ * Sequential 'static' parts are concatenated.
+ *
  * When derive is true, parts will only be composed of dynamic and static parts
+ *
+ * TODO: add derivation
  */
 export function extractString(
   path: NodePath<t.Expression>,
+  derive: false
+): { value?: StringPart[]; errors: string[]; metadata: Metadata };
+export function extractString(
+  path: NodePath<t.Expression>,
+  derive: true
+): {
+  value?: ResolutionNode<StringPart>[];
+  errors: string[];
+  metadata: Metadata;
+};
+export function extractString(
+  path: NodePath<t.Expression>,
+  derive?: boolean
+): {
+  value?: ResolutionNode<StringPart>[];
+  errors: string[];
+  metadata: Metadata;
+};
+export function extractString(
+  path: NodePath<t.Expression>,
   derive: boolean = false
-): { value?: ResolutionNode<Part>[]; errors: string[] } {
+): {
+  value?: ResolutionNode<StringPart>[];
+  errors: string[];
+  metadata: Metadata;
+} {
   const expr = path.node;
 
   // gt("Hello")
   if (t.isStringLiteral(expr)) {
-    return { errors: [], value: [createStaticPart(expr.value)] };
+    return {
+      errors: [],
+      value: [createStaticPart(expr.value)],
+      metadata: { hasDynamic: false, hasDerive: false, hasStatic: true },
+    };
   }
 
   // gt(123)
   if (t.isNumericLiteral(expr)) {
-    return { errors: [], value: [createStaticPart(String(expr.value))] };
+    return {
+      errors: [],
+      value: [createStaticPart(String(expr.value))],
+      metadata: { hasDynamic: false, hasDerive: false, hasStatic: true },
+    };
   }
 
   // gt(true)
   if (t.isBooleanLiteral(expr)) {
-    return { errors: [], value: [createStaticPart(String(expr.value))] };
+    return {
+      errors: [],
+      value: [createStaticPart(String(expr.value))],
+      metadata: { hasDynamic: false, hasDerive: false, hasStatic: true },
+    };
   }
 
   // gt(null)
   if (t.isNullLiteral(expr)) {
-    return { errors: [], value: [createStaticPart('null')] };
+    return {
+      errors: [],
+      value: [createStaticPart('null')],
+      metadata: { hasDynamic: false, hasDerive: false, hasStatic: true },
+    };
   }
 
   // gt("Hello" + "World")
   if (t.isBinaryExpression(expr) && expr.operator === '+') {
-    const left = extractString(path.get('left') as NodePath<t.Expression>);
+    const left = extractString(
+      path.get('left') as NodePath<t.Expression>,
+      derive
+    );
     if (left.errors.length || left.value == null) return left;
-    const right = extractString(path.get('right') as NodePath<t.Expression>);
+    const right = extractString(
+      path.get('right') as NodePath<t.Expression>,
+      derive
+    );
     if (right.errors.length || right.value == null) return right;
-    const result: ResolutionNode<Part>[] = [];
+    const result: ResolutionNode<StringPart>[] = [];
     addParts(result, left.value);
     addParts(result, right.value);
-    return { errors: [], value: result };
+    return {
+      errors: [],
+      value: result,
+      metadata: {
+        hasDynamic: left.metadata.hasDynamic || right.metadata.hasDynamic,
+        hasDerive: left.metadata.hasDerive || right.metadata.hasDerive,
+        hasStatic: left.metadata.hasStatic || right.metadata.hasStatic,
+      },
+    };
   }
 
   // gt(`Hello ${"World"}`)
   if (t.isTemplateLiteral(expr)) {
-    const result: ResolutionNode<Part>[] = [];
+    const result: ResolutionNode<StringPart>[] = [];
+    const metadata: Metadata = {
+      hasDynamic: false,
+      hasDerive: false,
+      hasStatic: false,
+    };
     for (let i = 0; i < expr.quasis.length; i++) {
       // Extract cooked string
       const cooked = expr.quasis[i].value.cooked;
       if (cooked == null) {
         return {
           errors: ['Template literal contains an invalid escape sequence'],
+          metadata,
         };
       }
 
@@ -79,22 +142,47 @@ export function extractString(
           derive
         );
         if (resolved.errors.length || resolved.value == null) return resolved;
+        metadata.hasDynamic =
+          metadata.hasDynamic || resolved.metadata.hasDynamic;
+        metadata.hasDerive = metadata.hasDerive || resolved.metadata.hasDerive;
+        metadata.hasStatic = metadata.hasStatic || resolved.metadata.hasStatic;
 
         addParts(result, resolved.value);
       }
     }
 
-    return { errors: [], value: result };
+    return {
+      errors: [],
+      value: result,
+      metadata,
+    };
   }
 
   // gt(derive("Hello"))
   const scope = path.scope;
   if (isDeriveInvocation(expr, scope)) {
-    return { errors: [], value: [createDerivePart(expr)] };
+    if (derive) {
+      // TODO: add derive-logic here
+      return {
+        errors: [],
+        value: [createDerivePart(expr)],
+        metadata: { hasDynamic: false, hasDerive: true, hasStatic: false },
+      };
+    } else {
+      return {
+        errors: [],
+        value: [createDynamicPart(expr)],
+        metadata: { hasDynamic: true, hasDerive: false, hasStatic: false },
+      };
+    }
   }
 
   // Fall back to dynamic
-  return { errors: [], value: [createDynamicPart(expr)] };
+  return {
+    errors: [],
+    value: [createDynamicPart(expr)],
+    metadata: { hasDynamic: true, hasDerive: false, hasStatic: false },
+  };
 }
 
 // ===== Helper Functions ===== //
@@ -104,7 +192,7 @@ export function extractString(
  * @param value - The value of the static part
  * @returns A static part
  */
-function createStaticPart(value: string): Part {
+function createStaticPart(value: string): StringPart {
   return { type: 'static', content: value };
 }
 
@@ -113,7 +201,7 @@ function createStaticPart(value: string): Part {
  * @param node - The node of the dynamic part
  * @returns A dynamic part
  */
-function createDynamicPart(node: t.Expression): Part {
+function createDynamicPart(node: t.Expression): StringPart {
   return { type: 'dynamic', content: node };
 }
 
@@ -122,7 +210,7 @@ function createDynamicPart(node: t.Expression): Part {
  * @param node - The node of the derive part
  * @returns A derive part
  */
-function createDerivePart(node: t.Expression): Part {
+function createDerivePart(node: t.Expression): StringPart {
   return { type: 'derive', content: node };
 }
 
@@ -132,7 +220,7 @@ function createDerivePart(node: t.Expression): Part {
  * @returns Whether the part is a static part
  */
 function isStaticPart(
-  part: ResolutionNode<Part>
+  part: ResolutionNode<StringPart>
 ): part is { type: 'static'; content: string } {
   return part != null && !isChoiceNode(part) && part.type === 'static';
 }
@@ -142,7 +230,10 @@ function isStaticPart(
  * @param result - The result to add the part to
  * @param part - The part to add
  */
-function addPart(result: ResolutionNode<Part>[], part: ResolutionNode<Part>) {
+function addPart(
+  result: ResolutionNode<StringPart>[],
+  part: ResolutionNode<StringPart>
+) {
   const current = result[result.length - 1];
   if (isStaticPart(current) && isStaticPart(part)) {
     current.content += part.content;
@@ -157,8 +248,8 @@ function addPart(result: ResolutionNode<Part>[], part: ResolutionNode<Part>) {
  * @param parts - The parts to add
  */
 function addParts(
-  result: ResolutionNode<Part>[],
-  parts: ResolutionNode<Part>[]
+  result: ResolutionNode<StringPart>[],
+  parts: ResolutionNode<StringPart>[]
 ) {
   for (const part of parts) {
     addPart(result, part);

@@ -13,6 +13,8 @@ export type Part =
  * template literals, binary '+' concatenation, and derive() calls.
  *
  * NOTE: no need to use ResolutionNode<string>, that is handled by extraction
+ *
+ * TODO: remove this function
  */
 export function flattenExpressionToParts(
   node: t.Expression,

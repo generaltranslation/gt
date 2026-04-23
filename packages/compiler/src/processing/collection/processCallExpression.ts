@@ -1,4 +1,4 @@
-import { VisitNode } from '@babel/traverse';
+import { NodePath, VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
 import {
@@ -40,7 +40,8 @@ export function processCallExpression(
 ): VisitNode<t.Node, t.CallExpression> {
   return (path) => {
     // Get the call expression
-    const callExpr = path.node;
+    const callExprPath = path;
+    const callExpr = callExprPath.node;
 
     // Get function name from callee
     const { namespaceName, functionName } =
@@ -66,7 +67,7 @@ export function processCallExpression(
     ) {
       // Handle translation function callbacks (useGT_callback, etc.)
       handleTranslationCallbackInvocation(
-        callExpr,
+        callExprPath,
         state,
         canonicalName,
         identifier!
@@ -78,12 +79,12 @@ export function processCallExpression(
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.msg
     ) {
-      handleStandaloneTranslation(callExpr, state);
+      handleStandaloneTranslation(callExprPath, state);
     } else if (
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.t
     ) {
-      handleStandaloneTranslation(callExpr, state);
+      handleStandaloneTranslation(callExprPath, state);
     }
   };
 }
@@ -97,7 +98,7 @@ export function processCallExpression(
  * useGTCallback(), useTranslationsCallback(), useMessagesCallback(), etc.
  */
 function handleTranslationCallbackInvocation(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   canonicalName: GT_ALL_FUNCTIONS,
   identifier: number
@@ -106,15 +107,15 @@ function handleTranslationCallbackInvocation(
   switch (canonicalName) {
     case GT_CALLBACK_FUNCTIONS.useGT_callback:
     case GT_CALLBACK_FUNCTIONS.getGT_callback:
-      handleUseGTCallback(callExpr, state, identifier);
+      handleUseGTCallback(callExprPath, state, identifier);
       break;
     case GT_CALLBACK_FUNCTIONS.useTranslations_callback:
     case GT_CALLBACK_FUNCTIONS.getTranslations_callback:
-      handleUseTranslationsCallback(callExpr, state, identifier);
+      handleUseTranslationsCallback(callExprPath, state, identifier);
       break;
     case GT_CALLBACK_FUNCTIONS.useMessages_callback:
     case GT_CALLBACK_FUNCTIONS.getMessages_callback:
-      handleUseMessagesCallback(callExpr, state, identifier);
+      handleUseMessagesCallback(callExprPath, state, identifier);
       break;
     default:
       return;
@@ -125,35 +126,35 @@ function handleTranslationCallbackInvocation(
  * Handle useGT_callback / getGT_callback
  */
 function handleUseGTCallback(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   identifier: number
 ) {
   // Check for violations
-  const useGTCallbackParams = validateUseGTCallback(callExpr, state);
-  state.errorTracker.addErrors(useGTCallbackParams.errors);
+  const { hasDerive, errors, variants, hash, id, format, maxChars } =
+    validateUseGTCallback(callExprPath, state);
+  state.errorTracker.addErrors(errors);
   if (
-    useGTCallbackParams.errors.length > 0 ||
-    useGTCallbackParams.content === undefined
+    errors.length > 0 ||
+    variants === undefined ||
+    variants.length !== 1 ||
+    // TODO: remove this once we add derivation
+    hasDerive
   ) {
     return;
   }
 
   // Track the function call
-  // When context contains derive(), skip hash calculation (CLI handles resolution)
-  const hash = useGTCallbackParams.hasDeriveContext
-    ? ''
-    : useGTCallbackParams.hash;
-
   registerUseGTCallback({
     identifier,
     state,
-    content: useGTCallbackParams.content,
-    context: useGTCallbackParams.context,
-    id: useGTCallbackParams.id,
-    maxChars: useGTCallbackParams.maxChars,
-    hash,
-    format: useGTCallbackParams.format,
+    content: variants[0].content,
+    context: variants[0].context,
+    id,
+    maxChars,
+    // When context contains derive(), skip hash calculation (CLI handles resolution)
+    hash: hasDerive ? '' : hash,
+    format,
   });
 }
 
@@ -161,13 +162,13 @@ function handleUseGTCallback(
  * Handle useTranslations_callback / getTranslations_callback
  */
 function handleUseTranslationsCallback(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   identifier: number
 ) {
   // Check for violations
   const useTranslationsCallbackParams =
-    validateUseTranslationsCallback(callExpr);
+    validateUseTranslationsCallback(callExprPath);
   state.errorTracker.addErrors(useTranslationsCallbackParams.errors);
   if (useTranslationsCallbackParams.errors.length > 0) {
     return;
@@ -184,12 +185,12 @@ function handleUseTranslationsCallback(
  * Handle useMessages_callback / getMessages_callback
  */
 function handleUseMessagesCallback(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   identifier: number
 ) {
   // Validate parameters
-  const useMessagesCallbackParams = validateUseMessagesCallback(callExpr);
+  const useMessagesCallbackParams = validateUseMessagesCallback(callExprPath);
 
   // Check for violations
   state.errorTracker.addErrors(useMessagesCallbackParams.errors);
@@ -295,38 +296,47 @@ function handleReactInvocation(
  * Pushes to runtimeOnlyEntries — bypasses the counter system so injection is unaffected.
  */
 function handleStandaloneTranslation(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState
 ) {
   // Reuse the same validation as useGT_callback (identical argument structure)
-  const params = validateUseGTCallback(callExpr, state);
-  if (params.errors.length > 0 || params.content === undefined) {
-    return;
-  }
-
-  // Skip derive content
-  if (params.hasDeriveContext) {
+  const {
+    hasDerive,
+    errors,
+    variants,
+    hash: _hash,
+    id,
+    format,
+    maxChars,
+  } = validateUseGTCallback(callExprPath, state);
+  if (
+    errors.length > 0 ||
+    variants === undefined ||
+    variants.length !== 1 ||
+    // TODO: remove this once we add derivation
+    hasDerive
+  ) {
     return;
   }
 
   // Calculate hash
   const hash =
-    params.hash ??
+    _hash ??
     hashSource({
-      source: params.content,
-      ...(params.id && { id: params.id }),
-      ...(params.context && { context: params.context }),
-      ...(params.maxChars != null && { maxChars: params.maxChars }),
-      dataFormat: (params.format || 'ICU') as DataFormat,
+      source: variants[0].content,
+      ...(id && { id }),
+      ...(variants[0].context && { context: variants[0].context }),
+      ...(maxChars != null && { maxChars }),
+      dataFormat: (format || 'ICU') as DataFormat,
     });
 
   // Push to runtime-only entries (no counter, no injection pass involvement)
   state.stringCollector.pushRuntimeOnlyContent({
-    message: params.content,
+    message: variants[0].content,
     hash,
-    id: params.id,
-    context: params.context,
-    maxChars: params.maxChars,
-    format: params.format,
+    id,
+    context: variants[0].context,
+    maxChars,
+    format,
   });
 }

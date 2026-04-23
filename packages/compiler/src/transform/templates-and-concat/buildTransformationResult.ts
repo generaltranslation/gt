@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { Part } from './flattenExpressionToParts';
+import { Part } from './extractString';
 
 /**
  * Converts merged parts into an AST message node and optional variables object.
@@ -21,11 +21,11 @@ export function buildTransformResult(parts: Part[]): {
     let message = '';
     for (const part of parts) {
       if (part.type === 'static') {
-        message += part.value;
+        message += part.content;
       } else {
         const key = varIndex.toString();
         message += `{${key}}`;
-        properties.push(t.objectProperty(t.stringLiteral(key), part.node));
+        properties.push(t.objectProperty(t.stringLiteral(key), part.content));
         varIndex++;
       }
     }
@@ -51,14 +51,15 @@ export function buildTransformResult(parts: Part[]): {
 
   for (const part of parts) {
     if (part.type === 'static') {
-      quasiBuffer += part.value;
+      quasiBuffer += part.content;
     } else if (part.type === 'derive') {
       flushQuasi(false);
-      expressions.push(part.node);
+      expressions.push(part.content);
     } else {
+      // TODO: probably should have better name than '{0}' for the variable key
       const key = varIndex.toString();
       quasiBuffer += `{${key}}`;
-      properties.push(t.objectProperty(t.stringLiteral(key), part.node));
+      properties.push(t.objectProperty(t.stringLiteral(key), part.content));
       varIndex++;
     }
   }

@@ -7,6 +7,10 @@ import { TransformState } from '../../state/types';
 import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFromExpression';
 import { getTrackedVariable } from '../getTrackedVariable';
 import { resolveStaticExpression } from '../templates-and-concat/resolveStaticExpression';
+import { NodePath } from '@babel/traverse';
+import { extractString } from '../templates-and-concat/extractString';
+import { cartesianProduct, multiply } from '../../nodes/multiply';
+import { collapseStringPartsToString } from '../../utils/parsing/collapsStringPartsToString';
 
 /**
  * Validate useGT_callback / getGT_callback
@@ -15,26 +19,29 @@ import { resolveStaticExpression } from '../templates-and-concat/resolveStaticEx
  * - second argument, if present, $id field + $context field must be a string literal
  */
 export function validateUseGTCallback(
-  callExpr: t.CallExpression,
+  path: NodePath<t.CallExpression>,
   state: TransformState
 ): {
   errors: string[];
-  content?: string;
-  context?: string;
+  variants?: {
+    content: string;
+    context?: string;
+  }[];
   hash?: string;
   id?: string;
   maxChars?: number;
   format?: string;
-  hasDeriveContext?: boolean;
+  hasDerive: boolean;
 } {
   const errors: string[] = [];
+  const callExpr = path.node;
 
   // Validate that the function has at least 1 argument
   if (callExpr.arguments.length < 1) {
     errors.push(
       'useGT_callback / getGT_callback must have at least 1 argument'
     );
-    return { errors };
+    return { errors, hasDerive: false };
   }
 
   // Validate first argument
@@ -42,49 +49,49 @@ export function validateUseGTCallback(
     errors.push(
       'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.'
     );
-    return { errors };
+    return { errors, hasDerive: false };
   }
 
-  // Try to resolve the expression to a static string (handles concat, nested templates, etc.)
-  const resolvedStaticExpression = resolveStaticExpression(
-    callExpr.arguments[0]
+  // Extract string parts
+  const extracted = extractString(
+    path.get('arguments')[0] as NodePath<t.Expression>,
+    true
   );
-  const content = resolvedStaticExpression.value;
-
-  if (content === undefined && !state.settings.autoderive.strings) {
-    // Not a static expression — check if it contains a derive() function invocation
-    validateDerive(callExpr.arguments[0], state, errors);
-    if (errors.length > 0) {
-      errors.push(...resolvedStaticExpression.errors);
-      errors.push(
-        'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.'
-      );
-      return { errors };
-    }
+  if (extracted.errors.length || extracted.value == null) {
+    errors.push(...extracted.errors);
+    return { errors, hasDerive: false };
   }
 
-  // TODO: hasDeriveContext should be refactored to enforce no hash generated HERE in this function
-  // instead of passing that information outside of this function.
-  // We skip hash gen with autoderive, derive in content, and derive in $context. This flag is being
-  // reused for all 3 cases.
-  const contentHasAutoderive =
-    state.settings.autoderive.strings && content === undefined;
+  if (!state.settings.autoderive.strings && extracted.metadata.hasDynamic) {
+    errors.push(...extracted.errors);
+    errors.push(
+      'String registration functions cannot contain dynamic content.'
+    );
+    return { errors, hasDerive: false };
+  }
+
+  const variants = multiply(extracted.value);
+
+  // Skip second argument
+  let hasDerive: boolean = extracted.metadata.hasDerive;
+  if (callExpr.arguments.length === 1) {
+    return {
+      errors,
+      variants: variants.map((variant) => ({
+        content: collapseStringPartsToString(variant),
+      })),
+      hasDerive,
+    };
+  }
 
   // Validate second argument
-  let context: string | undefined;
+  let context: string[] | undefined;
   let id: string | undefined;
   let hash: string | undefined;
   let maxChars: number | undefined;
   let format: string | undefined;
-  let hasDeriveContext: boolean | undefined;
-  if (callExpr.arguments.length === 1) {
-    return {
-      errors,
-      content,
-      hasDeriveContext: contentHasAutoderive || undefined,
-    };
-  }
   if (t.isObjectExpression(callExpr.arguments[1])) {
+    // TODO: derive for $context
     const contextProperty = validatePropertyFromObjectExpression(
       callExpr.arguments[1],
       USEGT_CALLBACK_OPTIONS.$context,
@@ -92,9 +99,8 @@ export function validateUseGTCallback(
       state
     );
     errors.push(...contextProperty.errors);
-    context = contextProperty.value as string | undefined;
-    hasDeriveContext =
-      contentHasAutoderive || contextProperty.hasDeriveExpression;
+    context = contextProperty.value ? [contextProperty.value] : undefined;
+    hasDerive ||= contextProperty.hasDeriveExpression ?? false;
     const idProperty = validatePropertyFromObjectExpression(
       callExpr.arguments[1],
       USEGT_CALLBACK_OPTIONS.$id,
@@ -127,13 +133,15 @@ export function validateUseGTCallback(
 
   return {
     errors,
-    content,
-    context,
+    variants: cartesianProduct([
+      variants.map(collapseStringPartsToString),
+      context ?? [],
+    ]).map(([content, context]) => ({ content, context })),
     id,
     hash,
     maxChars,
     format,
-    hasDeriveContext,
+    hasDerive,
   };
 }
 
@@ -141,8 +149,10 @@ export function validateUseGTCallback(
  * Validate useTranslations_callback / getTranslations_callback
  * - always valid (arguments can be dynamic)
  */
-// eslint-disable-next-line no-unused-vars
-export function validateUseTranslationsCallback(_callExpr: t.CallExpression): {
+export function validateUseTranslationsCallback(
+  // eslint-disable-next-line no-unused-vars
+  _callExprPath: NodePath<t.CallExpression>
+): {
   errors: string[];
 } {
   const errors: string[] = [];
@@ -153,8 +163,10 @@ export function validateUseTranslationsCallback(_callExpr: t.CallExpression): {
  * Validate useMessages_callback / getMessages_callback
  * - always valid
  */
-// eslint-disable-next-line no-unused-vars
-export function validateUseMessagesCallback(_callExpr: t.CallExpression): {
+export function validateUseMessagesCallback(
+  // eslint-disable-next-line no-unused-vars
+  _callExprPath: NodePath<t.CallExpression>
+): {
   errors: string[];
 } {
   const errors: string[] = [];

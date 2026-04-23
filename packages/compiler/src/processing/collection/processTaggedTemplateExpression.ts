@@ -6,6 +6,7 @@ import { transformTemplateLiteral } from '../../transform/macro-expansion/transf
 import hashSource from '../../utils/calculateHash';
 import type { ResolutionNode } from '../../nodes/types';
 import { multiply } from '../../nodes/multiply';
+import { extractString } from '../../transform/templates-and-concat/extractString';
 
 /**
  * Process tagged template expressions during the collection pass.
@@ -40,28 +41,28 @@ export function processTaggedTemplateExpression(
       }
     }
 
-    // Extract message from the template literal (reuse macro expansion utility)
-    // TODO: need a custom version of transformTemplateLiteral for returning ResolutionNode<string> as we cannot just ignore the derive() calls
-    const { message } = transformTemplateLiteral(path.get('quasi'));
+    // Extract message from the template literal
+    const extracted = extractString(path.get('quasi'), true);
+    if (extracted.errors.length || extracted.value == null) return;
+    const variants = multiply(extracted.value);
 
-    // If message is a TemplateLiteral, it contains derive() — skip
-    if (!t.isStringLiteral(message)) {
-      return;
+    for (const variant of variants) {
+      // contains derive() — skip
+      if (variant.some((p) => p.type === 'derive')) {
+        continue;
+      }
+      // const variants = multiply(resolutionNodes);
+      const content = variants[0].join('');
+
+      const hash = hashSource({
+        source: content,
+        dataFormat: 'ICU',
+      });
+
+      state.stringCollector.pushRuntimeOnlyContent({
+        message: content,
+        hash,
+      });
     }
-
-    // Run through multiplication pipeline (no-op without ChoiceNodes)
-    const resolutionNodes: ResolutionNode<string>[] = [message.value];
-    const variants = multiply(resolutionNodes);
-    const content = variants[0].join('');
-
-    const hash = hashSource({
-      source: content,
-      dataFormat: 'ICU',
-    });
-
-    state.stringCollector.pushRuntimeOnlyContent({
-      message: content,
-      hash,
-    });
   };
 }

@@ -42,10 +42,7 @@ import { isChoiceNode } from './guards';
  *   is one variant with all ChoiceNodes resolved to a single branch.
  *   Returns `[nodes as T[]]` if no ChoiceNodes are found.
  */
-export function multiply<T>(
-  nodes: ResolutionNode<T>[],
-  _recurseIntoLeaf?: (leaf: T) => ResolutionNode<T>[] | null
-): T[][] {
+export function multiply<T>(nodes: ResolutionNode<T>[]): T[][] {
   const alternativesPerPosition: T[][] = [];
 
   for (const node of nodes) {

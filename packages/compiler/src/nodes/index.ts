@@ -22,7 +22,7 @@ export {
 } from './traversal';
 
 // Multiplication
-export { multiply, cartesianProduct } from './multiply';
+export { multiply } from './multiply';
 
 // Factory
 export {
