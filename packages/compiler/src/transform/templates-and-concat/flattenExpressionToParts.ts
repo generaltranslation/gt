@@ -11,6 +11,8 @@ export type Part =
  * Recursively decomposes an expression tree into a flat list of typed parts.
  * Handles string/numeric/boolean/null literals, void expressions,
  * template literals, binary '+' concatenation, and derive() calls.
+ *
+ * NOTE: no need to use ResolutionNode<string>, that is handled by extraction
  */
 export function flattenExpressionToParts(
   node: t.Expression,
@@ -59,7 +61,7 @@ export function flattenExpressionToParts(
     ];
   }
 
-  if (isDeriveInvocation(node, tPath)) {
+  if (isDeriveInvocation(node, tPath.scope)) {
     return [{ type: 'derive', node }];
   }
 

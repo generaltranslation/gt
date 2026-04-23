@@ -4,6 +4,8 @@ import { TransformState } from '../../state/types';
 import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
 import { transformTemplateLiteral } from '../../transform/macro-expansion/transformTemplateLiteral';
 import hashSource from '../../utils/calculateHash';
+import type { ResolutionNode } from '../../nodes/types';
+import { multiply } from '../../nodes/multiply';
 
 /**
  * Process tagged template expressions during the collection pass.
@@ -39,6 +41,7 @@ export function processTaggedTemplateExpression(
     }
 
     // Extract message from the template literal (reuse macro expansion utility)
+    // TODO: need a custom version of transformTemplateLiteral for returning ResolutionNode<string> as we cannot just ignore the derive() calls
     const { message } = transformTemplateLiteral(path.get('quasi'));
 
     // If message is a TemplateLiteral, it contains derive() — skip
@@ -46,8 +49,11 @@ export function processTaggedTemplateExpression(
       return;
     }
 
-    // Compute hash and push to runtime-only entries
-    const content = message.value;
+    // Run through multiplication pipeline (no-op without ChoiceNodes)
+    const resolutionNodes: ResolutionNode<string>[] = [message.value];
+    const variants = multiply(resolutionNodes);
+    const content = variants[0].join('');
+
     const hash = hashSource({
       source: content,
       dataFormat: 'ICU',

@@ -7,6 +7,9 @@ import * as t from '@babel/types';
  *
  * Returns the resolved string, or undefined if the expression contains
  * any dynamic content (variables, function calls, etc.).
+ *
+ * TODO: this should return ResolutionNode<string> instead of the individual properties.
+ * TODO: rename function to resolveString
  */
 export function resolveStaticExpression(expr: t.Expression): {
   errors: string[];
