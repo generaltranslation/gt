@@ -6,12 +6,13 @@ import {
 import { TransformState } from '../../state/types';
 import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFromExpression';
 import { getTrackedVariable } from '../getTrackedVariable';
+import { resolveStaticExpression } from '../templates-and-concat/resolveStaticExpression';
 
 /**
  * Validate useGT_callback / getGT_callback
- * - first argument must be a string literal
+ * - first argument must be a statically resolvable string expression
+ *   (string literal, template literal, binary '+' concatenation, or derive() call)
  * - second argument, if present, $id field + $context field must be a string literal
- * TODO: Add maxChars validation
  */
 export function validateUseGTCallback(
   callExpr: t.CallExpression,
@@ -44,17 +45,17 @@ export function validateUseGTCallback(
     return { errors };
   }
 
-  // Get content and validate that it is a string literal
-  const validatedContent = validateExpressionIsStringLiteral(
+  // Try to resolve the expression to a static string (handles concat, nested templates, etc.)
+  const resolvedStaticExpression = resolveStaticExpression(
     callExpr.arguments[0]
   );
-  const content = validatedContent.value;
+  const content = resolvedStaticExpression.value;
 
   if (content === undefined && !state.settings.autoderive.strings) {
-    // Check if it contains a derive() function invocation (no requirement for derive() invoc with autoderive)
+    // Not a static expression — check if it contains a derive() function invocation
     validateDerive(callExpr.arguments[0], state, errors);
     if (errors.length > 0) {
-      errors.push(...validatedContent.errors);
+      errors.push(...resolvedStaticExpression.errors);
       errors.push(
         'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.'
       );

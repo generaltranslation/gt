@@ -5,7 +5,6 @@ import * as t from '@babel/types';
 import { flattenExpressionToParts } from '../flattenExpressionToParts';
 import { mergeAdjacentStaticParts } from '../mergeAdjacentStaticParts';
 import { buildTransformResult } from '../buildTransformationResult';
-
 /**
  * Parse code and extract the first expression's NodePath, then run the callback.
  */

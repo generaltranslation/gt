@@ -126,7 +126,7 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.errors).toHaveLength(3);
         expect(result.errors).toEqual([
           'Variables are not allowed',
-          'Expression is not a string literal',
+          'Expression is not a static string',
           'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.',
         ]);
         expect(result.content).toBeUndefined();
@@ -151,7 +151,7 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.errors).toEqual([
           'Variables are not allowed',
           'Expression does not use an allowed call expression',
-          'Expression is not a string literal',
+          'Expression is not a static string',
           'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.',
         ]);
         expect(result.content).toBeUndefined();
