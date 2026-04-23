@@ -96,6 +96,38 @@ describe('gt() string extraction E2E', () => {
     expect(content[0].context).toBe('greeting');
   });
 
+  it('extracts $context from string concatenation: "section" + ".title"', () => {
+    const state = collect(
+      prefix + 'gt("Hello", { $context: "section" + ".title" });'
+    );
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].context).toBe('section.title');
+  });
+
+  it('extracts $context from string + numeric: "section" + 1', () => {
+    const state = collect(prefix + 'gt("Hello", { $context: "section" + 1 });');
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].context).toBe('section1');
+  });
+
+  it('extracts $context from template literal: `section.title`', () => {
+    const state = collect(
+      prefix + 'gt("Hello", { $context: `section.title` });'
+    );
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].context).toBe('section.title');
+  });
+
+  it('rejects $context with dynamic variable', () => {
+    const state = collect(prefix + 'gt("Hello", { $context: contextVar });');
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(0);
+    expect(state.errorTracker.getErrors().length).toBeGreaterThan(0);
+  });
+
   it('extracts multiple calls independently', () => {
     const state = collect(
       prefix + `gt("Hello" + " World");\ngt(\`Foo \${"Bar"}\`);`
@@ -122,6 +154,55 @@ describe('gt() string extraction E2E', () => {
     const c3 = getCallbackContent(state3);
     expect(c1[0].hash).toBe(c2[0].hash);
     expect(c2[0].hash).toBe(c3[0].hash);
+  });
+
+  it('extracts string + numeric literal: "Hello, " + 1', () => {
+    const state = collect(prefix + `gt("Hello, " + 1);`);
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('Hello, 1');
+  });
+
+  it('extracts string + string via concat: "page" + ".title"', () => {
+    const state = collect(prefix + `gt("page" + ".title");`);
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('page.title');
+  });
+
+  it('extracts string + numeric: "section" + 1', () => {
+    const state = collect(prefix + `gt("section" + 1);`);
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('section1');
+  });
+
+  it('extracts chained concat: "a" + "b" + "c"', () => {
+    const state = collect(prefix + `gt("a" + "b" + "c");`);
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('abc');
+  });
+
+  it('extracts string + boolean: "value: " + true', () => {
+    const state = collect(prefix + `gt("value: " + true);`);
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('value: true');
+  });
+
+  it('extracts string + null: "value: " + null', () => {
+    const state = collect(prefix + `gt("value: " + null);`);
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(1);
+    expect(content[0].message).toBe('value: null');
+  });
+
+  it('rejects variable + string: variable + ".title"', () => {
+    const state = collect(prefix + `gt(variable + ".title");`);
+    const content = getCallbackContent(state);
+    expect(content).toHaveLength(0);
+    expect(state.errorTracker.getErrors().length).toBeGreaterThan(0);
   });
 
   it('rejects dynamic content with no extraction', () => {
