@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776889378677,
+  "lastUpdate": 1776904028695,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -3480,6 +3480,122 @@ window.BENCHMARK_DATA = {
             "value": 149.10000000003492,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.8\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Ernest McCarter",
+            "username": "ErnestM1234",
+            "email": "ernest@generaltranslation.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "2e1869d464714427e018911c61bd06b2cf5bb900",
+          "message": "chore(compiler): more robust string extraction (#1233)\n\n<!-- greptile_comment -->\n\n<h3>Greptile Summary</h3>\n\nThis PR replaces the narrow `validateExpressionIsStringLiteral` check\nwith a new `resolveStaticExpression` utility that recursively resolves\nbinary `+` concatenation, nested template literals, and primitive\nliterals (string, numeric, boolean, null) to a compile-time string. The\nchange broadens what `gt()`, `msg()`, and `t()` accept as their first\nargument while keeping `$id`/`$context` options strictly as string\nliterals. Test coverage is thorough across unit, integration, and E2E\nlayers.\n\n<details open><summary><h3>Confidence Score: 5/5</h3></summary>\n\nSafe to merge; the one finding is a minor edge-case gap (unary-negated\nnumerics) that does not break existing behavior.\n\nAll remaining findings are P2. The core logic is correct, derive\ninteraction is preserved, error messages are consistent, and the test\nsuite is comprehensive. No regressions or data-integrity issues were\nfound.\n\nresolveStaticExpression.ts — minor: unary-negated numeric literals (e.g.\n-5) are not resolved statically.\n</details>\n\n\n<details><summary><h3>Important Files Changed</h3></summary>\n\n\n\n\n| Filename | Overview |\n|----------|----------|\n|\npackages/compiler/src/transform/templates-and-concat/resolveStaticExpression.ts\n| New utility for compile-time static expression resolution; handles\nstring/template/binary-concat and primitive literals, but misses\nunary-negated numeric literals (e.g. -5) |\n|\npackages/compiler/src/transform/validation/validateTranslationFunctionCallback.ts\n| Swapped validateExpressionIsStringLiteral for resolveStaticExpression\nfor the first argument; options ($id, $context) still use the old strict\nstring-literal validator as intended |\n| packages/compiler/src/passes/__tests__/stringExtractionE2E.test.ts |\nNew E2E tests covering gt(), msg(), t(), and tagged-template extraction\nacross concatenation, nested templates, and dynamic/static mixing —\ncomprehensive and well-organized |\n|\npackages/compiler/src/transform/validation/__tests__/robustStringExtraction.test.ts\n| 841-line golden-standard test suite for validateUseGTCallback covering\nconcatenation, nested templates, mixed forms, primitives, edge cases,\nrejection of dynamic content, and derive interactions |\n\n</details>\n\n\n</details>\n\n\n<details><summary><h3>Flowchart</h3></summary>\n\n```mermaid\n%%{init: {'theme': 'neutral'}}%%\nflowchart TD\n    A[validateUseGTCallback] --> B{arg is Expression?}\n    B -- No --> ERR1[return error]\n    B -- Yes --> C[resolveStaticExpression]\n    C --> D{StringLiteral}\n    D -- Yes --> RET_STR[return value]\n    C --> E{NumericLiteral}\n    E -- Yes --> RET_NUM[return String of n]\n    C --> F{BooleanLiteral}\n    F -- Yes --> RET_BOOL[return true or false]\n    C --> G{NullLiteral}\n    G -- Yes --> RET_NULL[return null string]\n    C --> H{TemplateLiteral}\n    H -- Yes --> H1[iterate quasis + expressions]\n    H1 --> H2{cooked is null?}\n    H2 -- Yes --> ERR_TPL[return invalid escape error]\n    H2 -- No --> H3[recurse on each expression]\n    H3 --> H4{child error?}\n    H4 -- Yes --> PROP[propagate error]\n    H4 -- No --> H5[accumulate string]\n    C --> I{BinaryExpression +}\n    I -- Yes --> I1[resolve left]\n    I1 --> I2{left error?}\n    I2 -- Yes --> ERR_L[propagate error]\n    I2 -- No --> I3[resolve right]\n    I3 --> I4{right error?}\n    I4 -- Yes --> ERR_R[propagate error]\n    I4 -- No --> CONCAT[return left + right]\n    C --> Z[return static string error]\n    D -- No --> E\n    E -- No --> F\n    F -- No --> G\n    G -- No --> H\n    H -- No --> I\n    I -- No --> Z\n    RET_STR --> CONT[content defined]\n    RET_NUM --> CONT\n    RET_BOOL --> CONT\n    RET_NULL --> CONT\n    H5 --> CONT\n    CONCAT --> CONT\n    ERR_TPL --> CONT2{autoderive enabled?}\n    PROP --> CONT2\n    ERR_L --> CONT2\n    ERR_R --> CONT2\n    Z --> CONT2\n    CONT2 -- Yes --> SKIP[skip validation]\n    CONT2 -- No --> DRV[validateDerive]\n    DRV --> DRV2{derive errors?}\n    DRV2 -- Yes --> ERR2[return errors]\n    DRV2 -- No --> SKIP\n    CONT --> OPT[validate options]\n    SKIP --> OPT\n    OPT --> FINAL[return result]\n```\n</details>\n\n\n<!-- greptile_failed_comments -->\n<details open><summary><h3>Comments Outside Diff (1)</h3></summary>\n\n1.\n`packages/compiler/src/transform/validation/validateTranslationFunctionCallback.ts`,\nline 12-14\n([link](https://github.com/generaltranslation/gt/blob/673babde100bd46915719c7b8e184c2a7f422cc3/packages/compiler/src/transform/validation/validateTranslationFunctionCallback.ts#L12-L14))\n\n<a href=\"#\"><img alt=\"P2\"\nsrc=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=7\"\nalign=\"top\"></a> **Stale JSDoc after refactor**\n\nThe doc comment still says \"first argument must be a string literal\",\nbut the implementation now accepts any statically-resolvable expression\n(concatenation, template literals, numeric/boolean/null literals, or\n`derive()` calls). Consider updating it to reflect the broadened\ncontract.\n\n   \n\n   <details><summary>Prompt To Fix With AI</summary>\n\n   `````markdown\n   This is a comment left during a code review.\nPath:\npackages/compiler/src/transform/validation/validateTranslationFunctionCallback.ts\n   Line: 12-14\n\n   Comment:\n   **Stale JSDoc after refactor**\n\nThe doc comment still says \"first argument must be a string literal\",\nbut the implementation now accepts any statically-resolvable expression\n(concatenation, template literals, numeric/boolean/null literals, or\n`derive()` calls). Consider updating it to reflect the broadened\ncontract.\n\n   \n\n   How can I resolve this? If you propose a fix, please make it concise.\n   `````\n   </details>\n</details>\n\n<!-- /greptile_failed_comments -->\n\n<details><summary>Prompt To Fix All With AI</summary>\n\n`````markdown\nThis is a comment left during a code review.\nPath: packages/compiler/src/transform/templates-and-concat/resolveStaticExpression.ts\nLine: 19-21\n\nComment:\n**Negative numeric literals silently fail static resolution**\n\nIn Babel's AST, source code like `-5` or `-3.14` is represented as a `UnaryExpression(operator: '-', argument: NumericLiteral)`, not as a `NumericLiteral` directly. The current handler only matches `isNumericLiteral`, so `gt(\\`Count: ${-5}\\`)` falls through to the \"Expression is not a static string\" error even though the value is fully deterministic at compile time. Users writing translation strings with negative numbers in template interpolations will get a confusing rejection.\n\n```suggestion\n  if (t.isNumericLiteral(expr)) {\n    return { errors: [], value: String(expr.value) };\n  }\n\n  if (\n    t.isUnaryExpression(expr) &&\n    expr.operator === '-' &&\n    t.isNumericLiteral(expr.argument)\n  ) {\n    return { errors: [], value: String(-expr.argument.value) };\n  }\n```\n\nHow can I resolve this? If you propose a fix, please make it concise.\n`````\n\n</details>\n\n<sub>Reviews (2): Last reviewed commit: [\"fix minor\nfeedback\"](https://github.com/generaltranslation/gt/commit/e74dca8f6dcf344f4e466f2f80ff189b97cff056)\n| [Re-trigger\nGreptile](https://app.greptile.com/api/retrigger?id=29358871)</sub>\n\n<!-- /greptile_comment -->",
+          "timestamp": "2026-04-23T00:19:39Z",
+          "url": "https://github.com/generaltranslation/gt/commit/2e1869d464714427e018911c61bd06b2cf5bb900"
+        },
+        "date": 1776904027927,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.042088244612794784,
+            "range": "±0.0169",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.2506506827067658,
+            "range": "±0.06",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.4474077334525967,
+            "range": "±0.0531",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.4390209078138785,
+            "range": "±0.0413",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 245.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 254.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 387.70000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 161,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 16.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 24.600000000034925,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 152.70000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 595,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 13.400000000023283,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 22.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 151.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.9\"\n}"
           }
         ]
       }
