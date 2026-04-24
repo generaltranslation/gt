@@ -1,15 +1,17 @@
 import type { RefMap } from '../utils/resolveMintlifyRefs.js';
 
-let storedRefMap: RefMap | null = null;
+let storedRefMap: RefMap = new Map();
 
 export function storeRefMap(refMap: RefMap): void {
-  storedRefMap = refMap;
+  for (const [key, value] of refMap.entries()) {
+    storedRefMap.set(key, value);
+  }
 }
 
 export function getStoredRefMap(): RefMap | null {
-  return storedRefMap;
+  return storedRefMap.size > 0 ? storedRefMap : null;
 }
 
 export function clearStoredRefMap(): void {
-  storedRefMap = null;
+  storedRefMap = new Map();
 }
