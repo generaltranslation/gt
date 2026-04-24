@@ -55,6 +55,36 @@ export function generatePreset(
             },
           },
         };
+      case 'mintlify-hide-default':
+        // Mintlify with hideDefaultLocale — paths don't have locale prefix in source
+        return {
+          resolveRefs: true,
+          composite: {
+            '$.navigation.languages': {
+              type: 'array',
+              key: '$.language',
+              experimentalSort: 'localesAlphabetical',
+              splitEntries: true,
+              include: [
+                '$..group',
+                '$..tab',
+                '$..item',
+                '$..anchor',
+                '$..dropdown',
+              ],
+              transform: {
+                '$..pages[*]': {
+                  match: '^/?(.*)$',
+                  replace: '{locale}/$1',
+                },
+                '$..root': {
+                  match: '^/?(.*)$',
+                  replace: '{locale}/$1',
+                },
+              },
+            },
+          },
+        };
       case 'openapi':
         return {
           include: ['$..summary', '$..description'],

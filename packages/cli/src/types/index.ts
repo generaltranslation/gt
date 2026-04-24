@@ -311,7 +311,7 @@ export type StructuralTransform = {
 };
 
 export type JsonSchema = {
-  preset?: 'mintlify' | 'openapi';
+  preset?: 'mintlify' | 'mintlify-hide-default' | 'openapi';
   structuralTransform?: StructuralTransform[];
 
   // when true, resolve $ref entries in this file before processing
