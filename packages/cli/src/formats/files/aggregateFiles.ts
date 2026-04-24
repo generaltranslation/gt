@@ -5,7 +5,10 @@ import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
-import { resolveMintlifyRefs, shouldResolveRefs } from '../../utils/resolveMintlifyRefs.js';
+import {
+  resolveMintlifyRefs,
+  shouldResolveRefs,
+} from '../../utils/resolveMintlifyRefs.js';
 import { storeRefMap } from '../../state/mintlifyRefMap.js';
 import path from 'node:path';
 import parseYaml from '../yaml/parseYaml.js';

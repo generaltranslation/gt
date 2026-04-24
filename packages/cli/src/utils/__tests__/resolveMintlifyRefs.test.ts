@@ -51,7 +51,10 @@ describe('resolveMintlifyRefs', () => {
       name: 'My Docs',
       navigation: { groups: [{ group: 'Home', pages: ['index'] }] },
     };
-    const { resolved, refMap } = resolveMintlifyRefs(json, '/project/docs.json');
+    const { resolved, refMap } = resolveMintlifyRefs(
+      json,
+      '/project/docs.json'
+    );
     expect(resolved).toEqual(json);
     expect(refMap.size).toBe(0);
   });
@@ -68,7 +71,10 @@ describe('resolveMintlifyRefs', () => {
       navigation: { $ref: './config/nav.json' },
     };
 
-    const { resolved, refMap } = resolveMintlifyRefs(json, '/project/docs.json');
+    const { resolved, refMap } = resolveMintlifyRefs(
+      json,
+      '/project/docs.json'
+    );
 
     expect(resolved).toEqual({
       name: 'My Docs',
@@ -136,9 +142,7 @@ describe('resolveMintlifyRefs', () => {
 
   it('drops sibling keys when $ref resolves to a non-object', () => {
     setupFiles({
-      '/project/config/groups.json': [
-        { group: 'Home', pages: ['index'] },
-      ],
+      '/project/config/groups.json': [{ group: 'Home', pages: ['index'] }],
     });
 
     const json = {
@@ -171,7 +175,10 @@ describe('resolveMintlifyRefs', () => {
       navigation: { $ref: './config/nav.json' },
     };
 
-    const { resolved, refMap } = resolveMintlifyRefs(json, '/project/docs.json');
+    const { resolved, refMap } = resolveMintlifyRefs(
+      json,
+      '/project/docs.json'
+    );
 
     expect(resolved).toEqual({
       navigation: {
@@ -282,14 +289,14 @@ describe('resolveMintlifyRefs', () => {
 
     const json = {
       navigation: {
-        groups: [
-          { $ref: './groups/home.json' },
-          { $ref: './groups/api.json' },
-        ],
+        groups: [{ $ref: './groups/home.json' }, { $ref: './groups/api.json' }],
       },
     };
 
-    const { resolved, refMap } = resolveMintlifyRefs(json, '/project/docs.json');
+    const { resolved, refMap } = resolveMintlifyRefs(
+      json,
+      '/project/docs.json'
+    );
 
     expect(resolved).toEqual({
       navigation: {

@@ -62,7 +62,13 @@ function resolveNode(
 
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
-    result[key] = resolveNode(value, baseDir, `${pointer}/${key}`, visiting, refMap);
+    result[key] = resolveNode(
+      value,
+      baseDir,
+      `${pointer}/${key}`,
+      visiting,
+      refMap
+    );
   }
   return result;
 }
@@ -90,9 +96,7 @@ function resolveRef(
 
   if (visiting.has(resolvedFilePath)) {
     logger.warn(
-      chalk.yellow(
-        `Circular $ref detected at ${pointer || '/'}: ${refPath}`
-      )
+      chalk.yellow(`Circular $ref detected at ${pointer || '/'}: ${refPath}`)
     );
     const { $ref: _, ...rest } = obj;
     return rest;
@@ -112,9 +116,7 @@ function resolveRef(
   try {
     fileContent = fs.readFileSync(resolvedFilePath, 'utf-8');
   } catch {
-    logger.warn(
-      chalk.yellow(`Failed to read $ref file: ${resolvedFilePath}`)
-    );
+    logger.warn(chalk.yellow(`Failed to read $ref file: ${resolvedFilePath}`));
     const { $ref: _, ...rest } = obj;
     return rest;
   }

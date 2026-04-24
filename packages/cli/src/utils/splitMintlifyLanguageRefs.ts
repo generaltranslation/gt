@@ -71,7 +71,11 @@ export async function splitMintlifyLanguageRefs(
 
   // Collect the default locale entry's internal $ref entries
   const defaultPointerPrefix = `/navigation/languages/${defaultIndex}`;
-  const internalRefs = collectInternalRefs(refMap, defaultPointerPrefix, navDir);
+  const internalRefs = collectInternalRefs(
+    refMap,
+    defaultPointerPrefix,
+    navDir
+  );
 
   if (internalRefs.length > 0) {
     // Restore default locale's refs (same paths as original)
@@ -105,9 +109,7 @@ export async function splitMintlifyLanguageRefs(
               !internalRefs.some(
                 (other) =>
                   other !== ref &&
-                  ref.relativePointer.startsWith(
-                    other.relativePointer + '/'
-                  )
+                  ref.relativePointer.startsWith(other.relativePointer + '/')
               )
           )
           .map((r) => r.relativePointer)
@@ -136,9 +138,7 @@ export async function splitMintlifyLanguageRefs(
       }
     }
 
-    logger.info(
-      `Restored $ref structure for source locale navigation`
-    );
+    logger.info(`Restored $ref structure for source locale navigation`);
   }
 
   // Wrap each non-default locale entry into its own ref file.
@@ -165,9 +165,7 @@ export async function splitMintlifyLanguageRefs(
     languages[i] = { language: locale, $ref: `./${entryFileName}` };
   }
 
-  logger.info(
-    `Split locale navigation entries into ref files`
-  );
+  logger.info(`Split locale navigation entries into ref files`);
 
   // Now restore top-level refs (navigation → file, navbar → file, etc.)
   // This must happen AFTER language processing so the nav file gets the
@@ -200,11 +198,7 @@ function restoreTopLevelRefs(
   }
 
   if (changed) {
-    fs.writeFileSync(
-      docsJsonPath,
-      JSON.stringify(docsJson, null, 2),
-      'utf-8'
-    );
+    fs.writeFileSync(docsJsonPath, JSON.stringify(docsJson, null, 2), 'utf-8');
   }
 }
 

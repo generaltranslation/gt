@@ -9,7 +9,10 @@ import { mergeJson } from '../formats/json/mergeJson.js';
 import { extractJson } from '../formats/json/extractJson.js';
 import mergeYaml from '../formats/yaml/mergeYaml.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
-import { resolveMintlifyRefs, shouldResolveRefs } from '../utils/resolveMintlifyRefs.js';
+import {
+  resolveMintlifyRefs,
+  shouldResolveRefs,
+} from '../utils/resolveMintlifyRefs.js';
 import {
   readLockfile,
   writeLockfile,
@@ -319,4 +322,3 @@ export async function downloadFileBatch(
   }
   return result;
 }
-

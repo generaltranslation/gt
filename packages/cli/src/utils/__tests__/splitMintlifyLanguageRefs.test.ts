@@ -30,11 +30,11 @@ vi.mock('../../state/mintlifyRefMap.js', () => ({
 
 // Mock shouldResolveRefs to return true for the test docs.json path
 vi.mock('../resolveMintlifyRefs.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../resolveMintlifyRefs.js')>();
+  const actual =
+    await importOriginal<typeof import('../resolveMintlifyRefs.js')>();
   return {
     ...actual,
-    shouldResolveRefs: (filePath: string) =>
-      filePath.includes('docs.json'),
+    shouldResolveRefs: (filePath: string) => filePath.includes('docs.json'),
   };
 });
 
@@ -74,9 +74,7 @@ beforeEach(() => {
 
 describe('splitMintlifyLanguageRefs', () => {
   it('skips when no mintlify options', async () => {
-    await splitMintlifyLanguageRefs(
-      makeSettings({ options: {} }) as Settings
-    );
+    await splitMintlifyLanguageRefs(makeSettings({ options: {} }) as Settings);
     expect(mockWrite).not.toHaveBeenCalled();
   });
 
@@ -191,9 +189,7 @@ describe('splitMintlifyLanguageRefs', () => {
             tabs: [
               {
                 tab: 'Guides',
-                groups: [
-                  { group: 'API', pages: ['api/users'] },
-                ],
+                groups: [{ group: 'API', pages: ['api/users'] }],
               },
             ],
           },
@@ -202,9 +198,7 @@ describe('splitMintlifyLanguageRefs', () => {
             tabs: [
               {
                 tab: 'Guías',
-                groups: [
-                  { group: 'API', pages: ['es/api/users'] },
-                ],
+                groups: [{ group: 'API', pages: ['es/api/users'] }],
               },
             ],
           },

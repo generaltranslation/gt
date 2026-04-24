@@ -14,7 +14,10 @@ import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../../formats/json/parseJson.js';
 import { extractJson } from '../../formats/json/extractJson.js';
 import { validateJsonSchema } from '../../formats/json/utils.js';
-import { resolveMintlifyRefs, shouldResolveRefs } from '../../utils/resolveMintlifyRefs.js';
+import {
+  resolveMintlifyRefs,
+  shouldResolveRefs,
+} from '../../utils/resolveMintlifyRefs.js';
 import { runUploadFilesWorkflow } from '../../workflows/upload.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
