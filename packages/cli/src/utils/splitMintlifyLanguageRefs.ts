@@ -60,18 +60,17 @@ export async function splitMintlifyLanguageRefs(
     const defaultIndex = languages.findIndex(
       (e: any) => e?.language === defaultLocale
     );
-    if (defaultIndex < 0) return;
+    if (defaultIndex < 0) {
+      restoreTopLevelRefs(docsJson, refMap, docsJsonPath);
+      return;
+    }
 
     const navDir = navRefEntry
       ? path.dirname(navRefEntry.sourceFile)
       : path.dirname(docsJsonPath);
 
     const defaultPointerPrefix = `/navigation/languages/${defaultIndex}`;
-    const internalRefs = collectInternalRefs(
-      refMap,
-      defaultPointerPrefix,
-      navDir
-    );
+    const internalRefs = collectInternalRefs(refMap, defaultPointerPrefix);
 
     if (internalRefs.length > 0) {
       const defaultEntry = languages[defaultIndex];
@@ -86,19 +85,6 @@ export async function splitMintlifyLanguageRefs(
         const locale = entry.language;
         if (!locale) continue;
 
-        const topLevelPointers = new Set(
-          internalRefs
-            .filter(
-              (ref) =>
-                !internalRefs.some(
-                  (other) =>
-                    other !== ref &&
-                    ref.relativePointer.startsWith(other.relativePointer + '/')
-                )
-            )
-            .map((r) => r.relativePointer)
-        );
-
         for (const ref of internalRefs) {
           const subtree = getAtPointer(entry, ref.relativePointer);
           if (subtree === undefined) continue;
@@ -109,14 +95,10 @@ export async function splitMintlifyLanguageRefs(
           const outputPath = path.resolve(navDir, localeRelPath);
           writeJsonFile(outputPath, subtree);
 
-          if (topLevelPointers.has(ref.relativePointer)) {
-            const prefixedRefPath = prefixRefWithLocale(ref.refPath, locale);
-            setAtPointer(entry, ref.relativePointer, {
-              $ref: prefixedRefPath,
-            });
-          } else {
-            setAtPointer(entry, ref.relativePointer, { $ref: ref.refPath });
-          }
+          // All refs inside the locale's files use original paths — the locale
+          // directory mirrors the source structure, so relative resolution works.
+          // The locale prefix only appears in the parent navigation.json entry.
+          setAtPointer(entry, ref.relativePointer, { $ref: ref.refPath });
         }
       }
 
@@ -187,8 +169,7 @@ function restoreTopLevelRefs(
  */
 function collectInternalRefs(
   refMap: RefMap,
-  entryPointerPrefix: string,
-  navDir: string
+  entryPointerPrefix: string
 ): { relativePointer: string; refPath: string; resolvedDir: string }[] {
   const refs: {
     relativePointer: string;
@@ -208,23 +189,6 @@ function collectInternalRefs(
 
   refs.sort((a, b) => b.relativePointer.length - a.relativePointer.length);
   return refs;
-}
-
-/**
- * Prefix a $ref path with a locale directory.
- * "./tabs/guides.json" → "./es/tabs/guides.json"
- * "../groups/api.json" → "../es/groups/api.json"
- */
-function prefixRefWithLocale(refPath: string, locale: string): string {
-  if (refPath.startsWith('./')) {
-    return `./${locale}/${refPath.slice(2)}`;
-  }
-  // Handle ../ paths: preserve all leading ../ segments, insert locale after them
-  const match = refPath.match(/^((?:\.\.\/)+)(.*)$/);
-  if (match) {
-    return `${match[1]}${locale}/${match[2]}`;
-  }
-  return `./${locale}/${refPath}`;
 }
 
 function writeJsonFile(filePath: string, data: unknown): void {

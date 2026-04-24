@@ -389,4 +389,92 @@ describe('resolveMintlifyRefs', () => {
     expect(navEntry).toBeDefined();
     expect(navEntry!.originalContent).toEqual(navContent);
   });
+
+  it('records refPath and containingDir in refMap entries', () => {
+    setupFiles({
+      '/project/config/nav.json': {
+        groups: [{ $ref: './groups/api.json' }],
+      },
+      '/project/config/groups/api.json': {
+        group: 'API',
+        pages: ['api/users'],
+      },
+    });
+
+    const json = { navigation: { $ref: './config/nav.json' } };
+    const { refMap } = resolveMintlifyRefs(json, '/project/docs.json');
+
+    const navEntry = refMap.get('/navigation');
+    expect(navEntry!.refPath).toBe('./config/nav.json');
+    expect(navEntry!.containingDir).toBe(path.resolve('/project'));
+
+    const apiEntry = refMap.get('/navigation/groups/0');
+    expect(apiEntry!.refPath).toBe('./groups/api.json');
+    expect(apiEntry!.containingDir).toBe(
+      path.resolve('/project/config')
+    );
+  });
+
+  it('handles $ref resolving to a non-object (string)', () => {
+    setupFiles({
+      '/project/config/description.json': 'A simple string value',
+    });
+
+    // $ref resolves to a string — Mintlify drops sibling keys
+    const json = {
+      description: { $ref: './config/description.json', extra: 'dropped' },
+    };
+    const { resolved } = resolveMintlifyRefs(json, '/project/docs.json');
+
+    // Non-object: sibling keys are dropped, value replaces the object
+    expect((resolved as any).description).toBe('A simple string value');
+  });
+
+  it('handles multiple $ref at the same level', () => {
+    setupFiles({
+      '/project/config/nav.json': { groups: [] },
+      '/project/config/navbar.json': {
+        links: [{ label: 'Support' }],
+      },
+      '/project/config/footer.json': {
+        socials: { github: 'https://github.com/acme' },
+      },
+    });
+
+    const json = {
+      navigation: { $ref: './config/nav.json' },
+      navbar: { $ref: './config/navbar.json' },
+      footer: { $ref: './config/footer.json' },
+    };
+
+    const { resolved, refMap } = resolveMintlifyRefs(
+      json,
+      '/project/docs.json'
+    );
+
+    expect(resolved).toEqual({
+      navigation: { groups: [] },
+      navbar: { links: [{ label: 'Support' }] },
+      footer: { socials: { github: 'https://github.com/acme' } },
+    });
+    expect(refMap.size).toBe(3);
+  });
+
+  it('handles shouldResolveRefs correctly', async () => {
+    const { shouldResolveRefs } = await import('../resolveMintlifyRefs');
+
+    expect(shouldResolveRefs('/project/docs.json', undefined)).toBe(false);
+    expect(shouldResolveRefs('/project/docs.json', {})).toBe(false);
+    expect(
+      shouldResolveRefs('/project/docs.json', {
+        mintlify: { inferTitleFromFilename: true },
+      })
+    ).toBe(false);
+    expect(
+      shouldResolveRefs('/project/docs.json', {
+        mintlify: { inferTitleFromFilename: true },
+        jsonSchema: { './other.json': { composite: {} } },
+      })
+    ).toBe(false);
+  });
 });
