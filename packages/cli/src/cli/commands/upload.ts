@@ -13,10 +13,8 @@ import { UploadOptions } from '../base.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../../formats/json/parseJson.js';
 import { extractJson } from '../../formats/json/extractJson.js';
-import {
-  validateJsonSchema,
-  detectMintlifyUnsupportedFields,
-} from '../../formats/json/utils.js';
+import { validateJsonSchema } from '../../formats/json/utils.js';
+import { resolveMintlifyRefs, shouldResolveRefs } from '../../utils/resolveMintlifyRefs.js';
 import { runUploadFilesWorkflow } from '../../workflows/upload.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
@@ -62,20 +60,20 @@ export async function upload(
     const jsonFiles = filePaths.json.map((filePath) => {
       const content = readFile(filePath);
 
-      // Detect unsupported fields in Mintlify docs.json
-      if (
-        settings.framework === 'mintlify' &&
-        path.basename(filePath) === 'docs.json'
-      ) {
+      // Resolve $ref before parsing if configured
+      let contentForParsing = content;
+      if (shouldResolveRefs(filePath, additionalOptions)) {
         try {
-          detectMintlifyUnsupportedFields(JSON.parse(content), filePath);
+          const json = JSON.parse(content);
+          const { resolved } = resolveMintlifyRefs(json, filePath);
+          contentForParsing = JSON.stringify(resolved, null, 2);
         } catch {
           // JSON parse errors are handled below by parseJson
         }
       }
 
       const parsedJson = parseJson(
-        content,
+        contentForParsing,
         filePath,
         additionalOptions,
         settings.defaultLocale

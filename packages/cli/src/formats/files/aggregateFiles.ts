@@ -5,7 +5,8 @@ import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
-import { detectMintlifyUnsupportedFields } from '../json/utils.js';
+import { resolveMintlifyRefs, shouldResolveRefs } from '../../utils/resolveMintlifyRefs.js';
+import { storeRefMap } from '../../state/mintlifyRefMap.js';
 import path from 'node:path';
 import parseYaml from '../yaml/parseYaml.js';
 import { validateYamlSchema } from '../yaml/utils.js';
@@ -100,20 +101,21 @@ export async function aggregateFiles(
           }
         }
 
-        // Detect unsupported fields in Mintlify docs.json
-        if (
-          settings.framework === 'mintlify' &&
-          path.basename(filePath) === 'docs.json'
-        ) {
+        // Resolve $ref before parsing if configured
+        let contentForParsing = content;
+        if (shouldResolveRefs(filePath, settings.options)) {
           try {
-            detectMintlifyUnsupportedFields(JSON.parse(content), filePath);
+            const json = JSON.parse(content);
+            const { resolved, refMap } = resolveMintlifyRefs(json, filePath);
+            storeRefMap(refMap);
+            contentForParsing = JSON.stringify(resolved, null, 2);
           } catch {
             // JSON parse errors are handled below by parseJson
           }
         }
 
         const parsedJson = parseJson(
-          content,
+          contentForParsing,
           filePath,
           settings.options || {},
           settings.defaultLocale

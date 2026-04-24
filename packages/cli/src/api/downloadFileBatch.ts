@@ -9,6 +9,7 @@ import { mergeJson } from '../formats/json/mergeJson.js';
 import { extractJson } from '../formats/json/extractJson.js';
 import mergeYaml from '../formats/yaml/mergeYaml.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
+import { resolveMintlifyRefs, shouldResolveRefs } from '../utils/resolveMintlifyRefs.js';
 import {
   readLockfile,
   writeLockfile,
@@ -44,8 +45,19 @@ function mergeWithSource(
   if (!sourceContent) return translatedContent;
 
   if (jsonSchema) {
+    // Resolve $ref before merging if configured
+    let resolvedSourceContent = sourceContent;
+    if (shouldResolveRefs(inputPath, options.options)) {
+      try {
+        const json = JSON.parse(sourceContent);
+        const { resolved } = resolveMintlifyRefs(json, inputPath);
+        resolvedSourceContent = JSON.stringify(resolved, null, 2);
+      } catch {
+        // Fall through with original content
+      }
+    }
     return mergeJson(
-      sourceContent,
+      resolvedSourceContent,
       inputPath,
       options.options,
       [{ translatedContent, targetLocale: locale }],
@@ -178,7 +190,17 @@ export async function downloadFileBatch(
           // For schema-based files, re-merge with current source in case
           // non-translatable fields changed (skip the API download, not the merge)
           try {
-            const existingContent = fs.readFileSync(outputPath, 'utf8');
+            let existingContent = fs.readFileSync(outputPath, 'utf8');
+            // Resolve $ref before extraction if configured
+            if (shouldResolveRefs(outputPath, options.options)) {
+              try {
+                const json = JSON.parse(existingContent);
+                const { resolved } = resolveMintlifyRefs(json, outputPath);
+                existingContent = JSON.stringify(resolved, null, 2);
+              } catch {
+                // Fall through with original content
+              }
+            }
             const jsonExtracted = options.options?.jsonSchema
               ? extractJson(
                   existingContent,
@@ -297,3 +319,4 @@ export async function downloadFileBatch(
   }
   return result;
 }
+
