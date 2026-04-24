@@ -1,5 +1,5 @@
 import { hashString } from './hashSource';
-import stringify from 'fast-json-stable-stringify';
+import { stableStringify as stringify } from '../utils/stableStringify';
 
 export default function hashTemplate(
   template: {
