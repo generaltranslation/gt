@@ -5,6 +5,7 @@ export type FileFormat =
   | 'GTJSON'
   | 'JSON'
   | 'PO'
+  | 'POT'
   | 'YAML'
   | 'MDX'
   | 'MD'

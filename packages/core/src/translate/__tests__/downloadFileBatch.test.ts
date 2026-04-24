@@ -140,7 +140,7 @@ describe.sequential('_downloadFileBatch', () => {
           fileFormat: 'PO',
           fileName: 'es.po',
           data: Buffer.from(poContent).toString('base64'),
-          metadata: { language: 'es' },
+          metadata: {},
         },
       ],
       count: 1,
@@ -162,7 +162,7 @@ describe.sequential('_downloadFileBatch', () => {
         fileFormat: 'PO',
         fileName: 'es.po',
         data: poContent,
-        metadata: { language: 'es' },
+        metadata: {},
       },
     ]);
   });

@@ -346,12 +346,12 @@ describe('_uploadTranslations', () => {
     );
   });
 
-  it('should upload PO translations', async () => {
+  it('should upload POT sources with PO translations', async () => {
     const mockFiles = [
       {
         source: createMockFileUpload({
           fileName: 'messages.pot',
-          fileFormat: 'PO',
+          fileFormat: 'POT',
           content: 'msgid "Save"\nmsgstr ""\n',
         }),
         translations: [
@@ -378,7 +378,7 @@ describe('_uploadTranslations', () => {
               'base64'
             ),
             fileName: 'messages.pot',
-            fileFormat: 'PO',
+            fileFormat: 'POT',
             locale: 'en',
           }),
           translations: [

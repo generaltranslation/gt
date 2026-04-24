@@ -2,4 +2,4 @@
 "generaltranslation": patch
 ---
 
-Add core API type support for PO file translation workflows.
+Add core API type support for PO and POT file translation workflows.

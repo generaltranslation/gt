@@ -235,12 +235,12 @@ describe.sequential('_uploadSourceFiles', () => {
     );
   });
 
-  it('should upload PO source files', async () => {
+  it('should upload PO and POT source files', async () => {
     const mockFiles = [
       {
         source: createMockFileUpload({
           fileName: 'messages.pot',
-          fileFormat: 'PO',
+          fileFormat: 'POT',
           content: 'msgid "Save"\nmsgstr ""\n',
         }),
       },
@@ -270,7 +270,7 @@ describe.sequential('_uploadSourceFiles', () => {
                   'base64'
                 ),
                 fileName: 'messages.pot',
-                fileFormat: 'PO',
+                fileFormat: 'POT',
                 locale: 'en',
               }),
             },
