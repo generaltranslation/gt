@@ -67,6 +67,7 @@ import {
 } from '../setup/frameworkUtils.js';
 import { INLINE_LIBRARIES } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
+import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 
 export type UploadOptions = {
   config?: string;
@@ -304,6 +305,8 @@ export class BaseCLI {
     if (include.size > 0) {
       await postProcessTranslations(settings, include);
     }
+    // Split Mintlify language entries into $ref files to keep docs.json small
+    await splitMintlifyLanguageRefs(settings);
     // Mirror assets after translations are downloaded and locale dirs are populated
     await mirrorAssetsToLocales(settings);
     clearDownloaded();
