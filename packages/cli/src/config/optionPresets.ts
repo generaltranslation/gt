@@ -17,11 +17,13 @@ export function generatePreset(
       case 'mintlify':
         // https://mintlify.com/docs/navigation
         return {
+          resolveRefs: true,
           composite: {
             '$.navigation.languages': {
               type: 'array',
               key: '$.language',
               experimentalSort: 'localesAlphabetical',
+              splitEntries: true,
               include: [
                 '$..group',
                 '$..tab',

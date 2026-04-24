@@ -1,208 +1,323 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
-import { Settings } from '../types/index.js';
+import { Settings, JsonSchema, SourceObjectOptions } from '../types/index.js';
 import type { RefMap } from './resolveMintlifyRefs.js';
-import { shouldResolveRefs } from './resolveMintlifyRefs.js';
-import micromatch from 'micromatch';
+import { validateJsonSchema } from '../formats/json/utils.js';
 import { getStoredRefMap, clearStoredRefMap } from '../state/mintlifyRefMap.js';
+import { JSONPath } from 'jsonpath-plus';
+import { getLocaleProperties } from 'generaltranslation';
 
 /**
- * Post-processing step for Mintlify docs.json.
+ * Post-processing step for composite JSON files with splitEntries enabled.
  *
- * After mergeJson writes a fully-inlined docs.json, this function:
- * 1. Restores the original $ref structure (if the source used $ref)
- * 2. Wraps each non-default locale entry into its own ref file
- *    to keep the navigation file small
+ * After mergeJson writes a fully-inlined composite file, this function:
+ * 1. Restores the original $ref structure (if the source used $ref / resolveRefs)
+ * 2. Extracts non-default keyed entries into their own ref files
+ *    to keep the source file compact
+ *
+ * Driven entirely by the jsonSchema config — reads the composite path,
+ * key field, and splitEntries flag from the schema.
  */
 export async function splitMintlifyLanguageRefs(
   settings: Settings
 ): Promise<void> {
-  const isMintlify =
-    settings.framework === 'mintlify' || !!settings.options?.mintlify;
-  if (!isMintlify) return;
-
   const refMap = getStoredRefMap();
 
   try {
     const resolvedJsonPaths = settings.files?.resolvedPaths?.json;
     if (!resolvedJsonPaths) return;
 
-    // Find the composite JSON file — either via shouldResolveRefs (if refMap exists)
-    // or by checking for a composite jsonSchema entry directly
-    const docsJsonPath =
-      resolvedJsonPaths.find((p) => shouldResolveRefs(p, settings.options)) ??
-      findCompositeJsonFile(resolvedJsonPaths, settings.options);
-    if (!docsJsonPath) return;
-    if (!fs.existsSync(docsJsonPath)) return;
+    // Find a JSON file that has splitEntries enabled or resolveRefs
+    const targetFile = findTargetFile(resolvedJsonPaths, settings);
+    if (!targetFile) return;
 
-    let docsJson: any;
+    const { filePath: compositeFilePath, splitConfig } = targetFile;
+    if (!fs.existsSync(compositeFilePath)) return;
+
+    let fileJson: any;
     try {
-      docsJson = JSON.parse(fs.readFileSync(docsJsonPath, 'utf-8'));
+      fileJson = JSON.parse(fs.readFileSync(compositeFilePath, 'utf-8'));
     } catch {
       return;
     }
 
-    const defaultLocale = settings.defaultLocale;
-    const docsDir = path.dirname(docsJsonPath);
+    const docsDir = path.dirname(compositeFilePath);
 
-    // Determine where navigation lives
-    const navRefEntry = refMap?.get('/navigation');
-    const navContent = navRefEntry
-      ? getAtPointer(docsJson, '/navigation')
-      : docsJson?.navigation;
-
-    const languages: any[] | undefined = navContent?.languages;
-    if (!Array.isArray(languages) || languages.length <= 1) {
-      if (refMap && refMap.size > 0) {
-        restoreTopLevelRefs(docsJson, refMap, docsJsonPath);
-      }
-      return;
-    }
-
-    const defaultIndex = languages.findIndex(
-      (e: any) => e?.language === defaultLocale
-    );
-    if (defaultIndex < 0) {
-      if (refMap && refMap.size > 0) {
-        restoreTopLevelRefs(docsJson, refMap, docsJsonPath);
-      }
-      return;
-    }
-
-    const navDir = navRefEntry ? path.dirname(navRefEntry.sourceFile) : docsDir;
-
-    // Restore $ref structure if the source used $ref
-    if (refMap && refMap.size > 0) {
-      const defaultPointerPrefix = `/navigation/languages/${defaultIndex}`;
-      const internalRefs = collectInternalRefs(refMap, defaultPointerPrefix);
-
-      if (internalRefs.length > 0) {
-        // Restore default locale's refs
-        const defaultEntry = languages[defaultIndex];
-        for (const ref of internalRefs) {
-          setAtPointer(defaultEntry, ref.relativePointer, {
-            $ref: ref.refPath,
-          });
-        }
-
-        // Write locale ref files mirroring the source topology
-        for (const entry of languages) {
-          if (!entry || entry.language === defaultLocale) continue;
-          const locale = entry.language;
-          if (!locale) continue;
-
-          for (const ref of internalRefs) {
-            const subtree = getAtPointer(entry, ref.relativePointer);
-            if (subtree === undefined) continue;
-
-            const originalAbsPath = path.resolve(ref.resolvedDir, ref.refPath);
-            const relToNavDir = path.relative(navDir, originalAbsPath);
-            const localeRelPath = path.join(locale, relToNavDir);
-            const outputPath = path.resolve(navDir, localeRelPath);
-            writeJsonFile(outputPath, subtree);
-
-            setAtPointer(entry, ref.relativePointer, { $ref: ref.refPath });
-          }
-        }
-
-        logger.info(`Restored $ref structure for source locale navigation`);
-      }
-    }
-
-    // Wrap each non-default locale entry into its own ref file.
-    // This runs regardless of whether the source used $ref — it keeps
-    // the navigation file small by extracting locale content.
-    const navFileName = navRefEntry
-      ? path.basename(navRefEntry.sourceFile)
-      : path.basename(docsJsonPath);
-
-    for (let i = 0; i < languages.length; i++) {
-      const entry = languages[i];
-      if (!entry || entry.language === defaultLocale) continue;
-      const locale = entry.language;
-      if (!locale) continue;
-
-      const { language, ...contentWithoutLanguage } = entry;
-      const entryFileName = `${locale}/${navFileName}`;
-      const entryFilePath = path.resolve(navDir, entryFileName);
-      writeJsonFile(entryFilePath, contentWithoutLanguage);
-
-      languages[i] = { language: locale, $ref: `./${entryFileName}` };
-    }
-
-    logger.info(`Split locale navigation entries into ref files`);
-
-    // Restore top-level refs and write the final docs.json
-    if (refMap && refMap.size > 0) {
-      restoreTopLevelRefs(docsJson, refMap, docsJsonPath);
-    } else {
-      // No refMap — navigation is inline in docs.json, write it back directly
-      fs.writeFileSync(
-        docsJsonPath,
-        JSON.stringify(docsJson, null, 2),
-        'utf-8'
+    // If splitEntries is configured, process it
+    if (splitConfig) {
+      processSplitEntries(
+        fileJson,
+        compositeFilePath,
+        docsDir,
+        splitConfig,
+        settings,
+        refMap
       );
     }
+
+    // Restore top-level refs if any exist
+    if (refMap && refMap.size > 0) {
+      restoreTopLevelRefs(fileJson, refMap, splitConfig);
+    }
+
+    // Always write the composite file back — splitEntries modified the
+    // languages array, and restoreTopLevelRefs may not have written it
+    // (e.g., when all refs are inside language entries, not top-level)
+    fs.writeFileSync(
+      compositeFilePath,
+      JSON.stringify(fileJson, null, 2),
+      'utf-8'
+    );
   } finally {
     clearStoredRefMap();
   }
 }
 
+type SplitConfig = {
+  compositePath: string;
+  jsonPointer: string;
+  keyField: string;
+  keyJsonPath: string;
+  sourceObjectOptions: SourceObjectOptions;
+};
+
 /**
- * Find the composite JSON file from the jsonSchema config.
- * Used when no refMap exists (no $ref in source).
+ * Find the target file and extract split configuration from the schema.
  */
-function findCompositeJsonFile(
+function findTargetFile(
   resolvedPaths: string[],
-  options?: Record<string, any>
-): string | undefined {
-  if (!options?.jsonSchema) return undefined;
+  settings: Settings
+): {
+  filePath: string;
+  schema: JsonSchema;
+  splitConfig: SplitConfig | null;
+} | null {
+  if (!settings.options?.jsonSchema) return null;
 
   for (const filePath of resolvedPaths) {
-    const relative = path.relative(process.cwd(), filePath);
-    for (const [glob, schema] of Object.entries(
-      options.jsonSchema as Record<string, any>
-    )) {
-      if (schema?.composite && micromatch.isMatch(relative, glob)) {
-        return filePath;
+    const schema = validateJsonSchema(settings.options, filePath);
+    if (!schema) continue;
+
+    const hasSplitEntries = schema.composite
+      ? Object.entries(schema.composite).some(
+          ([, opts]) => opts.splitEntries
+        )
+      : false;
+
+    const hasResolveRefs = schema.resolveRefs;
+
+    if (!hasSplitEntries && !hasResolveRefs) continue;
+
+    // Extract split config if available
+    let splitConfig: SplitConfig | null = null;
+    if (schema.composite) {
+      for (const [compositePath, opts] of Object.entries(schema.composite)) {
+        if (opts.splitEntries && opts.type === 'array' && opts.key) {
+          splitConfig = {
+            compositePath,
+            jsonPointer: jsonPathToPointer(compositePath),
+            keyField: opts.key,
+            keyJsonPath: opts.key,
+            sourceObjectOptions: opts,
+          };
+          break;
+        }
       }
     }
+
+    return { filePath, schema, splitConfig };
   }
-  return undefined;
+
+  return null;
 }
 
 /**
- * Restore top-level $ref pointers in docs.json.
+ * Process splitEntries: extract non-default keyed entries into ref files.
+ */
+function processSplitEntries(
+  fileJson: any,
+  compositeFilePath: string,
+  docsDir: string,
+  splitConfig: SplitConfig,
+  settings: Settings,
+  refMap: RefMap | null
+): void {
+  const { jsonPointer, keyJsonPath } = splitConfig;
+
+  // Find the composite array — may be behind a $ref
+  const parentPointer = jsonPointer.split('/').slice(0, -1).join('/') || '';
+  const arrayKey = jsonPointer.split('/').pop() || '';
+  const navRefEntry = refMap?.get(parentPointer || undefined as any);
+
+  // Get the array from the file
+  const arrayContainer = parentPointer
+    ? getAtPointer(fileJson, parentPointer)
+    : fileJson;
+  if (!arrayContainer) return;
+
+  const entries: any[] = arrayContainer[arrayKey];
+  if (!Array.isArray(entries) || entries.length <= 1) return;
+
+  // Determine the default key value (the source entry)
+  const defaultKeyValue = getDefaultKeyValue(
+    settings.defaultLocale,
+    splitConfig.sourceObjectOptions
+  );
+
+  const defaultIndex = entries.findIndex((e: any) => {
+    if (!e || typeof e !== 'object') return false;
+    const values = JSONPath({
+      json: e,
+      path: keyJsonPath,
+      resultType: 'value',
+      flatten: true,
+      wrap: true,
+    });
+    return values?.[0] === defaultKeyValue;
+  });
+  if (defaultIndex < 0) return;
+
+  // Determine where the composite array actually lives on disk
+  const navDir = navRefEntry
+    ? path.dirname(navRefEntry.sourceFile)
+    : docsDir;
+
+  // Restore $ref structure if the source used $ref
+  if (refMap && refMap.size > 0) {
+    const defaultPointerPrefix = `${jsonPointer}/${defaultIndex}`;
+    const internalRefs = collectInternalRefs(refMap, defaultPointerPrefix);
+
+    if (internalRefs.length > 0) {
+      const defaultEntry = entries[defaultIndex];
+      for (const ref of internalRefs) {
+        setAtPointer(defaultEntry, ref.relativePointer, {
+          $ref: ref.refPath,
+        });
+      }
+
+      for (const entry of entries) {
+        const entryKeyValues = JSONPath({
+          json: entry,
+          path: keyJsonPath,
+          resultType: 'value',
+          flatten: true,
+          wrap: true,
+        });
+        if (entryKeyValues?.[0] === defaultKeyValue) continue;
+
+        for (const ref of internalRefs) {
+          const subtree = getAtPointer(entry, ref.relativePointer);
+          if (subtree === undefined) continue;
+
+          const originalAbsPath = path.resolve(ref.resolvedDir, ref.refPath);
+          const relToNavDir = path.relative(navDir, originalAbsPath);
+          const keyValue = entryKeyValues?.[0] || 'unknown';
+          const localeRelPath = path.join(keyValue, relToNavDir);
+          const outputPath = path.resolve(navDir, localeRelPath);
+          writeJsonFile(outputPath, subtree);
+
+          setAtPointer(entry, ref.relativePointer, { $ref: ref.refPath });
+        }
+      }
+
+      logger.info(`Restored $ref structure for default entry`);
+    }
+  }
+
+  // Extract each non-default entry into its own ref file
+  const navFileName = navRefEntry
+    ? path.basename(navRefEntry.sourceFile)
+    : path.basename(compositeFilePath);
+
+  // Get the actual property name from the key JSONPath (e.g., "$.language" → "language")
+  const keyPropertyName = keyJsonPath.replace(/^\$\.?/, '');
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    if (!entry || typeof entry !== 'object') continue;
+
+    const keyValues = JSONPath({
+      json: entry,
+      path: keyJsonPath,
+      resultType: 'value',
+      flatten: true,
+      wrap: true,
+    });
+    const keyValue = keyValues?.[0];
+    if (!keyValue || keyValue === defaultKeyValue) continue;
+
+    const { [keyPropertyName]: _, ...contentWithoutKey } = entry;
+    const entryFileName = `${keyValue}/${navFileName}`;
+    const entryFilePath = path.resolve(navDir, entryFileName);
+    writeJsonFile(entryFilePath, contentWithoutKey);
+
+    entries[i] = { [keyPropertyName]: keyValue, $ref: `./${entryFileName}` };
+  }
+
+  logger.info(`Split keyed entries into ref files`);
+}
+
+/**
+ * Get the identifying key value for the default locale.
+ */
+function getDefaultKeyValue(
+  defaultLocale: string,
+  sourceObjectOptions: SourceObjectOptions
+): string {
+  const localeProperty = sourceObjectOptions.localeProperty || 'code';
+  const localeProperties = getLocaleProperties(defaultLocale);
+  return (
+    (localeProperties as any)[localeProperty] ||
+    localeProperties.code ||
+    defaultLocale
+  );
+}
+
+/**
+ * Convert a JSONPath like "$.navigation.languages" to a JSON pointer like "/navigation/languages".
+ */
+function jsonPathToPointer(jsonPath: string): string {
+  return jsonPath
+    .replace(/^\$\.?/, '')
+    .split('.')
+    .filter(Boolean)
+    .map((segment) => `/${segment}`)
+    .join('');
+}
+
+/**
+ * Restore top-level $ref pointers in the composite file.
  * Sorted deepest-first so nested refs are written before parents.
  */
 function restoreTopLevelRefs(
-  docsJson: any,
+  fileJson: any,
   refMap: RefMap,
-  docsJsonPath: string
+  splitConfig: SplitConfig | null
 ): void {
-  let changed = false;
+
+  // Build a regex to exclude entries inside the composite array
+  const arrayPointerPattern = splitConfig
+    ? new RegExp(`^${splitConfig.jsonPointer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/\\d+`)
+    : null;
 
   const entries = [...refMap.entries()]
-    .filter(([pointer]) => !pointer.match(/^\/navigation\/languages\/\d+/))
+    .filter(
+      ([pointer]) => !arrayPointerPattern || !arrayPointerPattern.test(pointer)
+    )
     .sort(([a], [b]) => b.length - a.length);
 
   for (const [pointer, entry] of entries) {
-    const subtree = getAtPointer(docsJson, pointer);
+    const subtree = getAtPointer(fileJson, pointer);
     if (subtree === undefined) continue;
 
     writeJsonFile(entry.sourceFile, subtree);
-    setAtPointer(docsJson, pointer, { $ref: entry.refPath });
-    changed = true;
-  }
-
-  if (changed) {
-    fs.writeFileSync(docsJsonPath, JSON.stringify(docsJson, null, 2), 'utf-8');
+    setAtPointer(fileJson, pointer, { $ref: entry.refPath });
   }
 }
 
 /**
- * Collect refMap entries that describe a language entry's internal $ref chain.
+ * Collect refMap entries that describe an entry's internal $ref chain.
  * Sorted deepest-first so nested content is extracted before parents.
  */
 function collectInternalRefs(

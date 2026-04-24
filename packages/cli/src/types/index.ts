@@ -314,6 +314,9 @@ export type JsonSchema = {
   preset?: 'mintlify' | 'openapi';
   structuralTransform?: StructuralTransform[];
 
+  // when true, resolve $ref entries in this file before processing
+  resolveRefs?: boolean;
+
   // exactly 1 of include or composite must be provided; not both
 
   // specify include if file is not composite
@@ -367,6 +370,11 @@ export type SourceObjectOptions = {
   // When set to 'localesAlphabetical', the default locale will be placed first
   // and the remaining locales will be ordered alphabetically by locale code
   experimentalSort?: 'locales' | 'localesAlphabetical';
+
+  // when true, non-default keyed entries in this composite array are extracted
+  // into separate files (using the key value as the directory name) and replaced
+  // with $ref pointers. Keeps the source file compact.
+  splitEntries?: boolean;
 };
 
 export type TransformOptions = {
