@@ -13,7 +13,7 @@ import type {
  * @param branches - The alternative branches (at least 2)
  * @returns A ChoiceNode with the `__gt_node_type: 'choice'` discriminator
  */
-export function createChoiceNode<T extends object>(
+export function createChoiceNode<T>(
   branches: ResolutionNode<T>[]
 ): ChoiceNode<T> {
   return {
