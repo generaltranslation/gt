@@ -47,7 +47,6 @@
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.1",
-    "@types/crypto-js": "^4.2.2",
     "@types/node": "^20.14.9",
     "rollup": "^4.24.0",
     "rollup-plugin-dts": "^6.1.1",
@@ -59,7 +58,7 @@
   },
   "dependencies": {
     "@formatjs/icu-messageformat-parser": "^2.11.4",
-    "crypto-js": "^4.2.0",
+    "@noble/hashes": "^2.2.0",
     "fast-json-stable-stringify": "^2.1.0",
     "intl-messageformat": "^10.7.16"
   },

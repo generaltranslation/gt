@@ -2,7 +2,8 @@
 
 import { JsxChild, JsxChildren, Variable } from '../types';
 import stringify from 'fast-json-stable-stringify';
-import CryptoJS from 'crypto-js';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import isVariable from '../utils/isVariable';
 import { HashMetadata } from './types';
 
@@ -16,7 +17,7 @@ import { HashMetadata } from './types';
  * @returns {string} - The resulting hash as a hexadecimal string.
  */
 export function hashString(string: string): string {
-  return CryptoJS.SHA256(string).toString(CryptoJS.enc.Hex).slice(0, 16);
+  return bytesToHex(sha256(utf8ToBytes(string))).slice(0, 16);
 }
 
 /**

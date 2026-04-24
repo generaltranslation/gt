@@ -2,7 +2,8 @@
 
 import { OldJsxChild, OldJsxChildren, OldVariableObject } from './oldTypes';
 import stringify from 'fast-json-stable-stringify';
-import CryptoJS from 'crypto-js';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
 // ----- FUNCTIONS ----- //
 /**
@@ -12,7 +13,7 @@ import CryptoJS from 'crypto-js';
  * @returns {string} - The resulting hash as a hexadecimal string.
  */
 export function oldHashString(string: string): string {
-  return CryptoJS.SHA256(string).toString(CryptoJS.enc.Hex);
+  return bytesToHex(sha256(utf8ToBytes(string)));
 }
 
 /**
