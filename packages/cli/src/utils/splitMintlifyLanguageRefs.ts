@@ -100,9 +100,7 @@ function findTargetFile(
     if (!schema) continue;
 
     const hasSplitEntries = schema.composite
-      ? Object.entries(schema.composite).some(
-          ([, opts]) => opts.splitEntries
-        )
+      ? Object.entries(schema.composite).some(([, opts]) => opts.splitEntries)
       : false;
 
     const hasResolveRefs = schema.resolveRefs;
@@ -148,7 +146,7 @@ function processSplitEntries(
   // Find the composite array — may be behind a $ref
   const parentPointer = jsonPointer.split('/').slice(0, -1).join('/') || '';
   const arrayKey = jsonPointer.split('/').pop() || '';
-  const navRefEntry = refMap?.get(parentPointer || undefined as any);
+  const navRefEntry = refMap?.get(parentPointer || (undefined as any));
 
   // Get the array from the file
   const arrayContainer = parentPointer
@@ -179,9 +177,7 @@ function processSplitEntries(
   if (defaultIndex < 0) return;
 
   // Determine where the composite array actually lives on disk
-  const navDir = navRefEntry
-    ? path.dirname(navRefEntry.sourceFile)
-    : docsDir;
+  const navDir = navRefEntry ? path.dirname(navRefEntry.sourceFile) : docsDir;
 
   // Restore $ref structure if the source used $ref
   if (refMap && refMap.size > 0) {
@@ -295,10 +291,11 @@ function restoreTopLevelRefs(
   refMap: RefMap,
   splitConfig: SplitConfig | null
 ): void {
-
   // Build a regex to exclude entries inside the composite array
   const arrayPointerPattern = splitConfig
-    ? new RegExp(`^${splitConfig.jsonPointer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/\\d+`)
+    ? new RegExp(
+        `^${splitConfig.jsonPointer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/\\d+`
+      )
     : null;
 
   const entries = [...refMap.entries()]
