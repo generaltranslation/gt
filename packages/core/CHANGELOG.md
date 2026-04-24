@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.2.6
+
+### Patch Changes
+
+- [#1240](https://github.com/generaltranslation/gt/pull/1240) [`8b75420`](https://github.com/generaltranslation/gt/commit/8b7542091233fb2c87284a365cc9ab8ce70371d3) Thanks [@bgub](https://github.com/bgub)! - Replace crypto-js with @noble/hashes for SHA-256 hashing
+
 ## 8.2.5
 
 ### Patch Changes
