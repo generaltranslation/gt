@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.18
+
+### Patch Changes
+
+- [#1243](https://github.com/generaltranslation/gt/pull/1243) [`a0e19f6`](https://github.com/generaltranslation/gt/commit/a0e19f64a17d1a439d2352a6bc3ca7390c4ed401) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handling Mintlify $ref
+
 ## 2.14.17
 
 ### Patch Changes
