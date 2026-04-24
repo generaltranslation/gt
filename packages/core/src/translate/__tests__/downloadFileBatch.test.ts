@@ -165,6 +165,8 @@ describe.sequential('_downloadFileBatch', () => {
         metadata: {},
       },
     ]);
+    expect(result.count).toBe(1);
+    expect(result.batchCount).toBe(1);
   });
 
   it('should use default timeout when not specified', async () => {
