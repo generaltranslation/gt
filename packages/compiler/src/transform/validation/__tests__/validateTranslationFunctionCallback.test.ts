@@ -535,6 +535,25 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.id).toBeUndefined();
       });
 
+      it('should return variants when second argument has options but no $context', () => {
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          t.stringLiteral('Hello'),
+          t.objectExpression([
+            t.objectProperty(t.identifier('$id'), t.stringLiteral('greeting')),
+            t.objectProperty(t.identifier('$maxChars'), t.numericLiteral(100)),
+          ]),
+        ]);
+
+        const result = validateCall(callExpr, state);
+
+        expect(result.errors).toHaveLength(0);
+        expect(result.variants).toHaveLength(1);
+        expect(result.variants?.[0]?.content).toBe('Hello');
+        expect(result.variants?.[0]?.context).toBeUndefined();
+        expect(result.id).toBe('greeting');
+        expect(result.maxChars).toBe(100);
+      });
+
       it('should ignore non-object properties in second argument', () => {
         const callExpr = t.callExpression(t.identifier('useGT_callback'), [
           t.stringLiteral('Hello'),

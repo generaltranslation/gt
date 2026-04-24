@@ -133,13 +133,13 @@ export function validateUseGTCallback(
 
   // Join static parts of all variants
   const contentStrings = variants.map(joinStaticParts);
-  const variantsWithContext = cartesianProduct([
-    contentStrings,
-    context ?? [],
-  ]).map(([content, context]) => ({ content, context }));
   return {
     errors,
-    variants: variantsWithContext,
+    variants: context
+      ? cartesianProduct([contentStrings, context]).map(
+          ([content, context]) => ({ content, context })
+        )
+      : contentStrings.map((content) => ({ content })),
     id,
     hash,
     maxChars,
