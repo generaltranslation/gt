@@ -163,18 +163,12 @@ export function extractString(
   if (isDeriveInvocation(expr, scope)) {
     if (derive) {
       // TODO: add derive-logic here
-      return {
-        errors: [],
-        value: [createDerivePart(expr)],
-        metadata: { hasDynamic: false, hasDerive: true, hasStatic: false },
-      };
-    } else {
-      return {
-        errors: [],
-        value: [createDynamicPart(expr)],
-        metadata: { hasDynamic: true, hasDerive: false, hasStatic: false },
-      };
     }
+    return {
+      errors: [],
+      value: [createDerivePart(expr)],
+      metadata: { hasDynamic: false, hasDerive: true, hasStatic: false },
+    };
   }
 
   // Fall back to dynamic

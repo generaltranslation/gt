@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { Part } from './extractString';
+import { StringPart } from '../../nodes/types';
 
 /**
  * Converts merged parts into an AST message node and optional variables object.
@@ -8,7 +8,7 @@ import { Part } from './extractString';
  * - Has derive/dynamic → TemplateLiteral with derive expressions preserved
  *   and dynamic values extracted as {n} placeholders
  */
-export function buildTransformResult(parts: Part[]): {
+export function buildTransformResult(parts: StringPart[]): {
   message: t.StringLiteral | t.TemplateLiteral;
   variables: t.ObjectExpression | null;
 } {

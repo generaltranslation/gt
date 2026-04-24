@@ -2,11 +2,10 @@ import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
 import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
-import { transformTemplateLiteral } from '../../transform/macro-expansion/transformTemplateLiteral';
 import hashSource from '../../utils/calculateHash';
-import type { ResolutionNode } from '../../nodes/types';
 import { multiply } from '../../nodes/multiply';
 import { extractString } from '../../transform/templates-and-concat/extractString';
+import { collapseStringPartsToString } from '../../utils/parsing/collapsStringPartsToString';
 
 /**
  * Process tagged template expressions during the collection pass.
@@ -44,15 +43,13 @@ export function processTaggedTemplateExpression(
     // Extract message from the template literal
     const extracted = extractString(path.get('quasi'), true);
     if (extracted.errors.length || extracted.value == null) return;
+    // TODO: remove this once derive is supported
+    if (extracted.metadata.hasDerive) return;
     const variants = multiply(extracted.value);
 
+    // Enforce invariants: skip variants that contain derive (no resolution yet)
     for (const variant of variants) {
-      // contains derive() — skip
-      if (variant.some((p) => p.type === 'derive')) {
-        continue;
-      }
-      // const variants = multiply(resolutionNodes);
-      const content = variants[0].join('');
+      const content = collapseStringPartsToString(variant, true);
 
       const hash = hashSource({
         source: content,

@@ -1,7 +1,6 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import { flattenExpressionToParts } from '../templates-and-concat/flattenExpressionToParts';
-import { mergeAdjacentStaticParts } from '../templates-and-concat/mergeAdjacentStaticParts';
+import { extractString } from '../templates-and-concat/extractString';
 import { buildTransformResult } from '../templates-and-concat/buildTransformationResult';
 
 /**
@@ -14,7 +13,6 @@ export function transformConcatenation(path: NodePath<t.BinaryExpression>): {
   message: t.StringLiteral | t.TemplateLiteral;
   variables: t.ObjectExpression | null;
 } {
-  const parts = flattenExpressionToParts(path.node, path);
-  const merged = mergeAdjacentStaticParts(parts);
-  return buildTransformResult(merged);
+  const parts = extractString(path, false);
+  return buildTransformResult(parts.value ?? []);
 }

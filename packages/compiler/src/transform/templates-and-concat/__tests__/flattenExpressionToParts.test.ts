@@ -134,7 +134,7 @@ describe('mergeAdjacentStaticParts', () => {
 
 describe('buildTransformResult', () => {
   it('returns StringLiteral for all-static parts', () => {
-    const parts = [{ type: 'static' as const, value: 'hello world' }];
+    const parts = [{ type: 'static' as const, content: 'hello world' }];
     const { message, variables } = buildTransformResult(parts);
     expect(t.isStringLiteral(message)).toBe(true);
     expect((message as t.StringLiteral).value).toBe('hello world');
@@ -144,9 +144,9 @@ describe('buildTransformResult', () => {
   it('returns StringLiteral with placeholders for dynamic parts (no derive)', () => {
     const node = t.identifier('name');
     const parts = [
-      { type: 'static' as const, value: 'Hello, ' },
-      { type: 'dynamic' as const, node },
-      { type: 'static' as const, value: '!' },
+      { type: 'static' as const, content: 'Hello, ' },
+      { type: 'dynamic' as const, content: node as t.Expression },
+      { type: 'static' as const, content: '!' },
     ];
     const { message, variables } = buildTransformResult(parts);
     expect(t.isStringLiteral(message)).toBe(true);
@@ -160,8 +160,8 @@ describe('buildTransformResult', () => {
       t.callExpression(t.identifier('fn'), []),
     ]);
     const parts = [
-      { type: 'static' as const, value: 'Hello ' },
-      { type: 'derive' as const, node: deriveNode as t.Expression },
+      { type: 'static' as const, content: 'Hello ' },
+      { type: 'derive' as const, content: deriveNode as t.Expression },
     ];
     const { message, variables } = buildTransformResult(parts);
     expect(t.isTemplateLiteral(message)).toBe(true);

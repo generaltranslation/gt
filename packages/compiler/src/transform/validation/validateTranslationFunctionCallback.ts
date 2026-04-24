@@ -131,12 +131,14 @@ export function validateUseGTCallback(
     format = formatProperty.value;
   }
 
+  const contentStrings = variants.map(collapseStringPartsToString);
   return {
     errors,
-    variants: cartesianProduct([
-      variants.map(collapseStringPartsToString),
-      context ?? [],
-    ]).map(([content, context]) => ({ content, context })),
+    variants: context
+      ? cartesianProduct([contentStrings, context]).map(
+          ([content, context]) => ({ content, context })
+        )
+      : contentStrings.map((content) => ({ content })),
     id,
     hash,
     maxChars,

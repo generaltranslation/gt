@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as t from '@babel/types';
+import traverse, { NodePath } from '@babel/traverse';
 import { validateUseGTCallback } from '../validateTranslationFunctionCallback';
 import { TransformState } from '../../../state/types';
 import { StringCollector } from '../../../state/StringCollector';
@@ -47,12 +48,6 @@ function createState(overrides?: Partial<PluginSettings>): TransformState {
     ...overrides,
   };
 
-  scopeTracker.trackTranslationVariable(
-    GT_OTHER_FUNCTIONS.derive,
-    GT_OTHER_FUNCTIONS.derive,
-    0
-  );
-
   return {
     settings,
     stringCollector,
@@ -78,6 +73,52 @@ function makeCallWithOptions(
   options: t.ObjectExpression
 ): t.CallExpression {
   return t.callExpression(t.identifier('gt'), [firstArg, options]);
+}
+
+/**
+ * Wraps a t.CallExpression in a file AST and traverses it to obtain
+ * a NodePath<t.CallExpression>, then calls validateUseGTCallback.
+ *
+ * When `withDeriveImport` is true, an import declaration for `derive`
+ * from 'gt-react' is prepended so that isDeriveInvocation can find
+ * the binding via scope resolution.
+ */
+function validateCall(
+  callExpr: t.CallExpression,
+  state: TransformState,
+  withDeriveImport = false
+): ReturnType<typeof validateUseGTCallback> {
+  const body: t.Statement[] = [];
+  if (withDeriveImport) {
+    body.push(
+      t.importDeclaration(
+        [
+          t.importSpecifier(
+            t.identifier(GT_OTHER_FUNCTIONS.derive),
+            t.identifier(GT_OTHER_FUNCTIONS.derive)
+          ),
+        ],
+        t.stringLiteral('gt-react')
+      )
+    );
+  }
+  body.push(t.expressionStatement(callExpr));
+  const file = t.file(t.program(body));
+  let result: ReturnType<typeof validateUseGTCallback> | undefined;
+  traverse(file, {
+    CallExpression(path: NodePath<t.CallExpression>) {
+      // Skip the inner derive() calls — we want the outer gt() call
+      if (
+        t.isIdentifier(path.node.callee) &&
+        path.node.callee.name === GT_OTHER_FUNCTIONS.derive
+      ) {
+        return;
+      }
+      result = validateUseGTCallback(path, state);
+      path.stop();
+    },
+  });
+  return result!;
 }
 
 // Helper: "a" + "b"
@@ -110,10 +151,10 @@ describe('Robust string extraction — golden standard', () => {
   describe('string concatenation', () => {
     it('should extract from two string literals: "Hello" + " World"', () => {
       const expr = concat(t.stringLiteral('Hello'), t.stringLiteral(' World'));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
     });
 
     it('should extract from three chained string literals: "A" + "B" + "C"', () => {
@@ -122,10 +163,10 @@ describe('Robust string extraction — golden standard', () => {
         concat(t.stringLiteral('A'), t.stringLiteral('B')),
         t.stringLiteral('C')
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('ABC');
+      expect(result.variants?.[0]?.content).toBe('ABC');
     });
 
     it('should extract from right-associative concatenation: "A" + ("B" + "C")', () => {
@@ -133,10 +174,10 @@ describe('Robust string extraction — golden standard', () => {
         t.stringLiteral('A'),
         concat(t.stringLiteral('B'), t.stringLiteral('C'))
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('ABC');
+      expect(result.variants?.[0]?.content).toBe('ABC');
     });
 
     it('should extract from deeply chained concatenation: "A" + "B" + "C" + "D" + "E"', () => {
@@ -145,10 +186,10 @@ describe('Robust string extraction — golden standard', () => {
       for (const s of ['B', 'C', 'D', 'E']) {
         expr = concat(expr, t.stringLiteral(s));
       }
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('ABCDE');
+      expect(result.variants?.[0]?.content).toBe('ABCDE');
     });
 
     it('should extract from concatenation with empty strings: "" + "Hello" + ""', () => {
@@ -156,34 +197,34 @@ describe('Robust string extraction — golden standard', () => {
         concat(t.stringLiteral(''), t.stringLiteral('Hello')),
         t.stringLiteral('')
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello');
+      expect(result.variants?.[0]?.content).toBe('Hello');
     });
 
     it('should extract from string + template literal: "Hello" + ` World`', () => {
       const expr = concat(t.stringLiteral('Hello'), template([' World']));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
     });
 
     it('should extract from template literal + string: `Hello` + " World"', () => {
       const expr = concat(template(['Hello']), t.stringLiteral(' World'));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
     });
 
     it('should extract from template + template: `Hello` + ` World`', () => {
       const expr = concat(template(['Hello']), template([' World']));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
     });
   });
 
@@ -194,10 +235,10 @@ describe('Robust string extraction — golden standard', () => {
   describe('template literals with static expressions', () => {
     it('should extract from template with string expression: `Hello ${"World"}`', () => {
       const expr = template(['Hello ', ''], t.stringLiteral('World'));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
     });
 
     it('should extract from template with multiple string expressions: `${"Hello"} ${"World"}`', () => {
@@ -206,18 +247,18 @@ describe('Robust string extraction — golden standard', () => {
         t.stringLiteral('Hello'),
         t.stringLiteral('World')
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
     });
 
     it('should extract from template with template expression: `Hello ${`World`}`', () => {
       const expr = template(['Hello ', ''], template(['World']));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
     });
 
     it('should extract from template with concatenation expression: `Hello ${"Wo" + "rld"}`', () => {
@@ -225,34 +266,34 @@ describe('Robust string extraction — golden standard', () => {
         ['Hello ', ''],
         concat(t.stringLiteral('Wo'), t.stringLiteral('rld'))
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
     });
 
     it('should extract from template expression at start: `${"Hello"} World`', () => {
       const expr = template(['', ' World'], t.stringLiteral('Hello'));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
     });
 
     it('should extract from template expression at end: `Hello ${" World"}`', () => {
       const expr = template(['Hello', ''], t.stringLiteral(' World'));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
     });
 
     it('should extract from template with only an expression: `${"Hello World"}`', () => {
       const expr = template(['', ''], t.stringLiteral('Hello World'));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
     });
   });
 
@@ -264,20 +305,20 @@ describe('Robust string extraction — golden standard', () => {
     it('should extract from two levels of nesting: `A ${`B ${"C"}`}`', () => {
       const inner = template(['B ', ''], t.stringLiteral('C'));
       const outer = template(['A ', ''], inner);
-      const result = validateUseGTCallback(makeCall(outer), state);
+      const result = validateCall(makeCall(outer), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('A B C');
+      expect(result.variants?.[0]?.content).toBe('A B C');
     });
 
     it('should extract from three levels of nesting: `A ${`B ${`C ${"D"}`}`}`', () => {
       const innermost = template(['C ', ''], t.stringLiteral('D'));
       const middle = template(['B ', ''], innermost);
       const outer = template(['A ', ''], middle);
-      const result = validateUseGTCallback(makeCall(outer), state);
+      const result = validateCall(makeCall(outer), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('A B C D');
+      expect(result.variants?.[0]?.content).toBe('A B C D');
     });
 
     it('should extract from nested template with multiple expressions: `${`${"A"}${`B`}`}`', () => {
@@ -287,10 +328,10 @@ describe('Robust string extraction — golden standard', () => {
         template(['B'])
       );
       const outer = template(['', ''], inner);
-      const result = validateUseGTCallback(makeCall(outer), state);
+      const result = validateCall(makeCall(outer), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('AB');
+      expect(result.variants?.[0]?.content).toBe('AB');
     });
   });
 
@@ -304,10 +345,10 @@ describe('Robust string extraction — golden standard', () => {
         t.stringLiteral('Hello'),
         template([' World ', ''], t.stringLiteral('Here'))
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World Here');
+      expect(result.variants?.[0]?.content).toBe('Hello World Here');
     });
 
     it('should extract from: `Hello ${"World"}` + " End"', () => {
@@ -315,10 +356,10 @@ describe('Robust string extraction — golden standard', () => {
         template(['Hello ', ''], t.stringLiteral('World')),
         t.stringLiteral(' End')
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World End');
+      expect(result.variants?.[0]?.content).toBe('Hello World End');
     });
 
     it('should extract the user example: "Hello" + `World` + ` Here ${"is" + `a ${"nested"}`} string`', () => {
@@ -333,10 +374,12 @@ describe('Robust string extraction — golden standard', () => {
         concat(t.stringLiteral('Hello'), template(['World'])),
         outerTemplate
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('HelloWorld Here isa nested string');
+      expect(result.variants?.[0]?.content).toBe(
+        'HelloWorld Here isa nested string'
+      );
     });
 
     it('should extract from concat inside template inside concat: "A" + `B ${"C" + "D"}` + "E"', () => {
@@ -346,19 +389,19 @@ describe('Robust string extraction — golden standard', () => {
         concat(t.stringLiteral('A'), middleTemplate),
         t.stringLiteral('E')
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('AB CDE');
+      expect(result.variants?.[0]?.content).toBe('AB CDE');
     });
 
     it('should extract from template inside concat inside template: `A ${`B` + `C`} D`', () => {
       const innerConcat = concat(template(['B']), template(['C']));
       const expr = template(['A ', ' D'], innerConcat);
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('A BC D');
+      expect(result.variants?.[0]?.content).toBe('A BC D');
     });
   });
 
@@ -369,34 +412,34 @@ describe('Robust string extraction — golden standard', () => {
   describe('numeric literals in static expressions', () => {
     it('should extract from template with numeric expression: `Count: ${5}`', () => {
       const expr = template(['Count: ', ''], t.numericLiteral(5));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Count: 5');
+      expect(result.variants?.[0]?.content).toBe('Count: 5');
     });
 
     it('should extract from concatenation with numeric: "Count: " + 42', () => {
       const expr = concat(t.stringLiteral('Count: '), t.numericLiteral(42));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Count: 42');
+      expect(result.variants?.[0]?.content).toBe('Count: 42');
     });
 
     it('should extract from template with float: `Price: ${9.99}`', () => {
       const expr = template(['Price: ', ''], t.numericLiteral(9.99));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Price: 9.99');
+      expect(result.variants?.[0]?.content).toBe('Price: 9.99');
     });
 
     it('should extract from template with zero: `${0} items`', () => {
       const expr = template(['', ' items'], t.numericLiteral(0));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('0 items');
+      expect(result.variants?.[0]?.content).toBe('0 items');
     });
   });
 
@@ -407,18 +450,18 @@ describe('Robust string extraction — golden standard', () => {
   describe('boolean literals in static expressions', () => {
     it('should extract from template with boolean: `Value: ${true}`', () => {
       const expr = template(['Value: ', ''], t.booleanLiteral(true));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Value: true');
+      expect(result.variants?.[0]?.content).toBe('Value: true');
     });
 
     it('should extract from concatenation with boolean: "Active: " + false', () => {
       const expr = concat(t.stringLiteral('Active: '), t.booleanLiteral(false));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Active: false');
+      expect(result.variants?.[0]?.content).toBe('Active: false');
     });
   });
 
@@ -429,18 +472,18 @@ describe('Robust string extraction — golden standard', () => {
   describe('null literal in static expressions', () => {
     it('should extract from template with null: `Value: ${null}`', () => {
       const expr = template(['Value: ', ''], t.nullLiteral());
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Value: null');
+      expect(result.variants?.[0]?.content).toBe('Value: null');
     });
 
     it('should extract from concatenation with null: "Value: " + null', () => {
       const expr = concat(t.stringLiteral('Value: '), t.nullLiteral());
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Value: null');
+      expect(result.variants?.[0]?.content).toBe('Value: null');
     });
   });
 
@@ -450,53 +493,50 @@ describe('Robust string extraction — golden standard', () => {
 
   describe('edge cases', () => {
     it('should extract from single empty string literal: ""', () => {
-      const result = validateUseGTCallback(
-        makeCall(t.stringLiteral('')),
-        state
-      );
+      const result = validateCall(makeCall(t.stringLiteral('')), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('');
+      expect(result.variants?.[0]?.content).toBe('');
     });
 
     it('should extract from concatenation of empty strings: "" + ""', () => {
       const expr = concat(t.stringLiteral(''), t.stringLiteral(''));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('');
+      expect(result.variants?.[0]?.content).toBe('');
     });
 
     it('should extract from empty template literal: ``', () => {
       const expr = template(['']);
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('');
+      expect(result.variants?.[0]?.content).toBe('');
     });
 
     it('should extract from template with empty expression: `${""}`', () => {
       const expr = template(['', ''], t.stringLiteral(''));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('');
+      expect(result.variants?.[0]?.content).toBe('');
     });
 
     it('should handle strings with special characters in concat: "Hello\\n" + "World"', () => {
       const expr = concat(t.stringLiteral('Hello\n'), t.stringLiteral('World'));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello\nWorld');
+      expect(result.variants?.[0]?.content).toBe('Hello\nWorld');
     });
 
     it('should handle strings with unicode in concat: "Hello " + "🌍"', () => {
       const expr = concat(t.stringLiteral('Hello '), t.stringLiteral('🌍'));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello 🌍');
+      expect(result.variants?.[0]?.content).toBe('Hello 🌍');
     });
 
     it('should handle template with escaped backticks in quasis', () => {
@@ -508,10 +548,10 @@ describe('Robust string extraction — golden standard', () => {
         ),
       ];
       const expr = t.templateLiteral(quasis, []);
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello `World`');
+      expect(result.variants?.[0]?.content).toBe('Hello `World`');
     });
 
     it('should handle very long concatenation chains (20 segments)', () => {
@@ -519,10 +559,10 @@ describe('Robust string extraction — golden standard', () => {
       for (let i = 1; i < 20; i++) {
         expr = concat(expr, t.stringLiteral(String(i)));
       }
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe(
+      expect(result.variants?.[0]?.content).toBe(
         Array.from({ length: 20 }, (_, i) => String(i)).join('')
       );
     });
@@ -533,10 +573,10 @@ describe('Robust string extraction — golden standard', () => {
       for (const prefix of ['D ', 'C ', 'B ', 'A ']) {
         expr = template([prefix, ''], expr);
       }
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('A B C D E');
+      expect(result.variants?.[0]?.content).toBe('A B C D E');
     });
   });
 
@@ -546,28 +586,25 @@ describe('Robust string extraction — golden standard', () => {
 
   describe('rejection of dynamic content', () => {
     it('should reject identifier variable: gt(name)', () => {
-      const result = validateUseGTCallback(
-        makeCall(t.identifier('name')),
-        state
-      );
+      const result = validateCall(makeCall(t.identifier('name')), state);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.content).toBeUndefined();
+      expect(result.variants).toBeUndefined();
     });
 
     it('should reject template with identifier expression: gt(`Hello ${name}`)', () => {
       const expr = template(['Hello ', ''], t.identifier('name'));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.content).toBeUndefined();
+      expect(result.variants).toBeUndefined();
     });
 
     it('should reject concatenation with identifier: gt("Hello " + name)', () => {
       const expr = concat(t.stringLiteral('Hello '), t.identifier('name'));
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.content).toBeUndefined();
+      expect(result.variants).toBeUndefined();
     });
 
     it('should reject if any part of concatenation is dynamic: "A" + name + "B"', () => {
@@ -575,10 +612,10 @@ describe('Robust string extraction — golden standard', () => {
         concat(t.stringLiteral('A'), t.identifier('name')),
         t.stringLiteral('B')
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.content).toBeUndefined();
+      expect(result.variants).toBeUndefined();
     });
 
     it('should reject function call in concatenation: "Hello " + getName()', () => {
@@ -586,10 +623,10 @@ describe('Robust string extraction — golden standard', () => {
         t.stringLiteral('Hello '),
         t.callExpression(t.identifier('getName'), [])
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.content).toBeUndefined();
+      expect(result.variants).toBeUndefined();
     });
 
     it('should reject function call in template: `Hello ${getName()}`', () => {
@@ -597,20 +634,20 @@ describe('Robust string extraction — golden standard', () => {
         ['Hello ', ''],
         t.callExpression(t.identifier('getName'), [])
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.content).toBeUndefined();
+      expect(result.variants).toBeUndefined();
     });
 
     it('should reject mixed static + dynamic in deeply nested template', () => {
       // `A ${`B ${name}`}` — name is dynamic even though the rest is static
       const inner = template(['B ', ''], t.identifier('name'));
       const outer = template(['A ', ''], inner);
-      const result = validateUseGTCallback(makeCall(outer), state);
+      const result = validateCall(makeCall(outer), state);
 
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.content).toBeUndefined();
+      expect(result.variants).toBeUndefined();
     });
 
     it('should reject member expression in concatenation: "Hello " + obj.name', () => {
@@ -618,10 +655,10 @@ describe('Robust string extraction — golden standard', () => {
         t.stringLiteral('Hello '),
         t.memberExpression(t.identifier('obj'), t.identifier('name'))
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.content).toBeUndefined();
+      expect(result.variants).toBeUndefined();
     });
 
     it('should reject conditional expression: "Hello " + (flag ? "A" : "B")', () => {
@@ -633,10 +670,10 @@ describe('Robust string extraction — golden standard', () => {
           t.stringLiteral('B')
         )
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.content).toBeUndefined();
+      expect(result.variants).toBeUndefined();
     });
 
     it('should reject non-+ binary operator: "Hello " - "World"', () => {
@@ -645,10 +682,10 @@ describe('Robust string extraction — golden standard', () => {
         t.stringLiteral('Hello '),
         t.stringLiteral('World')
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
 
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.content).toBeUndefined();
+      expect(result.variants).toBeUndefined();
     });
   });
 
@@ -667,7 +704,7 @@ describe('Robust string extraction — golden standard', () => {
         concat(t.stringLiteral('Hello '), t.stringLiteral('World ')),
         deriveCall
       );
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state, true);
 
       expect(result.errors).toHaveLength(0);
     });
@@ -679,7 +716,7 @@ describe('Robust string extraction — golden standard', () => {
         [t.callExpression(t.identifier('fn'), [])]
       );
       const expr = template(['', ' ', ''], staticConcat, deriveCall);
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state, true);
 
       expect(result.errors).toHaveLength(0);
     });
@@ -695,13 +732,10 @@ describe('Robust string extraction — golden standard', () => {
       const options = t.objectExpression([
         t.objectProperty(t.identifier('$id'), t.stringLiteral('hw')),
       ]);
-      const result = validateUseGTCallback(
-        makeCallWithOptions(expr, options),
-        state
-      );
+      const result = validateCall(makeCallWithOptions(expr, options), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
       expect(result.id).toBe('hw');
     });
 
@@ -711,14 +745,11 @@ describe('Robust string extraction — golden standard', () => {
       const options = t.objectExpression([
         t.objectProperty(t.identifier('$context'), t.stringLiteral('greeting')),
       ]);
-      const result = validateUseGTCallback(
-        makeCallWithOptions(expr, options),
-        state
-      );
+      const result = validateCall(makeCallWithOptions(expr, options), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
-      expect(result.context).toBe('greeting');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
+      expect(result.variants?.[0]?.context).toBe('greeting');
     });
 
     it('should extract content and maxChars from concat', () => {
@@ -727,13 +758,10 @@ describe('Robust string extraction — golden standard', () => {
       const options = t.objectExpression([
         t.objectProperty(t.identifier('$maxChars'), t.numericLiteral(20)),
       ]);
-      const result = validateUseGTCallback(
-        makeCallWithOptions(expr, options),
-        state
-      );
+      const result = validateCall(makeCallWithOptions(expr, options), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello World');
+      expect(result.variants?.[0]?.content).toBe('Hello World');
       expect(result.maxChars).toBe(20);
     });
 
@@ -749,15 +777,12 @@ describe('Robust string extraction — golden standard', () => {
         t.objectProperty(t.identifier('$maxChars'), t.numericLiteral(50)),
         t.objectProperty(t.identifier('$format'), t.stringLiteral('STRING')),
       ]);
-      const result = validateUseGTCallback(
-        makeCallWithOptions(expr, options),
-        state
-      );
+      const result = validateCall(makeCallWithOptions(expr, options), state);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('AB C');
+      expect(result.variants?.[0]?.content).toBe('AB C');
       expect(result.id).toBe('abc');
-      expect(result.context).toBe('test');
+      expect(result.variants?.[0]?.context).toBe('test');
       expect(result.maxChars).toBe(50);
       expect(result.format).toBe('STRING');
     });
@@ -769,19 +794,16 @@ describe('Robust string extraction — golden standard', () => {
 
   describe('regression — existing behavior preserved', () => {
     it('plain string literal still works: gt("Hello")', () => {
-      const result = validateUseGTCallback(
-        makeCall(t.stringLiteral('Hello')),
-        state
-      );
+      const result = validateCall(makeCall(t.stringLiteral('Hello')), state);
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello');
+      expect(result.variants?.[0]?.content).toBe('Hello');
     });
 
     it('plain template literal (no expressions) still works: gt(`Hello`)', () => {
       const expr = template(['Hello']);
-      const result = validateUseGTCallback(makeCall(expr), state);
+      const result = validateCall(makeCall(expr), state);
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello');
+      expect(result.variants?.[0]?.content).toBe('Hello');
     });
 
     it('string with options still works', () => {
@@ -789,13 +811,13 @@ describe('Robust string extraction — golden standard', () => {
         t.objectProperty(t.identifier('$context'), t.stringLiteral('greeting')),
         t.objectProperty(t.identifier('$id'), t.stringLiteral('hello-id')),
       ]);
-      const result = validateUseGTCallback(
+      const result = validateCall(
         makeCallWithOptions(t.stringLiteral('Hello'), options),
         state
       );
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBe('Hello');
-      expect(result.context).toBe('greeting');
+      expect(result.variants?.[0]?.content).toBe('Hello');
+      expect(result.variants?.[0]?.context).toBe('greeting');
       expect(result.id).toBe('hello-id');
     });
 
@@ -804,12 +826,12 @@ describe('Robust string extraction — golden standard', () => {
         t.identifier(GT_OTHER_FUNCTIONS.derive),
         [t.callExpression(t.identifier('getName'), [])]
       );
-      const result = validateUseGTCallback(makeCall(deriveCall), state);
+      const result = validateCall(makeCall(deriveCall), state, true);
       expect(result.errors).toHaveLength(0);
     });
 
     it('no arguments still errors', () => {
-      const result = validateUseGTCallback(
+      const result = validateCall(
         t.callExpression(t.identifier('gt'), []),
         state
       );
@@ -817,25 +839,22 @@ describe('Robust string extraction — golden standard', () => {
     });
 
     it('identifier as first argument still errors (without autoderive)', () => {
-      const result = validateUseGTCallback(
-        makeCall(t.identifier('myVar')),
-        state
-      );
+      const result = validateCall(makeCall(t.identifier('myVar')), state);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.content).toBeUndefined();
+      expect(result.variants).toBeUndefined();
     });
 
     it('autoderive still skips validation for non-string content', () => {
       const autoState = createState({
         autoderive: { jsx: false, strings: true },
       });
-      const result = validateUseGTCallback(
+      const result = validateCall(
         makeCall(t.identifier('myVar')),
         autoState
       );
       expect(result.errors).toHaveLength(0);
-      expect(result.content).toBeUndefined();
-      expect(result.hasDeriveContext).toBe(true);
+      expect(result.variants).toBeDefined();
+      expect(result.hasDerive).toBe(false);
     });
   });
 });
