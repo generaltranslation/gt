@@ -258,8 +258,15 @@ function handleReactInvocation(
   }
 
   // Validate the arguments
-  const { errors, _hash, id, context, children, maxChars, hasDeriveContext } =
-    validateTranslationComponentArgs(callExpr, canonicalName, state);
+  const {
+    errors,
+    hash: hashArg,
+    id,
+    context,
+    children,
+    maxChars,
+    hasDeriveContext,
+  } = validateTranslationComponentArgs(callExpr, canonicalName, state);
 
   if (errors.length > 0) {
     state.errorTracker.addErrors(errors);
@@ -269,7 +276,7 @@ function handleReactInvocation(
   // Calculate hash (skip when context contains derive — CLI handles resolution)
   const hash = hasDeriveContext
     ? ''
-    : _hash ||
+    : hashArg ||
       hashSource({
         source: children!,
         ...(context && { context }),
@@ -304,7 +311,7 @@ function handleStandaloneTranslation(
     hasDerive,
     errors,
     variants,
-    hash: _hash,
+    hash: hashArg,
     id,
     format,
     maxChars,
@@ -321,7 +328,7 @@ function handleStandaloneTranslation(
 
   // Calculate hash
   const hash =
-    _hash ??
+    hashArg ??
     hashSource({
       source: variants[0].content,
       ...(id && { id }),

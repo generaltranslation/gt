@@ -5,7 +5,7 @@ import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
 import hashSource from '../../utils/calculateHash';
 import { multiply } from '../../nodes/multiply';
 import { extractString } from '../../transform/templates-and-concat/extractString';
-import { collapseStringPartsToString } from '../../utils/parsing/collapsStringPartsToString';
+import { joinAllParts } from '../../utils/parsing/collapseStringPartsToString';
 
 /**
  * Process tagged template expressions during the collection pass.
@@ -49,7 +49,7 @@ export function processTaggedTemplateExpression(
 
     // Enforce invariants: skip variants that contain derive (no resolution yet)
     for (const variant of variants) {
-      const content = collapseStringPartsToString(variant, true);
+      const content = joinAllParts(variant);
 
       const hash = hashSource({
         source: content,

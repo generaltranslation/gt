@@ -18,7 +18,7 @@ export function validateTranslationComponentArgs(
   state: TransformState
 ): {
   errors: string[];
-  _hash?: string;
+  hash?: string;
   id?: string;
   context?: string;
   maxChars?: number;
@@ -64,7 +64,7 @@ function validateTComponentArgs(
   state: TransformState
 ): {
   errors: string[];
-  _hash?: string;
+  hash?: string;
   id?: string;
   context?: string;
   maxChars?: number;
@@ -90,7 +90,7 @@ function validateTComponentArgs(
   // Validate hash
   const hashValidation = validateStringProperty(args, '_hash');
   errors.push(...hashValidation.errors);
-  const _hash = hashValidation.value;
+  const hash = hashValidation.value;
 
   // Validate children
   const childrenValidation = validateChildrenProperty(args, state);
@@ -100,7 +100,7 @@ function validateTComponentArgs(
   const hasDeriveContext =
     contextValidation.hasDeriveExpression || childrenValidation.hasAutoderive;
 
-  return { errors, id, context, _hash, maxChars, children, hasDeriveContext };
+  return { errors, id, context, hash, maxChars, children, hasDeriveContext };
 }
 
 /**

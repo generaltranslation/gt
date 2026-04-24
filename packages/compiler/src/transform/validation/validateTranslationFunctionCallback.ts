@@ -10,7 +10,7 @@ import { resolveStaticExpression } from '../templates-and-concat/resolveStaticEx
 import { NodePath } from '@babel/traverse';
 import { extractString } from '../templates-and-concat/extractString';
 import { cartesianProduct, multiply } from '../../nodes/multiply';
-import { collapseStringPartsToString } from '../../utils/parsing/collapsStringPartsToString';
+import { joinStaticParts } from '../../utils/parsing/collapseStringPartsToString';
 
 /**
  * Validate useGT_callback / getGT_callback
@@ -78,7 +78,7 @@ export function validateUseGTCallback(
     return {
       errors,
       variants: variants.map((variant) => ({
-        content: collapseStringPartsToString(variant),
+        content: joinStaticParts(variant),
       })),
       hasDerive,
     };
@@ -131,14 +131,15 @@ export function validateUseGTCallback(
     format = formatProperty.value;
   }
 
-  const contentStrings = variants.map(collapseStringPartsToString);
+  // Join static parts of all variants
+  const contentStrings = variants.map(joinStaticParts);
+  const variantsWithContext = cartesianProduct([
+    contentStrings,
+    context ?? [],
+  ]).map(([content, context]) => ({ content, context }));
   return {
     errors,
-    variants: context
-      ? cartesianProduct([contentStrings, context]).map(
-          ([content, context]) => ({ content, context })
-        )
-      : contentStrings.map((content) => ({ content })),
+    variants: variantsWithContext,
     id,
     hash,
     maxChars,

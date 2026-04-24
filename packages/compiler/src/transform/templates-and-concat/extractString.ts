@@ -13,8 +13,7 @@ type Metadata = {
 /**
  * Extracts a string and variables from expression
  * @param expr - The expression to extract from
- * @param scope - The scope to use for the extraction
- * @param derive - Whether to perform derivation
+ * @param derive - Perform derivation
  *
  * Sequential 'static' parts are concatenated.
  *
