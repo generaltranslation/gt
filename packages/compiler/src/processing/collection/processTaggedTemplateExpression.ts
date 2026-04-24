@@ -47,7 +47,6 @@ export function processTaggedTemplateExpression(
     if (extracted.metadata.hasDerive) return;
     const variants = multiply(extracted.value);
 
-    // Enforce invariants: skip variants that contain derive (no resolution yet)
     for (const variant of variants) {
       const content = joinAllParts(variant);
 

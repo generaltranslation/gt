@@ -44,15 +44,13 @@ export function findChoiceNodes<T>(
 
     if (isChoiceNode(node)) {
       results.push({ path: currentPath, node });
-      for (let b = 0; b < node.branches.length; b++) {
-        const branch = node.branches[b];
-        if (isChoiceNode(branch)) {
-          results.push({
-            path: `${currentPath}.branches[${b}]`,
-            node: branch,
-          });
-        }
-      }
+      results.push(
+        ...findChoiceNodes(
+          node.branches,
+          recurseIntoLeaf,
+          `${currentPath}.branches`
+        )
+      );
     } else if (recurseIntoLeaf) {
       const nested = recurseIntoLeaf(node as T);
       if (nested) {

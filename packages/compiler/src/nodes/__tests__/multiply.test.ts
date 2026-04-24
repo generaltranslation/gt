@@ -239,6 +239,16 @@ describe('findChoiceNodes', () => {
     const found = findChoiceNodes(nodes);
     expect(found).toHaveLength(2);
   });
+
+  it('finds deeply nested choice nodes inside branches', () => {
+    const inner = createChoiceNode(['deep1', 'deep2']);
+    const outer = createChoiceNode<string>([inner, 'shallow']);
+    const nodes: ResolutionNode<string>[] = ['prefix', outer];
+    const found = findChoiceNodes(nodes);
+    expect(found).toHaveLength(2);
+    expect(found[0].node).toBe(outer);
+    expect(found[1].node).toBe(inner);
+  });
 });
 
 // ─────────────────────────────────────────────────
