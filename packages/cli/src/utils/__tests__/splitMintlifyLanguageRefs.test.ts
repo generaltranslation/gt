@@ -365,8 +365,17 @@ describe('splitMintlifyLanguageRefs', () => {
 
     await splitMintlifyLanguageRefs(makeSettings());
 
-    // Empty refMap → function exits early, no writes
-    expect(mockWrite).not.toHaveBeenCalled();
+    // Even without $ref, locale entries should be split into their own files
+    const docsResult = getWritten('/project/docs.json');
+    expect(docsResult.navigation.languages[0].language).toBe('en');
+    expect(docsResult.navigation.languages[0].groups).toBeDefined();
+    expect(docsResult.navigation.languages[1]).toEqual({
+      language: 'es',
+      $ref: './es/docs.json',
+    });
+
+    const esNav = getWritten('/project/es/docs.json');
+    expect(esNav.groups[0].group).toBe('Inicio');
   });
 
   it('handles default locale not being first in the array', async () => {

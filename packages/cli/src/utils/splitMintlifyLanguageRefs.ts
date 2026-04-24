@@ -9,13 +9,10 @@ import { getStoredRefMap, clearStoredRefMap } from '../state/mintlifyRefMap.js';
 /**
  * Post-processing step for Mintlify docs.json.
  *
- * After mergeJson writes a fully-inlined docs.json, this function restores
- * the original $ref structure:
- *
- * - Default locale: restores original $ref paths
- * - Non-default locales: prefixes ref paths with {locale}/, writes translated
- *   content to the prefixed paths
- * - Top-level refs (navigation, navbar): restored in docs.json
+ * After mergeJson writes a fully-inlined docs.json, this function:
+ * 1. Restores the original $ref structure (if the source used $ref)
+ * 2. Wraps each non-default locale entry into its own ref file
+ *    to keep the navigation file small
  */
 export async function splitMintlifyLanguageRefs(
   settings: Settings
@@ -25,15 +22,16 @@ export async function splitMintlifyLanguageRefs(
   if (!isMintlify) return;
 
   const refMap = getStoredRefMap();
-  if (!refMap || refMap.size === 0) return;
 
   try {
     const resolvedJsonPaths = settings.files?.resolvedPaths?.json;
     if (!resolvedJsonPaths) return;
 
-    const docsJsonPath = resolvedJsonPaths.find((p) =>
-      shouldResolveRefs(p, settings.options)
-    );
+    // Find the composite JSON file — either via shouldResolveRefs (if refMap exists)
+    // or by checking for a composite jsonSchema entry directly
+    const docsJsonPath =
+      resolvedJsonPaths.find((p) => shouldResolveRefs(p, settings.options)) ??
+      findCompositeJsonFile(resolvedJsonPaths, settings.options);
     if (!docsJsonPath) return;
     if (!fs.existsSync(docsJsonPath)) return;
 
@@ -45,15 +43,19 @@ export async function splitMintlifyLanguageRefs(
     }
 
     const defaultLocale = settings.defaultLocale;
+    const docsDir = path.dirname(docsJsonPath);
 
-    const navRefEntry = refMap.get('/navigation');
+    // Determine where navigation lives
+    const navRefEntry = refMap?.get('/navigation');
     const navContent = navRefEntry
       ? getAtPointer(docsJson, '/navigation')
       : docsJson?.navigation;
 
     const languages: any[] | undefined = navContent?.languages;
     if (!Array.isArray(languages) || languages.length <= 1) {
-      restoreTopLevelRefs(docsJson, refMap, docsJsonPath);
+      if (refMap && refMap.size > 0) {
+        restoreTopLevelRefs(docsJson, refMap, docsJsonPath);
+      }
       return;
     }
 
@@ -61,53 +63,63 @@ export async function splitMintlifyLanguageRefs(
       (e: any) => e?.language === defaultLocale
     );
     if (defaultIndex < 0) {
-      restoreTopLevelRefs(docsJson, refMap, docsJsonPath);
+      if (refMap && refMap.size > 0) {
+        restoreTopLevelRefs(docsJson, refMap, docsJsonPath);
+      }
       return;
     }
 
     const navDir = navRefEntry
       ? path.dirname(navRefEntry.sourceFile)
-      : path.dirname(docsJsonPath);
+      : docsDir;
 
-    const defaultPointerPrefix = `/navigation/languages/${defaultIndex}`;
-    const internalRefs = collectInternalRefs(refMap, defaultPointerPrefix);
+    // Restore $ref structure if the source used $ref
+    if (refMap && refMap.size > 0) {
+      const defaultPointerPrefix = `/navigation/languages/${defaultIndex}`;
+      const internalRefs = collectInternalRefs(refMap, defaultPointerPrefix);
 
-    if (internalRefs.length > 0) {
-      const defaultEntry = languages[defaultIndex];
-      for (const ref of internalRefs) {
-        setAtPointer(defaultEntry, ref.relativePointer, {
-          $ref: ref.refPath,
-        });
-      }
-
-      for (const entry of languages) {
-        if (!entry || entry.language === defaultLocale) continue;
-        const locale = entry.language;
-        if (!locale) continue;
-
+      if (internalRefs.length > 0) {
+        // Restore default locale's refs
+        const defaultEntry = languages[defaultIndex];
         for (const ref of internalRefs) {
-          const subtree = getAtPointer(entry, ref.relativePointer);
-          if (subtree === undefined) continue;
-
-          const originalAbsPath = path.resolve(ref.resolvedDir, ref.refPath);
-          const relToNavDir = path.relative(navDir, originalAbsPath);
-          const localeRelPath = path.join(locale, relToNavDir);
-          const outputPath = path.resolve(navDir, localeRelPath);
-          writeJsonFile(outputPath, subtree);
-
-          // All refs inside the locale's files use original paths — the locale
-          // directory mirrors the source structure, so relative resolution works.
-          // The locale prefix only appears in the parent navigation.json entry.
-          setAtPointer(entry, ref.relativePointer, { $ref: ref.refPath });
+          setAtPointer(defaultEntry, ref.relativePointer, {
+            $ref: ref.refPath,
+          });
         }
-      }
 
-      logger.info(`Restored $ref structure for source locale navigation`);
+        // Write locale ref files mirroring the source topology
+        for (const entry of languages) {
+          if (!entry || entry.language === defaultLocale) continue;
+          const locale = entry.language;
+          if (!locale) continue;
+
+          for (const ref of internalRefs) {
+            const subtree = getAtPointer(entry, ref.relativePointer);
+            if (subtree === undefined) continue;
+
+            const originalAbsPath = path.resolve(
+              ref.resolvedDir,
+              ref.refPath
+            );
+            const relToNavDir = path.relative(navDir, originalAbsPath);
+            const localeRelPath = path.join(locale, relToNavDir);
+            const outputPath = path.resolve(navDir, localeRelPath);
+            writeJsonFile(outputPath, subtree);
+
+            setAtPointer(entry, ref.relativePointer, { $ref: ref.refPath });
+          }
+        }
+
+        logger.info(`Restored $ref structure for source locale navigation`);
+      }
     }
 
+    // Wrap each non-default locale entry into its own ref file.
+    // This runs regardless of whether the source used $ref — it keeps
+    // the navigation file small by extracting locale content.
     const navFileName = navRefEntry
       ? path.basename(navRefEntry.sourceFile)
-      : 'navigation.json';
+      : path.basename(docsJsonPath);
 
     for (let i = 0; i < languages.length; i++) {
       const entry = languages[i];
@@ -125,16 +137,50 @@ export async function splitMintlifyLanguageRefs(
 
     logger.info(`Split locale navigation entries into ref files`);
 
-    restoreTopLevelRefs(docsJson, refMap, docsJsonPath);
+    // Restore top-level refs and write the final docs.json
+    if (refMap && refMap.size > 0) {
+      restoreTopLevelRefs(docsJson, refMap, docsJsonPath);
+    } else {
+      // No refMap — navigation is inline in docs.json, write it back directly
+      fs.writeFileSync(
+        docsJsonPath,
+        JSON.stringify(docsJson, null, 2),
+        'utf-8'
+      );
+    }
   } finally {
     clearStoredRefMap();
   }
 }
 
 /**
+ * Find the composite JSON file from the jsonSchema config.
+ * Used when no refMap exists (no $ref in source).
+ */
+function findCompositeJsonFile(
+  resolvedPaths: string[],
+  options?: Record<string, any>
+): string | undefined {
+  if (!options?.jsonSchema) return undefined;
+
+  for (const filePath of resolvedPaths) {
+    const relative = path.relative(process.cwd(), filePath);
+    for (const [glob, schema] of Object.entries(
+      options.jsonSchema as Record<string, any>
+    )) {
+      const normalizedPath = relative.replace(/^\.\//, '');
+      const normalizedGlob = glob.replace(/^\.\//, '');
+      if (schema?.composite && normalizedPath === normalizedGlob) {
+        return filePath;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
  * Restore top-level $ref pointers in docs.json.
- * Writes each resolved subtree to its original source file and replaces
- * the subtree in docs.json with the $ref pointer.
+ * Sorted deepest-first so nested refs are written before parents.
  */
 function restoreTopLevelRefs(
   docsJson: any,
@@ -143,8 +189,6 @@ function restoreTopLevelRefs(
 ): void {
   let changed = false;
 
-  // Sort deepest-first so nested refs are written before their parent
-  // replaces the ancestor subtree with a $ref pointer
   const entries = [...refMap.entries()]
     .filter(([pointer]) => !pointer.match(/^\/navigation\/languages\/\d+/))
     .sort(([a], [b]) => b.length - a.length);
@@ -182,7 +226,6 @@ function collectInternalRefs(
     refs.push({
       relativePointer: pointer.slice(entryPointerPrefix.length),
       refPath: entry.refPath,
-      // The directory from which this $ref path should be resolved
       resolvedDir: entry.containingDir,
     });
   }
