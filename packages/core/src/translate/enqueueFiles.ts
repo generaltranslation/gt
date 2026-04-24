@@ -2,6 +2,7 @@ import { TranslationRequestConfig, EnqueueFilesResult } from '../types';
 import apiRequest from './utils/apiRequest';
 import type { FileReferenceIds } from '../types-dir/api/file';
 import { processBatches } from './utils/batch';
+import { validateFileFormatTransforms } from './utils/validateFileFormatTransform';
 
 export type EnqueueOptions = {
   sourceLocale?: string;
@@ -25,6 +26,8 @@ export default async function _enqueueFiles(
   options: EnqueueOptions,
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {
+  validateFileFormatTransforms(files);
+
   const result = await processBatches(
     files,
     async (batch) => {
@@ -34,6 +37,7 @@ export default async function _enqueueFiles(
           fileId: f.fileId,
           versionId: f.versionId,
           fileName: f.fileName,
+          formatTransform: f.formatTransform,
         })),
         targetLocales: options.targetLocales,
         sourceLocale: options.sourceLocale,

@@ -9,7 +9,7 @@ import apiRequest from '../utils/apiRequest';
 
 vi.mock('../utils/apiRequest');
 
-describe('_uploadTranslations', () => {
+describe.sequential('_uploadTranslations', () => {
   const mockConfig: TranslationRequestConfig = {
     baseUrl: 'https://api.test.com',
     projectId: 'test-project',
@@ -407,6 +407,76 @@ describe('_uploadTranslations', () => {
         body: expectedBody,
       })
     );
+  });
+
+  it('should upload translations with supported source format transforms', async () => {
+    const mockFiles = [
+      {
+        source: createMockFileUpload({
+          fileName: 'messages.json',
+          fileFormat: 'JSON',
+          formatTransform: 'JSON',
+          content: '{"save":"Save"}',
+        }),
+        translations: [
+          createMockFileUpload({
+            fileName: 'messages.es.json',
+            fileFormat: 'JSON',
+            content: '{"save":"Guardar"}',
+            locale: 'es',
+          }),
+        ],
+      },
+    ];
+
+    vi.mocked(apiRequest).mockResolvedValue({ success: true });
+
+    await _uploadTranslations(mockFiles, createMockOptions(), mockConfig);
+
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(String),
+      expect.objectContaining({
+        body: expect.objectContaining({
+          data: [
+            expect.objectContaining({
+              source: expect.objectContaining({
+                fileName: 'messages.json',
+                fileFormat: 'JSON',
+                formatTransform: 'JSON',
+              }),
+            }),
+          ],
+        }),
+      })
+    );
+  });
+
+  it('should reject unsupported source format transforms', async () => {
+    vi.mocked(apiRequest).mockClear();
+    const mockFiles = [
+      {
+        source: createMockFileUpload({
+          fileName: 'messages.pot',
+          fileFormat: 'POT',
+          formatTransform: 'PO',
+          content: 'msgid "Save"\nmsgstr ""\n',
+        }),
+        translations: [
+          createMockFileUpload({
+            fileName: 'es.po',
+            fileFormat: 'PO',
+            content: 'msgid "Save"\nmsgstr "Guardar"\n',
+            locale: 'es',
+          }),
+        ],
+      },
+    ];
+
+    await expect(
+      _uploadTranslations(mockFiles, createMockOptions(), mockConfig)
+    ).rejects.toThrow('Unsupported file format transform: POT -> PO');
+    expect(apiRequest).not.toHaveBeenCalled();
   });
 
   it('should handle fetch errors', async () => {

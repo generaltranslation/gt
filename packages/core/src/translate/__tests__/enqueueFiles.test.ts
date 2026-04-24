@@ -6,7 +6,7 @@ import apiRequest from '../utils/apiRequest';
 
 vi.mock('../utils/apiRequest');
 
-describe('_enqueueFiles', () => {
+describe.sequential('_enqueueFiles', () => {
   const mockConfig: TranslationRequestConfig = {
     baseUrl: 'https://api.test.com',
     projectId: 'test-project',
@@ -168,6 +168,84 @@ describe('_enqueueFiles', () => {
         timeout: 30000,
       })
     );
+  });
+
+  it('should pass supported format transforms in enqueue requests', async () => {
+    const mockFiles = [
+      createMockFile({
+        fileFormat: 'JSON',
+        formatTransform: 'JSON',
+      }),
+    ];
+    const mockOptions = createMockOptions({ targetLocales: ['es'] });
+
+    const mockApiResponse: EnqueueFilesResult = {
+      jobData: {
+        'job-1': {
+          sourceFileId: 'source-123',
+          fileId: 'file-123',
+          versionId: 'version-456',
+          branchId: 'branch-123',
+          targetLocale: 'es',
+          projectId: 'test-project',
+          force: false,
+        },
+      },
+      message: 'File enqueued successfully',
+      locales: ['es'],
+    };
+
+    vi.mocked(apiRequest).mockResolvedValue(mockApiResponse);
+
+    await _enqueueFiles(mockFiles, mockOptions, mockConfig);
+
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(String),
+      expect.objectContaining({
+        body: expect.objectContaining({
+          files: [
+            expect.objectContaining({
+              fileId: 'file-123',
+              formatTransform: 'JSON',
+            }),
+          ],
+        }),
+      })
+    );
+  });
+
+  it('should reject unsupported format transforms', async () => {
+    vi.mocked(apiRequest).mockClear();
+    const mockFiles = [
+      createMockFile({
+        fileFormat: 'YAML',
+        formatTransform: 'JSON',
+      }),
+    ];
+
+    await expect(
+      _enqueueFiles(mockFiles, createMockOptions(), mockConfig)
+    ).rejects.toThrow('Unsupported file format transform: YAML -> JSON');
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+
+  it('should require fileFormat when formatTransform is provided', async () => {
+    vi.mocked(apiRequest).mockClear();
+    const mockFiles = [
+      {
+        fileId: 'file-123',
+        versionId: 'version-456',
+        formatTransform: 'JSON' as const,
+      },
+    ];
+
+    await expect(
+      _enqueueFiles(mockFiles, createMockOptions(), mockConfig)
+    ).rejects.toThrow(
+      'fileFormat is required when formatTransform is provided for file-123'
+    );
+    expect(apiRequest).not.toHaveBeenCalled();
   });
 
   it('should use custom timeout when provided', async () => {

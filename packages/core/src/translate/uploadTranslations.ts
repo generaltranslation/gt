@@ -8,6 +8,7 @@ import {
   RequiredUploadFilesOptions,
 } from '../types-dir/api/uploadFiles';
 import { encode } from '../utils/base64';
+import { validateFileFormatTransforms } from './utils/validateFileFormatTransform';
 
 /**
  * @internal
@@ -25,6 +26,8 @@ export default async function _uploadTranslations(
   options: RequiredUploadFilesOptions,
   config: TranslationRequestConfig
 ) {
+  validateFileFormatTransforms(files.map(({ source }) => source));
+
   return processBatches(
     files,
     async (batch) => {
@@ -34,6 +37,7 @@ export default async function _uploadTranslations(
             content: encode(source.content),
             fileName: source.fileName,
             fileFormat: source.fileFormat,
+            formatTransform: source.formatTransform,
             locale: source.locale,
             dataFormat: source.dataFormat,
             formatMetadata: source.formatMetadata,
