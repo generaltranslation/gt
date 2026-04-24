@@ -69,9 +69,7 @@ export async function splitMintlifyLanguageRefs(
       return;
     }
 
-    const navDir = navRefEntry
-      ? path.dirname(navRefEntry.sourceFile)
-      : docsDir;
+    const navDir = navRefEntry ? path.dirname(navRefEntry.sourceFile) : docsDir;
 
     // Restore $ref structure if the source used $ref
     if (refMap && refMap.size > 0) {
@@ -97,10 +95,7 @@ export async function splitMintlifyLanguageRefs(
             const subtree = getAtPointer(entry, ref.relativePointer);
             if (subtree === undefined) continue;
 
-            const originalAbsPath = path.resolve(
-              ref.resolvedDir,
-              ref.refPath
-            );
+            const originalAbsPath = path.resolve(ref.resolvedDir, ref.refPath);
             const relToNavDir = path.relative(navDir, originalAbsPath);
             const localeRelPath = path.join(locale, relToNavDir);
             const outputPath = path.resolve(navDir, localeRelPath);
