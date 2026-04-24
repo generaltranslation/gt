@@ -4,178 +4,54 @@ import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
 import { dts } from 'rollup-plugin-dts';
 
+// Pure-ESM deps that we want consumers to bundle/dedupe rather than inlining
+// into every one of our entry points. Only externalized in the ESM output —
+// in the CJS output we bundle them so that `require('generaltranslation')`
+// keeps working on Node <22.12 (where require(ESM) is flag-gated).
+const esmOnlyExternal = [/^@noble\/hashes(\/|$)/];
+
+const buildPlugins = () => [
+  resolve({ extensions: ['.js', '.mjs', '.ts'] }),
+  typescript({ tsconfig: './tsconfig.json' }),
+  commonjs(),
+  terser(),
+];
+
+// Produce both a CJS bundle (with ESM-only deps inlined) and an ESM bundle
+// (with ESM-only deps externalized) for a given entry point.
+const entry = (input, outBase) => [
+  {
+    input,
+    output: {
+      file: `dist/${outBase}.cjs.min.cjs`,
+      format: 'cjs',
+      exports: 'auto',
+      sourcemap: true,
+    },
+    plugins: buildPlugins(),
+  },
+  {
+    input,
+    external: esmOnlyExternal,
+    output: {
+      file: `dist/${outBase}.esm.min.mjs`,
+      format: 'es',
+      exports: 'named',
+      sourcemap: true,
+    },
+    plugins: buildPlugins(),
+  },
+  {
+    input,
+    output: { file: `dist/${outBase}.d.ts`, format: 'es' },
+    plugins: [dts()],
+  },
+];
+
 export default [
-  // Bundling for the main library (index.ts)
-  {
-    input: 'src/index.ts',
-    output: [
-      {
-        file: 'dist/index.cjs.min.cjs',
-        format: 'cjs',
-        exports: 'auto', // 'auto' ensures compatibility with both default and named exports in CommonJS
-        sourcemap: true,
-      },
-      {
-        file: 'dist/index.esm.min.mjs',
-        format: 'es',
-        exports: 'named', // Named exports for ES modules
-        sourcemap: true,
-      },
-    ],
-    plugins: [
-      resolve({ extensions: ['.js', '.mjs', '.ts'] }), // add intl-messageformat into the bundle
-      typescript({ tsconfig: './tsconfig.json' }),
-      commonjs(), // Handle CommonJS dependencies
-      terser(), // Minification
-    ],
-  },
-
-  // TypeScript declarations for the main library
-  {
-    input: 'src/index.ts',
-    output: {
-      file: 'dist/index.d.ts',
-      format: 'es',
-    },
-    plugins: [dts()],
-  },
-
-  // Bundling for the id module (id.ts)
-  {
-    input: 'src/id.ts',
-    output: [
-      {
-        file: 'dist/id.cjs.min.cjs',
-        format: 'cjs',
-        exports: 'auto',
-        sourcemap: true,
-      },
-      {
-        file: 'dist/id.esm.min.mjs',
-        format: 'es',
-        exports: 'named',
-        sourcemap: true,
-      },
-    ],
-    plugins: [
-      resolve({ extensions: ['.js', '.mjs', '.ts'] }),
-      typescript({ tsconfig: './tsconfig.json' }),
-      commonjs(),
-      terser(),
-    ],
-  },
-
-  // TypeScript declarations for the id module
-  {
-    input: 'src/id.ts',
-    output: {
-      file: 'dist/id.d.ts',
-      format: 'es',
-    },
-    plugins: [dts()],
-  },
-
-  // Bundling for the internal module
-  {
-    input: 'src/internal.ts',
-    output: [
-      {
-        file: 'dist/internal.cjs.min.cjs',
-        format: 'cjs',
-        exports: 'auto',
-        sourcemap: true,
-      },
-      {
-        file: 'dist/internal.esm.min.mjs',
-        format: 'es',
-        exports: 'named',
-        sourcemap: true,
-      },
-    ],
-    plugins: [
-      resolve({ extensions: ['.js', '.mjs', '.ts'] }),
-      typescript({ tsconfig: './tsconfig.json' }),
-      commonjs(),
-      terser(),
-    ],
-  },
-
-  // TypeScript declarations for the internal module
-  {
-    input: 'src/internal.ts',
-    output: {
-      file: 'dist/internal.d.ts',
-      format: 'es',
-    },
-    plugins: [dts()],
-  },
-
-  // Bundling for the errors module
-  {
-    input: 'src/errors.ts',
-    output: [
-      {
-        file: 'dist/errors.cjs.min.cjs',
-        format: 'cjs',
-        exports: 'auto',
-        sourcemap: true,
-      },
-      {
-        file: 'dist/errors.esm.min.mjs',
-        format: 'es',
-        exports: 'named',
-        sourcemap: true,
-      },
-    ],
-    plugins: [
-      typescript({ tsconfig: './tsconfig.json' }),
-      commonjs(),
-      terser(),
-    ],
-    external: [], // External dependencies not bundled in
-  },
-
-  // TypeScript declarations for the errors module
-  {
-    input: 'src/errors.ts',
-    output: {
-      file: 'dist/errors.d.ts',
-      format: 'es',
-    },
-    plugins: [dts()],
-  },
-
-  // Bundling for the types module
-  {
-    input: 'src/types.ts',
-    output: [
-      {
-        file: 'dist/types.cjs.min.cjs',
-        format: 'cjs',
-        exports: 'auto',
-        sourcemap: true,
-      },
-      {
-        file: 'dist/types.esm.min.mjs',
-        format: 'es',
-        exports: 'named',
-        sourcemap: true,
-      },
-    ],
-    plugins: [
-      typescript({ tsconfig: './tsconfig.json' }),
-      commonjs(),
-      terser(),
-    ],
-  },
-
-  // TypeScript declarations for the types module
-  {
-    input: 'src/types.ts',
-    output: {
-      file: 'dist/types.d.ts',
-      format: 'es',
-    },
-    plugins: [dts()],
-  },
+  ...entry('src/index.ts', 'index'),
+  ...entry('src/id.ts', 'id'),
+  ...entry('src/internal.ts', 'internal'),
+  ...entry('src/errors.ts', 'errors'),
+  ...entry('src/types.ts', 'types'),
 ];
