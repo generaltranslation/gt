@@ -241,7 +241,7 @@ describe.sequential('_uploadSourceFiles', () => {
         source: createMockFileUpload({
           fileName: 'messages.pot',
           fileFormat: 'POT',
-          formatTransform: 'PO',
+          transformFormat: 'PO',
           content: 'msgid "Save"\nmsgstr ""\n',
         }),
       },

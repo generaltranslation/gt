@@ -33,7 +33,7 @@ export type FileToUpload = Omit<FileReference, 'branchId'> & {
   content: string;
   locale: string;
   // Optional output format requested for generated translations.
-  formatTransform?: FileFormat;
+  transformFormat?: FileFormat;
   formatMetadata?: FormatMetadata;
   branchId?: string;
   incomingBranchId?: string;
@@ -57,7 +57,7 @@ export type FileReference = {
   fileName: string;
   fileFormat: FileFormat;
   // Optional output format requested for generated translations.
-  formatTransform?: FileFormat;
+  transformFormat?: FileFormat;
   dataFormat?: DataFormat;
 };
 
@@ -73,6 +73,6 @@ export type FileReferenceIds = Omit<
   branchId?: string;
   fileName?: string;
   fileFormat?: FileFormat;
-  formatTransform?: FileFormat;
+  transformFormat?: FileFormat;
   dataFormat?: DataFormat;
 };

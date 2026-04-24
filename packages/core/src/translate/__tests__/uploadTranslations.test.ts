@@ -415,7 +415,7 @@ describe.sequential('_uploadTranslations', () => {
         source: createMockFileUpload({
           fileName: 'messages.json',
           fileFormat: 'JSON',
-          formatTransform: 'JSON',
+          transformFormat: 'JSON',
           content: '{"save":"Save"}',
         }),
         translations: [
@@ -443,7 +443,7 @@ describe.sequential('_uploadTranslations', () => {
               source: expect.objectContaining({
                 fileName: 'messages.json',
                 fileFormat: 'JSON',
-                formatTransform: 'JSON',
+                transformFormat: 'JSON',
               }),
             }),
           ],
@@ -459,7 +459,7 @@ describe.sequential('_uploadTranslations', () => {
         source: createMockFileUpload({
           fileName: 'messages.pot',
           fileFormat: 'POT',
-          formatTransform: 'PO',
+          transformFormat: 'PO',
           content: 'msgid "Save"\nmsgstr ""\n',
         }),
         translations: [

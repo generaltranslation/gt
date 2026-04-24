@@ -3,7 +3,7 @@ import { isSupportedFileFormatTransform } from '../../utils/isSupportedFileForma
 
 export type FileFormatTransformInput = {
   fileFormat?: FileFormat;
-  formatTransform?: FileFormat;
+  transformFormat?: FileFormat;
   fileName?: string;
   fileId?: string;
 };
@@ -15,13 +15,13 @@ export type FileFormatTransformInput = {
 export function getFileFormatTransformError(
   file: FileFormatTransformInput
 ): string | undefined {
-  if (!file.formatTransform) return undefined;
+  if (!file.transformFormat) return undefined;
   const fileLabel = file.fileName ?? file.fileId ?? 'unknown file';
   if (!file.fileFormat) {
-    return `fileFormat is required when formatTransform is provided for ${fileLabel}`;
+    return `fileFormat is required when transformFormat is provided for ${fileLabel}`;
   }
-  if (!isSupportedFileFormatTransform(file.fileFormat, file.formatTransform)) {
-    return `Unsupported file format transform: ${file.fileFormat} -> ${file.formatTransform}`;
+  if (!isSupportedFileFormatTransform(file.fileFormat, file.transformFormat)) {
+    return `Unsupported file format transform: ${file.fileFormat} -> ${file.transformFormat}`;
   }
   return undefined;
 }

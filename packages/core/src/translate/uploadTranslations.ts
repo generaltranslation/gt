@@ -37,7 +37,7 @@ export default async function _uploadTranslations(
             content: encode(source.content),
             fileName: source.fileName,
             fileFormat: source.fileFormat,
-            formatTransform: source.formatTransform,
+            transformFormat: source.transformFormat,
             locale: source.locale,
             dataFormat: source.dataFormat,
             formatMetadata: source.formatMetadata,

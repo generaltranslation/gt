@@ -37,7 +37,7 @@ export default async function _enqueueFiles(
           fileId: f.fileId,
           versionId: f.versionId,
           fileName: f.fileName,
-          formatTransform: f.formatTransform,
+          transformFormat: f.transformFormat,
         })),
         targetLocales: options.targetLocales,
         sourceLocale: options.sourceLocale,

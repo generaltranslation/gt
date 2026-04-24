@@ -174,7 +174,7 @@ describe.sequential('_enqueueFiles', () => {
     const mockFiles = [
       createMockFile({
         fileFormat: 'JSON',
-        formatTransform: 'JSON',
+        transformFormat: 'JSON',
       }),
     ];
     const mockOptions = createMockOptions({ targetLocales: ['es'] });
@@ -207,7 +207,7 @@ describe.sequential('_enqueueFiles', () => {
           files: [
             expect.objectContaining({
               fileId: 'file-123',
-              formatTransform: 'JSON',
+              transformFormat: 'JSON',
             }),
           ],
         }),
@@ -220,7 +220,7 @@ describe.sequential('_enqueueFiles', () => {
     const mockFiles = [
       createMockFile({
         fileFormat: 'YAML',
-        formatTransform: 'JSON',
+        transformFormat: 'JSON',
       }),
     ];
 
@@ -230,20 +230,20 @@ describe.sequential('_enqueueFiles', () => {
     expect(apiRequest).not.toHaveBeenCalled();
   });
 
-  it('should require fileFormat when formatTransform is provided', async () => {
+  it('should require fileFormat when transformFormat is provided', async () => {
     vi.mocked(apiRequest).mockClear();
     const mockFiles = [
       {
         fileId: 'file-123',
         versionId: 'version-456',
-        formatTransform: 'JSON' as const,
+        transformFormat: 'JSON' as const,
       },
     ];
 
     await expect(
       _enqueueFiles(mockFiles, createMockOptions(), mockConfig)
     ).rejects.toThrow(
-      'fileFormat is required when formatTransform is provided for file-123'
+      'fileFormat is required when transformFormat is provided for file-123'
     );
     expect(apiRequest).not.toHaveBeenCalled();
   });

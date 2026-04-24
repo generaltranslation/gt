@@ -30,7 +30,7 @@ export type FileUpload = {
   fileName: string;
   fileFormat: FileFormat;
   // Optional output format requested for generated translations.
-  formatTransform?: FileFormat;
+  transformFormat?: FileFormat;
   dataFormat?: DataFormat;
   locale: string;
   formatMetadata?: GTJsonFormatMetadata;
