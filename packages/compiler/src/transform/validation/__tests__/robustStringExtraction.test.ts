@@ -848,10 +848,7 @@ describe('Robust string extraction — golden standard', () => {
       const autoState = createState({
         autoderive: { jsx: false, strings: true },
       });
-      const result = validateCall(
-        makeCall(t.identifier('myVar')),
-        autoState
-      );
+      const result = validateCall(makeCall(t.identifier('myVar')), autoState);
       expect(result.errors).toHaveLength(0);
       expect(result.variants).toBeDefined();
       expect(result.hasDerive).toBe(false);
