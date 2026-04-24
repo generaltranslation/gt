@@ -4,6 +4,7 @@ import { logger } from '../console/logger.js';
 import { Settings } from '../types/index.js';
 import type { RefMap } from './resolveMintlifyRefs.js';
 import { shouldResolveRefs } from './resolveMintlifyRefs.js';
+import micromatch from 'micromatch';
 import { getStoredRefMap, clearStoredRefMap } from '../state/mintlifyRefMap.js';
 
 /**
@@ -163,9 +164,7 @@ function findCompositeJsonFile(
     for (const [glob, schema] of Object.entries(
       options.jsonSchema as Record<string, any>
     )) {
-      const normalizedPath = relative.replace(/^\.\//, '');
-      const normalizedGlob = glob.replace(/^\.\//, '');
-      if (schema?.composite && normalizedPath === normalizedGlob) {
+      if (schema?.composite && micromatch.isMatch(relative, glob)) {
         return filePath;
       }
     }
