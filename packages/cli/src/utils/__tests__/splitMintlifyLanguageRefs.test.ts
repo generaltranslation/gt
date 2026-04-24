@@ -26,6 +26,7 @@ vi.mock('../../console/logger.js', () => ({
 let mockRefMap: RefMap | null = null;
 vi.mock('../../state/mintlifyRefMap.js', () => ({
   getStoredRefMap: () => mockRefMap,
+  clearStoredRefMap: vi.fn(),
 }));
 
 // Mock shouldResolveRefs to return true for the test docs.json path

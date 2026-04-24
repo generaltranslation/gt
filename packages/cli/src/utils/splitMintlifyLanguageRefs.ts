@@ -4,7 +4,7 @@ import { logger } from '../console/logger.js';
 import { Settings } from '../types/index.js';
 import type { RefMap } from './resolveMintlifyRefs.js';
 import { shouldResolveRefs } from './resolveMintlifyRefs.js';
-import { getStoredRefMap } from '../state/mintlifyRefMap.js';
+import { getStoredRefMap, clearStoredRefMap } from '../state/mintlifyRefMap.js';
 
 /**
  * Post-processing step for Mintlify docs.json.
@@ -78,8 +78,6 @@ export async function splitMintlifyLanguageRefs(
   );
 
   if (internalRefs.length > 0) {
-    // Restore default locale's refs (same paths as original)
-
     // Restore default locale's refs (same paths as original)
     const defaultEntry = languages[defaultIndex];
     for (const ref of internalRefs) {
@@ -171,6 +169,8 @@ export async function splitMintlifyLanguageRefs(
   // This must happen AFTER language processing so the nav file gets the
   // updated language entries with $ref.
   restoreTopLevelRefs(docsJson, refMap, docsJsonPath);
+
+  clearStoredRefMap();
 }
 
 /**
@@ -185,10 +185,13 @@ function restoreTopLevelRefs(
 ): void {
   let changed = false;
 
-  for (const [pointer, entry] of refMap.entries()) {
-    // Only handle refs directly in docs.json, not inside language entries
-    if (pointer.match(/^\/navigation\/languages\/\d+/)) continue;
+  // Sort deepest-first so nested refs are written before their parent
+  // replaces the ancestor subtree with a $ref pointer
+  const entries = [...refMap.entries()]
+    .filter(([pointer]) => !pointer.match(/^\/navigation\/languages\/\d+/))
+    .sort(([a], [b]) => b.length - a.length);
 
+  for (const [pointer, entry] of entries) {
     const subtree = getAtPointer(docsJson, pointer);
     if (subtree === undefined) continue;
 

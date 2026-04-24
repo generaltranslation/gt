@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
 import chalk from 'chalk';
+import micromatch from 'micromatch';
 
 export type RefMapEntry = {
   sourceFile: string;
@@ -183,18 +184,11 @@ export function shouldResolveRefs(
 
   const relative = path.relative(process.cwd(), filePath);
   for (const [glob, schema] of Object.entries(options.jsonSchema)) {
-    if (schema?.composite && isGlobMatch(relative, glob)) {
+    if (schema?.composite && micromatch.isMatch(relative, glob)) {
       return true;
     }
   }
   return false;
-}
-
-function isGlobMatch(filePath: string, glob: string): boolean {
-  // Simple glob matching: strip leading ./ from both and compare
-  const normalizedPath = filePath.replace(/^\.\//, '');
-  const normalizedGlob = glob.replace(/^\.\//, '');
-  return normalizedPath === normalizedGlob;
 }
 
 function isRelativePath(refPath: string): boolean {
