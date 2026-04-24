@@ -127,6 +127,46 @@ describe.sequential('_downloadFileBatch', () => {
     expect(result.batchCount).toBe(1);
   });
 
+  it('should decode downloaded PO files', async () => {
+    const poContent = 'msgid "Save"\nmsgstr "Guardar"\n';
+    vi.mocked(apiRequest).mockResolvedValue({
+      files: [
+        {
+          id: 'translation-po',
+          branchId: 'branch-1',
+          fileId: 'file-po',
+          versionId: 'version-po',
+          locale: 'es',
+          fileFormat: 'PO',
+          fileName: 'es.po',
+          data: Buffer.from(poContent).toString('base64'),
+          metadata: { language: 'es' },
+        },
+      ],
+      count: 1,
+    });
+
+    const result = await _downloadFileBatch(
+      [{ fileId: 'file-po', locale: 'es' }],
+      {},
+      mockConfig
+    );
+
+    expect(result.data).toEqual([
+      {
+        id: 'translation-po',
+        branchId: 'branch-1',
+        fileId: 'file-po',
+        versionId: 'version-po',
+        locale: 'es',
+        fileFormat: 'PO',
+        fileName: 'es.po',
+        data: poContent,
+        metadata: { language: 'es' },
+      },
+    ]);
+  });
+
   it('should use default timeout when not specified', async () => {
     vi.mocked(apiRequest).mockResolvedValue(mockDownloadFileBatchResultBase64);
 

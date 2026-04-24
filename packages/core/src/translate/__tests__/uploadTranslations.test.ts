@@ -346,6 +346,69 @@ describe('_uploadTranslations', () => {
     );
   });
 
+  it('should upload PO translations', async () => {
+    const mockFiles = [
+      {
+        source: createMockFileUpload({
+          fileName: 'messages.pot',
+          fileFormat: 'PO',
+          content: 'msgid "Save"\nmsgstr ""\n',
+        }),
+        translations: [
+          createMockFileUpload({
+            fileName: 'es.po',
+            fileFormat: 'PO',
+            content: 'msgid "Save"\nmsgstr "Guardar"\n',
+            locale: 'es',
+          }),
+        ],
+      },
+    ];
+
+    const mockOptions = createMockOptions();
+    vi.mocked(apiRequest).mockResolvedValue({ success: true });
+
+    await _uploadTranslations(mockFiles, mockOptions, mockConfig);
+
+    const expectedBody = {
+      data: [
+        {
+          source: expect.objectContaining({
+            content: Buffer.from('msgid "Save"\nmsgstr ""\n').toString(
+              'base64'
+            ),
+            fileName: 'messages.pot',
+            fileFormat: 'PO',
+            locale: 'en',
+          }),
+          translations: [
+            {
+              content: Buffer.from('msgid "Save"\nmsgstr "Guardar"\n').toString(
+                'base64'
+              ),
+              fileName: 'es.po',
+              fileFormat: 'PO',
+              locale: 'es',
+              dataFormat: undefined,
+              fileId: undefined,
+              versionId: undefined,
+              branchId: undefined,
+            },
+          ],
+        },
+      ],
+      sourceLocale: 'en',
+    };
+
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(String),
+      expect.objectContaining({
+        body: expectedBody,
+      })
+    );
+  });
+
   it('should handle fetch errors', async () => {
     const mockFiles = [
       {

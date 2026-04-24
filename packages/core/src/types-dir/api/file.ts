@@ -4,6 +4,7 @@ import { Updates } from './enqueueFiles';
 export type FileFormat =
   | 'GTJSON'
   | 'JSON'
+  | 'PO'
   | 'YAML'
   | 'MDX'
   | 'MD'
