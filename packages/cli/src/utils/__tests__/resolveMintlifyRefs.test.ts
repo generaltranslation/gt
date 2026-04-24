@@ -410,9 +410,7 @@ describe('resolveMintlifyRefs', () => {
 
     const apiEntry = refMap.get('/navigation/groups/0');
     expect(apiEntry!.refPath).toBe('./groups/api.json');
-    expect(apiEntry!.containingDir).toBe(
-      path.resolve('/project/config')
-    );
+    expect(apiEntry!.containingDir).toBe(path.resolve('/project/config'));
   });
 
   it('handles $ref resolving to a non-object (string)', () => {
