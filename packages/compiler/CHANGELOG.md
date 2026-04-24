@@ -1,5 +1,11 @@
 # @generaltranslation/compiler
 
+## 1.3.10
+
+### Patch Changes
+
+- [#1236](https://github.com/generaltranslation/gt/pull/1236) [`3d6c60e`](https://github.com/generaltranslation/gt/commit/3d6c60e1595bc9409a2d21a153caa5f909154691) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: string extraction for concat with non-strings
+
 ## 1.3.9
 
 ### Patch Changes
