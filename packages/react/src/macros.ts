@@ -1,5 +1,5 @@
 import { t as _t } from './i18n-context/functions/translation/t';
-import { TemplateSyncResolutionFunction } from './i18n-context/functions/translation/types';
+import type { TemplateSyncResolutionFunction } from './i18n-context/functions/translation/types';
 
 declare global {
   /**
@@ -16,4 +16,4 @@ declare global {
 
 globalThis.t = _t;
 
-export { TemplateSyncResolutionFunction };
+export type { TemplateSyncResolutionFunction };

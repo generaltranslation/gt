@@ -37,11 +37,17 @@ import {
   mFallback,
   gtFallback,
 } from '@generaltranslation/react-core';
-import {
+import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from '@generaltranslation/react-core/types';
+
+export type {
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
+};
 
 export {
   Var,
@@ -70,9 +76,6 @@ export {
   useVersionId,
   LocaleSelector,
   RegionSelector,
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
   msg,
   decodeMsg,
   decodeOptions,

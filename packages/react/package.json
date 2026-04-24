@@ -2,9 +2,9 @@
   "name": "gt-react",
   "version": "10.19.3",
   "description": "A React library for automatic internationalization.",
-  "main": "./dist/index.cjs.min.cjs",
-  "module": "./dist/index.esm.min.mjs",
-  "types": "./dist/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.cts",
   "files": [
     "dist",
     "CHANGELOG.md"
@@ -22,7 +22,7 @@
   "scripts": {
     "patch": "pnpm version patch",
     "transpile": "tsc",
-    "build": "rollup -c",
+    "build": "tsdown",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "release": "pnpm run build:clean && pnpm publish",
@@ -45,73 +45,96 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
-    "@babel/preset-react": "^7.26.3",
-    "@babel/preset-typescript": "^7.26.0",
-    "@rollup/plugin-babel": "^6.0.4",
-    "@rollup/plugin-commonjs": "^28.0.6",
-    "@rollup/plugin-node-resolve": "^16.0.0",
-    "@rollup/plugin-terser": "^0.4.4",
-    "@rollup/plugin-typescript": "^12.1.4",
     "@types/node": "^22.13.5",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
-    "rollup": "^4.32.1",
-    "rollup-plugin-dts": "^6.2.3",
-    "rollup-plugin-peer-deps-external": "^2.2.4",
-    "rollup-plugin-postcss": "^4.0.2",
-    "rollup-preserve-directives": "^1.1.3",
-    "tslib": "^2.8.1",
+    "tsdown": "^0.21.10",
     "typescript": "^5.7.3"
+  },
+  "typescript": {
+    "definition": "dist/index.d.cts"
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs.min.cjs",
-      "import": "./dist/index.esm.min.mjs"
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
     },
     "./internal": {
-      "types": "./dist/internal.d.ts",
-      "require": "./dist/internal.cjs.min.cjs",
-      "import": "./dist/internal.esm.min.mjs"
+      "require": {
+        "types": "./dist/internal.d.cts",
+        "default": "./dist/internal.cjs"
+      },
+      "import": {
+        "types": "./dist/internal.d.mts",
+        "default": "./dist/internal.mjs"
+      }
     },
     "./client": {
-      "types": "./dist/client.d.ts",
-      "require": "./dist/client.cjs.min.cjs",
-      "import": "./dist/client.esm.min.mjs"
+      "require": {
+        "types": "./dist/client.d.cts",
+        "default": "./dist/client.cjs"
+      },
+      "import": {
+        "types": "./dist/client.d.mts",
+        "default": "./dist/client.mjs"
+      }
     },
     "./browser": {
-      "types": "./dist/browser.d.ts",
-      "require": "./dist/browser.cjs.min.cjs",
-      "import": "./dist/browser.esm.min.mjs"
+      "require": {
+        "types": "./dist/browser.d.cts",
+        "default": "./dist/browser.cjs"
+      },
+      "import": {
+        "types": "./dist/browser.d.mts",
+        "default": "./dist/browser.mjs"
+      }
     },
     "./browser/types": {
-      "types": "./dist/browser.d.ts"
+      "require": {
+        "types": "./dist/browser-types.d.cts",
+        "default": "./dist/browser-types.cjs"
+      },
+      "import": {
+        "types": "./dist/browser-types.d.mts",
+        "default": "./dist/browser-types.mjs"
+      }
     },
     "./macros": {
-      "types": "./dist/macros.d.ts",
-      "require": "./dist/macros.cjs.min.cjs",
-      "import": "./dist/macros.esm.min.mjs"
+      "require": {
+        "types": "./dist/macros.d.cts",
+        "default": "./dist/macros.cjs"
+      },
+      "import": {
+        "types": "./dist/macros.d.mts",
+        "default": "./dist/macros.mjs"
+      }
     }
   },
   "typesVersions": {
     "*": {
       "client": [
-        "./dist/client.d.ts"
+        "./dist/client.d.cts"
       ],
       "internal": [
-        "./dist/internal.d.ts"
+        "./dist/internal.d.cts"
       ],
       "setup": [
-        "./dist/setup.d.ts"
+        "./dist/setup.d.cts"
       ],
       "browser": [
-        "./dist/browser.d.ts"
+        "./dist/browser.d.cts"
       ],
       "browser/types": [
-        "./dist/browser.d.ts"
+        "./dist/browser-types.d.cts"
       ],
       "macros": [
-        "./dist/macros.d.ts"
+        "./dist/macros.d.cts"
       ]
     }
   },
@@ -125,16 +148,16 @@
         "./dist/internal"
       ],
       "gt-react/setup": [
-        "./dist/setup.d.ts"
+        "./dist/setup.d.cts"
       ],
       "gt-react/browser": [
-        "./dist/browser.d.ts"
+        "./dist/browser.d.cts"
       ],
       "gt-react/browser/types": [
-        "./dist/browser.d.ts"
+        "./dist/browser-types.d.cts"
       ],
       "gt-react/macros": [
-        "./dist/macros.d.ts"
+        "./dist/macros.d.cts"
       ]
     }
   },

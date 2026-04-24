@@ -2,9 +2,9 @@
   "name": "@generaltranslation/supported-locales",
   "version": "2.0.64",
   "description": "List of supported locales for General Translation",
-  "main": "./dist/index.cjs.min.cjs",
-  "module": "./dist/index.esm.min.mjs",
-  "types": "./dist/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.cts",
   "files": [
     "dist",
     "CHANGELOG.md"
@@ -12,7 +12,7 @@
   "scripts": {
     "build:release": "pnpm run build:clean",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
-    "build": "rollup -c",
+    "build": "tsdown",
     "lint": "eslint \"src/**/*.{js,ts}\" \"__tests__/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" \"__tests__/**/*.{js,ts}\" --fix",
     "test": "vitest run",
@@ -36,26 +36,25 @@
   },
   "homepage": "https://generaltranslation.com/",
   "typescript": {
-    "definition": "./dist/index.d.ts"
+    "definition": "dist/index.d.cts"
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs.min.cjs",
-      "import": "./dist/index.esm.min.mjs",
-      "default": "./dist/index.esm.min.mjs"
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
     }
   },
   "dependencies": {
     "generaltranslation": "workspace:*"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^28.0.1",
-    "@rollup/plugin-terser": "^0.4.4",
-    "@rollup/plugin-typescript": "^12.1.1",
-    "rollup": "^4.32.1",
-    "rollup-plugin-dts": "^6.1.1",
-    "tslib": "^2.8.0",
+    "tsdown": "^0.21.10",
     "typescript": "^5.6.2"
   }
 }

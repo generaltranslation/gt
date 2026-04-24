@@ -1,5 +1,8 @@
 import type { GTConfig, TranslationsLoader } from 'gt-i18n/internal/types';
-import { GetLocale, HtmlTagOptions } from '../browser-i18n-manager/utils/types';
+import type {
+  GetLocale,
+  HtmlTagOptions,
+} from '../browser-i18n-manager/utils/types';
 
 /**
  * Parameters for the initializing GT

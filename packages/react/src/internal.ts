@@ -42,7 +42,7 @@ import {
   gtFallback,
 } from '@generaltranslation/react-core/internal';
 
-import {
+import type {
   MFunctionType,
   GTFunctionType,
   Dictionary,
@@ -67,7 +67,7 @@ import {
   GTProp,
 } from '@generaltranslation/react-core/types';
 
-import {
+import type {
   ClientProviderProps,
   GTProviderProps,
 } from './react-context/types/config';
