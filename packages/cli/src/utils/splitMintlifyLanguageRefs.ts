@@ -93,9 +93,7 @@ export async function splitMintlifyLanguageRefs(
                 !internalRefs.some(
                   (other) =>
                     other !== ref &&
-                    ref.relativePointer.startsWith(
-                      other.relativePointer + '/'
-                    )
+                    ref.relativePointer.startsWith(other.relativePointer + '/')
                 )
             )
             .map((r) => r.relativePointer)
