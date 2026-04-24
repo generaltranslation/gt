@@ -1,7 +1,7 @@
 // Functions provided to other GT libraries
 
 import { OldJsxChild, OldJsxChildren, OldVariableObject } from './oldTypes';
-import stringify from 'fast-json-stable-stringify';
+import { stableStringify as stringify } from '../utils/stableStringify';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 

@@ -415,9 +415,6 @@ importers:
       '@noble/hashes':
         specifier: ^2.2.0
         version: 2.2.0
-      fast-json-stable-stringify:
-        specifier: ^2.1.0
-        version: 2.1.0
       intl-messageformat:
         specifier: ^10.7.16
         version: 10.7.16
