@@ -249,6 +249,82 @@ describe('findChoiceNodes', () => {
     expect(found[0].node).toBe(outer);
     expect(found[1].node).toBe(inner);
   });
+
+  it('finds choice node inside ExtractionElement.c', () => {
+    const choice = createChoiceNode<ExtractionChild>(['hello', 'goodbye']);
+    const elem = createExtractionElement('span', 1, [choice]);
+    const nodes: ResolutionNode<ExtractionChild>[] = [elem];
+    const found = findChoiceNodes(nodes, recurseIntoExtractionChild);
+    expect(found).toHaveLength(1);
+    expect(found[0].node).toBe(choice);
+  });
+
+  it('finds choice node inside ExtractionGTProp.b branches', () => {
+    const choice = createChoiceNode<ExtractionChild>([
+      'one item',
+      'many items',
+    ]);
+    const data = createExtractionGTProp({
+      one: [choice],
+      other: ['fallback'],
+    });
+    const elem = createExtractionElement('span', 1, undefined, data);
+    const nodes: ResolutionNode<ExtractionChild>[] = [elem];
+    const found = findChoiceNodes(nodes, recurseIntoExtractionChild);
+    expect(found).toHaveLength(1);
+    expect(found[0].node).toBe(choice);
+  });
+
+  it('finds choice nodes at multiple levels of nesting in ExtractionElement.c', () => {
+    const deepChoice = createChoiceNode<ExtractionChild>(['x', 'y']);
+    const innerElem = createExtractionElement('em', 2, [deepChoice]);
+    const topChoice = createChoiceNode<ExtractionChild>(['a', 'b']);
+    const outerElem = createExtractionElement('div', 1, [topChoice, innerElem]);
+    const nodes: ResolutionNode<ExtractionChild>[] = [outerElem];
+    const found = findChoiceNodes(nodes, recurseIntoExtractionChild);
+    expect(found).toHaveLength(2);
+    expect(found[0].node).toBe(topChoice);
+    expect(found[1].node).toBe(deepChoice);
+  });
+
+  it('finds choice nodes in both ExtractionElement.c and sibling GTProp.b', () => {
+    const childChoice = createChoiceNode<ExtractionChild>([
+      'variant A',
+      'variant B',
+    ]);
+    const propChoice = createChoiceNode<ExtractionChild>([
+      'singular',
+      'plural',
+    ]);
+    const data = createExtractionGTProp({ one: [propChoice] }, 'p');
+    const elem = createExtractionElement('div', 1, [childChoice], data);
+    // recurseIntoExtractionChild prefers .c over .d.b, so propChoice
+    // won't be found via this element — but we can test them separately
+    const propOnlyElem = createExtractionElement('span', 2, undefined, data);
+    const nodes: ResolutionNode<ExtractionChild>[] = [elem, propOnlyElem];
+    const found = findChoiceNodes(nodes, recurseIntoExtractionChild);
+    expect(found.some((f) => f.node === childChoice)).toBe(true);
+    expect(found.some((f) => f.node === propChoice)).toBe(true);
+  });
+
+  it('finds choice node nested three levels deep in ExtractionElement.c', () => {
+    const deepest = createChoiceNode<ExtractionChild>(['leaf1', 'leaf2']);
+    const level2 = createExtractionElement('em', 3, [deepest]);
+    const level1 = createExtractionElement('p', 2, [level2]);
+    const root = createExtractionElement('div', 1, [level1]);
+    const nodes: ResolutionNode<ExtractionChild>[] = [root];
+    const found = findChoiceNodes(nodes, recurseIntoExtractionChild);
+    expect(found).toHaveLength(1);
+    expect(found[0].node).toBe(deepest);
+  });
+
+  it('returns empty when ExtractionElement tree has no choice nodes', () => {
+    const inner = createExtractionElement('em', 2, ['plain text']);
+    const outer = createExtractionElement('div', 1, [inner, 'more text']);
+    const nodes: ResolutionNode<ExtractionChild>[] = [outer];
+    const found = findChoiceNodes(nodes, recurseIntoExtractionChild);
+    expect(found).toHaveLength(0);
+  });
 });
 
 // ─────────────────────────────────────────────────

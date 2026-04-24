@@ -1,6 +1,6 @@
 import { ResolutionNode, isChoiceNode } from '../../nodes';
 import * as t from '@babel/types';
-import { isDeriveInvocation } from '../../utils/parsing/isDeriveInvocation';
+import { isDeriveInvocation } from './isDeriveInvocation';
 import { NodePath } from '@babel/traverse';
 import { StringPart } from '../../nodes/types';
 

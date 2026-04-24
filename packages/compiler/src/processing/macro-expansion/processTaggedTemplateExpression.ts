@@ -3,10 +3,8 @@ import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
 import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
 import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
-import { transformTemplateLiteral } from '../../transform/macro-expansion/transformTemplateLiteral';
-import { extractString } from '../../transform/templates-and-concat/extractString';
+import { extractString } from '../../utils/parsing/extractString';
 import { buildTransformResult } from '../../transform/templates-and-concat/buildTransformationResult';
-import { multiply } from '../../nodes/multiply';
 
 /**
  * Process tagged template expressions for macro expansion.
@@ -39,14 +37,18 @@ export function processTaggedTemplateExpression(
       }
     }
 
-    // Extract the string parts
-    const parts = extractString(path.get('quasi'), true);
-    const variants = multiply(parts.value ?? []);
-    if (variants.length !== 1) return;
+    // Extract the string parts (do not trace derive, no multiplication)
+    const parts = extractString(path.get('quasi'), false);
+    if (parts.errors.length || parts.value == null) {
+      state.errorTracker.addErrors(parts.errors);
+      return;
+    }
 
     // Remap to a t() invocation
-    const variant = variants[0];
-    const { message, variables } = buildTransformResult(variant);
+    const { message, variables } = buildTransformResult(
+      parts.value,
+      parts.metadata.hasDerive
+    );
     const args: t.Expression[] = [message];
     if (variables) args.push(variables);
     path.replaceWith(

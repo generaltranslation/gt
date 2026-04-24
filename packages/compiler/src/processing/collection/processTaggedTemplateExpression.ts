@@ -4,7 +4,7 @@ import { TransformState } from '../../state/types';
 import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
 import hashSource from '../../utils/calculateHash';
 import { multiply } from '../../nodes/multiply';
-import { extractString } from '../../transform/templates-and-concat/extractString';
+import { extractString } from '../../utils/parsing/extractString';
 import { joinAllParts } from '../../utils/parsing/collapseStringPartsToString';
 
 /**
@@ -44,6 +44,7 @@ export function processTaggedTemplateExpression(
     const extracted = extractString(path.get('quasi'), true);
     if (extracted.errors.length || extracted.value == null) return;
     // TODO: remove this once derive is supported
+    // Skip reg if contains derive
     if (extracted.metadata.hasDerive) return;
     const variants = multiply(extracted.value);
 

@@ -8,12 +8,13 @@ import { StringPart } from '../../nodes/types';
  * - Has derive/dynamic → TemplateLiteral with derive expressions preserved
  *   and dynamic values extracted as {n} placeholders
  */
-export function buildTransformResult(parts: StringPart[]): {
+export function buildTransformResult(
+  parts: StringPart[],
+  hasDerive: boolean
+): {
   message: t.StringLiteral | t.TemplateLiteral;
   variables: t.ObjectExpression | null;
 } {
-  const hasDerive = parts.some((p) => p.type === 'derive');
-
   // No derive parts: collapse everything into a StringLiteral with {n} placeholders
   if (!hasDerive) {
     const properties: t.ObjectProperty[] = [];

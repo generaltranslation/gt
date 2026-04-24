@@ -8,7 +8,7 @@ import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFr
 import { getTrackedVariable } from '../getTrackedVariable';
 import { resolveStaticExpression } from '../templates-and-concat/resolveStaticExpression';
 import { NodePath } from '@babel/traverse';
-import { extractString } from '../templates-and-concat/extractString';
+import { extractString } from '../../utils/parsing/extractString';
 import { cartesianProduct, multiply } from '../../nodes/multiply';
 import { joinStaticParts } from '../../utils/parsing/collapseStringPartsToString';
 

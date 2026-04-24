@@ -2,13 +2,8 @@ import type { ChoiceNode, ResolutionNode } from './types';
 import { isChoiceNode } from './guards';
 
 /**
- * Expands all ChoiceNodes in a ResolutionNode array into the
+ * Expands top-level ChoiceNodes in a ResolutionNode array into the
  * cross-product of all possible combinations.
- *
- * This is the core algorithm that replaces both the CLI's
- * `multiplyJsxTree()` (for JSX) and `nodeToStrings()` (for strings).
- *
- * ## How it works
  *
  * Given `[A, Choice([B, C]), D]`:
  * - Position 0: A (1 alternative)
@@ -16,28 +11,15 @@ import { isChoiceNode } from './guards';
  * - Position 2: D (1 alternative)
  * - Cross-product: [[A, B, D], [A, C, D]]
  *
- * For nested choices (inside ExtractionElement children), the
- * `recurseIntoLeaf` callback is used to find and expand them.
- * Each nested expansion multiplies with the outer expansion.
- *
- * ## Usage
- *
- * ```typescript
- * // Strings — no recursion needed
- * const variants = multiply<string>(stringNodes);
- *
- * // JSX — recurse into element children and GTProp branches
- * const variants = multiply<ExtractionChild>(
- *   jsxNodes,
- *   recurseIntoExtractionChild
- * );
- * ```
+ * Nested ChoiceNodes within a branch are flattened (a Choice inside
+ * a Choice is treated as additional alternatives). However, this
+ * does NOT recurse into leaf values — ChoiceNodes inside
+ * ExtractionElement.c or ExtractionGTProp.b are passed through
+ * unexpanded. Leaf-level expansion will require a recurseIntoLeaf
+ * callback (not yet implemented).
  *
  * @typeParam T - The leaf content type
  * @param nodes - The array of resolution nodes to expand
- * @param recurseIntoLeaf - Optional callback to find nested
- *   ResolutionNode arrays inside leaf values. Required for JSX
- *   where ExtractionElement.c can contain ChoiceNodes.
  * @returns Array of all possible combinations. Each inner array
  *   is one variant with all ChoiceNodes resolved to a single branch.
  *   Returns `[nodes as T[]]` if no ChoiceNodes are found.

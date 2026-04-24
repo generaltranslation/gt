@@ -22,7 +22,12 @@ export function injectUseGTCallbackParameters(
   if (useGTCallbackParams.errors.length > 0) {
     return;
   }
+  // Skip injection if already has hash inline
   if (useGTCallbackParams.hash !== undefined) {
+    return;
+  }
+  // Skip injection if contains derive (keep this even after derive is supported)
+  if (useGTCallbackParams.hasDerive) {
     return;
   }
 

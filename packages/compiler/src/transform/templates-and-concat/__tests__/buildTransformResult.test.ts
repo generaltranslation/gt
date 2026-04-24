@@ -5,7 +5,7 @@ import { buildTransformResult } from '../buildTransformationResult';
 describe('buildTransformResult', () => {
   it('returns StringLiteral for all-static parts', () => {
     const parts = [{ type: 'static' as const, content: 'hello world' }];
-    const { message, variables } = buildTransformResult(parts);
+    const { message, variables } = buildTransformResult(parts, false);
     expect(t.isStringLiteral(message)).toBe(true);
     expect((message as t.StringLiteral).value).toBe('hello world');
     expect(variables).toBeNull();
@@ -18,7 +18,7 @@ describe('buildTransformResult', () => {
       { type: 'dynamic' as const, content: node as t.Expression },
       { type: 'static' as const, content: '!' },
     ];
-    const { message, variables } = buildTransformResult(parts);
+    const { message, variables } = buildTransformResult(parts, false);
     expect(t.isStringLiteral(message)).toBe(true);
     expect((message as t.StringLiteral).value).toBe('Hello, {0}!');
     expect(variables).not.toBeNull();
@@ -33,7 +33,7 @@ describe('buildTransformResult', () => {
       { type: 'static' as const, content: 'Hello ' },
       { type: 'derive' as const, content: deriveNode as t.Expression },
     ];
-    const { message, variables } = buildTransformResult(parts);
+    const { message, variables } = buildTransformResult(parts, true);
     expect(t.isTemplateLiteral(message)).toBe(true);
     const tl = message as t.TemplateLiteral;
     expect(tl.expressions).toHaveLength(1);
