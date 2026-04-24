@@ -56,7 +56,7 @@ export function buildTransformResult(parts: StringPart[]): {
       flushQuasi(false);
       expressions.push(part.content);
     } else {
-      // TODO: probably should have better name than '{0}' for the variable key
+      // probably should have better name than '{0}' for the variable key
       const key = varIndex.toString();
       quasiBuffer += `{${key}}`;
       properties.push(t.objectProperty(t.stringLiteral(key), part.content));
