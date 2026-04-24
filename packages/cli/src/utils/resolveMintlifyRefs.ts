@@ -172,19 +172,17 @@ function resolveRef(
 
 /**
  * Check if a file should have $ref resolution applied based on the settings.
- * Returns true if the file has mintlify options configured AND matches a
- * composite jsonSchema entry.
+ * Returns true if the file matches a jsonSchema entry with resolveRefs: true.
  */
 export function shouldResolveRefs(
   filePath: string,
-  options?: { mintlify?: any; jsonSchema?: Record<string, any> }
+  options?: { jsonSchema?: Record<string, any> }
 ): boolean {
-  if (!options?.mintlify) return false;
-  if (!options.jsonSchema) return false;
+  if (!options?.jsonSchema) return false;
 
   const relative = path.relative(process.cwd(), filePath);
   for (const [glob, schema] of Object.entries(options.jsonSchema)) {
-    if (schema?.composite && micromatch.isMatch(relative, glob)) {
+    if (schema?.resolveRefs && micromatch.isMatch(relative, glob)) {
       return true;
     }
   }

@@ -17,11 +17,13 @@ export function generatePreset(
       case 'mintlify':
         // https://mintlify.com/docs/navigation
         return {
+          resolveRefs: true,
           composite: {
             '$.navigation.languages': {
               type: 'array',
               key: '$.language',
               experimentalSort: 'localesAlphabetical',
+              splitEntries: true,
               include: [
                 '$..group',
                 '$..tab',
@@ -48,6 +50,36 @@ export function generatePreset(
                 '$.destination': {
                   match: '^/{locale}/(.*)$',
                   replace: '/{locale}/$1',
+                },
+              },
+            },
+          },
+        };
+      case 'mintlify-hide-default':
+        // Mintlify with hideDefaultLocale — paths don't have locale prefix in source
+        return {
+          resolveRefs: true,
+          composite: {
+            '$.navigation.languages': {
+              type: 'array',
+              key: '$.language',
+              experimentalSort: 'localesAlphabetical',
+              splitEntries: true,
+              include: [
+                '$..group',
+                '$..tab',
+                '$..item',
+                '$..anchor',
+                '$..dropdown',
+              ],
+              transform: {
+                '$..pages[*]': {
+                  match: '^/?(.*)$',
+                  replace: '{locale}/$1',
+                },
+                '$..root': {
+                  match: '^/?(.*)$',
+                  replace: '{locale}/$1',
                 },
               },
             },

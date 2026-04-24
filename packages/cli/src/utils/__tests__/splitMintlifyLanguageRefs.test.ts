@@ -29,15 +29,25 @@ vi.mock('../../state/mintlifyRefMap.js', () => ({
   clearStoredRefMap: vi.fn(),
 }));
 
-// Mock shouldResolveRefs to return true for the test docs.json path
-vi.mock('../resolveMintlifyRefs.js', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../resolveMintlifyRefs.js')>();
-  return {
-    ...actual,
-    shouldResolveRefs: (filePath: string) => filePath.includes('docs.json'),
-  };
-});
+// Mock validateJsonSchema to return the schema for docs.json
+vi.mock('../../formats/json/utils.js', () => ({
+  validateJsonSchema: (_options: any, filePath: string) => {
+    if (filePath.includes('docs.json')) {
+      return {
+        resolveRefs: true,
+        composite: {
+          '$.navigation.languages': {
+            type: 'array',
+            key: '$.language',
+            splitEntries: true,
+            include: ['$..group', '$..tab'],
+          },
+        },
+      };
+    }
+    return null;
+  },
+}));
 
 import fs from 'node:fs';
 
@@ -54,7 +64,21 @@ function makeSettings(overrides: Partial<Settings> = {}): Settings {
       placeholderPaths: {},
     },
     config: '/project/gt.config.json',
-    options: { mintlify: { inferTitleFromFilename: true } },
+    options: {
+      jsonSchema: {
+        './docs.json': {
+          resolveRefs: true,
+          composite: {
+            '$.navigation.languages': {
+              type: 'array',
+              key: '$.language',
+              splitEntries: true,
+              include: ['$..group', '$..tab'],
+            },
+          },
+        },
+      },
+    },
     parsingOptions: {},
     ...overrides,
   } as Settings;
@@ -74,16 +98,22 @@ beforeEach(() => {
 });
 
 describe('splitMintlifyLanguageRefs', () => {
-  it('skips when no mintlify options', async () => {
+  it('skips when no jsonSchema config', async () => {
     await splitMintlifyLanguageRefs(makeSettings({ options: {} }) as Settings);
     expect(mockWrite).not.toHaveBeenCalled();
   });
 
-  it('skips when no stored refMap', async () => {
+  it('skips splitting when no languages array exists', async () => {
     mockRefMap = null;
-    mockRead.mockReturnValue(JSON.stringify({ navigation: {} }));
+    mockRead.mockReturnValue(
+      JSON.stringify({ navigation: { groups: [{ group: 'Home' }] } })
+    );
     await splitMintlifyLanguageRefs(makeSettings());
-    expect(mockWrite).not.toHaveBeenCalled();
+    // No locale ref files created — only a write-back of the original file
+    const localeFiles = mockWrite.mock.calls.filter((c) =>
+      (c[0] as string).includes('/es/')
+    );
+    expect(localeFiles).toHaveLength(0);
   });
 
   it('restores top-level $ref and splits locale entries', async () => {
@@ -365,8 +395,17 @@ describe('splitMintlifyLanguageRefs', () => {
 
     await splitMintlifyLanguageRefs(makeSettings());
 
-    // Empty refMap → function exits early, no writes
-    expect(mockWrite).not.toHaveBeenCalled();
+    // Even without $ref, locale entries should be split into their own files
+    const docsResult = getWritten('/project/docs.json');
+    expect(docsResult.navigation.languages[0].language).toBe('en');
+    expect(docsResult.navigation.languages[0].groups).toBeDefined();
+    expect(docsResult.navigation.languages[1]).toEqual({
+      language: 'es',
+      $ref: './es/docs.json',
+    });
+
+    const esNav = getWritten('/project/es/docs.json');
+    expect(esNav.groups[0].group).toBe('Inicio');
   });
 
   it('handles default locale not being first in the array', async () => {
