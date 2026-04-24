@@ -1,5 +1,15 @@
 # gtx-cli
 
+## 2.14.19
+
+### Patch Changes
+
+- [#1244](https://github.com/generaltranslation/gt/pull/1244) [`c4c8b9c`](https://github.com/generaltranslation/gt/commit/c4c8b9c0429ce10d98ebdfaabc1213bd85a572bf) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Updating Mintlify $ref handling
+
+- Updated dependencies [[`8b75420`](https://github.com/generaltranslation/gt/commit/8b7542091233fb2c87284a365cc9ab8ce70371d3)]:
+  - generaltranslation@8.2.6
+  - @generaltranslation/python-extractor@0.2.11
+
 ## 2.14.18
 
 ### Patch Changes

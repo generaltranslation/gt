@@ -1,5 +1,12 @@
 # gtx-cli
 
+## 2.14.19
+
+### Patch Changes
+
+- Updated dependencies [[`c4c8b9c`](https://github.com/generaltranslation/gt/commit/c4c8b9c0429ce10d98ebdfaabc1213bd85a572bf)]:
+  - gt@2.14.19
+
 ## 2.14.18
 
 ### Patch Changes
