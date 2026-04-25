@@ -30,12 +30,12 @@ export default {
     postcss(), // Process CSS files
     preserveDirectives(), // Preserve directives in the output (i.e., "use client")
   ],
-  external: (id) =>
-    [
-      'react',
-      'react-dom',
-      'generaltranslation',
-      '@generaltranslation/supported-locales',
-      '@generaltranslation/react-core',
-    ].some((ext) => id === ext || id.startsWith(ext + '/')),
+  external: [
+    'react',
+    'react-dom',
+    'generaltranslation',
+    'generaltranslation/format',
+    '@generaltranslation/supported-locales',
+    '@generaltranslation/react-core',
+  ],
 };
