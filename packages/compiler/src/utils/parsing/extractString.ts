@@ -133,7 +133,7 @@ export function extractString(
       }
 
       // Add to current part or create new part
-      if (cooked != null) metadata.hasStatic = true;
+      metadata.hasStatic = true;
       addPart(result, createStaticPart(cooked));
 
       // Parse expression

@@ -99,7 +99,8 @@ export function validateUseGTCallback(
       state
     );
     errors.push(...contextProperty.errors);
-    context = contextProperty.value ? [contextProperty.value] : undefined;
+    context =
+      contextProperty.value !== undefined ? [contextProperty.value] : undefined;
     hasDerive ||= contextProperty.hasDeriveExpression ?? false;
     const idProperty = validatePropertyFromObjectExpression(
       callExpr.arguments[1],
