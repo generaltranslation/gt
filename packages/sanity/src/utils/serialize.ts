@@ -10,7 +10,7 @@ import { PortableTextHtmlComponents } from '@portabletext/to-html';
 import { pluginConfig } from '../adapter/core';
 import merge from 'lodash.merge';
 import { deleteMatchingFields } from './applyDocuments';
-import type { IgnoreFields } from '../adapter/types';
+import type { FieldMatcher } from '../adapter/types';
 
 export function deserializeDocument(document: string) {
   const deserializers = merge(
@@ -45,7 +45,8 @@ export function serializeDocument(
 
   const docToSerialize = stripIgnoredFields(
     document,
-    pluginConfig.getIgnoreFields()
+    pluginConfig.getIgnoreFields(),
+    pluginConfig.getDedupeFields()
   );
 
   const serialized = BaseDocumentSerializer(schema).serializeDocument(
@@ -60,16 +61,18 @@ export function serializeDocument(
 
 function stripIgnoredFields(
   document: SanityDocument,
-  ignoreFields: IgnoreFields[]
+  ignoreFields: FieldMatcher[],
+  dedupeFields: FieldMatcher[]
 ): SanityDocument {
-  if (ignoreFields.length === 0) return document;
+  const fieldsToStrip = [...ignoreFields, ...dedupeFields];
+  if (fieldsToStrip.length === 0) return document;
 
   const strippedDoc = JSON.parse(JSON.stringify(document)) as SanityDocument;
 
   deleteMatchingFields(
     document._id.replace('drafts.', ''),
     strippedDoc,
-    ignoreFields
+    fieldsToStrip
   );
 
   return strippedDoc;
