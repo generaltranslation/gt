@@ -2,6 +2,7 @@ import { GTProvider as _GTProvider } from '@generaltranslation/react-core';
 import { readAuthFromEnv } from '../utils/readAuthFromEnv';
 import { useRegionState } from './hooks/useRegionState';
 import { useEnableI18n } from './hooks/useEnableI18n';
+import { useTranslateMany } from './hooks/useTranslateMany';
 import { useDetermineLocale } from './hooks/locales/useDetermineLocale';
 import { isSSREnabled } from './helpers/isSSREnabled';
 import { GTProviderProps } from '../types/config';
@@ -32,13 +33,26 @@ import React from 'react';
  * @returns {JSX.Element} The provider component for General Translation context.
  */
 export function GTProvider(props: GTProviderProps): React.JSX.Element {
+  const environment = process.env.NODE_ENV as
+    | 'development'
+    | 'production'
+    | 'test';
+
+  const translateMany = useTranslateMany({
+    devApiKey: props.devApiKey,
+    defaultLocale: props.defaultLocale,
+    projectId: props.projectId,
+    runtimeUrl: props.runtimeUrl,
+    customMapping: props.customMapping,
+    environment,
+  });
+
   return (
     <_GTProvider
       ssr={isSSREnabled()}
-      environment={
-        process.env.NODE_ENV as 'development' | 'production' | 'test'
-      }
+      environment={environment}
       {...props}
+      translateMany={translateMany}
       readAuthFromEnv={readAuthFromEnv}
       useDetermineLocale={useDetermineLocale}
       useRegionState={useRegionState}

@@ -67,6 +67,16 @@
         "default": "./dist/index.mjs"
       }
     },
+    "./format": {
+      "require": {
+        "types": "./dist/format.d.cts",
+        "default": "./dist/format.cjs"
+      },
+      "import": {
+        "types": "./dist/format.d.mts",
+        "default": "./dist/format.mjs"
+      }
+    },
     "./id": {
       "require": {
         "types": "./dist/id.d.cts",
@@ -110,6 +120,9 @@
   },
   "typesVersions": {
     "*": {
+      "format": [
+        "./dist/format.d.cts"
+      ],
       "internal": [
         "./dist/internal.d.cts"
       ],
@@ -127,6 +140,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "generaltranslation/format": [
+        "/dist/format"
+      ],
       "generaltranslation/internal": [
         "/dist/internal"
       ],

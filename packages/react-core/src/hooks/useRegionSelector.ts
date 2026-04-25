@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import useGTContext from '../provider/GTContext';
-import { getLocaleProperties } from 'generaltranslation'; //
+import { getLocaleProperties } from 'generaltranslation/format';
 
 type RegionData = {
   code: string;

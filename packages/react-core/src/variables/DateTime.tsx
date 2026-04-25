@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { GT } from 'generaltranslation';
+import { GTFormatter } from 'generaltranslation/format';
 import { GTContext } from '../provider/GTContext';
 
 /**
@@ -31,7 +31,7 @@ function DateTime({
 }): React.JSX.Element | null {
   const context = useContext(GTContext);
   if (children == null) return null;
-  const gt = context?.gt || new GT();
+  const gt = context?.gt || new GTFormatter();
 
   if (!locales) {
     locales = [];

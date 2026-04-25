@@ -8,10 +8,10 @@ import {
   DictionaryEntry,
 } from './types';
 import { TranslateIcuCallback, TranslateChildrenCallback } from './runtime';
-import { GT } from 'generaltranslation';
+import { GTFormatter } from 'generaltranslation/format';
 
 export type GTContextType = {
-  gt: GT;
+  gt: GTFormatter;
   registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
   _gtFunction: (

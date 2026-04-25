@@ -3,7 +3,7 @@ import {
   requiresTranslation,
   isSameLanguage,
   isValidLocale,
-} from 'generaltranslation';
+} from 'generaltranslation/format';
 import { CustomMapping } from 'generaltranslation/types';
 import {
   invalidCanonicalLocalesError,

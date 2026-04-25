@@ -31,6 +31,7 @@ import { msg, decodeMsg, decodeOptions } from './messages/messages';
 import useMessages from './translation/hooks/useMessages';
 import { GTContext } from './provider/GTContext';
 import useRuntimeTranslation from './provider/hooks/useRuntimeTranslation';
+import type { TranslateManyFunction } from './provider/hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './provider/hooks/translation/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './provider/hooks/translation/useCreateInternalUseTranslationsFunction';
 import { useCreateInternalUseTranslationsObjFunction } from './provider/hooks/translation/useCreateInternalUseTranslationsObjFunction';
@@ -78,4 +79,5 @@ export {
   useCreateInternalUseGTFunction,
   useCreateInternalUseTranslationsFunction,
   useCreateInternalUseTranslationsObjFunction,
+  TranslateManyFunction,
 };

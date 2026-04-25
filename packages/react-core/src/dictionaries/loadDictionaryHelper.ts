@@ -1,4 +1,4 @@
-import { getLocaleProperties } from 'generaltranslation';
+import { getLocaleProperties } from 'generaltranslation/format';
 import { dictionaryMissingWarning } from '../errors-dir/createErrors';
 import { CustomLoader, Dictionary } from '../types-dir/types';
 

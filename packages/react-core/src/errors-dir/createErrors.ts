@@ -1,4 +1,4 @@
-import { getLocaleProperties } from 'generaltranslation';
+import { getLocaleProperties } from 'generaltranslation/format';
 import { PACKAGE_NAME } from './constants';
 
 // ---- ERRORS ---- //

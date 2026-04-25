@@ -3,10 +3,10 @@ import { ClientProvider } from 'gt-react/client';
 import { ClientProviderProps } from 'gt-react/internal';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useMemo } from 'react';
-import { GT, standardizeLocale } from 'generaltranslation';
+import { GTFormatter, standardizeLocale } from 'generaltranslation/format';
 import { useRouter } from 'next/navigation';
 
-function extractLocale(pathname: string, gt: GT): string | null {
+function extractLocale(pathname: string, gt: GTFormatter): string | null {
   const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
   return matches ? gt.resolveAliasLocale(matches[1]) : null;
 }
@@ -41,15 +41,12 @@ export default function ClientProviderWrapper(
 
   const gt = useMemo(
     () =>
-      new GT({
-        devApiKey,
+      new GTFormatter({
         sourceLocale: defaultLocale,
         targetLocale: locale,
-        projectId,
-        baseUrl: runtimeUrl || undefined,
         customMapping,
       }),
-    [devApiKey, defaultLocale, locale, projectId, runtimeUrl, customMapping]
+    [defaultLocale, locale, customMapping]
   );
 
   // Trigger page reload when locale changes

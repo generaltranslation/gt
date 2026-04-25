@@ -7,7 +7,7 @@ import {
 } from '../../../types-dir/types';
 import { StringFormat } from 'generaltranslation/types';
 import { TranslateIcuCallback } from '../../../types-dir/runtime';
-import { GT } from 'generaltranslation';
+import { GTFormatter } from 'generaltranslation/format';
 import {
   createStringRenderError,
   createStringRenderWarning,
@@ -43,7 +43,7 @@ export default function useCreateInternalUseGTFunction({
   registerIcuForTranslation,
   environment,
 }: {
-  gt: GT;
+  gt: GTFormatter;
   translations: Translations | null;
   locale: string;
   defaultLocale: string;

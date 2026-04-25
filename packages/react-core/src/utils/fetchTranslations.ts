@@ -1,4 +1,4 @@
-import { GT } from 'generaltranslation';
+import { GTFormatter } from 'generaltranslation/format';
 
 export default async function fetchTranslations({
   cacheUrl,
@@ -11,7 +11,7 @@ export default async function fetchTranslations({
   projectId: string;
   locale: string;
   versionId?: string;
-  gt: GT;
+  gt: GTFormatter;
 }) {
   if (!projectId || !cacheUrl || !locale) return {};
   locale = gt.resolveCanonicalLocale(locale);

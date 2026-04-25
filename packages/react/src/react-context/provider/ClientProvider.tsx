@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { determineLocale, GT } from 'generaltranslation';
+import { determineLocale, GTFormatter } from 'generaltranslation/format';
+import { useTranslateMany } from './hooks/useTranslateMany';
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
@@ -123,20 +124,26 @@ export default function ClientProvider({
 
   // ----- GT SETUP ----- //
 
-  // Define the GT instance
-  // Used for custom mapping and as a driver for the runtime translation
+  // Define the GTFormatter instance
+  // Used for custom mapping and locale resolution
   const gt = useMemo(
     () =>
-      new GT({
-        devApiKey,
+      new GTFormatter({
         sourceLocale: defaultLocale,
         targetLocale: locale,
-        projectId,
-        baseUrl: runtimeUrl || undefined,
         customMapping,
       }),
-    [devApiKey, defaultLocale, locale, projectId, runtimeUrl, customMapping]
+    [defaultLocale, locale, customMapping]
   );
+
+  const translateMany = useTranslateMany({
+    devApiKey,
+    defaultLocale,
+    projectId,
+    runtimeUrl,
+    customMapping,
+    environment,
+  });
 
   // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
   const setLocale = (newLocale: string): void => {
@@ -159,7 +166,9 @@ export default function ClientProvider({
 
   const { registerIcuForTranslation, registerJsxForTranslation } =
     useRuntimeTranslation({
-      gt,
+      translateMany,
+      projectId,
+      devApiKey,
       locale: locale,
       versionId: _versionId,
       runtimeUrl,

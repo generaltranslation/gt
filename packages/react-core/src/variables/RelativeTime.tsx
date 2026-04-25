@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { GT } from 'generaltranslation';
+import { GTFormatter } from 'generaltranslation/format';
 import { GTContext } from '../provider/GTContext';
 
 /**
@@ -50,7 +50,7 @@ function RelativeTime({
   options?: Intl.RelativeTimeFormatOptions;
 }): React.JSX.Element | null {
   const context = useContext(GTContext);
-  const gt = context?.gt || new GT();
+  const gt = context?.gt || new GTFormatter();
 
   if (!locales) {
     locales = [];

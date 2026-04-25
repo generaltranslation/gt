@@ -17,7 +17,7 @@ import {
 import { InternalGTProviderProps } from '../types-dir/config';
 import { useLocaleState } from './hooks/locales/useLocaleState';
 import { useErrorChecks } from './hooks/useErrorChecks';
-import { GT, resolveAliasLocale } from 'generaltranslation';
+import { GTFormatter, resolveAliasLocale } from 'generaltranslation/format';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
 import { useCreateInternalUseTranslationsObjFunction } from './hooks/translation/useCreateInternalUseTranslationsObjFunction';
@@ -61,6 +61,7 @@ export default function GTProvider({
   readAuthFromEnv = _readAuthFromEnv,
   useDetermineLocale = _useDetermineLocale,
   useRegionState = _useRegionState,
+  translateMany,
   ...metadata
 }: InternalGTProviderProps) {
   // ---------- PROPS ---------- //
@@ -113,19 +114,16 @@ export default function GTProvider({
     regionCookieName: defaultRegionCookieName,
   });
 
-  // Define the GT instance
-  // Used for custom mapping and as a driver for the runtime translation
+  // Define the GTFormatter instance
+  // Used for custom mapping and locale resolution
   const gt = useMemo(
     () =>
-      new GT({
-        devApiKey,
+      new GTFormatter({
         sourceLocale: defaultLocale,
         targetLocale: locale,
-        projectId,
-        baseUrl: runtimeUrl || undefined,
         customMapping,
       }),
-    [devApiKey, defaultLocale, projectId, runtimeUrl, customMapping]
+    [defaultLocale, locale, customMapping]
   );
 
   // Determine the type of translation loading
@@ -188,7 +186,9 @@ export default function GTProvider({
     registerJsxForTranslation,
     developmentApiEnabled,
   } = useRuntimeTranslation({
-    gt,
+    translateMany,
+    projectId,
+    devApiKey,
     locale,
     versionId: _versionId,
     defaultLocale,

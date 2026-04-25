@@ -2,7 +2,7 @@ import { customLoadTranslationsError } from '../../errors-dir/createErrors';
 import fetchTranslations from '../../utils/fetchTranslations';
 import { CustomLoader, Translations } from '../../types-dir/types';
 import { useEffect, useRef, useState } from 'react';
-import { GT } from 'generaltranslation';
+import { GTFormatter } from 'generaltranslation/format';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 
 export function useLoadTranslations({
@@ -24,7 +24,7 @@ export function useLoadTranslations({
   cacheUrl: string | null;
   projectId: string;
   _versionId?: string;
-  gt: GT;
+  gt: GTFormatter;
 }) {
   /** Key for translation tracking:
    * Cache Loading            -> translations = null

@@ -20,8 +20,16 @@ import {
   maxBatchSize,
   batchInterval,
 } from '../config/defaultProps';
-import { GT } from 'generaltranslation';
-import type { TranslateManyEntry } from 'generaltranslation/types';
+import type {
+  TranslateManyEntry,
+  TranslationResult,
+} from 'generaltranslation/types';
+
+export type TranslateManyFunction = (
+  sources: Record<string, TranslateManyEntry>,
+  options: Record<string, any>,
+  timeout?: number
+) => Promise<Record<string, TranslationResult>>;
 
 type TranslationRequestMetadata = {
   hash: string;
@@ -47,7 +55,9 @@ type TranslationRequestQueueItem =
     };
 
 export default function useRuntimeTranslation({
-  gt,
+  translateMany,
+  projectId,
+  devApiKey,
   locale,
   versionId, // kept for API compatibility (not used)
   defaultLocale,
@@ -55,9 +65,12 @@ export default function useRuntimeTranslation({
   renderSettings,
   setTranslations,
   environment,
+  developmentApiEnabled: _developmentApiEnabled,
   ...additionalMetadata
 }: {
-  gt: GT;
+  translateMany?: TranslateManyFunction;
+  projectId?: string;
+  devApiKey?: string;
   locale: string;
   versionId?: string;
   defaultLocale?: string;
@@ -68,6 +81,7 @@ export default function useRuntimeTranslation({
   };
   environment: 'development' | 'production' | 'test';
   setTranslations: React.Dispatch<React.SetStateAction<Translations | null>>;
+  developmentApiEnabled?: boolean;
   [key: string]: any;
 }): {
   registerIcuForTranslation: TranslateIcuCallback;
@@ -76,10 +90,11 @@ export default function useRuntimeTranslation({
 } {
   // ------ EARLY RETURN IF DISABLED ----- //
   const developmentApiEnabled =
-    !!gt.projectId &&
-    !!runtimeUrl &&
-    !!gt.devApiKey &&
-    environment === 'development';
+    _developmentApiEnabled ??
+    (!!projectId &&
+      !!runtimeUrl &&
+      !!devApiKey &&
+      environment === 'development');
 
   if (!developmentApiEnabled) {
     const disabledError = (fn: string) =>
@@ -97,20 +112,20 @@ export default function useRuntimeTranslation({
 
   // ---------- CONFIG SNAPSHOT (stable via ref, updated each render) ---------- //
   const cfgRef = useRef({
-    gt,
+    translateMany,
     locale,
     baseMetadata: {
       ...additionalMetadata,
-      projectId: gt.projectId,
+      projectId,
       sourceLocale: defaultLocale,
     },
     timeout: renderSettings.timeout,
   });
-  cfgRef.current.gt = gt;
+  cfgRef.current.translateMany = translateMany;
   cfgRef.current.locale = locale;
   cfgRef.current.baseMetadata = {
     ...additionalMetadata,
-    projectId: gt.projectId,
+    projectId,
     sourceLocale: defaultLocale,
   };
   cfgRef.current.timeout = renderSettings.timeout;
@@ -190,12 +205,17 @@ export default function useRuntimeTranslation({
       if (batch.size === 0) return {};
       activeRequestsRef.current += 1;
 
-      const { gt, locale, baseMetadata, timeout } = cfgRef.current;
+      const { translateMany: translateManyFn, locale, baseMetadata, timeout } =
+        cfgRef.current;
       const requests = Array.from(batch.values());
       const newTranslations: Translations = {};
       const resultsMap = new Map<string, TranslatedChildren | null>();
 
       try {
+        if (!translateManyFn) {
+          throw new Error('translateMany is not available');
+        }
+
         const requestsRecord: Record<string, TranslateManyEntry> = {};
         for (const req of requests) {
           const { source, metadata } = req;
@@ -205,7 +225,7 @@ export default function useRuntimeTranslation({
           };
         }
 
-        const results = await gt.translateMany(
+        const results = await translateManyFn(
           requestsRecord,
           {
             ...baseMetadata,

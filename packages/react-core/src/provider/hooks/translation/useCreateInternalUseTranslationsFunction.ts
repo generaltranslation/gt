@@ -16,7 +16,7 @@ import {
   createNoEntryFoundWarning,
 } from '../../../errors-dir/createErrors';
 import { hashSource } from 'generaltranslation/id';
-import { GT } from 'generaltranslation';
+import { GTFormatter } from 'generaltranslation/format';
 import { TranslateIcuCallback } from '../../../types-dir/runtime';
 import {
   extractVars,
@@ -27,7 +27,7 @@ import {
 import { StringFormat } from 'generaltranslation/types';
 
 export default function useCreateInternalUseTranslationsFunction(
-  gt: GT,
+  gt: GTFormatter,
   dictionary: Dictionary | undefined,
   dictionaryTranslations: Dictionary | undefined,
   translations: Translations | null,

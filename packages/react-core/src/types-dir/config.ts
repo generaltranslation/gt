@@ -2,6 +2,7 @@ import React from 'react';
 import { RenderMethod } from './types';
 import { Translations, CustomLoader } from './types';
 import { CustomMapping } from 'generaltranslation/types';
+import type { TranslateManyFunction } from '../provider/hooks/useRuntimeTranslation';
 
 // Special overriden function types
 import { AuthFromEnvParams, AuthFromEnvReturn } from '../utils/types';
@@ -82,5 +83,6 @@ export type InternalGTProviderProps = {
   useRegionState: (params: UseRegionStateParams) => UseRegionStateReturn;
   useEnableI18n?: (params: UseEnableI18nParams) => UseEnableI18nReturn;
   reloadOnLocaleUpdate?: boolean;
+  translateMany?: TranslateManyFunction;
   [key: string]: any;
 };

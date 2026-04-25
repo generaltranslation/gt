@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GT } from 'generaltranslation';
+import { GTFormatter } from 'generaltranslation/format';
 import useCreateInternalUseGTFunction from '../useCreateInternalUseGTFunction';
 import { Translations } from '../../../../types-dir/types';
 import { VAR_IDENTIFIER } from 'generaltranslation/internal';
@@ -47,7 +47,7 @@ vi.mock('../../../../messages/messages', () => ({
 }));
 
 describe('useCreateInternalUseGTFunction', () => {
-  let mockGT: GT;
+  let mockGT: GTFormatter;
   let mockRegisterIcuForTranslation: any;
   let consoleWarnSpy: any;
   let consoleErrorSpy: any;
