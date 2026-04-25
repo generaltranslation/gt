@@ -305,7 +305,7 @@ jobs:
         run: pnpm install
 
       - name: Build packages
-        run: pnpm build
+        run: pnpm exec turbo build --filter=generaltranslation --filter=gt-i18n --filter='@generaltranslation/react-core' --filter=gt-react --filter=gt-tanstack-start --filter=gt-next
 
       - name: Check bundle sizes
         run: pnpm size
