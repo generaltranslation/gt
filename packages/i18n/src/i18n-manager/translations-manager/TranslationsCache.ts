@@ -9,11 +9,7 @@ import {
   EntryMetadata,
   TranslateManyEntry,
 } from 'generaltranslation/types';
-
-// See gt-next
-const MAX_BATCH_SIZE = 25;
-const MAX_CONCURRENT_REQUESTS = 100;
-const BATCH_INTERVAL = 50;
+import { BatchingQueue, BatchingQueueEntry } from '../../utils/BatchingQueue';
 
 /**
  * InputKey type for lookups
@@ -32,14 +28,14 @@ export type TranslationKey<TranslationValue extends Translation> = {
 export type Hash = string;
 
 /**
- * A queue entry for batching, used to also handle reject and resolve
+ * Per-entry payload pushed onto the batching queue. Holds the request shape
+ * we need to assemble a translateMany call and the cache key to look up the
+ * matching response.
  */
-type QueueEntry<TranslationValue extends Translation> = {
+type QueueItem<TranslationValue extends Translation> = {
   key: Hash;
   source: TranslationValue;
   metadata: EntryMetadata;
-  resolve: (value: Translation) => void;
-  reject: (reason?: unknown) => void;
 };
 
 /**
@@ -65,33 +61,9 @@ export class TranslationsCache<
   TranslationValue,
   TranslationValue
 > {
-  /**
-   * Queue of translation requests
-   */
-  private _queue: Array<QueueEntry<TranslationValue>> = [];
-
-  /**
-   * Timer for batching
-   */
-  // eslint-disable-next-line no-undef
-  private _batchTimer: ReturnType<typeof setTimeout> | null = null;
-
-  /**
-   * Number of active requests
-   */
-  private _activeRequests = 0;
-
-  /**
-   * Translate many function
-   */
   private _translateMany: TranslateMany;
+  private _queue: BatchingQueue<QueueItem<TranslationValue>, TranslationValue>;
 
-  /**
-   * Constructor
-   * @param {Object} params - The parameters for the cache
-   * @param {Record<Hash, TranslationValue>} params.init - The initial cache
-   * @param {Function} params.fallback - Get the fallback value for a cache miss
-   */
   constructor({
     init,
     translateMany,
@@ -108,13 +80,11 @@ export class TranslationsCache<
   }) {
     super(init, lifecycle);
     this._translateMany = translateMany;
+    this._queue = new BatchingQueue({
+      sendBatch: (entries) => this._sendBatch(entries),
+    });
   }
 
-  /**
-   * Get the translation value for a given key
-   * @param key - The translation key
-   * @returns The translation value
-   */
   public get<T extends TranslationValue>(
     key: TranslationKey<T>
   ): T | undefined {
@@ -130,11 +100,6 @@ export class TranslationsCache<
     return value;
   }
 
-  /**
-   * Miss the cache
-   * @param key - The translation key
-   * @returns The translation value
-   */
   public async miss<T extends TranslationValue>(
     key: TranslationKey<T>
   ): Promise<T | undefined> {
@@ -150,163 +115,52 @@ export class TranslationsCache<
     return value as T | undefined;
   }
 
-  /**
-   * Generate a key for the cache
-   * @param key - The translation key
-   * @returns The key
-   */
   protected genKey(key: TranslationKey<TranslationValue>): Hash {
     return hashMessage(key.message, key.options);
   }
 
   /**
-   * Get the fallback value for a cache miss
-   * @param key - The translation key
-   * @returns The fallback value
+   * Cache miss path: enqueue the request and let BatchingQueue dispatch it
+   * along with any other concurrent misses.
    */
   protected fallback(
     key: TranslationKey<TranslationValue>
   ): Promise<TranslationValue> {
-    // Add translation request to queue
-    const translationPromise = this._enqueueTranslation(key);
-
-    // If batch is full, flush now
-    if (this._queue.length >= MAX_BATCH_SIZE) {
-      this._flushNow();
-    } else {
-      this._scheduleBatch();
-    }
-
-    return translationPromise;
-  }
-
-  // ===== PRIVATE METHODS ===== //
-
-  // --- QUEUE MANAGEMENT --- //
-
-  /**
-   * Flush the queue now
-   */
-  private _flushNow(): void {
-    if (this._batchTimer) {
-      // eslint-disable-next-line no-undef
-      clearTimeout(this._batchTimer);
-      this._batchTimer = null;
-    }
-    this._drainQueue();
-  }
-
-  /**
-   * Schedule a batch of translations
-   */
-  private _scheduleBatch(): void {
-    if (this._batchTimer) return; // already scheduled
-    // eslint-disable-next-line no-undef
-    this._batchTimer = setTimeout(() => {
-      this._batchTimer = null;
-      this._drainQueue();
-    }, BATCH_INTERVAL);
-  }
-
-  /**
-   * Drain the queue
-   */
-  private _drainQueue(): void {
-    while (
-      this._queue.length > 0 &&
-      this._activeRequests < MAX_CONCURRENT_REQUESTS
-    ) {
-      const batch = this._queue.splice(0, MAX_BATCH_SIZE);
-      this._sendBatchRequest(batch);
-    }
-    // If items remain (hit concurrency limit), schedule again
-    if (this._queue.length > 0) {
-      this._scheduleBatch();
-    }
-  }
-
-  /**
-   * Enqueue translation request and return a promise that resolves when the translation is ready
-   * @param {TranslationKey<TranslationValue>} key - The translation key
-   * @returns {Promise<TranslationValue>} The translation promise
-   */
-  private _enqueueTranslation(
-    key: TranslationKey<TranslationValue>
-  ): Promise<TranslationValue> {
     const cacheKey = this.genKey(key);
     const options = key.options;
-    return new Promise<TranslationValue>((resolve, reject) => {
-      this._queue.push({
-        key: cacheKey,
-        source: key.message,
-        metadata: {
-          ...(options?.$context && { context: options.$context }),
-          ...(options?.$id && { id: options.$id }),
-          ...('$maxChars' in options &&
-            options.$maxChars != null && {
-              $maxChars: Math.abs(options.$maxChars),
-            }),
-          dataFormat: options.$format,
-        },
-        resolve: (value) => resolve(value as TranslationValue),
-        reject,
-      });
+    return this._queue.enqueue({
+      key: cacheKey,
+      source: key.message,
+      metadata: {
+        ...(options?.$context && { context: options.$context }),
+        ...(options?.$id && { id: options.$id }),
+        ...('$maxChars' in options &&
+          options.$maxChars != null && {
+            $maxChars: Math.abs(options.$maxChars),
+          }),
+        dataFormat: options.$format,
+      },
     });
   }
 
-  // --- SEND REQUESTS --- //
-
   /**
-   * Send a batch request for translations
-   * @param {QueueEntry<TranslationValue>[]} batch - The batch of requests to send
+   * Send a single batch through translateMany and route each response back
+   * to the matching queue entry. Errors thrown here are caught by the queue
+   * and rejected onto every entry in the batch.
    */
-  private async _sendBatchRequest(
-    batch: QueueEntry<TranslationValue>[]
+  private async _sendBatch(
+    entries: BatchingQueueEntry<
+      QueueItem<TranslationValue>,
+      TranslationValue
+    >[]
   ): Promise<void> {
-    this._activeRequests++;
-
-    const requests = convertBatchToTranslateManyParams(batch);
-    const response = await this._sendBatchRequestWithErrorHandling(
-      batch,
-      requests
-    );
-    if (response) {
-      this._handleTranslationResponse(batch, response);
-    }
-
-    this._activeRequests--;
-  }
-
-  /**
-   * Send a translation request with error handling
-   */
-  private async _sendBatchRequestWithErrorHandling(
-    batch: QueueEntry<TranslationValue>[],
-    requests: Record<Hash, TranslateManyEntry>
-  ): Promise<ReturnType<TranslateMany> | undefined> {
-    try {
-      return await this._translateMany(requests);
-    } catch (error) {
-      for (const entry of batch) {
-        entry.reject(error);
-      }
-      return undefined;
-    }
-  }
-
-  /**
-   * Handle a translation response
-   */
-  private _handleTranslationResponse(
-    batch: QueueEntry<TranslationValue>[],
-    response: Awaited<ReturnType<TranslateMany>>
-  ): void {
-    for (const entry of batch) {
-      const { key } = entry;
-      const result = response[key];
+    const requests = convertBatchToTranslateManyParams(entries);
+    const response = await this._translateMany(requests);
+    for (const entry of entries) {
+      const result = response[entry.item.key];
       if (result && result.success) {
         const translation = result.translation as TranslationValue;
-        this.setCache(key, translation);
+        this.setCache(entry.item.key, translation);
         entry.resolve(translation);
       } else {
         entry.reject(result?.error);
@@ -315,16 +169,15 @@ export class TranslationsCache<
   }
 }
 
-/**
- * Convert a TranslationKey to a TranslateManyEntry
- */
 function convertBatchToTranslateManyParams<
   TranslationValue extends Translation,
->(batch: QueueEntry<TranslationValue>[]): Record<Hash, TranslateManyEntry> {
-  return batch.reduce<Record<Hash, TranslateManyEntry>>((acc, entry) => {
-    acc[entry.key] = {
-      source: entry.source as Content,
-      metadata: entry.metadata,
+>(
+  entries: BatchingQueueEntry<QueueItem<TranslationValue>, TranslationValue>[]
+): Record<Hash, TranslateManyEntry> {
+  return entries.reduce<Record<Hash, TranslateManyEntry>>((acc, entry) => {
+    acc[entry.item.key] = {
+      source: entry.item.source as Content,
+      metadata: entry.item.metadata,
     };
     return acc;
   }, {});
