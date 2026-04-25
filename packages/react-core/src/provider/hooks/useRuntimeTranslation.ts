@@ -22,6 +22,7 @@ import {
 } from '../config/defaultProps';
 import { GT } from 'generaltranslation';
 import type { TranslateManyEntry } from 'generaltranslation/types';
+import { BatchingQueue } from 'gt-i18n/internal';
 
 type TranslationRequestMetadata = {
   hash: string;
@@ -30,20 +31,16 @@ type TranslationRequestMetadata = {
   [attr: string]: any;
 };
 
-type TranslationRequestQueueItem =
+type QueueItem =
   | {
       dataFormat: 'ICU';
       source: string;
       metadata: TranslationRequestMetadata;
-      resolve: (value: TranslatedChildren) => void;
-      reject: (error: any) => void; // kept for API compatibility (unused after change)
     }
   | {
       dataFormat: 'JSX';
       source: JsxChildren;
       metadata: TranslationRequestMetadata;
-      resolve: (value: TranslatedChildren) => void;
-      reject: (error: any) => void; // kept for API compatibility (unused after change)
     };
 
 export default function useRuntimeTranslation({
@@ -173,164 +170,74 @@ export default function useRuntimeTranslation({
     }
   }, [flushTick, mergeIntoTranslations]);
 
-  // ---------- REQUEST/QUEUE STATE ---------- //
-  const activeRequestsRef = useRef(0);
-  const requestQueueRef = useRef<Map<string, TranslationRequestQueueItem>>(
+  // ---------- DEDUP MAP (separate from queue: same key can map to one in-flight Promise) ---------- //
+  const pendingRequestsRef = useRef<Map<string, Promise<TranslatedChildren>>>(
     new Map()
   );
-  const pendingRequestQueueRef = useRef<
-    Map<string, Promise<TranslatedChildren>>
-  >(new Map());
 
-  // ---------- BATCH SENDER (no state writes here) ---------- //
-  const sendBatchRequest = useCallback(
-    async (
-      batch: Map<string, TranslationRequestQueueItem>
-    ): Promise<Translations> => {
-      if (batch.size === 0) return {};
-      activeRequestsRef.current += 1;
+  // ---------- BATCHING QUEUE ---------- //
+  // Lazy-init via useState so the queue is constructed once. The sendBatch
+  // closure captures cfgRef (mutable, always current) and stageAndRequestFlush
+  // (stable useCallback identity), so it stays valid across renders.
+  const [queue] = useState(
+    () =>
+      new BatchingQueue<QueueItem, TranslatedChildren | null>({
+        maxBatchSize,
+        batchInterval,
+        maxConcurrent: maxConcurrentRequests,
+        sendBatch: async (entries) => {
+          const { gt, locale, baseMetadata, timeout } = cfgRef.current;
 
-      const { gt, locale, baseMetadata, timeout } = cfgRef.current;
-      const requests = Array.from(batch.values());
-      const newTranslations: Translations = {};
-      const resultsMap = new Map<string, TranslatedChildren | null>();
-
-      try {
-        const requestsRecord: Record<string, TranslateManyEntry> = {};
-        for (const req of requests) {
-          const { source, metadata } = req;
-          requestsRecord[metadata.hash] = {
-            source,
-            metadata: { ...metadata, dataFormat: req.dataFormat },
-          };
-        }
-
-        const results = await gt.translateMany(
-          requestsRecord,
-          {
-            ...baseMetadata,
-            targetLocale: locale,
-          },
-          timeout
-        );
-
-        for (const req of requests) {
-          const { hash, id } = req.metadata;
-          const result = results[hash];
-          if (result && result.success) {
-            const value = result.translation;
-            newTranslations[hash] = value;
-            resultsMap.set(hash, value);
-          } else if (result && result.error) {
-            const msg = createGenericRuntimeTranslationError(id, hash);
-            console.warn(
-              `${msg} ${result.error || 'An upstream error occurred.'}`
-            );
-            newTranslations[hash] = null;
-            resultsMap.set(hash, null);
-          } else {
-            const msg = createGenericRuntimeTranslationError(id, hash);
-            console.warn(`${msg} Unknown response format.`, result);
-            newTranslations[hash] = null;
-            resultsMap.set(hash, null);
+          const requestsRecord: Record<string, TranslateManyEntry> = {};
+          for (const e of entries) {
+            requestsRecord[e.item.metadata.hash] = {
+              source: e.item.source,
+              metadata: { ...e.item.metadata, dataFormat: e.item.dataFormat },
+            };
           }
-        }
-      } catch (e: any) {
-        if (e?.name === 'AbortError') {
-          console.warn(runtimeTranslationTimeoutWarning);
-        } else {
-          console.warn(dynamicTranslationError, e);
-        }
-        // Mark every request in this batch as null, and warn.
-        requests.forEach((r) => {
-          newTranslations[r.metadata.hash] = null;
-          resultsMap.set(r.metadata.hash, null);
-        });
-      } finally {
-        activeRequestsRef.current -= 1;
-        // Resolve the promises for this batch (never reject).
-        requests.forEach((r) => {
-          const res = resultsMap.get(r.metadata.hash);
-          if (res === undefined) {
-            console.warn(
-              `No translation result for ${r.metadata.hash}; resolving as null.`
+
+          const newTranslations: Translations = {};
+          try {
+            const results = await gt.translateMany(
+              requestsRecord,
+              { ...baseMetadata, targetLocale: locale },
+              timeout
             );
-            r.resolve(null as unknown as TranslatedChildren);
-          } else {
-            r.resolve(res as TranslatedChildren);
+            for (const e of entries) {
+              const { hash, id } = e.item.metadata;
+              const result = results[hash];
+              if (result && result.success) {
+                const value = result.translation;
+                newTranslations[hash] = value;
+                e.resolve(value);
+              } else {
+                const msg = createGenericRuntimeTranslationError(id, hash);
+                console.warn(
+                  result?.error
+                    ? `${msg} ${result.error}`
+                    : `${msg} Unknown response format.`,
+                  result?.error ? undefined : result
+                );
+                newTranslations[hash] = null;
+                e.resolve(null);
+              }
+            }
+          } catch (err: any) {
+            if (err?.name === 'AbortError') {
+              console.warn(runtimeTranslationTimeoutWarning);
+            } else {
+              console.warn(dynamicTranslationError, err);
+            }
+            // Never reject — preserve the original "always resolve, null on failure" contract.
+            for (const e of entries) {
+              newTranslations[e.item.metadata.hash] = null;
+              e.resolve(null);
+            }
           }
-        });
-      }
 
-      return newTranslations;
-    },
-    []
-  );
-
-  // ---------- TIMER-DRIVEN FLUSHER (no polling effect) ---------- //
-  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tickRef = useRef<() => Promise<void>>(async () => {});
-
-  const stageAndScheduleNext = useCallback(
-    (batchResult: Translations) => {
-      // Stage results and request the commit effect to run
-      stageAndRequestFlush(batchResult);
-
-      // If more work remains, schedule another flush cycle
-      if (requestQueueRef.current.size > 0) {
-        flushTimerRef.current = setTimeout(() => {
-          flushTimerRef.current = null;
-          void tickRef.current();
-        }, batchInterval);
-      }
-    },
-    [stageAndRequestFlush]
-  );
-
-  const installTick = useCallback(() => {
-    tickRef.current = async () => {
-      // Respect concurrency cap
-      if (activeRequestsRef.current >= maxConcurrentRequests) {
-        flushTimerRef.current = setTimeout(() => {
-          flushTimerRef.current = null;
-          void tickRef.current();
-        }, batchInterval);
-        return;
-      }
-
-      const q = requestQueueRef.current;
-      if (q.size === 0) return;
-
-      const batchEntries = Array.from(q.entries()).slice(
-        0,
-        Math.min(maxBatchSize, q.size)
-      );
-      const batch = new Map(batchEntries);
-      batchEntries.forEach(([k]) => q.delete(k));
-
-      const batchResult = await sendBatchRequest(batch);
-      stageAndScheduleNext(batchResult);
-    };
-  }, [sendBatchRequest, stageAndScheduleNext]);
-
-  const scheduleFlush = useCallback(
-    (immediate = false) => {
-      installTick();
-      if (immediate) {
-        if (flushTimerRef.current) {
-          clearTimeout(flushTimerRef.current);
-          flushTimerRef.current = null;
-        }
-        void tickRef.current(); // Safe pre-mount: will only stage results
-        return;
-      }
-      if (flushTimerRef.current) return; // already armed
-      flushTimerRef.current = setTimeout(() => {
-        flushTimerRef.current = null;
-        void tickRef.current();
-      }, batchInterval);
-    },
-    [installTick]
+          stageAndRequestFlush(newTranslations);
+        },
+      })
   );
 
   // ---------- REGISTRATION (returns Promises for Suspense) ---------- //
@@ -343,53 +250,40 @@ export default function useRuntimeTranslation({
       }): Promise<TranslatedChildren> => {
         const key = `${params.metadata.hash}:${params.targetLocale}`;
 
-        const existing = pendingRequestQueueRef.current.get(key);
+        const existing = pendingRequestsRef.current.get(key);
         if (existing) return existing;
 
-        const p = new Promise<TranslatedChildren>((resolve /*, reject */) => {
-          const item: TranslationRequestQueueItem =
-            dataFormat === 'JSX'
-              ? {
-                  dataFormat: 'JSX',
-                  source: params.source as JsxChildren,
-                  metadata: {
-                    ...params.metadata,
-                    ...(params.metadata.maxChars != null && {
-                      maxChars: Math.abs(params.metadata.maxChars),
-                    }),
-                  },
-                  resolve,
-                  reject: () => {}, // no-op; we no longer reject
-                }
-              : {
-                  dataFormat: 'ICU',
-                  source: params.source as string,
-                  metadata: {
-                    ...params.metadata,
-                    ...(params.metadata.maxChars != null && {
-                      maxChars: Math.abs(params.metadata.maxChars),
-                    }),
-                  },
-                  resolve,
-                  reject: () => {}, // no-op; we no longer reject
-                };
+        const metadata = {
+          ...params.metadata,
+          ...(params.metadata.maxChars != null && {
+            maxChars: Math.abs(params.metadata.maxChars),
+          }),
+        };
 
-          requestQueueRef.current.set(key, item);
+        const item: QueueItem =
+          dataFormat === 'JSX'
+            ? {
+                dataFormat: 'JSX',
+                source: params.source as JsxChildren,
+                metadata,
+              }
+            : {
+                dataFormat: 'ICU',
+                source: params.source as string,
+                metadata,
+              };
 
-          const canFlushNow =
-            requestQueueRef.current.size >= maxBatchSize &&
-            activeRequestsRef.current < maxConcurrentRequests;
+        const p = queue
+          .enqueue(item)
+          .then((value) => value as TranslatedChildren)
+          .finally(() => {
+            pendingRequestsRef.current.delete(key);
+          });
 
-          // Kick the scheduler; immediate is safe (no state writes pre-mount)
-          scheduleFlush(canFlushNow);
-        }).finally(() => {
-          pendingRequestQueueRef.current.delete(key);
-        });
-
-        pendingRequestQueueRef.current.set(key, p);
+        pendingRequestsRef.current.set(key, p);
         return p;
       },
-    [scheduleFlush]
+    [queue]
   );
 
   const registerIcuForTranslation = useMemo(
@@ -400,13 +294,6 @@ export default function useRuntimeTranslation({
     () => createRegistration('JSX'),
     [createRegistration]
   );
-
-  // Cleanup any stray timer on unmount (does not drive batching)
-  useEffect(() => {
-    return () => {
-      if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
-    };
-  }, []);
 
   return {
     developmentApiEnabled,

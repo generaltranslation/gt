@@ -22,6 +22,7 @@ import { defaultLocaleHeaderName } from '../utils/headers';
 import { CustomMapping } from 'generaltranslation/types';
 import { GTTranslationError } from '../utils/errors';
 import type { TranslateManyEntry } from 'generaltranslation/types';
+import { BatchingQueue, BatchingQueueEntry } from 'gt-i18n/internal';
 
 type I18NConfigurationParams = {
   apiKey?: string;
@@ -47,26 +48,18 @@ type I18NConfigurationParams = {
   [key: string]: any;
 };
 
-type QueueEntry =
+type QueueItem =
   | {
       dataFormat: 'I18NEXT' | 'ICU';
       source: _Content;
       targetLocale: string;
       metadata: { hash: string } & Record<string, any>;
-      resolve: (
-        value: TranslatedChildren | PromiseLike<TranslatedChildren>
-      ) => void;
-      reject: (reason?: any) => void;
     }
   | {
       dataFormat: 'JSX';
       source: JsxChildren;
       targetLocale: string;
       metadata: { hash: string } & Record<string, any>;
-      resolve: (
-        value: TranslatedChildren | PromiseLike<TranslatedChildren>
-      ) => void;
-      reject: (reason?: any) => void;
     };
 
 export default class I18NConfiguration {
@@ -100,8 +93,7 @@ export default class I18NConfiguration {
   maxConcurrentRequests: number;
   maxBatchSize: number;
   batchInterval: number;
-  private _queue: Array<QueueEntry>;
-  private _activeRequests: number;
+  private _queue!: BatchingQueue<QueueItem, TranslatedChildren>;
   // Cache for ongoing translation requests
   private _translationCache: Map<string, Promise<any>>;
   // Headers and cookies
@@ -228,10 +220,13 @@ export default class I18NConfiguration {
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.maxBatchSize = maxBatchSize;
     this.batchInterval = batchInterval;
-    this._queue = [];
-    this._activeRequests = 0;
     this._translationCache = new Map(); // cache for ongoing promises, so things aren't translated twice
-    this._startBatching();
+    this._queue = new BatchingQueue<QueueItem, TranslatedChildren>({
+      maxBatchSize,
+      maxConcurrent: maxConcurrentRequests,
+      batchInterval,
+      sendBatch: (entries) => this._sendBatch(entries),
+    });
     // Headers and cookies
     this.localeHeaderName =
       headersAndCookies?.localeHeaderName || defaultLocaleHeaderName;
@@ -447,37 +442,13 @@ export default class I18NConfiguration {
     },
     dataFormat: 'I18NEXT' | 'ICU'
   ): Promise<TranslatedChildren> {
-    // check internal cache
     const cacheKey = constructCacheKey(params.targetLocale, params.options);
-    if (this._translationCache.has(cacheKey)) {
-      return this._translationCache.get(cacheKey);
-    }
-
-    // add to tx queue
-    const { source, targetLocale, options } = params;
-    const translationPromise = new Promise<TranslatedChildren>(
-      (resolve, reject) => {
-        this._queue.push({
-          dataFormat,
-          source,
-          targetLocale,
-          metadata: {
-            ...options,
-            ...(options.maxChars != null && {
-              maxChars: Math.abs(options.maxChars),
-            }),
-          },
-          resolve,
-          reject,
-        });
-      }
-    ).catch((error) => {
-      this._translationCache.delete(cacheKey);
-      throw new Error(error);
+    return this._enqueue(cacheKey, {
+      dataFormat,
+      source: params.source,
+      targetLocale: params.targetLocale,
+      metadata: normalizeMetadata(params.options),
     });
-
-    this._translationCache.set(cacheKey, translationPromise);
-    return translationPromise;
   }
 
   /**
@@ -516,49 +487,45 @@ export default class I18NConfiguration {
     targetLocale: string;
     options: { hash: string } & Record<string, any>;
   }): Promise<TranslatedChildren> {
-    // In memory cache to make sure the same translation isn't requested twice
-    const { source, targetLocale, options } = params;
-    const cacheKey = constructCacheKey(targetLocale, options);
-    if (this._translationCache.has(cacheKey)) {
-      return this._translationCache.get(cacheKey);
-    }
-    // Add to translation queue
-    const translationPromise = new Promise<TranslatedChildren>(
-      (resolve, reject) => {
-        // In memory queue to batch requests
-        this._queue.push({
-          dataFormat: 'JSX',
-          source,
-          targetLocale,
-          metadata: {
-            ...options,
-            ...(options.maxChars != null && {
-              maxChars: Math.abs(options.maxChars),
-            }),
-          },
-          resolve,
-          reject,
-        });
-      }
-    ).catch((error) => {
-      this._translationCache.delete(cacheKey);
-      throw new Error(error);
+    const cacheKey = constructCacheKey(params.targetLocale, params.options);
+    return this._enqueue(cacheKey, {
+      dataFormat: 'JSX',
+      source: params.source,
+      targetLocale: params.targetLocale,
+      metadata: normalizeMetadata(params.options),
     });
-    this._translationCache.set(cacheKey, translationPromise);
-    return translationPromise;
   }
 
   /**
-   * Send a batch request for React translation
-   * @param batch - The batch of requests to be sent
+   * Dedupe identical concurrent requests, then enqueue. The local cache
+   * holds the in-flight Promise so a second caller for the same key joins
+   * the existing request instead of issuing a duplicate.
    */
-  private async _sendBatchRequest(batch: Array<QueueEntry>): Promise<void> {
-    this._activeRequests++;
+  private _enqueue(
+    cacheKey: string,
+    item: QueueItem
+  ): Promise<TranslatedChildren> {
+    const existing = this._translationCache.get(cacheKey);
+    if (existing) return existing;
+    const promise = this._queue.enqueue(item).catch((error) => {
+      this._translationCache.delete(cacheKey);
+      throw new Error(error);
+    });
+    this._translationCache.set(cacheKey, promise);
+    return promise;
+  }
+
+  /**
+   * Process one batch: send to translateMany, write successful results into
+   * the long-term TranslationManager cache, and resolve/reject each entry.
+   */
+  private async _sendBatch(
+    entries: BatchingQueueEntry<QueueItem, TranslatedChildren>[]
+  ): Promise<void> {
     try {
-      // ----- TRANSLATION REQUEST WITH ABORT CONTROLLER ----- //
       const requests: Record<string, TranslateManyEntry> = {};
-      for (const item of batch) {
-        const { source, metadata, dataFormat } = item;
+      for (const e of entries) {
+        const { source, metadata, dataFormat } = e.item;
         requests[metadata.hash] = {
           source,
           metadata: { ...metadata, dataFormat },
@@ -567,64 +534,49 @@ export default class I18NConfiguration {
 
       const results = await this.gt.translateMany(
         requests,
-        {
-          ...this.metadata,
-          targetLocale: batch[0].targetLocale,
-        },
+        { ...this.metadata, targetLocale: entries[0].item.targetLocale },
         this.renderSettings.timeout
       );
 
-      // ----- PROCESS RESPONSE ----- //
-      batch.forEach((request) => {
-        const hash = request.metadata.hash;
+      for (const e of entries) {
+        const hash = e.item.metadata.hash;
         const result = results[hash];
-
         if (result && result.success) {
-          // record translations
-          if (this._translationManager) {
-            this._translationManager.setTranslations(
-              request.targetLocale,
-              hash,
-              result.translation
-            );
-          }
-          return request.resolve(result.translation);
+          this._translationManager?.setTranslations(
+            e.item.targetLocale,
+            hash,
+            result.translation
+          );
+          e.resolve(result.translation);
+        } else {
+          e.reject(new GTTranslationError('Translation failed.', 500));
         }
-        return request.reject(
-          new GTTranslationError('Translation failed.', 500)
-        );
-      });
+      }
     } catch (error) {
-      // Error logging
       if (error instanceof Error && error.name === 'AbortError') {
-        console.warn(runtimeTranslationTimeoutWarning); // Warning for timeout
+        console.warn(runtimeTranslationTimeoutWarning);
       } else {
         console.warn(error);
       }
-      // Reject all promises
-      batch.forEach((request) => {
-        return request.reject(new GTTranslationError(String(error), 500));
-      });
-    } finally {
-      this._activeRequests--;
+      for (const e of entries) {
+        e.reject(new GTTranslationError(String(error), 500));
+      }
     }
   }
+}
 
-  /**
-   * Start the batching process with a set interval
-   */
-  private _startBatching(): void {
-    setInterval(() => {
-      if (
-        this._queue.length > 0 &&
-        this._activeRequests < this.maxConcurrentRequests
-      ) {
-        const batchSize = Math.min(this.maxBatchSize, this._queue.length);
-        this._sendBatchRequest(this._queue.slice(0, batchSize));
-        this._queue = this._queue.slice(batchSize);
-      }
-    }, this.batchInterval);
-  }
+/**
+ * Strip the maxChars sign so callers can pass either form.
+ */
+function normalizeMetadata(
+  options: { hash: string } & Record<string, any>
+): { hash: string } & Record<string, any> {
+  return {
+    ...options,
+    ...(options.maxChars != null && {
+      maxChars: Math.abs(options.maxChars),
+    }),
+  };
 }
 
 // Constructs the unique identification key for the map which is the in-memory same-render-cycle cache
