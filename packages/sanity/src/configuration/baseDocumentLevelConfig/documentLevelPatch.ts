@@ -99,7 +99,8 @@ export const documentLevelPatch = async (
       baseDoc,
       merged,
       translatedFields,
-      client
+      client,
+      localeId
     );
   }
   //otherwise, create a new document

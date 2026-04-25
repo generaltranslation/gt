@@ -14,7 +14,8 @@ export async function patchI18nDoc(
   sourceDocument: SanityDocumentLike,
   mergedDocument: SanityDocumentLike,
   translatedFields: Record<string, any>,
-  client: SanityClient
+  client: SanityClient,
+  localeId?: string
 ): Promise<void> {
   const cleanedMerge: Record<string, any> = {};
   Object.entries(mergedDocument).forEach(([key, value]) => {
@@ -41,7 +42,9 @@ export async function patchI18nDoc(
     cleanedSourceDocument,
     cleanedMerge,
     pluginConfig.getIgnoreFields(),
-    pluginConfig.getSkipFields()
+    pluginConfig.getSkipFields(),
+    pluginConfig.getDedupeFields(),
+    localeId
   );
   const newDocument = await client
     .patch(i18nDocId, { set: appliedDocument })

@@ -35,7 +35,9 @@ export async function createI18nDocAndPatchMetadata(
     sourceDocument,
     rest,
     pluginConfig.getIgnoreFields(),
-    pluginConfig.getSkipFields()
+    pluginConfig.getSkipFields(),
+    pluginConfig.getDedupeFields(),
+    localeId
   );
 
   // Check if this is a singleton document and apply singleton mapping
