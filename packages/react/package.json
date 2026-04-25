@@ -10,10 +10,8 @@
     "CHANGELOG.md"
   ],
   "sideEffects": [
-    "./dist/browser.cjs.min.cjs",
-    "./dist/browser.esm.min.mjs",
-    "./dist/macros.cjs.min.cjs",
-    "./dist/macros.esm.min.mjs"
+    "./dist/browser.*",
+    "./dist/macros.*"
   ],
   "peerDependencies": {
     "react": ">=16.8.0",

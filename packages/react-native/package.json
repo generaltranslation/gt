@@ -53,9 +53,9 @@
     "!**/.*"
   ],
   "sideEffects": [
-    "./dist/commonjs/NativeGtReactNative.js",
-    "./dist/module/NativeGtReactNative.js",
-    "./src/NativeGtReactNative.ts"
+    "./dist/commonjs/NativeGtReactNative.*",
+    "./dist/module/NativeGtReactNative.*",
+    "./src/NativeGtReactNative.*"
   ],
   "scripts": {
     "patch": "pnpm version patch",
