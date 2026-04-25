@@ -67,6 +67,11 @@ describe('generateSettings - composite patterns', () => {
       resolvedPaths: {},
       placeholderPaths: {},
       transformPaths: {},
+      transformFormats: {},
+      publishPaths: new Set(),
+      unpublishPaths: new Set(),
+      parsingFlags: {},
+      gtJson: { parsingFlags: {} as any },
     });
   });
 
@@ -229,6 +234,32 @@ describe('generateSettings - composite patterns', () => {
 
     expect(resolveFiles).not.toHaveBeenCalled();
   });
+
+  it('normalizes uppercase file format config keys before resolving files', async () => {
+    const options = {
+      files: {
+        POT: {
+          include: ['locales/[locale]/*.pot'],
+          transformationFormat: 'PO',
+        },
+      },
+    };
+
+    await generateSettings(options, '/test/cwd');
+
+    expect(resolveFiles).toHaveBeenCalledWith(
+      {
+        pot: {
+          include: ['locales/[locale]/*.pot'],
+          transformationFormat: 'PO',
+        },
+      },
+      'en',
+      ['fr', 'es'],
+      '/test/cwd',
+      []
+    );
+  });
 });
 
 describe('generateSettings - openapi config', () => {
@@ -238,6 +269,11 @@ describe('generateSettings - openapi config', () => {
       resolvedPaths: {},
       placeholderPaths: {},
       transformPaths: {},
+      transformFormats: {},
+      publishPaths: new Set(),
+      unpublishPaths: new Set(),
+      parsingFlags: {},
+      gtJson: { parsingFlags: {} as any },
     });
   });
 

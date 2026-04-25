@@ -277,6 +277,33 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(result[0].fileName).toBe('invalid.mdx');
     });
 
+    it('should attach transformFormat for configured POT files', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            pot: ['/full/path/messages.pot'],
+          },
+          placeholderPaths: {},
+          transformFormats: {
+            pot: 'PO',
+          },
+        },
+        defaultLocale: 'en',
+        options: {},
+      };
+
+      mockReadFile.mockReturnValueOnce('msgid "Hello"');
+
+      const { files: result } = await aggregateFiles(settings as any);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        fileName: 'messages.pot',
+        fileFormat: 'POT',
+        transformFormat: 'PO',
+      });
+    });
+
     it('should infer mintlify title from filename when missing', async () => {
       const settings = {
         files: {

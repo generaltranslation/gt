@@ -4,7 +4,8 @@ const SUPPORTED_TRANSFORMATIONS = {
   GTJSON: ['GTJSON'],
   JSON: ['JSON'],
   PO: ['PO'],
-  POT: ['POT'],
+  // POT templates can produce translated PO catalog files.
+  POT: ['POT', 'PO'],
   YAML: ['YAML'],
   MDX: ['MDX'],
   MD: ['MD'],

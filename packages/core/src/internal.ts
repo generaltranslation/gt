@@ -13,6 +13,7 @@ import isVariable from './utils/isVariable';
 import { minifyVariableType } from './utils/minify';
 import { encode, decode } from './utils/base64';
 import { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
+import { validateFileFormatTransforms } from './translate/utils/validateFileFormatTransform';
 
 export {
   _getPluralForm as getPluralForm,
@@ -27,6 +28,7 @@ export {
   encode,
   decode,
   isSupportedFileFormatTransform,
+  validateFileFormatTransforms,
 };
 
 // derive

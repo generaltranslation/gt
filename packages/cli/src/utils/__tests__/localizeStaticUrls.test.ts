@@ -77,6 +77,7 @@ describe('localizeStaticUrls', () => {
           placeholderPaths: { docs: '/docs' },
           resolvedPaths: ['file1', 'file2'],
           transformPaths: {},
+          transformFormats: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
@@ -91,6 +92,7 @@ describe('localizeStaticUrls', () => {
       expect(createFileMapping).toHaveBeenCalledWith(
         ['file1', 'file2'],
         { docs: '/docs' },
+        {},
         {},
         ['en', 'ja'],
         'en'

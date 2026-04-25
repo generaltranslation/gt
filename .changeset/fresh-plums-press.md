@@ -1,5 +1,6 @@
 ---
 "generaltranslation": patch
+"gt": patch
 ---
 
-Add core API type support for PO/POT file formats and upload format transforms.
+Add PO/POT file format support and transformFormat plumbing for API uploads and CLI file downloads.

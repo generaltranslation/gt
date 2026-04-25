@@ -24,8 +24,11 @@ describe('isSupportedFileFormatTransform', () => {
     }
   });
 
-  it('does not support cross-format transforms yet', () => {
+  it('supports configured cross-format transforms', () => {
+    expect(isSupportedFileFormatTransform('POT', 'PO')).toBe(true);
+  });
+
+  it('does not support unsupported cross-format transforms', () => {
     expect(isSupportedFileFormatTransform('YAML', 'JSON')).toBe(false);
-    expect(isSupportedFileFormatTransform('POT', 'PO')).toBe(false);
   });
 });

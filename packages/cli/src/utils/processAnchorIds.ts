@@ -17,11 +17,13 @@ export default async function processAnchorIds(
 ) {
   if (!settings.files) return;
 
-  const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
+  const { resolvedPaths, placeholderPaths, transformPaths, transformFormats } =
+    settings.files;
   const fileMapping = createFileMapping(
     resolvedPaths,
     placeholderPaths,
     transformPaths,
+    transformFormats,
     settings.locales,
     settings.defaultLocale
   );

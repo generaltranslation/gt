@@ -48,6 +48,7 @@ export default async function localizeStaticUrls(
     sourceFiles,
     settings.files.placeholderPaths,
     settings.files.transformPaths,
+    settings.files.transformFormats,
     settings.locales, // Always use all locales for mapping, filter later
     settings.defaultLocale
   );
