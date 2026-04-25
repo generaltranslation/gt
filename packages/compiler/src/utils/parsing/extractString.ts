@@ -1,4 +1,5 @@
-import { ResolutionNode, isChoiceNode } from '../../nodes';
+import type { ResolutionNode } from '../../nodes/types';
+import { isChoiceNode } from '../../nodes/guards';
 import * as t from '@babel/types';
 import { isDeriveInvocation } from './isDeriveInvocation';
 import { NodePath } from '@babel/traverse';
@@ -132,6 +133,7 @@ export function extractString(
       }
 
       // Add to current part or create new part
+      if (cooked != null) metadata.hasStatic = true;
       addPart(result, createStaticPart(cooked));
 
       // Parse expression

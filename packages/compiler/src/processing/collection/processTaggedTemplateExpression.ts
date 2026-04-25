@@ -42,7 +42,10 @@ export function processTaggedTemplateExpression(
 
     // Extract message from the template literal
     const extracted = extractString(path.get('quasi'), true);
-    if (extracted.errors.length || extracted.value == null) return;
+    if (extracted.errors.length || extracted.value == null) {
+      state.errorTracker.addErrors(extracted.errors);
+      return;
+    }
     // TODO: remove this once derive is supported
     // Skip reg if contains derive
     if (extracted.metadata.hasDerive) return;
