@@ -208,7 +208,7 @@ export async function upload(
     filePaths,
     placeholderPaths,
     transformPaths,
-    settings.files.transformFormats,
+    settings.files?.transformFormats || {},
     locales,
     settings.defaultLocale
   );
