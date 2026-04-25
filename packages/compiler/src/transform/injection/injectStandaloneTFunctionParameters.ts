@@ -20,6 +20,8 @@ export function injectStandaloneTFunctionParameters(
     return;
   }
 
+  // Keep this aligned with collection, which registers every injectable t() call
+  // even when the call already has $_hash.
   const counterId = state.stringCollector.incrementCounter();
   if (params.hash !== undefined) {
     return;
@@ -27,6 +29,9 @@ export function injectStandaloneTFunctionParameters(
 
   const translationHash = state.stringCollector.getTranslationHash(counterId);
   if (translationHash === undefined) {
+    state.logger.logError(
+      `[injectStandaloneTFunctionParameters] No hash found for counterId=${counterId}. Counter alignment may be broken.`
+    );
     return;
   }
 
