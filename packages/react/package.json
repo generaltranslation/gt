@@ -9,6 +9,12 @@
     "dist",
     "CHANGELOG.md"
   ],
+  "sideEffects": [
+    "./dist/browser.cjs.min.cjs",
+    "./dist/browser.esm.min.mjs",
+    "./dist/macros.cjs.min.cjs",
+    "./dist/macros.esm.min.mjs"
+  ],
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"

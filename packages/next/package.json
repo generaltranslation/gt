@@ -12,6 +12,10 @@
     "dist",
     "CHANGELOG.md"
   ],
+  "sideEffects": [
+    "./dist/index.server.js",
+    "./dist/server.js"
+  ],
   "dependencies": {
     "@generaltranslation/supported-locales": "workspace:*",
     "@generaltranslation/compiler": "workspace:*",
