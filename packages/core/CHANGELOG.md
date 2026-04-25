@@ -1,5 +1,13 @@
 # generaltranslation
 
+## 8.2.7
+
+### Patch Changes
+
+- [#1246](https://github.com/generaltranslation/gt/pull/1246) [`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5) Thanks [@bgub](https://github.com/bgub)! - Migrate build tooling from Rollup to tsdown (Rolldown). No public API changes. Output filenames simplified (e.g. `index.cjs.min.cjs` → `index.cjs`), minification removed (consumers bundle with their own minifier).
+
+- [#1251](https://github.com/generaltranslation/gt/pull/1251) [`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7) Thanks [@bgub](https://github.com/bgub)! - Declare `sideEffects` in each package's `package.json` to enable tree-shaking in consumer bundlers (webpack, esbuild, Rollup). Packages with no module-scope side effects are marked `"sideEffects": false`. Packages with intentional side-effect entry points (`gt-react/browser`, `gt-react/macros`, `gt-next` server entries, `gt-react-native` TurboModule spec) list those files explicitly so they are preserved.
+
 ## 8.2.6
 
 ### Patch Changes
