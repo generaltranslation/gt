@@ -100,7 +100,7 @@ export const documentLevelPatch = async (
       merged,
       translatedFields,
       client,
-      localeId
+      i18nDoc
     );
   }
   //otherwise, create a new document
