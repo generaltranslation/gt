@@ -45,8 +45,8 @@
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@types/node": "^20.14.9",
-    "tsdown": "^0.21.10",
-    "typescript": "^5.6.2"
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
   },
   "typescript": {
     "definition": "dist/index.d.cts"
@@ -58,32 +58,70 @@
   },
   "exports": {
     ".": {
-      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" },
-      "import": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" }
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
     },
     "./id": {
-      "require": { "types": "./dist/id.d.cts", "default": "./dist/id.cjs" },
-      "import": { "types": "./dist/id.d.mts", "default": "./dist/id.mjs" }
+      "require": {
+        "types": "./dist/id.d.cts",
+        "default": "./dist/id.cjs"
+      },
+      "import": {
+        "types": "./dist/id.d.mts",
+        "default": "./dist/id.mjs"
+      }
     },
     "./internal": {
-      "require": { "types": "./dist/internal.d.cts", "default": "./dist/internal.cjs" },
-      "import": { "types": "./dist/internal.d.mts", "default": "./dist/internal.mjs" }
+      "require": {
+        "types": "./dist/internal.d.cts",
+        "default": "./dist/internal.cjs"
+      },
+      "import": {
+        "types": "./dist/internal.d.mts",
+        "default": "./dist/internal.mjs"
+      }
     },
     "./types": {
-      "require": { "types": "./dist/types.d.cts", "default": "./dist/types.cjs" },
-      "import": { "types": "./dist/types.d.mts", "default": "./dist/types.mjs" }
+      "require": {
+        "types": "./dist/types.d.cts",
+        "default": "./dist/types.cjs"
+      },
+      "import": {
+        "types": "./dist/types.d.mts",
+        "default": "./dist/types.mjs"
+      }
     },
     "./errors": {
-      "require": { "types": "./dist/errors.d.cts", "default": "./dist/errors.cjs" },
-      "import": { "types": "./dist/errors.d.mts", "default": "./dist/errors.mjs" }
+      "require": {
+        "types": "./dist/errors.d.cts",
+        "default": "./dist/errors.cjs"
+      },
+      "import": {
+        "types": "./dist/errors.d.mts",
+        "default": "./dist/errors.mjs"
+      }
     }
   },
   "typesVersions": {
     "*": {
-      "internal": ["./dist/internal.d.cts"],
-      "id": ["./dist/id.d.cts"],
-      "types": ["./dist/types.d.cts"],
-      "errors": ["./dist/errors.d.cts"]
+      "internal": [
+        "./dist/internal.d.cts"
+      ],
+      "id": [
+        "./dist/id.d.cts"
+      ],
+      "types": [
+        "./dist/types.d.cts"
+      ],
+      "errors": [
+        "./dist/errors.d.cts"
+      ]
     }
   },
   "compilerOptions": {

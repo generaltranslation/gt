@@ -54,7 +54,7 @@
     "generaltranslation": "workspace:*"
   },
   "devDependencies": {
-    "tsdown": "^0.21.10",
-    "typescript": "^5.6.2"
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
   }
 }

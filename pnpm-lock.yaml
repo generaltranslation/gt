@@ -4,6 +4,15 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    tsdown:
+      specifier: ^0.21.10
+      version: 0.21.10
+    typescript:
+      specifier: ^5.6.2
+      version: 5.9.3
+
 overrides:
   '@generaltranslation/next-internal': link:packages/next-internal
 
@@ -423,11 +432,11 @@ importers:
         specifier: ^20.14.9
         version: 20.19.17
       tsdown:
-        specifier: ^0.21.10
-        version: 0.21.10(synckit@0.11.11)(typescript@5.9.2)
+        specifier: 'catalog:'
+        version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
       typescript:
-        specifier: ^5.6.2
-        version: 5.9.2
+        specifier: 'catalog:'
+        version: 5.9.3
 
   packages/gtx-cli:
     dependencies:
@@ -461,11 +470,11 @@ importers:
         specifier: ^20.14.9
         version: 20.19.17
       tsdown:
-        specifier: ^0.21.10
-        version: 0.21.10(synckit@0.11.11)(typescript@5.9.2)
+        specifier: 'catalog:'
+        version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
       typescript:
-        specifier: ^5.6.2
-        version: 5.9.2
+        specifier: 'catalog:'
+        version: 5.9.3
 
   packages/locadex:
     dependencies:
@@ -680,11 +689,11 @@ importers:
         specifier: ^20.14.9
         version: 20.19.17
       tsdown:
-        specifier: ^0.21.10
-        version: 0.21.10(synckit@0.11.11)(typescript@5.9.2)
+        specifier: 'catalog:'
+        version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
       typescript:
-        specifier: ^5.6.2
-        version: 5.9.2
+        specifier: 'catalog:'
+        version: 5.9.3
 
   packages/python-extractor:
     dependencies:
@@ -1099,11 +1108,11 @@ importers:
         version: link:../core
     devDependencies:
       tsdown:
-        specifier: ^0.21.10
-        version: 0.21.10(synckit@0.11.11)(typescript@5.9.2)
+        specifier: 'catalog:'
+        version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
       typescript:
-        specifier: ^5.6.2
-        version: 5.9.2
+        specifier: 'catalog:'
+        version: 5.9.3
 
   packages/tanstack-start:
     dependencies:
@@ -27332,7 +27341,7 @@ snapshots:
     transitivePeerDependencies:
       - oxc-resolver
 
-  rolldown-plugin-dts@0.23.2(rolldown@1.0.0-rc.17)(typescript@5.9.2):
+  rolldown-plugin-dts@0.23.2(rolldown@1.0.0-rc.17)(typescript@5.9.3):
     dependencies:
       '@babel/generator': 8.0.0-rc.3
       '@babel/helper-validator-identifier': 8.0.0-rc.3
@@ -27346,7 +27355,7 @@ snapshots:
       picomatch: 4.0.4
       rolldown: 1.0.0-rc.17
     optionalDependencies:
-      typescript: 5.9.2
+      typescript: 5.9.3
     transitivePeerDependencies:
       - oxc-resolver
 
@@ -28679,7 +28688,7 @@ snapshots:
       minimist: 1.2.8
       strip-bom: 3.0.0
 
-  tsdown@0.21.10(synckit@0.11.11)(typescript@5.9.2):
+  tsdown@0.21.10(synckit@0.11.11)(typescript@5.9.3):
     dependencies:
       ansis: 4.2.0
       cac: 7.0.0
@@ -28690,7 +28699,7 @@ snapshots:
       obug: 2.1.1
       picomatch: 4.0.4
       rolldown: 1.0.0-rc.17
-      rolldown-plugin-dts: 0.23.2(rolldown@1.0.0-rc.17)(typescript@5.9.2)
+      rolldown-plugin-dts: 0.23.2(rolldown@1.0.0-rc.17)(typescript@5.9.3)
       semver: 7.7.4
       tinyexec: 1.1.1
       tinyglobby: 0.2.16
@@ -28698,7 +28707,7 @@ snapshots:
       unconfig-core: 7.5.0
       unrun: 0.2.37(synckit@0.11.11)
     optionalDependencies:
-      typescript: 5.9.2
+      typescript: 5.9.3
     transitivePeerDependencies:
       - '@ts-macro/tsc'
       - '@typescript/native-preview'
