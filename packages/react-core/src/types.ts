@@ -1,5 +1,5 @@
-import type { MFunctionType, GTFunctionType } from './types-dir/types';
-import type {
+import { MFunctionType, GTFunctionType } from './types-dir/types';
+import {
   Dictionary,
   RenderMethod,
   TranslatedChildren,
@@ -21,26 +21,26 @@ import type {
   _Messages,
   TaggedChildren,
 } from './types-dir/types';
-import type { GTContextType } from './types-dir/context';
+import { GTContextType } from './types-dir/context';
 
-import type { AuthFromEnvParams, AuthFromEnvReturn } from './utils/types';
-import type {
+import { AuthFromEnvParams, AuthFromEnvReturn } from './utils/types';
+import {
   UseDetermineLocaleParams,
   UseDetermineLocaleReturn,
 } from './provider/hooks/locales/types';
-import type {
+import {
   UseRegionStateParams,
   UseRegionStateReturn,
   UseEnableI18nParams,
   UseEnableI18nReturn,
 } from './provider/hooks/types';
-import type { LocaleSelectorProps, RegionSelectorProps } from './ui/types';
+import { LocaleSelectorProps, RegionSelectorProps } from './ui/types';
 
-import type { GTProp } from 'generaltranslation/types';
+import { GTProp } from 'generaltranslation/types';
 
-import type { InternalGTProviderProps, GTConfig } from './types-dir/config';
+import { InternalGTProviderProps, GTConfig } from './types-dir/config';
 
-export type {
+export {
   Dictionary,
   DictionaryEntry,
   FlattenedDictionary,

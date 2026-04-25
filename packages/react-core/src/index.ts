@@ -39,12 +39,6 @@ export * from 'gt-i18n/fallbacks';
 
 export { declareStatic, derive, declareVar, decodeVars } from 'gt-i18n';
 
-export type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
-};
-
 export {
   Var,
   Num,
@@ -72,6 +66,9 @@ export {
   useVersionId,
   LocaleSelector,
   RegionSelector,
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
   msg,
   decodeMsg,
   decodeOptions,

@@ -2,9 +2,9 @@
   "name": "@generaltranslation/react-core",
   "version": "1.8.5",
   "description": "A pure React library for internationalization",
-  "main": "dist/index.cjs",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.cts",
+  "main": "./dist/index.cjs.min.cjs",
+  "module": "./dist/index.esm.min.mjs",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "CHANGELOG.md"
@@ -20,7 +20,7 @@
   "scripts": {
     "patch": "pnpm version patch",
     "transpile": "tsc",
-    "build": "tsdown",
+    "build": "rollup -c",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "release": "pnpm run build:clean && pnpm publish",
@@ -43,66 +43,53 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
+    "@babel/preset-react": "^7.26.3",
+    "@babel/preset-typescript": "^7.26.0",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.4",
     "@types/node": "^24.8.0",
     "@types/react": ">=18.0.0 <20.0.0",
-    "tsdown": "^0.21.10",
+    "rollup": "^4.32.1",
+    "rollup-plugin-dts": "^6.2.3",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-preserve-directives": "^1.1.3",
+    "tslib": "^2.8.1",
     "typescript": "^5.7.3"
-  },
-  "typescript": {
-    "definition": "dist/index.d.cts"
   },
   "exports": {
     ".": {
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      },
-      "import": {
-        "types": "./dist/index.d.mts",
-        "default": "./dist/index.mjs"
-      }
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs.min.cjs",
+      "import": "./dist/index.esm.min.mjs"
     },
     "./internal": {
-      "require": {
-        "types": "./dist/internal.d.cts",
-        "default": "./dist/internal.cjs"
-      },
-      "import": {
-        "types": "./dist/internal.d.mts",
-        "default": "./dist/internal.mjs"
-      }
+      "types": "./dist/internal.d.ts",
+      "require": "./dist/internal.cjs.min.cjs",
+      "import": "./dist/internal.esm.min.mjs"
     },
     "./errors": {
-      "require": {
-        "types": "./dist/errors.d.cts",
-        "default": "./dist/errors.cjs"
-      },
-      "import": {
-        "types": "./dist/errors.d.mts",
-        "default": "./dist/errors.mjs"
-      }
+      "types": "./dist/errors.d.ts",
+      "require": "./dist/errors.cjs.min.cjs",
+      "import": "./dist/errors.esm.min.mjs"
     },
     "./types": {
-      "require": {
-        "types": "./dist/types.d.cts",
-        "default": "./dist/types.cjs"
-      },
-      "import": {
-        "types": "./dist/types.d.mts",
-        "default": "./dist/types.mjs"
-      }
+      "types": "./dist/types.d.ts"
     }
   },
   "typesVersions": {
     "*": {
       "types": [
-        "./dist/types.d.cts"
+        "./dist/types.d.ts"
       ],
       "internal": [
-        "./dist/internal.d.cts"
+        "./dist/internal.d.ts"
       ],
       "errors": [
-        "./dist/errors.d.cts"
+        "./dist/errors.d.ts"
       ]
     }
   },
@@ -113,10 +100,10 @@
         "./dist/internal"
       ],
       "@generaltranslation/react-core/types": [
-        "./dist/types.d.cts"
+        "./dist/types.d.ts"
       ],
       "@generaltranslation/react-core/errors": [
-        "./dist/errors.d.cts"
+        "./dist/errors.d.ts"
       ]
     }
   },
