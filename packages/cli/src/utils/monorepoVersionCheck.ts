@@ -187,10 +187,14 @@ function findSyncedPackageVersionMismatches(
     );
     if (enabledGroupPackages.length <= 1) continue;
 
+    const presentGroupPackages = enabledGroupPackages.filter((pkg) =>
+      packageVersions.has(pkg)
+    );
+    if (presentGroupPackages.length <= 1) continue;
+
     const versionMap = new Map<string, string[]>();
-    for (const packageName of enabledGroupPackages) {
-      const packageVersionMap = packageVersions.get(packageName);
-      if (!packageVersionMap) continue;
+    for (const packageName of presentGroupPackages) {
+      const packageVersionMap = packageVersions.get(packageName)!;
 
       for (const [version, workspaces] of packageVersionMap) {
         const locations = versionMap.get(version) ?? [];
@@ -206,7 +210,7 @@ function findSyncedPackageVersionMismatches(
       shouldCheckSyncedVersionGroup(group, versionMap)
     ) {
       mismatches.push({
-        packageName: enabledGroupPackages.join(' / '),
+        packageName: presentGroupPackages.join(' / '),
         versions: getSortedVersionInfo(versionMap),
       });
     }
