@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777057261388,
+  "lastUpdate": 1777150629922,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -3944,6 +3944,122 @@ window.BENCHMARK_DATA = {
             "value": 114,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.12\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "8b3b6e5c542d926c2236c14725243333701f2a2a",
+          "message": "[ci] release (#1247)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.14.20\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)]:\n    -   generaltranslation@8.2.7\n    -   @generaltranslation/python-extractor@0.2.12\n\n## @generaltranslation/compiler@1.3.12\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)]:\n    -   generaltranslation@8.2.7\n\n## generaltranslation@8.2.7\n\n### Patch Changes\n\n- [#1246](https://github.com/generaltranslation/gt/pull/1246)\n[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5)\nThanks [@bgub](https://github.com/bgub)! - Migrate build tooling from\nRollup to tsdown (Rolldown). No public API changes. Output filenames\nsimplified (e.g. `index.cjs.min.cjs` → `index.cjs`), minification\nremoved (consumers bundle with their own minifier).\n\n- [#1251](https://github.com/generaltranslation/gt/pull/1251)\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)\nThanks [@bgub](https://github.com/bgub)! - Declare `sideEffects` in each\npackage's `package.json` to enable tree-shaking in consumer bundlers\n(webpack, esbuild, Rollup). Packages with no module-scope side effects\nare marked `\"sideEffects\": false`. Packages with intentional side-effect\nentry points (`gt-react/browser`, `gt-react/macros`, `gt-next` server\nentries, `gt-react-native` TurboModule spec) list those files explicitly\nso they are preserved.\n\n## gtx-cli@2.14.20\n\n### Patch Changes\n\n-   Updated dependencies \\[]:\n    -   gt@2.14.20\n\n## gt-i18n@0.8.5\n\n### Patch Changes\n\n- [#1252](https://github.com/generaltranslation/gt/pull/1252)\n[`47ad56b`](https://github.com/generaltranslation/gt/commit/47ad56bb23a70382ba98a900d968e9a48beee2b8)\nThanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - fix: pass\n`maxChars` (not `$maxChars`) to `hashSource` so it factors into the hash\n\n- [#1251](https://github.com/generaltranslation/gt/pull/1251)\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)\nThanks [@bgub](https://github.com/bgub)! - Declare `sideEffects` in each\npackage's `package.json` to enable tree-shaking in consumer bundlers\n(webpack, esbuild, Rollup). Packages with no module-scope side effects\nare marked `\"sideEffects\": false`. Packages with intentional side-effect\nentry points (`gt-react/browser`, `gt-react/macros`, `gt-next` server\nentries, `gt-react-native` TurboModule spec) list those files explicitly\nso they are preserved.\n\n- [#1249](https://github.com/generaltranslation/gt/pull/1249)\n[`50d7628`](https://github.com/generaltranslation/gt/commit/50d7628e23b056e91abf8fa05f6577b74cb91569)\nThanks [@bgub](https://github.com/bgub)! - chore: migrate build from\nRollup to tsdown\n\n- Updated dependencies\n\\[[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7),\n[`50d7628`](https://github.com/generaltranslation/gt/commit/50d7628e23b056e91abf8fa05f6577b74cb91569)]:\n    -   generaltranslation@8.2.7\n    -   @generaltranslation/supported-locales@2.0.65\n\n## locadex@1.0.155\n\n### Patch Changes\n\n-   Updated dependencies \\[]:\n    -   gt@2.14.20\n\n## gt-next@6.16.13\n\n### Patch Changes\n\n- [#1251](https://github.com/generaltranslation/gt/pull/1251)\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)\nThanks [@bgub](https://github.com/bgub)! - Declare `sideEffects` in each\npackage's `package.json` to enable tree-shaking in consumer bundlers\n(webpack, esbuild, Rollup). Packages with no module-scope side effects\nare marked `\"sideEffects\": false`. Packages with intentional side-effect\nentry points (`gt-react/browser`, `gt-react/macros`, `gt-next` server\nentries, `gt-react-native` TurboModule spec) list those files explicitly\nso they are preserved.\n\n- Updated dependencies\n\\[[`47ad56b`](https://github.com/generaltranslation/gt/commit/47ad56bb23a70382ba98a900d968e9a48beee2b8),\n[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7),\n[`50d7628`](https://github.com/generaltranslation/gt/commit/50d7628e23b056e91abf8fa05f6577b74cb91569)]:\n    -   gt-i18n@0.8.5\n    -   generaltranslation@8.2.7\n    -   gt-react@10.19.4\n    -   @generaltranslation/supported-locales@2.0.65\n    -   @generaltranslation/compiler@1.3.12\n\n## @generaltranslation/gt-next-lint@14.0.13\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)]:\n    -   gt-next@6.16.13\n\n## gt-node@0.6.5\n\n### Patch Changes\n\n- [#1251](https://github.com/generaltranslation/gt/pull/1251)\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)\nThanks [@bgub](https://github.com/bgub)! - Declare `sideEffects` in each\npackage's `package.json` to enable tree-shaking in consumer bundlers\n(webpack, esbuild, Rollup). Packages with no module-scope side effects\nare marked `\"sideEffects\": false`. Packages with intentional side-effect\nentry points (`gt-react/browser`, `gt-react/macros`, `gt-next` server\nentries, `gt-react-native` TurboModule spec) list those files explicitly\nso they are preserved.\n\n- [#1249](https://github.com/generaltranslation/gt/pull/1249)\n[`50d7628`](https://github.com/generaltranslation/gt/commit/50d7628e23b056e91abf8fa05f6577b74cb91569)\nThanks [@bgub](https://github.com/bgub)! - chore: migrate build from\nRollup to tsdown\n\n- Updated dependencies\n\\[[`47ad56b`](https://github.com/generaltranslation/gt/commit/47ad56bb23a70382ba98a900d968e9a48beee2b8),\n[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7),\n[`50d7628`](https://github.com/generaltranslation/gt/commit/50d7628e23b056e91abf8fa05f6577b74cb91569)]:\n    -   gt-i18n@0.8.5\n    -   generaltranslation@8.2.7\n\n## @generaltranslation/python-extractor@0.2.12\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)]:\n    -   generaltranslation@8.2.7\n\n## gt-react@10.19.4\n\n### Patch Changes\n\n- [#1251](https://github.com/generaltranslation/gt/pull/1251)\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)\nThanks [@bgub](https://github.com/bgub)! - Declare `sideEffects` in each\npackage's `package.json` to enable tree-shaking in consumer bundlers\n(webpack, esbuild, Rollup). Packages with no module-scope side effects\nare marked `\"sideEffects\": false`. Packages with intentional side-effect\nentry points (`gt-react/browser`, `gt-react/macros`, `gt-next` server\nentries, `gt-react-native` TurboModule spec) list those files explicitly\nso they are preserved.\n\n- Updated dependencies\n\\[[`47ad56b`](https://github.com/generaltranslation/gt/commit/47ad56bb23a70382ba98a900d968e9a48beee2b8),\n[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7),\n[`50d7628`](https://github.com/generaltranslation/gt/commit/50d7628e23b056e91abf8fa05f6577b74cb91569)]:\n    -   gt-i18n@0.8.5\n    -   generaltranslation@8.2.7\n    -   @generaltranslation/react-core@1.8.6\n    -   @generaltranslation/supported-locales@2.0.65\n\n## @generaltranslation/react-core@1.8.6\n\n### Patch Changes\n\n- [#1251](https://github.com/generaltranslation/gt/pull/1251)\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)\nThanks [@bgub](https://github.com/bgub)! - Declare `sideEffects` in each\npackage's `package.json` to enable tree-shaking in consumer bundlers\n(webpack, esbuild, Rollup). Packages with no module-scope side effects\nare marked `\"sideEffects\": false`. Packages with intentional side-effect\nentry points (`gt-react/browser`, `gt-react/macros`, `gt-next` server\nentries, `gt-react-native` TurboModule spec) list those files explicitly\nso they are preserved.\n\n- Updated dependencies\n\\[[`47ad56b`](https://github.com/generaltranslation/gt/commit/47ad56bb23a70382ba98a900d968e9a48beee2b8),\n[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7),\n[`50d7628`](https://github.com/generaltranslation/gt/commit/50d7628e23b056e91abf8fa05f6577b74cb91569)]:\n    -   gt-i18n@0.8.5\n    -   generaltranslation@8.2.7\n    -   @generaltranslation/supported-locales@2.0.65\n\n## gt-react-native@10.19.4\n\n### Patch Changes\n\n- [#1251](https://github.com/generaltranslation/gt/pull/1251)\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)\nThanks [@bgub](https://github.com/bgub)! - Declare `sideEffects` in each\npackage's `package.json` to enable tree-shaking in consumer bundlers\n(webpack, esbuild, Rollup). Packages with no module-scope side effects\nare marked `\"sideEffects\": false`. Packages with intentional side-effect\nentry points (`gt-react/browser`, `gt-react/macros`, `gt-next` server\nentries, `gt-react-native` TurboModule spec) list those files explicitly\nso they are preserved.\n\n- Updated dependencies\n\\[[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7),\n[`50d7628`](https://github.com/generaltranslation/gt/commit/50d7628e23b056e91abf8fa05f6577b74cb91569)]:\n    -   generaltranslation@8.2.7\n    -   @generaltranslation/react-core@1.8.6\n    -   @generaltranslation/supported-locales@2.0.65\n\n## gt-sanity@2.0.8\n\n### Patch Changes\n\n- [#1260](https://github.com/generaltranslation/gt/pull/1260)\n[`e29d660`](https://github.com/generaltranslation/gt/commit/e29d6605e5883b640232de3f78a35de70fffafac)\nThanks [@brian-lou](https://github.com/brian-lou)! - Add dedupeFields\noption\n\n- Updated dependencies\n\\[[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)]:\n    -   generaltranslation@8.2.7\n\n## @generaltranslation/supported-locales@2.0.65\n\n### Patch Changes\n\n- [#1249](https://github.com/generaltranslation/gt/pull/1249)\n[`50d7628`](https://github.com/generaltranslation/gt/commit/50d7628e23b056e91abf8fa05f6577b74cb91569)\nThanks [@bgub](https://github.com/bgub)! - chore: migrate build from\nRollup to tsdown\n\n- Updated dependencies\n\\[[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)]:\n    -   generaltranslation@8.2.7\n\n## gt-tanstack-start@0.4.8\n\n### Patch Changes\n\n- [#1251](https://github.com/generaltranslation/gt/pull/1251)\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)\nThanks [@bgub](https://github.com/bgub)! - Declare `sideEffects` in each\npackage's `package.json` to enable tree-shaking in consumer bundlers\n(webpack, esbuild, Rollup). Packages with no module-scope side effects\nare marked `\"sideEffects\": false`. Packages with intentional side-effect\nentry points (`gt-react/browser`, `gt-react/macros`, `gt-next` server\nentries, `gt-react-native` TurboModule spec) list those files explicitly\nso they are preserved.\n\n- Updated dependencies\n\\[[`47ad56b`](https://github.com/generaltranslation/gt/commit/47ad56bb23a70382ba98a900d968e9a48beee2b8),\n[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5),\n[`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7),\n[`50d7628`](https://github.com/generaltranslation/gt/commit/50d7628e23b056e91abf8fa05f6577b74cb91569)]:\n    -   gt-i18n@0.8.5\n    -   generaltranslation@8.2.7\n    -   gt-react@10.19.4\n    -   @generaltranslation/react-core@1.8.6\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-04-25T20:48:59Z",
+          "url": "https://github.com/generaltranslation/gt/commit/8b3b6e5c542d926c2236c14725243333701f2a2a"
+        },
+        "date": 1777150629353,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.04161179543941412,
+            "range": "±0.0188",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.2462355061546035,
+            "range": "±0.0732",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.4265418260869571,
+            "range": "±0.0823",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.41528706307054936,
+            "range": "±0.0728",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 173.40000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 214.10000000003492,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 305.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 134,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 18.900000000023283,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 28.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 125.10000000003492,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 598,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 10.900000000023283,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 20.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 123.70000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.13\"\n}"
           }
         ]
       }
