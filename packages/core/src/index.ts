@@ -151,17 +151,12 @@ export class GT extends GTFormatter {
    */
   constructor(params: GTConstructorParams = {}) {
     super(params);
-    // Read environment
+    // Env-var fallbacks (setConfig already ran via super)
     if (typeof process !== 'undefined') {
       this.apiKey ||= process.env?.GT_API_KEY;
       this.devApiKey ||= process.env?.GT_DEV_API_KEY;
       this.projectId ||= process.env?.GT_PROJECT_ID;
     }
-    // Set API-specific properties (super already handled locale config)
-    if (params.apiKey) this.apiKey = params.apiKey;
-    if (params.devApiKey) this.devApiKey = params.devApiKey;
-    if (params.projectId) this.projectId = params.projectId;
-    if (params.baseUrl) this.baseUrl = params.baseUrl;
   }
 
   override setConfig(params: GTConstructorParams) {
