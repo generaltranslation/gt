@@ -459,7 +459,7 @@ describe.sequential('_uploadTranslations', () => {
         source: createMockFileUpload({
           fileName: 'messages.pot',
           fileFormat: 'POT',
-          transformFormat: 'PO',
+          transformFormat: 'YAML',
           content: 'msgid "Save"\nmsgstr ""\n',
         }),
         translations: [
@@ -475,7 +475,7 @@ describe.sequential('_uploadTranslations', () => {
 
     await expect(
       _uploadTranslations(mockFiles, createMockOptions(), mockConfig)
-    ).rejects.toThrow('Unsupported file format transform: POT -> PO');
+    ).rejects.toThrow('Unsupported file format transform: POT -> YAML');
     expect(apiRequest).not.toHaveBeenCalled();
   });
 
