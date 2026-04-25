@@ -1,5 +1,3 @@
-'use client';
-
 import ClientProvider from './react-context/provider/ClientProvider';
 import LocaleSelector from './react-context/ui/LocaleSelector';
 import RegionSelector from './react-context/ui/RegionSelector';
