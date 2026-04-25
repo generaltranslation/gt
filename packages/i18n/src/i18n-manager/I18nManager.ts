@@ -21,6 +21,10 @@ import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
+import {
+  I18nEventEmitter,
+  I18nEventListener,
+} from './events/EventEmitter';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -77,6 +81,11 @@ class I18nManager<
   private localesCache: LocalesCache<TranslationValue>;
 
   /**
+   * Event emitter for subscribe/getVersion pattern
+   */
+  private _eventEmitter: I18nEventEmitter = new I18nEventEmitter();
+
+  /**
    * Creates an instance of I18nManager.
    * TODO: resolve gtConfig from just file path
    * @param params - The parameters for the I18nManager constructor
@@ -102,14 +111,37 @@ class I18nManager<
       DEFAULT_TRANSLATION_TIMEOUT
     );
 
+    // Create lifecycle callbacks that also emit events
+    const lifecycleCallbacks = createLifecycleCallbacks<TranslationValue>(
+      params.lifecycle ?? {}
+    );
+
+    // Wrap lifecycle callbacks to emit events
+    const originalOnLocalesCacheMiss = lifecycleCallbacks.onLocalesCacheMiss;
+    lifecycleCallbacks.onLocalesCacheMiss = (params) => {
+      originalOnLocalesCacheMiss?.(params);
+      this._eventEmitter.emit({
+        type: 'translationsLoaded',
+        locale: params.inputKey,
+      });
+    };
+
+    const originalOnTranslationsCacheMiss =
+      lifecycleCallbacks.onTranslationsCacheMiss;
+    lifecycleCallbacks.onTranslationsCacheMiss = (params) => {
+      originalOnTranslationsCacheMiss?.(params);
+      this._eventEmitter.emit({
+        type: 'translationResolved',
+        locale: params.locale,
+      });
+    };
+
     // Setup translations cache
     this.localesCache = new LocalesCache<TranslationValue>({
       loadTranslations:
         loadTranslations as SafeTranslationsLoader<TranslationValue>,
       createTranslateMany,
-      lifecycle: createLifecycleCallbacks<TranslationValue>(
-        params.lifecycle ?? {}
-      ),
+      lifecycle: lifecycleCallbacks,
     });
   }
 
@@ -143,7 +175,18 @@ class I18nManager<
     try {
       this.validateLocale(locale);
       const gtInstance = this.getGTClass();
-      this.storeAdapter.setItem('locale', gtInstance.determineLocale(locale)!);
+      const previousLocale = this.storeAdapter.getItem('locale') ?? undefined;
+      const newLocale = gtInstance.determineLocale(locale)!;
+      this.storeAdapter.setItem('locale', newLocale);
+
+      // Emit event only if locale actually changed
+      if (previousLocale !== newLocale) {
+        this._eventEmitter.emit({
+          type: 'localeChanged',
+          locale: newLocale,
+          previousLocale,
+        });
+      }
     } catch (error) {
       this.handleError(error);
     }
@@ -183,6 +226,37 @@ class I18nManager<
    */
   isTranslationEnabled(): boolean {
     return this.config.enableI18n;
+  }
+
+  // ========== Events ========== //
+
+  /**
+   * Subscribe to I18nManager events.
+   * Returns an unsubscribe function.
+   *
+   * Events:
+   * - `localeChanged` — fired when setLocale() changes the locale
+   * - `translationsLoaded` — fired when translations are loaded for a locale (CDN/cache)
+   * - `translationResolved` — fired when a runtime translation resolves
+   *
+   * Designed for use with React's useSyncExternalStore:
+   * ```ts
+   * const subscribe = (cb) => manager.subscribe(cb);
+   * const getSnapshot = () => manager.getVersion();
+   * useSyncExternalStore(subscribe, getSnapshot);
+   * ```
+   */
+  subscribe(listener: I18nEventListener): () => void {
+    return this._eventEmitter.subscribe(listener);
+  }
+
+  /**
+   * Get a monotonically increasing version number.
+   * Bumps on every event emission.
+   * Use as the snapshot value for useSyncExternalStore.
+   */
+  getVersion(): number {
+    return this._eventEmitter.getVersion();
   }
 
   // ========== Translation Loading ========== //

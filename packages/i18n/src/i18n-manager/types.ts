@@ -42,3 +42,5 @@ export type {
   StorageAdapterType,
   LifecycleCallbacks,
 };
+
+export type { I18nEvent, I18nEventListener } from './events/EventEmitter';
