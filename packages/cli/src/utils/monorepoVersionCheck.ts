@@ -3,7 +3,7 @@ import path from 'node:path';
 import fg from 'fast-glob';
 import chalk from 'chalk';
 import { logger } from '../console/logger.js';
-import type { GTLibrary } from '../types/libraries.js';
+import { Libraries, type GTLibrary } from '../types/libraries.js';
 import { resolveConfig } from '../config/resolveConfig.js';
 
 interface PackageJson {
@@ -24,6 +24,18 @@ interface VersionMismatch {
 }
 
 type PackageJsonReader = (workspaceDir: string) => PackageJson | null;
+
+interface SyncedVersionGroup {
+  packages: readonly GTLibrary[];
+  minVersion?: string;
+}
+
+const SYNCED_VERSION_GROUPS: readonly SyncedVersionGroup[] = [
+  {
+    packages: [Libraries.GT_REACT, Libraries.GT_REACT_NATIVE],
+    minVersion: '10.19.1',
+  },
+];
 
 const LOCKFILES = [
   'pnpm-lock.yaml',
@@ -146,19 +158,119 @@ function findVersionMismatches(
   const mismatches: VersionMismatch[] = [];
   for (const [packageName, versionMap] of packageVersions) {
     if (versionMap.size > 1) {
-      const versions: VersionInfo[] = [];
-      for (const [version, workspaces] of versionMap) {
-        versions.push({ version, workspaces });
+      mismatches.push({
+        packageName,
+        versions: getSortedVersionInfo(versionMap),
+      });
+    }
+  }
+
+  return [
+    ...mismatches,
+    ...findSyncedPackageVersionMismatches(packageVersions, libraries),
+  ];
+}
+
+/**
+ * Find mismatches between package names that must stay on the same version.
+ */
+function findSyncedPackageVersionMismatches(
+  packageVersions: Map<string, Map<string, string[]>>,
+  libraries: readonly GTLibrary[]
+): VersionMismatch[] {
+  const enabledLibraries = new Set(libraries);
+  const mismatches: VersionMismatch[] = [];
+
+  for (const group of SYNCED_VERSION_GROUPS) {
+    const enabledGroupPackages = group.packages.filter((pkg) =>
+      enabledLibraries.has(pkg)
+    );
+    if (enabledGroupPackages.length <= 1) continue;
+
+    const versionMap = new Map<string, string[]>();
+    for (const packageName of enabledGroupPackages) {
+      const packageVersionMap = packageVersions.get(packageName);
+      if (!packageVersionMap) continue;
+
+      for (const [version, workspaces] of packageVersionMap) {
+        const locations = versionMap.get(version) ?? [];
+        locations.push(
+          ...workspaces.map((workspace) => `${packageName} in ${workspace}`)
+        );
+        versionMap.set(version, locations);
       }
-      // Sort by version descending so the latest appears first
-      versions.sort((a, b) =>
-        b.version.localeCompare(a.version, undefined, { numeric: true })
-      );
-      mismatches.push({ packageName, versions });
+    }
+
+    if (
+      versionMap.size > 1 &&
+      shouldCheckSyncedVersionGroup(group, versionMap)
+    ) {
+      mismatches.push({
+        packageName: enabledGroupPackages.join(' / '),
+        versions: getSortedVersionInfo(versionMap),
+      });
     }
   }
 
   return mismatches;
+}
+
+function shouldCheckSyncedVersionGroup(
+  group: SyncedVersionGroup,
+  versionMap: Map<string, string[]>
+): boolean {
+  const { minVersion } = group;
+  if (!minVersion) return true;
+
+  return [...versionMap.keys()].some((version) =>
+    isVersionAtLeast(version, minVersion)
+  );
+}
+
+function isVersionAtLeast(version: string, minVersion: string): boolean {
+  const parsedVersion = parseSemverVersion(version);
+  const parsedMinVersion = parseSemverVersion(minVersion);
+  if (!parsedVersion || !parsedMinVersion) return true;
+
+  return compareSemverVersions(parsedVersion, parsedMinVersion) >= 0;
+}
+
+function parseSemverVersion(
+  version: string
+): { major: number; minor: number; patch: number } | null {
+  const match = version
+    .trim()
+    .match(/^[\^~<>=\s]*(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+  if (!match) return null;
+
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2] ?? 0),
+    patch: Number(match[3] ?? 0),
+  };
+}
+
+function compareSemverVersions(
+  a: { major: number; minor: number; patch: number },
+  b: { major: number; minor: number; patch: number }
+): number {
+  if (a.major !== b.major) return a.major - b.major;
+  if (a.minor !== b.minor) return a.minor - b.minor;
+  return a.patch - b.patch;
+}
+
+function getSortedVersionInfo(
+  versionMap: Map<string, string[]>
+): VersionInfo[] {
+  const versions: VersionInfo[] = [];
+  for (const [version, workspaces] of versionMap) {
+    versions.push({ version, workspaces });
+  }
+  // Sort by version descending so the latest appears first
+  versions.sort((a, b) =>
+    b.version.localeCompare(a.version, undefined, { numeric: true })
+  );
+  return versions;
 }
 
 /**
