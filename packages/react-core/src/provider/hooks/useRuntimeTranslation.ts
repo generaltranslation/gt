@@ -205,8 +205,12 @@ export default function useRuntimeTranslation({
       if (batch.size === 0) return {};
       activeRequestsRef.current += 1;
 
-      const { translateMany: translateManyFn, locale, baseMetadata, timeout } =
-        cfgRef.current;
+      const {
+        translateMany: translateManyFn,
+        locale,
+        baseMetadata,
+        timeout,
+      } = cfgRef.current;
       const requests = Array.from(batch.values());
       const newTranslations: Translations = {};
       const resultsMap = new Map<string, TranslatedChildren | null>();
