@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@generaltranslation/next-internal": "latest",
+    "@generaltranslation/next-internal": "workspace:*",
     "gt-next": "latest",
     "gt": "latest",
     "next": "latest",
