@@ -244,7 +244,8 @@ describe('parseFilesConfig', () => {
       ]);
     });
 
-    it('should resolve file format transformation options', () => {
+    // TODO: Re-enable when the API supports POT -> PO file format transforms.
+    it.skip('should resolve file format transformation options', () => {
       const files = {
         pot: {
           include: ['locales/[locale]/*.pot'],

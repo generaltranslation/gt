@@ -5,7 +5,7 @@ const SUPPORTED_TRANSFORMATIONS = {
   JSON: ['JSON'],
   PO: ['PO'],
   // POT templates can produce translated PO catalog files.
-  POT: ['POT', 'PO'],
+  POT: ['POT'],
   YAML: ['YAML'],
   MDX: ['MDX'],
   MD: ['MD'],

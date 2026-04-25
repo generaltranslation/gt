@@ -69,7 +69,8 @@ describe('postProcessTranslations', () => {
     vi.clearAllMocks();
   });
 
-  it('skips postprocessing only for files transformed to another format', async () => {
+  // TODO: Re-enable when the API supports POT -> PO file format transforms.
+  it.skip('skips postprocessing only for files transformed to another format', async () => {
     await postProcessTranslations(
       makeSettings(),
       new Set(['locales/fr/messages.po', 'locales/fr/messages.json'])

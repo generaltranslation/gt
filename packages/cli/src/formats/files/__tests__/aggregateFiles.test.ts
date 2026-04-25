@@ -277,7 +277,8 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(result[0].fileName).toBe('invalid.mdx');
     });
 
-    it('should attach transformFormat for configured POT files', async () => {
+    // TODO: Re-enable when the API supports POT -> PO file format transforms.
+    it.skip('should attach transformFormat for configured POT files', async () => {
       const settings = {
         files: {
           resolvedPaths: {
