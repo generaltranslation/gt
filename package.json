@@ -18,6 +18,7 @@
     "build:clean": "turbo run build:clean --filter='./packages/*'",
     "build:release": "turbo run build:release --filter='./packages/*'",
     "bench": "turbo run bench",
+    "size": "size-limit",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml}\"",
     "changeset": "changeset",
     "version-packages": "changeset version"
@@ -44,6 +45,7 @@
     "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.27.9",
     "@eslint/js": "^9.17.0",
+    "@size-limit/preset-small-lib": "^12.1.0",
     "@typescript-eslint/eslint-plugin": "^8.18.1",
     "@typescript-eslint/parser": "^8.18.1",
     "@vitejs/plugin-react": "^5.1.2",
@@ -55,6 +57,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^15.14.0",
     "prettier": "^3.6.2",
+    "size-limit": "^12.1.0",
     "turbo": "^2.5.3",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"

@@ -281,8 +281,37 @@ jobs:
         shell: bash
         run: cd tests/apps/cli-test-app && pnpm install && pnpm gtx-cli --help
 
+  size:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Check bundle sizes
+        run: pnpm size
+
   run-tests:
-    needs: [lint, tests, test-builds, test-cli-binaries, test-gtx-cli-binaries]
+    needs: [lint, tests, test-builds, test-cli-binaries, test-gtx-cli-binaries, size]
     runs-on: ubuntu-latest
     steps:
       - run: echo "All tests passed"
