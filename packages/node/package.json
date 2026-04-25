@@ -9,6 +9,7 @@
     "dist",
     "CHANGELOG.md"
   ],
+  "sideEffects": false,
   "scripts": {
     "build:release": "pnpm run build:clean",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",

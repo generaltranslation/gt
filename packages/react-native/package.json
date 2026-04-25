@@ -52,6 +52,11 @@
     "!**/__mocks__",
     "!**/.*"
   ],
+  "sideEffects": [
+    "./dist/commonjs/NativeGtReactNative.*",
+    "./dist/module/NativeGtReactNative.*",
+    "./src/NativeGtReactNative.*"
+  ],
   "scripts": {
     "patch": "pnpm version patch",
     "transpile": "tsc",
