@@ -58,7 +58,10 @@ export class EventEmitter<Events extends BaseEvent> {
   /**
    * Emit an event
    */
-  protected emit(eventName: keyof Events, event: Events[keyof Events]) {
+  protected emit<EventName extends keyof Events>(
+    eventName: EventName,
+    event: Events[EventName]
+  ) {
     this.listeners[eventName].forEach((subscriber) => subscriber(event));
   }
 }

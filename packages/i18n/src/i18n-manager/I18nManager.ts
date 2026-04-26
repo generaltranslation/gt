@@ -22,6 +22,7 @@ import { Locale, LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 import { EventEmitter } from './event-subscription/EventEmitter';
+import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -62,7 +63,7 @@ type PrefetchEntry<TranslationType extends Translation> = {
  * @prop {translations-cache-hit} - Emitted when a translations cache hit occurs
  * @prop {translations-cache-miss} - Emitted when a translations cache miss occurs
  */
-type I18nEvents<TranslationValue extends Translation> = {
+export type I18nEvents<TranslationValue extends Translation> = {
   'locale-update': {
     previousLocale?: Locale;
     newLocale: Locale;
@@ -87,20 +88,10 @@ type I18nEvents<TranslationValue extends Translation> = {
   };
 };
 
-// /**
-//  * A subscriber function
-//  */
-// type I18nSubscriber<
-//   TranslationValue extends Translation,
-//   EventType extends keyof I18nEvents<TranslationValue>,
-// > = (event: I18nEvents<TranslationValue>[EventType]) => void;
-
 /**
  * Class for managing translation functionality
  * @template StorageAdapterInstanceType - The type of the storage adapter
  * @template TranslationValue - The type of the translation that will be cached
- *
- * TODO: next major version, move U to the first generic and make it a required parameter, no default value
  */
 class I18nManager<
   StorageAdapterInstanceType extends StorageAdapter = StorageAdapter,
@@ -152,6 +143,11 @@ class I18nManager<
       DEFAULT_TRANSLATION_TIMEOUT
     );
 
+    // Subscribe lifecycle callbacks
+    subscribeLifecycleCallbacks(params.lifecycle ?? {}, (...args) =>
+      this.subscribe(...args)
+    );
+
     // Setup translations cache
     // TODO: Separate PR, move off lifecycle hooks and pass event emitter interface instead
     // NOTE: do not make caches extend EventEmitter, will have to subscribe whenever new cache added
@@ -159,9 +155,7 @@ class I18nManager<
       loadTranslations:
         loadTranslations as SafeTranslationsLoader<TranslationValue>,
       createTranslateMany,
-      lifecycle: createLifecycleCallbacks<TranslationValue>(
-        params.lifecycle ?? {}
-      ),
+      lifecycle: createLifecycleCallbacks((...args) => this.emit(...args)),
     });
   }
 
