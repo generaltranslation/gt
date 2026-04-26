@@ -18,7 +18,7 @@ export function hashMessage<T extends Translation>(
     ...(options?.$id && { id: options.$id }),
     ...('$maxChars' in options &&
       options.$maxChars != null && {
-        $maxChars: Math.abs(options.$maxChars),
+        maxChars: Math.abs(options.$maxChars),
       }),
     dataFormat: options.$format,
   });

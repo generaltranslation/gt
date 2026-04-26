@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { forEachMatchingField } from '../applyDocuments';
+import { applyDocuments, forEachMatchingField } from '../applyDocuments';
 import type { IgnoreFields } from '../../adapter/types';
 
 describe('forEachMatchingField', () => {
@@ -167,5 +167,75 @@ describe('forEachMatchingField', () => {
 
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb.mock.calls[0][0].pointer).toBe('/metadata/seo/title');
+  });
+});
+
+describe('applyDocuments dedupe fields', () => {
+  test('restores slug fields with a locale suffix', () => {
+    const sourceDoc = {
+      _id: 'doc-1',
+      title: 'Hello',
+      slug: { _type: 'slug', current: 'hello-world' },
+    };
+    const translatedDoc = {
+      _id: 'doc-1-es',
+      title: 'Hola',
+    };
+
+    const result = applyDocuments(
+      'doc-1',
+      sourceDoc,
+      translatedDoc,
+      [],
+      [],
+      [{ fields: [{ property: '$.slug' }] }],
+      'es'
+    );
+
+    expect(result).toEqual({
+      _id: 'doc-1-es',
+      title: 'Hola',
+      slug: { _type: 'slug', current: 'hello-world-es' },
+    });
+  });
+
+  test('dedupes string fields directly when the JSONPath targets a string', () => {
+    const sourceDoc = {
+      _id: 'doc-1',
+      title: 'Hello',
+      slug: { _type: 'slug', current: 'hello-world' },
+    };
+
+    const result = applyDocuments(
+      'doc-1',
+      sourceDoc,
+      { title: 'Bonjour' },
+      [],
+      [],
+      [{ fields: [{ property: '$.slug.current' }] }],
+      'fr-CA'
+    );
+
+    expect(result.slug.current).toBe('hello-world-fr-ca');
+  });
+
+  test('does not append the same locale suffix twice', () => {
+    const sourceDoc = {
+      _id: 'doc-1',
+      title: 'Hello',
+      slug: { _type: 'slug', current: 'hello-world-fr' },
+    };
+
+    const result = applyDocuments(
+      'doc-1',
+      sourceDoc,
+      { title: 'Bonjour' },
+      [],
+      [],
+      [{ fields: [{ property: '$.slug' }] }],
+      'fr'
+    );
+
+    expect(result.slug.current).toBe('hello-world-fr');
   });
 });

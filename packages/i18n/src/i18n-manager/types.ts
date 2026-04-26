@@ -17,6 +17,7 @@ export type I18nManagerConstructorParams<
   storeAdapter?: T;
   environment?: 'development' | 'production';
   // Cache lifecycle hooks
+  /** @deprecated - move to subscription api instead */
   lifecycle?: LifecycleCallbacks<TranslationValue>;
 };
 

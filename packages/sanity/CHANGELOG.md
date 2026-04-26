@@ -1,5 +1,14 @@
 # gt-sanity
 
+## 2.0.8
+
+### Patch Changes
+
+- [#1260](https://github.com/generaltranslation/gt/pull/1260) [`e29d660`](https://github.com/generaltranslation/gt/commit/e29d6605e5883b640232de3f78a35de70fffafac) Thanks [@brian-lou](https://github.com/brian-lou)! - Add dedupeFields option
+
+- Updated dependencies [[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5), [`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)]:
+  - generaltranslation@8.2.7
+
 ## 2.0.7
 
 ### Patch Changes

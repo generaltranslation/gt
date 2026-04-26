@@ -1,45 +1,42 @@
+import { EventEmitter } from '../event-subscription/EventEmitter';
 import type { Translation } from '../translations-manager/utils/types/translation-data';
-import type {
-  LifecycleCallbacks,
-  LocalesCacheLifecycleCallbacks,
-} from './types';
-
+import type { LocalesCacheLifecycleCallbacks } from './types';
+import type { I18nEvents } from '../event-subscription/types';
 /**
  * Maps consumer-facing lifecycle callbacks to internal locales cache lifecycle callbacks.
  * The consumer API exposes simplified params (locale, hash, value) while the internal
  * API uses the full cache lifecycle params (inputKey, cacheKey, cacheValue, outputValue).
+ *
+ * @deprecated - move to subscription api instead
  */
-export function createLifecycleCallbacks<TranslationValue extends Translation>({
-  onLocalesCacheHit,
-  onLocalesCacheMiss,
-  onTranslationsCacheHit,
-  onTranslationsCacheMiss,
-}: LifecycleCallbacks<TranslationValue>): LocalesCacheLifecycleCallbacks<TranslationValue> {
+export function createLifecycleCallbacks<TranslationValue extends Translation>(
+  emit: EventEmitter<I18nEvents<TranslationValue>>['emit']
+): LocalesCacheLifecycleCallbacks<TranslationValue> {
   return {
     onLocalesCacheHit: (params) => {
-      onLocalesCacheHit?.({
+      emit('locales-cache-hit', {
         locale: params.inputKey,
-        value: params.outputValue.getInternalCache(),
+        translations: params.outputValue.getInternalCache(),
       });
     },
     onLocalesCacheMiss: (params) => {
-      onLocalesCacheMiss?.({
+      emit('locales-cache-miss', {
         locale: params.inputKey,
-        value: params.outputValue.getInternalCache(),
+        translations: params.outputValue.getInternalCache(),
       });
     },
     onTranslationsCacheHit: (params) => {
-      onTranslationsCacheHit?.({
+      emit('translations-cache-hit', {
         locale: params.locale,
         hash: params.cacheKey,
-        value: params.outputValue,
+        translation: params.outputValue,
       });
     },
     onTranslationsCacheMiss: (params) => {
-      onTranslationsCacheMiss?.({
+      emit('translations-cache-miss', {
         locale: params.locale,
         hash: params.cacheKey,
-        value: params.outputValue,
+        translation: params.outputValue,
       });
     },
   };

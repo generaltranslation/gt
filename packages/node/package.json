@@ -1,18 +1,19 @@
 {
   "name": "gt-node",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "Node.js utilities for General Translation",
-  "main": "dist/index.cjs.min.cjs",
-  "module": "dist/index.esm.min.mjs",
-  "types": "dist/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.cts",
   "files": [
     "dist",
     "CHANGELOG.md"
   ],
+  "sideEffects": false,
   "scripts": {
     "build:release": "pnpm run build:clean",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
-    "build": "rollup -c",
+    "build": "tsdown",
     "lint": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\" --fix",
     "test": "vitest run --config=./vitest.config.ts",
@@ -48,18 +49,12 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^28.0.1",
-    "@rollup/plugin-node-resolve": "^16.0.1",
-    "@rollup/plugin-terser": "^0.4.4",
-    "@rollup/plugin-typescript": "^12.1.1",
     "@types/node": "^20.14.9",
-    "rollup": "^4.24.0",
-    "rollup-plugin-dts": "^6.1.1",
-    "tslib": "^2.8.0",
-    "typescript": "^5.6.2"
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
   },
   "typescript": {
-    "definition": "dist/index.d.ts"
+    "definition": "dist/index.d.cts"
   },
   "dependencies": {
     "gt-i18n": "workspace:*",
@@ -67,28 +62,43 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs.min.cjs",
-      "import": "./dist/index.esm.min.mjs"
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
     },
     "./types": {
-      "types": "./dist/types.d.ts",
-      "require": "./dist/types.cjs.min.cjs",
-      "import": "./dist/types.esm.min.mjs"
+      "require": {
+        "types": "./dist/types.d.cts",
+        "default": "./dist/types.cjs"
+      },
+      "import": {
+        "types": "./dist/types.d.mts",
+        "default": "./dist/types.mjs"
+      }
     },
     "./internal": {
-      "types": "./dist/internal.d.ts",
-      "require": "./dist/internal.cjs.min.cjs",
-      "import": "./dist/internal.esm.min.mjs"
+      "require": {
+        "types": "./dist/internal.d.cts",
+        "default": "./dist/internal.cjs"
+      },
+      "import": {
+        "types": "./dist/internal.d.mts",
+        "default": "./dist/internal.mjs"
+      }
     }
   },
   "typesVersions": {
     "*": {
       "types": [
-        "./dist/types.d.ts"
+        "./dist/types.d.cts"
       ],
       "internal": [
-        "./dist/internal.d.ts"
+        "./dist/internal.d.cts"
       ]
     }
   },

@@ -1,6 +1,6 @@
 {
   "name": "gt-tanstack-start",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "TanStack Start integration for General Translation",
   "main": "dist/index.cjs.min.cjs",
   "module": "dist/index.esm.min.mjs",
@@ -9,6 +9,7 @@
     "dist",
     "CHANGELOG.md"
   ],
+  "sideEffects": false,
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0",

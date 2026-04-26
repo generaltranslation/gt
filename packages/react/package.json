@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "10.19.3",
+  "version": "10.19.4",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -8,6 +8,10 @@
   "files": [
     "dist",
     "CHANGELOG.md"
+  ],
+  "sideEffects": [
+    "./dist/browser.*",
+    "./dist/macros.*"
   ],
   "peerDependencies": {
     "react": ">=16.8.0",

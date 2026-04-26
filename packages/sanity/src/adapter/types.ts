@@ -1,12 +1,13 @@
-export type IgnoreFields = {
+export type FieldMatcher = {
   documentId?: string;
   fields?: { property: string; type?: string }[];
 };
 
-export type SkipFields = {
-  documentId?: string;
-  fields?: { property: string; type?: string }[];
-};
+export type IgnoreFields = FieldMatcher;
+
+export type DedupeFields = FieldMatcher;
+
+export type SkipFields = FieldMatcher;
 
 export type TranslateDocumentFilter = {
   documentId?: string;
