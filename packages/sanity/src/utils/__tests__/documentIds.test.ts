@@ -32,8 +32,8 @@ describe('document ID helpers', () => {
     expect(createStableTranslationKey('branch', 'drafts.article-1', 'es')).toBe(
       'branch:article-1:es'
     );
-    expect(createStableTranslationKey(undefined, 'drafts.article-1', 'es')).toBe(
-      'article-1:es'
-    );
+    expect(
+      createStableTranslationKey(undefined, 'drafts.article-1', 'es')
+    ).toBe('article-1:es');
   });
 });
