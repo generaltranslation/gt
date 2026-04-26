@@ -394,6 +394,25 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.id).toBeUndefined();
       });
 
+      it('should preserve empty-string $context', () => {
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          t.stringLiteral('Hello'),
+          t.objectExpression([
+            t.objectProperty(
+              t.identifier('$context'),
+              t.stringLiteral('')
+            ),
+          ]),
+        ]);
+
+        const result = validateCall(callExpr, state);
+
+        expect(result.errors).toHaveLength(0);
+        expect(result.variants).toHaveLength(1);
+        expect(result.variants?.[0]?.content).toBe('Hello');
+        expect(result.variants?.[0]?.context).toBe('');
+      });
+
       it('should extract $id from second argument', () => {
         const callExpr = t.callExpression(t.identifier('useGT_callback'), [
           t.stringLiteral('Hello'),

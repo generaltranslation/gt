@@ -62,8 +62,7 @@ export function validateUseGTCallback(
     return { errors, hasDerive: false };
   }
 
-  if (!state.settings.autoderive.strings && extracted.metadata.hasDynamic) {
-    errors.push(...extracted.errors);
+  if (extracted.metadata.hasDynamic && !state.settings.autoderive.strings) {
     errors.push(
       'String registration functions cannot contain dynamic content.'
     );
@@ -72,9 +71,9 @@ export function validateUseGTCallback(
 
   const variants = multiply(extracted.value);
 
-  // Skip second argument
   let hasDerive: boolean = extracted.metadata.hasDerive;
   if (callExpr.arguments.length === 1) {
+    // Skip second argument
     return {
       errors,
       variants: variants.map((variant) => ({

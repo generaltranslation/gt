@@ -301,3 +301,51 @@ describe('extractString — coalescing', () => {
     expect(value![0]).toEqual({ type: 'static', content: 'Hello World!' });
   });
 });
+
+// ─────────────────────────────────────────────────
+// metadata.hasStatic
+// ─────────────────────────────────────────────────
+
+describe('extractString — hasStatic metadata', () => {
+  it('sets hasStatic=true for a pure template literal with no expressions', () => {
+    const { metadata } = extractFromCode('`hello`');
+    expect(metadata.hasStatic).toBe(true);
+  });
+
+  it('sets hasStatic=true for a template literal with static quasis and dynamic expression', () => {
+    const { metadata } = extractFromCode('`Hello ${name}`');
+    expect(metadata.hasStatic).toBe(true);
+  });
+
+  it('sets hasStatic=false for a purely dynamic identifier', () => {
+    const { metadata } = extractFromCode('name');
+    expect(metadata.hasStatic).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────
+// derive=false contract: no ChoiceNodes in result
+// ─────────────────────────────────────────────────
+
+describe('extractString — derive=false contract', () => {
+  it('never returns ChoiceNodes when derive=false', () => {
+    const codes = [
+      '"Hello"',
+      '`template`',
+      '"a" + "b"',
+      '`Hello ${name}`',
+      '"prefix" + name + "suffix"',
+    ];
+    for (const code of codes) {
+      let result: ReturnType<typeof extractString> | undefined;
+      withExpressionPath(code, (path) => {
+        result = extractString(path, false);
+      });
+      if (result?.value) {
+        for (const node of result.value) {
+          expect(isChoiceNode(node)).toBe(false);
+        }
+      }
+    }
+  });
+});
