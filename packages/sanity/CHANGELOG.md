@@ -1,5 +1,11 @@
 # gt-sanity
 
+## 2.0.9
+
+### Patch Changes
+
+- [#1265](https://github.com/generaltranslation/gt/pull/1265) [`5860bfe`](https://github.com/generaltranslation/gt/commit/5860bfe5aa14f0be40d7b01013fd3c4f7841b311) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix bulk translation imports creating duplicate translated documents when draft and published source documents are both present or multiple ready versions target the same source locale pair.
+
 ## 2.0.8
 
 ### Patch Changes
