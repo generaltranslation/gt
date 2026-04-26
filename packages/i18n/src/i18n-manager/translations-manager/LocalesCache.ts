@@ -137,6 +137,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
   public async miss(
     key: Locale
   ): Promise<CacheEntry<TranslationValue>['translationsCache']> {
+    console.log('miss', key);
     // Miss the cache
     const cacheValue = await this.missCache(key);
 

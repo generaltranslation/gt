@@ -190,7 +190,6 @@ function createDevHotReloadConfig(
       projectId,
       localStorageCaches
     ),
-    // lifecycle: createLifecycleCallbacks(projectId, localStorageCaches),
   };
 }
 /**
@@ -212,31 +211,6 @@ function wrapLoaderWithLocalStorage(
       init: loaderTranslations as Record<string, Translation>,
     });
     return localStorageCaches[locale].getInternalCache();
-  };
-}
-
-/**
- * Creates the lifecycle callbacks for the BrowserI18nManager
- * @param localStorageCaches - The localStorage caches
- * @returns The lifecycle callbacks
- */
-function createLifecycleCallbacks(
-  projectId: string,
-  localStorageCaches: Record<string, LocalStorageTranslationCache>
-): LifecycleCallbacks<Translation> {
-  return {
-    onTranslationsCacheMiss: ({ locale, hash, value }) => {
-      const cache = localStorageCaches[locale];
-      if (cache) {
-        cache.write(hash, value);
-      } else {
-        localStorageCaches[locale] = new LocalStorageTranslationCache({
-          locale,
-          projectId,
-          init: { [hash]: value },
-        });
-      }
-    },
   };
 }
 

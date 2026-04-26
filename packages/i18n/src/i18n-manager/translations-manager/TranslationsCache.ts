@@ -138,6 +138,7 @@ export class TranslationsCache<
   public async miss<T extends TranslationValue>(
     key: TranslationKey<T>
   ): Promise<T | undefined> {
+    console.log('miss (tx)', key);
     const value = await this.missCache(key);
     if (value != null && this.onMiss) {
       this.onMiss({
@@ -285,6 +286,7 @@ export class TranslationsCache<
     requests: Record<Hash, TranslateManyEntry>
   ): Promise<ReturnType<TranslateMany> | undefined> {
     try {
+      console.log('_translateMany');
       return await this._translateMany(requests);
     } catch (error) {
       for (const entry of batch) {
