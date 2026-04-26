@@ -111,8 +111,6 @@ class I18nManager<
     );
 
     // Setup translations cache
-    // TODO: Separate PR, move off lifecycle hooks and pass event emitter interface instead
-    // NOTE: do not make caches extend EventEmitter, will have to subscribe whenever new cache added
     this.localesCache = new LocalesCache<TranslationValue>({
       loadTranslations:
         loadTranslations as SafeTranslationsLoader<TranslationValue>,

@@ -285,7 +285,6 @@ export class TranslationsCache<
     requests: Record<Hash, TranslateManyEntry>
   ): Promise<ReturnType<TranslateMany> | undefined> {
     try {
-      console.log('_translateMany');
       return await this._translateMany(requests);
     } catch (error) {
       for (const entry of batch) {
