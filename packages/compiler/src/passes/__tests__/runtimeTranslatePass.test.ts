@@ -451,7 +451,7 @@ describe('runtimeTranslatePass', () => {
         'test.tsx'
       );
       expect(state.settings.devHotReload).toEqual({
-        strings: false,
+        strings: true,
         jsx: true,
       });
     });
@@ -650,10 +650,10 @@ describe('runtimeTranslatePass', () => {
       });
     });
 
-    // resolveDevHotReload(undefined) → { strings: false, jsx: false }
-    it('undefined disables both', () => {
+    // resolveDevHotReload(undefined) → { strings: true, jsx: false }
+    it('undefined enables strings by default', () => {
       expect(resolveDevHotReload(undefined)).toEqual({
-        strings: false,
+        strings: true,
         jsx: false,
       });
     });
@@ -666,10 +666,10 @@ describe('runtimeTranslatePass', () => {
       });
     });
 
-    // resolveDevHotReload({ jsx: true }) → { strings: false, jsx: true }
+    // resolveDevHotReload({ jsx: true }) → { strings: true, jsx: true }
     it('object with jsx only', () => {
       expect(resolveDevHotReload({ jsx: true })).toEqual({
-        strings: false,
+        strings: true,
         jsx: true,
       });
     });
@@ -682,10 +682,10 @@ describe('runtimeTranslatePass', () => {
       });
     });
 
-    // resolveDevHotReload({}) → { strings: false, jsx: false }
-    it('empty object disables both', () => {
+    // resolveDevHotReload({}) → { strings: true, jsx: false }
+    it('empty object enables strings by default', () => {
       expect(resolveDevHotReload({})).toEqual({
-        strings: false,
+        strings: true,
         jsx: false,
       });
     });

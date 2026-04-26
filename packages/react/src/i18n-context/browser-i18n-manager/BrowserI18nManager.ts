@@ -227,10 +227,13 @@ function createLifecycleCallbacks(
 function resolveDevHotReload(
   value: boolean | { strings?: boolean; jsx?: boolean } | undefined
 ): { strings: boolean; jsx: boolean } {
-  if (value === undefined || typeof value === 'boolean') {
-    return { strings: !!value, jsx: !!value };
+  if (value === undefined) {
+    return { strings: true, jsx: false };
   }
-  return { strings: value.strings ?? false, jsx: value.jsx ?? false };
+  if (typeof value === 'boolean') {
+    return { strings: value, jsx: false };
+  }
+  return { strings: value.strings ?? true, jsx: value.jsx ?? false };
 }
 
 /**

@@ -39,7 +39,7 @@ export function initializeState(
   const enableAutoJsxInjection =
     gtConfig?.files?.gt?.parsingFlags?.enableAutoJsxInjection ?? false;
   const rawDevHotReload =
-    gtConfig?.files?.gt?.parsingFlags?.devHotReload ?? false;
+    gtConfig?.files?.gt?.parsingFlags?.devHotReload ?? undefined;
   const rawAutoderive =
     gtConfig?.files?.gt?.parsingFlags?.autoderive ??
     gtConfig?.files?.gt?.parsingFlags?.autoDerive ??

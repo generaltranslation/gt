@@ -91,15 +91,19 @@ export function resolveAutoderive(
 
 /**
  * Resolves the devHotReload config value into separate strings and jsx flags.
+ * - `undefined` enables strings by default (JSX stays off)
  * - `true` enables strings only (JSX is handled at runtime via Suspense, no compiler injection needed)
  * - `false` disables both
- * - `{ strings?: boolean; jsx?: boolean }` enables selectively (missing keys default to false)
+ * - `{ strings?: boolean; jsx?: boolean }` enables selectively (strings defaults to true, jsx defaults to false)
  */
 export function resolveDevHotReload(
   value: boolean | { strings?: boolean; jsx?: boolean } | undefined
 ): { strings: boolean; jsx: boolean } {
-  if (value === undefined || typeof value === 'boolean') {
-    return { strings: !!value, jsx: false };
+  if (value === undefined) {
+    return { strings: true, jsx: false };
   }
-  return { strings: value.strings ?? false, jsx: value.jsx ?? false };
+  if (typeof value === 'boolean') {
+    return { strings: value, jsx: false };
+  }
+  return { strings: value.strings ?? true, jsx: value.jsx ?? false };
 }
