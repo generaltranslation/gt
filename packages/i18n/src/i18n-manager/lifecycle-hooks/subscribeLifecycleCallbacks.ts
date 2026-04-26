@@ -21,7 +21,7 @@ export function subscribeLifecycleCallbacks<
   if (onLocalesCacheHit) {
     subscribe('locales-cache-hit', (event) => {
       onLocalesCacheHit({
-        locale: event.locale,
+        ...event,
         value: event.translations,
       });
     });
@@ -29,7 +29,7 @@ export function subscribeLifecycleCallbacks<
   if (onLocalesCacheMiss) {
     subscribe('locales-cache-miss', (event) => {
       onLocalesCacheMiss({
-        locale: event.locale,
+        ...event,
         value: event.translations,
       });
     });
@@ -37,8 +37,7 @@ export function subscribeLifecycleCallbacks<
   if (onTranslationsCacheHit) {
     subscribe('translations-cache-hit', (event) => {
       onTranslationsCacheHit({
-        locale: event.locale,
-        hash: event.hash,
+        ...event,
         value: event.translation,
       });
     });
@@ -46,8 +45,7 @@ export function subscribeLifecycleCallbacks<
   if (onTranslationsCacheMiss) {
     subscribe('translations-cache-miss', (event) => {
       onTranslationsCacheMiss({
-        locale: event.locale,
-        hash: event.hash,
+        ...event,
         value: event.translation,
       });
     });

@@ -66,6 +66,25 @@ export class BrowserI18nManager extends I18nManager<
       ...DEFAULT_HTML_TAG_OPTIONS,
       ...config.htmlTagOptions,
     };
+
+    // For dev hot reload, we need to write the translations to the localStorage cache
+    if (isDevHotReloadEnabled(config)) {
+      this.subscribe(
+        'translations-cache-miss',
+        ({ locale, hash, translation }) => {
+          const cache = localStorageCaches[locale];
+          if (cache) {
+            cache.write(hash, translation);
+          } else {
+            localStorageCaches[locale] = new LocalStorageTranslationCache({
+              locale,
+              projectId: this.config.projectId!,
+              init: { [hash]: translation },
+            });
+          }
+        }
+      );
+    }
   }
 
   /**
@@ -171,7 +190,7 @@ function createDevHotReloadConfig(
       projectId,
       localStorageCaches
     ),
-    lifecycle: createLifecycleCallbacks(projectId, localStorageCaches),
+    // lifecycle: createLifecycleCallbacks(projectId, localStorageCaches),
   };
 }
 /**
