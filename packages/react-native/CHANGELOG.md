@@ -1,5 +1,12 @@
 # gt-react-native
 
+## 10.19.5
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@1.8.7
+
 ## 10.19.4
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.21
+
+### Patch Changes
+
+- [#1261](https://github.com/generaltranslation/gt/pull/1261) [`a2c5c2e`](https://github.com/generaltranslation/gt/commit/a2c5c2e8c748c9d3d81dc3c99800ea17e2f2c9b9) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix(cli): enforcement of gt-react-native and gt-react sync
+
 ## 2.14.20
 
 ### Patch Changes

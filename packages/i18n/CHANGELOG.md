@@ -1,5 +1,11 @@
 # gt-i18n
 
+## 0.8.6
+
+### Patch Changes
+
+- [#1262](https://github.com/generaltranslation/gt/pull/1262) [`5af18c1`](https://github.com/generaltranslation/gt/commit/5af18c13c2c2ad341ec67c2b4f6f6ef29320123b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor(gt-i18n): move over to subscription system
+
 ## 0.8.5
 
 ### Patch Changes
