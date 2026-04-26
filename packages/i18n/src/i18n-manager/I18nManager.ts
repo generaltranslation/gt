@@ -187,7 +187,7 @@ class I18nManager<
       this.storeAdapter.setItem('locale', gtInstance.determineLocale(locale)!);
       this.emit('locale-update', {
         previousLocale: oldLocale,
-        newLocale: locale,
+        newLocale: gtInstance.determineLocale(locale)!,
       });
     } catch (error) {
       this.handleError(error);
