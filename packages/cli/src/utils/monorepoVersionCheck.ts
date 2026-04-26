@@ -11,6 +11,7 @@ interface PackageJson {
   version?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
+  workspaces?: string[] | { packages: string[] };
 }
 
 interface VersionInfo {
@@ -34,13 +35,32 @@ const LOCKFILES = [
   'deno.lock',
 ];
 
+function hasWorkspaceConfig(dir: string): boolean {
+  if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) return true;
+  if (fs.existsSync(path.join(dir, 'lerna.json'))) return true;
+  const pkgPath = path.join(dir, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) as PackageJson;
+      if (pkg.workspaces) return true;
+    } catch {
+      // ignore parse errors
+    }
+  }
+  return false;
+}
+
 /**
- * Walk up from startDir to find the monorepo root by looking for a lockfile.
+ * Walk up from startDir to find the monorepo root by looking for a lockfile
+ * combined with workspace configuration.
  */
 function findMonorepoRoot(startDir: string): string | null {
   let dir = startDir;
   while (true) {
-    if (LOCKFILES.some((lf) => fs.existsSync(path.join(dir, lf)))) {
+    if (
+      LOCKFILES.some((lf) => fs.existsSync(path.join(dir, lf))) &&
+      hasWorkspaceConfig(dir)
+    ) {
       return dir;
     }
 
@@ -223,6 +243,8 @@ export function checkMonorepoVersionConsistency(
 
   const rootDir = findMonorepoRoot(cwd);
   if (!rootDir) return; // No lockfile found — nothing to check
+
+  logger.debug(chalk.dim(`Monorepo workspace root found at ${rootDir}`));
 
   const workspaceDirs = scanForPackageDirs(rootDir);
   if (workspaceDirs.length <= 1) return; // Single package — no mismatches possible

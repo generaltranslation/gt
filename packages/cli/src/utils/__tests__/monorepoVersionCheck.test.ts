@@ -21,6 +21,7 @@ vi.mock('../../console/logger.js', () => ({
     error: vi.fn(),
     warn: vi.fn(),
     info: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
@@ -291,6 +292,9 @@ function setupMocks(config: {
 
     // Lockfile detection at monorepo root
     if (pStr === path.join('/repo', lockfile)) return true;
+
+    // Workspace config detection at monorepo root
+    if (pStr === path.join('/repo', 'pnpm-workspace.yaml')) return true;
 
     // Package directory package.json files
     for (const dir of packageDirs) {
