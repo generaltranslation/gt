@@ -86,13 +86,7 @@ class I18nManager<
   constructor(
     params: I18nManagerConstructorParams<StorageAdapterInstanceType>
   ) {
-    super([
-      'locale-update',
-      'locales-cache-hit',
-      'locales-cache-miss',
-      'translations-cache-hit',
-      'translations-cache-miss',
-    ]);
+    super();
 
     // Validation
     const validationResults = validateConfig(params);

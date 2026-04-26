@@ -19,9 +19,9 @@ type Listener<
 /**
  * type defining our listener store
  */
-type ListenerStore<Events extends BaseEvent> = {
+type ListenerStore<Events extends BaseEvent> = Partial<{
   [EventName in keyof Events]: Set<Listener<Events, EventName>>;
-};
+}>;
 
 /**
  * Base class for event emitters
@@ -30,16 +30,15 @@ export class EventEmitter<Events extends BaseEvent> {
   /**
    * Events map
    */
-  protected listeners: ListenerStore<Events>;
+  protected listeners: ListenerStore<Events> = {};
 
-  /**
-   * Constructor
-   */
-  constructor(eventNames: (keyof Events)[]) {
-    this.listeners = eventNames.reduce((acc, eventName) => {
-      acc[eventName] = new Set();
-      return acc;
-    }, {} as ListenerStore<Events>);
+  private getOrCreateListeners<EventName extends keyof Events>(
+    eventName: EventName
+  ): Set<Listener<Events, EventName>> {
+    if (!this.listeners[eventName]) {
+      this.listeners[eventName] = new Set();
+    }
+    return this.listeners[eventName]!;
   }
 
   /**
@@ -49,9 +48,10 @@ export class EventEmitter<Events extends BaseEvent> {
     eventName: EventName,
     listener: Listener<Events, EventName>
   ) {
-    this.listeners[eventName].add(listener);
+    const set = this.getOrCreateListeners(eventName);
+    set.add(listener);
     return () => {
-      this.listeners[eventName].delete(listener);
+      set.delete(listener);
     };
   }
 
@@ -62,6 +62,6 @@ export class EventEmitter<Events extends BaseEvent> {
     eventName: EventName,
     event: Events[EventName]
   ) {
-    this.listeners[eventName].forEach((subscriber) => subscriber(event));
+    this.listeners[eventName]?.forEach((subscriber) => subscriber(event));
   }
 }
