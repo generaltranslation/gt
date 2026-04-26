@@ -18,9 +18,10 @@ import {
 import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
 import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
-import { LocalesCache } from './translations-manager/LocalesCache';
+import { Locale, LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
+import { EventEmitter } from './event-subscription/EventEmitter';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -54,6 +55,47 @@ type PrefetchEntry<TranslationType extends Translation> = {
 };
 
 /**
+ * A base event for the I18nManagers
+ * @prop {locale-update} - Emitted when the locale is updated
+ * @prop {locales-cache-hit} - Emitted when a locale cache hit occurs
+ * @prop {locales-cache-miss} - Emitted when a locale cache miss occurs
+ * @prop {translations-cache-hit} - Emitted when a translations cache hit occurs
+ * @prop {translations-cache-miss} - Emitted when a translations cache miss occurs
+ */
+type I18nEvents<TranslationValue extends Translation> = {
+  'locale-update': {
+    previousLocale?: Locale;
+    newLocale: Locale;
+  };
+  'locales-cache-hit': {
+    locale: Locale;
+    translations: Record<Hash, TranslationValue>;
+  };
+  'locales-cache-miss': {
+    locale: Locale;
+    translations: Record<Hash, TranslationValue>;
+  };
+  'translations-cache-hit': {
+    locale: Locale;
+    hash: Hash;
+    translation: TranslationValue;
+  };
+  'translations-cache-miss': {
+    locale: Locale;
+    hash: Hash;
+    translation: TranslationValue;
+  };
+};
+
+// /**
+//  * A subscriber function
+//  */
+// type I18nSubscriber<
+//   TranslationValue extends Translation,
+//   EventType extends keyof I18nEvents<TranslationValue>,
+// > = (event: I18nEvents<TranslationValue>[EventType]) => void;
+
+/**
  * Class for managing translation functionality
  * @template StorageAdapterInstanceType - The type of the storage adapter
  * @template TranslationValue - The type of the translation that will be cached
@@ -63,7 +105,7 @@ type PrefetchEntry<TranslationType extends Translation> = {
 class I18nManager<
   StorageAdapterInstanceType extends StorageAdapter = StorageAdapter,
   TranslationValue extends Translation = Translation,
-> {
+> extends EventEmitter<I18nEvents<TranslationValue>> {
   protected config: I18nManagerConfig;
 
   /**
@@ -85,6 +127,14 @@ class I18nManager<
   constructor(
     params: I18nManagerConstructorParams<StorageAdapterInstanceType>
   ) {
+    super([
+      'locale-update',
+      'locales-cache-hit',
+      'locales-cache-miss',
+      'translations-cache-hit',
+      'translations-cache-miss',
+    ]);
+
     // Validation
     const validationResults = validateConfig(params);
     publishValidationResults(validationResults, 'I18nManager: ');
@@ -103,6 +153,8 @@ class I18nManager<
     );
 
     // Setup translations cache
+    // TODO: Separate PR, move off lifecycle hooks and pass event emitter interface instead
+    // NOTE: do not make caches extend EventEmitter, will have to subscribe whenever new cache added
     this.localesCache = new LocalesCache<TranslationValue>({
       loadTranslations:
         loadTranslations as SafeTranslationsLoader<TranslationValue>,
@@ -110,6 +162,32 @@ class I18nManager<
       lifecycle: createLifecycleCallbacks<TranslationValue>(
         params.lifecycle ?? {}
       ),
+    });
+  }
+
+  // ========== Subscribers and Emitters ========== //
+
+  /**
+   * Subscribes to a change in a translation entry (eg a runtime translation)
+   * @param listener - The subscriber function
+   * @param locale - The locale of the translation entry
+   * @param hash - The hash of the translation entry
+   * @returns An unsubscribe function
+   *
+   * Pair this with {@link lookupTranslation} to get the translation entry
+   */
+  subscribeToTranslationsCacheMiss(
+    listener: (
+      event: I18nEvents<TranslationValue>['translations-cache-miss']
+    ) => void,
+    locale: Locale,
+    hash: Hash
+  ) {
+    return this.subscribe('translations-cache-miss', (event) => {
+      if (event.locale !== locale || event.hash !== hash) {
+        return;
+      }
+      listener(event);
     });
   }
 
@@ -144,6 +222,10 @@ class I18nManager<
       this.validateLocale(locale);
       const gtInstance = this.getGTClass();
       this.storeAdapter.setItem('locale', gtInstance.determineLocale(locale)!);
+      this.emit('locale-update', {
+        previousLocale: this.getLocale(),
+        newLocale: locale,
+      });
     } catch (error) {
       this.handleError(error);
     }

@@ -8,6 +8,8 @@ import type {
  * Maps consumer-facing lifecycle callbacks to internal locales cache lifecycle callbacks.
  * The consumer API exposes simplified params (locale, hash, value) while the internal
  * API uses the full cache lifecycle params (inputKey, cacheKey, cacheValue, outputValue).
+ *
+ * @deprecated - move to subscription api instead
  */
 export function createLifecycleCallbacks<TranslationValue extends Translation>({
   onLocalesCacheHit,
