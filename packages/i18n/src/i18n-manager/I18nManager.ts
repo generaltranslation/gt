@@ -175,11 +175,12 @@ class I18nManager<
     try {
       this.validateLocale(locale);
       const gtInstance = this.getGTClass();
-      const oldLocale = this.getLocale();
-      this.storeAdapter.setItem('locale', gtInstance.determineLocale(locale)!);
+      const newLocale = gtInstance.determineLocale(locale)!;
+      const previousLocale = this.getLocale();
+      this.storeAdapter.setItem('locale', newLocale);
       this.emit('locale-update', {
-        previousLocale: oldLocale,
-        newLocale: gtInstance.determineLocale(locale)!,
+        previousLocale,
+        newLocale,
       });
     } catch (error) {
       this.handleError(error);
