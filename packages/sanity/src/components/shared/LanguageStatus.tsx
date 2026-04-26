@@ -19,6 +19,7 @@ export const LanguageStatus = ({
   isImported = false,
 }: LanguageStatusProps) => {
   const [isBusy, setIsBusy] = useState(false);
+  const displayedProgress = isImported && progress < 100 ? 100 : progress;
 
   const handleImport = useCallback(async () => {
     setIsBusy(true);
@@ -37,9 +38,9 @@ export const LanguageStatus = ({
             {title}
           </Text>
         </Flex>
-        {typeof progress === 'number' ? (
+        {typeof displayedProgress === 'number' ? (
           <Flex columnStart={3} columnEnd={5} align='center'>
-            <ProgressBar progress={progress} />
+            <ProgressBar progress={displayedProgress} />
           </Flex>
         ) : null}
         <Box columnStart={5} columnEnd={6}>
