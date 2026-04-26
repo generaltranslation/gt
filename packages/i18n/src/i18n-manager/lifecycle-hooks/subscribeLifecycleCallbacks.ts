@@ -6,6 +6,9 @@ import type { I18nEvents } from '../event-subscription/types';
 /**
  * Subscribes to the lifecycle callbacks and emits the events to the event emitter
  * @deprecated - move to subscription api instead
+ *
+ * NOTE: we do not have to worry about unsubscribe here as this is a deprecated api
+ * and is only used internally
  */
 export function subscribeLifecycleCallbacks<
   TranslationValue extends Translation,
