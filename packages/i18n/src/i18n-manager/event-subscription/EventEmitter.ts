@@ -6,7 +6,7 @@ export type EventName = string;
 /**
  * Base event type
  */
-type BaseEvent = Record<EventName, unknown>;
+export type BaseEvent = Record<EventName, unknown>;
 
 /**
  * Listener type

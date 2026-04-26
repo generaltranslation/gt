@@ -1,11 +1,11 @@
 import { EventEmitter } from '../event-subscription/EventEmitter';
 import type { Translation } from '../translations-manager/utils/types/translation-data';
 import type { LifecycleCallbacks } from './types';
-// TODO: this is circular dependency, fix this
-import type { I18nEvents } from '../I18nManager';
+import type { I18nEvents } from '../event-subscription/types';
 
 /**
  * Subscribes to the lifecycle callbacks and emits the events to the event emitter
+ * @deprecated - move to subscription api instead
  */
 export function subscribeLifecycleCallbacks<
   TranslationValue extends Translation,

@@ -23,6 +23,7 @@ import { Hash } from './translations-manager/TranslationsCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 import { EventEmitter } from './event-subscription/EventEmitter';
 import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
+import { I18nEvents } from './event-subscription/types';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -53,39 +54,6 @@ type TranslationResolver<U extends Translation = Translation> = <
 type PrefetchEntry<TranslationType extends Translation> = {
   message: TranslationType;
   options: LookupOptions;
-};
-
-/**
- * A base event for the I18nManagers
- * @prop {locale-update} - Emitted when the locale is updated
- * @prop {locales-cache-hit} - Emitted when a locale cache hit occurs
- * @prop {locales-cache-miss} - Emitted when a locale cache miss occurs
- * @prop {translations-cache-hit} - Emitted when a translations cache hit occurs
- * @prop {translations-cache-miss} - Emitted when a translations cache miss occurs
- */
-export type I18nEvents<TranslationValue extends Translation> = {
-  'locale-update': {
-    previousLocale?: Locale;
-    newLocale: Locale;
-  };
-  'locales-cache-hit': {
-    locale: Locale;
-    translations: Record<Hash, TranslationValue>;
-  };
-  'locales-cache-miss': {
-    locale: Locale;
-    translations: Record<Hash, TranslationValue>;
-  };
-  'translations-cache-hit': {
-    locale: Locale;
-    hash: Hash;
-    translation: TranslationValue;
-  };
-  'translations-cache-miss': {
-    locale: Locale;
-    hash: Hash;
-    translation: TranslationValue;
-  };
 };
 
 /**

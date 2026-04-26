@@ -1,8 +1,7 @@
 import { EventEmitter } from '../event-subscription/EventEmitter';
 import type { Translation } from '../translations-manager/utils/types/translation-data';
 import type { LocalesCacheLifecycleCallbacks } from './types';
-// TODO: this is circular dependency, fix this
-import type { I18nEvents } from '../I18nManager';
+import type { I18nEvents } from '../event-subscription/types';
 /**
  * Maps consumer-facing lifecycle callbacks to internal locales cache lifecycle callbacks.
  * The consumer API exposes simplified params (locale, hash, value) while the internal
