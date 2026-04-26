@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'vitest';
+import type { TranslationStatus } from '../../adapter/types';
 import { getReadyFilesForImport } from '../importUtils';
 
 describe('getReadyFilesForImport', () => {
   test('dedupes ready files by branch, source document, and locale', async () => {
-    const statuses = new Map([
+    const statuses = new Map<string, TranslationStatus>([
       [
         'branch:article-1:rev-1:es',
         {
@@ -43,7 +44,7 @@ describe('getReadyFilesForImport', () => {
           },
         },
       ],
-    ] as any);
+    ]);
 
     const readyFiles = await getReadyFilesForImport(statuses);
 
