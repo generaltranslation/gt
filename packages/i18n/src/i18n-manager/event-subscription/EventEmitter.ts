@@ -1,27 +1,4 @@
-/**
- * Event name type
- */
-export type EventName = string;
-
-/**
- * Base event type
- */
-export type BaseEvent = Record<EventName, unknown>;
-
-/**
- * Listener type
- */
-type Listener<
-  Events extends BaseEvent,
-  EventName extends keyof Events = keyof Events,
-> = (event: Events[EventName]) => void;
-
-/**
- * type defining our listener store
- */
-type ListenerStore<Events extends BaseEvent> = Partial<{
-  [EventName in keyof Events]: Set<Listener<Events, EventName>>;
-}>;
+import type { BaseEvent, Listener, ListenerStore } from './types';
 
 /**
  * Base class for event emitters

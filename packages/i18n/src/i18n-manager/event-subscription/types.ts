@@ -1,7 +1,19 @@
 import type { Translation } from '../translations-manager/utils/types/translation-data';
 import type { Hash } from '../translations-manager/TranslationsCache';
 import type { Locale } from '../translations-manager/LocalesCache';
-import type { BaseEvent } from './EventEmitter';
+
+export type EventName = string;
+
+export type BaseEvent = Record<EventName, unknown>;
+
+export type Listener<
+  Events extends BaseEvent,
+  EventName extends keyof Events = keyof Events,
+> = (event: Events[EventName]) => void;
+
+export type ListenerStore<Events extends BaseEvent> = Partial<{
+  [EventName in keyof Events]: Set<Listener<Events, EventName>>;
+}>;
 
 /**
  * A base event for the I18nManagers
