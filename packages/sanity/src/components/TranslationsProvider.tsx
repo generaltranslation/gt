@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
   ReactNode,
 } from 'react';
 import { SanityDocument, useSchema } from 'sanity';
@@ -137,6 +138,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     failed: new Set<string>(),
     skipped: new Set<string>(),
   });
+  const downloadStatusRef = useRef(downloadStatus);
   const [translationStatuses, setTranslationStatuses] = useState<
     Map<string, TranslationStatus>
   >(new Map());
@@ -150,6 +152,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     pluginConfig.getSecretsNamespace()
   );
   const [branchId, setBranchId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    downloadStatusRef.current = downloadStatus;
+  }, [downloadStatus]);
 
   const fetchDocuments = useCallback(async () => {
     setLoadingDocuments(true);
@@ -577,7 +583,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
       const readyTranslations = await checkTranslationStatus(
         fileQueryData,
-        downloadStatus,
+        downloadStatusRef.current,
         secrets
       );
 
@@ -637,7 +643,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsRefreshing(false);
     }
-  }, [secrets, documents, locales, branchId, downloadStatus]);
+  }, [secrets, documents, locales, branchId]);
 
   const handleImportDocument = useCallback(
     async (documentId: string, versionId: string, localeId: string) => {

@@ -31,7 +31,10 @@ export function createTranslationStatusKey(
   versionId: string,
   localeId: string
 ): string {
-  return `${branchId}:${getPublishedId(documentId)}:${versionId}:${localeId}`;
+  const publishedId = getPublishedId(documentId);
+  return branchId
+    ? `${branchId}:${publishedId}:${versionId}:${localeId}`
+    : `${publishedId}:${versionId}:${localeId}`;
 }
 
 export function createStableTranslationKey(
