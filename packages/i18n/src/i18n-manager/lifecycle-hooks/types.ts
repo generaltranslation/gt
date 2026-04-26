@@ -72,24 +72,34 @@ export type LocalesCacheLifecycleCallbacks<
  * Simplified lifecycle callbacks for I18nManager consumers.
  * These provide a cleaner interface than the internal cache lifecycle types,
  * with locale and hash exposed directly instead of the full cache internals.
+ *
+ * @deprecated - move to subscription api instead
  */
 export type LifecycleCallbacks<TranslationValue extends Translation> = {
   onTranslationsCacheHit?: (params: {
     locale: Locale;
     hash: Hash;
+    translation: TranslationValue;
+    /** @deprecated - use translation instead */
     value: TranslationValue;
   }) => void;
   onTranslationsCacheMiss?: (params: {
     locale: Locale;
     hash: Hash;
+    translation: TranslationValue;
+    /** @deprecated - use translation instead */
     value: TranslationValue;
   }) => void;
   onLocalesCacheHit?: (params: {
     locale: Locale;
+    translations: Record<Hash, TranslationValue>;
+    /** @deprecated - use translations instead */
     value: Record<Hash, TranslationValue>;
   }) => void;
   onLocalesCacheMiss?: (params: {
     locale: Locale;
+    translations: Record<Hash, TranslationValue>;
+    /** @deprecated - use translations instead */
     value: Record<Hash, TranslationValue>;
   }) => void;
 };
