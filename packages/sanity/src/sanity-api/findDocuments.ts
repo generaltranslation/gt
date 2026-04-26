@@ -1,5 +1,7 @@
 import { SanityClient } from 'sanity';
 import { pluginConfig } from '../adapter/core';
+import { getPublishedId } from '../utils/documentIds';
+import { findLatestDraft } from '../configuration/utils/findLatestDraft';
 
 export async function findTranslatedDocuments(
   documentId: string,
@@ -16,24 +18,28 @@ export async function findTranslatedDocumentForLocale(
   localeId: string,
   client: SanityClient
 ) {
-  const cleanDocId = sourceDocumentId.replace('drafts.', '');
+  const cleanDocId = getPublishedId(sourceDocumentId);
 
-  // Try both clean and original IDs to be safe, and use -> to directly fetch the translated doc
+  // Use the last locale entry defensively. Older versions could create
+  // duplicate locale entries when bulk imports raced.
   const query = `*[
     _type == "translation.metadata" &&
     (
       translations[language == $sourceLocale][0].value._ref == $cleanDocId
     ) &&
     defined(translations[language == $localeId])
-  ][0].translations[language == $localeId][0].value->`;
+  ][0].translations[language == $localeId].value._ref`;
 
-  const translatedDoc = await client.fetch(query, {
+  const translatedDocIds = await client.fetch(query, {
     sourceLocale: pluginConfig.getSourceLocale(),
     cleanDocId,
     localeId,
   });
 
-  return translatedDoc || null;
+  const translatedDocId = translatedDocIds?.[translatedDocIds.length - 1];
+  if (!translatedDocId) return null;
+
+  return (await findLatestDraft(translatedDocId, client)) || null;
 }
 
 export async function findDocument(documentId: string, client: SanityClient) {

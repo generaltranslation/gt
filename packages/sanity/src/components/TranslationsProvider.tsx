@@ -35,6 +35,13 @@ import { processBatch } from '../utils/batchProcessor';
 import { publishTranslations } from '../sanity-api/publishDocuments';
 import { getLocales } from '../adapter/getLocales';
 import type { FileProperties, TranslationStatus } from '../adapter/types';
+import {
+  createStableTranslationKey,
+  createTranslationStatusKey,
+  dedupeDocumentsPreferDraft,
+  getDocumentPublishedId,
+  getPublishedId,
+} from '../utils/documentIds';
 
 interface ImportProgress {
   current: number;
@@ -180,7 +187,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       }
 
       const docs = await client.fetch(query);
-      setDocuments(docs);
+      setDocuments(dedupeDocumentsPreferDraft(docs));
     } catch {
       toast.push({
         title: 'Error fetching documents',
@@ -215,9 +222,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         .filter((locale) => locale.enabled !== false)
         .map((locale) => locale.localeId);
 
-      const documentIds = documents.map(
-        (doc) => doc._id?.replace('drafts.', '') || doc._id
-      );
+      const documentIds = documents.map(getDocumentPublishedId);
 
       const query = `*[
         _type == 'translation.metadata' &&
@@ -237,7 +242,13 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       existingMetadata.forEach((metadata: any) => {
         metadata.existingTranslations?.forEach((localeId: string) => {
           if (localeId !== sourceLocale) {
-            existing.add(`${metadata.sourceDocId}:${localeId}`);
+            existing.add(
+              createStableTranslationKey(
+                undefined,
+                metadata.sourceDocId,
+                localeId
+              )
+            );
           }
         });
       });
@@ -275,7 +286,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
             );
             return {
               info: {
-                documentId: doc._id?.replace('drafts.', '') || doc._id,
+                documentId: getDocumentPublishedId(doc),
                 versionId: doc._rev,
               },
               serializedDocument: serialized,
@@ -413,7 +424,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         metadata.existingTranslations?.forEach((localeId: string) => {
           if (localeId !== sourceLocale) {
             existing.add(
-              `${branchId}:${metadata.sourceDocId}:${metadata._rev}:${localeId}`
+              createStableTranslationKey(
+                branchId,
+                metadata.sourceDocId,
+                localeId
+              )
             );
           }
         });
@@ -434,9 +449,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         .filter((locale) => locale.enabled !== false)
         .map((locale) => locale.localeId);
 
-      const documentIds = documents.map(
-        (doc) => doc._id?.replace('drafts.', '') || doc._id
-      );
+      const documentIds = documents.map(getDocumentPublishedId);
 
       const existingTranslations = await getExistingTranslations(
         documentIds,
@@ -445,7 +458,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       );
 
       const readyFiles = await getReadyFilesForImport(translationStatuses, {
-        filterReadyFiles: (key) => !existingTranslations.has(key),
+        filterReadyFiles: (_key, status) =>
+          !existingTranslations.has(
+            createStableTranslationKey(
+              branchId,
+              status.fileData.fileId,
+              status.fileData.locale
+            )
+          ),
       });
 
       if (readyFiles.length === 0) {
@@ -545,7 +565,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       const fileQueryData: FileProperties[] = [];
       for (const doc of documents) {
         for (const localeId of availableLocaleIds) {
-          const documentId = doc._id?.replace('drafts.', '') || doc._id;
+          const documentId = getDocumentPublishedId(doc);
           fileQueryData.push({
             versionId: doc._rev,
             fileId: documentId,
@@ -566,16 +586,26 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
         for (const doc of documents) {
           for (const localeId of availableLocaleIds) {
-            const documentId = doc._id?.replace('drafts.', '') || doc._id;
+            const documentId = getDocumentPublishedId(doc);
             const versionId = doc._rev;
-            const key = `${branchId}:${documentId}:${versionId}:${localeId}`;
+            const key = createTranslationStatusKey(
+              branchId,
+              documentId,
+              versionId,
+              localeId
+            );
             newStatuses.set(key, { progress: 0, isReady: false });
           }
         }
 
         if (Array.isArray(readyTranslations)) {
           for (const translation of readyTranslations) {
-            const key = `${branchId}:${translation.fileId}:${translation.versionId}:${translation.locale}`;
+            const key = createTranslationStatusKey(
+              branchId,
+              translation.fileId,
+              translation.versionId,
+              translation.locale
+            );
             newStatuses.set(key, {
               progress: 100,
               isReady: true,
@@ -607,13 +637,18 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsRefreshing(false);
     }
-  }, [secrets, documents, locales, branchId]);
+  }, [secrets, documents, locales, branchId, downloadStatus]);
 
   const handleImportDocument = useCallback(
     async (documentId: string, versionId: string, localeId: string) => {
       if (!secrets) return;
 
-      const key = `${branchId}:${documentId}:${versionId}:${localeId}`;
+      const key = createTranslationStatusKey(
+        branchId,
+        documentId,
+        versionId,
+        localeId
+      );
       const status = translationStatuses.get(key);
 
       if (!status?.isReady || !status.fileData) {
@@ -626,7 +661,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       }
 
       const document = documents.find(
-        (doc) => (doc._id?.replace('drafts.', '') || doc._id) === documentId
+        (doc) => getDocumentPublishedId(doc) === getPublishedId(documentId)
       );
 
       if (!document) {
@@ -654,7 +689,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         if (downloadedFiles.length > 0) {
           try {
             const docInfo: GTFile = {
-              documentId,
+              documentId: getPublishedId(documentId),
               versionId: document._rev,
             };
 
@@ -671,6 +706,13 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
               downloaded: new Set([...prev.downloaded, key]),
             }));
             setImportedTranslations((prev) => new Set([...prev, key]));
+            setExistingTranslations(
+              (prev) =>
+                new Set([
+                  ...prev,
+                  createStableTranslationKey(branchId, documentId, localeId),
+                ])
+            );
 
             toast.push({
               title: `Successfully imported translation for ${documentId} (${localeId})`,
@@ -817,9 +859,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
 
     try {
       const sourceLocale = pluginConfig.getSourceLocale();
-      const publishedDocumentIds = documents
-        .filter((doc) => !doc._id.startsWith('drafts.'))
-        .map((doc) => doc._id);
+      const sourceDocumentIds = documents.map(getDocumentPublishedId);
+      const publishedDocumentIds = await client.fetch(
+        `*[_id in $sourceDocumentIds]._id`,
+        { sourceDocumentIds }
+      );
 
       if (publishedDocumentIds.length === 0) {
         toast.push({
@@ -847,16 +891,16 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         publishedDocumentIds,
       });
 
-      const translationDocIds: string[] = [];
+      const translationDocIds = new Set<string>();
       translationMetadata.forEach((metadata: any) => {
         metadata.translationDocs?.forEach((translation: any) => {
           if (translation.docId) {
-            translationDocIds.push(translation.docId);
+            translationDocIds.add(translation.docId);
           }
         });
       });
 
-      if (translationDocIds.length === 0) {
+      if (translationDocIds.size === 0) {
         toast.push({
           title: 'No translation documents found to publish',
           status: 'warning',
@@ -866,7 +910,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       }
 
       const translatedDocumentIds = await publishTranslations(
-        translationDocIds,
+        Array.from(translationDocIds),
         client
       );
 
@@ -911,11 +955,19 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       documents.length > 0 &&
       locales.length > 0 &&
       secrets &&
-      !loadingDocuments
+      !loadingDocuments &&
+      branchId
     ) {
       handleRefreshAll();
     }
-  }, [documents]);
+  }, [
+    documents,
+    locales,
+    secrets,
+    loadingDocuments,
+    branchId,
+    handleRefreshAll,
+  ]);
 
   useEffect(() => {
     if (!autoRefresh || documents.length === 0 || !secrets) return;

@@ -106,12 +106,36 @@ export const documentLevelPatch = async (
   //otherwise, create a new document
   //and add the document reference to the metadata document
   else {
+    const freshTranslationMetadata = await getOrCreateTranslationMetadata(
+      docInfo.documentId,
+      baseDoc,
+      client,
+      baseLanguage
+    );
+    const freshI18nDocId = (
+      freshTranslationMetadata.translations as Array<Record<string, any>>
+    ).find((translation) => translation.language === localeId)?.value?._ref;
+
+    if (freshI18nDocId) {
+      const freshI18nDoc = await findLatestDraft(freshI18nDocId, client);
+      await patchI18nDoc(
+        docInfo.documentId,
+        freshI18nDoc._id,
+        baseDoc,
+        merged,
+        translatedFields,
+        client,
+        freshI18nDoc
+      );
+      return;
+    }
+
     await createI18nDocAndPatchMetadata(
       baseDoc,
       merged,
       localeId,
       client,
-      translationMetadata,
+      freshTranslationMetadata,
       docInfo.documentId,
       languageField
     );
