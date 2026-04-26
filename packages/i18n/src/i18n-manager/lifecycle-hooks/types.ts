@@ -80,14 +80,14 @@ export type LifecycleCallbacks<TranslationValue extends Translation> = {
     locale: Locale;
     hash: Hash;
     translation: TranslationValue;
-    /** @deprecated - use translations instead */
+    /** @deprecated - use translation instead */
     value: TranslationValue;
   }) => void;
   onTranslationsCacheMiss?: (params: {
     locale: Locale;
     hash: Hash;
     translation: TranslationValue;
-    /** @deprecated - use translations instead */
+    /** @deprecated - use translation instead */
     value: TranslationValue;
   }) => void;
   onLocalesCacheHit?: (params: {
