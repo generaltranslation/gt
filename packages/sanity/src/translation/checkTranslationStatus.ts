@@ -1,6 +1,10 @@
 import type { Secrets } from '../types';
 import { gt, overrideConfig } from '../adapter/core';
 import { FileProperties } from '../adapter/types';
+import {
+  createStableTranslationKey,
+  createTranslationStatusKey,
+} from '../utils/documentIds';
 
 export async function checkTranslationStatus(
   fileQueryData: FileProperties[],
@@ -14,12 +18,27 @@ export async function checkTranslationStatus(
   overrideConfig(secrets);
   try {
     // Only query for files that haven't been downloaded yet
-    const currentQueryData = fileQueryData.filter(
-      (item) =>
-        !downloadStatus.downloaded.has(`${item.fileId}:${item.locale}`) &&
-        !downloadStatus.failed.has(`${item.fileId}:${item.locale}`) &&
-        !downloadStatus.skipped.has(`${item.fileId}:${item.locale}`)
-    );
+    const currentQueryData = fileQueryData.filter((item) => {
+      const statusKey = createTranslationStatusKey(
+        item.branchId,
+        item.fileId,
+        item.versionId,
+        item.locale
+      );
+      const stableKey = createStableTranslationKey(
+        item.branchId,
+        item.fileId,
+        item.locale
+      );
+      return (
+        !downloadStatus.downloaded.has(statusKey) &&
+        !downloadStatus.downloaded.has(stableKey) &&
+        !downloadStatus.failed.has(statusKey) &&
+        !downloadStatus.failed.has(stableKey) &&
+        !downloadStatus.skipped.has(statusKey) &&
+        !downloadStatus.skipped.has(stableKey)
+      );
+    });
 
     // If all files have been downloaded, we're done
     if (currentQueryData.length === 0) {

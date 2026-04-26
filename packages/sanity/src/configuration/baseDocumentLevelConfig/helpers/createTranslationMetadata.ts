@@ -7,6 +7,7 @@ import {
   SanityDocumentLike,
 } from 'sanity';
 import { randomKey } from '../../../utils/randomKey';
+import { getPublishedId } from '../../../utils/documentIds';
 
 type TranslationReference = KeyedObject & {
   _type: 'internationalizedArrayReferenceValue';
@@ -24,7 +25,7 @@ export const createTranslationMetadata = (
     _type: 'internationalizedArrayReferenceValue',
     value: {
       _type: 'reference',
-      _ref: document._id.replace('drafts.', ''),
+      _ref: getPublishedId(document._id),
     },
   };
 

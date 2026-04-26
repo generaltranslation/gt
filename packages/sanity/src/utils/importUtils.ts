@@ -1,8 +1,8 @@
-import { SanityDocument } from 'sanity';
 import { Secrets, TranslationFunctionContext } from '../types';
 import { downloadTranslations } from '../translation/downloadTranslations';
 import { processImportBatch, ImportBatchItem } from './batchProcessor';
 import type { FileProperties, TranslationStatus } from '../adapter/types';
+import { createStableTranslationKey, getPublishedId } from './documentIds';
 
 export interface ImportResult {
   successCount: number;
@@ -21,20 +21,28 @@ export async function getReadyFilesForImport(
   options: ImportOptions = {}
 ): Promise<FileProperties[]> {
   const { filterReadyFiles = () => true } = options;
-  const readyFiles: FileProperties[] = [];
+  const readyFilesByDocumentLocale = new Map<string, FileProperties>();
 
   for (const [key, status] of translationStatuses.entries()) {
-    if (status.isReady && filterReadyFiles(key, status)) {
-      readyFiles.push({
-        fileId: status.fileData.fileId,
+    if (status.isReady && status.fileData && filterReadyFiles(key, status)) {
+      const fileData = {
+        fileId: getPublishedId(status.fileData.fileId),
         versionId: status.fileData.versionId,
         branchId: status.fileData.branchId,
         locale: status.fileData.locale,
-      });
+      };
+      readyFilesByDocumentLocale.set(
+        createStableTranslationKey(
+          fileData.branchId,
+          fileData.fileId,
+          fileData.locale
+        ),
+        fileData
+      );
     }
   }
 
-  return readyFiles;
+  return Array.from(readyFilesByDocumentLocale.values());
 }
 
 export async function importTranslations(

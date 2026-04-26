@@ -3,6 +3,10 @@ import { Stack, Box, Card, Text, Flex, Spinner } from '@sanity/ui';
 import { LanguageStatus } from './LanguageStatus';
 import { useTranslations } from '../TranslationsProvider';
 import { pluginConfig } from '../../adapter/core';
+import {
+  createTranslationStatusKey,
+  getDocumentPublishedId,
+} from '../../utils/documentIds';
 
 export const SingleDocumentView: React.FC = () => {
   const {
@@ -60,7 +64,7 @@ export const SingleDocumentView: React.FC = () => {
             <Flex justify='space-between' align='flex-start'>
               <Box flex={1}>
                 <Text weight='semibold' size={1}>
-                  {document._id?.replace('drafts.', '') || document._id}
+                  {getDocumentPublishedId(document)}
                 </Text>
                 <Text size={0} muted style={{ marginTop: '2px' }}>
                   {document._type}
@@ -73,9 +77,13 @@ export const SingleDocumentView: React.FC = () => {
                 locales
                   .filter((locale) => locale.enabled !== false)
                   .map((locale) => {
-                    const documentId =
-                      document._id?.replace('drafts.', '') || document._id;
-                    const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
+                    const documentId = getDocumentPublishedId(document);
+                    const key = createTranslationStatusKey(
+                      branchId,
+                      documentId,
+                      document._rev,
+                      locale.localeId
+                    );
                     const status = translationStatuses.get(key);
                     const isDownloaded = downloadStatus.downloaded.has(key);
                     const isImported = importedTranslations.has(key);

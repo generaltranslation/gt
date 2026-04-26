@@ -92,14 +92,15 @@ async function resolveTranslatedReferences(
   // Optimized GROQ query that directly returns only the needed translation pairs
   const query = `*[_type == "translation.metadata" && count(translations[language == $sourceLocale && value._ref in $refIds]) > 0] {
     "originalRef": translations[language == $sourceLocale][0].value._ref,
-    "translatedRef": translations[language == $locale][0].value._ref
-  }[defined(originalRef) && defined(translatedRef)]`;
+    "translatedRefs": translations[language == $locale].value._ref
+  }[defined(originalRef) && count(translatedRefs) > 0]`;
 
-  const translationPairs: { originalRef: string; translatedRef: string }[] =
+  const translationPairs: { originalRef: string; translatedRefs: string[] }[] =
     await client.fetch(query, { refIds, sourceLocale, locale });
 
   // Build the translation map
-  for (const { originalRef, translatedRef } of translationPairs) {
+  for (const { originalRef, translatedRefs: localeRefs } of translationPairs) {
+    const translatedRef = localeRefs[localeRefs.length - 1];
     translatedRefs.set(originalRef, translatedRef);
   }
 

@@ -11,6 +11,7 @@ import { pluginConfig } from '../adapter/core';
 import merge from 'lodash.merge';
 import { deleteMatchingFields } from './applyDocuments';
 import type { FieldMatcher } from '../adapter/types';
+import { getPublishedId } from './documentIds';
 
 export function deserializeDocument(document: string) {
   const deserializers = merge(
@@ -70,7 +71,7 @@ function stripIgnoredFields(
   const strippedDoc = JSON.parse(JSON.stringify(document)) as SanityDocument;
 
   deleteMatchingFields(
-    document._id.replace('drafts.', ''),
+    getPublishedId(document._id),
     strippedDoc,
     fieldsToStrip
   );
