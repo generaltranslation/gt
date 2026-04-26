@@ -174,7 +174,7 @@ class I18nManager<
   setLocale(locale: string): void {
     try {
       this.validateLocale(locale);
-      const gtInstance = this.getGTClass();
+      const gtInstance = this.getGTClassClean();
       const newLocale = gtInstance.determineLocale(locale)!;
       const previousLocale = this.getLocale();
       this.storeAdapter.setItem('locale', newLocale);
