@@ -398,10 +398,7 @@ describe('validateTranslationFunctionCallback', () => {
         const callExpr = t.callExpression(t.identifier('useGT_callback'), [
           t.stringLiteral('Hello'),
           t.objectExpression([
-            t.objectProperty(
-              t.identifier('$context'),
-              t.stringLiteral('')
-            ),
+            t.objectProperty(t.identifier('$context'), t.stringLiteral('')),
           ]),
         ]);
 
