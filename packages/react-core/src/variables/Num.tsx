@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { GT } from 'generaltranslation';
+import { formatNum } from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
 
 /**
@@ -33,7 +33,6 @@ function Num({
 }): React.JSX.Element | null {
   const context = useContext(GTContext);
   if (children == null) return null;
-  const gt = context?.gt || new GT();
 
   let renderedValue: string | number =
     typeof children === 'string' ? parseFloat(children) : children;
@@ -44,7 +43,7 @@ function Num({
       if (context?.defaultLocale) locales.push(context.defaultLocale);
     }
     // Using Intl.NumberFormat for consistent number formatting
-    renderedValue = gt.formatNum(renderedValue, { locales, ...options });
+    renderedValue = formatNum(renderedValue, { locales, ...options });
   }
   return <>{renderedValue}</>;
 }

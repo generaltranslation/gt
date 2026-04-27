@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { GT } from 'generaltranslation';
+import { formatDateTime } from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
 
 /**
@@ -31,16 +31,16 @@ function DateTime({
 }): React.JSX.Element | null {
   const context = useContext(GTContext);
   if (children == null) return null;
-  const gt = context?.gt || new GT();
 
   if (!locales) {
     locales = [];
     if (context?.locale) locales.push(context.locale);
     if (context?.defaultLocale) locales.push(context.defaultLocale);
   }
-  const result = gt
-    .formatDateTime(children, { locales, ...options })
-    .replace(/[\u200F\u202B\u202E]/g, '');
+  const result = formatDateTime(children, { locales, ...options }).replace(
+    /[\u200F\u202B\u202E]/g,
+    ''
+  );
 
   // Note: This component may cause hydration errors when the output differs
   // between server and client (e.g., different timezones or locales).

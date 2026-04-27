@@ -1,5 +1,8 @@
 import React, { useContext } from 'react';
-import { GT } from 'generaltranslation';
+import {
+  formatRelativeTime,
+  formatRelativeTimeFromDate,
+} from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
 
 /**
@@ -50,7 +53,6 @@ function RelativeTime({
   options?: Intl.RelativeTimeFormatOptions;
 }): React.JSX.Element | null {
   const context = useContext(GTContext);
-  const gt = context?.gt || new GT();
 
   if (!locales) {
     locales = [];
@@ -72,7 +74,7 @@ function RelativeTime({
 
   if (value !== undefined && unit) {
     // Explicit value + unit mode
-    result = gt.formatRelativeTime(value, unit, {
+    result = formatRelativeTime(value, unit, {
       locales,
       numeric: options.numeric,
       style: options.style,
@@ -80,7 +82,7 @@ function RelativeTime({
     });
   } else if (resolvedDate != null) {
     // Auto-select unit from Date
-    result = gt.formatRelativeTimeFromDate(resolvedDate, {
+    result = formatRelativeTimeFromDate(resolvedDate, {
       locales,
       baseDate: baseDate ?? new Date(),
       numeric: options.numeric,
