@@ -3,6 +3,7 @@
 import { SanityClient, SanityDocumentLike } from 'sanity';
 import { pluginConfig } from '../../../adapter/core';
 import { applyDocuments } from '../../../utils/applyDocuments';
+import { getPublishedId } from '../../../utils/documentIds';
 import { randomKey } from '../../../utils/randomKey';
 
 export async function createI18nDocAndPatchMetadata(
@@ -14,6 +15,7 @@ export async function createI18nDocAndPatchMetadata(
   sourceDocumentId: string,
   languageField: string = 'language'
 ): Promise<void> {
+  const publishedSourceDocumentId = getPublishedId(sourceDocumentId);
   translatedDoc[languageField] = localeId;
   const translations = translationMetadata.translations as Record<
     string,
@@ -31,21 +33,26 @@ export async function createI18nDocAndPatchMetadata(
   const { _updatedAt, _createdAt, ...rest } = translatedDoc;
 
   const appliedDocument = applyDocuments(
-    sourceDocumentId,
+    publishedSourceDocumentId,
     sourceDocument,
     rest,
     pluginConfig.getIgnoreFields(),
-    pluginConfig.getSkipFields()
+    pluginConfig.getSkipFields(),
+    pluginConfig.getDedupeFields(),
+    localeId
   );
 
   // Check if this is a singleton document and apply singleton mapping
   const singletons = pluginConfig.getSingletons();
-  const isSingleton = singletons.includes(sourceDocumentId);
+  const isSingleton = singletons.includes(publishedSourceDocumentId);
 
   let createDocumentPromise;
   if (isSingleton) {
     const singletonMapping = pluginConfig.getSingletonMapping();
-    const translatedDocId = singletonMapping(sourceDocumentId, localeId);
+    const translatedDocId = singletonMapping(
+      publishedSourceDocumentId,
+      localeId
+    );
     createDocumentPromise = client.create({
       ...appliedDocument,
       _type: rest._type,
@@ -60,7 +67,7 @@ export async function createI18nDocAndPatchMetadata(
   }
 
   const doc = await createDocumentPromise;
-  const _ref = doc._id.replace('drafts.', '');
+  const _ref = getPublishedId(doc._id);
   const result = await client
     .transaction()
     .patch(translationMetadata._id, (p) =>

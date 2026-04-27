@@ -1,11 +1,11 @@
 import { JSONPath } from 'jsonpath-plus';
 import JSONPointer from 'jsonpointer';
-import type { IgnoreFields, SkipFields } from '../adapter/types';
+import type { DedupeFields, FieldMatcher, SkipFields } from '../adapter/types';
 
 export function forEachMatchingField(
   documentId: string,
   document: Record<string, any>,
-  fields: IgnoreFields[],
+  fields: FieldMatcher[],
   callback: (result: {
     pointer: string;
     value: any;
@@ -67,7 +67,7 @@ export function forEachMatchingField(
 export function deleteMatchingFields(
   documentId: string,
   document: Record<string, any>,
-  fields: IgnoreFields[]
+  fields: FieldMatcher[]
 ): void {
   const arrayRemovals: Array<{ parent: any[]; index: number }> = [];
 
@@ -93,8 +93,10 @@ export function applyDocuments(
   documentId: string,
   sourceDocument: Record<string, any>,
   targetDocument: Record<string, any>,
-  ignore: IgnoreFields[],
-  skip: SkipFields[] = []
+  ignore: FieldMatcher[],
+  skip: SkipFields[] = [],
+  dedupe: DedupeFields[] = [],
+  localeId?: string
 ) {
   // Deep copy both documents so mutations (e.g. skip-field deletions) never affect the originals
   const mergedDocument = JSON.parse(JSON.stringify(sourceDocument));
@@ -110,8 +112,57 @@ export function applyDocuments(
     JSONPointer.set(mergedDocument, result.pointer, result.value);
   });
 
+  // Restore de-duped fields from the source document with a deterministic locale suffix.
+  forEachMatchingField(documentId, sourceDocument, dedupe, (result) => {
+    JSONPointer.set(
+      mergedDocument,
+      result.pointer,
+      dedupeFieldValue(result.value, localeId)
+    );
+  });
+
   // Remove skip fields from merged document
   deleteMatchingFields(documentId, mergedDocument, skip);
 
   return mergedDocument;
+}
+
+function dedupeFieldValue(value: any, localeId?: string): any {
+  if (!localeId) return value;
+
+  if (typeof value === 'string') {
+    return appendLocaleSuffix(value, localeId);
+  }
+
+  if (
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    typeof value.current === 'string'
+  ) {
+    return {
+      ...value,
+      current: appendLocaleSuffix(value.current, localeId),
+    };
+  }
+
+  return value;
+}
+
+function appendLocaleSuffix(value: string, localeId: string): string {
+  if (!value) return value;
+
+  const suffix = createLocaleSuffix(localeId);
+  if (!suffix || value.endsWith(suffix)) return value;
+
+  return `${value}${suffix}`;
+}
+
+function createLocaleSuffix(localeId: string): string {
+  const normalized = localeId
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  return normalized ? `-${normalized}` : '';
 }

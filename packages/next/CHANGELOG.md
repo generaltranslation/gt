@@ -1,5 +1,39 @@
 # gt-next
 
+## 6.16.16
+
+### Patch Changes
+
+- Updated dependencies [[`28d0c06`](https://github.com/generaltranslation/gt/commit/28d0c06f3e8366fc2c119b7792620c4764eda2de)]:
+  - @generaltranslation/compiler@1.3.13
+
+## 6.16.15
+
+### Patch Changes
+
+- [#1266](https://github.com/generaltranslation/gt/pull/1266) [`0c22b7a`](https://github.com/generaltranslation/gt/commit/0c22b7a7dd87db7657eb1ffee0444a054c6744fa) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: access locale for metadata
+
+## 6.16.14
+
+### Patch Changes
+
+- Updated dependencies [[`5af18c1`](https://github.com/generaltranslation/gt/commit/5af18c13c2c2ad341ec67c2b4f6f6ef29320123b)]:
+  - gt-i18n@0.8.6
+  - gt-react@10.19.5
+
+## 6.16.13
+
+### Patch Changes
+
+- [#1251](https://github.com/generaltranslation/gt/pull/1251) [`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7) Thanks [@bgub](https://github.com/bgub)! - Declare `sideEffects` in each package's `package.json` to enable tree-shaking in consumer bundlers (webpack, esbuild, Rollup). Packages with no module-scope side effects are marked `"sideEffects": false`. Packages with intentional side-effect entry points (`gt-react/browser`, `gt-react/macros`, `gt-next` server entries, `gt-react-native` TurboModule spec) list those files explicitly so they are preserved.
+
+- Updated dependencies [[`47ad56b`](https://github.com/generaltranslation/gt/commit/47ad56bb23a70382ba98a900d968e9a48beee2b8), [`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5), [`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7), [`50d7628`](https://github.com/generaltranslation/gt/commit/50d7628e23b056e91abf8fa05f6577b74cb91569)]:
+  - gt-i18n@0.8.5
+  - generaltranslation@8.2.7
+  - gt-react@10.19.4
+  - @generaltranslation/supported-locales@2.0.65
+  - @generaltranslation/compiler@1.3.12
+
 ## 6.16.12
 
 ### Patch Changes

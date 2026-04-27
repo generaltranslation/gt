@@ -3,6 +3,7 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { Secrets } from '../types';
 import type {
   TranslateDocumentFilter,
+  DedupeFields,
   IgnoreFields,
   SkipFields,
 } from './types';
@@ -25,6 +26,7 @@ export class GTConfig {
   singletons: string[];
   singletonMapping: (sourceDocumentId: string, locale: string) => string;
   ignoreFields: IgnoreFields[];
+  dedupeFields: DedupeFields[];
   skipFields: SkipFields[];
   translateDocuments: TranslateDocumentFilter[];
   additionalStopTypes: string[];
@@ -41,6 +43,7 @@ export class GTConfig {
     singletons: string[],
     singletonMapping: (sourceDocumentId: string, locale: string) => string,
     ignoreFields: IgnoreFields[],
+    dedupeFields: DedupeFields[],
     skipFields: SkipFields[],
     translateDocuments: TranslateDocumentFilter[],
     additionalStopTypes: string[] = [],
@@ -55,6 +58,7 @@ export class GTConfig {
     this.singletons = singletons;
     this.singletonMapping = singletonMapping;
     this.ignoreFields = ignoreFields;
+    this.dedupeFields = dedupeFields;
     this.skipFields = skipFields;
     this.translateDocuments = translateDocuments;
     this.additionalStopTypes = additionalStopTypes;
@@ -76,6 +80,7 @@ export class GTConfig {
         [],
         [],
         [],
+        [],
         {},
         {},
         []
@@ -92,6 +97,7 @@ export class GTConfig {
     singletons: string[],
     singletonMapping: (sourceDocumentId: string, locale: string) => string,
     ignoreFields: IgnoreFields[],
+    dedupeFields: DedupeFields[],
     skipFields: SkipFields[],
     translateDocuments: TranslateDocumentFilter[],
     additionalStopTypes: string[] = [],
@@ -106,6 +112,7 @@ export class GTConfig {
     this.singletons = singletons;
     this.singletonMapping = singletonMapping;
     this.ignoreFields = ignoreFields;
+    this.dedupeFields = dedupeFields;
     this.skipFields = skipFields;
     this.translateDocuments = translateDocuments;
     this.additionalStopTypes = additionalStopTypes;
@@ -136,6 +143,9 @@ export class GTConfig {
   }
   getIgnoreFields() {
     return this.ignoreFields;
+  }
+  getDedupeFields() {
+    return this.dedupeFields;
   }
   getSkipFields() {
     return this.skipFields;

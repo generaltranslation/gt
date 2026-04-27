@@ -32,6 +32,9 @@ export default defineConfig({
     gtPlugin({
       sourceLocale: 'en',
       locales: ['es', 'fr'],
+      // Initialize translated document slugs with a unique locale suffix,
+      // e.g. "hello-world" -> "hello-world-es".
+      dedupeFields: [{ fields: [{ property: '$.slug' }] }],
     }),
   ],
 });

@@ -7,6 +7,7 @@ import {
   SanityDocumentLike,
 } from 'sanity';
 import { randomKey } from '../../../utils/randomKey';
+import { getPublishedId } from '../../../utils/documentIds';
 
 type TranslationReference = KeyedObject & {
   _type: 'internationalizedArrayReferenceValue';
@@ -19,13 +20,15 @@ export const getOrCreateTranslationMetadata = async (
   client: SanityClient,
   baseLanguage: string
 ): Promise<SanityDocumentLike> => {
+  const publishedId = getPublishedId(documentId);
+
   // First, try to get existing metadata
   const existingMetadata = await client.fetch(
     `*[
         _type == 'translation.metadata' &&
         translations[language == $baseLanguage][0].value._ref == $id
       ][0]`,
-    { baseLanguage, id: documentId.replace('drafts.', '') }
+    { baseLanguage, id: publishedId }
   );
 
   if (existingMetadata) {
@@ -39,7 +42,7 @@ export const getOrCreateTranslationMetadata = async (
     _type: 'internationalizedArrayReferenceValue',
     value: {
       _type: 'reference',
-      _ref: baseDocument._id.replace('drafts.', ''),
+      _ref: getPublishedId(baseDocument._id),
     },
   };
 
@@ -58,7 +61,7 @@ export const getOrCreateTranslationMetadata = async (
   try {
     // Use createIfNotExists to handle race conditions
     return await client.createIfNotExists({
-      _id: `translation.metadata.${documentId.replace('drafts.', '')}`,
+      _id: `translation.metadata.${publishedId}`,
       _type: 'translation.metadata',
       translations: [baseLangEntry],
     });
@@ -69,7 +72,7 @@ export const getOrCreateTranslationMetadata = async (
           _type == 'translation.metadata' &&
           translations[language == $baseLanguage][0].value._ref == $id
         ][0]`,
-      { baseLanguage, id: documentId.replace('drafts.', '') }
+      { baseLanguage, id: publishedId }
     );
 
     if (metadata) {

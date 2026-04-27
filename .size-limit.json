@@ -1,0 +1,42 @@
+[
+  {
+    "name": "generaltranslation",
+    "path": "packages/core/dist/index.mjs",
+    "limit": "30 kB",
+    "brotli": true
+  },
+  {
+    "name": "gt-i18n",
+    "path": "packages/i18n/dist/index.mjs",
+    "limit": "35 kB",
+    "brotli": true
+  },
+  {
+    "name": "@generaltranslation/react-core",
+    "path": "packages/react-core/dist/index.esm.min.mjs",
+    "limit": "48 kB",
+    "brotli": true,
+    "ignore": ["react"]
+  },
+  {
+    "name": "gt-react",
+    "path": "packages/react/dist/index.esm.min.mjs",
+    "limit": "50 kB",
+    "brotli": true,
+    "ignore": ["react", "react-dom"]
+  },
+  {
+    "name": "gt-tanstack-start",
+    "path": "packages/tanstack-start/dist/index.esm.min.mjs",
+    "limit": "55 kB",
+    "brotli": true,
+    "ignore": ["react", "react-dom", "@tanstack/react-start"]
+  },
+  {
+    "name": "gt-next/client",
+    "path": "packages/next/dist/client.js",
+    "limit": "55 kB",
+    "brotli": true,
+    "ignore": ["next", "react", "react-dom", "server-only"]
+  }
+]

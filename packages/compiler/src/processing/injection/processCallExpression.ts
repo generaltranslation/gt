@@ -19,6 +19,8 @@ import { createErrorLocation } from '../../utils/errors';
 import { injectUseGTCallbackParameters } from '../../transform/injection/callbacks/injectUseGTCallbackParameters';
 import { injectUseTranslationsCallbackParameters } from '../../transform/injection/callbacks/injectUseTranslationsCallbackParameters';
 import { injectUseMessagesCallbackParameters } from '../../transform/injection/callbacks/injectUseMessagesCallbackParameters';
+import { injectStandaloneTFunctionParameters } from '../../transform/injection/injectStandaloneTFunctionParameters';
+
 /**
  * Process call expression:
  */
@@ -66,7 +68,7 @@ export function processCallExpression(
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.t
     ) {
-      // TODO: Handle t() function
+      injectStandaloneTFunctionParameters(callExpr, state);
     }
   };
 }

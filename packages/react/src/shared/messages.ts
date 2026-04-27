@@ -7,10 +7,6 @@ export const GENERIC_BROWSER_ENVIRONMENT_ERROR = `${PACKAGE_NAME} Error: You are
 export const BROWSER_I18N_MANAGER_NOT_INITIALIZED_ERROR = `${PACKAGE_NAME} Error: BrowserI18nManager not initialized. Invoke initializeGT() to initialize.`;
 
 // ---- Warnings ---- //
-
-export const createInvalidLocaleWarning = (locale: string) =>
-  `${PACKAGE_NAME} Warning: "${locale}" is not a valid locale.`;
-
 export const createTranslationFailedDueToBrowserEnvironmentWarning = (
   message: string | TemplateStringsArray | undefined
 ) =>

@@ -61,6 +61,7 @@ import { gt, pluginConfig } from './adapter/core';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { getLocaleProperties } from 'generaltranslation';
 import type {
+  DedupeFields,
   IgnoreFields,
   SkipFields,
   TranslateDocumentFilter,
@@ -83,6 +84,7 @@ export type GTPluginConfig = Omit<
   // By default, the translated singleton document is is `${sourceDocumentId}-${locale}`
   singletonMapping?: (sourceDocumentId: string, locale: string) => string;
   ignoreFields?: IgnoreFields[];
+  dedupeFields?: DedupeFields[];
   skipFields?: SkipFields[];
   languageField?: string;
   translateDocuments?: TranslateDocumentFilter[] | string[];
@@ -122,6 +124,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     singletons,
     singletonMapping,
     ignoreFields,
+    dedupeFields,
     skipFields,
     translateDocuments,
     secretsNamespace = SECRETS_NAMESPACE,
@@ -153,6 +156,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       singletonMapping ||
         ((sourceDocumentId, locale) => `${sourceDocumentId}-${locale}`),
       ignoreFields || [],
+      dedupeFields || [],
       skipFields || [],
       normalizedTranslateDocuments || [],
       additionalStopTypes,

@@ -1,29 +1,29 @@
-import { LocaleProperties } from './locales/getLocaleProperties';
+import type { LocaleProperties } from './locales/getLocaleProperties';
 
-import { Variable, VariableType } from './types-dir/jsx/variables';
+import type { Variable, VariableType } from './types-dir/jsx/variables';
 
 import {
-  IcuMessage,
-  I18nextMessage,
-  StringMessage,
-  StringContent,
-  JsxChildren,
-  JsxChild,
-  JsxElement,
-  GTProp,
-  HtmlContentPropKeysRecord,
-  HtmlContentPropValuesRecord,
+  type IcuMessage,
+  type I18nextMessage,
+  type StringMessage,
+  type StringContent,
+  type JsxChildren,
+  type JsxChild,
+  type JsxElement,
+  type GTProp,
+  type HtmlContentPropKeysRecord,
+  type HtmlContentPropValuesRecord,
   HTML_CONTENT_PROPS,
-  DataFormat,
-  Content,
-  StringFormat,
+  type DataFormat,
+  type Content,
+  type StringFormat,
 } from './types-dir/jsx/content';
-import {
+import type {
   ActionType,
   EntryMetadata,
   TranslateManyEntry,
 } from './types-dir/api/entry';
-import { HashMetadata } from './id/types';
+import type { HashMetadata } from './id/types';
 export type { TranslationStatusResult } from './types-dir/api/translationStatus';
 
 export {

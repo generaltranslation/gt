@@ -1,8 +1,10 @@
 import { GTFile, TranslationFunctionContext } from '../types';
 import { importDocument } from '../translation/importDocument';
+import { createStableTranslationKey } from './documentIds';
 
 export interface BatchProcessorOptions {
   batchSize?: number;
+  getConcurrencyKey?: (item: any) => string | undefined;
   onProgress?: (current: number, total: number) => void;
   onItemSuccess?: (item: any, result: any) => void;
   onItemFailure?: (item: any, error: any) => void;
@@ -26,7 +28,13 @@ export async function processBatch<T>(
   successfulItems: any[];
   failedItems: { item: T; error: any }[];
 }> {
-  const { batchSize = 20, onProgress, onItemSuccess, onItemFailure } = options;
+  const {
+    batchSize = 20,
+    getConcurrencyKey,
+    onProgress,
+    onItemSuccess,
+    onItemFailure,
+  } = options;
 
   let successCount = 0;
   let failureCount = 0;
@@ -36,14 +44,39 @@ export async function processBatch<T>(
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
 
+    const pendingByKey = new Map<string, Promise<void>>();
+
     const batchPromises = batch.map(async (item) => {
+      const concurrencyKey = getConcurrencyKey?.(item);
+      const pending = concurrencyKey
+        ? pendingByKey.get(concurrencyKey)
+        : undefined;
+
+      let release: () => void = () => {};
+      const current = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+
+      if (concurrencyKey) {
+        pendingByKey.set(concurrencyKey, current);
+      }
+
       try {
+        if (pending) {
+          await pending;
+        }
+
         const result = await processor(item);
         onItemSuccess?.(item, result);
         return { success: true, item, result };
       } catch (error) {
         onItemFailure?.(item, error);
         return { success: false, item, error };
+      } finally {
+        release();
+        if (concurrencyKey && pendingByKey.get(concurrencyKey) === current) {
+          pendingByKey.delete(concurrencyKey);
+        }
       }
     });
 
@@ -90,6 +123,12 @@ export async function processImportBatch(
     },
     {
       ...options,
+      getConcurrencyKey: (item: ImportBatchItem) =>
+        createStableTranslationKey(
+          undefined,
+          item.docInfo.documentId,
+          item.locale
+        ),
       onItemSuccess: (item: ImportBatchItem, key: string) => {
         successfulImports.push(key);
         options.onItemSuccess?.(item, key);
