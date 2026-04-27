@@ -1,4 +1,4 @@
-import { getBrowserI18nManager } from '../../browser-i18n-manager/singleton-operations';
+import { formatNum } from 'generaltranslation';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 
 /**
@@ -21,9 +21,7 @@ function GtInternalNum({
   const locales = [...localesProp, getLocale(), getDefaultLocale()];
 
   // Apply formatting
-  const i18nManager = getBrowserI18nManager();
-  const gt = i18nManager.getGTClass();
-  const formattedNumber = gt.formatNum(parsedNumber, { locales, ...options });
+  const formattedNumber = formatNum(parsedNumber, { locales, ...options });
 
   // Return formatted number
   return formattedNumber;

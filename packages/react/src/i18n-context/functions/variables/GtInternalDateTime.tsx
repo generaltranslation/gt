@@ -1,4 +1,4 @@
-import { getBrowserI18nManager } from '../../browser-i18n-manager/singleton-operations';
+import { formatDateTime } from 'generaltranslation';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 
 /**
@@ -19,11 +19,10 @@ function GtInternalDateTime({
   const locales = [...localesProp, getLocale(), getDefaultLocale()];
 
   // Apply formatting
-  const i18nManager = getBrowserI18nManager();
-  const gt = i18nManager.getGTClass();
-  const result = gt
-    .formatDateTime(children, { locales, ...options })
-    .replace(/[\u200F\u202B\u202E]/g, '');
+  const result = formatDateTime(children, { locales, ...options }).replace(
+    /[\u200F\u202B\u202E]/g,
+    ''
+  );
 
   // Return formatted date
   return result;

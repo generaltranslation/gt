@@ -1,4 +1,4 @@
-import { getBrowserI18nManager } from '../../browser-i18n-manager/singleton-operations';
+import { formatCurrency } from 'generaltranslation';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 
 /**
@@ -23,9 +23,7 @@ function GtInternalCurrency({
   const locales = [...localesProp, getLocale(), getDefaultLocale()];
 
   // Apply formatting
-  const i18nManager = getBrowserI18nManager();
-  const gt = i18nManager.getGTClass();
-  const formattedCurrency = gt.formatCurrency(parsedNumber, currency, {
+  const formattedCurrency = formatCurrency(parsedNumber, currency, {
     locales,
     ...options,
   });

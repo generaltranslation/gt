@@ -1,4 +1,7 @@
-import { getBrowserI18nManager } from '../../browser-i18n-manager/singleton-operations';
+import {
+  formatRelativeTime,
+  formatRelativeTimeFromDate,
+} from 'generaltranslation';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 
 /**
@@ -24,8 +27,6 @@ function GtInternalRelativeTime({
   locales?: string[];
   options?: Intl.RelativeTimeFormatOptions;
 }): string | null {
-  const i18nManager = getBrowserI18nManager();
-  const gt = i18nManager.getGTClass();
   const locales = [...localesProp, getLocale(), getDefaultLocale()];
 
   // Resolve the date from either `date` prop or `children` (for backwards compat)
@@ -42,7 +43,7 @@ function GtInternalRelativeTime({
 
   if (value !== undefined && unit) {
     // Explicit value + unit mode
-    result = gt.formatRelativeTime(value, unit, {
+    result = formatRelativeTime(value, unit, {
       locales,
       numeric: options.numeric,
       style: options.style,
@@ -50,7 +51,7 @@ function GtInternalRelativeTime({
     });
   } else if (resolvedDate != null) {
     // Auto-select unit from Date
-    result = gt.formatRelativeTimeFromDate(resolvedDate, {
+    result = formatRelativeTimeFromDate(resolvedDate, {
       locales,
       baseDate: baseDate ?? new Date(),
       numeric: options.numeric,
