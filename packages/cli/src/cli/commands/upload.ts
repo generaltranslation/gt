@@ -5,7 +5,6 @@ import {
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
-import path from 'node:path';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
 import { FileFormat, DataFormat } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
@@ -257,7 +256,7 @@ export async function upload(
           const translatedContent = readFileSync(translatedFileName, 'utf8');
           translations.push({
             content: translatedContent,
-            fileName: file.fileName,
+            fileName: translatedFileName,
             fileFormat: file.transformFormat ?? file.fileFormat,
             dataFormat: file.dataFormat,
             locale,
