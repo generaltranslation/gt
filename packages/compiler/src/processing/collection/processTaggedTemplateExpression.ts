@@ -25,18 +25,22 @@ export function processTaggedTemplateExpression(
     if (!isStringTranslationTaggedTemplate(path, symbol)) return;
 
     // Extract message from the template literal (reuse macro expansion utility)
-    const { message } = transformTemplateLiteral(path.get('quasi'));
+    const { message, errors } = transformTemplateLiteral(path.get('quasi'));
+    if (errors.length > 0 || message == null) {
+      state.errorTracker.addErrors(errors);
+      return;
+    }
 
     // If message is a TemplateLiteral, it contains derive() — skip
     if (!t.isStringLiteral(message)) {
       return;
     }
 
-    // Register as runtime-only content. Leaving injectHash undefined is
-    // intentional: tagged templates do not reserve injection counter slots.
+    // Register as runtime-only content; tagged templates are not hash-injected.
     registerStandaloneTranslation({
       state,
       content: message.value,
+      injectHash: false,
     });
   };
 }

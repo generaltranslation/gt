@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import * as parser from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { flattenExpressionToParts } from '../flattenExpressionToParts';
+import {
+  flattenExpressionToParts,
+  type Part,
+} from '../flattenExpressionToParts';
 import { mergeAdjacentStaticParts } from '../mergeAdjacentStaticParts';
 import { buildTransformResult } from '../buildTransformationResult';
 /**
@@ -24,67 +27,77 @@ function withExpressionPath(
   });
 }
 
+function withTaggedTemplatePath(
+  code: string,
+  callback: (path: NodePath<t.TemplateLiteral>) => void
+) {
+  const ast = parser.parse(code, {
+    sourceType: 'module',
+    plugins: ['typescript'],
+  });
+  traverse(ast, {
+    TaggedTemplateExpression(path) {
+      callback(path.get('quasi') as NodePath<t.TemplateLiteral>);
+      path.stop();
+    },
+  });
+}
+
+function expectFlattenedParts(code: string, expectedParts: Part[]) {
+  withExpressionPath(code, (path) => {
+    const { parts, errors } = flattenExpressionToParts(path.node, path);
+    expect(errors).toEqual([]);
+    expect(parts).toEqual(expectedParts);
+  });
+}
+
 describe('flattenExpressionToParts', () => {
   it('flattens a string literal', () => {
-    withExpressionPath('"hello"', (path) => {
-      const parts = flattenExpressionToParts(path.node, path);
-      expect(parts).toEqual([{ type: 'static', value: 'hello' }]);
-    });
+    expectFlattenedParts('"hello"', [{ type: 'static', value: 'hello' }]);
   });
 
   it('flattens a numeric literal', () => {
-    withExpressionPath('42', (path) => {
-      const parts = flattenExpressionToParts(path.node, path);
-      expect(parts).toEqual([{ type: 'static', value: '42' }]);
-    });
+    expectFlattenedParts('42', [{ type: 'static', value: '42' }]);
   });
 
   it('flattens a boolean literal', () => {
-    withExpressionPath('true', (path) => {
-      const parts = flattenExpressionToParts(path.node, path);
-      expect(parts).toEqual([{ type: 'static', value: 'true' }]);
-    });
+    expectFlattenedParts('true', [{ type: 'static', value: 'true' }]);
   });
 
   it('flattens null', () => {
-    withExpressionPath('null', (path) => {
-      const parts = flattenExpressionToParts(path.node, path);
-      expect(parts).toEqual([{ type: 'static', value: 'null' }]);
-    });
+    expectFlattenedParts('null', [{ type: 'static', value: 'null' }]);
   });
 
   it('flattens a plain template literal', () => {
-    withExpressionPath('`hello`', (path) => {
-      const parts = flattenExpressionToParts(path.node, path);
-      expect(parts).toEqual([{ type: 'static', value: 'hello' }]);
-    });
+    expectFlattenedParts('`hello`', [{ type: 'static', value: 'hello' }]);
   });
 
   it('flattens "A" + "B" into two static parts', () => {
-    withExpressionPath('"A" + "B"', (path) => {
-      const parts = flattenExpressionToParts(path.node, path);
-      expect(parts).toEqual([
-        { type: 'static', value: 'A' },
-        { type: 'static', value: 'B' },
-      ]);
-    });
+    expectFlattenedParts('"A" + "B"', [
+      { type: 'static', value: 'A' },
+      { type: 'static', value: 'B' },
+    ]);
   });
 
   it('flattens template with expression', () => {
     withExpressionPath('`A${name}B`', (path) => {
-      const parts = flattenExpressionToParts(path.node, path);
+      const { parts, errors } = flattenExpressionToParts(path.node, path);
+      expect(errors).toEqual([]);
+      expect(parts).toBeDefined();
       expect(parts).toHaveLength(3);
-      expect(parts[0]).toEqual({ type: 'static', value: 'A' });
-      expect(parts[1].type).toBe('dynamic');
-      expect(parts[2]).toEqual({ type: 'static', value: 'B' });
+      expect(parts![0]).toEqual({ type: 'static', value: 'A' });
+      expect(parts![1].type).toBe('dynamic');
+      expect(parts![2]).toEqual({ type: 'static', value: 'B' });
     });
   });
 
   it('flattens an identifier as dynamic', () => {
     withExpressionPath('name', (path) => {
-      const parts = flattenExpressionToParts(path.node, path);
+      const { parts, errors } = flattenExpressionToParts(path.node, path);
+      expect(errors).toEqual([]);
+      expect(parts).toBeDefined();
       expect(parts).toHaveLength(1);
-      expect(parts[0].type).toBe('dynamic');
+      expect(parts![0].type).toBe('dynamic');
     });
   });
 
@@ -97,11 +110,23 @@ describe('flattenExpressionToParts', () => {
     traverse(ast, {
       ExpressionStatement(path) {
         const expr = path.get('expression') as NodePath<t.Expression>;
-        const parts = flattenExpressionToParts(expr.node, expr);
+        const { parts, errors } = flattenExpressionToParts(expr.node, expr);
+        expect(errors).toEqual([]);
+        expect(parts).toBeDefined();
         expect(parts).toHaveLength(1);
-        expect(parts[0].type).toBe('derive');
+        expect(parts![0].type).toBe('derive');
         path.stop();
       },
+    });
+  });
+
+  it('reports invalid escape sequences in template literals', () => {
+    withTaggedTemplatePath('tag`\\xg`;', (path) => {
+      const { parts, errors } = flattenExpressionToParts(path.node, path);
+      expect(parts).toEqual([]);
+      expect(errors).toEqual([
+        'Template literal contains an invalid escape sequence',
+      ]);
     });
   });
 });
