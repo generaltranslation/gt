@@ -362,12 +362,12 @@ class I18nManager<
       }
 
       // Invariant: all prefetchEntries must be the same locale
-      const filteredPrefetchEntries = filterPrefetchEntriesByLocale(
+      const resolvedPrefetchEntries = resolvePrefetchEntriesByLocale(
         prefetchEntries,
         resolvedLocale,
         (entryLocale) => this.resolveLocale(entryLocale)
       );
-      if (filteredPrefetchEntries.length !== prefetchEntries.length) {
+      if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
         logger.warn(
           `I18nManager: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${resolvedLocale}`
         );
@@ -379,10 +379,6 @@ class I18nManager<
       if (!txCache) return () => undefined;
 
       // Prefetch any entries during async block
-      const resolvedPrefetchEntries = filteredPrefetchEntries.map((entry) => ({
-        message: entry.message,
-        options: this.resolveLookupOptions(entry.options),
-      }));
       await Promise.all(
         resolvedPrefetchEntries
           .filter((entry) => txCache.get(entry) == null)
@@ -653,23 +649,35 @@ function standardizeLocales(config: {
 }
 
 /**
- * Filter prefetch entries by locale
+ * Resolve prefetch entry locales and keep entries matching the active locale.
  * @template TranslationType - The type of the translation
  * @param {PrefetchEntry<TranslationType>[]} prefetchEntries - The prefetch entries to filter
  * @param {string} locale - The locale to filter by
  * @returns {PrefetchEntry<TranslationType>[]} The filtered prefetch entries
  */
-function filterPrefetchEntriesByLocale<TranslationType extends Translation>(
+function resolvePrefetchEntriesByLocale<TranslationType extends Translation>(
   prefetchEntries: PrefetchEntry<TranslationType>[],
   locale: string,
   resolveLocale: (locale: string) => string
 ) {
-  return prefetchEntries.filter((entry) => {
-    if (entry.options.$locale == null) return true;
+  return prefetchEntries.flatMap((entry) => {
+    const entryLocale = entry.options.$locale;
+    if (entryLocale == null) return [entry];
+
     try {
-      return resolveLocale(entry.options.$locale) === locale;
+      const resolvedLocale = resolveLocale(entryLocale);
+      if (resolvedLocale !== locale) return [];
+      return [
+        {
+          message: entry.message,
+          options: {
+            ...entry.options,
+            $locale: resolvedLocale,
+          },
+        },
+      ];
     } catch {
-      return false;
+      return [];
     }
   });
 }

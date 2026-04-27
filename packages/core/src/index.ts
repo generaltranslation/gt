@@ -202,7 +202,7 @@ export class GT {
   customRegionMapping?: CustomRegionMapping;
 
   /** Client-safe locale and formatting helpers (backing field) */
-  private _localeConfig = new LocaleConfig();
+  private _localeConfig!: LocaleConfig;
 
   /** Client-safe locale and formatting helpers */
   get localeConfig() {
