@@ -205,7 +205,7 @@ export class GT {
   private _localeConfig = new LocaleConfig();
 
   /** Client-safe locale and formatting helpers */
-  get localeConfig(): LocaleConfig {
+  get localeConfig() {
     return this._localeConfig;
   }
 

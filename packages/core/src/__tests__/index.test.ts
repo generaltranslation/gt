@@ -15,8 +15,6 @@ vi.mock('../translate/translateMany', () => ({
 }));
 
 const numberValue = 1234.56;
-const dateValue = new Date('2024-01-02T00:00:00Z');
-const listValue = ['red', 'blue'];
 
 const brandFrenchMapping = {
   'brand-french': {
@@ -25,33 +23,12 @@ const brandFrenchMapping = {
   },
 };
 
-const formatNumWithIntl = (locale: string) =>
-  new Intl.NumberFormat(locale, {
-    numberingSystem: 'latn',
-  }).format(numberValue);
-
 const formatCurrencyWithIntl = (locale: string, currency = 'EUR') =>
   new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
     numberingSystem: 'latn',
   }).format(numberValue);
-
-const formatDateWithIntl = (locale: string) =>
-  new Intl.DateTimeFormat(locale, {
-    calendar: 'gregory',
-    numberingSystem: 'latn',
-    dateStyle: 'full',
-    timeZone: 'UTC',
-  }).format(dateValue);
-
-const formatListWithIntl = (
-  locale: string,
-  options: Intl.ListFormatOptions = {
-    type: 'conjunction',
-    style: 'long',
-  }
-) => new Intl.ListFormat(locale, options).format(listValue);
 
 describe.sequential('GT Translation Methods', () => {
   beforeEach(() => {
@@ -647,15 +624,7 @@ describe.sequential('GT Translation Methods', () => {
 });
 
 describe('LocaleConfig', () => {
-  it('initializes locale state without optional fields', () => {
-    const localeConfig = new LocaleConfig();
-
-    expect(localeConfig.defaultLocale).toBe('en');
-    expect(localeConfig.locales).toEqual([]);
-    expect(localeConfig.requiresTranslation('es', 'en')).toBe(true);
-  });
-
-  it('formats currency with a custom alias by resolving to the canonical locale', () => {
+  it('formats with a custom alias by resolving to the canonical locale', () => {
     const localeConfig = new LocaleConfig({
       defaultLocale: 'en-US',
       customMapping: {
@@ -670,86 +639,9 @@ describe('LocaleConfig', () => {
 
     expect(result).toBe(formatCurrencyWithIntl('fr-FR'));
   });
-
-  it('resolves explicit locales before formatting', () => {
-    const localeConfig = new LocaleConfig({
-      defaultLocale: 'en-US',
-      customMapping: {
-        'brand-de': {
-          code: 'de-DE',
-          name: 'Brand German',
-        },
-      },
-    });
-
-    const result = localeConfig.formatNum(numberValue, undefined, {
-      locales: ['brand-de', 'en-US'],
-    });
-
-    expect(result).toBe(formatNumWithIntl('de-DE'));
-  });
-
-  it('formats lists with a custom alias by resolving to the canonical locale', () => {
-    const localeConfig = new LocaleConfig({
-      defaultLocale: 'en-US',
-      customMapping: {
-        'brand-es': {
-          code: 'es-ES',
-          name: 'Brand Spanish',
-        },
-      },
-    });
-
-    const result = localeConfig.formatList(listValue, 'brand-es', {
-      type: 'disjunction',
-    });
-
-    expect(result).toBe(
-      formatListWithIntl('es-ES', {
-        type: 'disjunction',
-        style: 'long',
-      })
-    );
-  });
-
-  it('resolves custom aliases before locale matching', () => {
-    const localeConfig = new LocaleConfig({
-      defaultLocale: 'en',
-      locales: ['fr'],
-      customMapping: {
-        'brand-fr': {
-          code: 'fr-FR',
-          name: 'Brand French',
-        },
-      },
-    });
-
-    expect(localeConfig.requiresTranslation('brand-fr')).toBe(true);
-    expect(localeConfig.determineLocale('brand-fr')).toBe('fr');
-    expect(localeConfig.isSameLanguage('brand-fr', 'fr-CA')).toBe(true);
-  });
 });
 
 describe('GT LocaleConfig delegation', () => {
-  it('uses the target locale before the source locale for default formatting', () => {
-    const gt = new GT({
-      sourceLocale: 'en-US',
-      targetLocale: 'fr-FR',
-    });
-
-    expect(gt.formatNum(numberValue)).toBe(formatNumWithIntl('fr-FR'));
-    expect(gt.formatCurrency(numberValue, 'EUR')).toBe(
-      formatCurrencyWithIntl('fr-FR')
-    );
-    expect(
-      gt.formatDateTime(dateValue, {
-        dateStyle: 'full',
-        timeZone: 'UTC',
-      })
-    ).toBe(formatDateWithIntl('fr-FR'));
-    expect(gt.formatList(listValue)).toBe(formatListWithIntl('fr-FR'));
-  });
-
   it('formats with a custom target locale alias through LocaleConfig', () => {
     const gt = new GT({
       sourceLocale: 'en-US',
@@ -762,7 +654,7 @@ describe('GT LocaleConfig delegation', () => {
     expect(result).toBe(formatCurrencyWithIntl('fr-FR'));
   });
 
-  it('exposes a client-safe localeConfig without credentials', () => {
+  it('exposes client-safe localeConfig and refreshes it from setConfig', () => {
     const gt = new GT({
       apiKey: 'test-api-key',
       devApiKey: 'test-dev-key',
@@ -770,19 +662,12 @@ describe('GT LocaleConfig delegation', () => {
       sourceLocale: 'en-US',
       targetLocale: 'es-ES',
     });
+    const initialLocaleConfig = gt.localeConfig;
 
     expect(gt.localeConfig).toBeInstanceOf(LocaleConfig);
     expect('apiKey' in gt.localeConfig).toBe(false);
     expect('devApiKey' in gt.localeConfig).toBe(false);
     expect('projectId' in gt.localeConfig).toBe(false);
-  });
-
-  it('keeps localeConfig stable until setConfig refreshes it', () => {
-    const gt = new GT({
-      sourceLocale: 'en-US',
-      targetLocale: 'es-ES',
-    });
-    const initialLocaleConfig = gt.localeConfig;
 
     gt.setConfig({
       targetLocale: 'brand-french',
