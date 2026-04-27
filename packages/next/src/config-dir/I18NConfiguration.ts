@@ -1,4 +1,13 @@
-import { GT, isSameLanguage } from 'generaltranslation';
+import {
+  determineLocale as gtDetermineLocale,
+  getLocaleDirection as gtGetLocaleDirection,
+  getLocaleProperties as gtGetLocaleProperties,
+  GT,
+  isSameLanguage,
+  isValidLocale as gtIsValidLocale,
+  resolveAliasLocale as gtResolveAliasLocale,
+  resolveCanonicalLocale as gtResolveCanonicalLocale,
+} from 'generaltranslation';
 import translationManager, { TranslationManager } from './TranslationManager';
 import {
   RenderMethod,
@@ -19,7 +28,7 @@ import {
   defaultResetLocaleCookieName,
 } from '../utils/cookies';
 import { defaultLocaleHeaderName } from '../utils/headers';
-import { CustomMapping } from 'generaltranslation/types';
+import { CustomMapping, LocaleProperties } from 'generaltranslation/types';
 import { GTTranslationError } from '../utils/errors';
 import type { TranslateManyEntry } from 'generaltranslation/types';
 
@@ -322,6 +331,37 @@ export default class I18NConfiguration {
    */
   getLocales(): string[] {
     return this.locales;
+  }
+
+  determineLocale(
+    locales: string | string[],
+    approvedLocales: string[] | undefined = this.locales
+  ): string | undefined {
+    return gtDetermineLocale(locales, approvedLocales, this.customMapping);
+  }
+
+  resolveAliasLocale(locale: string): string {
+    return gtResolveAliasLocale(locale, this.customMapping);
+  }
+
+  resolveCanonicalLocale(locale: string): string {
+    return gtResolveCanonicalLocale(locale, this.customMapping);
+  }
+
+  isValidLocale(locale: string): boolean {
+    return gtIsValidLocale(locale, this.customMapping);
+  }
+
+  getLocaleProperties(locale: string): LocaleProperties {
+    return gtGetLocaleProperties(
+      locale,
+      this.defaultLocale,
+      this.customMapping
+    );
+  }
+
+  getLocaleDirection(locale: string): 'ltr' | 'rtl' {
+    return gtGetLocaleDirection(locale);
   }
 
   /**

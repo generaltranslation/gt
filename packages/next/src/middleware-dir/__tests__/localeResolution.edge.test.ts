@@ -1,7 +1,6 @@
 // @vitest-environment edge-runtime
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import { GT } from 'generaltranslation';
 import { getLocaleFromRequest } from '../utils';
 
 // Mock gt-react/internal — only provides a constant, avoids deep react-core build chain
@@ -53,7 +52,6 @@ function callGetLocaleFromRequest(
     defaultLocalePaths?: string[];
   } = {}
 ) {
-  const gt = new GT();
   return getLocaleFromRequest(
     req,
     overrides.defaultLocale ?? DEFAULT_LOCALE,
@@ -64,8 +62,7 @@ function callGetLocaleFromRequest(
     overrides.defaultLocalePaths ?? [],
     REFERRER_COOKIE,
     LOCALE_COOKIE,
-    RESET_COOKIE,
-    gt
+    RESET_COOKIE
   );
 }
 

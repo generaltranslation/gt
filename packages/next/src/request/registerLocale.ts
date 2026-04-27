@@ -9,6 +9,5 @@ import { localeStore } from './localeStore';
  * @param locale - A BCP-47 locale tag (e.g., 'en-US', 'de', 'fr')
  */
 export function registerLocale(locale: string): void {
-  const gt = getI18NConfig().getGTClass();
-  localeStore.enterWith(gt.resolveAliasLocale(locale));
+  localeStore.enterWith(getI18NConfig().resolveAliasLocale(locale));
 }

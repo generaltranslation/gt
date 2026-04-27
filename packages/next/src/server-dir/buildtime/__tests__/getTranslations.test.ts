@@ -95,6 +95,10 @@ vi.mock('generaltranslation', () => ({
   determineLocale: vi.fn(
     (preferred, available) => preferred[0] || available[0]
   ),
+  resolveAliasLocale: vi.fn((locale) => locale),
+  resolveCanonicalLocale: vi.fn((locale) => locale),
+  isValidLocale: vi.fn(() => true),
+  getLocaleDirection: vi.fn(() => 'ltr'),
 }));
 vi.mock('generaltranslation/id', () => ({
   hashSource: mockHashSource,

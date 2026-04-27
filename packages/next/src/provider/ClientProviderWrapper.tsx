@@ -2,13 +2,21 @@
 import { ClientProvider } from 'gt-react/client';
 import { ClientProviderProps } from 'gt-react/internal';
 import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useMemo } from 'react';
-import { GT, standardizeLocale } from 'generaltranslation';
+import { useCallback, useEffect } from 'react';
+import {
+  determineLocale,
+  resolveAliasLocale,
+  standardizeLocale,
+} from 'generaltranslation';
+import { CustomMapping } from 'generaltranslation/types';
 import { useRouter } from 'next/navigation';
 
-function extractLocale(pathname: string, gt: GT): string | null {
+function extractLocale(
+  pathname: string,
+  customMapping?: CustomMapping
+): string | null {
   const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
-  return matches ? gt.resolveAliasLocale(matches[1]) : null;
+  return matches ? resolveAliasLocale(matches[1], customMapping) : null;
 }
 
 export default function ClientProviderWrapper(
@@ -25,9 +33,6 @@ export default function ClientProviderWrapper(
     gtServicesEnabled,
     referrerLocaleCookieName,
     localeRoutingEnabledCookieName,
-    devApiKey,
-    projectId,
-    runtimeUrl,
     customMapping,
   } = props;
 
@@ -39,26 +44,13 @@ export default function ClientProviderWrapper(
     router.refresh();
   }, [router]);
 
-  const gt = useMemo(
-    () =>
-      new GT({
-        devApiKey,
-        sourceLocale: defaultLocale,
-        targetLocale: locale,
-        projectId,
-        baseUrl: runtimeUrl || undefined,
-        customMapping,
-      }),
-    [devApiKey, defaultLocale, locale, projectId, runtimeUrl, customMapping]
-  );
-
   // Trigger page reload when locale changes
   // When nav to same route but in diff locale, client components were cached and not re-rendered
   const pathname = usePathname();
   useEffect(() => {
     // ----- Referrer Locale ----- //
     if (locale) {
-      document.cookie = `${referrerLocaleCookieName}=${gt.resolveAliasLocale(locale)};path=/`;
+      document.cookie = `${referrerLocaleCookieName}=${resolveAliasLocale(locale, customMapping)};path=/`;
     }
 
     // ----- Middleware ----- //
@@ -71,18 +63,20 @@ export default function ClientProviderWrapper(
         ?.split('=')[1] === 'true';
     if (middlewareEnabled) {
       // Extract locale from pathname
-      const extractedLocale = extractLocale(pathname, gt) || defaultLocale;
-      let pathLocale = gt.determineLocale(
+      const extractedLocale =
+        extractLocale(pathname, customMapping) || defaultLocale;
+      let pathLocale = determineLocale(
         [
           gtServicesEnabled
             ? standardizeLocale(extractedLocale)
             : extractedLocale,
           defaultLocale,
         ],
-        locales
+        locales,
+        customMapping
       );
       if (pathLocale) {
-        pathLocale = gt.resolveAliasLocale(pathLocale);
+        pathLocale = resolveAliasLocale(pathLocale, customMapping);
       }
 
       if (pathLocale && locales.includes(pathLocale) && pathLocale !== locale) {
@@ -102,6 +96,7 @@ export default function ClientProviderWrapper(
     referrerLocaleCookieName,
     localeRoutingEnabledCookieName,
     reloadServer,
+    customMapping,
   ]);
 
   return <ClientProvider {...props} reloadServer={reloadServer} />;

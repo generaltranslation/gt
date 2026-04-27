@@ -6,8 +6,19 @@ import { validateConfig } from './validation/validateConfig';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { GT, standardizeLocale } from 'generaltranslation';
-import { CustomMapping } from 'generaltranslation/types';
+import {
+  determineLocale as gtDetermineLocale,
+  getLocaleDirection as gtGetLocaleDirection,
+  getLocaleProperties as gtGetLocaleProperties,
+  GT,
+  isSameLanguage as gtIsSameLanguage,
+  isValidLocale as gtIsValidLocale,
+  requiresTranslation as gtRequiresTranslation,
+  resolveAliasLocale as gtResolveAliasLocale,
+  resolveCanonicalLocale as gtResolveCanonicalLocale,
+  standardizeLocale,
+} from 'generaltranslation';
+import { CustomMapping, LocaleProperties } from 'generaltranslation/types';
 import { LookupOptions } from '../translation-functions/types/options';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
@@ -174,8 +185,7 @@ class I18nManager<
   setLocale(locale: string): void {
     try {
       this.validateLocale(locale);
-      const gtInstance = this.getGTClassClean();
-      const newLocale = gtInstance.determineLocale(locale)!;
+      const newLocale = this.determineLocale(locale)!;
       const previousLocale = this.getLocale();
       this.storeAdapter.setItem('locale', newLocale);
       this.emit('locale-update', {
@@ -199,6 +209,56 @@ class I18nManager<
    */
   getLocales(): string[] {
     return this.config.locales;
+  }
+
+  /**
+   * Determine the best supported locale from a preferred locale list
+   */
+  determineLocale(locales: string | string[]): string | undefined {
+    return gtDetermineLocale(
+      locales,
+      this.config.locales,
+      this.config.customMapping
+    );
+  }
+
+  /**
+   * Resolve a locale alias using the configured custom mapping
+   */
+  resolveAliasLocale(locale: string): string {
+    return gtResolveAliasLocale(locale, this.config.customMapping);
+  }
+
+  /**
+   * Resolve a locale to its canonical code using the configured custom mapping
+   */
+  resolveCanonicalLocale(locale: string): string {
+    return gtResolveCanonicalLocale(locale, this.config.customMapping);
+  }
+
+  /**
+   * Return true when a locale is valid for the configured custom mapping
+   */
+  isValidLocale(locale: string): boolean {
+    return gtIsValidLocale(locale, this.config.customMapping);
+  }
+
+  /**
+   * Get locale display metadata
+   */
+  getLocaleProperties(locale: string = this.getLocale()): LocaleProperties {
+    return gtGetLocaleProperties(
+      locale,
+      this.config.defaultLocale,
+      this.config.customMapping
+    );
+  }
+
+  /**
+   * Get text direction for a locale
+   */
+  getLocaleDirection(locale: string = this.getLocale()): 'ltr' | 'rtl' {
+    return gtGetLocaleDirection(locale);
   }
 
   /**
@@ -446,11 +506,15 @@ class I18nManager<
    */
   requiresTranslation(locale: string = this.getLocale()): boolean {
     const defaultLocale = this.getDefaultLocale();
-    const gtInstance = this.getGTClass();
     const locales = this.getLocales();
     return (
       this.isTranslationEnabled() &&
-      gtInstance.requiresTranslation(defaultLocale, locale, locales)
+      gtRequiresTranslation(
+        defaultLocale,
+        locale,
+        locales,
+        this.config.customMapping
+      )
     );
   }
 
@@ -461,10 +525,9 @@ class I18nManager<
    */
   requiresDialectTranslation(locale: string = this.getLocale()): boolean {
     const defaultLocale = this.getDefaultLocale();
-    const gt = this.getGTClass();
     return (
       this.requiresTranslation(locale) &&
-      gt.isSameLanguage(defaultLocale, locale)
+      gtIsSameLanguage(defaultLocale, locale)
     );
   }
 
@@ -487,11 +550,7 @@ class I18nManager<
    * Validate locale
    */
   private validateLocale(locale: string): void {
-    const gtInstance = this.getGTClass();
-    if (
-      !gtInstance.isValidLocale(locale) ||
-      !gtInstance.determineLocale(locale)
-    ) {
+    if (!this.isValidLocale(locale) || !this.determineLocale(locale)) {
       throw new Error(
         `I18nManager: validateLocale(): locale ${locale} is not valid`
       );

@@ -32,7 +32,6 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-import { GT } from 'generaltranslation';
 import {
   useMessages,
   useGT,
@@ -45,7 +44,7 @@ export function useGTClass() {
 }
 
 export function useLocaleProperties(locale: string): LocaleProperties {
-  return (useGTClass() as GT).getLocaleProperties(locale);
+  return getI18NConfig().getLocaleProperties(locale);
 }
 
 export function useLocales() {

@@ -52,6 +52,5 @@ export async function getNextLocale(): Promise<RequestFunctionReturnType> {
   // add defaultLocale just in case there are no matches
   preferredLocales.push(defaultLocale);
 
-  const gt = getI18NConfig().getGTClass();
-  return gt.determineLocale(preferredLocales, locales);
+  return I18NConfig.determineLocale(preferredLocales, locales);
 }

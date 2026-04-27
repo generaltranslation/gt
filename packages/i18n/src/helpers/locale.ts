@@ -52,6 +52,5 @@ export function getDefaultLocale() {
  */
 export function getLocaleProperties(locale?: string) {
   const i18nManager = getI18nManager();
-  const gtInstance = i18nManager.getGTClass();
-  return gtInstance.getLocaleProperties(locale);
+  return i18nManager.getLocaleProperties(locale);
 }

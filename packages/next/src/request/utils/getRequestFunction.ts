@@ -63,8 +63,7 @@ function handleExperimentalLocaleResolution(
             defaultExperimentalLocaleResolutionParam
         );
         const I18NConfig = getI18NConfig();
-        const gt = I18NConfig.getGTClass();
-        return unverifiedLocale && gt.isValidLocale(unverifiedLocale)
+        return unverifiedLocale && I18NConfig.isValidLocale(unverifiedLocale)
           ? unverifiedLocale
           : undefined;
       } catch (error) {

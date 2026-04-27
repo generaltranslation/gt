@@ -23,20 +23,19 @@ export async function getLocale(): Promise<string> {
   // Use the request function to get the locale
   if (getLocaleFunction) return await getLocaleFunction();
   const I18NConfig = getI18NConfig();
-  const gt = I18NConfig.getGTClass();
 
   if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {
     const requestFunction = getRequestFunction('getLocale');
     // Support new behavior
     getLocaleFunction = async () => {
       const requestLocale = await requestFunction();
-      return gt.resolveAliasLocale(
+      return I18NConfig.resolveAliasLocale(
         requestLocale || I18NConfig.getDefaultLocale()
       );
     };
   } else {
     // Support legacy behavior
-    getLocaleFunction = legacyGetLocaleFunction(I18NConfig, gt);
+    getLocaleFunction = legacyGetLocaleFunction(I18NConfig);
   }
 
   return getLocaleFunction();

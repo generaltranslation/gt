@@ -5,7 +5,11 @@ import type {
 } from 'gt-i18n/internal/types';
 import type { BrowserStorageAdapter } from './BrowserStorageAdapter';
 import type { HtmlTagOptions } from './utils/types';
-import { determineLocale as gtDetermineLocale } from 'generaltranslation';
+import {
+  getLocaleDirection,
+  isValidLocale,
+  resolveCanonicalLocale,
+} from 'generaltranslation';
 import { Translation } from 'gt-i18n/types';
 import { DEFAULT_HTML_TAG_OPTIONS } from './utils/constants';
 import { LocalStorageTranslationCache } from './LocalStorageTranslationCache';
@@ -141,13 +145,14 @@ export class BrowserI18nManager extends I18nManager<
   ): void {
     // Get parameters
     const locale = htmlTagOptions?.lang || this.getLocale();
-    const gtInstance = this.getGTClass();
-    const canonicalLocale = gtInstance.resolveCanonicalLocale(locale);
-    const localeDirection =
-      htmlTagOptions?.dir || gtInstance.getLocaleDirection(locale);
+    const canonicalLocale = resolveCanonicalLocale(
+      locale,
+      this.config.customMapping
+    );
+    const localeDirection = htmlTagOptions?.dir || getLocaleDirection(locale);
 
     // Validate parameters
-    if (!gtInstance.isValidLocale(canonicalLocale)) {
+    if (!isValidLocale(canonicalLocale, this.config.customMapping)) {
       console.warn(createInvalidLocaleWarning(locale));
       return;
     }
@@ -169,6 +174,10 @@ export class BrowserI18nManager extends I18nManager<
 }
 
 // ===== Helper Functions ===== //
+
+function createInvalidLocaleWarning(locale: string): string {
+  return `gt-react: Invalid locale: ${locale}.`;
+}
 
 /**
  * Creates the dev hot reload config

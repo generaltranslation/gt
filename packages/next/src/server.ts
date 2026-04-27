@@ -25,7 +25,7 @@ export function getGTClass() {
 }
 
 export function getLocaleProperties(locale: string): LocaleProperties {
-  return getGTClass().getLocaleProperties(locale);
+  return getI18NConfig().getLocaleProperties(locale);
 }
 
 export function getLocales(): string[] {

@@ -1,5 +1,8 @@
-import { isSameDialect, standardizeLocale } from 'generaltranslation';
-import { GT } from 'generaltranslation';
+import {
+  isSameDialect,
+  isValidLocale,
+  standardizeLocale,
+} from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
@@ -60,10 +63,7 @@ export default function createNextMiddleware({
     }
   }
 
-  // gt instance
-  const gt = new GT({
-    customMapping: envParams?.customMapping,
-  });
+  const customMapping = envParams?.customMapping;
 
   // using gt services
   const gtServicesEnabled =
@@ -97,12 +97,14 @@ export default function createNextMiddleware({
   const localeHeaderName =
     headersAndCookies?.localeHeaderName || defaultLocaleHeaderName;
 
-  if (!gt.isValidLocale(defaultLocale))
+  if (!isValidLocale(defaultLocale, customMapping))
     throw new Error(
       `gt-next middleware: defaultLocale "${defaultLocale}" is not a valid locale.`
     );
 
-  const warningLocales = locales.filter((locale) => !gt.isValidLocale(locale));
+  const warningLocales = locales.filter(
+    (locale) => !isValidLocale(locale, customMapping)
+  );
   if (warningLocales.length)
     console.warn(createUnsupportedLocalesWarning(warningLocales));
 
@@ -174,7 +176,7 @@ export default function createNextMiddleware({
       referrerLocaleCookieName,
       localeCookieName,
       resetLocaleCookieName,
-      gt
+      customMapping
     );
 
     const headerList = new Headers(req.headers);
