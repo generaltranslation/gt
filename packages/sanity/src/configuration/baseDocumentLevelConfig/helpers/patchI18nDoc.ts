@@ -1,7 +1,12 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
 import { SanityClient, SanityDocumentLike } from 'sanity';
-import { applyDocuments } from '../../../utils/applyDocuments';
+import JSONPointer from 'jsonpointer';
+import {
+  applyDocuments,
+  deleteMatchingFields,
+  forEachMatchingField,
+} from '../../../utils/applyDocuments';
 import { pluginConfig } from '../../../adapter/core';
 
 const SYSTEM_FIELDS = ['_id', '_rev', '_updatedAt', 'language'];
@@ -14,7 +19,8 @@ export async function patchI18nDoc(
   sourceDocument: SanityDocumentLike,
   mergedDocument: SanityDocumentLike,
   translatedFields: Record<string, any>,
-  client: SanityClient
+  client: SanityClient,
+  existingDocument?: SanityDocumentLike
 ): Promise<void> {
   const cleanedMerge: Record<string, any> = {};
   Object.entries(mergedDocument).forEach(([key, value]) => {
@@ -43,6 +49,18 @@ export async function patchI18nDoc(
     pluginConfig.getIgnoreFields(),
     pluginConfig.getSkipFields()
   );
+  const dedupeFields = pluginConfig.getDedupeFields();
+  deleteMatchingFields(sourceDocumentId, appliedDocument, dedupeFields);
+  if (existingDocument) {
+    forEachMatchingField(
+      sourceDocumentId,
+      existingDocument,
+      dedupeFields,
+      (result) => {
+        JSONPointer.set(appliedDocument, result.pointer, result.value);
+      }
+    );
+  }
   const newDocument = await client
     .patch(i18nDocId, { set: appliedDocument })
     .commit();

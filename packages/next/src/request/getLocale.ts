@@ -2,6 +2,7 @@ import getI18NConfig from '../config-dir/getI18NConfig';
 import use from '../utils/use';
 import { legacyGetLocaleFunction } from './utils/legacyGetLocaleFunction';
 import { getRequestFunction } from './utils/getRequestFunction';
+import { localeStore } from './localeStore';
 
 let getLocaleFunction: () => Promise<string>;
 
@@ -15,6 +16,11 @@ let getLocaleFunction: () => Promise<string>;
  * console.log(locale); // 'en-US'
  */
 export async function getLocale(): Promise<string> {
+  // If a locale has been registered for this request, return it
+  const registeredLocale = localeStore.getStore();
+  if (registeredLocale) return registeredLocale;
+
+  // Use the request function to get the locale
   if (getLocaleFunction) return await getLocaleFunction();
   const I18NConfig = getI18NConfig();
   const gt = I18NConfig.getGTClass();

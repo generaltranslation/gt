@@ -22,6 +22,10 @@ import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { LocaleCheckbox } from '../shared/LocaleCheckbox';
 import { DownloadIcon, LinkIcon, PublishIcon } from '@sanity/icons';
+import {
+  createTranslationStatusKey,
+  getDocumentPublishedId,
+} from '../../utils/documentIds';
 
 export const TranslationView = () => {
   const {
@@ -85,7 +89,7 @@ export const TranslationView = () => {
   // Get document ID for status tracking
   const documentId = useMemo(() => {
     if (!document) return null;
-    return document._id?.replace('drafts.', '') || document._id;
+    return getDocumentPublishedId(document);
   }, [document]);
 
   // Unified import functionality
@@ -99,7 +103,12 @@ export const TranslationView = () => {
 
       // Find translations ready to import
       const readyTranslations = availableLocales.filter((locale) => {
-        const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
+        const key = createTranslationStatusKey(
+          branchId,
+          documentId,
+          document._rev,
+          locale.localeId
+        );
         const status = translationStatuses.get(key);
         return status?.isReady && !importedTranslations.has(key);
       });
@@ -278,7 +287,12 @@ export const TranslationView = () => {
 
           <Box>
             {availableLocales.map((locale) => {
-              const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
+              const key = createTranslationStatusKey(
+                branchId,
+                documentId,
+                document._rev,
+                locale.localeId
+              );
               const status = translationStatuses.get(key);
               const progress = status?.progress || 0;
               const isImported = importedTranslations.has(key);
@@ -316,7 +330,12 @@ export const TranslationView = () => {
                   disabled={
                     isImporting ||
                     availableLocales.every((locale) => {
-                      const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
+                      const key = createTranslationStatusKey(
+                        branchId,
+                        documentId,
+                        document._rev,
+                        locale.localeId
+                      );
                       const status = translationStatuses.get(key);
                       return !status?.isReady || importedTranslations.has(key);
                     })
@@ -336,14 +355,24 @@ export const TranslationView = () => {
                 Imported{' '}
                 {
                   availableLocales.filter((locale) => {
-                    const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
+                    const key = createTranslationStatusKey(
+                      branchId,
+                      documentId,
+                      document._rev,
+                      locale.localeId
+                    );
                     return importedTranslations.has(key);
                   }).length
                 }
                 /
                 {
                   availableLocales.filter((locale) => {
-                    const key = `${branchId}:${documentId}:${document._rev}:${locale.localeId}`;
+                    const key = createTranslationStatusKey(
+                      branchId,
+                      documentId,
+                      document._rev,
+                      locale.localeId
+                    );
                     const status = translationStatuses.get(key);
                     return status?.isReady;
                   }).length

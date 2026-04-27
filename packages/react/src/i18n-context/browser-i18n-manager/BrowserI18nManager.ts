@@ -2,12 +2,10 @@ import { I18nManager } from 'gt-i18n/internal';
 import type {
   I18nManagerConstructorParams,
   TranslationsLoader,
-  LifecycleCallbacks,
 } from 'gt-i18n/internal/types';
 import type { BrowserStorageAdapter } from './BrowserStorageAdapter';
 import type { HtmlTagOptions } from './utils/types';
 import { determineLocale as gtDetermineLocale } from 'generaltranslation';
-import { createInvalidLocaleWarning } from '../../shared/messages';
 import { Translation } from 'gt-i18n/types';
 import { DEFAULT_HTML_TAG_OPTIONS } from './utils/constants';
 import { LocalStorageTranslationCache } from './LocalStorageTranslationCache';
@@ -66,6 +64,25 @@ export class BrowserI18nManager extends I18nManager<
       ...DEFAULT_HTML_TAG_OPTIONS,
       ...config.htmlTagOptions,
     };
+
+    // For dev hot reload, we need to write the translations to the localStorage cache
+    if (isDevHotReloadEnabled(config)) {
+      this.subscribe(
+        'translations-cache-miss',
+        ({ locale, hash, translation }) => {
+          const cache = localStorageCaches[locale];
+          if (cache) {
+            cache.write(hash, translation);
+          } else {
+            localStorageCaches[locale] = new LocalStorageTranslationCache({
+              locale,
+              projectId: this.config.projectId!,
+              init: { [hash]: translation },
+            });
+          }
+        }
+      );
+    }
   }
 
   /**
@@ -91,11 +108,7 @@ export class BrowserI18nManager extends I18nManager<
    * @note This function causes a page reload
    */
   setLocale(locale: string): void {
-    if (!gtDetermineLocale(locale, this.getLocales())) {
-      console.warn(createInvalidLocaleWarning(locale));
-      return;
-    }
-    this.storeAdapter.setItem('locale', locale);
+    super.setLocale(locale);
     window.location.reload();
   }
 
@@ -171,7 +184,6 @@ function createDevHotReloadConfig(
       projectId,
       localStorageCaches
     ),
-    lifecycle: createLifecycleCallbacks(projectId, localStorageCaches),
   };
 }
 /**
@@ -193,31 +205,6 @@ function wrapLoaderWithLocalStorage(
       init: loaderTranslations as Record<string, Translation>,
     });
     return localStorageCaches[locale].getInternalCache();
-  };
-}
-
-/**
- * Creates the lifecycle callbacks for the BrowserI18nManager
- * @param localStorageCaches - The localStorage caches
- * @returns The lifecycle callbacks
- */
-function createLifecycleCallbacks(
-  projectId: string,
-  localStorageCaches: Record<string, LocalStorageTranslationCache>
-): LifecycleCallbacks<Translation> {
-  return {
-    onTranslationsCacheMiss: ({ locale, hash, value }) => {
-      const cache = localStorageCaches[locale];
-      if (cache) {
-        cache.write(hash, value);
-      } else {
-        localStorageCaches[locale] = new LocalStorageTranslationCache({
-          locale,
-          projectId,
-          init: { [hash]: value },
-        });
-      }
-    },
   };
 }
 

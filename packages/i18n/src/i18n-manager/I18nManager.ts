@@ -18,9 +18,12 @@ import {
 import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
 import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
-import { LocalesCache } from './translations-manager/LocalesCache';
+import { Locale, LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
+import { EventEmitter } from './event-subscription/EventEmitter';
+import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
+import { I18nEvents } from './event-subscription/types';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -57,13 +60,11 @@ type PrefetchEntry<TranslationType extends Translation> = {
  * Class for managing translation functionality
  * @template StorageAdapterInstanceType - The type of the storage adapter
  * @template TranslationValue - The type of the translation that will be cached
- *
- * TODO: next major version, move U to the first generic and make it a required parameter, no default value
  */
 class I18nManager<
   StorageAdapterInstanceType extends StorageAdapter = StorageAdapter,
   TranslationValue extends Translation = Translation,
-> {
+> extends EventEmitter<I18nEvents<TranslationValue>> {
   protected config: I18nManagerConfig;
 
   /**
@@ -85,6 +86,8 @@ class I18nManager<
   constructor(
     params: I18nManagerConstructorParams<StorageAdapterInstanceType>
   ) {
+    super();
+
     // Validation
     const validationResults = validateConfig(params);
     publishValidationResults(validationResults, 'I18nManager: ');
@@ -102,14 +105,43 @@ class I18nManager<
       DEFAULT_TRANSLATION_TIMEOUT
     );
 
+    // Subscribe lifecycle callbacks
+    subscribeLifecycleCallbacks(params.lifecycle ?? {}, (...args) =>
+      this.subscribe(...args)
+    );
+
     // Setup translations cache
     this.localesCache = new LocalesCache<TranslationValue>({
       loadTranslations:
         loadTranslations as SafeTranslationsLoader<TranslationValue>,
       createTranslateMany,
-      lifecycle: createLifecycleCallbacks<TranslationValue>(
-        params.lifecycle ?? {}
-      ),
+      lifecycle: createLifecycleCallbacks((...args) => this.emit(...args)),
+    });
+  }
+
+  // ========== Subscribers and Emitters ========== //
+
+  /**
+   * Subscribes to a change in a translation entry (eg a runtime translation)
+   * @param listener - The subscriber function
+   * @param locale - The locale of the translation entry
+   * @param hash - The hash of the translation entry
+   * @returns An unsubscribe function
+   *
+   * Pair this with {@link lookupTranslation} to get the translation entry
+   */
+  subscribeToTranslationsCacheMiss(
+    listener: (
+      event: I18nEvents<TranslationValue>['translations-cache-miss']
+    ) => void,
+    locale: Locale,
+    hash: Hash
+  ) {
+    return this.subscribe('translations-cache-miss', (event) => {
+      if (event.locale !== locale || event.hash !== hash) {
+        return;
+      }
+      listener(event);
     });
   }
 
@@ -142,8 +174,14 @@ class I18nManager<
   setLocale(locale: string): void {
     try {
       this.validateLocale(locale);
-      const gtInstance = this.getGTClass();
-      this.storeAdapter.setItem('locale', gtInstance.determineLocale(locale)!);
+      const gtInstance = this.getGTClassClean();
+      const newLocale = gtInstance.determineLocale(locale)!;
+      const previousLocale = this.getLocale();
+      this.storeAdapter.setItem('locale', newLocale);
+      this.emit('locale-update', {
+        previousLocale,
+        newLocale,
+      });
     } catch (error) {
       this.handleError(error);
     }

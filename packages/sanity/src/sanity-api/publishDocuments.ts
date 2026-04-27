@@ -1,6 +1,7 @@
 import { SanityClient } from 'sanity';
 import { processBatch } from '../utils/batchProcessor';
 import { findDocument } from './findDocuments';
+import { getPublishedId } from '../utils/documentIds';
 
 export async function publishDocument(
   documentId: string,
@@ -13,7 +14,7 @@ export async function publishDocument(
         {
           actionType: 'sanity.action.document.publish',
           draftId: documentId,
-          publishedId: documentId.replace('drafts.', ''),
+          publishedId: getPublishedId(documentId),
         },
         {}
       );

@@ -55,7 +55,7 @@ export class StringCollector {
   private hashAggregators: Map<number, TranslationHash> = new Map();
   /** Global counter incremented for each useGT/getGT call encountered */
   private globalCallCounter: number = 0;
-  /** Runtime-only entries for t(), msg(), tagged templates — bypasses the counter system */
+  /** Runtime-only entries for standalone strings consumed by runtime translate */
   private runtimeOnlyEntries: TranslationContent[] = [];
 
   /**
@@ -198,8 +198,7 @@ export class StringCollector {
   }
 
   /**
-   * Add a runtime-only translation entry (for t(), msg(), tagged templates).
-   * These bypass the counter system and are only consumed by the runtime translate pass.
+   * Add a runtime-only translation entry for the runtime translate pass.
    */
   pushRuntimeOnlyContent(content: TranslationContent): void {
     this.runtimeOnlyEntries.push(content);

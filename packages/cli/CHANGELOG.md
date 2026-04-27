@@ -1,5 +1,19 @@
 # gtx-cli
 
+## 2.14.21
+
+### Patch Changes
+
+- [#1261](https://github.com/generaltranslation/gt/pull/1261) [`a2c5c2e`](https://github.com/generaltranslation/gt/commit/a2c5c2e8c748c9d3d81dc3c99800ea17e2f2c9b9) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix(cli): enforcement of gt-react-native and gt-react sync
+
+## 2.14.20
+
+### Patch Changes
+
+- Updated dependencies [[`e3a8008`](https://github.com/generaltranslation/gt/commit/e3a8008ed0a3ab82d053f549265f9de7829e94c5), [`fc3c699`](https://github.com/generaltranslation/gt/commit/fc3c699d2c952710cc975e26629ac309063dcbc7)]:
+  - generaltranslation@8.2.7
+  - @generaltranslation/python-extractor@0.2.12
+
 ## 2.14.19
 
 ### Patch Changes
