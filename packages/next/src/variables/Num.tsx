@@ -1,5 +1,6 @@
 import getI18NConfig from '../config-dir/getI18NConfig';
 import { useLocale } from '../request/getLocale';
+import { formatNum } from 'generaltranslation';
 import React from 'react';
 
 /**
@@ -34,7 +35,6 @@ function Num({
   if (!locales) {
     locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }
-  const gt = getI18NConfig().getGTClass();
 
   // Determine the value to be used
   const renderedValue =
@@ -43,7 +43,7 @@ function Num({
   // Format the number according to the locale
   const formattedValue =
     typeof renderedValue === 'number'
-      ? gt.formatNum(renderedValue, { locales, ...options })
+      ? formatNum(renderedValue, { locales, ...options })
       : renderedValue;
 
   return <>{formattedValue}</>;

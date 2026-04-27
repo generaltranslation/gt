@@ -1,5 +1,6 @@
 import getI18NConfig from '../config-dir/getI18NConfig';
 import { useLocale } from '../request/getLocale';
+import { formatCurrency } from 'generaltranslation';
 import React from 'react';
 
 /**
@@ -35,8 +36,6 @@ function Currency({
     locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }
 
-  const gt = getI18NConfig().getGTClass();
-
   // Determine the value to be formatted
   const renderedValue =
     typeof children === 'string' ? parseFloat(children) : children;
@@ -44,7 +43,7 @@ function Currency({
   // Format the number as currency according to the locale
   const formattedValue =
     typeof renderedValue === 'number'
-      ? gt.formatCurrency(renderedValue, currency, { locales, ...options })
+      ? formatCurrency(renderedValue, currency, { locales, ...options })
       : renderedValue;
 
   return <>{formattedValue}</>;

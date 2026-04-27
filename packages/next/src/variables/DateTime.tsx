@@ -1,5 +1,6 @@
 import getI18NConfig from '../config-dir/getI18NConfig';
 import { useLocale } from '../request/getLocale';
+import { formatDateTime } from 'generaltranslation';
 import React from 'react';
 
 /**
@@ -33,11 +34,10 @@ function DateTime({
     locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }
 
-  const gt = getI18NConfig().getGTClass();
-
-  const result = gt
-    .formatDateTime(children, { locales, ...options })
-    .replace(/[\u200F\u202B\u202E]/g, '');
+  const result = formatDateTime(children, { locales, ...options }).replace(
+    /[\u200F\u202B\u202E]/g,
+    ''
+  );
   // Note: This component may cause hydration errors when the output differs
   // between server and client (e.g., different timezones or locales).
   // We cannot use suppressHydrationWarning because this is a purely logical

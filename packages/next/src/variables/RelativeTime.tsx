@@ -1,5 +1,9 @@
 import getI18NConfig from '../config-dir/getI18NConfig';
 import { useLocale } from '../request/getLocale';
+import {
+  formatRelativeTime,
+  formatRelativeTimeFromDate,
+} from 'generaltranslation';
 import React from 'react';
 
 /**
@@ -50,8 +54,6 @@ function RelativeTime({
     locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }
 
-  const gt = getI18NConfig().getGTClass();
-
   // Resolve the date from either `date` prop or `children` (for backwards compat)
   const resolvedDate = date ?? children;
 
@@ -65,14 +67,14 @@ function RelativeTime({
   let result: string;
 
   if (value !== undefined && unit) {
-    result = gt.formatRelativeTime(value, unit, {
+    result = formatRelativeTime(value, unit, {
       locales,
       numeric: options.numeric,
       style: options.style,
       localeMatcher: options.localeMatcher,
     });
   } else if (resolvedDate != null) {
-    result = gt.formatRelativeTimeFromDate(resolvedDate, {
+    result = formatRelativeTimeFromDate(resolvedDate, {
       locales,
       baseDate: baseDate ?? new Date(),
       numeric: options.numeric,
