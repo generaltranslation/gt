@@ -36,8 +36,7 @@ export default function _getLocaleEmoji(
     const extrapolatedRegion = extrapolated.region || '';
 
     return (
-      exceptions[extrapolated.language] ||
-      getRegionEmoji(extrapolatedRegion)
+      exceptions[extrapolated.language] || getRegionEmoji(extrapolatedRegion)
     );
   } catch {
     return defaultEmoji;
@@ -48,11 +47,9 @@ export default function _getLocaleEmoji(
 const europeAfricaGlobe = '🌍';
 const asiaAustraliaGlobe = '🌏';
 const scotlandFlag =
-  '\u{1f3f4}\u{e0067}\u{e0062}\u{e0073}' +
-  '\u{e0063}\u{e0074}\u{e007f}';
+  '\u{1f3f4}\u{e0067}\u{e0062}\u{e0073}\u{e0063}\u{e0074}\u{e007f}';
 const walesFlag =
-  '\u{1f3f4}\u{e0067}\u{e0062}\u{e0077}' +
-  '\u{e006c}\u{e0073}\u{e007f}';
+  '\u{1f3f4}\u{e0067}\u{e0062}\u{e0077}\u{e006c}\u{e0073}\u{e007f}';
 export const defaultEmoji = europeAfricaGlobe;
 
 // Exceptions to better reflect linguistic and cultural identities
