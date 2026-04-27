@@ -41,7 +41,7 @@ type TranslationResolver<U extends Translation = Translation> = <
   T extends U = U,
 >(
   message: T,
-  options: LookupOptions
+  options?: LookupOptions
 ) => T | undefined;
 
 /**
@@ -277,7 +277,7 @@ class I18nManager<
    */
   lookupTranslation<T extends TranslationValue = TranslationValue>(
     message: T,
-    options: LookupOptions
+    options: LookupOptions = {} as LookupOptions
   ): T | undefined {
     try {
       // Validate
@@ -307,7 +307,10 @@ class I18nManager<
    */
   async lookupTranslationWithFallback<
     T extends TranslationValue = TranslationValue,
-  >(message: T, options: LookupOptions): Promise<T | undefined> {
+  >(
+    message: T,
+    options: LookupOptions = {} as LookupOptions
+  ): Promise<T | undefined> {
     try {
       // Validate
       const { locale, options: lookupOptions } =
@@ -387,7 +390,7 @@ class I18nManager<
       );
 
       // Create translation resolver
-      return (message, options: LookupOptions) => {
+      return (message, options: LookupOptions = {} as LookupOptions) => {
         // Calculate hash
         return txCache.get({
           message,
@@ -413,7 +416,7 @@ class I18nManager<
     T extends TranslationValue = TranslationValue,
   >(
     message: T,
-    options: LookupOptions
+    options: LookupOptions = {} as LookupOptions
   ) => {
     return this.lookupTranslation(message, options);
   };
@@ -505,7 +508,7 @@ class I18nManager<
     return resolvedLocale;
   }
 
-  private resolveLookupParams(options: LookupOptions): {
+  private resolveLookupParams(options: LookupOptions = {} as LookupOptions): {
     locale: string;
     options: LookupOptions;
   } {
@@ -517,7 +520,7 @@ class I18nManager<
   }
 
   private resolveLookupOptions(
-    options: LookupOptions,
+    options: LookupOptions = {} as LookupOptions,
     resolvedLocale?: string
   ): LookupOptions {
     if (!options.$locale) {
