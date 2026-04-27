@@ -123,6 +123,12 @@ import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/ty
 import { TranslateOptions } from './types-dir/api/entry';
 import { API_VERSION as _API_VERSION } from './translate/api';
 import { StringFormat } from './types-dir/jsx/content';
+import { LocaleConfig } from './LocaleConfig';
+
+export {
+  LocaleConfig,
+  type LocaleConfigConstructorParams,
+} from './LocaleConfig';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -186,9 +192,6 @@ export class GT {
   /** Array of supported locales */
   locales?: string[];
 
-  /** Array of locales used for rendering variables */
-  _renderingLocales: string[] = [];
-
   /** Custom mapping for locale codes to their names */
   customMapping?: CustomMapping;
 
@@ -197,6 +200,14 @@ export class GT {
 
   /** Lazily derived custom mapping for regions */
   customRegionMapping?: CustomRegionMapping;
+
+  /** Client-safe locale and formatting helpers (backing field) */
+  private _localeConfig!: LocaleConfig;
+
+  /** Client-safe locale and formatting helpers */
+  get localeConfig() {
+    return this._localeConfig;
+  }
 
   /**
    * Constructs an instance of the GT class.
@@ -255,12 +266,6 @@ export class GT {
         throw new Error(invalidLocaleError(this.targetLocale));
     }
 
-    // rendering locales
-    this._renderingLocales = [];
-    if (this.sourceLocale) this._renderingLocales.push(this.sourceLocale);
-    if (this.targetLocale) this._renderingLocales.push(this.targetLocale);
-    this._renderingLocales.push(libraryDefaultLocale);
-
     // locales
     if (locales) {
       const result: string[] = [];
@@ -291,6 +296,11 @@ export class GT {
           .map(([key, value]) => [(value as { code: string }).code, key])
       );
     }
+    this._localeConfig = new LocaleConfig({
+      defaultLocale: this.sourceLocale,
+      locales: this.locales ?? [],
+      customMapping: this.customMapping,
+    });
   }
 
   // -------------- Private Methods -------------- //
@@ -1088,10 +1098,7 @@ export class GT {
       locales?: string | string[];
     } & CutoffFormatOptions
   ): string {
-    return formatCutoff(value, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatCutoff(value, this.targetLocale, options);
   }
 
   /**
@@ -1118,10 +1125,7 @@ export class GT {
       dataFormat?: StringFormat;
     }
   ): string {
-    return formatMessage(message, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatMessage(message, this.targetLocale, options);
   }
   /**
    * Formats a number according to the specified locales and options.
@@ -1142,10 +1146,7 @@ export class GT {
       locales?: string | string[];
     } & Intl.NumberFormatOptions
   ): string {
-    return formatNum(number, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatNum(number, this.targetLocale, options);
   }
 
   /**
@@ -1167,10 +1168,7 @@ export class GT {
       locales?: string | string[];
     } & Intl.DateTimeFormatOptions
   ): string {
-    return formatDateTime(date, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatDateTime(date, this.targetLocale, options);
   }
 
   /**
@@ -1194,10 +1192,12 @@ export class GT {
       locales?: string | string[];
     } & Intl.NumberFormatOptions
   ): string {
-    return formatCurrency(value, currency, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatCurrency(
+      value,
+      currency,
+      this.targetLocale,
+      options
+    );
   }
 
   /**
@@ -1219,11 +1219,7 @@ export class GT {
       locales?: string | string[];
     } & Intl.ListFormatOptions
   ) {
-    return _formatList({
-      value: array,
-      locales: options?.locales || this._renderingLocales,
-      options: options,
-    });
+    return this.localeConfig.formatList(array, this.targetLocale, options);
   }
 
   /**
@@ -1244,11 +1240,11 @@ export class GT {
       locales?: string | string[];
     } & Intl.ListFormatOptions
   ): Array<T | string> {
-    return _formatListToParts<T>({
-      value: array,
-      locales: options?.locales || this._renderingLocales,
-      options: options,
-    });
+    return this.localeConfig.formatListToParts<T>(
+      array,
+      this.targetLocale,
+      options
+    );
   }
 
   /**
@@ -1272,10 +1268,12 @@ export class GT {
       locales?: string | string[];
     } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
   ): string {
-    return formatRelativeTime(value, unit, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatRelativeTime(
+      value,
+      unit,
+      this.targetLocale,
+      options
+    );
   }
 
   /**
@@ -1297,10 +1295,11 @@ export class GT {
       baseDate?: Date;
     } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
   ): string {
-    return formatRelativeTimeFromDate(date, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatRelativeTimeFromDate(
+      date,
+      this.targetLocale,
+      options
+    );
   }
 
   // -------------- Locale Properties -------------- //
@@ -1318,7 +1317,7 @@ export class GT {
    */
   getLocaleName(locale = this.targetLocale): string {
     if (!locale) throw new Error(noTargetLocaleProvidedError('getLocaleName'));
-    return _getLocaleName(locale, this.sourceLocale, this.customMapping);
+    return this.localeConfig.getLocaleName(locale);
   }
 
   /**
@@ -1335,7 +1334,7 @@ export class GT {
    */
   getLocaleEmoji(locale = this.targetLocale): string {
     if (!locale) throw new Error(noTargetLocaleProvidedError('getLocaleEmoji'));
-    return getLocaleEmoji(locale, this.customMapping);
+    return this.localeConfig.getLocaleEmoji(locale);
   }
 
   /**
@@ -1373,7 +1372,7 @@ export class GT {
   getLocaleProperties(locale = this.targetLocale): LocaleProperties {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('getLocaleProperties'));
-    return getLocaleProperties(locale, this.sourceLocale, this.customMapping);
+    return this.localeConfig.getLocaleProperties(locale);
   }
 
   /**
@@ -1471,6 +1470,13 @@ export class GT {
       throw new Error(noSourceLocaleProvidedError('requiresTranslation'));
     if (!targetLocale)
       throw new Error(noTargetLocaleProvidedError('requiresTranslation'));
+    if (customMapping === this.customMapping) {
+      return this.localeConfig.requiresTranslation(
+        targetLocale,
+        sourceLocale,
+        approvedLocales
+      );
+    }
     return _requiresTranslation(
       sourceLocale,
       targetLocale,
@@ -1495,6 +1501,9 @@ export class GT {
     approvedLocales: string[] | undefined = this.locales || [],
     customMapping: CustomMapping | undefined = this.customMapping
   ): string | undefined {
+    if (customMapping === this.customMapping) {
+      return this.localeConfig.determineLocale(locales, approvedLocales ?? []);
+    }
     return _determineLocale(locales, approvedLocales, customMapping);
   }
 
@@ -1512,7 +1521,7 @@ export class GT {
   getLocaleDirection(locale = this.targetLocale): 'ltr' | 'rtl' {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('getLocaleDirection'));
-    return getLocaleDirection(locale);
+    return this.localeConfig.getLocaleDirection(locale);
   }
 
   /**
@@ -1532,7 +1541,10 @@ export class GT {
     customMapping: CustomMapping | undefined = this.customMapping
   ): boolean {
     if (!locale) throw new Error(noTargetLocaleProvidedError('isValidLocale'));
-    return isValidLocale(locale, customMapping);
+    if (customMapping === this.customMapping) {
+      return this.localeConfig.isValidLocale(locale);
+    }
+    return _isValidLocale(locale, customMapping);
   }
 
   /**
@@ -1547,6 +1559,9 @@ export class GT {
   ): string {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('resolveCanonicalLocale'));
+    if (customMapping === this.customMapping) {
+      return this.localeConfig.resolveCanonicalLocale(locale);
+    }
     return _resolveCanonicalLocale(locale, customMapping);
   }
 
@@ -1562,6 +1577,9 @@ export class GT {
   ): string {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('resolveAliasLocale'));
+    if (customMapping === this.customMapping) {
+      return this.localeConfig.resolveAliasLocale(locale);
+    }
     return _resolveAliasLocale(locale, customMapping);
   }
 
@@ -1579,7 +1597,7 @@ export class GT {
   standardizeLocale(locale = this.targetLocale): string {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('standardizeLocale'));
-    return _standardizeLocale(locale);
+    return this.localeConfig.standardizeLocale(locale);
   }
 
   /**
@@ -1596,7 +1614,7 @@ export class GT {
    * // Returns: true
    */
   isSameDialect(...locales: (string | string[])[]): boolean {
-    return isSameDialect(...locales);
+    return this.localeConfig.isSameDialect(...locales);
   }
 
   /**
@@ -1610,7 +1628,7 @@ export class GT {
    * // Returns: true
    */
   isSameLanguage(...locales: (string | string[])[]): boolean {
-    return _isSameLanguage(...locales);
+    return this.localeConfig.isSameLanguage(...locales);
   }
 
   /**
@@ -1628,7 +1646,7 @@ export class GT {
    * // Returns: false
    */
   isSupersetLocale(superLocale: string, subLocale: string): boolean {
-    return isSupersetLocale(superLocale, subLocale);
+    return this.localeConfig.isSupersetLocale(superLocale, subLocale);
   }
 }
 

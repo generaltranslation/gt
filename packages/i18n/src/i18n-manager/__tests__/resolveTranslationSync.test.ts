@@ -20,6 +20,19 @@ describe('I18nManager.resolveTranslationSync', () => {
     expect(result).toBeUndefined();
   });
 
+  it('does not throw without options in development', () => {
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      loadTranslations: vi.fn(),
+      environment: 'development',
+    });
+    manager.setLocale('fr');
+
+    expect(() => manager.resolveTranslationSync('Hello')).not.toThrow();
+    expect(manager.resolveTranslationSync('Hello')).toBeUndefined();
+  });
+
   it('should return the correct translation via hash lookup after async getTranslations populates resolvedCache', async () => {
     const message = 'Hello {name}!';
     const options = { $context: 'greeting' };
