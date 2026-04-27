@@ -487,7 +487,7 @@ class I18nManager<
    * Handle errors
    * Soft error in production, throw in development
    */
-  private handleError(error: unknown): void {
+  private handleError(error: unknown) {
     switch (this.config.environment) {
       case 'development':
         throw error;
@@ -508,10 +508,7 @@ class I18nManager<
     return resolvedLocale;
   }
 
-  private resolveLookupParams(options: LookupOptions = {} as LookupOptions): {
-    locale: string;
-    options: LookupOptions;
-  } {
+  private resolveLookupParams(options: LookupOptions = {} as LookupOptions) {
     const locale = this.resolveLocale(options.$locale ?? this.getLocale());
     return {
       locale,
@@ -522,7 +519,7 @@ class I18nManager<
   private resolveLookupOptions(
     options: LookupOptions = {} as LookupOptions,
     resolvedLocale?: string
-  ): LookupOptions {
+  ) {
     if (!options.$locale) {
       return options;
     }
@@ -537,7 +534,7 @@ class I18nManager<
    * This is helpful for when our getLocale function is bound to a
    * specifica context
    */
-  private getGTClassClean(locale?: string): GT {
+  private getGTClassClean(locale?: string) {
     return new GT({
       sourceLocale: this.config.defaultLocale,
       targetLocale: locale,
@@ -666,8 +663,8 @@ function filterPrefetchEntriesByLocale<TranslationType extends Translation>(
   prefetchEntries: PrefetchEntry<TranslationType>[],
   locale: string,
   resolveLocale: (locale: string) => string
-): PrefetchEntry<TranslationType>[] {
-  const filteredEntries = prefetchEntries.filter((entry) => {
+) {
+  return prefetchEntries.filter((entry) => {
     if (entry.options.$locale == null) return true;
     try {
       return resolveLocale(entry.options.$locale) === locale;
@@ -675,7 +672,6 @@ function filterPrefetchEntriesByLocale<TranslationType extends Translation>(
       return false;
     }
   });
-  return filteredEntries;
 }
 
 /**
