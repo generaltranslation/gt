@@ -2,8 +2,8 @@ import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
 import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
-import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
 import { transformTemplateLiteral } from '../../transform/macro-expansion/transformTemplateLiteral';
+import { isStringTranslationTaggedTemplate } from '../../utils/parsing/isStringTranslationTaggedTemplate';
 
 /**
  * Process tagged template expressions for macro expansion.
@@ -11,7 +11,7 @@ import { transformTemplateLiteral } from '../../transform/macro-expansion/transf
  *
  * Only transforms when:
  * - t is unbound (global macro via gt-react/macros)
- * - t is imported from a recognized GT source
+ * - t is imported from gt-react/browser
  * Skips when t is bound to a non-GT import (e.g., i18next)
  */
 export function processTaggedTemplateExpression(
@@ -21,20 +21,7 @@ export function processTaggedTemplateExpression(
 
   return (path) => {
     if (!state.settings.enableTaggedTemplate) return;
-    if (!t.isIdentifier(path.node.tag, { name: symbol })) return;
-
-    // Only transform unbound t (global macro) or t imported from gt-react/browser
-    const binding = path.scope.getBinding(symbol);
-    if (binding) {
-      if (!binding.path.isImportSpecifier()) return;
-      const importDecl = binding.path.parentPath;
-      if (
-        !importDecl?.isImportDeclaration() ||
-        importDecl.node.source.value !== GT_IMPORT_SOURCES.GT_REACT_BROWSER
-      ) {
-        return;
-      }
-    }
+    if (!isStringTranslationTaggedTemplate(path, symbol)) return;
 
     const { message, variables } = transformTemplateLiteral(path.get('quasi'));
     const args: t.Expression[] = [message];

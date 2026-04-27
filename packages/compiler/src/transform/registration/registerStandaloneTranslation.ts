@@ -41,6 +41,8 @@ export function registerStandaloneTranslation({
     format,
   });
 
+  // Runtime-only entries, including msg() and t`...`, stop here. Only
+  // standalone t() sets injectHash so the injection pass sees a matching slot.
   if (!injectHash) {
     return;
   }

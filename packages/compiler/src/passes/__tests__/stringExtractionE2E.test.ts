@@ -288,6 +288,7 @@ describe('msg() string extraction E2E', () => {
     const state = collect(prefix + 'msg(name);');
     const content = getRuntimeContent(state);
     expect(content).toHaveLength(0);
+    expect(state.errorTracker.getErrors().length).toBeGreaterThan(0);
   });
 });
 
@@ -359,6 +360,7 @@ describe('t() string extraction E2E', () => {
     const state = collect(prefix + 't(name);');
     const content = getRuntimeContent(state);
     expect(content).toHaveLength(0);
+    expect(state.errorTracker.getErrors().length).toBeGreaterThan(0);
   });
 });
 
