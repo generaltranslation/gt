@@ -1,4 +1,8 @@
-import { ResolvedFiles, TransformFiles } from '../../types/index.js';
+import {
+  ResolvedFiles,
+  TransformFiles,
+  TransformFormats,
+} from '../../types/index.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../files/supportedFiles.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import path from 'node:path';
@@ -7,12 +11,14 @@ import { getLocaleProperties } from 'generaltranslation';
 import { replaceLocalePlaceholders } from '../utils.js';
 import { FileMapping } from '../../types/files.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
+import { replaceFileExtensionForFormat } from './transformFormat.js';
 
 /**
  * Creates a mapping between source files and their translated counterparts for each locale
  * @param filePaths - Resolved file paths for different file types
  * @param placeholderPaths - Placeholder paths for translated files
  * @param transformPaths - Transform paths for file naming
+ * @param transformFormats - Output file format transforms for translated files
  * @param locales - List of locales to create a mapping for
  * @returns A mapping between source files and their translated counterparts for each locale, in the form of relative paths
  */
@@ -20,6 +26,7 @@ export function createFileMapping(
   filePaths: ResolvedFiles,
   placeholderPaths: ResolvedFiles,
   transformPaths: TransformFiles,
+  transformFormats: TransformFormats,
   targetLocales: string[],
   defaultLocale: string
 ): FileMapping {
@@ -45,6 +52,7 @@ export function createFileMapping(
       if (!translatedFiles) continue;
 
       const transformPath = transformPaths[typeIndex];
+      const transformFormat = transformFormats?.[typeIndex];
 
       if (transformPath) {
         if (typeof transformPath === 'string') {
@@ -145,7 +153,12 @@ export function createFileMapping(
 
       for (let i = 0; i < sourcePaths.length; i++) {
         const sourceFile = getRelative(sourcePaths[i]);
-        const translatedFile = getRelative(translatedFiles[i]);
+        // Format transforms keep the mapped path but rewrite the output suffix.
+        const translatedFile = getRelative(
+          transformFormat
+            ? replaceFileExtensionForFormat(translatedFiles[i], transformFormat)
+            : translatedFiles[i]
+        );
         localeMapping[sourceFile] = translatedFile;
       }
     }
