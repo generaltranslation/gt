@@ -2,4 +2,4 @@
 'gt-next': patch
 ---
 
-fix: access locale for metadataa
+fix: access locale for metadata
