@@ -8,6 +8,7 @@ import {
 } from '../flattenExpressionToParts';
 import { mergeAdjacentStaticParts } from '../mergeAdjacentStaticParts';
 import { buildTransformResult } from '../buildTransformationResult';
+import { resolveStaticExpression } from '../resolveStaticExpression';
 /**
  * Parse code and extract the first expression's NodePath, then run the callback.
  */
@@ -133,6 +134,33 @@ describe('flattenExpressionToParts', () => {
       expect(errors).toEqual([
         'Template literal contains an invalid escape sequence',
       ]);
+    });
+  });
+});
+
+describe('resolveStaticExpression', () => {
+  it('resolves nested static string expressions', () => {
+    withExpressionPath('"A" + `B ${"C"}`', (path) => {
+      expect(resolveStaticExpression(path.node)).toEqual({
+        errors: [],
+        value: 'AB C',
+      });
+    });
+  });
+
+  it('rejects dynamic expressions', () => {
+    withExpressionPath('`Hello ${name}`', (path) => {
+      expect(resolveStaticExpression(path.node)).toEqual({
+        errors: ['Expression is not a static string'],
+      });
+    });
+  });
+
+  it('reports invalid escape sequences', () => {
+    withTaggedTemplatePath('tag`\\xg`;', (path) => {
+      expect(resolveStaticExpression(path.node)).toEqual({
+        errors: ['Template literal contains an invalid escape sequence'],
+      });
     });
   });
 });

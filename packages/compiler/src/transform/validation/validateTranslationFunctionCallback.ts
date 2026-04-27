@@ -5,8 +5,8 @@ import {
 } from '../../utils/constants/gt/constants';
 import { TransformState } from '../../state/types';
 import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFromExpression';
+import { resolveStaticExpression } from '../../utils/string-expressions/resolveStaticExpression';
 import { getTrackedVariable } from '../getTrackedVariable';
-import { resolveStaticExpression } from '../templates-and-concat/resolveStaticExpression';
 
 /**
  * Validate useGT_callback / getGT_callback

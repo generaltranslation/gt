@@ -1,6 +1,6 @@
 import * as t from '@babel/types';
-import { NodePath } from '@babel/traverse';
-import { isDeriveInvocation } from '../../utils/parsing/isDeriveInvocation';
+import type { NodePath } from '@babel/traverse';
+import { isDeriveInvocation } from '../parsing/isDeriveInvocation';
 
 export type Part =
   | { type: 'static'; value: string }
@@ -12,19 +12,22 @@ type FlattenExpressionResult = { parts: Part[]; errors: string[] };
 /**
  * Recursively decomposes an expression tree into a flat list of typed parts.
  * Handles string/numeric/boolean/null literals, void expressions,
- * template literals, binary '+' concatenation, and derive() calls.
+ * template literals, and binary '+' concatenation. When a NodePath is
+ * provided, imported derive() calls are preserved as derive parts.
  *
  * Returns errors alongside parts so callers can report extraction failures
  * without throwing during expression flattening.
  */
 export function flattenExpressionToParts(
   node: t.Expression,
-  tPath: NodePath
+  tPath?: NodePath
 ): FlattenExpressionResult {
+  // gt('Hello, World!')
   if (t.isStringLiteral(node)) {
     return { parts: [{ type: 'static', value: node.value }], errors: [] };
   }
 
+  // gt(123)
   if (t.isNumericLiteral(node)) {
     return {
       parts: [{ type: 'static', value: String(node.value) }],
@@ -32,6 +35,7 @@ export function flattenExpressionToParts(
     };
   }
 
+  // gt(true)
   if (t.isBooleanLiteral(node)) {
     return {
       parts: [{ type: 'static', value: String(node.value) }],
@@ -39,14 +43,17 @@ export function flattenExpressionToParts(
     };
   }
 
+  // gt(null)
   if (t.isNullLiteral(node)) {
     return { parts: [{ type: 'static', value: 'null' }], errors: [] };
   }
 
+  // gt(void 0)
   if (t.isUnaryExpression(node) && node.operator === 'void') {
     return { parts: [{ type: 'dynamic', node }], errors: [] };
   }
 
+  // gt(`Hello, ${name}!`)
   if (t.isTemplateLiteral(node)) {
     const result: FlattenExpressionResult = { parts: [], errors: [] };
     for (let i = 0; i < node.quasis.length; i++) {
@@ -69,6 +76,7 @@ export function flattenExpressionToParts(
     return result;
   }
 
+  // gt('Hello, ' + name + '!')
   if (t.isBinaryExpression(node) && node.operator === '+') {
     const { parts: leftParts, errors: leftErrors } = flattenExpressionToParts(
       node.left as t.Expression,
@@ -84,9 +92,11 @@ export function flattenExpressionToParts(
     };
   }
 
-  if (isDeriveInvocation(node, tPath)) {
+  // gt(derive(() => 'Hello, World!'))
+  if (tPath && isDeriveInvocation(node, tPath)) {
     return { parts: [{ type: 'derive', node }], errors: [] };
   }
 
+  // gt(name)
   return { parts: [{ type: 'dynamic', node }], errors: [] };
 }
