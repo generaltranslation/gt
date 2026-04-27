@@ -1,6 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import _getLocaleEmoji, { defaultEmoji } from '../getLocaleEmoji';
-import { CustomMapping } from '../customLocaleMapping';
+import _getLocaleEmoji, {
+  defaultEmoji,
+  getRegionEmoji,
+} from '../getLocaleEmoji';
+import type { CustomMapping } from '../customLocaleMapping';
+
+describe('getRegionEmoji', () => {
+  it('computes flags for ISO alpha-2 region codes', () => {
+    for (const [region, emoji] of Object.entries({
+      US: '🇺🇸',
+      FR: '🇫🇷',
+      CN: '🇨🇳',
+      TW: '🇹🇼',
+      RS: '🇷🇸',
+    })) {
+      expect(getRegionEmoji(region)).toBe(emoji);
+    }
+  });
+
+  it('handles special non-alpha region codes', () => {
+    for (const [region, emoji] of Object.entries({ EU: '🇪🇺', 419: '🌎' })) {
+      expect(getRegionEmoji(region)).toBe(emoji);
+    }
+  });
+
+  it('falls back for unsupported region codes', () => {
+    for (const region of ['001', '']) {
+      expect(getRegionEmoji(region)).toBe(defaultEmoji);
+    }
+  });
+});
 
 describe('_getLocaleEmoji', () => {
   it('should return correct emoji for locales with region codes', () => {
