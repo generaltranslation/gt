@@ -7,6 +7,8 @@ export type Part =
   | { type: 'derive'; node: t.Expression }
   | { type: 'dynamic'; node: t.Expression };
 
+type FlattenExpressionResult = { parts: Part[]; errors: string[] };
+
 /**
  * Recursively decomposes an expression tree into a flat list of typed parts.
  * Handles string/numeric/boolean/null literals, void expressions,
@@ -18,7 +20,7 @@ export type Part =
 export function flattenExpressionToParts(
   node: t.Expression,
   tPath: NodePath
-): { parts?: Part[]; errors: string[] } {
+): FlattenExpressionResult {
   if (t.isStringLiteral(node)) {
     return { parts: [{ type: 'static', value: node.value }], errors: [] };
   }
@@ -46,24 +48,25 @@ export function flattenExpressionToParts(
   }
 
   if (t.isTemplateLiteral(node)) {
-    const parts: Part[] = [];
-    const errors: string[] = [];
+    const result: FlattenExpressionResult = { parts: [], errors: [] };
     for (let i = 0; i < node.quasis.length; i++) {
       const cooked = node.quasis[i].value.cooked;
       if (cooked == null) {
-        errors.push('Template literal contains an invalid escape sequence');
+        result.errors.push(
+          'Template literal contains an invalid escape sequence'
+        );
+        return result;
       } else if (cooked) {
-        parts.push({ type: 'static', value: cooked });
+        result.parts.push({ type: 'static', value: cooked });
       }
       if (i < node.expressions.length) {
         const expr = node.expressions[i] as t.Expression;
-        const { parts: exprParts, errors: exprErrors } =
-          flattenExpressionToParts(expr, tPath);
-        parts.push(...(exprParts ?? []));
-        errors.push(...exprErrors);
+        const expressionResult = flattenExpressionToParts(expr, tPath);
+        result.parts.push(...expressionResult.parts);
+        result.errors.push(...expressionResult.errors);
       }
     }
-    return { parts, errors };
+    return result;
   }
 
   if (t.isBinaryExpression(node) && node.operator === '+') {
@@ -76,7 +79,7 @@ export function flattenExpressionToParts(
       tPath
     );
     return {
-      parts: [...(leftParts ?? []), ...(rightParts ?? [])],
+      parts: [...leftParts, ...rightParts],
       errors: [...leftErrors, ...rightErrors],
     };
   }

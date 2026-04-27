@@ -17,7 +17,7 @@ export function transformTemplateLiteral(path: NodePath<t.TemplateLiteral>): {
   errors: string[];
 } {
   const { parts, errors } = flattenExpressionToParts(path.node, path);
-  if (errors.length > 0 || parts == null) {
+  if (errors.length > 0) {
     return { errors };
   }
   const merged = mergeAdjacentStaticParts(parts);
