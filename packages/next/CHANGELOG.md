@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.16.15
+
+### Patch Changes
+
+- [#1266](https://github.com/generaltranslation/gt/pull/1266) [`0c22b7a`](https://github.com/generaltranslation/gt/commit/0c22b7a7dd87db7657eb1ffee0444a054c6744fa) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: access locale for metadata
+
 ## 6.16.14
 
 ### Patch Changes
