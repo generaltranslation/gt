@@ -600,7 +600,6 @@ describe('runtimeTranslatePass', () => {
     //   const gt = useGT(); gt("Callback string");
     //   t("Standalone string");
     // → both appear in Promise.all, AND the useGT injection (hash) still works
-    //   because t() uses runtimeOnlyEntries, not the counter-based aggregators
     it('t() does not disrupt useGT callback counter alignment', () => {
       const { runtimeCalls } = transform(`
         import { useGT, t } from 'gt-react';
@@ -722,6 +721,100 @@ describe('runtimeTranslatePass', () => {
 
       // Injection pass still ran — $_hash was injected into the callback
       expect(output).toContain('$_hash');
+    });
+
+    it('injects compile-time hash into standalone t() calls', () => {
+      const state = initializeState({}, 'test.tsx');
+      const ast = parser.parse(
+        `
+        import { t } from 'gt-react';
+        const msg = t("Hello world", { $context: "greeting" });
+      `,
+        {
+          sourceType: 'module',
+          plugins: ['jsx', 'typescript'],
+        }
+      );
+
+      traverse(ast, collectionPass(state));
+      traverse(ast, injectionPass(state));
+
+      const calls: t.CallExpression[] = [];
+      traverse(ast, {
+        CallExpression(path) {
+          if (t.isIdentifier(path.node.callee, { name: 't' })) {
+            calls.push(path.node);
+          }
+        },
+      });
+
+      expect(calls).toHaveLength(1);
+      expect(getOptionValue(calls[0], '$context')).toBe('greeting');
+      expect(getOptionValue(calls[0], '$_hash')).toBeDefined();
+    });
+
+    it('does not inject compile-time hash into msg() calls', () => {
+      const state = initializeState({}, 'test.tsx');
+      const ast = parser.parse(
+        `
+        import { msg } from 'gt-react';
+        const value = msg("Hello world");
+      `,
+        {
+          sourceType: 'module',
+          plugins: ['jsx', 'typescript'],
+        }
+      );
+
+      traverse(ast, collectionPass(state));
+      traverse(ast, injectionPass(state));
+
+      const calls: t.CallExpression[] = [];
+      traverse(ast, {
+        CallExpression(path) {
+          if (t.isIdentifier(path.node.callee, { name: 'msg' })) {
+            calls.push(path.node);
+          }
+        },
+      });
+
+      expect(calls).toHaveLength(1);
+      expect(getOptionValue(calls[0], '$_hash')).toBeUndefined();
+    });
+
+    it('keeps useGT callback hash alignment when standalone t() appears first', () => {
+      const state = initializeState({}, 'test.tsx');
+      const ast = parser.parse(
+        `
+        import { useGT, t } from 'gt-react';
+        const standalone = t("Standalone string");
+        const gt = useGT();
+        const callback = gt("Callback string");
+      `,
+        {
+          sourceType: 'module',
+          plugins: ['jsx', 'typescript'],
+        }
+      );
+
+      traverse(ast, collectionPass(state));
+      traverse(ast, injectionPass(state));
+
+      const calls: Record<string, t.CallExpression[]> = { t: [], gt: [] };
+      traverse(ast, {
+        CallExpression(path) {
+          if (t.isIdentifier(path.node.callee, { name: 't' })) {
+            calls.t.push(path.node);
+          } else if (t.isIdentifier(path.node.callee, { name: 'gt' })) {
+            calls.gt.push(path.node);
+          }
+        },
+      });
+
+      expect(calls.t).toHaveLength(1);
+      expect(calls.gt).toHaveLength(1);
+      expect(getOptionValue(calls.t[0], '$_hash')).toBeDefined();
+      expect(getOptionValue(calls.gt[0], '$_hash')).toBeDefined();
     });
 
     // devHotReload: false — no runtime translate calls injected at all

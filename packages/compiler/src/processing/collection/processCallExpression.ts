@@ -26,7 +26,7 @@ import { registerTranslationComponent } from '../../transform/registration/regis
 import { getCalleeNameFromJsxExpressionParam } from '../../transform/jsx-children/utils/getCalleeNameFromJsxExpressionParam';
 import { createErrorLocation } from '../../utils/errors';
 import hashSource from '../../utils/calculateHash';
-import type { DataFormat } from 'generaltranslation/types';
+import { registerStandaloneTranslation } from '../../transform/registration/registerStandaloneTranslation';
 
 /**
  * Process call expressions
@@ -78,12 +78,12 @@ export function processCallExpression(
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.msg
     ) {
-      handleStandaloneTranslation(callExpr, state);
+      handleStandaloneTranslation(callExpr, state, false);
     } else if (
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.t
     ) {
-      handleStandaloneTranslation(callExpr, state);
+      handleStandaloneTranslation(callExpr, state, true);
     }
   };
 }
@@ -292,11 +292,11 @@ function handleReactInvocation(
 /**
  * Handle standalone translation functions: t() and msg()
  * Same argument structure as useGT_callback (message string + options object).
- * Pushes to runtimeOnlyEntries — bypasses the counter system so injection is unaffected.
  */
 function handleStandaloneTranslation(
   callExpr: t.CallExpression,
-  state: TransformState
+  state: TransformState,
+  injectHash: boolean
 ) {
   // Reuse the same validation as useGT_callback (identical argument structure)
   const params = validateUseGTCallback(callExpr, state);
@@ -309,24 +309,14 @@ function handleStandaloneTranslation(
     return;
   }
 
-  // Calculate hash
-  const hash =
-    params.hash ??
-    hashSource({
-      source: params.content,
-      ...(params.id && { id: params.id }),
-      ...(params.context && { context: params.context }),
-      ...(params.maxChars != null && { maxChars: params.maxChars }),
-      dataFormat: (params.format || 'ICU') as DataFormat,
-    });
-
-  // Push to runtime-only entries (no counter, no injection pass involvement)
-  state.stringCollector.pushRuntimeOnlyContent({
-    message: params.content,
-    hash,
+  registerStandaloneTranslation({
+    state,
+    content: params.content,
+    hash: params.hash,
     id: params.id,
     context: params.context,
     maxChars: params.maxChars,
     format: params.format,
+    injectHash,
   });
 }
