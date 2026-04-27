@@ -1,5 +1,11 @@
 # @generaltranslation/compiler
 
+## 1.3.13
+
+### Patch Changes
+
+- [`28d0c06`](https://github.com/generaltranslation/gt/commit/28d0c06f3e8366fc2c119b7792620c4764eda2de) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - patch: inject compile-time hashes into standalone t() calls
+
 ## 1.3.12
 
 ### Patch Changes
