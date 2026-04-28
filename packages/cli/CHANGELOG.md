@@ -1,5 +1,15 @@
 # gtx-cli
 
+## 2.14.22
+
+### Patch Changes
+
+- [#1248](https://github.com/generaltranslation/gt/pull/1248) [`b12d57d`](https://github.com/generaltranslation/gt/commit/b12d57dab1d5cb1f602c5ac24a702b48cda7f11e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add PO/POT file format support and transformFormat plumbing for API uploads and CLI file downloads.
+
+- Updated dependencies [[`b12d57d`](https://github.com/generaltranslation/gt/commit/b12d57dab1d5cb1f602c5ac24a702b48cda7f11e)]:
+  - generaltranslation@8.2.8
+  - @generaltranslation/python-extractor@0.2.13
+
 ## 2.14.21
 
 ### Patch Changes
