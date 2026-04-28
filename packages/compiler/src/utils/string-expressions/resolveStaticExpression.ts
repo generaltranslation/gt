@@ -4,12 +4,12 @@ import { flattenExpressionToParts } from './flattenExpressionToParts';
 import { multiply } from '../multiplication/multiply';
 
 /**
- * Attempt to resolve an expression to a static string at compile time.
+ * Attempt to resolve an expression to static string values at compile time.
  * Handles string literals, template literals, binary '+' concatenation,
  * nested combinations, and numeric/boolean/null literals coerced to string.
  *
- * Returns the resolved string, or undefined if the expression contains
- * any dynamic content (variables, function calls, etc.).
+ * Returns all resolved values, or undefined if the expression contains
+ * dynamic or derive content.
  */
 export function resolveStaticExpression(exprPath: NodePath<t.Expression>): {
   errors: string[];

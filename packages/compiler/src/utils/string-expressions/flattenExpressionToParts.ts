@@ -94,9 +94,12 @@ export function flattenExpressionToParts(
     }
     const { parts: leftParts, errors: leftErrors } =
       flattenExpressionToParts(leftPath);
-    const { parts: rightParts, errors: rightErrors } = flattenExpressionToParts(
-      exprPath.get('right')
-    );
+    const rightPath = exprPath.get('right');
+    if (!rightPath.isExpression()) {
+      return { parts: [], errors: ['Expression is not a valid expression'] };
+    }
+    const { parts: rightParts, errors: rightErrors } =
+      flattenExpressionToParts(rightPath);
     return {
       parts: [...leftParts, ...rightParts],
       errors: [...leftErrors, ...rightErrors],
