@@ -52,7 +52,7 @@ async function resolveWasmPath(specifier: string): Promise<string> {
       return (await import('tree-sitter-python/tree-sitter-python.wasm'))
         .default;
     default:
-      return require.resolve(specifier);
+      throw new Error(`Unknown WASM specifier for Bun: ${specifier}`);
   }
 }
 
