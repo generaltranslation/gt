@@ -1,4 +1,4 @@
-import { VisitNode } from '@babel/traverse';
+import { NodePath, VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
 import {
@@ -38,9 +38,9 @@ import { registerStandaloneTranslation } from '../../transform/registration/regi
 export function processCallExpression(
   state: TransformState
 ): VisitNode<t.Node, t.CallExpression> {
-  return (path) => {
+  return (callExprPath) => {
     // Get the call expression
-    const callExpr = path.node;
+    const callExpr = callExprPath.node;
 
     // Get function name from callee
     const { namespaceName, functionName } =
@@ -66,7 +66,7 @@ export function processCallExpression(
     ) {
       // Handle translation function callbacks (useGT_callback, etc.)
       handleTranslationCallbackInvocation(
-        callExpr,
+        callExprPath,
         state,
         canonicalName,
         identifier!
@@ -79,14 +79,14 @@ export function processCallExpression(
       canonicalName === GT_OTHER_FUNCTIONS.msg
     ) {
       // msg() is runtime-only content; it must not advance the injection counter.
-      handleStandaloneTranslation(callExpr, state, { injectHash: false });
+      handleStandaloneTranslation(callExprPath, state, { injectHash: false });
     } else if (
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.t
     ) {
       // Standalone t() receives an injected $_hash, so collection reserves a
       // matching counter slot for the injection pass.
-      handleStandaloneTranslation(callExpr, state, { injectHash: true });
+      handleStandaloneTranslation(callExprPath, state, { injectHash: true });
     }
   };
 }
@@ -100,7 +100,7 @@ export function processCallExpression(
  * useGTCallback(), useTranslationsCallback(), useMessagesCallback(), etc.
  */
 function handleTranslationCallbackInvocation(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   canonicalName: GT_ALL_FUNCTIONS,
   identifier: number
@@ -109,15 +109,15 @@ function handleTranslationCallbackInvocation(
   switch (canonicalName) {
     case GT_CALLBACK_FUNCTIONS.useGT_callback:
     case GT_CALLBACK_FUNCTIONS.getGT_callback:
-      handleUseGTCallback(callExpr, state, identifier);
+      handleUseGTCallback(callExprPath, state, identifier);
       break;
     case GT_CALLBACK_FUNCTIONS.useTranslations_callback:
     case GT_CALLBACK_FUNCTIONS.getTranslations_callback:
-      handleUseTranslationsCallback(callExpr, state, identifier);
+      handleUseTranslationsCallback(callExprPath, state, identifier);
       break;
     case GT_CALLBACK_FUNCTIONS.useMessages_callback:
     case GT_CALLBACK_FUNCTIONS.getMessages_callback:
-      handleUseMessagesCallback(callExpr, state, identifier);
+      handleUseMessagesCallback(callExprPath, state, identifier);
       break;
     default:
       return;
@@ -128,12 +128,12 @@ function handleTranslationCallbackInvocation(
  * Handle useGT_callback / getGT_callback
  */
 function handleUseGTCallback(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   identifier: number
 ) {
   // Check for violations
-  const useGTCallbackParams = validateUseGTCallback(callExpr, state);
+  const useGTCallbackParams = validateUseGTCallback(callExprPath, state);
   state.errorTracker.addErrors(useGTCallbackParams.errors);
   if (
     useGTCallbackParams.errors.length > 0 ||
@@ -164,11 +164,12 @@ function handleUseGTCallback(
  * Handle useTranslations_callback / getTranslations_callback
  */
 function handleUseTranslationsCallback(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   identifier: number
 ) {
   // Check for violations
+  const callExpr = callExprPath.node;
   const useTranslationsCallbackParams =
     validateUseTranslationsCallback(callExpr);
   state.errorTracker.addErrors(useTranslationsCallbackParams.errors);
@@ -187,11 +188,12 @@ function handleUseTranslationsCallback(
  * Handle useMessages_callback / getMessages_callback
  */
 function handleUseMessagesCallback(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   identifier: number
 ) {
   // Validate parameters
+  const callExpr = callExprPath.node;
   const useMessagesCallbackParams = validateUseMessagesCallback(callExpr);
 
   // Check for violations
@@ -297,12 +299,12 @@ function handleReactInvocation(
  * Same argument structure as useGT_callback (message string + options object).
  */
 function handleStandaloneTranslation(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   { injectHash }: { injectHash: boolean }
 ) {
   // Reuse the same validation as useGT_callback (identical argument structure)
-  const params = validateUseGTCallback(callExpr, state);
+  const params = validateUseGTCallback(callExprPath, state);
   state.errorTracker.addErrors(params.errors);
   if (params.errors.length > 0 || params.content === undefined) {
     return;

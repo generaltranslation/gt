@@ -19,45 +19,47 @@ type FlattenExpressionResult = { parts: Part[]; errors: string[] };
  * without throwing during expression flattening.
  */
 export function flattenExpressionToParts(
-  node: t.Expression,
-  tPath?: NodePath
+  exprPath: NodePath<t.Expression>
 ): FlattenExpressionResult {
+  const expr = exprPath.node;
+  const scope = exprPath.scope;
+
   // gt('Hello, World!')
-  if (t.isStringLiteral(node)) {
-    return { parts: [{ type: 'static', value: node.value }], errors: [] };
+  if (t.isStringLiteral(expr)) {
+    return { parts: [{ type: 'static', value: expr.value }], errors: [] };
   }
 
   // gt(123)
-  if (t.isNumericLiteral(node)) {
+  if (t.isNumericLiteral(expr)) {
     return {
-      parts: [{ type: 'static', value: String(node.value) }],
+      parts: [{ type: 'static', value: String(expr.value) }],
       errors: [],
     };
   }
 
   // gt(true)
-  if (t.isBooleanLiteral(node)) {
+  if (t.isBooleanLiteral(expr)) {
     return {
-      parts: [{ type: 'static', value: String(node.value) }],
+      parts: [{ type: 'static', value: String(expr.value) }],
       errors: [],
     };
   }
 
   // gt(null)
-  if (t.isNullLiteral(node)) {
+  if (t.isNullLiteral(expr)) {
     return { parts: [{ type: 'static', value: 'null' }], errors: [] };
   }
 
   // gt(void 0)
-  if (t.isUnaryExpression(node) && node.operator === 'void') {
-    return { parts: [{ type: 'dynamic', node }], errors: [] };
+  if (t.isUnaryExpression(expr) && expr.operator === 'void') {
+    return { parts: [{ type: 'dynamic', node: expr }], errors: [] };
   }
 
   // gt(`Hello, ${name}!`)
-  if (t.isTemplateLiteral(node)) {
+  if (t.isTemplateLiteral(expr)) {
     const result: FlattenExpressionResult = { parts: [], errors: [] };
-    for (let i = 0; i < node.quasis.length; i++) {
-      const cooked = node.quasis[i].value.cooked;
+    for (let i = 0; i < expr.quasis.length; i++) {
+      const cooked = expr.quasis[i].value.cooked;
       if (cooked == null) {
         result.errors.push(
           'Template literal contains an invalid escape sequence'
@@ -66,9 +68,13 @@ export function flattenExpressionToParts(
       } else if (cooked) {
         result.parts.push({ type: 'static', value: cooked });
       }
-      if (i < node.expressions.length) {
-        const expr = node.expressions[i] as t.Expression;
-        const expressionResult = flattenExpressionToParts(expr, tPath);
+      if (i < expr.expressions.length) {
+        const exprPathIndex = exprPath.get('expressions')[i];
+        if (!exprPathIndex.isExpression()) {
+          result.errors.push('Expression is not a valid expression');
+          return result;
+        }
+        const expressionResult = flattenExpressionToParts(exprPathIndex);
         result.parts.push(...expressionResult.parts);
         result.errors.push(...expressionResult.errors);
       }
@@ -77,14 +83,15 @@ export function flattenExpressionToParts(
   }
 
   // gt('Hello, ' + name + '!')
-  if (t.isBinaryExpression(node) && node.operator === '+') {
-    const { parts: leftParts, errors: leftErrors } = flattenExpressionToParts(
-      node.left as t.Expression,
-      tPath
-    );
+  if (t.isBinaryExpression(expr) && expr.operator === '+') {
+    const leftPath = exprPath.get('left');
+    if (!leftPath.isExpression()) {
+      return { parts: [], errors: ['Expression is not a valid expression'] };
+    }
+    const { parts: leftParts, errors: leftErrors } =
+      flattenExpressionToParts(leftPath);
     const { parts: rightParts, errors: rightErrors } = flattenExpressionToParts(
-      node.right as t.Expression,
-      tPath
+      exprPath.get('right')
     );
     return {
       parts: [...leftParts, ...rightParts],
@@ -93,10 +100,10 @@ export function flattenExpressionToParts(
   }
 
   // gt(derive(() => 'Hello, World!'))
-  if (tPath && isDeriveInvocation(node, tPath)) {
-    return { parts: [{ type: 'derive', node }], errors: [] };
+  if (scope && isDeriveInvocation(expr, scope)) {
+    return { parts: [{ type: 'derive', node: expr }], errors: [] };
   }
 
   // gt(name)
-  return { parts: [{ type: 'dynamic', node }], errors: [] };
+  return { parts: [{ type: 'dynamic', node: expr }], errors: [] };
 }

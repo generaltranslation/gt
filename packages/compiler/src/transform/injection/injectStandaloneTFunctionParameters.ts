@@ -2,15 +2,17 @@ import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
 import { validateUseGTCallback } from '../validation/validateTranslationFunctionCallback';
 import { injectHashIntoTranslationOptions } from './injectHashIntoTranslationOptions';
+import { NodePath } from '@babel/traverse';
 
 /**
  * Injects $_hash into standalone t() invocations.
  */
 export function injectStandaloneTFunctionParameters(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState
 ): void {
-  const params = validateUseGTCallback(callExpr, state);
+  const callExpr = callExprPath.node;
+  const params = validateUseGTCallback(callExprPath, state);
   state.errorTracker.addErrors(params.errors);
   if (
     params.errors.length > 0 ||

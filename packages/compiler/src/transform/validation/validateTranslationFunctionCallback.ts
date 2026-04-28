@@ -7,6 +7,7 @@ import { TransformState } from '../../state/types';
 import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFromExpression';
 import { resolveStaticExpression } from '../../utils/string-expressions/resolveStaticExpression';
 import { getTrackedVariable } from '../getTrackedVariable';
+import { NodePath } from '@babel/traverse';
 
 /**
  * Validate useGT_callback / getGT_callback
@@ -15,7 +16,7 @@ import { getTrackedVariable } from '../getTrackedVariable';
  * - second argument, if present, $id field + $context field must be a string literal
  */
 export function validateUseGTCallback(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState
 ): {
   errors: string[];
@@ -27,6 +28,7 @@ export function validateUseGTCallback(
   format?: string;
   hasDeriveContext?: boolean;
 } {
+  const callExpr = callExprPath.node;
   const errors: string[] = [];
 
   // Validate that the function has at least 1 argument
@@ -47,7 +49,7 @@ export function validateUseGTCallback(
 
   // Try to resolve the expression to a static string (handles concat, nested templates, etc.)
   const resolvedStaticExpression = resolveStaticExpression(
-    callExpr.arguments[0]
+    callExprPath.get('arguments')[0] as NodePath<t.Expression>
   );
   const content = resolvedStaticExpression.value;
 
@@ -85,8 +87,9 @@ export function validateUseGTCallback(
     };
   }
   if (t.isObjectExpression(callExpr.arguments[1])) {
+    const objExprPath = callExprPath.get('arguments')[1];
     const contextProperty = validatePropertyFromObjectExpression(
-      callExpr.arguments[1],
+      callExprPath.get('arguments')[1] as NodePath<t.ObjectExpression>,
       USEGT_CALLBACK_OPTIONS.$context,
       'string-or-derive',
       state
@@ -96,28 +99,28 @@ export function validateUseGTCallback(
     hasDeriveContext =
       contentHasAutoderive || contextProperty.hasDeriveExpression;
     const idProperty = validatePropertyFromObjectExpression(
-      callExpr.arguments[1],
+      objExprPath.get('value'),
       USEGT_CALLBACK_OPTIONS.$id,
       'string'
     );
     errors.push(...idProperty.errors);
     id = idProperty.value;
     const maxCharsProperty = validatePropertyFromObjectExpression(
-      callExpr.arguments[1],
+      objExprPath.get('value'),
       USEGT_CALLBACK_OPTIONS.$maxChars,
       'number'
     );
     errors.push(...maxCharsProperty.errors);
     maxChars = maxCharsProperty.value;
     const hashProperty = validatePropertyFromObjectExpression(
-      callExpr.arguments[1],
+      objExprPath.get('value'),
       USEGT_CALLBACK_OPTIONS.$_hash,
       'string'
     );
     errors.push(...hashProperty.errors);
     hash = hashProperty.value;
     const formatProperty = validatePropertyFromObjectExpression(
-      callExpr.arguments[1],
+      objExprPath.get('value'),
       USEGT_CALLBACK_OPTIONS.$format,
       'string'
     );
@@ -172,23 +175,23 @@ export function validateUseMessagesCallback(_callExpr: t.CallExpression): {
  * @returns The validated property
  */
 function validatePropertyFromObjectExpression(
-  objExpr: t.ObjectExpression,
+  objExprPath: NodePath<t.ObjectExpression>,
   name: string,
   type: 'string'
 ): { errors: string[]; value?: string };
 function validatePropertyFromObjectExpression(
-  objExpr: t.ObjectExpression,
+  objExprPath: NodePath<t.ObjectExpression>,
   name: string,
   type: 'number'
 ): { errors: string[]; value?: number };
 function validatePropertyFromObjectExpression(
-  objExpr: t.ObjectExpression,
+  objExprPath: NodePath<t.ObjectExpression>,
   name: string,
   type: 'string-or-derive',
   state: TransformState
 ): { errors: string[]; value?: string; hasDeriveExpression?: boolean };
 function validatePropertyFromObjectExpression(
-  objExpr: t.ObjectExpression,
+  objExprPath: NodePath<t.ObjectExpression>,
   name: string,
   type: 'string' | 'number' | 'string-or-derive',
   state?: TransformState
@@ -203,6 +206,7 @@ function validatePropertyFromObjectExpression(
     hasDeriveExpression?: boolean;
   } = { errors: [] };
   let value: t.ObjectProperty | undefined;
+  const objExpr = objExprPath.node;
   for (const property of objExpr.properties) {
     if (!t.isObjectProperty(property)) {
       continue;
@@ -232,7 +236,7 @@ function validatePropertyFromObjectExpression(
 
   // extract value
   if (type === 'string-or-derive') {
-    const resolved = resolveStaticExpression(value.value);
+    const resolved = resolveStaticExpression(objExprPath.get('value'));
     if (resolved.value !== undefined) {
       result.value = resolved.value;
     } else if (state) {

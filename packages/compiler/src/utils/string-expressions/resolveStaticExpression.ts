@@ -1,4 +1,5 @@
 import * as t from '@babel/types';
+import type { NodePath } from '@babel/traverse';
 import { flattenExpressionToParts } from './flattenExpressionToParts';
 
 /**
@@ -9,11 +10,11 @@ import { flattenExpressionToParts } from './flattenExpressionToParts';
  * Returns the resolved string, or undefined if the expression contains
  * any dynamic content (variables, function calls, etc.).
  */
-export function resolveStaticExpression(expr: t.Expression): {
+export function resolveStaticExpression(exprPath: NodePath<t.Expression>): {
   errors: string[];
   value?: string;
 } {
-  const { parts, errors } = flattenExpressionToParts(expr);
+  const { parts, errors } = flattenExpressionToParts(exprPath);
   if (errors.length > 0) return { errors };
 
   let value = '';
@@ -21,8 +22,7 @@ export function resolveStaticExpression(expr: t.Expression): {
     // Signal derive by returning undefined
     if (part.type === 'derive') {
       return { errors: [], value: undefined };
-    }
-    if (part.type !== 'static') {
+    } else if (part.type !== 'static') {
       return { errors: ['Expression is not a static string'] };
     }
     value += part.value;

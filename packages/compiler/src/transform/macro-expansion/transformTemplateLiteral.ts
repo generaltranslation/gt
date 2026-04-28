@@ -16,7 +16,7 @@ export function transformTemplateLiteral(path: NodePath<t.TemplateLiteral>): {
   variables?: t.ObjectExpression | null;
   errors: string[];
 } {
-  const { parts, errors } = flattenExpressionToParts(path.node, path);
+  const { parts, errors } = flattenExpressionToParts(path);
   if (errors.length > 0) {
     return { errors };
   }
