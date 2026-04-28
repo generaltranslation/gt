@@ -73,9 +73,7 @@ describe('flattenExpressionToParts', () => {
   });
 
   it('flattens and merges adjacent static concatenation parts', () => {
-    expectFlattenedParts('"A" + "B" + "C"', [
-      { type: 'static', value: 'ABC' },
-    ]);
+    expectFlattenedParts('"A" + "B" + "C"', [{ type: 'static', value: 'ABC' }]);
   });
 
   it('does not merge static parts across dynamic parts', () => {
