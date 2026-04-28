@@ -1,7 +1,6 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
 import { flattenExpressionToParts } from '../../utils/string-expressions/flattenExpressionToParts';
-import { mergeAdjacentStaticParts } from '../../utils/string-expressions/mergeAdjacentStaticParts';
 import { buildTransformResult } from '../../utils/string-expressions/buildTransformationResult';
 import { multiply } from '../../utils/multiplication/multiply';
 
@@ -26,9 +25,8 @@ export function transformTemplateLiteral(path: NodePath<t.TemplateLiteral>): {
     return { errors, content: [] };
   }
   const variants = multiply(parts);
-  const merged = variants.map((variant) => mergeAdjacentStaticParts(variant));
 
-  const content = merged.map(buildTransformResult);
+  const content = variants.map(buildTransformResult);
 
   return {
     content,
