@@ -5,6 +5,9 @@ import _getLocaleEmoji, {
 } from '../getLocaleEmoji';
 import type { CustomMapping } from '../customLocaleMapping';
 
+const unsupportedRegions = ['001', '', 'AA', 'QM', 'QQ', 'XA', 'XB', 'ZZ'];
+const unsupportedRegionLocales = ['en-AA', 'en-QM', 'en-QQ', 'en-XA', 'en-XB'];
+
 describe('getRegionEmoji', () => {
   it('computes flags for common ISO alpha-2 country codes', () => {
     for (const [region, emoji] of Object.entries({
@@ -120,7 +123,7 @@ describe('getRegionEmoji', () => {
   });
 
   it('falls back for unsupported region codes', () => {
-    for (const region of ['001', '']) {
+    for (const region of unsupportedRegions) {
       expect(getRegionEmoji(region)).toBe(defaultEmoji);
     }
   });
@@ -180,6 +183,12 @@ describe('_getLocaleEmoji', () => {
     expect(_getLocaleEmoji('')).toBe(defaultEmoji);
     expect(_getLocaleEmoji('xyz')).toBeDefined(); // May get some emoji
     expect(_getLocaleEmoji('really-invalid-123456')).toBe(defaultEmoji);
+  });
+
+  it('should return default emoji for unsupported locale regions', () => {
+    for (const locale of unsupportedRegionLocales) {
+      expect(_getLocaleEmoji(locale)).toBe(defaultEmoji);
+    }
   });
 
   it('should handle locales with script codes', () => {
