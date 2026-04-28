@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.26
+
+### Patch Changes
+
+- [#1290](https://github.com/generaltranslation/gt/pull/1290) [`7172355`](https://github.com/generaltranslation/gt/commit/71723554db498946450606442c2a42c23caf8abb) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: fix release
+
 ## 2.14.25
 
 ### Patch Changes
