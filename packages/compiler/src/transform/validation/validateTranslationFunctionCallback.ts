@@ -252,7 +252,7 @@ function validatePropertyFromObjectExpression(
       if (deriveErrors.length === 0) {
         result.hasDeriveExpression = true;
       } else {
-        result.errors.push(...resolved.errors);
+        result.errors.push(...deriveErrors);
       }
     } else {
       result.errors.push(...resolved.errors);

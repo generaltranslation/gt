@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { validateUseGTCallback } from '../validateTranslationFunctionCallback';
 import { TransformState } from '../../../state/types';
@@ -9,6 +8,7 @@ import { ErrorTracker } from '../../../state/ErrorTracker';
 import { ScopeTracker } from '../../../state/ScopeTracker';
 import { PluginSettings } from '../../../config';
 import { GT_OTHER_FUNCTIONS } from '../../../utils/constants/gt/constants';
+import { getCallExpressionPath } from './testHelpers';
 
 /**
  * Golden standard tests for robust string extraction.
@@ -70,29 +70,7 @@ function createState(overrides?: Partial<PluginSettings>): TransformState {
   };
 }
 
-function getCallExpressionPath(
-  callExpr: t.CallExpression
-): NodePath<t.CallExpression> {
-  const ast = t.file(t.program([t.expressionStatement(callExpr)]));
-  let callExprPath: NodePath<t.CallExpression> | undefined;
-
-  traverse(ast, {
-    CallExpression(path) {
-      if (path.node === callExpr) {
-        callExprPath = path;
-        path.stop();
-      }
-    },
-  });
-
-  if (!callExprPath) {
-    throw new Error('Expected call expression path');
-  }
-
-  return callExprPath;
-}
-
-function makeCall(firstArg: t.Expression): NodePath<t.CallExpression> {
+function makeCall(firstArg: t.Expression) {
   return getCallExpressionPath(
     t.callExpression(t.identifier('gt'), [firstArg])
   );
@@ -101,7 +79,7 @@ function makeCall(firstArg: t.Expression): NodePath<t.CallExpression> {
 function makeCallWithOptions(
   firstArg: t.Expression,
   options: t.ObjectExpression
-): NodePath<t.CallExpression> {
+) {
   return getCallExpressionPath(
     t.callExpression(t.identifier('gt'), [firstArg, options])
   );
