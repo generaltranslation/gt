@@ -32,8 +32,10 @@ PLATFORM_WHEELS = (
     # Current outputs report minos 13.0 via `otool -l`.
     PlatformWheel("macos-arm64", "gt-darwin-arm64", "gt", "py3-none-macosx_13_0_arm64"),
     PlatformWheel("macos-x64", "gt-darwin-x64", "gt", "py3-none-macosx_13_0_x86_64"),
-    PlatformWheel("linux-arm64", "gt-linux-arm64", "gt", "py3-none-manylinux_2_17_aarch64"),
-    PlatformWheel("linux-x64", "gt-linux-x64", "gt", "py3-none-manylinux_2_17_x86_64"),
+    # Keep Linux wheel tags aligned with the bundled Bun executables' GLIBC symbols.
+    # Current outputs reference GLIBC_2.25 via `objdump -p`.
+    PlatformWheel("linux-arm64", "gt-linux-arm64", "gt", "py3-none-manylinux_2_25_aarch64"),
+    PlatformWheel("linux-x64", "gt-linux-x64", "gt", "py3-none-manylinux_2_25_x86_64"),
     PlatformWheel("windows-x64", "gt-win32-x64.exe", "gt.exe", "py3-none-win_amd64"),
 )
 
