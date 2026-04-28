@@ -157,7 +157,7 @@ export function resolveCanonicalLocale(
  * @returns {string} The standardized BCP 47 locale code or an empty string if it is an invalid code.
  *
  * @example
- * standardizeLocale('en_us');
+ * standardizeLocale('en-us');
  * // Returns: 'en-US'
  *
  * @example

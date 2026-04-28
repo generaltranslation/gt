@@ -11,7 +11,22 @@ describe('generaltranslation/core ESM export', () => {
         '-e',
         `
           import assert from 'node:assert/strict';
-          import { LocaleConfig, formatMessage } from 'generaltranslation/core';
+          import {
+            LocaleConfig,
+            formatCutoff,
+            formatMessage,
+            isValidLocale,
+            resolveCanonicalLocale,
+            standardizeLocale,
+          } from 'generaltranslation/core';
+
+          assert.equal(
+            formatCutoff('Hello, world!', {
+              locales: 'en-US',
+              maxChars: 8,
+            }),
+            'Hello, \\u2026'
+          );
 
           assert.equal(
             formatMessage('Hi {name}', { variables: { name: 'Ada' } }),
@@ -24,6 +39,10 @@ describe('generaltranslation/core ESM export', () => {
             }),
             'Hi Ada'
           );
+
+          assert.equal(isValidLocale('en-US'), true);
+          assert.equal(resolveCanonicalLocale('en-US'), 'en-US');
+          assert.equal(standardizeLocale('en-us'), 'en-US');
         `,
       ],
       { stdio: 'pipe' }
