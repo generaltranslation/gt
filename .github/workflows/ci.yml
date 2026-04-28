@@ -144,7 +144,7 @@ jobs:
             binary: gt-darwin-x64
           - os: macos-latest
             arch: arm64
-            binary: blacksmith-4vcpu-ubuntu-2404-arm
+            binary: gt-darwin-arm64
           - os: windows-latest
             arch: x64
             binary: gt-win32-x64.exe
@@ -220,7 +220,7 @@ jobs:
             binary: gtx-cli-darwin-x64
           - os: macos-latest
             arch: arm64
-            binary: blacksmith-4vcpu-ubuntu-2404-arm
+            binary: gtx-cli-darwin-arm64
           - os: windows-latest
             arch: x64
             binary: gtx-cli-win32-x64.exe
