@@ -1,8 +1,10 @@
 import { intlCache } from '../cache/IntlCache';
 import {
+  getCustomProperty,
   shouldUseCanonicalLocale,
   type CustomMapping,
 } from './customLocaleMapping';
+import { _standardizeLocale } from './isValidLocale';
 
 /**
  * @internal
@@ -11,35 +13,31 @@ export default function _getLocaleEmoji(
   locale: string,
   customMapping?: CustomMapping
 ): string {
-  // Check for canonical locale
   const aliasedLocale = locale;
   if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
-    // Override locale with canonical locale
     locale = (customMapping[locale] as { code: string }).code;
   }
 
   try {
-    const standardizedLocale = getCanonicalLocale(locale) || locale;
+    const standardizedLocale = _standardizeLocale(locale);
     const localeObject = intlCache.get('Locale', standardizedLocale);
     const { language, region } = localeObject;
 
-    // if a custom mapping is specified, use it
     if (customMapping) {
       for (const l of [aliasedLocale, locale, standardizedLocale, language]) {
-        const customEmoji = getCustomEmoji(customMapping, l);
+        const customEmoji = getCustomProperty(customMapping, l, 'emoji');
         if (customEmoji) return customEmoji;
       }
     }
 
-    // if a region is specified, use it!
-    if (region) return getRegionEmoji(region);
+    const regionEmoji = region && getSupportedRegionEmoji(region);
+    if (regionEmoji) return regionEmoji;
 
-    // if not, attempt to extrapolate
     const extrapolated = localeObject.maximize();
-    const extrapolatedRegion = extrapolated.region || '';
 
     return (
-      exceptions[extrapolated.language] || getRegionEmoji(extrapolatedRegion)
+      exceptions[extrapolated.language] ||
+      getRegionEmoji(extrapolated.region || '')
     );
   } catch {
     return defaultEmoji;
@@ -82,30 +80,18 @@ const flagRegions = new Set(
 const regionalIndicatorOffset = 0x1f1e6 - 'A'.charCodeAt(0);
 
 export function getRegionEmoji(region: string): string {
+  return getSupportedRegionEmoji(region) || defaultEmoji;
+}
+
+function getSupportedRegionEmoji(region: string): string | undefined {
   const normalizedRegion = region.toUpperCase();
   const specialEmoji = specialRegionEmojis[normalizedRegion];
   if (specialEmoji) return specialEmoji;
 
-  if (!flagRegions.has(normalizedRegion)) return defaultEmoji;
+  if (!flagRegions.has(normalizedRegion)) return undefined;
 
   return String.fromCodePoint(
     normalizedRegion.charCodeAt(0) + regionalIndicatorOffset,
     normalizedRegion.charCodeAt(1) + regionalIndicatorOffset
   );
 }
-
-function getCanonicalLocale(locale: string): string | undefined {
-  try {
-    return Intl.getCanonicalLocales(locale)[0];
-  } catch {
-    return undefined;
-  }
-}
-
-const getCustomEmoji = (
-  customMapping: CustomMapping,
-  locale: string
-): string | undefined => {
-  const value = customMapping[locale];
-  return value && typeof value === 'object' ? value.emoji : undefined;
-};

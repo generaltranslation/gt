@@ -191,6 +191,20 @@ describe('_getLocaleEmoji', () => {
     }
   });
 
+  it('should use language exceptions for unsupported locale regions', () => {
+    for (const locale of [
+      'bo-001',
+      'ug-001',
+      'gd-001',
+      'cy-001',
+      'gv-001',
+      'grc-001',
+    ]) {
+      const language = locale.split('-')[0];
+      expect(_getLocaleEmoji(locale)).toBe(_getLocaleEmoji(language));
+    }
+  });
+
   it('should handle locales with script codes', () => {
     const result1 = _getLocaleEmoji('zh-Hans-CN');
     const result2 = _getLocaleEmoji('zh-Hant-TW');
