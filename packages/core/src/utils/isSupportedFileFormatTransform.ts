@@ -29,14 +29,3 @@ export function isSupportedFileFormatTransform(
   const toFormats: FileFormat[] | undefined = SUPPORTED_TRANSFORMATIONS[from];
   return toFormats?.includes(to) ?? false;
 }
-
-/**
- * Returns the list of supported output formats for a given source format.
- * @param from - The source file format
- * @returns Array of supported target formats, or undefined if the source format is unknown
- */
-export function getSupportedTransformFormats(
-  from: FileFormat
-): readonly FileFormat[] | undefined {
-  return SUPPORTED_TRANSFORMATIONS[from];
-}

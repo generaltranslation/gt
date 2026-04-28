@@ -226,7 +226,7 @@ describe.sequential('_enqueueFiles', () => {
 
     await expect(
       _enqueueFiles(mockFiles, createMockOptions(), mockConfig)
-    ).rejects.toThrow('Unsupported file format transform: YAML -> JSON.');
+    ).rejects.toThrow('Unsupported file format transform: YAML -> JSON');
     expect(apiRequest).not.toHaveBeenCalled();
   });
 

@@ -4,7 +4,7 @@ import type {
   Settings,
   SupportedFileExtension,
 } from '../../types/index.js';
-import { validateFileFormatTransforms } from 'generaltranslation/internal';
+import { isSupportedFileFormatTransform } from 'generaltranslation/internal';
 
 /**
  * Maps CLI config file keys to API file format enum values.
@@ -95,13 +95,13 @@ export function resolveTransformationFormat(
   // Normalize to uppercase to match the FileFormat enum (e.g. "po" -> "PO")
   const normalized = transformationFormat.toUpperCase() as FileFormat;
   const fileFormat = CONFIG_FILE_TYPE_TO_FILE_FORMAT[fileType];
-  validateFileFormatTransforms([
-    {
-      fileFormat,
-      transformFormat: normalized,
-      fileName: `files.${fileType}`,
-    },
-  ]);
+
+  if (!isSupportedFileFormatTransform(fileFormat, normalized)) {
+    throw new Error(
+      `Unsupported file format transform: ${fileFormat} -> ${normalized} in files.${fileType}. ` +
+        `"${normalized}" is not a valid transformationFormat for ${fileFormat} source files.`
+    );
+  }
 
   return normalized;
 }
