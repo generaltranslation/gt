@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.2.10
+
+### Patch Changes
+
+- [#1276](https://github.com/generaltranslation/gt/pull/1276) [`20276d0`](https://github.com/generaltranslation/gt/commit/20276d03cc1494e79d93d9dc131eee2815a4fae6) Thanks [@bgub](https://github.com/bgub)! - Fix locale emoji fallback handling for language exception locales and document supported flag regions.
+
 ## 8.2.9
 
 ### Patch Changes
