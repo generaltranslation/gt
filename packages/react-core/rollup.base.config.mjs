@@ -33,6 +33,7 @@ export default {
   external: [
     'react',
     'generaltranslation',
+    'generaltranslation/core',
     '@generaltranslation/supported-locales',
   ],
 };

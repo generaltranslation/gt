@@ -654,7 +654,7 @@ describe('GT LocaleConfig delegation', () => {
     expect(result).toBe(formatCurrencyWithIntl('fr-FR'));
   });
 
-  it('exposes client-safe localeConfig and refreshes it from setConfig', () => {
+  it('exposes core localeConfig and refreshes it from setConfig', () => {
     const gt = new GT({
       apiKey: 'test-api-key',
       devApiKey: 'test-dev-key',

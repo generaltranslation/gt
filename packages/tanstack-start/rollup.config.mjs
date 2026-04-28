@@ -8,6 +8,7 @@ const external = [
   'react',
   'react-dom',
   'generaltranslation',
+  'generaltranslation/core',
   'generaltranslation/types',
   'generaltranslation/internal',
   'generaltranslation/id',

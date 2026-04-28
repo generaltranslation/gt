@@ -2,7 +2,7 @@ import { hashSource } from 'generaltranslation/id';
 import { indexVars } from 'generaltranslation/internal';
 import { LookupOptions } from '../translation-functions/types/options';
 import { Translation } from '../types';
-import { IcuMessage } from 'generaltranslation/types';
+import type { IcuMessage } from 'generaltranslation/types';
 
 /**
  * Hash a message string

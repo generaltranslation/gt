@@ -1,5 +1,31 @@
 # gtx-cli
 
+## 2.14.26
+
+### Patch Changes
+
+- [#1290](https://github.com/generaltranslation/gt/pull/1290) [`7172355`](https://github.com/generaltranslation/gt/commit/71723554db498946450606442c2a42c23caf8abb) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: fix release
+
+## 2.14.25
+
+### Patch Changes
+
+- Updated dependencies [[`ce0933a`](https://github.com/generaltranslation/gt/commit/ce0933ab102d34a0c38634f7c2b0d634c9a620a8)]:
+  - generaltranslation@8.2.9
+  - @generaltranslation/python-extractor@0.2.14
+
+## 2.14.24
+
+### Patch Changes
+
+- [#1287](https://github.com/generaltranslation/gt/pull/1287) [`37f9e7e`](https://github.com/generaltranslation/gt/commit/37f9e7eb2d78df4008c9b64d782f6ebe53f5ef5d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: release versioning
+
+## 2.14.23
+
+### Patch Changes
+
+- [#1282](https://github.com/generaltranslation/gt/pull/1282) [`756f963`](https://github.com/generaltranslation/gt/commit/756f963c370243ecca09cda4824d666d58c04b1c) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add PyPI distribution support for the GT CLI.
+
 ## 2.14.22
 
 ### Patch Changes
