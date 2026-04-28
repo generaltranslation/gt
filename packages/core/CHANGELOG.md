@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.2.9
+
+### Patch Changes
+
+- [#1278](https://github.com/generaltranslation/gt/pull/1278) [`ce0933a`](https://github.com/generaltranslation/gt/commit/ce0933ab102d34a0c38634f7c2b0d634c9a620a8) Thanks [@bgub](https://github.com/bgub)! - Add a `generaltranslation/core` entrypoint for locale and formatting helpers, and update `gt-i18n` to consume it where possible.
+
 ## 8.2.8
 
 ### Patch Changes
