@@ -49,11 +49,11 @@ export {
  *
  * @example
  * formatCutoff('Hello, world!', { locales: 'en-US', maxChars: 8 });
- * // Returns: 'Hello, w...'
+ * // Returns: 'Hello, …'
  *
  * @example
  * formatCutoff('Hello, world!', { locales: 'en-US', maxChars: -3 });
- * // Returns: '...ld!'
+ * // Returns: '…d!'
  *
  * @example
  * formatCutoff('Very long text that needs cutting', {
@@ -62,7 +62,7 @@ export {
  *   style: 'ellipsis',
  *   separator: ' '
  * });
- * // Returns: 'Very long text ...'
+ * // Returns: 'Very long tex …'
  */
 export function formatCutoff(
   value: string,

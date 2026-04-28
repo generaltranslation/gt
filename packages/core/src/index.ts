@@ -37,7 +37,7 @@ import _getLocaleEmoji from './locales/getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _getLocaleName } from './locales/getLocaleName';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
-import { libraryDefaultLocale } from './internal';
+import { libraryDefaultLocale } from './settings/settings';
 import _isSameDialect from './locales/isSameDialect';
 import _isSupersetLocale from './locales/isSupersetLocale';
 import {
