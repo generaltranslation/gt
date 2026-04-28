@@ -164,6 +164,7 @@ def retag_wheel(source_wheel: Path, output_dir: Path, wheel_tag: str) -> Path:
             records[info.filename] = data
 
         if not record_path:
+            output_wheel.unlink(missing_ok=True)
             raise SystemExit(f"Could not find RECORD in {source_wheel}")
 
         record_buffer = io.StringIO()
@@ -209,9 +210,10 @@ def main() -> None:
     output_dir = args.out_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    original_init = set_version(args.version)
+    original_init: str | None = None
     built_wheels: list[Path] = []
     try:
+        original_init = set_version(args.version)
         for platform_wheel in selected_platforms(args.platform):
             print(f"Building {platform_wheel.name} wheel...", flush=True)
             prepare_binary(source, platform_wheel)
@@ -219,7 +221,8 @@ def main() -> None:
                 pure_wheel = run_build(Path(temp_dir))
                 built_wheels.append(retag_wheel(pure_wheel, output_dir, platform_wheel.wheel_tag))
     finally:
-        INIT_PATH.write_text(original_init, encoding="utf-8")
+        if original_init is not None:
+            INIT_PATH.write_text(original_init, encoding="utf-8")
         clean_bin_dir()
 
     for wheel in built_wheels:
