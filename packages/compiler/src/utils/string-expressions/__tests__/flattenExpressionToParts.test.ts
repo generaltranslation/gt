@@ -46,7 +46,7 @@ function withTaggedTemplatePath(
 
 function expectFlattenedParts(code: string, expectedParts: Part[]) {
   withExpressionPath(code, (path) => {
-    const { parts, errors } = flattenExpressionToParts(path.node, path);
+    const { parts, errors } = flattenExpressionToParts(path);
     expect(errors).toEqual([]);
     expect(parts).toEqual(expectedParts);
   });
@@ -82,7 +82,7 @@ describe('flattenExpressionToParts', () => {
 
   it('flattens template with expression', () => {
     withExpressionPath('`A${name}B`', (path) => {
-      const { parts, errors } = flattenExpressionToParts(path.node, path);
+      const { parts, errors } = flattenExpressionToParts(path);
       expect(errors).toEqual([]);
       expect(parts).toHaveLength(3);
       expect(parts[0]).toEqual({ type: 'static', value: 'A' });
@@ -93,7 +93,7 @@ describe('flattenExpressionToParts', () => {
 
   it('flattens an identifier as dynamic', () => {
     withExpressionPath('name', (path) => {
-      const { parts, errors } = flattenExpressionToParts(path.node, path);
+      const { parts, errors } = flattenExpressionToParts(path);
       expect(errors).toEqual([]);
       expect(parts).toHaveLength(1);
       expect(parts[0].type).toBe('dynamic');
@@ -109,7 +109,7 @@ describe('flattenExpressionToParts', () => {
     traverse(ast, {
       ExpressionStatement(path) {
         const expr = path.get('expression') as NodePath<t.Expression>;
-        const { parts, errors } = flattenExpressionToParts(expr.node, expr);
+        const { parts, errors } = flattenExpressionToParts(expr);
         expect(errors).toEqual([]);
         expect(parts).toHaveLength(1);
         expect(parts[0].type).toBe('derive');
@@ -120,7 +120,7 @@ describe('flattenExpressionToParts', () => {
 
   it('reports invalid escape sequences in template literals', () => {
     withTaggedTemplatePath('tag`\\xg`;', (path) => {
-      const { parts, errors } = flattenExpressionToParts(path.node, path);
+      const { parts, errors } = flattenExpressionToParts(path);
       expect(parts).toEqual([]);
       expect(errors).toEqual([
         'Template literal contains an invalid escape sequence',
@@ -130,7 +130,7 @@ describe('flattenExpressionToParts', () => {
 
   it('reports invalid escape sequences once per template literal', () => {
     withTaggedTemplatePath('tag`\\xg${value}\\xh`;', (path) => {
-      const { errors } = flattenExpressionToParts(path.node, path);
+      const { errors } = flattenExpressionToParts(path);
       expect(errors).toEqual([
         'Template literal contains an invalid escape sequence',
       ]);
@@ -141,7 +141,7 @@ describe('flattenExpressionToParts', () => {
 describe('resolveStaticExpression', () => {
   it('resolves nested static string expressions', () => {
     withExpressionPath('"A" + `B ${"C"}`', (path) => {
-      expect(resolveStaticExpression(path.node)).toEqual({
+      expect(resolveStaticExpression(path)).toEqual({
         errors: [],
         value: 'AB C',
       });
@@ -150,7 +150,7 @@ describe('resolveStaticExpression', () => {
 
   it('rejects dynamic expressions', () => {
     withExpressionPath('`Hello ${name}`', (path) => {
-      expect(resolveStaticExpression(path.node)).toEqual({
+      expect(resolveStaticExpression(path)).toEqual({
         errors: ['Expression is not a static string'],
       });
     });
@@ -158,7 +158,7 @@ describe('resolveStaticExpression', () => {
 
   it('reports invalid escape sequences', () => {
     withTaggedTemplatePath('tag`\\xg`;', (path) => {
-      expect(resolveStaticExpression(path.node)).toEqual({
+      expect(resolveStaticExpression(path)).toEqual({
         errors: ['Template literal contains an invalid escape sequence'],
       });
     });

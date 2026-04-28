@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
   validateUseGTCallback,
@@ -12,6 +13,28 @@ import { ErrorTracker } from '../../../state/ErrorTracker';
 import { ScopeTracker } from '../../../state/ScopeTracker';
 import { PluginSettings } from '../../../config';
 import { GT_OTHER_FUNCTIONS } from '../../../utils/constants/gt/constants';
+
+function getCallExpressionPath(
+  callExpr: t.CallExpression
+): NodePath<t.CallExpression> {
+  const ast = t.file(t.program([t.expressionStatement(callExpr)]));
+  let callExprPath: NodePath<t.CallExpression> | undefined;
+
+  traverse(ast, {
+    CallExpression(path) {
+      if (path.node === callExpr) {
+        callExprPath = path;
+        path.stop();
+      }
+    },
+  });
+
+  if (!callExprPath) {
+    throw new Error('Expected call expression path');
+  }
+
+  return callExprPath;
+}
 
 describe('validateTranslationFunctionCallback', () => {
   let state: TransformState;
@@ -66,7 +89,10 @@ describe('validateTranslationFunctionCallback', () => {
       it('should return error when no arguments provided', () => {
         const callExpr = t.callExpression(t.identifier('useGT_callback'), []);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(1);
         expect(result.errors[0]).toBe(
@@ -80,7 +106,10 @@ describe('validateTranslationFunctionCallback', () => {
           t.spreadElement(t.identifier('args')),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(1);
         expect(result.errors[0]).toBe(
@@ -94,7 +123,10 @@ describe('validateTranslationFunctionCallback', () => {
           t.stringLiteral('Hello world'),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello world');
@@ -110,7 +142,10 @@ describe('validateTranslationFunctionCallback', () => {
           ),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello world');
@@ -121,7 +156,10 @@ describe('validateTranslationFunctionCallback', () => {
           t.identifier('myString'),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         // When an identifier is passed, validateDeclareStatic adds errors
         expect(result.errors).toHaveLength(3);
@@ -144,7 +182,10 @@ describe('validateTranslationFunctionCallback', () => {
           ),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         // Template literal with expressions that don't contain derive
         // fails validation
@@ -170,7 +211,10 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
       });
@@ -191,7 +235,10 @@ describe('validateTranslationFunctionCallback', () => {
           binaryExpr,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
       });
@@ -214,7 +261,10 @@ describe('validateTranslationFunctionCallback', () => {
           templateLiteral,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
       });
@@ -229,7 +279,10 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors.length).toBeGreaterThan(0);
         expect(
@@ -252,7 +305,10 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors.length).toBeGreaterThan(0);
         expect(
@@ -272,7 +328,10 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors.length).toBeGreaterThan(0);
         expect(
@@ -291,7 +350,10 @@ describe('validateTranslationFunctionCallback', () => {
           otherCall,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors.length).toBeGreaterThan(0);
       });
@@ -310,7 +372,10 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
       });
@@ -327,7 +392,10 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors.length).toBeGreaterThan(0);
         expect(
@@ -359,7 +427,10 @@ describe('validateTranslationFunctionCallback', () => {
           templateLiteral,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
       });
@@ -384,7 +455,10 @@ describe('validateTranslationFunctionCallback', () => {
           binaryExpr,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
       });
@@ -401,7 +475,10 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors.length).toBeGreaterThan(0);
         expect(
@@ -432,7 +509,10 @@ describe('validateTranslationFunctionCallback', () => {
           declareStaticCall,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
       });
@@ -455,7 +535,10 @@ describe('validateTranslationFunctionCallback', () => {
           templateLiteral,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
       });
@@ -476,7 +559,10 @@ describe('validateTranslationFunctionCallback', () => {
           binaryExpr,
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
       });
@@ -488,7 +574,10 @@ describe('validateTranslationFunctionCallback', () => {
           t.stringLiteral('Hello'),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello');
@@ -508,7 +597,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello');
@@ -524,7 +616,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello');
@@ -540,7 +635,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello');
@@ -560,7 +658,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello');
@@ -580,7 +681,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.context).toBe('greeting');
@@ -597,7 +701,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors.length).toBeGreaterThan(0);
       });
@@ -610,7 +717,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors.length).toBeGreaterThan(0);
         expect(result.errors.some((e) => e.includes('string literal'))).toBe(
@@ -637,7 +747,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.context).toBe('greeting');
@@ -649,7 +762,10 @@ describe('validateTranslationFunctionCallback', () => {
           t.objectExpression([]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello');
@@ -669,7 +785,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.context).toBe('greeting');
@@ -695,7 +814,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         // Should still extract $context, but ignore computed key
         expect(result.errors).toHaveLength(0);
@@ -717,7 +839,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello');
@@ -736,7 +861,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello');
@@ -761,7 +889,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello');
@@ -788,7 +919,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello');
@@ -805,7 +939,10 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(callExpr, state);
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
 
         expect(result.errors).toHaveLength(0);
         expect(result.context).toBe('greeting');
@@ -959,7 +1096,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoderiveState);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        autoderiveState
+      );
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
@@ -975,7 +1115,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoderiveState);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        autoderiveState
+      );
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
@@ -993,7 +1136,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoderiveState);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        autoderiveState
+      );
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
@@ -1009,7 +1155,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoderiveState);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        autoderiveState
+      );
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
@@ -1027,7 +1176,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, state);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        state
+      );
 
       expect(result.errors.length).toBeGreaterThan(0);
     });
@@ -1042,7 +1194,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, state);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        state
+      );
 
       expect(result.errors.length).toBeGreaterThan(0);
     });
@@ -1065,7 +1220,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoderiveState);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        autoderiveState
+      );
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
@@ -1083,7 +1241,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoderiveState);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        autoderiveState
+      );
 
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
@@ -1101,7 +1262,10 @@ describe('validateTranslationFunctionCallback', () => {
         ]),
       ]);
 
-      const result = validateUseGTCallback(callExpr, autoderiveState);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        autoderiveState
+      );
 
       expect(result.errors.length).toBeGreaterThan(0);
     });
@@ -1115,7 +1279,10 @@ describe('validateTranslationFunctionCallback', () => {
           t.objectProperty(t.identifier('$format'), t.stringLiteral('STRING')),
         ]),
       ]);
-      const result = validateUseGTCallback(callExpr, state);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        state
+      );
       expect(result.errors).toHaveLength(0);
       expect(result.content).toBe('Hello world');
       expect(result.format).toBe('STRING');
@@ -1131,7 +1298,10 @@ describe('validateTranslationFunctionCallback', () => {
           ),
         ]),
       ]);
-      const result = validateUseGTCallback(callExpr, state);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        state
+      );
       expect(result.errors).toHaveLength(0);
       expect(result.format).toBeUndefined();
     });
@@ -1148,7 +1318,10 @@ describe('validateTranslationFunctionCallback', () => {
           t.objectProperty(t.identifier('$format'), t.stringLiteral('I18NEXT')),
         ]),
       ]);
-      const result = validateUseGTCallback(callExpr, state);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        state
+      );
       expect(result.errors).toHaveLength(0);
       expect(result.id).toBe('hello');
       expect(result.context).toBe('greeting');
@@ -1162,7 +1335,10 @@ describe('validateTranslationFunctionCallback', () => {
           t.objectProperty(t.identifier('$format'), t.identifier('someVar')),
         ]),
       ]);
-      const result = validateUseGTCallback(callExpr, state);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        state
+      );
       expect(result.errors.length).toBeGreaterThan(0);
     });
   });
@@ -1224,7 +1400,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, jsxOnlyState);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        jsxOnlyState
+      );
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
@@ -1237,7 +1416,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, jsxOnlyState);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        jsxOnlyState
+      );
       expect(result.errors.length).toBeGreaterThan(0);
     });
   });
@@ -1299,7 +1481,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, stringsOnlyState);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        stringsOnlyState
+      );
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
     });
@@ -1313,7 +1498,10 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(callExpr, stringsOnlyState);
+      const result = validateUseGTCallback(
+        getCallExpressionPath(callExpr),
+        stringsOnlyState
+      );
       expect(result.errors).toHaveLength(0);
       expect(result.hasDeriveContext).toBe(true);
     });

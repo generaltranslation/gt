@@ -87,9 +87,11 @@ export function validateUseGTCallback(
     };
   }
   if (t.isObjectExpression(callExpr.arguments[1])) {
-    const objExprPath = callExprPath.get('arguments')[1];
+    const objExprPath = callExprPath.get(
+      'arguments'
+    )[1] as NodePath<t.ObjectExpression>;
     const contextProperty = validatePropertyFromObjectExpression(
-      callExprPath.get('arguments')[1] as NodePath<t.ObjectExpression>,
+      objExprPath,
       USEGT_CALLBACK_OPTIONS.$context,
       'string-or-derive',
       state
@@ -99,28 +101,28 @@ export function validateUseGTCallback(
     hasDeriveContext =
       contentHasAutoderive || contextProperty.hasDeriveExpression;
     const idProperty = validatePropertyFromObjectExpression(
-      objExprPath.get('value'),
+      objExprPath,
       USEGT_CALLBACK_OPTIONS.$id,
       'string'
     );
     errors.push(...idProperty.errors);
     id = idProperty.value;
     const maxCharsProperty = validatePropertyFromObjectExpression(
-      objExprPath.get('value'),
+      objExprPath,
       USEGT_CALLBACK_OPTIONS.$maxChars,
       'number'
     );
     errors.push(...maxCharsProperty.errors);
     maxChars = maxCharsProperty.value;
     const hashProperty = validatePropertyFromObjectExpression(
-      objExprPath.get('value'),
+      objExprPath,
       USEGT_CALLBACK_OPTIONS.$_hash,
       'string'
     );
     errors.push(...hashProperty.errors);
     hash = hashProperty.value;
     const formatProperty = validatePropertyFromObjectExpression(
-      objExprPath.get('value'),
+      objExprPath,
       USEGT_CALLBACK_OPTIONS.$format,
       'string'
     );
@@ -205,26 +207,28 @@ function validatePropertyFromObjectExpression(
     value?: string | number;
     hasDeriveExpression?: boolean;
   } = { errors: [] };
-  let value: t.ObjectProperty | undefined;
-  const objExpr = objExprPath.node;
-  for (const property of objExpr.properties) {
-    if (!t.isObjectProperty(property)) {
+  let valuePath: NodePath<t.ObjectProperty> | undefined;
+  for (const propertyPath of objExprPath.get('properties')) {
+    if (!propertyPath.isObjectProperty()) {
       continue;
     }
+    const property = propertyPath.node;
     if (t.isIdentifier(property.key) && property.key.name === name) {
-      value = property;
+      valuePath = propertyPath;
       break;
     }
     if (t.isStringLiteral(property.key) && property.key.value === name) {
-      value = property;
+      valuePath = propertyPath;
       break;
     }
   }
 
   // return result if no value found
-  if (!value) {
+  if (!valuePath) {
     return result;
   }
+
+  const value = valuePath.node;
 
   // validate value
   if (!t.isExpression(value.value)) {
@@ -236,7 +240,9 @@ function validatePropertyFromObjectExpression(
 
   // extract value
   if (type === 'string-or-derive') {
-    const resolved = resolveStaticExpression(objExprPath.get('value'));
+    const resolved = resolveStaticExpression(
+      valuePath.get('value') as NodePath<t.Expression>
+    );
     if (resolved.value !== undefined) {
       result.value = resolved.value;
     } else if (state) {
