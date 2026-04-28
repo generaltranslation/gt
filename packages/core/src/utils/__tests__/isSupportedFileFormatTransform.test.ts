@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { isSupportedFileFormatTransform } from '../isSupportedFileFormatTransform';
+import {
+  getSupportedTransformFormats,
+  isSupportedFileFormatTransform,
+} from '../isSupportedFileFormatTransform';
 import type { FileFormat } from '../../types-dir/api/file';
 
 describe('isSupportedFileFormatTransform', () => {
@@ -31,5 +34,26 @@ describe('isSupportedFileFormatTransform', () => {
 
   it('does not support unsupported cross-format transforms', () => {
     expect(isSupportedFileFormatTransform('YAML', 'JSON')).toBe(false);
+  });
+});
+
+describe('getSupportedTransformFormats', () => {
+  it('returns supported formats for POT', () => {
+    const formats = getSupportedTransformFormats('POT');
+    expect(formats).toContain('POT');
+    expect(formats).toContain('PO');
+  });
+
+  it('returns supported formats for JSON', () => {
+    const formats = getSupportedTransformFormats('JSON');
+    expect(formats).toContain('JSON');
+    expect(formats).not.toContain('YAML');
+  });
+
+  it('returns undefined for unknown format', () => {
+    const formats = getSupportedTransformFormats(
+      'UNKNOWN' as import('../../types-dir/api/file').FileFormat
+    );
+    expect(formats).toBeUndefined();
   });
 });

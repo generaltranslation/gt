@@ -1,5 +1,8 @@
 import type { FileFormat } from '../../types-dir/api/file';
-import { isSupportedFileFormatTransform } from '../../utils/isSupportedFileFormatTransform';
+import {
+  getSupportedTransformFormats,
+  isSupportedFileFormatTransform,
+} from '../../utils/isSupportedFileFormatTransform';
 
 export type FileFormatTransformInput = {
   fileFormat?: FileFormat;
@@ -21,7 +24,11 @@ export function getFileFormatTransformError(
     return `fileFormat is required when transformFormat is provided for ${fileLabel}`;
   }
   if (!isSupportedFileFormatTransform(file.fileFormat, file.transformFormat)) {
-    return `Unsupported file format transform: ${file.fileFormat} -> ${file.transformFormat}`;
+    const supported = getSupportedTransformFormats(file.fileFormat);
+    const hint = supported
+      ? ` Supported transformationFormat values for ${file.fileFormat}: ${supported.join(', ')}.`
+      : '';
+    return `Unsupported file format transform: ${file.fileFormat} -> ${file.transformFormat}.${hint}`;
   }
   return undefined;
 }

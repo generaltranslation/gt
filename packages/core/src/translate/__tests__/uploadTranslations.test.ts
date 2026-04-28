@@ -476,7 +476,7 @@ describe.sequential('_uploadTranslations', () => {
 
     await expect(
       _uploadTranslations(mockFiles, createMockOptions(), mockConfig)
-    ).rejects.toThrow('Unsupported file format transform: POT -> YAML');
+    ).rejects.toThrow('Unsupported file format transform: POT -> YAML.');
     expect(apiRequest).not.toHaveBeenCalled();
   });
 

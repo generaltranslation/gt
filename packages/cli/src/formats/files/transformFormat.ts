@@ -92,16 +92,18 @@ export function resolveTransformationFormat(
 ): FileFormat | undefined {
   if (!transformationFormat) return undefined;
 
+  // Normalize to uppercase to match the FileFormat enum (e.g. "po" -> "PO")
+  const normalized = transformationFormat.toUpperCase() as FileFormat;
   const fileFormat = CONFIG_FILE_TYPE_TO_FILE_FORMAT[fileType];
   validateFileFormatTransforms([
     {
       fileFormat,
-      transformFormat: transformationFormat as FileFormat,
+      transformFormat: normalized,
       fileName: `files.${fileType}`,
     },
   ]);
 
-  return transformationFormat as FileFormat;
+  return normalized;
 }
 
 /**
