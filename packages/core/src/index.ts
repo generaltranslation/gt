@@ -13,10 +13,7 @@ import {
   _formatRelativeTimeFromDate,
   _selectRelativeTimeUnit,
   _formatDateTime,
-  _formatMessageICU,
   _formatListToParts,
-  _formatCutoff,
-  _formatMessageString,
 } from './formatting/format';
 import {
   CustomMapping,
@@ -40,7 +37,7 @@ import _getLocaleEmoji from './locales/getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _getLocaleName } from './locales/getLocaleName';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
-import { libraryDefaultLocale } from './internal';
+import { libraryDefaultLocale } from './settings/settings';
 import _isSameDialect from './locales/isSameDialect';
 import _isSupersetLocale from './locales/isSupersetLocale';
 import {
@@ -130,6 +127,14 @@ export {
   type LocaleConfigConstructorParams,
 } from './LocaleConfig';
 
+export {
+  formatCutoff,
+  formatMessage,
+  isValidLocale,
+  resolveCanonicalLocale,
+  standardizeLocale,
+} from './core';
+
 // ============================================================ //
 //                        Core Class                            //
 // ============================================================ //
@@ -201,10 +206,10 @@ export class GT {
   /** Lazily derived custom mapping for regions */
   customRegionMapping?: CustomRegionMapping;
 
-  /** Client-safe locale and formatting helpers (backing field) */
+  /** Runtime-safe locale and formatting helpers (backing field) */
   private _localeConfig!: LocaleConfig;
 
-  /** Client-safe locale and formatting helpers */
+  /** Runtime-safe locale and formatting helpers */
   get localeConfig() {
     return this._localeConfig;
   }
@@ -1657,84 +1662,6 @@ export class GT {
 // -------------- Formatting -------------- //
 
 /**
- * Formats a string with cutoff behavior, applying a terminator when the string exceeds the maximum character limit.
- *
- * This standalone function provides cutoff formatting functionality without requiring a GT instance.
- * The locales parameter is required for proper terminator selection based on the target language.
- *
- * @param {string} value - The string value to format with cutoff behavior.
- * @param {Object} [options] - Configuration options for cutoff formatting.
- * @param {string | string[]} [options.locales] - The locales to use for terminator selection.
- * @param {number} [options.maxChars] - The maximum number of characters to display.
- * - Undefined values are treated as no cutoff.
- * - Negative values follow .slice() behavior and terminator will be added before the value.
- * - 0 will result in an empty string.
- * - If cutoff results in an empty string, no terminator is added.
- * @param {CutoffFormatStyle} [options.style='ellipsis'] - The style of the terminator.
- * @param {string} [options.terminator] - Optional override the terminator to use.
- * @param {string} [options.separator] - Optional override the separator to use between the terminator and the value.
- * - If no terminator is provided, then separator is ignored.
- * @returns {string} The formatted string with terminator applied if cutoff occurs.
- *
- * @example
- * formatCutoff('Hello, world!', { locales: 'en-US', maxChars: 8 });
- * // Returns: 'Hello, w...'
- *
- * @example
- * formatCutoff('Hello, world!', { locales: 'en-US', maxChars: -3 });
- * // Returns: '...ld!'
- *
- * @example
- * formatCutoff('Very long text that needs cutting', {
- *   locales: 'en-US',
- *   maxChars: 15,
- *   style: 'ellipsis',
- *   separator: ' '
- * });
- * // Returns: 'Very long text ...'
- */
-export function formatCutoff(
-  value: string,
-  options?: {
-    locales?: string | string[];
-  } & CutoffFormatOptions
-): string {
-  return _formatCutoff({ value, locales: options?.locales, options });
-}
-
-/**
- * Formats a message according to the specified locales and options.
- *
- * @param {string} message - The message to format.
- * @param {string | string[]} [locales='en'] - The locales to use for formatting.
- * @param {FormatVariables} [variables={}] - The variables to use for formatting.
- * @param {StringFormat} [dataFormat='ICU'] - The format of the message. (When STRING, the message is returned as is)
- * @returns {string} The formatted message.
- *
- * @example
- * formatMessage('Hello {name}', { name: 'John' });
- * // Returns: "Hello John"
- *
- * formatMessage('Hello {name}', { name: 'John' }, { locales: ['fr'] });
- * // Returns: "Bonjour John"
- */
-export function formatMessage(
-  message: string,
-  options?: {
-    locales?: string | string[];
-    variables?: FormatVariables;
-    dataFormat?: StringFormat;
-  }
-): string {
-  switch (options?.dataFormat) {
-    case 'STRING':
-      return _formatMessageString(message);
-    default:
-      return _formatMessageICU(message, options?.locales, options?.variables);
-  }
-}
-
-/**
  * Formats a number according to the specified locales and options.
  * @param {Object} params - The parameters for the number formatting.
  * @param {number} params.value - The number to format.
@@ -2061,19 +1988,6 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
 }
 
 /**
- * Checks if a given BCP 47 locale code is valid.
- * @param {string} locale - The BCP 47 locale code to validate.
- * @param {CustomMapping} [customMapping] - The custom mapping to use for validation.
- * @returns {boolean} True if the BCP 47 code is valid, false otherwise.
- */
-export function isValidLocale(
-  locale: string,
-  customMapping?: CustomMapping
-): boolean {
-  return _isValidLocale(locale, customMapping);
-}
-
-/**
  * Resolves the alias locale for a given locale.
  * @param {string} locale - The locale to resolve the alias locale for
  * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the alias locale
@@ -2084,28 +1998,6 @@ export function resolveAliasLocale(
   customMapping?: CustomMapping
 ): string {
   return _resolveAliasLocale(locale, customMapping);
-}
-
-/**
- * Resolves the canonical locale for a given locale.
- * @param {string} locale - The locale to resolve the canonical locale for
- * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the canonical locale
- * @returns {string} The canonical locale
- */
-export function resolveCanonicalLocale(
-  locale: string,
-  customMapping?: CustomMapping
-): string {
-  return _resolveCanonicalLocale(locale, customMapping);
-}
-
-/**
- * Standardizes a BCP 47 locale code to ensure correct formatting.
- * @param {string} locale - The BCP 47 locale code to standardize.
- * @returns {string} The standardized BCP 47 locale code or an empty string if it is an invalid code.
- */
-export function standardizeLocale(locale: string): string {
-  return _standardizeLocale(locale);
 }
 
 /**

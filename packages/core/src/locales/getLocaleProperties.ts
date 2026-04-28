@@ -1,4 +1,4 @@
-import { libraryDefaultLocale } from '../internal';
+import { libraryDefaultLocale } from '../settings/settings';
 import { defaultEmoji } from './getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 import _getLocaleEmoji from './getLocaleEmoji';

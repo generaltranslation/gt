@@ -1,4 +1,4 @@
-import { DataFormat, StringFormat } from 'generaltranslation/types';
+import type { DataFormat, StringFormat } from 'generaltranslation/types';
 
 // TODO: next major version, this should be Record<string, string>
 export type BaseTranslationOptions = Record<string, any>;
