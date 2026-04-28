@@ -13,10 +13,7 @@ import {
   _formatRelativeTimeFromDate,
   _selectRelativeTimeUnit,
   _formatDateTime,
-  _formatMessageICU,
   _formatListToParts,
-  _formatCutoff,
-  _formatMessageString,
 } from './formatting/format';
 import {
   CustomMapping,
@@ -40,7 +37,7 @@ import _getLocaleEmoji from './locales/getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _getLocaleName } from './locales/getLocaleName';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
-import { libraryDefaultLocale } from './internal';
+import { libraryDefaultLocale } from './settings/settings';
 import _isSameDialect from './locales/isSameDialect';
 import _isSupersetLocale from './locales/isSupersetLocale';
 import {
@@ -123,6 +120,20 @@ import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/ty
 import { TranslateOptions } from './types-dir/api/entry';
 import { API_VERSION as _API_VERSION } from './translate/api';
 import { StringFormat } from './types-dir/jsx/content';
+import { LocaleConfig } from './LocaleConfig';
+
+export {
+  LocaleConfig,
+  type LocaleConfigConstructorParams,
+} from './LocaleConfig';
+
+export {
+  formatCutoff,
+  formatMessage,
+  isValidLocale,
+  resolveCanonicalLocale,
+  standardizeLocale,
+} from './core';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -186,9 +197,6 @@ export class GT {
   /** Array of supported locales */
   locales?: string[];
 
-  /** Array of locales used for rendering variables */
-  _renderingLocales: string[] = [];
-
   /** Custom mapping for locale codes to their names */
   customMapping?: CustomMapping;
 
@@ -197,6 +205,14 @@ export class GT {
 
   /** Lazily derived custom mapping for regions */
   customRegionMapping?: CustomRegionMapping;
+
+  /** Runtime-safe locale and formatting helpers (backing field) */
+  private _localeConfig!: LocaleConfig;
+
+  /** Runtime-safe locale and formatting helpers */
+  get localeConfig() {
+    return this._localeConfig;
+  }
 
   /**
    * Constructs an instance of the GT class.
@@ -255,12 +271,6 @@ export class GT {
         throw new Error(invalidLocaleError(this.targetLocale));
     }
 
-    // rendering locales
-    this._renderingLocales = [];
-    if (this.sourceLocale) this._renderingLocales.push(this.sourceLocale);
-    if (this.targetLocale) this._renderingLocales.push(this.targetLocale);
-    this._renderingLocales.push(libraryDefaultLocale);
-
     // locales
     if (locales) {
       const result: string[] = [];
@@ -291,6 +301,11 @@ export class GT {
           .map(([key, value]) => [(value as { code: string }).code, key])
       );
     }
+    this._localeConfig = new LocaleConfig({
+      defaultLocale: this.sourceLocale,
+      locales: this.locales ?? [],
+      customMapping: this.customMapping,
+    });
   }
 
   // -------------- Private Methods -------------- //
@@ -1088,10 +1103,7 @@ export class GT {
       locales?: string | string[];
     } & CutoffFormatOptions
   ): string {
-    return formatCutoff(value, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatCutoff(value, this.targetLocale, options);
   }
 
   /**
@@ -1118,10 +1130,7 @@ export class GT {
       dataFormat?: StringFormat;
     }
   ): string {
-    return formatMessage(message, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatMessage(message, this.targetLocale, options);
   }
   /**
    * Formats a number according to the specified locales and options.
@@ -1142,10 +1151,7 @@ export class GT {
       locales?: string | string[];
     } & Intl.NumberFormatOptions
   ): string {
-    return formatNum(number, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatNum(number, this.targetLocale, options);
   }
 
   /**
@@ -1167,10 +1173,7 @@ export class GT {
       locales?: string | string[];
     } & Intl.DateTimeFormatOptions
   ): string {
-    return formatDateTime(date, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatDateTime(date, this.targetLocale, options);
   }
 
   /**
@@ -1194,10 +1197,12 @@ export class GT {
       locales?: string | string[];
     } & Intl.NumberFormatOptions
   ): string {
-    return formatCurrency(value, currency, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatCurrency(
+      value,
+      currency,
+      this.targetLocale,
+      options
+    );
   }
 
   /**
@@ -1219,11 +1224,7 @@ export class GT {
       locales?: string | string[];
     } & Intl.ListFormatOptions
   ) {
-    return _formatList({
-      value: array,
-      locales: options?.locales || this._renderingLocales,
-      options: options,
-    });
+    return this.localeConfig.formatList(array, this.targetLocale, options);
   }
 
   /**
@@ -1244,11 +1245,11 @@ export class GT {
       locales?: string | string[];
     } & Intl.ListFormatOptions
   ): Array<T | string> {
-    return _formatListToParts<T>({
-      value: array,
-      locales: options?.locales || this._renderingLocales,
-      options: options,
-    });
+    return this.localeConfig.formatListToParts<T>(
+      array,
+      this.targetLocale,
+      options
+    );
   }
 
   /**
@@ -1272,10 +1273,12 @@ export class GT {
       locales?: string | string[];
     } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
   ): string {
-    return formatRelativeTime(value, unit, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatRelativeTime(
+      value,
+      unit,
+      this.targetLocale,
+      options
+    );
   }
 
   /**
@@ -1297,10 +1300,11 @@ export class GT {
       baseDate?: Date;
     } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
   ): string {
-    return formatRelativeTimeFromDate(date, {
-      locales: this._renderingLocales,
-      ...options,
-    });
+    return this.localeConfig.formatRelativeTimeFromDate(
+      date,
+      this.targetLocale,
+      options
+    );
   }
 
   // -------------- Locale Properties -------------- //
@@ -1318,7 +1322,7 @@ export class GT {
    */
   getLocaleName(locale = this.targetLocale): string {
     if (!locale) throw new Error(noTargetLocaleProvidedError('getLocaleName'));
-    return _getLocaleName(locale, this.sourceLocale, this.customMapping);
+    return this.localeConfig.getLocaleName(locale);
   }
 
   /**
@@ -1335,7 +1339,7 @@ export class GT {
    */
   getLocaleEmoji(locale = this.targetLocale): string {
     if (!locale) throw new Error(noTargetLocaleProvidedError('getLocaleEmoji'));
-    return getLocaleEmoji(locale, this.customMapping);
+    return this.localeConfig.getLocaleEmoji(locale);
   }
 
   /**
@@ -1373,7 +1377,7 @@ export class GT {
   getLocaleProperties(locale = this.targetLocale): LocaleProperties {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('getLocaleProperties'));
-    return getLocaleProperties(locale, this.sourceLocale, this.customMapping);
+    return this.localeConfig.getLocaleProperties(locale);
   }
 
   /**
@@ -1471,6 +1475,13 @@ export class GT {
       throw new Error(noSourceLocaleProvidedError('requiresTranslation'));
     if (!targetLocale)
       throw new Error(noTargetLocaleProvidedError('requiresTranslation'));
+    if (customMapping === this.customMapping) {
+      return this.localeConfig.requiresTranslation(
+        targetLocale,
+        sourceLocale,
+        approvedLocales
+      );
+    }
     return _requiresTranslation(
       sourceLocale,
       targetLocale,
@@ -1495,6 +1506,9 @@ export class GT {
     approvedLocales: string[] | undefined = this.locales || [],
     customMapping: CustomMapping | undefined = this.customMapping
   ): string | undefined {
+    if (customMapping === this.customMapping) {
+      return this.localeConfig.determineLocale(locales, approvedLocales ?? []);
+    }
     return _determineLocale(locales, approvedLocales, customMapping);
   }
 
@@ -1512,7 +1526,7 @@ export class GT {
   getLocaleDirection(locale = this.targetLocale): 'ltr' | 'rtl' {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('getLocaleDirection'));
-    return getLocaleDirection(locale);
+    return this.localeConfig.getLocaleDirection(locale);
   }
 
   /**
@@ -1532,7 +1546,10 @@ export class GT {
     customMapping: CustomMapping | undefined = this.customMapping
   ): boolean {
     if (!locale) throw new Error(noTargetLocaleProvidedError('isValidLocale'));
-    return isValidLocale(locale, customMapping);
+    if (customMapping === this.customMapping) {
+      return this.localeConfig.isValidLocale(locale);
+    }
+    return _isValidLocale(locale, customMapping);
   }
 
   /**
@@ -1547,6 +1564,9 @@ export class GT {
   ): string {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('resolveCanonicalLocale'));
+    if (customMapping === this.customMapping) {
+      return this.localeConfig.resolveCanonicalLocale(locale);
+    }
     return _resolveCanonicalLocale(locale, customMapping);
   }
 
@@ -1562,6 +1582,9 @@ export class GT {
   ): string {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('resolveAliasLocale'));
+    if (customMapping === this.customMapping) {
+      return this.localeConfig.resolveAliasLocale(locale);
+    }
     return _resolveAliasLocale(locale, customMapping);
   }
 
@@ -1579,7 +1602,7 @@ export class GT {
   standardizeLocale(locale = this.targetLocale): string {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('standardizeLocale'));
-    return _standardizeLocale(locale);
+    return this.localeConfig.standardizeLocale(locale);
   }
 
   /**
@@ -1596,7 +1619,7 @@ export class GT {
    * // Returns: true
    */
   isSameDialect(...locales: (string | string[])[]): boolean {
-    return isSameDialect(...locales);
+    return this.localeConfig.isSameDialect(...locales);
   }
 
   /**
@@ -1610,7 +1633,7 @@ export class GT {
    * // Returns: true
    */
   isSameLanguage(...locales: (string | string[])[]): boolean {
-    return _isSameLanguage(...locales);
+    return this.localeConfig.isSameLanguage(...locales);
   }
 
   /**
@@ -1628,7 +1651,7 @@ export class GT {
    * // Returns: false
    */
   isSupersetLocale(superLocale: string, subLocale: string): boolean {
-    return isSupersetLocale(superLocale, subLocale);
+    return this.localeConfig.isSupersetLocale(superLocale, subLocale);
   }
 }
 
@@ -1637,84 +1660,6 @@ export class GT {
 // ============================================================ //
 
 // -------------- Formatting -------------- //
-
-/**
- * Formats a string with cutoff behavior, applying a terminator when the string exceeds the maximum character limit.
- *
- * This standalone function provides cutoff formatting functionality without requiring a GT instance.
- * The locales parameter is required for proper terminator selection based on the target language.
- *
- * @param {string} value - The string value to format with cutoff behavior.
- * @param {Object} [options] - Configuration options for cutoff formatting.
- * @param {string | string[]} [options.locales] - The locales to use for terminator selection.
- * @param {number} [options.maxChars] - The maximum number of characters to display.
- * - Undefined values are treated as no cutoff.
- * - Negative values follow .slice() behavior and terminator will be added before the value.
- * - 0 will result in an empty string.
- * - If cutoff results in an empty string, no terminator is added.
- * @param {CutoffFormatStyle} [options.style='ellipsis'] - The style of the terminator.
- * @param {string} [options.terminator] - Optional override the terminator to use.
- * @param {string} [options.separator] - Optional override the separator to use between the terminator and the value.
- * - If no terminator is provided, then separator is ignored.
- * @returns {string} The formatted string with terminator applied if cutoff occurs.
- *
- * @example
- * formatCutoff('Hello, world!', { locales: 'en-US', maxChars: 8 });
- * // Returns: 'Hello, w...'
- *
- * @example
- * formatCutoff('Hello, world!', { locales: 'en-US', maxChars: -3 });
- * // Returns: '...ld!'
- *
- * @example
- * formatCutoff('Very long text that needs cutting', {
- *   locales: 'en-US',
- *   maxChars: 15,
- *   style: 'ellipsis',
- *   separator: ' '
- * });
- * // Returns: 'Very long text ...'
- */
-export function formatCutoff(
-  value: string,
-  options?: {
-    locales?: string | string[];
-  } & CutoffFormatOptions
-): string {
-  return _formatCutoff({ value, locales: options?.locales, options });
-}
-
-/**
- * Formats a message according to the specified locales and options.
- *
- * @param {string} message - The message to format.
- * @param {string | string[]} [locales='en'] - The locales to use for formatting.
- * @param {FormatVariables} [variables={}] - The variables to use for formatting.
- * @param {StringFormat} [dataFormat='ICU'] - The format of the message. (When STRING, the message is returned as is)
- * @returns {string} The formatted message.
- *
- * @example
- * formatMessage('Hello {name}', { name: 'John' });
- * // Returns: "Hello John"
- *
- * formatMessage('Hello {name}', { name: 'John' }, { locales: ['fr'] });
- * // Returns: "Bonjour John"
- */
-export function formatMessage(
-  message: string,
-  options?: {
-    locales?: string | string[];
-    variables?: FormatVariables;
-    dataFormat?: StringFormat;
-  }
-): string {
-  switch (options?.dataFormat) {
-    case 'STRING':
-      return _formatMessageString(message);
-    default:
-      return _formatMessageICU(message, options?.locales, options?.variables);
-  }
-}
 
 /**
  * Formats a number according to the specified locales and options.
@@ -2043,19 +1988,6 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
 }
 
 /**
- * Checks if a given BCP 47 locale code is valid.
- * @param {string} locale - The BCP 47 locale code to validate.
- * @param {CustomMapping} [customMapping] - The custom mapping to use for validation.
- * @returns {boolean} True if the BCP 47 code is valid, false otherwise.
- */
-export function isValidLocale(
-  locale: string,
-  customMapping?: CustomMapping
-): boolean {
-  return _isValidLocale(locale, customMapping);
-}
-
-/**
  * Resolves the alias locale for a given locale.
  * @param {string} locale - The locale to resolve the alias locale for
  * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the alias locale
@@ -2066,28 +1998,6 @@ export function resolveAliasLocale(
   customMapping?: CustomMapping
 ): string {
   return _resolveAliasLocale(locale, customMapping);
-}
-
-/**
- * Resolves the canonical locale for a given locale.
- * @param {string} locale - The locale to resolve the canonical locale for
- * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the canonical locale
- * @returns {string} The canonical locale
- */
-export function resolveCanonicalLocale(
-  locale: string,
-  customMapping?: CustomMapping
-): string {
-  return _resolveCanonicalLocale(locale, customMapping);
-}
-
-/**
- * Standardizes a BCP 47 locale code to ensure correct formatting.
- * @param {string} locale - The BCP 47 locale code to standardize.
- * @returns {string} The standardized BCP 47 locale code or an empty string if it is an invalid code.
- */
-export function standardizeLocale(locale: string): string {
-  return _standardizeLocale(locale);
 }
 
 /**

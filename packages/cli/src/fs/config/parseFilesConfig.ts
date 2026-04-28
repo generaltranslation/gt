@@ -4,6 +4,7 @@ import {
   IncludePattern,
   ResolvedFiles,
   Settings,
+  TransformFormats,
   TransformFiles,
   TransformOption,
 } from '../../types/index.js';
@@ -17,6 +18,7 @@ import {
   BASE_PARSING_FLAGS_DEFAULT,
   GT_PARSING_FLAGS_DEFAULT,
 } from '../../config/defaults.js';
+import { resolveTransformationFormat } from '../../formats/files/transformFormat.js';
 
 /**
  * Resolves the files from the files object
@@ -91,6 +93,8 @@ export function resolveFiles(
   const resolvedPaths: ResolvedFiles = {};
   const placeholderResult: ResolvedFiles = {};
   const transformPaths: TransformFiles = {};
+  // Output format transforms are tracked separately from path transforms.
+  const transformFormats: TransformFormats = {};
   const publishPaths = new Set<string>();
   const unpublishPaths = new Set<string>();
   const parsingFlags: ParseFlagsByFileType = {};
@@ -110,6 +114,14 @@ export function resolveFiles(
         Array.isArray(transform))
     ) {
       transformPaths[fileType] = transform;
+    }
+    // Validate source -> output format transforms during settings generation.
+    const transformFormat = resolveTransformationFormat(
+      fileType,
+      files[fileType]?.transformationFormat
+    );
+    if (transformFormat) {
+      transformFormats[fileType] = transformFormat;
     }
     // ==== PLACEHOLDERS ==== //
     if (files[fileType]?.include) {
@@ -152,6 +164,7 @@ export function resolveFiles(
     resolvedPaths,
     placeholderPaths: placeholderResult,
     transformPaths: transformPaths,
+    transformFormats,
     publishPaths,
     unpublishPaths,
     parsingFlags,

@@ -1,7 +1,7 @@
-import { isValidLocale } from 'generaltranslation';
+import { isValidLocale } from 'generaltranslation/core';
 import { getGTServicesEnabled } from '../../utils/getGTServicesEnabled';
 import { ValidationResult } from '../types';
-import { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from 'generaltranslation/types';
 
 /**
  * Validate the locales configuration

@@ -235,6 +235,64 @@ describe.sequential('_uploadSourceFiles', () => {
     );
   });
 
+  // TODO: Re-enable when the API supports POT -> PO file format transforms.
+  it.skip('should upload PO and POT source files', async () => {
+    const mockFiles = [
+      {
+        source: createMockFileUpload({
+          fileName: 'messages.pot',
+          fileFormat: 'POT',
+          transformFormat: 'PO',
+          content: 'msgid "Save"\nmsgstr ""\n',
+        }),
+      },
+      {
+        source: createMockFileUpload({
+          fileName: 'en.po',
+          fileFormat: 'PO',
+          content: 'msgid "Save"\nmsgstr "Save"\n',
+        }),
+      },
+    ];
+
+    const mockOptions = createMockOptions();
+    vi.mocked(apiRequest).mockResolvedValue({ success: true });
+
+    await _uploadSourceFiles(mockFiles, mockOptions, mockConfig);
+
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(String),
+      expect.objectContaining({
+        body: {
+          data: [
+            {
+              source: expect.objectContaining({
+                content: Buffer.from('msgid "Save"\nmsgstr ""\n').toString(
+                  'base64'
+                ),
+                fileName: 'messages.pot',
+                fileFormat: 'POT',
+                locale: 'en',
+              }),
+            },
+            {
+              source: expect.objectContaining({
+                content: Buffer.from('msgid "Save"\nmsgstr "Save"\n').toString(
+                  'base64'
+                ),
+                fileName: 'en.po',
+                fileFormat: 'PO',
+                locale: 'en',
+              }),
+            },
+          ],
+          sourceLocale: 'en',
+        },
+      })
+    );
+  });
+
   it('should use custom timeout when provided', async () => {
     const mockFiles = [{ source: createMockFileUpload() }];
     const mockOptions = createMockOptions({ timeout: 30000 });
