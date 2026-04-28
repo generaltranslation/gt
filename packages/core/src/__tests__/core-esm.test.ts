@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
@@ -74,16 +74,56 @@ describe('generaltranslation/core export', () => {
     );
   });
 
-  it('does not import generated shared chunks from the built subpath', () => {
-    const builtFiles = ['core.mjs', 'core.cjs'].map((fileName) =>
-      readFileSync(join(process.cwd(), 'dist', fileName), 'utf8')
+  it('does not include internal-only dependencies in the built subpath graph', () => {
+    const builtFiles = ['core.mjs', 'core.cjs'].flatMap((fileName) =>
+      readBuiltFileGraph(fileName)
     );
+    const builtGraph = builtFiles.join('\n');
 
-    for (const file of builtFiles) {
-      expect(file).not.toMatch(/\bfrom\s+['"]\.\//);
-      expect(file).not.toMatch(/\brequire\(['"]\.\//);
-      expect(file).not.toContain('@noble/hashes');
-      expect(file).not.toContain('stableStringify');
+    for (const forbidden of [
+      '@noble/hashes',
+      'stableStringify',
+      'defaultBaseUrl',
+      'defaultRuntimeApiUrl',
+      'fetchWithTimeout',
+      'apiRequest',
+    ]) {
+      expect(builtGraph).not.toContain(forbidden);
     }
   });
 });
+
+function readBuiltFileGraph(entryFileName: string) {
+  const distDir = join(process.cwd(), 'dist');
+  const pending = [join(distDir, entryFileName)];
+  const visited = new Set<string>();
+  const files: string[] = [];
+
+  while (pending.length) {
+    const filePath = pending.pop();
+    if (!filePath || visited.has(filePath)) continue;
+    visited.add(filePath);
+
+    const file = readFileSync(filePath, 'utf8');
+    files.push(file);
+
+    for (const localImport of getLocalImports(file)) {
+      const importedPath = join(dirname(filePath), localImport);
+      if (existsSync(importedPath)) {
+        pending.push(importedPath);
+      }
+    }
+  }
+
+  return files;
+}
+
+function getLocalImports(file: string) {
+  return [
+    ...file.matchAll(
+      /\bfrom\s+['"](\.\/[^'"]+)['"]|\brequire\(['"](\.\/[^'"]+)['"]\)/g
+    ),
+  ]
+    .map((match) => match[1] ?? match[2])
+    .filter((importPath): importPath is string => !!importPath);
+}
