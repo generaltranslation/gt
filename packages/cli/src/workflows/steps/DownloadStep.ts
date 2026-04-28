@@ -98,6 +98,13 @@ export class DownloadTranslationsStep extends WorkflowStep<
         logger.warn(
           `Failed to download ${missing.length} file(s):\n${missing.map((f) => `- ${f.fileName} (${f.locale})`).join('\n')}`
         );
+        for (const f of missing) {
+          recordWarning(
+            'failed_download',
+            f.fileName,
+            `Failed to download for locale ${f.locale}`
+          );
+        }
       }
 
       // Prepare batch download data
