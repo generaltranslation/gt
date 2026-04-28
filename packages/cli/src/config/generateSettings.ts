@@ -188,12 +188,10 @@ export async function generateSettings(
   // For human review, always stage the project
   mergedOptions.stageTranslations = mergedOptions.stageTranslations ?? false;
 
-  // Add publish — only set if explicitly configured or passed via flag.
-  // When neither is set, leave undefined so the publish step knows
+  // Add publish — only set if explicitly configured in gt.config.json.
+  // When not set, leave undefined so the publish step knows
   // there is no global publish intent.
-  if (flags.publish) {
-    mergedOptions.publish = true;
-  } else if (gtConfig.publish !== undefined) {
+  if (gtConfig.publish !== undefined) {
     mergedOptions.publish = gtConfig.publish;
   } else {
     mergedOptions.publish = undefined;

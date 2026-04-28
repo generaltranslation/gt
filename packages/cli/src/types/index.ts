@@ -69,7 +69,6 @@ export type TranslateFlags = SharedFlags & {
   saveLocal?: boolean;
   stageTranslations?: boolean;
   setupProject?: boolean; // if true, skip enqueue step
-  publish?: boolean;
   force?: boolean;
   forceDownload?: boolean;
   tag?: string;

@@ -52,7 +52,6 @@ export function attachTranslateFlags(command: Command) {
       'Detect and save local edits before enqueuing translations',
       false
     )
-    .option('--publish', 'Publish translations to the CDN', false)
     .option(
       '--experimental-localize-static-urls',
       'Triggering this will run a script after the cli tool that localizes all urls in content files. Currently only supported for md and mdx files.',
