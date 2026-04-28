@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/supported-locales",
-  "version": "2.0.66",
+  "version": "2.0.67",
   "description": "List of supported locales for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

@@ -2,12 +2,12 @@ import { LookupOptions } from '../../translation-functions/types/options';
 import { Cache } from './Cache';
 import type { LifecycleParam } from '../lifecycle-hooks/types';
 import { Translation } from './utils/types/translation-data';
-import type { GT } from 'generaltranslation';
 import { hashMessage } from '../../utils/hashMessage';
-import {
+import type {
   Content,
   EntryMetadata,
   TranslateManyEntry,
+  TranslationResult,
 } from 'generaltranslation/types';
 
 // See gt-next
@@ -46,8 +46,8 @@ type QueueEntry<TranslationValue extends Translation> = {
  * TranslateMany call signature
  */
 export type TranslateMany = (
-  sources: Parameters<GT['translateMany']>[0]
-) => ReturnType<GT['translateMany']>;
+  sources: Record<Hash, TranslateManyEntry>
+) => Promise<Record<string, TranslationResult>>;
 
 /**
  * A cache for a single locale's translations
