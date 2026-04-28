@@ -1,9 +1,9 @@
 import { VisitNode } from '@babel/traverse';
 import * as t from '@babel/types';
 import { TransformState } from '../../state/types';
-import { GT_IMPORT_SOURCES } from '../../utils/constants/gt/constants';
 import { transformTemplateLiteral } from '../../transform/macro-expansion/transformTemplateLiteral';
-import hashSource from '../../utils/calculateHash';
+import { registerStandaloneTranslation } from '../../transform/registration/registerStandaloneTranslation';
+import { isStringTranslationTaggedTemplate } from '../../utils/parsing/isStringTranslationTaggedTemplate';
 
 /**
  * Process tagged template expressions during the collection pass.
@@ -22,21 +22,7 @@ export function processTaggedTemplateExpression(
   const symbol = state.settings.stringTranslationMacro;
 
   return (path) => {
-    if (!t.isIdentifier(path.node.tag, { name: symbol })) return;
-
-    // Same scope guard as macro expansion: only process unbound t (global macro)
-    // or t imported from gt-react/browser
-    const binding = path.scope.getBinding(symbol);
-    if (binding) {
-      if (!binding.path.isImportSpecifier()) return;
-      const importDecl = binding.path.parentPath;
-      if (
-        !importDecl?.isImportDeclaration() ||
-        importDecl.node.source.value !== GT_IMPORT_SOURCES.GT_REACT_BROWSER
-      ) {
-        return;
-      }
-    }
+    if (!isStringTranslationTaggedTemplate(path, symbol)) return;
 
     // Extract message from the template literal (reuse macro expansion utility)
     const { message } = transformTemplateLiteral(path.get('quasi'));
@@ -46,16 +32,11 @@ export function processTaggedTemplateExpression(
       return;
     }
 
-    // Compute hash and push to runtime-only entries
-    const content = message.value;
-    const hash = hashSource({
-      source: content,
-      dataFormat: 'ICU',
-    });
-
-    state.stringCollector.pushRuntimeOnlyContent({
-      message: content,
-      hash,
+    // Register as runtime-only content. Leaving injectHash undefined is
+    // intentional: tagged templates do not reserve injection counter slots.
+    registerStandaloneTranslation({
+      state,
+      content: message.value,
     });
   };
 }

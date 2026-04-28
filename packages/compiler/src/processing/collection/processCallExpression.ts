@@ -78,12 +78,15 @@ export function processCallExpression(
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.msg
     ) {
-      handleStandaloneTranslation(callExpr, state, false);
+      // msg() is runtime-only content; it must not advance the injection counter.
+      handleStandaloneTranslation(callExpr, state, { injectHash: false });
     } else if (
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.t
     ) {
-      handleStandaloneTranslation(callExpr, state, true);
+      // Standalone t() receives an injected $_hash, so collection reserves a
+      // matching counter slot for the injection pass.
+      handleStandaloneTranslation(callExpr, state, { injectHash: true });
     }
   };
 }
@@ -296,7 +299,7 @@ function handleReactInvocation(
 function handleStandaloneTranslation(
   callExpr: t.CallExpression,
   state: TransformState,
-  injectHash: boolean
+  { injectHash }: { injectHash: boolean }
 ) {
   // Reuse the same validation as useGT_callback (identical argument structure)
   const params = validateUseGTCallback(callExpr, state);
