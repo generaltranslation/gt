@@ -3,6 +3,7 @@ import { NodePath } from '@babel/traverse';
 import { flattenExpressionToParts } from '../../utils/string-expressions/flattenExpressionToParts';
 import { mergeAdjacentStaticParts } from '../../utils/string-expressions/mergeAdjacentStaticParts';
 import { buildTransformResult } from '../../utils/string-expressions/buildTransformationResult';
+import { multiply } from '../../utils/multiplication/multiply';
 
 /**
  * Converts template literal quasis and expressions into an ICU-style message
@@ -12,17 +13,27 @@ import { buildTransformResult } from '../../utils/string-expressions/buildTransf
  * nested templates) and preserves derive() calls as template expressions.
  */
 export function transformTemplateLiteral(path: NodePath<t.TemplateLiteral>): {
+  content: {
+    message: t.StringLiteral | t.TemplateLiteral;
+    variables: t.ObjectExpression | null;
+  }[];
   message?: t.StringLiteral | t.TemplateLiteral;
   variables?: t.ObjectExpression | null;
   errors: string[];
 } {
   const { parts, errors } = flattenExpressionToParts(path);
   if (errors.length > 0) {
-    return { errors };
+    return { errors, content: [] };
   }
-  const merged = mergeAdjacentStaticParts(parts);
+  const variants = multiply(parts);
+  const merged = variants.map((variant) => mergeAdjacentStaticParts(variant));
+
+  const content = merged.map(buildTransformResult);
+
   return {
-    ...buildTransformResult(merged),
+    content,
+    message: content[0]?.message,
+    variables: content[0]?.variables,
     errors: [],
   };
 }

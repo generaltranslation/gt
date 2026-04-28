@@ -1,6 +1,7 @@
 import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
 import { flattenExpressionToParts } from './flattenExpressionToParts';
+import { multiply } from '../multiplication/multiply';
 
 /**
  * Attempt to resolve an expression to a static string at compile time.
@@ -12,21 +13,26 @@ import { flattenExpressionToParts } from './flattenExpressionToParts';
  */
 export function resolveStaticExpression(exprPath: NodePath<t.Expression>): {
   errors: string[];
-  value?: string;
+  values?: string[];
 } {
   const { parts, errors } = flattenExpressionToParts(exprPath);
   if (errors.length > 0) return { errors };
+  const variants = multiply(parts);
 
-  let value = '';
-  for (const part of parts) {
-    // Signal derive by returning undefined
-    if (part.type === 'derive') {
-      return { errors: [], value: undefined };
-    } else if (part.type !== 'static') {
-      return { errors: ['Expression is not a static string'] };
+  const values: string[] = [];
+  for (const variant of variants) {
+    let value = '';
+    for (const part of variant) {
+      // Signal derive by returning undefined
+      if (part.type === 'derive') {
+        return { errors: [], values: undefined };
+      } else if (part.type !== 'static') {
+        return { errors: ['Expression is not a static string'] };
+      }
+      value += part.value;
     }
-    value += part.value;
+    values.push(value);
   }
 
-  return { errors: [], value };
+  return { errors: [], values };
 }

@@ -1,13 +1,17 @@
 import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
 import { isDeriveInvocation } from '../parsing/isDeriveInvocation';
+import { ResolutionNode } from '../multiplication/types';
 
 export type Part =
   | { type: 'static'; value: string }
   | { type: 'derive'; node: t.Expression }
   | { type: 'dynamic'; node: t.Expression };
 
-type FlattenExpressionResult = { parts: Part[]; errors: string[] };
+type FlattenExpressionResult = {
+  parts: ResolutionNode<Part>[];
+  errors: string[];
+};
 
 /**
  * Recursively decomposes an expression tree into a flat list of typed parts.

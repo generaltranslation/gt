@@ -143,7 +143,7 @@ describe('resolveStaticExpression', () => {
     withExpressionPath('"A" + `B ${"C"}`', (path) => {
       expect(resolveStaticExpression(path)).toEqual({
         errors: [],
-        value: 'AB C',
+        values: ['AB C'],
       });
     });
   });

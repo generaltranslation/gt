@@ -2,6 +2,7 @@ import { Part } from './flattenExpressionToParts';
 
 /**
  * Collapse consecutive static parts by concatenating their values.
+ * @deprecated
  */
 export function mergeAdjacentStaticParts(parts: Part[]): Part[] {
   const merged: Part[] = [];
