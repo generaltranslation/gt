@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/generaltranslation-gt-badge.png)](https://mseep.ai/app/generaltranslation-gt)
+
 <div align="center">
   <a href="https://generaltranslation.com">
     <picture>
