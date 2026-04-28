@@ -129,7 +129,7 @@ jobs:
         run: |
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
 
-          if echo "$published_packages" | grep -q '"name": *"gt"'; then
+          if echo "$published_packages" | jq -e 'any(.[]; .name == "gt")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
@@ -140,7 +140,7 @@ jobs:
         if: steps.check-gt.outputs.should_release_bin == 'true'
         run: |
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
-          version=$(echo "$published_packages" | jq -r '.[] | select(.name == "gt") | .version')
+          version=$(echo "$published_packages" | jq -er '.[] | select(.name == "gt") | .version')
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Build gt binaries
@@ -199,7 +199,7 @@ jobs:
         run: |
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
 
-          if echo "$published_packages" | grep -q '"name": *"gtx-cli"'; then
+          if echo "$published_packages" | jq -e 'any(.[]; .name == "gtx-cli")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
@@ -210,7 +210,7 @@ jobs:
         if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
         run: |
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
-          version=$(echo "$published_packages" | grep -A1 '"name": *"gtx-cli"' | grep '"version"' | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+          version=$(echo "$published_packages" | jq -er '.[] | select(.name == "gtx-cli") | .version')
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Build gtx-cli binaries
