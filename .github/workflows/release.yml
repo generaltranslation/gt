@@ -169,6 +169,23 @@ jobs:
           source-dir: packages/cli/binaries
           destination-dir: cli/latest
 
+      # PyPI: gtx-cli (Python launcher with bundled gt binaries)
+      - name: Setup Python
+        if: steps.check-gt.outputs.should_release_bin == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Publish gtx-cli to PyPI
+        if: steps.check-gt.outputs.should_release_bin == 'true'
+        working-directory: packages/cli/pypi
+        run: |
+          python -m pip install --upgrade build twine
+          python scripts/build_platform_wheels.py --version "${{ steps.gt-version.outputs.version }}" --source ../binaries --check --upload --skip-existing
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
       - name: Release gt binary to npm
         if: steps.check-gt.outputs.should_release_bin == 'true'
         run: pnpm --filter gt run bin:prep && pnpm --filter gt publish --tag bin --no-git-checks && pnpm --filter gt run bin:restore && pnpm --filter gt run build:clean
