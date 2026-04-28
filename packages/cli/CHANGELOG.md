@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.23
+
+### Patch Changes
+
+- [#1282](https://github.com/generaltranslation/gt/pull/1282) [`756f963`](https://github.com/generaltranslation/gt/commit/756f963c370243ecca09cda4824d666d58c04b1c) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add PyPI distribution support for the GT CLI.
+
 ## 2.14.22
 
 ### Patch Changes
