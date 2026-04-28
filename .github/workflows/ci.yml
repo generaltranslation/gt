@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
         run: pnpm exec turbo lint --filter='...[origin/${{ github.base_ref }}]'
 
   tests:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -82,7 +82,7 @@ jobs:
   test-builds:
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [blacksmith-4vcpu-windows-2025, ubuntu-latest, macos-latest]
         node: [20, 24]
     runs-on: ${{ matrix.os }}
 
@@ -144,7 +144,7 @@ jobs:
             binary: gt-darwin-x64
           - os: macos-latest
             arch: arm64
-            binary: gt-darwin-arm64
+            binary: blacksmith-4vcpu-ubuntu-2404-arm
           - os: windows-latest
             arch: x64
             binary: gt-win32-x64.exe
@@ -220,7 +220,7 @@ jobs:
             binary: gtx-cli-darwin-x64
           - os: macos-latest
             arch: arm64
-            binary: gtx-cli-darwin-arm64
+            binary: blacksmith-4vcpu-ubuntu-2404-arm
           - os: windows-latest
             arch: x64
             binary: gtx-cli-win32-x64.exe
@@ -282,7 +282,7 @@ jobs:
         run: cd tests/apps/cli-test-app && pnpm install && pnpm gtx-cli --help
 
   size:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -312,6 +312,6 @@ jobs:
 
   run-tests:
     needs: [lint, tests, test-builds, test-cli-binaries, test-gtx-cli-binaries, size]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - run: echo "All tests passed"
