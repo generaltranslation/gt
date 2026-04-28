@@ -1,7 +1,7 @@
 import { FormatVariables, I18nextMessage } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
-import IntlMessageFormat from 'intl-messageformat';
+import { IntlMessageFormat } from 'intl-messageformat';
 import { formatI18nextWarning, formatJsxWarning } from '../logging/warnings';
 import { formattingLogger } from '../logging/logger';
 import { JsxChildren } from '../types';

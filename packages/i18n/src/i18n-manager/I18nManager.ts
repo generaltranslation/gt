@@ -6,8 +6,9 @@ import { validateConfig } from './validation/validateConfig';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { GT, LocaleConfig, standardizeLocale } from 'generaltranslation';
-import { CustomMapping } from 'generaltranslation/types';
+import { GT } from 'generaltranslation';
+import { LocaleConfig, standardizeLocale } from 'generaltranslation/runtime';
+import type { CustomMapping } from 'generaltranslation/types';
 import { LookupOptions } from '../translation-functions/types/options';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
@@ -78,7 +79,7 @@ class I18nManager<
   private localesCache: LocalesCache<TranslationValue>;
 
   /**
-   * Client-safe locale and formatting helpers
+   * Runtime-safe locale and formatting helpers
    */
   private localeConfig: LocaleConfig;
 

@@ -17,6 +17,7 @@
     "lint": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\" --fix",
     "test": "vitest run --config=./vitest.config.ts",
+    "test:esm": "pnpm run build && node ./scripts/runtime-esm-smoke.mjs",
     "test:watch": "vitest --config=./vitest.config.ts",
     "release": "pnpm run build:clean && pnpm publish",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
@@ -77,6 +78,16 @@
         "default": "./dist/id.mjs"
       }
     },
+    "./runtime": {
+      "require": {
+        "types": "./dist/runtime.d.cts",
+        "default": "./dist/runtime.cjs"
+      },
+      "import": {
+        "types": "./dist/runtime.d.mts",
+        "default": "./dist/runtime.mjs"
+      }
+    },
     "./internal": {
       "require": {
         "types": "./dist/internal.d.cts",
@@ -116,6 +127,9 @@
       "id": [
         "./dist/id.d.cts"
       ],
+      "runtime": [
+        "./dist/runtime.d.cts"
+      ],
       "types": [
         "./dist/types.d.cts"
       ],
@@ -132,6 +146,9 @@
       ],
       "generaltranslation/id": [
         "/dist/id"
+      ],
+      "generaltranslation/runtime": [
+        "/dist/runtime"
       ],
       "generaltranslation/types": [
         "/dist/types"

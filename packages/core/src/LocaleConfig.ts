@@ -40,7 +40,7 @@ type LocalesOption = {
 type WithLocales<T = object> = T & LocalesOption;
 
 /**
- * LocaleConfig is a client-safe locale and formatting helper.
+ * LocaleConfig is a runtime-safe locale and formatting helper.
  *
  * It intentionally does not store project IDs, API keys, runtime URLs, or any
  * translation credentials. It only stores locale metadata needed to resolve

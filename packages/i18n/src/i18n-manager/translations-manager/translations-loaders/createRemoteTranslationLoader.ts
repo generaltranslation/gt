@@ -1,8 +1,8 @@
-import { resolveCanonicalLocale } from 'generaltranslation';
+import { resolveCanonicalLocale } from 'generaltranslation/runtime';
 import { TranslationsLoader } from './types';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import { Translation } from '../utils/types/translation-data';
-import { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from 'generaltranslation/types';
 
 /**
  * Parameters for the createRemoteTranslationLoader function

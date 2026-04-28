@@ -1,4 +1,4 @@
-import { formatCutoff } from 'generaltranslation';
+import { formatCutoff } from 'generaltranslation/runtime';
 import { InlineTranslationOptions } from '../../types/options';
 
 /**

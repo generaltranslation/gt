@@ -2,7 +2,7 @@ import type {
   EncodedTranslationOptions,
   InlineTranslationOptions,
 } from '../types/options';
-import { formatMessage } from 'generaltranslation';
+import { formatMessage } from 'generaltranslation/runtime';
 import {
   encode,
   libraryDefaultLocale,
