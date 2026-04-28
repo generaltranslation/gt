@@ -28,6 +28,8 @@ class PlatformWheel:
 
 
 PLATFORM_WHEELS = (
+    # Keep macOS wheel tags aligned with the bundled Bun executables' minos.
+    # Current outputs report minos 13.0 via `otool -l`.
     PlatformWheel("macos-arm64", "gt-darwin-arm64", "gt", "py3-none-macosx_13_0_arm64"),
     PlatformWheel("macos-x64", "gt-darwin-x64", "gt", "py3-none-macosx_13_0_x86_64"),
     PlatformWheel("linux-arm64", "gt-linux-arm64", "gt", "py3-none-manylinux_2_17_aarch64"),
@@ -182,6 +184,9 @@ def selected_platforms(names: list[str] | None) -> list[PlatformWheel]:
 
 
 def run_twine(args: argparse.Namespace, wheels: list[Path]) -> None:
+    if not wheels:
+        return
+
     if args.check:
         subprocess.run([sys.executable, "-m", "twine", "check", *(str(wheel) for wheel in wheels)], check=True)
 

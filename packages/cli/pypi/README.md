@@ -1,8 +1,7 @@
 # gtx-cli
 
 `gtx-cli` is the PyPI distribution for the General Translation CLI. It installs
-small Python entry points that run the bundled standalone `gt` binary for your
-platform.
+a `gt` command that runs the bundled standalone binary for your platform.
 
 ## Installation
 
@@ -17,8 +16,6 @@ gt init
 gt translate
 gt upload
 ```
-
-The package installs `gt`, `gtx`, and `gtx-cli` command aliases.
 
 ## How it works
 
