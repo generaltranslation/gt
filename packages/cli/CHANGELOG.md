@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.14.27
+
+### Patch Changes
+
+- [#1285](https://github.com/generaltranslation/gt/pull/1285) [`0404f04`](https://github.com/generaltranslation/gt/commit/0404f04be055275048ab3db03013cecb0d3d9153) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: silent error on download file failure
+
+- [#1277](https://github.com/generaltranslation/gt/pull/1277) [`5eae67c`](https://github.com/generaltranslation/gt/commit/5eae67c47b14edf65f7a8911559aa154db19f437) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Improve transformationFormat error message and normalize casing so lowercase values like "po" work in gt.config.json.
+
+- Updated dependencies [[`20276d0`](https://github.com/generaltranslation/gt/commit/20276d03cc1494e79d93d9dc131eee2815a4fae6)]:
+  - generaltranslation@8.2.10
+  - @generaltranslation/python-extractor@0.2.15
+
 ## 2.14.26
 
 ### Patch Changes
