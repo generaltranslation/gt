@@ -227,3 +227,16 @@ jobs:
         run: pnpm --filter gtx-cli run bin:prep && pnpm --filter gtx-cli publish --tag bin --no-git-checks && pnpm --filter gtx-cli run bin:restore && pnpm --filter gtx-cli run build:clean
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # PyPI: gtx-cli (Python wrapper that downloads the gt binary)
+      - name: Publish gtx-cli to PyPI
+        if: steps.check-gt.outputs.should_release_bin == 'true'
+        working-directory: packages/cli/pypi
+        run: |
+          pip install hatch
+          python scripts/set_version.py "${{ steps.gt-version.outputs.version }}"
+          hatch build
+          hatch publish
+        env:
+          HATCH_INDEX_USER: __token__
+          HATCH_INDEX_AUTH: ${{ secrets.PYPI_TOKEN }}
