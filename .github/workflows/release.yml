@@ -193,7 +193,7 @@ jobs:
         if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
         run: |
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
-          version=$(echo "$published_packages" | jq -r '.[] | select(.name == "gtx-cli") | .version')
+          version=$(echo "$published_packages" | grep -A1 '"name": *"gtx-cli"' | grep '"version"' | sed 's/.*"version": *"\([^"]*\)".*/\1/')
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Build gtx-cli binaries
