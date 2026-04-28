@@ -1,4 +1,4 @@
-import { resolveCanonicalLocale } from 'generaltranslation/runtime';
+import { resolveCanonicalLocale } from 'generaltranslation/core';
 import { TranslationsLoader } from './types';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import { Translation } from '../utils/types/translation-data';

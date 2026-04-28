@@ -5,7 +5,7 @@ import {
   extractVars,
   condenseVars,
 } from 'generaltranslation/internal';
-import { formatCutoff } from 'generaltranslation/runtime';
+import { formatCutoff } from 'generaltranslation/core';
 import logger from '../../../logs/logger';
 import { createInterpolationFailureMessage } from '../messages';
 import type { InlineTranslationOptions } from '../../types/options';

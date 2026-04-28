@@ -15,16 +15,16 @@ export {
 } from './LocaleConfig';
 
 /**
- * Runtime-safe formatting and locale helpers.
+ * Core formatting and locale helpers.
  *
- * "Runtime-safe" means this entry point exposes only deterministic locale and
- * formatting primitives. It does not export the GT service client, project
- * credentials, network translation methods, file APIs, or other server/service
- * concerns from the root `generaltranslation` facade.
+ * This entry point exposes deterministic locale and formatting primitives. It
+ * does not export the GT service client, project credentials, network
+ * translation methods, file APIs, or other server/service concerns from the
+ * root `generaltranslation` facade.
  *
- * This entry point is safe for browser-oriented and shared runtime packages to
- * import when they need locale metadata or formatting behavior without pulling
- * in the full translation API surface.
+ * This entry point is intended for framework and shared packages that need
+ * locale metadata or formatting behavior without pulling in the full
+ * translation API surface.
  */
 
 /**
@@ -111,9 +111,18 @@ export function formatMessage(
 
 /**
  * Checks if a given BCP 47 locale code is valid.
+ *
  * @param {string} locale - The BCP 47 locale code to validate.
  * @param {CustomMapping} [customMapping] - The custom mapping to use for validation.
  * @returns {boolean} True if the BCP 47 code is valid, false otherwise.
+ *
+ * @example
+ * isValidLocale('en-US');
+ * // Returns: true
+ *
+ * @example
+ * isValidLocale('en_US');
+ * // Returns: false
  */
 export function isValidLocale(locale: string, customMapping?: CustomMapping) {
   return _isValidLocale(locale, customMapping);
@@ -121,9 +130,18 @@ export function isValidLocale(locale: string, customMapping?: CustomMapping) {
 
 /**
  * Resolves the canonical locale for a given locale.
+ *
  * @param {string} locale - The locale to resolve the canonical locale for.
  * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the canonical locale.
  * @returns {string} The canonical locale.
+ *
+ * @example
+ * resolveCanonicalLocale('en-US');
+ * // Returns: 'en-US'
+ *
+ * @example
+ * resolveCanonicalLocale('en', { en: 'en-US' });
+ * // Returns: 'en-US'
  */
 export function resolveCanonicalLocale(
   locale: string,
@@ -134,8 +152,17 @@ export function resolveCanonicalLocale(
 
 /**
  * Standardizes a BCP 47 locale code to ensure correct formatting.
+ *
  * @param {string} locale - The BCP 47 locale code to standardize.
  * @returns {string} The standardized BCP 47 locale code or an empty string if it is an invalid code.
+ *
+ * @example
+ * standardizeLocale('en_us');
+ * // Returns: 'en-US'
+ *
+ * @example
+ * standardizeLocale('not a locale');
+ * // Returns: ''
  */
 export function standardizeLocale(locale: string) {
   return _standardizeLocale(locale);

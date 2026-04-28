@@ -34,7 +34,7 @@ export default {
     'react',
     'react-dom',
     'generaltranslation',
-    'generaltranslation/runtime',
+    'generaltranslation/core',
     '@generaltranslation/supported-locales',
     '@generaltranslation/react-core',
   ],

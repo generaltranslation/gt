@@ -133,7 +133,7 @@ export {
   isValidLocale,
   resolveCanonicalLocale,
   standardizeLocale,
-} from './runtime';
+} from './core';
 
 // ============================================================ //
 //                        Core Class                            //

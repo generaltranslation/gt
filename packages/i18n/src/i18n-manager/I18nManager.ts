@@ -7,7 +7,7 @@ import { Translation } from './translations-manager/utils/types/translation-data
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT } from 'generaltranslation';
-import { LocaleConfig, standardizeLocale } from 'generaltranslation/runtime';
+import { LocaleConfig, standardizeLocale } from 'generaltranslation/core';
 import type { CustomMapping } from 'generaltranslation/types';
 import { LookupOptions } from '../translation-functions/types/options';
 import { FallbackStorageAdapter } from './storage-adapter/FallbackStorageAdapter';

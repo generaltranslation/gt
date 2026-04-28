@@ -1,4 +1,4 @@
-import { isValidLocale } from 'generaltranslation/runtime';
+import { isValidLocale } from 'generaltranslation/core';
 import { getGTServicesEnabled } from '../../utils/getGTServicesEnabled';
 import { ValidationResult } from '../types';
 import type { CustomMapping } from 'generaltranslation/types';

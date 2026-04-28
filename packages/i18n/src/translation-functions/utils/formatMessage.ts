@@ -1,7 +1,7 @@
 import type { StringFormat } from 'generaltranslation/types';
 import logger from '../../logs/logger';
 import { createInterpolationFailureMessage } from './messages';
-import { formatMessage as _formatMessage } from 'generaltranslation/runtime';
+import { formatMessage as _formatMessage } from 'generaltranslation/core';
 
 /**
  * Given an encoded message and variables, formats the message.
