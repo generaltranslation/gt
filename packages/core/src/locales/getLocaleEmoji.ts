@@ -47,10 +47,6 @@ export default function _getLocaleEmoji(
 // Default language emoji for when none else can be found
 const europeAfricaGlobe = '🌍';
 const asiaAustraliaGlobe = '🌏';
-const scotlandFlag =
-  '\u{1f3f4}\u{e0067}\u{e0062}\u{e0073}\u{e0063}\u{e0074}\u{e007f}';
-const walesFlag =
-  '\u{1f3f4}\u{e0067}\u{e0062}\u{e0077}\u{e006c}\u{e0073}\u{e007f}';
 export const defaultEmoji = europeAfricaGlobe;
 
 // Exceptions to better reflect linguistic and cultural identities
@@ -60,8 +56,8 @@ const exceptions = {
   ku: europeAfricaGlobe,
   bo: asiaAustraliaGlobe,
   ug: asiaAustraliaGlobe,
-  gd: scotlandFlag,
-  cy: walesFlag,
+  gd: '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  cy: '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
   gv: '🇮🇲',
   grc: '🏺',
 } as Record<string, string>;
