@@ -58,7 +58,25 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `transpile`, `build:clean`, `b
 - ESLint: `@typescript-eslint` rules, unused vars prefixed with `_`, no explicit `any` (warn).
 - Prefer `const` over `let`. Never `var`.
 - Test files: `*.test.ts` / `*.spec.ts` using Vitest.
-- Build outputs go to `dist/`. Never edit `dist/` directly.
+- Build outputs go to `dist/`. Change source files and rebuild instead of editing `dist/` directly.
+- Do not use default exports.
+- Avoid `useEffect` in React code. Prefer derived state, event handlers, refs, or framework data-loading patterns; only use `useEffect` when synchronizing with an external system.
+
+## Git and PR Conventions
+
+- Commit messages should follow Conventional Commits style (for example, `feat: add locale fallback` or `fix: preserve formatter options`).
+- PR titles should also follow Conventional Commits style.
+
+## Focused References
+
+Load only the relevant file for the area being changed:
+
+- React, Next.js, React Native, or TanStack Start packages: `.claude/rules/react-packages.md`
+- Core i18n packages: `.claude/rules/core.md`
+- Compiler or build plugin code: `.claude/rules/compiler.md` and `packages/compiler/AGENTS.md`
+- CLI packages: `.claude/rules/cli.md`
+- ESLint plugin packages: `.claude/rules/linter-plugins.md`
+- Tests: `.claude/rules/testing.md`
 
 ## Important Patterns
 

@@ -1,4 +1,4 @@
-import { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from 'generaltranslation/types';
 import { GTConfig } from '../config/types';
 import { StorageAdapter } from './storage-adapter/StorageAdapter';
 import { StorageAdapterType } from './storage-adapter/types';

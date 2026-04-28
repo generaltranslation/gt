@@ -1,4 +1,4 @@
-import { CustomMapping } from 'generaltranslation/types';
+import { CustomMapping, FileFormat } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,
@@ -182,6 +182,10 @@ export type TransformFiles = {
   [K in SupportedFileExtension]?: TransformOption | string | TransformOption[]; // if a string, only transform the file name
 };
 
+export type TransformFormats = {
+  [K in SupportedFileExtension]?: FileFormat;
+};
+
 // Include patterns can be plain strings or objects with a publish flag
 export type IncludePattern = string | { pattern: string; publish?: boolean };
 
@@ -191,6 +195,7 @@ export type FilesOptions = {
     include: IncludePattern[];
     exclude?: string[];
     transform?: string | TransformOption | TransformOption[];
+    transformationFormat?: FileFormat;
     parsingFlags?: BaseParsingFlags; // Flags for parsing inline content
   };
 } & {
@@ -221,6 +226,7 @@ export type Settings = {
     resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale
     placeholderPaths: ResolvedFiles; // Absolute placeholder paths for all locales containing [locale]
     transformPaths: TransformFiles; // Absolute transform paths for all locales containing [locale]
+    transformFormats: TransformFormats; // Output file format transforms keyed by config file type
     publishPaths: Set<string>; // Absolute paths explicitly opted IN to publishing
     unpublishPaths: Set<string>; // Absolute paths explicitly opted OUT of publishing
     parsingFlags: ParseFlagsByFileType;

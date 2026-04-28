@@ -4,6 +4,8 @@ import { Updates } from './enqueueFiles';
 export type FileFormat =
   | 'GTJSON'
   | 'JSON'
+  | 'PO'
+  | 'POT'
   | 'YAML'
   | 'MDX'
   | 'MD'
@@ -30,6 +32,8 @@ type FormatMetadata = Record<string, any> | Updates[number]['metadata'];
 export type FileToUpload = Omit<FileReference, 'branchId'> & {
   content: string;
   locale: string;
+  // Optional output format requested for generated translations.
+  transformFormat?: FileFormat;
   formatMetadata?: FormatMetadata;
   branchId?: string;
   incomingBranchId?: string;
@@ -52,6 +56,8 @@ export type FileReference = {
   branchId: string;
   fileName: string;
   fileFormat: FileFormat;
+  // Optional output format requested for generated translations.
+  transformFormat?: FileFormat;
   dataFormat?: DataFormat;
 };
 
@@ -67,5 +73,6 @@ export type FileReferenceIds = Omit<
   branchId?: string;
   fileName?: string;
   fileFormat?: FileFormat;
+  transformFormat?: FileFormat;
   dataFormat?: DataFormat;
 };

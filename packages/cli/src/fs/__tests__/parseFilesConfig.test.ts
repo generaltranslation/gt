@@ -244,6 +244,38 @@ describe('parseFilesConfig', () => {
       ]);
     });
 
+    // TODO: Re-enable when the API supports POT -> PO file format transforms.
+    it.skip('should resolve file format transformation options', () => {
+      const files = {
+        pot: {
+          include: ['locales/[locale]/*.pot'],
+          transformationFormat: 'PO' as const,
+        },
+      };
+
+      vi.mocked(fg.sync).mockReturnValue(['/project/locales/en/messages.pot']);
+
+      const result = resolveFiles(files, 'en', defaultLocales, '/project');
+
+      expect(result.transformFormats.pot).toBe('PO');
+      expect(result.resolvedPaths.pot).toEqual([
+        '/project/locales/en/messages.pot',
+      ]);
+    });
+
+    it('throws for unsupported file format transformations', () => {
+      const files = {
+        mdx: {
+          include: ['docs/[locale]/*.mdx'],
+          transformationFormat: 'MD' as const,
+        },
+      };
+
+      expect(() =>
+        resolveFiles(files, 'en', defaultLocales, '/project')
+      ).toThrow('Unsupported file format transform: MDX -> MD');
+    });
+
     it('should handle mixed transform types across file extensions', () => {
       const files = {
         json: {

@@ -229,7 +229,8 @@ export async function mirrorAssetsToLocales(settings: Settings) {
   const assetPaths = resolveAssetPaths(include, cwd);
   if (assetPaths.size === 0) return;
 
-  const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
+  const { resolvedPaths, placeholderPaths, transformPaths, transformFormats } =
+    settings.files;
   const targetLocales = settings.locales.filter(
     (l) => l !== settings.defaultLocale
   );
@@ -239,6 +240,7 @@ export async function mirrorAssetsToLocales(settings: Settings) {
     resolvedPaths,
     placeholderPaths,
     transformPaths,
+    transformFormats,
     targetLocales,
     settings.defaultLocale
   );

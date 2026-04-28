@@ -17,6 +17,9 @@ import { BranchData } from '../../types/branch.js';
 import { getDownloadedMeta } from '../../state/recentDownloads.js';
 import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
+import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
+import { hasNonIdentityFileFormatTransformForType } from '../../formats/files/transformFormat.js';
+import { getRelative } from '../../fs/findFilepath.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -28,12 +31,18 @@ export async function handleTranslate(
   publishMap?: Map<string, boolean>
 ) {
   if (fileVersionData) {
-    const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
+    const {
+      resolvedPaths,
+      placeholderPaths,
+      transformPaths,
+      transformFormats,
+    } = settings.files;
 
     const fileMapping = createFileMapping(
       resolvedPaths,
       placeholderPaths,
       transformPaths,
+      transformFormats,
       settings.locales,
       settings.defaultLocale
     );
@@ -72,8 +81,14 @@ export async function postProcessTranslations(
   settings: Settings,
   includeFiles?: Set<string>
 ) {
+  const postProcessIncludes = filterPostProcessIncludesForFormatTransforms(
+    settings,
+    includeFiles
+  );
+  if (includeFiles && postProcessIncludes?.size === 0) return;
+
   // Mintlify OpenAPI localization (spec routing + validation)
-  await processOpenApi(settings, includeFiles);
+  await processOpenApi(settings, postProcessIncludes);
 
   // Localize static urls (/docs -> /[locale]/docs) and preserve anchor IDs for non-default locales
   // Default locale is processed earlier in the flow in base.ts
@@ -82,7 +97,11 @@ export async function postProcessTranslations(
       (locale) => locale !== settings.defaultLocale
     );
     if (nonDefaultLocales.length > 0) {
-      await localizeStaticUrls(settings, nonDefaultLocales, includeFiles);
+      await localizeStaticUrls(
+        settings,
+        nonDefaultLocales,
+        postProcessIncludes
+      );
     }
   }
 
@@ -92,7 +111,11 @@ export async function postProcessTranslations(
       (locale) => locale !== settings.defaultLocale
     );
     if (nonDefaultLocales.length > 0) {
-      await localizeRelativeAssets(settings, nonDefaultLocales, includeFiles);
+      await localizeRelativeAssets(
+        settings,
+        nonDefaultLocales,
+        postProcessIncludes
+      );
     }
   }
 
@@ -103,17 +126,17 @@ export async function postProcessTranslations(
   // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
   // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'
   if (shouldProcessAnchorIds) {
-    await processAnchorIds(settings, includeFiles);
+    await processAnchorIds(settings, postProcessIncludes);
   }
 
   // Localize static imports (import Snippet from /snippets/file.mdx -> import Snippet from /snippets/[locale]/file.mdx)
   if (settings.options?.experimentalLocalizeStaticImports) {
-    await localizeStaticImports(settings, includeFiles);
+    await localizeStaticImports(settings, postProcessIncludes);
   }
 
   // Flatten json files into a single file
   if (settings.options?.experimentalFlattenJsonFiles) {
-    await flattenJsonFiles(settings, includeFiles);
+    await flattenJsonFiles(settings, postProcessIncludes);
   }
 
   // Copy files to the target locale
@@ -122,5 +145,54 @@ export async function postProcessTranslations(
   }
 
   // Record postprocessed content hashes for newly downloaded files
-  persistPostProcessHashes(settings, includeFiles, getDownloadedMeta());
+  persistPostProcessHashes(settings, postProcessIncludes, getDownloadedMeta());
+}
+
+/**
+ * Exclude only outputs whose source file was translated into a different format.
+ * @param settings - The settings for the project
+ * @param includeFiles - The files to include in the post-processing
+ * @returns The files to exclude in the post-processing
+ */
+function filterPostProcessIncludesForFormatTransforms(
+  settings: Settings,
+  includeFiles?: Set<string>
+): Set<string> | undefined {
+  if (!includeFiles) return includeFiles;
+
+  const transformedSourcePaths = new Set<string>();
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (!hasNonIdentityFileFormatTransformForType(settings, fileType)) continue;
+
+    for (const sourcePath of settings.files.resolvedPaths[fileType] || []) {
+      transformedSourcePaths.add(getRelative(sourcePath));
+    }
+  }
+  if (transformedSourcePaths.size === 0) return includeFiles;
+
+  const { resolvedPaths, placeholderPaths, transformPaths, transformFormats } =
+    settings.files;
+  const fileMapping = createFileMapping(
+    resolvedPaths,
+    placeholderPaths,
+    transformPaths,
+    transformFormats,
+    settings.locales,
+    settings.defaultLocale
+  );
+
+  const transformedOutputPaths = new Set<string>();
+  for (const localeMapping of Object.values(fileMapping)) {
+    for (const [sourcePath, outputPath] of Object.entries(localeMapping)) {
+      if (transformedSourcePaths.has(sourcePath)) {
+        transformedOutputPaths.add(outputPath);
+      }
+    }
+  }
+
+  return new Set(
+    [...includeFiles].filter(
+      (filePath) => !transformedOutputPaths.has(filePath)
+    )
+  );
 }
