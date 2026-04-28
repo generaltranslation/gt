@@ -56,6 +56,7 @@
   "dependencies": {
     "@portabletext/block-tools": "^5.1.1",
     "@portabletext/to-html": "^2.0.14",
+    "@sanity/document-internationalization": "^6.0.6",
     "@sanity/icons": "^3.7.4",
     "@sanity/incompatible-plugin": "^1.0.5",
     "@sanity/mutator": "^5.18.0",
@@ -65,7 +66,6 @@
     "generaltranslation": "workspace:*",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
-    "@sanity/document-internationalization": "^6.0.6",
     "lodash.merge": "^4.6.2"
   },
   "devDependencies": {
@@ -76,6 +76,7 @@
     "@types/react": "^19.2.7",
     "@typescript-eslint/eslint-plugin": "^8.43.0",
     "@typescript-eslint/parser": "^8.43.0",
+    "eslint": "^9.36.0",
     "eslint-config-sanity": "^7.1.4",
     "jsdom": "^26.1.0",
     "just-clone": "^6.2.0",
