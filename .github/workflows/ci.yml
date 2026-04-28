@@ -155,11 +155,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if CLI changed
+      - name: Check if CLI or Python extractor changed
         id: gt_cli_changed
         shell: bash
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^packages/cli/"; then
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(cli|python-extractor)/"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -231,11 +231,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if gtx-cli wrapper changed
+      - name: Check if gtx-cli wrapper or CLI dependency changed
         id: gtx_cli_changed
         shell: bash
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(cli|gtx-cli)/"; then
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(cli|gtx-cli|python-extractor)/"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
