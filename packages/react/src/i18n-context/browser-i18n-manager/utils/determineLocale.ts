@@ -1,9 +1,12 @@
-import { CustomMapping } from 'generaltranslation/types';
-import { LocaleConfig } from 'generaltranslation/core';
 import { getCookieValue } from './cookies';
 import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
 import { createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning } from '../../../shared/messages';
-import { GetLocale } from './types';
+import type { GetLocale } from './types';
+import {
+  determineSupportedLocale,
+  resolveSupportedLocale,
+} from 'gt-i18n/internal';
+import type { ConditionStoreConfig } from 'gt-i18n/internal/types';
 
 /**
  * Determine a user's locale from their browser settings
@@ -20,30 +23,32 @@ export function determineLocale({
   localeCookieName = defaultLocaleCookieName,
   getLocale,
 }: {
-  defaultLocale: string;
-  locales: string[];
-  customMapping?: CustomMapping;
   localeCookieName?: string;
   getLocale?: GetLocale;
-}): string {
-  const localeConfig = new LocaleConfig({
+} & ConditionStoreConfig): string {
+  const localeConfig: ConditionStoreConfig = {
     defaultLocale,
     locales,
     customMapping,
-  });
+  };
+  const resolvedDefaultLocale = resolveSupportedLocale(undefined, localeConfig);
 
   // (1) Check custom locale
   if (getLocale) {
     const customLocale = getLocale();
-    const determinedLocale = localeConfig.determineLocale(customLocale);
+    // A custom getLocale is authoritative: if it returns an unsupported locale, warn and fall back.
+    const determinedLocale = determineSupportedLocale(
+      customLocale,
+      localeConfig
+    );
     if (!determinedLocale) {
       console.warn(
         createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning({
           customLocale,
-          defaultLocale,
+          defaultLocale: resolvedDefaultLocale,
         })
       );
-      return defaultLocale;
+      return resolvedDefaultLocale;
     }
     return determinedLocale;
   }
@@ -60,5 +65,5 @@ export function determineLocale({
   const navigatorLocales = navigator?.languages || [];
   candidates.push(...navigatorLocales);
 
-  return localeConfig.determineLocale(candidates) || defaultLocale;
+  return resolveSupportedLocale(candidates, localeConfig);
 }

@@ -1,7 +1,5 @@
 import type { CustomMapping } from 'generaltranslation/types';
 import { GTConfig } from '../config/types';
-import { StorageAdapter } from './storage-adapter/StorageAdapter';
-import { StorageAdapterType } from './storage-adapter/types';
 import { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import type { LifecycleCallbacks } from './lifecycle-hooks/types';
@@ -10,11 +8,9 @@ import type { LifecycleCallbacks } from './lifecycle-hooks/types';
  * Parameters for the I18nManager constructor
  */
 export type I18nManagerConstructorParams<
-  T extends StorageAdapter = StorageAdapter,
   TranslationValue extends Translation = Translation,
 > = GTConfig & {
   loadTranslations?: TranslationsLoader;
-  storeAdapter?: T;
   environment?: 'development' | 'production';
   // Cache lifecycle hooks
   /** @deprecated - move to subscription api instead */
@@ -37,9 +33,37 @@ export type I18nManagerConfig = {
   _versionId?: string;
 };
 
-export type {
-  TranslationsLoader,
-  StorageAdapter,
-  StorageAdapterType,
-  LifecycleCallbacks,
+/**
+ * Shared configuration used by condition stores to resolve locales.
+ */
+export type ConditionStoreConfig = {
+  defaultLocale?: string;
+  locales?: string[];
+  customMapping?: CustomMapping;
 };
+
+/**
+ * Minimal runtime condition store contract.
+ *
+ * Locale is the first condition exposed by this contract; additional runtime
+ * conditions can be added here as needed.
+ */
+export interface ConditionStore {
+  getLocale(): string;
+}
+
+/**
+ * Condition store contract for runtimes that can persist locale changes.
+ */
+export interface WritableConditionStore extends ConditionStore {
+  setLocale(locale: string): void;
+}
+
+/**
+ * Condition store contract for runtimes with scoped locale context.
+ */
+export interface ScopedConditionStore extends ConditionStore {
+  run<T>(locale: string, callback: () => T): T;
+}
+
+export type { TranslationsLoader, LifecycleCallbacks };

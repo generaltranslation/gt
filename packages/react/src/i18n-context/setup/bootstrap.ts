@@ -1,6 +1,7 @@
 import { initializeGT } from './initializeGT';
 import { getBrowserI18nManager } from '../browser-i18n-manager/singleton-operations';
 import { InitializeGTParams } from './types';
+import { getLocale } from '../functions/locale-operations';
 
 /**
  * Initialization function for react-core library invoked to enable synchronous resolution
@@ -24,10 +25,11 @@ import { InitializeGTParams } from './types';
 export async function bootstrap(params: InitializeGTParams): Promise<void> {
   initializeGT(params);
   const i18nManager = getBrowserI18nManager();
+  const locale = getLocale();
 
   // Update the html tag
-  i18nManager.updateHtmlTag();
+  i18nManager.updateHtmlTag(locale);
 
   // Load translations
-  await i18nManager.loadTranslations();
+  await i18nManager.loadTranslations(locale);
 }

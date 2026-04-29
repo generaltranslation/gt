@@ -1,4 +1,4 @@
-import { getI18nManager } from '../async-i18n-manager/singleton-operations';
+import { getI18nManager } from 'gt-i18n/internal';
 
 /**
  * A request object like interface
@@ -53,7 +53,7 @@ function parseAcceptLanguage(header: string): string[] {
  */
 export function getRequestLocale(request: RequestLike): string {
   // Setup
-  const i18nManager = getI18nManager();
+  const i18nManager = getI18nManager<string>();
   const defaultLocale = i18nManager.getDefaultLocale();
   const gtInstance = i18nManager.getGTClass();
 

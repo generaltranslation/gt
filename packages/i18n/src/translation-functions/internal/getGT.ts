@@ -1,21 +1,29 @@
-import { getI18nManager } from '../../i18n-manager/singleton-operations';
-import { InlineTranslationOptions, LookupOptions } from '../types/options';
+import {
+  getCurrentLocale,
+  getI18nManager,
+} from '../../i18n-manager/singleton-operations';
+import { InlineTranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
+import { createLookupOptions } from './helpers';
+import type { StringFormat } from 'generaltranslation/types';
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
+ * @param locale - The locale to resolve translations for.
  * @returns A promise of the gt function
- * @important Must be used inside of a request context
  *
  * @example
- * const gt = await getGT();
+ * const gt = await getGT('fr');
  * const greeting = gt('Hello, world!');
  */
-export async function getGT(): Promise<GTFunctionType> {
+export async function getGT(
+  locale = getCurrentLocale()
+): Promise<GTFunctionType> {
   // Get the translation resolver
   const i18nManager = getI18nManager();
-  const lookupTranslation = await i18nManager.getLookupTranslation();
+  const lookupTranslation = await i18nManager.getLookupTranslation(locale);
+  const sourceLocale = i18nManager.getDefaultLocale();
 
   /**
    * Registers a message at build time and resolves its translation at runtime.
@@ -25,32 +33,33 @@ export async function getGT(): Promise<GTFunctionType> {
    *
    * @example
    * // Simple translation without interpolation
-   * const gt = await getGT();
+   * const gt = await getGT('fr');
    * const greeting = gt('Hello, world!');
    *
    * @example
    * // Translation with interpolation
-   * const gt = await getGT();
+   * const gt = await getGT('fr');
    * const welcome = gt('Hello, {name}!', { name: 'Alice' });
    */
   const gt: GTFunctionType = (
     message: string,
     options: InlineTranslationOptions = {}
   ) => {
-    const resolutionOptions: LookupOptions = {
-      $format: 'ICU',
-      ...options,
-      $locale: options.$locale ?? i18nManager.getLocale(),
-    };
+    const lookupOptions = createLookupOptions<StringFormat>(
+      options,
+      'ICU',
+      locale
+    );
 
     // Lookup translation
-    const translation = lookupTranslation(message, resolutionOptions);
+    const translation = lookupTranslation(message, lookupOptions);
 
     // Format result
     return interpolateMessage({
       source: message,
       target: translation,
-      options: resolutionOptions,
+      options: lookupOptions,
+      sourceLocale,
     });
   };
 

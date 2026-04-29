@@ -1,0 +1,45 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { I18nManager } from '../../i18n-manager/I18nManager';
+import {
+  setI18nManager,
+  setConditionStore,
+} from '../../i18n-manager/singleton-operations';
+import { hashMessage } from '../../utils/hashMessage';
+import { t } from '../t';
+
+describe('t', () => {
+  afterEach(() => {
+    setConditionStore({ getLocale: () => 'en' });
+  });
+
+  it('works without an explicit locale', () => {
+    setI18nManager(
+      new I18nManager({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        loadTranslations: vi.fn(),
+      })
+    );
+
+    expect(t('Hello')).toBe('Hello');
+  });
+
+  it('uses the configured fallback locale store when no locale is provided', async () => {
+    const message = 'Hello {name}!';
+    const translatedMessage = 'Bonjour {name} !';
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      loadTranslations: vi.fn().mockResolvedValue({
+        [hashMessage(message, { $format: 'ICU' })]: translatedMessage,
+      }),
+    });
+    const conditionStore = { getLocale: () => 'fr' };
+
+    setConditionStore(conditionStore);
+    setI18nManager(manager);
+    await manager.loadTranslations('fr');
+
+    expect(t(message, { name: 'Alice' })).toBe('Bonjour Alice !');
+  });
+});

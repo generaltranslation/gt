@@ -1,4 +1,4 @@
-import { getLocale } from './getLocale';
+import { getLocale } from 'gt-i18n';
 import type { Translations } from 'gt-react/internal';
 import { isSSREnabled } from '../provider/utils/isSSREnabled';
 import { getI18nManager } from 'gt-i18n/internal';

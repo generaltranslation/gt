@@ -2,7 +2,7 @@ import {
   resolveTranslationSync,
   resolveTranslationSyncWithFallback,
 } from 'gt-i18n/internal';
-import { InlineTranslationOptions } from 'gt-i18n/types';
+import type { InlineTranslationOptions } from 'gt-i18n/types';
 import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../shared/messages';
 import { StringOrTemplateSyncResolutionFunction } from './types';
 

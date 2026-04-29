@@ -1,11 +1,8 @@
-// Locale Utilities
 export { getRequestLocale } from './getRequestLocale';
 export {
-  getLocale,
-  getLocales,
   getDefaultLocale,
+  getLocale,
   getLocaleProperties,
+  getLocales,
+  getVersionId,
 } from 'gt-i18n';
-
-// Version
-export { getVersionId } from 'gt-i18n';

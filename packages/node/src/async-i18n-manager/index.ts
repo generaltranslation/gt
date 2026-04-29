@@ -1,6 +1,5 @@
-export { AsyncStorageI18nManager } from './AsyncStorageI18nManager';
-export { AsyncStorageAdapter } from './AsyncStorageAdapter';
+export { AsyncConditionStore } from './AsyncConditionStore';
 export {
-  getI18nManager as asyncStorageGetI18nManager,
-  setI18nManager as asyncStorageSetI18nManager,
+  getAsyncConditionStore,
+  setAsyncConditionStore,
 } from './singleton-operations';

@@ -1,4 +1,5 @@
 import { getBrowserI18nManager } from '../browser-i18n-manager/singleton-operations';
+import { getLocale } from './locale-operations';
 
 /**
  * Update the html tag lang property
@@ -10,7 +11,7 @@ import { getBrowserI18nManager } from '../browser-i18n-manager/singleton-operati
  */
 export function updateHtmlTagLang(locale: string): void {
   const i18nManager = getBrowserI18nManager();
-  i18nManager.updateHtmlTag({
+  i18nManager.updateHtmlTag(locale, {
     lang: locale,
     updateHtmlLangTag: true,
     updateHtmlDirTag: false,
@@ -27,7 +28,7 @@ export function updateHtmlTagLang(locale: string): void {
  */
 export function updateHtmlTagDir(dir: 'ltr' | 'rtl'): void {
   const i18nManager = getBrowserI18nManager();
-  i18nManager.updateHtmlTag({
+  i18nManager.updateHtmlTag(getLocale(), {
     dir,
     updateHtmlLangTag: false,
     updateHtmlDirTag: true,

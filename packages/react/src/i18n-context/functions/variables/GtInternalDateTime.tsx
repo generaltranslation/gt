@@ -1,4 +1,4 @@
-import { getBrowserI18nManager } from '../../browser-i18n-manager/singleton-operations';
+import { getI18nManager } from 'gt-i18n/internal';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 
 /**
@@ -19,7 +19,7 @@ function GtInternalDateTime({
   const locales = [...localesProp, getLocale(), getDefaultLocale()];
 
   // Apply formatting
-  const i18nManager = getBrowserI18nManager();
+  const i18nManager = getI18nManager();
   const gt = i18nManager.getGTClass();
   const result = gt
     .formatDateTime(children, { locales, ...options })

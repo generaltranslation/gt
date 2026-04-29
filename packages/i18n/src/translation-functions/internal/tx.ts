@@ -2,6 +2,13 @@ import { RuntimeTranslationOptions } from '../types/options';
 import type { StringFormat } from 'generaltranslation/types';
 import { resolveStringContentWithRuntimeFallback } from './helpers';
 
+type RuntimeTranslationOptionsWithFormat = Omit<
+  RuntimeTranslationOptions,
+  '$format'
+> & {
+  $format?: StringFormat;
+};
+
 /**
  * Translates a message at runtime.
  * @param {string} message - The message to translate.
@@ -10,7 +17,7 @@ import { resolveStringContentWithRuntimeFallback } from './helpers';
  *
  * @example
  * // Simple runtime translation without interpolation
- * const status = await tx('Processing complete');
+ * const status = await tx('Processing complete', { $locale: 'es-MX' });
  *
  * @example
  * // Runtime translation with interpolation
@@ -18,9 +25,7 @@ import { resolveStringContentWithRuntimeFallback } from './helpers';
  */
 export async function tx(
   content: string,
-  options?: Omit<RuntimeTranslationOptions, '$format'> & {
-    $format?: StringFormat;
-  }
+  options: RuntimeTranslationOptionsWithFormat = {}
 ): Promise<string> {
   return resolveStringContentWithRuntimeFallback(content, {
     $format: 'STRING',

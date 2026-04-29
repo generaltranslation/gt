@@ -1,5 +1,7 @@
-import { getI18nManager } from '../../../i18n-manager/singleton-operations';
-import { InlineTranslationOptions } from '../../types/options';
+import {
+  InlineTranslationOptions,
+  NormalizedLookupOptions,
+} from '../../types/options';
 import { interpolateIcuMessage } from './interpolateIcuMessage';
 import { interpolateStringMessage } from './interpolateStringMessage';
 import type { StringFormat } from 'generaltranslation/types';
@@ -8,10 +10,7 @@ import type { StringFormat } from 'generaltranslation/types';
  * Options for string interpolation
  * @internal
  */
-export type InterpolationOptions = {
-  $format: StringFormat;
-  $locale: string;
-} & Omit<InlineTranslationOptions, '$format' | '$locale'>;
+export type InterpolationOptions = NormalizedLookupOptions<StringFormat>;
 
 /**
  * Interpolation router function for all {@link StringFormat} types
@@ -20,10 +19,12 @@ export function interpolateMessage({
   source,
   target,
   options,
+  sourceLocale,
 }: {
   source: string;
   target?: string;
   options: InterpolationOptions;
+  sourceLocale?: string;
 }): string {
   // Format translation
   if (target != null) {
@@ -34,10 +35,8 @@ export function interpolateMessage({
   }
 
   // Format source
-  return routeInterpolation(source, {
-    ...options,
-    $locale: getI18nManager().getDefaultLocale(),
-  });
+  // Missing translations format the source with the source locale, not the target locale.
+  return routeInterpolation(source, getSourceOptions(options, sourceLocale));
 }
 
 // ----- HELPERS ----- //
@@ -59,4 +58,15 @@ function routeInterpolation(
       // e.g. $format: 'NONE'
       return content;
   }
+}
+
+function getSourceOptions(
+  options: InterpolationOptions,
+  sourceLocale?: string
+): InterpolationOptions {
+  if (!sourceLocale) return options;
+  return {
+    ...options,
+    $locale: sourceLocale,
+  };
 }

@@ -13,9 +13,10 @@ describe('I18nManager.resolveTranslationSync', () => {
       locales: ['en', 'fr'],
       loadTranslations: vi.fn(),
     });
-    manager.setLocale('fr');
 
-    const result = manager.resolveTranslationSync('Hello');
+    const result = manager.resolveTranslationSync('fr', 'Hello', {
+      $format: 'ICU',
+    });
 
     expect(result).toBeUndefined();
   });
@@ -27,10 +28,15 @@ describe('I18nManager.resolveTranslationSync', () => {
       loadTranslations: vi.fn(),
       environment: 'development',
     });
-    manager.setLocale('fr');
 
-    expect(() => manager.resolveTranslationSync('Hello')).not.toThrow();
-    expect(manager.resolveTranslationSync('Hello')).toBeUndefined();
+    const options = { $format: 'ICU' as const };
+
+    expect(() =>
+      manager.resolveTranslationSync('fr', 'Hello', options)
+    ).not.toThrow();
+    expect(
+      manager.resolveTranslationSync('fr', 'Hello', options)
+    ).toBeUndefined();
   });
 
   it('should return the correct translation via hash lookup after async getTranslations populates resolvedCache', async () => {
@@ -48,12 +54,11 @@ describe('I18nManager.resolveTranslationSync', () => {
       locales: ['en', 'fr'],
       loadTranslations: vi.fn().mockResolvedValue(mockTranslations),
     });
-    manager.setLocale('fr');
 
     // Trigger async load to populate resolvedCache
     await manager.getTranslations('fr');
 
-    const result = manager.resolveTranslationSync(message, options);
+    const result = manager.resolveTranslationSync('fr', message, options);
 
     expect(result).toBe(translatedString);
   });

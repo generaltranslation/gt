@@ -36,7 +36,6 @@ describe('translation helpers (deep integration)', () => {
       locales: ['en', 'fr'],
       loadTranslations: vi.fn().mockResolvedValue(preloadedTranslations),
     });
-    manager.setLocale('fr');
     setI18nManager(manager);
     return manager;
   }
@@ -55,6 +54,7 @@ describe('translation helpers (deep integration)', () => {
 
     const promise = resolveStringContentWithRuntimeFallback(message, {
       $format: 'ICU',
+      $locale: 'fr',
     });
 
     // Flush batch timer so translateMany fires
@@ -82,6 +82,7 @@ describe('translation helpers (deep integration)', () => {
 
     const result = await resolveStringContentWithRuntimeFallback(message, {
       $format: 'ICU',
+      $locale: 'fr',
     });
 
     // translateMany should NOT be called because the translation was preloaded
@@ -101,7 +102,7 @@ describe('translation helpers (deep integration)', () => {
       [hash]: { success: true, translation: translatedContent },
     });
 
-    const promise = resolveJsxWithRuntimeFallback(content, {});
+    const promise = resolveJsxWithRuntimeFallback(content, { $locale: 'fr' });
 
     await vi.advanceTimersByTimeAsync(50);
 
@@ -124,6 +125,7 @@ describe('translation helpers (deep integration)', () => {
 
     const promise = resolveStringContentWithRuntimeFallback(message, {
       $format: 'STRING',
+      $locale: 'fr',
     });
 
     await vi.advanceTimersByTimeAsync(50);
