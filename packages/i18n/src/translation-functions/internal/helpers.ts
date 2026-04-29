@@ -72,7 +72,11 @@ export function resolveStringContent(
   return interpolateMessage({
     source: content,
     target: translation,
-    options: lookupOptions as InterpolationOptions,
+    options: getInterpolationOptions(
+      lookupOptions as InterpolationOptions,
+      i18nManager,
+      translation
+    ),
   });
 }
 
@@ -89,7 +93,11 @@ export function resolveStringContentWithFallback(
   return interpolateMessage({
     source: content,
     target: translation,
-    options: lookupOptions as InterpolationOptions,
+    options: getInterpolationOptions(
+      lookupOptions as InterpolationOptions,
+      i18nManager,
+      translation
+    ),
   });
 }
 
@@ -111,7 +119,11 @@ export async function resolveStringContentWithRuntimeFallback(
   return interpolateMessage({
     source: content,
     target: translation,
-    options: lookupOptions as InterpolationOptions,
+    options: getInterpolationOptions(
+      lookupOptions as InterpolationOptions,
+      i18nManager,
+      translation
+    ),
   });
 }
 // ----- HELPER FUNCTIONS ----- //
@@ -125,6 +137,23 @@ function getLookupOptions<T extends DataFormat>(
 ): LookupOptions {
   return {
     $format: format,
+    ...options,
+  };
+}
+
+function getInterpolationOptions(
+  options: InterpolationOptions,
+  i18nManager: ReturnType<typeof getI18nManager>,
+  translation: StringContent | undefined
+): InterpolationOptions {
+  if (translation == null) {
+    return {
+      ...options,
+      $locale: i18nManager.getDefaultLocale(),
+    };
+  }
+  return {
+    $locale: i18nManager.getLocale(),
     ...options,
   };
 }

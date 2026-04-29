@@ -15,6 +15,8 @@ describe('resolveTranslationSync', () => {
   it('should call interpolateMessage with source, target, and options when translation found', () => {
     const mockManager = {
       lookupTranslation: vi.fn().mockReturnValue('Bonjour {name} !'),
+      getDefaultLocale: vi.fn().mockReturnValue('en'),
+      getLocale: vi.fn().mockReturnValue('fr'),
     };
     vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
 
@@ -28,6 +30,7 @@ describe('resolveTranslationSync', () => {
       target: 'Bonjour {name} !',
       options: {
         $format: 'ICU',
+        $locale: 'fr',
         name: 'Alice',
       },
     });
@@ -51,6 +54,8 @@ describe('resolveTranslationSync', () => {
   it('should preserve user options when translation found', () => {
     const mockManager = {
       lookupTranslation: vi.fn().mockReturnValue('Translated'),
+      getDefaultLocale: vi.fn().mockReturnValue('en'),
+      getLocale: vi.fn().mockReturnValue('fr'),
     };
     vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
 
@@ -64,6 +69,7 @@ describe('resolveTranslationSync', () => {
       target: 'Translated',
       options: {
         $format: 'ICU',
+        $locale: 'fr',
         name: 'Bob',
         $context: 'greeting',
         $id: 'hello-msg',
@@ -74,6 +80,8 @@ describe('resolveTranslationSync', () => {
   it('should preserve $format in options passed to interpolateMessage', () => {
     const mockManager = {
       lookupTranslation: vi.fn().mockReturnValue('Translated'),
+      getDefaultLocale: vi.fn().mockReturnValue('en'),
+      getLocale: vi.fn().mockReturnValue('fr'),
     };
     vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
 
@@ -87,6 +95,7 @@ describe('resolveTranslationSync', () => {
       target: 'Translated',
       options: {
         $format: 'STRING',
+        $locale: 'fr',
         name: 'Alice',
       },
     });

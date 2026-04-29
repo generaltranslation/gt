@@ -35,6 +35,8 @@ describe('translation helpers', () => {
       lookupTranslationWithFallback: vi
         .fn()
         .mockResolvedValue('Bonjour {name} !'),
+      getDefaultLocale: vi.fn().mockReturnValue('en'),
+      getLocale: vi.fn().mockReturnValue('fr'),
     };
     vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
 
@@ -44,13 +46,15 @@ describe('translation helpers', () => {
     expect(interpolateMessage).toHaveBeenCalledWith({
       source: 'Hello {name}!',
       target: 'Bonjour {name} !',
-      options: expect.objectContaining({ $format: 'STRING' }),
+      options: expect.objectContaining({ $format: 'STRING', $locale: 'fr' }),
     });
   });
 
   it('resolveStringContentWithFallback interpolates source when no translation found', () => {
     const mockManager = {
       lookupTranslation: vi.fn().mockReturnValue(undefined),
+      getDefaultLocale: vi.fn().mockReturnValue('en'),
+      getLocale: vi.fn().mockReturnValue('fr'),
     };
     vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
 
@@ -60,7 +64,7 @@ describe('translation helpers', () => {
     expect(interpolateMessage).toHaveBeenCalledWith({
       source: 'Hello {name}!',
       target: undefined,
-      options: expect.objectContaining({ $format: 'STRING' }),
+      options: expect.objectContaining({ $format: 'STRING', $locale: 'en' }),
     });
   });
 });

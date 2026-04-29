@@ -1,4 +1,3 @@
-import { getI18nManager } from '../../../i18n-manager/singleton-operations';
 import { InlineTranslationOptions } from '../../types/options';
 import { interpolateIcuMessage } from './interpolateIcuMessage';
 import { interpolateStringMessage } from './interpolateStringMessage';
@@ -24,22 +23,16 @@ export function interpolateMessage({
   target?: string;
   options: InterpolationOptions;
 }): string {
-  const i18nManager = getI18nManager();
-
   // Format translation
   if (target != null) {
     return routeInterpolation(target, {
-      $locale: i18nManager.getLocale(),
       $_fallback: source,
       ...options,
     });
   }
 
   // Format source
-  return routeInterpolation(source, {
-    ...options,
-    $locale: i18nManager.getDefaultLocale(),
-  });
+  return routeInterpolation(source, options);
 }
 
 // ----- HELPERS ----- //

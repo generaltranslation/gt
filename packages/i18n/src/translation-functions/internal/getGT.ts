@@ -16,6 +16,8 @@ export async function getGT(): Promise<GTFunctionType> {
   // Get the translation resolver
   const i18nManager = getI18nManager();
   const lookupTranslation = await i18nManager.getLookupTranslation();
+  const targetLocale = i18nManager.getLocale();
+  const sourceLocale = i18nManager.getDefaultLocale();
 
   /**
    * Registers a message at build time and resolves its translation at runtime.
@@ -39,17 +41,25 @@ export async function getGT(): Promise<GTFunctionType> {
   ) => {
     const resolutionOptions: LookupOptions = {
       $format: 'ICU',
+      $locale: targetLocale,
       ...options,
     };
 
     // Lookup translation
     const translation = lookupTranslation(message, resolutionOptions);
+    const interpolationOptions =
+      translation == null
+        ? {
+            ...resolutionOptions,
+            $locale: sourceLocale,
+          }
+        : resolutionOptions;
 
     // Format result
     return interpolateMessage({
       source: message,
       target: translation,
-      options: resolutionOptions,
+      options: interpolationOptions,
     });
   };
 
