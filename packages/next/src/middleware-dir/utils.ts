@@ -10,28 +10,24 @@ export type ResponseConfig = {
   type: 'next' | 'rewrite' | 'redirect';
   responsePath?: string;
   originalUrl: NextURL;
-  userLocale: string;
   clearResetCookie: boolean;
   headerList: Headers;
   localeRouting: boolean;
   localeRoutingEnabledCookieName: string;
   localeCookieName: string;
   resetLocaleCookieName: string;
-  localeHeaderName: string;
 };
 
 export function getResponse({
   type,
   originalUrl,
   responsePath = originalUrl.pathname,
-  userLocale,
   clearResetCookie,
   headerList,
   localeRouting,
   localeRoutingEnabledCookieName,
   localeCookieName,
   resetLocaleCookieName,
-  localeHeaderName,
 }: ResponseConfig): NextResponse<unknown> {
   // Get Response
   let response;
@@ -54,8 +50,7 @@ export function getResponse({
         : NextResponse.redirect(responseUrl);
   }
 
-  // Set Headers & Cookies
-  response.headers.set(localeHeaderName, userLocale);
+  // Set Cookies
   response.cookies.set(
     localeRoutingEnabledCookieName,
     localeRouting.toString()
@@ -72,7 +67,7 @@ export function getResponse({
  * Extracts the locale from the given pathname.
  */
 export function extractLocale(pathname: string): string | null {
-  const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
+  const matches = pathname.match(/^\/([^/]+)(?:\/|$)/);
   return matches ? matches[1] : null;
 }
 

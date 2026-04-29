@@ -71,7 +71,6 @@ vi.mock('gt-react/internal', () => ({
   // Add other commonly needed exports to prevent missing export errors
   getDefaultRenderSettings: vi.fn(() => ({ method: 'replace' })),
   defaultLocaleCookieName: 'gt-locale',
-  defaultLocaleHeaderName: 'gt-locale',
   defaultReferrerLocaleCookieName: 'gt-referrer-locale',
   defaultLocaleRoutingEnabledCookieName: 'gt-locale-routing-enabled',
   DictionaryTranslationOptions: {},

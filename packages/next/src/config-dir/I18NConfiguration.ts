@@ -18,7 +18,6 @@ import {
   defaultReferrerLocaleCookieName,
   defaultResetLocaleCookieName,
 } from '../utils/cookies';
-import { defaultLocaleHeaderName } from '../utils/headers';
 import { CustomMapping } from 'generaltranslation/types';
 import { GTTranslationError } from '../utils/errors';
 import type { TranslateManyEntry } from 'generaltranslation/types';
@@ -104,8 +103,7 @@ export default class I18NConfiguration {
   private _activeRequests: number;
   // Cache for ongoing translation requests
   private _translationCache: Map<string, Promise<any>>;
-  // Headers and cookies
-  private localeHeaderName: string;
+  // Cookies
   private localeCookieName: string;
   private referrerLocaleCookieName: string;
   private localeRoutingEnabledCookieName: string;
@@ -232,9 +230,7 @@ export default class I18NConfiguration {
     this._activeRequests = 0;
     this._translationCache = new Map(); // cache for ongoing promises, so things aren't translated twice
     this._startBatching();
-    // Headers and cookies
-    this.localeHeaderName =
-      headersAndCookies?.localeHeaderName || defaultLocaleHeaderName;
+    // Cookies
     this.localeCookieName =
       headersAndCookies?.localeCookieName || defaultLocaleCookieName;
     this.referrerLocaleCookieName =
@@ -332,14 +328,10 @@ export default class I18NConfiguration {
     return this._versionId;
   }
 
-  // ----- COOKIES AND HEADERS ----- //
+  // ----- COOKIES ----- //
 
   getLocaleCookieName(): string {
     return this.localeCookieName;
-  }
-
-  getLocaleHeaderName(): string {
-    return this.localeHeaderName;
   }
 
   // ----- FEATURE FLAGS ----- //

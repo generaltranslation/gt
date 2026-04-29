@@ -6,6 +6,9 @@ import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 export const remoteTranslationsError =
   'gt-next Error: fetching remote translation.';
 
+export const rootLocaleResolutionError =
+  'gt-next: Error resolving locale from route params. Error: ';
+
 export const customLoadTranslationsError = (locale: string = '') =>
   `gt-next Error: Failed to fetch locally stored translations. If using a custom loadTranslations("${locale}"), make sure it is correctly implemented.`;
 

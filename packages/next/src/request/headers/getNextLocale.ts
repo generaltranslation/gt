@@ -21,11 +21,6 @@ export async function getNextLocale(): Promise<RequestFunctionReturnType> {
 
   const preferredLocales: string[] = [];
 
-  // Language routed to by middleware
-  const headerLocale = headersList.get(I18NConfig.getLocaleHeaderName());
-  if (headerLocale) {
-    preferredLocales.push(headerLocale);
-  }
   const cookieLocale = cookieStore.get(I18NConfig.getLocaleCookieName());
   if (cookieLocale?.value) {
     preferredLocales.push(cookieLocale.value);

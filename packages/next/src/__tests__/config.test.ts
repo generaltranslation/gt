@@ -158,13 +158,12 @@ describe('withGTConfig', () => {
       });
     });
 
-    it('has default headers/cookies values', async () => {
+    it('has default cookie values', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
       expect(params.headersAndCookies).toMatchObject({
-        localeHeaderName: 'x-generaltranslation-locale',
         localeCookieName: 'generaltranslation.locale',
         referrerLocaleCookieName: 'generaltranslation.referrer-locale',
         localeRoutingEnabledCookieName:
@@ -1257,17 +1256,14 @@ describe('withGTConfig', () => {
   });
 
   // ==============================
-  // 15. Headers/cookies merging
+  // 15. Cookie merging
   // ==============================
-  describe('15. Headers/cookies merging', () => {
+  describe('15. Cookie merging', () => {
     it('default values used when none provided', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
-      expect(params.headersAndCookies.localeHeaderName).toBe(
-        'x-generaltranslation-locale'
-      );
       expect(params.headersAndCookies.localeCookieName).toBe(
         'generaltranslation.locale'
       );
@@ -1289,15 +1285,14 @@ describe('withGTConfig', () => {
         'my-custom-cookie'
       );
       // Other values should remain defaults
-      expect(params.headersAndCookies.localeHeaderName).toBe(
-        'x-generaltranslation-locale'
+      expect(params.headersAndCookies.referrerLocaleCookieName).toBe(
+        'generaltranslation.referrer-locale'
       );
     });
 
     it('full override replaces all values', async () => {
       const withGTConfig = await getWithGTConfig();
       const customHeaders = {
-        localeHeaderName: 'x-my-locale',
         localeCookieName: 'my-locale',
         referrerLocaleCookieName: 'my-referrer',
         localeRoutingEnabledCookieName: 'my-routing',

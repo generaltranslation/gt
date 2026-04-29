@@ -3,6 +3,7 @@ import use from '../utils/use';
 import { legacyGetLocaleFunction } from './utils/legacyGetLocaleFunction';
 import { getRequestFunction } from './utils/getRequestFunction';
 import { localeStore } from './localeStore';
+import { getRootLocale } from './utils/getRootLocale';
 
 let getLocaleFunction: () => Promise<string>;
 
@@ -26,10 +27,16 @@ export async function getLocale(): Promise<string> {
   const gt = I18NConfig.getGTClass();
 
   if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {
-    const requestFunction = getRequestFunction('getLocale');
+    const useRootLocaleOnly =
+      process.env._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION === 'true';
+    const requestFunction = useRootLocaleOnly
+      ? undefined
+      : getRequestFunction('getLocale');
     // Support new behavior
     getLocaleFunction = async () => {
-      const requestLocale = await requestFunction();
+      const rootLocale = getRootLocale((locale) => gt.isValidLocale(locale));
+      const requestLocale =
+        rootLocale || (requestFunction ? await requestFunction() : undefined);
       return gt.resolveAliasLocale(
         requestLocale || I18NConfig.getDefaultLocale()
       );

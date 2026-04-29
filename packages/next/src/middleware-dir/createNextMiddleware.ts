@@ -19,7 +19,6 @@ import {
   getResponse,
   ResponseConfig,
 } from './utils';
-import { defaultLocaleHeaderName } from '../utils/headers';
 
 const NEXT_JS_SOURCE_MAP_PATH = '/__nextjs_source-map';
 
@@ -94,8 +93,6 @@ export default function createNextMiddleware({
     headersAndCookies?.localeCookieName || defaultLocaleCookieName;
   const resetLocaleCookieName =
     headersAndCookies?.resetLocaleCookieName || defaultResetLocaleCookieName;
-  const localeHeaderName =
-    headersAndCookies?.localeHeaderName || defaultLocaleHeaderName;
 
   if (!gt.isValidLocale(defaultLocale))
     throw new Error(
@@ -182,13 +179,11 @@ export default function createNextMiddleware({
     const responseConfig: Omit<ResponseConfig, 'type'> = {
       originalUrl: req.nextUrl,
       headerList,
-      userLocale,
       clearResetCookie,
       localeRouting,
       localeRoutingEnabledCookieName,
       localeCookieName,
       resetLocaleCookieName,
-      localeHeaderName,
     };
 
     const getRewriteResponse = (responsePath: string) =>
