@@ -35,10 +35,7 @@ export function determineLocale({
   // (1) Check custom locale
   if (getLocale) {
     const customLocale = getLocale();
-    const determinedLocale = localeConfig.determineLocale(
-      customLocale,
-      locales
-    );
+    const determinedLocale = localeConfig.determineLocale(customLocale);
     if (!determinedLocale) {
       console.warn(
         createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning({
@@ -63,5 +60,5 @@ export function determineLocale({
   const navigatorLocales = navigator?.languages || [];
   candidates.push(...navigatorLocales);
 
-  return localeConfig.determineLocale(candidates, locales) || defaultLocale;
+  return localeConfig.determineLocale(candidates) || defaultLocale;
 }

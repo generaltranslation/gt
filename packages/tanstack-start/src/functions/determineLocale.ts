@@ -59,7 +59,7 @@ function determineLocaleServer({
   }
 
   // determine locale (falling back to default locale if no match is found)
-  return localeConfig.determineLocale(candidates, locales) || defaultLocale;
+  return localeConfig.determineLocale(candidates) || defaultLocale;
 }
 
 /**
@@ -96,5 +96,5 @@ function determineLocaleClient({
   }
 
   // determine locale (falling back to default locale if no match is found)
-  return localeConfig.determineLocale(candidates, locales) || defaultLocale;
+  return localeConfig.determineLocale(candidates) || defaultLocale;
 }
