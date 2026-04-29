@@ -69,15 +69,12 @@ export function resolveStringContent(
   const i18nManager = getI18nManager();
   const translation = i18nManager.lookupTranslation(content, lookupOptions);
   if (translation == null) return undefined;
-  return interpolateMessage({
-    source: content,
-    target: translation,
-    options: getInterpolationOptions(
-      lookupOptions as InterpolationOptions,
-      i18nManager,
-      translation
-    ),
-  });
+  return interpolateStringResolution(
+    content,
+    translation,
+    lookupOptions as InterpolationOptions,
+    i18nManager
+  );
 }
 
 /**
@@ -90,15 +87,12 @@ export function resolveStringContentWithFallback(
   const lookupOptions = getLookupOptions(options, 'STRING');
   const i18nManager = getI18nManager();
   const translation = i18nManager.lookupTranslation(content, lookupOptions);
-  return interpolateMessage({
-    source: content,
-    target: translation,
-    options: getInterpolationOptions(
-      lookupOptions as InterpolationOptions,
-      i18nManager,
-      translation
-    ),
-  });
+  return interpolateStringResolution(
+    content,
+    translation,
+    lookupOptions as InterpolationOptions,
+    i18nManager
+  );
 }
 
 /**
@@ -116,15 +110,12 @@ export async function resolveStringContentWithRuntimeFallback(
     content,
     lookupOptions
   );
-  return interpolateMessage({
-    source: content,
-    target: translation,
-    options: getInterpolationOptions(
-      lookupOptions as InterpolationOptions,
-      i18nManager,
-      translation
-    ),
-  });
+  return interpolateStringResolution(
+    content,
+    translation,
+    lookupOptions as InterpolationOptions,
+    i18nManager
+  );
 }
 // ----- HELPER FUNCTIONS ----- //
 
@@ -141,19 +132,21 @@ function getLookupOptions<T extends DataFormat>(
   };
 }
 
-function getInterpolationOptions(
+function interpolateStringResolution(
+  content: StringContent,
+  translation: StringContent | undefined,
   options: InterpolationOptions,
-  i18nManager: ReturnType<typeof getI18nManager>,
-  translation: StringContent | undefined
-): InterpolationOptions {
-  if (translation == null) {
-    return {
+  i18nManager: ReturnType<typeof getI18nManager>
+): StringContent {
+  return interpolateMessage({
+    source: content,
+    target: translation,
+    options: {
       ...options,
-      $locale: i18nManager.getDefaultLocale(),
-    };
-  }
-  return {
-    $locale: i18nManager.getLocale(),
-    ...options,
-  };
+      $locale:
+        translation == null
+          ? i18nManager.getDefaultLocale()
+          : options.$locale ?? i18nManager.getLocale(),
+    },
+  });
 }

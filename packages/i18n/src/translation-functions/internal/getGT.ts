@@ -47,19 +47,18 @@ export async function getGT(): Promise<GTFunctionType> {
 
     // Lookup translation
     const translation = lookupTranslation(message, resolutionOptions);
-    const interpolationOptions =
-      translation == null
-        ? {
-            ...resolutionOptions,
-            $locale: sourceLocale,
-          }
-        : resolutionOptions;
 
     // Format result
     return interpolateMessage({
       source: message,
       target: translation,
-      options: interpolationOptions,
+      options: {
+        ...resolutionOptions,
+        $locale:
+          translation == null
+            ? sourceLocale
+            : (resolutionOptions.$locale ?? targetLocale),
+      },
     });
   };
 
