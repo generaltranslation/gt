@@ -126,5 +126,6 @@ function getLookupOptions<T extends DataFormat>(
   return {
     $format: format,
     ...options,
+    $locale: options.$locale ?? getI18nManager().getLocale(),
   };
 }
