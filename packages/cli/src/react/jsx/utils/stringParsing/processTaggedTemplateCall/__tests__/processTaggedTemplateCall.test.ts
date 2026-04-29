@@ -118,6 +118,27 @@ describe('processTaggedTemplateCall', () => {
     });
   });
 
+  it('should preserve source file metadata for derive variants', () => {
+    const output = runProcessTaggedTemplateCall(
+      `
+        function getSubject(gender: string) {
+          return gender === "male" ? "boy" : "girl";
+        }
+
+        t\`The \${derive(getSubject(gender))} is playing in the park.\`
+      `
+    );
+
+    expect(output.updates).toHaveLength(2);
+    expect(output.updates.map((u) => u.source).sort()).toEqual([
+      'The boy is playing in the park.',
+      'The girl is playing in the park.',
+    ]);
+    expect(output.updates.every((u) => u.metadata.staticId)).toBe(true);
+    expect(output.updates.every((u) => u.metadata.filePaths?.[0] === FILE_PATH))
+      .toBe(true);
+  });
+
   it('should still extract when ignoreTaggedTemplates is true (gating is done by caller)', () => {
     const output = runProcessTaggedTemplateCall('t`hello ${name}`', 't', {
       ignoreTaggedTemplates: true,
