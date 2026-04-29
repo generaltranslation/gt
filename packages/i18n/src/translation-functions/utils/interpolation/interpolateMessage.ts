@@ -37,8 +37,8 @@ export function interpolateMessage({
 
   // Format source
   return routeInterpolation(source, {
-    $locale: i18nManager.getDefaultLocale(),
     ...options,
+    $locale: i18nManager.getDefaultLocale(),
   });
 }
 

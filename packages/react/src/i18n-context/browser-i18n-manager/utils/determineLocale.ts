@@ -1,5 +1,5 @@
 import { CustomMapping } from 'generaltranslation/types';
-import { determineLocale as gtDetermineLocale } from 'generaltranslation';
+import { LocaleConfig } from 'generaltranslation/core';
 import { getCookieValue } from './cookies';
 import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
 import { createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning } from '../../../shared/messages';
@@ -26,13 +26,18 @@ export function determineLocale({
   localeCookieName?: string;
   getLocale?: GetLocale;
 }): string {
+  const localeConfig = new LocaleConfig({
+    defaultLocale,
+    locales,
+    customMapping,
+  });
+
   // (1) Check custom locale
   if (getLocale) {
     const customLocale = getLocale();
-    const determinedLocale = gtDetermineLocale(
+    const determinedLocale = localeConfig.determineLocale(
       customLocale,
-      locales,
-      customMapping
+      locales
     );
     if (!determinedLocale) {
       console.warn(
@@ -58,5 +63,5 @@ export function determineLocale({
   const navigatorLocales = navigator?.languages || [];
   candidates.push(...navigatorLocales);
 
-  return gtDetermineLocale(candidates, locales, customMapping) || defaultLocale;
+  return localeConfig.determineLocale(candidates, locales) || defaultLocale;
 }

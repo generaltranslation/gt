@@ -2,7 +2,7 @@ import { defaultLocaleCookieName } from 'gt-react/internal';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeader, getCookie } from '@tanstack/react-start/server';
 import { CustomMapping } from 'generaltranslation/types';
-import { determineLocale as gtDetermineLocale } from 'generaltranslation';
+import { LocaleConfig } from 'generaltranslation/core';
 
 type DetermineLocaleOptions = {
   defaultLocale: string;
@@ -28,6 +28,11 @@ function determineLocaleServer({
   locales,
   customMapping,
 }: DetermineLocaleOptions) {
+  const localeConfig = new LocaleConfig({
+    defaultLocale,
+    locales,
+    customMapping,
+  });
   const candidates = [];
 
   // (1) Check cookie
@@ -54,7 +59,7 @@ function determineLocaleServer({
   }
 
   // determine locale (falling back to default locale if no match is found)
-  return gtDetermineLocale(candidates, locales, customMapping) || defaultLocale;
+  return localeConfig.determineLocale(candidates, locales) || defaultLocale;
 }
 
 /**
@@ -65,6 +70,11 @@ function determineLocaleClient({
   locales,
   customMapping,
 }: DetermineLocaleOptions) {
+  const localeConfig = new LocaleConfig({
+    defaultLocale,
+    locales,
+    customMapping,
+  });
   const candidates = [];
 
   // (1) Check cookie
@@ -86,5 +96,5 @@ function determineLocaleClient({
   }
 
   // determine locale (falling back to default locale if no match is found)
-  return gtDetermineLocale(candidates, locales, customMapping) || defaultLocale;
+  return localeConfig.determineLocale(candidates, locales) || defaultLocale;
 }
