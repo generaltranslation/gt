@@ -135,8 +135,9 @@ describe('processTaggedTemplateCall', () => {
       'The girl is playing in the park.',
     ]);
     expect(output.updates.every((u) => u.metadata.staticId)).toBe(true);
-    expect(output.updates.every((u) => u.metadata.filePaths?.[0] === FILE_PATH))
-      .toBe(true);
+    expect(
+      output.updates.every((u) => u.metadata.filePaths?.[0] === FILE_PATH)
+    ).toBe(true);
   });
 
   it('should still extract when ignoreTaggedTemplates is true (gating is done by caller)', () => {
