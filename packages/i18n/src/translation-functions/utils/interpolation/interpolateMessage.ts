@@ -10,7 +10,8 @@ import type { StringFormat } from 'generaltranslation/types';
  */
 export type InterpolationOptions = {
   $format: StringFormat;
-} & Omit<InlineTranslationOptions, '$format'>;
+  $locale: string;
+} & Omit<InlineTranslationOptions, '$format' | '$locale'>;
 
 /**
  * Interpolation router function for all {@link StringFormat} types

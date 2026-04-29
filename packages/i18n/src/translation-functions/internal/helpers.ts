@@ -1,15 +1,20 @@
 import { getI18nManager } from '../../i18n-manager/singleton-operations';
-import { LookupOptions, ResolutionOptions } from '../types/options';
-import {
-  interpolateMessage,
-  InterpolationOptions,
-} from '../utils/interpolation/interpolateMessage';
+import { ResolutionOptions } from '../types/options';
+import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import type {
   DataFormat,
   JsxChildren,
   StringContent,
   StringFormat,
 } from 'generaltranslation/types';
+
+type NormalizedLookupOptions<T extends DataFormat> = Omit<
+  ResolutionOptions<T>,
+  '$format' | '$locale'
+> & {
+  $format: T;
+  $locale: string;
+};
 
 // ----- JSX TRANSLATION FUNCTIONS ----- //
 
@@ -72,7 +77,7 @@ export function resolveStringContent(
   return interpolateMessage({
     source: content,
     target: translation,
-    options: lookupOptions as InterpolationOptions,
+    options: lookupOptions,
   });
 }
 
@@ -89,7 +94,7 @@ export function resolveStringContentWithFallback(
   return interpolateMessage({
     source: content,
     target: translation,
-    options: lookupOptions as InterpolationOptions,
+    options: lookupOptions,
   });
 }
 
@@ -111,7 +116,7 @@ export async function resolveStringContentWithRuntimeFallback(
   return interpolateMessage({
     source: content,
     target: translation,
-    options: lookupOptions as InterpolationOptions,
+    options: lookupOptions,
   });
 }
 // ----- HELPER FUNCTIONS ----- //
@@ -122,10 +127,12 @@ export async function resolveStringContentWithRuntimeFallback(
 function getLookupOptions<T extends DataFormat>(
   options: ResolutionOptions<T>,
   format: T
-): LookupOptions {
+): NormalizedLookupOptions<T> {
+  const { $format = format, $locale, ...restOptions } = options;
+
   return {
-    $format: format,
-    ...options,
-    $locale: options.$locale ?? getI18nManager().getLocale(),
+    ...restOptions,
+    $format,
+    $locale: $locale ?? getI18nManager().getLocale(),
   };
 }
