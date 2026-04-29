@@ -40,6 +40,7 @@ export async function getGT(): Promise<GTFunctionType> {
     const resolutionOptions: LookupOptions = {
       $format: 'ICU',
       ...options,
+      $locale: options.$locale ?? i18nManager.getLocale(),
     };
 
     // Lookup translation

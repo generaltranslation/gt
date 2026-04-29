@@ -5,10 +5,10 @@ import type {
 } from 'gt-i18n/internal/types';
 import type { BrowserStorageAdapter } from './BrowserStorageAdapter';
 import type { HtmlTagOptions } from './utils/types';
-import { determineLocale as gtDetermineLocale } from 'generaltranslation';
 import { Translation } from 'gt-i18n/types';
 import { DEFAULT_HTML_TAG_OPTIONS } from './utils/constants';
 import { LocalStorageTranslationCache } from './LocalStorageTranslationCache';
+import { createInvalidLocaleWarning } from '../../shared/messages';
 
 /**
  * The configuration for the BrowserI18nManager
