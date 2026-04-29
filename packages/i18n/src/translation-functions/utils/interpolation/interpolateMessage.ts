@@ -1,3 +1,4 @@
+import { getI18nManager } from '../../../i18n-manager/singleton-operations';
 import { InlineTranslationOptions } from '../../types/options';
 import { interpolateIcuMessage } from './interpolateIcuMessage';
 import { interpolateStringMessage } from './interpolateStringMessage';
@@ -32,7 +33,10 @@ export function interpolateMessage({
   }
 
   // Format source
-  return routeInterpolation(source, options);
+  return routeInterpolation(source, {
+    ...options,
+    $locale: getI18nManager().getDefaultLocale(),
+  });
 }
 
 // ----- HELPERS ----- //

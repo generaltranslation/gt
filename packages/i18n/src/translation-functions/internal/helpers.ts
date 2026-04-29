@@ -69,12 +69,11 @@ export function resolveStringContent(
   const i18nManager = getI18nManager();
   const translation = i18nManager.lookupTranslation(content, lookupOptions);
   if (translation == null) return undefined;
-  return interpolateStringResolution(
-    content,
-    translation,
-    lookupOptions as InterpolationOptions,
-    i18nManager
-  );
+  return interpolateMessage({
+    source: content,
+    target: translation,
+    options: lookupOptions as InterpolationOptions,
+  });
 }
 
 /**
@@ -87,12 +86,11 @@ export function resolveStringContentWithFallback(
   const lookupOptions = getLookupOptions(options, 'STRING');
   const i18nManager = getI18nManager();
   const translation = i18nManager.lookupTranslation(content, lookupOptions);
-  return interpolateStringResolution(
-    content,
-    translation,
-    lookupOptions as InterpolationOptions,
-    i18nManager
-  );
+  return interpolateMessage({
+    source: content,
+    target: translation,
+    options: lookupOptions as InterpolationOptions,
+  });
 }
 
 /**
@@ -110,12 +108,11 @@ export async function resolveStringContentWithRuntimeFallback(
     content,
     lookupOptions
   );
-  return interpolateStringResolution(
-    content,
-    translation,
-    lookupOptions as InterpolationOptions,
-    i18nManager
-  );
+  return interpolateMessage({
+    source: content,
+    target: translation,
+    options: lookupOptions as InterpolationOptions,
+  });
 }
 // ----- HELPER FUNCTIONS ----- //
 
@@ -130,23 +127,4 @@ function getLookupOptions<T extends DataFormat>(
     $format: format,
     ...options,
   };
-}
-
-function interpolateStringResolution(
-  content: StringContent,
-  translation: StringContent | undefined,
-  options: InterpolationOptions,
-  i18nManager: ReturnType<typeof getI18nManager>
-): StringContent {
-  return interpolateMessage({
-    source: content,
-    target: translation,
-    options: {
-      ...options,
-      $locale:
-        translation == null
-          ? i18nManager.getDefaultLocale()
-          : options.$locale ?? i18nManager.getLocale(),
-    },
-  });
 }
