@@ -26,6 +26,7 @@ import { resolveConfig } from './resolveConfig.js';
 import { gt } from '../utils/gt.js';
 import { generatePreset } from './optionPresets.js';
 import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
+import { normalizeFilesOptions } from '../formats/files/transformFormat.js';
 
 export const DEFAULT_SRC_PATTERNS = [
   'src/**/*.{js,jsx,ts,tsx}',
@@ -209,7 +210,7 @@ export async function generateSettings(
     .map(([key]) => key);
   mergedOptions.files = mergedOptions.files
     ? resolveFiles(
-        mergedOptions.files as FilesOptions,
+        normalizeFilesOptions(mergedOptions.files as FilesOptions),
         mergedOptions.defaultLocale,
         mergedOptions.locales,
         cwd,
@@ -219,6 +220,7 @@ export async function generateSettings(
         resolvedPaths: {},
         placeholderPaths: {},
         transformPaths: {},
+        transformFormats: {},
         publishPaths: new Set<string>(),
         unpublishPaths: new Set<string>(),
         parsingFlags: {},

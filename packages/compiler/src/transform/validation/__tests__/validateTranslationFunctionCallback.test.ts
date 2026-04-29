@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
   validateUseGTCallback,
@@ -13,28 +12,7 @@ import { ErrorTracker } from '../../../state/ErrorTracker';
 import { ScopeTracker } from '../../../state/ScopeTracker';
 import { PluginSettings } from '../../../config';
 import { GT_OTHER_FUNCTIONS } from '../../../utils/constants/gt/constants';
-
-function getCallExpressionPath(
-  callExpr: t.CallExpression
-): NodePath<t.CallExpression> {
-  const ast = t.file(t.program([t.expressionStatement(callExpr)]));
-  let callExprPath: NodePath<t.CallExpression> | undefined;
-
-  traverse(ast, {
-    CallExpression(path) {
-      if (path.node === callExpr) {
-        callExprPath = path;
-        path.stop();
-      }
-    },
-  });
-
-  if (!callExprPath) {
-    throw new Error('Expected call expression path');
-  }
-
-  return callExprPath;
-}
+import { getCallExpressionPath } from './testHelpers';
 
 describe('validateTranslationFunctionCallback', () => {
   let state: TransformState;
@@ -926,6 +904,29 @@ describe('validateTranslationFunctionCallback', () => {
 
         expect(result.errors).toHaveLength(0);
         expect(result.content).toBe('Hello');
+      });
+
+      it('should error when $context contains invalid derive()', () => {
+        const deriveCall = t.callExpression(
+          t.identifier(GT_OTHER_FUNCTIONS.derive),
+          [t.stringLiteral('not-a-function')]
+        );
+
+        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+          t.stringLiteral('Hello'),
+          t.objectExpression([
+            t.objectProperty(t.identifier('$context'), deriveCall),
+          ]),
+        ]);
+
+        const result = validateUseGTCallback(
+          getCallExpressionPath(callExpr),
+          state
+        );
+
+        expect(result.errors).toContain(
+          'derive() must have a call expression as the argument'
+        );
       });
 
       it('should still accept static string $context (regression)', () => {

@@ -1,5 +1,17 @@
 # generaltranslation
 
+## 8.2.9
+
+### Patch Changes
+
+- [#1278](https://github.com/generaltranslation/gt/pull/1278) [`ce0933a`](https://github.com/generaltranslation/gt/commit/ce0933ab102d34a0c38634f7c2b0d634c9a620a8) Thanks [@bgub](https://github.com/bgub)! - Add a `generaltranslation/core` entrypoint for locale and formatting helpers, and update `gt-i18n` to consume it where possible.
+
+## 8.2.8
+
+### Patch Changes
+
+- [#1248](https://github.com/generaltranslation/gt/pull/1248) [`b12d57d`](https://github.com/generaltranslation/gt/commit/b12d57dab1d5cb1f602c5ac24a702b48cda7f11e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add PO/POT file format support and transformFormat plumbing for API uploads and CLI file downloads.
+
 ## 8.2.7
 
 ### Patch Changes

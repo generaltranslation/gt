@@ -43,6 +43,7 @@ export default async function localizeStaticImports(
     sourceFiles,
     settings.files.placeholderPaths,
     settings.files.transformPaths,
+    settings.files.transformFormats,
     settings.locales,
     settings.defaultLocale
   );

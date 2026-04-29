@@ -4,7 +4,7 @@ import {
   interpolateMessage,
   InterpolationOptions,
 } from '../utils/interpolation/interpolateMessage';
-import {
+import type {
   DataFormat,
   JsxChildren,
   StringContent,

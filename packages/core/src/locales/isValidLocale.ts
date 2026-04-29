@@ -1,5 +1,5 @@
 import { intlCache } from '../cache/IntlCache';
-import { libraryDefaultLocale } from '../internal';
+import { libraryDefaultLocale } from '../settings/settings';
 import { CustomMapping } from './customLocaleMapping';
 
 const scriptExceptions = ['Cham', 'Jamo', 'Kawi', 'Lisu', 'Toto', 'Thai'];

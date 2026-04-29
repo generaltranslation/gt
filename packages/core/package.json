@@ -1,6 +1,6 @@
 {
   "name": "generaltranslation",
-  "version": "8.2.7",
+  "version": "8.2.9",
   "description": "A language toolkit for AI developers",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -77,6 +77,16 @@
         "default": "./dist/id.mjs"
       }
     },
+    "./core": {
+      "require": {
+        "types": "./dist/core.d.cts",
+        "default": "./dist/core.cjs"
+      },
+      "import": {
+        "types": "./dist/core.d.mts",
+        "default": "./dist/core.mjs"
+      }
+    },
     "./internal": {
       "require": {
         "types": "./dist/internal.d.cts",
@@ -116,6 +126,9 @@
       "id": [
         "./dist/id.d.cts"
       ],
+      "core": [
+        "./dist/core.d.cts"
+      ],
       "types": [
         "./dist/types.d.cts"
       ],
@@ -132,6 +145,9 @@
       ],
       "generaltranslation/id": [
         "/dist/id"
+      ],
+      "generaltranslation/core": [
+        "/dist/core"
       ],
       "generaltranslation/types": [
         "/dist/types"

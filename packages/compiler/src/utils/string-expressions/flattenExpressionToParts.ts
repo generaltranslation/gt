@@ -138,7 +138,7 @@ export function flattenExpressionToParts(
   }
 
   // gt(derive(() => 'Hello, World!'))
-  if (scope && isDeriveInvocation(expr, scope)) {
+  if (isDeriveInvocation(expr, scope)) {
     return { parts: [{ type: 'derive', node: expr }], errors: [] };
   }
 

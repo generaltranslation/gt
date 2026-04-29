@@ -117,4 +117,48 @@ describe('I18nManager', () => {
     expect(result).toBe('Message inconnu');
     expect(mockTranslateMany).toHaveBeenCalled();
   });
+
+  it('resolves custom aliases for locale metadata operations', () => {
+    const manager = createManager({
+      customMapping: {
+        'brand-french': {
+          code: 'fr',
+          name: 'Brand French',
+        },
+      },
+    });
+
+    manager.setLocale('brand-french');
+
+    expect(manager.getLocale()).toBe('fr');
+    expect(manager.requiresTranslation('brand-french')).toBe(true);
+    expect(manager.requiresDialectTranslation('en-US')).toBe(false);
+  });
+
+  it('normalizes custom aliases before loading and reading locale caches', async () => {
+    const loadTranslations = vi
+      .fn()
+      .mockResolvedValue({ [expectedHash]: translatedString });
+    const manager = createManager({
+      loadTranslations,
+      customMapping: {
+        'brand-french': {
+          code: 'fr',
+          name: 'Brand French',
+        },
+      },
+    });
+
+    await manager.loadTranslations('brand-french');
+
+    expect(loadTranslations).toHaveBeenCalledTimes(1);
+    expect(loadTranslations).toHaveBeenCalledWith('fr');
+    expect(
+      manager.lookupTranslation(message, {
+        ...lookupOptions,
+        $locale: 'brand-french',
+      })
+    ).toBe(translatedString);
+    expect(loadTranslations).toHaveBeenCalledTimes(1);
+  });
 });

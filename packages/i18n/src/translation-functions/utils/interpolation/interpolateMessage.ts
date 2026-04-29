@@ -2,7 +2,7 @@ import { getI18nManager } from '../../../i18n-manager/singleton-operations';
 import { InlineTranslationOptions } from '../../types/options';
 import { interpolateIcuMessage } from './interpolateIcuMessage';
 import { interpolateStringMessage } from './interpolateStringMessage';
-import { StringFormat } from 'generaltranslation/types';
+import type { StringFormat } from 'generaltranslation/types';
 
 /**
  * Options for string interpolation
