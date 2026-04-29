@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.28
+
+### Patch Changes
+
+- [#1295](https://github.com/generaltranslation/gt/pull/1295) [`17cf156`](https://github.com/generaltranslation/gt/commit/17cf156403de524a665903c9d45262acf4dbe657) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Pass metadata to for tagged templates
+
 ## 2.14.27
 
 ### Patch Changes
