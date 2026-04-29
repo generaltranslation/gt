@@ -1,5 +1,11 @@
 # @generaltranslation/python-extractor
 
+## 0.2.16
+
+### Patch Changes
+
+- [#1294](https://github.com/generaltranslation/gt/pull/1294) [`a6c4adb`](https://github.com/generaltranslation/gt/commit/a6c4adbc46f3297bad11bf9f9d2eba7ba545c90a) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: bun vs node behavior for python extraction with wasm
+
 ## 0.2.15
 
 ### Patch Changes
