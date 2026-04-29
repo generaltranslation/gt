@@ -1,5 +1,5 @@
 import { intlCache } from '../cache/IntlCache';
-import { libraryDefaultLocale } from '../internal';
+import { libraryDefaultLocale } from '../settings/settings';
 import { defaultEmoji, emojis } from './getLocaleEmoji';
 import { _standardizeLocale } from './isValidLocale';
 

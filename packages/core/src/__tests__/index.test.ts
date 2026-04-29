@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GT } from '../index';
+import { GT, LocaleConfig } from '../index';
 import _translateMany from '../translate/translateMany';
 import {
   TranslationResult,
@@ -14,7 +14,23 @@ vi.mock('../translate/translateMany', () => ({
   default: vi.fn(),
 }));
 
-describe('GT Translation Methods', () => {
+const numberValue = 1234.56;
+
+const brandFrenchMapping = {
+  'brand-french': {
+    code: 'fr-FR',
+    name: 'Brand French',
+  },
+};
+
+const formatCurrencyWithIntl = (locale: string, currency = 'EUR') =>
+  new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    numberingSystem: 'latn',
+  }).format(numberValue);
+
+describe.sequential('GT Translation Methods', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -604,5 +620,64 @@ describe('GT Translation Methods', () => {
       const result = gt.resolveAliasLocale('zh-CN');
       expect(result).toBe('zh-CN');
     });
+  });
+});
+
+describe('LocaleConfig', () => {
+  it('formats with a custom alias by resolving to the canonical locale', () => {
+    const localeConfig = new LocaleConfig({
+      defaultLocale: 'en-US',
+      customMapping: {
+        'brand-fr': {
+          code: 'fr-FR',
+          name: 'Brand French',
+        },
+      },
+    });
+
+    const result = localeConfig.formatCurrency(numberValue, 'EUR', 'brand-fr');
+
+    expect(result).toBe(formatCurrencyWithIntl('fr-FR'));
+  });
+});
+
+describe('GT LocaleConfig delegation', () => {
+  it('formats with a custom target locale alias through LocaleConfig', () => {
+    const gt = new GT({
+      sourceLocale: 'en-US',
+      targetLocale: 'brand-french',
+      customMapping: brandFrenchMapping,
+    });
+
+    const result = gt.formatCurrency(numberValue, 'EUR');
+
+    expect(result).toBe(formatCurrencyWithIntl('fr-FR'));
+  });
+
+  it('exposes core localeConfig and refreshes it from setConfig', () => {
+    const gt = new GT({
+      apiKey: 'test-api-key',
+      devApiKey: 'test-dev-key',
+      projectId: 'test-project',
+      sourceLocale: 'en-US',
+      targetLocale: 'es-ES',
+    });
+    const initialLocaleConfig = gt.localeConfig;
+
+    expect(gt.localeConfig).toBeInstanceOf(LocaleConfig);
+    expect('apiKey' in gt.localeConfig).toBe(false);
+    expect('devApiKey' in gt.localeConfig).toBe(false);
+    expect('projectId' in gt.localeConfig).toBe(false);
+
+    gt.setConfig({
+      targetLocale: 'brand-french',
+      customMapping: brandFrenchMapping,
+    });
+
+    expect(gt.localeConfig).not.toBe(initialLocaleConfig);
+    expect(gt.resolveCanonicalLocale('brand-french')).toBe('fr-FR');
+    expect(gt.formatCurrency(numberValue, 'EUR')).toBe(
+      formatCurrencyWithIntl('fr-FR')
+    );
   });
 });

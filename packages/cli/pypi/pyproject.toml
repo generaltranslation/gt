@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gtx-cli"
+dynamic = ["version"]
+description = "Self-contained Python launcher for the General Translation CLI"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "FSL-1.1-ALv2"
+license-files = ["LICENSE.md"]
+authors = [
+    { name = "General Translation, Inc.", email = "support@generaltranslation.com" },
+]
+keywords = ["i18n", "internationalization", "translation", "localization", "cli"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Internationalization",
+]
+
+[project.urls]
+Homepage = "https://generaltranslation.com"
+Documentation = "https://generaltranslation.com/docs/cli"
+Repository = "https://github.com/generaltranslation/gt"
+Issues = "https://github.com/generaltranslation/gt/issues"
+
+[project.scripts]
+gt = "gtx_cli:main"
+
+[tool.hatch.version]
+path = "gtx_cli/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["gtx_cli"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"gtx_cli/bin" = "gtx_cli/bin"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "gtx_cli/",
+    "scripts/",
+    "LICENSE.md",
+    "README.md",
+    "pyproject.toml",
+]

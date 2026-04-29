@@ -24,6 +24,7 @@ import {
   type KeyedMetadata,
 } from '../parseKeyedMetadata.js';
 import { buildPublishMap } from '../../utils/resolvePublish.js';
+import { getTransformFormatProperty } from './transformFormat.js';
 
 /**
  * Checks if a file path is a metadata companion file (e.g. foo.metadata.json)
@@ -171,6 +172,7 @@ export async function aggregateFiles(
           content: parsedJson,
           fileName: relativePath,
           fileFormat: 'JSON' as const,
+          ...getTransformFormatProperty(settings, 'json'),
           dataFormat,
           locale: settings.defaultLocale,
           ...(keyedMetadata && {
@@ -256,6 +258,7 @@ export async function aggregateFiles(
           content: parsedYaml,
           fileName: relativePath,
           fileFormat,
+          ...getTransformFormatProperty(settings, 'yaml'),
           fileId: hashStringSync(relativePath),
           versionId: hashStringSync(parsedYaml),
           locale: settings.defaultLocale,
@@ -316,6 +319,7 @@ export async function aggregateFiles(
           content: parsedJson,
           fileName: relativePath,
           fileFormat: 'TWILIO_CONTENT_JSON' as const,
+          ...getTransformFormatProperty(settings, 'twilioContentJson'),
           dataFormat: 'STRING' as const,
           locale: settings.defaultLocale,
         } satisfies FileToUpload;
@@ -362,6 +366,7 @@ export async function aggregateFiles(
             content: processed,
             fileName: relativePath,
             fileFormat: fileType.toUpperCase() as FileFormat,
+            ...getTransformFormatProperty(settings, fileType),
             fileId: hashStringSync(relativePath),
             versionId: hashStringSync(processed),
             locale: settings.defaultLocale,

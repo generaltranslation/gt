@@ -159,6 +159,7 @@ export default async function localizeRelativeAssets(
     sourceFiles,
     settings.files.placeholderPaths,
     settings.files.transformPaths,
+    settings.files.transformFormats,
     settings.locales,
     settings.defaultLocale
   );

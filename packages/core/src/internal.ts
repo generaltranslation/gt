@@ -12,6 +12,8 @@ import type { LocaleProperties } from './types';
 import isVariable from './utils/isVariable';
 import { minifyVariableType } from './utils/minify';
 import { encode, decode } from './utils/base64';
+import { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
+import { validateFileFormatTransforms } from './translate/utils/validateFileFormatTransform';
 
 export {
   _getPluralForm as getPluralForm,
@@ -25,6 +27,8 @@ export {
   defaultTimeout,
   encode,
   decode,
+  isSupportedFileFormatTransform,
+  validateFileFormatTransforms,
 };
 
 // derive

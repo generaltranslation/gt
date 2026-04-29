@@ -34,11 +34,13 @@ export async function handleDownload(
     return logErrorAndExit(noFilesError);
   }
   // Files
-  const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
+  const { resolvedPaths, placeholderPaths, transformPaths, transformFormats } =
+    settings.files;
   const fileMapping = createFileMapping(
     resolvedPaths,
     placeholderPaths,
     transformPaths,
+    transformFormats,
     settings.locales,
     settings.defaultLocale
   );

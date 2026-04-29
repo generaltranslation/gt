@@ -5,7 +5,6 @@ import {
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
-import path from 'node:path';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
 import { FileFormat, DataFormat } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
@@ -27,6 +26,7 @@ import { hashStringSync } from '../../utils/hash.js';
 import { hasValidCredentials } from './utils/validation.js';
 import { buildPublishMap } from '../../utils/resolvePublish.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
+import { getTransformFormatProperty } from '../../formats/files/transformFormat.js';
 
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -93,6 +93,7 @@ export async function upload(
         content: parsedJson,
         fileName: relativePath,
         fileFormat: 'JSON' as FileFormat,
+        ...getTransformFormatProperty(settings, 'json'),
         dataFormat,
         locale: settings.defaultLocale,
         fileId: hashStringSync(relativePath),
@@ -121,6 +122,7 @@ export async function upload(
         content: parsedYaml,
         fileName: relativePath,
         fileFormat,
+        ...getTransformFormatProperty(settings, 'yaml'),
         dataFormat,
         locale: settings.defaultLocale,
         fileId: hashStringSync(relativePath),
@@ -149,6 +151,7 @@ export async function upload(
           content: parsedJson,
           fileName: relativePath,
           fileFormat: 'TWILIO_CONTENT_JSON' as const,
+          ...getTransformFormatProperty(settings, 'twilioContentJson'),
           dataFormat: 'STRING' as const,
           locale: settings.defaultLocale,
           fileId: hashStringSync(relativePath),
@@ -175,6 +178,7 @@ export async function upload(
           content: sanitizedContent,
           fileName: relativePath,
           fileFormat: fileType.toUpperCase() as FileFormat,
+          ...getTransformFormatProperty(settings, fileType),
           dataFormat,
           locale: settings.defaultLocale,
           fileId: hashStringSync(relativePath),
@@ -203,6 +207,7 @@ export async function upload(
     filePaths,
     placeholderPaths,
     transformPaths,
+    settings.files?.transformFormats || {},
     locales,
     settings.defaultLocale
   );
@@ -213,6 +218,7 @@ export async function upload(
       content: file.content,
       fileName: file.fileName,
       fileFormat: file.fileFormat,
+      transformFormat: file.transformFormat,
       dataFormat: file.dataFormat,
       locale: file.locale,
       fileId: file.fileId,
@@ -236,7 +242,7 @@ export async function upload(
           translations.push({
             content: extracted,
             fileName: file.fileName,
-            fileFormat: file.fileFormat,
+            fileFormat: file.transformFormat ?? file.fileFormat,
             dataFormat: file.dataFormat,
             locale,
             fileId: file.fileId,
@@ -250,8 +256,8 @@ export async function upload(
           const translatedContent = readFileSync(translatedFileName, 'utf8');
           translations.push({
             content: translatedContent,
-            fileName: file.fileName,
-            fileFormat: file.fileFormat,
+            fileName: translatedFileName,
+            fileFormat: file.transformFormat ?? file.fileFormat,
             dataFormat: file.dataFormat,
             locale,
             fileId: file.fileId,

@@ -66,11 +66,13 @@ export default async function processOpenApi(
   if (!specAnalyses.length) return;
 
   const warnings = new Set<string>();
-  const { resolvedPaths, placeholderPaths, transformPaths } = settings.files;
+  const { resolvedPaths, placeholderPaths, transformPaths, transformFormats } =
+    settings.files;
   const fileMapping = createFileMapping(
     resolvedPaths,
     placeholderPaths,
     transformPaths,
+    transformFormats,
     settings.locales,
     settings.defaultLocale
   );

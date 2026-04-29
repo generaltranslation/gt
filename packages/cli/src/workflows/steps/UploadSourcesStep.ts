@@ -177,7 +177,21 @@ export class UploadSourcesStep extends WorkflowStep<
       }
     );
 
-    this.result = response.uploadedFiles;
+    // The API may not echo transformFormat, so preserve it from local inputs.
+    const localFileMap = new Map(
+      files.map((f) => [`${f.fileId}:${f.versionId}`, f])
+    );
+
+    this.result = response.uploadedFiles.map((uploadedFile) => {
+      const localFile = localFileMap.get(
+        `${uploadedFile.fileId}:${uploadedFile.versionId}`
+      );
+      return {
+        ...uploadedFile,
+        transformFormat:
+          localFile?.transformFormat ?? uploadedFile.transformFormat,
+      };
+    });
 
     // Merge files that were already uploaded into the result
     this.result.push(
@@ -187,6 +201,7 @@ export class UploadSourcesStep extends WorkflowStep<
         branchId: f.branchId ?? currentBranchId,
         fileName: f.fileName,
         fileFormat: f.fileFormat,
+        transformFormat: f.transformFormat,
         dataFormat: f.dataFormat,
         locale: f.locale,
       }))

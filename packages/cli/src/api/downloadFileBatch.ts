@@ -22,6 +22,9 @@ import { recordDownloaded, recordRemerged } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import stringify from 'fast-json-stable-stringify';
 import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
+import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
+import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
+import { getRelative } from '../fs/findFilepath.js';
 
 /**
  * Merges translated content with the current source file for schema-based formats.
@@ -32,6 +35,9 @@ function mergeWithSource(
   inputPath: string,
   options: Settings
 ): string {
+  if (shouldSkipSourceFormatMerge(inputPath, options)) {
+    return translatedContent;
+  }
   if (!options.options) return translatedContent;
 
   const jsonSchema = options.options.jsonSchema
@@ -76,6 +82,32 @@ function mergeWithSource(
       options.defaultLocale
     )[0];
   }
+}
+
+/**
+ * Determines whether a source file should be skipped for schema re-merging.
+ * @param inputPath - The path of the source file
+ * @param options - The settings for the project
+ * @returns True if the source file should be skipped for schema re-merging, false otherwise
+ */
+function shouldSkipSourceFormatMerge(
+  inputPath: string,
+  options: Settings
+): boolean {
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (!hasNonIdentityFileFormatTransformForType(options, fileType)) continue;
+
+    const transformedSourcePaths = options.files.resolvedPaths[fileType] || [];
+    if (
+      transformedSourcePaths.some(
+        (sourcePath) => getRelative(sourcePath) === inputPath
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export type BatchedFiles = {

@@ -119,6 +119,7 @@ describe('collectAndSendUserEditDiffs', () => {
       settings.files.resolvedPaths,
       settings.files.placeholderPaths,
       settings.files.transformPaths,
+      settings.files.transformFormats,
       settings.locales,
       settings.defaultLocale
     );
