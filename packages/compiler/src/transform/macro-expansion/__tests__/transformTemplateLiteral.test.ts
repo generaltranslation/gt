@@ -24,14 +24,15 @@ function transformCode(code: string): {
     },
   });
   expect(result.errors).toEqual([]);
-  if (!result.message) {
+  const { message } = result;
+  if (!message) {
     throw new Error('Expected transformTemplateLiteral to return a message');
   }
   return {
     ...result,
-    message: result.message,
+    message,
     variables: result.variables ?? null,
-    generatedMessage: generate(result.message).code,
+    generatedMessage: generate(message).code,
     generatedVariables: result.variables
       ? generate(result.variables).code
       : null,
@@ -52,14 +53,15 @@ function transformWithImports(code: string) {
     },
   });
   expect(result.errors).toEqual([]);
-  if (!result.message) {
+  const { message } = result;
+  if (!message) {
     throw new Error('Expected transformTemplateLiteral to return a message');
   }
   return {
     ...result,
-    message: result.message,
+    message,
     variables: result.variables ?? null,
-    generatedMessage: generate(result.message).code,
+    generatedMessage: generate(message).code,
     generatedVariables: result.variables
       ? generate(result.variables).code
       : null,
