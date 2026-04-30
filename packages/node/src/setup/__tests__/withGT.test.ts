@@ -3,7 +3,7 @@ import { getLocale } from '../../helpers';
 import { initializeGT } from '../initializeGT';
 import { withGT } from '../withGT';
 
-describe('withGT', () => {
+describe.sequential('withGT', () => {
   beforeEach(() => {
     initializeGT({
       defaultLocale: 'en-US',
@@ -24,5 +24,16 @@ describe('withGT', () => {
     });
 
     expect(locale).toBe('es');
+  });
+
+  it('preserves same-language default locale dialects', () => {
+    initializeGT({
+      defaultLocale: 'pt-BR',
+      locales: ['pt', 'fr'],
+    });
+
+    const locale = withGT('pt-BR', () => getLocale());
+
+    expect(locale).toBe('pt-BR');
   });
 });

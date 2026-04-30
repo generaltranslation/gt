@@ -9,13 +9,13 @@ import { setBrowserConditionStore } from '../browser-i18n-manager/singleton-oper
  * @param {InitializeGTParams} config - The configuration for the GT instance
  */
 export function initializeGT(params: InitializeGTParams): void {
+  const i18nManager = new BrowserI18nManager(params);
   const conditionStore = new BrowserConditionStore({
-    defaultLocale: params.defaultLocale,
-    locales: params.locales,
-    customMapping: params.customMapping,
+    defaultLocale: i18nManager.getDefaultLocale(),
+    locales: i18nManager.getLocales(),
+    customMapping: i18nManager.getCustomMapping(),
     getLocale: params.getLocale,
   });
-  const i18nManager = new BrowserI18nManager(params);
 
   setI18nManager(i18nManager);
   setBrowserConditionStore(conditionStore);

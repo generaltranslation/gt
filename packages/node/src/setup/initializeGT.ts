@@ -9,12 +9,12 @@ import { AsyncConditionStore } from '../async-i18n-manager/AsyncConditionStore';
  * TODO: auto detect if can find gt.config.json files
  */
 export function initializeGT(params: InitializeGTParams): void {
-  const conditionStore = new AsyncConditionStore({
-    defaultLocale: params.defaultLocale,
-    locales: params.locales,
-    customMapping: params.customMapping,
-  });
   const i18nManager = new I18nManager<string>(params);
+  const conditionStore = new AsyncConditionStore({
+    defaultLocale: i18nManager.getDefaultLocale(),
+    locales: i18nManager.getLocales(),
+    customMapping: i18nManager.getCustomMapping(),
+  });
 
   setI18nManager(i18nManager);
   setAsyncConditionStore(conditionStore);

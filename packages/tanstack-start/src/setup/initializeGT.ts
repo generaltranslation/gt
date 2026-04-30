@@ -13,12 +13,12 @@ import { TanstackConditionStore } from '../runtime/TanstackConditionStore';
  * TODO: auto detect if can find gt.config.json files
  */
 export function initializeGT(params: InitializeGTParams): void {
-  const conditionStore = new TanstackConditionStore({
-    defaultLocale: params.defaultLocale,
-    locales: params.locales,
-    customMapping: params.customMapping,
-  });
   const i18nManager = new I18nManager<Translation>(params);
+  const conditionStore = new TanstackConditionStore({
+    defaultLocale: i18nManager.getDefaultLocale(),
+    locales: i18nManager.getLocales(),
+    customMapping: i18nManager.getCustomMapping(),
+  });
 
   setI18nManager(i18nManager);
   setConditionStore(conditionStore);

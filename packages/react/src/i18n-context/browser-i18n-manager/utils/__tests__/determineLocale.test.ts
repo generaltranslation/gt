@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { getLocale } from '../../../functions/locale-operations';
+import { initializeGT } from '../../../setup/initializeGT';
 import { determineLocale } from '../determineLocale';
 
 describe('determineLocale', () => {
@@ -21,5 +23,16 @@ describe('determineLocale', () => {
     expect(warnSpy).not.toHaveBeenCalled();
 
     warnSpy.mockRestore();
+  });
+
+  it('preserves default locale dialects through browser setup', () => {
+    initializeGT({
+      defaultLocale: 'pt-BR',
+      locales: ['pt', 'fr'],
+      getLocale: () => 'pt-BR',
+      loadTranslations: vi.fn(),
+    });
+
+    expect(getLocale()).toBe('pt-BR');
   });
 });

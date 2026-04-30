@@ -4,7 +4,7 @@ import {
   setI18nManager,
   setConditionStore,
 } from '../../i18n-manager/singleton-operations';
-import { getLocale } from '../../helpers/locale';
+import { getLocale, getLocaleProperties } from '../../helpers/locale';
 import { hashMessage } from '../../utils/hashMessage';
 import { t } from '../t';
 
@@ -74,5 +74,17 @@ describe('t', () => {
     );
 
     expect(getLocale()).toBe('es');
+  });
+
+  it('returns locale properties outside configured translation locales', () => {
+    setI18nManager(
+      new I18nManager({
+        defaultLocale: 'en',
+        locales: ['fr'],
+        loadTranslations: vi.fn(),
+      })
+    );
+
+    expect(getLocaleProperties('de-DE').code).toBe('de-DE');
   });
 });
