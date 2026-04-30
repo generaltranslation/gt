@@ -44,6 +44,24 @@ describe('t', () => {
     expect(t(message, { name: 'Alice' })).toBe('Bonjour Alice !');
   });
 
+  it('allows an explicit $locale to override the current locale', async () => {
+    const message = 'Hello {name}!';
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr', 'es'],
+      loadTranslations: vi.fn().mockImplementation((locale: string) => ({
+        [hashMessage(message, { $format: 'ICU' })]:
+          locale === 'es' ? 'Hola {name}!' : 'Bonjour {name} !',
+      })),
+    });
+
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+    await manager.loadTranslations('es');
+
+    expect(t(message, { $locale: 'es', name: 'Alice' })).toBe('Hola Alice!');
+  });
+
   it('resets stale condition stores when the singleton manager is replaced', () => {
     setConditionStore({ getLocale: () => 'fr' });
 

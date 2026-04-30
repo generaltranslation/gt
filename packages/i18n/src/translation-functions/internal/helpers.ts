@@ -138,13 +138,11 @@ export async function resolveStringContentWithRuntimeFallback(
  */
 export function createLookupOptions<T extends DataFormat>(
   options: ResolutionOptions<T>,
-  defaultFormat: T,
-  locale?: string
+  defaultFormat: T
 ): NormalizedLookupOptions<T> {
   return {
     ...options,
-    // Bound resolver locale wins over per-call options so getGT(locale) stays stable.
     $format: (options.$format ?? defaultFormat) as T,
-    $locale: locale ?? options.$locale ?? getCurrentLocale(),
+    $locale: options.$locale ?? getCurrentLocale(),
   };
 }

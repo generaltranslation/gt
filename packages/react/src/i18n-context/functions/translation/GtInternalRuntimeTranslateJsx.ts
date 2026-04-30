@@ -1,17 +1,22 @@
-import { resolveJsxWithRuntimeFallback } from 'gt-i18n/internal';
+import { getLocale, resolveJsxWithRuntimeFallback } from 'gt-i18n/internal';
 import type { JsxTranslationOptions } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
+
+type RuntimeJsxTranslationOptions = JsxTranslationOptions & {
+  $locale?: string;
+};
 
 /**
  * Internal runtime translate JSX function for dev only
  */
 const GtInternalRuntimeTranslateJsx = (
   content: JsxChildren,
-  options: JsxTranslationOptions = {}
+  options: RuntimeJsxTranslationOptions = {}
 ) => {
   // Mark as JSX because that is the default format used for compiler collected T-component translations
   return resolveJsxWithRuntimeFallback(content, {
     $format: 'JSX',
+    $locale: getLocale(),
     ...options,
   });
 };

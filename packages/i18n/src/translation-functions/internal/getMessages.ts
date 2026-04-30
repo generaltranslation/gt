@@ -3,11 +3,9 @@ import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
 import { getGT } from './getGT';
 import { MFunctionType } from '../types/functions';
-import { getCurrentLocale } from '../../i18n-manager/singleton-operations';
 
 /**
  * Returns the m function that resolves a registered message to its translation.
- * @param locale - The locale to resolve translations for.
  * @returns A promise of the m function
  *
  * @example
@@ -15,14 +13,12 @@ import { getCurrentLocale } from '../../i18n-manager/singleton-operations';
  * const registeredMessage = msg('Hello, world!');
  *
  * // Resolution
- * const m = await getMessages('fr');
+ * const m = await getMessages();
  * const greeting = m(registeredMessage);
  */
-export async function getMessages(
-  locale = getCurrentLocale()
-): Promise<MFunctionType> {
+export async function getMessages(): Promise<MFunctionType> {
   // Get the gt function
-  const gt = await getGT(locale);
+  const gt = await getGT();
 
   /**
    * Resolves a registered message to its translation.
@@ -32,12 +28,12 @@ export async function getMessages(
    *
    * @example
    * // Simple message without interpolation
-   * const m = await getMessages('fr');
+   * const m = await getMessages();
    * const greeting = m(msg('Hello, world!'));
    *
    * @example
    * // Message with interpolation
-   * const m = await getMessages('fr');
+   * const m = await getMessages();
    * const welcome = m(msg('Welcome, {user}!'), { user: 'Alice' });
    */
   const m: MFunctionType = <T extends string | null | undefined>(

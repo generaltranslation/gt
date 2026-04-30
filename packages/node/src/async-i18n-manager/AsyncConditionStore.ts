@@ -41,7 +41,11 @@ export class AsyncConditionStore implements ScopedConditionStore {
 
   getLocale(): string {
     const store = this.store.getStore();
-    // Outside an AsyncLocalStorage scope, resolveLocale(undefined) falls back to the default locale.
-    return this.resolveLocale(store?.locale);
+    if (!store) {
+      throw new Error(
+        'AsyncConditionStore: getLocale() called outside of a withGT() scope.'
+      );
+    }
+    return this.resolveLocale(store.locale);
   }
 }
