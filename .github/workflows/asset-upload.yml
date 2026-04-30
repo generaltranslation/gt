@@ -11,7 +11,7 @@ on:
 jobs:
   upload-assets:
     name: Upload Assets to Cloudflare R2
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
