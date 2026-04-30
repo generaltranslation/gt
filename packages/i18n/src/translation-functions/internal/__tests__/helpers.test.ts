@@ -27,7 +27,7 @@ describe('translation helpers', () => {
       mockManager as unknown as ReturnType<typeof getI18nManager>
     );
 
-    const result = resolveJsx(['Hello'], { $locale: 'fr' });
+    const result = resolveJsx('fr', ['Hello']);
     expect(result).toBeUndefined();
   });
 
@@ -39,7 +39,7 @@ describe('translation helpers', () => {
       mockManager as unknown as ReturnType<typeof getI18nManager>
     );
 
-    resolveJsx(['Hello'], { $locale: 'fr' });
+    resolveJsx('fr', ['Hello']);
 
     expect(mockManager.lookupTranslation).toHaveBeenCalledWith(
       'fr',
@@ -62,9 +62,7 @@ describe('translation helpers', () => {
       mockManager as unknown as ReturnType<typeof getI18nManager>
     );
 
-    await resolveStringContentWithRuntimeFallback('Hello {name}!', {
-      $locale: 'fr',
-    });
+    await resolveStringContentWithRuntimeFallback('fr', 'Hello {name}!');
 
     expect(mockManager.lookupTranslationWithFallback).toHaveBeenCalled();
     expect(interpolateMessage).toHaveBeenCalledWith({
@@ -85,7 +83,7 @@ describe('translation helpers', () => {
       mockManager as unknown as ReturnType<typeof getI18nManager>
     );
 
-    resolveStringContentWithFallback('Hello {name}!', { $locale: 'fr' });
+    resolveStringContentWithFallback('fr', 'Hello {name}!');
 
     // interpolateMessage is called with target=undefined, causing source fallback
     expect(interpolateMessage).toHaveBeenCalledWith({

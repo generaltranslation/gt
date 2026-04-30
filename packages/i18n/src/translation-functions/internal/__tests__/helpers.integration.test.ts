@@ -52,9 +52,8 @@ describe('translation helpers (deep integration)', () => {
       [hash]: { success: true, translation: 'Bonjour' },
     });
 
-    const promise = resolveStringContentWithRuntimeFallback(message, {
+    const promise = resolveStringContentWithRuntimeFallback('fr', message, {
       $format: 'ICU',
-      $locale: 'fr',
     });
 
     // Flush batch timer so translateMany fires
@@ -80,10 +79,13 @@ describe('translation helpers (deep integration)', () => {
     // Preload the translation
     setupManager({ [hash]: 'Bonjour' });
 
-    const result = await resolveStringContentWithRuntimeFallback(message, {
-      $format: 'ICU',
-      $locale: 'fr',
-    });
+    const result = await resolveStringContentWithRuntimeFallback(
+      'fr',
+      message,
+      {
+        $format: 'ICU',
+      }
+    );
 
     // translateMany should NOT be called because the translation was preloaded
     expect(mockTranslateMany).not.toHaveBeenCalled();
@@ -102,7 +104,7 @@ describe('translation helpers (deep integration)', () => {
       [hash]: { success: true, translation: translatedContent },
     });
 
-    const promise = resolveJsxWithRuntimeFallback(content, { $locale: 'fr' });
+    const promise = resolveJsxWithRuntimeFallback('fr', content);
 
     await vi.advanceTimersByTimeAsync(50);
 
@@ -123,9 +125,8 @@ describe('translation helpers (deep integration)', () => {
       [hash]: { success: false, error: 'Translation failed' },
     });
 
-    const promise = resolveStringContentWithRuntimeFallback(message, {
+    const promise = resolveStringContentWithRuntimeFallback('fr', message, {
       $format: 'STRING',
-      $locale: 'fr',
     });
 
     await vi.advanceTimersByTimeAsync(50);

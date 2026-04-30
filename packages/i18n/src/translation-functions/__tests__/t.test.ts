@@ -62,6 +62,29 @@ describe('t', () => {
     expect(t(message, { $locale: 'es', name: 'Alice' })).toBe('Hola Alice!');
   });
 
+  it('does not read the current locale when $locale is explicit', async () => {
+    const message = 'Hello {name}!';
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      loadTranslations: vi.fn().mockResolvedValue({
+        [hashMessage(message, { $format: 'ICU' })]: 'Bonjour {name} !',
+      }),
+    });
+
+    setI18nManager(manager);
+    setConditionStore({
+      getLocale: () => {
+        throw new Error('current locale should not be read');
+      },
+    });
+    await manager.loadTranslations('fr');
+
+    expect(t(message, { $locale: 'fr', name: 'Alice' })).toBe(
+      'Bonjour Alice !'
+    );
+  });
+
   it('resets stale condition stores when the singleton manager is replaced', () => {
     setConditionStore({ getLocale: () => 'fr' });
 

@@ -10,15 +10,15 @@ vi.mock('gt-i18n/internal', () => ({
 }));
 
 describe('internal runtime translation functions', () => {
-  it('defaults JSX runtime translation to the current locale', () => {
+  it('passes the current locale to JSX runtime translation', () => {
     const content = ['Hello'];
 
     GtInternalRuntimeTranslateJsx(content);
 
-    expect(resolveJsxWithRuntimeFallback).toHaveBeenCalledWith(content, {
+    expect(resolveJsxWithRuntimeFallback).toHaveBeenCalledWith('fr', content, {
       $format: 'JSX',
-      $locale: 'fr',
     });
+    expect(getLocale).toHaveBeenCalled();
   });
 
   it('allows JSX runtime translation to override $locale', () => {
@@ -26,7 +26,7 @@ describe('internal runtime translation functions', () => {
 
     GtInternalRuntimeTranslateJsx(content, { $locale: 'es' });
 
-    expect(resolveJsxWithRuntimeFallback).toHaveBeenCalledWith(content, {
+    expect(resolveJsxWithRuntimeFallback).toHaveBeenCalledWith('es', content, {
       $format: 'JSX',
       $locale: 'es',
     });
@@ -39,11 +39,5 @@ describe('internal runtime translation functions', () => {
       $format: 'ICU',
       $locale: 'es',
     });
-  });
-
-  it('reads the current locale through locale operations', () => {
-    GtInternalRuntimeTranslateJsx(['Hello']);
-
-    expect(getLocale).toHaveBeenCalled();
   });
 });

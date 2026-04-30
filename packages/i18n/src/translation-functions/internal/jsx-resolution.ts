@@ -7,8 +7,9 @@ import { resolveJsx } from './helpers';
  * @deprecated use resolveJsx instead
  */
 export function resolveJsxTranslation(
+  locale: string,
   children: JsxChildren,
   options: JsxTranslationOptions = {}
 ) {
-  return resolveJsx(children, options);
+  return resolveJsx(locale, children, options);
 }

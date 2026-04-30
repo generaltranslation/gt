@@ -76,7 +76,11 @@ function computeT({
   const targetOptions = { ...options, $locale: targetLocale };
 
   // --- (2) Try sync cache lookup (shared by both dev and prod paths) --- //
-  const targetJsxChildren = resolveJsx(sourceJsxChildren, targetOptions);
+  const targetJsxChildren = resolveJsx(
+    targetLocale,
+    sourceJsxChildren,
+    targetOptions
+  );
   if (targetJsxChildren) {
     return renderTranslatedChildren({
       source: taggedSourceChildren,
@@ -192,7 +196,7 @@ function DevTranslationResolver({
   targetLocale: string;
 }): ReactNode {
   const translation = use(
-    resolveJsxWithRuntimeFallback(sourceJsxChildren, options)
+    resolveJsxWithRuntimeFallback(targetLocale, sourceJsxChildren, options)
   );
 
   return renderTranslatedChildren({

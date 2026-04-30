@@ -2,6 +2,8 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { getLocale } from '../../helpers';
 import { initializeGT } from '../initializeGT';
 import { withGT } from '../withGT';
+import { tx } from '../../translation-functions';
+import { hashSource } from 'generaltranslation/id';
 
 describe.sequential('withGT', () => {
   beforeEach(() => {
@@ -35,5 +37,17 @@ describe.sequential('withGT', () => {
     const locale = withGT('pt-BR', () => getLocale());
 
     expect(locale).toBe('pt-BR');
+  });
+
+  it('allows explicit runtime locale outside a callback context', async () => {
+    initializeGT({
+      defaultLocale: 'en-US',
+      locales: ['en-US', 'fr'],
+      loadTranslations: () => ({
+        [hashSource({ source: 'Hello', dataFormat: 'STRING' })]: 'Bonjour',
+      }),
+    });
+
+    await expect(tx('Hello', { $locale: 'fr' })).resolves.toBe('Bonjour');
   });
 });

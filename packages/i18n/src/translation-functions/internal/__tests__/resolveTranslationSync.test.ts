@@ -25,7 +25,7 @@ describe('resolveTranslationSync', () => {
     const message = 'Hello {name}!';
     const options = { $locale: 'fr', name: 'Alice' };
 
-    resolveTranslationSync(message, options);
+    resolveTranslationSync('fr', message, options);
 
     expect(interpolateMessage).toHaveBeenCalledWith({
       source: 'Hello {name}!',
@@ -51,7 +51,7 @@ describe('resolveTranslationSync', () => {
     const message = 'Hello {name}!';
     const options = { $locale: 'fr', name: 'Alice' };
 
-    const result = resolveTranslationSync(message, options);
+    const result = resolveTranslationSync('fr', message, options);
 
     expect(result).toBeUndefined();
     expect(interpolateMessage).not.toHaveBeenCalled();
@@ -75,7 +75,7 @@ describe('resolveTranslationSync', () => {
       $id: 'hello-msg',
     };
 
-    resolveTranslationSync(message, options);
+    resolveTranslationSync('fr', message, options);
 
     expect(interpolateMessage).toHaveBeenCalledWith({
       source: 'Hello {name}!',
@@ -108,7 +108,7 @@ describe('resolveTranslationSync', () => {
       $format: 'STRING' as const,
     };
 
-    resolveTranslationSync(message, options);
+    resolveTranslationSync('fr', message, options);
 
     expect(interpolateMessage).toHaveBeenCalledWith({
       source: 'Hello {name}!',

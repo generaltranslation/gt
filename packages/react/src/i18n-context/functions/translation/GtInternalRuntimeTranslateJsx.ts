@@ -13,10 +13,10 @@ const GtInternalRuntimeTranslateJsx = (
   content: JsxChildren,
   options: RuntimeJsxTranslationOptions = {}
 ) => {
+  const locale = options.$locale ?? getLocale();
   // Mark as JSX because that is the default format used for compiler collected T-component translations
-  return resolveJsxWithRuntimeFallback(content, {
+  return resolveJsxWithRuntimeFallback(locale, content, {
     $format: 'JSX',
-    $locale: getLocale(),
     ...options,
   });
 };

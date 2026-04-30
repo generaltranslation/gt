@@ -85,6 +85,7 @@ export type TFunctionType = (
  * @returns {JsxChildren} The resolved translation.
  */
 export type ResolveJsxTranslationFunction = (
+  locale: string,
   children: JsxChildren,
   options?: JsxTranslationOptions
 ) => JsxChildren | undefined;

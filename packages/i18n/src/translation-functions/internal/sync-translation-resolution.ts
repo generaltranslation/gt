@@ -12,10 +12,11 @@ import {
  * @deprecated use resolveTranslation instead
  */
 export function resolveTranslationSync(
+  locale: string,
   message: string,
   options: InlineTranslationOptions = {}
 ) {
-  return resolveStringContent(message, { $format: 'ICU', ...options });
+  return resolveStringContent(locale, message, { $format: 'ICU', ...options });
 }
 
 /**
@@ -26,10 +27,11 @@ export function resolveTranslationSync(
  * @deprecated use resolveTranslationWithFallback instead
  */
 export function resolveTranslationSyncWithFallback(
+  locale: string,
   message: string,
   options: InlineTranslationOptions = {}
 ) {
-  return resolveStringContentWithFallback(message, {
+  return resolveStringContentWithFallback(locale, message, {
     $format: 'ICU',
     ...options,
   });

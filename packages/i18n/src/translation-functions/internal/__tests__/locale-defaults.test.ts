@@ -77,4 +77,24 @@ describe('translation function locale defaults', () => {
 
     await expect(tx(message)).resolves.toBe('Bonjour');
   });
+
+  it('tx does not read the current locale when $locale is explicit', async () => {
+    const message = 'Hello';
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      loadTranslations: vi.fn().mockResolvedValue({
+        [hashMessage(message, { $format: 'STRING' })]: 'Bonjour',
+      }),
+    });
+
+    setI18nManager(manager);
+    setConditionStore({
+      getLocale: () => {
+        throw new Error('current locale should not be read');
+      },
+    });
+
+    await expect(tx(message, { $locale: 'fr' })).resolves.toBe('Bonjour');
+  });
 });

@@ -43,10 +43,11 @@ export async function getGT(): Promise<GTFunctionType> {
     message: string,
     options: InlineTranslationOptions = {}
   ) => {
+    const targetLocale = options.$locale ?? locale;
     const lookupOptions = createLookupOptions<StringFormat>(
+      targetLocale,
       options,
-      'ICU',
-      locale
+      'ICU'
     );
 
     // Lookup translation

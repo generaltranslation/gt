@@ -1,4 +1,5 @@
 import {
+  getLocale,
   resolveTranslationSync,
   resolveTranslationSyncWithFallback,
 } from 'gt-i18n/internal';
@@ -42,9 +43,12 @@ export const t: StringOrTemplateSyncResolutionFunction = (
 
   //  t("Hello, {name}!", { name: "John" })
   if (typeof messageOrStrings === 'string') {
+    const options = values.at(0) as InlineTranslationOptions | undefined;
+    const locale = options?.$locale ?? getLocale();
     return resolveTranslationSyncWithFallback(
+      locale,
       messageOrStrings,
-      values.at(0) as InlineTranslationOptions | undefined
+      options
     );
   }
 
@@ -69,14 +73,17 @@ function handleTaggedTemplateLiteralTranslation(
   messageOrStrings: TemplateStringsArray,
   values: unknown[]
 ): string {
+  const locale = getLocale();
   // for tagged template literals, there has been no compiler transformation
   // (1) lookup interpolated template (aka derived message)
   const interpolatedTemplate = interpolateTemplateLiteral(
     messageOrStrings,
     values
   );
-  const translatedInterpolatedTemplate =
-    resolveTranslationSync(interpolatedTemplate);
+  const translatedInterpolatedTemplate = resolveTranslationSync(
+    locale,
+    interpolatedTemplate
+  );
   if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
 
   // (2) resolve uninterpolated message
@@ -84,7 +91,7 @@ function handleTaggedTemplateLiteralTranslation(
     messageOrStrings,
     values
   );
-  return resolveTranslationSyncWithFallback(message, variables);
+  return resolveTranslationSyncWithFallback(locale, message, variables);
 }
 
 /**
