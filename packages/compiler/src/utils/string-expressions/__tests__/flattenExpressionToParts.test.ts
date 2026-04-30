@@ -82,7 +82,7 @@ describe('flattenExpressionToParts', () => {
       expect(errors).toEqual([]);
       expect(parts).toHaveLength(3);
       expect(parts[0]).toEqual({ type: 'static', value: 'A' });
-      expect(parts[1].type).toBe('dynamic');
+      expect((parts[1] as Part).type).toBe('dynamic');
       expect(parts[2]).toEqual({ type: 'static', value: 'B' });
     });
   });
@@ -93,7 +93,7 @@ describe('flattenExpressionToParts', () => {
       expect(errors).toEqual([]);
       expect(parts).toHaveLength(3);
       expect(parts[0]).toEqual({ type: 'static', value: 'A' });
-      expect(parts[1].type).toBe('dynamic');
+      expect((parts[1] as Part).type).toBe('dynamic');
       expect(parts[2]).toEqual({ type: 'static', value: 'B' });
     });
   });
@@ -103,7 +103,7 @@ describe('flattenExpressionToParts', () => {
       const { parts, errors } = flattenExpressionToParts(path);
       expect(errors).toEqual([]);
       expect(parts).toHaveLength(1);
-      expect(parts[0].type).toBe('dynamic');
+      expect((parts[0] as Part).type).toBe('dynamic');
     });
   });
 
@@ -119,7 +119,7 @@ describe('flattenExpressionToParts', () => {
         const { parts, errors } = flattenExpressionToParts(expr);
         expect(errors).toEqual([]);
         expect(parts).toHaveLength(1);
-        expect(parts[0].type).toBe('derive');
+        expect((parts[0] as Part).type).toBe('derive');
         path.stop();
       },
     });

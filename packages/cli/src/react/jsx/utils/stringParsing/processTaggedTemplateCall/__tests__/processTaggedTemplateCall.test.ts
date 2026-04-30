@@ -1,7 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 import { parse } from '@babel/parser';
 import traverseModule, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { processTaggedTemplateCall } from '../index.js';
 import { ParsingConfig, ParsingOutput } from '../../types.js';
 import { Updates } from '../../../../../../types/index.js';
@@ -10,6 +13,28 @@ import { Updates } from '../../../../../../types/index.js';
 const traverse = (traverseModule as any).default || traverseModule;
 
 const FILE_PATH = 'test.tsx';
+const tempFiles: string[] = [];
+
+function writeTempFile(content: string): string {
+  const filePath = path.join(
+    os.tmpdir(),
+    `gt-tagged-template-test-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}.tsx`
+  );
+  fs.writeFileSync(filePath, content, 'utf8');
+  tempFiles.push(filePath);
+  return filePath;
+}
+
+afterEach(() => {
+  for (const filePath of tempFiles) {
+    try {
+      fs.unlinkSync(filePath);
+    } catch {}
+  }
+  tempFiles.length = 0;
+});
 
 function createConfig(overrides?: Partial<ParsingConfig>): ParsingConfig {
   return {
@@ -116,6 +141,73 @@ describe('processTaggedTemplateCall', () => {
       dataFormat: 'ICU',
       source: '{0}{1}',
     });
+  });
+
+  it('should preserve source file metadata for derive variants', () => {
+    const output = runProcessTaggedTemplateCall(
+      `
+        import { derive } from 'gt-react';
+
+        function getSubject() {
+          if (gender === "male") {
+            return "boy";
+          } else {
+            return "girl";
+          }
+        }
+
+        t\`The \${derive(getSubject())} is playing in the park.\`
+      `
+    );
+
+    expect(output.updates).toHaveLength(2);
+    expect(output.updates.map((u) => u.source).sort()).toEqual([
+      'The boy is playing in the park.',
+      'The girl is playing in the park.',
+    ]);
+    expect(output.updates.every((u) => u.metadata.staticId)).toBe(true);
+    expect(
+      output.updates.every((u) => u.metadata.filePaths?.[0] === FILE_PATH)
+    ).toBe(true);
+  });
+
+  it('should preserve source code metadata for derive variants', () => {
+    const code = [
+      "import { derive } from 'gt-react';",
+      '',
+      'function getSubject() {',
+      '  if (gender === "male") {',
+      '    return "boy";',
+      '  } else {',
+      '    return "girl";',
+      '  }',
+      '}',
+      '',
+      'const sentence = t`The ${derive(getSubject())} is playing in the park.`;',
+    ].join('\n');
+    const filePath = writeTempFile(code);
+    const relativeFilePath = path.relative(process.cwd(), filePath);
+
+    const output = runProcessTaggedTemplateCall(code, 't', {
+      file: filePath,
+      includeSourceCodeContext: true,
+    });
+
+    expect(output.updates).toHaveLength(2);
+    expect(output.updates.map((u) => u.source).sort()).toEqual([
+      'The boy is playing in the park.',
+      'The girl is playing in the park.',
+    ]);
+
+    for (const update of output.updates) {
+      expect(update.metadata.filePaths).toEqual([relativeFilePath]);
+      expect(update.metadata.sourceCode?.[relativeFilePath]).toHaveLength(1);
+      const entry = update.metadata.sourceCode?.[relativeFilePath]?.[0];
+      expect(entry?.target).toContain(
+        't`The ${derive(getSubject())} is playing in the park.`'
+      );
+      expect(entry?.before).toContain('return "girl"');
+    }
   });
 
   it('should still extract when ignoreTaggedTemplates is true (gating is done by caller)', () => {

@@ -20,3 +20,6 @@ export const createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning = ({
   defaultLocale: string;
 }) =>
   `${PACKAGE_NAME} Warning: Custom getLocale() function returned an unsupported locale: "${customLocale}". Falling back to default locale: "${defaultLocale}".`;
+
+export const createInvalidLocaleWarning = (locale: string) =>
+  `${PACKAGE_NAME} Warning: Invalid locale: "${locale}".`;
