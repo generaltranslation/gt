@@ -1,8 +1,8 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import { flattenExpressionToParts } from '../templates-and-concat/flattenExpressionToParts';
-import { mergeAdjacentStaticParts } from '../templates-and-concat/mergeAdjacentStaticParts';
-import { buildTransformResult } from '../templates-and-concat/buildTransformationResult';
+import { flattenExpressionToParts } from '../../utils/string-expressions/flattenExpressionToParts';
+import { mergeAdjacentStaticParts } from '../../utils/string-expressions/mergeAdjacentStaticParts';
+import { buildTransformResult } from '../../utils/string-expressions/buildTransformationResult';
 
 /**
  * Converts template literal quasis and expressions into an ICU-style message
@@ -16,7 +16,7 @@ export function transformTemplateLiteral(path: NodePath<t.TemplateLiteral>): {
   variables?: t.ObjectExpression | null;
   errors: string[];
 } {
-  const { parts, errors } = flattenExpressionToParts(path.node, path);
+  const { parts, errors } = flattenExpressionToParts(path);
   if (errors.length > 0) {
     return { errors };
   }

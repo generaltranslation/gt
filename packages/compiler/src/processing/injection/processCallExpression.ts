@@ -20,6 +20,7 @@ import { injectUseGTCallbackParameters } from '../../transform/injection/callbac
 import { injectUseTranslationsCallbackParameters } from '../../transform/injection/callbacks/injectUseTranslationsCallbackParameters';
 import { injectUseMessagesCallbackParameters } from '../../transform/injection/callbacks/injectUseMessagesCallbackParameters';
 import { injectStandaloneTFunctionParameters } from '../../transform/injection/injectStandaloneTFunctionParameters';
+import { NodePath } from '@babel/traverse';
 
 /**
  * Process call expression:
@@ -27,9 +28,9 @@ import { injectStandaloneTFunctionParameters } from '../../transform/injection/i
 export function processCallExpression(
   state: TransformState
 ): VisitNode<t.Node, t.CallExpression> {
-  return (path) => {
+  return (callExprPath) => {
     // Get the call expression
-    const callExpr = path.node;
+    const callExpr = callExprPath.node;
 
     // Get function name from callee
     const { namespaceName, functionName } =
@@ -54,7 +55,7 @@ export function processCallExpression(
       isTranslationFunctionCallback(canonicalName)
     ) {
       // Handle translation function callbacks (useGT_callback, etc.)
-      handleTranslationCallbackInvocation(callExpr, state, canonicalName);
+      handleTranslationCallbackInvocation(callExprPath, state, canonicalName);
     } else if (type === 'react' && isReactFunction(canonicalName)) {
       // Handle react variables (jsxDEV, etc.)
       handleReactInvocation(callExpr, state);
@@ -68,7 +69,7 @@ export function processCallExpression(
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.t
     ) {
-      injectStandaloneTFunctionParameters(callExpr, state);
+      injectStandaloneTFunctionParameters(callExprPath, state);
     }
   };
 }
@@ -82,7 +83,7 @@ export function processCallExpression(
  * useGTCallback(), useTranslationsCallback(), useMessagesCallback(), etc.
  */
 function handleTranslationCallbackInvocation(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   canonicalName: GT_ALL_FUNCTIONS
 ) {
@@ -90,15 +91,15 @@ function handleTranslationCallbackInvocation(
   switch (canonicalName) {
     case GT_CALLBACK_FUNCTIONS.useGT_callback:
     case GT_CALLBACK_FUNCTIONS.getGT_callback:
-      injectUseGTCallbackParameters(callExpr, state);
+      injectUseGTCallbackParameters(callExprPath, state);
       break;
     case GT_CALLBACK_FUNCTIONS.useTranslations_callback:
     case GT_CALLBACK_FUNCTIONS.getTranslations_callback:
-      injectUseTranslationsCallbackParameters(callExpr, state);
+      injectUseTranslationsCallbackParameters(callExprPath, state);
       break;
     case GT_CALLBACK_FUNCTIONS.useMessages_callback:
     case GT_CALLBACK_FUNCTIONS.getMessages_callback:
-      injectUseMessagesCallbackParameters(callExpr, state);
+      injectUseMessagesCallbackParameters(callExprPath, state);
       break;
     default:
       return;
