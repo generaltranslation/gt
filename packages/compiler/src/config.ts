@@ -12,6 +12,7 @@ type GTConfig = {
     gt?: {
       parsingFlags?: {
         enableAutoJsxInjection?: boolean;
+        enableCrossFileResolution?: boolean;
         autoderive?: boolean | { jsx?: boolean; strings?: boolean };
         /** @deprecated Use `autoderive` instead */
         autoDerive?: boolean;
@@ -40,6 +41,8 @@ export interface PluginConfig {
   stringTranslationMacro?: string;
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection?: boolean;
+  /** Enable cross-file import resolution for compiler analysis */
+  enableCrossFileResolution?: boolean;
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive?: boolean | { jsx?: boolean; strings?: boolean };
   /** @deprecated Use `autoderive` instead */
@@ -66,6 +69,8 @@ export interface PluginSettings {
   enableMacroImportInjection: boolean;
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection: boolean;
+  /** Enable cross-file import resolution for compiler analysis */
+  enableCrossFileResolution: boolean;
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive: { jsx: boolean; strings: boolean };
   /** Debug: write a hash → jsxChildren manifest file on build */
@@ -87,6 +92,20 @@ export function resolveAutoderive(
     return { jsx: !!value, strings: !!value };
   }
   return { jsx: value.jsx ?? false, strings: value.strings ?? false };
+}
+
+/**
+ * Resolves the cross-file resolution flag from plugin options or gt.config.
+ * Plugin options take precedence over gt.config parsing flags.
+ */
+export function resolveEnableCrossFileResolution(
+  options: PluginConfig
+): boolean {
+  return (
+    options.enableCrossFileResolution ??
+    options.gtConfig?.files?.gt?.parsingFlags?.enableCrossFileResolution ??
+    false
+  );
 }
 
 /**

@@ -4,7 +4,7 @@ import generate from '@babel/generator';
 import traverse from '@babel/traverse';
 
 // Core modules
-import { PluginConfig } from './config';
+import { PluginConfig, resolveEnableCrossFileResolution } from './config';
 
 // Import passes
 import { collectionPass } from './passes/collectionPass';
@@ -85,29 +85,32 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const debugManifest = options._debugHashManifest
       ? new Map<string, unknown>()
       : undefined;
+    const enableCrossFileResolution = resolveEnableCrossFileResolution(options);
     const resolutionCache = createResolutionCache();
     let webpackResolver: NativeResolver | null = null;
     let esbuildResolver: NativeResolver | null = null;
 
     return {
       name: '@generaltranslation/GT_PLUGIN',
-      ...(meta.framework === 'webpack' && {
-        webpack(compiler) {
-          compiler.hooks.afterResolvers.tap(
-            '@generaltranslation/GT_PLUGIN',
-            () => {
-              webpackResolver = createWebpackResolver(compiler);
-            }
-          );
-        },
-      }),
-      ...(meta.framework === 'esbuild' && {
-        esbuild: {
-          setup(build) {
-            esbuildResolver = createEsbuildResolver(build);
+      ...(enableCrossFileResolution &&
+        meta.framework === 'webpack' && {
+          webpack(compiler) {
+            compiler.hooks.afterResolvers.tap(
+              '@generaltranslation/GT_PLUGIN',
+              () => {
+                webpackResolver = createWebpackResolver(compiler);
+              }
+            );
           },
-        },
-      }),
+        }),
+      ...(enableCrossFileResolution &&
+        meta.framework === 'esbuild' && {
+          esbuild: {
+            setup(build) {
+              esbuildResolver = createEsbuildResolver(build);
+            },
+          },
+        }),
       transformInclude(id: string) {
         // Only transform TSX and JSX files
         return (
@@ -130,31 +133,33 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
-          let nativeResolver: NativeResolver | null = null;
-          switch (meta.framework) {
-            case 'webpack':
-              nativeResolver = webpackResolver;
-              break;
-            case 'esbuild':
-              nativeResolver = esbuildResolver;
-              break;
-            case 'rollup':
-            case 'rolldown':
-            case 'vite':
-              nativeResolver = createViteResolver(this);
-              break;
-          }
+          if (state.settings.enableCrossFileResolution) {
+            let nativeResolver: NativeResolver | null = null;
+            switch (meta.framework) {
+              case 'webpack':
+                nativeResolver = webpackResolver;
+                break;
+              case 'esbuild':
+                nativeResolver = esbuildResolver;
+                break;
+              case 'rollup':
+              case 'rolldown':
+              case 'vite':
+                nativeResolver = createViteResolver(this);
+                break;
+            }
 
-          if (nativeResolver) {
             // The graph builder reads transitive modules directly from disk,
             // so register them with the bundler for watch-mode invalidation.
-            const watchFile = this.addWatchFile.bind(this);
-            state.resolveImport = await createResolver(
-              id,
-              nativeResolver,
-              resolutionCache,
-              watchFile
-            );
+            if (nativeResolver) {
+              const watchFile = this.addWatchFile.bind(this);
+              state.resolveImport = await createResolver(
+                id,
+                nativeResolver,
+                resolutionCache,
+                watchFile
+              );
+            }
           }
 
           // Parse the code into AST
