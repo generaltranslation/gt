@@ -1,5 +1,13 @@
 # gt-next
 
+## 6.16.21
+
+### Patch Changes
+
+- Updated dependencies [[`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401)]:
+  - gt-i18n@0.8.11
+  - gt-react@10.19.10
+
 ## 6.16.20
 
 ### Patch Changes
