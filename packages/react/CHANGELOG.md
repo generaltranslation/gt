@@ -1,5 +1,15 @@
 # gt-react
 
+## 10.19.10
+
+### Patch Changes
+
+- [#1296](https://github.com/generaltranslation/gt/pull/1296) [`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401) Thanks [@bgub](https://github.com/bgub)! - Require explicit locales for I18nManager translation/cache operations, move current-locale lookup into higher-level helpers, and keep runtime condition storage in wrapper runtimes.
+
+- Updated dependencies [[`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401)]:
+  - gt-i18n@0.8.11
+  - @generaltranslation/react-core@1.8.12
+
 ## 10.19.9
 
 ### Patch Changes
