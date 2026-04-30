@@ -21,11 +21,7 @@ export function resolveJsx(
   options: ResolutionOptions<'JSX'> = {}
 ): JsxChildren | undefined {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(
-    options,
-    'JSX',
-    getCurrentLocale()
-  );
+  const lookupOptions = createLookupOptions(options, 'JSX', getCurrentLocale());
   const translation = i18nManager.lookupTranslation(
     lookupOptions.$locale,
     content,
@@ -55,11 +51,7 @@ export async function resolveJsxWithRuntimeFallback(
   options: ResolutionOptions<'JSX'> = {}
 ): Promise<JsxChildren> {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(
-    options,
-    'JSX',
-    getCurrentLocale()
-  );
+  const lookupOptions = createLookupOptions(options, 'JSX', getCurrentLocale());
   const translation = await i18nManager.lookupTranslationWithFallback(
     lookupOptions.$locale,
     content,
