@@ -23,10 +23,15 @@ export function processTaggedTemplateExpression(
     if (!state.settings.enableTaggedTemplate) return;
     if (!isStringTranslationTaggedTemplate(path, symbol)) return;
 
-    const { message, variables } = transformTemplateLiteral(path.get('quasi'));
+    // Extract message from the template literal, errors are logged by collection pass
+    const { message, variables, errors } = transformTemplateLiteral(
+      path.get('quasi')
+    );
+    if (errors.length > 0 || message == null) return;
+
+    // Build the call expression arguments
     const args: t.Expression[] = [message];
     if (variables) args.push(variables);
-
     path.replaceWith(
       t.callExpression(t.identifier(GT_OTHER_FUNCTIONS.t), args)
     );

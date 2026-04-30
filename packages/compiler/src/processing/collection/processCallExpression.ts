@@ -303,6 +303,7 @@ function handleStandaloneTranslation(
 ) {
   // Reuse the same validation as useGT_callback (identical argument structure)
   const params = validateUseGTCallback(callExpr, state);
+  state.errorTracker.addErrors(params.errors);
   if (params.errors.length > 0 || params.content === undefined) {
     return;
   }

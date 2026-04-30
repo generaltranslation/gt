@@ -288,6 +288,7 @@ describe('msg() string extraction E2E', () => {
     const state = collect(prefix + 'msg(name);');
     const content = getRuntimeContent(state);
     expect(content).toHaveLength(0);
+    expect(state.errorTracker.getErrors().length).toBeGreaterThan(0);
   });
 });
 
@@ -359,6 +360,7 @@ describe('t() string extraction E2E', () => {
     const state = collect(prefix + 't(name);');
     const content = getRuntimeContent(state);
     expect(content).toHaveLength(0);
+    expect(state.errorTracker.getErrors().length).toBeGreaterThan(0);
   });
 });
 
@@ -378,6 +380,15 @@ describe('t`` tagged template extraction E2E', () => {
     expect(content).toHaveLength(1);
     expect(content[0].message).toBe('Hello');
     expect(content[0].hash).toBeTruthy();
+  });
+
+  it('reports invalid escape sequences in tagged templates', () => {
+    const state = collect('t`\\xg`;');
+    const content = getRuntimeContent(state);
+    expect(content).toHaveLength(0);
+    expect(state.errorTracker.getErrors()).toEqual([
+      'Template literal contains an invalid escape sequence',
+    ]);
   });
 
   it('extracts tagged template with dynamic expression as ICU placeholder: t`Hello ${name}`', () => {

@@ -12,10 +12,17 @@ import { buildTransformResult } from '../templates-and-concat/buildTransformatio
  * nested templates) and preserves derive() calls as template expressions.
  */
 export function transformTemplateLiteral(path: NodePath<t.TemplateLiteral>): {
-  message: t.StringLiteral | t.TemplateLiteral;
-  variables: t.ObjectExpression | null;
+  message?: t.StringLiteral | t.TemplateLiteral;
+  variables?: t.ObjectExpression | null;
+  errors: string[];
 } {
-  const parts = flattenExpressionToParts(path.node, path);
+  const { parts, errors } = flattenExpressionToParts(path.node, path);
+  if (errors.length > 0) {
+    return { errors };
+  }
   const merged = mergeAdjacentStaticParts(parts);
-  return buildTransformResult(merged);
+  return {
+    ...buildTransformResult(merged),
+    errors: [],
+  };
 }
