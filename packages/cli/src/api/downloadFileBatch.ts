@@ -26,6 +26,11 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
 import { getRelative } from '../fs/findFilepath.js';
 
+function sortJsonString(data: string): string {
+  const sortedData = stringify(JSON.parse(data));
+  return JSON.stringify(JSON.parse(sortedData), null, 2);
+}
+
 /**
  * Merges translated content with the current source file for schema-based formats.
  */
@@ -257,8 +262,16 @@ export async function downloadFileBatch(
                 inputPath,
                 options
               );
-              if (remerged !== existingContent) {
-                await fs.promises.writeFile(outputPath, remerged);
+              let remergedData = remerged;
+              if (outputPath.endsWith('.json')) {
+                try {
+                  remergedData = sortJsonString(remergedData);
+                } catch {
+                  // Fall through with unsorted content
+                }
+              }
+              if (remergedData !== existingContent) {
+                await fs.promises.writeFile(outputPath, remergedData);
               }
               // Track for postprocessing (e.g. openapi path localization)
               // even when the API download was skipped
@@ -272,15 +285,12 @@ export async function downloadFileBatch(
         }
         let data = mergeWithSource(file.data, locale, inputPath, options);
 
-        // If the file is a GTJSON file, stable sort the order and format the data
-        if (file.fileFormat === 'GTJSON') {
+        // Stable sort JSON keys for deterministic output
+        if (file.fileFormat === 'GTJSON' || outputPath.endsWith('.json')) {
           try {
-            const jsonData = JSON.parse(data);
-            const sortedData = stringify(jsonData); // stably sort with fast-json-stable-stringify
-            const sortedJsonData = JSON.parse(sortedData);
-            data = JSON.stringify(sortedJsonData, null, 2); // format the data
+            data = sortJsonString(data);
           } catch (error) {
-            logger.warn(`Failed to sort GTJson file: ${file.id}: ` + error);
+            logger.warn(`Failed to sort JSON file: ${file.id}: ` + error);
           }
         }
 

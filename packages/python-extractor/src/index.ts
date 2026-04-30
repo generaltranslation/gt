@@ -25,7 +25,19 @@ export async function extractFromPythonSource(
   errors: string[];
   warnings: string[];
 }> {
-  const parser = await getParser();
+  let parser: Awaited<ReturnType<typeof getParser>>;
+  try {
+    parser = await getParser();
+  } catch (error) {
+    return {
+      results: [],
+      errors: [],
+      warnings: [
+        `${filePath}: Failed to initialize Python parser; skipping Python extraction. ${formatError(error)}`,
+      ],
+    };
+  }
+
   const tree = parser.parse(sourceCode);
   if (!tree) {
     return {
@@ -70,4 +82,8 @@ export async function extractFromPythonSource(
 
 function prefixErrors(messages: string[], filePath: string): string[] {
   return messages.map((msg) => `${filePath}: ${msg}`);
+}
+
+function formatError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

@@ -1,5 +1,14 @@
 # @generaltranslation/compiler
 
+## 1.3.16
+
+### Patch Changes
+
+- [#1271](https://github.com/generaltranslation/gt/pull/1271) [`7b1fd81`](https://github.com/generaltranslation/gt/commit/7b1fd816f8c8c9f2997bc0b9abe2cabd1dab00e8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor(compiler): consolidate string extraction logic
+
+- Updated dependencies [[`20276d0`](https://github.com/generaltranslation/gt/commit/20276d03cc1494e79d93d9dc131eee2815a4fae6)]:
+  - generaltranslation@8.2.10
+
 ## 1.3.15
 
 ### Patch Changes
