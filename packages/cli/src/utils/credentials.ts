@@ -1,10 +1,11 @@
 import { logErrorAndExit } from '../console/logging.js';
-import { logger } from '../console/logger.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import { Settings, SupportedFrameworks } from '../types/index.js';
-import chalk from 'chalk';
-import apiRequest from './fetch.js';
+
+export const BROWSER_AUTH_UNAVAILABLE_MESSAGE =
+  'Automatic browser-based CLI login is temporarily unavailable. Create an API key in the General Translation dashboard, then provide credentials manually: set GT_PROJECT_ID and GT_API_KEY (or GT_DEV_API_KEY) environment variables, add projectId to gt.config.json, or pass --project-id and --api-key to commands that support them.';
+
 // Type for credentials returned from the dashboard
 type Credentials = {
   apiKeys: ApiKey[];
@@ -16,84 +17,16 @@ type ApiKey = {
   type: 'development' | 'production';
 };
 
-// Fetches project ID and API key by opening the dashboard in the browser
+// Browser credential retrieval is temporarily unavailable.
 export async function retrieveCredentials(
-  settings: Settings,
-  keyType: 'development' | 'production' | 'all'
+  _settings: Settings,
+  _keyType: 'development' | 'production' | 'all'
 ): Promise<Credentials> {
-  // Generate a session ID
-  const { sessionId } = await generateCredentialsSession(
-    settings.baseUrl,
-    keyType
-  );
-
-  const urlToOpen = `${settings.dashboardUrl}/cli/wizard/${sessionId}`;
-  await import('open').then((open) =>
-    open.default(urlToOpen, {
-      wait: false,
-    })
-  );
-
-  logger.message(
-    `${chalk.dim(
-      `If the browser window didn't open automatically, please open the following link:`
-    )}\n\n${chalk.cyan(urlToOpen)}`
-  );
-
-  const spinner = logger.createSpinner('dots');
-  spinner.start('Waiting for response from dashboard...');
-
-  const credentials = await new Promise<Credentials>(
-    async (resolve, reject) => {
-      const interval = setInterval(async () => {
-        // Ping the dashboard to see if the credentials are set
-        try {
-          const res = await apiRequest(
-            settings.baseUrl,
-            `/cli/wizard/${sessionId}`,
-            { method: 'GET' }
-          );
-          if (res.status === 200) {
-            const data = await res.json();
-            resolve(data as Credentials);
-            clearInterval(interval);
-            clearTimeout(timeout);
-            apiRequest(settings.baseUrl, `/cli/wizard/${sessionId}`, {
-              method: 'DELETE',
-            });
-          }
-        } catch (err) {
-          console.error(err);
-        }
-      }, 2000);
-      // timeout after 1 hour
-      const timeout = setTimeout(
-        () => {
-          spinner.stop('Timed out');
-          clearInterval(interval);
-          logErrorAndExit('Timed out waiting for response from dashboard');
-        },
-        1000 * 60 * 60
-      );
-    }
-  );
-  spinner.stop('Received credentials');
-  return credentials;
+  return logBrowserAuthUnavailableAndExit();
 }
 
-export async function generateCredentialsSession(
-  url: string,
-  keyType: 'development' | 'production' | 'all'
-): Promise<{
-  sessionId: string;
-}> {
-  const res = await apiRequest(url, '/cli/wizard/session', {
-    body: { keyType },
-  });
-  if (!res.ok) {
-    logErrorAndExit('Failed to generate credentials session');
-  }
-  return await res.json();
+export function logBrowserAuthUnavailableAndExit(): never {
+  return logErrorAndExit(BROWSER_AUTH_UNAVAILABLE_MESSAGE);
 }
 
 // Checks if the credentials are set in the environment variables
