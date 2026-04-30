@@ -6,23 +6,29 @@ type ViteResolutionContext = UnpluginBuildContext &
     resolve?: NativeResolver;
   };
 
-let warnedMissingResolve = false;
+export type MissingResolveWarningState = {
+  value: boolean;
+};
 
 export function createViteResolver(
-  ctx: UnpluginBuildContext & UnpluginContext
+  ctx: UnpluginBuildContext & UnpluginContext,
+  warnedMissingResolve: MissingResolveWarningState
 ): NativeResolver {
   const { resolve } = ctx as ViteResolutionContext;
   if (typeof resolve !== 'function') {
-    warnMissingResolve(ctx);
+    warnMissingResolve(ctx, warnedMissingResolve);
     return async () => null;
   }
 
   return resolve.bind(ctx);
 }
 
-function warnMissingResolve(ctx: UnpluginContext): void {
-  if (warnedMissingResolve) return;
-  warnedMissingResolve = true;
+function warnMissingResolve(
+  ctx: UnpluginContext,
+  warnedMissingResolve: MissingResolveWarningState
+): void {
+  if (warnedMissingResolve.value) return;
+  warnedMissingResolve.value = true;
   ctx.warn(
     '[gt-compiler] Cross-file resolution is enabled, but this bundler context does not expose resolve(). Import lookups will return null.'
   );

@@ -17,21 +17,26 @@ function createContext(
 }
 
 describe('createViteResolver', () => {
-  it('warns once when the bundler context does not expose resolve()', async () => {
+  it('warns once per plugin state when the bundler context does not expose resolve()', async () => {
     const firstContext = createContext();
     const secondContext = createContext();
+    const firstWarningState = { value: false };
+    const secondWarningState = { value: false };
 
     await expect(
-      createViteResolver(firstContext)('./file')
+      createViteResolver(firstContext, firstWarningState)('./file')
     ).resolves.toBeNull();
     await expect(
-      createViteResolver(secondContext)('./file')
+      createViteResolver(secondContext, firstWarningState)('./file')
+    ).resolves.toBeNull();
+    await expect(
+      createViteResolver(secondContext, secondWarningState)('./file')
     ).resolves.toBeNull();
 
     expect(firstContext.warn).toHaveBeenCalledTimes(1);
     expect(firstContext.warn).toHaveBeenCalledWith(
       '[gt-compiler] Cross-file resolution is enabled, but this bundler context does not expose resolve(). Import lookups will return null.'
     );
-    expect(secondContext.warn).not.toHaveBeenCalled();
+    expect(secondContext.warn).toHaveBeenCalledTimes(1);
   });
 });

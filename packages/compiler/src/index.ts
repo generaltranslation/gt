@@ -89,6 +89,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const resolutionCache = createResolutionCache();
     let webpackResolver: NativeResolver | null = null;
     let esbuildResolver: NativeResolver | null = null;
+    const missingViteResolveWarning = { value: false };
 
     return {
       name: '@generaltranslation/GT_PLUGIN',
@@ -145,7 +146,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
               case 'rollup':
               case 'rolldown':
               case 'vite':
-                nativeResolver = createViteResolver(this);
+                nativeResolver = createViteResolver(
+                  this,
+                  missingViteResolveWarning
+                );
                 break;
             }
 
