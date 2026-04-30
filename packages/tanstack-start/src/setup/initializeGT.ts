@@ -20,6 +20,6 @@ export function initializeGT(params: InitializeGTParams): void {
   });
   const i18nManager = new I18nManager<Translation>(params);
 
-  setConditionStore(conditionStore);
   setI18nManager(i18nManager);
+  setConditionStore(conditionStore);
 }

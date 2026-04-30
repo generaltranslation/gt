@@ -16,6 +16,6 @@ export function initializeGT(params: InitializeGTParams): void {
   });
   const i18nManager = new I18nManager<string>(params);
 
-  setAsyncConditionStore(conditionStore);
   setI18nManager(i18nManager);
+  setAsyncConditionStore(conditionStore);
 }

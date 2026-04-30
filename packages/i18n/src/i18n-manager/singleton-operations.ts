@@ -48,6 +48,13 @@ export function setConditionStore(nextConditionStore: ConditionStore): void {
 }
 
 /**
+ * Reset the runtime condition source to the active manager's default-locale fallback.
+ */
+function resetConditionStore(): void {
+  conditionStore = fallbackConditionStore;
+}
+
+/**
  * Configure the singleton instance of I18nManager
  * @param config - The configuration for the I18nManager
  *
@@ -58,4 +65,5 @@ export function setI18nManager<TranslationValue extends Translation>(
 ): void {
   i18nManager = i18nManagerInstance as unknown as I18nManager;
   fallbackDefaultLocale = i18nManagerInstance.getDefaultLocale();
+  resetConditionStore();
 }

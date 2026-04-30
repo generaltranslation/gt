@@ -4,6 +4,7 @@ import {
   setI18nManager,
   setConditionStore,
 } from '../../i18n-manager/singleton-operations';
+import { getLocale } from '../../helpers/locale';
 import { hashMessage } from '../../utils/hashMessage';
 import { t } from '../t';
 
@@ -36,10 +37,24 @@ describe('t', () => {
     });
     const conditionStore = { getLocale: () => 'fr' };
 
-    setConditionStore(conditionStore);
     setI18nManager(manager);
+    setConditionStore(conditionStore);
     await manager.loadTranslations('fr');
 
     expect(t(message, { name: 'Alice' })).toBe('Bonjour Alice !');
+  });
+
+  it('resets stale condition stores when the singleton manager is replaced', () => {
+    setConditionStore({ getLocale: () => 'fr' });
+
+    setI18nManager(
+      new I18nManager({
+        defaultLocale: 'es',
+        locales: ['es'],
+        loadTranslations: vi.fn(),
+      })
+    );
+
+    expect(getLocale()).toBe('es');
   });
 });

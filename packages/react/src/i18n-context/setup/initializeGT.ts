@@ -17,6 +17,6 @@ export function initializeGT(params: InitializeGTParams): void {
   });
   const i18nManager = new BrowserI18nManager(params);
 
-  setBrowserConditionStore(conditionStore);
   setI18nManager(i18nManager);
+  setBrowserConditionStore(conditionStore);
 }

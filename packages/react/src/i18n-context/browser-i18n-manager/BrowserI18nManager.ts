@@ -118,20 +118,16 @@ export class BrowserI18nManager extends I18nManager<Translation> {
     // Get parameters
     const htmlLocale = htmlTagOptions?.lang || locale;
     const gtInstance = this.getGTClass();
-    const resolvedLocale = gtInstance.determineLocale(
-      htmlLocale,
-      this.getLocales()
-    );
+    const canonicalLocale = gtInstance.resolveCanonicalLocale(htmlLocale);
 
     // Validate parameters
-    if (!resolvedLocale) {
+    if (!gtInstance.isValidLocale(canonicalLocale)) {
       console.warn(createInvalidLocaleWarning(htmlLocale));
       return;
     }
 
-    const canonicalLocale = gtInstance.resolveCanonicalLocale(resolvedLocale);
     const localeDirection =
-      htmlTagOptions?.dir || gtInstance.getLocaleDirection(resolvedLocale);
+      htmlTagOptions?.dir || gtInstance.getLocaleDirection(canonicalLocale);
 
     // Merge options
     const mergedHtmlTagOptions = {
