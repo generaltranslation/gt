@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import * as parser from '@babel/parser';
 import traverse from '@babel/traverse';
@@ -41,7 +41,7 @@ export async function buildResolutionGraph(
   waitForPending = true
 ): Promise<void> {
   const fileId = normalizeFileId(id);
-  if (!postFilterPath(fileId) || cache.completed.has(fileId)) return;
+  if (!(await postFilterPath(fileId)) || cache.completed.has(fileId)) return;
 
   const pending = cache.pending.get(fileId);
   if (pending) {
@@ -73,30 +73,44 @@ async function buildResolutionGraphForFile(
   activeFiles: Set<FileId>
 ): Promise<void> {
   watchFile?.(fileId);
-  const sources = extractSources(fileId).filter(preFilterSource);
+  const sources = (await extractSources(fileId)).filter(preFilterSource);
   const resolvedSources = await Promise.all(
     sources.map(async (source) => ({
       source,
       resolved: await nativeResolver(source, fileId),
     }))
   );
-  const localResolvedSources = resolvedSources.flatMap(
-    ({ source, resolved }) => {
-      if (!resolved || resolved.external || !postFilterPath(resolved.id)) {
-        return [];
-      }
-      watchFile?.(normalizeFileId(resolved.id));
-      return [
-        {
+  const localResolvedSources = (
+    await Promise.all(
+      resolvedSources.map(async ({ source, resolved }) => {
+        if (!resolved || resolved.external) return null;
+
+        const resolvedId = normalizeFileId(resolved.id);
+        if (!(await postFilterPath(resolvedId))) return null;
+
+        watchFile?.(resolvedId);
+        return {
           source,
           resolved: {
             ...resolved,
-            id: normalizeFileId(resolved.id),
+            id: resolvedId,
           },
-        },
-      ];
-    }
-  );
+        };
+      })
+    )
+  ).filter(isLocalResolvedSource);
+
+  function isLocalResolvedSource(
+    input: {
+      source: SourceId;
+      resolved: ResolvedId;
+    } | null
+  ): input is {
+    source: SourceId;
+    resolved: ResolvedId;
+  } {
+    return input !== null;
+  }
 
   const resolutions = new Map<SourceId, ResolvedId>();
   for (const { source, resolved } of localResolvedSources) {
@@ -122,12 +136,12 @@ async function buildResolutionGraphForFile(
 /**
  * Extract statically analyzable import-like source strings from a module.
  */
-export function extractSources(id: FileId): SourceId[] {
-  if (!postFilterPath(id)) return [];
+export async function extractSources(id: FileId): Promise<SourceId[]> {
+  if (!(await postFilterPath(id))) return [];
 
   let code: string;
   try {
-    code = fs.readFileSync(normalizeFileId(id), 'utf8');
+    code = await fs.readFile(normalizeFileId(id), 'utf8');
   } catch {
     return [];
   }
@@ -180,15 +194,14 @@ export function preFilterSource(source: SourceId): boolean {
 /**
  * Applies post-resolution filtering to resolved file paths.
  */
-export function postFilterPath(source: FileId): boolean {
+export async function postFilterPath(source: FileId): Promise<boolean> {
   const filePath = normalizeFileId(source);
   if (!filePath || filePath.includes('\0')) return false;
-  if (!fs.existsSync(filePath)) return false;
   if (hasPathSegment(filePath, 'node_modules')) return false;
   if (!SUPPORTED_EXTENSIONS.has(path.extname(filePath))) return false;
 
   try {
-    return fs.statSync(filePath).isFile();
+    return (await fs.stat(filePath)).isFile();
   } catch {
     return false;
   }

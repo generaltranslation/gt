@@ -48,7 +48,7 @@ function createFilesystemResolver(): NativeResolver {
 }
 
 describe('resolution source extraction', () => {
-  it('extracts static imports, exports, dynamic import(), and require()', () => {
+  it('extracts static imports, exports, dynamic import(), and require()', async () => {
     const dir = createTempDir();
     const filePath = writeFile(
       path.join(dir, 'entry.ts'),
@@ -62,7 +62,7 @@ describe('resolution source extraction', () => {
       ].join('\n')
     );
 
-    expect(extractSources(filePath)).toEqual([
+    await expect(extractSources(filePath)).resolves.toEqual([
       './imported',
       './named-export',
       './all-export',
@@ -71,11 +71,11 @@ describe('resolution source extraction', () => {
     ]);
   });
 
-  it('returns no sources for files that cannot be parsed', () => {
+  it('returns no sources for files that cannot be parsed', async () => {
     const dir = createTempDir();
     const filePath = writeFile(path.join(dir, 'broken.ts'), 'const = ;');
 
-    expect(extractSources(filePath)).toEqual([]);
+    await expect(extractSources(filePath)).resolves.toEqual([]);
   });
 });
 
@@ -87,7 +87,7 @@ describe('resolution filtering', () => {
     expect(preFilterSource('./node_modules/pkg')).toBe(false);
   });
 
-  it('post-filters missing files, unsupported extensions, and node_modules', () => {
+  it('post-filters missing files, unsupported extensions, and node_modules', async () => {
     const dir = createTempDir();
     const sourceFile = writeFile(path.join(dir, 'source.ts'), '');
     const jsonFile = writeFile(path.join(dir, 'source.json'), '{}');
@@ -96,11 +96,13 @@ describe('resolution filtering', () => {
       ''
     );
 
-    expect(postFilterPath(sourceFile)).toBe(true);
-    expect(postFilterPath(`${sourceFile}?raw`)).toBe(true);
-    expect(postFilterPath(jsonFile)).toBe(false);
-    expect(postFilterPath(nodeModuleFile)).toBe(false);
-    expect(postFilterPath(path.join(dir, 'missing.ts'))).toBe(false);
+    await expect(postFilterPath(sourceFile)).resolves.toBe(true);
+    await expect(postFilterPath(`${sourceFile}?raw`)).resolves.toBe(true);
+    await expect(postFilterPath(jsonFile)).resolves.toBe(false);
+    await expect(postFilterPath(nodeModuleFile)).resolves.toBe(false);
+    await expect(postFilterPath(path.join(dir, 'missing.ts'))).resolves.toBe(
+      false
+    );
   });
 });
 
