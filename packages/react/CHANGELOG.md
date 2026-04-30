@@ -1,5 +1,15 @@
 # gt-react
 
+## 10.19.9
+
+### Patch Changes
+
+- [#1301](https://github.com/generaltranslation/gt/pull/1301) [`a5a109c`](https://github.com/generaltranslation/gt/commit/a5a109ceab5790af1dd621578cae7b597cfd26f2) Thanks [@bgub](https://github.com/bgub)! - Fix source-locale interpolation for missing translations and resolve custom locale aliases consistently in browser and TanStack Start locale detection.
+
+- Updated dependencies [[`a5a109c`](https://github.com/generaltranslation/gt/commit/a5a109ceab5790af1dd621578cae7b597cfd26f2)]:
+  - gt-i18n@0.8.10
+  - @generaltranslation/react-core@1.8.11
+
 ## 10.19.8
 
 ### Patch Changes

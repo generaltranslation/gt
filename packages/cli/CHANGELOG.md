@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.30
+
+### Patch Changes
+
+- [#1304](https://github.com/generaltranslation/gt/pull/1304) [`c15ecf5`](https://github.com/generaltranslation/gt/commit/c15ecf581821a2feac72f53c5470b5b9b163564a) Thanks [@moss-bryophyta](https://github.com/moss-bryophyta)! - Sort JSON keys when outputting translation files for deterministic output
+
 ## 2.14.29
 
 ### Patch Changes
