@@ -51,7 +51,7 @@ export function validateUseGTCallback(
   const resolvedStaticExpression = resolveStaticExpression(
     callExprPath.get('arguments')[0] as NodePath<t.Expression>
   );
-  // until we implement derivation, we will only need to check the first value
+  // TODO: until we implement derivation, we will only need to check the first value
   const content = resolvedStaticExpression.values?.[0];
 
   if (content === undefined && !state.settings.autoderive.strings) {
@@ -244,7 +244,7 @@ function validatePropertyFromObjectExpression(
     const resolved = resolveStaticExpression(
       valuePath.get('value') as NodePath<t.Expression>
     );
-    // until we implement derivation, we will only need to check the first value
+    // TODO: until we implement derivation, we will only need to check the first value
     if (resolved.values?.[0] !== undefined) {
       result.value = resolved.values[0];
     } else if (state) {

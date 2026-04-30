@@ -26,7 +26,7 @@ export function processTaggedTemplateExpression(
 
     // Extract message from the template literal (reuse macro expansion utility)
     const { content, errors } = transformTemplateLiteral(path.get('quasi'));
-    // Until derive added, we only support one message variant
+    // TODO: Until derive added, we only support one message variant
     const message = content[0]?.message;
     if (errors.length > 0 || message == null) {
       state.errorTracker.addErrors(errors);
