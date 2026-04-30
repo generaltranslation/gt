@@ -1,5 +1,11 @@
 # @generaltranslation/compiler
 
+## 1.3.17
+
+### Patch Changes
+
+- [#1272](https://github.com/generaltranslation/gt/pull/1272) [`7ce1813`](https://github.com/generaltranslation/gt/commit/7ce18131c7a1e494fdc5c488e2f53d033b083311) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add error enforcement for msg(), t() and t``
+
 ## 1.3.16
 
 ### Patch Changes
