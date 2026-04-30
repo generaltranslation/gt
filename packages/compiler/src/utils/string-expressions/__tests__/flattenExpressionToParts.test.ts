@@ -6,7 +6,6 @@ import {
   flattenExpressionToParts,
   type Part,
 } from '../flattenExpressionToParts';
-import { mergeAdjacentStaticParts } from '../mergeAdjacentStaticParts';
 import { buildTransformResult } from '../buildTransformationResult';
 import { resolveStaticExpression } from '../resolveStaticExpression';
 /**
@@ -73,11 +72,19 @@ describe('flattenExpressionToParts', () => {
     expectFlattenedParts('`hello`', [{ type: 'static', value: 'hello' }]);
   });
 
-  it('flattens "A" + "B" into two static parts', () => {
-    expectFlattenedParts('"A" + "B"', [
-      { type: 'static', value: 'A' },
-      { type: 'static', value: 'B' },
-    ]);
+  it('flattens and merges adjacent static concatenation parts', () => {
+    expectFlattenedParts('"A" + "B" + "C"', [{ type: 'static', value: 'ABC' }]);
+  });
+
+  it('does not merge static parts across dynamic parts', () => {
+    withExpressionPath('"A" + name + "B"', (path) => {
+      const { parts, errors } = flattenExpressionToParts(path);
+      expect(errors).toEqual([]);
+      expect(parts).toHaveLength(3);
+      expect(parts[0]).toEqual({ type: 'static', value: 'A' });
+      expect((parts[1] as Part).type).toBe('dynamic');
+      expect(parts[2]).toEqual({ type: 'static', value: 'B' });
+    });
   });
 
   it('flattens template with expression', () => {
@@ -86,7 +93,7 @@ describe('flattenExpressionToParts', () => {
       expect(errors).toEqual([]);
       expect(parts).toHaveLength(3);
       expect(parts[0]).toEqual({ type: 'static', value: 'A' });
-      expect(parts[1].type).toBe('dynamic');
+      expect((parts[1] as Part).type).toBe('dynamic');
       expect(parts[2]).toEqual({ type: 'static', value: 'B' });
     });
   });
@@ -96,7 +103,7 @@ describe('flattenExpressionToParts', () => {
       const { parts, errors } = flattenExpressionToParts(path);
       expect(errors).toEqual([]);
       expect(parts).toHaveLength(1);
-      expect(parts[0].type).toBe('dynamic');
+      expect((parts[0] as Part).type).toBe('dynamic');
     });
   });
 
@@ -112,7 +119,7 @@ describe('flattenExpressionToParts', () => {
         const { parts, errors } = flattenExpressionToParts(expr);
         expect(errors).toEqual([]);
         expect(parts).toHaveLength(1);
-        expect(parts[0].type).toBe('derive');
+        expect((parts[0] as Part).type).toBe('derive');
         path.stop();
       },
     });
@@ -143,7 +150,7 @@ describe('resolveStaticExpression', () => {
     withExpressionPath('"A" + `B ${"C"}`', (path) => {
       expect(resolveStaticExpression(path)).toEqual({
         errors: [],
-        value: 'AB C',
+        values: ['AB C'],
       });
     });
   });
@@ -162,32 +169,6 @@ describe('resolveStaticExpression', () => {
         errors: ['Template literal contains an invalid escape sequence'],
       });
     });
-  });
-});
-
-describe('mergeAdjacentStaticParts', () => {
-  it('merges consecutive static parts', () => {
-    const parts = [
-      { type: 'static' as const, value: 'A' },
-      { type: 'static' as const, value: 'B' },
-      { type: 'static' as const, value: 'C' },
-    ];
-    const merged = mergeAdjacentStaticParts(parts);
-    expect(merged).toEqual([{ type: 'static', value: 'ABC' }]);
-  });
-
-  it('does not merge non-adjacent static parts', () => {
-    const node = t.identifier('x');
-    const parts = [
-      { type: 'static' as const, value: 'A' },
-      { type: 'dynamic' as const, node },
-      { type: 'static' as const, value: 'B' },
-    ];
-    const merged = mergeAdjacentStaticParts(parts);
-    expect(merged).toHaveLength(3);
-    expect((merged[0] as any).value).toBe('A');
-    expect(merged[1].type).toBe('dynamic');
-    expect((merged[2] as any).value).toBe('B');
   });
 });
 

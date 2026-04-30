@@ -25,13 +25,16 @@ export function processTaggedTemplateExpression(
     if (!isStringTranslationTaggedTemplate(path, symbol)) return;
 
     // Extract message from the template literal (reuse macro expansion utility)
-    const { message, errors } = transformTemplateLiteral(path.get('quasi'));
+    const { content, errors } = transformTemplateLiteral(path.get('quasi'));
+    // TODO: Until derive added, we only support one message variant
+    const message = content[0]?.message;
     if (errors.length > 0 || message == null) {
       state.errorTracker.addErrors(errors);
       return;
     }
 
     // If message is a TemplateLiteral, it contains derive() — skip
+    // TODO: remove this check once derive is supported
     if (!t.isStringLiteral(message)) {
       return;
     }

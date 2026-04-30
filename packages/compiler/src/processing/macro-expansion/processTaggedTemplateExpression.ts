@@ -24,9 +24,10 @@ export function processTaggedTemplateExpression(
     if (!isStringTranslationTaggedTemplate(path, symbol)) return;
 
     // Extract message from the template literal, errors are logged by collection pass
-    const { message, variables, errors } = transformTemplateLiteral(
-      path.get('quasi')
-    );
+    const { content, errors } = transformTemplateLiteral(path.get('quasi'));
+    // TODO: Until derive added, we only support one message variant
+    const message = content[0]?.message;
+    const variables = content[0]?.variables;
     if (errors.length > 0 || message == null) return;
 
     // Build the call expression arguments

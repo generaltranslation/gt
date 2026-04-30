@@ -1,13 +1,44 @@
 import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
 import { isDeriveInvocation } from '../parsing/isDeriveInvocation';
+import { ResolutionNode } from '../multiplication/types';
 
 export type Part =
   | { type: 'static'; value: string }
   | { type: 'derive'; node: t.Expression }
   | { type: 'dynamic'; node: t.Expression };
 
-type FlattenExpressionResult = { parts: Part[]; errors: string[] };
+type FlattenExpressionResult = {
+  parts: ResolutionNode<Part>[];
+  errors: string[];
+};
+
+function isStaticPart(
+  part: ResolutionNode<Part> | undefined
+): part is Extract<Part, { type: 'static' }> {
+  return part != null && 'type' in part && part.type === 'static';
+}
+
+function appendPart(
+  parts: ResolutionNode<Part>[],
+  part: ResolutionNode<Part>
+): void {
+  const lastPart = parts[parts.length - 1];
+  if (isStaticPart(lastPart) && isStaticPart(part)) {
+    lastPart.value += part.value;
+    return;
+  }
+  parts.push(part);
+}
+
+function appendParts(
+  parts: ResolutionNode<Part>[],
+  nextParts: ResolutionNode<Part>[]
+): void {
+  for (const part of nextParts) {
+    appendPart(parts, part);
+  }
+}
 
 /**
  * Recursively decomposes an expression tree into a flat list of typed parts.
@@ -16,7 +47,8 @@ type FlattenExpressionResult = { parts: Part[]; errors: string[] };
  * provided, imported derive() calls are preserved as derive parts.
  *
  * Returns errors alongside parts so callers can report extraction failures
- * without throwing during expression flattening.
+ * without throwing during expression flattening. Adjacent static parts are
+ * coalesced before returning.
  */
 export function flattenExpressionToParts(
   exprPath: NodePath<t.Expression>
@@ -66,7 +98,7 @@ export function flattenExpressionToParts(
         );
         return result;
       } else if (cooked) {
-        result.parts.push({ type: 'static', value: cooked });
+        appendPart(result.parts, { type: 'static', value: cooked });
       }
       if (i < expr.expressions.length) {
         const exprPathIndex = exprPath.get('expressions')[i];
@@ -75,7 +107,7 @@ export function flattenExpressionToParts(
           return result;
         }
         const expressionResult = flattenExpressionToParts(exprPathIndex);
-        result.parts.push(...expressionResult.parts);
+        appendParts(result.parts, expressionResult.parts);
         result.errors.push(...expressionResult.errors);
       }
     }
@@ -90,11 +122,17 @@ export function flattenExpressionToParts(
     }
     const { parts: leftParts, errors: leftErrors } =
       flattenExpressionToParts(leftPath);
-    const { parts: rightParts, errors: rightErrors } = flattenExpressionToParts(
-      exprPath.get('right')
-    );
+    const rightPath = exprPath.get('right');
+    if (!rightPath.isExpression()) {
+      return { parts: [], errors: ['Expression is not a valid expression'] };
+    }
+    const { parts: rightParts, errors: rightErrors } =
+      flattenExpressionToParts(rightPath);
+    const parts: ResolutionNode<Part>[] = [];
+    appendParts(parts, leftParts);
+    appendParts(parts, rightParts);
     return {
-      parts: [...leftParts, ...rightParts],
+      parts,
       errors: [...leftErrors, ...rightErrors],
     };
   }

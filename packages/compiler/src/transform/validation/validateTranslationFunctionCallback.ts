@@ -51,7 +51,8 @@ export function validateUseGTCallback(
   const resolvedStaticExpression = resolveStaticExpression(
     callExprPath.get('arguments')[0] as NodePath<t.Expression>
   );
-  const content = resolvedStaticExpression.value;
+  // TODO: until we implement derivation, we will only need to check the first value
+  const content = resolvedStaticExpression.values?.[0];
 
   if (content === undefined && !state.settings.autoderive.strings) {
     // Not a static expression — check if it contains a derive() function invocation
@@ -243,8 +244,9 @@ function validatePropertyFromObjectExpression(
     const resolved = resolveStaticExpression(
       valuePath.get('value') as NodePath<t.Expression>
     );
-    if (resolved.value !== undefined) {
-      result.value = resolved.value;
+    // TODO: until we implement derivation, we will only need to check the first value
+    if (resolved.values?.[0] !== undefined) {
+      result.value = resolved.values[0];
     } else if (state) {
       // Static resolution failed — check if it's a valid derive() expression
       const deriveErrors: string[] = [];
@@ -252,7 +254,7 @@ function validatePropertyFromObjectExpression(
       if (deriveErrors.length === 0) {
         result.hasDeriveExpression = true;
       } else {
-        result.errors.push(...deriveErrors);
+        result.errors.push(...resolved.errors, ...deriveErrors);
       }
     } else {
       result.errors.push(...resolved.errors);
