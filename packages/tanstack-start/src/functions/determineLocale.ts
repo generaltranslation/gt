@@ -1,14 +1,8 @@
 import { defaultLocaleCookieName } from 'gt-react/internal';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeader, getCookie } from '@tanstack/react-start/server';
-import { CustomMapping } from 'generaltranslation/types';
-import { LocaleConfig } from 'generaltranslation/core';
-
-type DetermineLocaleOptions = {
-  defaultLocale: string;
-  locales: string[];
-  customMapping?: CustomMapping;
-};
+import { resolveSupportedLocale } from 'gt-i18n/internal';
+import type { ConditionStoreConfig } from 'gt-i18n/internal/types';
 
 /**
  * Determines the locale isomorphicly.
@@ -27,13 +21,8 @@ function determineLocaleServer({
   defaultLocale,
   locales,
   customMapping,
-}: DetermineLocaleOptions) {
-  const localeConfig = new LocaleConfig({
-    defaultLocale,
-    locales,
-    customMapping,
-  });
-  const candidates = [];
+}: ConditionStoreConfig) {
+  const candidates: string[] = [];
 
   // (1) Check cookie
   const cookie = getCookie(defaultLocaleCookieName);
@@ -58,8 +47,11 @@ function determineLocaleServer({
     );
   }
 
-  // determine locale (falling back to default locale if no match is found)
-  return localeConfig.determineLocale(candidates) || defaultLocale;
+  return resolveSupportedLocale(candidates, {
+    defaultLocale,
+    locales,
+    customMapping,
+  });
 }
 
 /**
@@ -69,13 +61,8 @@ function determineLocaleClient({
   defaultLocale,
   locales,
   customMapping,
-}: DetermineLocaleOptions) {
-  const localeConfig = new LocaleConfig({
-    defaultLocale,
-    locales,
-    customMapping,
-  });
-  const candidates = [];
+}: ConditionStoreConfig) {
+  const candidates: string[] = [];
 
   // (1) Check cookie
   const cookie = document.cookie
@@ -92,9 +79,11 @@ function determineLocaleClient({
     console.warn(
       'gt-tanstack-start(client): no locales could be determined for this request'
     );
-    candidates.push(defaultLocale);
   }
 
-  // determine locale (falling back to default locale if no match is found)
-  return localeConfig.determineLocale(candidates) || defaultLocale;
+  return resolveSupportedLocale(candidates, {
+    defaultLocale,
+    locales,
+    customMapping,
+  });
 }

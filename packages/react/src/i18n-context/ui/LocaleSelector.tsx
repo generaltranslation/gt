@@ -1,7 +1,11 @@
 import React, { useMemo } from 'react';
-import { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from 'generaltranslation/types';
 import { InternalLocaleSelector } from '../../shared/InternalLocaleSelector';
-import { getBrowserI18nManager } from '../browser-i18n-manager/singleton-operations';
+import { getI18nManager } from 'gt-i18n/internal';
+import {
+  getLocale as getBrowserLocale,
+  setLocale as setBrowserLocale,
+} from '../functions/locale-operations';
 
 /**
  * A dropdown component that allows users to select a locale.
@@ -22,19 +26,16 @@ export function LocaleSelector({
   // Get the sorted locales, setLocale, and locale
   const { sortedLocales, setLocale, locale, getLocaleProperties } =
     useMemo(() => {
-      const i18nManager = getBrowserI18nManager();
+      const i18nManager = getI18nManager();
       const gt = i18nManager.getGTClass();
-      const locale = i18nManager.getLocale();
-      const setLocale = (locale: string) => {
-        i18nManager.setLocale(locale);
-      };
+      const locale = getBrowserLocale();
       const getLocaleProperties = (locale: string) => {
         return gt.getLocaleProperties(locale);
       };
       if (locales)
         return {
           locale,
-          setLocale,
+          setLocale: setBrowserLocale,
           sortedLocales: locales,
           getLocaleProperties,
         };
@@ -46,7 +47,12 @@ export function LocaleSelector({
             gt.getLocaleProperties(b).nativeNameWithRegionCode
           )
         );
-      return { locale, sortedLocales, setLocale, getLocaleProperties };
+      return {
+        locale,
+        sortedLocales,
+        setLocale: setBrowserLocale,
+        getLocaleProperties,
+      };
     }, [locales]);
 
   return (

@@ -5,7 +5,7 @@ import {
   addGTIdentifier,
   removeInjectedT,
 } from '@generaltranslation/react-core/internal';
-import { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
+import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import {
   renderDefaultChildren,
   renderTranslatedChildren,
@@ -13,8 +13,8 @@ import {
 import { renderVariable } from '../variables/utils/renderVariable';
 import { requiresTranslation } from 'generaltranslation';
 import { getDefaultLocale, getLocale } from '../locale-operations';
-import { JsxChildren } from 'generaltranslation/types';
-import { TaggedChildren } from '@generaltranslation/react-core/types';
+import type { JsxChildren } from 'generaltranslation/types';
+import type { TaggedChildren } from '@generaltranslation/react-core/types';
 import { getBrowserI18nManager } from '../../browser-i18n-manager/singleton-operations';
 
 /**
@@ -73,9 +73,14 @@ function computeT({
   if (!requiresTranslation(defaultLocale, targetLocale)) {
     return renderSourceChildren();
   }
+  const targetOptions = { ...options, $locale: targetLocale };
 
   // --- (2) Try sync cache lookup (shared by both dev and prod paths) --- //
-  const targetJsxChildren = resolveJsx(sourceJsxChildren, options);
+  const targetJsxChildren = resolveJsx(
+    targetLocale,
+    sourceJsxChildren,
+    targetOptions
+  );
   if (targetJsxChildren) {
     return renderTranslatedChildren({
       source: taggedSourceChildren,
@@ -92,7 +97,7 @@ function computeT({
         <DevTranslationResolver
           sourceJsxChildren={sourceJsxChildren}
           taggedSourceChildren={taggedSourceChildren}
-          options={options}
+          options={targetOptions}
           targetLocale={targetLocale}
         />
       </Suspense>
@@ -187,11 +192,11 @@ function DevTranslationResolver({
 }: {
   sourceJsxChildren: JsxChildren;
   taggedSourceChildren: TaggedChildren;
-  options: JsxTranslationOptionsWithSugar;
+  options: JsxTranslationOptionsWithSugar & { $locale: string };
   targetLocale: string;
 }): ReactNode {
   const translation = use(
-    resolveJsxWithRuntimeFallback(sourceJsxChildren, options)
+    resolveJsxWithRuntimeFallback(targetLocale, sourceJsxChildren, options)
   );
 
   return renderTranslatedChildren({

@@ -3,9 +3,8 @@ import type {
   I18nManagerConstructorParams,
   TranslationsLoader,
 } from 'gt-i18n/internal/types';
-import type { BrowserStorageAdapter } from './BrowserStorageAdapter';
 import type { HtmlTagOptions } from './utils/types';
-import { Translation } from 'gt-i18n/types';
+import type { Translation } from 'gt-i18n/types';
 import { DEFAULT_HTML_TAG_OPTIONS } from './utils/constants';
 import { LocalStorageTranslationCache } from './LocalStorageTranslationCache';
 import { createInvalidLocaleWarning } from '../../shared/messages';
@@ -14,17 +13,14 @@ import { createInvalidLocaleWarning } from '../../shared/messages';
  * The configuration for the BrowserI18nManager
  */
 type BrowserI18nManagerConstructorParams =
-  I18nManagerConstructorParams<BrowserStorageAdapter> & {
+  I18nManagerConstructorParams<Translation> & {
     htmlTagOptions?: HtmlTagOptions;
   };
 
 /**
  * I18nManager implementation for Browser.
  */
-export class BrowserI18nManager extends I18nManager<
-  BrowserStorageAdapter,
-  Translation
-> {
+export class BrowserI18nManager extends I18nManager<Translation> {
   /** Customize browser-related behavior */
   private htmlTagOptions?: HtmlTagOptions;
 
@@ -35,38 +31,37 @@ export class BrowserI18nManager extends I18nManager<
   private _devHotReloadJsx = false;
 
   constructor(config: BrowserI18nManagerConstructorParams) {
-    // Must be initialized  before super()
+    // Must be initialized before super()
+    const { htmlTagOptions, ...managerConfig } = config;
     const localStorageCaches: Record<string, LocalStorageTranslationCache> = {};
     const resolved = resolveDevHotReload(
       config.files?.gt?.parsingFlags?.devHotReload
     );
-
-    // Initialize the I18nManager
-    super({
-      ...config,
-      ...(isDevHotReloadEnabled(config) &&
-        createDevHotReloadConfig(
+    const devHotReloadEnabled = isDevHotReloadEnabled(config);
+    const loadTranslations = devHotReloadEnabled
+      ? wrapLoaderWithLocalStorage(
           config.loadTranslations!,
           config.projectId!,
           localStorageCaches
-        )),
+        )
+      : config.loadTranslations;
+
+    // Initialize the I18nManager
+    super({
+      ...managerConfig,
+      loadTranslations,
     });
 
     this._localStorageCaches = localStorageCaches;
-    this._devHotReloadJsx = isDevHotReloadEnabled(config) && resolved.jsx;
-    this.storeAdapter.setConfig({
-      defaultLocale: this.getDefaultLocale(),
-      locales: this.getLocales(),
-      customMapping: config.customMapping,
-    });
+    this._devHotReloadJsx = devHotReloadEnabled && resolved.jsx;
 
     this.htmlTagOptions = {
       ...DEFAULT_HTML_TAG_OPTIONS,
-      ...config.htmlTagOptions,
+      ...htmlTagOptions,
     };
 
     // For dev hot reload, we need to write the translations to the localStorage cache
-    if (isDevHotReloadEnabled(config)) {
+    if (devHotReloadEnabled) {
       this.subscribe(
         'translations-cache-miss',
         ({ locale, hash, translation }) => {
@@ -90,26 +85,6 @@ export class BrowserI18nManager extends I18nManager<
    */
   isDevHotReloadJsx(): boolean {
     return this._devHotReloadJsx;
-  }
-
-  /**
-   * Returns the current locale
-   * @returns {string} The current locale
-   */
-  getLocale(): string {
-    return this.storeAdapter.getItem('locale') || this.config.defaultLocale;
-  }
-
-  /**
-   * Set the locale
-   * @param {string} locale - The locale to set
-   * @returns {void}
-   *
-   * @note This function causes a page reload
-   */
-  setLocale(locale: string): void {
-    super.setLocale(locale);
-    window.location.reload();
   }
 
   /**
@@ -137,20 +112,22 @@ export class BrowserI18nManager extends I18nManager<
    * Update the html tag (lang, dir)
    */
   updateHtmlTag(
+    locale: string,
     htmlTagOptions?: { lang?: string; dir?: 'ltr' | 'rtl' } & HtmlTagOptions
   ): void {
     // Get parameters
-    const locale = htmlTagOptions?.lang || this.getLocale();
+    const htmlLocale = htmlTagOptions?.lang || locale;
     const gtInstance = this.getGTClass();
-    const canonicalLocale = gtInstance.resolveCanonicalLocale(locale);
-    const localeDirection =
-      htmlTagOptions?.dir || gtInstance.getLocaleDirection(locale);
+    const canonicalLocale = gtInstance.resolveCanonicalLocale(htmlLocale);
 
     // Validate parameters
     if (!gtInstance.isValidLocale(canonicalLocale)) {
-      console.warn(createInvalidLocaleWarning(locale));
+      console.warn(createInvalidLocaleWarning(htmlLocale));
       return;
     }
+
+    const localeDirection =
+      htmlTagOptions?.dir || gtInstance.getLocaleDirection(canonicalLocale);
 
     // Merge options
     const mergedHtmlTagOptions = {
@@ -171,22 +148,6 @@ export class BrowserI18nManager extends I18nManager<
 // ===== Helper Functions ===== //
 
 /**
- * Creates the dev hot reload config
- */
-function createDevHotReloadConfig(
-  loadTranslations: TranslationsLoader,
-  projectId: string,
-  localStorageCaches: Record<string, LocalStorageTranslationCache>
-): I18nManagerConstructorParams<BrowserStorageAdapter> {
-  return {
-    loadTranslations: wrapLoaderWithLocalStorage(
-      loadTranslations,
-      projectId,
-      localStorageCaches
-    ),
-  };
-}
-/**
  * Wraps a translation loader to merge localStorage translations in dev mode.
  * On each call: runs the original loader, seeds a LocalStorageTranslationCache
  * with the result (loader wins over stale localStorage), and returns the merged
@@ -196,7 +157,7 @@ function wrapLoaderWithLocalStorage(
   originalLoader: TranslationsLoader,
   projectId: string,
   localStorageCaches: Record<string, LocalStorageTranslationCache>
-): TranslationsLoader {
+) {
   return async (locale: string) => {
     const loaderTranslations = await originalLoader(locale);
     localStorageCaches[locale] ||= new LocalStorageTranslationCache({
@@ -213,7 +174,7 @@ function wrapLoaderWithLocalStorage(
  */
 function resolveDevHotReload(
   value: boolean | { strings?: boolean; jsx?: boolean } | undefined
-): { strings: boolean; jsx: boolean } {
+) {
   if (value === undefined || typeof value === 'boolean') {
     return { strings: !!value, jsx: !!value };
   }
@@ -225,9 +186,7 @@ function resolveDevHotReload(
  * @param config - The configuration
  * @returns True if dev hot reload is enabled, false otherwise
  */
-function isDevHotReloadEnabled(
-  config: BrowserI18nManagerConstructorParams
-): boolean {
+function isDevHotReloadEnabled(config: BrowserI18nManagerConstructorParams) {
   // TODO: this only works when you've defined a custom loadTranslations function
   // meaning CDN users will not have access to this feature
   const requirements: Record<string, boolean> = {

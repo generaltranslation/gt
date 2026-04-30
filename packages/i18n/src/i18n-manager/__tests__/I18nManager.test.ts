@@ -39,13 +39,12 @@ describe('I18nManager', () => {
 
   it('resolveTranslationSync returns translation after loadTranslations', async () => {
     const manager = createManager();
-    manager.setLocale('fr');
 
     // Load translations first
     await manager.loadTranslations('fr');
 
     // Now sync resolution should work
-    const result = manager.resolveTranslationSync(message, lookupOptions);
+    const result = manager.resolveTranslationSync('fr', message, lookupOptions);
     expect(result).toBe(translatedString);
   });
 
@@ -58,7 +57,6 @@ describe('I18nManager', () => {
 
   it('getTranslationResolver returns a working resolver function', async () => {
     const manager = createManager();
-    manager.setLocale('fr');
 
     const resolver = await manager.getTranslationResolver('fr');
     const result = resolver(message, lookupOptions);
@@ -78,17 +76,16 @@ describe('I18nManager', () => {
 
   it('lookupTranslation() returns undefined before load, translation after', async () => {
     const manager = createManager();
-    manager.setLocale('fr');
 
     // Before loading
-    const before = manager.lookupTranslation(message, lookupOptions);
+    const before = manager.lookupTranslation('fr', message, lookupOptions);
     expect(before).toBeUndefined();
 
     // Load translations
     await manager.loadTranslations('fr');
 
     // After loading
-    const after = manager.lookupTranslation(message, lookupOptions);
+    const after = manager.lookupTranslation('fr', message, lookupOptions);
     expect(after).toBe(translatedString);
   });
 
@@ -99,7 +96,6 @@ describe('I18nManager', () => {
 
     // loadTranslations returns translations that do NOT include unknownMessage
     const manager = createManager();
-    manager.setLocale('fr');
 
     // Mock translateMany to return a translation for the unknown message
     mockTranslateMany.mockResolvedValue({
@@ -110,6 +106,7 @@ describe('I18nManager', () => {
     });
 
     const result = await manager.lookupTranslationWithFallback(
+      'fr',
       unknownMessage,
       unknownOptions
     );
@@ -128,11 +125,9 @@ describe('I18nManager', () => {
       },
     });
 
-    manager.setLocale('brand-french');
-
-    expect(manager.getLocale()).toBe('fr');
     expect(manager.requiresTranslation('brand-french')).toBe(true);
     expect(manager.requiresDialectTranslation('en-US')).toBe(false);
+    expect(() => manager.getGTClass('brand-french')).not.toThrow();
   });
 
   it('normalizes custom aliases before loading and reading locale caches', async () => {
@@ -154,11 +149,33 @@ describe('I18nManager', () => {
     expect(loadTranslations).toHaveBeenCalledTimes(1);
     expect(loadTranslations).toHaveBeenCalledWith('fr');
     expect(
-      manager.lookupTranslation(message, {
-        ...lookupOptions,
-        $locale: 'brand-french',
-      })
+      manager.lookupTranslation('brand-french', message, lookupOptions)
     ).toBe(translatedString);
     expect(loadTranslations).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not need current locale state for explicit locale operations', async () => {
+    const loadTranslations = vi
+      .fn()
+      .mockResolvedValue({ [expectedHash]: translatedString });
+    const manager = createManager({
+      loadTranslations,
+    });
+
+    await manager.loadTranslations('fr');
+
+    expect(loadTranslations).toHaveBeenCalledWith('fr');
+    expect(manager.lookupTranslation('fr', message, lookupOptions)).toBe(
+      translatedString
+    );
+    await expect(
+      manager.lookupTranslationWithFallback('fr', message, lookupOptions)
+    ).resolves.toBe(translatedString);
+    await expect(manager.getLookupTranslation('fr')).resolves.toEqual(
+      expect.any(Function)
+    );
+    expect(manager.requiresTranslation('fr')).toBe(true);
+    expect(manager.requiresDialectTranslation('fr')).toBe(false);
+    expect(() => manager.getGTClass('fr')).not.toThrow();
   });
 });

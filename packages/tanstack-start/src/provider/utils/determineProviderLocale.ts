@@ -1,6 +1,6 @@
 import { GTProviderProps } from '../types';
 import { isSSREnabled } from './isSSREnabled';
-import { getLocale } from '../../functions/getLocale';
+import { getLocale } from 'gt-i18n';
 
 /**
  * Determines the locale for the provider, must follow specific logic

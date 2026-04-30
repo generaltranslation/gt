@@ -17,17 +17,12 @@ export type ListenerStore<Events extends BaseEvent> = Partial<{
 
 /**
  * A base event for the I18nManagers
- * @prop {locale-update} - Emitted when the locale is updated
  * @prop {locales-cache-hit} - Emitted when a locale cache hit occurs
  * @prop {locales-cache-miss} - Emitted when a locale cache miss occurs
  * @prop {translations-cache-hit} - Emitted when a translations cache hit occurs
  * @prop {translations-cache-miss} - Emitted when a translations cache miss occurs
  */
 export type I18nEvents<TranslationValue extends Translation> = BaseEvent & {
-  'locale-update': {
-    previousLocale?: Locale;
-    newLocale: Locale;
-  };
   'locales-cache-hit': {
     locale: Locale;
     translations: Record<Hash, TranslationValue>;

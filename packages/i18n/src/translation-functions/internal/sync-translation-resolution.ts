@@ -1,7 +1,3 @@
-import {
-  SyncResolutionFunction,
-  SyncResolutionFunctionWithFallback,
-} from '../types/functions';
 import { InlineTranslationOptions } from '../types/options';
 import {
   resolveStringContent,
@@ -15,12 +11,13 @@ import {
  * @returns {string | undefined} The translated message or undefined if the message is not found.
  * @deprecated use resolveTranslation instead
  */
-export const resolveTranslationSync: SyncResolutionFunction = (
-  message,
+export function resolveTranslationSync(
+  locale: string,
+  message: string,
   options: InlineTranslationOptions = {}
-) => {
-  return resolveStringContent(message, { $format: 'ICU', ...options });
-};
+) {
+  return resolveStringContent(locale, message, { $format: 'ICU', ...options });
+}
 
 /**
  * Translate a message
@@ -29,10 +26,13 @@ export const resolveTranslationSync: SyncResolutionFunction = (
  * @returns {string} The translated message or the original message interpolated if the translation is not found.
  * @deprecated use resolveTranslationWithFallback instead
  */
-export const resolveTranslationSyncWithFallback: SyncResolutionFunctionWithFallback =
-  (message, options = {}) => {
-    return resolveStringContentWithFallback(message, {
-      $format: 'ICU',
-      ...options,
-    });
-  };
+export function resolveTranslationSyncWithFallback(
+  locale: string,
+  message: string,
+  options: InlineTranslationOptions = {}
+) {
+  return resolveStringContentWithFallback(locale, message, {
+    $format: 'ICU',
+    ...options,
+  });
+}

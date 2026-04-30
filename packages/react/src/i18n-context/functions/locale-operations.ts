@@ -1,55 +1,29 @@
-import { getBrowserI18nManager } from '../browser-i18n-manager/singleton-operations';
+import { getBrowserConditionStore } from '../browser-i18n-manager/singleton-operations';
+import { createInvalidLocaleWarning } from '../../shared/messages';
+import { determineSupportedLocale, getI18nManager } from 'gt-i18n/internal';
 
 /**
- * Returns the user's current locale.
- * @returns {string} The user's current locale.
- *
- * @example
- * const locale = getLocale();
- * console.log(locale); // 'en-US'
- */
-export function getLocale() {
-  const i18nManager = getBrowserI18nManager();
-  return i18nManager.getLocale();
-}
-
-/**
- * Returns the locales that are supported by the application.
- * @returns {string[]} The locales that are supported by the application.
- *
- * @example
- * const locales = getLocales();
- * console.log(locales); // ['en-US', 'es-ES']
- */
-export function getLocales() {
-  const i18nManager = getBrowserI18nManager();
-  return i18nManager.getLocales();
-}
-
-/**
- * Returns the user's current locales.
- * @returns {string[]} The user's current locales.
+ * Sets the user's current locale.
  *
  * @note This function causes a page reload
  *
  * @example
- * const locales = getLocales();
- * console.log(locales); // ['en-US', 'es-ES']
+ * setLocale('es-ES');
  */
 export function setLocale(locale: string) {
-  const i18nManager = getBrowserI18nManager();
-  return i18nManager.setLocale(locale);
+  const i18nManager = getI18nManager();
+  const newLocale = determineSupportedLocale(locale, {
+    defaultLocale: i18nManager.getDefaultLocale(),
+    locales: i18nManager.getLocales(),
+    customMapping: i18nManager.getCustomMapping(),
+  });
+  if (!newLocale) {
+    console.warn(createInvalidLocaleWarning(locale));
+    return;
+  }
+
+  getBrowserConditionStore().setLocale(newLocale);
+  window.location.reload();
 }
 
-/**
- * Returns the user's current default locale.
- * @returns {string} The user's current default locale.
- *
- * @example
- * const defaultLocale = getDefaultLocale();
- * console.log(defaultLocale); // 'en-US'
- */
-export function getDefaultLocale() {
-  const i18nManager = getBrowserI18nManager();
-  return i18nManager.getDefaultLocale();
-}
+export { getDefaultLocale, getLocale, getLocales } from 'gt-i18n/internal';

@@ -16,13 +16,16 @@ describe('resolveTranslationSync', () => {
     const mockManager = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue('Bonjour {name} !'),
+      getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
-    vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
+    vi.mocked(getI18nManager).mockReturnValue(
+      mockManager as unknown as ReturnType<typeof getI18nManager>
+    );
 
     const message = 'Hello {name}!';
-    const options = { name: 'Alice' };
+    const options = { $locale: 'fr', name: 'Alice' };
 
-    resolveTranslationSync(message, options);
+    resolveTranslationSync('fr', message, options);
 
     expect(interpolateMessage).toHaveBeenCalledWith({
       source: 'Hello {name}!',
@@ -32,6 +35,7 @@ describe('resolveTranslationSync', () => {
         $locale: 'fr',
         name: 'Alice',
       },
+      sourceLocale: 'en',
     });
   });
 
@@ -40,12 +44,14 @@ describe('resolveTranslationSync', () => {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue(undefined),
     };
-    vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
+    vi.mocked(getI18nManager).mockReturnValue(
+      mockManager as unknown as ReturnType<typeof getI18nManager>
+    );
 
     const message = 'Hello {name}!';
-    const options = { name: 'Alice' };
+    const options = { $locale: 'fr', name: 'Alice' };
 
-    const result = resolveTranslationSync(message, options);
+    const result = resolveTranslationSync('fr', message, options);
 
     expect(result).toBeUndefined();
     expect(interpolateMessage).not.toHaveBeenCalled();
@@ -55,13 +61,21 @@ describe('resolveTranslationSync', () => {
     const mockManager = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue('Translated'),
+      getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
-    vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
+    vi.mocked(getI18nManager).mockReturnValue(
+      mockManager as unknown as ReturnType<typeof getI18nManager>
+    );
 
     const message = 'Hello {name}!';
-    const options = { name: 'Bob', $context: 'greeting', $id: 'hello-msg' };
+    const options = {
+      $locale: 'fr',
+      name: 'Bob',
+      $context: 'greeting',
+      $id: 'hello-msg',
+    };
 
-    resolveTranslationSync(message, options);
+    resolveTranslationSync('fr', message, options);
 
     expect(interpolateMessage).toHaveBeenCalledWith({
       source: 'Hello {name}!',
@@ -73,6 +87,7 @@ describe('resolveTranslationSync', () => {
         $context: 'greeting',
         $id: 'hello-msg',
       },
+      sourceLocale: 'en',
     });
   });
 
@@ -80,13 +95,20 @@ describe('resolveTranslationSync', () => {
     const mockManager = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue('Translated'),
+      getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
-    vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
+    vi.mocked(getI18nManager).mockReturnValue(
+      mockManager as unknown as ReturnType<typeof getI18nManager>
+    );
 
     const message = 'Hello {name}!';
-    const options = { name: 'Alice', $format: 'STRING' as const };
+    const options = {
+      $locale: 'fr',
+      name: 'Alice',
+      $format: 'STRING' as const,
+    };
 
-    resolveTranslationSync(message, options);
+    resolveTranslationSync('fr', message, options);
 
     expect(interpolateMessage).toHaveBeenCalledWith({
       source: 'Hello {name}!',
@@ -96,6 +118,7 @@ describe('resolveTranslationSync', () => {
         $locale: 'fr',
         name: 'Alice',
       },
+      sourceLocale: 'en',
     });
   });
 });

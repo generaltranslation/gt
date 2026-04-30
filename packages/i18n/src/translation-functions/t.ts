@@ -1,15 +1,17 @@
 import { resolveStringContentWithFallback } from './internal/helpers';
-import { SyncResolutionFunctionWithFallback } from './types/functions';
+import { InlineTranslationOptions } from './types/options';
+import { getCurrentLocale } from '../i18n-manager/singleton-operations';
 
 /**
  * Translate a message
  * @param {string} message - The message to translate.
- * @param {InlineTranslationOptions} options - The options for the translation.
+ * @param options - The options for the translation.
  * @returns The translated message.
  */
-export const t: SyncResolutionFunctionWithFallback = (message, options) => {
-  return resolveStringContentWithFallback(message, {
+export function t(message: string, options: InlineTranslationOptions = {}) {
+  const locale = options.$locale ?? getCurrentLocale();
+  return resolveStringContentWithFallback(locale, message, {
     $format: 'ICU',
     ...options,
   });
-};
+}

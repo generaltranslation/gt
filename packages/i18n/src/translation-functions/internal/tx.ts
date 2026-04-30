@@ -1,6 +1,14 @@
 import { RuntimeTranslationOptions } from '../types/options';
 import type { StringFormat } from 'generaltranslation/types';
 import { resolveStringContentWithRuntimeFallback } from './helpers';
+import { getCurrentLocale } from '../../i18n-manager/singleton-operations';
+
+type RuntimeTranslationOptionsWithFormat = Omit<
+  RuntimeTranslationOptions,
+  '$format'
+> & {
+  $format?: StringFormat;
+};
 
 /**
  * Translates a message at runtime.
@@ -10,7 +18,7 @@ import { resolveStringContentWithRuntimeFallback } from './helpers';
  *
  * @example
  * // Simple runtime translation without interpolation
- * const status = await tx('Processing complete');
+ * const status = await tx('Processing complete', { $locale: 'es-MX' });
  *
  * @example
  * // Runtime translation with interpolation
@@ -18,11 +26,10 @@ import { resolveStringContentWithRuntimeFallback } from './helpers';
  */
 export async function tx(
   content: string,
-  options?: Omit<RuntimeTranslationOptions, '$format'> & {
-    $format?: StringFormat;
-  }
+  options: RuntimeTranslationOptionsWithFormat = {}
 ): Promise<string> {
-  return resolveStringContentWithRuntimeFallback(content, {
+  const locale = options.$locale ?? getCurrentLocale();
+  return resolveStringContentWithRuntimeFallback(locale, content, {
     $format: 'STRING',
     ...options,
   });

@@ -15,7 +15,7 @@ export type InlineTranslationOptions = BaseTranslationOptions & {
   $id?: string;
   /** The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'. */
   $format?: StringFormat;
-  /** The locale to use for formatting the message. Defaults to the current locale. Determines the formatting behavior. */
+  /** The locale to use for formatting the message. */
   $locale?: string;
   /**
    * @deprecated use {@link $locale} instead
@@ -84,7 +84,6 @@ export type LookupOptions =
 export type ResolutionOptions<T extends DataFormat> = {
   /**
    * The locale to use for formatting looking up and formatting the message.
-   * Defaults to the current locale. Determines the formatting behavior.
    */
   $locale?: string;
 } & (T extends 'JSX'
@@ -94,3 +93,14 @@ export type ResolutionOptions<T extends DataFormat> = {
   : Omit<InlineTranslationOptions, '$format'> & {
       $format?: T;
     });
+
+/**
+ * Lookup options after core has applied defaults for locale and format.
+ */
+export type NormalizedLookupOptions<T extends DataFormat> = Omit<
+  ResolutionOptions<T>,
+  '$format' | '$locale'
+> & {
+  $format: T;
+  $locale: string;
+};

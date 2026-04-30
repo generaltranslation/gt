@@ -23,10 +23,29 @@ describe('translation helpers', () => {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue(undefined),
     };
-    vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
+    vi.mocked(getI18nManager).mockReturnValue(
+      mockManager as unknown as ReturnType<typeof getI18nManager>
+    );
 
-    const result = resolveJsx(['Hello'], {});
+    const result = resolveJsx('fr', ['Hello']);
     expect(result).toBeUndefined();
+  });
+
+  it('resolveJsx uses the provided locale', () => {
+    const mockManager = {
+      lookupTranslation: vi.fn().mockReturnValue(undefined),
+    };
+    vi.mocked(getI18nManager).mockReturnValue(
+      mockManager as unknown as ReturnType<typeof getI18nManager>
+    );
+
+    resolveJsx('fr', ['Hello']);
+
+    expect(mockManager.lookupTranslation).toHaveBeenCalledWith(
+      'fr',
+      ['Hello'],
+      expect.objectContaining({ $format: 'JSX', $locale: 'fr' })
+    );
   });
 
   // ===== NEW BEHAVIOR ===== //
@@ -37,16 +56,20 @@ describe('translation helpers', () => {
       lookupTranslationWithFallback: vi
         .fn()
         .mockResolvedValue('Bonjour {name} !'),
+      getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
-    vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
+    vi.mocked(getI18nManager).mockReturnValue(
+      mockManager as unknown as ReturnType<typeof getI18nManager>
+    );
 
-    await resolveStringContentWithRuntimeFallback('Hello {name}!', {});
+    await resolveStringContentWithRuntimeFallback('fr', 'Hello {name}!');
 
     expect(mockManager.lookupTranslationWithFallback).toHaveBeenCalled();
     expect(interpolateMessage).toHaveBeenCalledWith({
       source: 'Hello {name}!',
       target: 'Bonjour {name} !',
       options: expect.objectContaining({ $format: 'STRING', $locale: 'fr' }),
+      sourceLocale: 'en',
     });
   });
 
@@ -54,16 +77,20 @@ describe('translation helpers', () => {
     const mockManager = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue(undefined),
+      getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
-    vi.mocked(getI18nManager).mockReturnValue(mockManager as any);
+    vi.mocked(getI18nManager).mockReturnValue(
+      mockManager as unknown as ReturnType<typeof getI18nManager>
+    );
 
-    resolveStringContentWithFallback('Hello {name}!', {});
+    resolveStringContentWithFallback('fr', 'Hello {name}!');
 
     // interpolateMessage is called with target=undefined, causing source fallback
     expect(interpolateMessage).toHaveBeenCalledWith({
       source: 'Hello {name}!',
       target: undefined,
       options: expect.objectContaining({ $format: 'STRING', $locale: 'fr' }),
+      sourceLocale: 'en',
     });
   });
 });

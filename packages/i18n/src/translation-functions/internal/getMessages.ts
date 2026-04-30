@@ -7,7 +7,6 @@ import { MFunctionType } from '../types/functions';
 /**
  * Returns the m function that resolves a registered message to its translation.
  * @returns A promise of the m function
- * @important Must be used inside of a request context
  *
  * @example
  * // Registration

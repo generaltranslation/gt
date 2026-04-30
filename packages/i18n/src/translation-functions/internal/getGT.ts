@@ -1,12 +1,16 @@
-import { getI18nManager } from '../../i18n-manager/singleton-operations';
-import { InlineTranslationOptions, LookupOptions } from '../types/options';
+import {
+  getCurrentLocale,
+  getI18nManager,
+} from '../../i18n-manager/singleton-operations';
+import { InlineTranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
+import { createLookupOptions } from './helpers';
+import type { StringFormat } from 'generaltranslation/types';
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
  * @returns A promise of the gt function
- * @important Must be used inside of a request context
  *
  * @example
  * const gt = await getGT();
@@ -15,7 +19,9 @@ import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 export async function getGT(): Promise<GTFunctionType> {
   // Get the translation resolver
   const i18nManager = getI18nManager();
-  const lookupTranslation = await i18nManager.getLookupTranslation();
+  const locale = getCurrentLocale();
+  await i18nManager.loadTranslations(locale);
+  const sourceLocale = i18nManager.getDefaultLocale();
 
   /**
    * Registers a message at build time and resolves its translation at runtime.
@@ -37,20 +43,26 @@ export async function getGT(): Promise<GTFunctionType> {
     message: string,
     options: InlineTranslationOptions = {}
   ) => {
-    const resolutionOptions: LookupOptions = {
-      $format: 'ICU',
-      ...options,
-      $locale: options.$locale ?? i18nManager.getLocale(),
-    };
+    const targetLocale = options.$locale ?? locale;
+    const lookupOptions = createLookupOptions<StringFormat>(
+      targetLocale,
+      options,
+      'ICU'
+    );
 
     // Lookup translation
-    const translation = lookupTranslation(message, resolutionOptions);
+    const translation = i18nManager.lookupTranslation(
+      lookupOptions.$locale,
+      message,
+      lookupOptions
+    );
 
     // Format result
     return interpolateMessage({
       source: message,
       target: translation,
-      options: resolutionOptions,
+      options: lookupOptions,
+      sourceLocale,
     });
   };
 
