@@ -36,6 +36,7 @@ export function interpolateMessage({
 
   // Format source
   // Missing translations format the source with the source locale, not the target locale.
+  // TODO: Consider formatting dates, numbers, etc. with the target locale while keeping plurals in the source locale.
   return routeInterpolation(source, getSourceOptions(options, sourceLocale));
 }
 
