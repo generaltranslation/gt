@@ -10,6 +10,9 @@ type Store = {
   locale: string;
 };
 
+const OUTSIDE_SCOPE_MESSAGE =
+  'AsyncConditionStore: getLocale() called outside of a withGT() scope.';
+
 type AsyncConditionStoreConstructorParams = ConditionStoreConfig & {
   store?: AsyncLocalStorage<Store>;
 };
@@ -42,9 +45,11 @@ export class AsyncConditionStore implements ScopedConditionStore {
   getLocale(): string {
     const store = this.store.getStore();
     if (!store) {
-      throw new Error(
-        'AsyncConditionStore: getLocale() called outside of a withGT() scope.'
-      );
+      if (process.env.NODE_ENV === 'production') {
+        console.warn(OUTSIDE_SCOPE_MESSAGE);
+        return this.resolveLocale();
+      }
+      throw new Error(OUTSIDE_SCOPE_MESSAGE);
     }
     return this.resolveLocale(store.locale);
   }

@@ -21,7 +21,11 @@ export function resolveJsx(
   options: ResolutionOptions<'JSX'> = {}
 ): JsxChildren | undefined {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(options, 'JSX');
+  const lookupOptions = createLookupOptions(
+    options,
+    'JSX',
+    getCurrentLocale()
+  );
   const translation = i18nManager.lookupTranslation(
     lookupOptions.$locale,
     content,
@@ -51,7 +55,11 @@ export async function resolveJsxWithRuntimeFallback(
   options: ResolutionOptions<'JSX'> = {}
 ): Promise<JsxChildren> {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(options, 'JSX');
+  const lookupOptions = createLookupOptions(
+    options,
+    'JSX',
+    getCurrentLocale()
+  );
   const translation = await i18nManager.lookupTranslationWithFallback(
     lookupOptions.$locale,
     content,
@@ -71,7 +79,11 @@ export function resolveStringContent(
   options: ResolutionOptions<StringFormat> = {}
 ): StringContent | undefined {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(options, 'STRING');
+  const lookupOptions = createLookupOptions(
+    options,
+    'STRING',
+    getCurrentLocale()
+  );
   const translation = i18nManager.lookupTranslation(
     lookupOptions.$locale,
     content,
@@ -94,7 +106,11 @@ export function resolveStringContentWithFallback(
   options: ResolutionOptions<StringFormat> = {}
 ): StringContent {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(options, 'STRING');
+  const lookupOptions = createLookupOptions(
+    options,
+    'STRING',
+    getCurrentLocale()
+  );
   const translation = i18nManager.lookupTranslation(
     lookupOptions.$locale,
     content,
@@ -118,7 +134,11 @@ export async function resolveStringContentWithRuntimeFallback(
   options: ResolutionOptions<StringFormat> = {}
 ): Promise<StringContent> {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(options, 'STRING');
+  const lookupOptions = createLookupOptions(
+    options,
+    'STRING',
+    getCurrentLocale()
+  );
   const translation = await i18nManager.lookupTranslationWithFallback(
     lookupOptions.$locale,
     content,
@@ -131,18 +151,17 @@ export async function resolveStringContentWithRuntimeFallback(
     sourceLocale: i18nManager.getDefaultLocale(),
   });
 }
-// ----- HELPER FUNCTIONS ----- //
-
 /**
  * Add the default format to caller-provided lookup options.
  */
 export function createLookupOptions<T extends DataFormat>(
   options: ResolutionOptions<T>,
-  defaultFormat: T
+  defaultFormat: T,
+  defaultTargetLocale: string
 ): NormalizedLookupOptions<T> {
   return {
     ...options,
     $format: (options.$format ?? defaultFormat) as T,
-    $locale: options.$locale ?? getCurrentLocale(),
+    $locale: options.$locale ?? defaultTargetLocale,
   };
 }

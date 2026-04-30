@@ -19,7 +19,8 @@ import type { StringFormat } from 'generaltranslation/types';
 export async function getGT(): Promise<GTFunctionType> {
   // Get the translation resolver
   const i18nManager = getI18nManager();
-  await i18nManager.loadTranslations(getCurrentLocale());
+  const locale = getCurrentLocale();
+  await i18nManager.loadTranslations(locale);
   const sourceLocale = i18nManager.getDefaultLocale();
 
   /**
@@ -42,7 +43,11 @@ export async function getGT(): Promise<GTFunctionType> {
     message: string,
     options: InlineTranslationOptions = {}
   ) => {
-    const lookupOptions = createLookupOptions<StringFormat>(options, 'ICU');
+    const lookupOptions = createLookupOptions<StringFormat>(
+      options,
+      'ICU',
+      locale
+    );
 
     // Lookup translation
     const translation = i18nManager.lookupTranslation(
