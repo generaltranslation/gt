@@ -1,4 +1,4 @@
-import path from 'node:path';
+import path from 'path';
 import type { WebpackCompiler } from 'unplugin';
 import type { NativeResolver } from './types';
 
