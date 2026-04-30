@@ -4,6 +4,7 @@ import {
   PluginSettings,
   resolveAutoderive,
   resolveDevHotReload,
+  resolveEnableCrossFileResolution,
 } from '../../config';
 import { StringCollector } from '../StringCollector';
 import { ScopeTracker } from '../ScopeTracker';
@@ -22,6 +23,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   enableConcatenationArg: true,
   enableMacroImportInjection: true,
   enableAutoJsxInjection: false,
+  enableCrossFileResolution: false,
   autoderive: { jsx: false, strings: false },
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
@@ -38,6 +40,7 @@ export function initializeState(
   const gtConfig = options.gtConfig;
   const enableAutoJsxInjection =
     gtConfig?.files?.gt?.parsingFlags?.enableAutoJsxInjection ?? false;
+  const enableCrossFileResolution = resolveEnableCrossFileResolution(options);
   const rawDevHotReload =
     gtConfig?.files?.gt?.parsingFlags?.devHotReload ?? false;
   const rawAutoderive =
@@ -69,6 +72,7 @@ export function initializeState(
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
     enableAutoJsxInjection, // can be overridden by options.enableAutoJsxInjection
+    enableCrossFileResolution,
     autoderive,
     devHotReload,
     ...restOptions,
