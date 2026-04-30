@@ -286,10 +286,7 @@ export async function downloadFileBatch(
         let data = mergeWithSource(file.data, locale, inputPath, options);
 
         // Stable sort JSON keys for deterministic output
-        if (
-          file.fileFormat === 'GTJSON' ||
-          outputPath.endsWith('.json')
-        ) {
+        if (file.fileFormat === 'GTJSON' || outputPath.endsWith('.json')) {
           try {
             data = sortJsonString(data);
           } catch (error) {
