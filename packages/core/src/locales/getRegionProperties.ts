@@ -1,7 +1,6 @@
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
-import { defaultEmoji, emojis } from './getLocaleEmoji';
-import { _standardizeLocale } from './isValidLocale';
+import { defaultEmoji, getRegionEmoji } from './getLocaleEmoji';
 
 export type CustomRegionMapping = {
   [region: string]: { name?: string; emoji?: string; locale?: string };
@@ -19,7 +18,7 @@ export type CustomRegionMapping = {
  * - Otherwise, uses `Intl.DisplayNames` to get the localized region name in the given `defaultLocale`,
  *   falling back to `libraryDefaultLocale`.
  * - Falls back to the region code as `name` if display name resolution fails.
- * - Falls back to `defaultEmoji` if no emoji mapping is found in `emojis` or `customMapping`.
+ * - Falls back to `defaultEmoji` if no emoji can be computed or found in `customMapping`.
  *
  * @param {string} region - The region code to look up (e.g., `"US"`, `"GB"`, `"DE"`).
  * @param {string} [defaultLocale=libraryDefaultLocale] - The locale to use when localizing the region name.
@@ -62,7 +61,7 @@ export function _getRegionProperties(
     return {
       code: region,
       name: displayNames.of(region) || region,
-      emoji: emojis[region] || defaultEmoji,
+      emoji: getRegionEmoji(region),
       ...customMapping?.[region],
     };
   } catch {

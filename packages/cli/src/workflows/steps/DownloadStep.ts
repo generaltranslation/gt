@@ -83,6 +83,30 @@ export class DownloadTranslationsStep extends WorkflowStep<
         (file) => file.completedAt !== null
       );
 
+      if (readyTranslations.length < currentQueryData.length) {
+        const readyKeys = new Set(
+          readyTranslations.map(
+            (t) => `${t.branchId}:${t.fileId}:${t.versionId}:${t.locale}`
+          )
+        );
+        const missing = currentQueryData.filter(
+          (item) =>
+            !readyKeys.has(
+              `${item.branchId}:${item.fileId}:${item.versionId}:${item.locale}`
+            )
+        );
+        logger.warn(
+          `Failed to download ${missing.length} file(s):\n${missing.map((f) => `- ${f.fileName} (${f.locale})`).join('\n')}`
+        );
+        for (const f of missing) {
+          recordWarning(
+            'failed_download',
+            f.fileName,
+            `Failed to download for locale ${f.locale}`
+          );
+        }
+      }
+
       // Prepare batch download data
       const batchFiles: BatchedFiles = readyTranslations
         .map((translation) => {

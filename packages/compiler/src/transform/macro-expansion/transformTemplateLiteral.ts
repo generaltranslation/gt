@@ -16,8 +16,6 @@ export function transformTemplateLiteral(path: NodePath<t.TemplateLiteral>): {
     message: t.StringLiteral | t.TemplateLiteral;
     variables: t.ObjectExpression | null;
   }[];
-  message?: t.StringLiteral | t.TemplateLiteral;
-  variables?: t.ObjectExpression | null;
   errors: string[];
 } {
   const { parts, errors } = flattenExpressionToParts(path);
@@ -30,8 +28,6 @@ export function transformTemplateLiteral(path: NodePath<t.TemplateLiteral>): {
 
   return {
     content,
-    message: content[0]?.message,
-    variables: content[0]?.variables,
     errors: [],
   };
 }

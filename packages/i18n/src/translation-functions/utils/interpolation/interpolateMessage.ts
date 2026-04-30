@@ -10,7 +10,8 @@ import type { StringFormat } from 'generaltranslation/types';
  */
 export type InterpolationOptions = {
   $format: StringFormat;
-} & Omit<InlineTranslationOptions, '$format'>;
+  $locale: string;
+} & Omit<InlineTranslationOptions, '$format' | '$locale'>;
 
 /**
  * Interpolation router function for all {@link StringFormat} types
@@ -24,12 +25,9 @@ export function interpolateMessage({
   target?: string;
   options: InterpolationOptions;
 }): string {
-  const i18nManager = getI18nManager();
-
   // Format translation
   if (target != null) {
     return routeInterpolation(target, {
-      $locale: i18nManager.getLocale(),
       $_fallback: source,
       ...options,
     });
@@ -37,8 +35,8 @@ export function interpolateMessage({
 
   // Format source
   return routeInterpolation(source, {
-    $locale: i18nManager.getDefaultLocale(),
     ...options,
+    $locale: getI18nManager().getDefaultLocale(),
   });
 }
 
