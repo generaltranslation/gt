@@ -4,6 +4,7 @@ import { PluginSettings } from '../config';
 import { Logger } from './Logger';
 import { ErrorTracker } from './ErrorTracker';
 import { ScopeTracker } from './ScopeTracker';
+import type { ModuleResolver } from '../utils/resolution/types';
 /**
  * Plugin state for processing files
  * Matches the Rust TransformVisitor structure
@@ -23,4 +24,6 @@ export interface TransformState {
   };
   /** Debug: shared manifest map for hash → jsxChildren mapping (accumulated across files) */
   debugManifest?: Map<string, unknown>;
+  /** Resolve local imports using the compiler's bundler-backed resolution graph. */
+  resolveImport?: ModuleResolver;
 }

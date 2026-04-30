@@ -45,3 +45,5 @@ export const INVALID_IDENTIFIERS = [
 ];
 
 export type InvalidIdentifier = (typeof INVALID_IDENTIFIERS)[number];
+
+export const REQUIRE_FUNCTION = 'require' as const;

@@ -14,6 +14,15 @@ import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
+import { createEsbuildResolver } from './utils/resolution/createEsbuildResolver';
+import {
+  clearResolutionCache,
+  createResolutionCache,
+  createResolver,
+} from './utils/resolution/createResolver';
+import { createViteResolver } from './utils/resolution/createViteResolver';
+import { createWebpackResolver } from './utils/resolution/createWebpackResolver';
+import type { NativeResolver } from './utils/resolution/types';
 
 /**
  * Architecture:
@@ -71,14 +80,34 @@ export interface GTUnpluginOptions extends PluginConfig {
  * that works across webpack, Vite, Rollup, and other bundlers.
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
-  (options = {}) => {
+  (options = {}, meta) => {
     // Debug manifest: accumulates hash → jsxChildren across all files
     const debugManifest = options._debugHashManifest
       ? new Map<string, unknown>()
       : undefined;
+    const resolutionCache = createResolutionCache();
+    let webpackResolver: NativeResolver | null = null;
+    let esbuildResolver: NativeResolver | null = null;
 
     return {
       name: '@generaltranslation/GT_PLUGIN',
+      ...(meta.framework === 'webpack' && {
+        webpack(compiler) {
+          compiler.hooks.afterResolvers.tap(
+            '@generaltranslation/GT_PLUGIN',
+            () => {
+              webpackResolver = createWebpackResolver(compiler);
+            }
+          );
+        },
+      }),
+      ...(meta.framework === 'esbuild' && {
+        esbuild: {
+          setup(build) {
+            esbuildResolver = createEsbuildResolver(build);
+          },
+        },
+      }),
       transformInclude(id: string) {
         // Only transform TSX and JSX files
         return (
@@ -88,7 +117,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           id.endsWith('.js')
         );
       },
-      transform(code: string, id: string) {
+      async transform(code: string, id: string) {
         // Initialize processing state
         const state = initializeState(options, id);
         if (debugManifest) state.debugManifest = debugManifest;
@@ -99,6 +128,33 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             !state.settings.compileTimeHash
           ) {
             return null;
+          }
+
+          let nativeResolver: NativeResolver | null = null;
+          switch (meta.framework) {
+            case 'webpack':
+              nativeResolver = webpackResolver;
+              break;
+            case 'esbuild':
+              nativeResolver = esbuildResolver;
+              break;
+            case 'rollup':
+            case 'rolldown':
+            case 'vite':
+              nativeResolver = createViteResolver(this);
+              break;
+          }
+
+          if (nativeResolver) {
+            // The graph builder reads transitive modules directly from disk,
+            // so register them with the bundler for watch-mode invalidation.
+            const watchFile = this.addWatchFile.bind(this);
+            state.resolveImport = await createResolver(
+              id,
+              nativeResolver,
+              resolutionCache,
+              watchFile
+            );
           }
 
           // Parse the code into AST
@@ -167,7 +223,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           return null;
         }
       },
+      watchChange() {
+        clearResolutionCache(resolutionCache);
+      },
       buildEnd() {
+        clearResolutionCache(resolutionCache);
         if (debugManifest && debugManifest.size > 0) {
           const fs = require('fs');
           const path = require('path');
