@@ -26,6 +26,11 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
 import { getRelative } from '../fs/findFilepath.js';
 
+function sortJsonString(data: string): string {
+  const sortedData = stringify(JSON.parse(data));
+  return JSON.stringify(JSON.parse(sortedData), null, 2);
+}
+
 /**
  * Merges translated content with the current source file for schema-based formats.
  */
@@ -260,10 +265,7 @@ export async function downloadFileBatch(
               let remergedData = remerged;
               if (outputPath.endsWith('.json')) {
                 try {
-                  const jsonData = JSON.parse(remergedData);
-                  const sortedData = stringify(jsonData);
-                  const sortedJsonData = JSON.parse(sortedData);
-                  remergedData = JSON.stringify(sortedJsonData, null, 2);
+                  remergedData = sortJsonString(remergedData);
                 } catch {
                   // Fall through with unsorted content
                 }
@@ -289,10 +291,7 @@ export async function downloadFileBatch(
           outputPath.endsWith('.json')
         ) {
           try {
-            const jsonData = JSON.parse(data);
-            const sortedData = stringify(jsonData); // stably sort with fast-json-stable-stringify
-            const sortedJsonData = JSON.parse(sortedData);
-            data = JSON.stringify(sortedJsonData, null, 2); // format the data
+            data = sortJsonString(data);
           } catch (error) {
             logger.warn(`Failed to sort JSON file: ${file.id}: ` + error);
           }
