@@ -158,7 +158,7 @@ async function cleanupEmptyDirs(dirPath: string): Promise<void> {
     if (remainingEntries.length === 0) {
       await fs.rmdir(dirPath);
     }
-  } catch (error) {
+  } catch {
     // Ignore errors - directory might not exist or might not be empty
   }
 }

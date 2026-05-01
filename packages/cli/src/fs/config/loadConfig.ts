@@ -6,7 +6,7 @@ export function loadConfig(filepath: string): Record<string, any> {
       string,
       any
     >;
-  } catch (error) {
+  } catch {
     return {};
   }
 }

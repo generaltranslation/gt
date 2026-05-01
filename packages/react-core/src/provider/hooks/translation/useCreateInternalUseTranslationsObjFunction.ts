@@ -89,7 +89,6 @@ export function useCreateInternalUseTranslationsObjFunction(
       // strategy is much more readable and much easier to test/debug
       // Inject hashes into subtree
       const { dictionary: subtreeWithHashes, updateDictionary } = injectHashes(
-        // eslint-disable-next-line no-undef
         structuredClone(subtree) as Dictionary,
         idWithParent
       );
@@ -105,7 +104,6 @@ export function useCreateInternalUseTranslationsObjFunction(
         updateDictionary: updateDictionaryTranslations,
       } = injectTranslations(
         subtreeWithHashes as Dictionary,
-        // eslint-disable-next-line no-undef
         structuredClone(translatedSubtree) as Dictionary,
         translations || {},
         untranslatedEntries,
@@ -114,7 +112,6 @@ export function useCreateInternalUseTranslationsObjFunction(
       // Inject fallbacks into translation subtree
       const translatedSubtreeWithFallbacks = injectFallbacks(
         subtreeWithHashes as Dictionary,
-        // eslint-disable-next-line no-undef
         structuredClone(dictionaryTranslationsWithTranslations) as Dictionary,
         untranslatedEntries,
         idWithParent
@@ -187,7 +184,6 @@ export function useCreateInternalUseTranslationsObjFunction(
       }
 
       // (5) Copy the dictionaryTranslations object
-      // eslint-disable-next-line no-undef
       return structuredClone(translatedSubtreeWithFallbacks);
     },
     [

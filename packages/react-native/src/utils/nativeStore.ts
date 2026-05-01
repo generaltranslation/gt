@@ -18,7 +18,6 @@ export function nativeStoreGet(key: string): string | null {
       console.warn(ssrUnsupportedWarning);
       return null;
     }
-    // eslint-disable-next-line no-undef
     return localStorage.getItem(key);
   }
   return GtReactNative.nativeStoreGet(key);
@@ -36,7 +35,6 @@ export function nativeStoreSet(key: string, value: string): void {
       console.warn(ssrUnsupportedWarning);
       return;
     }
-    // eslint-disable-next-line no-undef
     localStorage.setItem(key, value);
     return;
   }

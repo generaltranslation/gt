@@ -49,7 +49,7 @@ type TranslationRequestQueueItem =
 export default function useRuntimeTranslation({
   gt,
   locale,
-  versionId, // kept for API compatibility (not used)
+  versionId: _versionId, // kept for API compatibility (not used)
   defaultLocale,
   runtimeUrl,
   renderSettings,

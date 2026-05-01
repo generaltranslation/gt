@@ -5,7 +5,6 @@ import {
   isElementNode,
   isExpressionNode,
   isMultiplicationNode,
-  isWhitespaceMultiplicationNode,
   JsxTree,
   MultiplicationNode,
   WhitespaceJsxTreeResult,

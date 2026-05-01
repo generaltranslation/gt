@@ -9,7 +9,6 @@ import {
   GT_ALL_FUNCTIONS,
   GT_CALLBACK_FUNCTIONS,
 } from '../utils/constants/gt/constants';
-import { isGTFunction } from '../utils/constants/gt/helpers';
 
 // TODO: separate callback funtions and imported functions
 

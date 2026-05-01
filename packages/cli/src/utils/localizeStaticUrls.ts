@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { Options, Settings } from '../types/index.js';
+import { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
 import { unified } from 'unified';
@@ -105,7 +105,7 @@ export default async function localizeStaticUrls(
 
   // Then process all other locales from fileMapping
   const mappingPromises = Object.entries(fileMapping)
-    .filter(([locale, filesMap]) => locales.includes(locale)) // Filter by target locales
+    .filter(([locale]) => locales.includes(locale)) // Filter by target locales
     .map(async ([locale, filesMap]) => {
       // Get all files that are md or mdx
       const targetFiles = Object.values(filesMap).filter(
@@ -614,14 +614,6 @@ function localizeStaticUrlsForFile(
     exclude,
     baseDomain || ''
   );
-}
-
-function cleanPath(path: string): string {
-  let cleanedPath = path.startsWith('/') ? path.slice(1) : path;
-  cleanedPath = cleanedPath.endsWith('/')
-    ? cleanedPath.slice(0, -1)
-    : cleanedPath;
-  return cleanedPath;
 }
 
 function checkIfPathMatchesPattern(

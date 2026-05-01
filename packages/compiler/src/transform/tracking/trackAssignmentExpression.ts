@@ -25,8 +25,8 @@ export function trackAssignmentExpression(
  * TODO: track overwritten variable when handling namespace imports is refactored
  */
 function handleOptionalMemberExpression(
-  scopeTracker: ScopeTracker,
-  optionalMemberExpression: t.OptionalMemberExpression
+  _scopeTracker: ScopeTracker,
+  _optionalMemberExpression: t.OptionalMemberExpression
 ): void {
   return;
 }

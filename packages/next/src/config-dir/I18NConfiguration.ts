@@ -130,7 +130,7 @@ export class I18NConfiguration {
     // Render method
     renderSettings,
     // Dictionaries
-    dictionary,
+    dictionary: _dictionary,
     // Batching config
     maxConcurrentRequests,
     maxBatchSize,

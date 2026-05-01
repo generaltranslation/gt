@@ -280,7 +280,7 @@ describe('extractJson', () => {
         items: [{ locale: 'en', title: 'English Title' }],
       });
 
-      const result = extractJson(
+      extractJson(
         localContent,
         'test.json',
         {

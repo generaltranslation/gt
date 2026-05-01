@@ -351,7 +351,6 @@ export async function getTranslations(id?: string): Promise<
     // strategy is much more readable and much easier to test/debug
     // Inject hashes into subtree
     const { dictionary: subtreeWithHashes, updateDictionary } = injectHashes(
-      // eslint-disable-next-line no-undef
       structuredClone(subtree) as Dictionary,
       idWithParent
     );
@@ -367,7 +366,6 @@ export async function getTranslations(id?: string): Promise<
       updateDictionary: updateDictionaryTranslations,
     } = injectTranslations(
       subtreeWithHashes as Dictionary,
-      // eslint-disable-next-line no-undef
       structuredClone(translatedSubtree) as Dictionary,
       translations || {},
       untranslatedEntries,
@@ -376,7 +374,6 @@ export async function getTranslations(id?: string): Promise<
     // Inject fallbacks into translation subtree
     const translatedSubtreeWithFallbacks = injectFallbacks(
       subtreeWithHashes as Dictionary,
-      // eslint-disable-next-line no-undef
       structuredClone(dictionaryTranslationsWithTranslations) as Dictionary,
       untranslatedEntries,
       idWithParent
@@ -428,7 +425,6 @@ export async function getTranslations(id?: string): Promise<
     }
 
     // (4) Copy the dictionaryTranslations object
-    // eslint-disable-next-line no-undef
     return structuredClone(translatedSubtreeWithFallbacks);
   };
 

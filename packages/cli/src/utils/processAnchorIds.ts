@@ -41,8 +41,8 @@ export default async function processAnchorIds(
 
   // Process each locale's translated files
   const processPromises = Object.entries(fileMapping)
-    .filter(([locale, filesMap]) => locale !== settings.defaultLocale) // Skip default locale
-    .map(async ([locale, filesMap]) => {
+    .filter(([locale]) => locale !== settings.defaultLocale) // Skip default locale
+    .map(async ([, filesMap]) => {
       // Get all translated files whose sources are md or mdx
       const mdFiles = Object.entries(filesMap).filter(
         ([sourcePath, translatedPath]) =>

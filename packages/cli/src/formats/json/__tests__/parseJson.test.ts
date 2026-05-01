@@ -412,7 +412,7 @@ describe('parseJson', () => {
 
     it('should return original content when schema has no include or composite', () => {
       const json = JSON.stringify({ test: 'value' });
-      const result = expect(() => {
+      expect(() => {
         parseJson(
           json,
           path.join(__dirname, '../__mocks__', 'test.json'),

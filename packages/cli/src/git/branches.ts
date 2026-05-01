@@ -38,7 +38,7 @@ export async function getCurrentBranch(remoteName: string): Promise<{
 }
 
 export async function getIncomingBranches(
-  remoteName: string
+  _remoteName: string
 ): Promise<string[]> {
   try {
     // Get merge commits into the current branch

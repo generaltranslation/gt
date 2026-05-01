@@ -16,7 +16,7 @@ export function getLocadexVersion(): string {
   }
   try {
     return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).version;
-  } catch (error) {
+  } catch {
     return 'unknown';
   }
 }

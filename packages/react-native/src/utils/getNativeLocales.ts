@@ -18,7 +18,7 @@ export function getNativeLocales(): string[] {
 
     // Try to get locales from native module
     return GtReactNative.getNativeLocales() || [];
-  } catch (error) {
+  } catch {
     // Return empty array on any error (native module not available, etc.)
     return [];
   }
@@ -47,7 +47,7 @@ function getWebLocales(): string[] {
     }
 
     return locales;
-  } catch (error) {
+  } catch {
     return [];
   }
 }

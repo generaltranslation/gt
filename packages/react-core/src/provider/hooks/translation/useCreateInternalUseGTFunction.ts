@@ -356,10 +356,8 @@ export default function useCreateInternalUseGTFunction({
       $_hash,
       $_source,
       $context: context,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-      $hash,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-      $id,
+      $hash: _$hash,
+      $id: _$id,
       $maxChars: maxChars,
       $format: format,
       ...decodedVariables

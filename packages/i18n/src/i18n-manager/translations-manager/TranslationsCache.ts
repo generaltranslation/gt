@@ -73,7 +73,6 @@ export class TranslationsCache<
   /**
    * Timer for batching
    */
-  // eslint-disable-next-line no-undef
   private _batchTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
@@ -189,7 +188,6 @@ export class TranslationsCache<
    */
   private _flushNow(): void {
     if (this._batchTimer) {
-      // eslint-disable-next-line no-undef
       clearTimeout(this._batchTimer);
       this._batchTimer = null;
     }
@@ -201,7 +199,6 @@ export class TranslationsCache<
    */
   private _scheduleBatch(): void {
     if (this._batchTimer) return; // already scheduled
-    // eslint-disable-next-line no-undef
     this._batchTimer = setTimeout(() => {
       this._batchTimer = null;
       this._drainQueue();

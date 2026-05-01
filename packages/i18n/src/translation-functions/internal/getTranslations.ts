@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { DictionaryTranslationOptions } from '../types/options';
 import { TFunctionType } from '../types/functions';
 
@@ -37,8 +35,8 @@ export async function getTranslations(): Promise<TFunctionType> {
    * const greeting = t('user.greeting', { name: 'Bob' });
    */
   const t: TFunctionType = (
-    id: string,
-    options?: DictionaryTranslationOptions
+    _id: string,
+    _options?: DictionaryTranslationOptions
   ): string => {
     throw new Error('t() is not implemented');
   };
