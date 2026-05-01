@@ -14,7 +14,6 @@ const LOCALE_COOKIE = 'generaltranslation.locale';
 const RESET_COOKIE = 'generaltranslation.locale-reset';
 const REFERRER_COOKIE = 'generaltranslation.referrer-locale';
 const ROUTING_COOKIE = 'generaltranslation.locale-routing-enabled';
-const LOCALE_HEADER = 'x-generaltranslation-locale';
 
 // ---- Helpers ----
 
@@ -128,7 +127,6 @@ describe('Middleware Integration Tests', () => {
 
       expect(getResponseType(res)).toBe('rewrite');
       expect(getResponsePath(res)).toBe('/en/about');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('en');
       expect(res.cookies.get(ROUTING_COOKIE)?.value).toBe('true');
     });
 
@@ -141,7 +139,6 @@ describe('Middleware Integration Tests', () => {
       const res = middleware(createRequest('/en/about'));
 
       expect(getResponseType(res)).toBe('next');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('en');
     });
 
     it('2.3: !prefixDefault, non-default locale, /fr/about → next()', () => {
@@ -153,7 +150,6 @@ describe('Middleware Integration Tests', () => {
       const res = middleware(createRequest('/fr/about'));
 
       expect(getResponseType(res)).toBe('next');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('fr');
     });
 
     it('2.4: pathConfig, /fr/a-propos → rewrite /fr/about', () => {
@@ -170,7 +166,6 @@ describe('Middleware Integration Tests', () => {
 
       expect(getResponseType(res)).toBe('rewrite');
       expect(getResponsePath(res)).toBe('/fr/about');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('fr');
     });
 
     it('2.5: pathConfig + !prefixDefault, /about-us → rewrite /en/about', () => {
@@ -187,7 +182,6 @@ describe('Middleware Integration Tests', () => {
 
       expect(getResponseType(res)).toBe('rewrite');
       expect(getResponsePath(res)).toBe('/en/about');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('en');
     });
 
     it('2.6: localeRouting=false → next()', () => {
@@ -199,7 +193,6 @@ describe('Middleware Integration Tests', () => {
       const res = middleware(createRequest('/some/path'));
 
       expect(getResponseType(res)).toBe('next');
-      expect(res.headers.get(LOCALE_HEADER)).toBe('en');
       expect(res.cookies.get(ROUTING_COOKIE)?.value).toBe('false');
     });
 
@@ -212,8 +205,7 @@ describe('Middleware Integration Tests', () => {
       const res = middleware(createRequest('/__nextjs_source-map/main.js'));
 
       expect(getResponseType(res)).toBe('next');
-      // Source map next() is bare — no locale header or routing cookie
-      expect(res.headers.get(LOCALE_HEADER)).toBeNull();
+      // Source map next() is bare — no routing cookie
     });
   });
 
@@ -376,32 +368,6 @@ describe('Middleware Integration Tests', () => {
 
       expect(getResponseType(res)).toBe('redirect');
       expect(getResponseSearch(res)).toBe('?page=2');
-    });
-
-    it('sets locale header on rewrite responses', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-      });
-
-      const res = middleware(createRequest('/about'));
-
-      expect(res.headers.get(LOCALE_HEADER)).toBe('en');
-    });
-
-    it('sets locale header on redirect responses', () => {
-      setEnvConfig();
-      const middleware = createNextMiddleware({
-        prefixDefaultLocale: false,
-      });
-
-      const res = middleware(
-        createRequest('/about', {
-          cookies: { [LOCALE_COOKIE]: 'fr' },
-        })
-      );
-
-      expect(res.headers.get(LOCALE_HEADER)).toBe('fr');
     });
 
     it('sets locale-routing-enabled cookie on routed responses', () => {

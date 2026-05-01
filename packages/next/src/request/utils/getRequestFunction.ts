@@ -3,10 +3,6 @@ import {
   createCustomGetRequestFunctionWarning,
   createGetRequestFunctionWarning,
 } from '../../errors/ssg';
-import { getRootParam } from '@generaltranslation/next-internal';
-import { defaultExperimentalLocaleResolutionParam } from '../../utils/constants';
-import { experimentalLocaleResolutionError } from '../../errors/cacheComponents';
-import getI18NConfig from '../../config-dir/getI18NConfig';
 
 /**
  * Given a function type, return the associated request function
@@ -18,7 +14,7 @@ export function getRequestFunction(
   if (
     process.env._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION === 'true'
   ) {
-    return handleExperimentalLocaleResolution(functionName);
+    return async () => undefined;
   }
 
   const { error: moduleError, module } = getModule(functionName);
@@ -26,10 +22,7 @@ export function getRequestFunction(
     return async () => undefined;
   }
 
-  // Is using custom getRequest function
-  const usingCustom = getUsingCustom(functionName);
-
-  if (usingCustom) {
+  if (getUsingCustom(functionName)) {
     // Extract an unknown function
     const { error: extractError, value } = extractCustomFunction(
       module,
@@ -44,37 +37,6 @@ export function getRequestFunction(
   return extractDefaultFunction(
     module as { default: () => Promise<RequestFunctionReturnType> }
   );
-}
-
-/* ========== HELPERS ========== */
-/**
- * Special handler for when experimentalLocaleResolution is enabled
- */
-function handleExperimentalLocaleResolution(
-  functionName: RequestFunctions
-): () => Promise<RequestFunctionReturnType> {
-  // handle getLocale
-  if (functionName === 'getLocale') {
-    return async () => {
-      try {
-        const unverifiedLocale = getRootParam(
-          process.env
-            ._GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM ??
-            defaultExperimentalLocaleResolutionParam
-        );
-        const I18NConfig = getI18NConfig();
-        const gt = I18NConfig.getGTClass();
-        return unverifiedLocale && gt.isValidLocale(unverifiedLocale)
-          ? unverifiedLocale
-          : undefined;
-      } catch (error) {
-        console.warn(experimentalLocaleResolutionError + error);
-        return undefined;
-      }
-    };
-  }
-  // disable other request functions
-  return async () => undefined;
 }
 /**
  * Given a function name, returns the module for the function

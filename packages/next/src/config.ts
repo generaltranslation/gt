@@ -72,7 +72,7 @@ import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
  * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
- * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
+ * @param {object} headersAndCookies - Additional cookie names that can be passed for extended configuration.
  * @param {boolean} [experimentalEnableSSG=false] - Whether to enable SSG.
  * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings. (deprecated)
  * @param {string|undefined} [getStaticLocalePath="getStaticLocale"] - The path to the static getLocale function. (deprecated)
@@ -194,7 +194,7 @@ export function withGTConfig(
 
   // ---------- MERGE CONFIGS ---------- //
 
-  // Merge cookie and header names
+  // Merge cookie names
   const mergedHeadersAndCookies = {
     ...defaultWithGTConfigProps.headersAndCookies,
     ...props.headersAndCookies,

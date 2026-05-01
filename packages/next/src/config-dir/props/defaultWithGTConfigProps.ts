@@ -8,7 +8,6 @@ import {
   getDefaultRenderSettings,
   RenderMethod,
 } from 'gt-react/internal';
-import { defaultLocaleHeaderName } from '../../utils/headers';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
@@ -34,7 +33,6 @@ type DefaultGTConfigProps = {
   _usingPlugin: boolean;
   ignoreBrowserLocales: boolean;
   headersAndCookies: {
-    localeHeaderName: string;
     localeCookieName: string;
     referrerLocaleCookieName: string;
     localeRoutingEnabledCookieName: string;
@@ -61,7 +59,6 @@ const defaultWithGTConfigProps: DefaultGTConfigProps = {
   _usingPlugin: false,
   ignoreBrowserLocales: false,
   headersAndCookies: {
-    localeHeaderName: defaultLocaleHeaderName,
     localeCookieName: defaultLocaleCookieName,
     referrerLocaleCookieName: defaultReferrerLocaleCookieName,
     localeRoutingEnabledCookieName: defaultLocaleRoutingEnabledCookieName,

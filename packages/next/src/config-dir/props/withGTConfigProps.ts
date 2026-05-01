@@ -2,7 +2,6 @@ import { CustomMapping } from 'generaltranslation/types';
 import { RenderMethod } from 'gt-react/internal';
 
 export type HeadersAndCookies = {
-  localeHeaderName?: string;
   localeCookieName?: string;
   referrerLocaleCookieName?: string;
   localeRoutingEnabledCookieName?: string;
