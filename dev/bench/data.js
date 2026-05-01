@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777575055050,
+  "lastUpdate": 1777593706774,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -4872,6 +4872,122 @@ window.BENCHMARK_DATA = {
             "value": 100.70000000001164,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.20\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "a4adc594da4fd72abd08ab2d19dbdd0e69aa75a8",
+          "message": "[ci] release (#1307)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt-i18n@0.8.11\n\n### Patch Changes\n\n- [#1296](https://github.com/generaltranslation/gt/pull/1296)\n[`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401)\nThanks [@bgub](https://github.com/bgub)! - Require explicit locales for\nI18nManager translation/cache operations, move current-locale lookup\ninto higher-level helpers, and keep runtime condition storage in wrapper\nruntimes.\n\n## gt-next@6.16.21\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401)]:\n    -   gt-i18n@0.8.11\n    -   gt-react@10.19.10\n\n## @generaltranslation/gt-next-lint@14.0.21\n\n### Patch Changes\n\n-   Updated dependencies \\[]:\n    -   gt-next@6.16.21\n\n## gt-node@0.6.11\n\n### Patch Changes\n\n- [#1296](https://github.com/generaltranslation/gt/pull/1296)\n[`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401)\nThanks [@bgub](https://github.com/bgub)! - Require explicit locales for\nI18nManager translation/cache operations, move current-locale lookup\ninto higher-level helpers, and keep runtime condition storage in wrapper\nruntimes.\n\n- Updated dependencies\n\\[[`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401)]:\n    -   gt-i18n@0.8.11\n\n## gt-react@10.19.10\n\n### Patch Changes\n\n- [#1296](https://github.com/generaltranslation/gt/pull/1296)\n[`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401)\nThanks [@bgub](https://github.com/bgub)! - Require explicit locales for\nI18nManager translation/cache operations, move current-locale lookup\ninto higher-level helpers, and keep runtime condition storage in wrapper\nruntimes.\n\n- Updated dependencies\n\\[[`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401)]:\n    -   gt-i18n@0.8.11\n    -   @generaltranslation/react-core@1.8.12\n\n## @generaltranslation/react-core@1.8.12\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401)]:\n    -   gt-i18n@0.8.11\n\n## gt-react-native@10.19.10\n\n### Patch Changes\n\n-   Updated dependencies \\[]:\n    -   @generaltranslation/react-core@1.8.12\n\n## gt-tanstack-start@0.4.14\n\n### Patch Changes\n\n- [#1296](https://github.com/generaltranslation/gt/pull/1296)\n[`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401)\nThanks [@bgub](https://github.com/bgub)! - Require explicit locales for\nI18nManager translation/cache operations, move current-locale lookup\ninto higher-level helpers, and keep runtime condition storage in wrapper\nruntimes.\n\n- Updated dependencies\n\\[[`b8045ad`](https://github.com/generaltranslation/gt/commit/b8045ad0a6bf58ab39a0a1f632ed7250b670e401)]:\n    -   gt-i18n@0.8.11\n    -   gt-react@10.19.10\n    -   @generaltranslation/react-core@1.8.12\n\n<!-- codesmith:footer -->\n---\n<a\nhref=\"https://app.blacksmith.sh/generaltranslation/codesmith/gt/pr/1307\"><picture><source\nmedia=\"(prefers-color-scheme: dark)\"\nsrcset=\"https://pr-comments-assets.blacksmith.sh/codesmith/view-in-codesmith-dark.svg\"><source\nmedia=\"(prefers-color-scheme: light)\"\nsrcset=\"https://pr-comments-assets.blacksmith.sh/codesmith/view-in-codesmith-light.svg\"><img\nalt=\"View in Codesmith\"\nsrc=\"https://pr-comments-assets.blacksmith.sh/codesmith/view-in-codesmith-dark.svg\"></picture></a>\n<sup>Need help on this PR? Tag <code>@codesmith</code> with what you\nneed.</sup>\n\n- [ ] Let Codesmith autofix CI failures and bot reviews\n<!-- /codesmith:footer -->\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-04-30T23:54:38Z",
+          "url": "https://github.com/generaltranslation/gt/commit/a4adc594da4fd72abd08ab2d19dbdd0e69aa75a8"
+        },
+        "date": 1777593706109,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.03260870607799713,
+            "range": "±0.0159",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.20161407741935347,
+            "range": "±0.0707",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.370464357037035,
+            "range": "±0.073",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.3754924984985097,
+            "range": "±0.0879",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 149.60000000003492,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 159.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 257.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 146,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 34.40000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 51.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 137.70000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 590,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 10.099999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 19.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 87.09999999997672,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.21\"\n}"
           }
         ]
       }
