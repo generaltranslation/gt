@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { TranslationsCache, TranslateMany } from '../TranslationsCache';
+import { TranslationsCache } from '../TranslationsCache';
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../../translation-functions/types/options';
 
@@ -158,6 +158,107 @@ describe('TranslationsCache', () => {
     const results = await Promise.all(promises);
     expect(results[0]).toBe('translated-msg-0');
     expect(results[24]).toBe('translated-msg-24');
+  });
+
+  it('miss() honors custom batching config', async () => {
+    const intervalKey = makeKey('Waiting');
+    mockTranslateMany.mockResolvedValueOnce(
+      mockTranslateManyResponse([
+        { hash: intervalKey.hash, translation: 'En attente' },
+      ])
+    );
+    const intervalCache = new TranslationsCache({
+      init: {},
+      translateMany: mockTranslateMany,
+      batchConfig: { batchInterval: 10 },
+    });
+    const intervalPromise = intervalCache.miss({
+      message: intervalKey.message,
+      options: intervalKey.options,
+    });
+
+    vi.advanceTimersByTime(9);
+    expect(mockTranslateMany).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    await expect(intervalPromise).resolves.toBe('En attente');
+    expect(mockTranslateMany).toHaveBeenCalledTimes(1);
+
+    const k1 = makeKey('Hello');
+    const k2 = makeKey('Goodbye');
+    mockTranslateMany.mockResolvedValueOnce(
+      mockTranslateManyResponse([
+        { hash: k1.hash, translation: 'Bonjour' },
+        { hash: k2.hash, translation: 'Au revoir' },
+      ])
+    );
+    const sizeCache = new TranslationsCache({
+      init: {},
+      translateMany: mockTranslateMany,
+      batchConfig: { maxBatchSize: 2 },
+    });
+
+    const p1 = sizeCache.miss({
+      message: k1.message,
+      options: k1.options,
+    });
+    const p2 = sizeCache.miss({
+      message: k2.message,
+      options: k2.options,
+    });
+
+    expect(mockTranslateMany).toHaveBeenCalledTimes(2);
+    await expect(Promise.all([p1, p2])).resolves.toEqual([
+      'Bonjour',
+      'Au revoir',
+    ]);
+  });
+
+  it('miss() falls back to default batching values for invalid config', async () => {
+    const intervalKey = makeKey('Invalid interval');
+    mockTranslateMany.mockResolvedValueOnce(
+      mockTranslateManyResponse([
+        { hash: intervalKey.hash, translation: 'Intervalle invalide' },
+      ])
+    );
+
+    const intervalCache = new TranslationsCache({
+      init: {},
+      translateMany: mockTranslateMany,
+      batchConfig: { batchInterval: 0 },
+    });
+    const intervalPromise = intervalCache.miss({
+      message: intervalKey.message,
+      options: intervalKey.options,
+    });
+
+    vi.advanceTimersByTime(49);
+    expect(mockTranslateMany).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    await expect(intervalPromise).resolves.toBe('Intervalle invalide');
+    expect(mockTranslateMany).toHaveBeenCalledTimes(1);
+
+    const sizeKey = makeKey('Invalid size');
+    mockTranslateMany.mockResolvedValueOnce(
+      mockTranslateManyResponse([
+        { hash: sizeKey.hash, translation: 'Taille invalide' },
+      ])
+    );
+
+    const sizeCache = new TranslationsCache({
+      init: {},
+      translateMany: mockTranslateMany,
+      batchConfig: { maxBatchSize: 0.5, maxConcurrentRequests: 0.5 },
+    });
+    const sizePromise = sizeCache.miss({
+      message: sizeKey.message,
+      options: sizeKey.options,
+    });
+
+    vi.advanceTimersByTime(50);
+    await expect(sizePromise).resolves.toBe('Taille invalide');
+    expect(mockTranslateMany).toHaveBeenCalledTimes(2);
   });
 
   it('miss() rejects promise when translateMany throws', async () => {

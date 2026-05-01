@@ -1,10 +1,11 @@
 import type { Locale } from '../LocalesCache';
 import type { TranslateMany } from '../TranslationsCache';
+import type { RuntimeTranslateManyOptions } from '../../types';
 
 type TranslateManyClient = {
   translateMany(
     sources: Parameters<TranslateMany>[0],
-    options: { targetLocale: string },
+    options: { targetLocale: string } & RuntimeTranslateManyOptions,
     timeout?: number
   ): ReturnType<TranslateMany>;
 };
@@ -21,8 +22,13 @@ export type CreateTranslateMany = (locale: Locale) => TranslateMany;
  */
 export function createTranslateManyFactory(
   gtInstance: TranslateManyClient,
-  timeout?: number
+  timeout?: number,
+  metadata: RuntimeTranslateManyOptions = {}
 ): CreateTranslateMany {
   return (locale) => (sources) =>
-    gtInstance.translateMany(sources, { targetLocale: locale }, timeout);
+    gtInstance.translateMany(
+      sources,
+      { ...metadata, targetLocale: locale },
+      timeout
+    );
 }
