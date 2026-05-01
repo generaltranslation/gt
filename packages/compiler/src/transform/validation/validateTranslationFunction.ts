@@ -51,6 +51,13 @@ export function validateTranslationFunction(
   );
   // TODO: until we implement derivation, we will only need to check the first value
   const content = resolvedStaticExpression.values?.[0];
+  const nonDynamicResolutionErrors = resolvedStaticExpression.errors.filter(
+    (error) => error !== 'Expression is not a static string'
+  );
+
+  if (nonDynamicResolutionErrors.length > 0) {
+    return { errors: nonDynamicResolutionErrors };
+  }
 
   if (content === undefined && !state.settings.autoderive.strings) {
     // Not a static expression — check if it contains a derive() function invocation

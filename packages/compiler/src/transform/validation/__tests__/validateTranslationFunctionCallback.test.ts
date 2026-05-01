@@ -1106,6 +1106,25 @@ describe('validateTranslationFunctionCallback', () => {
       expect(result.hasDeriveContext).toBe(true);
     });
 
+    it('should still report invalid template escapes when autoderive is enabled', () => {
+      const callExpr = t.callExpression(t.identifier('useGT_callback'), [
+        t.templateLiteral(
+          [t.templateElement({ raw: '\\xg', cooked: undefined })],
+          []
+        ),
+      ]);
+
+      const result = validateTranslationFunction(
+        getCallExpressionPath(callExpr),
+        autoderiveState
+      );
+
+      expect(result.errors).toEqual([
+        'Template literal contains an invalid escape sequence',
+      ]);
+      expect(result.hasDeriveContext).toBeUndefined();
+    });
+
     it('should accept concatenation with bare variable when autoderive is enabled', () => {
       // gt("Hello, " + name)
       const callExpr = t.callExpression(t.identifier('useGT_callback'), [
