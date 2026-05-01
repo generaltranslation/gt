@@ -1,11 +1,11 @@
-import Num from '../../variables/Num';
-import Var from '../../variables/Var';
-import Currency from '../../variables/Currency';
-import DateTime from '../../variables/DateTime';
-import RelativeTime from '../../variables/RelativeTime';
+import { Num } from '../../variables/Num';
+import { Var } from '../../variables/Var';
+import { Currency } from '../../variables/Currency';
+import { DateTime } from '../../variables/DateTime';
+import { RelativeTime } from '../../variables/RelativeTime';
 import { RenderVariable } from 'gt-react/internal';
 
-const renderVariable: RenderVariable = ({
+export const renderVariable: RenderVariable = ({
   variableType,
   variableValue,
   variableOptions,
@@ -62,5 +62,3 @@ const renderVariable: RenderVariable = ({
   }
   return <Var>{variableValue}</Var>;
 };
-
-export default renderVariable;

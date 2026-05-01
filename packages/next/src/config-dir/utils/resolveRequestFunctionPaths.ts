@@ -4,7 +4,8 @@ import {
   REQUEST_FUNCTIONS,
   STATIC_REQUEST_FUNCTIONS,
 } from '../../request/types';
-import withGTConfigProps, {
+import {
+  type withGTConfigProps,
   REQUEST_FUNCTION_TO_CONFIG_KEY,
 } from '../props/withGTConfigProps';
 import { resolveConfigFilepath } from './resolveConfigFilepath';

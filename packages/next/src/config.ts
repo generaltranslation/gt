@@ -1,10 +1,11 @@
 import path from 'path';
 import fs from 'fs';
 import { NextConfig } from 'next';
-import defaultWithGTConfigProps, {
+import {
+  defaultWithGTConfigProps,
   defaultCacheExpiryTime,
 } from './config-dir/props/defaultWithGTConfigProps';
-import withGTConfigProps from './config-dir/props/withGTConfigProps';
+import { type withGTConfigProps } from './config-dir/props/withGTConfigProps';
 import {
   APIKeyMissingWarn,
   conflictingConfigurationBuildError,
@@ -19,7 +20,7 @@ import {
   standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
-} from './errors';
+} from './errors/createErrors';
 import {
   getLocaleProperties,
   isValidLocale,

@@ -14,7 +14,7 @@ import React from 'react';
  * @param {any} [children] - The content to render inside the component. If provided, it will take precedence over `value`.
  * @returns {React.JSX.Element} The rendered variable component with either `children` or `value`.
  */
-function Var({
+export function Var({
   children,
 }: {
   children?: any;
@@ -24,5 +24,3 @@ function Var({
 }
 /** @internal _gtt - The GT transformation for the component. */
 Var._gtt = 'variable-variable'; // keep this because Var is imported in other functions
-
-export default Var;

@@ -1,7 +1,7 @@
 // @vitest-environment edge-runtime
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import createNextMiddleware from '../createNextMiddleware';
+import { createNextMiddleware } from '../createNextMiddleware';
 import type { PathConfig } from '../utils';
 
 // Mock gt-react/internal — only provides a constant, avoids deep react-core build chain

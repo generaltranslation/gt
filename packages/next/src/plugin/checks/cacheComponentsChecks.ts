@@ -1,5 +1,5 @@
 import { NextConfig } from 'next';
-import withGTConfigProps from '../../config-dir/props/withGTConfigProps';
+import { type withGTConfigProps } from '../../config-dir/props/withGTConfigProps';
 import {
   cacheComponentsExperimentalFeatureWarning,
   cacheComponentsMissingExperimentalLocaleResolutionWarning,

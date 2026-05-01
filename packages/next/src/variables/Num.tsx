@@ -1,4 +1,4 @@
-import getI18NConfig from '../config-dir/getI18NConfig';
+import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { useLocale } from '../request/getLocale';
 import React from 'react';
 
@@ -20,7 +20,7 @@ import React from 'react';
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {React.JSX.Element} The formatted number component.
  */
-function Num({
+export function Num({
   children,
   locales,
   options = {},
@@ -50,5 +50,3 @@ function Num({
 }
 /** @internal _gtt - The GT transformation for the component. */
 Num._gtt = 'variable-number';
-
-export default Num;

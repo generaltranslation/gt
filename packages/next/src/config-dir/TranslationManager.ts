@@ -1,7 +1,7 @@
 import { standardizeLocale } from 'generaltranslation';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import { TranslatedChildren, Translations } from 'gt-react/internal';
-import loadTranslations from './loadTranslation';
+import { loadTranslations } from './loadTranslation';
 
 /**
  * Configuration type for TranslationManager.
@@ -155,5 +155,4 @@ export class TranslationManager {
   }
 }
 
-const translationManager = new TranslationManager();
-export default translationManager;
+export const translationManager = new TranslationManager();

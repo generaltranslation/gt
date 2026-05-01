@@ -3,7 +3,7 @@ import { unresolvedCustomLoadDictionaryError } from '../errors/createErrors';
 
 let customLoadDictionary: CustomLoader | undefined = undefined;
 
-export default function resolveDictionaryLoader(): CustomLoader | undefined {
+export function resolveDictionaryLoader(): CustomLoader | undefined {
   // Singleton pattern
   if (customLoadDictionary !== undefined) return customLoadDictionary;
 

@@ -47,7 +47,7 @@ type DefaultGTConfigProps = {
   experimentalLocaleResolutionParam: string;
 };
 
-const defaultWithGTConfigProps: DefaultGTConfigProps = {
+export const defaultWithGTConfigProps: DefaultGTConfigProps = {
   config: './gt.config.json',
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
@@ -81,5 +81,3 @@ const defaultWithGTConfigProps: DefaultGTConfigProps = {
 
 // exported separately because it's only used in production
 export const defaultCacheExpiryTime = 60000;
-
-export default defaultWithGTConfigProps;

@@ -1,4 +1,4 @@
-import getI18NConfig from '../../config-dir/getI18NConfig';
+import { getI18NConfig } from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { Suspense } from 'react';
 import {
@@ -9,7 +9,7 @@ import {
   TranslatedChildren,
   writeChildrenAsObjects,
 } from 'gt-react/internal';
-import renderVariable from '../variables/renderVariable';
+import { renderVariable } from '../variables/renderVariable';
 import React from 'react';
 import { hashSource } from 'generaltranslation/id';
 import { TxProps } from '../../utils/types';
@@ -41,7 +41,7 @@ async function Resolver({ children }: { children: React.ReactNode }) {
  * @param {string} [locale] - The locale to use for the translation.
  * @returns {Promise<any>} The translated content.
  */
-async function Tx({
+export async function Tx({
   children,
   context,
   locale,
@@ -176,5 +176,3 @@ async function Tx({
 }
 /** @internal _gtt - The GT transformation for the component. */
 Tx._gtt = 'translate-runtime';
-
-export default Tx;

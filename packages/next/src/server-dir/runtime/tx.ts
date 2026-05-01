@@ -1,4 +1,4 @@
-import getI18NConfig from '../../config-dir/getI18NConfig';
+import { getI18NConfig } from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
 import { hashSource } from 'generaltranslation/id';
@@ -44,7 +44,7 @@ import { StringFormat } from 'generaltranslation/types';
  * // Using variables in the content string
  * const translation = await tx("The price is {price}", { locale: 'es-MX', variables: { price: 29.99 } });
  */
-export default async function tx(
+export async function tx(
   message: string,
   options: Omit<RuntimeTranslationOptions, '$format'> & {
     $format?: StringFormat;

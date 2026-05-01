@@ -1,5 +1,5 @@
-import getI18NConfig from '../config-dir/getI18NConfig';
-import use from '../utils/use';
+import { getI18NConfig } from '../config-dir/getI18NConfig';
+import { use } from '../utils/use';
 import { legacyGetLocaleFunction } from './utils/legacyGetLocaleFunction';
 import { getRequestFunction } from './utils/getRequestFunction';
 import { localeStore } from './localeStore';

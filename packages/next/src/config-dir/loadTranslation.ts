@@ -3,8 +3,8 @@ import {
   customLoadTranslationsError,
   remoteTranslationsError,
 } from '../errors/createErrors';
-import resolveTranslationLoader from '../resolvers/resolveTranslationLoader';
-import getI18NConfig from './getI18NConfig';
+import { resolveTranslationLoader } from '../resolvers/resolveTranslationLoader';
+import { getI18NConfig } from './getI18NConfig';
 
 type RemoteLoadTranslationsInput = {
   targetLocale: string;
@@ -24,7 +24,7 @@ let loadTranslationsFunction: (
  * @returns {Promise<Translations | undefined>} The translation object or undefined if not found or errored
  *
  */
-export default async function loadTranslations(
+export async function loadTranslations(
   props: RemoteLoadTranslationsInput
 ): Promise<Translations | undefined> {
   // Singleton pattern

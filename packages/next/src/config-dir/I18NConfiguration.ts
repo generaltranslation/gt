@@ -1,5 +1,5 @@
 import { GT, isSameLanguage } from 'generaltranslation';
-import translationManager, { TranslationManager } from './TranslationManager';
+import { translationManager, TranslationManager } from './TranslationManager';
 import {
   RenderMethod,
   TranslatedChildren,
@@ -10,8 +10,8 @@ import {
 import { runtimeTranslationTimeoutWarning } from '../errors/createErrors';
 import { _Content, JsxChildren } from 'generaltranslation/internal';
 import { Translations } from 'gt-react/internal';
-import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
-import dictionaryManager, { DictionaryManager } from './DictionaryManager';
+import { defaultWithGTConfigProps } from './props/defaultWithGTConfigProps';
+import { dictionaryManager, DictionaryManager } from './DictionaryManager';
 import { HeadersAndCookies } from './props/withGTConfigProps';
 import {
   defaultLocaleRoutingEnabledCookieName,
@@ -69,7 +69,7 @@ type QueueEntry =
       reject: (reason?: any) => void;
     };
 
-export default class I18NConfiguration {
+export class I18NConfiguration {
   // Feature flags
   translationEnabled: boolean;
   developmentApiEnabled: boolean;
