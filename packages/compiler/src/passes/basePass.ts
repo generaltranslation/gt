@@ -53,7 +53,5 @@ export function basePass(state: TransformState): TraverseOptions {
     ForOfStatement: p.processForOfStatement(state),
     // try { ... } catch(T) { ... }
     CatchClause: p.processCatchClause(state),
-    // T: while (true) { break T; }
-    LabeledStatement: p.processLabeledStatement(state),
   };
 }

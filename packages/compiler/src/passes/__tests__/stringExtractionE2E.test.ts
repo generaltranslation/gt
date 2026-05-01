@@ -362,6 +362,17 @@ describe('t() string extraction E2E', () => {
     expect(content).toHaveLength(0);
     expect(state.errorTracker.getErrors().length).toBeGreaterThan(0);
   });
+
+  it('does not treat labels as shadowing translation imports', () => {
+    const state = collect(
+      prefix + 't: while (condition) { t("Inside label"); }\nt("After label");'
+    );
+    const content = getRuntimeContent(state);
+    expect(content.map((entry) => entry.message)).toEqual([
+      'Inside label',
+      'After label',
+    ]);
+  });
 });
 
 // ─────────────────────────────────────────────────────
