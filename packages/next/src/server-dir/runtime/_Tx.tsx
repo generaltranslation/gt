@@ -97,7 +97,18 @@ export async function Tx({
   });
 
   // Get the translation entry object
-  const translationEntry = I18NConfig.getRecentTranslations(locale)?.[hash];
+  const lookupOptions = {
+    $_hash: hash,
+    $format: 'JSX' as const,
+    ...(context && { $context: context }),
+    ...(maxChars != null && { $maxChars: maxChars }),
+  };
+
+  const translationEntry = I18NConfig.lookupTranslation({
+    source: childrenAsObjects,
+    targetLocale: locale,
+    options: lookupOptions,
+  });
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
 
@@ -138,16 +149,11 @@ export async function Tx({
   // (no entry has been found, this means that the translation is either (1) loading or (2) missing)
   const translationPromise = (async () => {
     try {
-      const target = await I18NConfig.translateJsx({
+      const target = await I18NConfig.translate({
         // do on demand translation
         source: childrenAsObjects,
         targetLocale: locale,
-        options: {
-          hash,
-          ...(context && { context }),
-          ...(maxChars && { maxChars }),
-          ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
-        },
+        options: lookupOptions,
       });
       return renderTranslation(target);
     } catch {

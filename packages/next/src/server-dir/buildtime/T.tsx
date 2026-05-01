@@ -171,16 +171,16 @@ export async function T({
           ...(id && { id }),
           dataFormat: 'JSX',
         });
-      const target = await I18NConfig.translateJsx({
+      const target = await I18NConfig.translate({
         // do on demand translation
         source: childrenAsObjects,
         targetLocale: locale,
         options: {
-          ...(id && { id }),
-          hash,
-          ...(context && { context }),
-          ...(maxChars && { maxChars }),
-          ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
+          ...(id && { $id: id }),
+          $_hash: hash,
+          $format: 'JSX',
+          ...(context && { $context: context }),
+          ...(maxChars != null && { $maxChars: maxChars }),
         },
       });
       return renderTranslation(target);

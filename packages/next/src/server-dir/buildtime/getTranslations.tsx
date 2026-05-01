@@ -273,14 +273,17 @@ export async function getTranslations(id?: string): Promise<
 
     try {
       // Translate on demand
-      I18NConfig.translateIcu({
+      I18NConfig.translate({
         source: indexVars(entry),
         targetLocale: locale,
         options: {
-          ...(metadata?.$context && { context: metadata.$context }),
-          ...(metadata?.$maxChars && { maxChars: metadata.$maxChars }),
-          id,
-          hash: getHash(),
+          ...(metadata?.$context && { $context: metadata.$context }),
+          ...(metadata?.$maxChars != null && {
+            $maxChars: metadata.$maxChars,
+          }),
+          $id: id,
+          $_hash: getHash(),
+          $format: 'ICU',
         },
       }).then((result) => {
         // Log the translation result for debugging purposes
@@ -385,14 +388,17 @@ export async function getTranslations(id?: string): Promise<
       const id = metadata?.$id;
 
       // (3.a) Translate
-      I18NConfig.translateIcu({
+      I18NConfig.translate({
         source: indexVars(source),
         targetLocale: locale,
         options: {
-          ...(metadata?.$context && { context: metadata.$context }),
-          ...(metadata?.$maxChars && { maxChars: metadata.$maxChars }),
-          id,
-          hash: metadata?.$_hash,
+          ...(metadata?.$context && { $context: metadata.$context }),
+          ...(metadata?.$maxChars != null && {
+            $maxChars: metadata.$maxChars,
+          }),
+          ...(id && { $id: id }),
+          $_hash: metadata?.$_hash,
+          $format: 'ICU',
         },
       })
         // (3.b) Inject the translation into the translations object
