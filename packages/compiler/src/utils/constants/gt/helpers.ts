@@ -122,8 +122,6 @@ export function isDeriveComponent(name: string): name is GT_COMPONENT_TYPES {
   );
 }
 
-/** @deprecated Use `isDeriveComponent` instead. */
-export const isStaticComponent = isDeriveComponent;
 /**
  * Check if a name is a GT branch component
  */
@@ -154,13 +152,6 @@ export function isTranslationFunctionCallback(
     'useMessages_callback',
     'getMessages_callback',
   ].includes(name);
-}
-
-/**
- * Check if it's a special Jsx function
- */
-export function isJsxFunction(name: string): boolean {
-  return ['jsxDEV', 'jsx', 'jsxs', 'React.createElement'].includes(name);
 }
 
 /**
