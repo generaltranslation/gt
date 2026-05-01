@@ -6,7 +6,6 @@ import useGTContext from '../provider/GTContext';
  * Gets the list of properties for using a locale selector.
  * Provides locale management utilities for the application.
  * @param locales an optional list of locales to use for the drop down. These locales must be a subset of the locales provided by the `<GTProvider>` context. When not provided, the list of locales from the `<GTProvider>` context is used.
- * Provides locale management utilities for the application.
  *
  * @returns {Object} An object containing locale-related utilities:
  * @returns {string} return.locale - The currently selected locale.
@@ -23,14 +22,14 @@ export default function useLocaleSelector(locales?: string[]) {
     if (!contextLocales || contextLocales.length === 0) {
       return [];
     }
-    const res = contextLocales.sort((a, b) =>
-      new Intl.Collator().compare(
+    const collator = new Intl.Collator();
+    return [...contextLocales].sort((a, b) =>
+      collator.compare(
         gt.getLocaleProperties(a).nativeNameWithRegionCode,
         gt.getLocaleProperties(b).nativeNameWithRegionCode
       )
     );
-    return res;
-  }, [contextLocales]);
+  }, [contextLocales, gt]);
 
   // create getLocaleProperties callback
   const getLocalePropertiesCallback = useCallback(
