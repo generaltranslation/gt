@@ -1,6 +1,6 @@
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
-import { validateUseGTCallback } from '../validation/validateTranslationFunctionCallback';
+import { validateTranslationFunction } from '../validation/validateTranslationFunction';
 import { injectHashIntoTranslationOptions } from './injectHashIntoTranslationOptions';
 import { NodePath } from '@babel/traverse';
 
@@ -12,7 +12,7 @@ export function injectStandaloneTFunctionParameters(
   state: TransformState
 ): void {
   const callExpr = callExprPath.node;
-  const params = validateUseGTCallback(callExprPath, state);
+  const params = validateTranslationFunction(callExprPath, state);
   state.errorTracker.addErrors(params.errors);
   if (
     params.errors.length > 0 ||

@@ -10,12 +10,12 @@ import { getTrackedVariable } from '../getTrackedVariable';
 import { NodePath } from '@babel/traverse';
 
 /**
- * Validate useGT_callback / getGT_callback
+ * Validate useGT_callback / getGT_callback / msg() / t()
  * - first argument must be a statically resolvable string expression
  *   (string literal, template literal, binary '+' concatenation, or derive() call)
  * - second argument, if present, $id field + $context field must be a string literal
  */
-export function validateUseGTCallback(
+export function validateTranslationFunction(
   callExprPath: NodePath<t.CallExpression>,
   state: TransformState
 ): {
@@ -33,16 +33,14 @@ export function validateUseGTCallback(
 
   // Validate that the function has at least 1 argument
   if (callExpr.arguments.length < 1) {
-    errors.push(
-      'useGT_callback / getGT_callback must have at least 1 argument'
-    );
+    errors.push('registration function must have at least 1 argument');
     return { errors };
   }
 
   // Validate first argument
   if (!t.isExpression(callExpr.arguments[0])) {
     errors.push(
-      'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.'
+      'registration function must use a string literal or derive() call as the first argument. Variable content is not allowed.'
     );
     return { errors };
   }
@@ -60,7 +58,7 @@ export function validateUseGTCallback(
     if (errors.length > 0) {
       errors.push(...resolvedStaticExpression.errors);
       errors.push(
-        'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.'
+        'registration function must use a string literal or derive() call as the first argument. Variable content is not allowed.'
       );
       return { errors };
     }
@@ -234,7 +232,7 @@ function validatePropertyFromObjectExpression(
   // validate value
   if (!t.isExpression(value.value)) {
     result.errors.push(
-      `useGT_callback / getGT_callback must use a string literal for its ${name} field. Variable content is not allowed.`
+      `registration function must use a string literal for its ${name} field. Variable content is not allowed.`
     );
     return result;
   }

@@ -7,7 +7,7 @@ import { JsxChildren } from 'generaltranslation/types';
 import { constructJsxChildren } from '../jsx-children';
 import { validateChildrenPropertyFromObjectExpression } from '../../utils/validation/validateChildrenFromObjectExpression';
 import { validateExpressionIsNumericLiteral } from '../../utils/validation/validateExpressionIsNumericLiteral';
-import { validateDerive } from './validateTranslationFunctionCallback';
+import { validateDerive } from './validateTranslationFunction';
 import { JsxValidationError } from '../jsx-children/errors';
 /**
  * Given a translation component, validate the arguments
