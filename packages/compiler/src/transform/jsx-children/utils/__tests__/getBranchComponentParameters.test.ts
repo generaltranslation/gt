@@ -31,7 +31,7 @@ describe('getBranchComponentParameters', () => {
     expect(keys).toEqual(['morning', 'evening']);
   });
 
-  it('should NOT filter data-* attributes for Plural components', () => {
+  it('should filter data-* attributes for Plural components', () => {
     const expression = makeObjectExpression({
       'data-testid': 'my-test',
       'data-track': 'click',
@@ -46,7 +46,7 @@ describe('getBranchComponentParameters', () => {
     );
 
     const keys = result.map(([key]) => key);
-    expect(keys).toEqual(['data-testid', 'data-track', 'one', 'other']);
+    expect(keys).toEqual(['one', 'other']);
   });
 
   it('should filter out children for any component type', () => {

@@ -1,6 +1,6 @@
 import { TransformState } from '../../../state/types';
 import * as t from '@babel/types';
-import { validateUseGTCallback } from '../../validation/validateTranslationFunctionCallback';
+import { validateTranslationFunction } from '../../validation/validateTranslationFunction';
 import { injectHashIntoTranslationOptions } from '../injectHashIntoTranslationOptions';
 import { NodePath } from '@babel/traverse';
 
@@ -17,7 +17,7 @@ export function injectUseGTCallbackParameters(
   const counterId = state.stringCollector.incrementCounter();
 
   // Check for existing hash
-  const useGTCallbackParams = validateUseGTCallback(callExprPath, state);
+  const useGTCallbackParams = validateTranslationFunction(callExprPath, state);
   state.errorTracker.addErrors(useGTCallbackParams.errors);
   if (useGTCallbackParams.errors.length > 0) {
     return;

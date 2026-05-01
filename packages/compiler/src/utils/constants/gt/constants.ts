@@ -1,13 +1,4 @@
 /**
- * Different TYPES of gt components
- */
-export enum GT_COMPONENT_CATEGORIES {
-  TRANSLATION = 'T',
-  VARIABLE = 'Var',
-  BRANCH = 'Branch',
-}
-
-/**
  * Different gt components
  */
 export enum GT_COMPONENT_TYPES {

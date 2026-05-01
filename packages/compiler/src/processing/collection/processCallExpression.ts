@@ -12,12 +12,12 @@ import {
   GT_OTHER_FUNCTIONS,
 } from '../../utils/constants/gt/constants';
 import {
-  validateUseGTCallback,
+  validateTranslationFunction,
   validateUseMessagesCallback,
   validateUseTranslationsCallback,
-} from '../../transform/validation/validateTranslationFunctionCallback';
+} from '../../transform/validation/validateTranslationFunction';
 import { registerUseGTCallback } from '../../transform/registration/callbacks/registerUseGTCallback';
-import { regsiterUseTranslationsCallback } from '../../transform/registration/callbacks/registerUseTranslationsCallback';
+import { registerUseTranslationsCallback } from '../../transform/registration/callbacks/registerUseTranslationsCallback';
 import { registerUseMessagesCallback } from '../../transform/registration/callbacks/registerUseMessagesCallback';
 import { getTrackedVariable } from '../../transform/getTrackedVariable';
 import { isReactFunction } from '../../utils/constants/react/helpers';
@@ -133,7 +133,7 @@ function handleUseGTCallback(
   identifier: number
 ) {
   // Check for violations
-  const useGTCallbackParams = validateUseGTCallback(callExprPath, state);
+  const useGTCallbackParams = validateTranslationFunction(callExprPath, state);
   state.errorTracker.addErrors(useGTCallbackParams.errors);
   if (
     useGTCallbackParams.errors.length > 0 ||
@@ -178,7 +178,7 @@ function handleUseTranslationsCallback(
   }
 
   // Track the function call
-  regsiterUseTranslationsCallback({
+  registerUseTranslationsCallback({
     identifier,
     state,
   });
@@ -304,7 +304,7 @@ function handleStandaloneTranslation(
   { injectHash }: { injectHash: boolean }
 ) {
   // Reuse the same validation as useGT_callback (identical argument structure)
-  const params = validateUseGTCallback(callExprPath, state);
+  const params = validateTranslationFunction(callExprPath, state);
   state.errorTracker.addErrors(params.errors);
   if (params.errors.length > 0 || params.content === undefined) {
     return;

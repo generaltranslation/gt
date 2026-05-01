@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as t from '@babel/types';
 import {
-  validateUseGTCallback,
+  validateTranslationFunction,
   validateUseTranslationsCallback,
   validateUseMessagesCallback,
-} from '../validateTranslationFunctionCallback';
+} from '../validateTranslationFunction';
 import { TransformState } from '../../../state/types';
 import { StringCollector } from '../../../state/StringCollector';
 import { Logger } from '../../../state/Logger';
@@ -62,19 +62,19 @@ describe('validateTranslationFunctionCallback', () => {
     );
   });
 
-  describe('validateUseGTCallback', () => {
+  describe('validateTranslationFunction', () => {
     describe('basic validation', () => {
       it('should return error when no arguments provided', () => {
         const callExpr = t.callExpression(t.identifier('useGT_callback'), []);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
 
         expect(result.errors).toHaveLength(1);
         expect(result.errors[0]).toBe(
-          'useGT_callback / getGT_callback must have at least 1 argument'
+          'registration function must have at least 1 argument'
         );
         expect(result.content).toBeUndefined();
       });
@@ -84,14 +84,14 @@ describe('validateTranslationFunctionCallback', () => {
           t.spreadElement(t.identifier('args')),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
 
         expect(result.errors).toHaveLength(1);
         expect(result.errors[0]).toBe(
-          'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.'
+          'registration function must use a string literal or derive() call as the first argument. Variable content is not allowed.'
         );
         expect(result.content).toBeUndefined();
       });
@@ -101,7 +101,7 @@ describe('validateTranslationFunctionCallback', () => {
           t.stringLiteral('Hello world'),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -120,7 +120,7 @@ describe('validateTranslationFunctionCallback', () => {
           ),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -134,7 +134,7 @@ describe('validateTranslationFunctionCallback', () => {
           t.identifier('myString'),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -144,7 +144,7 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.errors).toEqual([
           'Variables are not allowed',
           'Expression is not a static string',
-          'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.',
+          'registration function must use a string literal or derive() call as the first argument. Variable content is not allowed.',
         ]);
         expect(result.content).toBeUndefined();
       });
@@ -160,7 +160,7 @@ describe('validateTranslationFunctionCallback', () => {
           ),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -172,7 +172,7 @@ describe('validateTranslationFunctionCallback', () => {
           'Variables are not allowed',
           'Expression does not use an allowed call expression',
           'Expression is not a static string',
-          'useGT_callback / getGT_callback must use a string literal or derive() call as the first argument. Variable content is not allowed.',
+          'registration function must use a string literal or derive() call as the first argument. Variable content is not allowed.',
         ]);
         expect(result.content).toBeUndefined();
       });
@@ -189,7 +189,7 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -213,7 +213,7 @@ describe('validateTranslationFunctionCallback', () => {
           binaryExpr,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -239,7 +239,7 @@ describe('validateTranslationFunctionCallback', () => {
           templateLiteral,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -257,7 +257,7 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -283,7 +283,7 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -306,7 +306,7 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -328,7 +328,7 @@ describe('validateTranslationFunctionCallback', () => {
           otherCall,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -350,7 +350,7 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -370,7 +370,7 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -405,7 +405,7 @@ describe('validateTranslationFunctionCallback', () => {
           templateLiteral,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -433,7 +433,7 @@ describe('validateTranslationFunctionCallback', () => {
           binaryExpr,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -453,7 +453,7 @@ describe('validateTranslationFunctionCallback', () => {
           deriveCall,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -487,7 +487,7 @@ describe('validateTranslationFunctionCallback', () => {
           declareStaticCall,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -513,7 +513,7 @@ describe('validateTranslationFunctionCallback', () => {
           templateLiteral,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -537,7 +537,7 @@ describe('validateTranslationFunctionCallback', () => {
           binaryExpr,
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -552,7 +552,7 @@ describe('validateTranslationFunctionCallback', () => {
           t.stringLiteral('Hello'),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -575,7 +575,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -594,7 +594,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -613,7 +613,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -636,7 +636,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -659,7 +659,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -679,7 +679,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -695,7 +695,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -725,7 +725,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -740,7 +740,7 @@ describe('validateTranslationFunctionCallback', () => {
           t.objectExpression([]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -763,7 +763,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -792,7 +792,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -817,7 +817,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -839,7 +839,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -867,7 +867,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -897,7 +897,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -919,7 +919,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -940,7 +940,7 @@ describe('validateTranslationFunctionCallback', () => {
           ]),
         ]);
 
-        const result = validateUseGTCallback(
+        const result = validateTranslationFunction(
           getCallExpressionPath(callExpr),
           state
         );
@@ -1097,7 +1097,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         autoderiveState
       );
@@ -1116,7 +1116,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         autoderiveState
       );
@@ -1137,7 +1137,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         autoderiveState
       );
@@ -1156,7 +1156,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         autoderiveState
       );
@@ -1177,7 +1177,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         state
       );
@@ -1195,7 +1195,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         state
       );
@@ -1221,7 +1221,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         autoderiveState
       );
@@ -1242,7 +1242,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         autoderiveState
       );
@@ -1263,7 +1263,7 @@ describe('validateTranslationFunctionCallback', () => {
         ]),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         autoderiveState
       );
@@ -1280,7 +1280,7 @@ describe('validateTranslationFunctionCallback', () => {
           t.objectProperty(t.identifier('$format'), t.stringLiteral('STRING')),
         ]),
       ]);
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         state
       );
@@ -1299,7 +1299,7 @@ describe('validateTranslationFunctionCallback', () => {
           ),
         ]),
       ]);
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         state
       );
@@ -1319,7 +1319,7 @@ describe('validateTranslationFunctionCallback', () => {
           t.objectProperty(t.identifier('$format'), t.stringLiteral('I18NEXT')),
         ]),
       ]);
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         state
       );
@@ -1336,7 +1336,7 @@ describe('validateTranslationFunctionCallback', () => {
           t.objectProperty(t.identifier('$format'), t.identifier('someVar')),
         ]),
       ]);
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         state
       );
@@ -1401,7 +1401,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         jsxOnlyState
       );
@@ -1417,7 +1417,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         jsxOnlyState
       );
@@ -1482,7 +1482,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         stringsOnlyState
       );
@@ -1499,7 +1499,7 @@ describe('validateTranslationFunctionCallback', () => {
         ),
       ]);
 
-      const result = validateUseGTCallback(
+      const result = validateTranslationFunction(
         getCallExpressionPath(callExpr),
         stringsOnlyState
       );
