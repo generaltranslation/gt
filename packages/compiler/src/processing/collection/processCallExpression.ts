@@ -17,7 +17,7 @@ import {
   validateUseTranslationsCallback,
 } from '../../transform/validation/validateTranslationFunction';
 import { registerUseGTCallback } from '../../transform/registration/callbacks/registerUseGTCallback';
-import { regsiterUseTranslationsCallback } from '../../transform/registration/callbacks/registerUseTranslationsCallback';
+import { registerUseTranslationsCallback } from '../../transform/registration/callbacks/registerUseTranslationsCallback';
 import { registerUseMessagesCallback } from '../../transform/registration/callbacks/registerUseMessagesCallback';
 import { getTrackedVariable } from '../../transform/getTrackedVariable';
 import { isReactFunction } from '../../utils/constants/react/helpers';
@@ -178,7 +178,7 @@ function handleUseTranslationsCallback(
   }
 
   // Track the function call
-  regsiterUseTranslationsCallback({
+  registerUseTranslationsCallback({
     identifier,
     state,
   });
