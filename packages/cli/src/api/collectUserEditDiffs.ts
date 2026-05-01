@@ -169,7 +169,9 @@ export async function collectAndSendUserEditDiffs(
         const diff = await getGitUnifiedDiff(tempServerFile, c.outputPath);
         try {
           await fs.promises.unlink(tempServerFile);
-        } catch {}
+        } catch {
+          // Ignore cleanup errors for temporary comparison files.
+        }
 
         if (diff && diff.trim().length > 0) {
           const rawLocalContent = await fs.promises.readFile(

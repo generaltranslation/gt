@@ -10,13 +10,17 @@ export async function detectFormatter(): Promise<Formatter | null> {
   try {
     await import('prettier');
     return 'prettier';
-  } catch {}
+  } catch {
+    // Prettier is optional.
+  }
 
   // Try ESLint
   try {
     await import('eslint');
     return 'eslint';
-  } catch {}
+  } catch {
+    // ESLint is optional.
+  }
 
   // Try Biome
   try {
@@ -37,7 +41,9 @@ export async function detectFormatter(): Promise<Formatter | null> {
         }
       });
     });
-  } catch {}
+  } catch {
+    // Biome is optional.
+  }
 
   return null;
 }

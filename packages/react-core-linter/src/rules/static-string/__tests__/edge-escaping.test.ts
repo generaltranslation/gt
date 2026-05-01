@@ -280,7 +280,7 @@ describe('escaping: backtick and ${ in static text with derive path', () => {
           import { useGT, derive } from 'gt-react';
           function C() {
             const gt = useGT();
-            return gt(\`a\\\`b\${derive(x)}c\$'{'d'}'\${derive(y)}{var0}\`, { var0: name });
+            return gt(\`a\\\`b\${derive(x)}c$'{'d'}'\${derive(y)}{var0}\`, { var0: name });
           }
         `,
       },

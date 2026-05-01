@@ -424,7 +424,7 @@ describe('review: static text with ${ escaped in template literal output', () =>
           import { useGT, derive } from 'gt-react';
           function C() {
             const gt = useGT();
-            return gt(\`Use \$'{'varName'}' syntax \${derive(x)}{var0}\`, { var0: name });
+            return gt(\`Use $'{'varName'}' syntax \${derive(x)}{var0}\`, { var0: name });
           }
         `,
       },

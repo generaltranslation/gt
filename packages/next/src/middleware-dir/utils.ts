@@ -72,7 +72,7 @@ export function getResponse({
  * Extracts the locale from the given pathname.
  */
 export function extractLocale(pathname: string): string | null {
-  const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
+  const matches = pathname.match(/^\/([^/]+)(?:\/|$)/);
   return matches ? matches[1] : null;
 }
 
