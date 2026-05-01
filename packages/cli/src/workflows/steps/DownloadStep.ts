@@ -38,19 +38,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
     this.spinner = logger.createProgressBar(fileTracker.completed.size);
     this.spinner.start('Downloading files...');
 
-    // Download ready files
-    const success = await this.downloadFiles(
-      fileTracker,
-      resolveOutputPath,
-      forceDownload
-    );
-    if (success) {
-      this.spinner.stop(chalk.green('Downloaded files successfully'));
-    } else {
-      this.spinner.stop(chalk.red('Failed to download files'));
-    }
-
-    return success;
+    return this.downloadFiles(fileTracker, resolveOutputPath, forceDownload);
   }
 
   private async downloadFiles(
@@ -64,6 +52,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
 
       // If no files to download, we're done
       if (currentQueryData.length === 0) {
+        this.spinner?.stop(chalk.green('No files to download'));
         return true;
       }
 
@@ -82,6 +71,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
       const readyTranslations = translatedFiles.filter(
         (file) => file.completedAt !== null
       );
+      let missingCount = 0;
 
       if (readyTranslations.length < currentQueryData.length) {
         const readyKeys = new Set(
@@ -95,6 +85,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
               `${item.branchId}:${item.fileId}:${item.versionId}:${item.locale}`
             )
         );
+        missingCount = missing.length;
         logger.warn(
           `Failed to download ${missing.length} file(s):\n${missing.map((f) => `- ${f.fileName} (${f.locale})`).join('\n')}`
         );
@@ -161,6 +152,10 @@ export class DownloadTranslationsStep extends WorkflowStep<
             );
           }
         }
+      } else if (missingCount > 0) {
+        this.spinner?.stop(
+          chalk.yellow('No files downloaded - see warnings above')
+        );
       } else {
         this.spinner?.stop(chalk.green('No files to download'));
       }
