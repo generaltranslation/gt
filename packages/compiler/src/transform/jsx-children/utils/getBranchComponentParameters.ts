@@ -1,5 +1,10 @@
 import * as t from '@babel/types';
-import { GT_COMPONENT_TYPES } from '../../../utils/constants/gt/constants';
+import {
+  BRANCH_CONTROL_PROPS,
+  GT_COMPONENT_TYPES,
+  PLURAL_CONTROL_PROPS,
+  PLURAL_FORMS,
+} from '../../../utils/constants/gt/constants';
 /**
  * Given object expression, get the branch component args
  */
@@ -44,12 +49,13 @@ export function getBranchComponentParameters(
       // Filter by branch component type
       if (
         canonicalName === GT_COMPONENT_TYPES.Branch &&
-        propertyName === 'branch'
+        BRANCH_CONTROL_PROPS.has(propertyName)
       ) {
         return null;
       } else if (
         canonicalName === GT_COMPONENT_TYPES.Plural &&
-        propertyName === 'n'
+        (PLURAL_CONTROL_PROPS.has(propertyName) ||
+          !PLURAL_FORMS.has(propertyName))
       ) {
         return null;
       }

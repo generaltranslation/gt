@@ -46,7 +46,7 @@ describe('getBranchComponentParameters', () => {
     );
 
     const keys = result.map(([key]) => key);
-    expect(keys).toEqual(['data-testid', 'data-track', 'one', 'other']);
+    expect(keys).toEqual(['one', 'other']);
   });
 
   it('should filter out children for any component type', () => {
