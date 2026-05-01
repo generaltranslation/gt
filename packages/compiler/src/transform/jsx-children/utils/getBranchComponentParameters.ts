@@ -2,7 +2,6 @@ import * as t from '@babel/types';
 import {
   BRANCH_CONTROL_PROPS,
   GT_COMPONENT_TYPES,
-  PLURAL_CONTROL_PROPS,
   PLURAL_FORMS,
 } from '../../../utils/constants/gt/constants';
 /**
@@ -54,8 +53,7 @@ export function getBranchComponentParameters(
         return null;
       } else if (
         canonicalName === GT_COMPONENT_TYPES.Plural &&
-        (PLURAL_CONTROL_PROPS.has(propertyName) ||
-          !PLURAL_FORMS.has(propertyName))
+        !PLURAL_FORMS.has(propertyName)
       ) {
         return null;
       }
