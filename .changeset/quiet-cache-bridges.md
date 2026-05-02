@@ -1,4 +1,5 @@
 ---
+'generaltranslation': patch
 'gt-i18n': patch
 ---
 
