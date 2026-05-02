@@ -9,7 +9,6 @@ export * from './processForOfStatement';
 export * from './processFunctionDeclaration';
 export * from './processFunctionExpression';
 export * from './processImportDeclaration';
-export * from './processLabeledStatement';
 export * from './processObjectMethod';
 export * from './processProgram';
 export * from './processScopeChange';
