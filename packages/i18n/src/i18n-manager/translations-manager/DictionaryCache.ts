@@ -89,8 +89,17 @@ export class DictionaryCache extends Cache<
    * @param key - The dictionary key
    * @returns The dictionary value
    */
-  public async miss(): Promise<undefined> {
-    return undefined;
+  public async miss(key: DictionaryKey): Promise<DictionaryEntry | undefined> {
+    const value = await this.missCache(key);
+    if (typeof value === 'string' && this.onMiss) {
+      this.onMiss({
+        inputKey: key,
+        cacheKey: this.genKey(key),
+        cacheValue: value,
+        outputValue: value,
+      });
+    }
+    return typeof value === 'string' ? value : undefined;
   }
 
   /**

@@ -46,14 +46,14 @@ describe('DictionaryCache', () => {
     expect(result).toBeUndefined();
   });
 
-  it('miss() returns undefined and does not runtime translate', async () => {
+  it('miss() rejects because fallback is not implemented', async () => {
     const cache = new DictionaryCache({
       init: {},
     });
 
-    const result = await cache.miss('user.profile.name');
-
-    expect(result).toBeUndefined();
+    await expect(cache.miss('user.profile.name')).rejects.toThrow(
+      'DictionaryCache fallback is not implemented'
+    );
     expect(mockTranslateMany).not.toHaveBeenCalled();
     expect(cache.get('user.profile.name')).toBeUndefined();
     expect(cache.getInternalCache()).toEqual({});
