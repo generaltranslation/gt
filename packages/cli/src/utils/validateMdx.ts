@@ -11,7 +11,7 @@ import remarkFrontmatter from 'remark-frontmatter';
  */
 export function isValidMdx(
   content: string,
-  filePath: string
+  _filePath: string
 ): {
   isValid: boolean;
   error?: string;

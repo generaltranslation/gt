@@ -1,6 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-import { ParsingConfig } from '../react/jsx/utils/stringParsing/types.js';
-import { SupportedFileExtension } from './index.js';
+import type { SupportedFileExtension } from './index.js';
 
 /**
  * For monorepo projects, checking for extra exports fields in resolved internal packages.

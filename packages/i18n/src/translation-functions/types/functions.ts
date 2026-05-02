@@ -1,16 +1,9 @@
-import type {
-  Content,
-  DataFormat,
-  JsxChildren,
-  StringFormat,
-} from 'generaltranslation/types';
+import type { JsxChildren } from 'generaltranslation/types';
 import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   JsxTranslationOptions,
-  RuntimeTranslationOptions,
 } from './options';
-import { Translation } from '../../i18n-manager/translations-manager/utils/types/translation-data';
 
 /**
  * Synchronous resolution function type

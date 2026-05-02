@@ -39,7 +39,7 @@ class ProgressBar {
       try {
         this.progressBar.stop(message);
         this.progressBar = undefined;
-      } catch (error) {
+      } catch {
         this.progressBar = undefined;
       }
     }
@@ -73,7 +73,7 @@ class Spinner {
       try {
         this.spinner.stop(message);
         this.spinner = undefined;
-      } catch (error) {
+      } catch {
         this.spinner = undefined;
       }
     }

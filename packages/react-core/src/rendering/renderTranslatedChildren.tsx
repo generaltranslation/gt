@@ -16,8 +16,6 @@ import getPluralBranch from '../branches/plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
-  Variable,
-  InjectionType,
 } from 'generaltranslation/types';
 import getGTTag from './getGTTag';
 

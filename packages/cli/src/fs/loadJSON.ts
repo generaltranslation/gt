@@ -10,7 +10,7 @@ export default function loadJSON(filepath: string): Record<string, any> | null {
   try {
     const data = fs.readFileSync(path.resolve(filepath), 'utf-8');
     return JSON.parse(data);
-  } catch (error) {
+  } catch {
     // Return null if the file is not found or JSON parsing fails
     return null;
   }

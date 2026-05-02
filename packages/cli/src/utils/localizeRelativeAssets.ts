@@ -167,7 +167,7 @@ export default async function localizeRelativeAssets(
   const cwd = process.cwd();
   const processPromises = Object.entries(fileMapping)
     .filter(([locale]) => locales.includes(locale))
-    .map(async ([locale, filesMap]) => {
+    .map(async ([, filesMap]) => {
       const reverseMap = new Map<string, string>();
       for (const [sourcePath, targetPath] of Object.entries(filesMap)) {
         reverseMap.set(targetPath, sourcePath);

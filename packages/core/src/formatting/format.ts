@@ -5,11 +5,7 @@ import { IntlMessageFormat } from 'intl-messageformat';
 import { formatI18nextWarning, formatJsxWarning } from '../logging/warnings';
 import { formattingLogger } from '../logging/logger';
 import { JsxChildren } from '../types';
-import {
-  CutoffFormatOptions,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  CutoffFormatStyle,
-} from './custom-formats/CutoffFormat/types';
+import { CutoffFormatOptions } from './custom-formats/CutoffFormat/types';
 
 /**
  * Formats a string value with cutoff behavior according to the specified locales and options.
@@ -334,7 +330,6 @@ export function _formatRelativeTime({
  */
 export function _formatI18next(
   message: I18nextMessage,
-  // eslint-disable-next-line no-unused-vars
   _variables: FormatVariables = {}
 ): string {
   formattingLogger.warn(formatI18nextWarning);
@@ -353,7 +348,6 @@ export function _formatI18next(
  */
 export function _formatJsx(
   message: JsxChildren,
-  // eslint-disable-next-line no-unused-vars
   _variables: FormatVariables = {}
 ): JsxChildren {
   formattingLogger.warn(formatJsxWarning);

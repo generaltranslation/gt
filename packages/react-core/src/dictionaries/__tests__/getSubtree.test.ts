@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getSubtree } from '../getSubtree';
-import { Dictionary, DictionaryEntry } from '../../types/types';
+import { Dictionary } from '../../types/types';
 
 describe('getSubtree', () => {
   const mockDictionary: Dictionary = {

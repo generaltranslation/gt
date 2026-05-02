@@ -19,7 +19,7 @@ export async function searchForPackageJson(
   }
   try {
     return JSON.parse(await fs.promises.readFile(packageJsonPath, 'utf8'));
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -35,7 +35,7 @@ export async function getPackageJson(
   }
   try {
     return JSON.parse(await fs.promises.readFile(packageJsonPath, 'utf8'));
-  } catch (error) {
+  } catch {
     return null;
   }
 }

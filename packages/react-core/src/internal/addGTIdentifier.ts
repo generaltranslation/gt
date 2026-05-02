@@ -71,8 +71,7 @@ export default function addGTIdentifier(
           result.branches = pluralBranches;
       }
       if (transformationParts[0] === 'branch') {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-        const { children, branch, ...branches } = props;
+        const { children: _children, branch: _branch, ...branches } = props;
         // Filter out data-* attributes injected by build tools
         const filteredBranches = Object.fromEntries(
           Object.entries(branches).filter(([key]) => !key.startsWith('data-'))

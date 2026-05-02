@@ -120,7 +120,7 @@ function rewriteMdxContent(
       .use(remarkFrontmatter, ['yaml', 'toml'])
       .use(remarkMdx);
     ast = processor.runSync(processor.parse(content)) as Root;
-  } catch (e) {
+  } catch {
     return { content, changed: false };
   }
 
@@ -203,7 +203,7 @@ function rewriteMdxContent(
     if (out.endsWith('\n') && !content.endsWith('\n')) out = out.slice(0, -1);
     if (content.startsWith('\n') && !out.startsWith('\n')) out = '\n' + out;
     return { content: out, changed };
-  } catch (e) {
+  } catch {
     return { content, changed: false };
   }
 }

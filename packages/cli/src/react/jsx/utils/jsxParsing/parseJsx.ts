@@ -846,7 +846,6 @@ function parseJSXElement({
           dataFormat: 'JSX',
           source: cleanedTree,
           metadata: {
-            // eslint-disable-next-line no-undef
             ...structuredClone(metadata),
             context,
             staticId: temporaryDeriveId,
@@ -858,7 +857,6 @@ function parseJSXElement({
         dataFormat: 'JSX',
         source: cleanedTree,
         metadata: {
-          // eslint-disable-next-line no-undef
           ...structuredClone(metadata),
           ...(derivableTracker.isDerivable && { staticId: temporaryDeriveId }),
         },

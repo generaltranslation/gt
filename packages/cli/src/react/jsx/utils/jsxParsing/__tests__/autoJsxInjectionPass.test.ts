@@ -10,7 +10,6 @@
  * See JSX_INSERTION_RULES.md for the insertion rules.
  */
 import { describe, it, expect } from 'vitest';
-import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';

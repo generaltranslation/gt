@@ -5,7 +5,6 @@ import { TranslationsLoader } from './types';
  * @returns A translations loader function
  */
 export function createFallbackTranslationLoader(): TranslationsLoader {
-  // eslint-disable-next-line no-unused-vars
   const loader: TranslationsLoader = async (_locale: string) => {
     return {};
   };

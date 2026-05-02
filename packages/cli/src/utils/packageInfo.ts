@@ -18,7 +18,7 @@ export async function getPackageInfo(packageName: string): Promise<
     }
 
     return undefined;
-  } catch (error) {
+  } catch {
     return undefined;
   }
 }

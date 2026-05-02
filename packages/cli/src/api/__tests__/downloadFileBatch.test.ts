@@ -141,10 +141,6 @@ describe('downloadFileBatch', () => {
     }
   };
 
-  const setupFakeTimers = () => {
-    vi.useFakeTimers();
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
   });

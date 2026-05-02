@@ -3,7 +3,7 @@ import {
   isValidDictionaryEntry,
   getDictionaryEntry,
 } from '../getDictionaryEntry';
-import { Dictionary, DictionaryEntry } from '../../types/types';
+import { Dictionary } from '../../types/types';
 
 describe('isValidDictionaryEntry', () => {
   describe('should return true for valid DictionaryEntry types', () => {

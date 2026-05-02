@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import mergeYaml from '../mergeYaml';
-import { readFileSync } from 'fs';
-import path from 'path';
 import { exitSync } from '../../../console/logging.js';
 import { logger } from '../../../console/logger.js';
 import YAML from 'yaml';

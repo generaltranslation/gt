@@ -24,7 +24,7 @@ export async function detectFormatter(): Promise<Formatter | null> {
 
   // Try Biome
   try {
-    return await new Promise<Formatter | null>((resolve, reject) => {
+    return await new Promise<Formatter | null>((resolve) => {
       const child = spawn('npx', ['@biomejs/biome', '--version'], {
         stdio: 'ignore',
       });
@@ -80,7 +80,7 @@ export async function formatFiles(
     if (detectedFormatter === 'biome') {
       logger.message(chalk.dim('Cleaning up with biome...'));
       try {
-        await new Promise<void>((resolve, reject) => {
+        await new Promise<void>((resolve) => {
           const args = [
             '@biomejs/biome',
             'format',

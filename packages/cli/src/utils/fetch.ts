@@ -7,7 +7,7 @@ import { API_VERSION } from 'generaltranslation';
  *
  * Encapsulates URL construction, headers, and JSON parsing.
  */
-export default async function apiRequest<T>(
+export default async function apiRequest(
   baseUrl: string,
   endpoint: string,
   options?: {

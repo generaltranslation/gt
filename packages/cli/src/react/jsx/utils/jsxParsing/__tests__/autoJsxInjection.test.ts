@@ -38,15 +38,9 @@ vi.mock('node:fs');
 vi.mock('../../resolveImportPath.js');
 
 describe('auto JSX injection simulation', () => {
-  let updates: Updates;
-  let errors: string[];
-  let warnings: Set<string>;
   let parsingOptions: ParsingConfigOptions;
 
   beforeEach(() => {
-    updates = [];
-    errors = [];
-    warnings = new Set();
     parsingOptions = {
       conditionNames: ['import', 'require'],
     };
@@ -696,11 +690,6 @@ describe('auto JSX injection simulation', () => {
         }
       `;
       const withFlag = extractWithAutoInjection(code);
-
-      // Reset for second run
-      updates = [];
-      errors = [];
-      warnings = new Set();
 
       const withoutFlag = extractUserT(code);
 

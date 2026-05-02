@@ -1,4 +1,3 @@
-import * as React from 'react';
 import useGTContext from '../../provider/GTContext';
 import { _Messages, Translations } from '../../types-dir/types';
 import { useable } from '../../promises/dangerouslyUsable';

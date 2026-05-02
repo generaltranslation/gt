@@ -525,8 +525,7 @@ export function withGTConfig(
   // ---------- STORE CONFIGURATIONS ---------- //
   const I18NConfigParams = JSON.stringify(mergedConfig);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars , no-unused-vars
-  const { type, ...compilerOptions } =
+  const { type: _type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
 
   // Read autoderive from parsingFlags (single source of truth shared with CLI)

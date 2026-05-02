@@ -19,7 +19,6 @@ const DEFAULT_PURGE_INTERVAL_MS = 300_000; // 5 minutes
 const PURGE_TARGET_RATIO = 0.8; // purge down to 80% of max
 
 // Prevents interval leaks on HMR — keyed by storage key
-// eslint-disable-next-line no-undef
 const activeIntervals = new Map<string, ReturnType<typeof setInterval>>();
 
 // ===== Class ===== //
@@ -34,7 +33,6 @@ const activeIntervals = new Map<string, ReturnType<typeof setInterval>>();
 export class LocalStorageTranslationCache {
   private _storageKey: string;
   private _writeBuffer: Record<string, Translation> = {};
-  // eslint-disable-next-line no-undef
   private _flushTimer: ReturnType<typeof setTimeout> | null = null;
   private _estimatedSize: number = 0;
   private _maxSize: number;
@@ -79,10 +77,8 @@ export class LocalStorageTranslationCache {
 
     // Start background purge interval (clears any existing interval for HMR safety)
     if (activeIntervals.has(this._storageKey)) {
-      // eslint-disable-next-line no-undef
       clearInterval(activeIntervals.get(this._storageKey)!);
     }
-    // eslint-disable-next-line no-undef
     const intervalId = setInterval(
       () => this._backgroundPurge(),
       this._purgeInterval
@@ -140,7 +136,6 @@ export class LocalStorageTranslationCache {
    */
   private _scheduleFlush(): void {
     if (this._flushTimer) return; // already scheduled
-    // eslint-disable-next-line no-undef
     this._flushTimer = setTimeout(() => {
       this._flushTimer = null;
       this._flush();
@@ -214,7 +209,6 @@ export class LocalStorageTranslationCache {
   private _backgroundPurge(): void {
     try {
       // Check if a purge is needed (another tab may have purged recently)
-      // eslint-disable-next-line no-undef
       const raw = localStorage.getItem(this._purgeTimestampKey);
       const lastPurge = raw ? parseInt(raw, 10) : 0;
       const now = Date.now();
@@ -233,7 +227,6 @@ export class LocalStorageTranslationCache {
       }
 
       // Update timestamp after purge completes
-      // eslint-disable-next-line no-undef
       localStorage.setItem(this._purgeTimestampKey, String(now));
     } catch {
       // Silently fail
@@ -247,7 +240,6 @@ export class LocalStorageTranslationCache {
    */
   private _readFromStorage(): Record<string, CachedEntry> {
     try {
-      // eslint-disable-next-line no-undef
       const raw = localStorage.getItem(this._storageKey);
       if (!raw) {
         this._estimatedSize = 0;
@@ -285,7 +277,6 @@ export class LocalStorageTranslationCache {
    */
   private _writeRaw(serialized: string): void {
     try {
-      // eslint-disable-next-line no-undef
       localStorage.setItem(this._storageKey, serialized);
       this._estimatedSize = serialized.length;
     } catch {

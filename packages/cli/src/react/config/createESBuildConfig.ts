@@ -113,7 +113,7 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
                     try {
                       const realPath = fs.realpathSync(fullPath);
                       return realPath;
-                    } catch (_) {
+                    } catch {
                       continue;
                     }
                   }
@@ -123,7 +123,7 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
                 try {
                   const realPath = fs.realpathSync(resolvedPath);
                   return { path: realPath };
-                } catch (err) {
+                } catch {
                   const hasExtension = extensions.some((ext) =>
                     resolvedPath.endsWith(ext)
                   );

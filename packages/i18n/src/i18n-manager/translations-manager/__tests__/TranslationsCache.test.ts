@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { TranslationsCache, TranslateMany } from '../TranslationsCache';
+import { TranslationsCache } from '../TranslationsCache';
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../../translation-functions/types/options';
 

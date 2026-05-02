@@ -56,7 +56,7 @@ function routeToBinary(): void {
       if (!isExecutable) {
         chmodSync(binaryPath, 0o755); // Make executable
       }
-    } catch (error) {
+    } catch {
       // If we can't check/fix permissions, continue anyway
       // The spawn might still work or give a more meaningful error
     }

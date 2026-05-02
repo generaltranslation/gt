@@ -62,7 +62,7 @@ function isReactJsxFunctionImportSpecifier(
  * React.jsxDEV, React.jsx, React.jsxs, ...
  */
 function isReactJsxFunctionMemberExpression(
-  memberExpressionPath: NodePath<t.MemberExpression>
+  _memberExpressionPath: NodePath<t.MemberExpression>
 ): boolean {
   // TODO: implement
   return false;
