@@ -1,17 +1,31 @@
+import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
 import type { CustomMapping } from 'generaltranslation/types';
 import { GTConfig } from '../config/types';
 import { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import type { LifecycleCallbacks } from './lifecycle-hooks/types';
+import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
+
+type RuntimeTranslationConfig = {
+  timeout?: number;
+  metadata?: RuntimeTranslateManyOptions;
+};
 
 /**
  * Parameters for the I18nManager constructor
  */
 export type I18nManagerConstructorParams<
   TranslationValue extends Translation = Translation,
-> = GTConfig & {
+> = Omit<GTConfig, 'cacheExpiryTime'> & {
+  /**
+   * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
+   * disables expiry, and a number sets an explicit TTL.
+   */
+  cacheExpiryTime?: number | null;
   loadTranslations?: TranslationsLoader;
   environment?: 'development' | 'production';
+  batchConfig?: TranslationBatchConfig;
+  runtimeTranslation?: RuntimeTranslationConfig;
   // Cache lifecycle hooks
   /** @deprecated - move to subscription api instead */
   lifecycle?: LifecycleCallbacks<TranslationValue>;
@@ -30,6 +44,13 @@ export type I18nManagerConfig = {
   devApiKey?: string;
   apiKey?: string;
   runtimeUrl?: string | null;
+  /**
+   * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
+   * disables expiry, and a number sets an explicit TTL.
+   */
+  cacheExpiryTime?: number | null;
+  batchConfig?: TranslationBatchConfig;
+  runtimeTranslation?: RuntimeTranslationConfig;
   _versionId?: string;
 };
 

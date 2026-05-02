@@ -15,6 +15,50 @@ const MAX_BATCH_SIZE = 25;
 const MAX_CONCURRENT_REQUESTS = 100;
 const BATCH_INTERVAL = 50;
 
+export type TranslationBatchConfig = {
+  maxConcurrentRequests?: number;
+  maxBatchSize?: number;
+  batchInterval?: number;
+};
+
+const DEFAULT_BATCH_CONFIG: Required<TranslationBatchConfig> = {
+  maxConcurrentRequests: MAX_CONCURRENT_REQUESTS,
+  maxBatchSize: MAX_BATCH_SIZE,
+  batchInterval: BATCH_INTERVAL,
+};
+
+function getPositiveValue(value: number | undefined, defaultValue: number) {
+  if (value === undefined || !Number.isFinite(value) || value <= 0) {
+    return defaultValue;
+  }
+  return value;
+}
+
+function getPositiveInteger(value: number | undefined, defaultValue: number) {
+  if (value === undefined || !Number.isFinite(value)) return defaultValue;
+  const integer = Math.trunc(value);
+  return integer > 0 ? integer : defaultValue;
+}
+
+function normalizeBatchConfig(
+  batchConfig?: TranslationBatchConfig
+): Required<TranslationBatchConfig> {
+  return {
+    maxConcurrentRequests: getPositiveInteger(
+      batchConfig?.maxConcurrentRequests,
+      DEFAULT_BATCH_CONFIG.maxConcurrentRequests
+    ),
+    maxBatchSize: getPositiveInteger(
+      batchConfig?.maxBatchSize,
+      DEFAULT_BATCH_CONFIG.maxBatchSize
+    ),
+    batchInterval: getPositiveValue(
+      batchConfig?.batchInterval,
+      DEFAULT_BATCH_CONFIG.batchInterval
+    ),
+  };
+}
+
 /**
  * InputKey type for lookups
  * @typedef {Object} TranslationKey
@@ -80,6 +124,8 @@ export class TranslationsCache<
    */
   private _activeRequests = 0;
 
+  private _batchConfig: Required<TranslationBatchConfig>;
+
   /**
    * Translate many function
    */
@@ -95,9 +141,11 @@ export class TranslationsCache<
     init,
     translateMany,
     lifecycle,
+    batchConfig,
   }: {
     init: Record<Hash, TranslationValue>;
     translateMany: TranslateMany;
+    batchConfig?: TranslationBatchConfig;
     lifecycle: LifecycleParam<
       TranslationKey<TranslationValue>,
       Hash,
@@ -107,6 +155,7 @@ export class TranslationsCache<
   }) {
     super(init, lifecycle);
     this._translateMany = translateMany;
+    this._batchConfig = normalizeBatchConfig(batchConfig);
   }
 
   /**
@@ -170,7 +219,7 @@ export class TranslationsCache<
     const translationPromise = this._enqueueTranslation(key);
 
     // If batch is full, flush now
-    if (this._queue.length >= MAX_BATCH_SIZE) {
+    if (this._queue.length >= this._batchConfig.maxBatchSize) {
       this._flushNow();
     } else {
       this._scheduleBatch();
@@ -202,7 +251,7 @@ export class TranslationsCache<
     this._batchTimer = setTimeout(() => {
       this._batchTimer = null;
       this._drainQueue();
-    }, BATCH_INTERVAL);
+    }, this._batchConfig.batchInterval);
   }
 
   /**
@@ -211,9 +260,9 @@ export class TranslationsCache<
   private _drainQueue(): void {
     while (
       this._queue.length > 0 &&
-      this._activeRequests < MAX_CONCURRENT_REQUESTS
+      this._activeRequests < this._batchConfig.maxConcurrentRequests
     ) {
-      const batch = this._queue.splice(0, MAX_BATCH_SIZE);
+      const batch = this._queue.splice(0, this._batchConfig.maxBatchSize);
       this._sendBatchRequest(batch);
     }
     // If items remain (hit concurrency limit), schedule again

@@ -1,5 +1,6 @@
 import { Cache } from './Cache';
 import { Hash, TranslationKey, TranslationsCache } from './TranslationsCache';
+import type { TranslationBatchConfig } from './TranslationsCache';
 import { Translation } from './utils/types/translation-data';
 import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
 import { CreateTranslateMany } from './utils/createTranslateMany';
@@ -58,6 +59,8 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    */
   private ttl: number = DEFAULT_CACHE_EXPIRY_TIME;
 
+  private _batchConfig?: TranslationBatchConfig;
+
   /**
    * Translations cache lifecycle callbacks (locale embedded)
    */
@@ -75,6 +78,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
   constructor({
     init = {},
     ttl,
+    batchConfig,
     loadTranslations,
     createTranslateMany,
     lifecycle: {
@@ -86,6 +90,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
   }: {
     init?: Record<string, CacheEntry<TranslationValue>>;
     ttl?: number | null;
+    batchConfig?: TranslationBatchConfig;
     createTranslateMany: CreateTranslateMany;
     loadTranslations: SafeTranslationsLoader<TranslationValue>;
     lifecycle: LocalesCacheLifecycleCallbacks<TranslationValue>;
@@ -97,6 +102,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
 
     this._translationLoader = loadTranslations;
     this._createTranslateMany = createTranslateMany;
+    this._batchConfig = batchConfig;
     this._onTranslationsCacheHit = onTranslationsCacheHit;
     this._onTranslationsCacheMiss = onTranslationsCacheMiss;
   }
@@ -184,6 +190,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
       init: await translationsPromise,
       lifecycle: this._createTranslationsCacheLifecycle(locale),
       translateMany: this._createTranslateMany(locale),
+      batchConfig: this._batchConfig,
     });
 
     return { translationsCache, expiresAt };
