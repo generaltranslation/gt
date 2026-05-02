@@ -1,11 +1,6 @@
-import { PortableTextBlock, SanityDocument } from 'sanity';
-import { describe, expect, test } from 'vitest';
-import {
-  getSerialized,
-  getValidFields,
-  toPlainText,
-  getDeserialized,
-} from '../helpers';
+import { SanityDocument } from 'sanity';
+import { expect, test } from 'vitest';
+import { getDeserialized } from '../helpers';
 import { docWithInlineMarks, findByClass, getHTMLNode, schema } from './utils';
 import { attachGTData, BaseDocumentSerializer, customSerializers } from '../..';
 import { TranslationLevel } from '../../types';

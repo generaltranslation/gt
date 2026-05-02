@@ -1,6 +1,6 @@
 // Adapted from https://github.com/sanity-io/sanity-naive-html-serializer
 
-import { ObjectField, SanityDocument, TypedObject, Schema } from 'sanity';
+import { SanityDocument } from 'sanity';
 
 export type SerializedDocument = {
   name: string;
