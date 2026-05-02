@@ -13,7 +13,8 @@ export type PublishFilesResult = {
   results: {
     fileId: string;
     versionId: string;
-    locale?: string; // if locale is provided, it means this result is for a translation. Else it is for a source file.
+    // Present for translation files; omitted for source files.
+    locale?: string;
     branchId: string;
     success: boolean;
     error?: string;
@@ -23,9 +24,9 @@ export type PublishFilesResult = {
 /**
  * @internal
  * Publishes or unpublishes files on the CDN.
- * @param files - Array of file entries with publish flags
- * @param config - The configuration for the API call
- * @returns The result of the API call
+ * @param files - File entries with publish flags.
+ * @param config - The configuration for the API call.
+ * @returns The result of the API call.
  */
 export default async function _publishFiles(
   files: PublishFileEntry[],

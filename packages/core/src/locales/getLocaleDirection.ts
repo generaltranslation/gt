@@ -2,14 +2,14 @@ import { intlCache } from '../cache/IntlCache';
 import _getLocaleProperties from './getLocaleProperties';
 
 /**
- * Get the text direction for a given locale code using the Intl.Locale API.
+ * Gets the text direction for a given locale code using Intl.Locale when available.
  *
  * @param {string} code - The locale code to check.
- * @returns {string} - 'rtl' if the language is right-to-left, otherwise 'ltr'.
+ * @returns {string} 'rtl' if the language is right-to-left; otherwise 'ltr'.
  * @internal
  */
 export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
-  // Extract via textInfo property
+  // Prefer the Intl.Locale textInfo property when it is available.
   try {
     const locale = intlCache.get('Locale', code);
     const textInfoDirection = extractDirectionWithTextInfo(locale);
@@ -17,20 +17,17 @@ export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
       return textInfoDirection;
     }
   } catch {
-    // silent
+    // Fall back to heuristics if Intl.Locale cannot parse the code.
   }
 
-  // Fallback to simple heuristics
+  // Fall back to script and language heuristics.
   const { scriptCode, languageCode } = _getLocaleProperties(code);
 
-  // Handle RTL script or language
   if (scriptCode) return isRtlScript(scriptCode) ? 'rtl' : 'ltr';
   if (languageCode) return isRtlLanguage(languageCode) ? 'rtl' : 'ltr';
 
   return 'ltr';
 }
-
-// ===== HELPER CONSTANTS ===== //
 
 const RTL_SCRIPTS = new Set([
   'arab',
@@ -64,15 +61,13 @@ const RTL_LANGUAGES = new Set([
   'yi',
 ]);
 
-// ===== HELPER FUNCTIONS ===== //
-
 /**
- * Handles extracting direction via textInfo property
- * @param Locale - Intl.Locale object
- * @returns {'ltr' | 'rtl'} - The direction of the locale
+ * Extracts direction from the Intl.Locale textInfo property.
+ * @param locale - Intl.Locale object.
+ * @returns The direction of the locale, if available.
  *
- * Intl.Locale.prototype.getTextInfo() / textInfo property incorporated in ES2024 Specification.
- * This is not supported by all browsers yet.
+ * Intl.Locale.prototype.getTextInfo() / the textInfo property is incorporated in the ES2024 specification.
+ * It is not supported by all browsers yet.
  * See: {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo#browser_compatibility}
  */
 function extractDirectionWithTextInfo(

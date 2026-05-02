@@ -10,13 +10,13 @@ type TraverseIcuOptions = ParserOptions & {
 };
 
 /**
- * Given an ICU string, traverse the AST and call the visitor function for each element that matches the type T
- * @param icu - The ICU string to traverse
- * @param shouldVisit - A function that returns true if the element should be visited
- * @param visitor - A function that is called for each element that matches the type T
- * @returns The modified AST of the ICU string
+ * Traverses an ICU AST and calls the visitor for each element that matches type T.
+ * @param icuString - The ICU string to traverse.
+ * @param shouldVisit - Function that returns true if the element should be visited.
+ * @param visitor - Function called for each matching element.
+ * @returns The modified AST of the ICU string.
  *
- * @note This function is a heavy operation, use sparingly
+ * @note This function is expensive; use it sparingly.
  */
 export function traverseIcu<T extends MessageFormatElement>({
   icuString,
@@ -38,13 +38,13 @@ export function traverseIcu<T extends MessageFormatElement>({
   }
 
   function handleChild(child: MessageFormatElement) {
-    // handle select var
+    // Visit matching elements.
     let visited = false;
     if (shouldVisit(child)) {
       visitor(child);
       visited = true;
     }
-    // recurse on children
+    // Recurse into children.
     if (!visited || recurseIntoVisited) {
       if (child.type === TYPE.select || child.type === TYPE.plural) {
         Object.values(child.options)

@@ -9,11 +9,11 @@ import { ProjectData } from '../types-dir/api/project';
 
 /**
  * @internal
- * Gets the project data for a given project ID.
- * @param projectId - The project ID to get the project data for
- * @param options - The options for the API call
- * @param config - The configuration for the request
- * @returns The project data for the given project ID
+ * Gets project data for a given project ID.
+ * @param projectId - The project ID to query.
+ * @param options - The options for the API call.
+ * @param config - The configuration for the request.
+ * @returns The project data for the given project ID.
  */
 export default async function _getProjectData(
   projectId: string,
@@ -24,7 +24,6 @@ export default async function _getProjectData(
   const timeout = options.timeout ? options.timeout : defaultTimeout;
   const url = `${baseUrl || defaultBaseUrl}/v2/project/info/${encodeURIComponent(projectId)}`;
 
-  // Get the project data
   let response;
   try {
     response = await fetchWithTimeout(
@@ -39,7 +38,6 @@ export default async function _getProjectData(
     handleFetchError(error, timeout);
   }
 
-  // Validate the response
   await validateResponse(response);
 
   const result = await response.json();

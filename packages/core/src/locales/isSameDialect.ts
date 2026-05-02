@@ -19,17 +19,19 @@ function checkTwoLocalesAreSameDialect(codeA: string, codeB: string) {
 }
 
 /**
- * Test two or more language codes to determine if they are exactly the same
- * e.g. "en-US" and "en" would be exactly the same.
- * "en-GB" and "en" would be exactly the same.
- * "en-GB" and "en-US" would be different.
+ * Tests whether two or more locale codes describe the same dialect.
+ * Locale pairs are compatible when their languages match and any shared
+ * region or script subtags are equal.
+ *
+ * For example, "en-US" matches "en", "en-GB" matches "en",
+ * and "en-GB" does not match "en-US".
  * @internal
  */
 export default function _isSameDialect(
   ...locales: (string | string[])[]
 ): boolean {
   try {
-    // standardize codes
+    // Standardize locale codes before comparing subtags.
     const flattenedCodes = locales.flat().map(_standardizeLocale);
 
     for (let i = 0; i < flattenedCodes.length; i++) {

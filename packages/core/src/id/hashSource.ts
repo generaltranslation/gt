@@ -1,5 +1,3 @@
-// Functions provided to other GT libraries
-
 import { JsxChild, JsxChildren, Variable } from '../types';
 import { stableStringify as stringify } from '../utils/stableStringify';
 import { sha256 } from '@noble/hashes/sha2.js';
@@ -7,14 +5,13 @@ import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import isVariable from '../utils/isVariable';
 import { HashMetadata } from './types';
 
-// ----- FUNCTIONS ----- //
 /**
- * Calculates a unique hash for a given string using sha256.
+ * Calculates a unique hash for a given string using SHA-256.
  *
- * First 16 characters of hash, hex encoded.
+ * Returns the first 16 hex-encoded characters of the hash.
  *
  * @param {string} string - The string to be hashed.
- * @returns {string} - The resulting hash as a hexadecimal string.
+ * @returns {string} The resulting hash as a hexadecimal string.
  */
 export function hashString(string: string): string {
   return bytesToHex(sha256(utf8ToBytes(string))).slice(0, 16);
@@ -24,12 +21,12 @@ export function hashString(string: string): string {
  * Calculates a unique ID for the given children objects by hashing their sanitized JSON string representation.
  *
  * @param {any} childrenAsObjects - The children objects to be hashed.
- * @param {string} [context] - The context for the children
- * @param {string} [id] - The id for the JSX Children object
- * @param {number} [maxChars] - The maxChars for the JSX Children object
- * @param {string} [dataFormat] - The data format of the sources
- * @param {function} [hashFunction] custom hash function
- * @returns {string} - The unique has of the children.
+ * @param {string} [context] - The context for the children.
+ * @param {string} [id] - The ID for the JSX children object.
+ * @param {number} [maxChars] - The maxChars limit for the JSX children object.
+ * @param {string} [dataFormat] - The data format of the sources.
+ * @param {function} [hashFunction] - Custom hash function.
+ * @returns {string} The unique hash of the children.
  */
 export function hashSource(
   {
@@ -66,10 +63,10 @@ type SanitizedVariable = Omit<Variable, 'i'>;
 
 type SanitizedElement = {
   b?: {
-    [k: string]: SanitizedChildren; // Branches
+    [k: string]: SanitizedChildren;
   };
-  c?: SanitizedChildren; // Children
-  t?: string; // Branch Transformation
+  c?: SanitizedChildren;
+  t?: string;
 };
 type SanitizedChild = SanitizedElement | SanitizedVariable | string;
 type SanitizedChildren = SanitizedChild | SanitizedChild[];
@@ -90,9 +87,8 @@ const sanitizeChild = (child: JsxChild): SanitizedChild => {
     if ('d' in child) {
       const generaltranslation = child?.d;
       if (generaltranslation?.b) {
-        // The only thing that prevents sanitizeJsx from being stable is
-        // the order of the keys in the branches object.
-        // We don't sort them because stable-stringify sorts them anyways
+        // Branch key order is the only source of instability here.
+        // stableStringify sorts keys when serializing the sanitized tree.
         newChild.b = Object.fromEntries(
           Object.entries(generaltranslation.b).map(([key, value]) => [
             key,

@@ -16,10 +16,10 @@ export type EnqueueOptions = {
 /**
  * @internal
  * Enqueues files for translation in the General Translation API.
- * @param files - References of files to translate (file content already uploaded)
- * @param options - The options for the API call
- * @param config - The configuration for the API call
- * @returns The result of the API call
+ * @param files - References to files whose content is already uploaded.
+ * @param options - The options for the API call.
+ * @param config - The configuration for the API call.
+ * @returns The result of the API call.
  */
 export default async function _enqueueFiles(
   files: FileReferenceIds[],
@@ -55,7 +55,7 @@ export default async function _enqueueFiles(
     },
     { batchSize: 100 }
   );
-  // flatten the result
+  // Flatten batch results into the API response shape.
   const jobs = Object.fromEntries(
     result.data.map(([jobId, jobData]) => [jobId, jobData])
   );

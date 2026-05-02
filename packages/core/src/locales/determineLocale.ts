@@ -5,8 +5,8 @@ import _getLocaleProperties from './getLocaleProperties';
 import { CustomMapping } from './customLocaleMapping';
 
 /**
- * Given a list of locales and a list of approved locales, sorted in preference order
- * Determines which locale is the best match among the approved locales, prioritizing exact matches and falling back to dialects of the same language
+ * Determines the best approved locale match for a preference-ordered locale list.
+ * Prioritizes exact matches and falls back to dialects of the same language.
  * @internal
  */
 export default function _determineLocale(
@@ -39,10 +39,10 @@ export default function _determineLocale(
       scriptCode: string;
     }) => {
       const locales = [
-        locale, // If the full locale is supported under this language category
-        `${languageCode}-${regionCode}`, // Attempt to match parts
-        `${languageCode}-${scriptCode}`,
-        minimizedCode, // If a minimized variant of this locale is supported
+        locale, // Full locale match.
+        `${languageCode}-${regionCode}`, // Language-region match.
+        `${languageCode}-${scriptCode}`, // Language-script match.
+        minimizedCode, // Minimized locale match.
       ];
       for (const l of locales) {
         if (candidates.includes(l)) return l;

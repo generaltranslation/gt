@@ -44,12 +44,12 @@ export default function _getLocaleEmoji(
   }
 }
 
-// Default language emoji for when none else can be found
+// Default language emoji when no region-specific emoji is available.
 const europeAfricaGlobe = '🌍';
 const asiaAustraliaGlobe = '🌏';
 export const defaultEmoji = europeAfricaGlobe;
 
-// Exceptions to better reflect linguistic and cultural identities
+// Exceptions that better reflect linguistic and cultural identities.
 const exceptions = {
   ca: europeAfricaGlobe,
   eu: europeAfricaGlobe,

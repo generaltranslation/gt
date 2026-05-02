@@ -11,7 +11,7 @@ import { GTUnindexedSelectElement } from './utils/types';
 import { isGTUnindexedSelectElement } from './utils/traverseHelpers';
 import { IcuMessage } from '../types-dir/jsx/content';
 
-// Used for temporarily tracking variable indices in the AST
+// Temporarily marks variable indices while traversing the AST.
 const VAR_FLAG_SUFFIX = '_flag';
 
 interface GTFlaggedSelectElement extends SelectElement {
@@ -31,16 +31,16 @@ type Location = {
 };
 
 /**
- * Given an ICU string adds identifiers to each _gt_ placeholder
+ * Adds identifiers to each _gt_ placeholder in an ICU string.
  * indexVars('Hello {_gt_} {_gt_} World') => 'Hello {_gt_1_} {_gt_2_} World'
  */
 export function indexVars(icuString: IcuMessage): string {
-  // Check if the string contains _gt_
+  // Return early if the string contains no _gt_ variables.
   if (!icuString.includes(VAR_IDENTIFIER)) {
     return icuString;
   }
 
-  // Record the location of the variable
+  // Record variable locations.
   const variableLocations: Location[] = [];
   function visitor(child: GTUnindexedSelectElement): void {
     variableLocations.push({
@@ -51,7 +51,7 @@ export function indexVars(icuString: IcuMessage): string {
     });
   }
 
-  // Find all variable identifiers
+  // Find all variable identifiers.
   traverseIcu({
     icuString,
     shouldVisit: isGTUnindexedSelectElement,
@@ -59,23 +59,23 @@ export function indexVars(icuString: IcuMessage): string {
     options: { recurseIntoVisited: false, captureLocation: true },
   });
 
-  // Index each variable and collapse the other option
+  // Index each variable and collapse the other option.
   const result = [];
   let current = 0;
   for (let i = 0; i < variableLocations.length; i++) {
     const { start, end, otherStart, otherEnd } = variableLocations[i];
-    // Before the variable
+    // Preserve content before the variable.
     result.push(icuString.slice(current, start));
-    // Replace the variable with the new identifier (+1 is for the curly brace)
+    // Replace the variable with the new identifier; +1 includes the opening brace.
     result.push(icuString.slice(start, start + VAR_IDENTIFIER.length + 1));
 
-    // Add the new identifier
+    // Add the new identifier.
     result.push(String(i + 1));
-    // After the variable
+    // Preserve content after the variable name.
     result.push(icuString.slice(start + VAR_IDENTIFIER.length + 1, otherStart));
-    // Before the other option
+    // Collapse the other option.
     result.push('{}');
-    // The other option
+    // Preserve content after the other option.
     result.push(icuString.slice(otherEnd, end));
     current = end;
   }

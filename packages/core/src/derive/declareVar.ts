@@ -2,7 +2,8 @@ import { VAR_IDENTIFIER, VAR_NAME_IDENTIFIER } from './utils/constants';
 import { sanitizeVar } from './utils/sanitizeVar';
 
 /**
- * Mark as a non-translatable string. Use within a derive() call to mark content as not derivable (e.g., not possible to statically analyze).
+ * Marks content as a non-translatable variable. Use within a derive() call for
+ * content that cannot be statically analyzed.
  *
  * @example
  * function nonDerivableFunction() {
@@ -28,17 +29,17 @@ export function declareVar(
   variable: string | number | boolean | null | undefined,
   options?: { $name?: string }
 ): string {
-  // variable section
+  // Variable section.
   const sanitizedVariable = sanitizeVar(String(variable ?? ''));
   const variableSection = ` other {${sanitizedVariable}}`;
 
-  // name section
+  // Name section.
   let nameSection = '';
   if (options?.$name) {
     const sanitizedName = sanitizeVar(options.$name);
     nameSection = ` ${VAR_NAME_IDENTIFIER} {${sanitizedName}}`;
   }
 
-  // interpolate
+  // Interpolate into ICU select syntax.
   return `{${VAR_IDENTIFIER}, select,${variableSection}${nameSection}}`;
 }

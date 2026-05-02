@@ -4,23 +4,23 @@ import { CustomMapping } from './customLocaleMapping';
 
 const scriptExceptions = ['Cham', 'Jamo', 'Kawi', 'Lisu', 'Toto', 'Thai'];
 
-//// According to BCP 47, the range qaa–qtz is reserved for private-use language codes
+// BCP 47 reserves the qaa–qtz range for private-use language codes.
 const isCustomLanguage = (language: string) => {
   return language >= 'qaa' && language <= 'qtz';
 };
 
 /**
- * Checks if a given BCP 47 language code is valid.
- * @param {string} code - The BCP 47 language code to validate.
+ * Checks whether a BCP 47 locale code is valid.
+ * @param {string} locale - The BCP 47 locale code to validate.
  * @param {CustomMapping} [customMapping] - The custom mapping to use for validation.
- * @returns {boolean} True if the BCP 47 code is valid, false otherwise.
+ * @returns {boolean} True if the BCP 47 locale code is valid, false otherwise.
  * @internal
  */
 export const _isValidLocale = (
   locale: string,
   customMapping?: CustomMapping
 ): boolean => {
-  // If in custom mapping, return true
+  // Resolve custom aliases before validation.
   if (
     customMapping?.[locale] &&
     typeof customMapping[locale] === 'object' &&
@@ -87,7 +87,7 @@ export const _isValidLocale = (
 /**
  * Standardizes a BCP 47 locale to ensure correct formatting.
  * @param {string} locale - The BCP 47 locale to standardize.
- * @returns {string} The standardized BCP 47 locale, or an empty string if invalid.
+ * @returns {string} The standardized BCP 47 locale, or the input string if it cannot be standardized.
  * @internal
  */
 export const _standardizeLocale = (locale: string): string => {

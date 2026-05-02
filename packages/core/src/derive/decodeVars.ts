@@ -10,7 +10,7 @@ type Location = {
 };
 
 /**
- * Given an encoded ICU string, interpolate only _gt_ variables that have been marked with declareVar()
+ * Interpolates only _gt_ variables that have been marked with declareVar().
  * @example
  * const encodedIcu = "Hi" + declareVar("Brian") + ", my name is {name}"
  * // 'Hi {_gt_, select, other {Brian}}, my name is {name}'
@@ -18,12 +18,12 @@ type Location = {
  * // 'Hi Brian, my name is {name}'
  */
 export function decodeVars(icuString: string): string {
-  // Check if the string contains _gt_
+  // Return early if the string contains no _gt_ variables.
   if (!icuString.includes(VAR_IDENTIFIER)) {
     return icuString;
   }
 
-  // Record the location of the variable
+  // Record variable locations.
   const variableLocations: Location[] = [];
   function visitor(child: GTUnindexedSelectElement): void {
     variableLocations.push({
@@ -36,7 +36,7 @@ export function decodeVars(icuString: string): string {
     });
   }
 
-  // Find all variable identifiers
+  // Find all variable identifiers.
   traverseIcu({
     icuString,
     shouldVisit: isGTUnindexedSelectElement,
@@ -47,7 +47,7 @@ export function decodeVars(icuString: string): string {
     },
   });
 
-  // Construct output string
+  // Construct the output string.
   let previousIndex = 0;
   const outputList = [];
   for (let i = 0; i < variableLocations.length; i++) {

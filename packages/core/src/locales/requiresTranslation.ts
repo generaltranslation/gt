@@ -4,9 +4,9 @@ import _isSameLanguage from './isSameLanguage';
 import { _isValidLocale } from './isValidLocale';
 
 /**
- * Given a target locale and a source locale, determines whether a translation is required
- * If the target locale and the source locale are the same, returns false, otherwise returns true
- * If a translation is not possible due to the target locale being outside of the optional approvedLanguages scope, also returns false
+ * Determines whether a translation is required between source and target locales.
+ * Returns false when locales are invalid, the target is the same dialect as the source,
+ * or the target is outside the optional approved locale scope.
  * @internal
  */
 export default function _requiresTranslation(
@@ -15,7 +15,7 @@ export default function _requiresTranslation(
   approvedLocales?: string[],
   customMapping?: CustomMapping
 ): boolean {
-  // If codes are invalid
+  // Invalid locale codes cannot be translated.
   if (
     !_isValidLocale(sourceLocale, customMapping) ||
     !_isValidLocale(targetLocale, customMapping) ||
@@ -27,13 +27,12 @@ export default function _requiresTranslation(
     return false;
   }
 
-  // Check if the languages are identical, if so, a translation is not required
+  // Matching dialects do not require translation.
   if (_isSameDialect(sourceLocale, targetLocale)) {
     return false;
   }
 
-  // Check that the target locale is within the approvedLocales scope, if not, a translation is not required
-  // isSameLanguage rather than checkTwoLocalesAreSameDialect so we can show different dialects as a fallback
+  // Match approved locales by language so different dialects can be used as fallbacks.
   if (
     approvedLocales &&
     !approvedLocales.some((approvedLocale) =>
@@ -42,6 +41,5 @@ export default function _requiresTranslation(
   ) {
     return false;
   }
-  // Otherwise, a translation is required!
   return true;
 }

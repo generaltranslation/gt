@@ -2,10 +2,10 @@ import { shouldUseCanonicalLocale } from './customLocaleMapping';
 import { CustomMapping } from './customLocaleMapping';
 
 /**
- * Resolves the canonical locale for a given locale.
- * @param locale - The locale to resolve the canonical locale for
- * @param customMapping - The custom mapping to use for resolving the canonical locale
- * @returns The canonical locale
+ * Resolves the canonical locale for a custom alias.
+ * @param locale - The locale to resolve.
+ * @param customMapping - The custom mapping to inspect.
+ * @returns The canonical locale, or the input locale when no canonical mapping exists.
  */
 export function _resolveCanonicalLocale(
   locale: string,

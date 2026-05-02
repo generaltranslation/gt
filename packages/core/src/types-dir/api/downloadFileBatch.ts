@@ -1,12 +1,11 @@
 import { FileFormat } from './file';
-// Types for the downloadFileBatch function
 
 export type DownloadFileBatchRequest = {
   fileId: string;
-  branchId?: string; // if not provided, will use the default branch
-  versionId?: string; // if not provided, will use the latest version
-  locale?: string; // if not provided, will download the source file
-  useLatestAvailableVersion?: boolean; // if true and versionId is not found, falls back to the latest available version
+  branchId?: string; // Defaults to the default branch.
+  versionId?: string; // Defaults to the latest version.
+  locale?: string; // Downloads the source file when omitted.
+  useLatestAvailableVersion?: boolean; // Falls back to the latest available version when versionId is not found.
 }[];
 
 export type DownloadFileBatchOptions = {
@@ -28,7 +27,7 @@ export type DownloadedFile = {
   fileId: string;
   versionId: string;
   locale?: string;
-  fileName?: string; // Only present for source files (if locale is not present)
+  fileName?: string; // Only present for source files.
   data: string;
   metadata: Record<string, any>;
   fileFormat: FileFormat;

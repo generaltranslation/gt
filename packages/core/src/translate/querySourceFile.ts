@@ -8,11 +8,11 @@ import apiRequest from './utils/apiRequest';
 
 /**
  * @internal
- * Gets the source file and translation information for a given file ID and version ID.
- * @param query - The file ID and version ID to get the source file and translation information for
- * @param options - The options for the API call
- * @param config - The configuration for the request
- * @returns The source file and translation information for the given file ID and version ID
+ * Gets source file and translation information for a given file ID and version ID.
+ * @param query - The file ID and version ID to query.
+ * @param options - The options for the API call.
+ * @param config - The configuration for the request.
+ * @returns The source file and translation information.
  */
 export default async function _querySourceFile(
   query: FileQuery,

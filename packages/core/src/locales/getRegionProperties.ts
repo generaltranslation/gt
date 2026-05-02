@@ -49,13 +49,14 @@ export function _getRegionProperties(
   code: string;
   name: string;
   emoji: string;
-  locale?: string; // locale is a hidden return field, because we don't want to guarantee it, but we also need customMapping to work with it
+  /** Internal detail used when resolving custom locale mappings. */
+  locale?: string;
 } {
   defaultLocale ||= libraryDefaultLocale;
   try {
     const displayNames = intlCache.get(
       'DisplayNames',
-      [defaultLocale, libraryDefaultLocale], // default language order
+      [defaultLocale, libraryDefaultLocale], // Locale fallback order.
       { type: 'region' }
     );
     return {

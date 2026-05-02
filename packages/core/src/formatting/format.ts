@@ -28,8 +28,6 @@ import {
  *
  * @example
  * _formatCutoff({ value: 'Hello, world!', options: { maxChars: 8 } }); // Returns 'Hello, w...'
- *
- * Will fallback to an empty string if formatting fails.
  */
 export function _formatCutoff({
   value,
@@ -52,8 +50,8 @@ export function _formatCutoff({
  * @returns {string} The formatted message.
  * @internal
  *
- * Will fallback to an empty string
- * TODO: add this to custom formats
+ * Returns an empty string if IntlMessageFormat produces no output.
+ * TODO: Add this to custom formats.
  */
 export function _formatMessageICU(
   message: string,
@@ -71,7 +69,7 @@ export function _formatMessageICU(
  * @returns {string} The original message, unchanged.
  * @internal
  *
- * TODO: add this to custom formats
+ * TODO: Add this to custom formats.
  */
 export function _formatMessageString(message: string): string {
   return message;
@@ -191,15 +189,15 @@ export function _formatList({
 }): string {
   return intlCache
     .get('ListFormat', locales, {
-      type: 'conjunction', // Default type, can be overridden via options
-      style: 'long', // Default style, can be overridden via options
+      type: 'conjunction', // Default type; can be overridden via options.
+      style: 'long', // Default style; can be overridden via options.
       ...options,
     })
     .format(value);
 }
 
 /**
- * Formats a list of items according to the specified locales and options.
+ * Formats a list of items to parts according to the specified locales and options.
  * @param {Object} params - The parameters for the list formatting.
  * @param {Array<T>} params.value - The list of items to format.
  * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
@@ -218,8 +216,8 @@ export function _formatListToParts<T>({
 }) {
   const formatListParts = intlCache
     .get('ListFormat', locales, {
-      type: 'conjunction', // Default type, can be overridden via options
-      style: 'long', // Default style, can be overridden via options
+      type: 'conjunction', // Default type; can be overridden via options.
+      style: 'long', // Default style; can be overridden via options.
       ...options,
     })
     .formatToParts(value.map(() => '1'));
@@ -251,7 +249,7 @@ export function _selectRelativeTimeUnit(
   const sign = diffMs < 0 ? -1 : 1;
 
   // Use Math.floor to avoid confusing jumps near boundaries
-  // (e.g. 3.5 days rounding to "1 week ago" instead of "3 days ago")
+  // (for example, 3.5 days rounding to "1 week ago" instead of "3 days ago").
   const seconds = Math.floor(absDiffMs / 1000);
   const minutes = Math.floor(absDiffMs / (1000 * 60));
   const hours = Math.floor(absDiffMs / (1000 * 60 * 60));

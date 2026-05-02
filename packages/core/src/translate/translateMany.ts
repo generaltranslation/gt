@@ -20,10 +20,11 @@ import { hashSource } from '../id';
  * This function batches multiple translation requests together and sends them
  * to the GT translation API in one call.
  *
- * @param requests - The entries to translate. Can be an array (entries are hashed and results returned in order) or a record keyed by hash (skips hash calculation, returns a record).
+ * @param requests - The entries to translate. Arrays are hashed and returned in order; records are keyed by hash and returned as records.
  * @param globalMetadata - The metadata for the translation.
  * @param config - The configuration for the translation.
- * @returns The results of the translation. An array if requests was an array, a record if requests was a record.
+ * @param timeout - The timeout in milliseconds.
+ * @returns The translation results in the same shape as the input requests.
  */
 export default async function _translateMany<
   T extends TranslateManyEntry[] | Record<string, TranslateManyEntry>,
@@ -51,7 +52,7 @@ export default async function _translateMany(
 ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
   const isArray = Array.isArray(requests);
 
-  // normalize and map from requests to requests record
+  // Normalize requests to a record keyed by hash.
   const hashOrder: string[] | undefined = isArray ? [] : undefined;
   const requestsObject: Record<
     string,
@@ -96,7 +97,7 @@ export default async function _translateMany(
     }
   );
 
-  // If input was an array, map the record response back to an array in input order
+  // Map array input back to array output in input order.
   if (hashOrder) {
     return hashOrder.map(
       (hash) =>
@@ -108,6 +109,5 @@ export default async function _translateMany(
     );
   }
 
-  // If input was a record, return the record response directly
   return response;
 }

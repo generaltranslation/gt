@@ -1,8 +1,8 @@
 import { CutoffFormatConstructor } from '../formatting/custom-formats/CutoffFormat/CutoffFormat';
 
 /**
- * Extracts only the constructor functions from the Intl namespace,
- * filtering out static methods like getCanonicalLocales and supportedValuesOf
+ * Extracts constructor functions from the Intl namespace,
+ * filtering out static methods such as getCanonicalLocales and supportedValuesOf.
  */
 type IntlConstructors = {
   [K in keyof typeof Intl as (typeof Intl)[K] extends new (
@@ -15,22 +15,22 @@ type IntlConstructors = {
 };
 
 /**
- * Extended interface that includes all native Intl constructors plus custom ones
+ * Extends native Intl constructors with custom constructors.
  */
 export interface CustomIntlConstructors extends IntlConstructors {
   CutoffFormat: typeof CutoffFormatConstructor;
 }
 
 /**
- * Helper type to represent a constructor function for a given Intl constructor key
+ * Represents a constructor function for a given Intl constructor key.
  */
 export type ConstructorType<K extends keyof CustomIntlConstructors> = new (
   ...args: ConstructorParameters<CustomIntlConstructors[K]>
 ) => InstanceType<CustomIntlConstructors[K]>;
 
 /**
- * Type for the cache object structure - each constructor gets its own Record
- * mapping cache keys to instances of that specific constructor type
+ * Cache object structure.
+ * Each constructor gets its own record mapping cache keys to instances.
  */
 export type IntlCacheObject = {
   [K in keyof CustomIntlConstructors]?: Record<
@@ -40,7 +40,7 @@ export type IntlCacheObject = {
 };
 
 /**
- * Type for the CustomIntl object that maps constructor names to constructor functions
+ * Maps constructor names to constructor functions.
  */
 export type CustomIntlType = {
   [K in keyof CustomIntlConstructors]: ConstructorType<K>;

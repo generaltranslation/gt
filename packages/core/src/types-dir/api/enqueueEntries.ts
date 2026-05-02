@@ -2,7 +2,7 @@ import { DataFormat } from '../jsx/content';
 
 export type { Updates } from './enqueueFiles';
 
-// ApiOptions type that matches sendUpdates interface more closely
+// API options aligned with the sendUpdates interface.
 export type EnqueueEntriesOptions = {
   timeout?: number;
   sourceLocale?: string;

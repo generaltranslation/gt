@@ -1,6 +1,6 @@
 import { VAR_IDENTIFIER } from './constants';
 
-// Regex  for _gt_# select
+// Regex for _gt_# select identifiers.
 export const GT_INDEXED_IDENTIFIER_REGEX = new RegExp(
   `^${VAR_IDENTIFIER}\\d+$`
 );

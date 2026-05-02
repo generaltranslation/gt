@@ -1,10 +1,10 @@
 import { CustomMapping } from './customLocaleMapping';
 
 /**
- * Resolves the alias locale for a given locale.
- * @param locale - The locale to resolve the alias locale for
- * @param customMapping - The custom mapping to use for resolving the alias locale
- * @returns The alias locale
+ * Resolves the alias locale for a canonical locale.
+ * @param locale - The canonical locale to resolve.
+ * @param customMapping - The custom mapping to inspect.
+ * @returns The alias locale, or the input locale when no alias exists.
  */
 export function _resolveAliasLocale(
   locale: string,

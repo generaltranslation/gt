@@ -20,18 +20,18 @@ export class CutoffFormatConstructor implements CutoffFormat {
   private options: ResolvedCutoffFormatOptions;
   private additionLength: number;
   /**
-   * Constructor
-   * @param {string | string[]} locales - The locales to use for formatting.
+   * Creates a cutoff formatter.
+   * @param {Intl.LocalesArgument} locales - The locales to use for formatting.
    * @param {CutoffFormatOptions} options - The options for formatting.
-   * @param {number} [option.maxChars] - The maximum number of characters to display.
+   * @param {number} [options.maxChars] - The maximum number of characters to display.
    * - Undefined values are treated as no cutoff.
-   * - Negative values follow .slice() behavior and terminator will be added before the value.
-   * - 0 will result in an empty string.
+   * - Negative values follow .slice() behavior, and the terminator is added before the value.
+   * - 0 results in an empty string.
    * - If cutoff results in an empty string, no terminator is added.
-   * @param {CutoffFormatStyle} [option.style='ellipsis'] - The style of the terminator.
-   * @param {string} [option.terminator] - Optional override the terminator to use.
-   * @param {string} [option.separator] - Optional override the separator to use between the terminator and the value.
-   * - If no terminator is provided, then separator is ignored.
+   * @param {CutoffFormatStyle} [options.style='ellipsis'] - The terminator style.
+   * @param {string} [options.terminator] - Optional terminator override.
+   * @param {string} [options.separator] - Optional separator override between the terminator and value.
+   * - If no terminator is provided, the separator is ignored.
    *
    * @example
    * const format = new CutoffFormat('en', { maxChars: 5 });
@@ -44,9 +44,9 @@ export class CutoffFormatConstructor implements CutoffFormat {
     locales: Intl.LocalesArgument,
     options: CutoffFormatOptions = {}
   ) {
-    // Determine locale (this replicates Intl.NumberFormat behavior including silent failure)
+    // Replicate Intl.NumberFormat locale resolution behavior, including silent fallback.
     try {
-      // Normalize locales to string
+      // Normalize locales to strings.
       const localesList = !locales
         ? [libraryDefaultLocale]
         : Array.isArray(locales)
@@ -60,7 +60,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
       this.locale = libraryDefaultLocale;
     }
 
-    // Follows Intl.NumberFormat behavior of throwing an error when currency is invalid
+    // Follow Intl.NumberFormat behavior by throwing when an option value is invalid.
     if (!TERMINATOR_MAP[options.style ?? DEFAULT_CUTOFF_FORMAT_STYLE]) {
       throw new Error(
         createInvalidCutoffStyleError(
@@ -69,12 +69,12 @@ export class CutoffFormatConstructor implements CutoffFormat {
       );
     }
 
-    // Resolve terminator options
+    // Resolve terminator options.
     let style: CutoffFormatStyle | undefined;
     let presetTerminatorOptions: ResolvedTerminatorOptions | undefined;
     if (options.maxChars !== undefined) {
       style = options.style ?? DEFAULT_CUTOFF_FORMAT_STYLE;
-      // TODO: need more sophisticated locale negotiation if we want to add support for region/script/etc.-specific terminators in the future
+      // TODO: Use locale negotiation if we add region- or script-specific terminators.
       const languageCode = new Intl.Locale(this.locale).language;
       presetTerminatorOptions =
         TERMINATOR_MAP[style][languageCode] ||
@@ -86,7 +86,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
       terminator != null
         ? (options.separator ?? presetTerminatorOptions?.separator)
         : undefined;
-    // // Remove terminator and separator if maxChars does have enough space
+    // Remove the terminator and separator when maxChars cannot fit them.
     this.additionLength = (terminator?.length ?? 0) + (separator?.length ?? 0);
     if (
       options.maxChars !== undefined &&
@@ -135,8 +135,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
   formatToParts(value: string): PrependedCutoffParts | PostpendedCutoffParts {
     const { maxChars, terminator, separator } = this.options;
 
-    // Slice our value
-    // const additionLength = (terminator?.length ?? 0) + (separator?.length ?? 0);
+    // Adjust the slice length to reserve space for the terminator and separator.
     const adjustedChars =
       maxChars === undefined || Math.abs(maxChars) >= value.length
         ? maxChars
@@ -148,7 +147,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
         ? value.slice(0, adjustedChars)
         : value.slice(adjustedChars);
 
-    // No cutoff, no terminator -> value only
+    // Return only the value when no cutoff or terminator applies.
     if (
       maxChars == null ||
       adjustedChars == null ||
@@ -159,13 +158,13 @@ export class CutoffFormatConstructor implements CutoffFormat {
       return [slicedValue];
     }
 
-    // Postpended cutoff
+    // Postpended cutoff.
     if (adjustedChars > 0) {
       return separator != null
         ? [slicedValue, separator, terminator]
         : [slicedValue, terminator];
     }
-    // Prepended cutoff
+    // Prepended cutoff.
     else {
       return separator != null
         ? [terminator, separator, slicedValue]
@@ -174,7 +173,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
   }
 
   /**
-   * Get the resolved options
+   * Gets the resolved options.
    * @returns {ResolvedCutoffFormatOptions} The resolved options.
    */
   resolvedOptions(): ResolvedCutoffFormatOptions {

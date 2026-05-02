@@ -1,7 +1,7 @@
 /**
- * derive() is a powerful but dangerous function which marks its argument as derivable (statically analyzable) for the compiler and CLI tool.
+ * derive() marks its argument as derivable, meaning statically analyzable by the compiler and CLI.
  *
- * This function is dangerous because it can cause the compiler and CLI tool to throw an error if the argument is not derivable.
+ * This function can cause the compiler and CLI to throw an error if the argument is not actually derivable.
  *
  * @example
  * ```jsx
@@ -13,7 +13,7 @@
  * ```
  *
  * @param {T extends string | boolean | number | null | undefined} content - Content to mark as derivable.
- * @returns content
+ * @returns The original content.
  */
 export function derive<T extends string | boolean | number | null | undefined>(
   content: T
@@ -24,9 +24,9 @@ export function derive<T extends string | boolean | number | null | undefined>(
 /**
  * @deprecated Use derive() instead.
  *
- * declareStatic() is a powerful but dangerous function which marks its argument as derivable (statically analyzable) for the compiler and CLI tool.
+ * declareStatic() marks its argument as derivable, meaning statically analyzable by the compiler and CLI.
  *
- * This function is dangerous because it can cause the compiler and CLI tool to throw an error if the argument is not derivable.
+ * This function can cause the compiler and CLI to throw an error if the argument is not actually derivable.
  *
  * @example
  * ```jsx
@@ -38,6 +38,6 @@ export function derive<T extends string | boolean | number | null | undefined>(
  * ```
  *
  * @param {T extends string | boolean | number | null | undefined} content - Content to mark as derivable.
- * @returns content
+ * @returns The original content.
  */
 export const declareStatic = derive;

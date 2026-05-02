@@ -16,51 +16,41 @@ import {
 } from './typeChecking';
 
 /**
- * Convert request data from old format to new format
+ * Converts request data from the old JSX format to the current format.
  */
-
 export function getNewJsxChild(child: OldJsxChild): JsxChild {
-  // string (end case)
   if (typeof child === 'string') {
     return child;
   }
 
-  // VariableObject
   if (isOldVariableObject(child)) {
     return getNewVariableObject(child);
   }
 
-  // JsxElement
   return getNewJsxElement(child);
 }
 
 export function getNewJsxChildren(children: OldJsxChildren): JsxChildren {
-  // string (end case)
   if (typeof children === 'string') {
     return children;
   }
 
-  // Array
   if (Array.isArray(children)) {
     return children.map(getNewJsxChild);
   }
 
-  // Object
   return getNewJsxChild(children);
 }
 
 export function getNewJsxElement(element: OldJsxElement): JsxElement {
-  // string (end case)
   if (typeof element === 'string') {
     return element;
   }
 
-  // type
   let t: string | undefined = undefined;
   if (element.type != null) {
     t = element.type;
   }
-  // children
   let c: JsxChildren | undefined = undefined;
   if (element.props?.children != null) {
     c = getNewJsxChildren(element.props.children);
@@ -98,12 +88,10 @@ export function getNewVariableType(variable: OldVariableType): VariableType {
 export function getNewVariableObject(
   variable: OldVariableObject
 ): VariableObject {
-  // variable type
   let v: VariableType | undefined = undefined;
   if (variable.variable != null) {
     v = getNewVariableType(variable.variable);
   }
-  // variable id
   let i: number | undefined = undefined;
   if (variable.id != null) {
     i = variable.id;
@@ -116,7 +104,6 @@ export function getNewVariableObject(
 }
 
 export function getNewGTProp(dataGT: OldGTProp): GTProp {
-  // branches
   let b: Record<string, JsxChildren> | undefined = undefined;
   if (dataGT.branches) {
     b = Object.fromEntries(
@@ -126,7 +113,6 @@ export function getNewGTProp(dataGT: OldGTProp): GTProp {
       ])
     );
   }
-  // transformation
   let t: 'b' | 'p' | undefined;
   if (dataGT.transformation) {
     t = getNewBranchType(dataGT.transformation);
@@ -135,55 +121,44 @@ export function getNewGTProp(dataGT: OldGTProp): GTProp {
 }
 
 /**
- * Convert response data from old format to new format
+ * Converts response data from the current JSX format to the old format.
  */
-
 export function getOldJsxChild(child: JsxChild): OldJsxChild {
-  // string (end case)
   if (typeof child === 'string') {
     return child;
   }
 
-  // VariableObject
   if (isNewVariableObject(child)) {
     return getOldVariableObject(child);
   }
 
-  // JsxElement
   return getOldJsxElement(child);
 }
 
 export function getOldJsxChildren(
   children: JsxChildren | OldJsxChildren
 ): OldJsxChildren {
-  // if children is already old, return it
   if (isOldJsxChildren(children)) {
     return children;
   }
 
-  // string (end case)
   if (typeof children === 'string') {
     return children;
   }
 
-  // Array
   if (Array.isArray(children)) {
     return children.map(getOldJsxChild);
   }
 
-  // Object
   return getOldJsxChild(children);
 }
 
 export function getOldJsxElement(element: JsxElement): OldJsxElement {
-  // type (can assume that type will exist here)
   const type: string = element.t as string;
-  // children
   let children: OldJsxChildren | undefined = undefined;
   if (element.c != null) {
     children = getOldJsxChildren(element.c);
   }
-  // data-_gt (can assume id will exist here)
   const dataGT: OldGTProp = getOldGTProp(element.d || {}, element.i as number);
   return {
     type,
@@ -216,12 +191,10 @@ export function getOldVariableType(variable: VariableType): OldVariableType {
 export function getOldVariableObject(
   variable: VariableObject
 ): OldVariableObject {
-  // variable type
   let v: OldVariableType | undefined = undefined;
   if (variable.v != null) {
     v = getOldVariableType(variable.v);
   }
-  // variable id
   let i: number | undefined = undefined;
   if (variable.i != null) {
     i = variable.i;
@@ -234,12 +207,10 @@ export function getOldVariableObject(
 }
 
 export function getOldGTProp(dataGT: GTProp, i: number): OldGTProp {
-  // transformation
   let transformation: OldBranchType | undefined = undefined;
   if (dataGT.t != null) {
     transformation = getOldBranchType(dataGT.t);
   }
-  // branches
   let branches: Record<string, OldJsxChildren> | undefined = undefined;
   if (dataGT.b != null) {
     branches = Object.fromEntries(

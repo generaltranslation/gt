@@ -1,8 +1,6 @@
 // `generaltranslation` language toolkit
 // © 2026, General Translation, Inc.
 
-// ----- IMPORTS ----- //
-
 import _requiresTranslation from './locales/requiresTranslation';
 import _determineLocale from './locales/determineLocale';
 import {
@@ -135,9 +133,6 @@ export {
   standardizeLocale,
 } from './core';
 
-// ============================================================ //
-//                        Core Class                            //
-// ============================================================ //
 /**
  * Type representing the constructor parameters for the GT class.
  * @typedef {Object} GTConstructorParams
@@ -230,13 +225,12 @@ export class GT {
    * });
    */
   constructor(params: GTConstructorParams = {}) {
-    // Read environment
+    // Read environment variables.
     if (typeof process !== 'undefined') {
       this.apiKey ||= process.env?.GT_API_KEY;
       this.devApiKey ||= process.env?.GT_DEV_API_KEY;
       this.projectId ||= process.env?.GT_PROJECT_ID;
     }
-    // Set up config
     this.setConfig(params);
   }
 
@@ -250,28 +244,22 @@ export class GT {
     customMapping,
     baseUrl,
   }: GTConstructorParams) {
-    // ----- Environment properties ----- //
     if (apiKey) this.apiKey = apiKey;
     if (devApiKey) this.devApiKey = devApiKey;
     if (projectId) this.projectId = projectId;
 
-    // ----- Standardize locales ----- //
-
-    // source locale
     if (sourceLocale) {
       this.sourceLocale = _standardizeLocale(sourceLocale);
       if (!_isValidLocale(this.sourceLocale, customMapping))
         throw new Error(invalidLocaleError(this.sourceLocale));
     }
 
-    // target locale
     if (targetLocale) {
       this.targetLocale = _standardizeLocale(targetLocale);
       if (!_isValidLocale(this.targetLocale, customMapping))
         throw new Error(invalidLocaleError(this.targetLocale));
     }
 
-    // locales
     if (locales) {
       const result: string[] = [];
       const invalidLocales: string[] = [];
@@ -289,7 +277,6 @@ export class GT {
       this.locales = result;
     }
 
-    // ----- Other properties ----- //
     if (baseUrl) this.baseUrl = baseUrl;
     if (customMapping) {
       this.customMapping = customMapping;
@@ -307,8 +294,6 @@ export class GT {
       customMapping: this.customMapping,
     });
   }
-
-  // -------------- Private Methods -------------- //
 
   private _getTranslationConfig(): TranslationRequestConfig {
     return {
@@ -333,13 +318,11 @@ export class GT {
     }
   }
 
-  // -------------- Branch Methods -------------- //
-
   /**
    * Queries branch information from the API.
    *
-   * @param {BranchQuery} query - Object mapping the current branch and incoming branches
-   * @returns {Promise<BranchDataResult>} The branch information
+   * @param {BranchQuery} query - Branch names to query.
+   * @returns {Promise<BranchDataResult>} The branch information.
    */
   async queryBranchData(query: BranchQuery): Promise<BranchDataResult> {
     this._validateAuth('queryBranchData');
@@ -349,8 +332,8 @@ export class GT {
   /**
    * Creates a new branch in the API. If the branch already exists, it will be returned.
    *
-   * @param {CreateBranchQuery} query - Object mapping the branch name and default branch flag
-   * @returns {Promise<CreateBranchResult>} The created branch information
+   * @param {CreateBranchQuery} query - The branch name and default branch flag.
+   * @returns {Promise<CreateBranchResult>} The created branch information.
    */
   async createBranch(query: CreateBranchQuery): Promise<CreateBranchResult> {
     this._validateAuth('createBranch');
@@ -358,12 +341,12 @@ export class GT {
   }
 
   /**
-   * Processes file moves by cloning source files and translations with new fileIds.
-   * This is called when files have been moved/renamed and we want to preserve translations.
+   * Processes file moves by cloning source files and translations with new file IDs.
+   * This is called when files have been moved or renamed and translations should be preserved.
    *
-   * @param {MoveMapping[]} moves - Array of move mappings (old fileId to new fileId)
-   * @param {ProcessMovesOptions} options - Options including branchId and timeout
-   * @returns {Promise<ProcessMovesResponse>} The move processing results
+   * @param {MoveMapping[]} moves - Move mappings from old file ID to new file ID.
+   * @param {ProcessMovesOptions} options - Options including branch ID and timeout.
+   * @returns {Promise<ProcessMovesResponse>} The move processing results.
    *
    * @example
    * const result = await gt.processFileMoves([
@@ -383,14 +366,13 @@ export class GT {
   }
 
   /**
-   * Gets orphaned files for a branch - files that exist on the branch
-   * but whose fileIds are not in the provided list.
-   * Used for move detection.
+   * Gets orphaned files for a branch: files that exist on the branch but whose
+   * file IDs are not in the provided list. Used for move detection.
    *
-   * @param {string} branchId - The branch to check for orphaned files
-   * @param {string[]} fileIds - List of current file IDs (files that are NOT orphaned)
-   * @param {Object} options - Options including timeout
-   * @returns {Promise<GetOrphanedFilesResult>} The orphaned files
+   * @param {string} branchId - The branch to check for orphaned files.
+   * @param {string[]} fileIds - Current file IDs that are not orphaned.
+   * @param {Object} options - Options including timeout.
+   * @returns {Promise<GetOrphanedFilesResult>} The orphaned files.
    *
    * @example
    * const result = await gt.getOrphanedFiles('branch-id', ['file-1', 'file-2']);
@@ -409,19 +391,17 @@ export class GT {
     );
   }
 
-  // -------------- Translation Methods -------------- //
-
   /**
-   * Enqueues project setup job using the specified file references
+   * Enqueues a project setup job using the specified file references.
    *
    * This method creates setup jobs that will process source file references
    * and generate a project setup. The files parameter contains references (IDs) to source
    * files that have already been uploaded via uploadSourceFiles. The setup jobs are queued
    * for processing and will generate a project setup based on the source files.
    *
-   * @param {FileReference[]} files - Array of file references containing IDs of previously uploaded source files
-   * @param {SetupProjectOptions} [options] - Optional settings for target locales and timeout
-   * @returns {Promise<SetupProjectResult>} Object containing the jobId and status
+   * @param {FileReference[]} files - File references for previously uploaded source files.
+   * @param {SetupProjectOptions} [options] - Optional settings for target locales and timeout.
+   * @returns {Promise<SetupProjectResult>} Object containing the job ID and status.
    */
   async setupProject(
     files: FileReference[],
@@ -443,9 +423,9 @@ export class GT {
    * This method polls the API to determine whether one or more jobs are still running,
    * have completed successfully, or have failed. Jobs are created after calling either enqueueFiles or setupProject.
    *
-   * @param {string[]} jobIds - The unique identifiers of the jobs to check
-   * @param {number} [timeoutMs] - Optional timeout in milliseconds for the API request
-   * @returns {Promise<CheckJobStatusResult>} Object containing the job status
+   * @param {string[]} jobIds - The unique identifiers of the jobs to check.
+   * @param {number} [timeoutMs] - Optional timeout in milliseconds for the API request.
+   * @returns {Promise<CheckJobStatusResult>} Object containing the job status.
    *
    * @example
    * const result = await gt.checkJobStatus([
@@ -470,9 +450,9 @@ export class GT {
   /**
    * Polls job statuses until all jobs from enqueueFiles are finished or the timeout is reached.
    *
-   * @param {EnqueueFilesResult} enqueueResult - The result returned from enqueueFiles
-   * @param {AwaitJobsOptions} [options] - Polling configuration (interval, timeout)
-   * @returns {Promise<AwaitJobsResult>} The final status of all jobs and whether they all completed
+   * @param {EnqueueFilesResult} enqueueResult - The result returned from enqueueFiles.
+   * @param {AwaitJobsOptions} [options] - Polling configuration (interval, timeout).
+   * @returns {Promise<AwaitJobsResult>} The final status of all jobs and whether they all completed.
    */
   async awaitJobs(
     enqueueResult: EnqueueFilesResult,
@@ -495,32 +475,31 @@ export class GT {
    * uploadSourceFiles. The translation jobs are queued for processing and will
    * generate translated content based on the source files and target locales provided.
    *
-   * @param {FileReferenceIds[]} files - Array of file references containing IDs of previously uploaded source files
-   * @param {EnqueueOptions} options - Configuration options including source locale, target locales, and job settings
-   * @returns {Promise<EnqueueFilesResult>} Result containing job IDs, queue status, and processing information
+   * @param {FileReferenceIds[]} files - File references for previously uploaded source files.
+   * @param {EnqueueOptions} options - Configuration options including source locale, target locales, and job settings.
+   * @returns {Promise<EnqueueFilesResult>} Result containing job IDs, queue status, and processing information.
    */
   async enqueueFiles(
     files: FileReferenceIds[],
     options: EnqueueOptions
   ): Promise<EnqueueFilesResult> {
-    // Validation
     this._validateAuth('enqueueFiles');
 
-    // Merge instance settings with options
+    // Merge instance settings with options.
     let mergedOptions: EnqueueOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale!,
       targetLocales: options.targetLocales ?? [this.targetLocale!],
     };
 
-    // Require source locale
+    // Require a source locale.
     if (!mergedOptions.sourceLocale) {
       const error = noSourceLocaleProvidedError('enqueueFiles');
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
 
-    // Require target locale(s)
+    // Require at least one target locale.
     if (
       !mergedOptions.targetLocales ||
       mergedOptions.targetLocales.length === 0
@@ -530,7 +509,7 @@ export class GT {
       throw new Error(error);
     }
 
-    // Replace target locales with canonical locales
+    // Resolve target locales to canonical locales.
     mergedOptions = {
       ...mergedOptions,
       targetLocales: mergedOptions.targetLocales.map((locale) =>
@@ -549,8 +528,8 @@ export class GT {
    * Creates or upserts a file tag, associating a set of source files
    * with a user-defined tag ID and optional message.
    *
-   * @param {CreateTagOptions} options - Tag creation options including tagId, sourceFileIds, and optional message
-   * @returns {Promise<CreateTagResult>} The created or updated tag
+   * @param {CreateTagOptions} options - Tag creation options including tag ID, source file IDs, and optional message.
+   * @returns {Promise<CreateTagResult>} The created or updated tag.
    */
   async createTag(options: CreateTagOptions): Promise<CreateTagResult> {
     this._validateAuth('createTag');
@@ -560,8 +539,8 @@ export class GT {
   /**
    * Publishes or unpublishes files on the CDN.
    *
-   * @param {PublishFileEntry[]} files - Array of file entries with publish flags
-   * @returns {Promise<PublishFilesResult>} Result containing per-file success/failure
+   * @param {PublishFileEntry[]} files - File entries with publish flags.
+   * @returns {Promise<PublishFilesResult>} Result containing per-file success or failure.
    */
   async publishFiles(files: PublishFileEntry[]): Promise<PublishFilesResult> {
     this._validateAuth('publishFiles');
@@ -578,7 +557,7 @@ export class GT {
     payload: SubmitUserEditDiffsPayload
   ): Promise<void> {
     this._validateAuth('submitUserEditDiffs');
-    // Normalize locales to canonical form before submission
+    // Normalize locales to canonical form before submission.
     const normalized: SubmitUserEditDiffsPayload = {
       ...payload,
       diffs: (payload.diffs || []).map((d) => ({
@@ -613,23 +592,22 @@ export class GT {
     data: FileDataQuery,
     options: CheckFileTranslationsOptions = {}
   ): Promise<FileDataResult> {
-    // Validation
     this._validateAuth('queryFileData');
 
-    // Replace target locales with canonical locales
+    // Resolve target locales to canonical locales before querying.
     data.translatedFiles = data.translatedFiles?.map((item) => ({
       ...item,
       locale: this.resolveCanonicalLocale(item.locale),
     }));
 
-    // Request the file translation status
+    // Request file metadata.
     const result = await _queryFileData(
       data,
       options,
       this._getTranslationConfig()
     );
 
-    // Resolve canonical locales
+    // Resolve service locales back to aliases.
     result.translatedFiles = result.translatedFiles?.map((item) => ({
       ...item,
       ...(item.locale && { locale: this.resolveAliasLocale(item.locale) }),
@@ -662,16 +640,15 @@ export class GT {
     data: FileQuery,
     options: CheckFileTranslationsOptions = {}
   ): Promise<FileQueryResult> {
-    // Validation
     this._validateAuth('querySourceFile');
 
-    // Request the file translation status
+    // Request source file metadata and translations.
     const result = await _querySourceFile(
       data,
       options,
       this._getTranslationConfig()
     );
-    // Replace locales with canonical locales
+    // Resolve service locales back to aliases.
     result.translations = result.translations.map((item) => ({
       ...item,
       ...(item.locale && { locale: this.resolveAliasLocale(item.locale) }),
@@ -687,7 +664,7 @@ export class GT {
     return result;
   }
   /**
-   * Get project data for a given project ID.
+   * Gets project data for a given project ID.
    *
    * @param {string} projectId - The ID of the project to get the data for.
    * @returns {Promise<ProjectData>} The project data.
@@ -702,16 +679,15 @@ export class GT {
     projectId: string,
     options: { timeout?: number } = {}
   ): Promise<ProjectData> {
-    // Validation
     this._validateAuth('getProjectData');
 
-    // Request the file translation status
+    // Request project metadata.
     const result = await _getProjectData(
       projectId,
       options,
       this._getTranslationConfig()
     );
-    // Replace locales with canonical locales
+    // Resolve service locales back to aliases.
     result.currentLocales = result.currentLocales.map((item) =>
       this.resolveAliasLocale(item)
     );
@@ -750,7 +726,6 @@ export class GT {
     },
     options: DownloadFileOptions = {}
   ): Promise<string> {
-    // Validation
     this._validateAuth('downloadTranslatedFile');
 
     const result = await _downloadFileBatch(
@@ -791,7 +766,6 @@ export class GT {
     requests: DownloadFileBatchRequest,
     options: DownloadFileBatchOptions = {}
   ): Promise<DownloadFileBatchResult> {
-    // Validation
     this._validateAuth('downloadFileBatch');
 
     requests = requests.map((request) => ({
@@ -801,7 +775,7 @@ export class GT {
         : undefined,
     }));
 
-    // Request the batch download
+    // Request the batch download.
     const result = await _downloadFileBatch(
       requests,
       options,
@@ -842,15 +816,14 @@ export class GT {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslationResult | TranslationError> {
-    // Normalize string shorthand to options object
+    // Normalize string shorthand to an options object.
     if (typeof options === 'string') {
       options = { targetLocale: options };
     }
 
-    // Validation
     this._validateAuth('translate');
 
-    // Require target locale
+    // Require a target locale.
     let targetLocale = options?.targetLocale || this.targetLocale;
     if (!targetLocale) {
       const error = noTargetLocaleProvidedError('translate');
@@ -858,14 +831,14 @@ export class GT {
       throw new Error(error);
     }
 
-    // Replace target locale with canonical locale
+    // Resolve target locale to canonical locale.
     targetLocale = this.resolveCanonicalLocale(targetLocale);
 
     const sourceLocale = this.resolveCanonicalLocale(
       options?.sourceLocale || this.sourceLocale || libraryDefaultLocale
     );
 
-    // Request the translation
+    // Request the translation.
     const results = await _translateMany(
       [source],
       {
@@ -920,15 +893,14 @@ export class GT {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-    // Normalize string shorthand to options object
+    // Normalize string shorthand to an options object.
     if (typeof options === 'string') {
       options = { targetLocale: options };
     }
 
-    // Validation
     this._validateAuth('translateMany');
 
-    // Require target locale
+    // Require a target locale.
     let targetLocale = options?.targetLocale || this.targetLocale;
     if (!targetLocale) {
       const error = noTargetLocaleProvidedError('translateMany');
@@ -936,14 +908,14 @@ export class GT {
       throw new Error(error);
     }
 
-    // Replace target locale with canonical locale
+    // Resolve target locale to canonical locale.
     targetLocale = this.resolveCanonicalLocale(targetLocale);
 
     const sourceLocale = this.resolveCanonicalLocale(
       options?.sourceLocale || this.sourceLocale || libraryDefaultLocale
     );
 
-    // Request the translation
+    // Request the translation.
     return await _translateMany(
       sources,
       {
@@ -964,18 +936,17 @@ export class GT {
    * are processed and stored as base entries that serve as the foundation for generating
    * translations through the translation workflow.
    *
-   * @param {Array<{source: FileUpload}>} files - Array of objects containing source file data to upload
-   * @param {UploadFilesOptions} options - Configuration options including source locale and other upload settings
-   * @returns {Promise<UploadFilesResponse>} Upload result containing file IDs, version information, and upload status
+   * @param {Array<{source: FileUpload}>} files - Source file data to upload.
+   * @param {UploadFilesOptions} options - Configuration options including source locale and other upload settings.
+   * @returns {Promise<UploadFilesResponse>} Upload result containing file IDs, version information, and upload status.
    */
   async uploadSourceFiles(
     files: { source: FileUpload }[],
     options: UploadFilesOptions
   ): Promise<UploadFilesResponse> {
-    // Validation
     this._validateAuth('uploadSourceFiles');
 
-    // Merge instance settings with options
+    // Merge instance settings with options.
     const mergedOptions: UploadFilesOptions = {
       ...options,
       sourceLocale: this.resolveCanonicalLocale(
@@ -983,7 +954,7 @@ export class GT {
       ),
     };
 
-    // resolve canonical locales
+    // Resolve source locales to canonical locales.
     files = files.map((f) => ({
       ...f,
       source: {
@@ -992,7 +963,7 @@ export class GT {
       },
     }));
 
-    // Process files in batches and convert result to UploadFilesResponse
+    // Process files in batches and convert the result to UploadFilesResponse.
     const result = await _uploadSourceFiles(
       files,
       mergedOptions as RequiredUploadFilesOptions,
@@ -1014,29 +985,28 @@ export class GT {
    * along with the target locale information. This is used when you have pre-existing translations
    * that you want to upload directly rather than generating them through the translation service.
    *
-   * @param {Array<{source: FileUpload, translations: FileUpload[]}>} files - Array of file objects where:
-   *   - `source`: Reference to the existing source file (contains IDs but no content)
-   *   - `translations`: Array of translated files, each containing content, locale, and reference IDs
-   * @param {UploadFilesOptions} options - Configuration options including source locale and upload settings
-   * @returns {Promise<UploadFilesResponse>} Upload result containing translation IDs, status, and processing information
+   * @param {Array<{source: FileUpload, translations: FileUpload[]}>} files - File objects where:
+   *   - `source`: Reference to the existing source file (contains IDs but no content).
+   *   - `translations`: Translated files containing content, locale, and reference IDs.
+   * @param {UploadFilesOptions} options - Configuration options including source locale and upload settings.
+   * @returns {Promise<UploadFilesResponse>} Upload result containing translation IDs, status, and processing information.
    */
   async uploadTranslations(
     files: {
-      source: FileUpload; // reference only (no content)
-      translations: FileUpload[]; // each has content + ids + locale
+      source: FileUpload; // Reference only; no content.
+      translations: FileUpload[]; // Contains content, IDs, and locale.
     }[],
     options: UploadFilesOptions
   ): Promise<UploadFilesResponse> {
-    // Validation
     this._validateAuth('uploadTranslations');
 
-    // Merge instance settings with options
+    // Merge instance settings with options.
     const mergedOptions: UploadFilesOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale,
     };
 
-    // Require source locale
+    // Require a source locale.
     if (!mergedOptions.sourceLocale) {
       const error = noSourceLocaleProvidedError('uploadTranslations');
       gtInstanceLogger.error(error);
@@ -1052,7 +1022,7 @@ export class GT {
       })),
     }));
 
-    // Process files in batches and convert result to UploadFilesResponse
+    // Process files in batches and convert the result to UploadFilesResponse.
     const result = await _uploadTranslations(
       targetFiles,
       mergedOptions as RequiredUploadFilesOptions,
@@ -1066,8 +1036,6 @@ export class GT {
     };
   }
 
-  // -------------- Formatting -------------- //
-
   /**
    * Formats a string with cutoff behavior, applying a terminator when the string exceeds the maximum character limit.
    *
@@ -1079,13 +1047,13 @@ export class GT {
    * @param {string | string[]} [options.locales] - The locales to use for terminator selection. Defaults to instance's rendering locales.
    * @param {number} [options.maxChars] - The maximum number of characters to display.
    * - Undefined values are treated as no cutoff.
-   * - Negative values follow .slice() behavior and terminator will be added before the value.
-   * - 0 will result in an empty string.
+   * - Negative values follow .slice() behavior, and the terminator is added before the value.
+   * - 0 results in an empty string.
    * - If cutoff results in an empty string, no terminator is added.
-   * @param {CutoffFormatStyle} [options.style='ellipsis'] - The style of the terminator.
-   * @param {string} [options.terminator] - Optional override the terminator to use.
-   * @param {string} [options.separator] - Optional override the separator to use between the terminator and the value.
-   * - If no terminator is provided, then separator is ignored.
+   * @param {CutoffFormatStyle} [options.style='ellipsis'] - The terminator style.
+   * @param {string} [options.terminator] - Optional terminator override.
+   * @param {string} [options.separator] - Optional separator override between the terminator and value.
+   * - If no terminator is provided, the separator is ignored.
    * @returns {string} The formatted string with terminator applied if cutoff occurs.
    *
    * @example
@@ -1135,11 +1103,11 @@ export class GT {
   /**
    * Formats a number according to the specified locales and options.
    *
-   * @param {number} number - The number to format
-   * @param {Object} [options] - Additional options for number formatting
-   * @param {string | string[]} [options.locales] - The locales to use for formatting
-   * @param {Intl.NumberFormatOptions} [options] - Additional Intl.NumberFormat options
-   * @returns {string} The formatted number
+   * @param {number} number - The number to format.
+   * @param {Object} [options] - Additional options for number formatting.
+   * @param {string | string[]} [options.locales] - The locales to use for formatting.
+   * @param {Intl.NumberFormatOptions} [options] - Additional Intl.NumberFormat options.
+   * @returns {string} The formatted number.
    *
    * @example
    * gt.formatNum(1234.56, { style: 'currency', currency: 'USD' });
@@ -1157,11 +1125,11 @@ export class GT {
   /**
    * Formats a date according to the specified locales and options.
    *
-   * @param {Date} date - The date to format
-   * @param {Object} [options] - Additional options for date formatting
-   * @param {string | string[]} [options.locales] - The locales to use for formatting
-   * @param {Intl.DateTimeFormatOptions} [options] - Additional Intl.DateTimeFormat options
-   * @returns {string} The formatted date
+   * @param {Date} date - The date to format.
+   * @param {Object} [options] - Additional options for date formatting.
+   * @param {string | string[]} [options.locales] - The locales to use for formatting.
+   * @param {Intl.DateTimeFormatOptions} [options] - Additional Intl.DateTimeFormat options.
+   * @returns {string} The formatted date.
    *
    * @example
    * gt.formatDateTime(new Date(), { dateStyle: 'full', timeStyle: 'long' });
@@ -1179,12 +1147,12 @@ export class GT {
   /**
    * Formats a currency value according to the specified locales and options.
    *
-   * @param {number} value - The currency value to format
-   * @param {string} currency - The currency code (e.g., 'USD', 'EUR')
-   * @param {Object} [options] - Additional options for currency formatting
-   * @param {string | string[]} [options.locales] - The locales to use for formatting
-   * @param {Intl.NumberFormatOptions} [options] - Additional Intl.NumberFormat options
-   * @returns {string} The formatted currency value
+   * @param {number} value - The currency value to format.
+   * @param {string} currency - The currency code (for example, 'USD' or 'EUR').
+   * @param {Object} [options] - Additional options for currency formatting.
+   * @param {string | string[]} [options.locales] - The locales to use for formatting.
+   * @param {Intl.NumberFormatOptions} [options] - Additional Intl.NumberFormat options.
+   * @returns {string} The formatted currency value.
    *
    * @example
    * gt.formatCurrency(1234.56, 'USD', { style: 'currency' });
@@ -1208,11 +1176,11 @@ export class GT {
   /**
    * Formats a list of items according to the specified locales and options.
    *
-   * @param {Array<string | number>} array - The list of items to format
-   * @param {Object} [options] - Additional options for list formatting
-   * @param {string | string[]} [options.locales] - The locales to use for formatting
-   * @param {Intl.ListFormatOptions} [options] - Additional Intl.ListFormat options
-   * @returns {string} The formatted list
+   * @param {Array<string | number>} array - The list of items to format.
+   * @param {Object} [options] - Additional options for list formatting.
+   * @param {string | string[]} [options.locales] - The locales to use for formatting.
+   * @param {Intl.ListFormatOptions} [options] - Additional Intl.ListFormat options.
+   * @returns {string} The formatted list.
    *
    * @example
    * gt.formatList(['apple', 'banana', 'orange'], { type: 'conjunction' });
@@ -1228,12 +1196,12 @@ export class GT {
   }
 
   /**
-   * Formats a list of items according to the specified locales and options.
-   * @param {Array<T>} array - The list of items to format
-   * @param {Object} [options] - Additional options for list formatting
-   * @param {string | string[]} [options.locales] - The locales to use for formatting
-   * @param {Intl.ListFormatOptions} [options] - Additional Intl.ListFormat options
-   * @returns {Array<T | string>} The formatted list parts
+   * Formats a list of items to parts according to the specified locales and options.
+   * @param {Array<T>} array - The list of items to format.
+   * @param {Object} [options] - Additional options for list formatting.
+   * @param {string | string[]} [options.locales] - The locales to use for formatting.
+   * @param {Intl.ListFormatOptions} [options] - Additional Intl.ListFormat options.
+   * @returns {Array<T | string>} The formatted list parts.
    *
    * @example
    * gt.formatListToParts(['apple', 42, { foo: 'bar' }], { type: 'conjunction', style: 'short', locales: ['en'] });
@@ -1255,12 +1223,12 @@ export class GT {
   /**
    * Formats a relative time value according to the specified locales and options.
    *
-   * @param {number} value - The relative time value to format
-   * @param {Intl.RelativeTimeFormatUnit} unit - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year')
-   * @param {Object} options - Additional options for relative time formatting
-   * @param {string | string[]} [options.locales] - The locales to use for formatting
-   * @param {Intl.RelativeTimeFormatOptions} [options] - Additional Intl.RelativeTimeFormat options
-   * @returns {string} The formatted relative time string
+   * @param {number} value - The relative time value to format.
+   * @param {Intl.RelativeTimeFormatUnit} unit - The unit of time (for example, 'second', 'minute', 'hour', 'day', 'week', 'month', or 'year').
+   * @param {Object} options - Additional options for relative time formatting.
+   * @param {string | string[]} [options.locales] - The locales to use for formatting.
+   * @param {Intl.RelativeTimeFormatOptions} [options] - Additional Intl.RelativeTimeFormat options.
+   * @returns {string} The formatted relative time string.
    *
    * @example
    * gt.formatRelativeTime(-1, 'day', { locales: ['en-US'], numeric: 'auto' });
@@ -1284,10 +1252,10 @@ export class GT {
   /**
    * Formats a relative time string from a Date, automatically selecting the best unit.
    *
-   * @param {Date} date - The date to format relative to now
-   * @param {Object} [options] - Additional options for relative time formatting
-   * @param {string | string[]} [options.locales] - The locales to use for formatting
-   * @returns {string} The formatted relative time string (e.g., "2 hours ago", "in 3 days")
+   * @param {Date} date - The date to format relative to now.
+   * @param {Object} [options] - Additional options for relative time formatting.
+   * @param {string | string[]} [options.locales] - The locales to use for formatting.
+   * @returns {string} The formatted relative time string (for example, "2 hours ago" or "in 3 days").
    *
    * @example
    * gt.formatRelativeTimeFromDate(new Date(Date.now() - 3600000));
@@ -1307,14 +1275,12 @@ export class GT {
     );
   }
 
-  // -------------- Locale Properties -------------- //
-
   /**
    * Retrieves the display name of a locale code using Intl.DisplayNames, returning an empty string if no name is found.
    *
-   * @param {string} [locale=this.targetLocale] - A BCP-47 locale code
-   * @returns {string} The display name corresponding to the code
-   * @throws {Error} If no target locale is provided
+   * @param {string} [locale=this.targetLocale] - A BCP-47 locale code.
+   * @returns {string} The display name corresponding to the code.
+   * @throws {Error} If no target locale is provided.
    *
    * @example
    * gt.getLocaleName('es-ES');
@@ -1329,9 +1295,9 @@ export class GT {
    * Retrieves an emoji based on a given locale code.
    * Uses the locale's region (if present) to select an emoji or falls back on default emojis.
    *
-   * @param {string} [locale=this.targetLocale] - A BCP-47 locale code (e.g., 'en-US', 'fr-CA')
-   * @returns {string} The emoji representing the locale or its region
-   * @throws {Error} If no target locale is provided
+   * @param {string} [locale=this.targetLocale] - A BCP-47 locale code (for example, 'en-US' or 'fr-CA').
+   * @returns {string} The emoji representing the locale or its region.
+   * @throws {Error} If no target locale is provided.
    *
    * @example
    * gt.getLocaleEmoji('es-ES');
@@ -1423,7 +1389,7 @@ export class GT {
   ): { code: string; name: string; emoji: string } {
     if (!customMapping) {
       if (this.customMapping && !this.customRegionMapping) {
-        // Lazy derive custom region mapping from customMapping
+        // Lazily derive custom region mapping from customMapping.
         const customRegionMapping: CustomRegionMapping = {};
         for (const [locale, lp] of Object.entries(this.customMapping)) {
           if (
@@ -1446,7 +1412,7 @@ export class GT {
     }
     return _getRegionProperties(
       region,
-      this.targetLocale, // this.targetLocale because we want it in the user's language
+      this.targetLocale, // Localize region names in the user's target locale.
       customMapping
     );
   }
@@ -1454,12 +1420,12 @@ export class GT {
   /**
    * Determines whether a translation is required based on the source and target locales.
    *
-   * @param {string} [sourceLocale=this.sourceLocale] - The locale code for the original content
-   * @param {string} [targetLocale=this.targetLocale] - The locale code to translate into
-   * @param {string[]} [approvedLocales=this.locales] - Optional array of approved target locales
-   * @returns {boolean} True if translation is required, false otherwise
-   * @throws {Error} If no source locale is provided
-   * @throws {Error} If no target locale is provided
+   * @param {string} [sourceLocale=this.sourceLocale] - The locale code for the original content.
+   * @param {string} [targetLocale=this.targetLocale] - The locale code to translate into.
+   * @param {string[]} [approvedLocales=this.locales] - Optional array of approved target locales.
+   * @returns {boolean} True if translation is required; otherwise false.
+   * @throws {Error} If no source locale is provided.
+   * @throws {Error} If no target locale is provided.
    *
    * @example
    * gt.requiresTranslation('en-US', 'es-ES');
@@ -1493,9 +1459,9 @@ export class GT {
   /**
    * Determines the best matching locale from the provided approved locales list.
    *
-   * @param {string | string[]} locales - A single locale or array of locales in preference order
-   * @param {string[]} [approvedLocales=this.locales] - Array of approved locales in preference order
-   * @returns {string | undefined} The best matching locale or undefined if no match is found
+   * @param {string | string[]} locales - A single locale or array of locales in preference order.
+   * @param {string[]} [approvedLocales=this.locales] - Array of approved locales in preference order.
+   * @returns {string | undefined} The best matching locale, or undefined if no match is found.
    *
    * @example
    * gt.determineLocale(['fr-CA', 'fr-FR'], ['en-US', 'fr-FR', 'es-ES']);
@@ -1515,9 +1481,9 @@ export class GT {
   /**
    * Gets the text direction for a given locale code.
    *
-   * @param {string} [locale=this.targetLocale] - A BCP-47 locale code
-   * @returns {'ltr' | 'rtl'} 'rtl' if the locale is right-to-left, otherwise 'ltr'
-   * @throws {Error} If no target locale is provided
+   * @param {string} [locale=this.targetLocale] - A BCP-47 locale code.
+   * @returns {'ltr' | 'rtl'} 'rtl' if the locale is right-to-left; otherwise 'ltr'.
+   * @throws {Error} If no target locale is provided.
    *
    * @example
    * gt.getLocaleDirection('ar-SA');
@@ -1530,12 +1496,12 @@ export class GT {
   }
 
   /**
-   * Checks if a given BCP 47 locale code is valid.
+   * Checks whether a BCP 47 locale code is valid.
    *
-   * @param {string} [locale=this.targetLocale] - The BCP 47 locale code to validate
-   * @param {customMapping} [customMapping=this.customMapping] - The custom mapping to use for validation
-   * @returns {boolean} True if the locale code is valid, false otherwise
-   * @throws {Error} If no target locale is provided
+   * @param {string} [locale=this.targetLocale] - The BCP 47 locale code to validate.
+   * @param {CustomMapping} [customMapping=this.customMapping] - The custom mapping to use for validation.
+   * @returns {boolean} True if the locale code is valid; otherwise false.
+   * @throws {Error} If no target locale is provided.
    *
    * @example
    * gt.isValidLocale('en-US');
@@ -1553,10 +1519,10 @@ export class GT {
   }
 
   /**
-   * Resolves the canonical locale for a given locale.
-   * @param locale - The locale to resolve the canonical locale for
-   * @param customMapping - The custom mapping to use for resolving the canonical locale
-   * @returns The canonical locale
+   * Resolves the canonical locale for a custom alias.
+   * @param locale - The locale to resolve.
+   * @param customMapping - The custom mapping to inspect.
+   * @returns The canonical locale, or the input locale when no canonical mapping exists.
    */
   resolveCanonicalLocale(
     locale: string | undefined = this.targetLocale,
@@ -1571,10 +1537,10 @@ export class GT {
   }
 
   /**
-   * Resolves the alias locale for a given locale.
-   * @param locale - The locale to resolve the alias locale for
-   * @param customMapping - The custom mapping to use for resolving the alias locale
-   * @returns The alias locale
+   * Resolves the alias locale for a canonical locale.
+   * @param locale - The canonical locale to resolve.
+   * @param customMapping - The custom mapping to inspect.
+   * @returns The alias locale, or the input locale when no alias exists.
    */
   resolveAliasLocale(
     locale: string,
@@ -1591,9 +1557,9 @@ export class GT {
   /**
    * Standardizes a BCP 47 locale code to ensure correct formatting.
    *
-   * @param {string} [locale=this.targetLocale] - The BCP 47 locale code to standardize
-   * @returns {string} The standardized locale code or empty string if invalid
-   * @throws {Error} If no target locale is provided
+   * @param {string} [locale=this.targetLocale] - The BCP 47 locale code to standardize.
+   * @returns {string} The standardized locale code, or the input string if it cannot be standardized.
+   * @throws {Error} If no target locale is provided.
    *
    * @example
    * gt.standardizeLocale('en_us');
@@ -1606,10 +1572,10 @@ export class GT {
   }
 
   /**
-   * Checks if multiple BCP 47 locale codes represent the same dialect.
+   * Checks whether multiple BCP 47 locale codes represent the same dialect.
    *
-   * @param {...(string | string[])} locales - The BCP 47 locale codes to compare
-   * @returns {boolean} True if all codes represent the same dialect, false otherwise
+   * @param {...(string | string[])} locales - The BCP 47 locale codes to compare.
+   * @returns {boolean} True if all codes represent the same dialect; otherwise false.
    *
    * @example
    * gt.isSameDialect('en-US', 'en-GB');
@@ -1623,10 +1589,10 @@ export class GT {
   }
 
   /**
-   * Checks if multiple BCP 47 locale codes represent the same language.
+   * Checks whether multiple BCP 47 locale codes represent the same language.
    *
-   * @param {...(string | string[])} locales - The BCP 47 locale codes to compare
-   * @returns {boolean} True if all codes represent the same language, false otherwise
+   * @param {...(string | string[])} locales - The BCP 47 locale codes to compare.
+   * @returns {boolean} True if all codes represent the same language; otherwise false.
    *
    * @example
    * gt.isSameLanguage('en-US', 'en-GB');
@@ -1637,11 +1603,11 @@ export class GT {
   }
 
   /**
-   * Checks if a locale is a superset of another locale.
+   * Checks whether a locale is a superset of another locale.
    *
-   * @param {string} superLocale - The locale to check if it is a superset
-   * @param {string} subLocale - The locale to check if it is a subset
-   * @returns {boolean} True if superLocale is a superset of subLocale, false otherwise
+   * @param {string} superLocale - The locale to check as a superset.
+   * @param {string} subLocale - The locale to check as a subset.
+   * @returns {boolean} True if superLocale is a superset of subLocale; otherwise false.
    *
    * @example
    * gt.isSupersetLocale('en', 'en-US');
@@ -1654,12 +1620,6 @@ export class GT {
     return this.localeConfig.isSupersetLocale(superLocale, subLocale);
   }
 }
-
-// ============================================================ //
-//                    Utility methods                           //
-// ============================================================ //
-
-// -------------- Formatting -------------- //
 
 /**
  * Formats a number according to the specified locales and options.
@@ -1683,11 +1643,11 @@ export function formatNum(
 }
 
 /**
- * Formats a date according to the specified languages and options.
+ * Formats a date according to the specified locales and options.
  * @param {Object} params - The parameters for the date formatting.
  * @param {Date} params.value - The date to format.
  * @param {Intl.DateTimeFormatOptions} [params.options] - Additional options for date formatting.
- * @param {string | string[]} [params.options.locales] - The languages to use for formatting.
+ * @param {string | string[]} [params.options.locales] - The locales to use for formatting.
  * @returns {string} The formatted date.
  */
 export function formatDateTime(
@@ -1704,7 +1664,7 @@ export function formatDateTime(
 }
 
 /**
- * Formats a currency value according to the specified languages, currency, and options.
+ * Formats a currency value according to the specified locales, currency, and options.
  * @param {Object} params - The parameters for the currency formatting.
  * @param {number} params.value - The currency value to format.
  * @param {string} params.currency - The currency code (e.g., 'USD').
@@ -1749,12 +1709,12 @@ export function formatList(
 }
 
 /**
- * Formats a list of items according to the specified locales and options.
- * @param {Array<T>} array - The list of items to format
- * @param {Object} [options] - Additional options for list formatting
- * @param {string | string[]} [options.locales] - The locales to use for formatting
- * @param {Intl.ListFormatOptions} [options] - Additional Intl.ListFormat options
- * @returns {Array<T | string>} The formatted list parts
+ * Formats a list of items to parts according to the specified locales and options.
+ * @param {Array<T>} array - The list of items to format.
+ * @param {Object} [options] - Additional options for list formatting.
+ * @param {string | string[]} [options.locales] - The locales to use for formatting.
+ * @param {Intl.ListFormatOptions} [options] - Additional Intl.ListFormat options.
+ * @returns {Array<T | string>} The formatted list parts.
  */
 export function formatListToParts<T>(
   array: Array<T>,
@@ -1817,10 +1777,8 @@ export function formatRelativeTimeFromDate(
   });
 }
 
-// -------------- Locale Properties -------------- //
-
 /**
- * Retrieves the display name of locale code using Intl.DisplayNames.
+ * Retrieves the display name of a locale code using Intl.DisplayNames.
  *
  * @param {string} locale - A BCP-47 locale code.
  * @param {string} [defaultLocale] - The default locale to use for formatting.
@@ -1836,9 +1794,9 @@ export function getLocaleName(
 }
 
 /**
- * Retrieves an emoji based on a given locale code, taking into account region, language, and specific exceptions.
+ * Retrieves an emoji for a locale code, taking into account region, language, and specific exceptions.
  *
- * This function uses the locale's region (if present) to select an emoji or falls back on default emojis for certain languages.
+ * This function uses the locale's region, when present, to select an emoji or falls back to default emojis for certain languages.
  *
  * @param locale - A string representing the locale code (e.g., 'en-US', 'fr-CA').
  * @param {CustomMapping} [customMapping] - A custom mapping of locale codes to their names.
@@ -1854,9 +1812,9 @@ export function getLocaleEmoji(
 /**
  * Generates linguistic details for a given locale code.
  *
- * This function returns information about the locale,
- * script, and region of a given language code both in a standard form and in a maximized form (with likely script and region).
- * The function provides these names in both your default language and native forms, and an associated emoji.
+ * Returns information about the locale, script, and region of a language code in
+ * standard and maximized forms. Names are provided in both the default display
+ * language and native forms, along with an associated emoji.
  *
  * @param {string} locale - The locale code to get properties for (e.g., "de-AT").
  * @param {string} [defaultLocale] - The default locale to use for formatting.
@@ -1905,7 +1863,7 @@ export function getLocaleProperties(
  * - Otherwise, uses `Intl.DisplayNames` to get the localized region name in the given `defaultLocale`,
  *   falling back to `libraryDefaultLocale`.
  * - Falls back to the region code as `name` if display name resolution fails.
- * - Falls back to `defaultEmoji` if no emoji mapping is found in `emojis` or `customMapping`.
+ * - Falls back to `defaultEmoji` if no emoji mapping is found in built-in data or `customMapping`.
  *
  * @param {string} region - The region code to look up (e.g., `"US"`, `"GB"`, `"DE"`).
  * @param {string} [defaultLocale=libraryDefaultLocale] - The locale to use when localizing the region name.
@@ -1945,9 +1903,9 @@ export function getRegionProperties(
  *
  * @param {string} sourceLocale - The locale code for the original content (BCP 47 locale code).
  * @param {string} targetLocale - The locale code of the language to translate the content into (BCP 47 locale code).
- * @param {string[]} [approvedLocale] - An optional array of approved target locales.
+ * @param {string[]} [approvedLocales] - An optional array of approved target locales.
  *
- * @returns {boolean} - Returns `true` if translation is required, otherwise `false`.
+ * @returns {boolean} True if translation is required; otherwise false.
  */
 export function requiresTranslation(
   sourceLocale: string,
@@ -1978,20 +1936,20 @@ export function determineLocale(
 }
 
 /**
- * Get the text direction for a given locale code using the Intl.Locale API.
+ * Gets the text direction for a given locale code using Intl.Locale when available.
  *
  * @param {string} locale - A BCP-47 locale code.
- * @returns {string} - 'rtl' if the locale is right-to-left, otherwise 'ltr'.
+ * @returns {string} 'rtl' if the locale is right-to-left; otherwise 'ltr'.
  */
 export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
   return _getLocaleDirection(locale);
 }
 
 /**
- * Resolves the alias locale for a given locale.
- * @param {string} locale - The locale to resolve the alias locale for
- * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the alias locale
- * @returns {string} The alias locale
+ * Resolves the alias locale for a canonical locale.
+ * @param {string} locale - The canonical locale to resolve.
+ * @param {CustomMapping} [customMapping] - The custom mapping to inspect.
+ * @returns {string} The alias locale, or the input locale when no alias exists.
  */
 export function resolveAliasLocale(
   locale: string,
@@ -2001,30 +1959,30 @@ export function resolveAliasLocale(
 }
 
 /**
- * Checks if multiple BCP 47 locale codes represent the same dialect.
+ * Checks whether multiple BCP 47 locale codes represent the same dialect.
  * @param {string[]} locales - The BCP 47 locale codes to compare.
- * @returns {boolean} True if all BCP 47 codes represent the same dialect, false otherwise.
+ * @returns {boolean} True if all BCP 47 codes represent the same dialect; otherwise false.
  */
 export function isSameDialect(...locales: (string | string[])[]): boolean {
   return _isSameDialect(...locales);
 }
 
 /**
- * Checks if multiple BCP 47 locale codes represent the same language.
+ * Checks whether multiple BCP 47 locale codes represent the same language.
  * @param {string[]} locales - The BCP 47 locale codes to compare.
- * @returns {boolean} True if all BCP 47 codes represent the same language, false otherwise.
+ * @returns {boolean} True if all BCP 47 codes represent the same language; otherwise false.
  */
 export function isSameLanguage(...locales: (string | string[])[]): boolean {
   return _isSameLanguage(...locales);
 }
 
 /**
- * Checks if a locale is a superset of another locale.
- * A subLocale is a subset of superLocale if it is an extension of superLocale or are otherwise identical.
+ * Checks whether a locale is a superset of another locale.
+ * A subLocale is a subset of superLocale if it extends superLocale or is otherwise identical.
  *
- * @param {string} superLocale - The locale to check if it is a superset of the other locale.
- * @param {string} subLocale - The locale to check if it is a subset of the other locale.
- * @returns {boolean} True if the first locale is a superset of the second locale, false otherwise.
+ * @param {string} superLocale - The locale to check as a superset.
+ * @param {string} subLocale - The locale to check as a subset.
+ * @returns {boolean} True if the first locale is a superset of the second; otherwise false.
  */
 export function isSupersetLocale(
   superLocale: string,

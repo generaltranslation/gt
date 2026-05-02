@@ -11,10 +11,10 @@ import { processBatches } from './utils/batch';
 /**
  * @internal
  * Downloads multiple translation files in batches.
- * @param files - Array of files to download
- * @param options - The options for the API call
- * @param config - The configuration for the request
- * @returns Promise resolving to a BatchList with all downloaded files
+ * @param requests - The file requests to download.
+ * @param options - The options for the API call.
+ * @param config - The configuration for the request.
+ * @returns A BatchList with all downloaded files.
  */
 export default async function _downloadFileBatch(
   requests: DownloadFileBatchRequest,
@@ -30,7 +30,7 @@ export default async function _downloadFileBatch(
         { body: batch, timeout: options.timeout }
       );
 
-      // convert from base64 to string
+      // Decode file data from base64.
       const files = result.files.map((file) => ({
         ...file,
         data: decode(file.data),

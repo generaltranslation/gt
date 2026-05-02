@@ -6,7 +6,7 @@ import {
 } from '../jsx/content';
 
 /**
- * TranslationResultReference is used to store the reference for a translation result.
+ * Stores the reference for a translation result.
  */
 export type TranslationResultReference = {
   id?: string;
@@ -14,12 +14,11 @@ export type TranslationResultReference = {
 };
 
 /**
- * TypedResult is a union type that represents the different types of translations that can be returned.
+ * Represents the different translation payload types that can be returned.
  */
 export type TypedResult =
   | {
-      // TODO: omit the t property (tag name) from the translated element
-      // I have to double check that this is the case, but I think it is
+      // TODO: Verify whether translated JSX elements can omit the tag name (`t`).
       translation: JsxChildren;
       dataFormat: 'JSX';
     }
@@ -29,7 +28,7 @@ export type TypedResult =
     };
 
 /**
- * RequestError is a type that represents an error that occurred during a translation request.
+ * Represents an error that occurred during a translation request.
  */
 export type TranslationError = {
   success: false;
@@ -38,7 +37,7 @@ export type TranslationError = {
 };
 
 /**
- * RequestSuccess is a type that represents a successful translation request.
+ * Represents a successful translation request.
  */
 export type RequestSuccess = TypedResult & {
   success: true;

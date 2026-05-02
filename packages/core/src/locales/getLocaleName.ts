@@ -20,10 +20,9 @@ export function _getLocaleName(
   defaultLocale: string = libraryDefaultLocale,
   customMapping?: CustomMapping
 ): string {
-  // Check for canonical locale
+  // Resolve custom aliases to canonical locales before processing.
   const aliasedLocale = locale;
   if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
-    // Override locale with canonical locale
     locale = (customMapping[locale] as { code: string }).code;
   }
 
@@ -43,12 +42,12 @@ export function _getLocaleName(
     }
     const displayNames = intlCache.get(
       'DisplayNames',
-      [defaultLocale, standardizedLocale, libraryDefaultLocale], // default locale order
+      [defaultLocale, standardizedLocale, libraryDefaultLocale], // Locale fallback order.
       { type: 'language' }
     );
     return displayNames.of(standardizedLocale) || '';
   } catch {
-    // In case Intl.DisplayNames construction fails, return empty string(s)
+    // Return an empty string if Intl.DisplayNames construction fails.
     return '';
   }
 }

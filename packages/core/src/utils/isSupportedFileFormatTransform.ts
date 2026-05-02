@@ -17,10 +17,10 @@ const SUPPORTED_TRANSFORMATIONS = {
 } as const satisfies Record<FileFormat, FileFormat[]>;
 
 /**
- * This function checks if a file format transformation is supported during translation
- * @param from - The source file format
- * @param to - The target file format
- * @returns True if the transformation is supported, false otherwise
+ * Checks whether a file format transformation is supported during translation.
+ * @param from - The source file format.
+ * @param to - The target file format.
+ * @returns True if the transformation is supported; otherwise false.
  */
 export function isSupportedFileFormatTransform(
   from: FileFormat,

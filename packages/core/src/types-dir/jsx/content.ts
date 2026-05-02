@@ -1,7 +1,7 @@
 import { Variable } from './variables';
 
 /**
- * Map of data-_gt properties to their corresponding React props
+ * Maps data-_gt properties to their corresponding React props.
  */
 export const HTML_CONTENT_PROPS = {
   pl: 'placeholder',
@@ -20,59 +20,59 @@ export type HtmlContentPropValuesRecord = Partial<
 >;
 
 /**
- * GTProp is an internal property used to contain data for translating and rendering elements.
- * note, transformations are only read on the server side if they are 'plural' or 'branch'
+ * GTProp contains internal data for translating and rendering elements.
+ * Transformations are only read on the server side when they are 'plural' or 'branch'.
  */
 export type GTProp = {
-  b?: Record<string, JsxChildren>; // Branches
-  t?: 'p' | 'b'; // Branch Transformation
+  b?: Record<string, JsxChildren>; // Branches.
+  t?: 'p' | 'b'; // Branch transformation.
 } & HtmlContentPropKeysRecord;
 
 export type JsxElement = {
-  t?: string; // tag name
-  i?: number; // id
-  d?: GTProp; // GT data
-  c?: JsxChildren; // children
+  t?: string; // Tag name.
+  i?: number; // ID.
+  d?: GTProp; // GT data.
+  c?: JsxChildren; // Children.
 };
 
 export type JsxChild = string | JsxElement | Variable;
 
 /**
- * The format of the string content
+ * The format of string content.
  */
 export type StringFormat = 'ICU' | 'I18NEXT' | 'STRING';
 
 /**
- * The format of the content
+ * The format of the content.
  */
 export type DataFormat = 'JSX' | StringFormat;
 
 /**
- * String format content
+ * String format content.
  */
 export type StringContent = IcuMessage | StringMessage | I18nextMessage;
 
 /**
- * A content type representing JSX, ICU, and I18next messages
+ * A content type representing JSX, ICU, and I18next messages.
  */
 export type Content = JsxChildren | StringContent;
 
 /**
- * A content type representing JSX elements
+ * A content type representing JSX elements.
  */
 export type JsxChildren = JsxChild | JsxChild[];
 
 /**
- * A content type representing ICU messages
+ * A content type representing ICU messages.
  */
 export type IcuMessage = string;
 
 /**
- * A content type representing I18next messages
+ * A content type representing I18next messages.
  */
 export type I18nextMessage = string;
 
 /**
- * A content type representing plain strings
+ * A content type representing plain strings.
  */
 export type StringMessage = string;

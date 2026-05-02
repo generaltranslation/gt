@@ -13,10 +13,10 @@ import { validateFileFormatTransforms } from './utils/validateFileFormatTransfor
 /**
  * @internal
  * Uploads multiple translations to the General Translation API in batches.
- * @param files - Translations to upload with their source
- * @param options - The options for the API call
- * @param config - The configuration for the API call
- * @returns Promise resolving to a BatchList with all uploaded files
+ * @param files - Translations to upload with their source files.
+ * @param options - The options for the API call.
+ * @param config - The configuration for the API call.
+ * @returns A BatchList with all uploaded files.
  */
 export default async function _uploadTranslations(
   files: {

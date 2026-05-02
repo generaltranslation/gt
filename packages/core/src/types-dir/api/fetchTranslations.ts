@@ -1,11 +1,10 @@
-// Types for the fetchTranslations function
 export type FetchTranslationsOptions = {
   timeout?: number;
 };
 
 export type RetrievedTranslation = {
   locale: string;
-  // TODO: explicitly define type from cloud
+  // TODO: Replace with the explicit API response type.
   translation: any;
 };
 

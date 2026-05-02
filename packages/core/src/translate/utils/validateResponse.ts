@@ -13,7 +13,7 @@ export default async function validateResponse(response: Response) {
         errorMsg = text || 'Unknown error';
       }
     } catch {
-      // response.text() failed, keep 'Unknown error'
+      // Keep the default message if response.text() fails.
     }
     const errorMessage = apiError(
       response.status,

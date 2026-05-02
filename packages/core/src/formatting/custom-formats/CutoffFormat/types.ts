@@ -1,33 +1,29 @@
-// ========== Base Types ========== //
-
-/** Type of terminator */
+/** Terminator style. */
 export type CutoffFormatStyle = 'none' | 'ellipsis';
 
-/** Terminator options */
+/** Terminator options. */
 export interface TerminatorOptions {
-  /** The terminator to use */
+  /** The terminator to use. */
   terminator?: string;
-  /** An optional separator between the terminator and the value */
+  /** Optional separator between the terminator and the value. */
   separator?: string;
 }
 
-/** Input formatting options (for constructor) */
+/** Input formatting options for the constructor. */
 export interface CutoffFormatOptions extends TerminatorOptions {
-  /** Cutoff length */
+  /** Cutoff length. */
   maxChars?: number;
-  /** Type of terminator */
+  /** Terminator style. */
   style?: CutoffFormatStyle;
 }
 
-// ========== Resolved Options ========== //
-
-/** Resolved terminator options */
+/** Resolved terminator options. */
 export interface ResolvedTerminatorOptions extends TerminatorOptions {
   terminator: string | undefined;
   separator: string | undefined;
 }
 
-/** Resolved options (after constructor) */
+/** Options resolved by the constructor. */
 export interface ResolvedCutoffFormatOptions
   extends CutoffFormatOptions,
     ResolvedTerminatorOptions {
@@ -37,9 +33,7 @@ export interface ResolvedCutoffFormatOptions
   separator: string | undefined;
 }
 
-// ========== Formatting Parts ========== //
-
-/** Prepended cutoff list */
+/** Parts for a cutoff added before the value. */
 export type PrependedCutoffParts =
   | [string]
   | [ResolvedTerminatorOptions['terminator'], string]
@@ -49,7 +43,7 @@ export type PrependedCutoffParts =
       string,
     ];
 
-/** Postpended cutoff list */
+/** Parts for a cutoff added after the value. */
 export type PostpendedCutoffParts =
   | [string]
   | [string, ResolvedTerminatorOptions['terminator']]
@@ -59,10 +53,8 @@ export type PostpendedCutoffParts =
       ResolvedTerminatorOptions['terminator'],
     ];
 
-// ========== Cutoff Format Class ========== //
-
 /**
- * Cutoff Class interface
+ * Cutoff format interface.
  */
 export interface CutoffFormat {
   format: (value: string) => string;

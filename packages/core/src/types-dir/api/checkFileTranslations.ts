@@ -1,7 +1,6 @@
-// Types for the checkFileTranslations function
 export type FileTranslationQuery = {
   versionId: string;
-  fileName?: string; // Between fileName and fileId, one is required
+  fileName?: string; // Either fileName or fileId is required.
   fileId?: string;
   locale: string;
 };

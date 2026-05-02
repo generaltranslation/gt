@@ -38,13 +38,13 @@ export {
  * @param {string | string[]} [options.locales] - The locales to use for terminator selection.
  * @param {number} [options.maxChars] - The maximum number of characters to display.
  * - Undefined values are treated as no cutoff.
- * - Negative values follow .slice() behavior and terminator will be added before the value.
- * - 0 will result in an empty string.
+ * - Negative values follow .slice() behavior, and the terminator is added before the value.
+ * - 0 results in an empty string.
  * - If cutoff results in an empty string, no terminator is added.
- * @param {CutoffFormatStyle} [options.style='ellipsis'] - The style of the terminator.
- * @param {string} [options.terminator] - Optional override the terminator to use.
- * @param {string} [options.separator] - Optional override the separator to use between the terminator and the value.
- * - If no terminator is provided, then separator is ignored.
+ * @param {CutoffFormatStyle} [options.style='ellipsis'] - The terminator style.
+ * @param {string} [options.terminator] - Optional terminator override.
+ * @param {string} [options.separator] - Optional separator override between the terminator and value.
+ * - If no terminator is provided, the separator is ignored.
  * @returns {string} The formatted string with terminator applied if cutoff occurs.
  *
  * @example
@@ -110,11 +110,11 @@ export function formatMessage(
 }
 
 /**
- * Checks if a given BCP 47 locale code is valid.
+ * Checks whether a BCP 47 locale code is valid.
  *
  * @param {string} locale - The BCP 47 locale code to validate.
  * @param {CustomMapping} [customMapping] - The custom mapping to use for validation.
- * @returns {boolean} True if the BCP 47 code is valid, false otherwise.
+ * @returns {boolean} True if the BCP 47 code is valid; otherwise false.
  *
  * @example
  * isValidLocale('en-US');
@@ -129,11 +129,11 @@ export function isValidLocale(locale: string, customMapping?: CustomMapping) {
 }
 
 /**
- * Resolves the canonical locale for a given locale.
+ * Resolves the canonical locale for a custom alias.
  *
- * @param {string} locale - The locale to resolve the canonical locale for.
- * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the canonical locale.
- * @returns {string} The canonical locale.
+ * @param {string} locale - The locale to resolve.
+ * @param {CustomMapping} [customMapping] - The custom mapping to inspect.
+ * @returns {string} The canonical locale, or the input locale when no canonical mapping exists.
  *
  * @example
  * resolveCanonicalLocale('en-US');
@@ -154,15 +154,12 @@ export function resolveCanonicalLocale(
  * Standardizes a BCP 47 locale code to ensure correct formatting.
  *
  * @param {string} locale - The BCP 47 locale code to standardize.
- * @returns {string} The standardized BCP 47 locale code or an empty string if it is an invalid code.
+ * @returns {string} The standardized BCP 47 locale code, or the input string if it cannot be standardized.
  *
  * @example
  * standardizeLocale('en-us');
  * // Returns: 'en-US'
  *
- * @example
- * standardizeLocale('not a locale');
- * // Returns: ''
  */
 export function standardizeLocale(locale: string) {
   return _standardizeLocale(locale);

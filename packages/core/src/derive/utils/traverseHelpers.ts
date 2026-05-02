@@ -8,7 +8,7 @@ import {
   TYPE,
 } from '@formatjs/icu-messageformat-parser/types.js';
 
-// Visit any _gt_# select
+// Matches indexed _gt_# select elements.
 export function isGTIndexedSelectElement(
   child: MessageFormatElement
 ): child is GTIndexedSelectElement {
@@ -22,7 +22,7 @@ export function isGTIndexedSelectElement(
   );
 }
 
-// Visit any _gt_ select
+// Matches unindexed _gt_ select elements.
 export function isGTUnindexedSelectElement(
   child: MessageFormatElement
 ): child is GTUnindexedSelectElement {

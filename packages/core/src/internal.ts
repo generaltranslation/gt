@@ -31,10 +31,10 @@ export {
   validateFileFormatTransforms,
 };
 
-// derive
+// Derivation helpers.
 export * from './derive';
 
-// backwards compatability
+// Backward compatibility helpers.
 export {
   getNewJsxChild,
   getNewJsxChildren,

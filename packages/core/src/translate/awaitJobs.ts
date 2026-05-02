@@ -5,7 +5,7 @@ import { _checkJobStatus, JobStatus } from './checkJobStatus';
 export type AwaitJobsOptions = {
   /** Polling interval in seconds. Defaults to 5. */
   pollingIntervalSeconds?: number;
-  /** Timeout in seconds. Defaults to 600 (10 minutes). If reached, resolves with whatever status is current. */
+  /** Timeout in seconds. Defaults to 600 (10 minutes). If reached, resolves with the current statuses. */
   timeoutSeconds?: number;
 };
 
@@ -24,10 +24,10 @@ export type AwaitJobsResult = {
 /**
  * @internal
  * Polls job statuses until all jobs are finished or the timeout is reached.
- * @param enqueueResult - The result from enqueueFiles
- * @param options - Polling configuration
- * @param config - API credentials and configuration
- * @returns The final status of all jobs
+ * @param enqueueResult - The result from enqueueFiles.
+ * @param options - Polling configuration.
+ * @param config - API credentials and configuration.
+ * @returns The final status of all jobs.
  */
 export default async function _awaitJobs(
   enqueueResult: EnqueueFilesResult,
@@ -35,7 +35,7 @@ export default async function _awaitJobs(
   config: TranslationRequestConfig
 ): Promise<AwaitJobsResult> {
   const pollingInterval = (options?.pollingIntervalSeconds ?? 5) * 1000;
-  const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+  const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes.
   const timeout =
     options?.timeoutSeconds !== undefined
       ? options.timeoutSeconds * 1000

@@ -6,41 +6,54 @@ import { intlCache } from '../cache/IntlCache';
 import { CustomMapping, shouldUseCanonicalLocale } from './customLocaleMapping';
 
 export type LocaleProperties = {
-  // assume code = "de-AT", defaultLocale = "en-US"
+  /** ex. "de-AT" - Standardized locale code. */
+  code: string;
+  /** ex. "Austrian German" - Display name in the requested display locale. */
+  name: string;
+  /** ex. "Österreichisches Deutsch" - Display name in the locale's native language. */
+  nativeName: string;
 
-  code: string; // "de-AT"
-  name: string; // "Austrian German"
-  nativeName: string; // "Österreichisches Deutsch"
+  /** ex. "de" - Language subtag. */
+  languageCode: string;
+  /** ex. "German" - Language name in the requested display locale. */
+  languageName: string;
+  /** ex. "Deutsch" - Language name in the locale's native language. */
+  nativeLanguageName: string;
 
-  languageCode: string; // "de"
-  languageName: string; // "German"
-  nativeLanguageName: string; // "Deutsch"
+  /** ex. "German (AT)" - Display name with the explicit region code, without maximizing the locale. */
+  nameWithRegionCode: string;
+  /** ex. "Deutsch (AT)" - Native display name with the explicit region code, without maximizing the locale. */
+  nativeNameWithRegionCode: string;
 
-  // note that maximize() is NOT called here!
+  /** ex. "AT" - Most likely region subtag after maximizing the locale. */
+  regionCode: string;
+  /** ex. "Austria" - Region name in the requested display locale. */
+  regionName: string;
+  /** ex. "Österreich" - Region name in the locale's native language. */
+  nativeRegionName: string;
 
-  nameWithRegionCode: string; // "German (AT)"
-  nativeNameWithRegionCode: string; // "Deutsch (AT)"
+  /** ex. "Latn" - Most likely script subtag after maximizing the locale. */
+  scriptCode: string;
+  /** ex. "Latin" - Script name in the requested display locale. */
+  scriptName: string;
+  /** ex. "Lateinisch" - Script name in the locale's native language. */
+  nativeScriptName: string;
 
-  // for most likely script and region, maximize() is called
+  /** ex. "de-Latn-AT" - Maximized locale code. */
+  maximizedCode: string;
+  /** ex. "Austrian German (Latin)" - Maximized locale name. */
+  maximizedName: string;
+  /** ex. "Österreichisches Deutsch (Lateinisch)" - Native maximized locale name. */
+  nativeMaximizedName: string;
 
-  regionCode: string; // "AT"
-  regionName: string; // "Austria"
-  nativeRegionName: string; // Österreich
+  /** ex. "de-AT" or "de" for "de-DE" - Minimized locale code. */
+  minimizedCode: string;
+  /** ex. "Austrian German" - Minimized locale name. */
+  minimizedName: string;
+  /** ex. "Österreichisches Deutsch" - Native minimized locale name. */
+  nativeMinimizedName: string;
 
-  scriptCode: string; // "Latn"
-  scriptName: string; // "Latin"
-  nativeScriptName: string; // "Lateinisch"
-
-  maximizedCode: string; // "de-Latn-AT"
-  maximizedName: string; // "Austrian German (Latin)"
-  nativeMaximizedName: string; // Österreichisches Deutsch (Lateinisch)
-
-  minimizedCode: string; // "de-AT", but for "de-DE" it would just be "de"
-  minimizedName: string; // ""Austrian German";
-  nativeMinimizedName: string; // "Österreichisches Deutsch"
-
-  // Emoji depending on region code
-  // In order not to accidentally spark international conflict, some emojis are hard-coded
+  /** Locale emoji, with overrides for some linguistic and cultural identities. */
   emoji: string;
 };
 
@@ -80,43 +93,42 @@ export default function _getLocaleProperties(
   defaultLocale: string = libraryDefaultLocale,
   customMapping?: CustomMapping
 ): LocaleProperties {
-  // Check for canonical locale
+  // Resolve custom aliases to canonical locales before processing.
   const aliasedLocale = locale;
   if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
-    // Override locale with canonical locale
     locale = (customMapping[locale] as { code: string }).code;
   }
 
   defaultLocale ||= libraryDefaultLocale;
 
   try {
-    const standardizedLocale = _standardizeLocale(locale); // "de-AT"
+    const standardizedLocale = _standardizeLocale(locale);
 
     const localeObject = intlCache.get('Locale', locale);
-    const languageCode = localeObject.language; // "de"
+    const languageCode = localeObject.language;
 
     const customLocaleProperties = createCustomLocaleProperties(
       [aliasedLocale, locale, standardizedLocale, languageCode],
       customMapping
     );
 
-    const baseRegion = localeObject.region; // "AT"
+    const baseRegion = localeObject.region;
 
     const maximizedLocale = localeObject.maximize();
-    const maximizedCode = maximizedLocale.toString(); // "de-Latn-AT"
+    const maximizedCode = maximizedLocale.toString();
     const regionCode =
       localeObject.region ||
       customLocaleProperties?.regionCode ||
       maximizedLocale.region ||
-      ''; // "AT"
+      '';
     const scriptCode =
       localeObject.script ||
       customLocaleProperties?.scriptCode ||
       maximizedLocale.script ||
-      ''; // "Latn"
+      '';
 
     const minimizedLocale = localeObject.minimize();
-    const minimizedCode = minimizedLocale.toString(); // "de-AT"
+    const minimizedCode = minimizedLocale.toString();
 
     // Language names (default and native)
 
@@ -136,51 +148,51 @@ export default function _getLocaleProperties(
     const customNativeName =
       customLocaleProperties?.nativeName || customLocaleProperties?.name;
 
-    const name = customName || languageNames.of(locale) || locale; // "Austrian German"
+    const name = customName || languageNames.of(locale) || locale;
     const nativeName =
-      customNativeName || nativeLanguageNames.of(locale) || locale; // "Österreichisches Deutsch"
+      customNativeName || nativeLanguageNames.of(locale) || locale;
 
     const maximizedName =
       customLocaleProperties?.maximizedName ||
       customName ||
       languageNames.of(maximizedCode) ||
-      locale; // "Austrian German (Latin)"
+      locale;
     const nativeMaximizedName =
       customLocaleProperties?.nativeMaximizedName ||
       customNativeName ||
       nativeLanguageNames.of(maximizedCode) ||
-      locale; // "Österreichisches Deutsch (Lateinisch)"
+      locale;
 
     const minimizedName =
       customLocaleProperties?.minimizedName ||
       customName ||
       languageNames.of(minimizedCode) ||
-      locale; // "Austrian German", but for "de-DE" would just be "German"
+      locale;
     const nativeMinimizedName =
       customLocaleProperties?.nativeMinimizedName ||
       customNativeName ||
       nativeLanguageNames.of(minimizedCode) ||
-      locale; // "Österreichisches Deutsch", but for "de-DE" would just be "Deutsch"
+      locale;
 
     const languageName =
       customLocaleProperties?.languageName ||
       customName ||
       languageNames.of(languageCode) ||
-      locale; // "German"
+      locale;
     const nativeLanguageName =
       customLocaleProperties?.nativeLanguageName ||
       customNativeName ||
       nativeLanguageNames.of(languageCode) ||
-      locale; // "Deutsch"
+      locale;
 
     const nameWithRegionCode =
       customLocaleProperties?.nameWithRegionCode || baseRegion
         ? `${languageName} (${baseRegion})`
-        : name; // German (AT)
+        : name;
     const nativeNameWithRegionCode =
       customLocaleProperties?.nativeNameWithRegionCode ||
       (baseRegion ? `${nativeLanguageName} (${baseRegion})` : nativeName) ||
-      nameWithRegionCode; // "Deutsch (AT)"
+      nameWithRegionCode;
 
     // Region names (default and native)
 
@@ -196,11 +208,11 @@ export default function _getLocaleProperties(
     const regionName =
       customLocaleProperties?.regionName ||
       (regionCode ? regionNames.of(regionCode) : '') ||
-      ''; // "Austria"
+      '';
     const nativeRegionName =
       customLocaleProperties?.nativeRegionName ||
       (regionCode ? nativeRegionNames.of(regionCode) : '') ||
-      ''; // "Österreich"
+      '';
 
     // Script names (default and native)
 
@@ -216,11 +228,11 @@ export default function _getLocaleProperties(
     const scriptName =
       customLocaleProperties?.scriptName ||
       (scriptCode ? scriptNames.of(scriptCode) : '') ||
-      ''; // "Latin"
+      '';
     const nativeScriptName =
       customLocaleProperties?.nativeScriptName ||
       (scriptCode ? nativeScriptNames.of(scriptCode) : '') ||
-      ''; // "Lateinisch"
+      '';
 
     // Emoji
 

@@ -8,7 +8,7 @@ export default function _isSameLanguage(
 ): boolean {
   try {
     const flattenedCodes = locales.flat();
-    // Get the language for each code
+    // Compare the language subtag for each locale code.
     const languages = flattenedCodes.map(
       (locale) => intlCache.get('Locale', locale).language
     );

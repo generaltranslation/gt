@@ -1,6 +1,6 @@
 /**
- * Comprehensive logging system for the General Translation library
- * Provides structured logging with multiple levels and configurable output
+ * Comprehensive logging system for the General Translation library.
+ * Provides structured logging with multiple levels and configurable output.
  */
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'off';
@@ -14,17 +14,17 @@ export interface LogEntry {
 }
 
 export interface LoggerConfig {
-  /** Minimum log level to output */
+  /** Minimum log level to output. */
   level: LogLevel;
-  /** Whether to include timestamps in log output */
+  /** Whether to include timestamps in log output. */
   includeTimestamp: boolean;
-  /** Whether to include context information */
+  /** Whether to include context information. */
   includeContext: boolean;
-  /** Custom prefix for all log messages */
+  /** Custom prefix for all log messages. */
   prefix?: string;
-  /** Whether to output to console (default: true) */
+  /** Whether to output to console. Defaults to true. */
   enableConsole: boolean;
-  /** Custom log handlers */
+  /** Custom log handlers. */
   handlers?: LogHandler[];
 }
 
@@ -45,13 +45,13 @@ const LOG_COLORS: Record<LogLevel, string> = {
   info: '\x1b[32m', // Green
   warn: '\x1b[33m', // Yellow
   error: '\x1b[31m', // Red
-  off: '', // No color needed since 'off' level logs are never displayed
+  off: '', // No color needed because 'off' level logs are never displayed.
 };
 
 const RESET_COLOR = '\x1b[0m';
 
 /**
- * Get the configured log level from environment variable or default to 'warn'
+ * Gets the configured log level from the environment variable, or defaults to 'warn'.
  */
 function getConfiguredLogLevel(): LogLevel {
   if (typeof process !== 'undefined' && process.env?._GT_LOG_LEVEL) {
@@ -64,7 +64,7 @@ function getConfiguredLogLevel(): LogLevel {
 }
 
 /**
- * Console log handler that outputs formatted messages to console
+ * Console log handler that outputs formatted messages to the console.
  */
 export class ConsoleLogHandler implements LogHandler {
   private config: LoggerConfig;
@@ -76,37 +76,36 @@ export class ConsoleLogHandler implements LogHandler {
   handle(entry: LogEntry): void {
     const parts: string[] = [];
 
-    // Add timestamp if enabled
+    // Add a timestamp if enabled.
     if (this.config.includeTimestamp) {
       parts.push(`[${entry.timestamp.toISOString()}]`);
     }
 
-    // Add level with color
+    // Add the level with color.
     const colorCode = LOG_COLORS[entry.level];
     const levelText = `[${entry.level.toUpperCase()}]`;
     parts.push(`${colorCode}${levelText}${RESET_COLOR}`);
 
-    // Add prefix if configured
+    // Add a prefix if configured.
     if (this.config.prefix) {
       parts.push(`[${this.config.prefix}]`);
     }
 
-    // Add context if available and enabled
+    // Add context if available and enabled.
     if (this.config.includeContext && entry.context) {
       parts.push(`[${entry.context}]`);
     }
 
-    // Add the main message
     parts.push(entry.message);
 
-    // Format metadata if available
+    // Format metadata if available.
     if (entry.metadata && Object.keys(entry.metadata).length > 0) {
       parts.push(`\n  Metadata: ${JSON.stringify(entry.metadata, null, 2)}`);
     }
 
     const formattedMessage = parts.join(' ');
 
-    // Output to appropriate console method based on level
+    // Output to the appropriate console method based on level.
     switch (entry.level) {
       case 'debug':
         console.debug(formattedMessage);
@@ -125,7 +124,7 @@ export class ConsoleLogHandler implements LogHandler {
 }
 
 /**
- * Main Logger class providing structured logging capabilities
+ * Main Logger class providing structured logging capabilities.
  */
 export class Logger {
   private config: LoggerConfig;
@@ -143,21 +142,21 @@ export class Logger {
 
     this.handlers = [...(this.config.handlers || [])];
 
-    // Add console handler if enabled
+    // Add a console handler if enabled.
     if (this.config.enableConsole) {
       this.handlers.push(new ConsoleLogHandler(this.config));
     }
   }
 
   /**
-   * Add a custom log handler
+   * Adds a custom log handler.
    */
   addHandler(handler: LogHandler): void {
     this.handlers.push(handler);
   }
 
   /**
-   * Remove a log handler
+   * Removes a log handler.
    */
   removeHandler(handler: LogHandler): void {
     const index = this.handlers.indexOf(handler);
@@ -167,21 +166,21 @@ export class Logger {
   }
 
   /**
-   * Update logger configuration
+   * Updates logger configuration.
    */
   configure(config: Partial<LoggerConfig>): void {
     this.config = { ...this.config, ...config };
   }
 
   /**
-   * Check if a log level should be output based on current configuration
+   * Checks whether a log level should be output based on current configuration.
    */
   private shouldLog(level: LogLevel): boolean {
     return LOG_LEVELS[level] >= LOG_LEVELS[this.config.level];
   }
 
   /**
-   * Internal logging method that creates log entries and passes them to handlers
+   * Creates log entries and passes them to handlers.
    */
   private log(
     level: LogLevel,
@@ -201,20 +200,20 @@ export class Logger {
       metadata,
     };
 
-    // Pass to all handlers
+    // Pass entries to all handlers.
     this.handlers.forEach((handler) => {
       try {
         handler.handle(entry);
       } catch (error) {
-        // Prevent logging errors from breaking the application
+        // Prevent logging errors from breaking application code.
         console.error('Error in log handler:', error);
       }
     });
   }
 
   /**
-   * Log a debug message
-   * Used for detailed diagnostic information, typically of interest only when diagnosing problems
+   * Logs a debug message.
+   * Used for detailed diagnostic information, typically only when diagnosing problems.
    */
   debug(
     message: string,
@@ -225,8 +224,8 @@ export class Logger {
   }
 
   /**
-   * Log an info message
-   * Used for general information about application operation
+   * Logs an info message.
+   * Used for general information about application operation.
    */
   info(
     message: string,
@@ -237,8 +236,8 @@ export class Logger {
   }
 
   /**
-   * Log a warning message
-   * Used for potentially problematic situations that don't prevent operation
+   * Logs a warning message.
+   * Used for potentially problematic situations that do not prevent operation.
    */
   warn(
     message: string,
@@ -249,8 +248,8 @@ export class Logger {
   }
 
   /**
-   * Log an error message
-   * Used for error events that might still allow the application to continue
+   * Logs an error message.
+   * Used for error events that might still allow the application to continue.
    */
   error(
     message: string,
@@ -261,14 +260,14 @@ export class Logger {
   }
 
   /**
-   * Create a child logger with a specific context
+   * Creates a child logger with a specific context.
    */
   child(context: string): ContextLogger {
     return new ContextLogger(this, context);
   }
 
   /**
-   * Get current logger configuration
+   * Gets current logger configuration.
    */
   getConfig(): LoggerConfig {
     return { ...this.config };
@@ -276,7 +275,7 @@ export class Logger {
 }
 
 /**
- * Context logger that automatically includes context information
+ * Context logger that automatically includes context information.
  */
 export class ContextLogger {
   private logger: Logger;
@@ -308,7 +307,7 @@ export class ContextLogger {
   }
 }
 
-// Default logger instance
+// Default logger instance.
 export const defaultLogger = new Logger({
   level: getConfiguredLogLevel(),
   includeTimestamp: true,
@@ -316,7 +315,7 @@ export const defaultLogger = new Logger({
   prefix: 'GT',
 });
 
-// Convenience functions using the default logger
+// Convenience functions using the default logger.
 export const debug = (
   message: string,
   context?: string,
@@ -341,12 +340,11 @@ export const error = (
   metadata?: Record<string, any>
 ) => defaultLogger.error(message, context, metadata);
 
-// Create context-specific loggers for different parts of the system
+// Context-specific loggers for different parts of the system.
 export const fetchLogger = defaultLogger.child('fetch');
 export const validationLogger = defaultLogger.child('validation');
 export const formattingLogger = defaultLogger.child('formatting');
 export const localeLogger = defaultLogger.child('locale');
 export const gtInstanceLogger = defaultLogger.child('GT instance');
 
-// Export types and classes
 export { Logger as GTLogger };

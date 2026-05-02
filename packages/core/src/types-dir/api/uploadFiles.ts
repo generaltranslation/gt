@@ -23,9 +23,9 @@ export type GTJsonFormatMetadata = Record<
 >;
 
 export type FileUpload = {
-  branchId?: string; // optional branch id. If not provided, will use the default branch.
-  incomingBranchId?: string; // optional branch id to use for incoming translations
-  checkedOutBranchId?: string; // optional branch id to use for checked out translations
+  branchId?: string; // Optional branch ID. Defaults to the default branch.
+  incomingBranchId?: string; // Optional branch ID for incoming translations.
+  checkedOutBranchId?: string; // Optional branch ID for checked-out translations.
   content: string;
   fileName: string;
   fileFormat: FileFormat;
@@ -34,8 +34,8 @@ export type FileUpload = {
   dataFormat?: DataFormat;
   locale: string;
   formatMetadata?: GTJsonFormatMetadata;
-  versionId?: string; // Optional versionId. Only use this if you know what you are doing.
-  fileId?: string; // Optional fileId. Only use this if you know what you are doing.
+  versionId?: string; // Optional version ID. Only use when preserving an existing version.
+  fileId?: string; // Optional file ID. Only use when preserving an existing file.
 };
 
 export type UploadFilesOptions = {

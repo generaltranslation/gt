@@ -33,12 +33,12 @@ export type ProcessMovesOptions = {
 
 /**
  * @internal
- * Processes file moves by cloning source files and translations with new fileIds.
- * Called when the CLI detects that files have been moved/renamed.
- * @param moves - Array of move mappings (old fileId to new fileId)
- * @param options - Options including branchId and timeout
- * @param config - The configuration for the API call
- * @returns Promise resolving to the move results
+ * Processes file moves by cloning source files and translations with new file IDs.
+ * Called when the CLI detects that files have been moved or renamed.
+ * @param moves - Move mappings from old file ID to new file ID.
+ * @param options - Options including branch ID and timeout.
+ * @param config - The configuration for the API call.
+ * @returns The move results.
  */
 export default async function _processFileMoves(
   moves: MoveMapping[],

@@ -1,7 +1,7 @@
 /**
- * Sanitizes string by escaping ICU syntax
+ * Sanitizes a string by escaping ICU syntax.
  *
- * Sanitize arbitrary string so it does not break the following ICU message syntax:
+ * Sanitizes arbitrary strings so they do not break the following ICU message syntax:
  * {_gt_, select, other {string_here}}
  *
  * Escapes ICU special characters by:
@@ -10,19 +10,19 @@
  * 3. Adding a single quote after the last special character ({}<>)
  */
 export function sanitizeVar(string: string): string {
-  // First, double all single quotes (both ASCII and Unicode)
+  // First, double all single quotes (both ASCII and Unicode).
   let result = string.replace(/['\']/g, "''");
 
-  // Find first and last positions of special characters
+  // Find the first and last positions of special characters.
   const specialChars = /[{}<>]/;
   const firstSpecialIndex = result.search(specialChars);
 
   if (firstSpecialIndex === -1) {
-    // No special characters, return with just doubled quotes
+    // No special characters; return with just doubled quotes.
     return result;
   }
 
-  // Find last special character position
+  // Find the last special character position.
   let lastSpecialIndex = -1;
   for (let i = result.length - 1; i >= 0; i--) {
     if (specialChars.test(result[i])) {
@@ -31,7 +31,7 @@ export function sanitizeVar(string: string): string {
     }
   }
 
-  // Insert quotes around the special character region
+  // Insert quotes around the special character region.
   result =
     result.slice(0, firstSpecialIndex) +
     "'" +

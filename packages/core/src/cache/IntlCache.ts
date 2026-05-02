@@ -8,8 +8,8 @@ import {
 } from './types';
 
 /**
- * Object mapping constructor names to their respective constructor functions
- * Includes all native Intl constructors plus custom ones like CutoffFormat
+ * Maps constructor names to constructor functions.
+ * Includes native Intl constructors and custom constructors such as CutoffFormat.
  */
 const CustomIntl: CustomIntlType = {
   Collator: Intl.Collator,
@@ -25,8 +25,8 @@ const CustomIntl: CustomIntlType = {
 };
 
 /**
- * Cache for Intl and custom format instances to avoid repeated instantiation
- * Uses a two-level structure: constructor name -> cache key -> instance
+ * Caches Intl and custom format instances to avoid repeated instantiation.
+ * Uses a two-level structure: constructor name -> cache key -> instance.
  */
 class IntlCache {
   private cache: IntlCacheObject;
@@ -36,18 +36,18 @@ class IntlCache {
   }
 
   /**
-   * Generates a consistent cache key from locales and options
-   * Handles all LocalesArgument types (string, Locale, array, undefined)
+   * Generates a consistent cache key from locales and options.
+   * Handles all LocalesArgument types (string, Locale, array, undefined).
    */
   private _generateKey(locales: Intl.LocalesArgument, options = {}) {
-    // Normalize locales to string representation
+    // Normalize locales to a string representation.
     const localeKey = !locales
       ? 'undefined'
       : Array.isArray(locales)
         ? locales.map((l) => String(l)).join(',')
         : String(locales);
 
-    // Sort option keys to ensure consistent key generation regardless of property order
+    // Sort option keys so property order does not affect cache keys.
     const sortedOptions = options
       ? JSON.stringify(options, Object.keys(options).sort())
       : '{}';
@@ -55,10 +55,10 @@ class IntlCache {
   }
 
   /**
-   * Gets a cached Intl instance or creates a new one if not found
-   * @param constructor The name of the Intl constructor to use
-   * @param args Constructor arguments (locales, options)
-   * @returns Cached or newly created Intl instance
+   * Gets a cached Intl instance, or creates one when missing.
+   * @param constructor The name of the Intl constructor to use.
+   * @param args Constructor arguments (locales, options).
+   * @returns Cached or newly created Intl instance.
    */
   get<K extends keyof CustomIntlConstructors>(
     constructor: K,
@@ -69,7 +69,7 @@ class IntlCache {
     let intlObject = this.cache[constructor]?.[key];
 
     if (intlObject === undefined) {
-      // Create new instance and cache it
+      // Create and cache a new instance.
       intlObject = new CustomIntl[constructor](...args);
       if (!this.cache[constructor]) this.cache[constructor] = {};
       this.cache[constructor][key] = intlObject;
@@ -80,6 +80,6 @@ class IntlCache {
 }
 
 /**
- * Global instance of the Intl cache for use throughout the application
+ * Shared Intl cache instance used throughout the package.
  */
 export const intlCache = new IntlCache();
