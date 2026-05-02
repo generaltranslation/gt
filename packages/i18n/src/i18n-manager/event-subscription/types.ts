@@ -3,8 +3,8 @@ import type { Hash } from '../translations-manager/TranslationsCache';
 import type { Locale } from '../translations-manager/LocalesCache';
 import type {
   Dictionary,
+  DictionaryEntry,
   DictionaryPath,
-  DictionaryValue,
 } from '../translations-manager/DictionaryCache';
 
 export type EventName = string;
@@ -61,11 +61,11 @@ export type I18nEvents<TranslationValue extends Translation> = BaseEvent & {
   'dictionary-cache-hit': {
     locale: Locale;
     id: DictionaryPath;
-    dictionaryEntry: DictionaryValue;
+    dictionaryEntry: DictionaryEntry;
   };
   'dictionary-cache-miss': {
     locale: Locale;
     id: DictionaryPath;
-    dictionaryEntry: DictionaryValue;
+    dictionaryEntry: DictionaryEntry;
   };
 };

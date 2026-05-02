@@ -3,13 +3,11 @@ import {
   LocalesDictionaryCache,
   SafeDictionaryLoader,
 } from '../LocalesDictionaryCache';
-import { CreateTranslateMany } from '../utils/createTranslateMany';
 import { DEFAULT_CACHE_EXPIRY_TIME } from '../utils/constants';
 import { Dictionary } from '../DictionaryCache';
 
 describe('LocalesDictionaryCache', () => {
   let mockLoadDictionary: ReturnType<typeof vi.fn>;
-  let mockCreateTranslateMany: ReturnType<typeof vi.fn>;
   const enDictionary: Dictionary = {
     greeting: 'Hello',
   };
@@ -23,7 +21,6 @@ describe('LocalesDictionaryCache', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockLoadDictionary = vi.fn().mockResolvedValue(frDictionary);
-    mockCreateTranslateMany = vi.fn().mockReturnValue(vi.fn());
   });
 
   afterEach(() => {
@@ -35,7 +32,6 @@ describe('LocalesDictionaryCache', () => {
       defaultLocale: 'en',
       dictionary: enDictionary,
       loadDictionary: mockLoadDictionary as SafeDictionaryLoader,
-      createTranslateMany: mockCreateTranslateMany as CreateTranslateMany,
       lifecycle: {},
       ...(opts?.ttl !== undefined ? { ttl: opts.ttl } : {}),
     });

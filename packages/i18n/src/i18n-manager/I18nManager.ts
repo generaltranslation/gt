@@ -130,7 +130,6 @@ class I18nManager<
       defaultLocale: this.config.defaultLocale,
       dictionary: params.dictionary,
       loadDictionary,
-      createTranslateMany,
       lifecycle,
     });
   }
@@ -272,6 +271,19 @@ class I18nManager<
     } catch (error) {
       this.handleError(error);
       return {};
+    }
+  }
+
+  /**
+   * Look up a dictionary entry
+   */
+  lookupDictionary(locale: string, id: string): string | undefined {
+    try {
+      const resolvedLocale = this.resolveLocale(locale);
+      return this.lookupDictionaryResolved(resolvedLocale, id);
+    } catch (error) {
+      this.handleError(error);
+      return undefined;
     }
   }
 
@@ -527,6 +539,21 @@ class I18nManager<
       ...options,
       $locale: resolvedLocale ?? this.resolveLocale(options.$locale),
     };
+  }
+
+  /**
+   * Look up a dictionary entry after locale resolution
+   */
+  private lookupDictionaryResolved(
+    resolvedLocale: string,
+    id: string
+  ): string | undefined {
+    const dictionaryCache = this.localesDictionaryCache.get(resolvedLocale);
+    const entry = dictionaryCache?.get(id);
+    if (entry !== undefined || resolvedLocale === this.config.defaultLocale) {
+      return entry;
+    }
+    return this.lookupDictionaryResolved(this.config.defaultLocale, id);
   }
 
   /**

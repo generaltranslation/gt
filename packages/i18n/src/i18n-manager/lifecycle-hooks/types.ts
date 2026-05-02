@@ -9,6 +9,7 @@ import type {
   DictionaryPath,
   DictionaryValue,
   Dictionary,
+  DictionaryEntry,
 } from '../translations-manager/DictionaryCache';
 import type { DictionaryCacheEntry } from '../translations-manager/LocalesDictionaryCache';
 
@@ -93,7 +94,7 @@ export type DictionaryCacheLifecycleCallback = (params: {
   inputKey: DictionaryKey;
   cacheKey: DictionaryPath;
   cacheValue: DictionaryValue;
-  outputValue: DictionaryValue;
+  outputValue: DictionaryEntry;
 }) => void;
 
 /**
@@ -153,27 +154,19 @@ export type LifecycleCallbacks<TranslationValue extends Translation> = {
   onDictionaryCacheHit?: (params: {
     locale: Locale;
     id: DictionaryPath;
-    dictionaryEntry: DictionaryValue;
-    /** @deprecated - use dictionaryEntry instead */
-    value: DictionaryValue;
+    dictionaryEntry: DictionaryEntry;
   }) => void;
   onDictionaryCacheMiss?: (params: {
     locale: Locale;
     id: DictionaryPath;
-    dictionaryEntry: DictionaryValue;
-    /** @deprecated - use dictionaryEntry instead */
-    value: DictionaryValue;
+    dictionaryEntry: DictionaryEntry;
   }) => void;
   onLocalesDictionaryCacheHit?: (params: {
     locale: Locale;
     dictionary: Dictionary;
-    /** @deprecated - use dictionary instead */
-    value: Dictionary;
   }) => void;
   onLocalesDictionaryCacheMiss?: (params: {
     locale: Locale;
     dictionary: Dictionary;
-    /** @deprecated - use dictionary instead */
-    value: Dictionary;
   }) => void;
 };

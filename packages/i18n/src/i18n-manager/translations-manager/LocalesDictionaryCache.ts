@@ -2,12 +2,12 @@ import { Cache } from './Cache';
 import { DictionaryCache } from './DictionaryCache';
 import type {
   Dictionary,
+  DictionaryEntry,
   DictionaryKey,
   DictionaryPath,
   DictionaryValue,
 } from './DictionaryCache';
 import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
-import type { CreateTranslateMany } from './utils/createTranslateMany';
 import type {
   DictionaryCacheLifecycleCallback,
   LocalesDictionaryCacheLifecycleCallbacks,
@@ -53,11 +53,6 @@ export class LocalesDictionaryCache extends Cache<
   private _dictionaryLoader: SafeDictionaryLoader;
 
   /**
-   * Translate many function
-   */
-  private _createTranslateMany: CreateTranslateMany;
-
-  /**
    * Time to live for cache entries
    */
   private ttl: number = DEFAULT_CACHE_EXPIRY_TIME;
@@ -74,7 +69,6 @@ export class LocalesDictionaryCache extends Cache<
    * @param {Record<string, DictionaryCacheEntry>} params.init - The initial cache
    * @param {number | null} params.ttl - The time to live for cache entries
    * @param {SafeDictionaryLoader} params.loadDictionary - The dictionary loader function
-   * @param {CreateTranslateMany} params.createTranslateMany - Factory function for creating a translate many function
    */
   constructor({
     init = {},
@@ -82,7 +76,6 @@ export class LocalesDictionaryCache extends Cache<
     defaultLocale,
     dictionary = {},
     loadDictionary,
-    createTranslateMany,
     lifecycle: {
       onLocalesDictionaryCacheHit: onHit,
       onLocalesDictionaryCacheMiss: onMiss,
@@ -94,7 +87,6 @@ export class LocalesDictionaryCache extends Cache<
     ttl?: number | null;
     defaultLocale: Locale;
     dictionary?: Dictionary;
-    createTranslateMany: CreateTranslateMany;
     loadDictionary: SafeDictionaryLoader;
     lifecycle: LocalesDictionaryCacheLifecycleCallbacks;
   }) {
@@ -104,7 +96,6 @@ export class LocalesDictionaryCache extends Cache<
     this.ttl = ttl === null ? -1 : (ttl ?? DEFAULT_CACHE_EXPIRY_TIME);
 
     this._dictionaryLoader = loadDictionary;
-    this._createTranslateMany = createTranslateMany;
     this._onDictionaryCacheHit = onDictionaryCacheHit;
     this._onDictionaryCacheMiss = onDictionaryCacheMiss;
 
@@ -113,7 +104,6 @@ export class LocalesDictionaryCache extends Cache<
       dictionaryCache: new DictionaryCache({
         init: dictionary,
         lifecycle: this._createDictionaryCacheLifecycle(defaultLocale),
-        translateMany: this._createTranslateMany(defaultLocale),
       }),
       expiresAt: -1,
     });
@@ -197,7 +187,6 @@ export class LocalesDictionaryCache extends Cache<
     const dictionaryCache = new DictionaryCache({
       init: await dictionaryPromise,
       lifecycle: this._createDictionaryCacheLifecycle(locale),
-      translateMany: this._createTranslateMany(locale),
     });
 
     return { dictionaryCache, expiresAt };
@@ -216,7 +205,7 @@ export class LocalesDictionaryCache extends Cache<
     DictionaryKey,
     DictionaryPath,
     DictionaryValue,
-    DictionaryValue
+    DictionaryEntry
   > {
     return {
       onHit: this._onDictionaryCacheHit

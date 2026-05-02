@@ -14,6 +14,7 @@ export type {
 export type { LocaleCandidates } from './i18n-manager/condition-store/localeResolver';
 export type {
   DictionaryValue,
+  DictionaryEntry,
   DictionaryPath,
   DictionaryKey,
 } from './i18n-manager/translations-manager/DictionaryCache';

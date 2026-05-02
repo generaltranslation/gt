@@ -1,24 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DictionaryCache, Dictionary } from '../DictionaryCache';
-import { LookupOptions } from '../../../translation-functions/types/options';
-
-function makeKey(
-  id: string,
-  message = 'Hello',
-  options: LookupOptions = { $format: 'ICU' }
-) {
-  return { id, message, options };
-}
-
-function mockTranslateManyResponse(
-  entries: Array<{ id: string; translation: string }>
-) {
-  const result: Record<string, { success: true; translation: string }> = {};
-  for (const entry of entries) {
-    result[entry.id] = { success: true, translation: entry.translation };
-  }
-  return result;
-}
 
 describe('DictionaryCache', () => {
   let mockTranslateMany: ReturnType<typeof vi.fn>;
@@ -32,12 +13,7 @@ describe('DictionaryCache', () => {
   };
 
   beforeEach(() => {
-    vi.useFakeTimers();
     mockTranslateMany = vi.fn();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   // ===== REGRESSION TESTS ===== //
@@ -45,10 +21,9 @@ describe('DictionaryCache', () => {
   it('get() returns cached dictionary leaf when init is pre-populated', () => {
     const cache = new DictionaryCache({
       init: dictionary,
-      translateMany: mockTranslateMany,
     });
 
-    const result = cache.get(makeKey('user.profile.name', 'Name'));
+    const result = cache.get('user.profile.name');
     expect(result).toBe('Name');
     expect(mockTranslateMany).not.toHaveBeenCalled();
   });
@@ -56,105 +31,42 @@ describe('DictionaryCache', () => {
   it('get() returns cached dictionary subtree when init is pre-populated', () => {
     const cache = new DictionaryCache({
       init: dictionary,
-      translateMany: mockTranslateMany,
     });
 
-    const result = cache.get(makeKey('user', 'User'));
-    expect(result).toEqual({
-      profile: {
-        name: 'Name',
-      },
-    });
+    const result = cache.get('user');
+    expect(result).toBeUndefined();
   });
 
   it('get() returns undefined on cache miss', () => {
     const cache = new DictionaryCache({
       init: dictionary,
-      translateMany: mockTranslateMany,
     });
 
-    const result = cache.get(makeKey('missing.entry', 'Missing'));
+    const result = cache.get('missing.entry');
     expect(result).toBeUndefined();
   });
 
-  it('miss() calls translateMany and returns the translation', async () => {
-    mockTranslateMany.mockResolvedValue(
-      mockTranslateManyResponse([
-        { id: 'user.profile.name', translation: 'Nom' },
-      ])
-    );
-
+  it('miss() returns undefined and does not runtime translate', async () => {
     const cache = new DictionaryCache({
       init: {},
-      translateMany: mockTranslateMany,
     });
 
-    const promise = cache.miss(makeKey('user.profile.name', 'Name'));
-    vi.advanceTimersByTime(50);
-    const result = await promise;
+    const result = await cache.miss('user.profile.name');
 
-    expect(result).toBe('Nom');
-    expect(mockTranslateMany).toHaveBeenCalledTimes(1);
-    expect(cache.get(makeKey('user.profile.name', 'Name'))).toBe('Nom');
-    expect(cache.getInternalCache()).toEqual({
-      user: {
-        profile: {
-          name: 'Nom',
-        },
-      },
-    });
+    expect(result).toBeUndefined();
+    expect(mockTranslateMany).not.toHaveBeenCalled();
+    expect(cache.get('user.profile.name')).toBeUndefined();
+    expect(cache.getInternalCache()).toEqual({});
   });
 
   // ===== NEW BEHAVIOR TESTS ===== //
 
-  it('miss() batches multiple requests within BATCH_INTERVAL', async () => {
-    const k1 = makeKey('greeting', 'Hello');
-    const k2 = makeKey('farewell', 'Goodbye');
-
-    mockTranslateMany.mockResolvedValue(
-      mockTranslateManyResponse([
-        { id: k1.id, translation: 'Bonjour' },
-        { id: k2.id, translation: 'Au revoir' },
-      ])
-    );
-
+  it('get() returns undefined for the root dictionary object', () => {
     const cache = new DictionaryCache({
-      init: {},
-      translateMany: mockTranslateMany,
+      init: dictionary,
     });
 
-    const p1 = cache.miss(k1);
-    const p2 = cache.miss(k2);
-
-    expect(mockTranslateMany).not.toHaveBeenCalled();
-
-    vi.advanceTimersByTime(50);
-    const [r1, r2] = await Promise.all([p1, p2]);
-
-    expect(r1).toBe('Bonjour');
-    expect(r2).toBe('Au revoir');
-    expect(mockTranslateMany).toHaveBeenCalledTimes(1);
-  });
-
-  it('miss() deduplicates inflight requests for same key', async () => {
-    const key = makeKey('greeting', 'Hello');
-    mockTranslateMany.mockResolvedValue(
-      mockTranslateManyResponse([{ id: key.id, translation: 'Bonjour' }])
-    );
-
-    const cache = new DictionaryCache({
-      init: {},
-      translateMany: mockTranslateMany,
-    });
-
-    const p1 = cache.miss(key);
-    const p2 = cache.miss(key);
-
-    vi.advanceTimersByTime(50);
-    const [r1, r2] = await Promise.all([p1, p2]);
-
-    expect(r1).toBe('Bonjour');
-    expect(r2).toBe('Bonjour');
-    expect(mockTranslateMany).toHaveBeenCalledTimes(1);
+    const result = cache.get('');
+    expect(result).toBeUndefined();
   });
 });

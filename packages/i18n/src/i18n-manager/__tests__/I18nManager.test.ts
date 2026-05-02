@@ -117,6 +117,66 @@ describe('I18nManager', () => {
     expect(cachedDictionary).toBe(dictionary);
   });
 
+  it('lookupDictionary() returns a loaded target locale leaf', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Bonjour');
+  });
+
+  it('lookupDictionary() falls back to default locale when target locale is not loaded', () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+      }),
+    });
+
+    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Hello');
+  });
+
+  it('lookupDictionary() falls back to default locale when target leaf is missing', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Hello');
+  });
+
+  it('lookupDictionary() does not return dictionary subtrees', async () => {
+    const manager = createManager({
+      dictionary: {
+        user: {
+          name: 'Name',
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        user: {
+          name: 'Nom',
+        },
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'user')).toBeUndefined();
+  });
+
   it('lookupTranslation() returns undefined before load, translation after', async () => {
     const manager = createManager();
 

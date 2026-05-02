@@ -59,34 +59,22 @@ export function subscribeLifecycleCallbacks<
   }
   if (onLocalesDictionaryCacheHit) {
     subscribe('locales-dictionary-cache-hit', (event) => {
-      onLocalesDictionaryCacheHit({
-        ...event,
-        value: event.dictionary,
-      });
+      onLocalesDictionaryCacheHit(event);
     });
   }
   if (onLocalesDictionaryCacheMiss) {
     subscribe('locales-dictionary-cache-miss', (event) => {
-      onLocalesDictionaryCacheMiss({
-        ...event,
-        value: event.dictionary,
-      });
+      onLocalesDictionaryCacheMiss(event);
     });
   }
   if (onDictionaryCacheHit) {
     subscribe('dictionary-cache-hit', (event) => {
-      onDictionaryCacheHit({
-        ...event,
-        value: event.dictionaryEntry,
-      });
+      onDictionaryCacheHit(event);
     });
   }
   if (onDictionaryCacheMiss) {
     subscribe('dictionary-cache-miss', (event) => {
-      onDictionaryCacheMiss({
-        ...event,
-        value: event.dictionaryEntry,
-      });
+      onDictionaryCacheMiss(event);
     });
   }
 }
