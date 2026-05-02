@@ -13,7 +13,8 @@ import type { Root, Text } from 'mdast';
  *
  */
 export default function wrapPlainUrls(content: string): string {
-  const URL_REGEX = /https?:\/\/[^\s<>\[\]]*[^\s<>\[\].,;:!?'"\]}>]/g;
+  const URL_REGEX =
+    /https?:\/\/[^\s<>\u005b\u005d]*[^\s<>\u005b\u005d.,;:!?'"\u005d}>]/g;
   let ast: Root;
   try {
     const processor = unified()

@@ -31,7 +31,9 @@ afterEach(() => {
   for (const filePath of tempFiles) {
     try {
       fs.unlinkSync(filePath);
-    } catch {}
+    } catch {
+      // Temporary files may already be removed by the test.
+    }
   }
   tempFiles.length = 0;
 });

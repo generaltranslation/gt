@@ -141,7 +141,9 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
                 defaultBranch: true,
               });
               this.branchData.currentBranch = createBranchResult.branch;
-            } catch {}
+            } catch {
+              // The fallback branch may already exist.
+            }
           }
         }
       } else {

@@ -26,7 +26,9 @@ describe('sourceCode metadata integration', () => {
     for (const f of tempFiles) {
       try {
         fs.unlinkSync(f);
-      } catch {}
+      } catch {
+        // Temporary files may already be removed by the test.
+      }
     }
     tempFiles.length = 0;
   });

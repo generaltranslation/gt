@@ -446,7 +446,7 @@ describe('parseJson', () => {
         'en'
       );
 
-      expect(result).toBe('{"\/test":"value"}');
+      expect(result).toBe('{"/test":"value"}');
     });
   });
 
