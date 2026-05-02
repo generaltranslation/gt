@@ -21,7 +21,7 @@
  * @param {...branches} [branches] - A spread object containing possible branches as keys and their corresponding content as values.
  * @returns {React.JSX.Element} The rendered branch or fallback content.
  */
-function Branch({
+export function Branch({
   children,
   branch,
   ...branches
@@ -43,4 +43,3 @@ function Branch({
 }
 /** @internal _gtt - The GT transformation for the component. */
 Branch._gtt = 'branch';
-export default Branch;

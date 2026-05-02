@@ -1,19 +1,19 @@
 import 'server-only';
 
-import Var from './variables/Var';
-import Num from './variables/Num';
-import Currency from './variables/Currency';
-import DateTime from './variables/DateTime';
-import RelativeTime from './variables/RelativeTime';
-import T from './server-dir/buildtime/T';
-import Branch from './branches/Branch';
-import Plural from './branches/Plural';
-import GTProvider from './provider/GTProvider';
+import { Var } from './variables/Var';
+import { Num } from './variables/Num';
+import { Currency } from './variables/Currency';
+import { DateTime } from './variables/DateTime';
+import { RelativeTime } from './variables/RelativeTime';
+import { T } from './server-dir/buildtime/T';
+import { Branch } from './branches/Branch';
+import { Plural } from './branches/Plural';
+import { GTProvider } from './provider/GTProvider';
 import { Tx } from './server';
 import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
 import { useLocaleDirection } from './request/getLocaleDirection';
-import getI18NConfig from './config-dir/getI18NConfig';
+import { getI18NConfig } from './config-dir/getI18NConfig';
 import {
   msg,
   decodeMsg,

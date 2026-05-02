@@ -1,4 +1,4 @@
-import withGTConfigProps from '../props/withGTConfigProps';
+import { type withGTConfigProps } from '../props/withGTConfigProps';
 import { babelPluginCompatible } from '../../plugin/getStableNextVersionInfo';
 import {
   createGTCompilerUnavailableWarning,

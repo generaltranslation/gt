@@ -1,4 +1,4 @@
-import getI18NConfig from '../config-dir/getI18NConfig';
+import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { localeStore } from './localeStore';
 
 /**

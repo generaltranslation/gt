@@ -1,6 +1,6 @@
 import { typesFileError } from './errors/createErrors';
-import _GTProvider from './provider/GTProvider';
-import _T from './server-dir/buildtime/T';
+import { GTProvider as _GTProvider } from './provider/GTProvider';
+import { T as _T } from './server-dir/buildtime/T';
 import {
   useTranslations as _useTranslations,
   useLocale as _useLocale,

@@ -1,8 +1,8 @@
 import { GT } from 'generaltranslation';
 import { RequestFunctionReturnType } from '../types';
 import { legacyGetRequestFunction } from './legacyGetRequestFunction';
-import isSSR from './isSSR';
-import I18NConfiguration from '../../config-dir/I18NConfiguration';
+import { isSSR } from './isSSR';
+import { I18NConfiguration } from '../../config-dir/I18NConfiguration';
 
 let getLocaleFunction: () => Promise<RequestFunctionReturnType>;
 let getStaticLocaleFunction: () => Promise<RequestFunctionReturnType>;

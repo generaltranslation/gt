@@ -1,4 +1,4 @@
-import getI18NConfig from '../config-dir/getI18NConfig';
+import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { useLocale } from '../request/getLocale';
 import React from 'react';
 
@@ -18,7 +18,7 @@ import React from 'react';
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */
-function Currency({
+export function Currency({
   children,
   currency = 'USD',
   locales,
@@ -51,5 +51,3 @@ function Currency({
 }
 /** @internal _gtt - The GT transformation for the component. */
 Currency._gtt = 'variable-currency';
-
-export default Currency;

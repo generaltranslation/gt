@@ -3,7 +3,7 @@ import { unresolvedCustomLoadTranslationsError } from '../errors/createErrors';
 
 let customLoadTranslations: CustomLoader | undefined = undefined;
 
-export default function resolveTranslationLoader(): CustomLoader | undefined {
+export function resolveTranslationLoader(): CustomLoader | undefined {
   // Singleton pattern
   if (customLoadTranslations !== undefined) return customLoadTranslations;
 

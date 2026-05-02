@@ -1,4 +1,4 @@
-import getI18NConfig from '../config-dir/getI18NConfig';
+import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { useLocale } from '../request/getLocale';
 import React from 'react';
 
@@ -26,7 +26,7 @@ import React from 'react';
  * @param {Intl.RelativeTimeFormatOptions} [options={}] - Formatting options.
  * @returns {JSX.Element | null} The formatted relative time string.
  */
-function RelativeTime({
+export function RelativeTime({
   date,
   children,
   value,
@@ -92,5 +92,3 @@ function RelativeTime({
 
 /** @internal _gtt - The GT transformation for the component. */
 RelativeTime._gtt = 'variable-relative-time';
-
-export default RelativeTime;

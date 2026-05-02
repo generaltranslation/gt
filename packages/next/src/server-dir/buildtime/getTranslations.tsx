@@ -17,7 +17,7 @@ import {
   stripMetadataFromEntries,
 } from 'gt-react/internal';
 
-import getDictionary from '../../dictionary/getDictionary';
+import { getDictionary } from '../../dictionary/getDictionary';
 import {
   createDictionaryTranslationError,
   createInvalidDictionaryEntryWarning,
@@ -27,12 +27,12 @@ import {
   createNoEntryFoundWarning,
   createTranslationLoadingWarning,
 } from '../../errors/createErrors';
-import getI18NConfig from '../../config-dir/getI18NConfig';
+import { getI18NConfig } from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { hashSource } from 'generaltranslation/id';
-import use from '../../utils/use';
+import { use } from '../../utils/use';
 import { getSubtree } from 'gt-react/internal';
-import setDictionary from '../../dictionary/setDictionary';
+import { setDictionary } from '../../dictionary/setDictionary';
 import {
   extractVars,
   condenseVars,

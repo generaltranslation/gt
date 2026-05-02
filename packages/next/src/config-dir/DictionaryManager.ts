@@ -1,6 +1,6 @@
 import { standardizeLocale } from 'generaltranslation';
 import { Dictionary } from 'gt-react/internal';
-import resolveDictionaryLoader from '../resolvers/resolveDictionaryLoader';
+import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
 import { customLoadDictionaryWarning } from '../errors/createErrors';
 
 /**
@@ -60,5 +60,4 @@ export class DictionaryManager {
   }
 }
 
-const dictionaryManager = new DictionaryManager();
-export default dictionaryManager;
+export const dictionaryManager = new DictionaryManager();

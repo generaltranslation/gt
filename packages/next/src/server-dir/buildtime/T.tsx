@@ -1,4 +1,4 @@
-import getI18NConfig from '../../config-dir/getI18NConfig';
+import { getI18NConfig } from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { Suspense } from 'react';
 import {
@@ -9,7 +9,7 @@ import {
   TranslatedChildren,
   writeChildrenAsObjects,
 } from 'gt-react/internal';
-import renderVariable from '../variables/renderVariable';
+import { renderVariable } from '../variables/renderVariable';
 import { hashSource } from 'generaltranslation/id';
 
 /**
@@ -41,7 +41,7 @@ import { hashSource } from 'generaltranslation/id';
  *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
-async function T({
+export async function T({
   children,
   id,
   context,
@@ -210,5 +210,3 @@ async function T({
 }
 /** @internal _gtt - The GT transformation for the component. */
 T._gtt = 'translate-server';
-
-export default T;

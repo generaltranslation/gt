@@ -45,7 +45,7 @@ export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
   ...DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY,
 } as const;
 
-type withGTConfigProps = {
+export type withGTConfigProps = {
   // Request scoped filepath
   dictionary?: string;
   config?: string;
@@ -106,5 +106,3 @@ type withGTConfigProps = {
   getStaticDomainPath?: string;
   [key: string]: any;
 };
-
-export default withGTConfigProps;

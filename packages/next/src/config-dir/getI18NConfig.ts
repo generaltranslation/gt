@@ -1,5 +1,5 @@
-import I18NConfiguration from './I18NConfiguration';
-import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
+import { I18NConfiguration } from './I18NConfiguration';
+import { defaultWithGTConfigProps } from './props/defaultWithGTConfigProps';
 import {
   devApiKeyIncludedInProductionError,
   noInitGTWarn,
@@ -7,7 +7,7 @@ import {
 } from '../errors/createErrors';
 import { getDefaultRenderSettings } from 'gt-react/internal';
 
-export default function getI18NConfig(): I18NConfiguration {
+export function getI18NConfig(): I18NConfiguration {
   // Return the singleton instance
   const globalObj = globalThis as any;
   if (globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE) {
