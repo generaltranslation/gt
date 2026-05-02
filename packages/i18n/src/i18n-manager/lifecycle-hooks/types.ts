@@ -4,6 +4,13 @@ import type {
   Hash,
 } from '../translations-manager/TranslationsCache';
 import type { Locale, CacheEntry } from '../translations-manager/LocalesCache';
+import type {
+  DictionaryKey,
+  DictionaryPath,
+  DictionaryValue,
+  Dictionary,
+} from '../translations-manager/DictionaryCache';
+import type { DictionaryCacheEntry } from '../translations-manager/LocalesDictionaryCache';
 
 // ===== Base Cache Lifecycle ===== //
 
@@ -66,6 +73,47 @@ export type LocalesCacheLifecycleCallbacks<
   onTranslationsCacheMiss?: TranslationsCacheLifecycleCallback<TranslationValue>;
 };
 
+// ===== Locales Dictionary Cache Lifecycle ===== //
+
+/**
+ * Locales dictionary cache lifecycle callback
+ */
+export type LocalesDictionaryCacheLifecycleCallback = LifecycleCallback<
+  Locale,
+  Locale,
+  DictionaryCacheEntry,
+  DictionaryCacheEntry['dictionaryCache']
+>;
+
+/**
+ * Dictionary cache lifecycle callback with locale embedded as first param.
+ */
+export type DictionaryCacheLifecycleCallback = (params: {
+  locale: Locale;
+  inputKey: DictionaryKey;
+  cacheKey: DictionaryPath;
+  cacheValue: DictionaryValue;
+  outputValue: DictionaryValue;
+}) => void;
+
+/**
+ * Combined locales dictionary cache lifecycle callbacks
+ */
+export type LocalesDictionaryCacheLifecycleCallbacks = {
+  onLocalesDictionaryCacheHit?: LocalesDictionaryCacheLifecycleCallback;
+  onLocalesDictionaryCacheMiss?: LocalesDictionaryCacheLifecycleCallback;
+  onDictionaryCacheHit?: DictionaryCacheLifecycleCallback;
+  onDictionaryCacheMiss?: DictionaryCacheLifecycleCallback;
+};
+
+/**
+ * Combined I18nManager cache lifecycle callbacks
+ */
+export type I18nManagerCacheLifecycleCallbacks<
+  TranslationValue extends Translation,
+> = LocalesCacheLifecycleCallbacks<TranslationValue> &
+  LocalesDictionaryCacheLifecycleCallbacks;
+
 // ===== Consumer API ===== //
 
 /**
@@ -101,5 +149,31 @@ export type LifecycleCallbacks<TranslationValue extends Translation> = {
     translations: Record<Hash, TranslationValue>;
     /** @deprecated - use translations instead */
     value: Record<Hash, TranslationValue>;
+  }) => void;
+  onDictionaryCacheHit?: (params: {
+    locale: Locale;
+    id: DictionaryPath;
+    dictionaryEntry: DictionaryValue;
+    /** @deprecated - use dictionaryEntry instead */
+    value: DictionaryValue;
+  }) => void;
+  onDictionaryCacheMiss?: (params: {
+    locale: Locale;
+    id: DictionaryPath;
+    dictionaryEntry: DictionaryValue;
+    /** @deprecated - use dictionaryEntry instead */
+    value: DictionaryValue;
+  }) => void;
+  onLocalesDictionaryCacheHit?: (params: {
+    locale: Locale;
+    dictionary: Dictionary;
+    /** @deprecated - use dictionary instead */
+    value: Dictionary;
+  }) => void;
+  onLocalesDictionaryCacheMiss?: (params: {
+    locale: Locale;
+    dictionary: Dictionary;
+    /** @deprecated - use dictionary instead */
+    value: Dictionary;
   }) => void;
 };

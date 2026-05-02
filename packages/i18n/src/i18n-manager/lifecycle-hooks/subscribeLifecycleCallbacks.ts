@@ -18,6 +18,10 @@ export function subscribeLifecycleCallbacks<
     onLocalesCacheMiss,
     onTranslationsCacheHit,
     onTranslationsCacheMiss,
+    onLocalesDictionaryCacheHit,
+    onLocalesDictionaryCacheMiss,
+    onDictionaryCacheHit,
+    onDictionaryCacheMiss,
   }: LifecycleCallbacks<TranslationValue>,
   subscribe: EventEmitter<I18nEvents<TranslationValue>>['subscribe']
 ) {
@@ -50,6 +54,38 @@ export function subscribeLifecycleCallbacks<
       onTranslationsCacheMiss({
         ...event,
         value: event.translation,
+      });
+    });
+  }
+  if (onLocalesDictionaryCacheHit) {
+    subscribe('locales-dictionary-cache-hit', (event) => {
+      onLocalesDictionaryCacheHit({
+        ...event,
+        value: event.dictionary,
+      });
+    });
+  }
+  if (onLocalesDictionaryCacheMiss) {
+    subscribe('locales-dictionary-cache-miss', (event) => {
+      onLocalesDictionaryCacheMiss({
+        ...event,
+        value: event.dictionary,
+      });
+    });
+  }
+  if (onDictionaryCacheHit) {
+    subscribe('dictionary-cache-hit', (event) => {
+      onDictionaryCacheHit({
+        ...event,
+        value: event.dictionaryEntry,
+      });
+    });
+  }
+  if (onDictionaryCacheMiss) {
+    subscribe('dictionary-cache-miss', (event) => {
+      onDictionaryCacheMiss({
+        ...event,
+        value: event.dictionaryEntry,
       });
     });
   }
