@@ -1,3 +1,4 @@
+import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
 import type { CustomMapping } from 'generaltranslation/types';
 import { GTConfig } from '../config/types';
 import { TranslationsLoader } from './translations-manager/translations-loaders/types';
@@ -5,13 +6,7 @@ import { Translation } from './translations-manager/utils/types/translation-data
 import type { LifecycleCallbacks } from './lifecycle-hooks/types';
 import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
 
-export type RuntimeTranslateManyOptions = {
-  sourceLocale?: string;
-  modelProvider?: string;
-  [key: string]: unknown;
-};
-
-export type RuntimeTranslationConfig = {
+type RuntimeTranslationConfig = {
   timeout?: number;
   metadata?: RuntimeTranslateManyOptions;
 };

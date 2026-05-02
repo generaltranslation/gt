@@ -4,8 +4,6 @@ export type {
   TranslationsLoader,
   I18nManagerConfig,
   LifecycleCallbacks,
-  RuntimeTranslateManyOptions,
-  RuntimeTranslationConfig,
   ConditionStoreConfig,
   ConditionStore,
   WritableConditionStore,

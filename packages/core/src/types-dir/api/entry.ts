@@ -24,10 +24,14 @@ export type EntryMetadata = {
   actionType?: ActionType;
 };
 
-export type TranslateOptions = {
-  targetLocale: string;
+export type RuntimeTranslateManyOptions = {
   sourceLocale?: string;
   modelProvider?: string;
+  [key: string]: unknown;
+};
+
+export type TranslateOptions = RuntimeTranslateManyOptions & {
+  targetLocale: string;
 };
 
 /**

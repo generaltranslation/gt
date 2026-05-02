@@ -28,11 +28,14 @@ const DEFAULT_BATCH_CONFIG: Required<TranslationBatchConfig> = {
 };
 
 function getPositiveValue(value: number | undefined, defaultValue: number) {
-  return Number.isFinite(value) && value > 0 ? value : defaultValue;
+  if (value === undefined || !Number.isFinite(value) || value <= 0) {
+    return defaultValue;
+  }
+  return value;
 }
 
 function getPositiveInteger(value: number | undefined, defaultValue: number) {
-  if (!Number.isFinite(value)) return defaultValue;
+  if (value === undefined || !Number.isFinite(value)) return defaultValue;
   const integer = Math.trunc(value);
   return integer > 0 ? integer : defaultValue;
 }
