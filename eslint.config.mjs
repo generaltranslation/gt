@@ -67,6 +67,14 @@ export default [
       'no-empty': 'warn',
       'no-useless-escape': 'warn',
       'prettier/prettier': 'error',
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'ExportDefaultDeclaration',
+          message:
+            'Prefer named exports. Default exports make refactoring harder and hurt tree-shaking.',
+        },
+      ],
     },
   },
   {
