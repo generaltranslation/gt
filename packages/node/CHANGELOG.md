@@ -1,5 +1,13 @@
 # gt-node
 
+## 0.6.12
+
+### Patch Changes
+
+- Updated dependencies [[`fecaf93`](https://github.com/generaltranslation/gt/commit/fecaf93d1dcae65598b3f81b8eeabaeb35be13c6)]:
+  - generaltranslation@8.2.11
+  - gt-i18n@0.8.12
+
 ## 0.6.11
 
 ### Patch Changes

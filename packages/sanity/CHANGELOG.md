@@ -1,5 +1,12 @@
 # gt-sanity
 
+## 2.0.13
+
+### Patch Changes
+
+- Updated dependencies [[`fecaf93`](https://github.com/generaltranslation/gt/commit/fecaf93d1dcae65598b3f81b8eeabaeb35be13c6)]:
+  - generaltranslation@8.2.11
+
 ## 2.0.12
 
 ### Patch Changes

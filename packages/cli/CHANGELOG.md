@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.14.31
+
+### Patch Changes
+
+- Updated dependencies [[`fecaf93`](https://github.com/generaltranslation/gt/commit/fecaf93d1dcae65598b3f81b8eeabaeb35be13c6)]:
+  - generaltranslation@8.2.11
+  - @generaltranslation/python-extractor@0.2.17
+
 ## 2.14.30
 
 ### Patch Changes
