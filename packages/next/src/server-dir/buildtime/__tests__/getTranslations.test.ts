@@ -119,7 +119,6 @@ describe('getTranslations', () => {
   let mockI18NConfig: any;
   let consoleWarnSpy: any;
   let getTranslations: any;
-  let useTranslations: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -132,7 +131,6 @@ describe('getTranslations', () => {
     // Import the functions under test after clearing cache
     const module = await import('../getTranslations');
     getTranslations = module.getTranslations;
-    useTranslations = module.useTranslations;
 
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 

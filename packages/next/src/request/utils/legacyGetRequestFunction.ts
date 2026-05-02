@@ -8,7 +8,7 @@ import {
   createCustomGetRequestFunctionWarning,
   createSsgMissingCustomFunctionWarning,
   createSsrFunctionDuringSsgWarning,
-} from '../../errors';
+} from '../../errors/ssg';
 import getRegion from '../../internal/_getRegion';
 import getDomain from '../../internal/_getDomain';
 import getLocale from '../../internal/_getLocale';

@@ -1,27 +1,8 @@
-import {
-  MessageFormatElement,
-  PluralOrSelectOption,
-  SelectElement,
-  TYPE,
-} from '@formatjs/icu-messageformat-parser';
-
 import { VAR_IDENTIFIER } from './utils/constants';
 import { traverseIcu } from './utils/traverseIcu';
 import { GTUnindexedSelectElement } from './utils/types';
 import { isGTUnindexedSelectElement } from './utils/traverseHelpers';
 import { IcuMessage } from '../types-dir/jsx/content';
-
-// Used for temporarily tracking variable indices in the AST
-const VAR_FLAG_SUFFIX = '_flag';
-
-interface GTFlaggedSelectElement extends SelectElement {
-  type: TYPE.select;
-  value: `${typeof VAR_IDENTIFIER}${number}${typeof VAR_FLAG_SUFFIX}`;
-  options: {
-    other: PluralOrSelectOption;
-    [key: string]: PluralOrSelectOption;
-  };
-}
 
 type Location = {
   start: number;

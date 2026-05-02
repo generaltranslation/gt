@@ -6,7 +6,7 @@ import {
 import { getRootParam } from '@generaltranslation/next-internal';
 import { defaultExperimentalLocaleResolutionParam } from '../../utils/constants';
 import { experimentalLocaleResolutionError } from '../../errors/cacheComponents';
-import getI18NConfig from '../../config-dir/getI18NConfig';
+import { getI18NConfig } from '../../config-dir/getI18NConfig';
 
 /**
  * Given a function type, return the associated request function

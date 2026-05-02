@@ -58,8 +58,7 @@ function constructGTProp(
 
     // Branch
   } else if (type === BRANCH_COMPONENT) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-    const { children, branch, ...allBranches } = props;
+    const { children: _children, branch: _branch, ...allBranches } = props;
     // Filter out data-* attributes injected by build tools
     const branches = Object.fromEntries(
       Object.entries(allBranches).filter(

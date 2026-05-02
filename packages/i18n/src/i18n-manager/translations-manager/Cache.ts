@@ -58,7 +58,6 @@ abstract class Cache<
     init: Record<CacheKey, CacheValue>,
     lifecycle?: LifecycleParam<InputKey, CacheKey, CacheValue, OutputValue>
   ) {
-    // eslint-disable-next-line no-undef
     this.cache = structuredClone(init);
     this.onHit = lifecycle?.onHit;
     this.onMiss = lifecycle?.onMiss;

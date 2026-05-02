@@ -4,13 +4,13 @@ import {
   getDictionaryEntry as getEntry,
 } from 'gt-react/internal';
 import { customLoadDictionaryWarning } from '../errors/createErrors';
-import resolveDictionaryLoader from '../resolvers/resolveDictionaryLoader';
-import defaultWithGTConfigProps from '../config-dir/props/defaultWithGTConfigProps';
+import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
+import { defaultWithGTConfigProps } from '../config-dir/props/defaultWithGTConfigProps';
 import { getLocaleProperties } from 'generaltranslation';
 
 export let internalDictionary: Dictionary | undefined = undefined;
 
-export default async function getDictionary(): Promise<Dictionary | undefined> {
+export async function getDictionary(): Promise<Dictionary | undefined> {
   // Singleton pattern
   if (internalDictionary !== undefined) return internalDictionary;
 
@@ -25,7 +25,9 @@ export default async function getDictionary(): Promise<Dictionary | undefined> {
     } else if (dictionaryFileType === '.ts' || dictionaryFileType === '.js') {
       internalDictionary = require('gt-next/_dictionary').default;
     }
-  } catch {}
+  } catch {
+    // No bundled dictionary module was generated.
+  }
   if (internalDictionary) return internalDictionary;
 
   // Second, check for custom dictionary loader
@@ -38,7 +40,9 @@ export default async function getDictionary(): Promise<Dictionary | undefined> {
     // Check for [defaultLocale.json] file
     try {
       internalDictionary = await customLoadDictionary(defaultLocale);
-    } catch {}
+    } catch {
+      // Missing default-locale dictionaries fall through to language fallback.
+    }
 
     // Check the simplified locale name ('en' instead of 'en-US')
     const languageCode = getLocaleProperties(defaultLocale)?.languageCode;

@@ -1,6 +1,6 @@
 // getTranslationFunction.ts (refactored)
 
-import getI18NConfig from '../../config-dir/getI18NConfig';
+import { getI18NConfig } from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../server';
 import { hashSource } from 'generaltranslation/id';
 import {
@@ -24,7 +24,7 @@ import {
   indexVars,
 } from 'generaltranslation/internal';
 import { StringFormat } from 'generaltranslation/types';
-import use from '../../utils/use';
+import { use } from '../../utils/use';
 
 type RenderFn = (msg: string, locales: string[], fallback?: string) => string;
 

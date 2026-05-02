@@ -1,5 +1,5 @@
 import { getPluralBranch } from 'gt-react/internal';
-import getI18NConfig from '../config-dir/getI18NConfig';
+import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { useLocale } from '../request/getLocale';
 
 /**
@@ -26,7 +26,7 @@ import { useLocale } from '../request/getLocale';
  * @returns {React.JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
  * @throws {Error} If `n` is not provided or not a valid number.
  */
-function Plural({
+export function Plural({
   children,
   n,
   locales = [useLocale(), getI18NConfig().getDefaultLocale()],
@@ -47,5 +47,3 @@ function Plural({
 }
 /** @internal _gtt - The GT transformation for the component. */
 Plural._gtt = 'plural';
-
-export default Plural;

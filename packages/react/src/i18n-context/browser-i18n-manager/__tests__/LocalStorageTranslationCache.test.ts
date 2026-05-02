@@ -157,7 +157,7 @@ describe('LocalStorageTranslationCache', () => {
     it('background purge removes expired entries from localStorage', () => {
       const TTL = 1000;
       const PURGE_INTERVAL = 2000;
-      const cache = createCache({
+      createCache({
         ttl: TTL,
         purgeInterval: PURGE_INTERVAL,
         init: { hash1: 'Hola' },

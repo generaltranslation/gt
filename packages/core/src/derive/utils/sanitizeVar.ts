@@ -11,7 +11,7 @@
  */
 export function sanitizeVar(string: string): string {
   // First, double all single quotes (both ASCII and Unicode)
-  let result = string.replace(/['\']/g, "''");
+  let result = string.replace(/'/g, "''");
 
   // Find first and last positions of special characters
   const specialChars = /[{}<>]/;

@@ -1,11 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _translateMany from '../translateMany';
 import apiRequest from '../utils/apiRequest';
-import {
-  TranslationRequestConfig,
-  TranslationResult,
-  TranslateManyResult,
-} from '../../types';
+import { TranslationRequestConfig, TranslationResult } from '../../types';
 import { TranslateManyEntry, SharedMetadata } from '../../types-dir/api/entry';
 
 vi.mock('../utils/apiRequest');

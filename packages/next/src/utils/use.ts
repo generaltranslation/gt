@@ -38,4 +38,4 @@ import * as react from 'react';
 // not export `use` officially. Therefore, we have to use
 // something that is not statically analyzable. Once React
 // 19 is out, we can remove this in the next major version.
-export default react['use'.trim()] as typeof react.use;
+export const use = react['use'.trim()] as typeof react.use;

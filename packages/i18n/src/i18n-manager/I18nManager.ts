@@ -104,9 +104,14 @@ class I18nManager<
     // Create cache miss handlers
     const loadTranslations = createTranslationLoader<TranslationValue>(params);
     const loadDictionary = createDictionaryLoader(params);
+    const runtimeTranslationTimeout =
+      this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT;
+    const runtimeTranslationMetadata =
+      this.config.runtimeTranslation?.metadata ?? {};
     const createTranslateMany = createTranslateManyFactory(
       this.getGTClassClean(),
-      DEFAULT_TRANSLATION_TIMEOUT
+      runtimeTranslationTimeout,
+      runtimeTranslationMetadata
     );
 
     // Subscribe lifecycle callbacks
@@ -123,6 +128,8 @@ class I18nManager<
       loadTranslations,
       createTranslateMany,
       lifecycle,
+      ttl: this.config.cacheExpiryTime,
+      batchConfig: this.config.batchConfig,
     });
 
     // Setup dictionary cache
@@ -602,6 +609,9 @@ function standardizeConfig<TranslationValue extends Translation>(
     devApiKey: config.devApiKey,
     apiKey: config.apiKey,
     runtimeUrl: config.runtimeUrl,
+    cacheExpiryTime: config.cacheExpiryTime,
+    batchConfig: config.batchConfig,
+    runtimeTranslation: config.runtimeTranslation,
     _versionId: config._versionId,
     ...(gtServicesEnabled
       ? standardizeLocales(dedupedLocales)

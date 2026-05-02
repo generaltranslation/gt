@@ -1,11 +1,11 @@
 import { DictionaryEntry, mergeDictionaries } from 'gt-react/internal';
 import { isValidElement } from 'react';
-import getI18NConfig from '../config-dir/getI18NConfig';
+import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { getLocale } from '../request/getLocale';
-import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
+import { getDictionary, getDictionaryEntry } from '../dictionary/getDictionary';
 import { Dictionary, Translations } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';
-import ClientProviderWrapper from './ClientProviderWrapper';
+import { ClientProviderWrapper } from './ClientProviderWrapper';
 import { GTProviderProps } from '../utils/types';
 import { getRegion } from '../request/getRegion';
 
@@ -17,7 +17,7 @@ However:
 - A disparity between _locale and the server side locale will cause the window to reload in order to set _locale as the server side locale too
 */
 
-export default async function GTProvider({
+export async function GTProvider({
   children,
   id: prefixId,
   locale: _locale,

@@ -37,7 +37,7 @@ const NEXT_JS_SOURCE_MAP_PATH = '/__nextjs_source-map';
  * @param {PathConfig} [config.pathConfig] - Path configuration for locale routing
  * @returns {function} - A middleware function that processes the request and response.
  */
-export default function createNextMiddleware({
+export function createNextMiddleware({
   localeRouting = true,
   prefixDefaultLocale = false,
   ignoreSourceMaps = true,

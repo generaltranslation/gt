@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { I18nManager } from '../I18nManager';
+import { createTranslateManyFactory } from '../translations-manager/utils/createTranslateMany';
 import { hashMessage } from '../../utils/hashMessage';
 import { LookupOptions } from '../../translation-functions/types/options';
 
@@ -33,6 +34,10 @@ describe('I18nManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTranslateMany.mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   // ===== REGRESSION TESTS ===== //
@@ -192,13 +197,66 @@ describe('I18nManager', () => {
     expect(after).toBe(translatedString);
   });
 
+  it.each([
+    {
+      name: 'expires',
+      cacheExpiryTime: 100,
+      advanceBy: 101,
+      lookupAfter: undefined,
+      reloaded: 'Salut {name} !',
+      calls: 2,
+    },
+    {
+      name: 'keeps',
+      cacheExpiryTime: null,
+      advanceBy: 60_001,
+      lookupAfter: translatedString,
+      reloaded: translatedString,
+      calls: 1,
+    },
+  ])('$name locale caches according to cacheExpiryTime', async (testCase) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    const loadTranslations = vi
+      .fn()
+      .mockResolvedValueOnce({ [expectedHash]: translatedString })
+      .mockResolvedValueOnce({ [expectedHash]: 'Salut {name} !' });
+    const manager = createManager({
+      cacheExpiryTime: testCase.cacheExpiryTime,
+      loadTranslations,
+    });
+
+    await manager.loadTranslations('fr');
+    expect(manager.lookupTranslation('fr', message, lookupOptions)).toBe(
+      translatedString
+    );
+
+    vi.advanceTimersByTime(testCase.advanceBy);
+    expect(manager.lookupTranslation('fr', message, lookupOptions)).toBe(
+      testCase.lookupAfter
+    );
+
+    const translations = await manager.loadTranslations('fr');
+    expect(translations[expectedHash]).toBe(testCase.reloaded);
+    expect(loadTranslations).toHaveBeenCalledTimes(testCase.calls);
+  });
+
   it('lookupTranslationWithFallback() falls back to runtime translate on cache miss', async () => {
     const unknownMessage = 'Unknown message';
     const unknownOptions: LookupOptions = { $format: 'ICU' };
     const unknownHash = hashMessage(unknownMessage, unknownOptions);
 
     // loadTranslations returns translations that do NOT include unknownMessage
-    const manager = createManager();
+    const manager = createManager({
+      runtimeTranslation: {
+        timeout: 4321,
+        metadata: {
+          sourceLocale: 'en',
+          projectId: 'project-id',
+          publish: true,
+        },
+      },
+    });
 
     // Mock translateMany to return a translation for the unknown message
     mockTranslateMany.mockResolvedValue({
@@ -216,6 +274,15 @@ describe('I18nManager', () => {
 
     expect(result).toBe('Message inconnu');
     expect(mockTranslateMany).toHaveBeenCalled();
+    expect(createTranslateManyFactory).toHaveBeenCalledWith(
+      expect.any(Object),
+      4321,
+      {
+        sourceLocale: 'en',
+        projectId: 'project-id',
+        publish: true,
+      }
+    );
   });
 
   it('resolves custom aliases for locale metadata operations', () => {

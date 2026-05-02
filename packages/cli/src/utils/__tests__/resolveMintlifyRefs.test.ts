@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import path from 'node:path';
 import { resolveMintlifyRefs } from '../resolveMintlifyRefs';
 
@@ -238,7 +238,7 @@ describe('resolveMintlifyRefs', () => {
       navigation: { $ref: 'https://example.com/nav.json' },
     };
 
-    const { resolved } = resolveMintlifyRefs(json, '/project/docs.json');
+    resolveMintlifyRefs(json, '/project/docs.json');
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('non-relative')
@@ -268,7 +268,7 @@ describe('resolveMintlifyRefs', () => {
       navigation: { $ref: './bad.json' },
     };
 
-    const { resolved } = resolveMintlifyRefs(json, '/project/docs.json');
+    resolveMintlifyRefs(json, '/project/docs.json');
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('not valid JSON')

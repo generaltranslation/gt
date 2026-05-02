@@ -43,40 +43,40 @@ export async function retrieveCredentials(
   const spinner = logger.createSpinner('dots');
   spinner.start('Waiting for response from dashboard...');
 
-  const credentials = await new Promise<Credentials>(
-    async (resolve, reject) => {
-      const interval = setInterval(async () => {
-        // Ping the dashboard to see if the credentials are set
-        try {
-          const res = await apiRequest(
-            settings.baseUrl,
-            `/cli/wizard/${sessionId}`,
-            { method: 'GET' }
-          );
-          if (res.status === 200) {
-            const data = await res.json();
-            resolve(data as Credentials);
-            clearInterval(interval);
-            clearTimeout(timeout);
-            apiRequest(settings.baseUrl, `/cli/wizard/${sessionId}`, {
-              method: 'DELETE',
-            });
+  const credentials = await new Promise<Credentials>(async (resolve) => {
+    const interval = setInterval(async () => {
+      // Ping the dashboard to see if the credentials are set
+      try {
+        const res = await apiRequest(
+          settings.baseUrl,
+          `/cli/wizard/${sessionId}`,
+          {
+            method: 'GET',
           }
-        } catch (err) {
-          console.error(err);
-        }
-      }, 2000);
-      // timeout after 1 hour
-      const timeout = setTimeout(
-        () => {
-          spinner.stop('Timed out');
+        );
+        if (res.status === 200) {
+          const data = await res.json();
+          resolve(data as Credentials);
           clearInterval(interval);
-          logErrorAndExit('Timed out waiting for response from dashboard');
-        },
-        1000 * 60 * 60
-      );
-    }
-  );
+          clearTimeout(timeout);
+          apiRequest(settings.baseUrl, `/cli/wizard/${sessionId}`, {
+            method: 'DELETE',
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }, 2000);
+    // timeout after 1 hour
+    const timeout = setTimeout(
+      () => {
+        spinner.stop('Timed out');
+        clearInterval(interval);
+        logErrorAndExit('Timed out waiting for response from dashboard');
+      },
+      1000 * 60 * 60
+    );
+  });
   spinner.stop('Received credentials');
   return credentials;
 }

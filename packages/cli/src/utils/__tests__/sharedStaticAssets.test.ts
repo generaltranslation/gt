@@ -365,8 +365,8 @@ describe('processSharedStaticAssets', () => {
         '# API Documentation\n\n![Screenshot](./img/picture1.png)\n\nSome text.';
 
       vi.mocked(fg.sync).mockReturnValue([assetPath]);
-      vi.mocked(fs.promises.stat).mockImplementation((path) => {
-        if (path === mdxFile) {
+      vi.mocked(fs.promises.stat).mockImplementation((filePath) => {
+        if (filePath === mdxFile) {
           return Promise.resolve({} as any); // MDX file exists
         }
         return Promise.reject(new Error('Not found')); // Everything else doesn't exist
@@ -399,7 +399,7 @@ describe('processSharedStaticAssets', () => {
       const mdxFile = '/project/docs/api/index.mdx';
 
       vi.mocked(fg.sync).mockReturnValue([assetPath]);
-      vi.mocked(fs.promises.stat).mockImplementation((path) => {
+      vi.mocked(fs.promises.stat).mockImplementation((_path) => {
         // All files don't exist
         return Promise.reject(new Error('File not found'));
       });

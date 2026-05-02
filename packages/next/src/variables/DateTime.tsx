@@ -1,4 +1,4 @@
-import getI18NConfig from '../config-dir/getI18NConfig';
+import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { useLocale } from '../request/getLocale';
 import React from 'react';
 
@@ -18,7 +18,7 @@ import React from 'react';
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {JSX.Element} The formatted date or time component.
  */
-function DateTime({
+export function DateTime({
   children,
   locales,
   options = {},
@@ -46,5 +46,3 @@ function DateTime({
 }
 /** @internal _gtt - The GT transformation for the component. */
 DateTime._gtt = 'variable-datetime';
-
-export default DateTime;

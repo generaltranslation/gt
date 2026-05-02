@@ -21,7 +21,7 @@ export function matchSetupPyDependency(
 
     // Find the opening bracket after the keyword
     const afterKeyword = content.slice(keywordIndex + keyword.length);
-    const bracketMatch = afterKeyword.match(/\s*=\s*[\[{]/);
+    const bracketMatch = afterKeyword.match(/\s*=\s*(?:\[|{)/);
     if (!bracketMatch) continue;
 
     const openBracket =

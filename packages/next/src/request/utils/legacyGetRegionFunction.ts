@@ -1,6 +1,6 @@
 import { RequestFunctionReturnType } from '../types';
 import { legacyGetRequestFunction } from './legacyGetRequestFunction';
-import isSSR from './isSSR';
+import { isSSR } from './isSSR';
 
 let getRegionFunction: () => Promise<RequestFunctionReturnType>;
 let getStaticRegionFunction: () => Promise<RequestFunctionReturnType>;

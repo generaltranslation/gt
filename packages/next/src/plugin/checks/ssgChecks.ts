@@ -3,7 +3,8 @@ import {
   deprecatedExperimentalEnableSSGWarning,
   ssgMissingGetStaticLocaleFunctionError,
 } from '../../errors/ssg';
-import withGTConfigProps, {
+import {
+  type withGTConfigProps,
   DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY,
 } from '../../config-dir/props/withGTConfigProps';
 import { RequestFunctionPaths } from '../../config-dir/utils/resolveRequestFunctionPaths';

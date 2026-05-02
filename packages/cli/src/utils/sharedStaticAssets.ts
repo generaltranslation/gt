@@ -49,7 +49,9 @@ async function moveFile(src: string, dest: string) {
       await fs.promises.writeFile(dest, data);
       try {
         await fs.promises.unlink(src);
-      } catch {}
+      } catch {
+        // Ignore cleanup errors for source files that were already moved.
+      }
     } else if (err && err.code === 'ENOENT') {
       // already moved or missing; ignore
       return;
@@ -118,7 +120,7 @@ function rewriteMdxContent(
       .use(remarkFrontmatter, ['yaml', 'toml'])
       .use(remarkMdx);
     ast = processor.runSync(processor.parse(content)) as Root;
-  } catch (e) {
+  } catch {
     return { content, changed: false };
   }
 
@@ -201,7 +203,7 @@ function rewriteMdxContent(
     if (out.endsWith('\n') && !content.endsWith('\n')) out = out.slice(0, -1);
     if (content.startsWith('\n') && !out.startsWith('\n')) out = '\n' + out;
     return { content: out, changed };
-  } catch (e) {
+  } catch {
     return { content, changed: false };
   }
 }
@@ -377,11 +379,15 @@ export default async function processSharedStaticAssets(settings: Settings) {
       const st = await fs.promises.stat(destAbs).catch(() => null);
       if (st && st.isFile()) {
         // Remove source if it still exists
-        await fs.promises.unlink(abs).catch(() => {});
+        await fs.promises.unlink(abs).catch(() => {
+          // Ignore missing source files.
+        });
         await removeEmptyDirsUpwards(path.dirname(abs), cwd);
         continue;
       }
-    } catch {}
+    } catch {
+      // If stat/removal fails, fall through to the normal move path.
+    }
     await moveFile(abs, destAbs);
     await removeEmptyDirsUpwards(path.dirname(abs), cwd);
   }

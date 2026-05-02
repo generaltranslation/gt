@@ -10,7 +10,6 @@ import {
   shouldResolveRefs,
 } from '../../utils/resolveMintlifyRefs.js';
 import { storeRefMap } from '../../state/mintlifyRefMap.js';
-import path from 'node:path';
 import parseYaml from '../yaml/parseYaml.js';
 import { validateYamlSchema } from '../yaml/utils.js';
 import { flattenJson } from '../json/flattenJson.js';
@@ -94,7 +93,7 @@ export async function aggregateFiles(
         if (!skipValidation?.json) {
           try {
             JSON.parse(content);
-          } catch (e: any) {
+          } catch {
             logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
             recordWarning(
               'skipped_file',
@@ -204,7 +203,7 @@ export async function aggregateFiles(
         if (!skipValidation?.yaml) {
           try {
             YAML.parse(content);
-          } catch (e: any) {
+          } catch {
             logger.warn(`Skipping ${relativePath}: YAML file is not parsable`);
             recordWarning(
               'skipped_file',

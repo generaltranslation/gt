@@ -7,11 +7,11 @@ import { GT, standardizeLocale } from 'generaltranslation';
 import { useRouter } from 'next/navigation';
 
 function extractLocale(pathname: string, gt: GT): string | null {
-  const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
+  const matches = pathname.match(/^\/([^/]+)(?:\/|$)/);
   return matches ? gt.resolveAliasLocale(matches[1]) : null;
 }
 
-export default function ClientProviderWrapper(
+export function ClientProviderWrapper(
   props: Omit<ClientProviderProps, 'reloadServer'> & {
     localeRoutingEnabledCookieName: string;
     referrerLocaleCookieName: string;

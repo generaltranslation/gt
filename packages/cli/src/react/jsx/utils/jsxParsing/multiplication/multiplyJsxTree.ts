@@ -85,7 +85,6 @@ function multiplyBranches(
       } else {
         // Replace the multiplication node with the sub branch
         parent[key] = subBranch;
-        // eslint-disable-next-line no-undef
         newBranch = structuredClone(branch);
         // Add the new branch to the list
         branchQueue.push(newBranch);

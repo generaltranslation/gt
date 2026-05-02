@@ -1,10 +1,11 @@
 import path from 'path';
 import fs from 'fs';
 import { NextConfig } from 'next';
-import defaultWithGTConfigProps, {
+import {
+  defaultWithGTConfigProps,
   defaultCacheExpiryTime,
 } from './config-dir/props/defaultWithGTConfigProps';
-import withGTConfigProps from './config-dir/props/withGTConfigProps';
+import { type withGTConfigProps } from './config-dir/props/withGTConfigProps';
 import {
   APIKeyMissingWarn,
   conflictingConfigurationBuildError,
@@ -19,7 +20,7 @@ import {
   standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
-} from './errors';
+} from './errors/createErrors';
 import {
   getLocaleProperties,
   isValidLocale,
@@ -524,8 +525,7 @@ export function withGTConfig(
   // ---------- STORE CONFIGURATIONS ---------- //
   const I18NConfigParams = JSON.stringify(mergedConfig);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars , no-unused-vars
-  const { type, ...compilerOptions } =
+  const { type: _type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
 
   // Read autoderive from parsingFlags (single source of truth shared with CLI)

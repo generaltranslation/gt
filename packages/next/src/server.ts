@@ -1,14 +1,14 @@
 import 'server-only';
 
-import T from './server-dir/buildtime/T';
-import tx from './server-dir/runtime/tx';
+import { T } from './server-dir/buildtime/T';
+import { tx } from './server-dir/runtime/tx';
 import { getLocale } from './request/getLocale';
 import { registerLocale } from './request/registerLocale';
 import { getRegion } from './request/getRegion';
-import getI18NConfig from './config-dir/getI18NConfig';
+import { getI18NConfig } from './config-dir/getI18NConfig';
 import { getTranslations } from './server-dir/buildtime/getTranslations';
-import GTProvider from './provider/GTProvider';
-import Tx from './server-dir/runtime/_Tx';
+import { GTProvider } from './provider/GTProvider';
+import { Tx } from './server-dir/runtime/_Tx';
 import { LocaleProperties } from 'generaltranslation/types';
 import { getLocaleDirection } from './request/getLocaleDirection';
 import {

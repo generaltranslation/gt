@@ -43,7 +43,7 @@ export const BUN: PackageManager = {
     ['bun.lockb', 'bun.lock'].some((lockFile) => {
       try {
         return fs.existsSync(path.join(cwd, lockFile));
-      } catch (e) {
+      } catch {
         return false;
       }
     }),
@@ -78,7 +78,7 @@ export const DENO: PackageManager = {
   detect: (cwd: string) => {
     try {
       return fs.existsSync(path.join(cwd, 'deno.lock'));
-    } catch (e) {
+    } catch {
       return false;
     }
   },
@@ -115,7 +115,7 @@ export const YARN_V1: PackageManager = {
         .readFileSync(path.join(cwd, 'yarn.lock'), 'utf-8')
         .slice(0, 500)
         .includes('yarn lockfile v1');
-    } catch (e) {
+    } catch {
       return false;
     }
   },
@@ -153,7 +153,7 @@ export const YARN_V2: PackageManager = {
         .readFileSync(path.join(cwd, 'yarn.lock'), 'utf-8')
         .slice(0, 500)
         .includes('__metadata');
-    } catch (e) {
+    } catch {
       return false;
     }
   },
@@ -187,7 +187,7 @@ export const PNPM: PackageManager = {
   detect: (cwd: string) => {
     try {
       return fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'));
-    } catch (e) {
+    } catch {
       return false;
     }
   },
@@ -225,7 +225,7 @@ export const NPM: PackageManager = {
   detect: (cwd: string) => {
     try {
       return fs.existsSync(path.join(cwd, 'package-lock.json'));
-    } catch (e) {
+    } catch {
       return false;
     }
   },

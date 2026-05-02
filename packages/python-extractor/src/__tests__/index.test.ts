@@ -210,7 +210,7 @@ t("Hello, world!")`;
 
   describe('derive', () => {
     it('expands simple ternary into 2 variants', async () => {
-      const { results, errors } = await extractFromPythonSource(
+      const { results } = await extractFromPythonSource(
         fixture('derive_ternary.py'),
         'test.py'
       );
@@ -490,7 +490,7 @@ t(f"The {derive(get_gender(variant))}")`;
 
   describe('declare_static (backwards compatibility)', () => {
     it('expands simple ternary into 2 variants', async () => {
-      const { results, errors } = await extractFromPythonSource(
+      const { results } = await extractFromPythonSource(
         fixture('declare_static_ternary.py'),
         'test.py'
       );
@@ -506,7 +506,7 @@ t(f"The {derive(get_gender(variant))}")`;
     });
 
     it('expands nested ternary into 3 variants', async () => {
-      const { results, errors } = await extractFromPythonSource(
+      const { results } = await extractFromPythonSource(
         fixture('declare_static_ternary.py'),
         'test.py'
       );
@@ -522,7 +522,7 @@ t(f"The {derive(get_gender(variant))}")`;
     });
 
     it('handles plain string in declare_static', async () => {
-      const { results, errors } = await extractFromPythonSource(
+      const { results } = await extractFromPythonSource(
         fixture('declare_static_ternary.py'),
         'test.py'
       );
@@ -547,11 +547,6 @@ t(f"The {derive(get_gender(variant))}")`;
     });
 
     it('resolves cross-file function in declare_static', async () => {
-      const helperPath = path.join(
-        __dirname,
-        'fixtures',
-        'declare_static_helper.py'
-      );
       const code = `from gt_flask import t, declare_static
 from declare_static_helper import get_time
 t(f"It is {declare_static(get_time())}!")`;
@@ -567,7 +562,7 @@ t(f"It is {declare_static(get_time())}!")`;
     });
 
     it('handles concatenation with declare_static', async () => {
-      const { results, errors } = await extractFromPythonSource(
+      const { results } = await extractFromPythonSource(
         fixture('declare_static_concat.py'),
         'test.py'
       );

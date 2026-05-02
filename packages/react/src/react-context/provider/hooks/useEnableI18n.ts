@@ -118,7 +118,6 @@ function getCookieEnableI18nValue(
   enableI18nCookieName: string
 ): boolean | null {
   if (typeof document === 'undefined') return null;
-  // eslint-disable-next-line no-undef -- document is defined in browser
   const rawCookieValue = document.cookie
     .split('; ')
     .find((row) => row.startsWith(`${enableI18nCookieName}=`))
@@ -138,6 +137,5 @@ function persistEnableI18nFlagToCookie({
   enableI18nCookieName: string;
 }): void {
   if (typeof document === 'undefined') return;
-  // eslint-disable-next-line no-undef -- document is defined in browser
   document.cookie = `${enableI18nCookieName}=${enableI18n ? 'true' : 'false'};path=/;`;
 }

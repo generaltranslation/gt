@@ -27,7 +27,7 @@ export function flattenJson(
       results.forEach((result: { pointer: string; value: any }) => {
         extractedJson[result.pointer] = result.value;
       });
-    } catch (error) {
+    } catch {
       logger.error(`Error with JSONPath pattern: ${jsonPath}`);
     }
   }

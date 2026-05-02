@@ -1,6 +1,6 @@
 import { cookies, headers } from 'next/headers';
-import getI18NConfig from '../../config-dir/getI18NConfig';
-import { noLocalesCouldBeDeterminedWarning } from '../../errors';
+import { getI18NConfig } from '../../config-dir/getI18NConfig';
+import { noLocalesCouldBeDeterminedWarning } from '../../errors/ssg';
 import { RequestFunctionReturnType } from '../types';
 
 /**
