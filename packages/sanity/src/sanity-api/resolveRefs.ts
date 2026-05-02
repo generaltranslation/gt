@@ -6,16 +6,6 @@ interface Reference {
   _ref: string;
 }
 
-interface TranslationMetadata {
-  _id: string;
-  _type: 'translation.metadata';
-  translations: {
-    _key: string;
-    language: string;
-    value: Reference;
-  }[];
-}
-
 /**
  * Function that:
  * 1. Finds all references in the document

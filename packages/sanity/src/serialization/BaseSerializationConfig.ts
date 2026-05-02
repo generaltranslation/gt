@@ -13,7 +13,7 @@ import {
 import { htmlToBlocks } from '@portabletext/block-tools';
 import { blockContentType } from './deserialize/helpers';
 import { PortableTextObject, PortableTextTextBlock, TypedObject } from 'sanity';
-import { attachGTData, detachGTData } from './data';
+import { detachGTData } from './data';
 
 export const defaultStopTypes = [
   'reference',

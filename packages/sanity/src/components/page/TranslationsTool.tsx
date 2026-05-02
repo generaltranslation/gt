@@ -8,7 +8,6 @@ import {
   Stack,
   Switch,
   Text,
-  Spinner,
   Tooltip,
 } from '@sanity/ui';
 import {

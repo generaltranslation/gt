@@ -587,7 +587,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         secrets
       );
 
-      setTranslationStatuses((prevStatuses) => {
+      setTranslationStatuses(() => {
         const newStatuses = new Map();
 
         for (const doc of documents) {
