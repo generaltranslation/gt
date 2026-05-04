@@ -104,26 +104,36 @@ export async function tx(
     ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
     dataFormat: format || 'ICU',
   });
+  const dataFormat = format || 'ICU';
+  const source = dataFormat === 'ICU' ? indexVars(message) : message;
+  const lookupOptions = {
+    ...variables,
+    $_hash: hash,
+    $format: dataFormat,
+    ...(context && { $context: context }),
+    ...(maxChars != null && { $maxChars: Math.abs(maxChars) }),
+  };
 
   // ----- CHECK LOCAL CACHE ----- //
 
-  const recentTranslations = I18NConfig.getRecentTranslations(locale);
+  const translationEntry = I18NConfig.lookupTranslation({
+    source,
+    targetLocale: locale,
+    options: lookupOptions,
+  });
 
-  if (recentTranslations?.[hash]) {
-    return renderContent(recentTranslations[hash] as string, [
-      locale,
-      defaultLocale,
-    ]);
+  if (translationEntry) {
+    return renderContent(translationEntry as string, [locale, defaultLocale]);
   }
 
   // ------ CREATE NEW TRANSLATION ---- //
 
   // New translation required
   try {
-    const target = (await I18NConfig.translateIcu({
-      source: indexVars(message),
+    const target = (await I18NConfig.translate({
+      source,
       targetLocale: locale,
-      options: { ...variables, hash, context, maxChars },
+      options: lookupOptions,
     })) as string;
     return renderContent(target, [locale, defaultLocale]);
   } catch (error) {

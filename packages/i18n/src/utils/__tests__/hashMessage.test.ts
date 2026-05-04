@@ -30,4 +30,22 @@ describe('hashMessage', () => {
     // So the hashes should be different
     expect(icuHash).not.toBe(stringHash);
   });
+
+  it('uses an explicit hash when provided', () => {
+    expect(
+      hashMessage('Hello {name}!', {
+        $format: 'ICU',
+        $_hash: 'precomputed-hash',
+      })
+    ).toBe('precomputed-hash');
+  });
+
+  it('uses an explicit empty hash when provided', () => {
+    expect(
+      hashMessage('Hello {name}!', {
+        $format: 'ICU',
+        $_hash: '',
+      })
+    ).toBe('');
+  });
 });
