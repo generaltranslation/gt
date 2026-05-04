@@ -217,14 +217,14 @@ class I18nManager<
   ): Promise<Record<Hash, TranslationValue>> {
     try {
       // Validate
-      const resolvedLocale = this.resolveLocale(locale);
-      if (!this.requiresTranslation(resolvedLocale)) {
+      const translationLocale = this.resolveTranslationCacheLocale(locale);
+      if (!translationLocale) {
         return {};
       }
 
       // Get the locale cache
-      let txCache = this.localesCache.get(resolvedLocale);
-      if (!txCache) txCache = await this.localesCache.miss(resolvedLocale);
+      let txCache = this.localesCache.get(translationLocale);
+      if (!txCache) txCache = await this.localesCache.miss(translationLocale);
 
       // Get the translations
       const translations = txCache.getInternalCache();
@@ -245,16 +245,16 @@ class I18nManager<
   ): T | undefined {
     try {
       // Validate
-      const { resolvedLocale, options: lookupOptions } =
+      const { translationLocale, options: lookupOptions } =
         this.resolveLookupParams(locale, options);
 
       // Early return if in default locale
-      if (!this.requiresTranslation(resolvedLocale)) {
+      if (!translationLocale) {
         return message;
       }
 
       // Get the locale cache
-      const txCache = this.localesCache.get(resolvedLocale);
+      const txCache = this.localesCache.get(translationLocale);
       if (!txCache) return undefined;
 
       // Get the translation
@@ -278,17 +278,17 @@ class I18nManager<
   ): Promise<T | undefined> {
     try {
       // Validate
-      const { resolvedLocale, options: lookupOptions } =
+      const { translationLocale, options: lookupOptions } =
         this.resolveLookupParams(locale, options);
 
       // Early return if in default locale
-      if (!this.requiresTranslation(resolvedLocale)) {
+      if (!translationLocale) {
         return message;
       }
 
       // Get the locale cache
-      let txCache = this.localesCache.get(resolvedLocale);
-      if (!txCache) txCache = await this.localesCache.miss(resolvedLocale);
+      let txCache = this.localesCache.get(translationLocale);
+      if (!txCache) txCache = await this.localesCache.miss(translationLocale);
 
       // Get the translation (falling back to runtime translate)
       let translation = txCache.get({ message, options: lookupOptions });
@@ -319,28 +319,30 @@ class I18nManager<
   ): Promise<TranslationResolver<TranslationValue>> {
     try {
       // Validate
-      const resolvedLocale = this.resolveLocale(locale);
+      const translationLocale = this.resolveTranslationCacheLocale(locale);
 
       // Early return if i18n is disabled or default locale
-      if (!this.requiresTranslation(resolvedLocale)) {
+      if (!translationLocale) {
         return (message) => message;
       }
 
       // Invariant: all prefetchEntries must be the same locale
       const resolvedPrefetchEntries = resolvePrefetchEntriesByLocale(
         prefetchEntries,
-        resolvedLocale,
-        (entryLocale) => this.resolveLocale(entryLocale)
+        translationLocale,
+        (entryLocale) =>
+          this.resolveTranslationCacheLocale(entryLocale) ??
+          this.resolveLocale(entryLocale)
       );
       if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
         logger.warn(
-          `I18nManager: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${resolvedLocale}`
+          `I18nManager: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${translationLocale}`
         );
       }
 
       // Get Locale Cache
-      let txCache = this.localesCache.get(resolvedLocale);
-      if (!txCache) txCache = await this.localesCache.miss(resolvedLocale);
+      let txCache = this.localesCache.get(translationLocale);
+      if (!txCache) txCache = await this.localesCache.miss(translationLocale);
       if (!txCache) return () => undefined;
 
       // Prefetch any entries during async block
@@ -468,24 +470,49 @@ class I18nManager<
     return resolvedLocale;
   }
 
-  private resolveLookupParams(locale: string, options: LookupOptions) {
+  /**
+   * Resolve the locale key used to load/read translation caches.
+   * Returns undefined when the requested locale can use source content.
+   */
+  private resolveTranslationCacheLocale(locale: string) {
     const resolvedLocale = this.resolveLocale(locale);
+    if (this.requiresTranslation(resolvedLocale)) {
+      return resolvedLocale;
+    }
+
+    const aliasLocale = this.localeConfig.resolveAliasLocale(
+      standardizeLocale(locale)
+    );
+    if (this.requiresTranslation(aliasLocale)) {
+      return aliasLocale;
+    }
+
+    return undefined;
+  }
+
+  private resolveLookupParams(locale: string, options: LookupOptions) {
+    const translationLocale = this.resolveTranslationCacheLocale(locale);
     return {
-      resolvedLocale,
-      options: this.resolveLookupOptions(options, resolvedLocale),
+      translationLocale,
+      options: translationLocale
+        ? this.resolveLookupOptions(options, translationLocale)
+        : options,
     };
   }
 
   private resolveLookupOptions(
     options: LookupOptions = {} as LookupOptions,
-    resolvedLocale?: string
+    translationLocale?: string
   ) {
     if (!options.$locale) {
       return options;
     }
     return {
       ...options,
-      $locale: resolvedLocale ?? this.resolveLocale(options.$locale),
+      $locale:
+        translationLocale ??
+        this.resolveTranslationCacheLocale(options.$locale) ??
+        this.resolveLocale(options.$locale),
     };
   }
 
@@ -498,7 +525,15 @@ class I18nManager<
     return new GT({
       sourceLocale: this.config.defaultLocale,
       targetLocale: locale,
-      locales: this.config.locales,
+      // GT validates approved locales before constructing its LocaleConfig, so
+      // pass canonical locales here while preserving alias target locales.
+      locales: Array.from(
+        new Set(
+          this.config.locales.map((locale) =>
+            this.localeConfig.resolveCanonicalLocale(locale)
+          )
+        )
+      ),
       customMapping: this.config.customMapping,
       projectId: this.config.projectId,
       baseUrl: this.config.runtimeUrl || undefined,
