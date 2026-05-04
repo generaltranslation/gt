@@ -286,11 +286,12 @@ export class TranslationsCache<
         key: cacheKey,
         source: key.message,
         metadata: {
+          hash: cacheKey,
           ...(options?.$context && { context: options.$context }),
           ...(options?.$id && { id: options.$id }),
           ...('$maxChars' in options &&
             options.$maxChars != null && {
-              $maxChars: Math.abs(options.$maxChars),
+              maxChars: Math.abs(options.$maxChars),
             }),
           dataFormat: options.$format,
         },
