@@ -1,17 +1,19 @@
+import type { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { validateChildrenPropertyFromObjectExpression } from '../../../utils/validation/validateChildrenFromObjectExpression';
 import { createErrorLocation } from '../../../utils/errors';
 
 /**
- * Given (t.ArgumentPlaceholder | t.SpreadElement | t.Expression)[] extracts children and validates
+ * Given a CallExpression path, extracts children and validates them.
  */
 export function validateChildrenFromArgs(
-  args: (t.ArgumentPlaceholder | t.SpreadElement | t.Expression)[]
+  callExprPath: NodePath<t.CallExpression>
 ): {
   errors: string[];
-  value?: t.Expression;
+  value?: NodePath<t.Expression>;
 } {
   const errors: string[] = [];
+  const args = callExprPath.node.arguments;
 
   if (args.length < 2) {
     errors.push(
@@ -28,5 +30,17 @@ export function validateChildrenFromArgs(
     return { errors };
   }
 
-  return validateChildrenPropertyFromObjectExpression(args[1]);
+  const argsPath = callExprPath.get('arguments')[1];
+  if (!argsPath?.isObjectExpression()) {
+    return {
+      errors: [
+        `Failed to construct JsxElement! Parameter field must be an object expression` +
+          createErrorLocation(args[1]),
+      ],
+    };
+  }
+
+  return validateChildrenPropertyFromObjectExpression(
+    argsPath as NodePath<t.ObjectExpression>
+  );
 }
