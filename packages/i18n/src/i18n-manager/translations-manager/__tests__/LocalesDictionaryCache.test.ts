@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
+  DictionaryLoader,
   LocalesDictionaryCache,
-  SafeDictionaryLoader,
 } from '../LocalesDictionaryCache';
 import { DEFAULT_CACHE_EXPIRY_TIME } from '../utils/constants';
 import { Dictionary } from '../DictionaryCache';
@@ -31,7 +31,7 @@ describe('LocalesDictionaryCache', () => {
     return new LocalesDictionaryCache({
       defaultLocale: 'en',
       dictionary: enDictionary,
-      loadDictionary: mockLoadDictionary as SafeDictionaryLoader,
+      loadDictionary: mockLoadDictionary as DictionaryLoader,
       lifecycle: {},
       ...(opts?.ttl !== undefined ? { ttl: opts.ttl } : {}),
     });

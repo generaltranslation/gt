@@ -73,7 +73,7 @@ export class DictionaryCache extends Cache<
       return undefined;
     }
 
-    if (typeof value === 'string' && this.onHit) {
+    if (this.onHit) {
       this.onHit({
         inputKey: key,
         cacheKey: this.genKey(key),

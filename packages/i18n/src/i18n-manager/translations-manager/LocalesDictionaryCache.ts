@@ -32,13 +32,6 @@ export type DictionaryCacheEntry = {
 export type DictionaryLoader = (locale: string) => Promise<Dictionary>;
 
 /**
- * Safe dictionary loader function type
- * @returns A promise that resolves to a dictionary
- * TODO: rename this because we are no longer doing try/catch around the dictionary loader
- */
-export type SafeDictionaryLoader = (locale: string) => Promise<Dictionary>;
-
-/**
  * Cache for looking up dictionaries by locale
  */
 export class LocalesDictionaryCache extends Cache<
@@ -50,7 +43,7 @@ export class LocalesDictionaryCache extends Cache<
   /**
    * Dictionary loader function
    */
-  private _dictionaryLoader: SafeDictionaryLoader;
+  private _dictionaryLoader: DictionaryLoader;
 
   /**
    * Time to live for cache entries
@@ -68,7 +61,7 @@ export class LocalesDictionaryCache extends Cache<
    * @param {Object} params - The parameters for the cache
    * @param {Record<string, DictionaryCacheEntry>} params.init - The initial cache
    * @param {number | null} params.ttl - The time to live for cache entries
-   * @param {SafeDictionaryLoader} params.loadDictionary - The dictionary loader function
+   * @param {DictionaryLoader} params.loadDictionary - The dictionary loader function
    */
   constructor({
     init = {},
@@ -87,7 +80,7 @@ export class LocalesDictionaryCache extends Cache<
     ttl?: number | null;
     defaultLocale: Locale;
     dictionary?: Dictionary;
-    loadDictionary: SafeDictionaryLoader;
+    loadDictionary: DictionaryLoader;
     lifecycle: LocalesDictionaryCacheLifecycleCallbacks;
   }) {
     super(init, { onHit, onMiss });
