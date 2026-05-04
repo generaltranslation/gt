@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.2.11
+
+### Patch Changes
+
+- [#1308](https://github.com/generaltranslation/gt/pull/1308) [`fecaf93`](https://github.com/generaltranslation/gt/commit/fecaf93d1dcae65598b3f81b8eeabaeb35be13c6) Thanks [@bgub](https://github.com/bgub)! - Add shared cache expiry, batching, and runtime translation configuration to I18nManager.
+
 ## 8.2.10
 
 ### Patch Changes

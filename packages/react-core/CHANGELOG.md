@@ -1,5 +1,16 @@
 # @generaltranslation/react-core
 
+## 1.8.13
+
+### Patch Changes
+
+- [#1312](https://github.com/generaltranslation/gt/pull/1312) [`d9f3646`](https://github.com/generaltranslation/gt/commit/d9f3646aee45dc85cb3e28952bbf2c61b2b25050) Thanks [@bgub](https://github.com/bgub)! - Fix locale selector sorting so it does not mutate provider locale state.
+
+- Updated dependencies [[`fecaf93`](https://github.com/generaltranslation/gt/commit/fecaf93d1dcae65598b3f81b8eeabaeb35be13c6)]:
+  - generaltranslation@8.2.11
+  - gt-i18n@0.8.12
+  - @generaltranslation/supported-locales@2.0.69
+
 ## 1.8.12
 
 ### Patch Changes
