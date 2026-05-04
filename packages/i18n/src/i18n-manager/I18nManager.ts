@@ -119,13 +119,17 @@ class I18nManager<
       this.subscribe(...args)
     );
 
+    const lifecycle = createLifecycleCallbacks<TranslationValue>((...args) =>
+      this.emit(...args)
+    );
+
     // Setup translations cache
     this.localesCache = new LocalesCache<TranslationValue>({
       loadTranslations,
       createTranslateMany,
+      lifecycle,
       ttl: this.config.cacheExpiryTime,
       batchConfig: this.config.batchConfig,
-      lifecycle: createLifecycleCallbacks((...args) => this.emit(...args)),
     });
 
     // Setup dictionary cache
@@ -134,7 +138,7 @@ class I18nManager<
       dictionary: params.dictionary,
       loadDictionary,
       ttl: this.config.cacheExpiryTime,
-      lifecycle: {},
+      lifecycle,
     });
   }
 
