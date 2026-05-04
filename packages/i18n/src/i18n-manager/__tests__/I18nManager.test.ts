@@ -552,4 +552,42 @@ describe('I18nManager', () => {
     expect(manager.requiresDialectTranslation('fr')).toBe(false);
     expect(() => manager.getGTClass('fr')).not.toThrow();
   });
+
+  it('emits dictionary cache lifecycle events', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+      }),
+    });
+    const localesDictionaryMiss = vi.fn();
+    const localesDictionaryHit = vi.fn();
+    const dictionaryCacheHit = vi.fn();
+    const dictionaryCacheMiss = vi.fn();
+
+    manager.subscribe('locales-dictionary-cache-miss', localesDictionaryMiss);
+    manager.subscribe('locales-dictionary-cache-hit', localesDictionaryHit);
+    manager.subscribe('dictionary-cache-hit', dictionaryCacheHit);
+    manager.subscribe('dictionary-cache-miss', dictionaryCacheMiss);
+
+    await manager.loadDictionary('fr');
+    await manager.loadDictionary('fr');
+
+    expect(localesDictionaryMiss).toHaveBeenCalledWith({
+      locale: 'fr',
+      dictionary: {
+        greeting: 'Bonjour',
+      },
+    });
+    expect(localesDictionaryHit).toHaveBeenCalledWith({
+      locale: 'fr',
+      dictionary: {
+        greeting: 'Bonjour',
+      },
+    });
+    expect(dictionaryCacheHit).not.toHaveBeenCalled();
+    expect(dictionaryCacheMiss).not.toHaveBeenCalled();
+  });
 });
