@@ -1,5 +1,14 @@
 # @generaltranslation/compiler
 
+## 1.3.18
+
+### Patch Changes
+
+- [#1313](https://github.com/generaltranslation/gt/pull/1313) [`b6098f8`](https://github.com/generaltranslation/gt/commit/b6098f87e2355e7d862d201c24b25467fb569015) Thanks [@bgub](https://github.com/bgub)! - Do not treat JavaScript labels as shadowing GT translation imports during string extraction.
+
+- Updated dependencies [[`fecaf93`](https://github.com/generaltranslation/gt/commit/fecaf93d1dcae65598b3f81b8eeabaeb35be13c6)]:
+  - generaltranslation@8.2.11
+
 ## 1.3.17
 
 ### Patch Changes
