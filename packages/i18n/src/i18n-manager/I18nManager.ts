@@ -133,6 +133,7 @@ class I18nManager<
       defaultLocale: this.config.defaultLocale,
       dictionary: params.dictionary,
       loadDictionary,
+      ttl: this.config.cacheExpiryTime,
       lifecycle: {},
     });
   }
