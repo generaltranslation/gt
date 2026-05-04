@@ -79,6 +79,109 @@ describe('I18nManager', () => {
     expect(translations[expectedHash]).toBe(translatedString);
   });
 
+  it('loadDictionary() returns default locale dictionary without calling loadDictionary', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+    });
+
+    const dictionary = await manager.loadDictionary('en');
+
+    expect(dictionary).toEqual({ greeting: 'Hello' });
+    expect(loadDictionary).not.toHaveBeenCalled();
+  });
+
+  it('loadDictionary() loads and caches dictionary for requested locale', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Bonjour',
+      user: {
+        name: 'Nom',
+      },
+    });
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+    });
+
+    const dictionary = await manager.loadDictionary('fr');
+    const cachedDictionary = await manager.loadDictionary('fr');
+
+    expect(loadDictionary).toHaveBeenCalledTimes(1);
+    expect(loadDictionary).toHaveBeenCalledWith('fr');
+    expect(dictionary).toEqual({
+      greeting: 'Bonjour',
+      user: {
+        name: 'Nom',
+      },
+    });
+    expect(cachedDictionary).toBe(dictionary);
+  });
+
+  it('lookupDictionary() returns a loaded target locale leaf', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Bonjour');
+  });
+
+  it('lookupDictionary() falls back to default locale when target locale is not loaded', () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+      }),
+    });
+
+    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Hello');
+  });
+
+  it('lookupDictionary() falls back to default locale when target leaf is missing', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Hello');
+  });
+
+  it('lookupDictionary() does not return dictionary subtrees', async () => {
+    const manager = createManager({
+      dictionary: {
+        user: {
+          name: 'Name',
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        user: {
+          name: 'Nom',
+        },
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'user')).toBeUndefined();
+  });
+
   it('lookupTranslation() returns undefined before load, translation after', async () => {
     const manager = createManager();
 
@@ -244,5 +347,43 @@ describe('I18nManager', () => {
     expect(manager.requiresTranslation('fr')).toBe(true);
     expect(manager.requiresDialectTranslation('fr')).toBe(false);
     expect(() => manager.getGTClass('fr')).not.toThrow();
+  });
+
+  it('emits dictionary cache lifecycle events', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+      }),
+    });
+    const localesDictionaryMiss = vi.fn();
+    const localesDictionaryHit = vi.fn();
+    const dictionaryCacheHit = vi.fn();
+    const dictionaryCacheMiss = vi.fn();
+
+    manager.subscribe('locales-dictionary-cache-miss', localesDictionaryMiss);
+    manager.subscribe('locales-dictionary-cache-hit', localesDictionaryHit);
+    manager.subscribe('dictionary-cache-hit', dictionaryCacheHit);
+    manager.subscribe('dictionary-cache-miss', dictionaryCacheMiss);
+
+    await manager.loadDictionary('fr');
+    await manager.loadDictionary('fr');
+
+    expect(localesDictionaryMiss).toHaveBeenCalledWith({
+      locale: 'fr',
+      dictionary: {
+        greeting: 'Bonjour',
+      },
+    });
+    expect(localesDictionaryHit).toHaveBeenCalledWith({
+      locale: 'fr',
+      dictionary: {
+        greeting: 'Bonjour',
+      },
+    });
+    expect(dictionaryCacheHit).not.toHaveBeenCalled();
+    expect(dictionaryCacheMiss).not.toHaveBeenCalled();
   });
 });

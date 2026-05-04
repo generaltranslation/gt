@@ -3,6 +3,7 @@ import { I18nManagerConstructorParams } from '../types';
 import { validateLoadTranslations } from './config-validation/validateLoadTranslations';
 import { validateTranslationApi } from './config-validation/validateTranslationApi';
 import { validateLocales } from './config-validation/validateLocales';
+import { validateDictionary } from './config-validation/validateDictionary';
 import type { Translation } from '../translations-manager/utils/types/translation-data';
 
 /**
@@ -18,6 +19,7 @@ export function validateConfig<TranslationValue extends Translation>(
   results.push(...validateLoadTranslations(config));
   results.push(...validateTranslationApi(config));
   results.push(...validateLocales(config));
+  results.push(...validateDictionary(config));
 
   return results;
 }

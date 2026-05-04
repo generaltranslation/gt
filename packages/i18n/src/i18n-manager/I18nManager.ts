@@ -18,6 +18,9 @@ import { routeCreateTranslationLoader } from './translations-manager/translation
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { Locale, LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
+import type { Dictionary } from './translations-manager/DictionaryCache';
+import { LocalesDictionaryCache } from './translations-manager/LocalesDictionaryCache';
+import type { SafeDictionaryLoader } from './translations-manager/LocalesDictionaryCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 import { EventEmitter } from './event-subscription/EventEmitter';
 import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
@@ -69,6 +72,11 @@ class I18nManager<
   private localesCache: LocalesCache<TranslationValue>;
 
   /**
+   * Cache for dictionaries
+   */
+  private localesDictionaryCache: LocalesDictionaryCache;
+
+  /**
    * Runtime-safe locale and formatting helpers
    */
   private localeConfig: LocaleConfig;
@@ -95,6 +103,7 @@ class I18nManager<
     });
     // Create cache miss handlers
     const loadTranslations = createTranslationLoader<TranslationValue>(params);
+    const loadDictionary = createDictionaryLoader(params);
     const runtimeTranslationTimeout =
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT;
     const runtimeTranslationMetadata =
@@ -110,13 +119,25 @@ class I18nManager<
       this.subscribe(...args)
     );
 
+    const lifecycle = createLifecycleCallbacks<TranslationValue>((...args) =>
+      this.emit(...args)
+    );
+
     // Setup translations cache
     this.localesCache = new LocalesCache<TranslationValue>({
       loadTranslations,
       createTranslateMany,
+      lifecycle,
       ttl: this.config.cacheExpiryTime,
       batchConfig: this.config.batchConfig,
-      lifecycle: createLifecycleCallbacks((...args) => this.emit(...args)),
+    });
+
+    // Setup dictionary cache
+    this.localesDictionaryCache = new LocalesDictionaryCache({
+      defaultLocale: this.config.defaultLocale,
+      dictionary: params.dictionary,
+      loadDictionary,
+      lifecycle,
     });
   }
 
@@ -232,6 +253,44 @@ class I18nManager<
     } catch (error) {
       this.handleError(error);
       return {};
+    }
+  }
+
+  /**
+   * Loads in the dictionary for a given locale
+   * Edge case usage: access the dictionary object directly
+   */
+  async loadDictionary(locale: string): Promise<Dictionary> {
+    try {
+      // Validate
+      const resolvedLocale = this.resolveLocale(locale);
+
+      // Get the locale dictionary cache
+      let dictionaryCache = this.localesDictionaryCache.get(resolvedLocale);
+      if (!dictionaryCache) {
+        dictionaryCache =
+          await this.localesDictionaryCache.miss(resolvedLocale);
+      }
+
+      // Get the dictionary
+      const dictionary = dictionaryCache.getInternalCache();
+      return dictionary;
+    } catch (error) {
+      this.handleError(error);
+      return {};
+    }
+  }
+
+  /**
+   * Look up a dictionary entry
+   */
+  lookupDictionary(locale: string, id: string): string | undefined {
+    try {
+      const resolvedLocale = this.resolveLocale(locale);
+      return this.lookupDictionaryResolved(resolvedLocale, id);
+    } catch (error) {
+      this.handleError(error);
+      return undefined;
     }
   }
 
@@ -490,6 +549,21 @@ class I18nManager<
   }
 
   /**
+   * Look up a dictionary entry after locale resolution
+   */
+  private lookupDictionaryResolved(
+    resolvedLocale: string,
+    id: string
+  ): string | undefined {
+    const dictionaryCache = this.localesDictionaryCache.get(resolvedLocale);
+    const entry = dictionaryCache?.get(id);
+    if (entry !== undefined || resolvedLocale === this.config.defaultLocale) {
+      return entry;
+    }
+    return this.lookupDictionaryResolved(this.config.defaultLocale, id);
+  }
+
+  /**
    * A helper function to create a gt class that is locale agnostic
    * This is helpful for when our getLocale function is bound to a
    * specific context
@@ -658,4 +732,13 @@ function createTranslationLoader<TranslationType extends Translation>(
       customMapping: params.customMapping,
     },
   }) as SafeTranslationsLoader<TranslationType>;
+}
+
+/**
+ * Helper function for creating a dictionary loader
+ */
+function createDictionaryLoader<TranslationType extends Translation>(
+  params: I18nManagerConstructorParams<TranslationType>
+): SafeDictionaryLoader {
+  return params.loadDictionary ?? (() => Promise.resolve({}));
 }
