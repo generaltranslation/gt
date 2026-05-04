@@ -73,7 +73,7 @@ export class DictionaryCache extends Cache<
       return undefined;
     }
 
-    if (this.onHit) {
+    if (typeof value === 'string' && this.onHit) {
       this.onHit({
         inputKey: key,
         cacheKey: this.genKey(key),
@@ -162,9 +162,11 @@ export class DictionaryCache extends Cache<
    * Get the fallback value for a cache miss
    * @param key - The dictionary key
    * @returns The fallback value
+   *
+   * @throws {Error} - If the fallback is not implemented
    */
   protected fallback(): Promise<DictionaryValue> {
-    return Promise.resolve('');
+    throw new Error('DictionaryCache fallback is not implemented');
   }
 }
 
