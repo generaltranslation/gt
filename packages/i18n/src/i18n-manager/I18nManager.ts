@@ -20,7 +20,7 @@ import { Locale, LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
 import type { Dictionary } from './translations-manager/DictionaryCache';
 import { LocalesDictionaryCache } from './translations-manager/LocalesDictionaryCache';
-import type { SafeDictionaryLoader } from './translations-manager/LocalesDictionaryCache';
+import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 import { EventEmitter } from './event-subscription/EventEmitter';
 import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
@@ -707,6 +707,6 @@ function createTranslationLoader<TranslationType extends Translation>(
  */
 function createDictionaryLoader<TranslationType extends Translation>(
   params: I18nManagerConstructorParams<TranslationType>
-): SafeDictionaryLoader {
+): DictionaryLoader {
   return params.loadDictionary ?? (() => Promise.resolve({}));
 }
