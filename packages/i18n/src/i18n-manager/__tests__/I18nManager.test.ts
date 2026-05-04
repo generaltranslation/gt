@@ -79,6 +79,49 @@ describe('I18nManager', () => {
     expect(translations[expectedHash]).toBe(translatedString);
   });
 
+  it('loadDictionary() returns default locale dictionary without calling loadDictionary', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+    });
+
+    const dictionary = await manager.loadDictionary('en');
+
+    expect(dictionary).toEqual({ greeting: 'Hello' });
+    expect(loadDictionary).not.toHaveBeenCalled();
+  });
+
+  it('loadDictionary() loads and caches dictionary for requested locale', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Bonjour',
+      user: {
+        name: 'Nom',
+      },
+    });
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+    });
+
+    const dictionary = await manager.loadDictionary('fr');
+    const cachedDictionary = await manager.loadDictionary('fr');
+
+    expect(loadDictionary).toHaveBeenCalledTimes(1);
+    expect(loadDictionary).toHaveBeenCalledWith('fr');
+    expect(dictionary).toEqual({
+      greeting: 'Bonjour',
+      user: {
+        name: 'Nom',
+      },
+    });
+    expect(cachedDictionary).toBe(dictionary);
+  });
+
   it('lookupTranslation() returns undefined before load, translation after', async () => {
     const manager = createManager();
 
