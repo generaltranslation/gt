@@ -8,6 +8,7 @@ import { msg } from '../../msg';
 import { hashMessage } from '../../../utils/hashMessage';
 import { getGT } from '../getGT';
 import { getMessages } from '../getMessages';
+import { getTranslations } from '../getTranslations';
 import { tx } from '../tx';
 
 describe('translation function locale defaults', () => {
@@ -67,6 +68,114 @@ describe('translation function locale defaults', () => {
     const m = await getMessages();
 
     expect(m(msg(message, { name: 'Alice' }))).toBe('Bonjour Alice !');
+  });
+
+  it('getTranslations uses the current locale without accepting a locale parameter', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Bonjour {name} !',
+    });
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {
+        greeting: 'Hello {name}!',
+      },
+      loadDictionary,
+      loadTranslations: vi.fn().mockResolvedValue({}),
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(t('greeting', { name: 'Alice' })).toBe('Bonjour Alice !');
+    expect(loadDictionary).toHaveBeenCalledWith('fr');
+  });
+
+  it('getTranslations ignores $locale and uses the current locale', async () => {
+    const loadDictionary = vi.fn().mockImplementation((locale: string) =>
+      Promise.resolve({
+        greeting: locale === 'es' ? 'Hola {name}!' : 'Bonjour {name} !',
+      })
+    );
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr', 'es'],
+      dictionary: {
+        greeting: 'Hello {name}!',
+      },
+      loadDictionary,
+      loadTranslations: vi.fn().mockResolvedValue({}),
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+    await manager.loadDictionary('es');
+
+    expect(t('greeting', { $locale: 'es', name: 'Alice' })).toBe(
+      'Bonjour Alice !'
+    );
+  });
+
+  it('getTranslations returns an empty string for missing dictionary entries', async () => {
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {},
+      loadDictionary: vi.fn().mockResolvedValue({}),
+      loadTranslations: vi.fn().mockResolvedValue({}),
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(t('missing')).toBe('');
+  });
+
+  it('getTranslations returns an empty string when only the target locale has an entry', async () => {
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {},
+      loadDictionary: vi.fn().mockResolvedValue({
+        stale: 'Bonjour',
+      }),
+      loadTranslations: vi.fn().mockResolvedValue({}),
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(t('stale')).toBe('');
+  });
+
+  it('getTranslations ignores dictionary metadata options during interpolation', async () => {
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {
+        greeting: 'Hello {name}!',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour {name} !',
+      }),
+      loadTranslations: vi.fn().mockResolvedValue({}),
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(
+      t('greeting', {
+        name: 'Alice',
+        $context: 'ignored',
+        $maxChars: 7,
+      } as unknown as Parameters<typeof t>[1])
+    ).toBe('Bonjour Alice !');
   });
 
   it('tx uses the current locale when $locale is omitted', async () => {
