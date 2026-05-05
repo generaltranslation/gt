@@ -91,6 +91,17 @@
                 "name": "gt-i18n",
                 "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types."
               }
+            ],
+            "patterns": [
+              {
+                "group": [
+                  "gt-i18n/**",
+                  "!gt-i18n/types",
+                  "!gt-i18n/internal",
+                  "!gt-i18n/internal/types"
+                ],
+                "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types. Importing from other gt-i18n subpaths is likely to break i18n context."
+              }
             ]
           }
         ]

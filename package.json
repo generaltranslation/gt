@@ -9,8 +9,8 @@
   "scripts": {
     "build": "turbo run build --filter='./packages/*'",
     "test": "turbo run test --filter='./packages/*'",
-    "lint": "oxlint packages && node scripts/check-lint-invariants.mjs && prettier --check \"packages/**/*.{js,jsx,ts,tsx}\" scripts/check-lint-invariants.mjs",
-    "lint:fix": "oxlint packages --fix && prettier --write \"packages/**/*.{js,jsx,ts,tsx}\" scripts/check-lint-invariants.mjs && node scripts/check-lint-invariants.mjs",
+    "lint": "oxlint packages && prettier --check \"packages/**/*.{js,jsx,ts,tsx}\"",
+    "lint:fix": "oxlint packages --fix && prettier --write \"packages/**/*.{js,jsx,ts,tsx}\"",
     "transpile": "turbo run transpile --filter='./packages/*'",
     "release": "changeset publish",
     "release:gt-bin": "pnpm --filter gt run release:bin",
