@@ -32,7 +32,7 @@ export async function downloadTranslations(
       );
       const downloadedFiles = responseData.files || [];
       return downloadedFiles;
-    } catch (error) {
+    } catch {
       // Increment retry counter and wait before next attempt
       retries++;
       await new Promise((resolve) => setTimeout(resolve, retryDelay));

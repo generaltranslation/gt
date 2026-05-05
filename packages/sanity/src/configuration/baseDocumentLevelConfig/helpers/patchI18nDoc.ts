@@ -61,7 +61,5 @@ export async function patchI18nDoc(
       }
     );
   }
-  const newDocument = await client
-    .patch(i18nDocId, { set: appliedDocument })
-    .commit();
+  await client.patch(i18nDocId, { set: appliedDocument }).commit();
 }

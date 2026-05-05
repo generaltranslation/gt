@@ -9,6 +9,7 @@
     "commonjs": true
   },
   "globals": {
+    "DOMParser": "readonly",
     "RequestInit": "readonly",
     "document": "readonly",
     "window": "readonly",

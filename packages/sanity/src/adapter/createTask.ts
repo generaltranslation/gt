@@ -10,8 +10,8 @@ export const createTask: Adapter['createTask'] = async (
   serializedDocument: GTSerializedDocument,
   localeIds: string[],
   secrets: Secrets | null,
-  workflowUid?: string,
-  callbackUrl?: string
+  _workflowUid?: string,
+  _callbackUrl?: string
 ) => {
   const fileName = `sanity/${documentInfo.documentId}`;
   overrideConfig(secrets);
@@ -32,7 +32,7 @@ export const createTask: Adapter['createTask'] = async (
       sourceLocale: gt.sourceLocale || libraryDefaultLocale,
     }
   );
-  const enqueueResult = await gt.enqueueFiles(uploadResult.uploadedFiles, {
+  await gt.enqueueFiles(uploadResult.uploadedFiles, {
     sourceLocale: gt.sourceLocale || libraryDefaultLocale,
     targetLocales: localeIds,
   });
