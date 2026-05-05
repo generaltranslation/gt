@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import traverse, { type NodePath } from '@babel/traverse';
+import * as t from '@babel/types';
 import { constructJsxChildren } from '../index';
 import { TransformState } from '../../../state/types';
 import { StringCollector } from '../../../state/StringCollector';
@@ -12,6 +14,27 @@ import { ScopeTracker } from '../../../state/ScopeTracker';
 import { PluginSettings } from '../../../config';
 
 // TODO: ignore error if its just keys out of order
+
+function getExpressionPath(expr: t.Expression): NodePath<t.Expression> {
+  const ast = t.file(t.program([t.expressionStatement(expr)]));
+  let expressionPath: NodePath<t.Expression> | undefined;
+
+  traverse(ast, {
+    ExpressionStatement(path) {
+      const pathExpression = path.get('expression');
+      if (pathExpression.isExpression()) {
+        expressionPath = pathExpression;
+        path.stop();
+      }
+    },
+  });
+
+  if (!expressionPath) {
+    throw new Error('Expected expression path');
+  }
+
+  return expressionPath;
+}
 
 function isLeafDir(pathname: string): boolean {
   const statePath = path.join(pathname, 'state.json');
@@ -72,7 +95,10 @@ function createTest(dirPath: string) {
       scopeTracker.unserialize(stateSeed.state.scopeTracker);
 
       // Construct JsxChildren
-      const result = constructJsxChildren(stateSeed.children, state);
+      const result = constructJsxChildren(
+        getExpressionPath(stateSeed.children),
+        state
+      );
 
       // Assert expected output
       if (!result.value) {

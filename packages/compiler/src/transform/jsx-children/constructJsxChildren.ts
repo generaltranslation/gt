@@ -9,6 +9,7 @@ import {
 } from 'generaltranslation/types';
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
+import type { NodePath } from '@babel/traverse';
 import { validateIdentifier } from './validation/validateIdentifier';
 import { validateTemplateLiteral } from './validation/validateTemplateLiteral';
 import { validateChildrenElement } from './validation/validateChildrenElement';
@@ -45,31 +46,38 @@ import {
 } from './errors';
 
 /**
- * Given the children of a <T> component, constructs a JsxChildren object
- * Takes an Expression
+ * Given the children of a <T> component, constructs a JsxChildren object.
+ * Takes an Expression path.
  *
- * ONLY does JsxChildren construction + validation, no further processing on any children
+ * ONLY does JsxChildren construction + validation, no further processing on any children.
  *
- * On invalid children, quit immediately
+ * On invalid children, quit immediately.
+ *
+ * The node checks intentionally happen before navigating with .get(). This
+ * keeps runtime validation behavior stable while preserving NodePath scope for
+ * future derivation work.
  */
-export function _constructJsxChildren(
-  children: t.Expression | undefined,
+export function constructJsxChildren(
+  childrenPath: NodePath<t.Expression> | undefined,
   state: TransformState,
   id: IdObject = new IdObject()
 ): { errors: JsxValidationError[]; value?: JsxChildren } {
   const errors: JsxValidationError[] = [];
 
   // Skip if no children
-  if (!children) {
-    return { errors, value: children };
+  if (!childrenPath) {
+    return { errors, value: childrenPath };
   }
 
+  const children = childrenPath.node;
   let value: JsxChildren | undefined;
   if (t.isArrayExpression(children)) {
     // Handle ArrayExpression
     value = [];
+    const elementPaths = childrenPath.get('elements');
 
-    for (const child of children.elements) {
+    for (let i = 0; i < children.elements.length; i++) {
+      const child = children.elements[i];
       // Validate child
       if (!validateChildrenElement(child)) {
         errors.push(
@@ -87,18 +95,25 @@ export function _constructJsxChildren(
       }
 
       // Construct JsxChild
-      const validation = constructJsxChild(child, state, id);
+      const childPath = elementPaths[i] as NodePath<
+        Exclude<t.Expression, t.ArrayExpression>
+      >;
+      const validation = constructJsxChild(childPath, state, id);
       errors.push(...validation.errors);
       if (errors.length > 0) {
         return { errors };
       }
       // Skip if no value
       if (validation.value === undefined) continue;
-      (value as JsxChild[]).push(validation.value!);
+      (value as JsxChild[]).push(validation.value);
     }
   } else {
     // Handle single child
-    const validation = constructJsxChild(children, state, id);
+    const validation = constructJsxChild(
+      childrenPath as NodePath<Exclude<t.Expression, t.ArrayExpression>>,
+      state,
+      id
+    );
     errors.push(...validation.errors);
     if (errors.length > 0) {
       return { errors };
@@ -110,20 +125,25 @@ export function _constructJsxChildren(
 }
 
 /**
- * Given an Expression, constructs a JsxChild
+ * Given an Expression path, constructs a JsxChild.
  * @returns { errors: string[]; value?: JsxChild }
  */
 function constructJsxChild(
-  child: Exclude<t.Expression, t.ArrayExpression>,
+  childPath: NodePath<Exclude<t.Expression, t.ArrayExpression>>,
   state: TransformState,
   id: IdObject
 ): { errors: JsxValidationError[]; value?: JsxChild } {
   const errors: JsxValidationError[] = [];
+  const child = childPath.node;
   let value: JsxChild | undefined;
 
   if (t.isCallExpression(child)) {
     // Construct JsxElement
-    const validation = constructJsxElement(child, state, id);
+    const validation = constructJsxElement(
+      childPath as NodePath<t.CallExpression>,
+      state,
+      id
+    );
     errors.push(...validation.errors);
     if (errors.length > 0) {
       return { errors };
@@ -173,15 +193,16 @@ function constructJsxChild(
 }
 
 /**
- * Given a CallExpression, constructs a JsxChild
+ * Given a CallExpression path, constructs a JsxChild.
  * Handles: Jsx(T, ...children)
  */
 function constructJsxElement(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   id: IdObject
 ): { errors: JsxValidationError[]; value?: JsxElement | Variable } {
   const errors: JsxValidationError[] = [];
+  const callExpr = callExprPath.node;
 
   // Validate that this is a jsx call
   const jsxValidation = validateJsxCall(callExpr, state);
@@ -245,8 +266,7 @@ function constructJsxElement(
     if (variableValidation.errors.length > 0) {
       return { errors };
     }
-    const variable: Variable = variableValidation.value!;
-    return { errors, value: variable };
+    return { errors, value: variableValidation.value! };
   }
 
   // Set the component name
@@ -265,7 +285,7 @@ function constructJsxElement(
       );
       return { errors };
     }
-    // Derive/Static — opaque element, skip children validation
+    // Derive/Static - opaque element, skip children validation
     // The compiler doesn't resolve Derive functions; the CLI handles that.
     if (isDeriveComponent(canonicalName)) {
       return {
@@ -286,8 +306,7 @@ function constructJsxElement(
       );
       return { errors };
     }
-
-    // Get the name of the componet
+    // Get the name of the component
     componentName =
       canonicalName === REACT_COMPONENTS.Fragment
         ? `C${id.get()}`
@@ -298,7 +317,7 @@ function constructJsxElement(
   }
 
   // Get children from args
-  const childrenValidation = validateChildrenFromArgs(callExpr.arguments);
+  const childrenValidation = validateChildrenFromArgs(callExprPath);
   if (childrenValidation.errors.length > 0) {
     errors.push(
       ...childrenValidation.errors.map((msg) => structuralError(msg))
@@ -322,7 +341,7 @@ function constructJsxElement(
 
   // Construct GT Tag
   const tagValidation = constructGTProp(
-    callExpr.arguments,
+    callExprPath,
     id,
     state,
     canonicalName,
@@ -346,14 +365,15 @@ function constructJsxElement(
 
 /**
  * Construct JsxChildren for a JsxElement
- * This is slightly different from _constructJsxChildren in how it handles nullLiteral and booleanLiteral
+ * This is slightly different from constructJsxChildren in how it handles nullLiteral and booleanLiteral
  */
 function constructJsxChildrenForJsxElement(
-  children: t.Expression | undefined,
+  childrenPath: NodePath<t.Expression> | undefined,
   state: TransformState,
   id: IdObject
 ): { errors: JsxValidationError[]; value?: JsxChildren } {
   const errors: JsxValidationError[] = [];
+  const children = childrenPath?.node;
 
   // Special children edge cases: nullLiteral, booleanLiteral
   if (t.isNullLiteral(children)) {
@@ -367,14 +387,14 @@ function constructJsxChildrenForJsxElement(
   }
 
   // Construct JsxChildren
-  return _constructJsxChildren(children, state, id);
+  return constructJsxChildren(childrenPath, state, id);
 }
 
 /**
  * Given a canonical name, constructs a GTProp
  */
 function constructGTProp(
-  args: (t.ArgumentPlaceholder | t.SpreadElement | t.Expression)[],
+  callExprPath: NodePath<t.CallExpression>,
   id: IdObject,
   state: TransformState,
   canonicalName?: string,
@@ -382,6 +402,7 @@ function constructGTProp(
 ): { errors: JsxValidationError[]; value?: GTProp } {
   const errors: JsxValidationError[] = [];
   const value: GTProp = {};
+  const args = callExprPath.node.arguments;
 
   // Validate Parameters
   if (args.length < 2) {
@@ -405,6 +426,10 @@ function constructGTProp(
   }
 
   // For Branch and Plural, get the properties
+  const parametersPath = callExprPath.get(
+    'arguments'
+  )[1] as NodePath<t.ObjectExpression>;
+
   if (
     canonicalName &&
     type === 'generaltranslation' &&
@@ -412,15 +437,14 @@ function constructGTProp(
   ) {
     // Get the branching parameters
     const branchingParameters = getBranchComponentParameters(
-      parameters,
+      parametersPath as NodePath<t.ObjectExpression>,
       canonicalName
     );
-
     // Add branch component branches
     const branches = {} as Record<string, JsxChildren>;
 
-    // Add branch component branches
-    for (const [name, parameter] of branchingParameters) {
+    for (const [name, parameterPath] of branchingParameters) {
+      const parameter = parameterPath.node;
       // Special exceptions for branches:
       if (t.isNullLiteral(parameter)) {
         branches[name] = null as unknown as JsxChildren;
@@ -431,7 +455,7 @@ function constructGTProp(
       }
 
       // Otherwise, construct the JsxChildren
-      const validation = _constructJsxChildren(parameter, state, id.copy());
+      const validation = constructJsxChildren(parameterPath, state, id.copy());
       errors.push(...validation.errors);
       if (validation.errors.length > 0) {
         return { errors };

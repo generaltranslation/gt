@@ -73,7 +73,7 @@ export function processCallExpression(
       );
     } else if (type === 'react' && isReactFunction(canonicalName)) {
       // Handle react variables (jsxDEV, etc.)
-      handleReactInvocation(callExpr, state);
+      handleReactInvocation(callExprPath, state);
     } else if (
       type === 'generaltranslation' &&
       canonicalName === GT_OTHER_FUNCTIONS.msg
@@ -216,9 +216,10 @@ function handleUseMessagesCallback(
  * We want to check these because they wrap <T> and other components
  */
 function handleReactInvocation(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   state: TransformState
 ) {
+  const callExpr = callExprPath.node;
   // Check if it contains a GT component (first argument)
   if (callExpr.arguments.length === 0) {
     state.errorTracker.addError(
@@ -263,7 +264,7 @@ function handleReactInvocation(
 
   // Validate the arguments
   const { errors, _hash, id, context, children, maxChars, hasDeriveContext } =
-    validateTranslationComponentArgs(callExpr, canonicalName, state);
+    validateTranslationComponentArgs(callExprPath, canonicalName, state);
 
   if (errors.length > 0) {
     state.errorTracker.addErrors(errors);
@@ -284,7 +285,7 @@ function handleReactInvocation(
 
   // Debug: record hash → children mapping
   // Note: children may be undefined when autoderive filters all dynamic-content
-  // errors (the early return in _constructJsxChildren means value is never set).
+  // errors (the early return in constructJsxChildren means value is never set).
   // This is intentional — the compiler signals CLI resolution via hash=''.
   if (state.debugManifest) {
     state.debugManifest.set(hash, children ?? null);

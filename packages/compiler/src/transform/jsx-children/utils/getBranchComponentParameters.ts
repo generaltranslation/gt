@@ -1,24 +1,30 @@
 import * as t from '@babel/types';
+import type { NodePath } from '@babel/traverse';
 import {
   BRANCH_CONTROL_PROPS,
   GT_COMPONENT_TYPES,
   PLURAL_FORMS,
 } from '../../../utils/constants/gt/constants';
+
 /**
- * Given object expression, get the branch component args
+ * Given an object expression path, get branch component argument paths.
  */
 export function getBranchComponentParameters(
-  parameters: t.ObjectExpression,
+  parametersPath: NodePath<t.ObjectExpression>,
   canonicalName: string
-): [string, t.Expression][] {
+): [string, NodePath<t.Expression>][] {
   // Get the args
-  const args = parameters.properties
-    .map((property) => {
+  return parametersPath
+    .get('properties')
+    .map((propertyPath) => {
       // filter out non expression values
-      if (!t.isObjectProperty(property)) {
+      if (!propertyPath.isObjectProperty()) {
         return null;
       }
-      if (!t.isExpression(property.value)) {
+      const property = propertyPath.node;
+
+      const valuePath = propertyPath.get('value');
+      if (!valuePath.isExpression()) {
         return null;
       }
 
@@ -58,8 +64,7 @@ export function getBranchComponentParameters(
         return null;
       }
 
-      return [propertyName, property.value];
+      return [propertyName, valuePath as NodePath<t.Expression>];
     })
-    .filter((arg) => arg !== null) as [string, t.Expression][];
-  return args;
+    .filter((arg) => arg !== null) as [string, NodePath<t.Expression>][];
 }
