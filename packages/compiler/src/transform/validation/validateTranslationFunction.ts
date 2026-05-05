@@ -252,6 +252,11 @@ function validatePropertyFromObjectExpression(
     // TODO: until we implement derivation, we will only need to check the first value
     if (resolved.values?.[0] !== undefined) {
       result.value = resolved.values[0];
+    } else if (
+      resolved.errors.length > 0 &&
+      resolved.kind !== 'dynamic-expression'
+    ) {
+      result.errors.push(...resolved.errors);
     } else if (state) {
       // Static resolution failed — check if it's a valid derive() expression
       const deriveErrors: string[] = [];

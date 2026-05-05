@@ -668,13 +668,16 @@ describe('validateTranslationFunctionCallback', () => {
         expect(result.context).toBe('greeting');
       });
 
-      it('should return error when $context is not a static expression', () => {
+      it('should report invalid template escapes in $context', () => {
         const callExpr = t.callExpression(t.identifier('useGT_callback'), [
           t.stringLiteral('Hello'),
           t.objectExpression([
             t.objectProperty(
               t.identifier('$context'),
-              t.identifier('contextVar')
+              t.templateLiteral(
+                [t.templateElement({ raw: '\\xg', cooked: undefined })],
+                []
+              )
             ),
           ]),
         ]);
@@ -684,7 +687,11 @@ describe('validateTranslationFunctionCallback', () => {
           state
         );
 
-        expect(result.errors.length).toBeGreaterThan(0);
+        expect(result.errors).toEqual([
+          'Template literal contains an invalid escape sequence',
+        ]);
+        expect(result.context).toBeUndefined();
+        expect(result.hasDeriveContext).toBeUndefined();
       });
 
       it('should return error when $id is not a string literal', () => {
