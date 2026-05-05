@@ -1,7 +1,22 @@
 import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
-import { flattenExpressionToParts } from './flattenExpressionToParts';
+import {
+  flattenExpressionToParts,
+  type FlattenExpressionError,
+} from './flattenExpressionToParts';
 import { multiply } from '../multiplication/multiply';
+
+export type ResolveStaticExpressionError =
+  | FlattenExpressionError
+  | {
+      kind: 'dynamic-expression';
+      message: string;
+    };
+
+const DYNAMIC_EXPRESSION_ERROR: ResolveStaticExpressionError = {
+  kind: 'dynamic-expression',
+  message: 'Expression is not a static string',
+};
 
 /**
  * Attempt to resolve an expression to static string values at compile time.
@@ -12,7 +27,7 @@ import { multiply } from '../multiplication/multiply';
  * dynamic or derive content.
  */
 export function resolveStaticExpression(exprPath: NodePath<t.Expression>): {
-  errors: string[];
+  errors: ResolveStaticExpressionError[];
   values?: string[];
 } {
   const { parts, errors } = flattenExpressionToParts(exprPath);
@@ -27,7 +42,7 @@ export function resolveStaticExpression(exprPath: NodePath<t.Expression>): {
       if (part.type === 'derive') {
         return { errors: [], values: undefined };
       } else if (part.type !== 'static') {
-        return { errors: ['Expression is not a static string'] };
+        return { errors: [DYNAMIC_EXPRESSION_ERROR] };
       }
       value += part.value;
     }
