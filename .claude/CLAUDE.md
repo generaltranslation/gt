@@ -8,7 +8,7 @@ Open source i18n libraries for React, Next.js, and more. Repo: `generaltranslati
 - **Build system:** Turbo (`turbo.json` defines task graph)
 - **Releases:** Changesets (`pnpm changeset` to add, `changeset publish` to release)
 - **Testing:** Vitest across all packages
-- **Linting:** ESLint + Prettier (enforced via lefthook pre-commit)
+- **Linting:** oxlint + oxfmt (enforced via lefthook pre-commit)
 - **License:** FSL-1.1-ALv2
 
 ## Commands
@@ -18,7 +18,8 @@ pnpm build          # Build all packages (turbo, cached)
 pnpm test           # Test all packages
 pnpm lint           # Lint all packages
 pnpm lint:fix       # Lint + auto-fix
-pnpm format         # Prettier format everything
+pnpm format         # Check formatting with oxfmt
+pnpm format:fix     # Format everything with oxfmt
 pnpm changeset      # Create a changeset for a new release
 pnpm version-packages  # Apply changesets to bump versions
 pnpm release        # Publish packages (changeset publish)
@@ -26,7 +27,7 @@ pnpm release        # Publish packages (changeset publish)
 
 Per-package commands: `pnpm --filter <pkg> <script>` (e.g., `pnpm --filter gt test`).
 
-Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `transpile`, `build:clean`, `build:release`, `bench`.
+Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `transpile`, `build:clean`, `build:release`, `bench`.
 
 ## Key Packages
 
@@ -54,7 +55,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `transpile`, `build:clean`, `b
 ## Code Conventions
 
 - TypeScript everywhere. Strict mode.
-- Prettier: single quotes, 2-space indent, trailing commas (es5), semicolons, LF line endings.
+- oxfmt: single quotes, 2-space indent, trailing commas (es5), semicolons, LF line endings.
 - ESLint: `@typescript-eslint` rules, unused vars prefixed with `_`, no explicit `any` (warn).
 - Prefer `const` over `let`. Never `var`.
 - Test files: `*.test.ts` / `*.spec.ts` using Vitest.

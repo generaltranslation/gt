@@ -12,7 +12,7 @@
     "build:watch": "tsc --watch",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
-    "format": "prettier --write src",
+    "format": "oxfmt src",
     "patch": "pnpm version patch",
     "release": "pnpm run build:clean && pnpm publish",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
