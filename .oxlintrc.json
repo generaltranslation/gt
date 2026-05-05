@@ -1,0 +1,110 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "globals": {
+    "console": "readonly",
+    "process": "readonly",
+    "Buffer": "readonly",
+    "__dirname": "readonly",
+    "__filename": "readonly",
+    "global": "readonly",
+    "module": "readonly",
+    "require": "readonly",
+    "exports": "readonly",
+    "fetch": "readonly",
+    "Headers": "readonly",
+    "Request": "readonly",
+    "RequestInit": "readonly",
+    "Response": "readonly",
+    "URL": "readonly",
+    "URLSearchParams": "readonly",
+    "AbortController": "readonly",
+    "AbortSignal": "readonly",
+    "TextDecoder": "readonly",
+    "TextEncoder": "readonly",
+    "atob": "readonly",
+    "btoa": "readonly",
+    "clearInterval": "readonly",
+    "clearTimeout": "readonly",
+    "document": "readonly",
+    "localStorage": "readonly",
+    "navigator": "readonly",
+    "NodeJS": "readonly",
+    "React": "readonly",
+    "setInterval": "readonly",
+    "setTimeout": "readonly",
+    "structuredClone": "readonly",
+    "window": "readonly",
+    "__DEV__": "readonly"
+  },
+  "ignorePatterns": [
+    "dist/",
+    "node_modules/",
+    "coverage/",
+    "**/*.d.ts",
+    "**/rollup.config.*",
+    "tests/seeds/**/*"
+  ],
+  "rules": {
+    "no-console": "warn",
+    "prefer-const": "warn",
+    "no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "no-undef": "warn",
+    "no-empty": "warn",
+    "no-useless-escape": "warn",
+    "typescript/no-explicit-any": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.{js,ts,tsx}", "**/*.spec.{js,ts,tsx}"],
+      "globals": {
+        "describe": "readonly",
+        "it": "readonly",
+        "expect": "readonly",
+        "beforeEach": "readonly",
+        "afterEach": "readonly",
+        "beforeAll": "readonly",
+        "afterAll": "readonly",
+        "vi": "readonly",
+        "test": "readonly"
+      }
+    },
+    {
+      "files": ["packages/react/src/i18n-context/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "gt-i18n",
+                "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["gt-i18n/*", "!gt-i18n/types", "!gt-i18n/internal"],
+                "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types. Importing from gt-i18n is likely to break i18n context."
+              },
+              {
+                "group": ["gt-i18n/*/*", "!gt-i18n/internal/types"],
+                "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types. Importing from gt-i18n is likely to break i18n context."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

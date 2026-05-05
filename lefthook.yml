@@ -1,7 +1,7 @@
 pre-commit:
   parallel: true
   jobs:
-    - run: npx eslint --fix {staged_files}
-      glob: '**/*.{js,ts,jsx,tsx,json,sh,mjs,yaml,yml}'
+    - run: pnpm exec oxlint --fix {staged_files}
+      glob: '**/*.{js,ts,jsx,tsx,mjs}'
     - run: node scripts/generate-version.js && git add src/generated/version.ts
       root: packages/cli

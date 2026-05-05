@@ -64,8 +64,6 @@
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "clean": "del-cli android/build dist",
-    "lint": "eslint \"src/**/*.{js,ts,tsx}\" \"**/__tests__/**/*.{js,ts,tsx}\"",
-    "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" \"**/__tests__/**/*.{js,ts,tsx}\" --fix",
     "test": "vitest run",
     "test:watch": "vitest",
     "release": "pnpm run build:clean && pnpm publish",
