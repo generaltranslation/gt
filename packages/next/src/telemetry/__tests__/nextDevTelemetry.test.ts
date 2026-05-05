@@ -195,7 +195,7 @@ describe('next dev telemetry', () => {
 
     resetNextDevTelemetryForTests();
     delete process.env.GT_TELEMETRY_DISABLED;
-    process.env.DO_NOT_TRACK = 'true';
+    process.env.DO_NOT_TRACK = 'yes';
     recordNextDevTelemetry(baseOptions);
     await flushPromises();
     expect(fetchMock).not.toHaveBeenCalled();

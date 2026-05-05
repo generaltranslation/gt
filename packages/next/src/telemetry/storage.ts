@@ -2,6 +2,7 @@ import { createHash, randomBytes, type BinaryLike } from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import Conf from 'conf';
+import { isCI } from './utils';
 
 const TELEMETRY_KEY_ENABLED = 'telemetry.enabled';
 const TELEMETRY_KEY_NOTIFY_DATE = 'telemetry.notifiedAt';
@@ -17,18 +18,6 @@ export type TelemetryStorageOptions = {
   distDir?: string;
   store?: TelemetryStore;
 };
-
-function isCI() {
-  return !!(
-    process.env.CI ||
-    process.env.GITHUB_ACTIONS ||
-    process.env.GITLAB_CI ||
-    process.env.CIRCLECI ||
-    process.env.BUILDKITE ||
-    process.env.VERCEL ||
-    process.env.NETLIFY
-  );
-}
 
 function isDockerLike() {
   try {
@@ -87,15 +76,15 @@ export class TelemetryStorage {
     try {
       if (this.store.get(TELEMETRY_KEY_NOTIFY_DATE)) return;
       this.store.set(TELEMETRY_KEY_NOTIFY_DATE, Date.now().toString());
-      console.log(
-        'Attention: General Translation now collects completely anonymous telemetry regarding gt-next development usage.'
+      process.stderr.write(
+        [
+          'Attention: General Translation now collects completely anonymous telemetry regarding gt-next development usage.',
+          "This information is used to shape General Translation's roadmap and prioritize features.",
+          'You can learn more, including how to opt out, by visiting:',
+          'https://generaltranslation.com/docs/telemetry',
+          '',
+        ].join('\n')
       );
-      console.log(
-        "This information is used to shape General Translation's roadmap and prioritize features."
-      );
-      console.log('You can learn more, including how to opt out, by visiting:');
-      console.log('https://generaltranslation.com/docs/telemetry');
-      console.log();
     } catch {
       return;
     }

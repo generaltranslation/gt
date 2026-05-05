@@ -2,6 +2,7 @@ import type { withGTConfigProps } from '../config-dir/props/withGTConfigProps';
 import { getAnonymousProjectHash } from './projectHash';
 import { TelemetryStorage, type TelemetryStorageOptions } from './storage';
 import { postTelemetryPayload } from './postTelemetryPayload';
+import { isCI } from './utils';
 import packageJson from '../../package.json';
 
 export type NextDevTelemetryPayload = {
@@ -57,7 +58,7 @@ function isTelemetryDisabled(config: withGTConfigProps) {
     config.devServerTelemetry === false ||
     isTruthy(process.env.NEXT_TELEMETRY_DISABLED) ||
     isTruthy(process.env.GT_TELEMETRY_DISABLED) ||
-    isTruthy(process.env.DO_NOT_TRACK)
+    !!process.env.DO_NOT_TRACK
   );
 }
 
@@ -65,18 +66,6 @@ function isTelemetryDebug() {
   return (
     isTruthy(process.env.NEXT_TELEMETRY_DEBUG) ||
     isTruthy(process.env.GT_TELEMETRY_DEBUG)
-  );
-}
-
-function isCI() {
-  return !!(
-    process.env.CI ||
-    process.env.GITHUB_ACTIONS ||
-    process.env.GITLAB_CI ||
-    process.env.CIRCLECI ||
-    process.env.BUILDKITE ||
-    process.env.VERCEL ||
-    process.env.NETLIFY
   );
 }
 
