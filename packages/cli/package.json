@@ -21,8 +21,6 @@
     "build:bin:linux-x64": "sh scripts/build-exe.sh linux-x64",
     "build:bin:linux-arm64": "sh scripts/build-exe.sh linux-arm64",
     "build:bin:windows-x64": "sh scripts/build-exe.sh windows-x64",
-    "lint": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\"",
-    "lint:fix": "eslint \"src/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\" --fix",
     "test": "vitest run --config=./vitest.config.ts",
     "test:watch": "vitest --config=./vitest.config.ts",
     "release": "pnpm run release:normal && pnpm run release:bin",

@@ -43,7 +43,7 @@ jobs:
         run: pnpm rebuild --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Run lint
-        run: pnpm exec turbo lint --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm lint
 
   tests:
     runs-on: ubuntu-latest

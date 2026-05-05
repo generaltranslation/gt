@@ -38,7 +38,7 @@ pnpm build
 # Run tests
 pnpm test
 
-# Lint code
+# Lint code from the repository root
 pnpm lint
 ```
 

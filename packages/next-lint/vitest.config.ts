@@ -7,7 +7,7 @@ export default defineConfig({
     globals: true,
     // Allow test files to import modules from scripts directory
     alias: {
-      '@scripts': './scripts'
+      '@scripts': './scripts',
     },
   },
 });
