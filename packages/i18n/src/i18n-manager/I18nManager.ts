@@ -286,6 +286,20 @@ class I18nManager<
   }
 
   /**
+   * Look up a dictionary entry
+   */
+  lookupDictionary(locale: string, id: string): string | undefined {
+    try {
+      const resolvedLocale = this.resolveLocale(locale);
+      const dictionaryCache = this.localesDictionaryCache.get(resolvedLocale);
+      return dictionaryCache?.get(id);
+    } catch (error) {
+      this.handleError(error);
+      return undefined;
+    }
+  }
+
+  /**
    * Just lookup a translation
    */
   lookupTranslation<T extends TranslationValue = TranslationValue>(
