@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.16.24
+
+### Patch Changes
+
+- [#1348](https://github.com/generaltranslation/gt/pull/1348) [`6307dea`](https://github.com/generaltranslation/gt/commit/6307deac200eab9d5a9b2bc4edca080d49e4c131) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Clarify Babel compiler compatibility warnings for Turbopack and unsupported React versions.
+
 ## 6.16.23
 
 ### Patch Changes
