@@ -58,8 +58,6 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
         dictionaryEntry: params.outputValue,
       });
     },
-    // Reserved for the future fallback-backed dictionary miss path. Current
-    // lookupDictionary() misses use DictionaryCache.get(), which is silent.
     onDictionaryCacheMiss: (params) => {
       emit('dictionary-cache-miss', {
         locale: params.locale,

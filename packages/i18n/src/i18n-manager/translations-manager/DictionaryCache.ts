@@ -23,6 +23,10 @@ export type {
   DictionaryValue,
 } from './utils/types/dictionary';
 
+export type DictionaryRuntimeTranslate = (
+  key: DictionaryKey
+) => Promise<DictionaryValue>;
+
 /**
  * A cache for a single locale's dictionary
  *
@@ -37,6 +41,8 @@ export class DictionaryCache extends Cache<
   DictionaryValue,
   DictionaryEntry
 > {
+  private _runtimeTranslate: DictionaryRuntimeTranslate;
+
   /**
    * Constructor
    * @param {Object} params - The parameters for the cache
@@ -45,8 +51,10 @@ export class DictionaryCache extends Cache<
   constructor({
     init,
     lifecycle,
+    runtimeTranslate,
   }: {
     init: Dictionary;
+    runtimeTranslate: DictionaryRuntimeTranslate;
     lifecycle?: LifecycleParam<
       DictionaryKey,
       DictionaryPath,
@@ -55,6 +63,7 @@ export class DictionaryCache extends Cache<
     >;
   }) {
     super(init, lifecycle);
+    this._runtimeTranslate = runtimeTranslate;
   }
 
   /**
@@ -162,7 +171,7 @@ export class DictionaryCache extends Cache<
    *
    * @throws {Error} - If the fallback is not implemented
    */
-  protected fallback(): Promise<DictionaryValue> {
-    throw new Error('DictionaryCache fallback is not implemented');
+  protected fallback(key: DictionaryKey): Promise<DictionaryValue> {
+    return this._runtimeTranslate(key);
   }
 }
