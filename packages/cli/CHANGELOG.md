@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.14.32
+
+### Patch Changes
+
+- [#1338](https://github.com/generaltranslation/gt/pull/1338) [`66b5df5`](https://github.com/generaltranslation/gt/commit/66b5df57a69d224345ad0a6191437ba8aca3a19d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Generate explicit relative import paths in `loadTranslations.js` for local
+  translation files.
+
+- [#1314](https://github.com/generaltranslation/gt/pull/1314) [`a13629f`](https://github.com/generaltranslation/gt/commit/a13629f2c5e5a2fcc22c34704507bcc591174825) Thanks [@bgub](https://github.com/bgub)! - Show a warning download status when completed files are missing from the download response.
+
 ## 2.14.31
 
 ### Patch Changes
