@@ -109,7 +109,7 @@ abstract class Cache<
       const value = await fallbackPromise;
 
       // Update cache
-      this.cache[cacheKey] = value;
+      this.setCache(cacheKey, value);
       return value;
     } finally {
       delete this.fallbackPromises[cacheKey];

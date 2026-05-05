@@ -4,6 +4,13 @@ import type {
   Hash,
 } from '../translations-manager/TranslationsCache';
 import type { Locale, CacheEntry } from '../translations-manager/LocalesCache';
+import type {
+  DictionaryKey,
+  DictionaryPath,
+  DictionaryValue,
+  DictionaryEntry,
+} from '../translations-manager/DictionaryCache';
+import type { DictionaryCacheEntry } from '../translations-manager/LocalesDictionaryCache';
 
 // ===== Base Cache Lifecycle ===== //
 
@@ -64,6 +71,39 @@ export type LocalesCacheLifecycleCallbacks<
   onLocalesCacheMiss?: LocalesCacheLifecycleCallback<TranslationValue>;
   onTranslationsCacheHit?: TranslationsCacheLifecycleCallback<TranslationValue>;
   onTranslationsCacheMiss?: TranslationsCacheLifecycleCallback<TranslationValue>;
+};
+
+// ===== Locales Dictionary Cache Lifecycle ===== //
+
+/**
+ * Locales dictionary cache lifecycle callback
+ */
+export type LocalesDictionaryCacheLifecycleCallback = LifecycleCallback<
+  Locale,
+  Locale,
+  DictionaryCacheEntry,
+  DictionaryCacheEntry['dictionaryCache']
+>;
+
+/**
+ * Dictionary cache lifecycle callback with locale embedded as first param.
+ */
+export type DictionaryCacheLifecycleCallback = (params: {
+  locale: Locale;
+  inputKey: DictionaryKey;
+  cacheKey: DictionaryPath;
+  cacheValue: DictionaryValue;
+  outputValue: DictionaryEntry;
+}) => void;
+
+/**
+ * Combined locales dictionary cache lifecycle callbacks
+ */
+export type LocalesDictionaryCacheLifecycleCallbacks = {
+  onLocalesDictionaryCacheHit?: LocalesDictionaryCacheLifecycleCallback;
+  onLocalesDictionaryCacheMiss?: LocalesDictionaryCacheLifecycleCallback;
+  onDictionaryCacheHit?: DictionaryCacheLifecycleCallback;
+  onDictionaryCacheMiss?: DictionaryCacheLifecycleCallback;
 };
 
 // ===== Consumer API ===== //
