@@ -94,6 +94,22 @@ describe('I18nManager', () => {
     expect(loadDictionary).not.toHaveBeenCalled();
   });
 
+  it('loadDictionary() returns source dictionary without loading when i18n is disabled', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
+    const manager = createManager({
+      enableI18n: false,
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+    });
+
+    const dictionary = await manager.loadDictionary('fr');
+
+    expect(dictionary).toEqual({ greeting: 'Hello' });
+    expect(loadDictionary).not.toHaveBeenCalled();
+  });
+
   it('loadDictionary() loads and caches dictionary for requested locale', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({
       greeting: 'Bonjour',

@@ -261,6 +261,13 @@ class I18nManager<
     try {
       // Validate
       const resolvedLocale = this.resolveLocale(locale);
+      if (!this.requiresTranslation(resolvedLocale)) {
+        return (
+          this.localesDictionaryCache
+            .get(this.config.defaultLocale)
+            ?.getInternalCache() ?? {}
+        );
+      }
 
       // Get the locale dictionary cache
       let dictionaryCache = this.localesDictionaryCache.get(resolvedLocale);
