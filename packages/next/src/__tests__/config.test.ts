@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import type { NextConfig } from 'next';
+import { BABEL_PLUGIN_SUPPORT } from '../plugin/constants';
 
 // ---- Mocks ---- //
 
@@ -1195,7 +1196,7 @@ describe('withGTConfig', () => {
       expect(params.experimentalCompilerOptions.type).toBe('none');
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining(
-          'The GT babel compiler requires react@17.0.0 or newer'
+          `The GT babel compiler requires react@${BABEL_PLUGIN_SUPPORT} or newer`
         )
       );
       expect(warnSpy).not.toHaveBeenCalledWith(
@@ -1224,7 +1225,7 @@ describe('withGTConfig', () => {
       );
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining(
-          'The GT babel compiler requires react@17.0.0 or newer'
+          `The GT babel compiler requires react@${BABEL_PLUGIN_SUPPORT} or newer`
         )
       );
       expect(warnSpy).not.toHaveBeenCalledWith(
