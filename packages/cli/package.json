@@ -149,6 +149,7 @@
     "@types/node": "^22.5.1",
     "@types/react": "^18.3.4",
     "@types/resolve": "^1.20.2",
+    "eslint": "^9.20.0",
     "esm": "^3.2.25",
     "mdast-util-mdx-jsx": "^3.2.0",
     "mdast-util-mdxjs-esm": "^2.0.1",

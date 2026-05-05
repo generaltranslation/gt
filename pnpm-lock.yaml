@@ -324,6 +324,9 @@ importers:
       '@types/resolve':
         specifier: ^1.20.2
         version: 1.20.6
+      eslint:
+        specifier: ^9.20.0
+        version: 9.36.0(jiti@2.6.1)
       esm:
         specifier: ^3.2.25
         version: 3.2.25
