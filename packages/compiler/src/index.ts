@@ -1,4 +1,6 @@
 import { createUnplugin } from 'unplugin';
+import fs from 'node:fs';
+import path from 'node:path';
 import * as parser from '@babel/parser';
 import generate from '@babel/generator';
 import traverse from '@babel/traverse';
@@ -64,6 +66,28 @@ export interface GTUnpluginOptions extends PluginConfig {
   // Inherits from PluginConfig
 }
 
+const MISSING_GT_CONFIG_WARNING =
+  '[@generaltranslation/compiler] No gtConfig found. Auto JSX injection and parsingFlags features require a gt.config.json. See https://generaltranslation.com/en/docs/react/concepts/compiler.';
+
+function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
+  return logLevel !== 'silent' && logLevel !== 'error';
+}
+
+function loadGTConfigFromCwd(): PluginConfig['gtConfig'] | undefined {
+  const configPath = path.join(process.cwd(), 'gt.config.json');
+  if (!fs.existsSync(configPath)) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(configPath, 'utf-8')) as NonNullable<
+      PluginConfig['gtConfig']
+    >;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * GT Universal Plugin - Main entry point
  *
@@ -72,8 +96,18 @@ export interface GTUnpluginOptions extends PluginConfig {
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}) => {
+    const loadedGTConfig = options.gtConfig ?? loadGTConfigFromCwd();
+    const resolvedOptions: GTUnpluginOptions = {
+      ...options,
+      ...(loadedGTConfig ? { gtConfig: loadedGTConfig } : {}),
+    };
+
+    if (!loadedGTConfig && shouldWarn(options.logLevel)) {
+      console.warn(MISSING_GT_CONFIG_WARNING);
+    }
+
     // Debug manifest: accumulates hash → jsxChildren across all files
-    const debugManifest = options._debugHashManifest
+    const debugManifest = resolvedOptions._debugHashManifest
       ? new Map<string, unknown>()
       : undefined;
 
@@ -90,7 +124,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       },
       transform(code: string, id: string) {
         // Initialize processing state
-        const state = initializeState(options, id);
+        const state = initializeState(resolvedOptions, id);
         if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
