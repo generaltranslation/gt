@@ -181,14 +181,14 @@ describe('next dev telemetry', () => {
       storageOptions: { store: createStore() },
     };
 
-    process.env.NEXT_TELEMETRY_DISABLED = '1';
+    process.env.NEXT_TELEMETRY_DISABLED = 'yes';
     recordNextDevTelemetry(baseOptions);
     await flushPromises();
     expect(fetchMock).not.toHaveBeenCalled();
 
     resetNextDevTelemetryForTests();
     delete process.env.NEXT_TELEMETRY_DISABLED;
-    process.env.GT_TELEMETRY_DISABLED = '1';
+    process.env.GT_TELEMETRY_DISABLED = 'on';
     recordNextDevTelemetry(baseOptions);
     await flushPromises();
     expect(fetchMock).not.toHaveBeenCalled();

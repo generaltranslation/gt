@@ -56,8 +56,8 @@ function isTruthy(value: string | undefined) {
 function isTelemetryDisabled(config: withGTConfigProps) {
   return (
     config.devServerTelemetry === false ||
-    isTruthy(process.env.NEXT_TELEMETRY_DISABLED) ||
-    isTruthy(process.env.GT_TELEMETRY_DISABLED) ||
+    !!process.env.NEXT_TELEMETRY_DISABLED ||
+    !!process.env.GT_TELEMETRY_DISABLED ||
     !!process.env.DO_NOT_TRACK
   );
 }
