@@ -91,17 +91,31 @@
                 "name": "gt-i18n",
                 "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types."
               }
-            ],
-            "patterns": [
-              {
-                "group": ["gt-i18n/*", "!gt-i18n/types", "!gt-i18n/internal"],
-                "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types. Importing from gt-i18n is likely to break i18n context."
-              },
-              {
-                "group": ["gt-i18n/*/*", "!gt-i18n/internal/types"],
-                "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types. Importing from gt-i18n is likely to break i18n context."
-              }
             ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/locadex/**/*.{ts,tsx}", "packages/mcp/**/*.{ts,tsx}"],
+      "rules": {
+        "no-console": [
+          "error",
+          {
+            "allow": ["error"]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/locadex/**/*.{ts,tsx}"],
+      "plugins": ["unicorn", "typescript", "oxc", "import"],
+      "rules": {
+        "import/extensions": [
+          "error",
+          "ignorePackages",
+          {
+            "js": "always"
           }
         ]
       }
