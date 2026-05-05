@@ -39,11 +39,28 @@ class MockSpinner implements SpinnerResult {
     this.currentMessage = '';
   }
 
+  cancel(message?: string): void {
+    this.isCancelled = true;
+    const msg = message || this.currentMessage || 'Canceled';
+    this.logger.info(`[Spinner] ${msg}`);
+    this.currentMessage = '';
+  }
+
+  error(message?: string): void {
+    const msg = message || this.currentMessage || 'Something went wrong';
+    this.logger.error(`[Spinner] ${msg}`);
+    this.currentMessage = '';
+  }
+
   message(message?: string): void {
     if (message) {
       this.currentMessage = message;
       this.logger.info(`[Spinner] ${message}`);
     }
+  }
+
+  clear(): void {
+    this.currentMessage = '';
   }
 }
 
@@ -69,6 +86,17 @@ class MockProgress implements ProgressResult {
     this.logger.info(`[Progress] ${msg} (${this.current}/${this.max})`);
   }
 
+  cancel(message?: string): void {
+    this.isCancelled = true;
+    const msg = message || 'Canceled';
+    this.logger.info(`[Progress] ${msg} (${this.current}/${this.max})`);
+  }
+
+  error(message?: string): void {
+    const msg = message || 'Something went wrong';
+    this.logger.error(`[Progress] ${msg} (${this.current}/${this.max})`);
+  }
+
   message(message?: string): void {
     if (message) {
       this.logger.info(`[Progress] ${message} (${this.current}/${this.max})`);
@@ -79,6 +107,10 @@ class MockProgress implements ProgressResult {
     this.current += amount;
     const msg = message || 'Progress';
     this.logger.info(`[Progress] ${msg} (${this.current}/${this.max})`);
+  }
+
+  clear(): void {
+    this.current = 0;
   }
 }
 

@@ -65,6 +65,7 @@ import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
 } from '../setup/frameworkUtils.js';
+import { promptSetupMode } from '../setup/setupMode.js';
 import { INLINE_LIBRARIES } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
@@ -395,34 +396,20 @@ export class BaseCLI {
         findFilepath(['gt.config.json'])
       )
       .action(async (options: SetupOptions) => {
-        const settings = await generateSettings(options);
         displayHeader('Running setup wizard...');
+        const settings = await generateSettings(options);
 
         const framework = await detectFramework();
+        const setupMode = await promptSetupMode(framework);
 
-        const useAgent = await (async () => {
-          let useAgentMessage;
-          if (framework.name === 'mintlify') {
-            useAgentMessage = `Mintlify project detected. Would you like to connect to GitHub so that the Locadex AI Agent can translate your project automatically?`;
-          }
-          if (framework.name === 'next-app') {
-            useAgentMessage = `Next.js App Router detected. Would you like to connect to GitHub so that the Locadex AI Agent can set up your project automatically?`;
-          }
-          if (useAgentMessage) {
-            return await promptConfirm({
-              message: useAgentMessage,
-              defaultValue: false,
-            });
-          }
-          return false;
-        })();
-
-        if (useAgent) {
+        if (setupMode === 'agent') {
           await setupLocadex(settings);
           logger.endCommand(
-            'Once installed, Locadex will open a PR to your repository. See the docs for more information: https://generaltranslation.com/docs/locadex'
+            'Continue in your browser to finish Locadex setup. Docs: https://generaltranslation.com/docs/locadex'
           );
         } else {
+          logger.step('Manual setup selected');
+
           // Get framework display info for the defaults message
           const frameworkDisplayName =
             framework.type === 'react'
