@@ -4,6 +4,25 @@ import { logger } from '../console/logger.js';
 import chalk from 'chalk';
 import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
 
+function toRelativeImportPath(relativePath: string) {
+  const normalizedPath = relativePath.split(path.sep).join(path.posix.sep);
+
+  if (!normalizedPath) {
+    return './';
+  }
+
+  // Dynamic imports must use explicit relative specifiers; values like
+  // "src/_gt" are otherwise treated as package names by Vite and Node.
+  const hasExplicitRelativePrefix =
+    normalizedPath === '..' ||
+    normalizedPath.startsWith('../') ||
+    normalizedPath.startsWith('./');
+
+  return hasExplicitRelativePrefix
+    ? `${normalizedPath}/`
+    : `./${normalizedPath}/`;
+}
+
 export async function createLoadTranslationsFile(
   appDirectory: string,
   translationsDir: string = DEFAULT_TRANSLATIONS_DIR,
@@ -11,7 +30,6 @@ export async function createLoadTranslationsFile(
 ) {
   const usingSrcDirectory = fs.existsSync(path.join(appDirectory, 'src'));
 
-  // Calculate the relative path from the loadTranslations.js location to the translations directory
   const loadTranslationsDir = usingSrcDirectory
     ? path.join(appDirectory, 'src')
     : appDirectory;
@@ -19,7 +37,7 @@ export async function createLoadTranslationsFile(
     loadTranslationsDir,
     path.resolve(appDirectory, translationsDir)
   );
-  const publicPath = relativePath ? `${relativePath}/` : './';
+  const publicPath = toRelativeImportPath(relativePath);
 
   const filePath = usingSrcDirectory
     ? path.join(appDirectory, 'src', 'loadTranslations.js')

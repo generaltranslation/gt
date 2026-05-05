@@ -7,10 +7,10 @@ import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
 // ----- FUNCTIONS ----- //
 /**
- * Calculates a unique hash for a given string using sha256.
+ * Calculates a unique hash for a given string using SHA-256.
  *
  * @param {string} string - The string to be hashed.
- * @returns {string} - The resulting hash as a hexadecimal string.
+ * @returns {string} The resulting hash as a hexadecimal string.
  */
 export function oldHashString(string: string): string {
   return bytesToHex(sha256(utf8ToBytes(string)));
@@ -20,10 +20,10 @@ export function oldHashString(string: string): string {
  * Calculates a unique ID for the given children objects by hashing their sanitized JSON string representation.
  *
  * @param {any} childrenAsObjects - The children objects to be hashed.
- * @param {string} context - The context for the children
- * @param {string} id - The id for the JSX Children object
- * @param {function} hashFunction custom hash function
- * @returns {string} - The unique has of the children.
+ * @param {string} context - The context for the children.
+ * @param {string} id - The ID for the JSX children object.
+ * @param {function} hashFunction - Custom hash function.
+ * @returns {string} - The unique hash of the children.
  */
 export function oldHashJsxChildren(
   {

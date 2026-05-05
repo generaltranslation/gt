@@ -10,6 +10,6 @@ export function isValidTaggedElement(target: unknown): target is TaggedElement {
 /**
  * @deprecated - this function is to always be overridden by a wrapper react package
  */
-export function readAuthFromEnv({}: AuthFromEnvParams): AuthFromEnvReturn {
+export function readAuthFromEnv(_params: AuthFromEnvParams): AuthFromEnvReturn {
   throw createInternalUsageError('readAuthFromEnv');
 }

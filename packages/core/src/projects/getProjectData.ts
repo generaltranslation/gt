@@ -11,9 +11,9 @@ import { ProjectData } from '../types-dir/api/project';
  * @internal
  * Gets the project data for a given project ID.
  * @param projectId - The project ID to get the project data for
- * @param options - The options for the API call
- * @param config - The configuration for the request
- * @returns The project data for the given project ID
+ * @param options - The options for the API call.
+ * @param config - The configuration for the request.
+ * @returns The project data for the given project ID.
  */
 export default async function _getProjectData(
   projectId: string,

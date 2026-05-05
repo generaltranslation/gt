@@ -227,14 +227,15 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   }) {
     const { source, context, maxChars, id, hash, renderMessage } = args;
     try {
-      I18NConfig.translateIcu({
+      I18NConfig.translate({
         source: indexVars(source),
         targetLocale: locale,
         options: {
-          ...(context && { context }),
-          ...(maxChars && { maxChars }),
-          ...(id && { id }),
-          hash,
+          ...(context && { $context: context }),
+          ...(maxChars != null && { $maxChars: maxChars }),
+          ...(id && { $id: id }),
+          $_hash: hash,
+          $format: 'ICU',
         },
       }).then((result) => {
         // eslint-disable-next-line no-console
@@ -281,14 +282,15 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       if (translationEntry) return; // exists already
 
       try {
-        preloadedTranslations![hash] = (await I18NConfig.translateIcu({
+        preloadedTranslations![hash] = (await I18NConfig.translate({
           source: indexVars(message),
           targetLocale: locale,
           options: {
-            ...(context && { context }),
-            ...(maxChars && { maxChars }),
-            ...(id && { id }),
-            hash,
+            ...(context && { $context: context }),
+            ...(maxChars != null && { $maxChars: maxChars }),
+            ...(id && { $id: id }),
+            $_hash: hash,
+            $format: 'ICU',
           },
         })) as string;
       } catch (error) {

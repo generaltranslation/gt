@@ -261,6 +261,37 @@ describe('TranslationsCache', () => {
     expect(mockTranslateMany).toHaveBeenCalledTimes(2);
   });
 
+  it('miss() maps $maxChars to maxChars metadata', async () => {
+    const options: LookupOptions = {
+      $format: 'ICU',
+      $maxChars: 12,
+    };
+    const { message, hash } = makeKey('Hello', options);
+    mockTranslateMany.mockResolvedValue(
+      mockTranslateManyResponse([{ hash, translation: 'Bonjour' }])
+    );
+
+    const cache = new TranslationsCache({
+      init: {},
+      translateMany: mockTranslateMany,
+    });
+
+    const promise = cache.miss({ message, options });
+    vi.advanceTimersByTime(50);
+    await promise;
+
+    expect(mockTranslateMany).toHaveBeenCalledWith({
+      [hash]: {
+        source: message,
+        metadata: {
+          hash,
+          maxChars: 12,
+          dataFormat: 'ICU',
+        },
+      },
+    });
+  });
+
   it('miss() rejects promise when translateMany throws', async () => {
     const { message, options } = makeKey('Hello');
     mockTranslateMany.mockRejectedValue(new Error('API error'));

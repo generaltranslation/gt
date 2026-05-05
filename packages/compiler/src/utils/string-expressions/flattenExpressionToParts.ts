@@ -8,9 +8,27 @@ export type Part =
   | { type: 'derive'; node: t.Expression }
   | { type: 'dynamic'; node: t.Expression };
 
+export const INVALID_TEMPLATE_ESCAPE_ERROR =
+  'Template literal contains an invalid escape sequence';
+
+export type FlattenExpressionError = {
+  kind: 'invalid-template-escape' | 'invalid-expression';
+  message: string;
+};
+
+const INVALID_TEMPLATE_ESCAPE: FlattenExpressionError = {
+  kind: 'invalid-template-escape',
+  message: INVALID_TEMPLATE_ESCAPE_ERROR,
+};
+
+const INVALID_EXPRESSION: FlattenExpressionError = {
+  kind: 'invalid-expression',
+  message: 'Expression is not a valid expression',
+};
+
 type FlattenExpressionResult = {
   parts: ResolutionNode<Part>[];
-  errors: string[];
+  errors: FlattenExpressionError[];
 };
 
 function isStaticPart(
@@ -93,9 +111,7 @@ export function flattenExpressionToParts(
     for (let i = 0; i < expr.quasis.length; i++) {
       const cooked = expr.quasis[i].value.cooked;
       if (cooked == null) {
-        result.errors.push(
-          'Template literal contains an invalid escape sequence'
-        );
+        result.errors.push(INVALID_TEMPLATE_ESCAPE);
         return result;
       } else if (cooked) {
         appendPart(result.parts, { type: 'static', value: cooked });
@@ -103,7 +119,7 @@ export function flattenExpressionToParts(
       if (i < expr.expressions.length) {
         const exprPathIndex = exprPath.get('expressions')[i];
         if (!exprPathIndex.isExpression()) {
-          result.errors.push('Expression is not a valid expression');
+          result.errors.push(INVALID_EXPRESSION);
           return result;
         }
         const expressionResult = flattenExpressionToParts(exprPathIndex);
@@ -118,13 +134,13 @@ export function flattenExpressionToParts(
   if (t.isBinaryExpression(expr) && expr.operator === '+') {
     const leftPath = exprPath.get('left');
     if (!leftPath.isExpression()) {
-      return { parts: [], errors: ['Expression is not a valid expression'] };
+      return { parts: [], errors: [INVALID_EXPRESSION] };
     }
     const { parts: leftParts, errors: leftErrors } =
       flattenExpressionToParts(leftPath);
     const rightPath = exprPath.get('right');
     if (!rightPath.isExpression()) {
-      return { parts: [], errors: ['Expression is not a valid expression'] };
+      return { parts: [], errors: [INVALID_EXPRESSION] };
     }
     const { parts: rightParts, errors: rightErrors } =
       flattenExpressionToParts(rightPath);

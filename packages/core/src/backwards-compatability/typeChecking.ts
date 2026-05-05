@@ -9,7 +9,7 @@ import { Variable as VariableObject } from '../types';
 
 /**
  * Checks if a JSX child is an old variable object format
- * @param child - The JSX child to check
+ * @param child - The JSX child to check.
  * @returns True if the child is an old variable object (has 'key' property)
  */
 export function isOldVariableObject(
@@ -20,7 +20,7 @@ export function isOldVariableObject(
 
 /**
  * Checks if a JSX child is a new variable object format
- * @param child - The JSX child to check
+ * @param child - The JSX child to check.
  * @returns True if the child is a new variable object (has 'k' property)
  */
 export function isNewVariableObject(
@@ -31,7 +31,7 @@ export function isNewVariableObject(
 
 /**
  * Checks if a JSX child is an old JSX element format
- * @param child - The JSX child to check
+ * @param child - The JSX child to check.
  * @returns True if the child is an old JSX element (has 'type' and 'props' properties)
  */
 function isOldJsxElement(
@@ -47,8 +47,8 @@ function isOldJsxElement(
 
 /**
  * Checks if a JSX child follows the old format (string, old variable object, or old JSX element)
- * @param child - The JSX child to check
- * @returns True if the child is in the old format
+ * @param child - The JSX child to check.
+ * @returns True if the child is in the old format.
  */
 function isOldJsxChild(child: OldJsxChild | JsxChild): child is OldJsxChild {
   // string
@@ -68,7 +68,7 @@ function isOldJsxChild(child: OldJsxChild | JsxChild): child is OldJsxChild {
 /**
  * Checks if JSX children follow the old format
  * @param children - The JSX children to check (can be string, array, or single child)
- * @returns True if all children are in the old format
+ * @returns True if all children are in the old format.
  */
 export function isOldJsxChildren(
   children: OldJsxChildren | JsxChildren

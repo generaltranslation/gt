@@ -1,27 +1,27 @@
-import { GT, isSameLanguage } from 'generaltranslation';
-import { translationManager, TranslationManager } from './TranslationManager';
+import type { GT } from 'generaltranslation';
 import {
   RenderMethod,
-  TranslatedChildren,
   getDefaultRenderSettings,
   defaultLocaleCookieName,
-  Dictionary,
 } from 'gt-react/internal';
-import { runtimeTranslationTimeoutWarning } from '../errors/createErrors';
-import { _Content, JsxChildren } from 'generaltranslation/internal';
-import { Translations } from 'gt-react/internal';
+import type {
+  Dictionary,
+  TranslatedChildren,
+  Translations,
+} from 'gt-react/internal';
 import { defaultWithGTConfigProps } from './props/defaultWithGTConfigProps';
 import { dictionaryManager, DictionaryManager } from './DictionaryManager';
-import { HeadersAndCookies } from './props/withGTConfigProps';
+import type { HeadersAndCookies } from './props/withGTConfigProps';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
   defaultResetLocaleCookieName,
 } from '../utils/cookies';
 import { defaultLocaleHeaderName } from '../utils/headers';
-import { CustomMapping } from 'generaltranslation/types';
-import { GTTranslationError } from '../utils/errors';
-import type { TranslateManyEntry } from 'generaltranslation/types';
+import type { CustomMapping } from 'generaltranslation/types';
+import { I18nManager } from 'gt-i18n/internal';
+import type { LookupOptions } from 'gt-i18n/internal/types';
+import { loadTranslations } from './loadTranslation';
 
 type I18NConfigurationParams = {
   apiKey?: string;
@@ -47,27 +47,11 @@ type I18NConfigurationParams = {
   [key: string]: any;
 };
 
-type QueueEntry =
-  | {
-      dataFormat: 'I18NEXT' | 'ICU';
-      source: _Content;
-      targetLocale: string;
-      metadata: { hash: string } & Record<string, any>;
-      resolve: (
-        value: TranslatedChildren | PromiseLike<TranslatedChildren>
-      ) => void;
-      reject: (reason?: any) => void;
-    }
-  | {
-      dataFormat: 'JSX';
-      source: JsxChildren;
-      targetLocale: string;
-      metadata: { hash: string } & Record<string, any>;
-      resolve: (
-        value: TranslatedChildren | PromiseLike<TranslatedChildren>
-      ) => void;
-      reject: (reason?: any) => void;
-    };
+type RuntimeTranslationParams = {
+  source: TranslatedChildren;
+  targetLocale: string;
+  options: LookupOptions;
+};
 
 export class I18NConfiguration {
   // Feature flags
@@ -77,42 +61,22 @@ export class I18NConfiguration {
   dictionaryEnabled: boolean;
   // Cloud integration
   projectId?: string;
-  apiKey?: string;
   devApiKey?: string;
   runtimeUrl: string | undefined;
-  cacheUrl: string | null;
-  cacheExpiryTime?: number;
-  _versionId?: string;
-  // Locale info
-  defaultLocale: string;
-  locales: string[];
   // Rendering
   renderSettings: {
     method: RenderMethod;
     timeout?: number;
   };
   // Dictionaries
-  private _translationManager: TranslationManager | undefined;
+  private _i18nManager: I18nManager<TranslatedChildren>;
   private _dictionaryManager: DictionaryManager | undefined;
-  // Other metadata
-  metadata: Record<string, any>;
-  // Batching config
-  maxConcurrentRequests: number;
-  maxBatchSize: number;
-  batchInterval: number;
-  private _queue: Array<QueueEntry>;
-  private _activeRequests: number;
-  // Cache for ongoing translation requests
-  private _translationCache: Map<string, Promise<any>>;
   // Headers and cookies
   private localeHeaderName: string;
   private localeCookieName: string;
   private referrerLocaleCookieName: string;
   private localeRoutingEnabledCookieName: string;
   private resetLocaleCookieName: string;
-  // Custom mapping
-  private customMapping: CustomMapping | undefined;
-  private gt: GT;
   constructor({
     // Cloud integration
     apiKey,
@@ -130,6 +94,8 @@ export class I18NConfiguration {
     // Render method
     renderSettings,
     // Dictionaries
+    // Dictionary files are resolved by dictionaryManager; do not forward the
+    // public dictionary prop as runtime translation metadata.
     dictionary: _dictionary,
     // Batching config
     maxConcurrentRequests,
@@ -137,27 +103,26 @@ export class I18NConfiguration {
     batchInterval,
     // Internal
     _usingPlugin,
-    // Other metadata
     headersAndCookies,
     customMapping,
+    // Other metadata
     ...metadata
   }: I18NConfigurationParams) {
+    void _dictionary;
+
     // ----- CLOUD INTEGRATION ----- //
 
-    this.apiKey = apiKey;
     this.devApiKey = devApiKey;
     this.projectId = projectId;
     this.runtimeUrl = runtimeUrl;
-    this.cacheUrl = cacheUrl;
-    this.cacheExpiryTime = cacheExpiryTime;
-    this._versionId = _versionId; // version id for the dictionary
 
-    // buildtime translation enabled
+    // Enables locale-based translation lookups through I18nManager. Runtime API
+    // availability is tracked separately by developmentApiEnabled/productionApiEnabled.
     this.translationEnabled = !!(
       loadTranslationsType === 'custom' || // load local translation
       (loadTranslationsType === 'remote' &&
         this.projectId && // projectId required because it's part of the GET request
-        this.cacheUrl) ||
+        cacheUrl) ||
       loadDictionaryEnabled // load local dictionary
     );
 
@@ -171,16 +136,13 @@ export class I18NConfiguration {
       this.devApiKey &&
       process.env.NODE_ENV === 'development'
     );
-    this.productionApiEnabled = !!(runtimeApiEnabled && this.apiKey);
+    this.productionApiEnabled = !!(runtimeApiEnabled && apiKey);
 
     // dictionary enabled
     this.dictionaryEnabled = _usingPlugin;
 
     // ----- SETUP ----- //
 
-    // Locales
-    this.defaultLocale = defaultLocale;
-    this.locales = locales;
     // Render method
     const defaultRenderSettings = getDefaultRenderSettings(
       process.env.NODE_ENV
@@ -192,46 +154,59 @@ export class I18NConfiguration {
         timeout: renderSettings?.timeout || defaultRenderSettings.timeout,
       }),
     };
-    // Other metadata
-    this.metadata = {
-      sourceLocale: this.defaultLocale,
-      ...(this.renderSettings.timeout && {
-        timeout: this.renderSettings.timeout,
-      }),
-      projectId: this.projectId,
-      publish: true,
-      fast: true,
-      ...(metadata || {}),
-    };
-    // Custom mapping
-    this.customMapping = customMapping;
-    this.gt = new GT({
+    // Translation and dictionary managers
+    const shouldLoadTranslations = loadTranslationsType !== 'disabled';
+    const runtimeTranslationTimeout = this.renderSettings.timeout;
+    this._i18nManager = new I18nManager<TranslatedChildren>({
       apiKey,
       devApiKey,
-      sourceLocale: defaultLocale,
       projectId,
-      baseUrl: runtimeUrl,
+      runtimeUrl,
+      // Locale info
+      defaultLocale,
+      locales,
+      // Custom mapping
       customMapping,
-    });
-    // Dictionary managers
-    this._translationManager = translationManager;
-    this._dictionaryManager = dictionaryManager;
-    this._translationManager.setConfig({
-      cacheUrl,
-      projectId,
-      translationEnabled: this.translationEnabled,
+      enableI18n: this.translationEnabled,
+      // Batching config
+      batchConfig: {
+        maxConcurrentRequests,
+        maxBatchSize,
+        batchInterval,
+      },
+      runtimeTranslation: {
+        timeout: runtimeTranslationTimeout,
+        // Other metadata
+        metadata: {
+          sourceLocale: defaultLocale,
+          ...(runtimeTranslationTimeout && {
+            timeout: runtimeTranslationTimeout,
+          }),
+          projectId,
+          publish: true,
+          fast: true,
+          ...metadata,
+        },
+      },
+      cacheUrl: shouldLoadTranslations ? cacheUrl : null,
+      // Only apply cache expiry for remote translations; custom loaders manage
+      // their own freshness, and historically their caches were never evicted.
+      cacheExpiryTime:
+        loadTranslationsType === 'remote' ? (cacheExpiryTime ?? null) : null,
       _versionId,
-      cacheExpiryTime: this.cacheExpiryTime,
-      loadTranslationsType: loadTranslationsType,
+      environment:
+        process.env.NODE_ENV === 'development' ? 'development' : 'production',
+      ...(shouldLoadTranslations && {
+        loadTranslations: async (locale: string) =>
+          (await loadTranslations({
+            targetLocale: locale,
+            ...(cacheUrl && { cacheUrl }),
+            ...(projectId && { projectId }),
+            ...(_versionId && { _versionId }),
+          })) || {},
+      }),
     });
-    // Batching
-    this.maxConcurrentRequests = maxConcurrentRequests;
-    this.maxBatchSize = maxBatchSize;
-    this.batchInterval = batchInterval;
-    this._queue = [];
-    this._activeRequests = 0;
-    this._translationCache = new Map(); // cache for ongoing promises, so things aren't translated twice
-    this._startBatching();
+    this._dictionaryManager = dictionaryManager;
     // Headers and cookies
     this.localeHeaderName =
       headersAndCookies?.localeHeaderName || defaultLocaleHeaderName;
@@ -278,9 +253,9 @@ export class I18NConfiguration {
       referrerLocaleCookieName,
       localeCookieName,
       resetLocaleCookieName,
-      customMapping,
-      _versionId,
     } = this;
+    const customMapping = this._i18nManager.getCustomMapping();
+    const _versionId = this._i18nManager.getVersionId();
     return {
       projectId,
       translationEnabled,
@@ -303,7 +278,7 @@ export class I18NConfiguration {
    * @returns {GT} The GT class instance
    */
   getGTClass(): GT {
-    return this.gt;
+    return this._i18nManager.getGTClass();
   }
 
   // ----- LOCALES ----- //
@@ -313,7 +288,7 @@ export class I18NConfiguration {
    * @returns {string} A BCP-47 locale tag
    */
   getDefaultLocale(): string {
-    return this.defaultLocale;
+    return this._i18nManager.getDefaultLocale();
   }
 
   /**
@@ -321,7 +296,7 @@ export class I18NConfiguration {
    * @returns {string[]} A list of BCP-47 locale tags, or undefined if none were provided
    */
   getLocales(): string[] {
-    return this.locales;
+    return this._i18nManager.getLocales();
   }
 
   /**
@@ -329,7 +304,7 @@ export class I18NConfiguration {
    * @returns {string | undefined} The version ID, if set
    */
   getVersionId(): string | undefined {
-    return this._versionId;
+    return this._i18nManager.getVersionId();
   }
 
   // ----- COOKIES AND HEADERS ----- //
@@ -380,15 +355,10 @@ export class I18NConfiguration {
    * @returns True if translation is required, otherwise false
    */
   requiresTranslation(locale: string): [boolean, boolean] {
-    if (!this.translationEnabled) return [false, false];
-    const translationRequired = this.gt.requiresTranslation(
-      this.defaultLocale,
-      locale,
-      this.locales
-    );
-    const dialectTranslationRequired =
-      translationRequired && isSameLanguage(locale, this.defaultLocale);
-    return [translationRequired, dialectTranslationRequired];
+    return [
+      this._i18nManager.requiresTranslation(locale),
+      this._i18nManager.requiresDialectTranslation(locale),
+    ];
   }
 
   // ----- DICTIONARY ----- //
@@ -423,214 +393,32 @@ export class I18NConfiguration {
    * @returns A promise that resolves to the translations.
    */
   async getCachedTranslations(locale: string): Promise<Translations> {
-    return (
-      (await this._translationManager?.getCachedTranslations(locale)) || {}
-    );
-  }
-
-  /**
-   * Synchronously retrieves translations for a given locale which are already cached locally
-   * @param {string} locale - The locale code.
-   * @returns {Translations} The translations data or an empty object if not found.
-   */
-  getRecentTranslations(locale: string): Translations {
-    return this._translationManager?.getRecentTranslations(locale) || {};
+    return (await this._i18nManager.loadTranslations(locale)) as Translations;
   }
 
   // ----- RUNTIME TRANSLATION ----- //
 
-  private async _translateContent(
-    params: {
-      source: _Content;
-      targetLocale: string;
-      options: { hash: string } & Record<string, any>;
-    },
-    dataFormat: 'I18NEXT' | 'ICU'
-  ): Promise<TranslatedChildren> {
-    // check internal cache
-    const cacheKey = constructCacheKey(params.targetLocale, params.options);
-    if (this._translationCache.has(cacheKey)) {
-      return this._translationCache.get(cacheKey);
+  lookupTranslation({
+    source,
+    targetLocale,
+    options,
+  }: RuntimeTranslationParams): TranslatedChildren | undefined {
+    return this._i18nManager.lookupTranslation(targetLocale, source, options);
+  }
+
+  async translate({
+    source,
+    targetLocale,
+    options,
+  }: RuntimeTranslationParams): Promise<TranslatedChildren> {
+    const translation = await this._i18nManager.lookupTranslationWithFallback(
+      targetLocale,
+      source,
+      options
+    );
+    if (translation == null) {
+      throw new Error('Translation failed.');
     }
-
-    // add to tx queue
-    const { source, targetLocale, options } = params;
-    const translationPromise = new Promise<TranslatedChildren>(
-      (resolve, reject) => {
-        this._queue.push({
-          dataFormat,
-          source,
-          targetLocale,
-          metadata: {
-            ...options,
-            ...(options.maxChars != null && {
-              maxChars: Math.abs(options.maxChars),
-            }),
-          },
-          resolve,
-          reject,
-        });
-      }
-    ).catch((error) => {
-      this._translationCache.delete(cacheKey);
-      throw new Error(error);
-    });
-
-    this._translationCache.set(cacheKey, translationPromise);
-    return translationPromise;
-  }
-
-  /**
-   * Translate content into language associated with a given locale
-   * @param params - Parameters for translation
-   * @returns Translated string
-   */
-  async translateI18Next(params: {
-    source: _Content;
-    targetLocale: string;
-    options: { hash: string } & Record<string, any>;
-  }): Promise<TranslatedChildren> {
-    return this._translateContent(params, 'I18NEXT');
-  }
-
-  /**
-   * Translate content into language associated with a given locale
-   * @param params - Parameters for translation
-   * @returns Translated string
-   */
-  async translateIcu(params: {
-    source: _Content;
-    targetLocale: string;
-    options: { hash: string } & Record<string, any>;
-  }): Promise<TranslatedChildren> {
-    return this._translateContent(params, 'ICU');
-  }
-
-  /**
-   * Translate the children components
-   * @param params - Parameters for translation
-   * @returns A promise that resolves when translation is complete
-   */
-  async translateJsx(params: {
-    source: JsxChildren;
-    targetLocale: string;
-    options: { hash: string } & Record<string, any>;
-  }): Promise<TranslatedChildren> {
-    // In memory cache to make sure the same translation isn't requested twice
-    const { source, targetLocale, options } = params;
-    const cacheKey = constructCacheKey(targetLocale, options);
-    if (this._translationCache.has(cacheKey)) {
-      return this._translationCache.get(cacheKey);
-    }
-    // Add to translation queue
-    const translationPromise = new Promise<TranslatedChildren>(
-      (resolve, reject) => {
-        // In memory queue to batch requests
-        this._queue.push({
-          dataFormat: 'JSX',
-          source,
-          targetLocale,
-          metadata: {
-            ...options,
-            ...(options.maxChars != null && {
-              maxChars: Math.abs(options.maxChars),
-            }),
-          },
-          resolve,
-          reject,
-        });
-      }
-    ).catch((error) => {
-      this._translationCache.delete(cacheKey);
-      throw new Error(error);
-    });
-    this._translationCache.set(cacheKey, translationPromise);
-    return translationPromise;
-  }
-
-  /**
-   * Send a batch request for React translation
-   * @param batch - The batch of requests to be sent
-   */
-  private async _sendBatchRequest(batch: Array<QueueEntry>): Promise<void> {
-    this._activeRequests++;
-    try {
-      // ----- TRANSLATION REQUEST WITH ABORT CONTROLLER ----- //
-      const requests: Record<string, TranslateManyEntry> = {};
-      for (const item of batch) {
-        const { source, metadata, dataFormat } = item;
-        requests[metadata.hash] = {
-          source,
-          metadata: { ...metadata, dataFormat },
-        };
-      }
-
-      const results = await this.gt.translateMany(
-        requests,
-        {
-          ...this.metadata,
-          targetLocale: batch[0].targetLocale,
-        },
-        this.renderSettings.timeout
-      );
-
-      // ----- PROCESS RESPONSE ----- //
-      batch.forEach((request) => {
-        const hash = request.metadata.hash;
-        const result = results[hash];
-
-        if (result && result.success) {
-          // record translations
-          if (this._translationManager) {
-            this._translationManager.setTranslations(
-              request.targetLocale,
-              hash,
-              result.translation
-            );
-          }
-          return request.resolve(result.translation);
-        }
-        return request.reject(
-          new GTTranslationError('Translation failed.', 500)
-        );
-      });
-    } catch (error) {
-      // Error logging
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.warn(runtimeTranslationTimeoutWarning); // Warning for timeout
-      } else {
-        console.warn(error);
-      }
-      // Reject all promises
-      batch.forEach((request) => {
-        return request.reject(new GTTranslationError(String(error), 500));
-      });
-    } finally {
-      this._activeRequests--;
-    }
-  }
-
-  /**
-   * Start the batching process with a set interval
-   */
-  private _startBatching(): void {
-    setInterval(() => {
-      if (
-        this._queue.length > 0 &&
-        this._activeRequests < this.maxConcurrentRequests
-      ) {
-        const batchSize = Math.min(this.maxBatchSize, this._queue.length);
-        this._sendBatchRequest(this._queue.slice(0, batchSize));
-        this._queue = this._queue.slice(batchSize);
-      }
-    }, this.batchInterval);
+    return translation;
   }
 }
-
-// Constructs the unique identification key for the map which is the in-memory same-render-cycle cache
-const constructCacheKey = (
-  targetLocale: string,
-  metadata: Record<string, any>
-) => {
-  return `${targetLocale}-${metadata.hash}`;
-};

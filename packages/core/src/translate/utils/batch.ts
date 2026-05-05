@@ -1,8 +1,8 @@
 /**
  * Splits an array into batches of a specified size.
- * @param items - The array to split into batches
- * @param batchSize - The maximum size of each batch
- * @returns An array of batches
+ * @param items - The array to split into batches.
+ * @param batchSize - The maximum size of each batch.
+ * @returns An array of batches.
  */
 export function createBatches<T>(items: T[], batchSize: number): T[][] {
   const batches: T[][] = [];
@@ -13,7 +13,7 @@ export function createBatches<T>(items: T[], batchSize: number): T[][] {
 }
 
 /**
- * Result of processing batches
+ * Result of processing batches.
  */
 export interface BatchList<T> {
   /** The items successfully processed across all batches */
@@ -25,7 +25,7 @@ export interface BatchList<T> {
 }
 
 /**
- * Options for batch processing
+ * Options for batch processing.
  */
 export interface BatchProcessOptions {
   /** Maximum number of items per batch (default: 100) */
@@ -37,10 +37,10 @@ export interface BatchProcessOptions {
 /**
  * Processes items in batches using a provided processor function.
  *
- * @param items - The items to process
- * @param processor - Async function that processes a single batch and returns items
- * @param options - Optional configuration for batch processing
- * @returns Promise that resolves to a BatchList containing all processed items
+ * @param items - The items to process.
+ * @param processor - Async function that processes a single batch and returns items.
+ * @param options - Optional configuration for batch processing.
+ * @returns Promise that resolves to a BatchList containing all processed items.
  *
  * @example
  * ```typescript
@@ -77,7 +77,7 @@ export async function processBatches<TInput, TOutput>(
   const allItems: TOutput[] = [];
 
   if (parallel) {
-    // Process all batches in parallel
+    // Process all batches in parallel.
     const results = await Promise.all(batches.map((batch) => processor(batch)));
     for (const result of results) {
       if (result) {
@@ -85,7 +85,7 @@ export async function processBatches<TInput, TOutput>(
       }
     }
   } else {
-    // Process batches sequentially
+    // Process batches sequentially.
     for (const batch of batches) {
       const result = await processor(batch);
       if (result) {

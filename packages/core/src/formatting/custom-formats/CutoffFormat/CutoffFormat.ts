@@ -21,16 +21,16 @@ export class CutoffFormatConstructor implements CutoffFormat {
   private additionLength: number;
   /**
    * Constructor
-   * @param {string | string[]} locales - The locales to use for formatting.
+   * @param {Intl.LocalesArgument} locales - The locales to use for formatting.
    * @param {CutoffFormatOptions} options - The options for formatting.
-   * @param {number} [option.maxChars] - The maximum number of characters to display.
+   * @param {number} [options.maxChars] - The maximum number of characters to display.
    * - Undefined values are treated as no cutoff.
    * - Negative values follow .slice() behavior and terminator will be added before the value.
    * - 0 will result in an empty string.
    * - If cutoff results in an empty string, no terminator is added.
-   * @param {CutoffFormatStyle} [option.style='ellipsis'] - The style of the terminator.
-   * @param {string} [option.terminator] - Optional override the terminator to use.
-   * @param {string} [option.separator] - Optional override the separator to use between the terminator and the value.
+   * @param {CutoffFormatStyle} [options.style='ellipsis'] - The style of the terminator.
+   * @param {string} [options.terminator] - Optional override the terminator to use.
+   * @param {string} [options.separator] - Optional override the separator to use between the terminator and the value.
    * - If no terminator is provided, then separator is ignored.
    *
    * @example
@@ -69,7 +69,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
       );
     }
 
-    // Resolve terminator options
+    // Resolve terminator options.
     let style: CutoffFormatStyle | undefined;
     let presetTerminatorOptions: ResolvedTerminatorOptions | undefined;
     if (options.maxChars !== undefined) {
@@ -159,13 +159,13 @@ export class CutoffFormatConstructor implements CutoffFormat {
       return [slicedValue];
     }
 
-    // Postpended cutoff
+    // Postpended cutoff.
     if (adjustedChars > 0) {
       return separator != null
         ? [slicedValue, separator, terminator]
         : [slicedValue, terminator];
     }
-    // Prepended cutoff
+    // Prepended cutoff.
     else {
       return separator != null
         ? [terminator, separator, slicedValue]

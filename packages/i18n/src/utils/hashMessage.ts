@@ -11,6 +11,10 @@ export function hashMessage<T extends Translation>(
   message: T,
   options: LookupOptions
 ): string {
+  if (options.$_hash != null) {
+    return options.$_hash;
+  }
+
   return hashSource({
     source:
       options.$format === 'ICU' ? indexVars(message as IcuMessage) : message,

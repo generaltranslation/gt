@@ -145,7 +145,7 @@ describe('getTranslations', () => {
       getCachedTranslationsStatus: vi.fn(),
       getRenderSettings: vi.fn(() => ({ method: 'replace' })),
       isDevelopmentApiEnabled: vi.fn(() => false),
-      translateIcu: vi.fn(() => Promise.resolve()),
+      translate: vi.fn(() => Promise.resolve()),
       setDictionaryTranslations: vi.fn(),
       getGTClass: vi.fn(() => ({
         formatMessage: mockFormatMessage,

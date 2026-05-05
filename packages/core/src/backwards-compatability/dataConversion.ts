@@ -135,7 +135,7 @@ export function getNewGTProp(dataGT: OldGTProp): GTProp {
 }
 
 /**
- * Convert response data from old format to new format
+ * Convert response data from current format to old format
  */
 
 export function getOldJsxChild(child: JsxChild): OldJsxChild {

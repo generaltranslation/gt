@@ -48,8 +48,10 @@ export async function initProject(
     }
 
     if (setupCompleted) {
+      // eslint-disable-next-line no-console
       console.log('Setup successfully completed');
     } else {
+      // eslint-disable-next-line no-console
       console.log(
         `Setup ${setupFailedMessage ? 'failed' : 'timed out'} — proceeding without setup${
           setupFailedMessage ? ` (${setupFailedMessage})` : ''

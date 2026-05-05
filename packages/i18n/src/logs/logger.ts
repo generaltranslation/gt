@@ -8,10 +8,12 @@ export default {
   },
 
   info(message: string) {
+    // eslint-disable-next-line no-console
     console.info(message);
   },
 
   debug(message: string) {
+    // eslint-disable-next-line no-console
     console.debug(message);
   },
 };

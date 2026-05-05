@@ -39,17 +39,6 @@ export function useCreateInternalUseTranslationsObjFunction(
   registerIcuForTranslation: TranslateIcuCallback,
   gtFunction: (id: string, options: DictionaryTranslationOptions) => string
 ) {
-  [
-    dictionary,
-    translations,
-    locale,
-    defaultLocale,
-    translationRequired,
-    dialectTranslationRequired,
-    developmentApiEnabled,
-    registerIcuForTranslation,
-    dictionaryTranslations,
-  ];
   return useCallback(
     (
       id: string,

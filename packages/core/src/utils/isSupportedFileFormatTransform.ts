@@ -18,8 +18,8 @@ const SUPPORTED_TRANSFORMATIONS = {
 
 /**
  * This function checks if a file format transformation is supported during translation
- * @param from - The source file format
- * @param to - The target file format
+ * @param from - The source file format.
+ * @param to - The target file format.
  * @returns True if the transformation is supported, false otherwise
  */
 export function isSupportedFileFormatTransform(

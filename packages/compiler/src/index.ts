@@ -177,6 +177,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           );
           const manifest = Object.fromEntries(debugManifest);
           fs.writeFileSync(outPath, JSON.stringify(manifest, null, 2));
+          // eslint-disable-next-line no-console
           console.log(
             `[gt-compiler] Debug hash manifest written to ${outPath} (${debugManifest.size} entries)`
           );

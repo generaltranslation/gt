@@ -68,7 +68,7 @@ export async function createI18nDocAndPatchMetadata(
 
   const doc = await createDocumentPromise;
   const _ref = getPublishedId(doc._id);
-  const result = await client
+  await client
     .transaction()
     .patch(translationMetadata._id, (p) =>
       p.insert(operation, location, [

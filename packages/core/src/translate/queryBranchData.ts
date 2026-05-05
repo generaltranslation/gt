@@ -10,8 +10,8 @@ export type BranchQuery = {
  * @internal
  * Queries branch information from the API.
  * @param query - Object mapping the current branch and incoming branches
- * @param config - The configuration for the API call
- * @returns The branch information
+ * @param config - The configuration for the API call.
+ * @returns The branch information.
  */
 export default async function _queryBranchData(
   query: BranchQuery,

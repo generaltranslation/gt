@@ -1,6 +1,6 @@
 /**
- * Comprehensive logging system for the General Translation library
- * Provides structured logging with multiple levels and configurable output
+ * Comprehensive logging system for the General Translation library.
+ * Provides structured logging with multiple levels and configurable output.
  */
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'off';
@@ -14,17 +14,17 @@ export interface LogEntry {
 }
 
 export interface LoggerConfig {
-  /** Minimum log level to output */
+  /** Minimum log level to output. */
   level: LogLevel;
-  /** Whether to include timestamps in log output */
+  /** Whether to include timestamps in log output. */
   includeTimestamp: boolean;
-  /** Whether to include context information */
+  /** Whether to include context information. */
   includeContext: boolean;
-  /** Custom prefix for all log messages */
+  /** Custom prefix for all log messages. */
   prefix?: string;
   /** Whether to output to console (default: true) */
   enableConsole: boolean;
-  /** Custom log handlers */
+  /** Custom log handlers. */
   handlers?: LogHandler[];
 }
 
@@ -91,7 +91,7 @@ export class ConsoleLogHandler implements LogHandler {
       parts.push(`[${this.config.prefix}]`);
     }
 
-    // Add context if available and enabled
+    // Add context if available and enabled.
     if (this.config.includeContext && entry.context) {
       parts.push(`[${entry.context}]`);
     }
@@ -99,7 +99,7 @@ export class ConsoleLogHandler implements LogHandler {
     // Add the main message
     parts.push(entry.message);
 
-    // Format metadata if available
+    // Format metadata if available.
     if (entry.metadata && Object.keys(entry.metadata).length > 0) {
       parts.push(`\n  Metadata: ${JSON.stringify(entry.metadata, null, 2)}`);
     }
@@ -109,9 +109,11 @@ export class ConsoleLogHandler implements LogHandler {
     // Output to appropriate console method based on level
     switch (entry.level) {
       case 'debug':
+        // eslint-disable-next-line no-console
         console.debug(formattedMessage);
         break;
       case 'info':
+        // eslint-disable-next-line no-console
         console.info(formattedMessage);
         break;
       case 'warn':
@@ -125,7 +127,7 @@ export class ConsoleLogHandler implements LogHandler {
 }
 
 /**
- * Main Logger class providing structured logging capabilities
+ * Main Logger class providing structured logging capabilities.
  */
 export class Logger {
   private config: LoggerConfig;
@@ -226,7 +228,7 @@ export class Logger {
 
   /**
    * Log an info message
-   * Used for general information about application operation
+   * Used for general information about application operation.
    */
   info(
     message: string,
@@ -250,7 +252,7 @@ export class Logger {
 
   /**
    * Log an error message
-   * Used for error events that might still allow the application to continue
+   * Used for error events that might still allow the application to continue.
    */
   error(
     message: string,
@@ -276,7 +278,7 @@ export class Logger {
 }
 
 /**
- * Context logger that automatically includes context information
+ * Context logger that automatically includes context information.
  */
 export class ContextLogger {
   private logger: Logger;
@@ -308,7 +310,7 @@ export class ContextLogger {
   }
 }
 
-// Default logger instance
+// Default logger instance.
 export const defaultLogger = new Logger({
   level: getConfiguredLogLevel(),
   includeTimestamp: true,
@@ -316,7 +318,7 @@ export const defaultLogger = new Logger({
   prefix: 'GT',
 });
 
-// Convenience functions using the default logger
+// Convenience functions using the default logger.
 export const debug = (
   message: string,
   context?: string,

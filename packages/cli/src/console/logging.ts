@@ -16,6 +16,7 @@ import { FileToUpload } from 'generaltranslation/types';
  * Strip ANSI escape codes from a string (e.g., chalk color codes)
  */
 export function stripAnsi(str: string): string {
+  // eslint-disable-next-line no-control-regex, no-useless-escape
   return str.replace(/\x1B\[[0-9;]*m/g, '');
 }
 
@@ -41,6 +42,7 @@ export function displayHeader(introString?: string) {
 }
 
 function displayAsciiTitle() {
+  // eslint-disable-next-line no-console
   console.log(
     chalk.cyan(
       `\n  ,ad8888ba,  888888888888  
@@ -57,6 +59,7 @@ Y8,        88      88
 
 function displayInitializingText() {
   const version = getCLIVersion();
+  // eslint-disable-next-line no-console
   console.log(
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.dim('https://generaltranslation.com/docs')}

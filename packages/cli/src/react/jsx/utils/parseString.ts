@@ -91,7 +91,6 @@ function collectObjectProperties(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>,
   errors: string[] = []
 ): ObjectEntry[] {
   const entries: ObjectEntry[] = [];
@@ -119,7 +118,6 @@ function collectObjectProperties(
             tPath,
             file,
             parsingOptions,
-            warnings,
             errors
           )
         );
@@ -164,7 +162,6 @@ function collectObjectProperties(
             spreadBinding.path,
             file,
             parsingOptions,
-            warnings,
             errors
           )
         );
@@ -199,8 +196,7 @@ function collectObjectProperties(
         const crossFileObjects = resolveObjectNodesInFile(
           resolvedFilePath,
           originalName,
-          parsingOptions,
-          warnings
+          parsingOptions
         );
         for (const crossObj of crossFileObjects) {
           const crossEntries = t.isArrayExpression(crossObj.objExpr)
@@ -208,15 +204,13 @@ function collectObjectProperties(
                 crossObj.objExpr,
                 crossObj.tPath,
                 crossObj.file,
-                parsingOptions,
-                warnings
+                parsingOptions
               )
             : collectObjectProperties(
                 crossObj.objExpr,
                 crossObj.tPath,
                 crossObj.file,
                 parsingOptions,
-                warnings,
                 errors
               );
           entries.push(...crossEntries);
@@ -238,7 +232,6 @@ function collectArrayElements(
   tPath: NodePath,
   file: string,
   parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>,
   errors: string[] = []
 ): ObjectEntry[] {
   const entries: ObjectEntry[] = [];
@@ -280,8 +273,7 @@ function collectArrayElements(
             spreadUnwrapped,
             spreadBinding.path,
             file,
-            parsingOptions,
-            warnings
+            parsingOptions
           );
           for (const e of spreadEntries) {
             entries.push({ key: String(index++), value: e.value });
@@ -318,8 +310,7 @@ function collectArrayElements(
         const crossFileNodes = resolveObjectNodesInFile(
           resolvedFilePath,
           originalName,
-          parsingOptions,
-          warnings
+          parsingOptions
         );
         for (const crossNode of crossFileNodes) {
           if (t.isArrayExpression(crossNode.objExpr)) {
@@ -327,8 +318,7 @@ function collectArrayElements(
               crossNode.objExpr,
               crossNode.tPath,
               crossNode.file,
-              parsingOptions,
-              warnings
+              parsingOptions
             );
             for (const e of spreadEntries) {
               entries.push({ key: String(index++), value: e.value });
@@ -451,8 +441,7 @@ function resolveToObjectNodes(
       return resolveObjectNodesInFile(
         resolvedFilePath,
         originalName,
-        parsingOptions,
-        warnings
+        parsingOptions
       );
     }
 
@@ -481,15 +470,13 @@ function resolveToObjectNodes(
             parent.objExpr,
             parent.tPath,
             parent.file,
-            parsingOptions,
-            warnings
+            parsingOptions
           )
         : collectObjectProperties(
             parent.objExpr,
             parent.tPath,
             parent.file,
             parsingOptions,
-            warnings,
             errors
           );
 
@@ -552,8 +539,7 @@ function resolveToObjectNodes(
 function resolveObjectNodesInFile(
   filePath: string,
   name: string,
-  parsingOptions: ParsingConfigOptions,
-  warnings: Set<string>
+  parsingOptions: ParsingConfigOptions
 ): ResolvedObject[] {
   const cacheKey = `${filePath}::${name}`;
   if (resolveObjectNodeCache.has(cacheKey)) {
@@ -609,12 +595,7 @@ function resolveObjectNodesInFile(
           );
           if (resolvedPath) {
             results.push(
-              ...resolveObjectNodesInFile(
-                resolvedPath,
-                name,
-                parsingOptions,
-                warnings
-              )
+              ...resolveObjectNodesInFile(resolvedPath, name, parsingOptions)
             );
           }
         }
@@ -661,8 +642,7 @@ function resolveObjectNodesInFile(
                 ...resolveObjectNodesInFile(
                   resolvedPath,
                   originalName,
-                  parsingOptions,
-                  warnings
+                  parsingOptions
                 )
               );
             }
@@ -964,7 +944,6 @@ export function parseStringExpression(
             objPath,
             objFile,
             parsingOptions,
-            warnings,
             errors
           )
         : collectObjectProperties(
@@ -972,7 +951,6 @@ export function parseStringExpression(
             objPath,
             objFile,
             parsingOptions,
-            warnings,
             errors
           );
 

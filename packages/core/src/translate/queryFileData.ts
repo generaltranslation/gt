@@ -50,9 +50,9 @@ export type FileDataResult = {
  * @internal
  * Queries data about one or more source or translation files.
  * @param data - Object mapping source or translation file information
- * @param options - The options for the API call
- * @param config - The configuration for the API call
- * @returns The file data
+ * @param options - The options for the API call.
+ * @param config - The configuration for the API call.
+ * @returns The file data.
  */
 export default async function _queryFileData(
   data: FileDataQuery,

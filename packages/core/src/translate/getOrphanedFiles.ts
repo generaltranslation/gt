@@ -62,7 +62,7 @@ export default async function _getOrphanedFiles(
     orphanedFileMap.set(orphan.fileId, orphan);
   }
 
-  // Intersect with each subsequent batch
+  // Intersect with each subsequent batch.
   for (let i = 1; i < batchResults.length; i++) {
     const batchOrphanIds = new Set(
       batchResults[i].orphanedFiles.map((f) => f.fileId)

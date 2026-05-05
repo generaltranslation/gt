@@ -279,18 +279,19 @@ export class TranslationsCache<
   private _enqueueTranslation(
     key: TranslationKey<TranslationValue>
   ): Promise<TranslationValue> {
-    const cacheKey = this.genKey(key);
+    const hash = this.genKey(key);
     const options = key.options;
     return new Promise<TranslationValue>((resolve, reject) => {
       this._queue.push({
-        key: cacheKey,
+        key: hash,
         source: key.message,
         metadata: {
+          hash,
           ...(options?.$context && { context: options.$context }),
           ...(options?.$id && { id: options.$id }),
           ...('$maxChars' in options &&
             options.$maxChars != null && {
-              $maxChars: Math.abs(options.$maxChars),
+              maxChars: Math.abs(options.$maxChars),
             }),
           dataFormat: options.$format,
         },

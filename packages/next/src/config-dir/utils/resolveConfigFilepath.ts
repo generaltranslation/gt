@@ -26,11 +26,9 @@ export function resolveConfigFilepath(
   }
 
   // Check for file existence in the root and src directories with supported extensions
-  for (const candidate of [
-    ...prefixes.flatMap(
-      (prefix) => extensions.map((ext) => `${prefix}/${fileName}${ext}`) // TOOD: is the / necessary after dot?
-    ),
-  ]) {
+  for (const candidate of prefixes.flatMap(
+    (prefix) => extensions.map((ext) => `${prefix}/${fileName}${ext}`) // TOOD: is the / necessary after dot?
+  )) {
     if (pathExists(candidate)) {
       return candidate;
     }

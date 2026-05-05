@@ -24,8 +24,6 @@ import { CutoffFormatOptions } from './custom-formats/CutoffFormat/types';
  *
  * @example
  * _formatCutoff({ value: 'Hello, world!', options: { maxChars: 8 } }); // Returns 'Hello, w...'
- *
- * Will fallback to an empty string if formatting fails.
  */
 export function _formatCutoff({
   value,
@@ -48,8 +46,8 @@ export function _formatCutoff({
  * @returns {string} The formatted message.
  * @internal
  *
- * Will fallback to an empty string
- * TODO: add this to custom formats
+ * Returns an empty string if IntlMessageFormat produces no output.
+ * TODO: Add this to custom formats.
  */
 export function _formatMessageICU(
   message: string,
@@ -67,7 +65,7 @@ export function _formatMessageICU(
  * @returns {string} The original message, unchanged.
  * @internal
  *
- * TODO: add this to custom formats
+ * TODO: Add this to custom formats.
  */
 export function _formatMessageString(message: string): string {
   return message;

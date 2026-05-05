@@ -1,0 +1,103 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "env": {
+    "builtin": true,
+    "node": true,
+    "commonjs": true
+  },
+  "globals": {
+    "DOMParser": "readonly",
+    "RequestInit": "readonly",
+    "document": "readonly",
+    "window": "readonly",
+    "NodeJS": "readonly",
+    "React": "readonly",
+    "__DEV__": "readonly"
+  },
+  "ignorePatterns": [
+    "dist/",
+    "node_modules/",
+    "coverage/",
+    "**/*.d.ts",
+    "**/rollup.config.*",
+    "tests/seeds/**/*"
+  ],
+  "rules": {
+    "no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error"]
+      }
+    ],
+    "prefer-const": "warn",
+    "no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "no-undef": "warn",
+    "no-empty": "warn",
+    "typescript/no-explicit-any": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.{js,ts,tsx}", "**/*.spec.{js,ts,tsx}"],
+      "env": {
+        "vitest": true
+      }
+    },
+    {
+      "files": ["packages/react/src/i18n-context/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "gt-i18n",
+                "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types."
+              }
+            ],
+            "patterns": [
+              {
+                "group": [
+                  "gt-i18n/**",
+                  "!gt-i18n/types",
+                  "!gt-i18n/internal",
+                  "!gt-i18n/internal/types"
+                ],
+                "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types. Importing from other gt-i18n subpaths is likely to break i18n context."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/locadex/**/*.{ts,tsx}", "packages/mcp/**/*.{ts,tsx}"],
+      "rules": {
+        "no-console": [
+          "error",
+          {
+            "allow": ["error"]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/locadex/**/*.{ts,tsx}"],
+      "plugins": ["import"],
+      "rules": {
+        "import/extensions": [
+          "error",
+          "ignorePackages",
+          {
+            "js": "always"
+          }
+        ]
+      }
+    }
+  ]
+}

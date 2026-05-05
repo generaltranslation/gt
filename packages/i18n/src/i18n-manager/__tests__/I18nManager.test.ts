@@ -296,6 +296,66 @@ describe('I18nManager', () => {
     expect(loadTranslations).toHaveBeenCalledTimes(testCase.calls);
   });
 
+  it.each([
+    {
+      name: 'requested dialect locale',
+      locale: 'en-GB',
+      translationLocale: 'en-GB',
+      translation: 'Hello there {name}!',
+    },
+    {
+      name: 'custom alias locale',
+      locale: 'brand-british',
+      translationLocale: 'brand-british',
+      translation: 'Hello mate {name}!',
+      customMapping: {
+        'brand-british': {
+          code: 'en-GB',
+          name: 'Brand British',
+        },
+      },
+    },
+    {
+      name: 'canonical locale with custom alias',
+      locale: 'en-GB',
+      translationLocale: 'brand-british',
+      translation: 'Hello mate {name}!',
+      customMapping: {
+        'brand-british': {
+          code: 'en-GB',
+          name: 'Brand British',
+        },
+      },
+    },
+  ])(
+    'uses $name cache key when approved fallback is source-equivalent',
+    async (testCase) => {
+      const loadTranslations = vi
+        .fn()
+        .mockResolvedValue({ [expectedHash]: testCase.translation });
+      const manager = createManager({
+        defaultLocale: 'en-US',
+        locales: ['en-US', 'en'],
+        loadTranslations,
+        ...(testCase.customMapping && {
+          customMapping: testCase.customMapping,
+        }),
+      });
+
+      expect(manager.requiresTranslation('en-GB')).toBe(true);
+      expect(manager.requiresDialectTranslation('en-GB')).toBe(true);
+
+      const translations = await manager.loadTranslations(testCase.locale);
+
+      expect(loadTranslations).toHaveBeenCalledTimes(1);
+      expect(loadTranslations).toHaveBeenCalledWith(testCase.translationLocale);
+      expect(translations[expectedHash]).toBe(testCase.translation);
+      expect(
+        manager.lookupTranslation(testCase.locale, message, lookupOptions)
+      ).toBe(testCase.translation);
+    }
+  );
+
   it('lookupTranslationWithFallback() falls back to runtime translate on cache miss', async () => {
     const unknownMessage = 'Unknown message';
     const unknownOptions: LookupOptions = { $format: 'ICU' };
@@ -353,6 +413,23 @@ describe('I18nManager', () => {
     expect(manager.requiresTranslation('brand-french')).toBe(true);
     expect(manager.requiresDialectTranslation('en-US')).toBe(false);
     expect(() => manager.getGTClass('brand-french')).not.toThrow();
+  });
+
+  it('preserves alias target locale when creating a GT instance', () => {
+    const manager = createManager({
+      locales: ['en', 'brand-french'],
+      customMapping: {
+        'brand-french': {
+          code: 'fr',
+          name: 'Brand French',
+        },
+      },
+    });
+
+    const gt = manager.getGTClass('fr');
+
+    expect(gt.targetLocale).toBe('brand-french');
+    expect(gt.locales).toEqual(['en', 'fr']);
   });
 
   it('normalizes custom aliases before loading and reading locale caches', async () => {

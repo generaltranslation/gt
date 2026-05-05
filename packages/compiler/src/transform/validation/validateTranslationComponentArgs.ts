@@ -1,6 +1,7 @@
 import { TransformState } from '../../state/types';
 import { GT_COMPONENT_TYPES } from '../../utils/constants/gt/constants';
 import * as t from '@babel/types';
+import type { NodePath } from '@babel/traverse';
 import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { validateExpressionIsStringLiteral } from '../../utils/validation/validateExpressionIsStringLiteral';
 import { JsxChildren } from 'generaltranslation/types';
@@ -13,7 +14,7 @@ import { JsxValidationError } from '../jsx-children/errors';
  * Given a translation component, validate the arguments
  */
 export function validateTranslationComponentArgs(
-  callExpr: t.CallExpression,
+  callExprPath: NodePath<t.CallExpression>,
   canonicalName: string,
   state: TransformState
 ): {
@@ -25,6 +26,7 @@ export function validateTranslationComponentArgs(
   children?: JsxChildren;
   hasDeriveContext?: boolean;
 } {
+  const callExpr = callExprPath.node;
   // Check that there are at least 2 arguments (identifier, args)
   if (callExpr.arguments.length < 2) {
     const errors = [
@@ -41,12 +43,22 @@ export function validateTranslationComponentArgs(
     ];
     return { errors };
   }
+  const argsPath = callExprPath.get('arguments')[1];
+  if (!argsPath?.isObjectExpression()) {
+    const errors = [
+      'Translation component must have an object expression as the second argument',
+    ];
+    return { errors };
+  }
 
   // Map to appropriate validation function
   switch (canonicalName) {
     case GT_COMPONENT_TYPES.T:
     case GT_COMPONENT_TYPES.GtInternalTranslateJsx:
-      return validateTComponentArgs(args, state);
+      return validateTComponentArgs(
+        argsPath as NodePath<t.ObjectExpression>,
+        state
+      );
     default:
       const errors = [
         `Invalid translation component: ${canonicalName}. You likely passed a non-translation component to validateTranslationComponentArgs`,
@@ -60,7 +72,7 @@ export function validateTranslationComponentArgs(
 /* =============================== */
 
 function validateTComponentArgs(
-  args: t.ObjectExpression,
+  argsPath: NodePath<t.ObjectExpression>,
   state: TransformState
 ): {
   errors: string[];
@@ -72,6 +84,7 @@ function validateTComponentArgs(
   hasDeriveContext?: boolean;
 } {
   const errors: string[] = [];
+  const args = argsPath.node;
 
   // Validate id
   const idValidation = validateStringProperty(args, 'id');
@@ -93,7 +106,7 @@ function validateTComponentArgs(
   const _hash = hashValidation.value;
 
   // Validate children
-  const childrenValidation = validateChildrenProperty(args, state);
+  const childrenValidation = validateChildrenProperty(argsPath, state);
   errors.push(...childrenValidation.errors);
   const children = childrenValidation.value;
 
@@ -107,7 +120,7 @@ function validateTComponentArgs(
  * Validate that the children property is a string literal
  */
 export function validateChildrenProperty(
-  args: t.ObjectExpression,
+  argsPath: NodePath<t.ObjectExpression>,
   state: TransformState
 ): {
   errors: string[];
@@ -117,7 +130,8 @@ export function validateChildrenProperty(
   const errors: string[] = [];
 
   // Get the children property
-  const childrenValidation = validateChildrenPropertyFromObjectExpression(args);
+  const childrenValidation =
+    validateChildrenPropertyFromObjectExpression(argsPath);
   if (childrenValidation.errors.length > 0) {
     errors.push(...childrenValidation.errors);
     return { errors };
