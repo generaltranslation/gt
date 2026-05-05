@@ -1,0 +1,167 @@
+---
+title: Compiler
+description: Use the GT compiler with React apps that are not using Next.js
+---
+
+## Overview
+
+The GT compiler is an optional build plugin for React apps that use Vite,
+webpack, Rollup, or esbuild. Next.js users should configure the compiler through
+[`withGTConfig()`](/docs/next/api/config/withGTConfig) instead.
+
+The compiler can:
+
+- add compile-time hashes to translated JSX and strings
+- run build checks for common translation mistakes
+- automatically wrap plain JSX text for translation when auto JSX injection is enabled
+
+<Callout type='info'>
+  Auto JSX injection is configured through `gt.config.json`. See the [auto JSX
+  injection guide](/docs/cli/features/auto-jsx-injection) for the full setup.
+</Callout>
+
+## Install
+
+Install the compiler as a development dependency.
+
+<Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+  <Tab value="npm">
+
+```bash
+npm i -D @generaltranslation/compiler
+```
+
+  </Tab>
+  <Tab value="yarn">
+
+```bash
+yarn add -D @generaltranslation/compiler
+```
+
+  </Tab>
+  <Tab value="bun">
+
+```bash
+bun add -d @generaltranslation/compiler
+```
+
+  </Tab>
+  <Tab value="pnpm">
+
+```bash
+pnpm add -D @generaltranslation/compiler
+```
+
+  </Tab>
+</Tabs>
+
+## Setup
+
+Pass your parsed `gt.config.json` as `{ gtConfig }` so compiler features that
+read `files.gt.parsingFlags`, including auto JSX injection and autoderive, use
+the same configuration as the CLI.
+
+### Vite
+
+```ts title="vite.config.ts"
+import fs from 'node:fs';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { vite as gtCompiler } from '@generaltranslation/compiler';
+
+const gtConfig = JSON.parse(fs.readFileSync('./gt.config.json', 'utf-8'));
+
+export default defineConfig({
+  plugins: [react(), gtCompiler({ gtConfig })],
+});
+```
+
+### webpack
+
+```js title="webpack.config.js"
+const fs = require('node:fs');
+const { webpack: gtCompiler } = require('@generaltranslation/compiler');
+
+const gtConfig = JSON.parse(fs.readFileSync('./gt.config.json', 'utf-8'));
+
+module.exports = {
+  plugins: [gtCompiler({ gtConfig })],
+};
+```
+
+### Rollup
+
+```js title="rollup.config.mjs"
+import fs from 'node:fs';
+import { rollup as gtCompiler } from '@generaltranslation/compiler';
+
+const gtConfig = JSON.parse(fs.readFileSync('./gt.config.json', 'utf-8'));
+
+export default {
+  plugins: [gtCompiler({ gtConfig })],
+};
+```
+
+### esbuild
+
+```js title="build.mjs"
+import fs from 'node:fs';
+import { build } from 'esbuild';
+import { esbuild as gtCompiler } from '@generaltranslation/compiler';
+
+const gtConfig = JSON.parse(fs.readFileSync('./gt.config.json', 'utf-8'));
+
+await build({
+  entryPoints: ['src/main.tsx'],
+  bundle: true,
+  outdir: 'dist',
+  plugins: [gtCompiler({ gtConfig })],
+});
+```
+
+## Options
+
+You can pass compiler options next to `gtConfig`.
+
+```ts
+gtCompiler({
+  gtConfig,
+  logLevel: 'warn',
+  compileTimeHash: true,
+  disableBuildChecks: false,
+});
+```
+
+- `gtConfig`: parsed `gt.config.json`. When omitted, the compiler tries to
+  load `./gt.config.json` from the current working directory.
+- `logLevel`: one of `silent`, `error`, `warn`, `info`, or `debug`. Defaults
+  to `warn`.
+- `compileTimeHash`: boolean. Defaults to `false`.
+- `disableBuildChecks`: boolean. Defaults to `false`.
+
+## Enable Parsing Flags
+
+Compiler features that are shared with the CLI live under
+`files.gt.parsingFlags` in `gt.config.json`.
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr"],
+  "files": {
+    "gt": {
+      "output": "public/_gt/[locale].json",
+      "parsingFlags": {
+        "enableAutoJsxInjection": true,
+        "autoderive": {
+          "jsx": true,
+          "strings": true
+        }
+      }
+    }
+  }
+}
+```
+
+With `{ gtConfig }` passed to the plugin, the compiler reads these flags during
+your bundler build.
