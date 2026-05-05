@@ -203,9 +203,9 @@ export async function generateSettings(
   // Only set src if the user explicitly provided it via flags or config.
 
   // Resolve all glob patterns in the files object
-  const compositePatterns = [
-    ...Object.entries(mergedOptions.options?.jsonSchema || {}),
-  ]
+  const compositePatterns = Object.entries(
+    mergedOptions.options?.jsonSchema || {}
+  )
     .filter(([, schema]) => schema.composite)
     .map(([key]) => key);
   mergedOptions.files = mergedOptions.files
@@ -230,9 +230,9 @@ export async function generateSettings(
       };
 
   mergedOptions.options = {
-    ...(mergedOptions.options || {}),
+    ...mergedOptions.options,
     mintlify: {
-      ...(mergedOptions.options?.mintlify || {}),
+      ...mergedOptions.options?.mintlify,
       inferTitleFromFilename:
         gtConfig.options?.mintlify?.inferTitleFromFilename ||
         mergedOptions.options?.mintlify?.inferTitleFromFilename,

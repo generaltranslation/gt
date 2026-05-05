@@ -143,7 +143,7 @@ export default function useRuntimeTranslation({
 
   const stageAndRequestFlush = useCallback((delta: Translations) => {
     stagedResultsRef.current = {
-      ...(stagedResultsRef.current ?? {}),
+      ...stagedResultsRef.current,
       ...delta,
     };
     // Only trigger a state change after mount; before mount, we'll flush on mount.

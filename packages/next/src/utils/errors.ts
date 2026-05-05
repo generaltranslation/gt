@@ -4,7 +4,6 @@ export class GTTranslationError extends Error {
     public code: number
   ) {
     super(error);
-    this.code = code;
   }
 
   toTranslationError() {

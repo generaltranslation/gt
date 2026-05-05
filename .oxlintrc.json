@@ -1,8 +1,5 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "categories": {
-    "correctness": "off"
-  },
   "env": {
     "builtin": true,
     "node": true,
@@ -37,7 +34,6 @@
     ],
     "no-undef": "warn",
     "no-empty": "warn",
-    "no-useless-escape": "warn",
     "typescript/no-explicit-any": "warn"
   },
   "overrides": [

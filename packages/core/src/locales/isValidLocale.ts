@@ -24,7 +24,7 @@ export const _isValidLocale = (
   if (
     customMapping?.[locale] &&
     typeof customMapping[locale] === 'object' &&
-    'code' in (customMapping[locale] as Object) &&
+    'code' in (customMapping[locale] as object) &&
     (customMapping[locale] as { code: string }).code
   ) {
     locale = (customMapping[locale] as { code: string }).code;

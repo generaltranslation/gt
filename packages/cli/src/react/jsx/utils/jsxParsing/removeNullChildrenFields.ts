@@ -36,14 +36,12 @@ export function removeNullChildrenFields(tree: JsxChildren): JsxChildren {
     if (child && 'd' in child && child.d != null) {
       let b: Record<string, JsxChildren> | undefined;
       if (child.d && 'b' in child.d && child.d.b != null) {
-        b = {
-          ...Object.fromEntries(
-            Object.entries(child.d.b).map(([key, value]) => [
-              key,
-              handleChildren(value),
-            ])
-          ),
-        };
+        b = Object.fromEntries(
+          Object.entries(child.d.b).map(([key, value]) => [
+            key,
+            handleChildren(value),
+          ])
+        );
       }
       d = {
         ...(b != null && { b }),
