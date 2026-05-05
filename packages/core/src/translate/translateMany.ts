@@ -72,7 +72,7 @@ export default async function _translateMany(
       hashSource({
         source,
         dataFormat: metadata?.dataFormat ?? 'STRING',
-        ...(metadata ?? {}),
+        ...metadata,
       });
     hashOrder?.push(hash);
     requestsObject[hash] = {

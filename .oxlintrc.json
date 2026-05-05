@@ -1,14 +1,12 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "categories": {
-    "correctness": "off"
-  },
   "env": {
     "builtin": true,
     "node": true,
     "commonjs": true
   },
   "globals": {
+    "DOMParser": "readonly",
     "RequestInit": "readonly",
     "document": "readonly",
     "window": "readonly",
@@ -36,7 +34,6 @@
     ],
     "no-undef": "warn",
     "no-empty": "warn",
-    "no-useless-escape": "warn",
     "typescript/no-explicit-any": "warn"
   },
   "overrides": [

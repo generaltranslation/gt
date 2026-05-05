@@ -191,7 +191,7 @@ const documentLevelArticle = {
 
 function createLocaleFields(locales: string[], fieldType: Record<string, any>) {
   return locales.map((locale) => ({
-    ...{ name: locale },
+    name: locale,
     ...fieldType,
   }));
 }

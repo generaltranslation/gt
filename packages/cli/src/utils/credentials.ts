@@ -43,7 +43,7 @@ export async function retrieveCredentials(
   const spinner = logger.createSpinner('dots');
   spinner.start('Waiting for response from dashboard...');
 
-  const credentials = await new Promise<Credentials>(async (resolve) => {
+  const credentials = await new Promise<Credentials>((resolve) => {
     const interval = setInterval(async () => {
       // Ping the dashboard to see if the credentials are set
       try {

@@ -246,13 +246,11 @@ export function validateJsonSchema(
       'include and composite cannot be used together in the same JSON schema'
     );
     return exitSync(1);
-    return null;
   }
 
   if (!jsonSchema.include && !jsonSchema.composite) {
     logger.error('No include or composite property found in JSON schema');
     return exitSync(1);
-    return null;
   }
 
   if (jsonSchema.structuralTransform && !jsonSchema.composite) {
@@ -260,7 +258,6 @@ export function validateJsonSchema(
       'structuralTransform requires composite to be defined in the JSON schema'
     );
     return exitSync(1);
-    return null;
   }
   return jsonSchema;
 }

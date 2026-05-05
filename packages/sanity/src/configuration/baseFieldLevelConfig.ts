@@ -1,14 +1,7 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
 import { SanityClient, SanityDocument } from 'sanity';
-import {
-  BaseDocumentSerializer,
-  BaseDocumentDeserializer,
-  BaseDocumentMerger,
-  defaultStopTypes,
-  customSerializers,
-  customBlockDeserializers,
-} from '../serialization/';
+import { BaseDocumentMerger } from '../serialization/';
 
 import type {
   ExportForTranslation,

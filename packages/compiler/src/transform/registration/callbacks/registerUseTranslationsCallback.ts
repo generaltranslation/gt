@@ -4,7 +4,7 @@ import { TransformState } from '../../../state/types';
  * Track t() function invocations
  * - Adds the translation content to the string collector
  */
-export function registerUseTranslationsCallback({}: {
+export function registerUseTranslationsCallback(_params: {
   identifier: number;
   state: TransformState;
 }): void {

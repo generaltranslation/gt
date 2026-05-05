@@ -1,5 +1,5 @@
 import {
-  RequestFunctionReturnType as RequestFunctionReturnType,
+  RequestFunctionReturnType,
   RequestFunctions,
   StaticRequestFunctions,
 } from '../types';
@@ -216,7 +216,7 @@ function extractCustomFunction(
  * Helper function to extract the custom function from the namespace.
  */
 const extractCustomFunctionHelper = (
-  module: Object | null,
+  module: object | null,
   functionName: RequestFunctions | StaticRequestFunctions
 ): (() => Promise<RequestFunctionReturnType>) => {
   const undefinedNamespaceError = `gt-next Error: expected a custom ${functionName} function, but got ${module}.`;

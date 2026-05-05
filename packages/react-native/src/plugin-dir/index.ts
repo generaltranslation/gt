@@ -39,9 +39,9 @@ export default function (
           ...POLYFILLS.filter(
             (polyfill) => !excludePolyfills.includes(polyfill)
           ),
-          ...resolvedLocales.flatMap((locale) => [
-            ...LOCALE_POLYFILLS.map((localeData) => `${localeData}/${locale}`),
-          ]),
+          ...resolvedLocales.flatMap((locale) =>
+            LOCALE_POLYFILLS.map((localeData) => `${localeData}/${locale}`)
+          ),
         ];
 
         const existingImports = new Set<string>();
