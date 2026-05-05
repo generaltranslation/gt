@@ -36,7 +36,7 @@ export async function retrieveCredentials(
 
   logger.message(
     `${chalk.dim(
-      `If the browser window didn't open automatically, please open the following link:`
+      `Sign in or create an account, finish company info, and create your project credentials. If the browser window didn't open automatically, please open the following link:`
     )}\n\n${chalk.cyan(urlToOpen)}`
   );
 
@@ -77,7 +77,7 @@ export async function retrieveCredentials(
       1000 * 60 * 60
     );
   });
-  spinner.stop('Received credentials');
+  spinner.stop('Received project credentials');
   return credentials;
 }
 
