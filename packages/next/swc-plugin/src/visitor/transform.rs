@@ -767,6 +767,7 @@ mod tests {
   use super::*;
   use swc_core::common::{SyntaxContext, DUMMY_SP};
   use swc_core::ecma::atoms::Atom;
+  use swc_core::ecma::visit::VisitMutWith;
 
   // Helper to create a test visitor with specific imports
   fn create_visitor_with_imports() -> TransformVisitor {
@@ -2143,6 +2144,104 @@ mod tests {
       visitor.visit_mut_jsx_expr_container(&mut expr_container);
 
       assert_eq!(visitor.statistics.dynamic_content_violations, 1);
+    }
+
+    #[test]
+    fn autoderive_off_rejects_raw_variable_child_in_t_component() {
+      let mut visitor = create_visitor_with_imports();
+      let mut element = create_jsx_element("T", vec![]);
+      element.children.push(JSXElementChild::JSXExprContainer(
+        JSXExprContainer {
+          span: DUMMY_SP,
+          expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("username"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }))),
+        },
+      ));
+
+      element.visit_mut_with(&mut visitor);
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 1);
+    }
+
+    #[test]
+    fn autoderive_off_rejects_nested_raw_variable_in_t_component() {
+      let mut visitor = create_visitor_with_imports();
+      let mut element = create_jsx_element("T", vec![]);
+      let mut nested = create_jsx_element("strong", vec![]);
+      nested.children.push(JSXElementChild::JSXExprContainer(
+        JSXExprContainer {
+          span: DUMMY_SP,
+          expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("username"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }))),
+        },
+      ));
+      element
+        .children
+        .push(JSXElementChild::JSXElement(Box::new(nested)));
+
+      element.visit_mut_with(&mut visitor);
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 1);
+    }
+
+    #[test]
+    fn autoderive_off_allows_var_child_in_t_component() {
+      let mut visitor = create_visitor_with_imports();
+      let mut element = create_jsx_element("T", vec![]);
+      let mut var = create_jsx_element("Var", vec![]);
+      var.children.push(JSXElementChild::JSXExprContainer(
+        JSXExprContainer {
+          span: DUMMY_SP,
+          expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("username"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }))),
+        },
+      ));
+      element
+        .children
+        .push(JSXElementChild::JSXElement(Box::new(var)));
+
+      element.visit_mut_with(&mut visitor);
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
+    }
+
+    #[test]
+    fn autoderive_off_allows_nested_jsx_inside_var_child() {
+      let mut visitor = create_visitor_with_imports();
+      let mut element = create_jsx_element("T", vec![]);
+      let mut var = create_jsx_element("Var", vec![]);
+      let mut nested = create_jsx_element("span", vec![]);
+      nested.children.push(JSXElementChild::JSXExprContainer(
+        JSXExprContainer {
+          span: DUMMY_SP,
+          expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident {
+            span: DUMMY_SP,
+            sym: Atom::new("username"),
+            optional: false,
+            ctxt: SyntaxContext::empty(),
+          }))),
+        },
+      ));
+      var.children.push(JSXElementChild::JSXElement(Box::new(nested)));
+      element
+        .children
+        .push(JSXElementChild::JSXElement(Box::new(var)));
+
+      element.visit_mut_with(&mut visitor);
+
+      assert_eq!(visitor.statistics.dynamic_content_violations, 0);
     }
 
     #[test]

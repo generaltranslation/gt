@@ -3,6 +3,14 @@ import { getI18NConfig } from '../../config-dir/getI18NConfig';
 import { noLocalesCouldBeDeterminedWarning } from '../../errors/ssg';
 import { RequestFunctionReturnType } from '../types';
 
+const warnedNoLocaleHeaders = new WeakSet<object>();
+
+function warnNoLocalesCouldBeDeterminedOnce(headersList: object) {
+  if (warnedNoLocaleHeaders.has(headersList)) return;
+  warnedNoLocaleHeaders.add(headersList);
+  console.warn(noLocalesCouldBeDeterminedWarning);
+}
+
 /**
  * Retrieves the 'accept-language' header from the headers list.
  * If the 'next/headers' module is not available, it attempts to load it. If the
@@ -41,17 +49,21 @@ export async function getNextLocale(): Promise<RequestFunctionReturnType> {
     if (acceptedLocales) preferredLocales.push(...acceptedLocales);
   }
 
-  // Give an error here
-  if (
-    preferredLocales.length === 0 &&
-    process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false'
-  ) {
-    console.warn(noLocalesCouldBeDeterminedWarning);
-  }
+  const hadRequestLocales = preferredLocales.length > 0;
 
   // add defaultLocale just in case there are no matches
   preferredLocales.push(defaultLocale);
 
   const gt = getI18NConfig().getGTClass();
-  return gt.determineLocale(preferredLocales, locales);
+  const locale = gt.determineLocale(preferredLocales, locales);
+
+  if (
+    !locale &&
+    !hadRequestLocales &&
+    process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false'
+  ) {
+    warnNoLocalesCouldBeDeterminedOnce(headersList);
+  }
+
+  return locale;
 }

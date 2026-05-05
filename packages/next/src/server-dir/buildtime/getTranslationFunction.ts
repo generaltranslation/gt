@@ -227,7 +227,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   }) {
     const { source, context, maxChars, id, hash, renderMessage } = args;
     try {
-      I18NConfig.translate({
+      void I18NConfig.translate({
         source: indexVars(source),
         targetLocale: locale,
         options: {
@@ -237,20 +237,24 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
           $_hash: hash,
           $format: 'ICU',
         },
-      }).then((result) => {
-        // eslint-disable-next-line no-console
-        console.warn(
-          createTranslationLoadingWarning({
-            ...(id && { id }),
-            source: renderMessage(source, [defaultLocale]),
-            translation: renderMessage(
-              result as string,
-              [locale, defaultLocale],
-              source
-            ),
-          })
-        );
-      });
+      })
+        .then((result) => {
+          // eslint-disable-next-line no-console
+          console.warn(
+            createTranslationLoadingWarning({
+              ...(id && { id }),
+              source: renderMessage(source, [defaultLocale]),
+              translation: renderMessage(
+                result as string,
+                [locale, defaultLocale],
+                source
+              ),
+            })
+          );
+        })
+        .catch((error) => {
+          console.warn(error);
+        });
     } catch (error) {
       console.warn(error);
     }

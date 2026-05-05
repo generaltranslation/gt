@@ -11,12 +11,14 @@ vi.mock('fs', () => ({
   },
 }));
 
-vi.mock('../plugin/getStableNextVersionInfo', () => ({
+const mockVersionInfo = vi.hoisted(() => ({
   rootParamStability: 'experimental',
   turboConfigStable: true,
   swcPluginCompatible: true,
   babelPluginCompatible: true,
 }));
+
+vi.mock('../plugin/getStableNextVersionInfo', () => mockVersionInfo);
 
 // ---- Helpers ---- //
 
@@ -49,6 +51,10 @@ beforeEach(() => {
   delete process.env.TURBOPACK;
   process.env.NODE_ENV = 'development';
   vi.clearAllMocks();
+  mockVersionInfo.rootParamStability = 'experimental';
+  mockVersionInfo.turboConfigStable = true;
+  mockVersionInfo.swcPluginCompatible = true;
+  mockVersionInfo.babelPluginCompatible = true;
   vi.mocked(fs.existsSync).mockReturnValue(false);
   vi.mocked(fs.readFileSync).mockReturnValue('{}');
 });
@@ -1146,9 +1152,122 @@ describe('withGTConfig', () => {
   });
 
   // ==============================
-  // 13. Webpack function
+  // 13. Compiler configuration
   // ==============================
-  describe('13. Webpack function', () => {
+  describe('13. Compiler configuration', () => {
+    it('logs when the SWC compiler is enabled', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+      const result = withGTConfig(
+        {},
+        { experimentalCompilerOptions: { type: 'swc' } as any }
+      );
+
+      expect(result.experimental!.swcPlugins).toHaveLength(1);
+      expect(infoSpy).toHaveBeenCalledWith('gt-next: SWC compiler enabled');
+      infoSpy.mockRestore();
+    });
+
+    it('emits debug compiler details when SWC logLevel is debug', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+      withGTConfig(
+        {},
+        {
+          experimentalCompilerOptions: {
+            type: 'swc',
+            logLevel: 'debug',
+            disableBuildChecks: false,
+          } as any,
+        }
+      );
+
+      expect(infoSpy).toHaveBeenCalledWith('gt-next: SWC compiler enabled');
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('gt-next: SWC compiler debug config')
+      );
+      infoSpy.mockRestore();
+      debugSpy.mockRestore();
+    });
+
+    it('does not log SWC startup messages when logLevel is silent', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+      withGTConfig(
+        {},
+        {
+          experimentalCompilerOptions: {
+            type: 'swc',
+            logLevel: 'silent',
+          } as any,
+        }
+      );
+
+      expect(infoSpy).not.toHaveBeenCalled();
+      expect(debugSpy).not.toHaveBeenCalled();
+      infoSpy.mockRestore();
+      debugSpy.mockRestore();
+    });
+
+    it('uses a Turbopack-specific babel compiler warning', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      process.env.TURBOPACK = '1';
+
+      const result = withGTConfig(
+        {},
+        { experimentalCompilerOptions: { type: 'babel' } as any }
+      );
+      const params = parseConfigParams(result);
+
+      expect(params.experimentalCompilerOptions.type).toBe('none');
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'The GT babel compiler is not compatible with Turbopack'
+        )
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("experimentalCompilerOptions: { type: 'swc' }")
+      );
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('compatible with turbopack or < react')
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('uses a React-version-specific babel compiler warning', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockVersionInfo.babelPluginCompatible = false;
+
+      const result = withGTConfig(
+        {},
+        { experimentalCompilerOptions: { type: 'babel' } as any }
+      );
+      const params = parseConfigParams(result);
+
+      expect(params.experimentalCompilerOptions.type).toBe('none');
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'The GT babel compiler requires react@17.0.0 or newer'
+        )
+      );
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('compatible with turbopack or < react')
+      );
+      warnSpy.mockRestore();
+    });
+  });
+
+  // ==============================
+  // 14. Webpack function
+  // ==============================
+  describe('14. Webpack function', () => {
     it('returns webpack config object', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
@@ -1217,9 +1336,9 @@ describe('withGTConfig', () => {
   });
 
   // ==============================
-  // 14. Turbopack configuration
+  // 15. Turbopack configuration
   // ==============================
-  describe('14. Turbopack configuration', () => {
+  describe('15. Turbopack configuration', () => {
     it('when TURBOPACK=1 + turboConfigStable=true (no legacy turbo config): aliases in result.turbopack.resolveAlias', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.TURBOPACK = '1';
@@ -1257,9 +1376,9 @@ describe('withGTConfig', () => {
   });
 
   // ==============================
-  // 15. Headers/cookies merging
+  // 16. Headers/cookies merging
   // ==============================
-  describe('15. Headers/cookies merging', () => {
+  describe('16. Headers/cookies merging', () => {
     it('default values used when none provided', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
@@ -1312,9 +1431,9 @@ describe('withGTConfig', () => {
   });
 
   // ==============================
-  // 16. nextConfig passthrough
+  // 17. nextConfig passthrough
   // ==============================
-  describe('16. nextConfig passthrough', () => {
+  describe('17. nextConfig passthrough', () => {
     it('preserves all existing nextConfig properties', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig({
@@ -1350,9 +1469,9 @@ describe('withGTConfig', () => {
   });
 
   // ==============================
-  // 17. initGT backward compatibility
+  // 18. initGT backward compatibility
   // ==============================
-  describe('17. initGT backward compatibility', () => {
+  describe('18. initGT backward compatibility', () => {
     it('initGT(props) returns a function (nextConfig) => NextConfig', async () => {
       const initGT = await getInitGT();
       const configFn = initGT({ defaultLocale: 'es' });

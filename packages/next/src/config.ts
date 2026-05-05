@@ -5,7 +5,10 @@ import {
   defaultWithGTConfigProps,
   defaultCacheExpiryTime,
 } from './config-dir/props/defaultWithGTConfigProps';
-import { type withGTConfigProps } from './config-dir/props/withGTConfigProps';
+import {
+  type CompilerOptions,
+  type withGTConfigProps,
+} from './config-dir/props/withGTConfigProps';
 import {
   APIKeyMissingWarn,
   conflictingConfigurationBuildError,
@@ -525,8 +528,10 @@ export function withGTConfig(
   // ---------- STORE CONFIGURATIONS ---------- //
   const I18NConfigParams = JSON.stringify(mergedConfig);
 
+  const resolvedExperimentalCompilerOptions: CompilerOptions =
+    mergedConfig.experimentalCompilerOptions ?? { type: 'none' };
   const { type: _type, ...compilerOptions } =
-    mergedConfig.experimentalCompilerOptions || {};
+    resolvedExperimentalCompilerOptions;
 
   // Read autoderive from parsingFlags (single source of truth shared with CLI)
   const rawAutoderive: boolean | { jsx?: boolean; strings?: boolean } =
@@ -549,6 +554,21 @@ export function withGTConfig(
           { ...compilerOptions, autoderiveJsx, autoderiveStrings },
         ]
       : null;
+
+  if (swcPluginEntry && compilerOptions.logLevel !== 'silent') {
+    console.info('gt-next: SWC compiler enabled');
+    if (compilerOptions.logLevel === 'debug') {
+      console.debug(
+        `gt-next: SWC compiler debug config ${JSON.stringify({
+          wasm: resolvedWasmFilePath,
+          compileTimeHash: compilerOptions.compileTimeHash,
+          disableBuildChecks: compilerOptions.disableBuildChecks,
+          autoderiveJsx,
+          autoderiveStrings,
+        })}`
+      );
+    }
+  }
 
   const turboAliases = {
     'gt-next/_dictionary': resolvedDictionaryFilePath || '',

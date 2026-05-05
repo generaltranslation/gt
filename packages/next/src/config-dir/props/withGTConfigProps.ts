@@ -12,7 +12,7 @@ export type HeadersAndCookies = {
 export type CompilerOptions = {
   /**
    * Which compiler plugin to use: babel, swc, or none
-   * @default 'babel'
+   * @default 'none'
    */
   type: 'babel' | 'swc' | 'none';
   /**

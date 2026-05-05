@@ -273,7 +273,7 @@ export async function getTranslations(id?: string): Promise<
 
     try {
       // Translate on demand
-      I18NConfig.translate({
+      void I18NConfig.translate({
         source: indexVars(entry),
         targetLocale: locale,
         options: {
@@ -285,23 +285,32 @@ export async function getTranslations(id?: string): Promise<
           $_hash: getHash(),
           $format: 'ICU',
         },
-      }).then((result) => {
-        // Log the translation result for debugging purposes
-        // eslint-disable-next-line no-console
-        console.warn(
-          createTranslationLoadingWarning({
-            ...(id && { id }),
-            source: renderContent(entry, [defaultLocale]),
-            translation: renderContent(result as string, [
-              locale,
-              defaultLocale,
-            ]),
-          })
-        );
+      })
+        .then((result) => {
+          // Log the translation result for debugging purposes
+          // eslint-disable-next-line no-console
+          console.warn(
+            createTranslationLoadingWarning({
+              ...(id && { id }),
+              source: renderContent(entry, [defaultLocale]),
+              translation: renderContent(result as string, [
+                locale,
+                defaultLocale,
+              ]),
+            })
+          );
 
-        // inject
-        injectEntry(result as string, dictionaryTranslations!, id, dictionary);
-      });
+          // inject
+          injectEntry(
+            result as string,
+            dictionaryTranslations!,
+            id,
+            dictionary
+          );
+        })
+        .catch((error) => {
+          console.warn(error);
+        });
     } catch (error) {
       console.warn(error);
     }

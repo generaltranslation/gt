@@ -1,6 +1,7 @@
 use crate::visitor::TransformVisitor;
 use crate::{
   config::PluginConfig,
+  logging::Logger,
   visitor::{
     analysis::{is_translation_function_callback, is_translation_function_name},
     errors::create_dynamic_content_warning,
@@ -144,9 +145,15 @@ impl VisitMut for TransformVisitor {
   /// Process JSX expression containers to detect unwrapped dynamic content
   fn visit_mut_jsx_expr_container(&mut self, expr_container: &mut JSXExprContainer) {
     // Only check for violations if we're in a translation component and NOT in a JSX attribute
-    if self.traversal_state.in_translation_component && !self.traversal_state.in_jsx_attribute {
+    if self.traversal_state.in_translation_component
+      && !self.traversal_state.in_variable_component
+      && !self.traversal_state.in_jsx_attribute
+    {
       // Check if the expression is allowed dynamic content
-      if !self.settings.disable_build_checks && !self.settings.autoderive_jsx && !is_allowed_dynamic_content(&expr_container.expr) {
+      if !self.settings.disable_build_checks
+        && !self.settings.autoderive_jsx
+        && !is_allowed_dynamic_content(&expr_container.expr)
+      {
         self.statistics.dynamic_content_violations += 1;
         let warning = create_dynamic_content_warning(self.settings.filename.as_deref(), "T");
         self.logger.log_error(&warning);
@@ -174,8 +181,10 @@ impl VisitMut for TransformVisitor {
     // Update component tracking state
     let (is_translation_component, is_variable_component, _) =
       self.determine_component_type(element);
-    self.traversal_state.in_translation_component = is_translation_component;
-    self.traversal_state.in_variable_component = is_variable_component;
+    self.traversal_state.in_translation_component =
+      was_in_translation || is_translation_component;
+    self.traversal_state.in_variable_component =
+      was_in_variable || is_variable_component;
 
     // Calculate and record hash for translation components
     if self.settings.compile_time_hash
@@ -327,8 +336,10 @@ impl Fold for TransformVisitor {
 
     // Determine context
     let (is_translation, is_variable, _) = self.determine_component_type(&element);
-    self.traversal_state.in_translation_component = is_translation;
-    self.traversal_state.in_variable_component = is_variable;
+    self.traversal_state.in_translation_component =
+      was_in_translation || is_translation;
+    self.traversal_state.in_variable_component =
+      was_in_variable || is_variable;
 
     // Inject hash attributes on translation components
     let element = if self.settings.compile_time_hash
@@ -365,6 +376,16 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
   let filename = metadata
     .get_context(&TransformPluginMetadataContextKind::Filename)
     .map(|f| f.to_string());
+
+  let logger = Logger::new(config.log_level.clone());
+  let debug_message = format!(
+    "gt-next: SWC compiler transform started{}",
+    filename
+      .as_ref()
+      .map(|filename| format!(" for {filename}"))
+      .unwrap_or_default()
+  );
+  logger.log_debug(debug_message.as_str());
 
   // Create StringCollector for the two-pass system
   let string_collector = crate::ast::StringCollector::new();
