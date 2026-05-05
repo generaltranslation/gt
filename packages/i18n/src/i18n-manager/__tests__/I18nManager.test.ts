@@ -425,6 +425,7 @@ describe('I18nManager', () => {
 
     await manager.loadDictionary('fr');
     await manager.loadDictionary('fr');
+    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Bonjour');
 
     expect(localesDictionaryMiss).toHaveBeenCalledWith({
       locale: 'fr',
@@ -438,7 +439,11 @@ describe('I18nManager', () => {
         greeting: 'Bonjour',
       },
     });
-    expect(dictionaryCacheHit).not.toHaveBeenCalled();
+    expect(dictionaryCacheHit).toHaveBeenCalledWith({
+      locale: 'fr',
+      id: 'greeting',
+      dictionaryEntry: 'Bonjour',
+    });
     expect(dictionaryCacheMiss).not.toHaveBeenCalled();
   });
 });
