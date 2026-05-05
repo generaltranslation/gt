@@ -59,12 +59,10 @@ export class LocalesDictionaryCache extends Cache<
   /**
    * Constructor
    * @param {Object} params - The parameters for the cache
-   * @param {Record<string, DictionaryCacheEntry>} params.init - The initial cache
    * @param {number | null} params.ttl - The time to live for cache entries
    * @param {DictionaryLoader} params.loadDictionary - The dictionary loader function
    */
   constructor({
-    init = {},
     ttl,
     defaultLocale,
     dictionary = {},
@@ -76,14 +74,13 @@ export class LocalesDictionaryCache extends Cache<
       onDictionaryCacheMiss,
     },
   }: {
-    init?: Record<string, DictionaryCacheEntry>;
     ttl?: number | null;
     defaultLocale: Locale;
     dictionary?: Dictionary;
     loadDictionary: DictionaryLoader;
     lifecycle: LocalesDictionaryCacheLifecycleCallbacks;
   }) {
-    super(init, { onHit, onMiss });
+    super({}, { onHit, onMiss });
 
     // Set time to live
     this.ttl = ttl === null ? -1 : (ttl ?? DEFAULT_CACHE_EXPIRY_TIME);
