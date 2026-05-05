@@ -45,7 +45,7 @@ export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
 
       const documentHandler = documentHandlersByArtifactKind.find(
         (documentHandlerByArtifactKind) =>
-          documentHandlerByArtifactKind.kind === kind,
+          documentHandlerByArtifactKind.kind === kind
       );
 
       if (!documentHandler) {
