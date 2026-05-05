@@ -43,36 +43,36 @@ export type JsxChild = string | JsxElement | Variable;
 export type StringFormat = 'ICU' | 'I18NEXT' | 'STRING';
 
 /**
- * The format of the content
+ * The format of the content.
  */
 export type DataFormat = 'JSX' | StringFormat;
 
 /**
- * String format content
+ * String format content.
  */
 export type StringContent = IcuMessage | StringMessage | I18nextMessage;
 
 /**
- * A content type representing JSX, ICU, and I18next messages
+ * A content type representing JSX, ICU, and I18next messages.
  */
 export type Content = JsxChildren | StringContent;
 
 /**
- * A content type representing JSX elements
+ * A content type representing JSX elements.
  */
 export type JsxChildren = JsxChild | JsxChild[];
 
 /**
- * A content type representing ICU messages
+ * A content type representing ICU messages.
  */
 export type IcuMessage = string;
 
 /**
- * A content type representing I18next messages
+ * A content type representing I18next messages.
  */
 export type I18nextMessage = string;
 
 /**
- * A content type representing plain strings
+ * A content type representing plain strings.
  */
 export type StringMessage = string;

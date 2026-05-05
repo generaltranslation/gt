@@ -36,7 +36,7 @@ export function decodeVars(icuString: string): string {
     });
   }
 
-  // Find all variable identifiers
+  // Find all variable identifiers.
   traverseIcu({
     icuString,
     shouldVisit: isGTUnindexedSelectElement,

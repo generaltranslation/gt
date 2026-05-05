@@ -16,9 +16,9 @@ export type SetupProjectOptions = {
  * @internal
  * Enqueues files for project setup the General Translation API.
  * @param files - References of files to translate (file content already uploaded)
- * @param config - The configuration for the API call
+ * @param config - The configuration for the API call.
  * @param timeoutMS - The timeout in milliseconds
- * @returns The result of the API call
+ * @returns The result of the API call.
  */
 export default async function _setupProject(
   files: FileReference[],

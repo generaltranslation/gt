@@ -26,9 +26,9 @@ export type CreateTagResult = {
 /**
  * @internal
  * Creates or upserts a file tag in the General Translation API.
- * @param options - The tag creation options
- * @param config - The configuration for the API call
- * @returns The created or updated tag
+ * @param options - The tag creation options.
+ * @param config - The configuration for the API call.
+ * @returns The created or updated tag.
  */
 export default async function _createTag(
   options: CreateTagOptions,

@@ -49,7 +49,7 @@ export function _formatCutoff({
  * @internal
  *
  * Will fallback to an empty string
- * TODO: add this to custom formats
+ * TODO: Add this to custom formats.
  */
 export function _formatMessageICU(
   message: string,
@@ -67,7 +67,7 @@ export function _formatMessageICU(
  * @returns {string} The original message, unchanged.
  * @internal
  *
- * TODO: add this to custom formats
+ * TODO: Add this to custom formats.
  */
 export function _formatMessageString(message: string): string {
   return message;

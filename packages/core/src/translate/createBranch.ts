@@ -14,8 +14,8 @@ export type CreateBranchResult = {
  * @internal
  * Creates a new branch in the API.
  * @param query - Object mapping the branch name and default branch flag
- * @param config - The configuration for the API call
- * @returns The created branch information
+ * @param config - The configuration for the API call.
+ * @returns The created branch information.
  */
 export default async function _createBranch(
   query: CreateBranchQuery,

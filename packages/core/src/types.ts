@@ -228,9 +228,9 @@ export type { CustomMapping } from './locales/customLocaleMapping';
 /**
  * TranslationRequestConfig is used to configure the translation request.
  *
- * @param projectId - The project id of the translation request.
- * @param baseUrl - The base url of the translation request.
- * @param apiKey - The api key of the translation request.
+ * @param projectId - The project ID of the translation request.
+ * @param baseUrl - The base URL of the translation request.
+ * @param apiKey - The API key of the translation request.
  */
 export type TranslationRequestConfig = {
   projectId: string;

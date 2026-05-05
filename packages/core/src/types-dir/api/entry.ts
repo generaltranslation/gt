@@ -11,7 +11,7 @@ export type ActionType = 'fast'; // TODO: Add standard action type when availabl
  * EntryMetadata is the metadata for a GTRequest.
  *
  * @param context - The context of the request.
- * @param id - The id of the request.
+ * @param id - The ID of the request.
  * @param maxChars - The maxChars of the request.
  * @param hash - The hash of the request.
  */

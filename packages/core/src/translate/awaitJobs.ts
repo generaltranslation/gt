@@ -24,10 +24,10 @@ export type AwaitJobsResult = {
 /**
  * @internal
  * Polls job statuses until all jobs are finished or the timeout is reached.
- * @param enqueueResult - The result from enqueueFiles
- * @param options - Polling configuration
- * @param config - API credentials and configuration
- * @returns The final status of all jobs
+ * @param enqueueResult - The result from enqueueFiles.
+ * @param options - Polling configuration.
+ * @param config - API credentials and configuration.
+ * @returns The final status of all jobs.
  */
 export default async function _awaitJobs(
   enqueueResult: EnqueueFilesResult,

@@ -12,9 +12,9 @@ import {
 /**
  * @internal
  * Uploads source files to the General Translation API in batches.
- * @param files - The files to upload
- * @param options - The options for the API call
- * @param config - The configuration for the API call
+ * @param files - The files to upload.
+ * @param options - The options for the API call.
+ * @param config - The configuration for the API call.
  * @returns Promise resolving to a BatchList with all uploaded files
  */
 export default async function _uploadSourceFiles(

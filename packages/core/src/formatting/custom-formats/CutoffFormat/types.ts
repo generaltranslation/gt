@@ -3,9 +3,9 @@
 /** Type of terminator */
 export type CutoffFormatStyle = 'none' | 'ellipsis';
 
-/** Terminator options */
+/** Terminator options. */
 export interface TerminatorOptions {
-  /** The terminator to use */
+  /** The terminator to use. */
   terminator?: string;
   /** An optional separator between the terminator and the value */
   separator?: string;
@@ -13,7 +13,7 @@ export interface TerminatorOptions {
 
 /** Input formatting options (for constructor) */
 export interface CutoffFormatOptions extends TerminatorOptions {
-  /** Cutoff length */
+  /** Cutoff length. */
   maxChars?: number;
   /** Type of terminator */
   style?: CutoffFormatStyle;

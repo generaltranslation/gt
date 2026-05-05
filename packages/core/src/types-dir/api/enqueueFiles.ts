@@ -24,13 +24,13 @@ export type Updates = ({
 
 /**
  * Options for enqueueing files
- * @param requireApproval - Whether to require approval for the files
- * @param description - Optional description for the project
- * @param sourceLocale - The project's source locale
- * @param targetLocales - The locales to translate the files to
- * @param version - Optional custom version ID to specify
- * @param timeout - Optional timeout for the request
- * @param modelProvider - Optional model provider to use
+ * @param requireApproval - Whether to require approval for the files.
+ * @param description - Optional description for the project.
+ * @param sourceLocale - The project's source locale.
+ * @param targetLocales - The locales to translate the files to.
+ * @param version - Optional custom version ID to specify.
+ * @param timeout - Optional timeout for the request.
+ * @param modelProvider - Optional model provider to use.
  */
 export type EnqueueFilesOptions = {
   requireApproval?: boolean;

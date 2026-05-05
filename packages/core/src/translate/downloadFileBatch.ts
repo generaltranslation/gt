@@ -12,8 +12,8 @@ import { processBatches } from './utils/batch';
  * @internal
  * Downloads multiple translation files in batches.
  * @param files - Array of files to download
- * @param options - The options for the API call
- * @param config - The configuration for the request
+ * @param options - The options for the API call.
+ * @param config - The configuration for the request.
  * @returns Promise resolving to a BatchList with all downloaded files
  */
 export default async function _downloadFileBatch(

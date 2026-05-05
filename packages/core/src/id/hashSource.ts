@@ -14,7 +14,7 @@ import { HashMetadata } from './types';
  * First 16 characters of hash, hex encoded.
  *
  * @param {string} string - The string to be hashed.
- * @returns {string} - The resulting hash as a hexadecimal string.
+ * @returns {string} The resulting hash as a hexadecimal string.
  */
 export function hashString(string: string): string {
   return bytesToHex(sha256(utf8ToBytes(string))).slice(0, 16);
@@ -24,11 +24,11 @@ export function hashString(string: string): string {
  * Calculates a unique ID for the given children objects by hashing their sanitized JSON string representation.
  *
  * @param {any} childrenAsObjects - The children objects to be hashed.
- * @param {string} [context] - The context for the children
- * @param {string} [id] - The id for the JSX Children object
+ * @param {string} [context] - The context for the children.
+ * @param {string} [id] - The ID for the JSX children object.
  * @param {number} [maxChars] - The maxChars for the JSX Children object
- * @param {string} [dataFormat] - The data format of the sources
- * @param {function} [hashFunction] custom hash function
+ * @param {string} [dataFormat] - The data format of the sources.
+ * @param {function} [hashFunction] - Custom hash function.
  * @returns {string} - The unique has of the children.
  */
 export function hashSource(

@@ -69,7 +69,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
       );
     }
 
-    // Resolve terminator options
+    // Resolve terminator options.
     let style: CutoffFormatStyle | undefined;
     let presetTerminatorOptions: ResolvedTerminatorOptions | undefined;
     if (options.maxChars !== undefined) {
@@ -159,13 +159,13 @@ export class CutoffFormatConstructor implements CutoffFormat {
       return [slicedValue];
     }
 
-    // Postpended cutoff
+    // Postpended cutoff.
     if (adjustedChars > 0) {
       return separator != null
         ? [slicedValue, separator, terminator]
         : [slicedValue, terminator];
     }
-    // Prepended cutoff
+    // Prepended cutoff.
     else {
       return separator != null
         ? [terminator, separator, slicedValue]

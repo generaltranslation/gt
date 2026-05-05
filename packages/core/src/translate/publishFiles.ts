@@ -24,8 +24,8 @@ export type PublishFilesResult = {
  * @internal
  * Publishes or unpublishes files on the CDN.
  * @param files - Array of file entries with publish flags
- * @param config - The configuration for the API call
- * @returns The result of the API call
+ * @param config - The configuration for the API call.
+ * @returns The result of the API call.
  */
 export default async function _publishFiles(
   files: PublishFileEntry[],

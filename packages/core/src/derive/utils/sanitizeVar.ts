@@ -10,7 +10,7 @@
  * 3. Adding a single quote after the last special character ({}<>)
  */
 export function sanitizeVar(string: string): string {
-  // First, double all single quotes (both ASCII and Unicode)
+  // First, double all single quotes (both ASCII and Unicode).
   let result = string.replace(/'/g, "''");
 
   // Find first and last positions of special characters
@@ -18,7 +18,7 @@ export function sanitizeVar(string: string): string {
   const firstSpecialIndex = result.search(specialChars);
 
   if (firstSpecialIndex === -1) {
-    // No special characters, return with just doubled quotes
+    // No special characters; return with just doubled quotes.
     return result;
   }
 
@@ -31,7 +31,7 @@ export function sanitizeVar(string: string): string {
     }
   }
 
-  // Insert quotes around the special character region
+  // Insert quotes around the special character region.
   result =
     result.slice(0, firstSpecialIndex) +
     "'" +
