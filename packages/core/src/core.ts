@@ -133,7 +133,7 @@ export function isValidLocale(locale: string, customMapping?: CustomMapping) {
  *
  * @param {string} locale - The locale to resolve the canonical locale for.
  * @param {CustomMapping} [customMapping] - The custom mapping to use for resolving the canonical locale.
- * @returns {string} The canonical locale.
+ * @returns {string} The canonical locale, or the input locale when no canonical mapping exists.
  *
  * @example
  * resolveCanonicalLocale('en-US');
@@ -154,7 +154,7 @@ export function resolveCanonicalLocale(
  * Standardizes a BCP 47 locale code to ensure correct formatting.
  *
  * @param {string} locale - The BCP 47 locale code to standardize.
- * @returns {string} The standardized BCP 47 locale code or an empty string if it is an invalid code.
+ * @returns {string} The standardized BCP 47 locale code, or the input string if it cannot be standardized.
  *
  * @example
  * standardizeLocale('en-us');
@@ -162,7 +162,7 @@ export function resolveCanonicalLocale(
  *
  * @example
  * standardizeLocale('not a locale');
- * // Returns: ''
+ * // Returns: 'not a locale'
  */
 export function standardizeLocale(locale: string) {
   return _standardizeLocale(locale);
