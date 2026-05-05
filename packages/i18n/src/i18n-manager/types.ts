@@ -1,10 +1,22 @@
 import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
 import type { CustomMapping } from 'generaltranslation/types';
-import { GTConfig } from '../config/types';
-import { TranslationsLoader } from './translations-manager/translations-loaders/types';
-import { Translation } from './translations-manager/utils/types/translation-data';
+import type { GTConfig } from '../config/types';
+import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
+import type { Translation } from './translations-manager/utils/types/translation-data';
 import type { LifecycleCallbacks } from './lifecycle-hooks/types';
+import type { Dictionary } from './translations-manager/DictionaryCache';
+import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
 import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
+
+type DictionaryConfig =
+  | {
+      dictionary: Dictionary;
+      loadDictionary?: DictionaryLoader;
+    }
+  | {
+      dictionary?: Dictionary;
+      loadDictionary?: undefined;
+    };
 
 type RuntimeTranslationConfig = {
   timeout?: number;
@@ -16,20 +28,21 @@ type RuntimeTranslationConfig = {
  */
 export type I18nManagerConstructorParams<
   TranslationValue extends Translation = Translation,
-> = Omit<GTConfig, 'cacheExpiryTime'> & {
-  /**
-   * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
-   * disables expiry, and a number sets an explicit TTL.
-   */
-  cacheExpiryTime?: number | null;
-  loadTranslations?: TranslationsLoader;
-  environment?: 'development' | 'production';
-  batchConfig?: TranslationBatchConfig;
-  runtimeTranslation?: RuntimeTranslationConfig;
-  // Cache lifecycle hooks
-  /** @deprecated - move to subscription api instead */
-  lifecycle?: LifecycleCallbacks<TranslationValue>;
-};
+> = DictionaryConfig &
+  Omit<GTConfig, 'cacheExpiryTime'> & {
+    /**
+     * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
+     * disables expiry, and a number sets an explicit TTL.
+     */
+    cacheExpiryTime?: number | null;
+    loadTranslations?: TranslationsLoader;
+    environment?: 'development' | 'production';
+    batchConfig?: TranslationBatchConfig;
+    runtimeTranslation?: RuntimeTranslationConfig;
+    // Cache lifecycle hooks
+    /** @deprecated - move to subscription api instead */
+    lifecycle?: LifecycleCallbacks<TranslationValue>;
+  };
 
 /**
  * I18nManager class configuration
@@ -87,4 +100,9 @@ export interface ScopedConditionStore extends ConditionStore {
   run<T>(locale: string, callback: () => T): T;
 }
 
-export type { TranslationsLoader, LifecycleCallbacks };
+export type {
+  TranslationsLoader,
+  LifecycleCallbacks,
+  Dictionary,
+  DictionaryLoader,
+};

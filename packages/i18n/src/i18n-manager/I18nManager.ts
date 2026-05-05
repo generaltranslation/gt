@@ -18,6 +18,9 @@ import { routeCreateTranslationLoader } from './translations-manager/translation
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { Locale, LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
+import type { Dictionary } from './translations-manager/DictionaryCache';
+import { LocalesDictionaryCache } from './translations-manager/LocalesDictionaryCache';
+import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 import { EventEmitter } from './event-subscription/EventEmitter';
 import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
@@ -69,6 +72,11 @@ class I18nManager<
   private localesCache: LocalesCache<TranslationValue>;
 
   /**
+   * Cache for dictionaries
+   */
+  private localesDictionaryCache: LocalesDictionaryCache;
+
+  /**
    * Runtime-safe locale and formatting helpers
    */
   private localeConfig: LocaleConfig;
@@ -95,6 +103,7 @@ class I18nManager<
     });
     // Create cache miss handlers
     const loadTranslations = createTranslationLoader<TranslationValue>(params);
+    const loadDictionary = createDictionaryLoader(params);
     const runtimeTranslationTimeout =
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT;
     const runtimeTranslationMetadata =
@@ -117,6 +126,15 @@ class I18nManager<
       ttl: this.config.cacheExpiryTime,
       batchConfig: this.config.batchConfig,
       lifecycle: createLifecycleCallbacks((...args) => this.emit(...args)),
+    });
+
+    // Setup dictionary cache
+    this.localesDictionaryCache = new LocalesDictionaryCache({
+      defaultLocale: this.config.defaultLocale,
+      dictionary: params.dictionary,
+      loadDictionary,
+      ttl: this.config.cacheExpiryTime,
+      lifecycle: {},
     });
   }
 
@@ -229,6 +247,38 @@ class I18nManager<
       // Get the translations
       const translations = txCache.getInternalCache();
       return translations;
+    } catch (error) {
+      this.handleError(error);
+      return {};
+    }
+  }
+
+  /**
+   * Loads in the dictionary for a given locale
+   * Edge case usage: access the dictionary object directly
+   */
+  async loadDictionary(locale: string): Promise<Dictionary> {
+    try {
+      // Validate
+      const resolvedLocale = this.resolveLocale(locale);
+      if (!this.requiresTranslation(resolvedLocale)) {
+        return (
+          this.localesDictionaryCache
+            .get(this.config.defaultLocale)
+            ?.getInternalCache() ?? {}
+        );
+      }
+
+      // Get the locale dictionary cache
+      let dictionaryCache = this.localesDictionaryCache.get(resolvedLocale);
+      if (!dictionaryCache) {
+        dictionaryCache =
+          await this.localesDictionaryCache.miss(resolvedLocale);
+      }
+
+      // Get the dictionary
+      const dictionary = dictionaryCache.getInternalCache();
+      return dictionary;
     } catch (error) {
       this.handleError(error);
       return {};
@@ -693,4 +743,13 @@ function createTranslationLoader<TranslationType extends Translation>(
       customMapping: params.customMapping,
     },
   }) as SafeTranslationsLoader<TranslationType>;
+}
+
+/**
+ * Helper function for creating a dictionary loader
+ */
+function createDictionaryLoader<TranslationType extends Translation>(
+  params: I18nManagerConstructorParams<TranslationType>
+): DictionaryLoader {
+  return params.loadDictionary ?? (() => Promise.resolve({}));
 }
