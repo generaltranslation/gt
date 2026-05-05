@@ -1,0 +1,238 @@
+---
+title: withGTConfig()
+description: API reference for configuring gt-next
+---
+
+## Overview
+
+`withGTConfig()` wraps your Next.js config and enables `gt-next`.
+
+```js title="next.config.mjs"
+import { withGTConfig } from 'gt-next/config';
+
+const nextConfig = {
+  // Your existing Next.js config
+};
+
+export default withGTConfig(nextConfig, {
+  defaultLocale: 'en',
+  locales: ['es', 'fr'],
+});
+```
+
+By default, `withGTConfig()` also reads `gt.config.json` from the same directory
+as your `next.config.js` or `next.config.mjs` file and merges it with the
+options passed directly to `withGTConfig()`.
+
+<Callout type='info'>
+  Use `gt.config.json` as the source of truth for settings that also need to be
+  read by the CLI.
+</Callout>
+
+## Required Props
+
+<TypeTable
+  type={{
+    nextConfig: {
+      type: 'NextConfig',
+      optional: false,
+    },
+  }}
+/>
+
+## Recommended Props
+
+<TypeTable
+  type={{
+    'defaultLocale?': {
+      type: 'string',
+      optional: true,
+      default: '"en"',
+    },
+    'locales?': {
+      type: 'string[]',
+      optional: true,
+      default: '[]',
+    },
+    'description?': {
+      type: 'string',
+      optional: true,
+    },
+  }}
+/>
+
+| Prop            | Description                                                                 |
+| --------------- | --------------------------------------------------------------------------- |
+| `defaultLocale` | The locale your source content is written in.                               |
+| `locales`       | The locales your application supports.                                      |
+| `description`   | Natural-language project context that can help produce better translations. |
+
+## Advanced Props
+
+<TypeTable
+  type={{
+    'projectId?': {
+      type: 'string',
+      optional: true,
+    },
+    'apiKey?': {
+      type: 'string',
+      optional: true,
+    },
+    'devApiKey?': {
+      type: 'string',
+      optional: true,
+    },
+    'runtimeUrl?': {
+      type: 'string | null',
+      optional: true,
+    },
+    'cacheUrl?': {
+      type: 'string | null',
+      optional: true,
+    },
+    'cacheExpiryTime?': {
+      type: 'number',
+      optional: true,
+      default: '60000',
+    },
+    'renderSettings?': {
+      type: 'RenderSettings',
+      optional: true,
+    },
+    'maxConcurrentRequests?': {
+      type: 'number',
+      optional: true,
+      default: '100',
+    },
+    'maxBatchSize?': {
+      type: 'number',
+      optional: true,
+      default: '25',
+    },
+    'batchInterval?': {
+      type: 'number',
+      optional: true,
+      default: '50',
+    },
+    'dictionary?': {
+      type: 'string',
+      optional: true,
+    },
+    'experimentalCompilerOptions?': {
+      type: 'CompilerOptions',
+      optional: true,
+    },
+  }}
+/>
+
+| Prop                          | Description                                                                |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| `projectId`                   | Project ID for the General Translation platform.                           |
+| `apiKey`                      | Production API key. Prefer `GT_API_KEY` in your environment.               |
+| `devApiKey`                   | Development API key. Prefer `GT_DEV_API_KEY` in your environment.          |
+| `runtimeUrl`                  | Base URL for runtime translations. Set to `null` to disable.               |
+| `cacheUrl`                    | Base URL for cached translations. Set to `null` to disable.                |
+| `cacheExpiryTime`             | Time in milliseconds before remote cached translations expire.             |
+| `renderSettings`              | Loading behavior for runtime translations.                                 |
+| `maxConcurrentRequests`       | Maximum number of concurrent translation requests.                         |
+| `maxBatchSize`                | Maximum number of translations per request batch.                          |
+| `batchInterval`               | Time in milliseconds between batched translation requests.                 |
+| `dictionary`                  | Path to a local dictionary file.                                           |
+| `experimentalCompilerOptions` | Compiler plugin settings for build checks and compile-time hash injection. |
+
+## `experimentalCompilerOptions`
+
+`experimentalCompilerOptions` controls the compiler that `gt-next` wires into
+your Next.js build.
+
+```js title="next.config.mjs"
+import { withGTConfig } from 'gt-next/config';
+
+const nextConfig = {};
+
+export default withGTConfig(nextConfig, {
+  experimentalCompilerOptions: {
+    type: 'swc',
+    logLevel: 'warn',
+    compileTimeHash: true,
+    disableBuildChecks: false,
+  },
+});
+```
+
+<TypeTable
+  type={{
+    type: {
+      type: '"swc" | "babel" | "none"',
+      optional: false,
+      default: '"none"',
+    },
+    'logLevel?': {
+      type: '"silent" | "error" | "warn" | "info" | "debug"',
+      optional: true,
+      default: '"warn"',
+    },
+    'disableBuildChecks?': {
+      type: 'boolean',
+      optional: true,
+      default: 'false',
+    },
+    'compileTimeHash?': {
+      type: 'boolean',
+      optional: true,
+      default: 'true',
+    },
+  }}
+/>
+
+| Option               | Description                                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `type`               | Selects `swc`, `babel`, or `none` for compiler integration.                                                    |
+| `logLevel`           | Controls compiler output. Use `silent`, `error`, `warn`, `info`, or `debug`.                                   |
+| `disableBuildChecks` | Disables compiler validation for dynamic JSX content and translation function usage.                           |
+| `compileTimeHash`    | Adds translation hashes at build time so the runtime does not need to calculate them in the browser or server. |
+
+<Callout type='warn'>
+  `babel` does not work with Turbopack, which is the default bundler in Next.js
+  16 and newer. The `swc` compiler option requires Next.js 16.1 or newer.
+</Callout>
+
+If `type` is `none`, the compiler does not run. Other compiler options only
+apply when `type` is `swc` or `babel`.
+
+## Render Settings
+
+`renderSettings` controls how runtime translations are displayed while they are
+loading.
+
+<TypeTable
+  type={{
+    method: {
+      type: '"skeleton" | "replace" | "default"',
+      optional: false,
+      default: '"default"',
+    },
+    'timeout?': {
+      type: 'number',
+      optional: true,
+      default: '8000',
+    },
+  }}
+/>
+
+| Prop      | Description                                                         |
+| --------- | ------------------------------------------------------------------- |
+| `method`  | Loading behavior. Options are `skeleton`, `replace`, and `default`. |
+| `timeout` | Time in milliseconds before the loading behavior times out.         |
+
+## Returns
+
+`withGTConfig()` returns a `NextConfig` object with GT settings, aliases,
+environment values, and optional compiler integration applied.
+
+## Exceptions
+
+`withGTConfig()` can throw when required project configuration is missing,
+local translation or dictionary files cannot be resolved, or configuration in
+`gt.config.json` conflicts with values passed directly to `withGTConfig()`.

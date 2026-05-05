@@ -1,0 +1,188 @@
+---
+title: Auto JSX Injection
+description: Automatically wrap React JSX text for translation
+---
+
+## Overview
+
+Auto JSX injection lets the GT compiler wrap plain React JSX text with
+translation components during your build. It is useful for SPA React apps where
+you want to keep authoring normal JSX while still extracting and translating
+user-facing copy.
+
+```tsx title="src/App.tsx"
+export function App() {
+  return <h1>Welcome back</h1>;
+}
+```
+
+With auto JSX injection enabled, the compiler treats that text as translatable
+content and injects the GT translation wrapper for you.
+
+<Callout type='info'>
+  This guide is for React apps that use `gt-react` with Vite, webpack, Rollup,
+  or esbuild. Next.js apps should use the compiler options in
+  [`withGTConfig()`](/docs/next/api/config/withGTConfig).
+</Callout>
+
+## Complete Setup
+
+### 1. Install the compiler
+
+Install `@generaltranslation/compiler` as a development dependency.
+
+<Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+  <Tab value="npm">
+
+```bash
+npm i -D @generaltranslation/compiler
+```
+
+  </Tab>
+  <Tab value="yarn">
+
+```bash
+yarn add -D @generaltranslation/compiler
+```
+
+  </Tab>
+  <Tab value="bun">
+
+```bash
+bun add -d @generaltranslation/compiler
+```
+
+  </Tab>
+  <Tab value="pnpm">
+
+```bash
+pnpm add -D @generaltranslation/compiler
+```
+
+  </Tab>
+</Tabs>
+
+### 2. Add the bundler plugin
+
+Add the GT compiler plugin to your bundler config and pass `{ gtConfig }`. The
+`gtConfig` option lets the compiler read `files.gt.parsingFlags` from the same
+`gt.config.json` file used by the CLI.
+
+```ts title="vite.config.ts"
+import fs from 'node:fs';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { vite as gtCompiler } from '@generaltranslation/compiler';
+
+const gtConfig = JSON.parse(fs.readFileSync('./gt.config.json', 'utf-8'));
+
+export default defineConfig({
+  plugins: [react(), gtCompiler({ gtConfig })],
+});
+```
+
+For webpack, Rollup, and esbuild examples, see the
+[React compiler guide](/docs/react/concepts/compiler).
+
+### 3. Enable auto JSX injection
+
+Enable `files.gt.parsingFlags.enableAutoJsxInjection` in `gt.config.json`.
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr"],
+  "files": {
+    "gt": {
+      "output": "public/_gt/[locale].json",
+      "parsingFlags": {
+        "enableAutoJsxInjection": true
+      }
+    }
+  }
+}
+```
+
+### 4. Build your app
+
+Run your normal build command. The compiler runs as part of the bundler build.
+
+<Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+  <Tab value="npm">
+
+```bash
+npm run build
+```
+
+  </Tab>
+  <Tab value="yarn">
+
+```bash
+yarn build
+```
+
+  </Tab>
+  <Tab value="bun">
+
+```bash
+bun run build
+```
+
+  </Tab>
+  <Tab value="pnpm">
+
+```bash
+pnpm build
+```
+
+  </Tab>
+</Tabs>
+
+## React Setup
+
+Your app still needs `GTProvider` from `gt-react` at the root so translated
+content can render with the active locale.
+
+```tsx title="src/App.tsx"
+import { GTProvider, LocaleSelector } from 'gt-react';
+
+function Home() {
+  return (
+    <main>
+      <LocaleSelector />
+      <h1>Welcome back</h1>
+      <p>Your dashboard is ready.</p>
+    </main>
+  );
+}
+
+export default function App() {
+  return (
+    <GTProvider>
+      <Home />
+    </GTProvider>
+  );
+}
+```
+
+Auto JSX injection handles static JSX text. Continue to use explicit
+[`<T>`](/docs/react/api/components/t), [`<Var>`](/docs/react/api/components/var),
+and [`useGT()`](/docs/react/api/strings/useGT) calls when you need precise
+control over variables, attributes, or translation context.
+
+## How It Works
+
+During the bundler build, the compiler scans JSX and injects GT translation
+wrappers around plain text. When you also run the CLI translate command, the CLI
+uses the same `enableAutoJsxInjection` flag to extract matching text from your
+source files.
+
+Passing `{ gtConfig }` keeps those two steps aligned:
+
+- the build compiler knows auto JSX injection is enabled
+- the CLI knows to extract text that will be wrapped automatically
+
+## Next Steps
+
+Use the [React compiler guide](/docs/react/concepts/compiler) for bundler
+setup details, including compile-time hashing and build checks.

@@ -1,0 +1,150 @@
+---
+title: React Quickstart
+description: Get started with gt-react
+---
+
+## Step 1: Install
+
+Install `gt-react` and the CLI.
+
+<Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+  <Tab value="npm">
+
+```bash
+npm i gt-react
+npm i -D gtx-cli
+```
+
+  </Tab>
+  <Tab value="yarn">
+
+```bash
+yarn add gt-react
+yarn add -D gtx-cli
+```
+
+  </Tab>
+  <Tab value="bun">
+
+```bash
+bun add gt-react
+bun add -d gtx-cli
+```
+
+  </Tab>
+  <Tab value="pnpm">
+
+```bash
+pnpm add gt-react
+pnpm add -D gtx-cli
+```
+
+  </Tab>
+</Tabs>
+
+## Step 2: Add `GTProvider`
+
+Wrap your React app with `GTProvider`.
+
+```tsx title="src/App.tsx"
+import { GTProvider } from 'gt-react';
+
+export default function App() {
+  return (
+    <GTProvider>
+      <YourApp />
+    </GTProvider>
+  );
+}
+```
+
+## Step 3: Configure locales
+
+Create `gt.config.json` in your project root.
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr"]
+}
+```
+
+## Step 4: Add environment variables
+
+For development hot reloading, expose your development key and project ID using
+the prefix required by your React framework.
+
+```bash title=".env.local"
+VITE_GT_API_KEY="your-dev-api-key"
+VITE_GT_PROJECT_ID="your-project-id"
+```
+
+<Callout type='warn'>
+  Development keys can be exposed to the browser. Production API keys should
+  stay server-side and should not use a public client-side prefix.
+</Callout>
+
+## Step 5: Translate JSX
+
+Wrap JSX content with [`<T>`](/docs/react/api/components/t).
+
+```tsx
+import { T } from 'gt-react';
+
+function Welcome() {
+  return (
+    <T>
+      <h1>Welcome to our app!</h1>
+    </T>
+  );
+}
+```
+
+<Callout type='info'>
+  Want this done automatically? Install `@generaltranslation/compiler` and
+  enable auto JSX injection. See the [auto JSX injection
+  guide](/docs/cli/features/auto-jsx-injection).
+</Callout>
+
+For dynamic values, use [`<Var>`](/docs/react/api/components/var).
+
+```tsx
+import { T, Var } from 'gt-react';
+
+function Greeting({ user }) {
+  return (
+    <T>
+      <p>
+        Hello, <Var>{user.name}</Var>!
+      </p>
+    </T>
+  );
+}
+```
+
+## Step 6: Translate strings
+
+Use [`useGT()`](/docs/react/api/strings/useGT) for attributes, labels, and
+plain strings.
+
+```tsx
+import { useGT } from 'gt-react';
+
+function ContactForm() {
+  const t = useGT();
+
+  return <input placeholder={t('Enter your email')} />;
+}
+```
+
+## Step 7: Build for production
+
+Run the translate command before your production build.
+
+```bash
+npx gtx-cli translate
+```
+
+For Vite apps, the optional
+[`@generaltranslation/compiler`](/docs/react/concepts/compiler) plugin can also
+add compile-time hashes and run build checks as part of your bundler build.
