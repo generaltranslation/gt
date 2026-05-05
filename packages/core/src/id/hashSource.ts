@@ -9,7 +9,7 @@ import { HashMetadata } from './types';
 
 // ----- FUNCTIONS ----- //
 /**
- * Calculates a unique hash for a given string using sha256.
+ * Calculates a unique hash for a given string using SHA-256.
  *
  * First 16 characters of hash, hex encoded.
  *
@@ -26,10 +26,10 @@ export function hashString(string: string): string {
  * @param {any} childrenAsObjects - The children objects to be hashed.
  * @param {string} [context] - The context for the children.
  * @param {string} [id] - The ID for the JSX children object.
- * @param {number} [maxChars] - The maxChars for the JSX Children object
+ * @param {number} [maxChars] - The maxChars limit for the JSX children object.
  * @param {string} [dataFormat] - The data format of the sources.
  * @param {function} [hashFunction] - Custom hash function.
- * @returns {string} - The unique has of the children.
+ * @returns {string} - The unique hash of the children.
  */
 export function hashSource(
   {

@@ -1556,7 +1556,7 @@ export class GT {
    * Resolves the canonical locale for a given locale.
    * @param locale - The locale to resolve the canonical locale for
    * @param customMapping - The custom mapping to use for resolving the canonical locale
-   * @returns The canonical locale
+   * @returns The canonical locale, or the input locale when no canonical mapping exists.
    */
   resolveCanonicalLocale(
     locale: string | undefined = this.targetLocale,
@@ -1574,7 +1574,7 @@ export class GT {
    * Resolves the alias locale for a given locale.
    * @param locale - The locale to resolve the alias locale for
    * @param customMapping - The custom mapping to use for resolving the alias locale
-   * @returns The alias locale
+   * @returns The configured alias for a canonical locale, or the input locale when already an alias or no alias mapping exists.
    */
   resolveAliasLocale(
     locale: string,
@@ -1592,7 +1592,7 @@ export class GT {
    * Standardizes a BCP 47 locale code to ensure correct formatting.
    *
    * @param {string} [locale=this.targetLocale] - The BCP 47 locale code to standardize.
-   * @returns {string} The standardized locale code or empty string if invalid
+   * @returns {string} The standardized locale code, or the input string if it cannot be standardized.
    * @throws {Error} If no target locale is provided.
    *
    * @example

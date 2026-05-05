@@ -87,7 +87,7 @@ export const _isValidLocale = (
 /**
  * Standardizes a BCP 47 locale to ensure correct formatting.
  * @param {string} locale - The BCP 47 locale to standardize.
- * @returns {string} The standardized BCP 47 locale, or an empty string if invalid.
+ * @returns {string} The standardized BCP 47 locale, or the input string if it cannot be standardized.
  * @internal
  */
 export const _standardizeLocale = (locale: string): string => {
