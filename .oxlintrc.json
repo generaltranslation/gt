@@ -4,42 +4,16 @@
     "correctness": "off"
   },
   "env": {
-    "builtin": true
+    "builtin": true,
+    "node": true,
+    "commonjs": true
   },
   "globals": {
-    "console": "readonly",
-    "process": "readonly",
-    "Buffer": "readonly",
-    "__dirname": "readonly",
-    "__filename": "readonly",
-    "global": "readonly",
-    "module": "readonly",
-    "require": "readonly",
-    "exports": "readonly",
-    "fetch": "readonly",
-    "Headers": "readonly",
-    "Request": "readonly",
     "RequestInit": "readonly",
-    "Response": "readonly",
-    "URL": "readonly",
-    "URLSearchParams": "readonly",
-    "AbortController": "readonly",
-    "AbortSignal": "readonly",
-    "TextDecoder": "readonly",
-    "TextEncoder": "readonly",
-    "atob": "readonly",
-    "btoa": "readonly",
-    "clearInterval": "readonly",
-    "clearTimeout": "readonly",
     "document": "readonly",
-    "localStorage": "readonly",
-    "navigator": "readonly",
+    "window": "readonly",
     "NodeJS": "readonly",
     "React": "readonly",
-    "setInterval": "readonly",
-    "setTimeout": "readonly",
-    "structuredClone": "readonly",
-    "window": "readonly",
     "__DEV__": "readonly"
   },
   "ignorePatterns": [
@@ -68,16 +42,8 @@
   "overrides": [
     {
       "files": ["**/*.test.{js,ts,tsx}", "**/*.spec.{js,ts,tsx}"],
-      "globals": {
-        "describe": "readonly",
-        "it": "readonly",
-        "expect": "readonly",
-        "beforeEach": "readonly",
-        "afterEach": "readonly",
-        "beforeAll": "readonly",
-        "afterAll": "readonly",
-        "vi": "readonly",
-        "test": "readonly"
+      "env": {
+        "vitest": true
       }
     },
     {
@@ -120,7 +86,7 @@
     },
     {
       "files": ["packages/locadex/**/*.{ts,tsx}"],
-      "plugins": ["unicorn", "typescript", "oxc", "import"],
+      "plugins": ["import"],
       "rules": {
         "import/extensions": [
           "error",
