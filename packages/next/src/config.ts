@@ -38,6 +38,7 @@ import {
 import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath';
 import { ssgChecks } from './plugin/checks/ssgChecks';
 import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
+import { recordNextDevTelemetry } from './telemetry/nextDevTelemetry';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -574,6 +575,29 @@ export function withGTConfig(
     (!nextConfig.experimental?.turbo || nextConfig.turbopack?.resolveAlias)
   );
 
+  const telemetryConfig = {
+    devServerTelemetry: mergedConfig.devServerTelemetry,
+    devServerTelemetryUrl: mergedConfig.devServerTelemetryUrl,
+    experimentalCompilerOptions: mergedConfig.experimentalCompilerOptions,
+    experimentalEnableSSG: mergedConfig.experimentalEnableSSG,
+    experimentalLocaleResolution: mergedConfig.experimentalLocaleResolution,
+  };
+
+  const recordDevTelemetry = (bundler: 'webpack' | 'turbopack') => {
+    recordNextDevTelemetry({
+      config: telemetryConfig,
+      bundler,
+      distDir: nextConfig.distDir,
+      gtServicesEnabled,
+      localDictionary: !!customLoadDictionaryPath,
+      localTranslations: !!customLoadTranslationsPath,
+    });
+  };
+
+  if (turboPackEnabled && process.env.NODE_ENV === 'development') {
+    recordDevTelemetry('turbopack');
+  }
+
   const config: NextConfig = {
     ...nextConfig,
     env: {
@@ -654,6 +678,10 @@ export function withGTConfig(
         NonNullable<NextConfig['webpack']>
       >
     ) {
+      if (options.dev) {
+        recordDevTelemetry('webpack');
+      }
+
       // Only apply webpack aliases if we're using webpack (not Turbopack)
       if (!turboPackEnabled) {
         // Try to load GT compiler if available

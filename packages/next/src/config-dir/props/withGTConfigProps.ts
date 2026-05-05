@@ -57,6 +57,8 @@ export type withGTConfigProps = {
   runtimeUrl?: string | null;
   cacheUrl?: string | null;
   cacheExpiryTime?: number;
+  devServerTelemetry?: boolean;
+  devServerTelemetryUrl?: string | null;
   // Locale info
   locales?: string[];
   defaultLocale?: string;

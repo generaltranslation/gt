@@ -18,6 +18,10 @@ vi.mock('../plugin/getStableNextVersionInfo', () => ({
   babelPluginCompatible: true,
 }));
 
+vi.mock('../telemetry/nextDevTelemetry', () => ({
+  recordNextDevTelemetry: vi.fn(),
+}));
+
 // ---- Helpers ---- //
 
 function parseConfigParams(result: NextConfig) {
@@ -1214,6 +1218,44 @@ describe('withGTConfig', () => {
 
       expect(wc.cache).toBe(false);
     });
+
+    it('records anonymous dev telemetry only for webpack dev', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const { recordNextDevTelemetry } = await import(
+        '../telemetry/nextDevTelemetry'
+      );
+
+      const result = withGTConfig(
+        {},
+        {
+          devServerTelemetryUrl:
+            'https://api.example.com/v2/telemetry/next-dev',
+        }
+      );
+
+      result.webpack!(
+        makeWebpackConfig() as any,
+        { ...makeWebpackOptions(), dev: false } as any
+      );
+      expect(recordNextDevTelemetry).not.toHaveBeenCalled();
+
+      result.webpack!(
+        makeWebpackConfig() as any,
+        { ...makeWebpackOptions(), dev: true } as any
+      );
+
+      expect(recordNextDevTelemetry).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bundler: 'webpack',
+          gtServicesEnabled: false,
+          localDictionary: false,
+          localTranslations: false,
+        })
+      );
+      expect(
+        vi.mocked(recordNextDevTelemetry).mock.calls[0][0].config
+      ).not.toHaveProperty('projectId');
+    });
   });
 
   // ==============================
@@ -1253,6 +1295,29 @@ describe('withGTConfig', () => {
       expect(result.turbopack!.resolveAlias).toHaveProperty(
         'gt-next/_dictionary'
       );
+    });
+
+    it('records anonymous dev telemetry for turbopack development config', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const { recordNextDevTelemetry } = await import(
+        '../telemetry/nextDevTelemetry'
+      );
+      process.env.TURBOPACK = '1';
+      process.env.NODE_ENV = 'development';
+
+      withGTConfig();
+
+      expect(recordNextDevTelemetry).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bundler: 'turbopack',
+          gtServicesEnabled: false,
+          localDictionary: false,
+          localTranslations: false,
+        })
+      );
+      expect(
+        vi.mocked(recordNextDevTelemetry).mock.calls[0][0].config
+      ).not.toHaveProperty('projectId');
     });
   });
 

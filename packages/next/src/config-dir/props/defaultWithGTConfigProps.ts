@@ -1,5 +1,6 @@
 import {
   libraryDefaultLocale,
+  defaultBaseUrl,
   defaultCacheUrl,
   defaultRuntimeApiUrl,
 } from 'generaltranslation/internal';
@@ -21,6 +22,8 @@ type DefaultGTConfigProps = {
   config: string;
   runtimeUrl: string;
   cacheUrl: string;
+  devServerTelemetry: boolean;
+  devServerTelemetryUrl: string;
   defaultLocale: string;
   getLocale: () => Promise<string>;
   locales: string[];
@@ -51,6 +54,8 @@ export const defaultWithGTConfigProps: DefaultGTConfigProps = {
   config: './gt.config.json',
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
+  devServerTelemetry: true,
+  devServerTelemetryUrl: `${defaultBaseUrl}/v2/telemetry/next-dev`,
   defaultLocale: libraryDefaultLocale,
   getLocale: async () => libraryDefaultLocale,
   locales: [] as string[],
