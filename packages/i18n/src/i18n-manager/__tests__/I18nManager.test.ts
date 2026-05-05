@@ -79,7 +79,7 @@ describe('I18nManager', () => {
     expect(translations[expectedHash]).toBe(translatedString);
   });
 
-  it('loadDictionary() returns default locale dictionary without calling loadDictionary', async () => {
+  it('loadDictionary() returns empty object without loading when locale does not require translation', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
     const manager = createManager({
       dictionary: {
@@ -90,11 +90,11 @@ describe('I18nManager', () => {
 
     const dictionary = await manager.loadDictionary('en');
 
-    expect(dictionary).toEqual({ greeting: 'Hello' });
+    expect(dictionary).toEqual({});
     expect(loadDictionary).not.toHaveBeenCalled();
   });
 
-  it('loadDictionary() returns source dictionary without loading when i18n is disabled', async () => {
+  it('loadDictionary() returns empty object without loading when i18n is disabled', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
     const manager = createManager({
       enableI18n: false,
@@ -106,7 +106,7 @@ describe('I18nManager', () => {
 
     const dictionary = await manager.loadDictionary('fr');
 
-    expect(dictionary).toEqual({ greeting: 'Hello' });
+    expect(dictionary).toEqual({});
     expect(loadDictionary).not.toHaveBeenCalled();
   });
 

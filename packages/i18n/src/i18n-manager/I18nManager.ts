@@ -262,11 +262,7 @@ class I18nManager<
       // Validate
       const resolvedLocale = this.resolveLocale(locale);
       if (!this.requiresTranslation(resolvedLocale)) {
-        return (
-          this.localesDictionaryCache
-            .get(this.config.defaultLocale)
-            ?.getInternalCache() ?? {}
-        );
+        return {};
       }
 
       // Get the locale dictionary cache
