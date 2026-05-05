@@ -201,7 +201,10 @@ describe('I18nManager', () => {
 
     await manager.loadDictionary('fr');
 
-    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Bonjour');
+    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
   });
 
   it('lookupDictionary() returns a loaded target locale nested leaf', async () => {
@@ -220,10 +223,13 @@ describe('I18nManager', () => {
 
     await manager.loadDictionary('fr');
 
-    expect(manager.lookupDictionary('fr', 'user.name')).toBe('Nom');
+    expect(manager.lookupDictionary('fr', 'user.name')).toEqual({
+      entry: 'Nom',
+      options: {},
+    });
   });
 
-  it('lookupDictionary() returns the string from a metadata tuple leaf', async () => {
+  it('lookupDictionary() returns the entry and options from a metadata tuple leaf', async () => {
     const manager = createManager({
       dictionary: {
         greeting: ['Hello', { $context: 'homepage', $maxChars: 10 }],
@@ -235,7 +241,10 @@ describe('I18nManager', () => {
 
     await manager.loadDictionary('fr');
 
-    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Bonjour');
+    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+      entry: 'Bonjour',
+      options: { context: 'homepage' },
+    });
   });
 
   it('lookupDictionary() returns undefined when target locale is not loaded', () => {
@@ -249,7 +258,10 @@ describe('I18nManager', () => {
     });
 
     expect(manager.lookupDictionary('fr', 'greeting')).toBeUndefined();
-    expect(manager.lookupDictionary('en', 'greeting')).toBe('Hello');
+    expect(manager.lookupDictionary('en', 'greeting')).toEqual({
+      entry: 'Hello',
+      options: {},
+    });
   });
 
   it('lookupDictionary() returns undefined when source leaf is missing and translation is not required', () => {
@@ -284,7 +296,10 @@ describe('I18nManager', () => {
     await manager.loadDictionary('fr');
 
     expect(manager.lookupDictionary('fr', 'greeting')).toBeUndefined();
-    expect(manager.lookupDictionary('en', 'greeting')).toBe('Hello');
+    expect(manager.lookupDictionary('en', 'greeting')).toEqual({
+      entry: 'Hello',
+      options: {},
+    });
   });
 
   it('lookupDictionary() returns undefined when target nested leaf is missing', async () => {
@@ -302,7 +317,10 @@ describe('I18nManager', () => {
     await manager.loadDictionary('fr');
 
     expect(manager.lookupDictionary('fr', 'user.name')).toBeUndefined();
-    expect(manager.lookupDictionary('en', 'user.name')).toBe('Name');
+    expect(manager.lookupDictionary('en', 'user.name')).toEqual({
+      entry: 'Name',
+      options: {},
+    });
   });
 
   it('lookupDictionary() does not return dictionary subtrees', async () => {
@@ -589,7 +607,10 @@ describe('I18nManager', () => {
 
     await manager.loadDictionary('fr');
     await manager.loadDictionary('fr');
-    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Bonjour');
+    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
 
     expect(localesDictionaryMiss).toHaveBeenCalledWith({
       locale: 'fr',
@@ -606,7 +627,10 @@ describe('I18nManager', () => {
     expect(dictionaryCacheHit).toHaveBeenCalledWith({
       locale: 'fr',
       id: 'greeting',
-      dictionaryEntry: 'Bonjour',
+      dictionaryEntry: {
+        entry: 'Bonjour',
+        options: {},
+      },
     });
     expect(dictionaryCacheMiss).not.toHaveBeenCalled();
   });

@@ -18,7 +18,10 @@ import { routeCreateTranslationLoader } from './translations-manager/translation
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { Locale, LocalesCache } from './translations-manager/LocalesCache';
 import { Hash } from './translations-manager/TranslationsCache';
-import type { Dictionary } from './translations-manager/DictionaryCache';
+import type {
+  Dictionary,
+  DictionaryEntry,
+} from './translations-manager/DictionaryCache';
 import { LocalesDictionaryCache } from './translations-manager/LocalesDictionaryCache';
 import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
@@ -299,7 +302,7 @@ class I18nManager<
   /**
    * Look up a dictionary entry
    */
-  lookupDictionary(locale: string, id: string): string | undefined {
+  lookupDictionary(locale: string, id: string): DictionaryEntry | undefined {
     try {
       const dictionaryLocale =
         this.resolveCacheLocale(locale) ?? this.config.defaultLocale;

@@ -18,14 +18,16 @@ export function isDictionaryValue(value: unknown): value is Dictionary {
   return typeof value === 'object' && value != null && !Array.isArray(value);
 }
 
-// TODO: Return metadata here when dictionary lookups start applying it.
 export function getDictionaryEntry(
   value: DictionaryValue | undefined
 ): DictionaryEntry | undefined {
   if (!isDictionaryLeafNode(value)) {
     return undefined;
   }
-  return Array.isArray(value) ? value[0] : value;
+  return {
+    entry: Array.isArray(value) ? value[0] : value,
+    options: Array.isArray(value) ? (value[1] ?? {}) : {},
+  };
 }
 
 function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
