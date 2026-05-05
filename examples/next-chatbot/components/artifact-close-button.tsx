@@ -8,8 +8,8 @@ function PureArtifactCloseButton() {
 
   return (
     <Button
-      variant="outline"
-      className="h-fit p-2 dark:hover:bg-zinc-700"
+      variant='outline'
+      className='h-fit p-2 dark:hover:bg-zinc-700'
       onClick={() => {
         setArtifact((currentArtifact) =>
           currentArtifact.status === 'streaming'
@@ -17,7 +17,7 @@ function PureArtifactCloseButton() {
                 ...currentArtifact,
                 isVisible: false,
               }
-            : { ...initialArtifactData, status: 'idle' },
+            : { ...initialArtifactData, status: 'idle' }
         );
       }}
     >

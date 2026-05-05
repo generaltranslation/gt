@@ -7,7 +7,7 @@ export default function LocaleSwitcher() {
   const locales = useLocales();
 
   return (
-    <div data-testid="locale-switcher">
+    <div data-testid='locale-switcher'>
       {locales.map((l) => (
         <button
           key={l}

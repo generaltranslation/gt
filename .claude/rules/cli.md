@@ -1,7 +1,7 @@
 ---
 paths:
-  - "packages/cli/**"
-  - "packages/gtx-cli/**"
+  - 'packages/cli/**'
+  - 'packages/gtx-cli/**'
 ---
 
 # CLI Package Rules

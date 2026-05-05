@@ -43,7 +43,10 @@ writeFileSync(PKG_PATH, JSON.stringify(pkg, null, 2) + '\n');
 try {
   // --- Step 4: Install with tarball ---
   console.log('\n=== Installing with packed gt-next ===\n');
-  execSync('pnpm install --no-frozen-lockfile', { cwd: ROOT, stdio: 'inherit' });
+  execSync('pnpm install --no-frozen-lockfile', {
+    cwd: ROOT,
+    stdio: 'inherit',
+  });
 
   // --- Step 5: Run tests per use case ---
   for (const useCase of useCases) {
@@ -57,5 +60,8 @@ try {
   // --- Step 6: Restore workspace dependency ---
   console.log('\n=== Restoring workspace dependency ===\n');
   writeFileSync(PKG_PATH, originalPkg);
-  execSync('pnpm install --no-frozen-lockfile', { cwd: ROOT, stdio: 'inherit' });
+  execSync('pnpm install --no-frozen-lockfile', {
+    cwd: ROOT,
+    stdio: 'inherit',
+  });
 }

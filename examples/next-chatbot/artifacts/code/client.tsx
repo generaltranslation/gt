@@ -93,7 +93,7 @@ export const codeArtifact = new Artifact<'code', Metadata>({
   content: ({ metadata, setMetadata, ...props }) => {
     return (
       <>
-        <div className="px-1">
+        <div className='px-1'>
           <CodeEditor {...props} />
         </div>
 
@@ -169,12 +169,12 @@ export const codeArtifact = new Artifact<'code', Metadata>({
           for (const handler of requiredHandlers) {
             if (OUTPUT_HANDLERS[handler as keyof typeof OUTPUT_HANDLERS]) {
               await currentPyodideInstance.runPythonAsync(
-                OUTPUT_HANDLERS[handler as keyof typeof OUTPUT_HANDLERS],
+                OUTPUT_HANDLERS[handler as keyof typeof OUTPUT_HANDLERS]
               );
 
               if (handler === 'matplotlib') {
                 await currentPyodideInstance.runPythonAsync(
-                  'setup_matplotlib_output()',
+                  'setup_matplotlib_output()'
                 );
               }
             }

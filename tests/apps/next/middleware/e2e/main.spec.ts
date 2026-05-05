@@ -19,9 +19,7 @@ test.describe('main (prefixDefaultLocale: false)', () => {
     await expectLocaleSync(page, 'en');
   });
 
-  test('/fr/about passes through for non-default locale', async ({
-    page,
-  }) => {
+  test('/fr/about passes through for non-default locale', async ({ page }) => {
     await page.goto('/fr/about');
     await expect(page).toHaveURL('/fr/about');
     await expectLocaleSync(page, 'fr');
@@ -35,9 +33,7 @@ test.describe('main (prefixDefaultLocale: false)', () => {
     await expectHtmlLang(page, 'fr');
   });
 
-  test('locale cookie fr causes / to redirect to /fr/', async ({
-    browser,
-  }) => {
+  test('locale cookie fr causes / to redirect to /fr/', async ({ browser }) => {
     // Simulate a user who has locale=fr and reset cookies set (as setLocale would)
     const context = await browser.newContext();
     const page = await context.newPage();

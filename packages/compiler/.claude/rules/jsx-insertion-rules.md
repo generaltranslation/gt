@@ -41,7 +41,7 @@ This document is the single source of truth for the insertion rules. Both the co
 
 ## Rule 2: When a parent has direct text, it claims the entire subtree
 
-If a parent element has text as a direct child, _T wraps at that level. Nested child elements become part of the same translation unit — they do NOT get their own _T.
+If a parent element has text as a direct child, \_T wraps at that level. Nested child elements become part of the same translation unit — they do NOT get their own \_T.
 
 ```jsx
 // <div> has "Hello " as direct text — _T at div, <b> is part of the unit
@@ -57,7 +57,7 @@ If a parent element has text as a direct child, _T wraps at that level. Nested c
 <div><_T>Welcome, <span><em>friend</em></span>!</_T></div>
 ```
 
-## Rule 3: Sibling elements without a common text parent get independent _T
+## Rule 3: Sibling elements without a common text parent get independent \_T
 
 When a parent has no direct text, each child subtree is processed independently.
 
@@ -71,11 +71,11 @@ When a parent has no direct text, each child subtree is processed independently.
 <ul><li><_T>Item A</_T></li><li><_T>Item B</_T></li></ul>
 ```
 
-## Rule 4: Dynamic expressions get wrapped in _Var
+## Rule 4: Dynamic expressions get wrapped in \_Var
 
-Any expression that is not statically parseable gets wrapped in `GtInternalVar` (_Var). _Var is ONLY inserted inside a _T region.
+Any expression that is not statically parseable gets wrapped in `GtInternalVar` (\_Var). \_Var is ONLY inserted inside a \_T region.
 
-### Expressions that need _Var (dynamic):
+### Expressions that need \_Var (dynamic):
 
 ```jsx
 // Identifier (variable reference)
@@ -192,7 +192,7 @@ If an element's children contain no non-whitespace string content (`StringLitera
 
 ## Rule 6: User-written T — completely hands off
 
-If the user has manually written a `<T>` component (imported from a GT library), the pass does **nothing** to it or any of its descendants. No _T, no _Var, nothing.
+If the user has manually written a `<T>` component (imported from a GT library), the pass does **nothing** to it or any of its descendants. No \_T, no \_Var, nothing.
 
 ```jsx
 // User T with text
@@ -254,6 +254,7 @@ This does NOT apply to auto-inserted \_Var. When the pass itself inserts a \_Var
 Branch and Plural components trigger \_T insertion at the **parent** level. The `<T>` component already knows how to translate their branches, so static content inside Branch/Plural props and children is left alone.
 
 **Control props are never modified.** These are selector/configuration props, not translatable content:
+
 - Branch: `branch` (selector key), `data-*` (HTML attributes, ignored at runtime)
 - Plural: `n` (count), `locales` (locale hint)
 
@@ -347,9 +348,9 @@ For **regular components**, JSX in non-`children` props (e.g. `header`, `icon`, 
 <Button icon={<span><_T>X</_T></span>}><_T>Click me</_T></Button>
 ```
 
-## Rule 11: _Var is only inserted inside _T
+## Rule 11: \_Var is only inserted inside \_T
 
-Dynamic expressions are only wrapped in _Var when they are inside a _T region (auto-inserted). If there is no _T (e.g., no text to translate), dynamic expressions are left as-is.
+Dynamic expressions are only wrapped in \_Var when they are inside a \_T region (auto-inserted). If there is no \_T (e.g., no text to translate), dynamic expressions are left as-is.
 
 ```jsx
 // Has text → _T inserted → dynamic expressions get _Var
@@ -365,9 +366,9 @@ Dynamic expressions are only wrapped in _Var when they are inside a _T region (a
 <div>{firstName} {lastName}</div>  // unchanged
 ```
 
-## Rule 12: Nested dynamic content inside _T gets _Var at the expression level
+## Rule 12: Nested dynamic content inside \_T gets \_Var at the expression level
 
-When _T claims a subtree and a nested element contains dynamic content, the _Var wraps the expression inside that nested element.
+When \_T claims a subtree and a nested element contains dynamic content, the \_Var wraps the expression inside that nested element.
 
 ```jsx
 // Parent has text → claims _T. Child <span> has dynamic content → _Var inside span
@@ -438,7 +439,7 @@ The pass only operates on JSX children, not on string-valued props/attributes. P
 
 ## Import injection
 
-When the pass inserts at least one _T, it automatically adds:
+When the pass inserts at least one \_T, it automatically adds:
 
 ```javascript
 import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
@@ -462,18 +463,22 @@ function getName() {
 
 <div>
   <Derive>{getName()}</Derive>
-</div>
+</div>;
 
 // After injection:
 function getName() {
-  return <div><_T>John</_T></div>;  // _T injected here — compiler doesn't know this is derived
+  return (
+    <div>
+      <_T>John</_T>
+    </div>
+  ); // _T injected here — compiler doesn't know this is derived
 }
 
 <div>
   <_T>
     <Derive>{getName()}</Derive>
   </_T>
-</div>
+</div>;
 
 // Result: nested _T inside Derive — the inner _T needs to be removed at runtime
 ```
@@ -487,6 +492,7 @@ Instead of relying on the compiler to never emit nested \_T, the **runtime remov
 **Key invariant that makes this safe:** \_T is always inserted by wrapping the children of an existing element. This means removing \_T is always a simple child replacement — unwrap \_T's children back into the parent. No merging or restructuring needed.
 
 The function uses a `derivationDepth` counter:
+
 - Entering `<Derive>` or `<Static>` increments the depth
 - When depth > 0 and an auto-injected \_T is encountered, it is unwrapped (replaced by its children)
 - User-written `<T>` components are never removed (distinguished by the `_gtt` transformation tag: `'translate-client'` vs `'translate-client-automatic'`)
@@ -521,7 +527,7 @@ This is consistent with the function-definition case:
 ```jsx
 // Function that returns Branch:
 function getNav() {
-  return <Branch branch="x">fallback</Branch>;
+  return <Branch branch='x'>fallback</Branch>;
 }
 // The compiler inserts _T inside getNav(), producing the same standalone Branch entry.
 // If this function is called inside <Derive>{getNav()}</Derive>, the inner _T is
@@ -533,6 +539,7 @@ function getNav() {
 ### Why this matters for CLI extraction
 
 The CLI extraction tool must be aware that:
+
 1. The compiler **will** produce nested \_T in Derive cases — this is expected, not a bug
 2. The runtime removes these nested \_T before hash computation, so the **effective** structure (after removal) is what the hash is computed against
 3. The CLI must simulate the same removal when computing hashes from source to maintain agreement
@@ -542,20 +549,20 @@ The CLI extraction tool must be aware that:
 
 ## Summary table
 
-| Scenario | \_T inserted? | \_Var inserted? | Where? |
-|----------|-------------|----------------|--------|
-| `<div>Hello</div>` | Yes | No | Inside div |
-| `<div>{name}</div>` | No | No | — (no text) |
-| `<div>{42}</div>` | No | No | — (number is not text) |
-| `<div>Hello {name}</div>` | Yes | Yes (name) | Inside div |
-| `<div><span>Hi</span></div>` | Yes | No | Inside span |
-| `<div>Hi <b>W</b></div>` | Yes | No | Inside div |
-| `<div>{a} {b}</div>` | No | No | — (whitespace only) |
-| `<>Hello</>` | Yes | No | Inside fragment |
-| `<T>Hello</T>` | No | No | — (user T, hands off) |
-| `<div><Var>{x}</Var></div>` | No | No | — (no text) |
-| `<div>Hi <Var>{x}</Var></div>` | Yes | No | Inside div (user Var untouched) |
-| `<div><Branch ...>F</Branch></div>` | Yes | No | Inside div (wraps Branch) |
-| `<div><Derive>{x}</Derive></div>` | Yes | No | Inside div (wraps Derive) |
-| `<div>Hi {x ? <a/> : <b/>}</div>` | Yes | Yes (ternary) | Inside div |
-| `<input placeholder="Hi" />` | No | No | — (attributes untouched) |
+| Scenario                            | \_T inserted? | \_Var inserted? | Where?                          |
+| ----------------------------------- | ------------- | --------------- | ------------------------------- |
+| `<div>Hello</div>`                  | Yes           | No              | Inside div                      |
+| `<div>{name}</div>`                 | No            | No              | — (no text)                     |
+| `<div>{42}</div>`                   | No            | No              | — (number is not text)          |
+| `<div>Hello {name}</div>`           | Yes           | Yes (name)      | Inside div                      |
+| `<div><span>Hi</span></div>`        | Yes           | No              | Inside span                     |
+| `<div>Hi <b>W</b></div>`            | Yes           | No              | Inside div                      |
+| `<div>{a} {b}</div>`                | No            | No              | — (whitespace only)             |
+| `<>Hello</>`                        | Yes           | No              | Inside fragment                 |
+| `<T>Hello</T>`                      | No            | No              | — (user T, hands off)           |
+| `<div><Var>{x}</Var></div>`         | No            | No              | — (no text)                     |
+| `<div>Hi <Var>{x}</Var></div>`      | Yes           | No              | Inside div (user Var untouched) |
+| `<div><Branch ...>F</Branch></div>` | Yes           | No              | Inside div (wraps Branch)       |
+| `<div><Derive>{x}</Derive></div>`   | Yes           | No              | Inside div (wraps Derive)       |
+| `<div>Hi {x ? <a/> : <b/>}</div>`   | Yes           | Yes (ternary)   | Inside div                      |
+| `<input placeholder="Hi" />`        | No            | No              | — (attributes untouched)        |

@@ -9,8 +9,8 @@
   "scripts": {
     "build": "turbo run build --filter='./packages/*'",
     "test": "turbo run test --filter='./packages/*'",
-    "lint": "oxlint packages && prettier --check \"packages/**/*.{js,jsx,ts,tsx}\"",
-    "lint:fix": "oxlint packages --fix && prettier --write \"packages/**/*.{js,jsx,ts,tsx}\"",
+    "lint": "oxlint packages && oxfmt --check .",
+    "lint:fix": "oxlint packages --fix && oxfmt .",
     "transpile": "turbo run transpile --filter='./packages/*'",
     "release": "changeset publish",
     "release:gt-bin": "pnpm --filter gt run release:bin",
@@ -19,7 +19,8 @@
     "build:release": "turbo run build:release --filter='./packages/*'",
     "bench": "turbo run bench",
     "size": "size-limit",
-    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml}\"",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
     "changeset": "changeset",
     "version-packages": "changeset version"
   },
@@ -47,6 +48,7 @@
     "@size-limit/preset-small-lib": "^12.1.0",
     "@vitejs/plugin-react": "^5.1.2",
     "@vitest/coverage-v8": "^3.2.4",
+    "oxfmt": "^0.47.0",
     "oxlint": "^1.62.0",
     "prettier": "^3.6.2",
     "size-limit": "^12.1.0",

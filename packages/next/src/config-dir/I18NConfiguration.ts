@@ -119,11 +119,13 @@ export class I18NConfiguration {
     // Enables locale-based translation lookups through I18nManager. Runtime API
     // availability is tracked separately by developmentApiEnabled/productionApiEnabled.
     this.translationEnabled = !!(
-      loadTranslationsType === 'custom' || // load local translation
-      (loadTranslationsType === 'remote' &&
-        this.projectId && // projectId required because it's part of the GET request
-        cacheUrl) ||
-      loadDictionaryEnabled // load local dictionary
+      (
+        loadTranslationsType === 'custom' || // load local translation
+        (loadTranslationsType === 'remote' &&
+          this.projectId && // projectId required because it's part of the GET request
+          cacheUrl) ||
+        loadDictionaryEnabled
+      ) // load local dictionary
     );
 
     // runtime translation enabled

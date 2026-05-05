@@ -11,7 +11,13 @@
       "outputs": ["dist/**"]
     },
     "//#lint": {},
-    "//#lint:fix": {},
+    "//#lint:fix": {
+      "cache": false
+    },
+    "//#format": {
+      "cache": false
+    },
+    "//#format:check": {},
     "test": {
       "cache": false,
       "env": ["VITE_CI_TEST_GT_PROJECT_ID", "VITE_CI_TEST_GT_API_KEY"]

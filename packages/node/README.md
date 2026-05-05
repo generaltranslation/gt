@@ -18,7 +18,7 @@ pnpm add gt-node
 ## Usage
 
 ```typescript
-import { /* utilities */ } from 'gt-node';
+import {} from /* utilities */ 'gt-node';
 ```
 
 This package provides Node.js-specific utilities built on top of the General Translation toolkit. It includes all functionality from:

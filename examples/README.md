@@ -65,9 +65,9 @@ npm start
 
 ### Template Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `[LIBRARY]` | GT library used | `gt-next`, `gt-react` |
-| `[FRAMEWORK]` | Framework/tool | `Next.js`, `Vite`, `Create React App` |
-| `[EXAMPLE_NAME]` | Directory name | `next-create-app`, `vite-create-app` |
-| `[LIBRARY_PATH]` | Docs path | `next`, `react` |
+| Variable         | Description     | Example                               |
+| ---------------- | --------------- | ------------------------------------- |
+| `[LIBRARY]`      | GT library used | `gt-next`, `gt-react`                 |
+| `[FRAMEWORK]`    | Framework/tool  | `Next.js`, `Vite`, `Create React App` |
+| `[EXAMPLE_NAME]` | Directory name  | `next-create-app`, `vite-create-app`  |
+| `[LIBRARY_PATH]` | Docs path       | `next`, `react`                       |

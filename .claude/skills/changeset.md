@@ -3,7 +3,7 @@ name: changeset
 description: Create a changeset for releasing package changes
 user-invocable: true
 allowed-tools: Bash(pnpm changeset *), Write, Read, Bash(git *)
-argument-hint: "[description of changes]"
+argument-hint: '[description of changes]'
 ---
 
 Create a changeset for releasing changes to General Translation packages.
@@ -20,7 +20,7 @@ Create a changeset for releasing changes to General Translation packages.
 
 ```markdown
 ---
-"<package-name>": <patch|minor|major>
+'<package-name>': <patch|minor|major>
 ---
 
 <Description of the changes>
