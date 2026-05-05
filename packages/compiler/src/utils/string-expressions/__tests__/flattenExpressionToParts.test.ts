@@ -158,6 +158,7 @@ describe('resolveStaticExpression', () => {
   it('rejects dynamic expressions', () => {
     withExpressionPath('`Hello ${name}`', (path) => {
       expect(resolveStaticExpression(path)).toEqual({
+        kind: 'dynamic-expression',
         errors: ['Expression is not a static string'],
       });
     });

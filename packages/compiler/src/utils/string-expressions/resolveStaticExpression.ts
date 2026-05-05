@@ -14,6 +14,7 @@ import { multiply } from '../multiplication/multiply';
 export function resolveStaticExpression(exprPath: NodePath<t.Expression>): {
   errors: string[];
   values?: string[];
+  kind?: 'dynamic-expression';
 } {
   const { parts, errors } = flattenExpressionToParts(exprPath);
   if (errors.length > 0) return { errors };
@@ -27,7 +28,10 @@ export function resolveStaticExpression(exprPath: NodePath<t.Expression>): {
       if (part.type === 'derive') {
         return { errors: [], values: undefined };
       } else if (part.type !== 'static') {
-        return { errors: ['Expression is not a static string'] };
+        return {
+          kind: 'dynamic-expression',
+          errors: ['Expression is not a static string'],
+        };
       }
       value += part.value;
     }
