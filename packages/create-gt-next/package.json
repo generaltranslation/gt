@@ -1,0 +1,54 @@
+{
+  "name": "create-gt-next",
+  "version": "0.0.0",
+  "description": "Create a Next.js app internationalized with gt-next.",
+  "main": "dist/index.js",
+  "bin": {
+    "create-gt-next": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "template",
+    "CHANGELOG.md"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "test": "vitest run --config=./vitest.config.ts",
+    "test:watch": "vitest --config=./vitest.config.ts",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "keywords": [
+    "next",
+    "nextjs",
+    "gt-next",
+    "translation",
+    "internationalization",
+    "localization",
+    "i18n",
+    "create"
+  ],
+  "author": "General Translation, Inc.",
+  "license": "FSL-1.1-ALv2",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.1",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.0"
+  }
+}
