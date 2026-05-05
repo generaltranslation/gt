@@ -10,9 +10,11 @@ describe('LocalesDictionaryCache', () => {
   let mockLoadDictionary: ReturnType<typeof vi.fn>;
   const enDictionary: Dictionary = {
     greeting: 'Hello',
+    cta: ['Click me', { $context: 'button', $maxChars: 12 }],
   };
   const frDictionary: Dictionary = {
     greeting: 'Bonjour',
+    cta: ['Cliquez', { context: 'button' }],
     user: {
       name: 'Nom',
     },
@@ -61,6 +63,7 @@ describe('LocalesDictionaryCache', () => {
     expect(mockLoadDictionary).toHaveBeenCalledWith('fr');
     expect(dictionaryCache).toBeDefined();
     expect(dictionaryCache.getInternalCache()).toEqual(frDictionary);
+    expect(dictionaryCache.get('cta')).toBe('Cliquez');
   });
 
   it('miss() deduplicates concurrent loads for same locale', async () => {
