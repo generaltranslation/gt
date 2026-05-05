@@ -54,12 +54,12 @@ pnpm bench   # Runs all middleware benchmarks via turbo
 
 The middleware reads `NEXT_PUBLIC_USE_CASE` at build time. Each variant gets its own spec file and a separate `next build` + `next start` cycle.
 
-| Variant | Middleware Config | Tests |
-|---------|------------------|-------|
-| `main` | `prefixDefaultLocale: false` | 6 |
-| `prefix-default` | `prefixDefaultLocale: true` | 5 |
-| `path-config` | Localized paths for `/about` | 5 |
-| `no-routing` | `localeRouting: false` | 5 |
+| Variant          | Middleware Config            | Tests |
+| ---------------- | ---------------------------- | ----- |
+| `main`           | `prefixDefaultLocale: false` | 6     |
+| `prefix-default` | `prefixDefaultLocale: true`  | 5     |
+| `path-config`    | Localized paths for `/about` | 5     |
+| `no-routing`     | `localeRouting: false`       | 5     |
 
 ## pnpm pack
 

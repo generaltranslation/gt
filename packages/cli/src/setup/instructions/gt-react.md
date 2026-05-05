@@ -29,8 +29,8 @@ You can also add a `context` prop to `<T>` to give context to the translator. Fo
 ```jsx
 import { T } from 'gt-react';
 
-<T context="Cookies as in web cookies">
-  View your <a href="/cookies">Cookies</a>
+<T context='Cookies as in web cookies'>
+  View your <a href='/cookies'>Cookies</a>
 </T>;
 ```
 
@@ -88,7 +88,7 @@ import { T, Var, Num } from 'gt-react';
 `useLocale` returns the user's current language, as a BCP 47 locale tag.
 
 ```js
-import { useLocale } from 'gt-react'
+import { useLocale } from 'gt-react';
 
 const locale = useLocale(); // "en-US"
 ```

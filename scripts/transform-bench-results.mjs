@@ -86,7 +86,11 @@ function normalizeE2EResults(json, pkg) {
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const pkg = args.package;
-  const extra = JSON.stringify({ package: pkg, version: args.version }, null, 2);
+  const extra = JSON.stringify(
+    { package: pkg, version: args.version },
+    null,
+    2
+  );
   const results = [];
 
   if (args.unit) {

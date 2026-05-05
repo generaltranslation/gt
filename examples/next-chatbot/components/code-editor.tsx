@@ -49,7 +49,7 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
       const updateListener = EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           const transaction = update.transactions.find(
-            (tr) => !tr.annotation(Transaction.remote),
+            (tr) => !tr.annotation(Transaction.remote)
           );
 
           if (transaction) {
@@ -92,7 +92,7 @@ function PureCodeEditor({ content, onSaveContent, status }: EditorProps) {
 
   return (
     <div
-      className="relative not-prose w-full pb-[calc(80dvh)] text-sm"
+      className='relative not-prose w-full pb-[calc(80dvh)] text-sm'
       ref={containerRef}
     />
   );
