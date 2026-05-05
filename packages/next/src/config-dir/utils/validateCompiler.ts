@@ -1,6 +1,7 @@
 import { type withGTConfigProps } from '../props/withGTConfigProps';
 import { babelPluginCompatible } from '../../plugin/getStableNextVersionInfo';
 import {
+  babelCompilerTurbopackUnavailableWarning,
   createGTCompilerUnavailableWarning,
   disablingCompileTimeHashWarning,
   swcPluginCompatibilityChangeWarning,
@@ -20,9 +21,16 @@ export function validateCompiler(mergedConfig: withGTConfigProps) {
     console.warn(createGTCompilerUnavailableWarning('swc'));
     console.warn(swcPluginCompatibilityChangeWarning);
     mergedConfig.experimentalCompilerOptions.type = 'none';
-  } else if (type === 'babel' && (!babelPluginCompatible || turboPackEnabled)) {
-    console.warn(createGTCompilerUnavailableWarning('babel'));
-    mergedConfig.experimentalCompilerOptions.type = 'none';
+  } else if (type === 'babel') {
+    if (turboPackEnabled) {
+      console.warn(babelCompilerTurbopackUnavailableWarning);
+    }
+    if (!babelPluginCompatible) {
+      console.warn(createGTCompilerUnavailableWarning('babel'));
+    }
+    if (turboPackEnabled || !babelPluginCompatible) {
+      mergedConfig.experimentalCompilerOptions.type = 'none';
+    }
   }
   // Backwards compatibility, remove this condition in the future
   if (mergedConfig.experimentalCompilerOptions.compileTimeHash === false) {
