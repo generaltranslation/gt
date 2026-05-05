@@ -17,9 +17,9 @@ export type EnqueueOptions = {
  * @internal
  * Enqueues files for translation in the General Translation API.
  * @param files - References of files to translate (file content already uploaded)
- * @param options - The options for the API call
- * @param config - The configuration for the API call
- * @returns The result of the API call
+ * @param options - The options for the API call.
+ * @param config - The configuration for the API call.
+ * @returns The result of the API call.
  */
 export default async function _enqueueFiles(
   files: FileReferenceIds[],

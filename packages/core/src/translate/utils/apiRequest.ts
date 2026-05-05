@@ -34,10 +34,10 @@ function getRetryDelay(policy: RetryPolicy, attempt: number): number {
  * Encapsulates URL construction, fetch with timeout, error handling,
  * response validation, and JSON parsing.
  *
- * @param config - The configuration for the API call
+ * @param config - The configuration for the API call.
  * @param endpoint - The API endpoint path (e.g. '/v2/project/jobs/info')
- * @param options - Optional request options
- * @returns The parsed JSON response
+ * @param options - Optional request options.
+ * @returns The parsed JSON response.
  */
 export default async function apiRequest<T>(
   config: TranslationRequestConfig,
@@ -75,7 +75,7 @@ export default async function apiRequest<T>(
       handleFetchError(error, timeout);
     }
 
-    // Retry on 5XX server errors
+    // Retry on 5XX server errors.
     if (response!.status >= 500 && attempt < maxRetries) {
       await sleep(getRetryDelay(retryPolicy, attempt));
       continue;

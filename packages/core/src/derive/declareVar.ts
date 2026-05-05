@@ -28,11 +28,11 @@ export function declareVar(
   variable: string | number | boolean | null | undefined,
   options?: { $name?: string }
 ): string {
-  // variable section
+  // Variable section.
   const sanitizedVariable = sanitizeVar(String(variable ?? ''));
   const variableSection = ` other {${sanitizedVariable}}`;
 
-  // name section
+  // Name section.
   let nameSection = '';
   if (options?.$name) {
     const sanitizedName = sanitizeVar(options.$name);

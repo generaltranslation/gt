@@ -32,7 +32,7 @@ export function indexVars(icuString: IcuMessage): string {
     });
   }
 
-  // Find all variable identifiers
+  // Find all variable identifiers.
   traverseIcu({
     icuString,
     shouldVisit: isGTUnindexedSelectElement,
@@ -40,7 +40,7 @@ export function indexVars(icuString: IcuMessage): string {
     options: { recurseIntoVisited: false, captureLocation: true },
   });
 
-  // Index each variable and collapse the other option
+  // Index each variable and collapse the other option.
   const result = [];
   let current = 0;
   for (let i = 0; i < variableLocations.length; i++) {
@@ -50,7 +50,7 @@ export function indexVars(icuString: IcuMessage): string {
     // Replace the variable with the new identifier (+1 is for the curly brace)
     result.push(icuString.slice(start, start + VAR_IDENTIFIER.length + 1));
 
-    // Add the new identifier
+    // Add the new identifier.
     result.push(String(i + 1));
     // After the variable
     result.push(icuString.slice(start + VAR_IDENTIFIER.length + 1, otherStart));

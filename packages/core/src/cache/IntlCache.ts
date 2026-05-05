@@ -26,7 +26,7 @@ const CustomIntl: CustomIntlType = {
 
 /**
  * Cache for Intl and custom format instances to avoid repeated instantiation
- * Uses a two-level structure: constructor name -> cache key -> instance
+ * Uses a two-level structure: constructor name -> cache key -> instance.
  */
 class IntlCache {
   private cache: IntlCacheObject;
@@ -36,8 +36,8 @@ class IntlCache {
   }
 
   /**
-   * Generates a consistent cache key from locales and options
-   * Handles all LocalesArgument types (string, Locale, array, undefined)
+   * Generates a consistent cache key from locales and options.
+   * Handles all LocalesArgument types (string, Locale, array, undefined).
    */
   private _generateKey(locales: Intl.LocalesArgument, options = {}) {
     // Normalize locales to string representation
@@ -56,9 +56,9 @@ class IntlCache {
 
   /**
    * Gets a cached Intl instance or creates a new one if not found
-   * @param constructor The name of the Intl constructor to use
-   * @param args Constructor arguments (locales, options)
-   * @returns Cached or newly created Intl instance
+   * @param constructor The name of the Intl constructor to use.
+   * @param args Constructor arguments (locales, options).
+   * @returns Cached or newly created Intl instance.
    */
   get<K extends keyof CustomIntlConstructors>(
     constructor: K,

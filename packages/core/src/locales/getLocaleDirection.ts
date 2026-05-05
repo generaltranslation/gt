@@ -5,7 +5,7 @@ import _getLocaleProperties from './getLocaleProperties';
  * Get the text direction for a given locale code using the Intl.Locale API.
  *
  * @param {string} code - The locale code to check.
- * @returns {string} - 'rtl' if the language is right-to-left, otherwise 'ltr'.
+ * @returns {string} 'rtl' if the language is right-to-left; otherwise 'ltr'.
  * @internal
  */
 export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
@@ -68,7 +68,7 @@ const RTL_LANGUAGES = new Set([
 
 /**
  * Handles extracting direction via textInfo property
- * @param Locale - Intl.Locale object
+ * @param locale - Intl.Locale object.
  * @returns {'ltr' | 'rtl'} - The direction of the locale
  *
  * Intl.Locale.prototype.getTextInfo() / textInfo property incorporated in ES2024 Specification.

@@ -16,11 +16,11 @@ export type CheckJobStatusResult = {
 
 /**
  * @internal
- * Queries job statuses for a project
- * @param jobIds - Job IDs
- * @param config - The configuration for the API call
- * @param timeoutMS - The timeout in milliseconds
- * @returns The result of the API call
+ * Queries job statuses for a project.
+ * @param jobIds - Job IDs.
+ * @param config - The configuration for the API call.
+ * @param timeoutMs - The timeout in milliseconds.
+ * @returns The result of the API call.
  */
 export async function _checkJobStatus(
   jobIds: string[],

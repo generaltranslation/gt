@@ -37,7 +37,7 @@ export type ProcessMovesOptions = {
  * Called when the CLI detects that files have been moved/renamed.
  * @param moves - Array of move mappings (old fileId to new fileId)
  * @param options - Options including branchId and timeout
- * @param config - The configuration for the API call
+ * @param config - The configuration for the API call.
  * @returns Promise resolving to the move results
  */
 export default async function _processFileMoves(
