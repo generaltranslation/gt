@@ -5,7 +5,10 @@ import {
 } from '../../utils/constants/gt/constants';
 import { TransformState } from '../../state/types';
 import { getCalleeNameFromExpression } from '../../utils/parsing/getCalleeNameFromExpression';
-import { resolveStaticExpression } from '../../utils/string-expressions/resolveStaticExpression';
+import {
+  resolveStaticExpression,
+  type ResolveStaticExpressionError,
+} from '../../utils/string-expressions/resolveStaticExpression';
 import { getTrackedVariable } from '../getTrackedVariable';
 import { NodePath } from '@babel/traverse';
 
@@ -51,19 +54,22 @@ export function validateTranslationFunction(
   );
   // TODO: until we implement derivation, we will only need to check the first value
   const content = resolvedStaticExpression.values?.[0];
+  const resolutionErrors = getResolutionErrorMessages(
+    resolvedStaticExpression.errors,
+    false
+  );
 
-  if (
-    resolvedStaticExpression.errors.length > 0 &&
-    resolvedStaticExpression.kind !== 'dynamic-expression'
-  ) {
-    return { errors: resolvedStaticExpression.errors };
+  if (resolutionErrors.length > 0) {
+    return { errors: resolutionErrors };
   }
 
   if (content === undefined && !state.settings.autoderive.strings) {
     // Not a static expression — check if it contains a derive() function invocation
     validateDerive(callExpr.arguments[0], state, errors);
     if (errors.length > 0) {
-      errors.push(...resolvedStaticExpression.errors);
+      errors.push(
+        ...getResolutionErrorMessages(resolvedStaticExpression.errors)
+      );
       errors.push(
         'registration function must use a string literal or derive() call as the first argument. Variable content is not allowed.'
       );
@@ -176,6 +182,15 @@ export function validateUseMessagesCallback(_callExpr: t.CallExpression): {
 /* Helper Functions */
 /* =============================== */
 
+function getResolutionErrorMessages(
+  errors: ResolveStaticExpressionError[],
+  includeDynamic = true
+): string[] {
+  return errors
+    .filter((error) => includeDynamic || error.kind !== 'dynamic-expression')
+    .map(({ message }) => message);
+}
+
 /**
  * Validate a property from an object expression
  * @param objExpr - The object expression to validate
@@ -249,14 +264,12 @@ function validatePropertyFromObjectExpression(
     const resolved = resolveStaticExpression(
       valuePath.get('value') as NodePath<t.Expression>
     );
+    const resolutionErrors = getResolutionErrorMessages(resolved.errors, false);
     // TODO: until we implement derivation, we will only need to check the first value
     if (resolved.values?.[0] !== undefined) {
       result.value = resolved.values[0];
-    } else if (
-      resolved.errors.length > 0 &&
-      resolved.kind !== 'dynamic-expression'
-    ) {
-      result.errors.push(...resolved.errors);
+    } else if (resolutionErrors.length > 0) {
+      result.errors.push(...resolutionErrors);
     } else if (state) {
       // Static resolution failed — check if it's a valid derive() expression
       const deriveErrors: string[] = [];
@@ -264,10 +277,13 @@ function validatePropertyFromObjectExpression(
       if (deriveErrors.length === 0) {
         result.hasDeriveExpression = true;
       } else {
-        result.errors.push(...resolved.errors, ...deriveErrors);
+        result.errors.push(
+          ...getResolutionErrorMessages(resolved.errors),
+          ...deriveErrors
+        );
       }
     } else {
-      result.errors.push(...resolved.errors);
+      result.errors.push(...getResolutionErrorMessages(resolved.errors));
     }
   } else {
     const validatedValue =

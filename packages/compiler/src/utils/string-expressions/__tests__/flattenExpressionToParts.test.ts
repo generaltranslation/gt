@@ -4,6 +4,7 @@ import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import {
   flattenExpressionToParts,
+  INVALID_TEMPLATE_ESCAPE_ERROR,
   type Part,
 } from '../flattenExpressionToParts';
 import { buildTransformResult } from '../buildTransformationResult';
@@ -130,7 +131,10 @@ describe('flattenExpressionToParts', () => {
       const { parts, errors } = flattenExpressionToParts(path);
       expect(parts).toEqual([]);
       expect(errors).toEqual([
-        'Template literal contains an invalid escape sequence',
+        {
+          kind: 'invalid-template-escape',
+          message: INVALID_TEMPLATE_ESCAPE_ERROR,
+        },
       ]);
     });
   });
@@ -139,7 +143,10 @@ describe('flattenExpressionToParts', () => {
     withTaggedTemplatePath('tag`\\xg${value}\\xh`;', (path) => {
       const { errors } = flattenExpressionToParts(path);
       expect(errors).toEqual([
-        'Template literal contains an invalid escape sequence',
+        {
+          kind: 'invalid-template-escape',
+          message: INVALID_TEMPLATE_ESCAPE_ERROR,
+        },
       ]);
     });
   });
@@ -158,8 +165,12 @@ describe('resolveStaticExpression', () => {
   it('rejects dynamic expressions', () => {
     withExpressionPath('`Hello ${name}`', (path) => {
       expect(resolveStaticExpression(path)).toEqual({
-        kind: 'dynamic-expression',
-        errors: ['Expression is not a static string'],
+        errors: [
+          {
+            kind: 'dynamic-expression',
+            message: 'Expression is not a static string',
+          },
+        ],
       });
     });
   });
@@ -167,7 +178,12 @@ describe('resolveStaticExpression', () => {
   it('reports invalid escape sequences', () => {
     withTaggedTemplatePath('tag`\\xg`;', (path) => {
       expect(resolveStaticExpression(path)).toEqual({
-        errors: ['Template literal contains an invalid escape sequence'],
+        errors: [
+          {
+            kind: 'invalid-template-escape',
+            message: INVALID_TEMPLATE_ESCAPE_ERROR,
+          },
+        ],
       });
     });
   });

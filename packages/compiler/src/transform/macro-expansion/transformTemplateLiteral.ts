@@ -20,7 +20,7 @@ export function transformTemplateLiteral(path: NodePath<t.TemplateLiteral>): {
 } {
   const { parts, errors } = flattenExpressionToParts(path);
   if (errors.length > 0) {
-    return { errors, content: [] };
+    return { errors: errors.map(({ message }) => message), content: [] };
   }
   const variants = multiply(parts);
 
