@@ -287,12 +287,6 @@ describe('getGitUnifiedDiff', () => {
 
     const diff = await getGitUnifiedDiff(oldFile, newFile);
 
-    // Log the complete diff for inspection
-    console.log('Complete diff output:');
-    console.log('='.repeat(50));
-    console.log(diff);
-    console.log('='.repeat(50));
-
     // Basic structure checks
     expect(diff).toContain('---');
     expect(diff).toContain('+++');

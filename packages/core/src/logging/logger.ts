@@ -109,9 +109,11 @@ export class ConsoleLogHandler implements LogHandler {
     // Output to appropriate console method based on level
     switch (entry.level) {
       case 'debug':
+        // eslint-disable-next-line no-console
         console.debug(formattedMessage);
         break;
       case 'info':
+        // eslint-disable-next-line no-console
         console.info(formattedMessage);
         break;
       case 'warn':
