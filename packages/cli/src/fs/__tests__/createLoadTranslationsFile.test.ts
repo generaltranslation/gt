@@ -36,7 +36,7 @@ describe('createLoadTranslationsFile', () => {
 
     const content = fs.readFileSync(filePath, 'utf-8');
     expect(content).toContain('export default async function loadTranslations');
-    expect(content).toContain('../public/_gt/');
+    expect(content).toContain('import(`../public/_gt/${locale}.json`)');
   });
 
   it('creates loadTranslations.js at root when no src directory exists', async () => {
@@ -47,7 +47,7 @@ describe('createLoadTranslationsFile', () => {
 
     const content = fs.readFileSync(filePath, 'utf-8');
     expect(content).toContain('export default async function loadTranslations');
-    expect(content).toContain('public/_gt/');
+    expect(content).toContain('import(`./public/_gt/${locale}.json`)');
   });
 
   it('uses correct relative path for Vite translations dir (./src/_gt)', async () => {
@@ -61,9 +61,32 @@ describe('createLoadTranslationsFile', () => {
     expect(fs.existsSync(filePath)).toBe(true);
 
     const content = fs.readFileSync(filePath, 'utf-8');
-    // From src/loadTranslations.js to src/_gt/ the relative path is just _gt/
-    expect(content).toContain('_gt/');
+    expect(content).toContain('import(`./_gt/${locale}.json`)');
     expect(content).not.toContain('public/_gt');
+  });
+
+  it('prefixes nested Vite paths with ./ when loadTranslations.js is at the project root', async () => {
+    await createLoadTranslationsFile(tmpDir, DEFAULT_VITE_TRANSLATIONS_DIR, [
+      'es',
+    ]);
+
+    const filePath = path.join(tmpDir, 'loadTranslations.js');
+    expect(fs.existsSync(filePath)).toBe(true);
+
+    const content = fs.readFileSync(filePath, 'utf-8');
+    expect(content).toContain('import(`./src/_gt/${locale}.json`)');
+  });
+
+  it('prefixes hidden relative directories with ./', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
+
+    await createLoadTranslationsFile(tmpDir, './src/.gt', ['es']);
+
+    const filePath = path.join(tmpDir, 'src', 'loadTranslations.js');
+    expect(fs.existsSync(filePath)).toBe(true);
+
+    const content = fs.readFileSync(filePath, 'utf-8');
+    expect(content).toContain('import(`./.gt/${locale}.json`)');
   });
 
   it('creates locale JSON files in the translations directory', async () => {
@@ -130,6 +153,6 @@ describe('createLoadTranslationsFile', () => {
     expect(fs.existsSync(filePath)).toBe(true);
 
     const content = fs.readFileSync(filePath, 'utf-8');
-    expect(content).toContain('public/_gt/');
+    expect(content).toContain('import(`./public/_gt/${locale}.json`)');
   });
 });
