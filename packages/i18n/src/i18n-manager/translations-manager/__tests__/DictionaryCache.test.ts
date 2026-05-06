@@ -193,4 +193,89 @@ describe('DictionaryCache', () => {
     const result = cache.get('');
     expect(result).toBeUndefined();
   });
+
+  it('getObj() returns cached dictionary leaves and subtrees', () => {
+    const cache = new DictionaryCache({
+      init: dictionary,
+      runtimeTranslate,
+    });
+
+    expect(cache.getObj('greeting')).toEqual({
+      entry: 'Hello',
+      options: {},
+    });
+    expect(cache.getObj('user')).toEqual({
+      profile: {
+        name: 'Name',
+      },
+    });
+  });
+
+  it('getObj() returns undefined on cache miss', () => {
+    const cache = new DictionaryCache({
+      init: dictionary,
+      runtimeTranslate,
+    });
+
+    expect(cache.getObj('missing.entry')).toBeUndefined();
+  });
+
+  it('getObj() returns the root dictionary object', () => {
+    const cache = new DictionaryCache({
+      init: dictionary,
+      runtimeTranslate,
+    });
+
+    expect(cache.getObj('')).toEqual(dictionary);
+  });
+
+  it('setObj() stores dictionary entries by path', () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+
+    cache.setObj('user.profile.name', {
+      entry: 'Name',
+      options: { $context: 'profile label' },
+    });
+
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: ['Name', { $context: 'profile label' }],
+        },
+      },
+    });
+    expect(cache.getObj('user.profile.name')).toEqual({
+      entry: 'Name',
+      options: { $context: 'profile label' },
+    });
+  });
+
+  it('setObj() stores dictionary subtrees by path', () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+
+    cache.setObj('user.profile', {
+      name: 'Name',
+      title: ['Title', { $context: 'profile title' }],
+    });
+
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: 'Name',
+          title: ['Title', { $context: 'profile title' }],
+        },
+      },
+    });
+    expect(cache.getObj('user.profile')).toEqual({
+      name: 'Name',
+      title: ['Title', { $context: 'profile title' }],
+    });
+    expect(cache.get('user.profile')).toBeUndefined();
+  });
 });

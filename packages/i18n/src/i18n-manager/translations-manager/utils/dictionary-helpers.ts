@@ -2,6 +2,7 @@ import type {
   Dictionary,
   DictionaryEntry,
   DictionaryLeaf,
+  DictionaryObject,
   DictionaryPath,
   DictionaryValue,
 } from './types/dictionary';
@@ -30,11 +31,28 @@ export function getDictionaryEntry(
   };
 }
 
+export function getDictionaryObject(
+  value: DictionaryValue | undefined
+): DictionaryObject | undefined {
+  return (
+    getDictionaryEntry(value) ?? (isDictionaryValue(value) ? value : undefined)
+  );
+}
+
 export function getDictionaryValue(value: DictionaryEntry): DictionaryValue {
   if (Object.keys(value.options).length === 0) {
     return value.entry;
   }
   return [value.entry, value.options];
+}
+
+export function getDictionaryObjectValue(
+  value: DictionaryObject
+): DictionaryValue {
+  if (isDictionaryEntry(value)) {
+    return getDictionaryValue(value);
+  }
+  return value;
 }
 
 export function resolveDictionaryLookupOptions(
@@ -58,6 +76,14 @@ function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
     return true;
   }
   return value.length === 2 && isDictionaryOptions(value[1]);
+}
+
+function isDictionaryEntry(value: unknown): value is DictionaryEntry {
+  if (!isDictionaryValue(value)) {
+    return false;
+  }
+
+  return typeof value.entry === 'string' && isDictionaryOptions(value.options);
 }
 
 function isDictionaryOptions(value: unknown): value is DictionaryOptions {

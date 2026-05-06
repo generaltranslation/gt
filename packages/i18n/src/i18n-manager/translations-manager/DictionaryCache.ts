@@ -1,6 +1,8 @@
 import { Cache } from './Cache';
 import {
   getDictionaryEntry,
+  getDictionaryObject,
+  getDictionaryObjectValue,
   getDictionaryPath,
   getDictionaryValue,
   isDictionaryValue,
@@ -11,6 +13,7 @@ import type {
   Dictionary,
   DictionaryEntry,
   DictionaryKey,
+  DictionaryObject,
   DictionaryPath,
   DictionaryValue,
 } from './utils/types/dictionary';
@@ -19,6 +22,7 @@ export type {
   DictionaryEntry,
   DictionaryKey,
   DictionaryLeaf,
+  DictionaryObject,
   DictionaryOptions,
   DictionaryPath,
   DictionaryValue,
@@ -93,6 +97,14 @@ export class DictionaryCache extends Cache<
   public set(key: DictionaryKey, value: DictionaryEntry): void {
     const dictionaryValue = getDictionaryValue(value);
     this.setCache(this.genKey(key), dictionaryValue);
+  }
+
+  public getObj(key: DictionaryKey): DictionaryObject | undefined {
+    return getDictionaryObject(this.getCache(key));
+  }
+
+  public setObj(key: DictionaryKey, value: DictionaryObject): void {
+    this.setCache(this.genKey(key), getDictionaryObjectValue(value));
   }
 
   /**

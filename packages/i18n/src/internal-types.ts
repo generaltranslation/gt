@@ -16,6 +16,7 @@ export type {
   DictionaryValue,
   DictionaryEntry,
   DictionaryLeaf,
+  DictionaryObject,
   DictionaryOptions,
   DictionaryPath,
   DictionaryKey,
