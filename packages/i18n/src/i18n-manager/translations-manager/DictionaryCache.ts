@@ -172,6 +172,12 @@ export class DictionaryCache extends Cache<
     return translatedObject;
   }
 
+  public async missObj(key: DictionaryKey): Promise<DictionaryObject> {
+    const value = await this._runtimeTranslateObj(key);
+    this.setObj(key, value);
+    return value;
+  }
+
   /**
    * Miss the cache
    * @param key - The dictionary key
