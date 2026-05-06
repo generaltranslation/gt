@@ -5,6 +5,7 @@ import type {
   Dictionary,
   DictionaryEntry,
   DictionaryPath,
+  DictionaryValue,
 } from '../translations-manager/DictionaryCache';
 
 export type EventName = string;
@@ -30,6 +31,7 @@ export type ListenerStore<Events extends BaseEvent> = Partial<{
  * @prop {locales-dictionary-cache-miss} - Emitted when a locales dictionary cache miss occurs
  * @prop {dictionary-cache-hit} - Emitted when a dictionary cache hit occurs
  * @prop {dictionary-cache-miss} - Emitted when a dictionary cache miss occurs
+ * @prop {dictionary-object-cache-hit} - Emitted when a dictionary object cache hit occurs
  */
 export type I18nEvents<TranslationValue extends Translation> = BaseEvent & {
   'locales-cache-hit': {
@@ -67,5 +69,10 @@ export type I18nEvents<TranslationValue extends Translation> = BaseEvent & {
     locale: Locale;
     id: DictionaryPath;
     dictionaryEntry: DictionaryEntry;
+  };
+  'dictionary-object-cache-hit': {
+    locale: Locale;
+    id: DictionaryPath;
+    dictionaryValue: DictionaryValue;
   };
 };

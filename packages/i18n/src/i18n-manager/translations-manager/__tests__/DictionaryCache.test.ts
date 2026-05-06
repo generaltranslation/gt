@@ -219,6 +219,50 @@ describe('DictionaryCache', () => {
     });
   });
 
+  it('getObj() emits object cache hits with raw dictionary values', () => {
+    const onHitObj = vi.fn();
+    const cache = new DictionaryCache({
+      init: dictionary,
+      runtimeTranslate,
+      lifecycle: {
+        onHitObj,
+      },
+    });
+
+    expect(cache.getObj('greeting')).toEqual({
+      entry: 'Hello',
+      options: {},
+    });
+    expect(cache.getObj('user')).toEqual({
+      profile: {
+        name: 'Name',
+      },
+    });
+    expect(cache.getObj('missing')).toBeUndefined();
+
+    expect(onHitObj).toHaveBeenCalledTimes(2);
+    expect(onHitObj).toHaveBeenNthCalledWith(1, {
+      inputKey: 'greeting',
+      cacheKey: 'greeting',
+      cacheValue: 'Hello',
+      outputValue: 'Hello',
+    });
+    expect(onHitObj).toHaveBeenNthCalledWith(2, {
+      inputKey: 'user',
+      cacheKey: 'user',
+      cacheValue: {
+        profile: {
+          name: 'Name',
+        },
+      },
+      outputValue: {
+        profile: {
+          name: 'Name',
+        },
+      },
+    });
+  });
+
   it('getObj() returns undefined on cache miss', () => {
     const cache = new DictionaryCache({
       init: dictionary,

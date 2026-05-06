@@ -98,6 +98,17 @@ export type DictionaryCacheLifecycleCallback = (params: {
 }) => void;
 
 /**
+ * Dictionary object cache lifecycle callback with locale embedded as first param.
+ */
+export type DictionaryObjectCacheLifecycleCallback = (params: {
+  locale: Locale;
+  inputKey: DictionaryKey;
+  cacheKey: DictionaryPath;
+  cacheValue: DictionaryValue;
+  outputValue: DictionaryValue;
+}) => void;
+
+/**
  * Combined locales dictionary cache lifecycle callbacks
  */
 export type LocalesDictionaryCacheLifecycleCallbacks = {
@@ -105,6 +116,7 @@ export type LocalesDictionaryCacheLifecycleCallbacks = {
   onLocalesDictionaryCacheMiss?: LocalesDictionaryCacheLifecycleCallback;
   onDictionaryCacheHit?: DictionaryCacheLifecycleCallback;
   onDictionaryCacheMiss?: DictionaryCacheLifecycleCallback;
+  onDictionaryObjectCacheHit?: DictionaryObjectCacheLifecycleCallback;
 };
 
 /**
@@ -160,6 +172,11 @@ export type LifecycleCallbacks<TranslationValue extends Translation> = {
     locale: Locale;
     id: DictionaryPath;
     dictionaryEntry: DictionaryEntry;
+  }) => void;
+  onDictionaryObjectCacheHit?: (params: {
+    locale: Locale;
+    id: DictionaryPath;
+    dictionaryValue: DictionaryValue;
   }) => void;
   onLocalesDictionaryCacheHit?: (params: {
     locale: Locale;

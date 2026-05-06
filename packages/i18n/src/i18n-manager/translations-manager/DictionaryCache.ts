@@ -8,7 +8,10 @@ import {
   isDictionaryValue,
   replaceDictionary,
 } from './utils/dictionary-helpers';
-import type { LifecycleParam } from '../lifecycle-hooks/types';
+import type {
+  LifecycleCallback,
+  LifecycleParam,
+} from '../lifecycle-hooks/types';
 import type {
   Dictionary,
   DictionaryEntry,
@@ -33,6 +36,21 @@ export type DictionaryRuntimeTranslate = (
   sourceEntry: DictionaryEntry
 ) => Promise<string>;
 
+export type DictionaryObjectLifecycleParam = {
+  onHitObj?: LifecycleCallback<
+    DictionaryKey,
+    DictionaryPath,
+    DictionaryValue,
+    DictionaryValue
+  >;
+  onMissObj?: LifecycleCallback<
+    DictionaryKey,
+    DictionaryPath,
+    DictionaryValue,
+    DictionaryValue
+  >;
+};
+
 /**
  * A cache for a single locale's dictionary
  *
@@ -49,6 +67,9 @@ export class DictionaryCache extends Cache<
   [DictionaryKey, DictionaryEntry]
 > {
   private _runtimeTranslate: DictionaryRuntimeTranslate;
+  private onHitObj?: DictionaryObjectLifecycleParam['onHitObj'];
+  // TODO: Wire this when object miss handling is introduced.
+  private onMissObj?: DictionaryObjectLifecycleParam['onMissObj'];
 
   /**
    * Constructor
@@ -67,10 +88,13 @@ export class DictionaryCache extends Cache<
       DictionaryPath,
       DictionaryValue,
       DictionaryEntry
-    >;
+    > &
+      DictionaryObjectLifecycleParam;
   }) {
     super(init, lifecycle);
     this._runtimeTranslate = runtimeTranslate;
+    this.onHitObj = lifecycle?.onHitObj;
+    this.onMissObj = lifecycle?.onMissObj;
   }
 
   /**
@@ -102,7 +126,21 @@ export class DictionaryCache extends Cache<
   }
 
   public getObj(key: DictionaryKey): DictionaryObject | undefined {
-    return getDictionaryObject(this.getCache(key));
+    const value = this.getCache(key);
+    const dictionaryObject = getDictionaryObject(value);
+    if (dictionaryObject === undefined) {
+      return undefined;
+    }
+
+    if (this.onHitObj) {
+      this.onHitObj({
+        inputKey: key,
+        cacheKey: this.genKey(key),
+        cacheValue: value as DictionaryValue,
+        outputValue: value as DictionaryValue,
+      });
+    }
+    return dictionaryObject;
   }
 
   public setObj(key: DictionaryKey, value: DictionaryObject): void {
