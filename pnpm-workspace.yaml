@@ -4,6 +4,8 @@ packages:
   - examples/next-ssg
   - examples/react-native
 
+enableGlobalVirtualStore: true
+
 minimumReleaseAge: 1440
 
 minimumReleaseAgeExclude:

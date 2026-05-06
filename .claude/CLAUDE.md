@@ -29,6 +29,12 @@ Per-package commands: `pnpm --filter <pkg> <script>` (e.g., `pnpm --filter gt te
 
 Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `transpile`, `build:clean`, `build:release`, `bench`.
 
+## pnpm Worktrees
+
+- pnpm's global virtual store is enabled via `enableGlobalVirtualStore: true` in `pnpm-workspace.yaml` so git worktrees share the pnpm store while keeping isolated `node_modules`.
+- After creating a new worktree, run `pnpm install` inside it.
+- If pnpm prompts to recreate `node_modules` in a non-interactive shell, use `CI=true pnpm install`.
+
 ## Key Packages
 
 | Package                                 | Path                         | Description                                                       |
