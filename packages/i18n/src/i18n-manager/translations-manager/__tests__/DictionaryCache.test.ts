@@ -27,25 +27,31 @@ describe('DictionaryCache', () => {
     });
 
     const result = cache.get('user.profile.name');
-    expect(result).toBe('Name');
+    expect(result).toEqual({ entry: 'Name', options: {} });
     expect(mockTranslateMany).not.toHaveBeenCalled();
   });
 
-  it('get() returns the string from a tuple leaf', () => {
+  it('get() returns the entry from a tuple leaf', () => {
     const cache = new DictionaryCache({
       init: dictionary,
     });
 
-    expect(cache.get('cta')).toBe('Click me');
+    expect(cache.get('cta')).toEqual({ entry: 'Click me', options: {} });
   });
 
-  it('get() returns the string from a metadata tuple leaf', () => {
+  it('get() returns the entry and options from a metadata tuple leaf', () => {
     const cache = new DictionaryCache({
       init: dictionary,
     });
 
-    expect(cache.get('header')).toBe('Welcome');
-    expect(cache.get('footer')).toBe('Thanks');
+    expect(cache.get('header')).toEqual({
+      entry: 'Welcome',
+      options: { $context: 'homepage', $maxChars: 12 },
+    });
+    expect(cache.get('footer')).toEqual({
+      entry: 'Thanks',
+      options: { context: 'homepage footer' },
+    });
   });
 
   it('get() returns undefined for malformed metadata tuple leaves', () => {
@@ -69,7 +75,10 @@ describe('DictionaryCache', () => {
       } as unknown as Dictionary,
     });
 
-    expect(cache.get('unknownMetadataKey')).toBe('Hello');
+    expect(cache.get('unknownMetadataKey')).toEqual({
+      entry: 'Hello',
+      options: { custom: 'value' },
+    });
   });
 
   it('get() treats tuple leaves as leaves instead of subtrees', () => {

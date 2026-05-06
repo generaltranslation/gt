@@ -9,7 +9,10 @@ export type Dictionary = {
 
 export type DictionaryValue = DictionaryLeaf | Dictionary;
 
-export type DictionaryEntry = string;
+export type DictionaryEntry = {
+  entry: string;
+  options: DictionaryOptions;
+};
 
 export type DictionaryPath = string;
 

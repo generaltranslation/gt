@@ -63,7 +63,10 @@ describe('LocalesDictionaryCache', () => {
     expect(mockLoadDictionary).toHaveBeenCalledWith('fr');
     expect(dictionaryCache).toBeDefined();
     expect(dictionaryCache.getInternalCache()).toEqual(frDictionary);
-    expect(dictionaryCache.get('cta')).toBe('Cliquez');
+    expect(dictionaryCache.get('cta')).toEqual({
+      entry: 'Cliquez',
+      options: { context: 'button' },
+    });
   });
 
   it('miss() deduplicates concurrent loads for same locale', async () => {
