@@ -678,10 +678,7 @@ describe('I18nManager', () => {
 
     await expect(
       manager.lookupDictionaryObjWithFallback('en', 'greeting')
-    ).resolves.toEqual({
-      entry: 'Hello',
-      options: {},
-    });
+    ).resolves.toBe('Hello');
     await expect(
       manager.lookupDictionaryObjWithFallback('en', 'user.profile')
     ).resolves.toEqual({
