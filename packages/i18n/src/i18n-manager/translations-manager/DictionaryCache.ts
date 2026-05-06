@@ -127,16 +127,17 @@ export class DictionaryCache extends Cache<
     if (value === undefined) {
       return undefined;
     }
+    const outputValue = structuredClone(value);
 
     if (this.onHitObj) {
       this.onHitObj({
         inputKey: key,
         cacheKey: this.genKey(key),
         cacheValue: value as DictionaryValue,
-        outputValue: value as DictionaryValue,
+        outputValue,
       });
     }
-    return value;
+    return outputValue;
   }
 
   public setObj(key: DictionaryKey, value: DictionaryValue): void {

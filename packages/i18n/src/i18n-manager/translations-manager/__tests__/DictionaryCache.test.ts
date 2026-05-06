@@ -279,6 +279,24 @@ describe('DictionaryCache', () => {
     expect(cache.getObj('')).toEqual(dictionary);
   });
 
+  it('getObj() returns copies of cached dictionary objects', () => {
+    const cache = new DictionaryCache({
+      init: dictionary,
+      runtimeTranslate,
+    });
+
+    const user = cache.getObj('user') as Dictionary;
+    user.profile = {
+      name: 'Changed',
+    };
+
+    expect(cache.getObj('user')).toEqual({
+      profile: {
+        name: 'Name',
+      },
+    });
+  });
+
   it('setObj() stores dictionary leaves by path', () => {
     const cache = new DictionaryCache({
       init: {},
