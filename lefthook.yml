@@ -3,7 +3,7 @@ pre-commit:
   jobs:
     - run: pnpm exec oxlint --fix {staged_files}
       glob: '**/*.{js,ts,jsx,tsx,mjs}'
-    - run: pnpm exec oxfmt {staged_files}
+    - run: pnpm exec oxfmt --no-error-on-unmatched-pattern {staged_files}
       glob: '**/*.{js,ts,jsx,tsx,mjs,json,md,yml,yaml,html,css,toml}'
     - run: node scripts/generate-version.js && git add src/generated/version.ts
       root: packages/cli
