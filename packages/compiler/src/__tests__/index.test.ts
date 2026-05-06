@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type {
   TransformResult,
   UnpluginBuildContext,
@@ -20,8 +20,29 @@ const JSX_RUNTIME_CODE = `
   }
 `;
 
+const tempDirs: string[] = [];
+
 function createTempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'gt-compiler-'));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-compiler-'));
+  tempDirs.push(tempDir);
+  return tempDir;
+}
+
+function createTestContext(): UnpluginBuildContext & UnpluginContext {
+  return {
+    addWatchFile() {},
+    emitFile() {},
+    getWatchFiles() {
+      return [];
+    },
+    parse() {
+      throw new Error('parse is not implemented in this test context');
+    },
+    warn() {},
+    error(message: unknown) {
+      throw new Error(String(message));
+    },
+  } as UnpluginBuildContext & UnpluginContext;
 }
 
 function writeGTConfig(cwd: string, config: unknown): void {
@@ -49,20 +70,7 @@ async function transformWithPlugin(
     throw new Error('Expected transform hook to be a function');
   }
 
-  const context = {
-    addWatchFile() {},
-    emitFile() {},
-    getWatchFiles() {
-      return [];
-    },
-    parse() {
-      throw new Error('parse is not implemented in this test context');
-    },
-    warn() {},
-    error(message: unknown) {
-      throw new Error(String(message));
-    },
-  } as UnpluginBuildContext & UnpluginContext;
+  const context = createTestContext();
 
   const result: TransformResult = await transform.call(
     context,
@@ -76,6 +84,12 @@ async function transformWithPlugin(
 }
 
 describe('gtUnplugin config loading', () => {
+  afterEach(() => {
+    for (const tempDir of tempDirs.splice(0)) {
+      fs.rmSync(tempDir, { force: true, recursive: true });
+    }
+  });
+
   it('auto-loads gt.config.json from process.cwd() when gtConfig is omitted', async () => {
     const cwd = createTempDir();
     writeGTConfig(cwd, {
@@ -135,6 +149,25 @@ describe('gtUnplugin config loading', () => {
     }
   });
 
+  it('preserves default behavior when auto-loaded gt.config.json has no parsingFlags', async () => {
+    const cwd = createTempDir();
+    writeGTConfig(cwd, {
+      projectId: 'test-project',
+      defaultLocale: 'en',
+      locales: ['en', 'es'],
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      const output = await transformWithPlugin(undefined, cwd);
+
+      expect(output).toBeNull();
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   it('warns once per plugin instance when gtConfig cannot be loaded', async () => {
     const cwd = createTempDir();
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -152,7 +185,7 @@ describe('gtUnplugin config loading', () => {
       if (typeof transform !== 'function') {
         throw new Error('Expected transform hook to be a function');
       }
-      const context = {} as UnpluginBuildContext & UnpluginContext;
+      const context = createTestContext();
 
       await transform.call(
         context,
