@@ -5,6 +5,12 @@ import {
   JsxTranslationOptions,
 } from './options';
 
+export type DictionaryObjectTranslation =
+  | string
+  | {
+      [key: string]: DictionaryObjectTranslation;
+    };
+
 /**
  * Synchronous resolution function type
  * @param {string} message - The message to translate.
@@ -66,10 +72,15 @@ export type MFunctionType = <T extends string | null | undefined>(
  * @returns {string} The translated message.
  * TODO: next major version, remove the "...type" suffix, it's redundant
  */
-export type TFunctionType = (
+export type TFunctionType = ((
   id: string,
   options?: DictionaryTranslationOptions
-) => string;
+) => string) & {
+  obj: (
+    id: string,
+    options?: DictionaryTranslationOptions
+  ) => DictionaryObjectTranslation | undefined;
+};
 
 /**
  * Type for the resolveJsxTranslation() function
