@@ -78,7 +78,7 @@ function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
   return value.length === 2 && isDictionaryOptions(value[1]);
 }
 
-function isDictionaryEntry(value: unknown): value is DictionaryEntry {
+export function isDictionaryEntry(value: unknown): value is DictionaryEntry {
   if (!isDictionaryValue(value)) {
     return false;
   }

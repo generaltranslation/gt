@@ -32,6 +32,10 @@ export type DictionaryRuntimeTranslate = (
   key: DictionaryKey
 ) => Promise<string>;
 
+export type DictionaryRuntimeTranslateObj = (
+  key: DictionaryKey
+) => Promise<DictionaryObject>;
+
 /**
  * A cache for a single locale's dictionary
  *
@@ -47,6 +51,7 @@ export class DictionaryCache extends Cache<
   DictionaryEntry
 > {
   private _runtimeTranslate: DictionaryRuntimeTranslate;
+  private _runtimeTranslateObj: DictionaryRuntimeTranslateObj;
 
   /**
    * Constructor
@@ -57,9 +62,13 @@ export class DictionaryCache extends Cache<
     init,
     lifecycle,
     runtimeTranslate,
+    runtimeTranslateObj = async () => {
+      throw new Error('DictionaryCache object fallback is not implemented');
+    },
   }: {
     init: Dictionary;
     runtimeTranslate: DictionaryRuntimeTranslate;
+    runtimeTranslateObj?: DictionaryRuntimeTranslateObj;
     lifecycle?: LifecycleParam<
       DictionaryKey,
       DictionaryPath,
@@ -69,6 +78,7 @@ export class DictionaryCache extends Cache<
   }) {
     super(init, lifecycle);
     this._runtimeTranslate = runtimeTranslate;
+    this._runtimeTranslateObj = runtimeTranslateObj;
   }
 
   /**
@@ -105,6 +115,12 @@ export class DictionaryCache extends Cache<
 
   public setObj(key: DictionaryKey, value: DictionaryObject): void {
     this.setCache(this.genKey(key), getDictionaryObjectValue(value));
+  }
+
+  public async missObj(key: DictionaryKey): Promise<DictionaryObject> {
+    const value = await this._runtimeTranslateObj(key);
+    this.setObj(key, value);
+    return value;
   }
 
   /**
