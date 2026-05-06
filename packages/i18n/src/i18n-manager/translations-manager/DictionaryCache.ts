@@ -17,6 +17,7 @@ import type {
   DictionaryPath,
   DictionaryValue,
 } from './utils/types/dictionary';
+import { DictionarySourceNotFoundError } from './utils/DictionarySourceNotFoundError';
 export type {
   Dictionary,
   DictionaryEntry,
@@ -155,9 +156,7 @@ export class DictionaryCache extends Cache<
     }
 
     if (!isDictionaryValue(sourceObject)) {
-      throw new Error(
-        `DictionaryCache missObj source value ${key} is not a dictionary object`
-      );
+      throw new DictionarySourceNotFoundError(key);
     }
 
     const translatedEntries = await Promise.all(
