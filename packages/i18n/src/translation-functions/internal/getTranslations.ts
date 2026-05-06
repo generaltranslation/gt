@@ -12,13 +12,11 @@ import { createLookupOptions } from './helpers';
 import { extractVariables } from '../../utils/extractVariables';
 import type { StringFormat } from 'generaltranslation/types';
 import type {
-  Dictionary,
   DictionaryEntry,
-  DictionaryObject,
+  DictionaryValue,
 } from '../../i18n-manager/translations-manager/DictionaryCache';
 import {
-  getDictionaryObject,
-  isDictionaryEntry,
+  getDictionaryEntry,
   isDictionaryValue,
   resolveDictionaryLookupOptions,
 } from '../../i18n-manager/translations-manager/utils/dictionary-helpers';
@@ -68,28 +66,29 @@ export async function getTranslations(): Promise<TFunctionType> {
   };
 
   const renderObject = (
-    sourceObject: DictionaryObject,
-    targetObject: DictionaryObject | undefined,
+    sourceObject: DictionaryValue,
+    targetObject: DictionaryValue | undefined,
     options: DictionaryTranslationOptions = {}
   ): DictionaryObjectTranslation | undefined => {
-    if (isDictionaryEntry(sourceObject)) {
+    const sourceEntry = getDictionaryEntry(sourceObject);
+    if (sourceEntry !== undefined) {
       return renderEntry(
-        sourceObject,
-        isDictionaryEntry(targetObject) ? targetObject : undefined,
+        sourceEntry,
+        getDictionaryEntry(targetObject),
         options
       );
     }
 
+    if (!isDictionaryValue(sourceObject)) {
+      return undefined;
+    }
+
     const result: Record<string, DictionaryObjectTranslation> = {};
     for (const [key, value] of Object.entries(sourceObject)) {
-      const sourceChild = getDictionaryObject(value);
-      if (sourceChild === undefined) {
-        continue;
-      }
       const targetChild = isDictionaryValue(targetObject)
-        ? getDictionaryObject(targetObject[key])
+        ? targetObject[key]
         : undefined;
-      const renderedChild = renderObject(sourceChild, targetChild, options);
+      const renderedChild = renderObject(value, targetChild, options);
       if (renderedChild !== undefined) {
         result[key] = renderedChild;
       }
