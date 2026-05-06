@@ -31,6 +31,13 @@ import { I18nEvents } from './event-subscription/types';
  */
 const DEFAULT_TRANSLATION_TIMEOUT = 12_000; // 12 seconds
 
+class DictionarySourceNotFoundError extends Error {
+  constructor(id: string) {
+    super(`I18nManager: source dictionary entry ${id} is not defined`);
+    this.name = 'DictionarySourceNotFoundError';
+  }
+}
+
 /**
  * A translation resolver is a function that synchronously resolves a translation
  * @template U - The type of the translation (default: Translation)
@@ -283,10 +290,21 @@ class I18nManager<
 
   /**
    * Look up a dictionary entry
+   * @throws {DictionarySourceNotFoundError} - If the source dictionary entry is not defined when translation is not required.
    */
   lookupDictionary(locale: string, id: string): string | undefined {
     try {
       const resolvedLocale = this.resolveLocale(locale);
+      if (!this.requiresTranslation(resolvedLocale)) {
+        const sourceEntry = this.localesDictionaryCache
+          .get(this.config.defaultLocale)
+          ?.get(id);
+        if (sourceEntry === undefined) {
+          throw new DictionarySourceNotFoundError(id);
+        }
+        return sourceEntry;
+      }
+
       const dictionaryCache = this.localesDictionaryCache.get(resolvedLocale);
       return dictionaryCache?.get(id);
     } catch (error) {
@@ -510,6 +528,10 @@ class I18nManager<
    * Soft error in production, throw in development
    */
   private handleError(error: unknown) {
+    if (error instanceof DictionarySourceNotFoundError) {
+      throw error;
+    }
+
     switch (this.config.environment) {
       case 'development':
         throw error;
