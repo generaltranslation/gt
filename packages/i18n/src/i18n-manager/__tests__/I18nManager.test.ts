@@ -430,6 +430,56 @@ describe('I18nManager', () => {
     expect(loadDictionary).toHaveBeenCalledWith('fr');
   });
 
+  it.each([
+    {
+      name: 'dialect locale',
+      locale: 'en-GB',
+      dictionaryLocale: 'en-GB',
+      dictionary: {
+        greeting: 'Hello mate',
+      },
+    },
+    {
+      name: 'canonical locale with custom alias',
+      locale: 'en-GB',
+      dictionaryLocale: 'brand-british',
+      dictionary: {
+        greeting: 'Brand hello mate',
+      },
+      customMapping: {
+        'brand-british': {
+          code: 'en-GB',
+          name: 'Brand British',
+        },
+      },
+    },
+  ])(
+    'lookupDictionaryWithFallback() uses cache locale for $name',
+    async (testCase) => {
+      const loadDictionary = vi.fn().mockResolvedValue(testCase.dictionary);
+      const manager = createManager({
+        defaultLocale: 'en-US',
+        locales: ['en-US', 'en'],
+        dictionary: {
+          greeting: 'Hello',
+        },
+        loadDictionary,
+        ...(testCase.customMapping && {
+          customMapping: testCase.customMapping,
+        }),
+      });
+
+      await expect(
+        manager.lookupDictionaryWithFallback(testCase.locale, 'greeting')
+      ).resolves.toEqual({
+        entry: testCase.dictionary.greeting,
+        options: {},
+      });
+      expect(loadDictionary).toHaveBeenCalledTimes(1);
+      expect(loadDictionary).toHaveBeenCalledWith(testCase.dictionaryLocale);
+    }
+  );
+
   it('lookupDictionaryWithFallback() runtime translates and caches missing dictionary entries', async () => {
     const source = 'Hello';
     const sourceOptions: LookupOptions = { $format: 'ICU' };
