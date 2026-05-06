@@ -332,12 +332,7 @@ class I18nManager<
     try {
       const dictionaryLocale =
         this.resolveCacheLocale(locale) ?? this.config.defaultLocale;
-      const dictionaryObject = this.localesDictionaryCache
-        .get(dictionaryLocale)
-        ?.getObj(id);
-      return dictionaryObject === undefined
-        ? undefined
-        : structuredClone(dictionaryObject);
+      return this.localesDictionaryCache.get(dictionaryLocale)?.getObj(id);
     } catch (error) {
       this.handleError(error);
       return undefined;
