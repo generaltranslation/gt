@@ -79,7 +79,7 @@ describe('I18nManager', () => {
     expect(translations[expectedHash]).toBe(translatedString);
   });
 
-  it('loadDictionary() returns empty object without loading when locale does not require translation', async () => {
+  it('loadDictionary() returns source dictionary without loading when locale does not require translation', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
     const manager = createManager({
       dictionary: {
@@ -90,11 +90,13 @@ describe('I18nManager', () => {
 
     const dictionary = await manager.loadDictionary('en');
 
-    expect(dictionary).toEqual({});
+    expect(dictionary).toEqual({
+      greeting: 'Hello',
+    });
     expect(loadDictionary).not.toHaveBeenCalled();
   });
 
-  it('loadDictionary() returns empty object without loading when i18n is disabled', async () => {
+  it('loadDictionary() returns source dictionary without loading when i18n is disabled', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
     const manager = createManager({
       enableI18n: false,
@@ -106,7 +108,9 @@ describe('I18nManager', () => {
 
     const dictionary = await manager.loadDictionary('fr');
 
-    expect(dictionary).toEqual({});
+    expect(dictionary).toEqual({
+      greeting: 'Hello',
+    });
     expect(loadDictionary).not.toHaveBeenCalled();
   });
 
@@ -136,6 +140,53 @@ describe('I18nManager', () => {
       },
     });
     expect(cachedDictionary).toBe(dictionary);
+  });
+
+  it.each([
+    {
+      name: 'dialect locale',
+      locale: 'en-GB',
+      dictionaryLocale: 'en-GB',
+      dictionary: {
+        greeting: 'Hello mate',
+      },
+    },
+    {
+      name: 'canonical locale with custom alias',
+      locale: 'en-GB',
+      dictionaryLocale: 'brand-british',
+      dictionary: {
+        greeting: 'Brand hello mate',
+      },
+      customMapping: {
+        'brand-british': {
+          code: 'en-GB',
+          name: 'Brand British',
+        },
+      },
+    },
+  ])('loadDictionary() uses cache locale for $name', async (testCase) => {
+    const loadDictionary = vi.fn().mockResolvedValue(testCase.dictionary);
+    const manager = createManager({
+      defaultLocale: 'en-US',
+      locales: ['en-US', 'en'],
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+      ...(testCase.customMapping && {
+        customMapping: testCase.customMapping,
+      }),
+    });
+
+    const dictionary = await manager.loadDictionary(testCase.locale);
+
+    expect(loadDictionary).toHaveBeenCalledTimes(1);
+    expect(loadDictionary).toHaveBeenCalledWith(testCase.dictionaryLocale);
+    expect(dictionary).toEqual(testCase.dictionary);
+    expect(manager.lookupDictionary(testCase.locale, 'greeting')).toBe(
+      testCase.dictionary.greeting
+    );
   });
 
   it('lookupDictionary() returns a loaded target locale leaf', async () => {
