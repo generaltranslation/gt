@@ -6,6 +6,13 @@ export type BaseTranslationOptions = Record<string, any>;
 // For t()
 export type DictionaryTranslationOptions = BaseTranslationOptions;
 
+export type DictionaryOptions = BaseTranslationOptions & {
+  $context?: string;
+  $maxChars?: number;
+  /** @deprecated use {@link $context} instead */
+  context?: string;
+};
+
 /**
  * Options for string resolution
  * Used by the gt() function
