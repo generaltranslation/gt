@@ -41,12 +41,10 @@ export class DictionaryCache extends Cache<
   DictionaryKey,
   DictionaryPath,
   DictionaryValue,
-  DictionaryEntry
+  DictionaryEntry,
+  [DictionaryKey, DictionaryEntry]
 > {
   private _runtimeTranslate: DictionaryRuntimeTranslate;
-  private fallbackPromises: Partial<
-    Record<DictionaryPath, Promise<DictionaryValue>>
-  > = {};
 
   /**
    * Constructor
@@ -184,30 +182,6 @@ export class DictionaryCache extends Cache<
   }
 
   /**
-   * Fallback to runtime translation on a cache miss
-   */
-  protected async missCache(
-    key: DictionaryKey,
-    sourceEntry: DictionaryEntry
-  ): Promise<DictionaryValue> {
-    const cacheKey = this.genKey(key);
-    if (this.fallbackPromises[cacheKey] !== undefined) {
-      return await this.fallbackPromises[cacheKey];
-    }
-
-    const fallbackPromise = this.fallback(key, sourceEntry);
-    this.fallbackPromises[cacheKey] = fallbackPromise;
-
-    try {
-      const value = await fallbackPromise;
-      this.setCache(cacheKey, value);
-      return value;
-    } finally {
-      delete this.fallbackPromises[cacheKey];
-    }
-  }
-
-  /**
    * Get the fallback value for a cache miss
    * @param key - The dictionary key
    * @returns The fallback value
@@ -216,11 +190,8 @@ export class DictionaryCache extends Cache<
    */
   protected fallback(
     key: DictionaryKey,
-    sourceEntry?: DictionaryEntry
+    sourceEntry: DictionaryEntry
   ): Promise<DictionaryValue> {
-    if (sourceEntry === undefined) {
-      throw new Error('DictionaryCache fallback source entry is not defined');
-    }
     return this._runtimeTranslate(key, sourceEntry);
   }
 }
