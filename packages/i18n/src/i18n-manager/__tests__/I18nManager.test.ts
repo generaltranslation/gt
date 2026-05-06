@@ -184,9 +184,10 @@ describe('I18nManager', () => {
     expect(loadDictionary).toHaveBeenCalledTimes(1);
     expect(loadDictionary).toHaveBeenCalledWith(testCase.dictionaryLocale);
     expect(dictionary).toEqual(testCase.dictionary);
-    expect(manager.lookupDictionary(testCase.locale, 'greeting')).toBe(
-      testCase.dictionary.greeting
-    );
+    expect(manager.lookupDictionary(testCase.locale, 'greeting')).toEqual({
+      entry: testCase.dictionary.greeting,
+      options: {},
+    });
   });
 
   it('lookupDictionary() returns a loaded target locale leaf', async () => {
