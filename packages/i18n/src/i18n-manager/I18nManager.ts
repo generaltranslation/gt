@@ -290,7 +290,6 @@ class I18nManager<
 
   /**
    * Look up a dictionary entry
-   * @throws {DictionarySourceNotFoundError} - If the source dictionary entry is not defined when translation is not required.
    */
   lookupDictionary(locale: string, id: string): string | undefined {
     try {
@@ -302,10 +301,6 @@ class I18nManager<
       const dictionaryEntry = this.localesDictionaryCache
         .get(dictionaryLocale)
         ?.get(id);
-
-      if (!requiresTranslation && dictionaryEntry === undefined) {
-        throw new DictionarySourceNotFoundError(id);
-      }
 
       return dictionaryEntry;
     } catch (error) {

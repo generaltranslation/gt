@@ -34,21 +34,4 @@ describe('I18nManager.handleError', () => {
     const result = await manager.loadTranslations('fr');
     expect(result).toEqual({});
   });
-
-  it('throws dictionary source errors in production mode', () => {
-    const manager = new I18nManager({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      environment: 'production',
-      dictionary: {
-        greeting: 'Hello',
-      },
-      loadTranslations: vi.fn().mockResolvedValue({}),
-      loadDictionary: vi.fn().mockResolvedValue({}),
-    });
-
-    expect(() => manager.lookupDictionary('en', 'missing')).toThrow(
-      'I18nManager: source dictionary entry missing is not defined'
-    );
-  });
 });

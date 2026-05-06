@@ -186,19 +186,17 @@ describe('I18nManager', () => {
     expect(manager.lookupDictionary('en', 'greeting')).toBe('Hello');
   });
 
-  it('lookupDictionary() throws when source leaf is missing and translation is not required', () => {
+  it('lookupDictionary() returns undefined when source leaf is missing and translation is not required', () => {
     const manager = createManager({
       dictionary: {
         greeting: 'Hello',
       },
     });
 
-    expect(() => manager.lookupDictionary('en', 'missing')).toThrow(
-      'I18nManager: source dictionary entry missing is not defined'
-    );
+    expect(manager.lookupDictionary('en', 'missing')).toBeUndefined();
   });
 
-  it('lookupDictionary() throws when source leaf is missing and i18n is disabled', () => {
+  it('lookupDictionary() returns undefined when source leaf is missing and i18n is disabled', () => {
     const manager = createManager({
       enableI18n: false,
       dictionary: {
@@ -206,9 +204,7 @@ describe('I18nManager', () => {
       },
     });
 
-    expect(() => manager.lookupDictionary('fr', 'missing')).toThrow(
-      'I18nManager: source dictionary entry missing is not defined'
-    );
+    expect(manager.lookupDictionary('fr', 'missing')).toBeUndefined();
   });
 
   it('lookupDictionary() returns undefined when target leaf is missing', async () => {
