@@ -626,9 +626,7 @@ class I18nManager<
       .get(this.config.defaultLocale)
       ?.get(id);
     if (sourceEntry === undefined) {
-      throw new Error(
-        `I18nManager: dictionaryRuntimeTranslate(): source dictionary entry ${id} is not defined`
-      );
+      throw new DictionarySourceNotFoundError(id);
     }
 
     // Runtime translation

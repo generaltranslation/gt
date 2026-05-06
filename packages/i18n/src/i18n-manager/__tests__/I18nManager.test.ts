@@ -525,7 +525,7 @@ describe('I18nManager', () => {
     await expect(
       runtimeTranslate.dictionaryRuntimeTranslate('fr', 'missing')
     ).rejects.toThrow(
-      'I18nManager: dictionaryRuntimeTranslate(): source dictionary entry missing is not defined'
+      'I18nManager: source dictionary entry missing is not defined'
     );
   });
 
