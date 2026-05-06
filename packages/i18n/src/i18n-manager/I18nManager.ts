@@ -636,8 +636,8 @@ class I18nManager<
       locale,
       sourceEntry.entry as TranslationValue,
       {
-        ...resolveDictionaryLookupOptions(sourceEntry.options),
         $format: 'ICU',
+        ...resolveDictionaryLookupOptions(sourceEntry.options),
       }
     );
     if (typeof translation !== 'string') {

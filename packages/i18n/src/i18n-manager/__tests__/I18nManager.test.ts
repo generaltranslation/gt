@@ -529,10 +529,10 @@ describe('I18nManager', () => {
     );
   });
 
-  it('dictionaryRuntimeTranslate() enforces ICU format for source dictionary options', async () => {
+  it('dictionaryRuntimeTranslate() respects source dictionary format options', async () => {
     const source = 'Hello {name}';
     const sourceOptions: LookupOptions = {
-      $format: 'ICU',
+      $format: 'I18NEXT',
       $context: 'homepage',
     };
     const sourceHash = hashMessage(source, sourceOptions);
