@@ -35,7 +35,7 @@ export type DictionaryLoader = (locale: string) => Promise<Dictionary>;
 export type LocalesDictionaryRuntimeTranslate = (
   locale: Locale,
   key: DictionaryKey
-) => Promise<DictionaryValue>;
+) => Promise<string>;
 
 /**
  * Cache for looking up dictionaries by locale

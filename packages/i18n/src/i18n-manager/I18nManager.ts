@@ -21,6 +21,8 @@ import { Hash } from './translations-manager/TranslationsCache';
 import type {
   Dictionary,
   DictionaryEntry,
+  DictionaryKey,
+  DictionaryOptions,
   DictionaryValue,
 } from './translations-manager/DictionaryCache';
 import { LocalesDictionaryCache } from './translations-manager/LocalesDictionaryCache';
@@ -362,14 +364,10 @@ class I18nManager<
     options: LookupOptions
   ): Promise<T | undefined> {
     try {
-      // Validate
-      const { translationLocale, options: lookupOptions } =
-        this.resolveLookupParams(locale, options);
-
       return await this.lookupTranslationWithFallbackResolved(
-        translationLocale,
+        locale,
         message,
-        lookupOptions
+        options
       );
     } catch (error) {
       this.handleError(error);
@@ -598,11 +596,10 @@ class I18nManager<
 
   private async lookupTranslationWithFallbackResolved<
     T extends TranslationValue = TranslationValue,
-  >(
-    translationLocale: string | undefined,
-    message: T,
-    lookupOptions: LookupOptions
-  ): Promise<T | undefined> {
+  >(locale: string, message: T, options: LookupOptions): Promise<T> {
+    const { translationLocale, options: lookupOptions } =
+      this.resolveLookupParams(locale, options);
+
     if (!translationLocale) {
       return message;
     }
@@ -617,10 +614,14 @@ class I18nManager<
     return translation;
   }
 
+  /**
+   * Runtime lookup function for dictionaries
+   */
   private async lookupDictionaryRuntimeTranslate(
-    locale: string,
-    id: string
-  ): Promise<DictionaryValue> {
+    locale: Locale,
+    id: DictionaryKey
+  ): Promise<string> {
+    // Lookup the source entry (should be sync accessible)
     const sourceEntry = this.localesDictionaryCache
       .get(this.config.defaultLocale)
       ?.get(id);
@@ -630,14 +631,14 @@ class I18nManager<
       );
     }
 
-    const lookupOptions = this.resolveLookupOptions(
-      this.resolveDictionaryLookupOptions(sourceEntry.options),
-      locale
-    );
+    // Runtime translation
     const translation = await this.lookupTranslationWithFallbackResolved(
       locale,
       sourceEntry.entry as TranslationValue,
-      lookupOptions
+      {
+        $format: 'ICU',
+        ...this.resolveDictionaryLookupOptions(sourceEntry.options),
+      }
     );
     if (typeof translation !== 'string') {
       throw new Error(
@@ -645,19 +646,16 @@ class I18nManager<
       );
     }
 
-    return Object.keys(sourceEntry.options).length > 0
-      ? [translation, sourceEntry.options]
-      : translation;
+    return translation;
   }
 
   private resolveDictionaryLookupOptions(
     options: DictionaryEntry['options']
-  ): LookupOptions {
+  ): DictionaryOptions {
     return {
       ...options,
       ...(options.$context === undefined &&
         typeof options.context === 'string' && { $context: options.context }),
-      $format: 'ICU',
     };
   }
 

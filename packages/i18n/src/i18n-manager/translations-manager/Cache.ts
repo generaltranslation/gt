@@ -136,7 +136,7 @@ abstract class Cache<
   /**
    * Miss the cache
    */
-  public abstract miss(key: InputKey): Promise<OutputValue | undefined>;
+  public abstract miss(key: InputKey): Promise<OutputValue>;
 }
 
 export { Cache };

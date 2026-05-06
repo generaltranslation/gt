@@ -2,6 +2,7 @@ import { Cache } from './Cache';
 import {
   getDictionaryEntry,
   getDictionaryPath,
+  getDictionaryValue,
   isDictionaryValue,
   replaceDictionary,
 } from './utils/dictionary-helpers';
@@ -25,7 +26,7 @@ export type {
 
 export type DictionaryRuntimeTranslate = (
   key: DictionaryKey
-) => Promise<DictionaryValue>;
+) => Promise<string>;
 
 /**
  * A cache for a single locale's dictionary
@@ -82,11 +83,16 @@ export class DictionaryCache extends Cache<
       this.onHit({
         inputKey: key,
         cacheKey: this.genKey(key),
-        cacheValue: value,
+        cacheValue: value as DictionaryValue,
         outputValue: entry,
       });
     }
     return entry;
+  }
+
+  public set(key: DictionaryKey, value: DictionaryEntry): void {
+    const dictionaryValue = getDictionaryValue(value);
+    this.setCache(this.genKey(key), dictionaryValue);
   }
 
   /**
@@ -94,9 +100,15 @@ export class DictionaryCache extends Cache<
    * @param key - The dictionary key
    * @returns The dictionary value
    */
-  public async miss(key: DictionaryKey): Promise<DictionaryEntry | undefined> {
+  public async miss(key: DictionaryKey): Promise<DictionaryEntry> {
     const value = await this.missCache(key);
     const entry = getDictionaryEntry(value);
+    if (entry === undefined) {
+      // Never will happen
+      throw new Error(
+        'DictionaryCache missCache did not return a DictionaryEntry'
+      );
+    }
     if (entry !== undefined && this.onMiss) {
       this.onMiss({
         inputKey: key,

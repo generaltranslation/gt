@@ -119,6 +119,30 @@ describe('DictionaryCache', () => {
     expect(result).toBeUndefined();
   });
 
+  it('set() stores dictionary entries by path', () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+
+    cache.set('user.profile.name', {
+      entry: 'Name',
+      options: { $context: 'profile label' },
+    });
+
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: ['Name', { $context: 'profile label' }],
+        },
+      },
+    });
+    expect(cache.get('user.profile.name')).toEqual({
+      entry: 'Name',
+      options: { $context: 'profile label' },
+    });
+  });
+
   it('miss() rejects because fallback is not implemented', async () => {
     const cache = new DictionaryCache({
       init: {},

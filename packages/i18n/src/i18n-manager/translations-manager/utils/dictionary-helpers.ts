@@ -30,6 +30,13 @@ export function getDictionaryEntry(
   };
 }
 
+export function getDictionaryValue(value: DictionaryEntry): DictionaryValue {
+  if (Object.keys(value.options).length === 0) {
+    return value.entry;
+  }
+  return [value.entry, value.options];
+}
+
 function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
   if (typeof value === 'string') {
     return true;
