@@ -14,6 +14,8 @@ export type DictionaryEntry = {
   options: DictionaryOptions;
 };
 
+export type DictionaryObject = DictionaryEntry | Dictionary;
+
 export type DictionaryPath = string;
 
 export type DictionaryKey = DictionaryPath;
