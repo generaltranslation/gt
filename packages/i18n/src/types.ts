@@ -4,6 +4,8 @@ export type { Translation } from './i18n-manager/translations-manager/utils/type
 export type {
   Dictionary,
   DictionaryEntry,
+  DictionaryLeaf,
+  DictionaryOptions,
   DictionaryValue,
   DictionaryPath,
   DictionaryKey,

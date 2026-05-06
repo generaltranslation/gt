@@ -1,32 +1,27 @@
 import { Cache } from './Cache';
+import {
+  getDictionaryEntry,
+  getDictionaryPath,
+  isDictionaryValue,
+  replaceDictionary,
+} from './utils/dictionary-helpers';
 import type { LifecycleParam } from '../lifecycle-hooks/types';
-
-/**
- * A dictionary is a nested object with strings as leaf values
- */
-export type Dictionary = {
-  [key: string]: DictionaryValue;
-};
-
-/**
- * Value stored in a dictionary
- */
-export type DictionaryValue = string | Dictionary;
-
-/**
- * Value returned from a dictionary lookup
- */
-export type DictionaryEntry = string;
-
-/**
- * Just a way to be more explicit about what "dictionary path" is
- */
-export type DictionaryPath = string;
-
-/**
- * InputKey type for lookups
- */
-export type DictionaryKey = DictionaryPath;
+import type {
+  Dictionary,
+  DictionaryEntry,
+  DictionaryKey,
+  DictionaryPath,
+  DictionaryValue,
+} from './utils/types/dictionary';
+export type {
+  Dictionary,
+  DictionaryEntry,
+  DictionaryKey,
+  DictionaryLeaf,
+  DictionaryOptions,
+  DictionaryPath,
+  DictionaryValue,
+} from './utils/types/dictionary';
 
 /**
  * A cache for a single locale's dictionary
@@ -69,7 +64,8 @@ export class DictionaryCache extends Cache<
    */
   public get(key: DictionaryKey): DictionaryEntry | undefined {
     const value = this.getCache(key);
-    if (typeof value !== 'string') {
+    const entry = getDictionaryEntry(value);
+    if (entry === undefined) {
       return undefined;
     }
 
@@ -78,10 +74,10 @@ export class DictionaryCache extends Cache<
         inputKey: key,
         cacheKey: this.genKey(key),
         cacheValue: value,
-        outputValue: value,
+        outputValue: entry,
       });
     }
-    return value;
+    return entry;
   }
 
   /**
@@ -91,15 +87,16 @@ export class DictionaryCache extends Cache<
    */
   public async miss(key: DictionaryKey): Promise<DictionaryEntry | undefined> {
     const value = await this.missCache(key);
-    if (typeof value === 'string' && this.onMiss) {
+    const entry = getDictionaryEntry(value);
+    if (entry !== undefined && this.onMiss) {
       this.onMiss({
         inputKey: key,
         cacheKey: this.genKey(key),
         cacheValue: value,
-        outputValue: value,
+        outputValue: entry,
       });
     }
-    return typeof value === 'string' ? value : undefined;
+    return entry;
   }
 
   /**
@@ -110,7 +107,7 @@ export class DictionaryCache extends Cache<
     const dictionaryPath = getDictionaryPath(cacheKey);
 
     if (dictionaryPath.length === 0) {
-      if (typeof value !== 'string') {
+      if (isDictionaryValue(value)) {
         replaceDictionary(cache, value);
       }
       return;
@@ -119,7 +116,7 @@ export class DictionaryCache extends Cache<
     let current = cache;
     for (const key of dictionaryPath.slice(0, -1)) {
       const next = current[key];
-      if (typeof next !== 'object' || next == null) {
+      if (!isDictionaryValue(next)) {
         current[key] = {};
       }
       current = current[key] as Dictionary;
@@ -140,7 +137,7 @@ export class DictionaryCache extends Cache<
     }
 
     for (const pathSegment of dictionaryPath) {
-      if (typeof current !== 'object' || current == null) {
+      if (!isDictionaryValue(current)) {
         return undefined;
       }
       current = current[pathSegment];
@@ -168,24 +165,4 @@ export class DictionaryCache extends Cache<
   protected fallback(): Promise<DictionaryValue> {
     throw new Error('DictionaryCache fallback is not implemented');
   }
-}
-
-/**
- * Convert a dictionary path string to path segments
- */
-function getDictionaryPath(id: DictionaryPath): string[] {
-  if (!id) {
-    return [];
-  }
-  return id.split('.');
-}
-
-/**
- * Replace a dictionary object while preserving its reference
- */
-function replaceDictionary(target: Dictionary, source: Dictionary): void {
-  for (const key of Object.keys(target)) {
-    delete target[key];
-  }
-  Object.assign(target, source);
 }

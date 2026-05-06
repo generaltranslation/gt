@@ -223,6 +223,21 @@ describe('I18nManager', () => {
     expect(manager.lookupDictionary('fr', 'user.name')).toBe('Nom');
   });
 
+  it('lookupDictionary() returns the string from a metadata tuple leaf', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: ['Hello', { $context: 'homepage', $maxChars: 10 }],
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: ['Bonjour', { context: 'homepage' }],
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Bonjour');
+  });
+
   it('lookupDictionary() returns undefined when target locale is not loaded', () => {
     const manager = createManager({
       dictionary: {
