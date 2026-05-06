@@ -1,5 +1,19 @@
 # gt-i18n
 
+## 0.8.13
+
+### Patch Changes
+
+- [#1325](https://github.com/generaltranslation/gt/pull/1325) [`c7f8dbe`](https://github.com/generaltranslation/gt/commit/c7f8dbe7841b772358e4e0391fd7782e223cbec8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add dictionary cache primitives.
+
+- [#1310](https://github.com/generaltranslation/gt/pull/1310) [`3af2461`](https://github.com/generaltranslation/gt/commit/3af2461b5456a87883431561712615fdb4f8c89e) Thanks [@bgub](https://github.com/bgub)! - Fix dialect translation cache keys for fallback and custom alias locales.
+
+- [#1326](https://github.com/generaltranslation/gt/pull/1326) [`6f56c52`](https://github.com/generaltranslation/gt/commit/6f56c52d2d6687b614b3eee7226f886c8eac9a96) Thanks [@bgub](https://github.com/bgub)! - Fix runtime translation metadata for max character limits.
+
+- [#1327](https://github.com/generaltranslation/gt/pull/1327) [`a5b18eb`](https://github.com/generaltranslation/gt/commit/a5b18eb39f6f74e77df78b58f11f065cc7dbdbda) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Wire dictionary loading into the i18n manager.
+
+- [#1311](https://github.com/generaltranslation/gt/pull/1311) [`4976fc6`](https://github.com/generaltranslation/gt/commit/4976fc682c84fa95b7deace431b2235ca1fccf24) Thanks [@bgub](https://github.com/bgub)! - Route gt-next cached and runtime translation lookups through I18nManager.
+
 ## 0.8.12
 
 ### Patch Changes

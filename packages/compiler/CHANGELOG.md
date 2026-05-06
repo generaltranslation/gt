@@ -1,5 +1,13 @@
 # @generaltranslation/compiler
 
+## 1.3.19
+
+### Patch Changes
+
+- [#1315](https://github.com/generaltranslation/gt/pull/1315) [`5801996`](https://github.com/generaltranslation/gt/commit/58019961cf4142e5468fbbc523a514e3f90b4123) Thanks [@bgub](https://github.com/bgub)! - Preserve invalid template escape errors in `msg()` and `t()` validation even when string autoderive is enabled.
+
+- [#1331](https://github.com/generaltranslation/gt/pull/1331) [`3dedd4a`](https://github.com/generaltranslation/gt/commit/3dedd4a07b674f7b943f963190232e5c0f01026f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Thread JSX collection through path-aware helpers for future derivation support.
+
 ## 1.3.18
 
 ### Patch Changes

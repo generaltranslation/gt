@@ -172,7 +172,11 @@ export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
 export const createGTCompilerUnavailableWarning = (type: 'babel' | 'swc') =>
   type === 'swc'
     ? `gt-next (plugin): The GT swc compiler is compatible with < next@${SWC_PLUGIN_SUPPORT}. Skipping compiler optimizations.`
-    : `gt-next (plugin): The GT babel compiler is compatible with turbopack or < react@${BABEL_PLUGIN_SUPPORT}. Skipping compiler optimizations.`;
+    : `gt-next (plugin): The GT babel compiler requires react@${BABEL_PLUGIN_SUPPORT} or newer. Skipping compiler optimizations.`;
+
+export const babelCompilerTurbopackUnavailableWarning =
+  `gt-next (plugin): The GT babel compiler is not compatible with Turbopack. ` +
+  `To use compiler optimizations with Turbopack, set experimentalCompilerOptions: { type: 'swc' }.`;
 
 export const disablingCompileTimeHashWarning = `gt-next (plugin): Compile-time hash is disabled. Compiler optimizations are inactive.`;
 
