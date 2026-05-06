@@ -12,6 +12,36 @@ import { getCLIVersion } from '../utils/packageJson.js';
 import { logger } from './logger.js';
 import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
 import { FileToUpload } from 'generaltranslation/types';
+import { endTerminalSession, shouldUseInkPrompts } from './terminalSession.js';
+import {
+  parseLocaleList,
+  validateLocale,
+  validateLocaleList,
+} from './promptParsing.js';
+
+function cancelPromptAndExit(message: string): never {
+  endTerminalSession();
+  cancel(message);
+  return exitSync(0);
+}
+
+async function loadInkPrompts() {
+  return import('./inkPrompts.js');
+}
+
+async function runInkPrompt<T>(
+  prompt: (prompts: Awaited<ReturnType<typeof loadInkPrompts>>) => Promise<{
+    value?: T;
+    cancelled: boolean;
+  }>,
+  cancelMessage = 'Operation cancelled'
+) {
+  const result = await prompt(await loadInkPrompts());
+  if (result.cancelled) {
+    return cancelPromptAndExit(cancelMessage);
+  }
+  return result.value;
+}
 
 /**
  * Strip ANSI escape codes from a string (e.g., chalk color codes)
@@ -104,6 +134,14 @@ export async function promptText({
   defaultValue?: string;
   validate?: (value: string) => boolean | string;
 }) {
+  if (shouldUseInkPrompts()) {
+    return (
+      (await runInkPrompt<string>((prompts) =>
+        prompts.inkPromptText({ message, defaultValue, validate })
+      )) ?? ''
+    );
+  }
+
   const result = await text({
     message,
     placeholder: defaultValue,
@@ -123,6 +161,79 @@ export async function promptText({
   return result;
 }
 
+export async function promptLocale({
+  message,
+  defaultValue,
+}: {
+  message: string;
+  defaultValue?: string;
+}) {
+  if (shouldUseInkPrompts()) {
+    return (
+      (await runInkPrompt<string>((prompts) =>
+        prompts.inkPromptLocale({ message, defaultValue })
+      )) ?? ''
+    );
+  }
+
+  return promptText({
+    message,
+    defaultValue,
+    validate: validateLocale,
+  });
+}
+
+export async function promptLocaleList({
+  message,
+  defaultValue,
+  required = true,
+}: {
+  message: string;
+  defaultValue?: string[];
+  required?: boolean;
+}) {
+  if (shouldUseInkPrompts()) {
+    return (
+      (await runInkPrompt<string[]>((prompts) =>
+        prompts.inkPromptLocaleMulti({
+          message,
+          defaultValue,
+          required,
+        })
+      )) ?? []
+    );
+  }
+
+  return promptText({
+    message,
+    defaultValue: defaultValue?.join(' '),
+    validate: validateLocaleList,
+  }).then(parseLocaleList);
+}
+
+export async function promptGlobPatterns({
+  label,
+  message,
+  defaultValue,
+}: {
+  label: string;
+  message: string;
+  defaultValue?: string;
+}) {
+  if (shouldUseInkPrompts()) {
+    return (
+      (await runInkPrompt<string>((prompts) =>
+        prompts.inkPromptGlob({ label, defaultValue })
+      )) ?? ''
+    );
+  }
+
+  return promptText({
+    message,
+    defaultValue,
+  });
+}
+
 export async function promptSelect<T>({
   message,
   options,
@@ -132,6 +243,12 @@ export async function promptSelect<T>({
   options: Array<{ value: T; label: string; hint?: string }>;
   defaultValue?: T;
 }) {
+  if (shouldUseInkPrompts()) {
+    return (await runInkPrompt<T>((prompts) =>
+      prompts.inkPromptSelect({ message, options, defaultValue })
+    )) as T;
+  }
+
   // Convert options to the format expected by clack
   const clackOptions = options.map((opt) => ({
     value: opt.value,
@@ -162,6 +279,18 @@ export async function promptMultiSelect<T extends string>({
   options: Array<{ value: T; label: string; hint?: string }>;
   required?: boolean;
 }) {
+  if (shouldUseInkPrompts()) {
+    return (
+      (await runInkPrompt<Array<T>>((prompts) =>
+        prompts.inkPromptMultiSelect({
+          message,
+          options,
+          required,
+        })
+      )) ?? []
+    );
+  }
+
   // Convert options to the format expected by clack
   const clackOptions = options.map((opt) => ({
     value: opt.value,
@@ -192,6 +321,15 @@ export async function promptConfirm({
   defaultValue?: boolean;
   cancelMessage?: string;
 }) {
+  if (shouldUseInkPrompts()) {
+    return (
+      (await runInkPrompt<boolean>(
+        (prompts) => prompts.inkPromptConfirm({ message, defaultValue }),
+        cancelMessage
+      )) ?? defaultValue
+    );
+  }
+
   const result = await confirm({
     message,
     initialValue: defaultValue,
