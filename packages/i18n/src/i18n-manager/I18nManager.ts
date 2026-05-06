@@ -22,6 +22,7 @@ import type {
   Dictionary,
   DictionaryEntry,
   DictionaryKey,
+  DictionaryObject,
   DictionaryValue,
 } from './translations-manager/DictionaryCache';
 import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
@@ -316,6 +317,23 @@ class I18nManager<
         ?.get(id);
 
       return dictionaryEntry;
+    } catch (error) {
+      this.handleError(error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Look up a dictionary entry or subtree
+   */
+  lookupDictionaryObj(
+    locale: string,
+    id: string
+  ): DictionaryObject | undefined {
+    try {
+      const dictionaryLocale =
+        this.resolveCacheLocale(locale) ?? this.config.defaultLocale;
+      return this.localesDictionaryCache.get(dictionaryLocale)?.getObj(id);
     } catch (error) {
       this.handleError(error);
       return undefined;
