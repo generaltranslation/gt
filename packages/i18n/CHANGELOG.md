@@ -1,5 +1,15 @@
 # gt-i18n
 
+## 0.8.14
+
+### Patch Changes
+
+- [#1328](https://github.com/generaltranslation/gt/pull/1328) [`cb2e106`](https://github.com/generaltranslation/gt/commit/cb2e1066f975dce8e90b166c51f763a3778c3861) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add dictionary lookup.
+
+- [#1329](https://github.com/generaltranslation/gt/pull/1329) [`b907d87`](https://github.com/generaltranslation/gt/commit/b907d8799670e9e22355b5664da4c9f6f323b8f4) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add dictionary cache lifecycle events.
+
+- [#1346](https://github.com/generaltranslation/gt/pull/1346) [`bf0386b`](https://github.com/generaltranslation/gt/commit/bf0386b38b8a9342619eb2f8b4e5f043dcba4d8f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add dictionary metadata entry types without applying metadata at lookup time.
+
 ## 0.8.13
 
 ### Patch Changes
