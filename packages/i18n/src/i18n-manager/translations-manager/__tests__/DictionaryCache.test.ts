@@ -281,16 +281,13 @@ describe('DictionaryCache', () => {
     expect(cache.getObj('')).toEqual(dictionary);
   });
 
-  it('setObj() stores dictionary entries by path', () => {
+  it('setObj() stores dictionary leaves by path', () => {
     const cache = new DictionaryCache({
       init: {},
       runtimeTranslate,
     });
 
-    cache.setObj('user.profile.name', {
-      entry: 'Name',
-      options: { $context: 'profile label' },
-    });
+    cache.setObj('user.profile.name', ['Name', { $context: 'profile label' }]);
 
     expect(cache.getInternalCache()).toEqual({
       user: {
@@ -302,6 +299,33 @@ describe('DictionaryCache', () => {
     expect(cache.getObj('user.profile.name')).toEqual({
       entry: 'Name',
       options: { $context: 'profile label' },
+    });
+  });
+
+  it('setObj() stores entry-shaped dictionary subtrees by path', () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+
+    cache.setObj('content', {
+      entry: 'Entry label',
+      options: {},
+    });
+
+    expect(cache.getInternalCache()).toEqual({
+      content: {
+        entry: 'Entry label',
+        options: {},
+      },
+    });
+    expect(cache.getObj('content')).toEqual({
+      entry: 'Entry label',
+      options: {},
+    });
+    expect(cache.getObj('content.entry')).toEqual({
+      entry: 'Entry label',
+      options: {},
     });
   });
 

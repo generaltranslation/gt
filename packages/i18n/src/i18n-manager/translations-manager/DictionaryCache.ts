@@ -2,7 +2,6 @@ import { Cache } from './Cache';
 import {
   getDictionaryEntry,
   getDictionaryObject,
-  getDictionaryObjectValue,
   getDictionaryPath,
   getDictionaryValue,
   isDictionaryValue,
@@ -143,8 +142,8 @@ export class DictionaryCache extends Cache<
     return dictionaryObject;
   }
 
-  public setObj(key: DictionaryKey, value: DictionaryObject): void {
-    this.setCache(this.genKey(key), getDictionaryObjectValue(value));
+  public setObj(key: DictionaryKey, value: DictionaryValue): void {
+    this.setCache(this.genKey(key), value);
   }
 
   /**
