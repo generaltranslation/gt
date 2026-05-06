@@ -35,6 +35,7 @@ function getDictionaryRuntimeTranslate(
 ) {
   return manager as unknown as {
     dictionaryRuntimeTranslate(locale: string, id: string): Promise<string>;
+    dictionaryRuntimeTranslateObj(locale: string, id: string): Promise<unknown>;
   };
 }
 
@@ -863,6 +864,58 @@ describe('I18nManager', () => {
       runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting')
     ).rejects.toThrow(
       'I18nManager: dictionaryRuntimeTranslate(): unable to translate dictionary entry greeting'
+    );
+  });
+
+  it('dictionaryRuntimeTranslateObj() translates source dictionary subtrees', async () => {
+    const name = 'Name';
+    const title = 'Title';
+    const nameHash = hashMessage(name, { $format: 'ICU' });
+    const titleHash = hashMessage(title, { $format: 'ICU' });
+    const manager = createManager({
+      dictionary: {
+        user: {
+          profile: {
+            name,
+            title,
+          },
+        },
+      },
+      runtimeTranslation: {},
+    });
+    const runtimeTranslate = getDictionaryRuntimeTranslate(manager);
+
+    mockTranslateMany.mockResolvedValue({
+      [nameHash]: {
+        success: true,
+        translation: 'Nom',
+      },
+      [titleHash]: {
+        success: true,
+        translation: 'Titre',
+      },
+    });
+
+    await expect(
+      runtimeTranslate.dictionaryRuntimeTranslateObj('fr', 'user.profile')
+    ).resolves.toEqual({
+      name: 'Nom',
+      title: 'Titre',
+    });
+  });
+
+  it('dictionaryRuntimeTranslateObj() rejects when source dictionary object is missing', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+    });
+    const runtimeTranslate = getDictionaryRuntimeTranslate(manager);
+
+    await expect(
+      runtimeTranslate.dictionaryRuntimeTranslateObj('fr', 'missing')
+    ).rejects.toThrow(
+      'I18nManager: source dictionary entry missing is not defined'
     );
   });
 

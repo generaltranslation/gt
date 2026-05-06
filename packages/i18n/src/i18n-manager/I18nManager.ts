@@ -25,7 +25,12 @@ import type {
   DictionaryObject,
   DictionaryValue,
 } from './translations-manager/DictionaryCache';
-import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
+import {
+  getDictionaryEntry,
+  isDictionaryEntry,
+  isDictionaryValue,
+  resolveDictionaryLookupOptions,
+} from './translations-manager/utils/dictionary-helpers';
 import { LocalesDictionaryCache } from './translations-manager/LocalesDictionaryCache';
 import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
@@ -153,6 +158,8 @@ class I18nManager<
       loadDictionary,
       runtimeTranslate: (locale, id) =>
         this.dictionaryRuntimeTranslate(locale, id),
+      runtimeTranslateObj: (locale, id) =>
+        this.dictionaryRuntimeTranslateObj(locale, id),
       ttl: this.config.cacheExpiryTime,
       lifecycle,
     });
@@ -700,6 +707,51 @@ class I18nManager<
     }
 
     return translation;
+  }
+
+  /**
+   * Runtime lookup function for dictionary leaves or subtrees
+   */
+  private async dictionaryRuntimeTranslateObj(
+    locale: Locale,
+    id: DictionaryKey
+  ): Promise<DictionaryObject> {
+    const sourceObject = this.localesDictionaryCache
+      .get(this.config.defaultLocale)
+      ?.getObj(id);
+    if (sourceObject === undefined) {
+      throw new DictionarySourceNotFoundError(id);
+    }
+
+    if (isDictionaryEntry(sourceObject)) {
+      return {
+        entry: await this.dictionaryRuntimeTranslate(locale, id),
+        options: {},
+      };
+    }
+
+    return this.translateDictionaryObject(locale, id, sourceObject);
+  }
+
+  private async translateDictionaryObject(
+    locale: Locale,
+    baseId: DictionaryKey,
+    dictionary: Dictionary
+  ): Promise<Dictionary> {
+    const translatedEntries = await Promise.all(
+      Object.entries(dictionary).map(async ([key, value]) => {
+        const id = baseId ? `${baseId}.${key}` : key;
+        const entry = getDictionaryEntry(value);
+        if (entry !== undefined) {
+          return [key, await this.dictionaryRuntimeTranslate(locale, id)];
+        }
+        if (isDictionaryValue(value)) {
+          return [key, await this.translateDictionaryObject(locale, id, value)];
+        }
+        throw new DictionarySourceNotFoundError(id);
+      })
+    );
+    return Object.fromEntries(translatedEntries);
   }
 
   /**

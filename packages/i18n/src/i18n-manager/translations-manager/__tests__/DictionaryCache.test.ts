@@ -278,4 +278,55 @@ describe('DictionaryCache', () => {
     });
     expect(cache.get('user.profile')).toBeUndefined();
   });
+
+  it('missObj() stores runtime fallback dictionary entries by path', async () => {
+    const runtimeTranslateObj = vi.fn().mockResolvedValue({
+      entry: 'Name',
+      options: {},
+    });
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+      runtimeTranslateObj,
+    });
+
+    await expect(cache.missObj('user.profile.name')).resolves.toEqual({
+      entry: 'Name',
+      options: {},
+    });
+    expect(runtimeTranslateObj).toHaveBeenCalledWith('user.profile.name');
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: 'Name',
+        },
+      },
+    });
+  });
+
+  it('missObj() stores runtime fallback dictionary subtrees by path', async () => {
+    const runtimeTranslateObj = vi.fn().mockResolvedValue({
+      name: 'Nom',
+      title: 'Titre',
+    });
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+      runtimeTranslateObj,
+    });
+
+    await expect(cache.missObj('user.profile')).resolves.toEqual({
+      name: 'Nom',
+      title: 'Titre',
+    });
+    expect(runtimeTranslateObj).toHaveBeenCalledWith('user.profile');
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: 'Nom',
+          title: 'Titre',
+        },
+      },
+    });
+  });
 });

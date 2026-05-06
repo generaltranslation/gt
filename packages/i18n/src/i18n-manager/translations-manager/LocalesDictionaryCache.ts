@@ -6,6 +6,7 @@ import type {
   DictionaryKey,
   DictionaryPath,
   DictionaryRuntimeTranslate,
+  DictionaryRuntimeTranslateObj,
   DictionaryValue,
 } from './DictionaryCache';
 import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
@@ -37,6 +38,11 @@ export type LocalesDictionaryRuntimeTranslate = (
   key: DictionaryKey
 ) => Promise<string>;
 
+export type LocalesDictionaryRuntimeTranslateObj = (
+  locale: Locale,
+  key: DictionaryKey
+) => ReturnType<DictionaryRuntimeTranslateObj>;
+
 /**
  * Cache for looking up dictionaries by locale
  */
@@ -52,6 +58,7 @@ export class LocalesDictionaryCache extends Cache<
   private _dictionaryLoader: DictionaryLoader;
 
   private _runtimeTranslate: LocalesDictionaryRuntimeTranslate;
+  private _runtimeTranslateObj: LocalesDictionaryRuntimeTranslateObj;
 
   /**
    * Time to live for cache entries
@@ -76,6 +83,11 @@ export class LocalesDictionaryCache extends Cache<
     dictionary = {},
     loadDictionary,
     runtimeTranslate,
+    runtimeTranslateObj = async () => {
+      throw new Error(
+        'LocalesDictionaryCache object fallback is not implemented'
+      );
+    },
     lifecycle: {
       onLocalesDictionaryCacheHit: onHit,
       onLocalesDictionaryCacheMiss: onMiss,
@@ -88,6 +100,7 @@ export class LocalesDictionaryCache extends Cache<
     dictionary?: Dictionary;
     loadDictionary: DictionaryLoader;
     runtimeTranslate: LocalesDictionaryRuntimeTranslate;
+    runtimeTranslateObj?: LocalesDictionaryRuntimeTranslateObj;
     lifecycle: LocalesDictionaryCacheLifecycleCallbacks;
   }) {
     super({}, { onHit, onMiss });
@@ -97,6 +110,7 @@ export class LocalesDictionaryCache extends Cache<
 
     this._dictionaryLoader = loadDictionary;
     this._runtimeTranslate = runtimeTranslate;
+    this._runtimeTranslateObj = runtimeTranslateObj;
     this._onDictionaryCacheHit = onDictionaryCacheHit;
     this._onDictionaryCacheMiss = onDictionaryCacheMiss;
 
@@ -105,6 +119,8 @@ export class LocalesDictionaryCache extends Cache<
       dictionaryCache: new DictionaryCache({
         init: dictionary,
         runtimeTranslate: this._createDictionaryRuntimeTranslate(defaultLocale),
+        runtimeTranslateObj:
+          this._createDictionaryRuntimeTranslateObj(defaultLocale),
         lifecycle: this._createDictionaryCacheLifecycle(defaultLocale),
       }),
       expiresAt: -1,
@@ -189,6 +205,7 @@ export class LocalesDictionaryCache extends Cache<
     const dictionaryCache = new DictionaryCache({
       init: await dictionaryPromise,
       runtimeTranslate: this._createDictionaryRuntimeTranslate(locale),
+      runtimeTranslateObj: this._createDictionaryRuntimeTranslateObj(locale),
       lifecycle: this._createDictionaryCacheLifecycle(locale),
     });
 
@@ -232,5 +249,11 @@ export class LocalesDictionaryCache extends Cache<
     locale: Locale
   ): DictionaryRuntimeTranslate {
     return (key) => this._runtimeTranslate(locale, key);
+  }
+
+  private _createDictionaryRuntimeTranslateObj(
+    locale: Locale
+  ): DictionaryRuntimeTranslateObj {
+    return (key) => this._runtimeTranslateObj(locale, key);
   }
 }
