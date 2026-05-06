@@ -34,7 +34,11 @@ function getDictionaryRuntimeTranslate(
   manager: ReturnType<typeof createManager>
 ) {
   return manager as unknown as {
-    dictionaryRuntimeTranslate(locale: string, id: string): Promise<string>;
+    dictionaryRuntimeTranslate(
+      locale: string,
+      id: string,
+      sourceEntry: { entry: string; options: LookupOptions }
+    ): Promise<string>;
   };
 }
 
@@ -514,21 +518,6 @@ describe('I18nManager', () => {
     );
   });
 
-  it('dictionaryRuntimeTranslate() rejects when source dictionary entry is missing', async () => {
-    const manager = createManager({
-      dictionary: {
-        greeting: 'Hello',
-      },
-    });
-    const runtimeTranslate = getDictionaryRuntimeTranslate(manager);
-
-    await expect(
-      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'missing')
-    ).rejects.toThrow(
-      'I18nManager: source dictionary entry missing is not defined'
-    );
-  });
-
   it('dictionaryRuntimeTranslate() respects source dictionary format options', async () => {
     const source = 'Hello {name}';
     const sourceOptions: LookupOptions = {
@@ -552,7 +541,10 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting')
+      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting', {
+        entry: source,
+        options: { $format: 'I18NEXT', context: 'homepage' },
+      })
     ).resolves.toBe('Bonjour {name}');
   });
 
@@ -576,7 +568,10 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting')
+      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting', {
+        entry: source,
+        options: {},
+      })
     ).rejects.toThrow(
       'I18nManager: dictionaryRuntimeTranslate(): unable to translate dictionary entry greeting'
     );

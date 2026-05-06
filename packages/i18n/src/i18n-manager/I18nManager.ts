@@ -620,22 +620,15 @@ class I18nManager<
   private async dictionaryRuntimeTranslate(
     locale: Locale,
     id: DictionaryKey,
-    sourceEntry?: DictionaryEntry
+    sourceEntry: DictionaryEntry
   ): Promise<string> {
-    const resolvedSourceEntry =
-      sourceEntry ??
-      this.localesDictionaryCache.get(this.config.defaultLocale)?.get(id);
-    if (resolvedSourceEntry === undefined) {
-      throw new DictionarySourceNotFoundError(id);
-    }
-
     // Runtime translation
     const translation = await this.lookupTranslationWithFallbackResolved(
       locale,
-      resolvedSourceEntry.entry as TranslationValue,
+      sourceEntry.entry as TranslationValue,
       {
         $format: 'ICU',
-        ...resolveDictionaryLookupOptions(resolvedSourceEntry.options),
+        ...resolveDictionaryLookupOptions(sourceEntry.options),
       }
     );
     if (typeof translation !== 'string') {
