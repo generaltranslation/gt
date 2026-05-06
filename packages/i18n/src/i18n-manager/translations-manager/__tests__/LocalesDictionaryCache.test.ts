@@ -8,6 +8,7 @@ import { Dictionary } from '../DictionaryCache';
 
 describe('LocalesDictionaryCache', () => {
   let mockLoadDictionary: ReturnType<typeof vi.fn>;
+  let mockRuntimeTranslate: ReturnType<typeof vi.fn>;
   const enDictionary: Dictionary = {
     greeting: 'Hello',
     cta: ['Click me', { $context: 'button', $maxChars: 12 }],
@@ -23,6 +24,7 @@ describe('LocalesDictionaryCache', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockLoadDictionary = vi.fn().mockResolvedValue(frDictionary);
+    mockRuntimeTranslate = vi.fn();
   });
 
   afterEach(() => {
@@ -34,6 +36,7 @@ describe('LocalesDictionaryCache', () => {
       defaultLocale: 'en',
       dictionary: enDictionary,
       loadDictionary: mockLoadDictionary as DictionaryLoader,
+      runtimeTranslate: mockRuntimeTranslate,
       lifecycle: {},
       ...(opts?.ttl !== undefined ? { ttl: opts.ttl } : {}),
     });

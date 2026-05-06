@@ -21,7 +21,10 @@ import { Hash } from './translations-manager/TranslationsCache';
 import type {
   Dictionary,
   DictionaryEntry,
+  DictionaryKey,
+  DictionaryValue,
 } from './translations-manager/DictionaryCache';
+import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
 import { LocalesDictionaryCache } from './translations-manager/LocalesDictionaryCache';
 import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
@@ -147,6 +150,8 @@ class I18nManager<
       defaultLocale: this.config.defaultLocale,
       dictionary: params.dictionary,
       loadDictionary,
+      runtimeTranslate: (locale, id) =>
+        this.dictionaryRuntimeTranslate(locale, id),
       ttl: this.config.cacheExpiryTime,
       lifecycle,
     });
@@ -359,24 +364,11 @@ class I18nManager<
     options: LookupOptions
   ): Promise<T | undefined> {
     try {
-      // Validate
-      const { translationLocale, options: lookupOptions } =
-        this.resolveLookupParams(locale, options);
-
-      // Early return if in default locale
-      if (!translationLocale) {
-        return message;
-      }
-
-      // Get the locale cache
-      let txCache = this.localesCache.get(translationLocale);
-      if (!txCache) txCache = await this.localesCache.miss(translationLocale);
-
-      // Get the translation (falling back to runtime translate)
-      let translation = txCache.get({ message, options: lookupOptions });
-      if (translation == null)
-        translation = await txCache.miss({ message, options: lookupOptions });
-      return translation;
+      return await this.lookupTranslationWithFallbackResolved(
+        locale,
+        message,
+        options
+      );
     } catch (error) {
       this.handleError(error);
       return undefined;
@@ -600,6 +592,59 @@ class I18nManager<
         this.resolveCacheLocale(options.$locale) ??
         this.resolveLocale(options.$locale),
     };
+  }
+
+  private async lookupTranslationWithFallbackResolved<
+    T extends TranslationValue = TranslationValue,
+  >(locale: string, message: T, options: LookupOptions): Promise<T> {
+    const { translationLocale, options: lookupOptions } =
+      this.resolveLookupParams(locale, options);
+
+    if (!translationLocale) {
+      return message;
+    }
+
+    let txCache = this.localesCache.get(translationLocale);
+    if (!txCache) txCache = await this.localesCache.miss(translationLocale);
+
+    let translation = txCache.get({ message, options: lookupOptions });
+    if (translation == null) {
+      translation = await txCache.miss({ message, options: lookupOptions });
+    }
+    return translation;
+  }
+
+  /**
+   * Runtime lookup function for dictionaries
+   */
+  private async dictionaryRuntimeTranslate(
+    locale: Locale,
+    id: DictionaryKey
+  ): Promise<string> {
+    // Lookup the source entry (should be sync accessible)
+    const sourceEntry = this.localesDictionaryCache
+      .get(this.config.defaultLocale)
+      ?.get(id);
+    if (sourceEntry === undefined) {
+      throw new DictionarySourceNotFoundError(id);
+    }
+
+    // Runtime translation
+    const translation = await this.lookupTranslationWithFallbackResolved(
+      locale,
+      sourceEntry.entry as TranslationValue,
+      {
+        $format: 'ICU',
+        ...resolveDictionaryLookupOptions(sourceEntry.options),
+      }
+    );
+    if (typeof translation !== 'string') {
+      throw new Error(
+        `I18nManager: dictionaryRuntimeTranslate(): unable to translate dictionary entry ${id}`
+      );
+    }
+
+    return translation;
   }
 
   /**

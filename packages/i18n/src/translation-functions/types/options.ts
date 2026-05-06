@@ -7,6 +7,7 @@ export type BaseTranslationOptions = Record<string, any>;
 export type DictionaryTranslationOptions = BaseTranslationOptions;
 
 export type DictionaryOptions = BaseTranslationOptions & {
+  $format?: StringFormat;
   $context?: string;
   $maxChars?: number;
   /** @deprecated use {@link $context} instead */

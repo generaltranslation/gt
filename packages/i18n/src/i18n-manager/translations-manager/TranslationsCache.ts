@@ -185,7 +185,7 @@ export class TranslationsCache<
    */
   public async miss<T extends TranslationValue>(
     key: TranslationKey<T>
-  ): Promise<T | undefined> {
+  ): Promise<T> {
     const value = await this.missCache(key);
     if (value != null && this.onMiss) {
       this.onMiss({
@@ -195,7 +195,7 @@ export class TranslationsCache<
         outputValue: value,
       });
     }
-    return value as T | undefined;
+    return value as T;
   }
 
   /**
