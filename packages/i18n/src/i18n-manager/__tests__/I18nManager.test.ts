@@ -444,7 +444,7 @@ describe('I18nManager', () => {
     });
   });
 
-  it('lookupDictionaryWithFallback() returns undefined when source dictionary entry is missing', async () => {
+  it('lookupDictionaryWithFallback() throws when source dictionary entry is missing', async () => {
     const manager = createManager({
       dictionary: {
         greeting: 'Hello',
@@ -455,7 +455,9 @@ describe('I18nManager', () => {
 
     await expect(
       manager.lookupDictionaryWithFallback('fr', 'missing')
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow(
+      'I18nManager: source dictionary entry missing is not defined'
+    );
   });
 
   it('lookupTranslation() returns undefined before load, translation after', async () => {
