@@ -368,10 +368,7 @@ describe('I18nManager', () => {
       },
     });
 
-    expect(manager.lookupDictionaryObj('en', 'greeting')).toEqual({
-      entry: 'Hello',
-      options: {},
-    });
+    expect(manager.lookupDictionaryObj('en', 'greeting')).toBe('Hello');
     expect(manager.lookupDictionaryObj('en', 'user.profile')).toEqual({
       name: 'Name',
     });
@@ -394,10 +391,7 @@ describe('I18nManager', () => {
 
     await manager.loadDictionary('fr');
 
-    expect(manager.lookupDictionaryObj('fr', 'greeting')).toEqual({
-      entry: 'Bonjour',
-      options: {},
-    });
+    expect(manager.lookupDictionaryObj('fr', 'greeting')).toBe('Bonjour');
     expect(manager.lookupDictionaryObj('fr', 'user.profile')).toEqual({
       name: 'Nom',
     });
