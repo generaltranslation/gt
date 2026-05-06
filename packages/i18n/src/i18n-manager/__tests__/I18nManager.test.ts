@@ -371,6 +371,23 @@ describe('I18nManager', () => {
     expect(loadDictionary).not.toHaveBeenCalled();
   });
 
+  it('lookupDictionaryWithFallback() throws when source entry is missing and translation is not required', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+      }),
+    });
+
+    await expect(
+      manager.lookupDictionaryWithFallback('en', 'missing')
+    ).rejects.toThrow(
+      'I18nManager: source dictionary entry missing is not defined'
+    );
+  });
+
   it('lookupDictionaryWithFallback() returns the source dictionary entry when i18n is disabled', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({
       greeting: 'Bonjour',

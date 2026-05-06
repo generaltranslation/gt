@@ -333,9 +333,13 @@ class I18nManager<
     try {
       const resolvedLocale = this.resolveLocale(locale);
       if (!this.requiresTranslation(resolvedLocale)) {
-        return this.localesDictionaryCache
+        const sourceEntry = this.localesDictionaryCache
           .get(this.config.defaultLocale)
           ?.get(id);
+        if (sourceEntry === undefined) {
+          throw new DictionarySourceNotFoundError(id);
+        }
+        return sourceEntry;
       }
 
       let dictionaryCache = this.localesDictionaryCache.get(resolvedLocale);
