@@ -295,18 +295,19 @@ class I18nManager<
   lookupDictionary(locale: string, id: string): string | undefined {
     try {
       const resolvedLocale = this.resolveLocale(locale);
-      if (!this.requiresTranslation(resolvedLocale)) {
-        const sourceEntry = this.localesDictionaryCache
-          .get(this.config.defaultLocale)
-          ?.get(id);
-        if (sourceEntry === undefined) {
-          throw new DictionarySourceNotFoundError(id);
-        }
-        return sourceEntry;
+      const requiresTranslation = this.requiresTranslation(resolvedLocale);
+      const dictionaryLocale = requiresTranslation
+        ? resolvedLocale
+        : this.config.defaultLocale;
+      const dictionaryEntry = this.localesDictionaryCache
+        .get(dictionaryLocale)
+        ?.get(id);
+
+      if (!requiresTranslation && dictionaryEntry === undefined) {
+        throw new DictionarySourceNotFoundError(id);
       }
 
-      const dictionaryCache = this.localesDictionaryCache.get(resolvedLocale);
-      return dictionaryCache?.get(id);
+      return dictionaryEntry;
     } catch (error) {
       this.handleError(error);
       return undefined;
