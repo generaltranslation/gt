@@ -30,18 +30,18 @@ artifacts/
 This file is responsible for rendering your custom artifact. You might replace the inner UI with your own components, but the overall pattern (initialization, handling streamed data, and rendering content) remains the same. For instance:
 
 ```tsx
-import { Artifact } from "@/components/create-artifact";
-import { ExampleComponent } from "@/components/example-component";
-import { toast } from "sonner";
+import { Artifact } from '@/components/create-artifact';
+import { ExampleComponent } from '@/components/example-component';
+import { toast } from 'sonner';
 
 interface CustomArtifactMetadata {
   // Define metadata your custom artifact might need—the example below is minimal.
   info: string;
 }
 
-export const customArtifact = new Artifact<"custom", CustomArtifactMetadata>({
-  kind: "custom",
-  description: "A custom artifact for demonstrating custom functionality.",
+export const customArtifact = new Artifact<'custom', CustomArtifactMetadata>({
+  kind: 'custom',
+  description: 'A custom artifact for demonstrating custom functionality.',
   // Initialization can fetch any extra data or perform side effects
   initialize: async ({ documentId, setMetadata }) => {
     // For example, initialize the artifact with default metadata.
@@ -51,17 +51,17 @@ export const customArtifact = new Artifact<"custom", CustomArtifactMetadata>({
   },
   // Handle streamed parts from the server (if your artifact supports streaming updates)
   onStreamPart: ({ streamPart, setMetadata, setArtifact }) => {
-    if (streamPart.type === "info-update") {
+    if (streamPart.type === 'info-update') {
       setMetadata((metadata) => ({
         ...metadata,
         info: streamPart.content as string,
       }));
     }
-    if (streamPart.type === "content-update") {
+    if (streamPart.type === 'content-update') {
       setArtifact((draftArtifact) => ({
         ...draftArtifact,
         content: draftArtifact.content + (streamPart.content as string),
-        status: "streaming",
+        status: 'streaming',
       }));
     }
   },
@@ -81,7 +81,7 @@ export const customArtifact = new Artifact<"custom", CustomArtifactMetadata>({
       return <div>Loading custom artifact...</div>;
     }
 
-    if (mode === "diff") {
+    if (mode === 'diff') {
       const oldContent = getDocumentContentById(currentVersionIndex - 1);
       const newContent = getDocumentContentById(currentVersionIndex);
       return (
@@ -94,7 +94,7 @@ export const customArtifact = new Artifact<"custom", CustomArtifactMetadata>({
     }
 
     return (
-      <div className="custom-artifact">
+      <div className='custom-artifact'>
         <ExampleComponent
           content={content}
           metadata={metadata}
@@ -104,7 +104,7 @@ export const customArtifact = new Artifact<"custom", CustomArtifactMetadata>({
         <button
           onClick={() => {
             navigator.clipboard.writeText(content);
-            toast.success("Content copied to clipboard!");
+            toast.success('Content copied to clipboard!');
           }}
         >
           Copy
@@ -116,11 +116,11 @@ export const customArtifact = new Artifact<"custom", CustomArtifactMetadata>({
   actions: [
     {
       icon: <span>⟳</span>,
-      description: "Refresh artifact info",
+      description: 'Refresh artifact info',
       onClick: ({ appendMessage }) => {
         appendMessage({
-          role: "user",
-          content: "Please refresh the info for my custom artifact.",
+          role: 'user',
+          content: 'Please refresh the info for my custom artifact.',
         });
       },
     },
@@ -129,11 +129,11 @@ export const customArtifact = new Artifact<"custom", CustomArtifactMetadata>({
   toolbar: [
     {
       icon: <span>✎</span>,
-      description: "Edit custom artifact",
+      description: 'Edit custom artifact',
       onClick: ({ appendMessage }) => {
         appendMessage({
-          role: "user",
-          content: "Edit the custom artifact content.",
+          role: 'user',
+          content: 'Edit the custom artifact content.',
         });
       },
     },
@@ -146,31 +146,31 @@ Server-Side Example (server.ts)
 The server file processes the document for the artifact. It streams updates (if applicable) and returns the final content. For example:
 
 ```ts
-import { smoothStream, streamText } from "ai";
-import { myProvider } from "@/lib/ai/models";
-import { createDocumentHandler } from "@/lib/artifacts/server";
-import { updateDocumentPrompt } from "@/lib/ai/prompts";
+import { smoothStream, streamText } from 'ai';
+import { myProvider } from '@/lib/ai/models';
+import { createDocumentHandler } from '@/lib/artifacts/server';
+import { updateDocumentPrompt } from '@/lib/ai/prompts';
 
-export const customDocumentHandler = createDocumentHandler<"custom">({
-  kind: "custom",
+export const customDocumentHandler = createDocumentHandler<'custom'>({
+  kind: 'custom',
   // Called when the document is first created.
   onCreateDocument: async ({ title, dataStream }) => {
-    let draftContent = "";
+    let draftContent = '';
     // For demonstration, use streamText to generate content.
     const { fullStream } = streamText({
-      model: myProvider.languageModel("artifact-model"),
+      model: myProvider.languageModel('artifact-model'),
       system:
-        "Generate a creative piece based on the title. Markdown is supported.",
-      experimental_transform: smoothStream({ chunking: "word" }),
+        'Generate a creative piece based on the title. Markdown is supported.',
+      experimental_transform: smoothStream({ chunking: 'word' }),
       prompt: title,
     });
 
     // Stream the content back to the client.
     for await (const delta of fullStream) {
-      if (delta.type === "text-delta") {
+      if (delta.type === 'text-delta') {
         draftContent += delta.textDelta;
         dataStream.writeData({
-          type: "content-update",
+          type: 'content-update',
           content: delta.textDelta,
         });
       }
@@ -180,16 +180,16 @@ export const customDocumentHandler = createDocumentHandler<"custom">({
   },
   // Called when updating the document based on user modifications.
   onUpdateDocument: async ({ document, description, dataStream }) => {
-    let draftContent = "";
+    let draftContent = '';
     const { fullStream } = streamText({
-      model: myProvider.languageModel("artifact-model"),
-      system: updateDocumentPrompt(document.content, "custom"),
-      experimental_transform: smoothStream({ chunking: "word" }),
+      model: myProvider.languageModel('artifact-model'),
+      system: updateDocumentPrompt(document.content, 'custom'),
+      experimental_transform: smoothStream({ chunking: 'word' }),
       prompt: description,
       experimental_providerMetadata: {
         openai: {
           prediction: {
-            type: "content",
+            type: 'content',
             content: document.content,
           },
         },
@@ -197,10 +197,10 @@ export const customDocumentHandler = createDocumentHandler<"custom">({
     });
 
     for await (const delta of fullStream) {
-      if (delta.type === "text-delta") {
+      if (delta.type === 'text-delta') {
         draftContent += delta.textDelta;
         dataStream.writeData({
-          type: "content-update",
+          type: 'content-update',
           content: delta.textDelta,
         });
       }

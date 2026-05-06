@@ -1,4 +1,3 @@
-
 export async function loadTranslations(locale: string) {
   try {
     const t = await import(`../public/_gt/${locale}.json`);

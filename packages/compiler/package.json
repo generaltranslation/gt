@@ -10,7 +10,7 @@
     "build:watch": "tsc --watch",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
-    "format": "prettier --write src",
+    "format": "oxfmt src",
     "patch": "pnpm version patch",
     "release": "pnpm run build:clean && pnpm publish",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
@@ -45,7 +45,6 @@
     "@types/babel__generator": "^7.6.0",
     "@types/babel__traverse": "^7.20.0",
     "@types/node": "^20.0.0",
-    "prettier": "^3.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
   },

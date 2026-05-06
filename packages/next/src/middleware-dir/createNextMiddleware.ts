@@ -275,7 +275,6 @@ export function createNextMiddleware({
         }
 
         // --- CASE: defaultLocale prefix --- //
-
         // REDIRECT CASE: no pathnameLocale (ie, /customers -> /fr/customers)
         else if (!pathnameLocale) {
           return getRedirectResponse(`/${userLocale}${pathname}`);

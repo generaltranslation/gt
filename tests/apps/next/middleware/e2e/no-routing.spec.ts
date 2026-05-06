@@ -1,8 +1,5 @@
 import { test, expect } from '@playwright/test';
-import {
-  expectServerLocale,
-  expectCookie,
-} from './helpers';
+import { expectServerLocale, expectCookie } from './helpers';
 
 // no-routing use case: localeRouting = false
 // Middleware does NOT redirect or rewrite based on locale.
@@ -13,9 +10,7 @@ test.describe('localeRouting: false', () => {
   test('/en passes through without redirect', async ({ page }) => {
     await page.goto('/en');
     await expect(page).toHaveURL('/en');
-    await expect(page.locator('[data-testid="page-title"]')).toHaveText(
-      'Home'
-    );
+    await expect(page.locator('[data-testid="page-title"]')).toHaveText('Home');
   });
 
   test('/en/about passes through without redirect', async ({ page }) => {
@@ -31,9 +26,7 @@ test.describe('localeRouting: false', () => {
     await expect(page).toHaveURL('/fr/about');
   });
 
-  test('locale-routing-enabled cookie is set to false', async ({
-    page,
-  }) => {
+  test('locale-routing-enabled cookie is set to false', async ({ page }) => {
     await page.goto('/en');
     await expectCookie(
       page,

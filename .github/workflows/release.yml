@@ -96,7 +96,7 @@ jobs:
           else
             message=$(printf '📦 *New packages published!*\n\n%s\n\n<@U0AF0LK9ZDY>' "$packages")
           fi
-          
+
           # Escape for JSON
           message_escaped=$(echo "$message" | jq -Rs .)
           echo "message=$message_escaped" >> $GITHUB_OUTPUT

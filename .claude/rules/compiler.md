@@ -1,7 +1,7 @@
 ---
 paths:
-  - "packages/compiler/**"
-  - "packages/next/src/plugin/**"
+  - 'packages/compiler/**'
+  - 'packages/next/src/plugin/**'
 ---
 
 # Compiler & Build Plugin Rules

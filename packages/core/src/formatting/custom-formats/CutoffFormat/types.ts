@@ -29,8 +29,7 @@ export interface ResolvedTerminatorOptions extends TerminatorOptions {
 
 /** Resolved options (after constructor) */
 export interface ResolvedCutoffFormatOptions
-  extends CutoffFormatOptions,
-    ResolvedTerminatorOptions {
+  extends CutoffFormatOptions, ResolvedTerminatorOptions {
   maxChars: number | undefined;
   style: CutoffFormatStyle | undefined;
   terminator: string | undefined;
