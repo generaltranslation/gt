@@ -151,7 +151,7 @@ class I18nManager<
       dictionary: params.dictionary,
       loadDictionary,
       runtimeTranslate: (locale, id) =>
-        this.lookupDictionaryRuntimeTranslate(locale, id),
+        this.dictionaryRuntimeTranslate(locale, id),
       ttl: this.config.cacheExpiryTime,
       lifecycle,
     });
@@ -617,7 +617,7 @@ class I18nManager<
   /**
    * Runtime lookup function for dictionaries
    */
-  private async lookupDictionaryRuntimeTranslate(
+  private async dictionaryRuntimeTranslate(
     locale: Locale,
     id: DictionaryKey
   ): Promise<string> {
@@ -627,7 +627,7 @@ class I18nManager<
       ?.get(id);
     if (sourceEntry === undefined) {
       throw new Error(
-        `I18nManager: lookupDictionaryRuntimeTranslate(): source dictionary entry ${id} is not defined`
+        `I18nManager: dictionaryRuntimeTranslate(): source dictionary entry ${id} is not defined`
       );
     }
 
@@ -642,7 +642,7 @@ class I18nManager<
     );
     if (typeof translation !== 'string') {
       throw new Error(
-        `I18nManager: lookupDictionaryRuntimeTranslate(): unable to translate dictionary entry ${id}`
+        `I18nManager: dictionaryRuntimeTranslate(): unable to translate dictionary entry ${id}`
       );
     }
 

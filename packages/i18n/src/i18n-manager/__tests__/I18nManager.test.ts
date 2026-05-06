@@ -30,6 +30,14 @@ function createManager(overrides: Record<string, unknown> = {}) {
   });
 }
 
+function getDictionaryRuntimeTranslate(
+  manager: ReturnType<typeof createManager>
+) {
+  return manager as unknown as {
+    dictionaryRuntimeTranslate(locale: string, id: string): Promise<string>;
+  };
+}
+
 describe('I18nManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -503,6 +511,47 @@ describe('I18nManager', () => {
         projectId: 'project-id',
         publish: true,
       }
+    );
+  });
+
+  it('dictionaryRuntimeTranslate() rejects when source dictionary entry is missing', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+    });
+    const runtimeTranslate = getDictionaryRuntimeTranslate(manager);
+
+    await expect(
+      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'missing')
+    ).rejects.toThrow(
+      'I18nManager: dictionaryRuntimeTranslate(): source dictionary entry missing is not defined'
+    );
+  });
+
+  it('dictionaryRuntimeTranslate() rejects when runtime translation is not a string', async () => {
+    const source = 'Hello';
+    const sourceOptions: LookupOptions = { $format: 'ICU' };
+    const sourceHash = hashMessage(source, sourceOptions);
+    const manager = createManager({
+      dictionary: {
+        greeting: source,
+      },
+      runtimeTranslation: {},
+    });
+    const runtimeTranslate = getDictionaryRuntimeTranslate(manager);
+
+    mockTranslateMany.mockResolvedValue({
+      [sourceHash]: {
+        success: true,
+        translation: ['Bonjour'],
+      },
+    });
+
+    await expect(
+      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting')
+    ).rejects.toThrow(
+      'I18nManager: dictionaryRuntimeTranslate(): unable to translate dictionary entry greeting'
     );
   });
 
