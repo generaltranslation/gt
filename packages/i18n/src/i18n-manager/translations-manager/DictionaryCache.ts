@@ -109,7 +109,7 @@ export class DictionaryCache extends Cache<
         'DictionaryCache missCache did not return a DictionaryEntry'
       );
     }
-    if (entry !== undefined && this.onMiss) {
+    if (this.onMiss) {
       this.onMiss({
         inputKey: key,
         cacheKey: this.genKey(key),

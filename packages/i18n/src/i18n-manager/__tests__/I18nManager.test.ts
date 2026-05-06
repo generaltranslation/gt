@@ -529,6 +529,33 @@ describe('I18nManager', () => {
     );
   });
 
+  it('dictionaryRuntimeTranslate() enforces ICU format for source dictionary options', async () => {
+    const source = 'Hello {name}';
+    const sourceOptions: LookupOptions = {
+      $format: 'ICU',
+      $context: 'homepage',
+    };
+    const sourceHash = hashMessage(source, sourceOptions);
+    const manager = createManager({
+      dictionary: {
+        greeting: [source, { $format: 'I18NEXT', context: 'homepage' }],
+      },
+      runtimeTranslation: {},
+    });
+    const runtimeTranslate = getDictionaryRuntimeTranslate(manager);
+
+    mockTranslateMany.mockResolvedValue({
+      [sourceHash]: {
+        success: true,
+        translation: 'Bonjour {name}',
+      },
+    });
+
+    await expect(
+      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting')
+    ).resolves.toBe('Bonjour {name}');
+  });
+
   it('dictionaryRuntimeTranslate() rejects when runtime translation is not a string', async () => {
     const source = 'Hello';
     const sourceOptions: LookupOptions = { $format: 'ICU' };
