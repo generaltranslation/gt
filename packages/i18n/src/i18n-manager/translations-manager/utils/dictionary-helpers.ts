@@ -2,7 +2,6 @@ import type {
   Dictionary,
   DictionaryEntry,
   DictionaryLeaf,
-  DictionaryObject,
   DictionaryPath,
   DictionaryValue,
 } from './types/dictionary';
@@ -32,14 +31,6 @@ export function getDictionaryEntry(
     entry: Array.isArray(value) ? value[0] : value,
     options: Array.isArray(value) ? (value[1] ?? {}) : {},
   };
-}
-
-export function getDictionaryObject(
-  value: DictionaryValue | undefined
-): DictionaryObject | undefined {
-  return (
-    getDictionaryEntry(value) ?? (isDictionaryValue(value) ? value : undefined)
-  );
 }
 
 export function getDictionaryValue(value: DictionaryEntry): DictionaryValue {

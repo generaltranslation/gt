@@ -208,10 +208,11 @@ describe('DictionaryCache', () => {
       runtimeTranslate,
     });
 
-    expect(cache.getObj('greeting')).toEqual({
-      entry: 'Hello',
-      options: {},
-    });
+    expect(cache.getObj('greeting')).toBe('Hello');
+    expect(cache.getObj('header')).toEqual([
+      'Welcome',
+      { $context: 'homepage', $maxChars: 12 },
+    ]);
     expect(cache.getObj('user')).toEqual({
       profile: {
         name: 'Name',
@@ -229,10 +230,7 @@ describe('DictionaryCache', () => {
       },
     });
 
-    expect(cache.getObj('greeting')).toEqual({
-      entry: 'Hello',
-      options: {},
-    });
+    expect(cache.getObj('greeting')).toBe('Hello');
     expect(cache.getObj('user')).toEqual({
       profile: {
         name: 'Name',
@@ -296,10 +294,10 @@ describe('DictionaryCache', () => {
         },
       },
     });
-    expect(cache.getObj('user.profile.name')).toEqual({
-      entry: 'Name',
-      options: { $context: 'profile label' },
-    });
+    expect(cache.getObj('user.profile.name')).toEqual([
+      'Name',
+      { $context: 'profile label' },
+    ]);
   });
 
   it('setObj() stores entry-shaped dictionary subtrees by path', () => {
@@ -323,10 +321,7 @@ describe('DictionaryCache', () => {
       entry: 'Entry label',
       options: {},
     });
-    expect(cache.getObj('content.entry')).toEqual({
-      entry: 'Entry label',
-      options: {},
-    });
+    expect(cache.getObj('content.entry')).toBe('Entry label');
   });
 
   it('setObj() stores dictionary subtrees by path', () => {
