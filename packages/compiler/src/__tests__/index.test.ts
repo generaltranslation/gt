@@ -7,9 +7,7 @@ import type {
   UnpluginBuildContext,
   UnpluginContext,
 } from 'unplugin';
-import gtUnplugin, {
-  MISSING_GT_CONFIG_WARNING,
-} from '../index';
+import gtUnplugin, { MISSING_GT_CONFIG_WARNING } from '../index';
 import type { GTUnpluginOptions } from '../index';
 
 const JSX_RUNTIME_CODE = `
