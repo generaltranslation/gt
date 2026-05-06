@@ -351,6 +351,113 @@ describe('I18nManager', () => {
     expect(manager.lookupDictionary('fr', 'user')).toBeUndefined();
   });
 
+  it('lookupDictionaryWithFallback() returns the source dictionary entry when translation is not required', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Bonjour',
+    });
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+    });
+
+    await expect(
+      manager.lookupDictionaryWithFallback('en', 'greeting')
+    ).resolves.toEqual({
+      entry: 'Hello',
+      options: {},
+    });
+    expect(loadDictionary).not.toHaveBeenCalled();
+  });
+
+  it('lookupDictionaryWithFallback() returns the source dictionary entry when i18n is disabled', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Bonjour',
+    });
+    const manager = createManager({
+      enableI18n: false,
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+    });
+
+    await expect(
+      manager.lookupDictionaryWithFallback('fr', 'greeting')
+    ).resolves.toEqual({
+      entry: 'Hello',
+      options: {},
+    });
+    expect(loadDictionary).not.toHaveBeenCalled();
+  });
+
+  it('lookupDictionaryWithFallback() loads and returns a target dictionary entry', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Bonjour',
+    });
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+    });
+
+    await expect(
+      manager.lookupDictionaryWithFallback('fr', 'greeting')
+    ).resolves.toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
+    expect(loadDictionary).toHaveBeenCalledTimes(1);
+    expect(loadDictionary).toHaveBeenCalledWith('fr');
+  });
+
+  it('lookupDictionaryWithFallback() runtime translates and caches missing dictionary entries', async () => {
+    const source = 'Hello';
+    const sourceOptions: LookupOptions = { $format: 'ICU' };
+    const sourceHash = hashMessage(source, sourceOptions);
+    const manager = createManager({
+      dictionary: {
+        greeting: source,
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+      runtimeTranslation: {},
+    });
+
+    mockTranslateMany.mockResolvedValue({
+      [sourceHash]: {
+        success: true,
+        translation: 'Bonjour',
+      },
+    });
+
+    await expect(
+      manager.lookupDictionaryWithFallback('fr', 'greeting')
+    ).resolves.toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
+    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
+  });
+
+  it('lookupDictionaryWithFallback() returns undefined when source dictionary entry is missing', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+      runtimeTranslation: {},
+    });
+
+    await expect(
+      manager.lookupDictionaryWithFallback('fr', 'missing')
+    ).resolves.toBeUndefined();
+  });
+
   it('lookupTranslation() returns undefined before load, translation after', async () => {
     const manager = createManager();
 
