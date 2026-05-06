@@ -636,6 +636,212 @@ describe('I18nManager', () => {
     );
   });
 
+  it('lookupDictionaryObjWithFallback() returns source leaves and subtrees when translation is not required', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      user: {
+        profile: {
+          name: 'Nom',
+        },
+      },
+    });
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+      loadDictionary,
+    });
+
+    await expect(
+      manager.lookupDictionaryObjWithFallback('en', 'greeting')
+    ).resolves.toEqual({
+      entry: 'Hello',
+      options: {},
+    });
+    await expect(
+      manager.lookupDictionaryObjWithFallback('en', 'user.profile')
+    ).resolves.toEqual({
+      name: 'Name',
+    });
+    expect(loadDictionary).not.toHaveBeenCalled();
+  });
+
+  it('lookupDictionaryObjWithFallback() returns source subtrees when i18n is disabled', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      user: {
+        profile: {
+          name: 'Nom',
+        },
+      },
+    });
+    const manager = createManager({
+      enableI18n: false,
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+      loadDictionary,
+    });
+
+    await expect(
+      manager.lookupDictionaryObjWithFallback('fr', 'user.profile')
+    ).resolves.toEqual({
+      name: 'Name',
+    });
+    expect(loadDictionary).not.toHaveBeenCalled();
+  });
+
+  it('lookupDictionaryObjWithFallback() loads and returns a target dictionary subtree', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      user: {
+        profile: {
+          name: 'Nom',
+        },
+      },
+    });
+    const manager = createManager({
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+      loadDictionary,
+    });
+
+    await expect(
+      manager.lookupDictionaryObjWithFallback('fr', 'user.profile')
+    ).resolves.toEqual({
+      name: 'Nom',
+    });
+    expect(loadDictionary).toHaveBeenCalledTimes(1);
+    expect(loadDictionary).toHaveBeenCalledWith('fr');
+  });
+
+  it('lookupDictionaryObjWithFallback() runtime translates and caches missing dictionary subtrees', async () => {
+    const name = 'Name';
+    const title = 'Title';
+    const nameHash = hashMessage(name, { $format: 'ICU' });
+    const titleHash = hashMessage(title, { $format: 'ICU' });
+    const manager = createManager({
+      dictionary: {
+        user: {
+          profile: {
+            name,
+            title,
+          },
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+      runtimeTranslation: {},
+    });
+
+    mockTranslateMany.mockResolvedValue({
+      [nameHash]: {
+        success: true,
+        translation: 'Nom',
+      },
+      [titleHash]: {
+        success: true,
+        translation: 'Titre',
+      },
+    });
+
+    await expect(
+      manager.lookupDictionaryObjWithFallback('fr', 'user.profile')
+    ).resolves.toEqual({
+      name: 'Nom',
+      title: 'Titre',
+    });
+    expect(manager.lookupDictionaryObj('fr', 'user.profile')).toEqual({
+      name: 'Nom',
+      title: 'Titre',
+    });
+  });
+
+  it('lookupDictionaryObjWithFallback() throws when source dictionary object is missing', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+      runtimeTranslation: {},
+    });
+
+    await expect(
+      manager.lookupDictionaryObjWithFallback('fr', 'missing')
+    ).rejects.toThrow(
+      'I18nManager: source dictionary entry missing is not defined'
+    );
+  });
+
+  it.each([
+    {
+      name: 'dialect locale',
+      locale: 'en-GB',
+      dictionaryLocale: 'en-GB',
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Mate',
+          },
+        },
+      },
+    },
+    {
+      name: 'canonical locale with custom alias',
+      locale: 'en-GB',
+      dictionaryLocale: 'brand-british',
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Brand mate',
+          },
+        },
+      },
+      customMapping: {
+        'brand-british': {
+          code: 'en-GB',
+          name: 'Brand British',
+        },
+      },
+    },
+  ])(
+    'lookupDictionaryObjWithFallback() uses cache locale for $name',
+    async (testCase) => {
+      const loadDictionary = vi.fn().mockResolvedValue(testCase.dictionary);
+      const manager = createManager({
+        defaultLocale: 'en-US',
+        locales: ['en-US', 'en'],
+        dictionary: {
+          user: {
+            profile: {
+              name: 'Name',
+            },
+          },
+        },
+        loadDictionary,
+        ...(testCase.customMapping && {
+          customMapping: testCase.customMapping,
+        }),
+      });
+
+      await expect(
+        manager.lookupDictionaryObjWithFallback(testCase.locale, 'user.profile')
+      ).resolves.toEqual(testCase.dictionary.user.profile);
+      expect(loadDictionary).toHaveBeenCalledTimes(1);
+      expect(loadDictionary).toHaveBeenCalledWith(testCase.dictionaryLocale);
+    }
+  );
+
   it('lookupTranslation() returns undefined before load, translation after', async () => {
     const manager = createManager();
 
