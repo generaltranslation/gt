@@ -31,8 +31,8 @@ You can also add a `context` prop to `<T>` to give context to the translator. Fo
 ```jsx
 import { T } from 'gt-next';
 
-<T context="Cookies as in web cookies">
-  View your <a href="/cookies">Cookies</a>
+<T context='Cookies as in web cookies'>
+  View your <a href='/cookies'>Cookies</a>
 </T>;
 ```
 
@@ -97,7 +97,7 @@ import { T, Var, Num } from 'gt-next';
 `useLocale` returns the user's current language, as a BCP 47 locale tag.
 
 ```js
-import { useLocale } from 'gt-next'
+import { useLocale } from 'gt-next';
 
 const locale = useLocale(); // "en-US"
 ```

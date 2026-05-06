@@ -60,9 +60,7 @@ export async function waitForClientEffects(page: Page) {
 /**
  * Get all cookies from the page's browser context as a Record.
  */
-export async function getCookies(
-  page: Page
-): Promise<Record<string, string>> {
+export async function getCookies(page: Page): Promise<Record<string, string>> {
   const cookies = await page.context().cookies();
   return Object.fromEntries(cookies.map((c) => [c.name, c.value]));
 }
@@ -70,11 +68,7 @@ export async function getCookies(
 /**
  * Assert a specific cookie has the expected value.
  */
-export async function expectCookie(
-  page: Page,
-  name: string,
-  value: string
-) {
+export async function expectCookie(page: Page, name: string, value: string) {
   const cookies = await getCookies(page);
   expect(cookies[name]).toBe(value);
 }

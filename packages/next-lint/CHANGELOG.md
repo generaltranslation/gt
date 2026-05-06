@@ -1,5 +1,19 @@
 # @generaltranslation/gt-next-lint
 
+## 14.0.24
+
+### Patch Changes
+
+- Updated dependencies [[`6307dea`](https://github.com/generaltranslation/gt/commit/6307deac200eab9d5a9b2bc4edca080d49e4c131)]:
+  - gt-next@6.16.24
+
+## 14.0.23
+
+### Patch Changes
+
+- Updated dependencies [[`4976fc6`](https://github.com/generaltranslation/gt/commit/4976fc682c84fa95b7deace431b2235ca1fccf24)]:
+  - gt-next@6.16.23
+
 ## 14.0.22
 
 ### Patch Changes

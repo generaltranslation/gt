@@ -7,8 +7,8 @@ import gtConfig from '../gt.config.json';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <GTProvider 
-      {...gtConfig} 
+    <GTProvider
+      {...gtConfig}
       projectId={import.meta.env.VITE_GT_PROJECT_ID}
       devApiKey={import.meta.env.VITE_GT_API_KEY}
     >

@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semi": true,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "useTabs": false,
+  "trailingComma": "es5",
+  "bracketSpacing": true,
+  "arrowParens": "always",
+  "printWidth": 80,
+  "endOfLine": "lf",
+  "jsxSingleQuote": true,
+  "proseWrap": "preserve",
+  "htmlWhitespaceSensitivity": "ignore",
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    ".changeset/*.md",
+    "tests/seeds/*",
+    "tests/apps/compiler-cli-parity/**"
+  ]
+}

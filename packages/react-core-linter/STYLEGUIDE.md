@@ -19,13 +19,13 @@ Rules are created with `ESLintUtils.RuleCreator` and exported from `src/index.ts
 
 ### Shared Utilities (`src/utils/`)
 
-| File                  | Purpose                                                    |
-| --------------------- | ---------------------------------------------------------- |
-| `constants.ts`        | Component/function names, library list, AST node sets      |
+| File                  | Purpose                                                     |
+| --------------------- | ----------------------------------------------------------- |
+| `constants.ts`        | Component/function names, library list, AST node sets       |
 | `isGTFunction.ts`     | Scope-aware detection of GT imports (components, functions) |
-| `expression-utils.ts` | Static analysis predicates for AST expressions             |
-| `import-utils.ts`     | Auto-fix helpers for managing GT import declarations       |
-| `branching-utils.ts`  | Content-branch detection for `<Branch>`/`<Plural>`         |
+| `expression-utils.ts` | Static analysis predicates for AST expressions              |
+| `import-utils.ts`     | Auto-fix helpers for managing GT import declarations        |
+| `branching-utils.ts`  | Content-branch detection for `<Branch>`/`<Plural>`          |
 
 ### Detection Pattern
 

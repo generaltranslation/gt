@@ -22,7 +22,6 @@ import type {
   Dictionary,
   DictionaryEntry,
   DictionaryKey,
-  DictionaryValue,
 } from './translations-manager/DictionaryCache';
 import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
 import { LocalesDictionaryCache } from './translations-manager/LocalesDictionaryCache';

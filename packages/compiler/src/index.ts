@@ -1,4 +1,6 @@
 import { createUnplugin } from 'unplugin';
+import fs from 'node:fs';
+import path from 'node:path';
 import * as parser from '@babel/parser';
 import generate from '@babel/generator';
 import traverse from '@babel/traverse';
@@ -64,6 +66,53 @@ export interface GTUnpluginOptions extends PluginConfig {
   // Inherits from PluginConfig
 }
 
+export const MISSING_GT_CONFIG_WARNING =
+  '[@generaltranslation/compiler] No gtConfig found. Auto JSX injection and parsingFlags features require a gt.config.json. See https://generaltranslation.com/en/docs/react/concepts/compiler.';
+
+export const createInvalidGTConfigWarning = (
+  configPath: string,
+  error: unknown
+) =>
+  `[@generaltranslation/compiler] Failed to load gt.config.json at ${configPath}. ` +
+  `Auto JSX injection and parsingFlags features require a valid gt.config.json. ` +
+  `${error instanceof Error ? error.message : String(error)}`;
+
+function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
+  return logLevel !== 'silent' && logLevel !== 'error';
+}
+
+type GTConfigLoadResult =
+  | {
+      gtConfig: NonNullable<PluginConfig['gtConfig']>;
+      status: 'loaded';
+    }
+  | {
+      status: 'missing';
+    }
+  | {
+      configPath: string;
+      error: unknown;
+      status: 'invalid';
+    };
+
+function loadGTConfigFromCwd(): GTConfigLoadResult {
+  const configPath = path.join(process.cwd(), 'gt.config.json');
+  if (!fs.existsSync(configPath)) {
+    return { status: 'missing' };
+  }
+
+  try {
+    return {
+      gtConfig: JSON.parse(fs.readFileSync(configPath, 'utf-8')) as NonNullable<
+        PluginConfig['gtConfig']
+      >,
+      status: 'loaded',
+    };
+  } catch (error) {
+    return { configPath, error, status: 'invalid' };
+  }
+}
+
 /**
  * GT Universal Plugin - Main entry point
  *
@@ -72,8 +121,33 @@ export interface GTUnpluginOptions extends PluginConfig {
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}) => {
+    const gtConfigLoadResult = options.gtConfig
+      ? ({ gtConfig: options.gtConfig, status: 'loaded' } as const)
+      : loadGTConfigFromCwd();
+    const loadedGTConfig =
+      gtConfigLoadResult.status === 'loaded'
+        ? gtConfigLoadResult.gtConfig
+        : undefined;
+    const resolvedOptions: GTUnpluginOptions = {
+      ...options,
+      ...(loadedGTConfig ? { gtConfig: loadedGTConfig } : {}),
+    };
+
+    if (shouldWarn(options.logLevel)) {
+      if (gtConfigLoadResult.status === 'missing') {
+        console.warn(MISSING_GT_CONFIG_WARNING);
+      } else if (gtConfigLoadResult.status === 'invalid') {
+        console.warn(
+          createInvalidGTConfigWarning(
+            gtConfigLoadResult.configPath,
+            gtConfigLoadResult.error
+          )
+        );
+      }
+    }
+
     // Debug manifest: accumulates hash → jsxChildren across all files
-    const debugManifest = options._debugHashManifest
+    const debugManifest = resolvedOptions._debugHashManifest
       ? new Map<string, unknown>()
       : undefined;
 
@@ -90,7 +164,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       },
       transform(code: string, id: string) {
         // Initialize processing state
-        const state = initializeState(options, id);
+        const state = initializeState(resolvedOptions, id);
         if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
