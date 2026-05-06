@@ -7,11 +7,10 @@ import type {
   UnpluginBuildContext,
   UnpluginContext,
 } from 'unplugin';
-import gtUnplugin from '../index';
+import gtUnplugin, {
+  MISSING_GT_CONFIG_WARNING,
+} from '../index';
 import type { GTUnpluginOptions } from '../index';
-
-const MISSING_GT_CONFIG_WARNING =
-  '[@generaltranslation/compiler] No gtConfig found. Auto JSX injection and parsingFlags features require a gt.config.json. See https://generaltranslation.com/en/docs/react/concepts/compiler.';
 
 const JSX_RUNTIME_CODE = `
   import { jsx, jsxs } from 'react/jsx-runtime';
@@ -50,6 +49,12 @@ function writeGTConfig(cwd: string, config: unknown): void {
     path.join(cwd, 'gt.config.json'),
     JSON.stringify(config, null, 2)
   );
+}
+
+function writeInvalidGTConfig(cwd: string): string {
+  const configPath = path.join(cwd, 'gt.config.json');
+  fs.writeFileSync(configPath, '{ invalid json');
+  return configPath;
 }
 
 async function transformWithPlugin(
@@ -233,6 +238,27 @@ describe('gtUnplugin config loading', () => {
 
       expect(warnSpy).toHaveBeenCalledTimes(1);
       expect(warnSpy).toHaveBeenCalledWith(MISSING_GT_CONFIG_WARNING);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('warns that gt.config.json is invalid when the config file cannot be parsed', async () => {
+    const cwd = createTempDir();
+    const configPath = writeInvalidGTConfig(cwd);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      const output = await transformWithPlugin(undefined, cwd);
+
+      expect(output).toBeNull();
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const warning = warnSpy.mock.calls[0]?.[0];
+      expect(warning).toContain(
+        `[@generaltranslation/compiler] Failed to load gt.config.json at ${configPath}.`
+      );
+      expect(warning).toContain('valid gt.config.json');
+      expect(warning).not.toBe(MISSING_GT_CONFIG_WARNING);
     } finally {
       warnSpy.mockRestore();
     }
