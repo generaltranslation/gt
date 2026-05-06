@@ -15,7 +15,7 @@
       "Bash(npm test)",
       "Bash(npx tsc:*)",
       "Bash(npx vitest:*)",
-      "Bash(npx prettier:*)",
+      "Bash(npx oxfmt:*)",
       "Bash(npx eslint:*)",
       "Bash(node:*)",
       "Bash(turbo:*)",
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // empty' | xargs -I {} sh -c 'echo \"{}\" | grep -qE \"\\.(js|jsx|ts|tsx|json|md|yml|yaml)$\" && npx prettier --write \"{}\" 2>/dev/null || true'",
+            "command": "jq -r '.tool_input.file_path // empty' | xargs -I {} sh -c 'echo \"{}\" | grep -qE \"\\.(js|jsx|ts|tsx|json|md|yml|yaml)$\" && npx oxfmt \"{}\" 2>/dev/null || true'",
             "timeout": 15
           }
         ]

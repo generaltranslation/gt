@@ -51,7 +51,7 @@ type ToolProps = {
   isAnimating: boolean;
   append: (
     message: Message | CreateMessage,
-    chatRequestOptions?: ChatRequestOptions,
+    chatRequestOptions?: ChatRequestOptions
   ) => Promise<string | null | undefined>;
   onClick: ({
     appendMessage,
@@ -134,9 +134,9 @@ const Tool = ({
         </motion.div>
       </TooltipTrigger>
       <TooltipContent
-        side="left"
+        side='left'
         sideOffset={16}
-        className="bg-foreground text-background rounded-2xl p-3 px-4"
+        className='bg-foreground text-background rounded-2xl p-3 px-4'
       >
         {description}
       </TooltipContent>
@@ -155,7 +155,7 @@ const ReadingLevelSelector = ({
   isAnimating: boolean;
   append: (
     message: Message | CreateMessage,
-    chatRequestOptions?: ChatRequestOptions,
+    chatRequestOptions?: ChatRequestOptions
   ) => Promise<string | null | undefined>;
 }) => {
   const LEVELS = [
@@ -185,17 +185,17 @@ const ReadingLevelSelector = ({
   }, [yToLevel]);
 
   return (
-    <div className="relative flex flex-col justify-end items-center">
+    <div className='relative flex flex-col justify-end items-center'>
       {randomArr.map((id) => (
         <motion.div
           key={id}
-          className="size-[40px] flex flex-row items-center justify-center"
+          className='size-[40px] flex flex-row items-center justify-center'
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div className="size-2 rounded-full bg-muted-foreground/40" />
+          <div className='size-2 rounded-full bg-muted-foreground/40' />
         </motion.div>
       ))}
 
@@ -208,10 +208,10 @@ const ReadingLevelSelector = ({
                 {
                   'bg-primary text-primary-foreground': currentLevel !== 2,
                   'bg-background text-foreground': currentLevel === 2,
-                },
+                }
               )}
               style={{ y }}
-              drag="y"
+              drag='y'
               dragElastic={0}
               dragMomentum={false}
               whileHover={{ scale: 1.05 }}
@@ -243,9 +243,9 @@ const ReadingLevelSelector = ({
             </motion.div>
           </TooltipTrigger>
           <TooltipContent
-            side="left"
+            side='left'
             sideOffset={16}
-            className="bg-foreground text-background text-sm rounded-2xl p-3 px-4"
+            className='bg-foreground text-background text-sm rounded-2xl p-3 px-4'
           >
             {LEVELS[currentLevel]}
           </TooltipContent>
@@ -269,7 +269,7 @@ export const Tools = ({
   setSelectedTool: Dispatch<SetStateAction<string | null>>;
   append: (
     message: Message | CreateMessage,
-    chatRequestOptions?: ChatRequestOptions,
+    chatRequestOptions?: ChatRequestOptions
   ) => Promise<string | null | undefined>;
   isAnimating: boolean;
   setIsToolbarVisible: Dispatch<SetStateAction<boolean>>;
@@ -279,7 +279,7 @@ export const Tools = ({
 
   return (
     <motion.div
-      className="flex flex-col gap-1.5"
+      className='flex flex-col gap-1.5'
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -329,7 +329,7 @@ const PureToolbar = ({
   isLoading: boolean;
   append: (
     message: Message | CreateMessage,
-    chatRequestOptions?: ChatRequestOptions,
+    chatRequestOptions?: ChatRequestOptions
   ) => Promise<string | null | undefined>;
   stop: () => void;
   setMessages: Dispatch<SetStateAction<Message[]>>;
@@ -378,7 +378,7 @@ const PureToolbar = ({
   }, [isLoading, setIsToolbarVisible]);
 
   const artifactDefinition = artifactDefinitions.find(
-    (definition) => definition.kind === artifactKind,
+    (definition) => definition.kind === artifactKind
   );
 
   if (!artifactDefinition) {
@@ -394,7 +394,7 @@ const PureToolbar = ({
   return (
     <TooltipProvider delayDuration={0}>
       <motion.div
-        className="cursor-pointer absolute right-6 bottom-6 p-1.5 border rounded-full shadow-lg bg-background flex flex-col justify-end"
+        className='cursor-pointer absolute right-6 bottom-6 p-1.5 border rounded-full shadow-lg bg-background flex flex-col justify-end'
         initial={{ opacity: 0, y: -20, scale: 1 }}
         animate={
           isToolbarVisible
@@ -438,11 +438,11 @@ const PureToolbar = ({
       >
         {isLoading ? (
           <motion.div
-            key="stop-icon"
+            key='stop-icon'
             initial={{ scale: 1 }}
             animate={{ scale: 1.4 }}
             exit={{ scale: 1 }}
-            className="p-3"
+            className='p-3'
             onClick={() => {
               stop();
               setMessages((messages) => sanitizeUIMessages(messages));
@@ -452,14 +452,14 @@ const PureToolbar = ({
           </motion.div>
         ) : selectedTool === 'adjust-reading-level' ? (
           <ReadingLevelSelector
-            key="reading-level-selector"
+            key='reading-level-selector'
             append={append}
             setSelectedTool={setSelectedTool}
             isAnimating={isAnimating}
           />
         ) : (
           <Tools
-            key="tools"
+            key='tools'
             append={append}
             isAnimating={isAnimating}
             isToolbarVisible={isToolbarVisible}

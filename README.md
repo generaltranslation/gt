@@ -31,18 +31,18 @@ Visit [https://generaltranslation.com/docs](https://generaltranslation.com/docs)
 
 ## Packages
 
-| Package | Description |
-| ------- | ----------- |
-| [gt-next](packages/next) | Automatic i18n for Next.js |
-| [gt-react](packages/react) | Automatic i18n for React |
-| [gt-i18n](packages/i18n) | Pure JavaScript i18n library |
-| [gt](packages/cli) | CLI tool for continuous localization |
-| [gt-sanity](packages/sanity) | Plugin for Sanity Studio v3 |
-| [locadex](packages/locadex) | AI agent for automating i18n in complex codebases |
-| [generaltranslation](packages/core) | Core TypeScript library (internal) |
-| [@generaltranslation/compiler](packages/compiler) | Build plugin for webpack, Vite, Rollup, esbuild |
-| [@generaltranslation/mcp](packages/mcp) | MCP server for General Translation |
-| [@generaltranslation/react-core-linter](packages/react-core-linter) | ESLint plugin for React Core integration |
+| Package                                                             | Description                                       |
+| ------------------------------------------------------------------- | ------------------------------------------------- |
+| [gt-next](packages/next)                                            | Automatic i18n for Next.js                        |
+| [gt-react](packages/react)                                          | Automatic i18n for React                          |
+| [gt-i18n](packages/i18n)                                            | Pure JavaScript i18n library                      |
+| [gt](packages/cli)                                                  | CLI tool for continuous localization              |
+| [gt-sanity](packages/sanity)                                        | Plugin for Sanity Studio v3                       |
+| [locadex](packages/locadex)                                         | AI agent for automating i18n in complex codebases |
+| [generaltranslation](packages/core)                                 | Core TypeScript library (internal)                |
+| [@generaltranslation/compiler](packages/compiler)                   | Build plugin for webpack, Vite, Rollup, esbuild   |
+| [@generaltranslation/mcp](packages/mcp)                             | MCP server for General Translation                |
+| [@generaltranslation/react-core-linter](packages/react-core-linter) | ESLint plugin for React Core integration          |
 
 ## Quick Start
 

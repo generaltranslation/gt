@@ -207,10 +207,10 @@ export function Weather({
   weatherAtLocation?: WeatherAtLocation;
 }) {
   const currentHigh = Math.max(
-    ...weatherAtLocation.hourly.temperature_2m.slice(0, 24),
+    ...weatherAtLocation.hourly.temperature_2m.slice(0, 24)
   );
   const currentLow = Math.min(
-    ...weatherAtLocation.hourly.temperature_2m.slice(0, 24),
+    ...weatherAtLocation.hourly.temperature_2m.slice(0, 24)
   );
 
   const isDay = isWithinInterval(new Date(weatherAtLocation.current.time), {
@@ -235,17 +235,17 @@ export function Weather({
 
   // Find the index of the current time or the next closest time
   const currentTimeIndex = weatherAtLocation.hourly.time.findIndex(
-    (time) => new Date(time) >= new Date(weatherAtLocation.current.time),
+    (time) => new Date(time) >= new Date(weatherAtLocation.current.time)
   );
 
   // Slice the arrays to get the desired number of items
   const displayTimes = weatherAtLocation.hourly.time.slice(
     currentTimeIndex,
-    currentTimeIndex + hoursToShow,
+    currentTimeIndex + hoursToShow
   );
   const displayTemperatures = weatherAtLocation.hourly.temperature_2m.slice(
     currentTimeIndex,
-    currentTimeIndex + hoursToShow,
+    currentTimeIndex + hoursToShow
   );
 
   return (
@@ -257,11 +257,11 @@ export function Weather({
         },
         {
           'bg-indigo-900': !isDay,
-        },
+        }
       )}
     >
-      <div className="flex flex-row justify-between items-center">
-        <div className="flex flex-row gap-2 items-center">
+      <div className='flex flex-row justify-between items-center'>
+        <div className='flex flex-row gap-2 items-center'>
           <div
             className={cx(
               'size-10 rounded-full skeleton-div',
@@ -270,22 +270,22 @@ export function Weather({
               },
               {
                 'bg-indigo-100': !isDay,
-              },
+              }
             )}
           />
-          <div className="text-4xl font-medium text-blue-50">
+          <div className='text-4xl font-medium text-blue-50'>
             {n(weatherAtLocation.current.temperature_2m)}
             {weatherAtLocation.current_units.temperature_2m}
           </div>
         </div>
 
-        <div className="text-blue-50">{`H:${n(currentHigh)}° L:${n(currentLow)}°`}</div>
+        <div className='text-blue-50'>{`H:${n(currentHigh)}° L:${n(currentLow)}°`}</div>
       </div>
 
-      <div className="flex flex-row justify-between">
+      <div className='flex flex-row justify-between'>
         {displayTimes.map((time, index) => (
-          <div key={time} className="flex flex-col items-center gap-1">
-            <div className="text-blue-100 text-xs">
+          <div key={time} className='flex flex-col items-center gap-1'>
+            <div className='text-blue-100 text-xs'>
               {format(new Date(time), 'ha')}
             </div>
             <div
@@ -296,10 +296,10 @@ export function Weather({
                 },
                 {
                   'bg-indigo-200': !isDay,
-                },
+                }
               )}
             />
-            <div className="text-blue-50 text-sm">
+            <div className='text-blue-50 text-sm'>
               {n(displayTemperatures[index])}
               {weatherAtLocation.hourly_units.temperature_2m}
             </div>

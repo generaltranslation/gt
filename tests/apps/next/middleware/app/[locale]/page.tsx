@@ -6,8 +6,8 @@ export default async function Home() {
   const locale = await getLocale();
   return (
     <main>
-      <h1 data-testid="page-title">Home</h1>
-      <p data-testid="server-locale">{locale}</p>
+      <h1 data-testid='page-title'>Home</h1>
+      <p data-testid='server-locale'>{locale}</p>
       <LocaleDisplay />
       <LocaleSwitcher />
     </main>

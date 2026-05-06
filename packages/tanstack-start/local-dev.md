@@ -7,10 +7,7 @@
 ```json
 {
   "defaultLocale": "en",
-  "locales": [
-    "fr",
-    "zh"
-  ],
+  "locales": ["fr", "zh"],
   "files": {
     "gt": {
       "output": "src/_gt/[locale].json"
@@ -30,7 +27,7 @@ VITE_GT_API_KEY=your-api-key
 
 ```ts
 export async function loadTranslations(locale: string) {
-  const translations = await import(`./src/_gt/${locale}.json`)
+  const translations = await import(`./src/_gt/${locale}.json`);
   return translations.default;
 }
 ```
@@ -38,33 +35,38 @@ export async function loadTranslations(locale: string) {
 - `__root.tsx` minimum setup:
 
 ```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-import gtConfig from '../../gt.config.json'
-import { loadTranslations } from '../../loadTranslations'
-import Header from '../components/Header'
+import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router';
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
+import { TanStackDevtools } from '@tanstack/react-devtools';
+import gtConfig from '../../gt.config.json';
+import { loadTranslations } from '../../loadTranslations';
+import Header from '../components/Header';
 
-import appCss from '../styles.css?url'
-import { initializeGT, LocaleSelector, getLocale, getTranslations, GTProvider } from 'gt-tanstack-start'
+import appCss from '../styles.css?url';
+import {
+  initializeGT,
+  LocaleSelector,
+  getLocale,
+  getTranslations,
+  GTProvider,
+} from 'gt-tanstack-start';
 
 initializeGT({
   ...gtConfig,
   projectId: import.meta.env.VITE_GT_PROJECT_ID,
   devApiKey: import.meta.env.VITE_GT_DEV_API_KEY,
   loadTranslations,
-
-})
+});
 
 export const Route = createRootRoute({
   loader: async () => {
     return {
       translations: await getTranslations(),
       locale: getLocale(),
-    }
+    };
   },
   shellComponent: RootDocument,
-})
+});
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const { translations, locale } = Route.useLoaderData();
@@ -93,9 +95,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
-  )
+  );
 }
-
 ```
 
 ## Some notes

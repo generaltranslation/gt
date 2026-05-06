@@ -24,21 +24,21 @@ npm install @generaltranslation/react-core-linter --save-dev
 ## Quick Start
 
 ```js
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
-import gtLint from "@generaltranslation/react-core-linter";
+import { defineConfig, globalIgnores } from 'eslint/config';
+import nextVitals from 'eslint-config-next/core-web-vitals';
+import nextTs from 'eslint-config-next/typescript';
+import gtLint from '@generaltranslation/react-core-linter';
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   gtLint.configs.recommended,
   globalIgnores([
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    "eslint.config.*",
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
+    'eslint.config.*',
   ]),
 ]);
 
