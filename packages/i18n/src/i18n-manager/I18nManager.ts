@@ -330,8 +330,8 @@ class I18nManager<
     id: string
   ): Promise<DictionaryEntry | undefined> {
     try {
-      const resolvedLocale = this.resolveLocale(locale);
-      if (!this.requiresTranslation(resolvedLocale)) {
+      const dictionaryLocale = this.resolveCacheLocale(locale);
+      if (!dictionaryLocale) {
         const sourceEntry = this.localesDictionaryCache
           .get(this.config.defaultLocale)
           ?.get(id);
@@ -341,10 +341,10 @@ class I18nManager<
         return sourceEntry;
       }
 
-      let dictionaryCache = this.localesDictionaryCache.get(resolvedLocale);
+      let dictionaryCache = this.localesDictionaryCache.get(dictionaryLocale);
       if (!dictionaryCache) {
         dictionaryCache =
-          await this.localesDictionaryCache.miss(resolvedLocale);
+          await this.localesDictionaryCache.miss(dictionaryLocale);
       }
 
       let dictionaryEntry = dictionaryCache.get(id);
