@@ -79,7 +79,7 @@ describe('I18nManager', () => {
     expect(translations[expectedHash]).toBe(translatedString);
   });
 
-  it('loadDictionary() returns default locale dictionary without calling loadDictionary', async () => {
+  it('loadDictionary() returns source dictionary without loading when locale does not require translation', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
     const manager = createManager({
       dictionary: {
@@ -90,7 +90,9 @@ describe('I18nManager', () => {
 
     const dictionary = await manager.loadDictionary('en');
 
-    expect(dictionary).toEqual({ greeting: 'Hello' });
+    expect(dictionary).toEqual({
+      greeting: 'Hello',
+    });
     expect(loadDictionary).not.toHaveBeenCalled();
   });
 
@@ -106,7 +108,9 @@ describe('I18nManager', () => {
 
     const dictionary = await manager.loadDictionary('fr');
 
-    expect(dictionary).toEqual({ greeting: 'Hello' });
+    expect(dictionary).toEqual({
+      greeting: 'Hello',
+    });
     expect(loadDictionary).not.toHaveBeenCalled();
   });
 
@@ -136,6 +140,173 @@ describe('I18nManager', () => {
       },
     });
     expect(cachedDictionary).toBe(dictionary);
+  });
+
+  it.each([
+    {
+      name: 'dialect locale',
+      locale: 'en-GB',
+      dictionaryLocale: 'en-GB',
+      dictionary: {
+        greeting: 'Hello mate',
+      },
+    },
+    {
+      name: 'canonical locale with custom alias',
+      locale: 'en-GB',
+      dictionaryLocale: 'brand-british',
+      dictionary: {
+        greeting: 'Brand hello mate',
+      },
+      customMapping: {
+        'brand-british': {
+          code: 'en-GB',
+          name: 'Brand British',
+        },
+      },
+    },
+  ])('loadDictionary() uses cache locale for $name', async (testCase) => {
+    const loadDictionary = vi.fn().mockResolvedValue(testCase.dictionary);
+    const manager = createManager({
+      defaultLocale: 'en-US',
+      locales: ['en-US', 'en'],
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+      ...(testCase.customMapping && {
+        customMapping: testCase.customMapping,
+      }),
+    });
+
+    const dictionary = await manager.loadDictionary(testCase.locale);
+
+    expect(loadDictionary).toHaveBeenCalledTimes(1);
+    expect(loadDictionary).toHaveBeenCalledWith(testCase.dictionaryLocale);
+    expect(dictionary).toEqual(testCase.dictionary);
+    expect(manager.lookupDictionary(testCase.locale, 'greeting')).toBe(
+      testCase.dictionary.greeting
+    );
+  });
+
+  it('lookupDictionary() returns a loaded target locale leaf', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'greeting')).toBe('Bonjour');
+  });
+
+  it('lookupDictionary() returns a loaded target locale nested leaf', async () => {
+    const manager = createManager({
+      dictionary: {
+        user: {
+          name: 'Name',
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        user: {
+          name: 'Nom',
+        },
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'user.name')).toBe('Nom');
+  });
+
+  it('lookupDictionary() returns undefined when target locale is not loaded', () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+      }),
+    });
+
+    expect(manager.lookupDictionary('fr', 'greeting')).toBeUndefined();
+    expect(manager.lookupDictionary('en', 'greeting')).toBe('Hello');
+  });
+
+  it('lookupDictionary() returns undefined when source leaf is missing and translation is not required', () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+    });
+
+    expect(manager.lookupDictionary('en', 'missing')).toBeUndefined();
+  });
+
+  it('lookupDictionary() returns undefined when source leaf is missing and i18n is disabled', () => {
+    const manager = createManager({
+      enableI18n: false,
+      dictionary: {
+        greeting: 'Hello',
+      },
+    });
+
+    expect(manager.lookupDictionary('fr', 'missing')).toBeUndefined();
+  });
+
+  it('lookupDictionary() returns undefined when target leaf is missing', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'greeting')).toBeUndefined();
+    expect(manager.lookupDictionary('en', 'greeting')).toBe('Hello');
+  });
+
+  it('lookupDictionary() returns undefined when target nested leaf is missing', async () => {
+    const manager = createManager({
+      dictionary: {
+        user: {
+          name: 'Name',
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        user: {},
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'user.name')).toBeUndefined();
+    expect(manager.lookupDictionary('en', 'user.name')).toBe('Name');
+  });
+
+  it('lookupDictionary() does not return dictionary subtrees', async () => {
+    const manager = createManager({
+      dictionary: {
+        user: {
+          name: 'Name',
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        user: {
+          name: 'Nom',
+        },
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionary('fr', 'user')).toBeUndefined();
   });
 
   it('lookupTranslation() returns undefined before load, translation after', async () => {

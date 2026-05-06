@@ -31,6 +31,13 @@ import { I18nEvents } from './event-subscription/types';
  */
 const DEFAULT_TRANSLATION_TIMEOUT = 12_000; // 12 seconds
 
+class DictionarySourceNotFoundError extends Error {
+  constructor(id: string) {
+    super(`I18nManager: source dictionary entry ${id} is not defined`);
+    this.name = 'DictionarySourceNotFoundError';
+  }
+}
+
 /**
  * A translation resolver is a function that synchronously resolves a translation
  * @template U - The type of the translation (default: Translation)
@@ -235,7 +242,7 @@ class I18nManager<
   ): Promise<Record<Hash, TranslationValue>> {
     try {
       // Validate
-      const translationLocale = this.resolveTranslationCacheLocale(locale);
+      const translationLocale = this.resolveCacheLocale(locale);
       if (!translationLocale) {
         return {};
       }
@@ -260,8 +267,8 @@ class I18nManager<
   async loadDictionary(locale: string): Promise<Dictionary> {
     try {
       // Validate
-      const resolvedLocale = this.resolveLocale(locale);
-      if (!this.requiresTranslation(resolvedLocale)) {
+      const dictionaryLocale = this.resolveCacheLocale(locale);
+      if (!dictionaryLocale) {
         return (
           this.localesDictionaryCache
             .get(this.config.defaultLocale)
@@ -270,10 +277,10 @@ class I18nManager<
       }
 
       // Get the locale dictionary cache
-      let dictionaryCache = this.localesDictionaryCache.get(resolvedLocale);
+      let dictionaryCache = this.localesDictionaryCache.get(dictionaryLocale);
       if (!dictionaryCache) {
         dictionaryCache =
-          await this.localesDictionaryCache.miss(resolvedLocale);
+          await this.localesDictionaryCache.miss(dictionaryLocale);
       }
 
       // Get the dictionary
@@ -282,6 +289,24 @@ class I18nManager<
     } catch (error) {
       this.handleError(error);
       return {};
+    }
+  }
+
+  /**
+   * Look up a dictionary entry
+   */
+  lookupDictionary(locale: string, id: string): string | undefined {
+    try {
+      const dictionaryLocale =
+        this.resolveCacheLocale(locale) ?? this.config.defaultLocale;
+      const dictionaryEntry = this.localesDictionaryCache
+        .get(dictionaryLocale)
+        ?.get(id);
+
+      return dictionaryEntry;
+    } catch (error) {
+      this.handleError(error);
+      return undefined;
     }
   }
 
@@ -369,7 +394,7 @@ class I18nManager<
   ): Promise<TranslationResolver<TranslationValue>> {
     try {
       // Validate
-      const translationLocale = this.resolveTranslationCacheLocale(locale);
+      const translationLocale = this.resolveCacheLocale(locale);
 
       // Early return if i18n is disabled or default locale
       if (!translationLocale) {
@@ -381,7 +406,7 @@ class I18nManager<
         prefetchEntries,
         translationLocale,
         (entryLocale) =>
-          this.resolveTranslationCacheLocale(entryLocale) ??
+          this.resolveCacheLocale(entryLocale) ??
           this.resolveLocale(entryLocale)
       );
       if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
@@ -500,6 +525,10 @@ class I18nManager<
    * Soft error in production, throw in development
    */
   private handleError(error: unknown) {
+    if (error instanceof DictionarySourceNotFoundError) {
+      throw error;
+    }
+
     switch (this.config.environment) {
       case 'development':
         throw error;
@@ -521,10 +550,10 @@ class I18nManager<
   }
 
   /**
-   * Resolve the locale key used to load/read translation caches.
+   * Resolve the locale key used to load/read locale caches.
    * Returns undefined when the requested locale can use source content.
    */
-  private resolveTranslationCacheLocale(locale: string) {
+  private resolveCacheLocale(locale: string) {
     const resolvedLocale = this.resolveLocale(locale);
     if (this.requiresTranslation(resolvedLocale)) {
       return resolvedLocale;
@@ -541,7 +570,7 @@ class I18nManager<
   }
 
   private resolveLookupParams(locale: string, options: LookupOptions) {
-    const translationLocale = this.resolveTranslationCacheLocale(locale);
+    const translationLocale = this.resolveCacheLocale(locale);
     return {
       translationLocale,
       options: translationLocale
@@ -561,7 +590,7 @@ class I18nManager<
       ...options,
       $locale:
         translationLocale ??
-        this.resolveTranslationCacheLocale(options.$locale) ??
+        this.resolveCacheLocale(options.$locale) ??
         this.resolveLocale(options.$locale),
     };
   }
