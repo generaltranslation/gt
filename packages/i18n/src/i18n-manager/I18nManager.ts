@@ -404,7 +404,13 @@ class I18nManager<
 
       let dictionaryObject = dictionaryCache.getObj(id);
       if (dictionaryObject === undefined) {
-        dictionaryObject = await dictionaryCache.missObj(id);
+        const sourceObject = this.localesDictionaryCache
+          .get(this.config.defaultLocale)
+          ?.getObj(id);
+        if (sourceObject === undefined) {
+          throw new DictionarySourceNotFoundError(id);
+        }
+        dictionaryObject = await dictionaryCache.missObj(id, sourceObject);
       }
       return dictionaryObject;
     } catch (error) {
