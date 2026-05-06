@@ -397,6 +397,28 @@ describe('I18nManager', () => {
     });
   });
 
+  it('lookupDictionaryObj() returns copies of dictionary subtrees', () => {
+    const manager = createManager({
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+    });
+
+    const profile = manager.lookupDictionaryObj('en', 'user.profile');
+    expect(profile).toEqual({
+      name: 'Name',
+    });
+    (profile as { name: string }).name = 'Changed';
+
+    expect(manager.lookupDictionaryObj('en', 'user.profile')).toEqual({
+      name: 'Name',
+    });
+  });
+
   it('lookupDictionaryObj() returns undefined when target locale is not loaded', () => {
     const manager = createManager({
       dictionary: {
