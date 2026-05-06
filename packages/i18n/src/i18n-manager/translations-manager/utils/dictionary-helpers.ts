@@ -6,7 +6,6 @@ import type {
   DictionaryValue,
 } from './types/dictionary';
 import type { DictionaryOptions } from '../../../translation-functions/types/options';
-import type { StringFormat } from 'generaltranslation/types';
 
 export function getDictionaryPath(id: DictionaryPath): string[] {
   if (!id) {
@@ -39,14 +38,12 @@ export function getDictionaryValue(value: DictionaryEntry): DictionaryValue {
 }
 
 export function resolveDictionaryLookupOptions(
-  options: DictionaryEntry['options'],
-  format: StringFormat
+  options: DictionaryEntry['options']
 ): DictionaryOptions {
   return {
     ...options,
     ...(options.$context === undefined &&
       typeof options.context === 'string' && { $context: options.context }),
-    $format: format,
   };
 }
 

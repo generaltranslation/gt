@@ -635,7 +635,10 @@ class I18nManager<
     const translation = await this.lookupTranslationWithFallbackResolved(
       locale,
       sourceEntry.entry as TranslationValue,
-      resolveDictionaryLookupOptions(sourceEntry.options, 'ICU')
+      resolveDictionaryLookupOptions({
+        ...sourceEntry.options,
+        $format: 'ICU',
+      })
     );
     if (typeof translation !== 'string') {
       throw new Error(
