@@ -37,6 +37,16 @@ export function getDictionaryValue(value: DictionaryEntry): DictionaryValue {
   return [value.entry, value.options];
 }
 
+export function resolveDictionaryLookupOptions(
+  options: DictionaryEntry['options']
+): DictionaryOptions {
+  return {
+    ...options,
+    ...(options.$context === undefined &&
+      typeof options.context === 'string' && { $context: options.context }),
+  };
+}
+
 function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
   if (typeof value === 'string') {
     return true;

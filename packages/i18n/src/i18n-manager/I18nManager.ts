@@ -22,9 +22,9 @@ import type {
   Dictionary,
   DictionaryEntry,
   DictionaryKey,
-  DictionaryOptions,
   DictionaryValue,
 } from './translations-manager/DictionaryCache';
+import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
 import { LocalesDictionaryCache } from './translations-manager/LocalesDictionaryCache';
 import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
@@ -637,7 +637,7 @@ class I18nManager<
       sourceEntry.entry as TranslationValue,
       {
         $format: 'ICU',
-        ...this.resolveDictionaryLookupOptions(sourceEntry.options),
+        ...resolveDictionaryLookupOptions(sourceEntry.options),
       }
     );
     if (typeof translation !== 'string') {
@@ -647,16 +647,6 @@ class I18nManager<
     }
 
     return translation;
-  }
-
-  private resolveDictionaryLookupOptions(
-    options: DictionaryEntry['options']
-  ): DictionaryOptions {
-    return {
-      ...options,
-      ...(options.$context === undefined &&
-        typeof options.context === 'string' && { $context: options.context }),
-    };
   }
 
   /**
