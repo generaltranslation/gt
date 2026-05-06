@@ -25,7 +25,8 @@ export type {
 } from './utils/types/dictionary';
 
 export type DictionaryRuntimeTranslate = (
-  key: DictionaryKey
+  key: DictionaryKey,
+  sourceEntry: DictionaryEntry
 ) => Promise<string>;
 
 /**
@@ -43,6 +44,9 @@ export class DictionaryCache extends Cache<
   DictionaryEntry
 > {
   private _runtimeTranslate: DictionaryRuntimeTranslate;
+  private fallbackPromises: Partial<
+    Record<DictionaryPath, Promise<DictionaryValue>>
+  > = {};
 
   /**
    * Constructor
@@ -100,8 +104,11 @@ export class DictionaryCache extends Cache<
    * @param key - The dictionary key
    * @returns The dictionary value
    */
-  public async miss(key: DictionaryKey): Promise<DictionaryEntry> {
-    const value = await this.missCache(key);
+  public async miss(
+    key: DictionaryKey,
+    sourceEntry: DictionaryEntry
+  ): Promise<DictionaryEntry> {
+    const value = await this.missCache(key, sourceEntry);
     const entry = getDictionaryEntry(value);
     if (entry === undefined) {
       // Never will happen
@@ -177,13 +184,43 @@ export class DictionaryCache extends Cache<
   }
 
   /**
+   * Fallback to runtime translation on a cache miss
+   */
+  protected async missCache(
+    key: DictionaryKey,
+    sourceEntry: DictionaryEntry
+  ): Promise<DictionaryValue> {
+    const cacheKey = this.genKey(key);
+    if (this.fallbackPromises[cacheKey] !== undefined) {
+      return await this.fallbackPromises[cacheKey];
+    }
+
+    const fallbackPromise = this.fallback(key, sourceEntry);
+    this.fallbackPromises[cacheKey] = fallbackPromise;
+
+    try {
+      const value = await fallbackPromise;
+      this.setCache(cacheKey, value);
+      return value;
+    } finally {
+      delete this.fallbackPromises[cacheKey];
+    }
+  }
+
+  /**
    * Get the fallback value for a cache miss
    * @param key - The dictionary key
    * @returns The fallback value
    *
    * @throws {Error} - If the fallback is not implemented
    */
-  protected fallback(key: DictionaryKey): Promise<DictionaryValue> {
-    return this._runtimeTranslate(key);
+  protected fallback(
+    key: DictionaryKey,
+    sourceEntry?: DictionaryEntry
+  ): Promise<DictionaryValue> {
+    if (sourceEntry === undefined) {
+      throw new Error('DictionaryCache fallback source entry is not defined');
+    }
+    return this._runtimeTranslate(key, sourceEntry);
   }
 }

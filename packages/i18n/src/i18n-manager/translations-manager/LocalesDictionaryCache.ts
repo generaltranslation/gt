@@ -34,7 +34,8 @@ export type DictionaryLoader = (locale: string) => Promise<Dictionary>;
 
 export type LocalesDictionaryRuntimeTranslate = (
   locale: Locale,
-  key: DictionaryKey
+  key: DictionaryKey,
+  sourceEntry: DictionaryEntry
 ) => Promise<string>;
 
 /**
@@ -231,6 +232,7 @@ export class LocalesDictionaryCache extends Cache<
   private _createDictionaryRuntimeTranslate(
     locale: Locale
   ): DictionaryRuntimeTranslate {
-    return (key) => this._runtimeTranslate(locale, key);
+    return (key, sourceEntry) =>
+      this._runtimeTranslate(locale, key, sourceEntry);
   }
 }

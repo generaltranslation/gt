@@ -150,8 +150,8 @@ class I18nManager<
       defaultLocale: this.config.defaultLocale,
       dictionary: params.dictionary,
       loadDictionary,
-      runtimeTranslate: (locale, id) =>
-        this.dictionaryRuntimeTranslate(locale, id),
+      runtimeTranslate: (locale, id, sourceEntry) =>
+        this.dictionaryRuntimeTranslate(locale, id, sourceEntry),
       ttl: this.config.cacheExpiryTime,
       lifecycle,
     });
@@ -619,23 +619,23 @@ class I18nManager<
    */
   private async dictionaryRuntimeTranslate(
     locale: Locale,
-    id: DictionaryKey
+    id: DictionaryKey,
+    sourceEntry?: DictionaryEntry
   ): Promise<string> {
-    // Lookup the source entry (should be sync accessible)
-    const sourceEntry = this.localesDictionaryCache
-      .get(this.config.defaultLocale)
-      ?.get(id);
-    if (sourceEntry === undefined) {
+    const resolvedSourceEntry =
+      sourceEntry ??
+      this.localesDictionaryCache.get(this.config.defaultLocale)?.get(id);
+    if (resolvedSourceEntry === undefined) {
       throw new DictionarySourceNotFoundError(id);
     }
 
     // Runtime translation
     const translation = await this.lookupTranslationWithFallbackResolved(
       locale,
-      sourceEntry.entry as TranslationValue,
+      resolvedSourceEntry.entry as TranslationValue,
       {
         $format: 'ICU',
-        ...resolveDictionaryLookupOptions(sourceEntry.options),
+        ...resolveDictionaryLookupOptions(resolvedSourceEntry.options),
       }
     );
     if (typeof translation !== 'string') {

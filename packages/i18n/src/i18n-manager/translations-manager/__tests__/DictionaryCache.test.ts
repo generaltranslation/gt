@@ -149,9 +149,9 @@ describe('DictionaryCache', () => {
       runtimeTranslate,
     });
 
-    await expect(cache.miss('user.profile.name')).rejects.toThrow(
-      'DictionaryCache fallback is not implemented'
-    );
+    await expect(
+      cache.miss('user.profile.name', { entry: 'Name', options: {} })
+    ).rejects.toThrow('DictionaryCache fallback is not implemented');
     expect(mockTranslateMany).not.toHaveBeenCalled();
     expect(cache.get('user.profile.name')).toBeUndefined();
     expect(cache.getInternalCache()).toEqual({});
@@ -164,11 +164,17 @@ describe('DictionaryCache', () => {
       runtimeTranslate,
     });
 
-    await expect(cache.miss('user.profile.name')).resolves.toEqual({
-      entry: 'Name',
-      options: {},
-    });
-    expect(runtimeTranslate).toHaveBeenCalledWith('user.profile.name');
+    const sourceEntry = { entry: 'Name', options: {} };
+    await expect(cache.miss('user.profile.name', sourceEntry)).resolves.toEqual(
+      {
+        entry: 'Name',
+        options: {},
+      }
+    );
+    expect(runtimeTranslate).toHaveBeenCalledWith(
+      'user.profile.name',
+      sourceEntry
+    );
     expect(cache.getInternalCache()).toEqual({
       user: {
         profile: {
