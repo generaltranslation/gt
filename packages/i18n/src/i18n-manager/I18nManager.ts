@@ -385,6 +385,43 @@ class I18nManager<
   }
 
   /**
+   * Look up a dictionary entry or subtree
+   * If it's not found, use the fallback (runtime translate)
+   */
+  async lookupDictionaryObjWithFallback(
+    locale: string,
+    id: string
+  ): Promise<DictionaryObject | undefined> {
+    try {
+      const dictionaryLocale = this.resolveCacheLocale(locale);
+      if (!dictionaryLocale) {
+        const sourceObject = this.localesDictionaryCache
+          .get(this.config.defaultLocale)
+          ?.getObj(id);
+        if (sourceObject === undefined) {
+          throw new DictionarySourceNotFoundError(id);
+        }
+        return sourceObject;
+      }
+
+      let dictionaryCache = this.localesDictionaryCache.get(dictionaryLocale);
+      if (!dictionaryCache) {
+        dictionaryCache =
+          await this.localesDictionaryCache.miss(dictionaryLocale);
+      }
+
+      let dictionaryObject = dictionaryCache.getObj(id);
+      if (dictionaryObject === undefined) {
+        dictionaryObject = await dictionaryCache.missObj(id);
+      }
+      return dictionaryObject;
+    } catch (error) {
+      this.handleError(error);
+      return undefined;
+    }
+  }
+
+  /**
    * Just lookup a translation
    */
   lookupTranslation<T extends TranslationValue = TranslationValue>(
