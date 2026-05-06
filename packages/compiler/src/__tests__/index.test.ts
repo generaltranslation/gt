@@ -149,12 +149,45 @@ describe('gtUnplugin config loading', () => {
     }
   });
 
-  it('preserves default behavior when auto-loaded gt.config.json has no parsingFlags', async () => {
+  it('preserves default behavior when auto-loaded gt.config.json has ordinary project settings', async () => {
     const cwd = createTempDir();
     writeGTConfig(cwd, {
       projectId: 'test-project',
+      _versionId: 'test-version',
       defaultLocale: 'en',
       locales: ['en', 'es'],
+      files: {
+        gt: {
+          output: 'src/_gt/[locale].json',
+        },
+      },
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      const output = await transformWithPlugin(undefined, cwd);
+
+      expect(output).toBeNull();
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('preserves default behavior when auto-loaded parsingFlags are explicitly disabled', async () => {
+    const cwd = createTempDir();
+    writeGTConfig(cwd, {
+      locales: ['en', 'es'],
+      files: {
+        gt: {
+          output: 'src/_gt/[locale].json',
+          parsingFlags: {
+            enableAutoJsxInjection: false,
+            autoderive: false,
+            devHotReload: false,
+          },
+        },
+      },
     });
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
