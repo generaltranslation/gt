@@ -390,4 +390,69 @@ describe('DictionaryCache', () => {
       },
     });
   });
+
+  it('missObj() stores runtime fallback dictionary entries by path', async () => {
+    runtimeTranslate.mockResolvedValue('Name');
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+    const sourceEntry = { entry: 'Name', options: {} };
+
+    await expect(cache.missObj('user.profile.name', 'Name')).resolves.toBe(
+      'Name'
+    );
+    expect(runtimeTranslate).toHaveBeenCalledWith(
+      'user.profile.name',
+      sourceEntry
+    );
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: 'Name',
+        },
+      },
+    });
+  });
+
+  it('missObj() stores runtime fallback dictionary subtrees by path', async () => {
+    runtimeTranslate.mockImplementation(async (key) => {
+      if (key === 'user.profile.name') {
+        return 'Nom';
+      }
+      if (key === 'user.profile.title') {
+        return 'Titre';
+      }
+      throw new Error(`Unexpected key: ${key}`);
+    });
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+    const sourceObject = {
+      name: 'Name',
+      title: 'Title',
+    };
+
+    await expect(cache.missObj('user.profile', sourceObject)).resolves.toEqual({
+      name: 'Nom',
+      title: 'Titre',
+    });
+    expect(runtimeTranslate).toHaveBeenCalledWith('user.profile.name', {
+      entry: 'Name',
+      options: {},
+    });
+    expect(runtimeTranslate).toHaveBeenCalledWith('user.profile.title', {
+      entry: 'Title',
+      options: {},
+    });
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: 'Nom',
+          title: 'Titre',
+        },
+      },
+    });
+  });
 });

@@ -144,6 +144,35 @@ export class DictionaryCache extends Cache<
     this.setCache(this.genKey(key), structuredClone(value));
   }
 
+  public async missObj(
+    key: DictionaryKey,
+    sourceObject: DictionaryValue
+  ): Promise<DictionaryValue> {
+    const sourceEntry = getDictionaryEntry(sourceObject);
+    if (sourceEntry !== undefined) {
+      const entry = await this.miss(key, sourceEntry);
+      return getDictionaryValue(entry);
+    }
+
+    if (!isDictionaryValue(sourceObject)) {
+      throw new Error(
+        `DictionaryCache missObj source value ${key} is not a dictionary object`
+      );
+    }
+
+    const translatedEntries = await Promise.all(
+      Object.entries(sourceObject).map(async ([childKey, childSource]) => {
+        const childPath = key ? `${key}.${childKey}` : childKey;
+        return [childKey, await this.missObj(childPath, childSource)] as const;
+      })
+    );
+    const translatedObject = Object.fromEntries(
+      translatedEntries
+    ) as Dictionary;
+    this.setObj(key, translatedObject);
+    return translatedObject;
+  }
+
   /**
    * Miss the cache
    * @param key - The dictionary key
