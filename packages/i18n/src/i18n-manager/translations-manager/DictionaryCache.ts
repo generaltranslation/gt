@@ -141,7 +141,7 @@ export class DictionaryCache extends Cache<
   }
 
   public setObj(key: DictionaryKey, value: DictionaryValue): void {
-    this.setCache(this.genKey(key), value);
+    this.setCache(this.genKey(key), structuredClone(value));
   }
 
   /**

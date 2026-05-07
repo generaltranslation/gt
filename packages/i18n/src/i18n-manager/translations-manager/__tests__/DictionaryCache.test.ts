@@ -367,4 +367,27 @@ describe('DictionaryCache', () => {
     });
     expect(cache.get('user.profile')).toBeUndefined();
   });
+
+  it('setObj() stores copies of dictionary objects', () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+    const value: Dictionary = {
+      profile: {
+        name: 'Name',
+      },
+    };
+
+    cache.setObj('user', value);
+    value.profile = {
+      name: 'Changed',
+    };
+
+    expect(cache.getObj('user')).toEqual({
+      profile: {
+        name: 'Name',
+      },
+    });
+  });
 });
