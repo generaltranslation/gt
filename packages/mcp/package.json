@@ -35,7 +35,8 @@
     "release:beta": "pnpm run build:clean && pnpm publish --access public --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --access public --tag latest",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",

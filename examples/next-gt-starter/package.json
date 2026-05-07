@@ -4,14 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx gt translate; next build;",
+    "build": "gt translate; next build;",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "generaltranslation": "latest",
-    "gt-next": "latest",
-    "gt": "latest",
+    "generaltranslation": "workspace:*",
+    "gt-next": "workspace:*",
+    "gt": "workspace:*",
     "next": "15.5.9",
     "react": "^19.2.3",
     "react-dom": "^19.2.2"

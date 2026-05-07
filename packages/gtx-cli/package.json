@@ -3,8 +3,9 @@
   "version": "2.14.32",
   "description": "CLI tool for AI-powered i18n (wrapper for gt)",
   "main": "dist/index.js",
-  "bin": "dist/main.js",
+  "bin": "bin/main.js",
   "files": [
+    "bin",
     "dist",
     "binaries",
     "CHANGELOG.md"
@@ -31,7 +32,8 @@
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
     "bin:prep": "node scripts/prepare-binary-release.js",
-    "bin:restore": "node scripts/restore-package-json.js"
+    "bin:restore": "node scripts/restore-package-json.js",
+    "typecheck": "tsc --noEmit"
   },
   "exports": {
     ".": {

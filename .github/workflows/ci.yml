@@ -74,10 +74,10 @@ jobs:
         run: pnpm rebuild --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Build packages
-        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e'
+        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
       - name: Run tests
-        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e'
+        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
   test-builds:
     strategy:

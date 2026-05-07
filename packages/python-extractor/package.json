@@ -19,7 +19,8 @@
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "exports": {
     ".": {

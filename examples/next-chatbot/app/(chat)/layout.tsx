@@ -1,12 +1,19 @@
 import { cookies } from 'next/headers';
+import Script, { type ScriptProps } from 'next/script';
+import type { ComponentType } from 'react';
 
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 import { auth } from '../(auth)/auth';
-import Script from 'next/script';
 
 export const experimental_ppr = true;
+
+type ScriptWithSrcProps = ScriptProps & {
+  src: string;
+};
+
+const ScriptWithSrc = Script as unknown as ComponentType<ScriptWithSrcProps>;
 
 export default async function Layout({
   children,
@@ -18,7 +25,7 @@ export default async function Layout({
 
   return (
     <>
-      <Script
+      <ScriptWithSrc
         src='https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js'
         strategy='beforeInteractive'
       />

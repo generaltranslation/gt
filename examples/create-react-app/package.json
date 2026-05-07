@@ -7,8 +7,8 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
-    "gt-react": "latest",
-    "gt": "latest",
+    "gt-react": "workspace:*",
+    "gt": "workspace:*",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-scripts": "5.0.1",
@@ -16,7 +16,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "npx gt translate && react-scripts build",
+    "build": "gt translate && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

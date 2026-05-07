@@ -41,7 +41,8 @@
     "test:rust": "cargo test --manifest-path ./swc-plugin/Cargo.toml",
     "test:watch": "vitest",
     "bench": "vitest bench --run --config vitest.config.bench.ts",
-    "bench:unit:json": "vitest bench --run --config vitest.config.bench.ts --outputJson benchmarks/results/unit-latest.json"
+    "bench:unit:json": "vitest bench --run --config vitest.config.bench.ts --outputJson benchmarks/results/unit-latest.json",
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
