@@ -1,5 +1,14 @@
 # @generaltranslation/compiler
 
+## 1.3.20
+
+### Patch Changes
+
+- [#1342](https://github.com/generaltranslation/gt/pull/1342) [`6a255fb`](https://github.com/generaltranslation/gt/commit/6a255fb7ee440c88f6374fe14e7b0008e051d3a8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Auto-load gt.config.json for compiler plugins when no gtConfig option is passed.
+
+- Updated dependencies [[`9eae4d9`](https://github.com/generaltranslation/gt/commit/9eae4d93476688b621c739683c8bac64cbf50bf0)]:
+  - generaltranslation@8.2.12
+
 ## 1.3.19
 
 ### Patch Changes

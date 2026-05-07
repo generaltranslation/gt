@@ -1,5 +1,31 @@
 # gt-i18n
 
+## 0.9.0
+
+### Minor Changes
+
+- [#1359](https://github.com/generaltranslation/gt/pull/1359) [`528bb4a`](https://github.com/generaltranslation/gt/commit/528bb4a34b3eeab6f676137ab0f09e85dff213b0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Enable dictionary-backed getTranslations with t and t.obj, and expose it from gt-node.
+
+### Patch Changes
+
+- [#1354](https://github.com/generaltranslation/gt/pull/1354) [`663af94`](https://github.com/generaltranslation/gt/commit/663af94207bc244de30046d96130e913f48c9add) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add dictionary lookup with runtime fallback.
+
+- [#1355](https://github.com/generaltranslation/gt/pull/1355) [`a88c86d`](https://github.com/generaltranslation/gt/commit/a88c86df7842299063f1a2f6f7404e021c905016) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add dictionary cache object get and set primitives.
+
+- [#1358](https://github.com/generaltranslation/gt/pull/1358) [`0f252ff`](https://github.com/generaltranslation/gt/commit/0f252fff408c701811cba61565beaf15bf9cdd95) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add dictionary object lookup with runtime fallback.
+
+- [#1356](https://github.com/generaltranslation/gt/pull/1356) [`ee3a6ee`](https://github.com/generaltranslation/gt/commit/ee3a6eea113fbc5c2f5f0e8771d878a305f7bc7f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add dictionary object lookup on the i18n manager.
+
+- [#1357](https://github.com/generaltranslation/gt/pull/1357) [`375d75f`](https://github.com/generaltranslation/gt/commit/375d75f7a6525d83e19a5cf015a375a0f50537d2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add runtime fallback primitives for dictionary object cache misses.
+
+- [#1349](https://github.com/generaltranslation/gt/pull/1349) [`e123485`](https://github.com/generaltranslation/gt/commit/e12348563700ed886f64b2e00d7964355fb4558a) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Return dictionary metadata from dictionary cache lookups.
+
+- [#1351](https://github.com/generaltranslation/gt/pull/1351) [`40e26b9`](https://github.com/generaltranslation/gt/commit/40e26b914295101d1be00f738fc33eb4ba9c495a) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add runtime translation fallback for dictionary cache misses.
+
+- Updated dependencies [[`9eae4d9`](https://github.com/generaltranslation/gt/commit/9eae4d93476688b621c739683c8bac64cbf50bf0)]:
+  - generaltranslation@8.2.12
+  - @generaltranslation/supported-locales@2.0.70
+
 ## 0.8.14
 
 ### Patch Changes

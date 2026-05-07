@@ -1,5 +1,14 @@
 # gt-react-native
 
+## 10.19.14
+
+### Patch Changes
+
+- Updated dependencies [[`9eae4d9`](https://github.com/generaltranslation/gt/commit/9eae4d93476688b621c739683c8bac64cbf50bf0)]:
+  - @generaltranslation/react-core@1.8.16
+  - generaltranslation@8.2.12
+  - @generaltranslation/supported-locales@2.0.70
+
 ## 10.19.13
 
 ### Patch Changes
