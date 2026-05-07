@@ -356,6 +356,130 @@ describe('I18nManager', () => {
     expect(manager.lookupDictionary('fr', 'user')).toBeUndefined();
   });
 
+  it('lookupDictionaryObj() returns source leaves and subtrees', () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+    });
+
+    expect(manager.lookupDictionaryObj('en', 'greeting')).toBe('Hello');
+    expect(manager.lookupDictionaryObj('en', 'user.profile')).toEqual({
+      name: 'Name',
+    });
+  });
+
+  it('lookupDictionaryObj() returns loaded target leaves and subtrees', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+        user: {
+          profile: {
+            name: 'Nom',
+          },
+        },
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionaryObj('fr', 'greeting')).toBe('Bonjour');
+    expect(manager.lookupDictionaryObj('fr', 'user.profile')).toEqual({
+      name: 'Nom',
+    });
+  });
+
+  it('lookupDictionaryObj() returns copies of dictionary subtrees', () => {
+    const manager = createManager({
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+    });
+
+    const profile = manager.lookupDictionaryObj('en', 'user.profile');
+    expect(profile).toEqual({
+      name: 'Name',
+    });
+    (profile as { name: string }).name = 'Changed';
+
+    expect(manager.lookupDictionaryObj('en', 'user.profile')).toEqual({
+      name: 'Name',
+    });
+  });
+
+  it('lookupDictionaryObj() returns undefined when target locale is not loaded', () => {
+    const manager = createManager({
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        user: {
+          profile: {
+            name: 'Nom',
+          },
+        },
+      }),
+    });
+
+    expect(manager.lookupDictionaryObj('fr', 'user.profile')).toBeUndefined();
+  });
+
+  it('lookupDictionaryObj() returns undefined for missing paths', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+
+    expect(manager.lookupDictionaryObj('fr', 'missing')).toBeUndefined();
+    expect(manager.lookupDictionaryObj('en', 'missing')).toBeUndefined();
+  });
+
+  it('lookupDictionaryObj() uses the source dictionary when i18n is disabled', () => {
+    const manager = createManager({
+      enableI18n: false,
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        user: {
+          profile: {
+            name: 'Nom',
+          },
+        },
+      }),
+    });
+
+    expect(manager.lookupDictionaryObj('fr', 'user.profile')).toEqual({
+      name: 'Name',
+    });
+  });
+
   it('lookupDictionaryWithFallback() returns the source dictionary entry when translation is not required', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({
       greeting: 'Bonjour',
