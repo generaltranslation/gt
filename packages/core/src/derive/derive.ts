@@ -1,7 +1,17 @@
 /**
- * derive() is a powerful but dangerous function which marks its argument as derivable (statically analyzable) for the compiler and CLI tool.
+ * Marks content as derivable by the GT compiler and CLI.
  *
- * This function is dangerous because it can cause the compiler and CLI tool to throw an error if the argument is not derivable.
+ * Use `derive()` when a translation string or context needs content that is
+ * computed from source code, but should still be discovered during extraction
+ * instead of treated as a runtime interpolation variable. The CLI attempts to
+ * resolve the derivable expression into every possible static value and
+ * includes those values in the source content that gets translated.
+ *
+ * `derive()` returns its argument unchanged at runtime.
+ *
+ * Run `gt validate` after adding or changing `derive()` calls to verify that
+ * each derivable expression can be resolved by the CLI before translating or
+ * building.
  *
  * @example
  * ```jsx
@@ -12,8 +22,8 @@
  * gt(`My name is ${derive(getSubject())}`);
  * ```
  *
- * @param {T extends string | boolean | number | null | undefined} content - Content to mark as derivable.
- * @returns content
+ * @param {T extends string | boolean | number | null | undefined} content - Content to derive for translation extraction.
+ * @returns {T} The same content, unchanged at runtime.
  */
 export function derive<T extends string | boolean | number | null | undefined>(
   content: T
@@ -24,9 +34,14 @@ export function derive<T extends string | boolean | number | null | undefined>(
 /**
  * @deprecated Use derive() instead.
  *
- * declareStatic() is a powerful but dangerous function which marks its argument as derivable (statically analyzable) for the compiler and CLI tool.
+ * Marks content as derivable by the GT compiler and CLI.
  *
- * This function is dangerous because it can cause the compiler and CLI tool to throw an error if the argument is not derivable.
+ * Use `derive()` instead of `declareStatic()` for new code. This alias is kept
+ * for backwards compatibility and returns its argument unchanged at runtime.
+ *
+ * Run `gt validate` after adding or changing derived content to verify that
+ * each derivable expression can be resolved by the CLI before translating or
+ * building.
  *
  * @example
  * ```jsx
@@ -37,7 +52,7 @@ export function derive<T extends string | boolean | number | null | undefined>(
  * gt(`My name is ${declareStatic(getSubject())}`);
  * ```
  *
- * @param {T extends string | boolean | number | null | undefined} content - Content to mark as derivable.
- * @returns content
+ * @param {T extends string | boolean | number | null | undefined} content - Content to derive for translation extraction.
+ * @returns {T} The same content, unchanged at runtime.
  */
 export const declareStatic = derive;

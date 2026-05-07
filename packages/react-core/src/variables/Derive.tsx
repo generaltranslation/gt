@@ -1,9 +1,19 @@
 import React from 'react';
 
 /**
- * `<Derive>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
+ * Marks JSX children as derivable by the GT compiler and CLI.
  *
- * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
+ * Use `<Derive>` inside translated JSX when child content is computed from
+ * source code, but should still be discovered during extraction instead of
+ * treated as a runtime interpolation variable. The CLI attempts to resolve the
+ * derivable children into every possible static value and includes those values
+ * in the source content that gets translated.
+ *
+ * `<Derive>` renders its children unchanged at runtime.
+ *
+ * Run `gt validate` after adding or changing `<Derive>` usage to verify that
+ * each derivable expression can be resolved by the CLI before translating or
+ * building.
  *
  * @example
  * ```jsx
@@ -19,8 +29,8 @@ import React from 'react';
  * </T>
  * ```
  *
- * @param {T extends React.ReactNode} children - Derived content to render.
- * @returns {T} The result of the function invocation.
+ * @param {T extends React.ReactNode} children - JSX content to derive for translation extraction.
+ * @returns {T} The same children, unchanged at runtime.
  */
 function Derive<T extends React.ReactNode>({ children }: { children: T }): T {
   return children;
@@ -29,9 +39,14 @@ function Derive<T extends React.ReactNode>({ children }: { children: T }): T {
 /**
  * @deprecated Use `<Derive>` instead.
  *
- * `<Static>` is a powerful but dangerous component which marks its children as statically analyzable for the compiler and CLI tool.
+ * Marks JSX children as derivable by the GT compiler and CLI.
  *
- * This component is dangerous because it can cause the compiler and CLI tool to throw an error if children are not statically analyzable.
+ * Use `<Derive>` instead of `<Static>` for new code. This alias is kept for
+ * backwards compatibility and renders its children unchanged at runtime.
+ *
+ * Run `gt validate` after adding or changing derived JSX content to verify that
+ * each derivable expression can be resolved by the CLI before translating or
+ * building.
  *
  * @example
  * ```jsx
@@ -47,8 +62,8 @@ function Derive<T extends React.ReactNode>({ children }: { children: T }): T {
  * </T>
  * ```
  *
- * @param {T extends React.ReactNode} children - Derived content to render.
- * @returns {T} The result of the function invocation.
+ * @param {T extends React.ReactNode} children - JSX content to derive for translation extraction.
+ * @returns {T} The same children, unchanged at runtime.
  */
 function Static<T extends React.ReactNode>(props: { children: T }): T {
   return Derive(props);
