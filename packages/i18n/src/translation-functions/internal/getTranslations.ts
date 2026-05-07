@@ -75,8 +75,8 @@ export async function getTranslations(): Promise<TFunctionType> {
    *
    * @example
    * const t = await getTranslations();
-   * const user = t('greetings');
-   * console.log(user);
+   * const greetings = t.obj('greetings');
+   * console.log(greetings);
    * // { greeting1: 'Hello', greeting2: 'Hi' }
    */
   t.obj = (id: string): DictionaryObjectTranslation => {
