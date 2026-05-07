@@ -68,6 +68,17 @@ export async function getTranslations(): Promise<TFunctionType> {
     });
   }) as TFunctionType;
 
+  /**
+   * Returns a subtree of the dictionary object translation based on its id.
+   * @param {string} id - The id of the translation to translate.
+   * @returns The translated object.
+   *
+   * @example
+   * const t = await getTranslations();
+   * const user = t('greetings');
+   * console.log(user);
+   * // { greeting1: 'Hello', greeting2: 'Hi' }
+   */
   t.obj = (id: string): DictionaryObjectTranslation => {
     const sourceObject = i18nManager.lookupDictionaryObj(sourceLocale, id);
     if (sourceObject === undefined) {
