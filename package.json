@@ -7,7 +7,7 @@
     "tests/apps/**/*"
   ],
   "scripts": {
-    "build": "turbo run build --filter='./packages/*'",
+    "build": "turbo run build --filter='./packages/*' --ui tui",
     "test": "turbo run test --filter='./packages/*'",
     "lint": "oxlint packages && oxfmt --check .",
     "lint:fix": "oxlint packages --fix && oxfmt .",
