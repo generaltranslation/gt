@@ -6,12 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@generaltranslation/next-internal": "workspace:*",
-    "gt-next": "latest",
-    "gt": "latest",
+    "gt-next": "workspace:*",
+    "gt": "workspace:*",
     "next": "latest",
     "react": "19.2.3",
     "react-dom": "19.2.3"
@@ -21,8 +22,13 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@next/eslint-plugin-next": "latest",
     "eslint": "^9",
     "eslint-config-next": "latest",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

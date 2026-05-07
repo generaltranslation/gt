@@ -10,6 +10,7 @@ import {
 } from 'framer-motion';
 import {
   type Dispatch,
+  type KeyboardEvent,
   memo,
   ReactNode,
   type SetStateAction,
@@ -112,7 +113,7 @@ const Tool = ({
           onHoverEnd={() => {
             if (selectedTool !== description) setIsHovered(false);
           }}
-          onKeyDown={(event) => {
+          onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
             if (event.key === 'Enter') {
               handleSelect();
             }
@@ -336,7 +337,7 @@ const PureToolbar = ({
   artifactKind: ArtifactKind;
 }) => {
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);

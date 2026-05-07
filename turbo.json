@@ -10,6 +10,10 @@
       "dependsOn": ["^transpile"],
       "outputs": ["dist/**"]
     },
+    "typecheck": {
+      "dependsOn": ["^build", "^typecheck"],
+      "outputs": []
+    },
     "//#lint": {},
     "//#lint:fix": {
       "cache": false
@@ -19,7 +23,7 @@
       "cache": false
     },
     "test": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["build", "^build"],
       "cache": false,
       "env": ["VITE_CI_TEST_GT_PROJECT_ID", "VITE_CI_TEST_GT_API_KEY"]
     },

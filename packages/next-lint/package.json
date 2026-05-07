@@ -46,7 +46,8 @@
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build:clean"
+    "prepublishOnly": "npm run build:clean",
+    "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
     "eslint": "^8.0.0 || ^9.0.0",

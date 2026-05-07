@@ -39,7 +39,8 @@
     "release:latest": "pnpm run build:release && pnpm publish --access public --tag latest",
     "test": "vitest run",
     "test:watch": "vitest",
-    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org general-translation --project locadex ./dist && sentry-cli sourcemaps upload --org general-translation --project locadex ./dist --release=${npm_package_version}"
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org general-translation --project locadex ./dist && sentry-cli sourcemaps upload --org general-translation --project locadex ./dist --release=${npm_package_version}",
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",

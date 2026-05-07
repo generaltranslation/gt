@@ -1,13 +1,19 @@
-import { Html, Head, Main, NextScript } from 'next/document';
+import Document, { Html, Head, Main, NextScript } from 'next/document';
+import type { ComponentType } from 'react';
 
-export default async function Document() {
-  return (
-    <Html lang='en'>
-      <Head />
-      <body className='antialiased'>
-        <Main />
-        <NextScript />
-      </body>
-    </Html>
-  );
+const DocumentHead = Head as unknown as ComponentType;
+const DocumentNextScript = NextScript as unknown as ComponentType;
+
+export default class MyDocument extends Document {
+  render() {
+    return (
+      <Html lang='en'>
+        <DocumentHead />
+        <body className='antialiased'>
+          <Main />
+          <DocumentNextScript />
+        </body>
+      </Html>
+    );
+  }
 }

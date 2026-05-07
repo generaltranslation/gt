@@ -9,7 +9,8 @@
     "test:e2e": "node runPlaywright.mjs",
     "test:e2e:install": "npx playwright install chromium",
     "bench": "pnpm bench:e2e",
-    "bench:e2e": "node runBenchE2E.mjs"
+    "bench:e2e": "node runBenchE2E.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "gt-next": "workspace:*",

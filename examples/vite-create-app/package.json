@@ -7,11 +7,12 @@
     "dev": "vite",
     "build": "npx gt translate && tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc -b"
   },
   "dependencies": {
-    "gt-react": "latest",
-    "gt": "latest",
+    "gt-react": "workspace:*",
+    "gt": "workspace:*",
     "react": "^19.2.3",
     "react-dom": "^19.2.2"
   },

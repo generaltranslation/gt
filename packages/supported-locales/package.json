@@ -18,7 +18,8 @@
     "release": "pnpm run build:clean && pnpm publish",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
-    "release:latest": "pnpm run build:clean && pnpm publish --tag latest"
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",

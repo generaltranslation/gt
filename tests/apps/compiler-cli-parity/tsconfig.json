@@ -8,6 +8,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "types": ["node", "vite/client"],
     "outDir": "dist"
   },
   "include": ["src", "scripts"]

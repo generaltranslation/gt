@@ -24,7 +24,8 @@
     "test": "vitest run && pnpm run test:e2e",
     "test:watch": "vitest",
     "test:e2e": "pnpm run test:e2e:install && cd tests/latest && pnpm run test:e2e",
-    "test:e2e:install": "cd tests/latest && npx playwright install --with-deps"
+    "test:e2e:install": "cd tests/latest && npx playwright install --with-deps",
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",

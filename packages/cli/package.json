@@ -30,7 +30,8 @@
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
     "bin:restore": "node scripts/restore-package-json.js",
-    "bin:prep": "node scripts/prepare-binary-release.js"
+    "bin:prep": "node scripts/prepare-binary-release.js",
+    "typecheck": "tsc --noEmit"
   },
   "exports": {
     ".": {

@@ -1,8 +1,7 @@
 packages:
   - packages/*
   - tests/apps/**/*
-  - examples/next-ssg
-  - examples/react-native
+  - examples/*
 
 enableGlobalVirtualStore: true
 hoist: false
@@ -30,3 +29,8 @@ catalog:
 
 overrides:
   '@generaltranslation/next-internal': link:packages/next-internal
+
+packageExtensions:
+  eslint-config-next@*:
+    peerDependencies:
+      next: '*'
