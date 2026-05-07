@@ -7,6 +7,7 @@ import {
 import { msg } from '../../msg';
 import { hashMessage } from '../../../utils/hashMessage';
 import { getGT } from '../getGT';
+import { getTranslations } from '../getTranslations';
 import { getMessages } from '../getMessages';
 import { tx } from '../tx';
 
@@ -56,6 +57,118 @@ describe('translation function locale defaults', () => {
     await manager.loadTranslations('es');
 
     expect(gt(message, { $locale: 'es', name: 'Alice' })).toBe('Hola Alice!');
+  });
+
+  it('getTranslations uses the current locale for dictionary entries', async () => {
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {
+        greeting: 'Hello {name}!',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour {name} !',
+      }),
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(t('greeting', { name: 'Alice' })).toBe('Bonjour Alice !');
+  });
+
+  it('getTranslations returns source dictionary entries when no target translation exists', async () => {
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {
+        greeting: 'Hello {name}!',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(t('greeting', { name: 'Alice' })).toBe('Hello Alice!');
+  });
+
+  it('getTranslations throws when the source dictionary entry is missing', async () => {
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(() => t('missing')).toThrow(
+      'Dictionary entry missing cannot be found'
+    );
+  });
+
+  it('getTranslations obj throws when the source dictionary object is missing', async () => {
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(() => t.obj('missing')).toThrow(
+      'Dictionary entry missing cannot be found'
+    );
+  });
+
+  it('getTranslations obj returns translated dictionary subtrees', async () => {
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Name',
+            greeting: 'Hello {name}!',
+            title: ['Title', { $context: 'profile title' }],
+          },
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        user: {
+          profile: {
+            name: 'Nom',
+            greeting: 'Bonjour {name} !',
+          },
+        },
+      }),
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(t.obj('user.profile')).toEqual({
+      name: 'Nom',
+      greeting: 'Bonjour {name} !',
+      title: 'Title',
+    });
   });
 
   it('getMessages uses the current locale without accepting a locale parameter', async () => {

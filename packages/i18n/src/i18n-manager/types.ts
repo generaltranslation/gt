@@ -8,7 +8,7 @@ import type { Dictionary } from './translations-manager/DictionaryCache';
 import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
 import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
 
-type DictionaryConfig =
+export type DictionaryConfig =
   | {
       dictionary: Dictionary;
       loadDictionary?: DictionaryLoader;
