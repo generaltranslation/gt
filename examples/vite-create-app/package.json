@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx gt translate && tsc -b && vite build",
+    "build": "gt translate && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc -b"

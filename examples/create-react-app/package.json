@@ -16,7 +16,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "npx gt translate && react-scripts build",
+    "build": "gt translate && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

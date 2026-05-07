@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx gt translate && next build",
+    "build": "gt translate && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"

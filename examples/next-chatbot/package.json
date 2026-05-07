@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "tsx lib/db/migrate && npx gt translate && next build",
+    "build": "tsx lib/db/migrate && gt translate && next build",
     "start": "next start",
     "lint": "next lint && oxlint .",
     "lint:fix": "next lint --fix && oxlint . --fix",
