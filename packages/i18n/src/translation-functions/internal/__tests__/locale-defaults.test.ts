@@ -95,6 +95,30 @@ describe('translation function locale defaults', () => {
     expect(t('greeting', { name: 'Alice' })).toBe('Hello Alice!');
   });
 
+  it('getTranslations falls back to translations with source dictionary options', async () => {
+    const message = 'Hello {name}!';
+    const lookupOptions = { $format: 'ICU', $context: 'homepage' } as const;
+    const loadTranslations = vi.fn().mockResolvedValue({
+      [hashMessage(message, lookupOptions)]: 'Bonjour {name} !',
+    });
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {
+        greeting: [message, { context: 'homepage' }],
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+      loadTranslations,
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(t('greeting', { name: 'Alice' })).toBe('Bonjour Alice !');
+    expect(loadTranslations).toHaveBeenCalledWith('fr');
+  });
+
   it('getTranslations throws when the source dictionary entry is missing', async () => {
     const manager = new I18nManager({
       defaultLocale: 'en',
@@ -169,6 +193,47 @@ describe('translation function locale defaults', () => {
       greeting: 'Bonjour {name} !',
       title: 'Title',
     });
+  });
+
+  it('getTranslations obj falls back to translations for missing target leaves', async () => {
+    const title = 'Title';
+    const titleOptions = {
+      $format: 'ICU',
+      $context: 'profile title',
+    } as const;
+    const loadTranslations = vi.fn().mockResolvedValue({
+      [hashMessage(title, titleOptions)]: 'Titre',
+    });
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Name',
+            title: [title, { context: 'profile title' }],
+          },
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        user: {
+          profile: {
+            name: 'Nom',
+          },
+        },
+      }),
+      loadTranslations,
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(t.obj('user.profile')).toEqual({
+      name: 'Nom',
+      title: 'Titre',
+    });
+    expect(loadTranslations).toHaveBeenCalledWith('fr');
   });
 
   it('getMessages uses the current locale without accepting a locale parameter', async () => {
