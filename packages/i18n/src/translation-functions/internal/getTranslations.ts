@@ -68,10 +68,10 @@ export async function getTranslations(): Promise<TFunctionType> {
     });
   }) as TFunctionType;
 
-  t.obj = (id: string): DictionaryObjectTranslation | undefined => {
+  t.obj = (id: string): DictionaryObjectTranslation => {
     const sourceObject = i18nManager.lookupDictionaryObj(sourceLocale, id);
     if (sourceObject === undefined) {
-      return undefined;
+      throw new Error(`Dictionary entry ${id} cannot be found`);
     }
     const targetObject = i18nManager.lookupDictionaryObj(locale, id);
     return renderObject({ sourceObject, targetObject });
@@ -118,33 +118,51 @@ function renderObject({
 }: {
   sourceObject: DictionaryValue | undefined;
   targetObject: DictionaryValue | undefined;
-}): DictionaryObjectTranslation | undefined {
+}): DictionaryObjectTranslation {
   const targetEntry = getDictionaryEntry(targetObject);
   if (targetEntry !== undefined) {
     return targetEntry.entry;
   }
 
-  if (targetObject !== undefined && !isDictionaryValue(targetObject)) {
-    return undefined;
-  }
-
-  const sourceEntry = getDictionaryEntry(sourceObject);
-  if (sourceObject === undefined) {
-    return isDictionaryValue(targetObject)
-      ? renderObject({ sourceObject: targetObject, targetObject: undefined })
-      : undefined;
-  }
-
-  if (!isDictionaryValue(sourceObject)) {
-    if (isDictionaryValue(targetObject)) {
+  if (isDictionaryValue(targetObject)) {
+    if (!isDictionaryValue(sourceObject)) {
       return renderObject({
         sourceObject: targetObject,
         targetObject: undefined,
       });
     }
-    return sourceEntry?.entry;
+
+    return renderDictionaryObject({
+      sourceObject,
+      targetObject,
+    });
   }
 
+  const sourceEntry = getDictionaryEntry(sourceObject);
+  if (sourceEntry !== undefined) {
+    return sourceEntry.entry;
+  }
+
+  if (isDictionaryValue(sourceObject)) {
+    return renderDictionaryObject({
+      sourceObject,
+      targetObject: undefined,
+    });
+  }
+
+  throw new Error('Dictionary object cannot be rendered');
+}
+
+function renderDictionaryObject({
+  sourceObject,
+  targetObject,
+}: {
+  sourceObject: DictionaryValue;
+  targetObject: DictionaryValue | undefined;
+}): DictionaryObjectTranslation {
+  if (!isDictionaryValue(sourceObject)) {
+    return renderObject({ sourceObject, targetObject });
+  }
   const result: Record<string, DictionaryObjectTranslation> = {};
   const keys = new Set([
     ...Object.keys(sourceObject),

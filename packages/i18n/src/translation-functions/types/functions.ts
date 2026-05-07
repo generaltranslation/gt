@@ -76,7 +76,7 @@ export type TFunctionType = ((
   id: string,
   options?: DictionaryTranslationOptions
 ) => string) & {
-  obj: (id: string) => DictionaryObjectTranslation | undefined;
+  obj: (id: string) => DictionaryObjectTranslation;
 };
 
 /**
