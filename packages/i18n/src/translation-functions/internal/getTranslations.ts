@@ -59,7 +59,13 @@ export async function getTranslations(): Promise<TFunctionType> {
       return '';
     }
     const targetEntry = i18nManager.lookupDictionary(locale, id);
-    return renderEntry(sourceLocale, locale, sourceEntry, targetEntry, options);
+    return renderEntry({
+      sourceLocale,
+      targetLocale: locale,
+      sourceEntry,
+      targetEntry,
+      options,
+    });
   }) as TFunctionType;
 
   t.obj = (id: string): DictionaryObjectTranslation | undefined => {
@@ -68,19 +74,25 @@ export async function getTranslations(): Promise<TFunctionType> {
       return undefined;
     }
     const targetObject = i18nManager.lookupDictionaryObj(locale, id);
-    return renderObject(sourceObject, targetObject);
+    return renderObject({ sourceObject, targetObject });
   };
 
   return t;
 }
 
-function renderEntry(
-  sourceLocale: string,
-  targetLocale: string,
-  sourceEntry: DictionaryEntry,
-  targetEntry: DictionaryEntry | undefined,
-  options: DictionaryTranslationOptions = {}
-): string {
+function renderEntry({
+  sourceLocale,
+  targetLocale,
+  sourceEntry,
+  targetEntry,
+  options = {},
+}: {
+  sourceLocale: string;
+  targetLocale: string;
+  sourceEntry: DictionaryEntry;
+  targetEntry: DictionaryEntry | undefined;
+  options?: DictionaryTranslationOptions;
+}): string {
   const dictionaryOptions = resolveDictionaryLookupOptions(sourceEntry.options);
   const interpolationOptions = extractVariables(options);
   const lookupOptions = createLookupOptions<StringFormat>(
@@ -100,10 +112,13 @@ function renderEntry(
   });
 }
 
-function renderObject(
-  sourceObject: DictionaryValue | undefined,
-  targetObject: DictionaryValue | undefined
-): DictionaryObjectTranslation | undefined {
+function renderObject({
+  sourceObject,
+  targetObject,
+}: {
+  sourceObject: DictionaryValue | undefined;
+  targetObject: DictionaryValue | undefined;
+}): DictionaryObjectTranslation | undefined {
   const targetEntry = getDictionaryEntry(targetObject);
   if (targetEntry !== undefined) {
     return targetEntry.entry;
@@ -116,13 +131,16 @@ function renderObject(
   const sourceEntry = getDictionaryEntry(sourceObject);
   if (sourceObject === undefined) {
     return isDictionaryValue(targetObject)
-      ? renderObject(targetObject, undefined)
+      ? renderObject({ sourceObject: targetObject, targetObject: undefined })
       : undefined;
   }
 
   if (!isDictionaryValue(sourceObject)) {
     if (isDictionaryValue(targetObject)) {
-      return renderObject(targetObject, undefined);
+      return renderObject({
+        sourceObject: targetObject,
+        targetObject: undefined,
+      });
     }
     return sourceEntry?.entry;
   }
@@ -134,10 +152,12 @@ function renderObject(
   ]);
 
   for (const key of keys) {
-    const renderedChild = renderObject(
-      sourceObject[key],
-      isDictionaryValue(targetObject) ? targetObject[key] : undefined
-    );
+    const renderedChild = renderObject({
+      sourceObject: sourceObject[key],
+      targetObject: isDictionaryValue(targetObject)
+        ? targetObject[key]
+        : undefined,
+    });
     if (renderedChild !== undefined) {
       result[key] = renderedChild;
     }
