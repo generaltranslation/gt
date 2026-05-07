@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.14.33
+
+### Patch Changes
+
+- Updated dependencies [[`9eae4d9`](https://github.com/generaltranslation/gt/commit/9eae4d93476688b621c739683c8bac64cbf50bf0)]:
+  - generaltranslation@8.2.12
+  - @generaltranslation/python-extractor@0.2.18
+
 ## 2.14.32
 
 ### Patch Changes
@@ -1052,6 +1060,7 @@
   https://generaltranslation.com/blog/generaltranslation_v8
 
   Please update the following packages to the latest version:
+
   - generaltranslation: `7.9.1` or later
   - gtx-cli: `2.4.15` or later
   - gt-sanity: `1.0.11` or later

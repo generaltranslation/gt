@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.2.12
+
+### Patch Changes
+
+- [#1364](https://github.com/generaltranslation/gt/pull/1364) [`9eae4d9`](https://github.com/generaltranslation/gt/commit/9eae4d93476688b621c739683c8bac64cbf50bf0) Thanks [@pie575](https://github.com/pie575)! - Update Derive docs comments
+
 ## 8.2.11
 
 ### Patch Changes
@@ -275,6 +281,7 @@
   https://generaltranslation.com/blog/generaltranslation_v8
 
   Please update the following packages to the latest version:
+
   - generaltranslation: `7.9.1` or later
   - gtx-cli: `2.4.15` or later
   - gt-sanity: `1.0.11` or later
