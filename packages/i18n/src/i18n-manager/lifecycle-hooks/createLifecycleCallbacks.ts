@@ -65,5 +65,12 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
         dictionaryEntry: params.outputValue,
       });
     },
+    onDictionaryObjectCacheHit: (params) => {
+      emit('dictionary-object-cache-hit', {
+        locale: params.locale,
+        id: params.cacheKey,
+        dictionaryValue: params.outputValue,
+      });
+    },
   };
 }

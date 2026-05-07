@@ -201,4 +201,193 @@ describe('DictionaryCache', () => {
     const result = cache.get('');
     expect(result).toBeUndefined();
   });
+
+  it('getObj() returns cached dictionary leaves and subtrees', () => {
+    const cache = new DictionaryCache({
+      init: dictionary,
+      runtimeTranslate,
+    });
+
+    expect(cache.getObj('greeting')).toBe('Hello');
+    expect(cache.getObj('header')).toEqual([
+      'Welcome',
+      { $context: 'homepage', $maxChars: 12 },
+    ]);
+    expect(cache.getObj('user')).toEqual({
+      profile: {
+        name: 'Name',
+      },
+    });
+  });
+
+  it('getObj() emits object cache hits with raw dictionary values', () => {
+    const onHitObj = vi.fn();
+    const cache = new DictionaryCache({
+      init: dictionary,
+      runtimeTranslate,
+      lifecycle: {
+        onHitObj,
+      },
+    });
+
+    expect(cache.getObj('greeting')).toBe('Hello');
+    expect(cache.getObj('user')).toEqual({
+      profile: {
+        name: 'Name',
+      },
+    });
+    expect(cache.getObj('missing')).toBeUndefined();
+
+    expect(onHitObj).toHaveBeenCalledTimes(2);
+    expect(onHitObj).toHaveBeenNthCalledWith(1, {
+      inputKey: 'greeting',
+      cacheKey: 'greeting',
+      cacheValue: 'Hello',
+      outputValue: 'Hello',
+    });
+    expect(onHitObj).toHaveBeenNthCalledWith(2, {
+      inputKey: 'user',
+      cacheKey: 'user',
+      cacheValue: {
+        profile: {
+          name: 'Name',
+        },
+      },
+      outputValue: {
+        profile: {
+          name: 'Name',
+        },
+      },
+    });
+  });
+
+  it('getObj() returns undefined on cache miss', () => {
+    const cache = new DictionaryCache({
+      init: dictionary,
+      runtimeTranslate,
+    });
+
+    expect(cache.getObj('missing.entry')).toBeUndefined();
+  });
+
+  it('getObj() returns the root dictionary object', () => {
+    const cache = new DictionaryCache({
+      init: dictionary,
+      runtimeTranslate,
+    });
+
+    expect(cache.getObj('')).toEqual(dictionary);
+  });
+
+  it('getObj() returns copies of cached dictionary objects', () => {
+    const cache = new DictionaryCache({
+      init: dictionary,
+      runtimeTranslate,
+    });
+
+    const user = cache.getObj('user') as Dictionary;
+    user.profile = {
+      name: 'Changed',
+    };
+
+    expect(cache.getObj('user')).toEqual({
+      profile: {
+        name: 'Name',
+      },
+    });
+  });
+
+  it('setObj() stores dictionary leaves by path', () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+
+    cache.setObj('user.profile.name', ['Name', { $context: 'profile label' }]);
+
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: ['Name', { $context: 'profile label' }],
+        },
+      },
+    });
+    expect(cache.getObj('user.profile.name')).toEqual([
+      'Name',
+      { $context: 'profile label' },
+    ]);
+  });
+
+  it('setObj() stores entry-shaped dictionary subtrees by path', () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+
+    cache.setObj('content', {
+      entry: 'Entry label',
+      options: {},
+    });
+
+    expect(cache.getInternalCache()).toEqual({
+      content: {
+        entry: 'Entry label',
+        options: {},
+      },
+    });
+    expect(cache.getObj('content')).toEqual({
+      entry: 'Entry label',
+      options: {},
+    });
+    expect(cache.getObj('content.entry')).toBe('Entry label');
+  });
+
+  it('setObj() stores dictionary subtrees by path', () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+
+    cache.setObj('user.profile', {
+      name: 'Name',
+      title: ['Title', { $context: 'profile title' }],
+    });
+
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: 'Name',
+          title: ['Title', { $context: 'profile title' }],
+        },
+      },
+    });
+    expect(cache.getObj('user.profile')).toEqual({
+      name: 'Name',
+      title: ['Title', { $context: 'profile title' }],
+    });
+    expect(cache.get('user.profile')).toBeUndefined();
+  });
+
+  it('setObj() stores copies of dictionary objects', () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+    const value: Dictionary = {
+      profile: {
+        name: 'Name',
+      },
+    };
+
+    cache.setObj('user', value);
+    value.profile = {
+      name: 'Changed',
+    };
+
+    expect(cache.getObj('user')).toEqual({
+      profile: {
+        name: 'Name',
+      },
+    });
+  });
 });

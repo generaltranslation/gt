@@ -4,6 +4,7 @@ import type {
   Dictionary,
   DictionaryEntry,
   DictionaryKey,
+  DictionaryObjectLifecycleParam,
   DictionaryPath,
   DictionaryRuntimeTranslate,
   DictionaryValue,
@@ -11,6 +12,7 @@ import type {
 import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
 import type {
   DictionaryCacheLifecycleCallback,
+  DictionaryObjectCacheLifecycleCallback,
   LocalesDictionaryCacheLifecycleCallbacks,
   LifecycleParam,
 } from '../lifecycle-hooks/types';
@@ -64,6 +66,7 @@ export class LocalesDictionaryCache extends Cache<
    */
   private _onDictionaryCacheHit?: DictionaryCacheLifecycleCallback;
   private _onDictionaryCacheMiss?: DictionaryCacheLifecycleCallback;
+  private _onDictionaryObjectCacheHit?: DictionaryObjectCacheLifecycleCallback;
 
   /**
    * Constructor
@@ -82,6 +85,7 @@ export class LocalesDictionaryCache extends Cache<
       onLocalesDictionaryCacheMiss: onMiss,
       onDictionaryCacheHit,
       onDictionaryCacheMiss,
+      onDictionaryObjectCacheHit,
     },
   }: {
     ttl?: number | null;
@@ -100,6 +104,7 @@ export class LocalesDictionaryCache extends Cache<
     this._runtimeTranslate = runtimeTranslate;
     this._onDictionaryCacheHit = onDictionaryCacheHit;
     this._onDictionaryCacheMiss = onDictionaryCacheMiss;
+    this._onDictionaryObjectCacheHit = onDictionaryObjectCacheHit;
 
     // The default locale dictionary is always available.
     this.setCache(defaultLocale, {
@@ -210,7 +215,8 @@ export class LocalesDictionaryCache extends Cache<
     DictionaryPath,
     DictionaryValue,
     DictionaryEntry
-  > {
+  > &
+    DictionaryObjectLifecycleParam {
     return {
       onHit: this._onDictionaryCacheHit
         ? (params) =>
@@ -222,6 +228,13 @@ export class LocalesDictionaryCache extends Cache<
       onMiss: this._onDictionaryCacheMiss
         ? (params) =>
             this._onDictionaryCacheMiss!({
+              locale,
+              ...params,
+            })
+        : undefined,
+      onHitObj: this._onDictionaryObjectCacheHit
+        ? (params) =>
+            this._onDictionaryObjectCacheHit!({
               locale,
               ...params,
             })

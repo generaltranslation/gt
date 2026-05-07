@@ -6,7 +6,10 @@ import {
   isDictionaryValue,
   replaceDictionary,
 } from './utils/dictionary-helpers';
-import type { LifecycleParam } from '../lifecycle-hooks/types';
+import type {
+  LifecycleCallback,
+  LifecycleParam,
+} from '../lifecycle-hooks/types';
 import type {
   Dictionary,
   DictionaryEntry,
@@ -19,6 +22,7 @@ export type {
   DictionaryEntry,
   DictionaryKey,
   DictionaryLeaf,
+  DictionaryObject,
   DictionaryOptions,
   DictionaryPath,
   DictionaryValue,
@@ -28,6 +32,21 @@ export type DictionaryRuntimeTranslate = (
   key: DictionaryKey,
   sourceEntry: DictionaryEntry
 ) => Promise<string>;
+
+export type DictionaryObjectLifecycleParam = {
+  onHitObj?: LifecycleCallback<
+    DictionaryKey,
+    DictionaryPath,
+    DictionaryValue,
+    DictionaryValue
+  >;
+  onMissObj?: LifecycleCallback<
+    DictionaryKey,
+    DictionaryPath,
+    DictionaryValue,
+    DictionaryValue
+  >;
+};
 
 /**
  * A cache for a single locale's dictionary
@@ -45,6 +64,9 @@ export class DictionaryCache extends Cache<
   [DictionaryKey, DictionaryEntry]
 > {
   private _runtimeTranslate: DictionaryRuntimeTranslate;
+  private onHitObj?: DictionaryObjectLifecycleParam['onHitObj'];
+  // TODO: Wire this when object miss handling is introduced.
+  private onMissObj?: DictionaryObjectLifecycleParam['onMissObj'];
 
   /**
    * Constructor
@@ -63,10 +85,13 @@ export class DictionaryCache extends Cache<
       DictionaryPath,
       DictionaryValue,
       DictionaryEntry
-    >;
+    > &
+      DictionaryObjectLifecycleParam;
   }) {
     super(init, lifecycle);
     this._runtimeTranslate = runtimeTranslate;
+    this.onHitObj = lifecycle?.onHitObj;
+    this.onMissObj = lifecycle?.onMissObj;
   }
 
   /**
@@ -95,6 +120,28 @@ export class DictionaryCache extends Cache<
   public set(key: DictionaryKey, value: DictionaryEntry): void {
     const dictionaryValue = getDictionaryValue(value);
     this.setCache(this.genKey(key), dictionaryValue);
+  }
+
+  public getObj(key: DictionaryKey): DictionaryValue | undefined {
+    const value = this.getCache(key);
+    if (value === undefined) {
+      return undefined;
+    }
+    const outputValue = structuredClone(value);
+
+    if (this.onHitObj) {
+      this.onHitObj({
+        inputKey: key,
+        cacheKey: this.genKey(key),
+        cacheValue: value as DictionaryValue,
+        outputValue,
+      });
+    }
+    return outputValue;
+  }
+
+  public setObj(key: DictionaryKey, value: DictionaryValue): void {
+    this.setCache(this.genKey(key), structuredClone(value));
   }
 
   /**

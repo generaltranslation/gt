@@ -22,6 +22,7 @@ export function subscribeLifecycleCallbacks<
     onLocalesDictionaryCacheMiss,
     onDictionaryCacheHit,
     onDictionaryCacheMiss,
+    onDictionaryObjectCacheHit,
   }: LifecycleCallbacks<TranslationValue>,
   subscribe: EventEmitter<I18nEvents<TranslationValue>>['subscribe']
 ) {
@@ -75,6 +76,11 @@ export function subscribeLifecycleCallbacks<
   if (onDictionaryCacheMiss) {
     subscribe('dictionary-cache-miss', (event) => {
       onDictionaryCacheMiss(event);
+    });
+  }
+  if (onDictionaryObjectCacheHit) {
+    subscribe('dictionary-object-cache-hit', (event) => {
+      onDictionaryObjectCacheHit(event);
     });
   }
 }
