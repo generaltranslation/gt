@@ -19,6 +19,7 @@
       "cache": false
     },
     "test": {
+      "dependsOn": ["^build"],
       "cache": false,
       "env": ["VITE_CI_TEST_GT_PROJECT_ID", "VITE_CI_TEST_GT_API_KEY"]
     },
