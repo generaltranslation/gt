@@ -1,8 +1,13 @@
 import Document, { Html, Head, Main, NextScript } from 'next/document';
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 
-const DocumentHead = Head as unknown as ComponentType;
-const DocumentNextScript = NextScript as unknown as ComponentType;
+type DocumentComponentProps = {
+  children?: ReactNode;
+};
+
+const DocumentHead = Head as unknown as ComponentType<DocumentComponentProps>;
+const DocumentNextScript =
+  NextScript as unknown as ComponentType<DocumentComponentProps>;
 
 export default class MyDocument extends Document {
   render() {
