@@ -7,6 +7,7 @@ export type BaseTranslationOptions = Record<string, any>;
 export type DictionaryTranslationOptions = BaseTranslationOptions;
 
 export type DictionaryOptions = BaseTranslationOptions & {
+  $format?: StringFormat;
   $context?: string;
   $maxChars?: number;
   /** @deprecated use {@link $context} instead */
@@ -87,6 +88,13 @@ export type LookupOptions =
       $format: 'JSX';
       $locale?: string;
     });
+
+export type DictionaryLookupOptions = Omit<
+  InlineTranslationOptions,
+  '$format'
+> & {
+  $format: StringFormat;
+};
 
 export type ResolutionOptions<T extends DataFormat> = {
   /**

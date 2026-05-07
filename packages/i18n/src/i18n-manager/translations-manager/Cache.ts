@@ -15,6 +15,7 @@ abstract class Cache<
   CacheKey extends string,
   CacheValue,
   OutputValue extends unknown,
+  MissArgs extends [InputKey, ...unknown[]] = [InputKey],
 > {
   /**
    * Cache of items
@@ -92,15 +93,16 @@ abstract class Cache<
    * Fallback to the value from the fallback function on a cache miss
    * @important assumes that the fallback error handling done upstream
    */
-  protected async missCache(key: InputKey): Promise<CacheValue> {
+  protected async missCache(...args: MissArgs): Promise<CacheValue> {
     // Check for inflight fallback
+    const key = args[0];
     const cacheKey = this.genKey(key);
     if (this.fallbackPromises[cacheKey] !== undefined) {
       return await this.fallbackPromises[cacheKey];
     }
 
     // Add to inflight fallback cache
-    const fallbackPromise = this.fallback(key);
+    const fallbackPromise = this.fallback(...args);
     this.fallbackPromises[cacheKey] = fallbackPromise;
 
     // Wait for fallback to complete
@@ -126,7 +128,7 @@ abstract class Cache<
   /**
    * Get the fallback value for a cache miss
    */
-  protected abstract fallback(key: InputKey): Promise<CacheValue>;
+  protected abstract fallback(...args: MissArgs): Promise<CacheValue>;
 
   /**
    * Lookup a value in the cache
@@ -136,7 +138,7 @@ abstract class Cache<
   /**
    * Miss the cache
    */
-  public abstract miss(key: InputKey): Promise<OutputValue | undefined>;
+  public abstract miss(...args: MissArgs): Promise<OutputValue>;
 }
 
 export { Cache };

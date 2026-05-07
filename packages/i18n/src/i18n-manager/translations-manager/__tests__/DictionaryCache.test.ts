@@ -3,6 +3,7 @@ import { DictionaryCache, Dictionary } from '../DictionaryCache';
 
 describe('DictionaryCache', () => {
   let mockTranslateMany: ReturnType<typeof vi.fn>;
+  const runtimeTranslate = vi.fn();
   const dictionary: Dictionary = {
     greeting: 'Hello',
     cta: ['Click me'],
@@ -17,6 +18,9 @@ describe('DictionaryCache', () => {
 
   beforeEach(() => {
     mockTranslateMany = vi.fn();
+    runtimeTranslate.mockRejectedValue(
+      new Error('DictionaryCache fallback is not implemented')
+    );
   });
 
   // ===== REGRESSION TESTS ===== //
@@ -24,6 +28,7 @@ describe('DictionaryCache', () => {
   it('get() returns cached dictionary leaf when init is pre-populated', () => {
     const cache = new DictionaryCache({
       init: dictionary,
+      runtimeTranslate,
     });
 
     const result = cache.get('user.profile.name');
@@ -34,6 +39,7 @@ describe('DictionaryCache', () => {
   it('get() returns the entry from a tuple leaf', () => {
     const cache = new DictionaryCache({
       init: dictionary,
+      runtimeTranslate,
     });
 
     expect(cache.get('cta')).toEqual({ entry: 'Click me', options: {} });
@@ -42,6 +48,7 @@ describe('DictionaryCache', () => {
   it('get() returns the entry and options from a metadata tuple leaf', () => {
     const cache = new DictionaryCache({
       init: dictionary,
+      runtimeTranslate,
     });
 
     expect(cache.get('header')).toEqual({
@@ -60,12 +67,15 @@ describe('DictionaryCache', () => {
         nullMetadata: ['Hello', null],
         numberMetadata: ['Hello', 42],
         stringMetadata: ['Hello', 'World'],
+        invalidFormat: ['Hello', { $format: 42 }],
       } as unknown as Dictionary,
+      runtimeTranslate,
     });
 
     expect(cache.get('nullMetadata')).toBeUndefined();
     expect(cache.get('numberMetadata')).toBeUndefined();
     expect(cache.get('stringMetadata')).toBeUndefined();
+    expect(cache.get('invalidFormat')).toBeUndefined();
   });
 
   it('get() accepts unknown metadata options', () => {
@@ -73,6 +83,7 @@ describe('DictionaryCache', () => {
       init: {
         unknownMetadataKey: ['Hello', { custom: 'value' }],
       } as unknown as Dictionary,
+      runtimeTranslate,
     });
 
     expect(cache.get('unknownMetadataKey')).toEqual({
@@ -84,6 +95,7 @@ describe('DictionaryCache', () => {
   it('get() treats tuple leaves as leaves instead of subtrees', () => {
     const cache = new DictionaryCache({
       init: dictionary,
+      runtimeTranslate,
     });
 
     expect(cache.get('header.$context')).toBeUndefined();
@@ -92,6 +104,7 @@ describe('DictionaryCache', () => {
   it('get() returns cached dictionary subtree when init is pre-populated', () => {
     const cache = new DictionaryCache({
       init: dictionary,
+      runtimeTranslate,
     });
 
     const result = cache.get('user');
@@ -101,23 +114,80 @@ describe('DictionaryCache', () => {
   it('get() returns undefined on cache miss', () => {
     const cache = new DictionaryCache({
       init: dictionary,
+      runtimeTranslate,
     });
 
     const result = cache.get('missing.entry');
     expect(result).toBeUndefined();
   });
 
+  it('set() stores dictionary entries by path', () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+
+    cache.set('user.profile.name', {
+      entry: 'Name',
+      options: { $context: 'profile label' },
+    });
+
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: ['Name', { $context: 'profile label' }],
+        },
+      },
+    });
+    expect(cache.get('user.profile.name')).toEqual({
+      entry: 'Name',
+      options: { $context: 'profile label' },
+    });
+  });
+
   it('miss() rejects because fallback is not implemented', async () => {
     const cache = new DictionaryCache({
       init: {},
+      runtimeTranslate,
     });
 
-    await expect(cache.miss('user.profile.name')).rejects.toThrow(
-      'DictionaryCache fallback is not implemented'
-    );
+    await expect(
+      cache.miss('user.profile.name', { entry: 'Name', options: {} })
+    ).rejects.toThrow('DictionaryCache fallback is not implemented');
     expect(mockTranslateMany).not.toHaveBeenCalled();
     expect(cache.get('user.profile.name')).toBeUndefined();
     expect(cache.getInternalCache()).toEqual({});
+  });
+
+  it('miss() stores runtime fallback values by dictionary path', async () => {
+    runtimeTranslate.mockResolvedValue('Name');
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+
+    const sourceEntry = { entry: 'Name', options: {} };
+    await expect(cache.miss('user.profile.name', sourceEntry)).resolves.toEqual(
+      {
+        entry: 'Name',
+        options: {},
+      }
+    );
+    expect(runtimeTranslate).toHaveBeenCalledWith(
+      'user.profile.name',
+      sourceEntry
+    );
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: 'Name',
+        },
+      },
+    });
+    expect(cache.get('user.profile.name')).toEqual({
+      entry: 'Name',
+      options: {},
+    });
   });
 
   // ===== NEW BEHAVIOR TESTS ===== //
@@ -125,6 +195,7 @@ describe('DictionaryCache', () => {
   it('get() returns undefined for the root dictionary object', () => {
     const cache = new DictionaryCache({
       init: dictionary,
+      runtimeTranslate,
     });
 
     const result = cache.get('');
