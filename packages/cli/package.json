@@ -148,7 +148,7 @@
     "@types/mdast": "^4.0.0",
     "@types/micromatch": "^4.0.9",
     "@types/mock-require": "^2.0.3",
-    "@types/node": "^22.5.1",
+    "@types/node": "catalog:",
     "@types/react": "^18.3.4",
     "@types/resolve": "^1.20.2",
     "eslint": "^9.20.0",
@@ -157,8 +157,8 @@
     "mdast-util-mdxjs-esm": "^2.0.1",
     "prettier": "^3.4.2",
     "ts-node": "^10.9.2",
-    "tslib": "^2.8.1",
-    "typescript": "^5.5.4",
-    "vitest": "^2.0.0"
+    "tslib": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

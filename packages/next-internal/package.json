@@ -24,7 +24,7 @@
     "test": "vitest run && pnpm run test:e2e",
     "test:watch": "vitest",
     "test:e2e": "pnpm run test:e2e:install && cd tests/latest && pnpm run test:e2e",
-    "test:e2e:install": "cd tests/latest && npx playwright install --with-deps",
+    "test:e2e:install": "pnpm --dir tests/latest install --ignore-workspace --no-lockfile --config.enable-global-virtual-store=false --force && pnpm --dir tests/latest exec playwright install --with-deps",
     "typecheck": "tsc --noEmit"
   },
   "repository": {
@@ -39,12 +39,12 @@
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@playwright/test": "^1.57.0",
-    "@types/node": ">=20.0.0 <23.0.0",
+    "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
     "playwright": "^1.57.0",
-    "typescript": "^5.7.3",
-    "vitest": "^1.0.0"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "exports": {
     ".": {

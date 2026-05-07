@@ -57,11 +57,11 @@
   },
   "devDependencies": {
     "@types/eslint": "^8.56.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "catalog:",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
-    "typescript": "^5.0.0",
-    "vitest": "^2.0.0"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

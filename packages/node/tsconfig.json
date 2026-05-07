@@ -1,16 +1,9 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "ESNext",
-    "strict": true,
-    "composite": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "declarationDir": "./dist",
     "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "removeComments": false,
+    "composite": true,
     "stripInternal": true,
     "outDir": "./dist",
     "rootDir": "./src",
@@ -21,7 +14,7 @@
     "lib": ["ES2023"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"],
+  "exclude": ["**/*.test.ts"],
   "references": [
     {
       "path": "../core"

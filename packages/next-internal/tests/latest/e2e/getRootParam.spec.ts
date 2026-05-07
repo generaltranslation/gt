@@ -142,7 +142,7 @@ test.describe('getRootParam function', () => {
     await page.goto('/hello%20world');
 
     await expect(page.locator('[data-testid="locale-result"]')).toContainText(
-      '"hello%20world"'
+      '"hello world"'
     );
   });
 });

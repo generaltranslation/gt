@@ -1,19 +1,12 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": ".",
     "module": "ESNext",
     "target": "ESNext",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
     "moduleResolution": "bundler",
     "sourceMap": false,
-    "declaration": true,
     "declarationMap": true,
-    "removeComments": false,
-    "allowSyntheticDefaultImports": true,
     "composite": true,
     "jsx": "react-jsx",
     "lib": ["ESNext", "DOM"],
@@ -26,10 +19,16 @@
     "verbatimModuleSyntax": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"],
+  "exclude": ["**/*.test.ts"],
   "references": [
-    { "path": "../core" },
-    { "path": "../supported-locales" },
-    { "path": "../react-core" }
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../supported-locales"
+    },
+    {
+      "path": "../react-core"
+    }
   ]
 }

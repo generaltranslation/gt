@@ -1,20 +1,13 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "Node16",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "target": "ES2022",
+    "module": "node16",
+    "moduleResolution": "node16",
     "outDir": "./dist",
     "rootDir": "./src",
-    "resolveJsonModule": true,
-    "moduleResolution": "node16",
     "sourceMap": true,
-    "declaration": true,
-    "declarationDir": "./dist",
     "declarationMap": true,
-    "removeComments": false,
-    "allowSyntheticDefaultImports": true,
     "inlineSources": true,
 
     // Set `sourceRoot` to  "/" to strip the build path prefix
@@ -26,7 +19,7 @@
     "baseUrl": "."
   },
   "include": ["src/**/*", "src/.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"],
+  "exclude": ["**/*.test.ts"],
   "references": [
     {
       "path": "../cli"

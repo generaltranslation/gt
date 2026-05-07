@@ -1,26 +1,18 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "ESNext",
     "target": "ES2022",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "resolveJsonModule": true,
     "moduleResolution": "Node",
     "sourceMap": true,
-    "declaration": true,
-    "declarationDir": "./dist",
     "declarationMap": true,
-    "removeComments": false,
-    "allowSyntheticDefaultImports": true,
-    "composite": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true
   },
   "include": ["src/**/*", "../i18n/src/msg/__tests__"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"],
+  "exclude": ["**/*.test.ts"],
   "references": [
     {
       "path": "../core"

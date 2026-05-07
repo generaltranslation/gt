@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2020",
     "module": "Node16",
@@ -6,17 +7,10 @@
     "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
     "jsx": "react-jsx"
   },
   "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules", "**/*.test.ts"]
+  "exclude": ["**/*.test.ts"]
 }

@@ -48,7 +48,7 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
-    "@types/node": "^20.14.9",
+    "@types/node": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:"
   },
