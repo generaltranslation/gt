@@ -36,6 +36,7 @@ export async function runPrompt<T>(
         unmount(instance);
         instance = undefined;
         exitAlternateScreen();
+        resolve({ cancelled: true });
       });
       enterAlternateScreen();
       instance = render(node);
