@@ -2,10 +2,7 @@ import {
   getCurrentLocale,
   getI18nManager,
 } from '../../i18n-manager/singleton-operations';
-import {
-  DictionaryTranslationOptions,
-  BaseTranslationOptions,
-} from '../types/options';
+import { DictionaryTranslationOptions } from '../types/options';
 import { TFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
@@ -37,65 +34,6 @@ export async function getTranslations(): Promise<TFunctionType> {
   await i18nManager.loadDictionary(locale);
   const sourceLocale = i18nManager.getDefaultLocale();
 
-  const renderEntry = (
-    sourceEntry: DictionaryEntry,
-    targetEntry: DictionaryEntry | undefined,
-    options: DictionaryTranslationOptions = {}
-  ): string => {
-    const targetLocale =
-      typeof options.$locale === 'string' ? options.$locale : locale;
-    const dictionaryOptions = resolveDictionaryLookupOptions(
-      sourceEntry.options
-    );
-    const interpolationOptions = extractVariables(options);
-    const lookupOptions = createLookupOptions<StringFormat>(
-      targetLocale,
-      {
-        ...dictionaryOptions,
-        ...interpolationOptions,
-      },
-      dictionaryOptions.$format ?? 'ICU'
-    );
-
-    return interpolateMessage({
-      source: sourceEntry.entry,
-      target: targetEntry?.entry,
-      options: lookupOptions,
-      sourceLocale,
-    });
-  };
-
-  const renderObject = (
-    sourceObject: DictionaryValue,
-    targetObject: DictionaryValue | undefined,
-    options: DictionaryTranslationOptions = {}
-  ): DictionaryObjectTranslation | undefined => {
-    const sourceEntry = getDictionaryEntry(sourceObject);
-    if (sourceEntry !== undefined) {
-      return renderEntry(
-        sourceEntry,
-        getDictionaryEntry(targetObject),
-        options
-      );
-    }
-
-    if (!isDictionaryValue(sourceObject)) {
-      return undefined;
-    }
-
-    const result: Record<string, DictionaryObjectTranslation> = {};
-    for (const [key, value] of Object.entries(sourceObject)) {
-      const targetChild = isDictionaryValue(targetObject)
-        ? targetObject[key]
-        : undefined;
-      const renderedChild = renderObject(value, targetChild, options);
-      if (renderedChild !== undefined) {
-        result[key] = renderedChild;
-      }
-    }
-    return result;
-  };
-
   /**
    * Dictionary resolution
    * @param {string} id - The id of the translation to translate.
@@ -116,29 +54,94 @@ export async function getTranslations(): Promise<TFunctionType> {
     id: string,
     options: DictionaryTranslationOptions = {}
   ): string => {
-    const targetLocale =
-      typeof options.$locale === 'string' ? options.$locale : locale;
     const sourceEntry = i18nManager.lookupDictionary(sourceLocale, id);
     if (sourceEntry === undefined) {
       return '';
     }
-    const targetEntry = i18nManager.lookupDictionary(targetLocale, id);
-    return renderEntry(sourceEntry, targetEntry, options);
+    const targetEntry = i18nManager.lookupDictionary(locale, id);
+    return renderEntry(sourceLocale, locale, sourceEntry, targetEntry, options);
   }) as TFunctionType;
 
-  t.obj = (
-    id: string,
-    options: BaseTranslationOptions = {}
-  ): DictionaryObjectTranslation | undefined => {
-    const targetLocale =
-      typeof options.$locale === 'string' ? options.$locale : locale;
+  t.obj = (id: string): DictionaryObjectTranslation | undefined => {
     const sourceObject = i18nManager.lookupDictionaryObj(sourceLocale, id);
     if (sourceObject === undefined) {
       return undefined;
     }
-    const targetObject = i18nManager.lookupDictionaryObj(targetLocale, id);
-    return renderObject(sourceObject, targetObject, options);
+    const targetObject = i18nManager.lookupDictionaryObj(locale, id);
+    return renderObject(sourceObject, targetObject);
   };
 
   return t;
+}
+
+function renderEntry(
+  sourceLocale: string,
+  targetLocale: string,
+  sourceEntry: DictionaryEntry,
+  targetEntry: DictionaryEntry | undefined,
+  options: DictionaryTranslationOptions = {}
+): string {
+  const dictionaryOptions = resolveDictionaryLookupOptions(sourceEntry.options);
+  const interpolationOptions = extractVariables(options);
+  const lookupOptions = createLookupOptions<StringFormat>(
+    targetLocale,
+    {
+      ...dictionaryOptions,
+      ...interpolationOptions,
+    },
+    dictionaryOptions.$format ?? 'ICU'
+  );
+
+  return interpolateMessage({
+    source: sourceEntry.entry,
+    target: targetEntry?.entry,
+    options: lookupOptions,
+    sourceLocale,
+  });
+}
+
+function renderObject(
+  sourceObject: DictionaryValue | undefined,
+  targetObject: DictionaryValue | undefined
+): DictionaryObjectTranslation | undefined {
+  const targetEntry = getDictionaryEntry(targetObject);
+  if (targetEntry !== undefined) {
+    return targetEntry.entry;
+  }
+
+  if (targetObject !== undefined && !isDictionaryValue(targetObject)) {
+    return undefined;
+  }
+
+  const sourceEntry = getDictionaryEntry(sourceObject);
+  if (sourceObject === undefined) {
+    return isDictionaryValue(targetObject)
+      ? renderObject(targetObject, undefined)
+      : undefined;
+  }
+
+  if (!isDictionaryValue(sourceObject)) {
+    if (isDictionaryValue(targetObject)) {
+      return renderObject(targetObject, undefined);
+    }
+    return sourceEntry?.entry;
+  }
+
+  const result: Record<string, DictionaryObjectTranslation> = {};
+  const keys = new Set([
+    ...Object.keys(sourceObject),
+    ...(isDictionaryValue(targetObject) ? Object.keys(targetObject) : []),
+  ]);
+
+  for (const key of keys) {
+    const renderedChild = renderObject(
+      sourceObject[key],
+      isDictionaryValue(targetObject) ? targetObject[key] : undefined
+    );
+    if (renderedChild !== undefined) {
+      result[key] = renderedChild;
+    }
+  }
+
+  return result;
 }

@@ -104,6 +104,7 @@ describe('translation function locale defaults', () => {
           profile: {
             name: 'Name',
             greeting: 'Hello {name}!',
+            title: ['Title', { $context: 'profile title' }],
           },
         },
       },
@@ -121,9 +122,10 @@ describe('translation function locale defaults', () => {
 
     const t = await getTranslations();
 
-    expect(t.obj('user.profile', { name: 'Alice' })).toEqual({
+    expect(t.obj('user.profile')).toEqual({
       name: 'Nom',
-      greeting: 'Bonjour Alice !',
+      greeting: 'Bonjour {name} !',
+      title: 'Title',
     });
   });
 
