@@ -15,7 +15,7 @@ const originalVersion = packageJson.version.replace(/-bin\.\d+$/, '');
 
 // Restore package.json fields
 packageJson.version = originalVersion;
-packageJson.bin = 'dist/main.js';
+packageJson.bin = 'bin/main.js';
 
 // Write restored package.json
 writeFileSync(
