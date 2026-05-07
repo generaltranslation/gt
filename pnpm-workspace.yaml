@@ -5,6 +5,7 @@ packages:
   - examples/react-native
 
 enableGlobalVirtualStore: true
+hoist: false
 
 minimumReleaseAge: 1440
 
