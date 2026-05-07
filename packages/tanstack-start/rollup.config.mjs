@@ -26,6 +26,11 @@ const external = [
   '@tanstack/react-start/server',
 ];
 
+const suppressTypeOnlyEntryWarnings = (warning, warn) => {
+  if (warning.code === 'EMPTY_BUNDLE') return;
+  warn(warning);
+};
+
 export default [
   // Bundling for the main library (index.ts)
   {
@@ -66,6 +71,7 @@ export default [
   // Bundling for the types module
   {
     input: 'src/types.ts',
+    onwarn: suppressTypeOnlyEntryWarnings,
     output: [
       {
         file: 'dist/types.cjs.min.cjs',
