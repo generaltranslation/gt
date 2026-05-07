@@ -10,6 +10,7 @@ export type {
   ScopedConditionStore,
   Dictionary,
   DictionaryLoader,
+  DictionaryConfig,
 } from './i18n-manager/types';
 export type { LocaleCandidates } from './i18n-manager/condition-store/localeResolver';
 export type {

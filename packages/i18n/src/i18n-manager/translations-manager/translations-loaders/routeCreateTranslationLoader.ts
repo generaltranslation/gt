@@ -42,7 +42,7 @@ export function routeCreateTranslationLoader({
     case LoadTranslationsType.REMOTE:
     case LoadTranslationsType.GT_REMOTE:
       return createRemoteTranslationLoader({
-        cacheUrl: cacheUrl || '',
+        cacheUrl: cacheUrl as string | undefined,
         projectId: projectId || '',
         _versionId,
         _branchId,
