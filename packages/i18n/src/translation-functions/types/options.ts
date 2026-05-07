@@ -89,6 +89,13 @@ export type LookupOptions =
       $locale?: string;
     });
 
+export type DictionaryLookupOptions = Omit<
+  InlineTranslationOptions,
+  '$format'
+> & {
+  $format: StringFormat;
+};
+
 export type ResolutionOptions<T extends DataFormat> = {
   /**
    * The locale to use for formatting looking up and formatting the message.

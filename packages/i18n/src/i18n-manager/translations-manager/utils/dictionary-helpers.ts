@@ -5,7 +5,10 @@ import type {
   DictionaryPath,
   DictionaryValue,
 } from './types/dictionary';
-import type { DictionaryOptions } from '../../../translation-functions/types/options';
+import type {
+  DictionaryLookupOptions,
+  DictionaryOptions,
+} from '../../../translation-functions/types/options';
 
 export function getDictionaryPath(id: DictionaryPath): string[] {
   if (!id) {
@@ -39,11 +42,13 @@ export function getDictionaryValue(value: DictionaryEntry): DictionaryValue {
 
 export function resolveDictionaryLookupOptions(
   options: DictionaryEntry['options']
-): DictionaryOptions {
+): DictionaryLookupOptions {
+  const { $format, ...rest } = options;
   return {
-    ...options,
-    ...(options.$context === undefined &&
-      typeof options.context === 'string' && { $context: options.context }),
+    ...rest,
+    $format: isStringFormat($format) ? $format : 'ICU',
+    ...(rest.$context === undefined &&
+      typeof rest.context === 'string' && { $context: rest.context }),
   };
 }
 
@@ -68,10 +73,17 @@ function isDictionaryOptions(value: unknown): value is DictionaryOptions {
   const options = value as Record<string, unknown>;
   return (
     (options.$context === undefined || typeof options.$context === 'string') &&
+    (options.$format === undefined || isStringFormat(options.$format)) &&
     (options.$maxChars === undefined ||
       typeof options.$maxChars === 'number') &&
     (options.context === undefined || typeof options.context === 'string')
   );
+}
+
+function isStringFormat(
+  value: unknown
+): value is DictionaryLookupOptions['$format'] {
+  return value === 'ICU' || value === 'I18NEXT' || value === 'STRING';
 }
 
 export function replaceDictionary(

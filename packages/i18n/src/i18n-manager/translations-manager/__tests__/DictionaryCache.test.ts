@@ -67,6 +67,7 @@ describe('DictionaryCache', () => {
         nullMetadata: ['Hello', null],
         numberMetadata: ['Hello', 42],
         stringMetadata: ['Hello', 'World'],
+        invalidFormat: ['Hello', { $format: 42 }],
       } as unknown as Dictionary,
       runtimeTranslate,
     });
@@ -74,6 +75,7 @@ describe('DictionaryCache', () => {
     expect(cache.get('nullMetadata')).toBeUndefined();
     expect(cache.get('numberMetadata')).toBeUndefined();
     expect(cache.get('stringMetadata')).toBeUndefined();
+    expect(cache.get('invalidFormat')).toBeUndefined();
   });
 
   it('get() accepts unknown metadata options', () => {

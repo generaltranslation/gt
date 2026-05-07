@@ -3,6 +3,7 @@ import { I18nManager } from '../I18nManager';
 import { createTranslateManyFactory } from '../translations-manager/utils/createTranslateMany';
 import { hashMessage } from '../../utils/hashMessage';
 import { LookupOptions } from '../../translation-functions/types/options';
+import type { DictionaryEntry } from '../translations-manager/DictionaryCache';
 
 // Mock createTranslateManyFactory to inject a controlled translateMany
 const mockTranslateMany = vi.fn();
@@ -37,7 +38,7 @@ function getDictionaryRuntimeTranslate(
     dictionaryRuntimeTranslate(
       locale: string,
       id: string,
-      sourceEntry: { entry: string; options: LookupOptions }
+      sourceEntry: DictionaryEntry
     ): Promise<string>;
   };
 }
@@ -544,6 +545,36 @@ describe('I18nManager', () => {
       runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting', {
         entry: source,
         options: { $format: 'I18NEXT', context: 'homepage' },
+      })
+    ).resolves.toBe('Bonjour {name}');
+  });
+
+  it('dictionaryRuntimeTranslate() defaults missing source dictionary format to ICU', async () => {
+    const source = 'Hello {name}';
+    const sourceOptions: LookupOptions = {
+      $format: 'ICU',
+      $context: 'homepage',
+    };
+    const sourceHash = hashMessage(source, sourceOptions);
+    const manager = createManager({
+      dictionary: {
+        greeting: [source, { context: 'homepage' }],
+      },
+      runtimeTranslation: {},
+    });
+    const runtimeTranslate = getDictionaryRuntimeTranslate(manager);
+
+    mockTranslateMany.mockResolvedValue({
+      [sourceHash]: {
+        success: true,
+        translation: 'Bonjour {name}',
+      },
+    });
+
+    await expect(
+      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting', {
+        entry: source,
+        options: { context: 'homepage' },
       })
     ).resolves.toBe('Bonjour {name}');
   });
