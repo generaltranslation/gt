@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -18,4 +18,5 @@ export const PACKAGE_VERSION = '${packageJson.version}';
 
 // Write to src/generated/version.ts
 const outputPath = join(__dirname, '..', 'src', 'generated', 'version.ts');
+mkdirSync(dirname(outputPath), { recursive: true });
 writeFileSync(outputPath, tsContent, 'utf8');

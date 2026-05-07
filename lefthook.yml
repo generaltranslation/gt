@@ -5,5 +5,5 @@ pre-commit:
       glob: '**/*.{js,ts,jsx,tsx,mjs}'
     - run: pnpm exec oxfmt --no-error-on-unmatched-pattern {staged_files}
       glob: '**/*.{js,ts,jsx,tsx,mjs,json,md,yml,yaml,html,css,toml}'
-    - run: node scripts/generate-version.js && git add src/generated/version.ts
+    - run: node scripts/generate-version.js
       root: packages/cli
