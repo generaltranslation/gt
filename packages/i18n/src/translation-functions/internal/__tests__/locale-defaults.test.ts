@@ -95,6 +95,25 @@ describe('translation function locale defaults', () => {
     expect(t('greeting', { name: 'Alice' })).toBe('Hello Alice!');
   });
 
+  it('getTranslations throws when the source dictionary entry is missing', async () => {
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({}),
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(() => t('missing')).toThrow(
+      'Dictionary entry missing cannot be found'
+    );
+  });
+
   it('getTranslations obj returns translated dictionary subtrees', async () => {
     const manager = new I18nManager({
       defaultLocale: 'en',

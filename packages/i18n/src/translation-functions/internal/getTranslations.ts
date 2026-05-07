@@ -56,7 +56,7 @@ export async function getTranslations(): Promise<TFunctionType> {
   ): string => {
     const sourceEntry = i18nManager.lookupDictionary(sourceLocale, id);
     if (sourceEntry === undefined) {
-      return '';
+      throw new Error(`Dictionary entry ${id} cannot be found`);
     }
     const targetEntry = i18nManager.lookupDictionary(locale, id);
     return renderEntry({
