@@ -22,22 +22,35 @@
   "homepage": "https://generaltranslation.com/",
   "author": "General Translation, Inc.",
   "sideEffects": false,
-  "type": "commonjs",
+  "browserslist": "extends @sanity/browserslist-config",
+  "type": "module",
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "import": "./dist/index.mjs",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.js",
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "sanity.json",
     "src",
-    "v2-incompatible.js"
+    "v2-incompatible.cjs"
   ],
   "scripts": {
     "release": "pnpm run build && pnpm publish --access public",
@@ -69,6 +82,7 @@
   },
   "devDependencies": {
     "@portabletext/types": "^2.0.15",
+    "@sanity/browserslist-config": "^1.0.5",
     "@sanity/pkg-utils": "^10.4.13",
     "@sanity/plugin-kit": "^4.0.20",
     "@types/lodash.merge": "^4.6.9",
