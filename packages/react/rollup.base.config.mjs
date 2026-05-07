@@ -24,7 +24,7 @@ export default {
     typescript({
       // Compiles TypeScript files
       tsconfig: './tsconfig.json',
-      sourceMap: false,
+      sourceMap: true,
       outputToFilesystem: true, // supress warning about outputToFilesystem
     }),
     postcss(), // Process CSS files
