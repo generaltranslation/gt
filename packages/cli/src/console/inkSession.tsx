@@ -32,13 +32,13 @@ export async function runPrompt<T>(
   try {
     return await new Promise<PromptResult<T>>((resolve) => {
       const node = nodeFactory(resolve);
-      enterAlternateScreen();
-      instance = render(node);
       unregisterCleanup = registerTerminalSessionCleanup(() => {
         unmount(instance);
         instance = undefined;
         exitAlternateScreen();
       });
+      enterAlternateScreen();
+      instance = render(node);
     });
   } finally {
     unregisterCleanup();

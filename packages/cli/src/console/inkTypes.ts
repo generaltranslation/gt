@@ -41,6 +41,7 @@ export type LocaleMultiPromptProps = {
 
 export type GlobPromptProps = {
   label: string;
+  message?: string;
   defaultValue?: string;
   onComplete: (result: PromptResult<string>) => void;
 };
@@ -66,7 +67,7 @@ export type MultiSelectPromptProps<T extends string> = {
 
 export type ConfirmPromptProps = {
   message: string;
-  defaultValue: boolean;
+  defaultValue?: boolean;
   onComplete: (result: PromptResult<boolean>) => void;
 };
 

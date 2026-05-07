@@ -339,10 +339,18 @@ function LocaleMultiPrompt({
   );
 }
 
-function GlobPrompt({ label, defaultValue, onComplete }: GlobPromptProps) {
+function GlobPrompt({
+  label,
+  message,
+  defaultValue,
+  onComplete,
+}: GlobPromptProps) {
   return (
     <TextPrompt
-      message={`${label}: Enter space-separated glob patterns for files to translate. Include [locale].`}
+      message={
+        message ??
+        `${label}: Enter space-separated glob patterns for files to translate. Include [locale].`
+      }
       defaultValue={defaultValue}
       footer='enter save   esc cancel'
       onComplete={onComplete}

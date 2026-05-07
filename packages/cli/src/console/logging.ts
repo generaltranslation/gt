@@ -223,7 +223,7 @@ export async function promptGlobPatterns({
   if (shouldUseInkPrompts()) {
     return (
       (await runInkPrompt<string>((prompts) =>
-        prompts.inkPromptGlob({ label, defaultValue })
+        prompts.inkPromptGlob({ label, message, defaultValue })
       )) ?? ''
     );
   }
