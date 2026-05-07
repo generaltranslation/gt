@@ -17,6 +17,7 @@ import type {
   DictionaryPath,
   DictionaryValue,
 } from './utils/types/dictionary';
+import { DictionarySourceNotFoundError } from './utils/DictionarySourceNotFoundError';
 export type {
   Dictionary,
   DictionaryEntry,
@@ -142,6 +143,33 @@ export class DictionaryCache extends Cache<
 
   public setObj(key: DictionaryKey, value: DictionaryValue): void {
     this.setCache(this.genKey(key), structuredClone(value));
+  }
+
+  public async missObj(
+    key: DictionaryKey,
+    sourceObject: DictionaryValue
+  ): Promise<DictionaryValue> {
+    const sourceEntry = getDictionaryEntry(sourceObject);
+    if (sourceEntry !== undefined) {
+      const entry = await this.miss(key, sourceEntry);
+      return getDictionaryValue(entry);
+    }
+
+    if (!isDictionaryValue(sourceObject)) {
+      throw new DictionarySourceNotFoundError(key);
+    }
+
+    const translatedEntries = await Promise.all(
+      Object.entries(sourceObject).map(async ([childKey, childSource]) => {
+        const childPath = key ? `${key}.${childKey}` : childKey;
+        return [childKey, await this.missObj(childPath, childSource)] as const;
+      })
+    );
+    const translatedObject = Object.fromEntries(
+      translatedEntries
+    ) as Dictionary;
+    this.setObj(key, translatedObject);
+    return translatedObject;
   }
 
   /**

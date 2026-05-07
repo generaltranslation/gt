@@ -65,6 +65,14 @@ function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
   return value.length === 2 && isDictionaryOptions(value[1]);
 }
 
+export function isDictionaryEntry(value: unknown): value is DictionaryEntry {
+  if (!isDictionaryValue(value)) {
+    return false;
+  }
+
+  return typeof value.entry === 'string' && isDictionaryOptions(value.options);
+}
+
 function isDictionaryOptions(value: unknown): value is DictionaryOptions {
   if (typeof value !== 'object' || value == null || Array.isArray(value)) {
     return false;

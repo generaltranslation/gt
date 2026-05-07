@@ -27,6 +27,7 @@ import type {
 import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
 import { LocalesDictionaryCache } from './translations-manager/LocalesDictionaryCache';
 import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
+import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 import { EventEmitter } from './event-subscription/EventEmitter';
 import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
@@ -36,13 +37,6 @@ import { I18nEvents } from './event-subscription/types';
  * Default translation timeout in milliseconds for a runtime translation request
  */
 const DEFAULT_TRANSLATION_TIMEOUT = 12_000; // 12 seconds
-
-class DictionarySourceNotFoundError extends Error {
-  constructor(id: string) {
-    super(`I18nManager: source dictionary entry ${id} is not defined`);
-    this.name = 'DictionarySourceNotFoundError';
-  }
-}
 
 /**
  * A translation resolver is a function that synchronously resolves a translation
