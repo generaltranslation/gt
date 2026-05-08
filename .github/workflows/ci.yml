@@ -73,11 +73,25 @@ jobs:
       - name: Rebuild packages
         run: pnpm rebuild --filter='...[origin/${{ github.base_ref }}]'
 
+      - name: Check if next-internal changed
+        id: next_internal_changed
+        shell: bash
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^packages/next-internal/"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build packages
         run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
       - name: Run tests
         run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
+
+      - name: Run next-internal e2e tests
+        if: steps.next_internal_changed.outputs.changed == 'true'
+        run: pnpm --filter @generaltranslation/next-internal run test:e2e
 
   test-builds:
     strategy:
