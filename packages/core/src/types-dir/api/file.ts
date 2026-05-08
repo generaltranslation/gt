@@ -1,5 +1,6 @@
 import { DataFormat } from '../jsx/content';
 import { Updates } from './enqueueFiles';
+import type { JsonObject } from './json';
 
 export type FileFormat =
   | 'GTJSON'
@@ -18,7 +19,7 @@ export type FileFormat =
 /**
  * Metadata for files or entries.
  */
-type FormatMetadata = Record<string, any> | Updates[number]['metadata'];
+export type FormatMetadata = JsonObject | Updates[number]['metadata'];
 
 /**
  * File object structure for uploading files.

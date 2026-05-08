@@ -1,8 +1,24 @@
-import { JsxChildren } from '../jsx/content';
+import { DataFormat, JsxChildren } from '../jsx/content';
+
+type UpdateMetadata = {
+  id?: string;
+  hash?: string;
+  context?: string;
+  maxChars?: number;
+  dataFormat?: DataFormat;
+  actionType?: 'standard' | 'fast' | string;
+  staticId?: string;
+  format?: string;
+  filePaths?: string[];
+  sourceCode?: unknown;
+  contextDeriveExpr?: unknown;
+  _contextDeriveExpr?: unknown;
+  [key: string]: unknown;
+};
 
 // Types for the enqueueTranslationEntries function
 export type Updates = ({
-  metadata: Record<string, any> & { staticId?: string };
+  metadata: UpdateMetadata;
 } & (
   | {
       dataFormat: 'JSX';

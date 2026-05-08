@@ -124,7 +124,7 @@ export class InlineCLI extends BaseCLI {
       const { hash, id } = metadata;
       if (id) {
         newData[id] = source;
-      } else {
+      } else if (hash) {
         newData[hash] = source;
       }
     }

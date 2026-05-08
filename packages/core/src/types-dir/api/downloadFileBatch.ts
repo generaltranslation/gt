@@ -1,4 +1,5 @@
 import { FileFormat } from './file';
+import type { JsonObject } from './json';
 // Types for the downloadFileBatch function
 
 export type DownloadFileBatchRequest = {
@@ -30,7 +31,7 @@ export type DownloadedFile = {
   locale?: string;
   fileName?: string; // Only present for source files (if locale is not present)
   data: string;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
   fileFormat: FileFormat;
 };
 

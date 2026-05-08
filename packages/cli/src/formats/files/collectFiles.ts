@@ -48,7 +48,7 @@ export async function collectFiles(
         if (id) {
           fileData[id] = source;
           fileMetadata[id] = metadata;
-        } else {
+        } else if (hash) {
           fileData[hash] = source;
           fileMetadata[hash] = metadata;
         }

@@ -1,5 +1,5 @@
 import { DataFormat } from '../jsx/content';
-import { FileFormat, FileReference } from './file';
+import { FileFormat, FileReference, type FormatMetadata } from './file';
 
 /**
  * Metadata stored alongside GTJSON file entries.
@@ -33,7 +33,7 @@ export type FileUpload = {
   transformFormat?: FileFormat;
   dataFormat?: DataFormat;
   locale: string;
-  formatMetadata?: GTJsonFormatMetadata;
+  formatMetadata?: GTJsonFormatMetadata | FormatMetadata;
   versionId?: string; // Optional versionId. Only use this if you know what you are doing.
   fileId?: string; // Optional fileId. Only use this if you know what you are doing.
 };
