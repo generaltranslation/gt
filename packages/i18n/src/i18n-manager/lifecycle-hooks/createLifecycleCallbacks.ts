@@ -1,4 +1,10 @@
 import { EventEmitter } from '../event-subscription/EventEmitter';
+import {
+  DICTIONARY_CACHE_MISS_EVENT_NAME,
+  LOCALES_CACHE_MISS_EVENT_NAME,
+  LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME,
+  TRANSLATIONS_CACHE_MISS_EVENT_NAME,
+} from '../event-subscription/types';
 import type { Translation } from '../translations-manager/utils/types/translation-data';
 import type { I18nManagerCacheLifecycleCallbacks } from './types';
 import type { I18nEvents } from '../event-subscription/types';
@@ -20,7 +26,7 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
       });
     },
     onLocalesCacheMiss: (params) => {
-      emit('locales-cache-miss', {
+      emit(LOCALES_CACHE_MISS_EVENT_NAME, {
         locale: params.inputKey,
         translations: params.outputValue.getInternalCache(),
       });
@@ -33,7 +39,7 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
       });
     },
     onTranslationsCacheMiss: (params) => {
-      emit('translations-cache-miss', {
+      emit(TRANSLATIONS_CACHE_MISS_EVENT_NAME, {
         locale: params.locale,
         hash: params.cacheKey,
         translation: params.outputValue,
@@ -46,7 +52,7 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
       });
     },
     onLocalesDictionaryCacheMiss: (params) => {
-      emit('locales-dictionary-cache-miss', {
+      emit(LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME, {
         locale: params.inputKey,
         dictionary: params.outputValue.getInternalCache(),
       });
@@ -59,7 +65,7 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
       });
     },
     onDictionaryCacheMiss: (params) => {
-      emit('dictionary-cache-miss', {
+      emit(DICTIONARY_CACHE_MISS_EVENT_NAME, {
         locale: params.locale,
         id: params.cacheKey,
         dictionaryEntry: params.outputValue,
