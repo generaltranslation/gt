@@ -59,6 +59,11 @@
       "require": "./dist/internal.cjs.min.cjs",
       "import": "./dist/internal.esm.min.mjs"
     },
+    "./internal-external-store": {
+      "types": "./dist/internal-external-store.d.ts",
+      "require": "./dist/internal-external-store.cjs.min.cjs",
+      "import": "./dist/internal-external-store.esm.min.mjs"
+    },
     "./errors": {
       "types": "./dist/errors.d.ts",
       "require": "./dist/errors.cjs.min.cjs",
@@ -76,6 +81,9 @@
       "internal": [
         "./dist/internal.d.ts"
       ],
+      "internal-external-store": [
+        "./dist/internal-external-store.d.ts"
+      ],
       "errors": [
         "./dist/errors.d.ts"
       ]
@@ -86,6 +94,9 @@
     "paths": {
       "@generaltranslation/react-core/internal": [
         "./dist/internal"
+      ],
+      "@generaltranslation/react-core/internal-external-store": [
+        "./dist/internal-external-store"
       ],
       "@generaltranslation/react-core/types": [
         "./dist/types.d.ts"
