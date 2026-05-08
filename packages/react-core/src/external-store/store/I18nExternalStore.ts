@@ -1,39 +1,29 @@
-import { getI18nManager } from 'gt-i18n/internal';
-import {
-  getLocaleSnapshot as readLocaleSnapshot,
-  getRegionSnapshot as readRegionSnapshot,
-  setLocale as setConditionLocale,
-  setRegion as setConditionRegion,
-  subscribeToLocale as subscribeToConditionLocale,
-  subscribeToRegion as subscribeToConditionRegion,
-} from '../state/externalConditionStore';
+import type { I18nManager } from 'gt-i18n/internal';
+import { hashSource } from 'generaltranslation/id';
+import { indexVars } from 'generaltranslation/internal';
+import type { CustomMapping, IcuMessage } from 'generaltranslation/types';
 import {
   DICTIONARY_ENTRY_EVENT_NAME,
   LOCALES_DICTIONARY_EVENT_NAME,
   LOCALES_EVENT_NAME,
   TRANSLATION_EVENT_NAME,
-} from '../utils/managerEvents';
-import {
-  getCustomMappingSnapshot as readCustomMappingSnapshot,
-  getDefaultLocaleSnapshot as readDefaultLocaleSnapshot,
-  getDictionaryEntrySnapshot as readDictionaryEntrySnapshot,
-  getDictionaryObjectSnapshot as readDictionaryObjectSnapshot,
-  getEnableI18nSnapshot as readEnableI18nSnapshot,
-  getLocalesSnapshot as readLocalesSnapshot,
-  getTranslationHash,
-  getTranslationSnapshot as readTranslationSnapshot,
-} from '../state/readSnapshots';
+} from './managerEvents';
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
   DictionaryObjectSnapshot,
+  I18nExternalConditionStore,
   ListenerSet,
   StoreListener,
   TranslationLookup,
   TranslationSnapshot,
   Unsubscribe,
-} from '../storeTypes';
-import type { DictionaryValue, Translation } from 'gt-i18n/types';
+} from './storeTypes';
+import type {
+  DictionaryValue,
+  LookupOptions,
+  Translation,
+} from 'gt-i18n/types';
 
 type LocaleCacheEvent<T> = {
   locale: string;
@@ -53,13 +43,24 @@ type DictionaryStoreEvent =
   | EntryCacheEvent<DictionaryEntrySnapshot>;
 type DictionaryStoreListener = (event: DictionaryStoreEvent) => void;
 
+export type I18nExternalStoreParams = {
+  i18nManager: I18nManager<Translation>;
+  conditionStore: I18nExternalConditionStore;
+};
+
 /**
- * Minimal external store adapter between React and the gt-i18n singletons.
+ * External store adapter between React and provider-owned i18n state.
  *
- * Each externally mutable resource has its own snapshot getter and subscriber
- * set. Derived values should be calculated by consumers from these primitives.
+ * Each mutable value exposes a focused getSnapshot/subscribe pair. Derived
+ * values stay outside the store so React consumers subscribe only to the data
+ * they actually read.
  */
 export class I18nExternalStore {
+  // ===== Source Instances ===== //
+
+  private i18nManager: I18nManager<Translation>;
+  private conditionStore: I18nExternalConditionStore;
+
   // ===== Listener Sets ===== //
 
   private localeListeners: ListenerSet = new Set();
@@ -79,7 +80,18 @@ export class I18nExternalStore {
   private unsubscribeLocalesDictionaryEvents: Unsubscribe | undefined;
   private unsubscribeDictionaryEntryEvents: Unsubscribe | undefined;
 
-  // ===== Subscriptions ===== //
+  constructor({ i18nManager, conditionStore }: I18nExternalStoreParams) {
+    this.i18nManager = i18nManager;
+    this.conditionStore = conditionStore;
+  }
+
+  // ===== Instance Access ===== //
+
+  getI18nManager = (): I18nManager<Translation> => {
+    return this.i18nManager;
+  };
+
+  // ===== Locale Subscriptions ===== //
 
   subscribeToLocale = (listener: StoreListener): Unsubscribe => {
     return this.subscribeToSet(this.localeListeners, listener);
@@ -89,9 +101,8 @@ export class I18nExternalStore {
     return this.subscribeToSet(this.regionListeners, listener);
   };
 
-  // These manager config values do not have runtime update events today.
-  // Keep separate subscribers so hooks can read a narrow snapshot now and gain
-  // targeted invalidation later if those config values become mutable.
+  // ===== Manager Config Subscriptions ===== //
+
   subscribeToDefaultLocale = (listener: StoreListener): Unsubscribe => {
     return this.subscribeToStaticSet(this.defaultLocaleListeners, listener);
   };
@@ -107,6 +118,8 @@ export class I18nExternalStore {
   subscribeToEnableI18n = (listener: StoreListener): Unsubscribe => {
     return this.subscribeToStaticSet(this.enableI18nListeners, listener);
   };
+
+  // ===== Translation Subscriptions ===== //
 
   subscribeToTranslation<T extends Translation>(
     lookup: TranslationLookup<T>,
@@ -153,47 +166,77 @@ export class I18nExternalStore {
     );
   }
 
-  // ===== Snapshots ===== //
+  // ===== Locale Snapshots ===== //
 
-  getLocaleSnapshot = readLocaleSnapshot;
+  getLocaleSnapshot = (): string => {
+    return this.conditionStore.getLocale();
+  };
 
-  getRegionSnapshot = readRegionSnapshot;
+  getRegionSnapshot = (): string | undefined => {
+    return this.conditionStore.getRegion?.();
+  };
 
-  getDefaultLocaleSnapshot = readDefaultLocaleSnapshot;
+  // ===== Manager Config Snapshots ===== //
 
-  getLocalesSnapshot = readLocalesSnapshot;
+  getDefaultLocaleSnapshot = (): string => {
+    return this.i18nManager.getDefaultLocale();
+  };
 
-  getCustomMappingSnapshot = readCustomMappingSnapshot;
+  getLocalesSnapshot = (): readonly string[] => {
+    return this.i18nManager.getLocales();
+  };
 
-  getEnableI18nSnapshot = readEnableI18nSnapshot;
+  getCustomMappingSnapshot = (): CustomMapping => {
+    return this.i18nManager.getCustomMapping();
+  };
 
-  getTranslationSnapshot<T extends Translation>(
-    lookup: TranslationLookup<T>
-  ): TranslationSnapshot<T> {
-    return readTranslationSnapshot(lookup);
-  }
+  getEnableI18nSnapshot = (): boolean => {
+    return this.i18nManager.isTranslationEnabled();
+  };
 
-  getDictionaryEntrySnapshot(
-    lookup: DictionaryLookup
-  ): DictionaryEntrySnapshot {
-    return readDictionaryEntrySnapshot(lookup);
-  }
+  // ===== Translation Snapshots ===== //
 
-  getDictionaryObjectSnapshot(
-    lookup: DictionaryLookup
-  ): DictionaryObjectSnapshot {
-    return readDictionaryObjectSnapshot(lookup);
-  }
+  getTranslationSnapshot = <T extends Translation>({
+    locale,
+    message,
+    options,
+  }: TranslationLookup<T>): TranslationSnapshot<T> => {
+    return this.i18nManager.lookupTranslation<T>(locale, message, options);
+  };
+
+  getDictionaryEntrySnapshot = ({
+    locale,
+    id,
+  }: DictionaryLookup): DictionaryEntrySnapshot => {
+    return this.i18nManager.lookupDictionary(locale, id);
+  };
+
+  getDictionaryObjectSnapshot = ({
+    locale,
+    id,
+  }: DictionaryLookup): DictionaryObjectSnapshot => {
+    return this.i18nManager.lookupDictionaryObj(locale, id);
+  };
 
   // ===== Setters ===== //
 
-  setLocale(locale: string): void {
-    setConditionLocale(locale);
-  }
+  setLocale = (locale: string): void => {
+    if (!this.conditionStore.setLocale) {
+      throw new Error(
+        'setLocale(): Unable to update locale because the active condition store is not writable.'
+      );
+    }
+    this.conditionStore.setLocale(locale);
+  };
 
-  setRegion(region: string | undefined): void {
-    setConditionRegion(region);
-  }
+  setRegion = (region: string | undefined): void => {
+    if (!this.conditionStore.setRegion) {
+      throw new Error(
+        'setRegion(): Unable to update region because the active condition store is not writable.'
+      );
+    }
+    this.conditionStore.setRegion(region);
+  };
 
   // ===== Subscription Lifecycle ===== //
 
@@ -261,10 +304,10 @@ export class I18nExternalStore {
   }
 
   private connect(): void {
-    this.unsubscribeLocale = subscribeToConditionLocale(() => {
+    this.unsubscribeLocale = this.conditionStore.subscribeToLocale(() => {
       this.emit(this.localeListeners);
     });
-    this.unsubscribeRegion = subscribeToConditionRegion(() => {
+    this.unsubscribeRegion = this.conditionStore.subscribeToRegion?.(() => {
       this.emit(this.regionListeners);
     });
     this.subscribeToManager();
@@ -285,13 +328,12 @@ export class I18nExternalStore {
     this.unsubscribeDictionaryEntryEvents = undefined;
   }
 
-  // ===== Source Wiring ===== //
+  // ===== Manager Event Wiring ===== //
 
   private subscribeToManager(): void {
-    const manager = getI18nManager();
     // Cache events are invalidation signals. Listeners reread snapshots instead
     // of receiving payload values, matching useSyncExternalStore's contract.
-    this.unsubscribeLocalesEvents = manager.subscribe(
+    this.unsubscribeLocalesEvents = this.i18nManager.subscribe(
       LOCALES_EVENT_NAME,
       (event) => {
         this.emitTranslationEvent({
@@ -300,7 +342,7 @@ export class I18nExternalStore {
         });
       }
     );
-    this.unsubscribeTranslationEvents = manager.subscribe(
+    this.unsubscribeTranslationEvents = this.i18nManager.subscribe(
       TRANSLATION_EVENT_NAME,
       (event) => {
         this.emitTranslationEvent({
@@ -310,7 +352,7 @@ export class I18nExternalStore {
         });
       }
     );
-    this.unsubscribeLocalesDictionaryEvents = manager.subscribe(
+    this.unsubscribeLocalesDictionaryEvents = this.i18nManager.subscribe(
       LOCALES_DICTIONARY_EVENT_NAME,
       (event) => {
         this.emitDictionaryEvent({
@@ -319,7 +361,7 @@ export class I18nExternalStore {
         });
       }
     );
-    this.unsubscribeDictionaryEntryEvents = manager.subscribe(
+    this.unsubscribeDictionaryEntryEvents = this.i18nManager.subscribe(
       DICTIONARY_ENTRY_EVENT_NAME,
       (event) => {
         this.emitDictionaryEvent({
@@ -331,7 +373,7 @@ export class I18nExternalStore {
     );
   }
 
-  // ===== Utilities ===== //
+  // ===== Listener Utilities ===== //
 
   private emit(listenerSet: ListenerSet): void {
     listenerSet.forEach((listener) => listener());
@@ -359,6 +401,8 @@ export class I18nExternalStore {
   }
 }
 
+// ===== Lookup Keys ===== //
+
 function getTranslationListenerKey<T extends Translation>(
   lookup: TranslationLookup<T> | { locale: string; hash: string }
 ): string {
@@ -368,6 +412,20 @@ function getTranslationListenerKey<T extends Translation>(
       : getTranslationHash(lookup.message, lookup.options);
   return `${lookup.locale}:${hash}`;
 }
+
+function getDictionaryListenerKey({ locale, id }: DictionaryLookup): string {
+  return `${locale}:${id}`;
+}
+
+function getDictionaryLookupFromKey(lookupKey: string): DictionaryLookup {
+  const separatorIndex = lookupKey.indexOf(':');
+  return {
+    locale: lookupKey.slice(0, separatorIndex),
+    id: lookupKey.slice(separatorIndex + 1),
+  };
+}
+
+// ===== Event Matching ===== //
 
 function translationEventMatchesLookup(
   event: TranslationStoreEvent,
@@ -385,10 +443,6 @@ function translationEventMatchesLookup(
     (hash) =>
       getTranslationListenerKey({ locale: event.locale, hash }) === lookupKey
   );
-}
-
-function getDictionaryListenerKey({ locale, id }: DictionaryLookup): string {
-  return `${locale}:${id}`;
 }
 
 function dictionaryEntryEventMatchesLookup(
@@ -417,12 +471,27 @@ function dictionaryObjectEventMatchesLookup(
   return getDictionaryPathValue(event.value, id) != null;
 }
 
-function getDictionaryLookupFromKey(lookupKey: string): DictionaryLookup {
-  const separatorIndex = lookupKey.indexOf(':');
-  return {
-    locale: lookupKey.slice(0, separatorIndex),
-    id: lookupKey.slice(separatorIndex + 1),
-  };
+// ===== Snapshot Helpers ===== //
+
+function getTranslationHash<T extends Translation>(
+  message: T,
+  options: LookupOptions
+): string {
+  if (options.$_hash != null) {
+    return options.$_hash;
+  }
+
+  return hashSource({
+    source:
+      options.$format === 'ICU' ? indexVars(message as IcuMessage) : message,
+    ...(options.$context && { context: options.$context }),
+    ...(options.$id && { id: options.$id }),
+    ...('$maxChars' in options &&
+      options.$maxChars != null && {
+        maxChars: Math.abs(options.$maxChars),
+      }),
+    dataFormat: options.$format,
+  });
 }
 
 function getDictionaryPathValue(

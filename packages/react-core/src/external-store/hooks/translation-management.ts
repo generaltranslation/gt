@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { getI18nExternalStore } from '../external-store/singleton-operations';
+import { useI18nExternalStore } from '../provider/GTContext';
 import type { Translation } from 'gt-i18n/types';
 import type {
   TranslationLookup,
@@ -7,12 +7,12 @@ import type {
   DictionaryLookup,
   DictionaryEntrySnapshot,
   DictionaryObjectSnapshot,
-} from '../storeTypes';
+} from '../store/storeTypes';
 
 export function useTranslation<T extends Translation>(
   lookup: TranslationLookup<T>
 ): TranslationSnapshot<T> {
-  const store = getI18nExternalStore();
+  const store = useI18nExternalStore();
   return useSyncExternalStore(
     (listener) => store.subscribeToTranslation(lookup, listener),
     () => store.getTranslationSnapshot(lookup),
@@ -23,7 +23,7 @@ export function useTranslation<T extends Translation>(
 export function useDictionaryEntry(
   lookup: DictionaryLookup
 ): DictionaryEntrySnapshot {
-  const store = getI18nExternalStore();
+  const store = useI18nExternalStore();
   return useSyncExternalStore(
     (listener) => store.subscribeToDictionaryEntry(lookup, listener),
     () => store.getDictionaryEntrySnapshot(lookup),
@@ -34,7 +34,7 @@ export function useDictionaryEntry(
 export function useDictionaryObject(
   lookup: DictionaryLookup
 ): DictionaryObjectSnapshot {
-  const store = getI18nExternalStore();
+  const store = useI18nExternalStore();
   return useSyncExternalStore(
     (listener) => store.subscribeToDictionaryObject(lookup, listener),
     () => store.getDictionaryObjectSnapshot(lookup),

@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react';
-import { getI18nExternalStore } from '../external-store/singleton-operations';
+import { useI18nExternalStore } from '../provider/GTContext';
 
 export function useLocale(): string {
-  const store = getI18nExternalStore();
+  const store = useI18nExternalStore();
   return useSyncExternalStore(
     store.subscribeToLocale,
     store.getLocaleSnapshot,
@@ -11,7 +11,7 @@ export function useLocale(): string {
 }
 
 export function useRegion(): string | undefined {
-  const store = getI18nExternalStore();
+  const store = useI18nExternalStore();
   return useSyncExternalStore(
     store.subscribeToRegion,
     store.getRegionSnapshot,
@@ -19,8 +19,16 @@ export function useRegion(): string | undefined {
   );
 }
 
+export function useSetLocale(): (locale: string) => void {
+  return useI18nExternalStore().setLocale;
+}
+
+export function useSetRegion(): (region: string | undefined) => void {
+  return useI18nExternalStore().setRegion;
+}
+
 export function useDefaultLocale(): string {
-  const store = getI18nExternalStore();
+  const store = useI18nExternalStore();
   return useSyncExternalStore(
     store.subscribeToDefaultLocale,
     store.getDefaultLocaleSnapshot,
@@ -29,7 +37,7 @@ export function useDefaultLocale(): string {
 }
 
 export function useLocales(): readonly string[] {
-  const store = getI18nExternalStore();
+  const store = useI18nExternalStore();
   return useSyncExternalStore(
     store.subscribeToLocales,
     store.getLocalesSnapshot,
