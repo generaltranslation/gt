@@ -9,6 +9,7 @@ import {
 import { flattenJsonWithStringFilter } from './flattenJson.js';
 import { gt } from '../../utils/gt.js';
 import { applyStructuralTransforms } from './transformJson.js';
+import type { JSONObject, JSONValue } from '../../types/data/json.js';
 
 /**
  * Extracts translated values from a full JSON file back into composite JSON format.
@@ -36,7 +37,7 @@ export function extractJson(
     return null;
   }
 
-  let localJson: any;
+  let localJson: JSONValue;
   try {
     localJson = JSON.parse(localContent);
   } catch {
@@ -76,7 +77,7 @@ export function extractJson(
   }
 
   // Handle composite schemas
-  const compositeResult: Record<string, any> = {};
+  const compositeResult: Record<string, JSONValue> = {};
 
   // Generate source object pointers from the local JSON
   const sourceObjectPointers = generateSourceObjectPointers(
@@ -139,7 +140,8 @@ export function extractJson(
         // Use default locale key
         const outputKey =
           i < defaultKeys.length ? defaultKeys[i] : targetEntries[i][0];
-        compositeResult[sourceObjectPointer][outputKey] = extractedValues;
+        (compositeResult[sourceObjectPointer] as JSONObject)[outputKey] =
+          extractedValues;
       }
     } else {
       // Object type
@@ -149,13 +151,14 @@ export function extractJson(
         );
         continue;
       }
+      const sourceObjectRecord = sourceObjectValue as JSONObject;
 
       // Find the matching item for the target locale
       const matchingTargetItem = findMatchingItemObject(
         canonicalTargetLocale,
         sourceObjectPointer,
         sourceObjectOptions,
-        sourceObjectValue
+        sourceObjectRecord
       );
 
       if (!matchingTargetItem.sourceItem) {
@@ -173,7 +176,7 @@ export function extractJson(
 
       // Extract values at the include paths
       const extractedValues = flattenJsonWithStringFilter(
-        matchingTargetItem.sourceItem,
+        matchingTargetItem.sourceItem as JSONObject,
         sourceObjectOptions.include
       );
 

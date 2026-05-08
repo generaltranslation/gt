@@ -1,6 +1,11 @@
-import JSONPointer from 'jsonpointer';
 import { StructuralTransform, SourceObjectOptions } from '../../types/index.js';
-import { JSONPath } from 'jsonpath-plus';
+import type { JSONValue } from '../../types/data/json.js';
+import { getJSONPathMatches } from './jsonPath.js';
+import {
+  deleteJSONPointerValue,
+  getJSONPointerValue,
+  setJSONPointerValue,
+} from './jsonPointer.js';
 
 /**
  * Derive entry parent paths from composite sourceObjectPaths by trimming the last segment.
@@ -25,20 +30,14 @@ function deriveEntryPaths(
  * Mutates json in-place.
  */
 export function applyStructuralTransforms(
-  json: any,
+  json: JSONValue,
   transforms: StructuralTransform[],
   compositeConfig: Record<string, SourceObjectOptions>
-): any {
+): JSONValue {
   const entryPaths = deriveEntryPaths(compositeConfig);
 
   for (const entryPath of entryPaths) {
-    const entries = JSONPath({
-      json,
-      path: entryPath,
-      resultType: 'all',
-      flatten: true,
-      wrap: true,
-    });
+    const entries = getJSONPathMatches(json, entryPath);
     if (!entries) continue;
 
     for (const entry of entries) {
@@ -46,9 +45,16 @@ export function applyStructuralTransforms(
       if (typeof entryObj !== 'object' || entryObj === null) continue;
 
       for (const transform of transforms) {
-        const sourceValue = JSONPointer.get(entryObj, transform.sourcePointer);
+        const sourceValue = getJSONPointerValue(
+          entryObj,
+          transform.sourcePointer
+        );
         if (sourceValue !== undefined) {
-          JSONPointer.set(entryObj, transform.destinationPointer, sourceValue);
+          setJSONPointerValue(
+            entryObj,
+            transform.destinationPointer,
+            sourceValue
+          );
         }
       }
     }
@@ -63,20 +69,14 @@ export function applyStructuralTransforms(
  * Leaves sourcePointer untouched. Mutates json in-place.
  */
 export function unapplyStructuralTransforms(
-  json: any,
+  json: JSONValue,
   transforms: StructuralTransform[],
   compositeConfig: Record<string, SourceObjectOptions>
-): any {
+): JSONValue {
   const entryPaths = deriveEntryPaths(compositeConfig);
 
   for (const entryPath of entryPaths) {
-    const entries = JSONPath({
-      json,
-      path: entryPath,
-      resultType: 'all',
-      flatten: true,
-      wrap: true,
-    });
+    const entries = getJSONPathMatches(json, entryPath);
     if (!entries) continue;
 
     for (const entry of entries) {
@@ -84,21 +84,8 @@ export function unapplyStructuralTransforms(
       if (typeof entryObj !== 'object' || entryObj === null) continue;
 
       for (const transform of transforms) {
-        // Navigate to parent of destinationPointer and delete the leaf key
-        const pointer = transform.destinationPointer;
-        const lastSlash = pointer.lastIndexOf('/');
-        if (lastSlash < 0) continue;
-
-        const parentPointer = pointer.substring(0, lastSlash) || '';
-        const leafKey = pointer.substring(lastSlash + 1);
-
         try {
-          const parent = parentPointer
-            ? JSONPointer.get(entryObj, parentPointer)
-            : entryObj;
-          if (parent && typeof parent === 'object' && leafKey in parent) {
-            delete parent[leafKey];
-          }
+          deleteJSONPointerValue(entryObj, transform.destinationPointer);
         } catch {
           /* entry may not have the destination path */
         }

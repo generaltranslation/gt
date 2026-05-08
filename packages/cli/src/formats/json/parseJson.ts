@@ -1,6 +1,5 @@
-import { AdditionalOptions, SourceObjectOptions } from '../../types/index.js';
+import { AdditionalOptions } from '../../types/index.js';
 import { flattenJson, flattenJsonWithStringFilter } from './flattenJson.js';
-import { JSONPath } from 'jsonpath-plus';
 import { exitSync } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 import {
@@ -10,6 +9,8 @@ import {
   validateJsonSchema,
 } from './utils.js';
 import { applyStructuralTransforms } from './transformJson.js';
+import type { JSONObject, JSONValue } from '../../types/data/json.js';
+import { getJSONPathMatches, type JSONPathMatch } from './jsonPath.js';
 
 // Parse a JSON file according to a JSON schema
 export function parseJson(
@@ -24,7 +25,7 @@ export function parseJson(
     return content;
   }
 
-  let json: any;
+  let json: JSONValue;
   try {
     json = JSON.parse(content);
   } catch {
@@ -54,15 +55,15 @@ export function parseJson(
 
   // Construct lvl 1
   // Create mapping of sourceObjectPointer to SourceObjectOptions
-  const sourceObjectPointers: Record<
-    string,
-    { sourceObjectValue: any; sourceObjectOptions: SourceObjectOptions }
-  > = generateSourceObjectPointers(jsonSchema.composite, json);
+  const sourceObjectPointers = generateSourceObjectPointers(
+    jsonSchema.composite,
+    json
+  );
 
   // Construct lvl 2
   const sourceObjectsToTranslate: Record<
     string,
-    Record<string, Record<string, string>> | string
+    Record<string, Record<string, JSONValue>> | JSONValue
   > = {};
   for (const [
     sourceObjectPointer,
@@ -98,22 +99,19 @@ export function parseJson(
         return exitSync(1);
       }
       // Construct lvl 3
-      const sourceItemsToTranslate: Record<string, Record<string, string>> = {};
+      const sourceItemsToTranslate: Record<
+        string,
+        Record<string, JSONValue>
+      > = {};
       for (const [arrayPointer, matchingItem] of Object.entries(
         matchingItems
       )) {
         const { sourceItem, keyPointer } = matchingItem;
         // Get the fields to translate from the includes
-        const matchingItemsToTranslate: any[] = [];
+        const matchingItemsToTranslate: JSONPathMatch[] = [];
         for (const include of sourceObjectOptions.include) {
           try {
-            const matchingItems = JSONPath({
-              json: sourceItem,
-              path: include,
-              resultType: 'all',
-              flatten: true,
-              wrap: true,
-            });
+            const matchingItems = getJSONPathMatches(sourceItem, include);
             if (matchingItems) {
               matchingItemsToTranslate.push(...matchingItems);
             }
@@ -124,14 +122,8 @@ export function parseJson(
         // Filter out the key pointer
         sourceItemsToTranslate[arrayPointer] = Object.fromEntries(
           matchingItemsToTranslate
-            .filter(
-              (item: { pointer: string; value: any }) =>
-                item.pointer !== keyPointer
-            )
-            .map((item: { pointer: string; value: string }) => [
-              item.pointer,
-              item.value,
-            ])
+            .filter((item) => item.pointer !== keyPointer)
+            .map((item) => [item.pointer, item.value])
         );
       }
 
@@ -146,13 +138,14 @@ export function parseJson(
         );
         return exitSync(1);
       }
+      const sourceObjectRecord = sourceObjectValue as JSONObject;
 
       // Validate localeProperty
       const matchingItem = findMatchingItemObject(
         defaultLocale,
         sourceObjectPointer,
         sourceObjectOptions,
-        sourceObjectValue
+        sourceObjectRecord
       );
       // Validate source item exists
       if (!matchingItem.sourceItem) {
@@ -171,7 +164,10 @@ export function parseJson(
 
       // Get the fields to translate from the includes
       const flatten = filterStrings ? flattenJsonWithStringFilter : flattenJson;
-      const itemsToTranslate = flatten(sourceItem, sourceObjectOptions.include);
+      const itemsToTranslate = flatten(
+        sourceItem as JSONObject,
+        sourceObjectOptions.include
+      );
 
       // Add the items to translate to the result
       sourceObjectsToTranslate[sourceObjectPointer] = itemsToTranslate;

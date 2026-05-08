@@ -1,4 +1,3 @@
-import JSONPointer from 'jsonpointer';
 import { AdditionalOptions, SourceObjectOptions } from '../../types/index.js';
 import { exitSync } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
@@ -10,7 +9,6 @@ import {
   getSourceObjectOptionsArray,
   validateJsonSchema,
 } from './utils.js';
-import { JSONPath } from 'jsonpath-plus';
 import { getLocaleProperties } from 'generaltranslation';
 import { replaceLocalePlaceholders } from '../utils.js';
 import { gt } from '../../utils/gt.js';
@@ -18,6 +16,15 @@ import {
   applyStructuralTransforms,
   unapplyStructuralTransforms,
 } from './transformJson.js';
+import type { JSONObject, JSONValue } from '../../types/data/json.js';
+import { getJSONPathMatches, getJSONPathValues } from './jsonPath.js';
+import { getJSONPointerValue, setJSONPointerValue } from './jsonPointer.js';
+
+type ParsedTarget = {
+  translatedContent: string;
+  targetLocale: string;
+  parsedContent: JSONObject;
+};
 
 export function mergeJson(
   originalContent: string,
@@ -35,7 +42,7 @@ export function mergeJson(
     return targets.map((target) => target.translatedContent);
   }
 
-  let originalJson: any;
+  let originalJson: JSONValue;
   try {
     originalJson = JSON.parse(originalContent);
   } catch {
@@ -66,14 +73,14 @@ export function mergeJson(
     for (const target of targets) {
       // Must clone the original JSON to avoid mutations
       const mergedJson = structuredClone(originalJson);
-      const translatedJson = JSON.parse(target.translatedContent);
+      const translatedJson = JSON.parse(target.translatedContent) as JSONObject;
       for (const [jsonPointer, translatedValue] of Object.entries(
         translatedJson
       )) {
         try {
-          const value = JSONPointer.get(mergedJson, jsonPointer);
+          const value = getJSONPointerValue(mergedJson, jsonPointer);
           if (!value) continue;
-          JSONPointer.set(mergedJson, jsonPointer, translatedValue);
+          setJSONPointerValue(mergedJson, jsonPointer, translatedValue);
         } catch {
           /* empty */
         }
@@ -95,14 +102,14 @@ export function mergeJson(
   // Pre-parse all target contents ONCE (avoid re-parsing per pointer)
   const parsedTargets = targets.map((target) => ({
     ...target,
-    parsedContent: JSON.parse(target.translatedContent),
-  }));
+    parsedContent: JSON.parse(target.translatedContent) as JSONObject,
+  })) satisfies ParsedTarget[];
 
   // Create mapping of sourceObjectPointer to SourceObjectOptions
-  const sourceObjectPointers: Record<
-    string,
-    { sourceObjectValue: any; sourceObjectOptions: SourceObjectOptions }
-  > = generateSourceObjectPointers(jsonSchema.composite, originalJson);
+  const sourceObjectPointers = generateSourceObjectPointers(
+    jsonSchema.composite,
+    originalJson
+  );
 
   // Find the source object
   for (const [
@@ -150,7 +157,7 @@ export function mergeJson(
       // 9. Check that items to add is >= items to remove
       // 10. Remove all items for the target locale (they can be identified by the key)
       const indiciesToRemove = new Set<number>();
-      const itemsToAdd: any[] = [];
+      const itemsToAdd: JSONValue[] = [];
       for (const target of parsedTargets) {
         let targetItems = target.parsedContent[sourceObjectPointer];
         // 1. Get the target items
@@ -174,8 +181,8 @@ export function mergeJson(
 
         // Remap mismatched positional keys to current source positions
         const sourceKeys = [...matchingDefaultLocaleItemKeys];
-        const remappedTargetItems: Record<string, any> = {};
-        for (const [key, value] of Object.entries(targetItems)) {
+        const remappedTargetItems: Record<string, JSONValue> = {};
+        for (const [key, value] of Object.entries(targetItems as JSONObject)) {
           if (matchingDefaultLocaleItemKeys.has(key)) {
             remappedTargetItems[key] = value;
           } else if (
@@ -228,7 +235,7 @@ export function mergeJson(
               sourceObjectPointer,
               sourceObjectOptions
             );
-          JSONPointer.set(
+          setJSONPointerValue(
             mutatedSourceItem,
             defaultLocaleKeyPointer,
             targetLocaleKeyProperty
@@ -236,7 +243,7 @@ export function mergeJson(
           for (const [
             translatedKeyJsonPointer,
             translatedValue,
-          ] of Object.entries(targetItem || {})) {
+          ] of Object.entries((targetItem || {}) as JSONObject)) {
             const valueToSet =
               useCanonicalLocaleKeys &&
               defaultLocaleKeyPointer &&
@@ -244,12 +251,12 @@ export function mergeJson(
                 ? targetLocaleKeyProperty
                 : translatedValue;
             try {
-              const value = JSONPointer.get(
+              const value = getJSONPointerValue(
                 mutatedSourceItem,
                 translatedKeyJsonPointer
               );
               if (!value) continue;
-              JSONPointer.set(
+              setJSONPointerValue(
                 mutatedSourceItem,
                 translatedKeyJsonPointer,
                 valueToSet
@@ -286,7 +293,7 @@ export function mergeJson(
       // 10. Add all items to the original JSON
       filteredSourceObjectValue.push(...itemsToAdd);
 
-      JSONPointer.set(
+      setJSONPointerValue(
         mergedJson,
         sourceObjectPointer,
         sortByLocaleOrder(
@@ -305,12 +312,13 @@ export function mergeJson(
         );
         return exitSync(1);
       }
+      const sourceObjectRecord = sourceObjectValue as JSONObject;
       // Validate localeProperty
       const matchingDefaultLocaleItem = findMatchingItemObject(
         canonicalDefaultLocale,
         sourceObjectPointer,
         sourceObjectOptions,
-        sourceObjectValue
+        sourceObjectRecord
       );
       // Validate source item exists
       if (!matchingDefaultLocaleItem.sourceItem) {
@@ -343,14 +351,14 @@ export function mergeJson(
             : target.targetLocale,
           sourceObjectPointer,
           sourceObjectOptions,
-          sourceObjectValue
+          sourceObjectRecord
         );
         const mutateSourceItemKey = matchingTargetItem.keyParentProperty;
 
         // If the source item is a string, use the translated string directly
         if (typeof defaultLocaleSourceItem === 'string') {
           if (typeof targetItems === 'string') {
-            sourceObjectValue[mutateSourceItemKey] = targetItems;
+            sourceObjectRecord[mutateSourceItemKey] = targetItems;
           }
           // If no translation found, leave the locale slot unchanged
           continue;
@@ -361,9 +369,11 @@ export function mergeJson(
         const mutateSourceItem = structuredClone(defaultLocaleSourceItem);
 
         // 3. Merge the target items with the source item (if there are transformations to perform)
-        const mergedItems = {
-          ...(sourceObjectOptions.transform ? defaultLocaleSourceItem : {}),
-          ...targetItems,
+        const mergedItems: Record<string, JSONValue> = {
+          ...(sourceObjectOptions.transform
+            ? (defaultLocaleSourceItem as JSONObject)
+            : {}),
+          ...(targetItems as JSONObject),
         };
 
         // 4. Validate that the mergedItems is not empty
@@ -380,12 +390,12 @@ export function mergeJson(
           translatedValue,
         ] of Object.entries(mergedItems || {})) {
           try {
-            const value = JSONPointer.get(
+            const value = getJSONPointerValue(
               mutateSourceItem,
               translatedKeyJsonPointer
             );
             if (!value) continue;
-            JSONPointer.set(
+            setJSONPointerValue(
               mutateSourceItem,
               translatedKeyJsonPointer,
               translatedValue
@@ -403,9 +413,9 @@ export function mergeJson(
         );
 
         // 7. Merge the source item with the original JSON
-        sourceObjectValue[mutateSourceItemKey] = mutateSourceItem;
+        sourceObjectRecord[mutateSourceItemKey] = mutateSourceItem;
       }
-      JSONPointer.set(mergedJson, sourceObjectPointer, sourceObjectValue);
+      setJSONPointerValue(mergedJson, sourceObjectPointer, sourceObjectValue);
     }
   }
   if (jsonSchema.structuralTransform && jsonSchema.composite) {
@@ -420,12 +430,12 @@ export function mergeJson(
 }
 
 function sortByLocaleOrder(
-  items: any[],
+  items: JSONValue[],
   sourceObjectOptions: SourceObjectOptions,
   localeOrder: string[],
   sourceObjectPointer: string,
   defaultLocale: string
-): any[] {
+): JSONValue[] {
   const sortMode = sourceObjectOptions.experimentalSort;
   if (!sortMode || !sourceObjectOptions.key) {
     return items;
@@ -434,13 +444,7 @@ function sortByLocaleOrder(
   const itemsWithLocale = items.map((item) => {
     let localeValue: string | undefined;
     try {
-      const values = JSONPath({
-        json: item,
-        path: sourceObjectOptions.key as string,
-        resultType: 'value',
-        flatten: true,
-        wrap: true,
-      });
+      const values = getJSONPathValues(item, sourceObjectOptions.key as string);
       const value = values?.[0];
       if (typeof value === 'string') {
         localeValue = value;
@@ -468,7 +472,7 @@ function sortByLocaleOrder(
       )
     );
 
-    const orderedItems: any[] = [];
+    const orderedItems: JSONValue[] = [];
     const remainingItems = [...itemsWithLocale];
 
     for (const localeValue of localeOrderValues) {
@@ -534,7 +538,7 @@ function sortByLocaleOrder(
  * @param defaultLocale - The default locale
  */
 export function applyTransformations(
-  sourceItem: any,
+  sourceItem: JSONValue,
   transform: SourceObjectOptions['transform'],
   targetLocale: string,
   defaultLocale: string
@@ -551,17 +555,11 @@ export function applyTransformations(
     ) {
       continue;
     }
-    const results = JSONPath({
-      json: sourceItem,
-      path: transformPath,
-      resultType: 'all',
-      flatten: true,
-      wrap: true,
-    });
+    const results = getJSONPathMatches(sourceItem, transformPath);
     if (!results || results.length === 0) {
       continue;
     }
-    results.forEach((result: { pointer: string; value: any }) => {
+    results.forEach((result) => {
       if (typeof result.value !== 'string') {
         return;
       }
@@ -594,7 +592,7 @@ export function applyTransformations(
       }
 
       // Update the actual sourceItem using JSONPointer
-      JSONPointer.set(sourceItem, result.pointer, result.value);
+      setJSONPointerValue(sourceItem, result.pointer, result.value);
     });
   }
 }

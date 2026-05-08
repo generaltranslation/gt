@@ -1,7 +1,6 @@
 import { getLocaleProperties } from 'generaltranslation';
 import { exitSync } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
-import { JSONPath } from 'jsonpath-plus';
 import { LocaleProperties } from 'generaltranslation/types';
 import {
   AdditionalOptions,
@@ -12,7 +11,21 @@ import { flattenJson } from './flattenJson.js';
 import chalk from 'chalk';
 import path from 'node:path';
 import micromatch from 'micromatch';
+import type { JSONObject, JSONValue } from '../../types/data/json.js';
+import { getJSONPathMatches } from './jsonPath.js';
 const { isMatch } = micromatch;
+
+type MatchingArrayItem = {
+  sourceItem: JSONValue;
+  keyParentProperty: string | number;
+  keyPointer: string;
+  index: number;
+};
+
+type SourceObjectPointerMap = Record<
+  string,
+  { sourceObjectValue: JSONValue; sourceObjectOptions: SourceObjectOptions }
+>;
 
 // Find the matching source item in an array
 // where the key matches the identifying locale property
@@ -21,16 +34,8 @@ export function findMatchingItemArray(
   locale: string,
   sourceObjectOptions: SourceObjectOptions,
   sourceObjectPointer: string,
-  sourceObjectValue: any
-): Record<
-  string,
-  {
-    sourceItem: any;
-    keyParentProperty: string;
-    keyPointer: string;
-    index: number;
-  }
-> {
+  sourceObjectValue: JSONValue[]
+): Record<string, MatchingArrayItem> {
   const { identifyingLocaleProperty, localeKeyJsonPath } =
     getSourceObjectOptionsArray(
       locale,
@@ -38,24 +43,10 @@ export function findMatchingItemArray(
       sourceObjectOptions
     );
   // Use the json pointer key to locate the source item
-  const matchingItems: Record<
-    string,
-    {
-      sourceItem: any;
-      keyParentProperty: string;
-      keyPointer: string;
-      index: number;
-    }
-  > = {};
+  const matchingItems: Record<string, MatchingArrayItem> = {};
   for (const [index, item] of sourceObjectValue.entries()) {
     // Get the key candidates
-    const keyCandidates = JSONPath({
-      json: item,
-      path: localeKeyJsonPath,
-      resultType: 'all',
-      flatten: true,
-      wrap: true,
-    });
+    const keyCandidates = getJSONPathMatches(item, localeKeyJsonPath);
     if (!keyCandidates) {
       logger.error(
         `Source item at path: ${sourceObjectPointer} does not have a key value at path: ${localeKeyJsonPath}`
@@ -74,10 +65,17 @@ export function findMatchingItemArray(
       // Validate the key is the identifying locale property
       continue;
     }
+    const keyParentProperty = keyCandidates[0].parentProperty;
+    if (keyParentProperty === null) {
+      logger.error(
+        `Source item at path: ${sourceObjectPointer} has a root-level key match with path: ${localeKeyJsonPath}`
+      );
+      return exitSync(1);
+    }
     // Map the index to the source item
     matchingItems[`/${index}`] = {
       sourceItem: item,
-      keyParentProperty: keyCandidates[0].parentProperty,
+      keyParentProperty,
       keyPointer: keyCandidates[0].pointer,
       index,
     };
@@ -89,8 +87,8 @@ export function findMatchingItemObject(
   locale: string,
   sourceObjectPointer: string,
   sourceObjectOptions: SourceObjectOptions,
-  sourceObjectValue: any
-): { sourceItem: any | undefined; keyParentProperty: string } {
+  sourceObjectValue: JSONObject
+): { sourceItem: JSONValue | undefined; keyParentProperty: string } {
   const { identifyingLocaleProperty } = getSourceObjectOptionsObject(
     locale,
     sourceObjectPointer,
@@ -193,16 +191,10 @@ export function generateSourceObjectPointers(
   jsonSchema: {
     [sourceObjectPath: string]: SourceObjectOptions;
   },
-  originalJson: any
-): Record<
-  string,
-  { sourceObjectValue: any; sourceObjectOptions: SourceObjectOptions }
-> {
-  const sourceObjectPointers: Record<
-    string,
-    { sourceObjectValue: any; sourceObjectOptions: SourceObjectOptions }
-  > = Object.entries(jsonSchema).reduce(
-    (acc: Record<string, any>, [sourceObjectPath, sourceObjectOptions]) => {
+  originalJson: JSONValue
+): SourceObjectPointerMap {
+  const sourceObjectPointers = Object.entries(jsonSchema).reduce(
+    (acc: SourceObjectPointerMap, [sourceObjectPath, sourceObjectOptions]) => {
       const sourceObjects = flattenJson(originalJson, [sourceObjectPath]);
       Object.entries(sourceObjects).forEach(([pointer, value]) => {
         acc[pointer as string] = {
@@ -269,7 +261,7 @@ const UNSUPPORTED_MINTLIFY_FIELDS = ['$ref'];
  * matches one of the unsupported field names.
  */
 function findMintlifyUnsupportedFields(
-  value: any,
+  value: JSONValue,
   fieldNames: string[],
   pointer: string = ''
 ): { pointer: string; field: string; fieldValue: string }[] {
@@ -289,17 +281,18 @@ function findMintlifyUnsupportedFields(
     return results;
   }
   // Check if this object contains an unsupported field
+  const objectValue = value as JSONObject;
   for (const field of fieldNames) {
-    if (typeof value[field] === 'string') {
-      return [{ pointer, field, fieldValue: value[field] }];
+    if (typeof objectValue[field] === 'string') {
+      return [{ pointer, field, fieldValue: objectValue[field] }];
     }
   }
   // Recurse into child properties
   const results: { pointer: string; field: string; fieldValue: string }[] = [];
-  for (const key of Object.keys(value)) {
+  for (const key of Object.keys(objectValue)) {
     results.push(
       ...findMintlifyUnsupportedFields(
-        value[key],
+        objectValue[key],
         fieldNames,
         `${pointer}/${key}`
       )
@@ -313,7 +306,7 @@ function findMintlifyUnsupportedFields(
  * Logs a warning listing the fields found.
  */
 export function detectMintlifyUnsupportedFields(
-  json: any,
+  json: JSONValue,
   filePath: string
 ): void {
   const unsupported = findMintlifyUnsupportedFields(
