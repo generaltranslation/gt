@@ -31,7 +31,8 @@ import { DictionarySourceNotFoundError } from './translations-manager/utils/Dict
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 import { EventEmitter } from './event-subscription/EventEmitter';
 import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
-import { I18nEvents } from './event-subscription/types';
+import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
+import type { I18nEvents } from './event-subscription/types';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -164,12 +165,12 @@ class I18nManager<
    */
   subscribeToTranslationsCacheMiss(
     listener: (
-      event: I18nEvents<TranslationValue>['translations-cache-miss']
+      event: I18nEvents<TranslationValue>[typeof TRANSLATIONS_CACHE_MISS_EVENT_NAME]
     ) => void,
     locale: Locale,
     hash: Hash
   ) {
-    return this.subscribe('translations-cache-miss', (event) => {
+    return this.subscribe(TRANSLATIONS_CACHE_MISS_EVENT_NAME, (event) => {
       if (event.locale !== locale || event.hash !== hash) {
         return;
       }

@@ -1,4 +1,10 @@
 import { EventEmitter } from '../event-subscription/EventEmitter';
+import {
+  DICTIONARY_CACHE_MISS_EVENT_NAME,
+  LOCALES_CACHE_MISS_EVENT_NAME,
+  LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME,
+  TRANSLATIONS_CACHE_MISS_EVENT_NAME,
+} from '../event-subscription/types';
 import type { Translation } from '../translations-manager/utils/types/translation-data';
 import type { LifecycleCallbacks } from './types';
 import type { I18nEvents } from '../event-subscription/types';
@@ -35,7 +41,7 @@ export function subscribeLifecycleCallbacks<
     });
   }
   if (onLocalesCacheMiss) {
-    subscribe('locales-cache-miss', (event) => {
+    subscribe(LOCALES_CACHE_MISS_EVENT_NAME, (event) => {
       onLocalesCacheMiss({
         ...event,
         value: event.translations,
@@ -51,7 +57,7 @@ export function subscribeLifecycleCallbacks<
     });
   }
   if (onTranslationsCacheMiss) {
-    subscribe('translations-cache-miss', (event) => {
+    subscribe(TRANSLATIONS_CACHE_MISS_EVENT_NAME, (event) => {
       onTranslationsCacheMiss({
         ...event,
         value: event.translation,
@@ -64,7 +70,7 @@ export function subscribeLifecycleCallbacks<
     });
   }
   if (onLocalesDictionaryCacheMiss) {
-    subscribe('locales-dictionary-cache-miss', (event) => {
+    subscribe(LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME, (event) => {
       onLocalesDictionaryCacheMiss(event);
     });
   }
@@ -74,7 +80,7 @@ export function subscribeLifecycleCallbacks<
     });
   }
   if (onDictionaryCacheMiss) {
-    subscribe('dictionary-cache-miss', (event) => {
+    subscribe(DICTIONARY_CACHE_MISS_EVENT_NAME, (event) => {
       onDictionaryCacheMiss(event);
     });
   }

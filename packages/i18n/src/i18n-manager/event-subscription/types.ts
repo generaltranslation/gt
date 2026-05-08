@@ -21,6 +21,12 @@ export type ListenerStore<Events extends BaseEvent> = Partial<{
   [EventName in keyof Events]: Set<Listener<Events, EventName>>;
 }>;
 
+export const LOCALES_CACHE_MISS_EVENT_NAME = 'locales-cache-miss';
+export const TRANSLATIONS_CACHE_MISS_EVENT_NAME = 'translations-cache-miss';
+export const LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME =
+  'locales-dictionary-cache-miss';
+export const DICTIONARY_CACHE_MISS_EVENT_NAME = 'dictionary-cache-miss';
+
 /**
  * A base event for the I18nManagers
  * @prop {locales-cache-hit} - Emitted when a locale cache hit occurs
@@ -38,7 +44,7 @@ export type I18nEvents<TranslationValue extends Translation> = BaseEvent & {
     locale: Locale;
     translations: Record<Hash, TranslationValue>;
   };
-  'locales-cache-miss': {
+  [LOCALES_CACHE_MISS_EVENT_NAME]: {
     locale: Locale;
     translations: Record<Hash, TranslationValue>;
   };
@@ -47,7 +53,7 @@ export type I18nEvents<TranslationValue extends Translation> = BaseEvent & {
     hash: Hash;
     translation: TranslationValue;
   };
-  'translations-cache-miss': {
+  [TRANSLATIONS_CACHE_MISS_EVENT_NAME]: {
     locale: Locale;
     hash: Hash;
     translation: TranslationValue;
@@ -56,7 +62,7 @@ export type I18nEvents<TranslationValue extends Translation> = BaseEvent & {
     locale: Locale;
     dictionary: Dictionary;
   };
-  'locales-dictionary-cache-miss': {
+  [LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME]: {
     locale: Locale;
     dictionary: Dictionary;
   };
@@ -65,7 +71,7 @@ export type I18nEvents<TranslationValue extends Translation> = BaseEvent & {
     id: DictionaryPath;
     dictionaryEntry: DictionaryEntry;
   };
-  'dictionary-cache-miss': {
+  [DICTIONARY_CACHE_MISS_EVENT_NAME]: {
     locale: Locale;
     id: DictionaryPath;
     dictionaryEntry: DictionaryEntry;
