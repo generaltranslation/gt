@@ -10,5 +10,10 @@
     "jsx-a11y",
     "nextjs"
   ],
-  "ignorePatterns": [".next/**", "out/**", "build/**"]
+  "ignorePatterns": [".next/**", "out/**", "build/**"],
+  "env": {
+    "browser": true,
+    "builtin": true,
+    "node": true
+  }
 }
