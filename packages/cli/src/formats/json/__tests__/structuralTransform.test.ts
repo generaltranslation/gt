@@ -94,7 +94,7 @@ describe('structuralTransform', () => {
       // no "label" field exists
       applyStructuralTransforms(json, transforms, compositeConfig);
 
-      expect((json.item_a.i18n as any).en).toBeUndefined();
+      expect(json.item_a.i18n).not.toHaveProperty('en');
     });
 
     it('should handle multiple transforms', () => {
@@ -138,8 +138,8 @@ describe('structuralTransform', () => {
       expect(json.btn_save.i18n.en).toBe('Save changes');
 
       unapplyStructuralTransforms(json, transforms, compositeConfig);
-      expect((json.btn_save.i18n as any).en).toBeUndefined();
-      expect((json.btn_cancel.i18n as any).en).toBeUndefined();
+      expect(json.btn_save.i18n).not.toHaveProperty('en');
+      expect(json.btn_cancel.i18n).not.toHaveProperty('en');
     });
 
     it('should leave sourcePointer value intact', () => {

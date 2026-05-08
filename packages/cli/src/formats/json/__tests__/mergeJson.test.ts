@@ -15,6 +15,18 @@ const mockExit = vi.mocked(exitSync).mockImplementation(() => {
   throw new Error('Process exit called');
 });
 
+type LocaleEntry = { locale: string };
+type NestedLocaleEntry = { meta: { locale: string } };
+type LanguageEntry = { language: string };
+
+const hasLocale = (locale: string) => (item: LocaleEntry) =>
+  item.locale === locale;
+const hasNestedLocale = (locale: string) => (item: NestedLocaleEntry) =>
+  item.meta.locale === locale;
+const hasLanguage = (language: string) => (item: LanguageEntry) =>
+  item.language === language;
+const getLanguage = (item: LanguageEntry) => item.language;
+
 describe('mergeJson', () => {
   beforeEach(() => {
     mockLogError.mockClear();
@@ -259,21 +271,17 @@ describe('mergeJson', () => {
       expect(parsed.items).toHaveLength(3);
 
       // English item should be unchanged
-      const englishItem = parsed.items.find(
-        (item: any) => item.locale === 'en'
-      );
+      const englishItem = parsed.items.find(hasLocale('en'));
       expect(englishItem.title).toBe('English Title');
       expect(englishItem.desc).toBe('English Description');
 
       // Spanish item should remain unchanged
-      const spanishItem = parsed.items.find(
-        (item: any) => item.locale === 'es'
-      );
+      const spanishItem = parsed.items.find(hasLocale('es'));
       expect(spanishItem.title).toBe('Título Español');
       expect(spanishItem.desc).toBe('Descripción Española');
 
       // French item should be updated with French translations
-      const frenchItem = parsed.items.find((item: any) => item.locale === 'fr');
+      const frenchItem = parsed.items.find(hasLocale('fr'));
       expect(frenchItem.title).toBe('Nouveau Titre');
       expect(frenchItem.desc).toBe('Nouvelle Description');
     });
@@ -320,7 +328,7 @@ describe('mergeJson', () => {
       );
 
       const parsed = JSON.parse(result[0]);
-      const frenchItem = parsed.items.find((item: any) => item.locale === 'fr');
+      const frenchItem = parsed.items.find(hasLocale('fr'));
       expect(frenchItem.title).toBe('Titre Français Traduit');
     });
 
@@ -371,9 +379,7 @@ describe('mergeJson', () => {
       );
 
       const parsed = JSON.parse(result[0]);
-      const frenchItems = parsed.items.filter(
-        (item: any) => item.locale === 'fr'
-      );
+      const frenchItems = parsed.items.filter(hasLocale('fr'));
       expect(frenchItems).toHaveLength(2);
       expect(frenchItems[0].title).toBe('Titre Français Traduit');
       expect(frenchItems[1].title).toBe('Titre Français Phrase2');
@@ -421,15 +427,9 @@ describe('mergeJson', () => {
       );
 
       const parsed = JSON.parse(result[0]);
-      const englishItem = parsed.items.find(
-        (item: any) => item.meta.locale === 'en'
-      );
-      const spanishItem = parsed.items.find(
-        (item: any) => item.meta.locale === 'es'
-      );
-      const frenchItem = parsed.items.find(
-        (item: any) => item.meta.locale === 'fr'
-      );
+      const englishItem = parsed.items.find(hasNestedLocale('en'));
+      const spanishItem = parsed.items.find(hasNestedLocale('es'));
+      const frenchItem = parsed.items.find(hasNestedLocale('fr'));
       expect(englishItem.title).toBe('English Title');
       expect(spanishItem.title).toBe('Título Español');
       expect(frenchItem.title).toBe('Titre Français');
@@ -1147,9 +1147,7 @@ describe('mergeJson', () => {
 
       // The valid /0 translation should be applied
       const parsed = JSON.parse(result[0]);
-      const spanishItem = parsed.items.find(
-        (item: any) => item.locale === 'es'
-      );
+      const spanishItem = parsed.items.find(hasLocale('es'));
       expect(spanishItem.title).toBe('Título Español');
 
       // The invalid /1 key should produce a warning
@@ -1309,9 +1307,7 @@ describe('mergeJson', () => {
 
       const parsed = JSON.parse(result[0]);
       // Should have remapped /1 to /0 and applied the translation
-      const spanishItem = parsed.items.find(
-        (item: any) => item.locale === 'es'
-      );
+      const spanishItem = parsed.items.find(hasLocale('es'));
       expect(spanishItem).toBeDefined();
       expect(spanishItem.title).toBe('Hola');
     });
@@ -1412,12 +1408,8 @@ describe('mergeJson', () => {
       );
 
       const parsed = JSON.parse(result[0]);
-      const englishNav = parsed.navigation.languages.find(
-        (lang: any) => lang.language === 'en'
-      );
-      const spanishNav = parsed.navigation.languages.find(
-        (lang: any) => lang.language === 'es'
-      );
+      const englishNav = parsed.navigation.languages.find(hasLanguage('en'));
+      const spanishNav = parsed.navigation.languages.find(hasLanguage('es'));
 
       expect(englishNav.global.anchors[0].anchor).toBe('Announcements');
       expect(englishNav.global.anchors[1].anchor).toBe('Status');
@@ -1496,10 +1488,8 @@ describe('mergeJson', () => {
       expect(result).toHaveLength(1); // Composite returns single merged result
 
       const parsed = JSON.parse(result[0]);
-      const englishItem = parsed.items.find(
-        (item: any) => item.locale === 'en'
-      );
-      const germanItem = parsed.items.find((item: any) => item.locale === 'de');
+      const englishItem = parsed.items.find(hasLocale('en'));
+      const germanItem = parsed.items.find(hasLocale('de'));
 
       expect(englishItem.title).toBe('English Title');
       expect(englishItem.desc).toBe('English Description');
@@ -1561,18 +1551,14 @@ describe('mergeJson', () => {
         ['fr-ca']
       );
 
-      gt.setConfig({ sourceLocale: 'en', customMapping: undefined as any });
+      gt.setConfig({ sourceLocale: 'en' });
 
       const parsed = JSON.parse(result[0]);
-      const frenchNav = parsed.navigation.languages.find(
-        (lang: any) => lang.language === 'fr-CA'
-      );
+      const frenchNav = parsed.navigation.languages.find(hasLanguage('fr-CA'));
 
       expect(frenchNav).toBeDefined();
       expect(
-        parsed.navigation.languages.find(
-          (lang: any) => lang.language === 'fr-ca'
-        )
+        parsed.navigation.languages.find(hasLanguage('fr-ca'))
       ).toBeUndefined();
       expect(frenchNav.tabs[0].tab).toBe('Accueil');
       expect(frenchNav.tabs[0].pages[0]).toBe('docs/fr-ca/index');
@@ -1625,14 +1611,8 @@ describe('mergeJson', () => {
 
       const parsed = JSON.parse(result[0]);
       const languages = parsed.navigation.languages;
-      expect(languages.map((lang: any) => lang.language)).toEqual([
-        'en',
-        'es',
-        'ja',
-      ]);
-      const spanishEntry = languages.find(
-        (lang: any) => lang.language === 'es'
-      );
+      expect(languages.map(getLanguage)).toEqual(['en', 'es', 'ja']);
+      const spanishEntry = languages.find(hasLanguage('es'));
       expect(spanishEntry.tab).toBe('Inicio');
     });
 
@@ -1683,11 +1663,7 @@ describe('mergeJson', () => {
 
       const parsed = JSON.parse(result[0]);
       const languages = parsed.navigation.languages;
-      expect(languages.map((lang: any) => lang.language)).toEqual([
-        'en',
-        'es',
-        'ja',
-      ]);
+      expect(languages.map(getLanguage)).toEqual(['en', 'es', 'ja']);
     });
 
     it('should order locales alphabetically with default locale first', () => {
@@ -1737,11 +1713,7 @@ describe('mergeJson', () => {
 
       const parsed = JSON.parse(result[0]);
       const languages = parsed.navigation.languages;
-      expect(languages.map((lang: any) => lang.language)).toEqual([
-        'ja',
-        'de',
-        'en',
-      ]);
+      expect(languages.map(getLanguage)).toEqual(['ja', 'de', 'en']);
     });
 
     it('should preserve non-translatable fields during merge', () => {
@@ -2458,7 +2430,7 @@ describe('mergeJson', () => {
   describe('Edge Cases', () => {
     it('should handle empty targets array', () => {
       const originalContent = JSON.stringify({ test: 'value' });
-      const targets: any[] = [];
+      const targets: Parameters<typeof mergeJson>[3] = [];
 
       const result = mergeJson(
         originalContent,
@@ -2876,10 +2848,10 @@ describe('mergeJson', () => {
         sourceItem,
         {
           '$.title': {
-            replace: null as any,
+            replace: null as unknown as string,
           },
           '$.count': {
-            replace: 100 as any,
+            replace: 100 as unknown as string,
           },
         },
         'es',
