@@ -46,19 +46,32 @@
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.27.9",
+    "@babel/core": "catalog:",
+    "@babel/preset-react": "catalog:",
+    "@babel/preset-typescript": "catalog:",
+    "@rollup/plugin-babel": "catalog:",
+    "@rollup/plugin-commonjs": "catalog:",
+    "@rollup/plugin-node-resolve": "catalog:",
+    "@rollup/plugin-terser": "catalog:",
+    "@rollup/plugin-typescript": "catalog:",
     "@size-limit/preset-small-lib": "^12.1.0",
     "@vitejs/plugin-react": "^5.1.2",
     "@vitest/coverage-v8": "^3.2.4",
     "oxfmt": "^0.47.0",
     "oxlint": "^1.62.0",
+    "rollup": "catalog:",
+    "rollup-plugin-dts": "catalog:",
+    "rollup-plugin-peer-deps-external": "catalog:",
+    "rollup-plugin-postcss": "catalog:",
+    "rollup-preserve-directives": "catalog:",
     "size-limit": "^12.1.0",
     "turbo": "^2.5.3",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "tslib": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "packageManager": "pnpm@10.20.0",
   "dependencies": {
-    "@generaltranslation/next-internal": "link:packages/next-internal",
     "lefthook": "^1.12.3",
     "vite": "^7.0.5"
   }

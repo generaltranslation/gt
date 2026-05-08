@@ -1,21 +1,13 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "ES2022",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "resolveJsonModule": true,
     "moduleResolution": "node",
     "sourceMap": true,
-    "declaration": true,
-    "declarationDir": "./dist",
-    "declarationMap": true,
-    "removeComments": false,
-    "allowSyntheticDefaultImports": true
+    "declarationMap": true
   },
   "include": ["src/**/*", "src/.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "exclude": ["**/*.test.ts"]
 }

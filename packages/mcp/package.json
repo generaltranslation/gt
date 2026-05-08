@@ -18,9 +18,9 @@
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.14.2",
     "@types/jest": "^29.5.14",
-    "@types/node": ">=20.0.0",
+    "@types/node": "catalog:",
     "tsx": "^4.16.5",
-    "typescript": "^5.7.3"
+    "typescript": "catalog:"
   },
   "scripts": {
     "patch": "pnpm version patch",

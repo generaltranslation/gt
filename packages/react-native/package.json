@@ -116,13 +116,13 @@
     "@babel/types": "^7.28.4",
     "@react-native/babel-preset": "0.81.1",
     "@types/babel__core": "^7.20.5",
-    "@types/node": "^22.13.5",
+    "@types/node": "catalog:",
     "@types/react": "^19.1.0",
     "del-cli": "^6.0.0",
     "react": "19.1.0",
     "react-native": "0.81.1",
     "react-native-builder-bob": "^0.40.13",
-    "typescript": "^5.9.2"
+    "typescript": "catalog:"
   },
   "react-native-builder-bob": {
     "source": "src",

@@ -1,8 +1,10 @@
 import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
-import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
-import { dts } from 'rollup-plugin-dts';
+import {
+  createDtsConfig,
+  createMinifiedBundleConfig,
+} from '../../rollup.preset.mjs';
 
 const external = [
   'react',
@@ -27,49 +29,28 @@ const external = [
 ];
 
 export default [
-  // Bundling for the main library (index.ts)
-  {
+  createMinifiedBundleConfig({
     input: 'src/index.ts',
-    output: [
-      {
-        file: 'dist/index.cjs.min.cjs',
-        format: 'cjs',
-        exports: 'auto',
-        sourcemap: true,
-      },
-      {
-        file: 'dist/index.esm.min.mjs',
-        format: 'es',
-        exports: 'named',
-        sourcemap: true,
-      },
-    ],
+    outputName: 'index',
+    distDir: 'dist',
+    esmFormat: 'es',
     plugins: [
       resolve({ extensions: ['.js', '.mjs', '.ts', '.tsx'] }),
       typescript({ tsconfig: './tsconfig.json', outputToFilesystem: true }),
       commonjs(),
-      terser(),
     ],
     external,
-  },
-
-  // TypeScript declarations for the main library
-  {
+  }),
+  createDtsConfig({
     input: 'src/index.ts',
-    output: {
-      file: 'dist/index.d.ts',
-      format: 'es',
-    },
-    plugins: [dts()],
-  },
-
-  // TypeScript declarations for the types module
-  {
+    outputName: 'index',
+    distDir: 'dist',
+    format: 'es',
+  }),
+  createDtsConfig({
     input: 'src/types.ts',
-    output: {
-      file: 'dist/types.d.ts',
-      format: 'es',
-    },
-    plugins: [dts()],
-  },
+    outputName: 'types',
+    distDir: 'dist',
+    format: 'es',
+  }),
 ];

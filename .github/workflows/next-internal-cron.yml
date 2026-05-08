@@ -37,12 +37,8 @@ jobs:
         run: pnpm exec turbo build --filter=@generaltranslation/next-internal
 
       - name: Install test dependencies
-        working-directory: packages/next-internal/tests/latest
-        run: pnpm i
-
-      - name: Install Playwright Browsers
-        working-directory: packages/next-internal/tests/latest
-        run: npx playwright install --with-deps
+        working-directory: packages/next-internal
+        run: pnpm run test:e2e:install
 
       - name: Run Playwright tests
         working-directory: packages/next-internal/tests/latest
