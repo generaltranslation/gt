@@ -24,7 +24,7 @@
     "test": "vitest run && pnpm run test:e2e",
     "test:watch": "vitest",
     "test:e2e": "pnpm run test:e2e:install && cd tests/latest && pnpm run test:e2e",
-    "test:e2e:install": "pnpm --dir tests/latest install --ignore-workspace --no-lockfile --config.enable-global-virtual-store=false --force && pnpm --dir tests/latest exec playwright install --with-deps",
+    "test:e2e:install": "pnpm --dir tests/latest install --ignore-workspace --config.enable-global-virtual-store=false --force && pnpm --dir tests/latest exec playwright install --with-deps",
     "typecheck": "tsc --noEmit"
   },
   "repository": {
