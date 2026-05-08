@@ -1,6 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Options, Settings, AdditionalOptions } from '../types/index.js';
+import type {
+  AdditionalOptions,
+  StaticLocalizationSettings,
+} from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
 import { unified } from 'unified';
@@ -12,6 +15,8 @@ import type { Root } from 'mdast';
 import type { MdxjsEsm } from 'mdast-util-mdxjs-esm';
 
 const { isMatch } = micromatch;
+
+export type StaticImportSettings = StaticLocalizationSettings;
 
 /**
  * Localizes static imports in content files.
@@ -27,7 +32,7 @@ const { isMatch } = micromatch;
  * - Support more complex paths
  */
 export default async function localizeStaticImports(
-  settings: Settings,
+  settings: StaticImportSettings,
   includeFiles?: Set<string>
 ) {
   if (
@@ -42,8 +47,8 @@ export default async function localizeStaticImports(
   const fileMapping = createFileMapping(
     sourceFiles,
     settings.files.placeholderPaths,
-    settings.files.transformPaths,
-    settings.files.transformFormats,
+    settings.files.transformPaths ?? {},
+    settings.files.transformFormats ?? {},
     settings.locales,
     settings.defaultLocale
   );
@@ -453,7 +458,7 @@ function transformMdxImports(
       pattern,
       exclude,
       currentFilePath,
-      options as any
+      options
     );
   }
 
@@ -559,7 +564,7 @@ function transformImportsStringFallback(
   pattern: string = '/[locale]',
   exclude: string[] = [],
   currentFilePath?: string,
-  options?: Options
+  options?: AdditionalOptions
 ): ImportTransformResult {
   const transformedImports: Array<{ originalPath: string; newPath: string }> =
     [];

@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { Settings } from '../types/index.js';
+import type { StaticLocalizationSettings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
 import { unified } from 'unified';
@@ -13,6 +13,8 @@ import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 
 const { isMatch } = micromatch;
+
+export type StaticUrlSettings = StaticLocalizationSettings;
 
 /**
  * Localizes static urls in content files.
@@ -28,7 +30,7 @@ const { isMatch } = micromatch;
  * - Support more complex paths
  */
 export default async function localizeStaticUrls(
-  settings: Settings,
+  settings: StaticUrlSettings,
   targetLocales?: string[],
   includeFiles?: Set<string>
 ) {
@@ -47,8 +49,8 @@ export default async function localizeStaticUrls(
   const fileMapping = createFileMapping(
     sourceFiles,
     settings.files.placeholderPaths,
-    settings.files.transformPaths,
-    settings.files.transformFormats,
+    settings.files.transformPaths ?? {},
+    settings.files.transformFormats ?? {},
     settings.locales, // Always use all locales for mapping, filter later
     settings.defaultLocale
   );
@@ -555,7 +557,7 @@ function transformMdxUrls(
       .use(remarkStringify, {
         handlers: {
           // Handler to prevent escaping (avoids '&lt;' -> '\&lt;')
-          text(node: any) {
+          text(node: Literal) {
             return node.value;
           },
         },

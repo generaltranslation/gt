@@ -258,6 +258,19 @@ export type Settings = {
   sharedStaticAssets?: SharedStaticAssetsConfig;
 };
 
+export type StaticLocalizationFiles = Pick<
+  Settings['files'],
+  'placeholderPaths' | 'resolvedPaths'
+> &
+  Partial<Pick<Settings['files'], 'transformPaths' | 'transformFormats'>>;
+
+export type StaticLocalizationSettings = Pick<
+  Settings,
+  'defaultLocale' | 'locales' | 'options'
+> & {
+  files?: StaticLocalizationFiles | null;
+};
+
 export type BranchOptions = {
   currentBranch?: string;
   autoDetectBranches?: boolean;
