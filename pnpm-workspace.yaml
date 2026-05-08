@@ -13,6 +13,7 @@ minimumReleaseAgeExclude:
   - gt-next
   - gt-react
   - gt-sanity
+  - gt-format
   - gt-i18n
   - gt
   - gtx-cli

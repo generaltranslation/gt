@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import _getLocaleProperties, {
+import {
+  _getLocaleProperties,
   createCustomLocaleProperties,
 } from '../getLocaleProperties';
 import { CustomMapping } from '../customLocaleMapping';

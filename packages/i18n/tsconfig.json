@@ -14,6 +14,9 @@
   "exclude": ["**/*.test.ts"],
   "references": [
     {
+      "path": "../format"
+    },
+    {
       "path": "../core"
     },
     {

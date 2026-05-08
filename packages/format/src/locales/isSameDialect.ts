@@ -25,9 +25,7 @@ function checkTwoLocalesAreSameDialect(codeA: string, codeB: string) {
  * "en-GB" and "en-US" would be different.
  * @internal
  */
-export default function _isSameDialect(
-  ...locales: (string | string[])[]
-): boolean {
+export function _isSameDialect(...locales: (string | string[])[]): boolean {
   try {
     // standardize codes
     const flattenedCodes = locales.flat().map(_standardizeLocale);

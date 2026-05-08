@@ -53,6 +53,7 @@
   },
   "dependencies": {
     "@generaltranslation/supported-locales": "workspace:*",
+    "gt-format": "workspace:*",
     "generaltranslation": "workspace:*"
   },
   "exports": {

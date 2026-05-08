@@ -1,0 +1,92 @@
+{
+  "name": "gt-format",
+  "version": "0.1.0",
+  "description": "Locale and formatting utilities for General Translation",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.cts",
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build:release": "pnpm run build:clean",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build": "tsdown",
+    "test": "vitest run --config=./vitest.config.ts",
+    "test:watch": "vitest --config=./vitest.config.ts",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "keywords": [
+    "language",
+    "internationalization",
+    "localization",
+    "locale",
+    "formatting",
+    "i18n"
+  ],
+  "author": "General Translation, Inc.",
+  "license": "FSL-1.1-ALv2",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "typescript": {
+    "definition": "dist/index.d.cts"
+  },
+  "dependencies": {
+    "intl-messageformat": "^10.7.16"
+  },
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
+    },
+    "./types": {
+      "require": {
+        "types": "./dist/types.d.cts",
+        "default": "./dist/types.cjs"
+      },
+      "import": {
+        "types": "./dist/types.d.mts",
+        "default": "./dist/types.mjs"
+      }
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "types": [
+        "./dist/types.d.cts"
+      ]
+    }
+  },
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "gt-format/types": [
+        "/dist/types"
+      ]
+    }
+  }
+}

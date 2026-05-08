@@ -1,4 +1,4 @@
-import { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from 'gt-format/types';
 import { JsxTranslationOptions } from '../types/options';
 import { resolveJsx } from './helpers';
 

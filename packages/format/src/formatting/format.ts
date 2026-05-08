@@ -3,7 +3,7 @@ import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
 import { IntlMessageFormat } from 'intl-messageformat';
 import { formatI18nextWarning, formatJsxWarning } from '../logging/warnings';
-import { formattingLogger } from '../logging/logger';
+import { warnFormatting } from '../logging/warnFormatting';
 import { JsxChildren } from '../types';
 import { CutoffFormatOptions } from './custom-formats/CutoffFormat/types';
 
@@ -330,7 +330,7 @@ export function _formatI18next(
   message: I18nextMessage,
   _variables: FormatVariables = {}
 ): string {
-  formattingLogger.warn(formatI18nextWarning);
+  warnFormatting(formatI18nextWarning);
   return message;
 }
 
@@ -348,6 +348,6 @@ export function _formatJsx(
   message: JsxChildren,
   _variables: FormatVariables = {}
 ): JsxChildren {
-  formattingLogger.warn(formatJsxWarning);
+  warnFormatting(formatJsxWarning);
   return message;
 }

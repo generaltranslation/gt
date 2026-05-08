@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import _getLocaleEmoji, {
+import {
+  _getLocaleEmoji,
   defaultEmoji,
   getRegionEmoji,
 } from '../getLocaleEmoji';

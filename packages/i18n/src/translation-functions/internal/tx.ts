@@ -1,5 +1,5 @@
 import { RuntimeTranslationOptions } from '../types/options';
-import type { StringFormat } from 'generaltranslation/types';
+import type { StringFormat } from 'gt-format/types';
 import { resolveStringContentWithRuntimeFallback } from './helpers';
 import { getCurrentLocale } from '../../i18n-manager/singleton-operations';
 

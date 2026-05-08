@@ -2,7 +2,7 @@ import type {
   EncodedTranslationOptions,
   InlineTranslationOptions,
 } from '../types/options';
-import { formatMessage } from 'generaltranslation/core';
+import { formatMessage } from 'gt-format';
 import {
   encode,
   libraryDefaultLocale,

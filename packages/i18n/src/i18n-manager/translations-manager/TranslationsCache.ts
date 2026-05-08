@@ -3,8 +3,8 @@ import { Cache } from './Cache';
 import type { LifecycleParam } from '../lifecycle-hooks/types';
 import { Translation } from './utils/types/translation-data';
 import { hashMessage } from '../../utils/hashMessage';
+import type { Content } from 'gt-format/types';
 import type {
-  Content,
   EntryMetadata,
   TranslateManyEntry,
   TranslationResult,

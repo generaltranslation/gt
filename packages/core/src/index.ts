@@ -3,21 +3,40 @@
 
 // ----- IMPORTS ----- //
 
-import _requiresTranslation from './locales/requiresTranslation';
-import _determineLocale from './locales/determineLocale';
 import {
-  _formatNum,
-  _formatCurrency,
-  _formatList,
-  _formatRelativeTime,
-  _formatRelativeTimeFromDate,
-  _selectRelativeTimeUnit,
-  _formatDateTime,
-  _formatListToParts,
-} from './formatting/format';
-import {
+  LocaleConfig,
+  determineLocale as _determineLocale,
+  formatCurrency as _formatCurrency,
+  formatDateTime as _formatDateTime,
+  formatList as _formatList,
+  formatListToParts as _formatListToParts,
+  formatNum as _formatNum,
+  formatRelativeTime as _formatRelativeTime,
+  formatRelativeTimeFromDate as _formatRelativeTimeFromDate,
+  getLocaleDirection as _getLocaleDirection,
+  getLocaleEmoji as _getLocaleEmoji,
+  getLocaleName as _getLocaleName,
+  getLocaleProperties as _getLocaleProperties,
+  getRegionProperties as _getRegionProperties,
+  isSameDialect as _isSameDialect,
+  isSameLanguage as _isSameLanguage,
+  isSupersetLocale as _isSupersetLocale,
+  isValidLocale as _isValidLocale,
+  requiresTranslation as _requiresTranslation,
+  resolveAliasLocale as _resolveAliasLocale,
+  resolveCanonicalLocale as _resolveCanonicalLocale,
+  standardizeLocale as _standardizeLocale,
+  type LocaleConfigConstructorParams,
+} from 'gt-format';
+import type {
   CustomMapping,
+  CustomRegionMapping,
+  CutoffFormatOptions,
   FormatVariables,
+  LocaleProperties,
+  StringFormat,
+} from 'gt-format/types';
+import {
   TranslateManyResult,
   TranslationError,
   TranslationRequestConfig,
@@ -29,17 +48,7 @@ import {
   DownloadFileOptions,
   TranslateManyEntry,
 } from './types';
-import _isSameLanguage from './locales/isSameLanguage';
-import _getLocaleProperties, {
-  LocaleProperties,
-} from './locales/getLocaleProperties';
-import _getLocaleEmoji from './locales/getLocaleEmoji';
-import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
-import { _getLocaleName } from './locales/getLocaleName';
-import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { libraryDefaultLocale } from './settings/settings';
-import _isSameDialect from './locales/isSameDialect';
-import _isSupersetLocale from './locales/isSupersetLocale';
 import {
   noSourceLocaleProvidedError,
   noTargetLocaleProvidedError,
@@ -67,12 +76,6 @@ import {
 import _submitUserEditDiffs, {
   SubmitUserEditDiffsPayload,
 } from './translate/submitUserEditDiffs';
-import {
-  _getRegionProperties,
-  CustomRegionMapping,
-} from './locales/getRegionProperties';
-import { _resolveAliasLocale } from './locales/resolveAliasLocale';
-import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
 import _uploadSourceFiles from './translate/uploadSourceFiles';
 import _uploadTranslations from './translate/uploadTranslations';
 import {
@@ -116,16 +119,10 @@ import _publishFiles, {
   type PublishFileEntry,
   type PublishFilesResult,
 } from './translate/publishFiles';
-import { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import { TranslateOptions } from './types-dir/api/entry';
 import { API_VERSION as _API_VERSION } from './translate/api';
-import { StringFormat } from './types-dir/jsx/content';
-import { LocaleConfig } from './LocaleConfig';
 
-export {
-  LocaleConfig,
-  type LocaleConfigConstructorParams,
-} from './LocaleConfig';
+export { LocaleConfig, type LocaleConfigConstructorParams } from 'gt-format';
 
 export {
   formatCutoff,
@@ -133,7 +130,7 @@ export {
   isValidLocale,
   resolveCanonicalLocale,
   standardizeLocale,
-} from './core';
+} from 'gt-format';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -1675,11 +1672,7 @@ export function formatNum(
     locales: string | string[];
   } & Intl.NumberFormatOptions
 ): string {
-  return _formatNum({
-    value: number,
-    locales: options.locales,
-    options,
-  });
+  return _formatNum(number, options);
 }
 
 /**
@@ -1696,11 +1689,7 @@ export function formatDateTime(
     locales?: string | string[];
   } & Intl.DateTimeFormatOptions
 ): string {
-  return _formatDateTime({
-    value: date,
-    locales: options?.locales,
-    options,
-  });
+  return _formatDateTime(date, options);
 }
 
 /**
@@ -1719,12 +1708,7 @@ export function formatCurrency(
     locales: string | string[];
   } & Intl.NumberFormatOptions
 ): string {
-  return _formatCurrency({
-    value,
-    currency,
-    locales: options.locales,
-    options,
-  });
+  return _formatCurrency(value, currency, options);
 }
 
 /**
@@ -1741,11 +1725,7 @@ export function formatList(
     locales: string | string[];
   } & Intl.ListFormatOptions
 ): string {
-  return _formatList({
-    value: array,
-    locales: options.locales,
-    options,
-  });
+  return _formatList(array, options);
 }
 
 /**
@@ -1762,11 +1742,7 @@ export function formatListToParts<T>(
     locales?: string | string[];
   } & Intl.ListFormatOptions
 ): Array<T | string> {
-  return _formatListToParts<T>({
-    value: array,
-    locales: options?.locales,
-    options: options,
-  });
+  return _formatListToParts(array, options);
 }
 
 /**
@@ -1785,12 +1761,7 @@ export function formatRelativeTime(
     locales: string | string[];
   } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
 ): string {
-  return _formatRelativeTime({
-    value,
-    unit,
-    locales: options.locales,
-    options,
-  });
+  return _formatRelativeTime(value, unit, options);
 }
 
 /**
@@ -1808,13 +1779,7 @@ export function formatRelativeTimeFromDate(
     baseDate?: Date;
   } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
 ): string {
-  const { locales, baseDate, ...intlOptions } = options;
-  return _formatRelativeTimeFromDate({
-    date,
-    baseDate: baseDate ?? new Date(),
-    locales,
-    options: intlOptions,
-  });
+  return _formatRelativeTimeFromDate(date, options);
 }
 
 // -------------- Locale Properties -------------- //
