@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { NextConfig } from 'next';
+import type { NextConfig } from 'next';
 import {
   defaultWithGTConfigProps,
   defaultCacheExpiryTime,
@@ -39,14 +39,42 @@ import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath'
 import { ssgChecks } from './plugin/checks/ssgChecks';
 import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
 
+type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
+
+type ConfigFileShape = {
+  files?: {
+    gt?: {
+      parsingFlags?: {
+        autoderive?: AutoderiveConfig;
+        autoDerive?: AutoderiveConfig;
+      };
+    };
+  };
+};
+
+type InternalGTConfigProps = withGTConfigProps &
+  ConfigFileShape & {
+    devApiKey?: string;
+    loadDictionaryEnabled?: boolean;
+    loadTranslationsType?: 'remote' | 'custom' | 'disabled';
+    _dictionaryFileType?: string;
+  };
+
+type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
+
 /**
  * Initializes General Translation settings for a Next.js application.
  *
  * Use it in `next.config.js` to enable GT translation functionality as a plugin.
  *
  * @example
- * // In next.config.mjs
+ * // In next.config.ts
  * import { withGTConfig } from 'gt-next/config';
+ * import type { NextConfig } from 'next';
+ *
+ * const nextConfig = {
+ *   reactStrictMode: true,
+ * } satisfies NextConfig;
  *
  * export default withGTConfig(nextConfig, {
  *   projectId: 'abc-123',
@@ -83,19 +111,21 @@ import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
  * @param {string|undefined} [experimentalLocaleResolutionParam=defaultWithGTConfigProps.experimentalLocaleResolutionParam] - The parameter to use for experimental locale resolution.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
- * @param {NextConfig} nextConfig - The Next.js configuration object to extend
+ * @param {object} nextConfig - The Next.js configuration object to extend
  * @param {withGTConfigProps} props - General Translation configuration properties
  * @returns {NextConfig} - An updated Next.js config with GT settings applied
  *
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  */
-export function withGTConfig(
-  nextConfig: any = {},
+export function withGTConfig<TNextConfig extends object = NextConfig>(
+  nextConfig?: TNextConfig,
   props: withGTConfigProps = {}
-) {
+): WithGTConfigResult<TNextConfig> {
+  const internalNextConfig = (nextConfig ?? {}) as unknown as NextConfig;
+
   // ---------- LOAD GT CONFIG FILE ---------- //
 
-  let loadedConfig: Partial<withGTConfigProps> = {};
+  let loadedConfig: Partial<InternalGTConfigProps> = {};
   try {
     let configPath: string | undefined;
     if (props.config) {
@@ -138,7 +168,7 @@ export function withGTConfig(
   }
 
   // conditionally add environment variables to config
-  const envConfig: Partial<withGTConfigProps> = {
+  const envConfig: Partial<InternalGTConfigProps> = {
     ...(projectId ? { projectId } : {}),
     ...(apiKey ? { apiKey } : {}),
     ...(devApiKey ? { devApiKey } : {}),
@@ -147,12 +177,13 @@ export function withGTConfig(
   // ---------- CHECK FOR CONFIG CONFLICTS ---------- //
 
   // Check for conflicts between config and params
+  const propsRecord = props as Record<string, unknown>;
   const conflicts = Object.entries(loadedConfig)
     .filter(([key, value]) => {
       // Skip if key doesn't exist in props
       if (!(key in props)) return false;
 
-      const propValue = props[key];
+      const propValue = propsRecord[key];
 
       // Handle null/undefined values
       if (value == null || propValue == null) {
@@ -173,20 +204,22 @@ export function withGTConfig(
 
       // Handle objects
       if (typeof value === 'object' && typeof propValue === 'object') {
-        const valueKeys = Object.keys(value);
-        const propKeys = Object.keys(propValue);
+        const valueRecord = value as Record<string, unknown>;
+        const propRecord = propValue as Record<string, unknown>;
+        const valueKeys = Object.keys(valueRecord);
+        const propKeys = Object.keys(propRecord);
         const keys = new Set([...valueKeys, ...propKeys]);
 
         // Objects must match exactly (no need to go deeper)
         if (valueKeys.length !== propKeys.length) return true;
-        return !Array.from(keys).every((k) => value[k] === propValue[k]);
+        return !Array.from(keys).every((k) => valueRecord[k] === propRecord[k]);
       }
 
       return false;
     })
     .map(
       ([key, value]) =>
-        `- Key: ${key} Next Config: ${JSON.stringify(props[key])} does not match GT Config: ${JSON.stringify(value)}`
+        `- Key: ${key} Next Config: ${JSON.stringify(propsRecord[key])} does not match GT Config: ${JSON.stringify(value)}`
     );
 
   if (conflicts.length) {
@@ -209,7 +242,7 @@ export function withGTConfig(
   };
 
   // precedence: input > env > config file > defaults
-  const mergedConfig: withGTConfigProps = {
+  const mergedConfig: InternalGTConfigProps = {
     ...defaultWithGTConfigProps,
     ...loadedConfig,
     ...envConfig,
@@ -403,7 +436,7 @@ export function withGTConfig(
   // Run cache component checks
   cacheComponentsChecks({
     mergedConfig,
-    nextConfig,
+    nextConfig: internalNextConfig,
     requestFunctionPaths,
     localTranslationsEnabled: !!customLoadTranslationsPath,
     localDictionaryEnabled: !!customLoadDictionaryPath,
@@ -542,12 +575,15 @@ export function withGTConfig(
       ? rawAutoderive
       : (rawAutoderive.strings ?? false);
 
-  const swcPluginEntry =
+  const swcPluginOptions: Record<string, unknown> = {
+    ...compilerOptions,
+    autoderiveJsx,
+    autoderiveStrings,
+  };
+
+  const swcPluginEntry: [string, Record<string, unknown>] | null =
     mergedConfig.experimentalCompilerOptions?.type === 'swc'
-      ? [
-          resolvedWasmFilePath,
-          { ...compilerOptions, autoderiveJsx, autoderiveStrings },
-        ]
+      ? [resolvedWasmFilePath, swcPluginOptions]
       : null;
 
   const turboAliases = {
@@ -571,13 +607,14 @@ export function withGTConfig(
   // Yet, if there are other resolveAlias fields, we don't want to be ignored either.
   const experimentalTurbopack = !(
     turboConfigStable &&
-    (!nextConfig.experimental?.turbo || nextConfig.turbopack?.resolveAlias)
+    (!internalNextConfig.experimental?.turbo ||
+      internalNextConfig.turbopack?.resolveAlias)
   );
 
   const config: NextConfig = {
-    ...nextConfig,
+    ...internalNextConfig,
     env: {
-      ...nextConfig.env,
+      ...internalNextConfig.env,
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
       ...(resolvedDictionaryFilePathType && {
         _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:
@@ -622,28 +659,28 @@ export function withGTConfig(
     ...(turboPackEnabled &&
       !experimentalTurbopack && {
         turbopack: {
-          ...nextConfig.turbopack,
+          ...internalNextConfig.turbopack,
           resolveAlias: {
-            ...nextConfig.turbopack?.resolveAlias,
+            ...internalNextConfig.turbopack?.resolveAlias,
             ...turboAliases,
           },
         },
       }),
     experimental: {
-      ...nextConfig.experimental,
+      ...internalNextConfig.experimental,
       ...(rootParamStability === 'experimental' && {
         rootParams: true,
       }),
       swcPlugins: [
-        ...(nextConfig.experimental?.swcPlugins || []),
+        ...(internalNextConfig.experimental?.swcPlugins || []),
         ...(swcPluginEntry ? [swcPluginEntry] : []),
       ],
       ...(turboPackEnabled &&
         experimentalTurbopack && {
           turbo: {
-            ...nextConfig.experimental?.turbo,
+            ...internalNextConfig.experimental?.turbo,
             resolveAlias: {
-              ...nextConfig.experimental?.turbo?.resolveAlias,
+              ...internalNextConfig.experimental?.turbo?.resolveAlias,
               ...turboAliases,
             },
           },
@@ -706,15 +743,17 @@ export function withGTConfig(
           );
         }
       }
-      if (typeof nextConfig?.webpack === 'function') {
-        return nextConfig.webpack(webpackConfig, options);
+      if (typeof internalNextConfig?.webpack === 'function') {
+        return internalNextConfig.webpack(webpackConfig, options);
       }
       return webpackConfig;
     },
   };
-  return config;
+  return config as WithGTConfigResult<TNextConfig>;
 }
 
 // Keep initGT for backward compatibility
-export const initGT = (props: withGTConfigProps) => (nextConfig: any) =>
-  withGTConfig(nextConfig, props);
+export const initGT =
+  (props: withGTConfigProps) =>
+  <TNextConfig extends object = NextConfig>(nextConfig?: TNextConfig) =>
+    withGTConfig(nextConfig, props);
