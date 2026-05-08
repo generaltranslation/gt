@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createNextMiddleware } from '../createNextMiddleware';
 import type { PathConfig } from '../utils';
+import type { CustomMapping } from 'generaltranslation/types';
 
 // Mock gt-react/internal — only provides a constant, avoids deep react-core build chain
 vi.mock('gt-react/internal', () => ({
@@ -18,7 +19,14 @@ const LOCALE_HEADER = 'x-generaltranslation-locale';
 
 // ---- Helpers ----
 
-function setEnvConfig(overrides: Record<string, any> = {}) {
+type MiddlewareEnvOverrides = {
+  defaultLocale?: string;
+  locales?: string[];
+  customMapping?: CustomMapping;
+  headersAndCookies?: Record<string, string>;
+};
+
+function setEnvConfig(overrides: MiddlewareEnvOverrides = {}) {
   process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS = JSON.stringify({
     defaultLocale: 'en',
     locales: ['en', 'fr', 'es', 'de'],

@@ -15,7 +15,7 @@ type RemoteLoadTranslationsInput = {
 
 let loadTranslationsFunction: (
   props: RemoteLoadTranslationsInput
-) => Promise<any>;
+) => Promise<Translations | undefined>;
 
 /**
  * Loads the translations for the user's current locale.
@@ -54,7 +54,7 @@ export async function loadTranslations(
     // Default translation loader: remote cache
     loadTranslationsFunction = async (
       _props: RemoteLoadTranslationsInput
-    ): Promise<any> => {
+    ): Promise<Translations | undefined> => {
       try {
         const gt = getI18NConfig().getGTClass();
         const targetLocale = gt.resolveCanonicalLocale(_props.targetLocale);

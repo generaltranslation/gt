@@ -7,9 +7,13 @@ import {
 } from '../errors/createErrors';
 import { getDefaultRenderSettings } from 'gt-react/internal';
 
+type GlobalWithI18NConfig = typeof globalThis & {
+  _GENERALTRANSLATION_I18N_CONFIG_INSTANCE?: I18NConfiguration;
+};
+
 export function getI18NConfig(): I18NConfiguration {
   // Return the singleton instance
-  const globalObj = globalThis as any;
+  const globalObj = globalThis as GlobalWithI18NConfig;
   if (globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE) {
     return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
   }

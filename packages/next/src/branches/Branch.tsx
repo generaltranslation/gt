@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
  * It allows for flexible content switching based on the `branch` prop and an object of possible branches (`...branches`).
@@ -26,9 +28,9 @@ export function Branch({
   branch,
   ...branches
 }: {
-  children?: any;
+  children?: ReactNode;
   branch?: string | number | boolean;
-  [key: string]: any;
+  [key: string]: ReactNode;
 }): React.JSX.Element {
   branch = branch?.toString();
   // ignore data-* attributes

@@ -14,6 +14,9 @@ import { vi } from 'vitest';
 export function setupModuleLoadPatching() {
   return vi.hoisted(() => {
     const Module = require('module');
+    type RequestFunctionMock = {
+      default: () => Promise<string>;
+    };
 
     // Save original _load if not already saved
     if (!Module._load_original) {
@@ -21,7 +24,7 @@ export function setupModuleLoadPatching() {
     }
 
     // Create mocks for all the require() calls in getRequestFunction
-    const mocks: Record<string, any> = {
+    const mocks: Record<string, RequestFunctionMock> = {
       'gt-next/internal/_getLocale': {
         default: () => Promise.resolve('en'),
       },
@@ -43,7 +46,7 @@ export function setupModuleLoadPatching() {
     };
 
     // Patch _load to intercept require() calls
-    Module._load = (uri: string, parent: any) => {
+    Module._load = (uri: string, parent: NodeModule | null) => {
       if (mocks[uri]) {
         return mocks[uri];
       }

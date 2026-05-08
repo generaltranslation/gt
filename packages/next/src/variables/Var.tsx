@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 
 /**
  * The `<Var>` component renders a variable value, which can either be passed as `children` or a `value`.
@@ -17,7 +17,7 @@ import React from 'react';
 export function Var({
   children,
 }: {
-  children?: any;
+  children?: ReactNode;
   name?: string;
 }): React.JSX.Element | null {
   return <>{children}</>;

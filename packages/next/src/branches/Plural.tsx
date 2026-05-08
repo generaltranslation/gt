@@ -1,4 +1,5 @@
 import { getPluralBranch } from 'gt-react/internal';
+import type { ReactNode } from 'react';
 import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { useLocale } from '../request/getLocale';
 
@@ -32,10 +33,10 @@ export function Plural({
   locales = [useLocale(), getI18NConfig().getDefaultLocale()],
   ...branches
 }: {
-  children?: React.ReactNode;
+  children?: ReactNode;
   n?: number;
   locales?: string[];
-  [key: string]: any;
+  [key: string]: ReactNode;
 }) {
   return (
     <>

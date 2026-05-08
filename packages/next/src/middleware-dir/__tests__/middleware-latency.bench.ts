@@ -4,12 +4,22 @@ import { vi } from 'vitest';
 import type { NextResponse } from 'next/server';
 import { RequestCookies } from 'next/dist/compiled/@edge-runtime/cookies';
 
+type MockResponseInit = ResponseInit & {
+  request?: {
+    headers?: Headers;
+  };
+};
+
+type ResponseWithCookies = Response & {
+  cookies: RequestCookies;
+};
+
 // Mock NextResponse (same pattern as Layer 1 tests)
 vi.mock('next/server', async (importActual) => {
-  const Actual = (await importActual()) as any;
-  function createResponse(init: any) {
-    const response = new Response(null, init);
-    (response as any).cookies = new RequestCookies(
+  const Actual = await importActual<typeof import('next/server')>();
+  function createResponse(init?: MockResponseInit) {
+    const response = new Response(null, init) as ResponseWithCookies;
+    response.cookies = new RequestCookies(
       init?.request?.headers || new Headers()
     );
     return response as NextResponse;
@@ -17,9 +27,13 @@ vi.mock('next/server', async (importActual) => {
   return {
     ...Actual,
     NextResponse: {
-      next: vi.fn((init?: any) => createResponse(init)),
-      rewrite: vi.fn((dest: any, init?: any) => createResponse(init)),
-      redirect: vi.fn((url: any, init?: any) => createResponse(init)),
+      next: vi.fn((init?: MockResponseInit) => createResponse(init)),
+      rewrite: vi.fn((_dest: string | URL, init?: MockResponseInit) =>
+        createResponse(init)
+      ),
+      redirect: vi.fn((_url: string | URL, init?: MockResponseInit) =>
+        createResponse(init)
+      ),
     },
   };
 });
