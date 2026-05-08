@@ -776,7 +776,7 @@ describe('extractJson', () => {
         'en'
       );
 
-      gt.setConfig({ sourceLocale: 'en', customMapping: undefined as any });
+      gt.setConfig({ sourceLocale: 'en' });
 
       expect(result).not.toBeNull();
       const parsed = JSON.parse(result!);
