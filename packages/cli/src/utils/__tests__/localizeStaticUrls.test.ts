@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
-import localizeStaticUrls, { transformUrlPath } from '../localizeStaticUrls';
+import localizeStaticUrls, {
+  transformUrlPath,
+  type StaticUrlSettings,
+} from '../localizeStaticUrls';
+
+const createSettings = (settings: StaticUrlSettings): StaticUrlSettings =>
+  settings;
 
 // Mock fs module
 vi.mock('fs', () => ({
@@ -37,7 +43,7 @@ describe('localizeStaticUrls', () => {
         locales: ['en', 'ja'],
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
 
       expect(createFileMapping).not.toHaveBeenCalled();
     });
@@ -46,19 +52,20 @@ describe('localizeStaticUrls', () => {
       const settings = {
         files: {
           placeholderPaths: { gt: 'some-path' },
-          resolvedPaths: [],
+          resolvedPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
 
       expect(createFileMapping).not.toHaveBeenCalled();
     });
 
     it('should process md/mdx files for localization', async () => {
       const mockFileMapping = {
+        en: {},
         ja: {
           'file1.md': '/path/to/ja/file1.md',
           'file2.mdx': '/path/to/ja/file2.mdx',
@@ -75,22 +82,21 @@ describe('localizeStaticUrls', () => {
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['file1', 'file2'],
+          resolvedPaths: { mdx: ['file1', 'file2'] },
           transformPaths: {},
           transformFormats: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/docs/[locale]',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
 
       expect(createFileMapping).toHaveBeenCalledWith(
-        ['file1', 'file2'],
+        { mdx: ['file1', 'file2'] },
         { docs: '/docs' },
         {},
         {},
@@ -122,18 +128,17 @@ describe('localizeStaticUrls', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle markdown links without trailing paths', async () => {
@@ -154,18 +159,17 @@ describe('localizeStaticUrls', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
 
@@ -188,7 +192,7 @@ describe('localizeStaticUrls', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -199,7 +203,7 @@ describe('localizeStaticUrls', () => {
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should not modify already localized markdown links', async () => {
@@ -220,7 +224,7 @@ describe('localizeStaticUrls', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -231,7 +235,7 @@ describe('localizeStaticUrls', () => {
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
 
@@ -254,7 +258,7 @@ describe('localizeStaticUrls', () => {
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['file1'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -262,7 +266,7 @@ describe('localizeStaticUrls', () => {
         options: { docsUrlPattern: '/docs/[locale]' },
       };
 
-      await localizeStaticUrls(settings as any, ['ja']);
+      await localizeStaticUrls(createSettings(settings), ['ja']);
 
       // If no changes detected, writeFile may not be called
       // Ensure the content remains unchanged
@@ -287,7 +291,7 @@ describe('localizeStaticUrls', () => {
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['file1'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -298,7 +302,7 @@ describe('localizeStaticUrls', () => {
         },
       };
 
-      await localizeStaticUrls(settings as any, ['ja']);
+      await localizeStaticUrls(createSettings(settings), ['ja']);
       expect(vi.mocked(fs.promises.readFile)).toHaveBeenCalled();
     });
 
@@ -320,7 +324,7 @@ describe('localizeStaticUrls', () => {
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['file1'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -331,7 +335,7 @@ describe('localizeStaticUrls', () => {
         },
       };
 
-      await localizeStaticUrls(settings as any, ['ja']);
+      await localizeStaticUrls(createSettings(settings), ['ja']);
       expect(vi.mocked(fs.promises.readFile)).toHaveBeenCalled();
     });
   });
@@ -356,18 +360,17 @@ describe('localizeStaticUrls', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle href attributes without trailing paths', async () => {
@@ -388,7 +391,7 @@ describe('localizeStaticUrls', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -399,7 +402,7 @@ describe('localizeStaticUrls', () => {
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle complex href attributes with query parameters and fragments', async () => {
@@ -420,18 +423,17 @@ describe('localizeStaticUrls', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
 
@@ -454,7 +456,7 @@ describe('localizeStaticUrls', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -465,7 +467,7 @@ describe('localizeStaticUrls', () => {
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle href attributes without trailing paths', async () => {
@@ -486,7 +488,7 @@ describe('localizeStaticUrls', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -497,7 +499,7 @@ describe('localizeStaticUrls', () => {
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should not modify already localized href attributes', async () => {
@@ -518,7 +520,7 @@ describe('localizeStaticUrls', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -529,7 +531,7 @@ describe('localizeStaticUrls', () => {
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
   });
@@ -565,18 +567,17 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/docs/[locale]',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
   });
 
@@ -600,7 +601,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -612,7 +613,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should exclude href attributes matching exact paths', async () => {
@@ -633,7 +634,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -645,7 +646,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should exclude paths matching glob patterns', async () => {
@@ -666,7 +667,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -678,7 +679,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle [locale] placeholder in exclude patterns', async () => {
@@ -699,19 +700,18 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/[locale]/images/**'],
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
 
@@ -734,7 +734,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -746,7 +746,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should exclude href attributes matching exact paths', async () => {
@@ -767,7 +767,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -779,7 +779,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should exclude paths matching glob patterns', async () => {
@@ -800,7 +800,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -812,7 +812,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle [locale] placeholder in exclude patterns with hideDefaultLocale', async () => {
@@ -833,7 +833,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -845,7 +845,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
 
@@ -878,19 +878,18 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/en/images/**', '/docs/en/snippets/**'],
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
 
@@ -913,19 +912,18 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: [],
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should work when exclude parameter is undefined', async () => {
@@ -946,19 +944,18 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
             // excludeStaticUrls not provided
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle complex glob patterns', async () => {
@@ -989,19 +986,18 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
             excludeStaticUrls: ['/docs/[locale]/{images,assets}/**'],
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
   });
@@ -1026,18 +1022,17 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle href attributes with /[locale] pattern', async () => {
@@ -1058,18 +1053,17 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
 
@@ -1092,7 +1086,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -1103,7 +1097,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle href attributes with /[locale] pattern when hideDefaultLocale is true', async () => {
@@ -1124,7 +1118,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -1135,7 +1129,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
 
@@ -1158,19 +1152,18 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/[locale]',
             excludeStaticUrls: ['/[locale]/images/**'],
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should include paths with /[locale] pattern when hideDefaultLocale is true when locale path is specified', async () => {
@@ -1191,7 +1184,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -1203,7 +1196,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
   });
@@ -1231,18 +1224,17 @@ Some content without any matching links.
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/docs/[locale]',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
 
     it('should handle special characters in pattern', async () => {
@@ -1263,18 +1255,17 @@ Some content without any matching links.
       const settings = {
         files: {
           placeholderPaths: { docs: '/api-docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/api-docs/[locale]',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
 
     it('should handle pattern without leading slash', async () => {
@@ -1295,18 +1286,17 @@ Some content without any matching links.
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: 'docs/[locale]', // No leading slash
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
 
     it('should use default pattern when docsUrlPattern is not provided', async () => {
@@ -1327,18 +1317,17 @@ Some content without any matching links.
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        experimentalHideDefaultLocale: false,
         options: {
           // docsUrlPattern not provided - should default to '/[locale]'
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
 
     it('should work with different target locales', async () => {
@@ -1365,18 +1354,17 @@ Some content without any matching links.
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', locale],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       }
     });
   });
@@ -1405,18 +1393,17 @@ Some content without any matching links.
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle multiple Card components with different href patterns', async () => {
@@ -1461,18 +1448,17 @@ Some content without any matching links.
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle JSX components with single quotes in href', async () => {
@@ -1497,18 +1483,17 @@ Some content without any matching links.
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle JSX components mixed with markdown links and regular href attributes', async () => {
@@ -1565,18 +1550,17 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
 
@@ -1603,7 +1587,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -1614,7 +1598,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should replace default locale with target locale when href contains default locale', async () => {
@@ -1639,7 +1623,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -1650,7 +1634,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should not modify already localized JSX component href attributes with hideDefaultLocale = true', async () => {
@@ -1675,7 +1659,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -1686,7 +1670,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle multiple identical href attributes in raw JSX strings correctly', async () => {
@@ -1724,7 +1708,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -1735,7 +1719,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle multiple identical href attributes in JSX correctly', async () => {
@@ -1760,7 +1744,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -1771,7 +1755,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
   });
@@ -1808,13 +1792,12 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should not modify URLs that already have default locale', async () => {
@@ -1845,13 +1828,12 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
 
@@ -1890,7 +1872,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should not modify URLs that already lack default locale', async () => {
@@ -1927,7 +1909,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
   });
@@ -1952,7 +1934,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -1963,7 +1945,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should replace default locale with target locale when URL contains default locale', async () => {
@@ -1984,7 +1966,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -1995,7 +1977,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should handle exact matches by adding target locale', async () => {
@@ -2016,7 +1998,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -2027,7 +2009,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
 
@@ -2050,18 +2032,17 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
 
       it('should replace existing default locale with target locale', async () => {
@@ -2082,18 +2063,17 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
           locales: ['en', 'ja'],
-          experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
           },
         };
 
-        await localizeStaticUrls(settings as any);
+        await localizeStaticUrls(createSettings(settings));
       });
     });
   });
@@ -2140,7 +2120,7 @@ description: "Bienvenido al nuevo hogar de tu documentación"
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2150,7 +2130,7 @@ description: "Bienvenido al nuevo hogar de tu documentación"
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
   });
 
@@ -2174,18 +2154,17 @@ description: "Bienvenido al nuevo hogar de tu documentación"
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/docs/[locale]',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
 
     it('should return original content unchanged when MDX has unclosed JSX tags', async () => {
@@ -2207,18 +2186,17 @@ description: "Bienvenido al nuevo hogar de tu documentación"
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/docs/[locale]',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
 
     it('should return original content unchanged when MDX has nested unclosed tags', async () => {
@@ -2244,18 +2222,17 @@ description: "Bienvenido al nuevo hogar de tu documentación"
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/docs/[locale]',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
 
     it('should return original content unchanged when MDX has mismatched JSX tags', async () => {
@@ -2279,18 +2256,17 @@ description: "Bienvenido al nuevo hogar de tu documentación"
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/docs/[locale]',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
 
     it('should return original content unchanged when MDX has invalid JSX attributes', async () => {
@@ -2314,18 +2290,17 @@ description: "Bienvenido al nuevo hogar de tu documentación"
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/docs/[locale]',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
   });
 
@@ -2361,7 +2336,7 @@ description: "Bienvenido al nuevo hogar de tu documentación"
       },
     };
 
-    await localizeStaticUrls(settings as any);
+    await localizeStaticUrls(createSettings(settings));
 
     const expectedContent = `# Default Locale Content
 
@@ -2402,7 +2377,6 @@ describe('baseDomain', () => {
       },
       defaultLocale: 'en',
       locales: ['fr'],
-      experimentalHideDefaultLocale: false,
       options: {
         docsUrlPattern: '/[locale]',
         excludeStaticUrls: [],
@@ -2410,7 +2384,7 @@ describe('baseDomain', () => {
       },
     };
 
-    await localizeStaticUrls(settings as any);
+    await localizeStaticUrls(createSettings(settings));
 
     vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
     vi.mocked(fs.promises.writeFile).mockImplementation((_, content) => {
@@ -2438,19 +2412,18 @@ describe('baseDomain', () => {
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: { mdx: ['test.mdx'] },
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['fr'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/docs/[locale]',
           baseDomain: 'https://example.com',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
 
     it('should handle baseDomain with hideDefaultLocale=true', async () => {
@@ -2471,7 +2444,7 @@ describe('baseDomain', () => {
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: { mdx: ['test.mdx'] },
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2483,7 +2456,7 @@ describe('baseDomain', () => {
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
 
     it('should not add literal null to baseDomain URLs when transformation fails', async () => {
@@ -2505,19 +2478,18 @@ describe('baseDomain', () => {
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: { mdx: ['test.mdx'] },
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['fr'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/docs/[locale]',
           baseDomain: 'https://example.com',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
 
     it('should handle multiple baseDomain URLs with mixed transformable/non-transformable paths', async () => {
@@ -2549,19 +2521,18 @@ describe('baseDomain', () => {
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: { mdx: ['test.mdx'] },
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
         locales: ['fr'],
-        experimentalHideDefaultLocale: false,
         options: {
           docsUrlPattern: '/docs/[locale]',
           baseDomain: 'https://example.com',
         },
       };
 
-      await localizeStaticUrls(settings as any);
+      await localizeStaticUrls(createSettings(settings));
     });
   });
 });

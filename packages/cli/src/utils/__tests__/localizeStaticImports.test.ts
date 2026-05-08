@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
-import localizeStaticImports from '../localizeStaticImports';
+import localizeStaticImports, {
+  type StaticImportSettings,
+} from '../localizeStaticImports';
+
+const createSettings = (settings: StaticImportSettings): StaticImportSettings =>
+  settings;
 
 // Mock fs module
 vi.mock('fs', () => ({
@@ -42,7 +47,7 @@ describe('localizeStaticImports', () => {
         locales: ['en', 'ja'],
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
 
       expect(createFileMapping).not.toHaveBeenCalled();
     });
@@ -51,19 +56,20 @@ describe('localizeStaticImports', () => {
       const settings = {
         files: {
           placeholderPaths: { gt: 'some-path' },
-          resolvedPaths: [],
+          resolvedPaths: {},
         },
         defaultLocale: 'en',
         locales: ['en', 'ja'],
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
 
       expect(createFileMapping).not.toHaveBeenCalled();
     });
 
     it('should process md/mdx files for localization', async () => {
       const mockFileMapping = {
+        en: {},
         ja: {
           'file1.md': '/path/to/ja/file1.md',
           'file2.mdx': '/path/to/ja/file2.mdx',
@@ -80,7 +86,7 @@ describe('localizeStaticImports', () => {
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['file1', 'file2'],
+          resolvedPaths: { mdx: ['file1', 'file2'] },
           transformPaths: {},
           transformFormats: {},
         },
@@ -92,10 +98,10 @@ describe('localizeStaticImports', () => {
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
 
       expect(createFileMapping).toHaveBeenCalledWith(
-        ['file1', 'file2'],
+        { mdx: ['file1', 'file2'] },
         { docs: '/docs' },
         {},
         {},
@@ -127,7 +133,7 @@ describe('localizeStaticImports', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -138,7 +144,7 @@ describe('localizeStaticImports', () => {
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle double quotes in import statements', async () => {
@@ -159,7 +165,7 @@ describe('localizeStaticImports', () => {
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -170,7 +176,7 @@ describe('localizeStaticImports', () => {
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle multiple import statements', async () => {
@@ -205,7 +211,7 @@ import Component3 from '/components/ja/component3.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -216,7 +222,7 @@ import Component3 from '/components/ja/component3.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle pattern without leading slash', async () => {
@@ -237,7 +243,7 @@ import Component3 from '/components/ja/component3.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -248,7 +254,7 @@ import Component3 from '/components/ja/component3.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle nested paths correctly', async () => {
@@ -269,7 +275,7 @@ import Component3 from '/components/ja/component3.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -280,7 +286,7 @@ import Component3 from '/components/ja/component3.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
     });
 
@@ -303,7 +309,7 @@ import Component3 from '/components/ja/component3.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -314,7 +320,7 @@ import Component3 from '/components/ja/component3.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle empty path after pattern', async () => {
@@ -335,7 +341,7 @@ import Component3 from '/components/ja/component3.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -346,7 +352,7 @@ import Component3 from '/components/ja/component3.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should replace default locale with target locale when hideDefaultLocale is true and import contains default locale', async () => {
@@ -367,7 +373,7 @@ import Component3 from '/components/ja/component3.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -378,7 +384,7 @@ import Component3 from '/components/ja/component3.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
     });
 
@@ -405,7 +411,7 @@ export default function Component() {}
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -416,7 +422,7 @@ export default function Component() {}
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle mixed quote types', async () => {
@@ -443,7 +449,7 @@ import Component2 from "/components/ja/component2.mdx"
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -454,7 +460,7 @@ import Component2 from "/components/ja/component2.mdx"
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle complex import patterns', async () => {
@@ -481,7 +487,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -492,7 +498,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle imports with no path after locale', async () => {
@@ -513,7 +519,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -524,7 +530,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
     });
 
@@ -564,7 +570,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -575,7 +581,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         }
       });
     });
@@ -599,7 +605,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'fr', // Different default locale
@@ -610,7 +616,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
     });
 
@@ -633,7 +639,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -644,7 +650,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should use default pattern /[locale] when docsImportPattern is not provided with hideDefaultLocale true', async () => {
@@ -665,7 +671,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -676,7 +682,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle nested paths with default pattern /[locale]', async () => {
@@ -697,7 +703,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -708,7 +714,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle empty options object (no docsImportPattern or docsHideDefaultLocaleImport)', async () => {
@@ -729,7 +735,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -737,7 +743,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
           // No options object at all
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle undefined docsImportPattern specifically', async () => {
@@ -758,7 +764,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -769,7 +775,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
     });
 
@@ -803,7 +809,7 @@ import API from '/components/ja/api.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -815,7 +821,7 @@ import API from '/components/ja/api.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should exclude paths matching glob patterns', async () => {
@@ -846,7 +852,7 @@ import Snippet from '/components/en/snippets/code.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -861,7 +867,7 @@ import Snippet from '/components/en/snippets/code.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should handle [locale] placeholder in exclude patterns', async () => {
@@ -890,7 +896,7 @@ import Images from '/components/en/images/logo.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -902,7 +908,7 @@ import Images from '/components/en/images/logo.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
       });
 
@@ -935,7 +941,7 @@ import API from '/components/ja/api.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -947,7 +953,7 @@ import API from '/components/ja/api.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should exclude paths matching glob patterns', async () => {
@@ -978,7 +984,7 @@ import Snippet from '/components/snippets/code.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -993,7 +999,7 @@ import Snippet from '/components/snippets/code.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should handle [locale] placeholder in exclude patterns with hideDefaultLocale', async () => {
@@ -1022,7 +1028,7 @@ import Images from '/components/images/logo.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1034,7 +1040,7 @@ import Images from '/components/images/logo.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should handle [locale] placeholder without pathContent', async () => {
@@ -1063,7 +1069,7 @@ import Images from '/components/images/logo.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1075,7 +1081,7 @@ import Images from '/components/images/logo.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should handle [locale] placeholder without pathContent with a default locale import', async () => {
@@ -1104,7 +1110,7 @@ import Images from '/components/en/images/logo.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1116,7 +1122,7 @@ import Images from '/components/en/images/logo.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
       });
 
@@ -1141,7 +1147,7 @@ import Images from '/components/en/images/logo.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1153,7 +1159,7 @@ import Images from '/components/en/images/logo.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should work when exclude parameter is undefined', async () => {
@@ -1176,7 +1182,7 @@ import Images from '/components/en/images/logo.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1188,7 +1194,7 @@ import Images from '/components/en/images/logo.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should handle complex glob patterns', async () => {
@@ -1221,7 +1227,7 @@ import Guide from '/components/ja/guide.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1233,7 +1239,7 @@ import Guide from '/components/ja/guide.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
       });
 
@@ -1270,7 +1276,7 @@ import Fence from '/components/en/fence.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1281,7 +1287,7 @@ import Fence from '/components/en/fence.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
       });
     });
@@ -1300,13 +1306,13 @@ import Fence from '/components/en/fence.mdx'
 
       const mockFileMapping = {
         en: { 'test.mdx': '/path/test.mdx' },
-      } as any;
+      };
       vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
 
-      const settings = {
+      const settings = createSettings({
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -1315,7 +1321,7 @@ import Fence from '/components/en/fence.mdx'
           docsHideDefaultLocaleImport: true,
           docsImportPattern: '/components/[locale]',
         },
-      } as any;
+      });
 
       await localizeStaticImports(settings);
 
@@ -1335,13 +1341,13 @@ import Fence from '/components/en/fence.mdx'
 
       const mockFileMapping = {
         ja: { 'test.mdx': '/path/test.mdx' },
-      } as any;
+      };
       vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
 
-      const settings = {
+      const settings = createSettings({
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -1350,7 +1356,7 @@ import Fence from '/components/en/fence.mdx'
           docsHideDefaultLocaleImport: false,
           docsImportPattern: '/components/[locale]',
         },
-      } as any;
+      });
 
       await localizeStaticImports(settings);
       // Ensure re-run is also stable
@@ -1366,19 +1372,19 @@ import Fence from '/components/en/fence.mdx'
 
     const mockFileMapping = {
       ja: { 'test.mdx': '/path/test.mdx' },
-    } as any;
+    };
     vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
 
-    const settings = {
+    const settings = createSettings({
       files: {
         placeholderPaths: { docs: '/docs' },
-        resolvedPaths: ['test'],
+        resolvedPaths: {},
         transformPaths: {},
       },
       defaultLocale: 'en',
       locales: ['en', 'ja'],
       options: { docsImportPattern: '/components/[locale]' },
-    } as any;
+    });
 
     await localizeStaticImports(settings);
 
@@ -1408,7 +1414,7 @@ import Fence from '/components/en/fence.mdx'
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1419,7 +1425,7 @@ import Fence from '/components/en/fence.mdx'
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should handle real-world scenario - file in en directory with missing locale in imports', async () => {
@@ -1461,7 +1467,7 @@ import SnippetIntro from '/snippets/en/snippet-intro.mdx';
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['reusable-snippets'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1472,7 +1478,7 @@ import SnippetIntro from '/snippets/en/snippet-intro.mdx';
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should handle exact user scenario - snippets pattern', async () => {
@@ -1514,7 +1520,7 @@ import SnippetIntro from '/snippets/en/snippet-intro.mdx';
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['reusable-snippets'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1525,7 +1531,7 @@ import SnippetIntro from '/snippets/en/snippet-intro.mdx';
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should not modify imports that already have the default locale', async () => {
@@ -1548,7 +1554,7 @@ import SnippetIntro from '/snippets/en/snippet-intro.mdx';
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1559,7 +1565,7 @@ import SnippetIntro from '/snippets/en/snippet-intro.mdx';
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should handle multiple imports with mixed patterns', async () => {
@@ -1590,7 +1596,7 @@ import Component3 from '/snippets/en/outro.mdx';
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1601,7 +1607,7 @@ import Component3 from '/snippets/en/outro.mdx';
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should work with different quote types', async () => {
@@ -1630,7 +1636,7 @@ import Component2 from "/snippets/en/double.mdx";
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1641,7 +1647,7 @@ import Component2 from "/snippets/en/double.mdx";
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should handle nested path patterns', async () => {
@@ -1664,7 +1670,7 @@ import Component2 from "/snippets/en/double.mdx";
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1675,7 +1681,7 @@ import Component2 from "/snippets/en/double.mdx";
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
       });
 
@@ -1700,7 +1706,7 @@ import Component2 from "/snippets/en/double.mdx";
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1711,7 +1717,7 @@ import Component2 from "/snippets/en/double.mdx";
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
       });
     });
@@ -1738,7 +1744,7 @@ import Component2 from "/snippets/en/double.mdx";
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1749,7 +1755,7 @@ import Component2 from "/snippets/en/double.mdx";
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should not modify imports that already have the correct format', async () => {
@@ -1772,7 +1778,7 @@ import Component2 from "/snippets/en/double.mdx";
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1783,7 +1789,7 @@ import Component2 from "/snippets/en/double.mdx";
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should handle multiple imports with mixed patterns', async () => {
@@ -1814,7 +1820,7 @@ import Component3 from '/snippets/outro.mdx';
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1825,7 +1831,7 @@ import Component3 from '/snippets/outro.mdx';
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should work with different quote types', async () => {
@@ -1854,7 +1860,7 @@ import Component2 from "/snippets/double.mdx";
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1865,7 +1871,7 @@ import Component2 from "/snippets/double.mdx";
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
 
         it('should handle nested path patterns', async () => {
@@ -1888,7 +1894,7 @@ import Component2 from "/snippets/double.mdx";
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1899,7 +1905,7 @@ import Component2 from "/snippets/double.mdx";
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
       });
 
@@ -1924,7 +1930,7 @@ import Component2 from "/snippets/double.mdx";
           const settings = {
             files: {
               placeholderPaths: { docs: '/docs' },
-              resolvedPaths: ['test'],
+              resolvedPaths: {},
               transformPaths: {},
             },
             defaultLocale: 'en',
@@ -1935,7 +1941,7 @@ import Component2 from "/snippets/double.mdx";
             },
           };
 
-          await localizeStaticImports(settings as any);
+          await localizeStaticImports(createSettings(settings));
         });
       });
     });
@@ -1980,7 +1986,7 @@ import Component2 from "/snippets/double.mdx";
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should handle non-default locale files that have imports without locale (real-world case)', async () => {
@@ -2035,7 +2041,7 @@ import SnippetIntro from '/snippets/fr/snippet-intro.mdx';
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should still handle standard case where imports already have default locale', async () => {
@@ -2067,7 +2073,7 @@ import SnippetIntro from '/snippets/fr/snippet-intro.mdx';
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
     });
 
@@ -2096,7 +2102,7 @@ import Component2 from '/snippets/excluded.mdx';
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -2108,7 +2114,7 @@ import Component2 from '/snippets/excluded.mdx';
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
 
       it('should work with different default locales', async () => {
@@ -2129,7 +2135,7 @@ import Component2 from '/snippets/excluded.mdx';
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['test'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'fr',
@@ -2140,7 +2146,7 @@ import Component2 from '/snippets/excluded.mdx';
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
     });
 
@@ -2163,7 +2169,7 @@ import Component2 from '/snippets/excluded.mdx';
         const settings = {
           files: {
             placeholderPaths: { docs: '/docs' },
-            resolvedPaths: ['system'],
+            resolvedPaths: {},
             transformPaths: {},
           },
           defaultLocale: 'en',
@@ -2180,7 +2186,7 @@ import Component2 from '/snippets/excluded.mdx';
           },
         };
 
-        await localizeStaticImports(settings as any);
+        await localizeStaticImports(createSettings(settings));
       });
     });
   });
@@ -2206,7 +2212,7 @@ import ValidComponent from '/components/ja/valid.mdx'`;
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2217,7 +2223,7 @@ import ValidComponent from '/components/ja/valid.mdx'`;
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should use fallback processing when MDX has unclosed JSX tags', async () => {
@@ -2242,7 +2248,7 @@ import Component from '/components/ja/test.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2253,7 +2259,7 @@ import Component from '/components/ja/test.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should use fallback processing when MDX has nested unclosed tags', async () => {
@@ -2286,7 +2292,7 @@ import Component from '/components/ja/test.mdx'`;
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2297,7 +2303,7 @@ import Component from '/components/ja/test.mdx'`;
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should use fallback processing when MDX has mismatched JSX tags', async () => {
@@ -2326,7 +2332,7 @@ Some content here`;
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2337,7 +2343,7 @@ Some content here`;
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should use fallback processing when MDX has invalid JSX attributes', async () => {
@@ -2362,7 +2368,7 @@ Some content here`;
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2373,7 +2379,7 @@ Some content here`;
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should use fallback processing when MDX has complex invalid syntax', async () => {
@@ -2406,7 +2412,7 @@ Some content here`;
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2417,7 +2423,7 @@ Some content here`;
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
   });
 
@@ -2448,7 +2454,7 @@ Some content here`;
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2459,7 +2465,7 @@ Some content here`;
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should transform imports when target file exists', async () => {
@@ -2483,7 +2489,7 @@ Some content here`;
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2494,7 +2500,7 @@ Some content here`;
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should check for files with common extensions', async () => {
@@ -2522,7 +2528,7 @@ Some content here`;
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2533,7 +2539,7 @@ Some content here`;
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should handle mixed scenarios - some files exist, others do not', async () => {
@@ -2570,7 +2576,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2581,7 +2587,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should handle relative import paths with proper separator', async () => {
@@ -2605,7 +2611,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2616,7 +2622,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should handle absolute/root import paths', async () => {
@@ -2640,7 +2646,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2651,7 +2657,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should not transform relative paths when target file does not exist', async () => {
@@ -2681,7 +2687,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2692,7 +2698,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
   });
 
@@ -2717,7 +2723,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2728,7 +2734,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should handle locale at root level', async () => {
@@ -2751,7 +2757,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2762,7 +2768,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should handle complex relative patterns with multiple levels', async () => {
@@ -2785,7 +2791,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2796,7 +2802,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should not transform paths that contain pattern but are not at the expected position', async () => {
@@ -2819,7 +2825,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2830,7 +2836,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should handle patterns with multiple path segments after locale', async () => {
@@ -2853,7 +2859,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2864,7 +2870,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should add locale to relative imports in non-default locale files', async () => {
@@ -2887,7 +2893,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2898,7 +2904,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should add locale to current directory relative imports', async () => {
@@ -2921,7 +2927,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2932,7 +2938,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should handle deeply nested relative imports without locale', async () => {
@@ -2955,7 +2961,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -2966,7 +2972,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
 
     it('should not add locale to relative imports when target file does not exist', async () => {
@@ -2994,7 +3000,7 @@ import AnotherExisting from '/components/ja/another.mdx'
       const settings = {
         files: {
           placeholderPaths: { docs: '/docs' },
-          resolvedPaths: ['test'],
+          resolvedPaths: {},
           transformPaths: {},
         },
         defaultLocale: 'en',
@@ -3005,7 +3011,7 @@ import AnotherExisting from '/components/ja/another.mdx'
         },
       };
 
-      await localizeStaticImports(settings as any);
+      await localizeStaticImports(createSettings(settings));
     });
   });
 });

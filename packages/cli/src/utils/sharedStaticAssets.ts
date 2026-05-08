@@ -7,11 +7,24 @@ import remarkMdx from 'remark-mdx';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
-import type { Root } from 'mdast';
+import type { Literal, Root } from 'mdast';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
-import type { Settings, SharedStaticAssetsConfig } from '../types/index.js';
+import type { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { TEMPLATE_FILE_NAME } from './constants.js';
+
+type MdxAssetNode = {
+  type?: string;
+  name?: unknown;
+  attributes?: unknown;
+  url?: unknown;
+};
+
+type MdxAttribute = {
+  type?: string;
+  name?: string;
+  value?: unknown;
+};
 
 function derivePublicPath(outDir: string, provided?: string): string {
   if (provided) return provided;
@@ -36,14 +49,10 @@ async function moveFile(src: string, dest: string) {
   try {
     await ensureDir(path.dirname(dest));
     await fs.promises.rename(src, dest);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException | undefined)?.code;
     // Fallback to copy+unlink for cross-device or existing files
-    if (
-      err &&
-      (err.code === 'EXDEV' ||
-        err.code === 'EEXIST' ||
-        err.code === 'ENOTEMPTY')
-    ) {
+    if (code === 'EXDEV' || code === 'EEXIST' || code === 'ENOTEMPTY') {
       const data = await fs.promises.readFile(src);
       await ensureDir(path.dirname(dest));
       await fs.promises.writeFile(dest, data);
@@ -52,7 +61,7 @@ async function moveFile(src: string, dest: string) {
       } catch {
         // Ignore cleanup errors for source files that were already moved.
       }
-    } else if (err && err.code === 'ENOENT') {
+    } else if (code === 'ENOENT') {
       // already moved or missing; ignore
       return;
     } else {
@@ -151,34 +160,35 @@ function rewriteMdxContent(
     return null;
   };
 
-  visit(ast, (node: any) => {
+  visit(ast, (node) => {
+    const assetNode = node as MdxAssetNode;
     // Markdown image: ![alt](url)
-    if (node.type === 'image' && typeof node.url === 'string') {
-      const newUrl = maybeRewrite(node.url);
-      if (newUrl) node.url = newUrl;
+    if (assetNode.type === 'image' && typeof assetNode.url === 'string') {
+      const newUrl = maybeRewrite(assetNode.url);
+      if (newUrl) assetNode.url = newUrl;
       return;
     }
     // Markdown link: [text](url) — useful for PDFs and other downloadable assets
-    if (node.type === 'link' && typeof node.url === 'string') {
-      const newUrl = maybeRewrite(node.url);
-      if (newUrl) node.url = newUrl;
+    if (assetNode.type === 'link' && typeof assetNode.url === 'string') {
+      const newUrl = maybeRewrite(assetNode.url);
+      if (newUrl) assetNode.url = newUrl;
       return;
     }
     // MDX <img src="..." />
     if (
-      (node.type === 'mdxJsxFlowElement' ||
-        node.type === 'mdxJsxTextElement') &&
-      Array.isArray(node.attributes)
+      (assetNode.type === 'mdxJsxFlowElement' ||
+        assetNode.type === 'mdxJsxTextElement') &&
+      Array.isArray(assetNode.attributes)
     ) {
-      for (const attr of node.attributes) {
+      for (const attr of assetNode.attributes) {
+        const attribute = attr as MdxAttribute;
         if (
-          attr &&
-          attr.type === 'mdxJsxAttribute' &&
-          (attr.name === 'src' || attr.name === 'href') &&
-          typeof attr.value === 'string'
+          attribute.type === 'mdxJsxAttribute' &&
+          (attribute.name === 'src' || attribute.name === 'href') &&
+          typeof attribute.value === 'string'
         ) {
-          const newUrl = maybeRewrite(attr.value);
-          if (newUrl) attr.value = newUrl;
+          const newUrl = maybeRewrite(attribute.value);
+          if (newUrl) attribute.value = newUrl;
         }
       }
     }
@@ -192,13 +202,13 @@ function rewriteMdxContent(
       .use(escapeHtmlInTextNodes)
       .use(remarkStringify, {
         handlers: {
-          text(node: any) {
+          text(node: Literal) {
             return node.value;
           },
         },
       });
-    const outTree = s.runSync(ast);
-    let out = s.stringify(outTree as any);
+    const outTree = s.runSync(ast) as Root;
+    let out = s.stringify(outTree);
     // Preserve trailing/leading newlines similar to localizeStaticUrls
     if (out.endsWith('\n') && !content.endsWith('\n')) out = out.slice(0, -1);
     if (content.startsWith('\n') && !out.startsWith('\n')) out = '\n' + out;
@@ -219,8 +229,7 @@ function resolveAssetPaths(include: string[], cwd: string): Set<string> {
 }
 
 export async function mirrorAssetsToLocales(settings: Settings) {
-  const cfg: SharedStaticAssetsConfig | undefined =
-    settings.sharedStaticAssets as any;
+  const cfg = settings.sharedStaticAssets;
   if (!cfg?.mirrorToLocales) return;
   if (!settings.files) return;
 
@@ -334,8 +343,7 @@ export async function mirrorAssetsToLocales(settings: Settings) {
  * @returns
  */
 export default async function processSharedStaticAssets(settings: Settings) {
-  const cfg: SharedStaticAssetsConfig | undefined =
-    settings.sharedStaticAssets as any;
+  const cfg = settings.sharedStaticAssets;
   if (!cfg) return;
 
   // mirrorToLocales is handled separately after translations are downloaded

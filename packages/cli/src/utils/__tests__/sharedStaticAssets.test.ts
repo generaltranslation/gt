@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'node:path';
 import fs from 'node:fs';
+import type { Stats } from 'node:fs';
 import fg from 'fast-glob';
 import processSharedStaticAssets, {
   mirrorAssetsToLocales,
@@ -45,6 +46,12 @@ vi.mock('fast-glob', () => ({
 vi.mock('../../formats/files/fileMapping.js', () => ({
   createFileMapping: vi.fn(),
 }));
+
+const createFileStat = (size = 0): Stats =>
+  ({
+    isFile: () => true,
+    size,
+  }) as Stats;
 
 describe('processSharedStaticAssets', () => {
   beforeEach(() => {
@@ -326,7 +333,7 @@ describe('processSharedStaticAssets', () => {
 
       vi.mocked(fg.sync).mockReturnValue([assetPath]);
       vi.mocked(fs.promises.stat)
-        .mockResolvedValueOnce({ isFile: () => true } as any) // Destination exists
+        .mockResolvedValueOnce(createFileStat()) // Destination exists
         .mockRejectedValue(new Error('Not found')); // Source doesn't exist anymore after unlink
 
       const settings = {
@@ -367,7 +374,7 @@ describe('processSharedStaticAssets', () => {
       vi.mocked(fg.sync).mockReturnValue([assetPath]);
       vi.mocked(fs.promises.stat).mockImplementation((filePath) => {
         if (filePath === mdxFile) {
-          return Promise.resolve({} as any); // MDX file exists
+          return Promise.resolve(createFileStat()); // MDX file exists
         }
         return Promise.reject(new Error('Not found')); // Everything else doesn't exist
       });
@@ -434,7 +441,7 @@ describe('processSharedStaticAssets', () => {
       vi.mocked(fg.sync).mockReturnValue([assetPath]);
       vi.mocked(fs.promises.stat).mockImplementation((path) => {
         if (path === mdxFile || path === mdFile) {
-          return Promise.resolve({} as any); // Files exist
+          return Promise.resolve(createFileStat()); // Files exist
         }
         return Promise.reject(new Error('Not found')); // Everything else doesn't exist
       });
@@ -903,7 +910,7 @@ describe('processSharedStaticAssets', () => {
       // Both source and target exist with same size
       vi.mocked(fs.promises.stat).mockImplementation((p) => {
         if (p === assetPath || p === '/project/i18n/fr/docs/images/pic.png') {
-          return Promise.resolve({ isFile: () => true, size: 1024 } as any);
+          return Promise.resolve(createFileStat(1024));
         }
         return Promise.reject(new Error('Not found'));
       });
