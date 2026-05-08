@@ -548,7 +548,7 @@ export const useMessages: (
   _messages?: _Messages
 ) => <T extends string | null | undefined>(
   encodedMsg: T,
-  options?: Record<string, any>
+  options?: InlineTranslationOptions
 ) => T extends string ? string : T = () => {
   throw new Error(typesFileError);
 };

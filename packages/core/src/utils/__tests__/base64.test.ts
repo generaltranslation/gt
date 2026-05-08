@@ -114,19 +114,22 @@ Last line`;
   });
 
   describe('cross-platform compatibility', () => {
-    let originalBuffer: any;
+    const bufferGlobal = globalThis as typeof globalThis & {
+      Buffer?: typeof Buffer;
+    };
+    let originalBuffer: typeof Buffer | undefined;
 
     beforeEach(() => {
-      originalBuffer = global.Buffer;
+      originalBuffer = bufferGlobal.Buffer;
     });
 
     afterEach(() => {
-      global.Buffer = originalBuffer;
+      bufferGlobal.Buffer = originalBuffer;
     });
 
     it('should work consistently when Buffer is available (Node.js)', () => {
       // Ensure Buffer is available
-      global.Buffer = originalBuffer;
+      bufferGlobal.Buffer = originalBuffer;
 
       const testStrings = [
         'simple text',
@@ -144,7 +147,7 @@ Last line`;
 
     it('should work consistently when Buffer is not available (Browser)', () => {
       // Remove Buffer to simulate browser environment
-      global.Buffer = undefined as any;
+      bufferGlobal.Buffer = undefined;
 
       const testStrings = [
         'simple text',

@@ -28,7 +28,8 @@ describe('CutoffFormatConstructor', () => {
 
     it('should throw error for invalid style', () => {
       expect(() => {
-        new CutoffFormatConstructor('en', { style: 'invalid' as any });
+        // @ts-expect-error testing runtime validation for invalid options
+        new CutoffFormatConstructor('en', { style: 'invalid' });
       }).toThrow();
     });
 

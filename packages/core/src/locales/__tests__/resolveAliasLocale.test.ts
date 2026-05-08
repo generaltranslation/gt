@@ -89,8 +89,10 @@ describe('_resolveAliasLocale', () => {
 
   it('should ignore custom mapping entries with null or undefined values', () => {
     const customMapping: CustomMapping = {
-      'null-value': null as any,
-      'undefined-value': undefined as any,
+      // @ts-expect-error testing malformed runtime input
+      'null-value': null,
+      // @ts-expect-error testing malformed runtime input
+      'undefined-value': undefined,
       'valid-alias': {
         code: 'en-US',
         name: 'Valid Alias',
@@ -184,7 +186,8 @@ describe('_resolveAliasLocale', () => {
   it('should handle edge case with mixed data types in custom mapping', () => {
     const customMapping: CustomMapping = {
       'mixed-entry': {
-        code: 42 as any, // Invalid type
+        // @ts-expect-error testing malformed runtime input
+        code: 42, // Invalid type
         name: 'Mixed Types',
       },
       'valid-entry': {

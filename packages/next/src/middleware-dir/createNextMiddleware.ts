@@ -20,8 +20,17 @@ import {
   ResponseConfig,
 } from './utils';
 import { defaultLocaleHeaderName } from '../utils/headers';
+import type { CustomMapping } from 'generaltranslation/types';
+import type { HeadersAndCookies } from '../config-dir/props/withGTConfigProps';
 
 const NEXT_JS_SOURCE_MAP_PATH = '/__nextjs_source-map';
+
+type MiddlewareEnvConfig = {
+  customMapping?: CustomMapping;
+  defaultLocale?: string;
+  locales?: string[];
+  headersAndCookies?: HeadersAndCookies;
+};
 
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
@@ -49,7 +58,7 @@ export function createNextMiddleware({
   pathConfig?: PathConfig;
 } = {}) {
   // i18n config
-  let envParams;
+  let envParams: MiddlewareEnvConfig | undefined;
   if (process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS) {
     try {
       envParams = JSON.parse(
@@ -75,11 +84,16 @@ export function createNextMiddleware({
   const locales: string[] = envParams?.locales || [defaultLocale];
 
   // add canonical locales
-  const canonicalLocales = Object.values(
-    (envParams?.customMapping || {}) as any
-  )
-    .filter((locale: any) => locale.code)
-    .map((locale: any) => locale.code);
+  const canonicalLocales = Object.values(envParams?.customMapping || {})
+    .filter(
+      (locale): locale is { code: string } =>
+        typeof locale === 'object' &&
+        locale !== null &&
+        'code' in locale &&
+        typeof locale.code === 'string' &&
+        locale.code.length > 0
+    )
+    .map((locale) => locale.code);
   locales.push(...canonicalLocales);
 
   // cookies and header names

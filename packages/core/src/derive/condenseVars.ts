@@ -26,7 +26,7 @@ export function condenseVars(icuString: string): string {
   // Replace with argument
   function visitor(child: GTIndexedSelectElement): void {
     (child as unknown as GTIndexedArgumentElement).type = TYPE.argument;
-    delete (child as any).options;
+    Reflect.deleteProperty(child, 'options');
   }
 
   const ast = traverseIcu({

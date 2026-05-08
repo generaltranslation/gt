@@ -43,8 +43,9 @@ type I18NConfigurationParams = {
   batchInterval: number;
   headersAndCookies: HeadersAndCookies;
   _usingPlugin: boolean;
+  _versionId?: string;
   customMapping?: CustomMapping | undefined;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 type RuntimeTranslationParams = {

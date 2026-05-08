@@ -179,7 +179,7 @@ export function _formatList({
   locales = [libraryDefaultLocale],
   options = {},
 }: {
-  value: Array<any>;
+  value: Array<string | number>;
   locales?: string | string[];
   options?: Intl.ListFormatOptions;
 }): string {
@@ -189,7 +189,7 @@ export function _formatList({
       style: 'long', // Default style, can be overridden via options
       ...options,
     })
-    .format(value);
+    .format(value.map(String));
 }
 
 /**

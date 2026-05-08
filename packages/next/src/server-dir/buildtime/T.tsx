@@ -1,6 +1,6 @@
 import { getI18NConfig } from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
-import { Suspense } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import {
   addGTIdentifier,
   renderDefaultChildren,
@@ -11,6 +11,17 @@ import {
 } from 'gt-react/internal';
 import { renderVariable } from '../variables/renderVariable';
 import { hashSource } from 'generaltranslation/id';
+
+type TProps = {
+  children: ReactNode;
+  id?: string;
+  context?: string;
+  _hash?: string;
+  $id?: string;
+  $context?: string;
+  $maxChars?: number;
+  [key: string]: ReactNode;
+};
 
 /**
  * Build-time translation component that renders its children in the user's given locale.
@@ -47,13 +58,7 @@ export async function T({
   context,
   _hash,
   ...options
-}: {
-  children: any;
-  id?: string;
-  context?: string;
-  _hash?: string;
-  [key: string]: any;
-}): Promise<any> {
+}: TProps): Promise<ReactNode> {
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();

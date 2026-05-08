@@ -7,9 +7,12 @@ export type GTProviderProps = {
   region?: string | undefined;
 };
 
-export type TxProps = Record<string, any> & {
-  children: any;
+export type TxProps = Record<string, ReactNode> & {
+  children: ReactNode;
   context?: string;
   maxChars?: number;
   locale?: string;
+  $context?: string;
+  $maxChars?: number;
+  $locale?: string;
 };

@@ -39,14 +39,14 @@ async function Resolver({ children }: { children: React.ReactNode }) {
  *
  * @param {string} [context] - A context for the translation.
  * @param {string} [locale] - The locale to use for the translation.
- * @returns {Promise<any>} The translated content.
+ * @returns {Promise<React.ReactNode>} The translated content.
  */
 export async function Tx({
   children,
   context,
   locale,
   ...options
-}: TxProps): Promise<any> {
+}: TxProps): Promise<React.ReactNode> {
   // ----- SET UP ----- //
 
   // Compatibility with different options

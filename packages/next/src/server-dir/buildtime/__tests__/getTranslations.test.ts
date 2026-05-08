@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupGetRequestFunctionMocks } from '../../../request/utils/__mocks__/mockGetRequestFunction';
 import { VAR_IDENTIFIER } from 'generaltranslation/internal';
+import type { MockInstance } from 'vitest';
 
 // Set up comprehensive mocking for getRequestFunction and all its dependencies
 setupGetRequestFunctionMocks();
@@ -41,6 +42,22 @@ const mockInjectFallbacks = vi.fn();
 const mockInjectAndMerge = vi.fn();
 const mockMergeDictionaries = vi.fn();
 const mockSetDictionary = vi.fn();
+
+type GetTranslations = (typeof import('../getTranslations'))['getTranslations'];
+type UseTranslations = (typeof import('../getTranslations'))['useTranslations'];
+type MockFunction = ReturnType<typeof vi.fn>;
+type MockI18NConfig = {
+  getDefaultLocale: MockFunction;
+  requiresTranslation: MockFunction;
+  getDictionaryTranslations: MockFunction;
+  getCachedTranslations: MockFunction;
+  getCachedTranslationsStatus: MockFunction;
+  getRenderSettings: MockFunction;
+  isDevelopmentApiEnabled: MockFunction;
+  translate: MockFunction;
+  setDictionaryTranslations: MockFunction;
+  getGTClass: MockFunction;
+};
 
 vi.mock('../../dictionary/getDictionary', () => ({
   default: mockGetDictionary,
@@ -116,9 +133,9 @@ vi.mock('../../dictionary/setDictionary', () => ({
 }));
 
 describe('getTranslations', () => {
-  let mockI18NConfig: any;
-  let consoleWarnSpy: any;
-  let getTranslations: any;
+  let mockI18NConfig: MockI18NConfig;
+  let consoleWarnSpy: MockInstance;
+  let getTranslations: GetTranslations;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -586,7 +603,7 @@ describe('getTranslations', () => {
 });
 
 describe('useTranslations', () => {
-  let useTranslations: any;
+  let useTranslations: UseTranslations;
 
   beforeEach(async () => {
     vi.clearAllMocks();

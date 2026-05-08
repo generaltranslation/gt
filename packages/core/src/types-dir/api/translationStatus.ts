@@ -2,7 +2,7 @@ export type TranslationStatusResult = {
   count: number;
   availableLocales: string[];
   locales: string[];
-  localesWaitingForApproval: any[];
+  localesWaitingForApproval: string[];
 };
 
 export type CheckTranslationStatusOptions = {

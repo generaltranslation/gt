@@ -38,7 +38,7 @@ export async function GTProvider({
 
   const cachedTranslationsPromise: Promise<Translations> = translationRequired
     ? I18NConfig.getCachedTranslations(locale)
-    : ({} as any);
+    : Promise.resolve({});
 
   // ---------- PROCESS DICTIONARY ---------- //
   // (While waiting for cache...)

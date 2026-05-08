@@ -11,7 +11,7 @@ import { libraryDefaultLocale } from '../settings/settings';
  */
 export default function _getPluralForm(
   n: number,
-  forms: PluralType[] = pluralForms as any,
+  forms: readonly PluralType[] = pluralForms,
   locales: string[] = [libraryDefaultLocale]
 ): PluralType | '' {
   const pluralRules = intlCache.get('PluralRules', locales);

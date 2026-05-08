@@ -59,7 +59,10 @@ import { StringFormat } from 'generaltranslation/types';
  */
 export async function getTranslations(id?: string): Promise<
   ((id: string, options?: DictionaryTranslationOptions) => string) & {
-    obj: (id: string, options?: Record<string, any>) => any | undefined;
+    obj: (
+      id: string,
+      options?: DictionaryTranslationOptions
+    ) => Dictionary | DictionaryEntry | string | undefined;
   }
 > {
   // ---------- SET UP ---------- //
@@ -105,7 +108,10 @@ export async function getTranslations(id?: string): Promise<
    * // Translates item in dictionary under greetings.greeting2 and replaces {name} with 'John'
    * t('greetings.greeting2', { variables: { name: 'John' } });
    */
-  const t = (id: string, options: Record<string, any> = {}): string => {
+  const t = (
+    id: string,
+    options: DictionaryTranslationOptions = {}
+  ): string => {
     // Get entry
     id = getId(id);
     const value = getDictionaryEntry(dictionary, id);
@@ -130,10 +136,8 @@ export async function getTranslations(id?: string): Promise<
     if (!entry || typeof entry !== 'string') return '';
 
     // Extract format from options
-    const { $format: format, ...variableOptions } = options as Record<
-      string,
-      any
-    > & { $format?: StringFormat };
+    const { $format: format, ...variableOptions } =
+      options as DictionaryTranslationOptions & { $format?: StringFormat };
 
     // Render method
     const renderContent = (
@@ -317,7 +321,7 @@ export async function getTranslations(id?: string): Promise<
    */
   t.obj = (
     id: string,
-    options: Record<string, any> = {}
+    options: DictionaryTranslationOptions = {}
   ): Dictionary | DictionaryEntry | string | undefined => {
     // (1) Get subtree
     const idWithParent = getId(id);

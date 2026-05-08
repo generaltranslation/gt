@@ -23,14 +23,21 @@ import {
   VAR_IDENTIFIER,
   indexVars,
 } from 'generaltranslation/internal';
-import { StringFormat } from 'generaltranslation/types';
+import { FormatVariables, StringFormat } from 'generaltranslation/types';
 import { use } from '../../utils/use';
 
 type RenderFn = (msg: string, locales: string[], fallback?: string) => string;
 
+type GTStringOptions = InlineTranslationOptions & {
+  $context?: string;
+  $maxChars?: number;
+  $id?: string;
+  $_hash?: string;
+};
+
 type RenderMessageParams = {
   message: string;
-  variables: Record<string, any> | undefined;
+  variables: FormatVariables | undefined;
   locales: string[];
   fallback?: string;
   id?: string;
@@ -43,21 +50,13 @@ type InitResult = {
   context?: string;
   maxChars?: number;
   _hash?: string;
-  variables: Record<string, any>;
+  variables: FormatVariables;
   calculateHash: () => string;
   renderMessage: RenderFn;
 };
 
 type Translator = {
-  gt: (
-    message: string,
-    options?: InlineTranslationOptions & {
-      $id?: string;
-      $context?: string;
-      $maxChars?: number;
-      $_hash?: string;
-    }
-  ) => string;
+  gt: (message: string, options?: GTStringOptions) => string;
   m: <T extends string | null | undefined>(
     encodedMsg: T,
     options?: InlineTranslationOptions
@@ -148,12 +147,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   }
   function initializeGT(
     message: string,
-    options: Record<string, any> & {
-      $context?: string;
-      $maxChars?: number;
-      $id?: string;
-      $_hash?: string;
-    } = {}
+    options: GTStringOptions = {}
   ): InitResult | null {
     if (!message || typeof message !== 'string') return null;
 
@@ -165,12 +159,13 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       $format: format,
       ...variables
     } = options;
+    const formatVariables = variables as FormatVariables;
 
     const renderMessage: RenderFn = (msg, locales, fallback) => {
       return renderMessageHelper({
         message: msg,
         locales,
-        variables,
+        variables: formatVariables,
         id,
         fallback,
         maxChars,
@@ -192,7 +187,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       context,
       maxChars,
       _hash,
-      variables,
+      variables: formatVariables,
       calculateHash,
       renderMessage,
     };
@@ -302,15 +297,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
   // ---------- gt() ---------- /
 
-  const gt = (
-    message: string,
-    options: Record<string, any> & {
-      $context?: string;
-      $maxChars?: number;
-      $id?: string;
-      $_hash?: string;
-    } = {}
-  ): string => {
+  const gt = (message: string, options: GTStringOptions = {}): string => {
     const init = initializeGT(message, options);
     if (!init) return '';
     const { id, context, maxChars, _hash, calculateHash, renderMessage } = init;
@@ -360,7 +347,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   // ---------- m() ---------- //
   const m = <T extends string | null | undefined>(
     encodedMsg: T,
-    options?: Record<string, any>
+    options?: InlineTranslationOptions
   ): T extends string ? string : T => {
     if (!encodedMsg) return encodedMsg as T extends string ? string : T;
 
@@ -503,7 +490,7 @@ export async function getMessages(
 ): Promise<
   <T extends string | null | undefined>(
     encodedMsg: T,
-    options?: Record<string, any>
+    options?: InlineTranslationOptions
   ) => T extends string ? string : T
 > {
   const { m } = await createTranslator(_messages);
@@ -517,7 +504,7 @@ export function useMessages(
   _messages?: _Messages
 ): <T extends string | null | undefined>(
   encodedMsg: T,
-  options?: Record<string, any>
+  options?: InlineTranslationOptions
 ) => T extends string ? string : T {
   return use(getMessages(_messages));
 }

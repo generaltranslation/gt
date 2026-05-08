@@ -5,12 +5,25 @@
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'off';
 
+export type LogMetadataValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Date
+  | Error
+  | LogMetadataValue[]
+  | { [key: string]: LogMetadataValue };
+
+export type LogMetadata = Record<string, LogMetadataValue>;
+
 export interface LogEntry {
   level: LogLevel;
   message: string;
   timestamp: Date;
   context?: string;
-  metadata?: Record<string, any>;
+  metadata?: LogMetadata;
 }
 
 export interface LoggerConfig {
@@ -189,7 +202,7 @@ export class Logger {
     level: LogLevel,
     message: string,
     context?: string,
-    metadata?: Record<string, any>
+    metadata?: LogMetadata
   ): void {
     if (!this.shouldLog(level)) {
       return;
@@ -218,11 +231,7 @@ export class Logger {
    * Log a debug message
    * Used for detailed diagnostic information, typically of interest only when diagnosing problems
    */
-  debug(
-    message: string,
-    context?: string,
-    metadata?: Record<string, any>
-  ): void {
+  debug(message: string, context?: string, metadata?: LogMetadata): void {
     this.log('debug', message, context, metadata);
   }
 
@@ -230,11 +239,7 @@ export class Logger {
    * Log an info message
    * Used for general information about application operation.
    */
-  info(
-    message: string,
-    context?: string,
-    metadata?: Record<string, any>
-  ): void {
+  info(message: string, context?: string, metadata?: LogMetadata): void {
     this.log('info', message, context, metadata);
   }
 
@@ -242,11 +247,7 @@ export class Logger {
    * Log a warning message
    * Used for potentially problematic situations that don't prevent operation
    */
-  warn(
-    message: string,
-    context?: string,
-    metadata?: Record<string, any>
-  ): void {
+  warn(message: string, context?: string, metadata?: LogMetadata): void {
     this.log('warn', message, context, metadata);
   }
 
@@ -254,11 +255,7 @@ export class Logger {
    * Log an error message
    * Used for error events that might still allow the application to continue.
    */
-  error(
-    message: string,
-    context?: string,
-    metadata?: Record<string, any>
-  ): void {
+  error(message: string, context?: string, metadata?: LogMetadata): void {
     this.log('error', message, context, metadata);
   }
 
@@ -289,19 +286,19 @@ export class ContextLogger {
     this.context = context;
   }
 
-  debug(message: string, metadata?: Record<string, any>): void {
+  debug(message: string, metadata?: LogMetadata): void {
     this.logger.debug(message, this.context, metadata);
   }
 
-  info(message: string, metadata?: Record<string, any>): void {
+  info(message: string, metadata?: LogMetadata): void {
     this.logger.info(message, this.context, metadata);
   }
 
-  warn(message: string, metadata?: Record<string, any>): void {
+  warn(message: string, metadata?: LogMetadata): void {
     this.logger.warn(message, this.context, metadata);
   }
 
-  error(message: string, metadata?: Record<string, any>): void {
+  error(message: string, metadata?: LogMetadata): void {
     this.logger.error(message, this.context, metadata);
   }
 
@@ -322,25 +319,25 @@ export const defaultLogger = new Logger({
 export const debug = (
   message: string,
   context?: string,
-  metadata?: Record<string, any>
+  metadata?: LogMetadata
 ) => defaultLogger.debug(message, context, metadata);
 
 export const info = (
   message: string,
   context?: string,
-  metadata?: Record<string, any>
+  metadata?: LogMetadata
 ) => defaultLogger.info(message, context, metadata);
 
 export const warn = (
   message: string,
   context?: string,
-  metadata?: Record<string, any>
+  metadata?: LogMetadata
 ) => defaultLogger.warn(message, context, metadata);
 
 export const error = (
   message: string,
   context?: string,
-  metadata?: Record<string, any>
+  metadata?: LogMetadata
 ) => defaultLogger.error(message, context, metadata);
 
 // Create context-specific loggers for different parts of the system
