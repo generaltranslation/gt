@@ -24,7 +24,7 @@ export function useEnableI18n({
   const isFirstRender = useRef(true);
 
   // Extract state from cookie or default _enableI18n flag
-  const [enableI18n, setEnableI18n] = useState(
+  const [enableI18n, setEnableI18n] = useState(() =>
     getInitialEnableI18n({
       _enableI18n,
       asyncEnabled,
