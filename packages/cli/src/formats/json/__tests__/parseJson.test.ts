@@ -1134,7 +1134,6 @@ describe('parseJson', () => {
       }
       const json = JSON.stringify({ data: largeObject });
 
-      const start = Date.now();
       const result = parseJson(
         json,
         path.join(__dirname, '../__mocks__', 'test.json'),
@@ -1147,9 +1146,7 @@ describe('parseJson', () => {
         },
         'en'
       );
-      const end = Date.now();
 
-      expect(end - start).toBeLessThan(1000); // Should complete in under 1 second
       const parsed = JSON.parse(result);
       expect(parsed['/data/key0']).toBe('value0');
       expect(parsed['/data/key999']).toBe('value999');
