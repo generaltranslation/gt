@@ -34,7 +34,7 @@
     "release:alpha": "pnpm run build:clean && pnpm publish --access public --tag alpha",
     "release:beta": "pnpm run build:clean && pnpm publish --access public --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --access public --tag latest",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },

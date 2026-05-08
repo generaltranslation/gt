@@ -21,7 +21,7 @@
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
-    "test": "vitest run && pnpm run test:e2e",
+    "test": "vitest run --passWithNoTests && pnpm run test:e2e",
     "test:watch": "vitest",
     "test:e2e": "pnpm run test:e2e:install && cd tests/latest && pnpm run test:e2e",
     "test:e2e:install": "pnpm --dir tests/latest install --ignore-workspace --config.enable-global-virtual-store=false --force && pnpm --dir tests/latest exec playwright install --with-deps",

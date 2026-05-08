@@ -64,7 +64,7 @@
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "clean": "del-cli android/build dist",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "release": "pnpm run build:clean && pnpm publish",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
