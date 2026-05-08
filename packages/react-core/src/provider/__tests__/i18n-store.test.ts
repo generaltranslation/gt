@@ -1,50 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { I18nManager, setConditionStore, setI18nManager } from 'gt-i18n/internal';
-import { I18nExternalStore } from '../i18n-store/I18nExternalStore';
-import { setI18nExternalConditionStore } from '../i18n-store/condition-store/externalConditionStore';
+import { I18nManager } from 'gt-i18n/internal';
+import { I18nExternalStore } from '../../external-store/store/I18nExternalStore';
+import { ProviderConditionStore } from '../../external-store/store/ProviderConditionStore';
 
-class TestConditionStore {
-  private localeListeners = new Set<() => void>();
-  private regionListeners = new Set<() => void>();
-  private region: string | undefined;
-
-  constructor(private locale: string) {}
-
-  getLocale(): string {
-    return this.locale;
-  }
-
-  setLocale(locale: string): void {
-    this.locale = locale;
-    this.localeListeners.forEach((listener) => listener());
-  }
-
-  subscribeToLocale(listener: () => void): () => void {
-    this.localeListeners.add(listener);
-    return () => {
-      this.localeListeners.delete(listener);
-    };
-  }
-
-  getRegion(): string | undefined {
-    return this.region;
-  }
-
-  setRegion(region: string | undefined): void {
-    this.region = region;
-    this.regionListeners.forEach((listener) => listener());
-  }
-
-  subscribeToRegion(listener: () => void): () => void {
-    this.regionListeners.add(listener);
-    return () => {
-      this.regionListeners.delete(listener);
-    };
-  }
-}
-
-function installManager() {
-  const manager = new I18nManager({
+function createManager() {
+  return new I18nManager({
     defaultLocale: 'en',
     locales: ['en', 'fr', 'es'],
     dictionary: {
@@ -67,65 +27,53 @@ function installManager() {
       hash: 'Bonjour',
     }),
   });
-  setI18nManager(manager);
-  return manager;
 }
 
-function installConditionStore(locale = 'en') {
-  const conditionStore = new TestConditionStore(locale);
-  setConditionStore(conditionStore);
-  setI18nExternalConditionStore(conditionStore);
-  return conditionStore;
+function createConditionStore(locale = 'en') {
+  return new ProviderConditionStore({
+    defaultLocale: 'en',
+    locales: ['en', 'fr', 'es'],
+    locale,
+  });
 }
 
-describe('i18n external store', () => {
+describe('external store i18n wiring', () => {
   it('notifies only locale subscribers when locale changes', () => {
-    installManager();
-    const conditionStore = installConditionStore('en');
-    const externalStore = new I18nExternalStore();
+    const conditionStore = createConditionStore('en');
     const localeListener = vi.fn();
-    const defaultLocaleListener = vi.fn();
-
     const unsubscribeLocale =
-      externalStore.subscribeToLocale(localeListener);
-    const unsubscribeDefaultLocale =
-      externalStore.subscribeToDefaultLocale(defaultLocaleListener);
+      conditionStore.subscribeToLocale(localeListener);
 
     conditionStore.setLocale('fr');
 
-    expect(externalStore.getLocaleSnapshot()).toBe('fr');
+    expect(conditionStore.getLocale()).toBe('fr');
     expect(localeListener).toHaveBeenCalledTimes(1);
-    expect(defaultLocaleListener).not.toHaveBeenCalled();
 
     unsubscribeLocale();
-    unsubscribeDefaultLocale();
   });
 
   it('notifies region subscribers when region changes', () => {
-    installManager();
-    const conditionStore = installConditionStore('en');
-    const externalStore = new I18nExternalStore();
+    const conditionStore = createConditionStore('en');
     const regionListener = vi.fn();
     const unsubscribeRegion =
-      externalStore.subscribeToRegion(regionListener);
+      conditionStore.subscribeToRegion(regionListener);
 
     conditionStore.setRegion('US');
 
-    expect(externalStore.getRegionSnapshot()).toBe('US');
+    expect(conditionStore.getRegion()).toBe('US');
     expect(regionListener).toHaveBeenCalledTimes(1);
 
     unsubscribeRegion();
   });
 
   it('notifies translation subscribers for matching cache updates', async () => {
-    const manager = installManager();
-    installConditionStore('en');
-    const externalStore = new I18nExternalStore();
+    const manager = createManager();
+    const externalStore = new I18nExternalStore({ i18nManager: manager });
     const matchingListener = vi.fn();
     const otherHashListener = vi.fn();
     const otherLocaleListener = vi.fn();
 
-    const unsubscribeMatching = externalStore.subscribeToTranslation(
+    const unsubscribeMatching = externalStore.subscribeToTranslate(
       {
         locale: 'fr',
         message: 'Hello',
@@ -133,7 +81,7 @@ describe('i18n external store', () => {
       },
       matchingListener
     );
-    const unsubscribeOtherHash = externalStore.subscribeToTranslation(
+    const unsubscribeOtherHash = externalStore.subscribeToTranslate(
       {
         locale: 'fr',
         message: 'Other',
@@ -141,7 +89,7 @@ describe('i18n external store', () => {
       },
       otherHashListener
     );
-    const unsubscribeOtherLocale = externalStore.subscribeToTranslation(
+    const unsubscribeOtherLocale = externalStore.subscribeToTranslate(
       {
         locale: 'es',
         message: 'Hello',
@@ -164,10 +112,50 @@ describe('i18n external store', () => {
     unsubscribeOtherLocale();
   });
 
+  it('notifies translate many subscribers for matching cache updates', async () => {
+    const manager = createManager();
+    const externalStore = new I18nExternalStore({ i18nManager: manager });
+    const listener = vi.fn();
+    const lookups = [
+      {
+        locale: 'fr',
+        message: 'Hello',
+        options: { $format: 'ICU' as const, $_hash: 'hash' },
+      },
+      {
+        locale: 'fr',
+        message: 'Other',
+        options: { $format: 'ICU' as const, $_hash: 'other' },
+      },
+    ];
+
+    const initialSnapshot = externalStore.getTranslateManySnapshot(lookups);
+    expect(externalStore.getTranslateManySnapshot(lookups)).toBe(
+      initialSnapshot
+    );
+
+    const unsubscribe = externalStore.subscribeToTranslateMany(
+      lookups,
+      listener
+    );
+
+    await manager.lookupTranslationWithFallback('fr', 'Hello', {
+      $format: 'ICU',
+      $_hash: 'hash',
+    });
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(externalStore.getTranslateManySnapshot(lookups)).toEqual([
+      'Bonjour',
+      undefined,
+    ]);
+
+    unsubscribe();
+  });
+
   it('notifies dictionary entry subscribers for matching cache misses', async () => {
-    const manager = installManager();
-    installConditionStore('en');
-    const externalStore = new I18nExternalStore();
+    const manager = createManager();
+    const externalStore = new I18nExternalStore({ i18nManager: manager });
     const matchingListener = vi.fn();
     const otherListener = vi.fn();
 
@@ -192,9 +180,8 @@ describe('i18n external store', () => {
   });
 
   it('notifies dictionary object subscribers for matching cache misses', async () => {
-    const manager = installManager();
-    installConditionStore('en');
-    const externalStore = new I18nExternalStore();
+    const manager = createManager();
+    const externalStore = new I18nExternalStore({ i18nManager: manager });
     const matchingListener = vi.fn();
     const otherListener = vi.fn();
 

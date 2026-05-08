@@ -1,5 +1,6 @@
-import getPluralBranch from '../../branches/plurals/getPluralBranch';
-import { useDefaultLocale, useLocale } from '../hooks/locale-management';
+import getPluralBranch from '../../../branches/plurals/getPluralBranch';
+import { useLocale } from '../../hooks/condition-hooks';
+import { useDefaultLocale } from '../../hooks/i18n-manager-hooks';
 import type { ReactNode } from 'react';
 
 // ===== Component ===== //

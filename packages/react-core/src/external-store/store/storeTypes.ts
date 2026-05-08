@@ -18,7 +18,7 @@ export type I18nExternalConditionStore = {
   setRegion?(region: string | undefined): void;
 };
 
-export type TranslationLookup<T extends Translation = Translation> = {
+export type TranslateLookup<T extends Translation = Translation> = {
   locale: string;
   message: T;
   options: LookupOptions;
@@ -29,8 +29,10 @@ export type DictionaryLookup = {
   id: string;
 };
 
-export type TranslationSnapshot<T extends Translation = Translation> =
+export type TranslateSnapshot<T extends Translation = Translation> =
   | T
   | undefined;
+export type TranslateManySnapshot<T extends Translation = Translation> =
+  readonly TranslateSnapshot<T>[];
 export type DictionaryEntrySnapshot = DictionaryEntry | undefined;
 export type DictionaryObjectSnapshot = DictionaryObject | undefined;

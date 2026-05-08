@@ -1,21 +1,22 @@
 import { useCallback, useMemo } from 'react';
 import { requiresTranslation } from 'generaltranslation';
-import addGTIdentifier from '../../internal/addGTIdentifier';
-import { removeInjectedT } from '../../internal/removeInjectedT';
-import writeChildrenAsObjects from '../../internal/writeChildrenAsObjects';
-import renderDefaultChildren from '../../rendering/renderDefaultChildren';
-import renderTranslatedChildren from '../../rendering/renderTranslatedChildren';
+import addGTIdentifier from '../../../internal/addGTIdentifier';
+import { removeInjectedT } from '../../../internal/removeInjectedT';
+import writeChildrenAsObjects from '../../../internal/writeChildrenAsObjects';
+import renderDefaultChildren from '../../../rendering/renderDefaultChildren';
+import renderTranslatedChildren from '../../../rendering/renderTranslatedChildren';
 import { renderVariable } from '../variables/renderVariable';
+import { useLocale } from '../../hooks/condition-hooks';
 import {
+  useCustomMapping,
+  useEnableI18n,
   useDefaultLocale,
-  useLocale,
   useLocales,
-} from '../hooks/locale-management';
-import { useCustomMapping, useEnableI18n } from '../hooks/other-hooks';
-import { useTranslation } from '../hooks/translation-management';
+  useTranslate,
+} from '../../hooks/i18n-manager-hooks';
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
-import type { TaggedChildren } from '../../types-dir/types';
+import type { TaggedChildren } from '../../../types-dir/types';
 import type { ReactNode } from 'react';
 
 // ===== Component ===== //
@@ -28,26 +29,17 @@ function T(
     children: ReactNode;
   } & JsxTranslationOptions
 ): ReactNode {
-  return computeT(props);
-}
-
-function GtInternalTranslateJsx(
-  props: {
-    children: ReactNode;
-  } & JsxTranslationOptions
-): ReactNode {
-  return computeT(props);
+  return useComputeT(props);
 }
 
 /** @internal _gtt - The GT transformation for the component. */
 T._gtt = 'translate-client';
-GtInternalTranslateJsx._gtt = 'translate-client-automatic';
 
-export { GtInternalTranslateJsx, T };
+export { T };
 
 // ===== Render Logic ===== //
 
-function computeT({
+function useComputeT({
   children: sourceChildren,
   ...params
 }: {
@@ -76,7 +68,7 @@ function computeT({
   }, [defaultLocale, taggedSourceChildren]);
 
   // Lookup translation in cache
-  const targetJsxChildren = useTranslation({
+  const targetJsxChildren = useTranslate({
     locale,
     message: sourceJsxChildren,
     options: targetOptions,

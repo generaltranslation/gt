@@ -3,6 +3,7 @@ import { I18nManager } from 'gt-i18n/internal';
 import { GTContext } from './GTContext';
 import { ProviderConditionStore } from '../store/ProviderConditionStore';
 import { I18nExternalStore } from '../store/I18nExternalStore';
+import { setI18nExternalStore } from '../store/singleton-operations';
 import type { I18nManagerConstructorParams } from 'gt-i18n/internal/types';
 import type { ReactNode } from 'react';
 import type { Translation } from 'gt-i18n/types';
@@ -19,9 +20,9 @@ export type GTProviderProps = I18nManagerConstructorParams<Translation> & {
 /**
  * Minimal external-store provider.
  *
- * The manager and condition store are created once per provider instance and
- * then exposed through context. Runtime condition changes should go through the
- * external store setters so the focused subscriptions can notify React.
+ * The condition store is created once per provider instance and exposed
+ * through context. The manager-backed external store is initialized as a
+ * singleton for hooks that read I18nManager snapshots.
  */
 export function GTProvider({
   children,
@@ -30,9 +31,11 @@ export function GTProvider({
   getLocale,
   ...managerParams
 }: GTProviderProps) {
-  const storeRef = useRef<I18nExternalStore | undefined>(undefined);
+  const conditionStoreRef = useRef<ProviderConditionStore | undefined>(
+    undefined
+  );
 
-  if (!storeRef.current) {
+  if (!conditionStoreRef.current) {
     const i18nManager = new I18nManager<Translation>(
       managerParams as I18nManagerConstructorParams<Translation>
     );
@@ -45,16 +48,16 @@ export function GTProvider({
       getLocale,
     });
 
-    storeRef.current = new I18nExternalStore({
-      i18nManager,
-      conditionStore,
-    });
+    setI18nExternalStore(new I18nExternalStore({ i18nManager }));
+    conditionStoreRef.current = conditionStore;
   }
 
-  const store = storeRef.current;
-  if (!store) {
-    throw new Error('GTProvider failed to initialize an external store.');
+  const conditionStore = conditionStoreRef.current;
+  if (!conditionStore) {
+    throw new Error('GTProvider failed to initialize a condition store.');
   }
 
-  return <GTContext.Provider value={store}>{children}</GTContext.Provider>;
+  return (
+    <GTContext.Provider value={conditionStore}>{children}</GTContext.Provider>
+  );
 }

@@ -1,8 +1,5 @@
 import { GtInternalCurrency, Currency as GtExternalCurrency } from './Currency';
-import {
-  GtInternalDateTime,
-  DateTime as GtExternalDateTime,
-} from './DateTime';
+import { GtInternalDateTime, DateTime as GtExternalDateTime } from './DateTime';
 import { GtInternalNum, Num as GtExternalNum } from './Num';
 import {
   GtInternalRelativeTime,
@@ -12,7 +9,7 @@ import { computeVar, Var as GtExternalVar } from './Var';
 import type {
   RelativeTimeFormatOptions,
   RenderVariable,
-} from '../../types-dir/types';
+} from '../../../types-dir/types';
 
 // ===== Renderer ===== //
 

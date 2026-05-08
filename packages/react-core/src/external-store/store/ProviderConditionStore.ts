@@ -59,40 +59,40 @@ export class ProviderConditionStore
 
   // ===== Locale ===== //
 
-  getLocale(): string {
+  getLocale = (): string => {
     return this.resolveLocale(this.customGetLocale?.() ?? this.locale);
-  }
+  };
 
-  setLocale(locale: string): void {
+  setLocale = (locale: string): void => {
     const previousLocale = this.getLocale();
     this.locale = locale;
     const nextLocale = this.getLocale();
     if (nextLocale !== previousLocale) {
       emit(this.localeListeners);
     }
-  }
+  };
 
-  subscribeToLocale(listener: StoreListener): Unsubscribe {
+  subscribeToLocale = (listener: StoreListener): Unsubscribe => {
     return subscribeToSet(this.localeListeners, listener);
-  }
+  };
 
   // ===== Region ===== //
 
-  getRegion(): string | undefined {
+  getRegion = (): string | undefined => {
     return this.region;
-  }
+  };
 
-  setRegion(region: string | undefined): void {
+  setRegion = (region: string | undefined): void => {
     const previousRegion = this.region;
     this.region = region;
     if (this.region !== previousRegion) {
       emit(this.regionListeners);
     }
-  }
+  };
 
-  subscribeToRegion(listener: StoreListener): Unsubscribe {
+  subscribeToRegion = (listener: StoreListener): Unsubscribe => {
     return subscribeToSet(this.regionListeners, listener);
-  }
+  };
 }
 
 // ===== Utilities ===== //

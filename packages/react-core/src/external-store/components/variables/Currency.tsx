@@ -1,5 +1,5 @@
-import { useI18nManager } from '../provider/GTContext';
-import { useFormatLocales } from './useFormatLocales';
+import { useI18nManager } from '../../provider/GTContext';
+import { useFormatLocales } from '../../hooks/utils';
 
 // ===== Component ===== //
 

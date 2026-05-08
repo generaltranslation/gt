@@ -12,11 +12,11 @@ import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
   DictionaryObjectSnapshot,
-  I18nExternalConditionStore,
   ListenerSet,
   StoreListener,
-  TranslationLookup,
-  TranslationSnapshot,
+  TranslateLookup,
+  TranslateManySnapshot,
+  TranslateSnapshot,
   Unsubscribe,
 } from './storeTypes';
 import type {
@@ -34,10 +34,10 @@ type EntryCacheEvent<T> = {
   id: string;
   value: T;
 };
-type TranslationStoreEvent =
+type TranslateStoreEvent =
   | LocaleCacheEvent<Translation>
   | EntryCacheEvent<Translation>;
-type TranslationStoreListener = (event: TranslationStoreEvent) => void;
+type TranslateStoreListener = (event: TranslateStoreEvent) => void;
 type DictionaryStoreEvent =
   | LocaleCacheEvent<DictionaryValue>
   | EntryCacheEvent<DictionaryEntrySnapshot>;
@@ -45,60 +45,47 @@ type DictionaryStoreListener = (event: DictionaryStoreEvent) => void;
 
 export type I18nExternalStoreParams = {
   i18nManager: I18nManager<Translation>;
-  conditionStore: I18nExternalConditionStore;
 };
 
 /**
- * External store adapter between React and provider-owned i18n state.
+ * External store adapter between React and I18nManager.
  *
- * Each mutable value exposes a focused getSnapshot/subscribe pair. Derived
- * values stay outside the store so React consumers subscribe only to the data
- * they actually read.
+ * Locale and region are runtime conditions owned by the active condition store.
+ * This class is only responsible for manager-backed snapshots and manager cache
+ * invalidation events.
  */
 export class I18nExternalStore {
   // ===== Source Instances ===== //
 
   private i18nManager: I18nManager<Translation>;
-  private conditionStore: I18nExternalConditionStore;
 
   // ===== Listener Sets ===== //
 
-  private localeListeners: ListenerSet = new Set();
-  private regionListeners: ListenerSet = new Set();
   private defaultLocaleListeners: ListenerSet = new Set();
   private localesListeners: ListenerSet = new Set();
   private customMappingListeners: ListenerSet = new Set();
   private enableI18nListeners: ListenerSet = new Set();
-  private translationListeners = new Set<TranslationStoreListener>();
+  private translateListeners = new Set<TranslateStoreListener>();
+  private translateManySnapshotCache = new WeakMap<
+    readonly TranslateLookup[],
+    TranslateManySnapshot
+  >();
   private dictionaryEntryListeners = new Set<DictionaryStoreListener>();
   private dictionaryObjectListeners = new Set<DictionaryStoreListener>();
 
-  private unsubscribeLocale: Unsubscribe | undefined;
-  private unsubscribeRegion: Unsubscribe | undefined;
   private unsubscribeLocalesEvents: Unsubscribe | undefined;
-  private unsubscribeTranslationEvents: Unsubscribe | undefined;
+  private unsubscribeTranslateEvents: Unsubscribe | undefined;
   private unsubscribeLocalesDictionaryEvents: Unsubscribe | undefined;
   private unsubscribeDictionaryEntryEvents: Unsubscribe | undefined;
 
-  constructor({ i18nManager, conditionStore }: I18nExternalStoreParams) {
+  constructor({ i18nManager }: I18nExternalStoreParams) {
     this.i18nManager = i18nManager;
-    this.conditionStore = conditionStore;
   }
 
   // ===== Instance Access ===== //
 
   getI18nManager = (): I18nManager<Translation> => {
     return this.i18nManager;
-  };
-
-  // ===== Locale Subscriptions ===== //
-
-  subscribeToLocale = (listener: StoreListener): Unsubscribe => {
-    return this.subscribeToSet(this.localeListeners, listener);
-  };
-
-  subscribeToRegion = (listener: StoreListener): Unsubscribe => {
-    return this.subscribeToSet(this.regionListeners, listener);
   };
 
   // ===== Manager Config Subscriptions ===== //
@@ -119,19 +106,31 @@ export class I18nExternalStore {
     return this.subscribeToStaticSet(this.enableI18nListeners, listener);
   };
 
-  // ===== Translation Subscriptions ===== //
+  // ===== Translate Subscriptions ===== //
 
-  subscribeToTranslation<T extends Translation>(
-    lookup: TranslationLookup<T>,
+  subscribeToTranslate<T extends Translation>(
+    lookup: TranslateLookup<T>,
     listener: StoreListener
   ): Unsubscribe {
-    const lookupKey = getTranslationListenerKey(lookup);
-    const wrappedListener: TranslationStoreListener = (event) => {
-      if (translationEventMatchesLookup(event, lookupKey)) {
+    const lookupKey = getTranslateListenerKey(lookup);
+    const wrappedListener: TranslateStoreListener = (event) => {
+      if (translateEventMatchesLookup(event, lookupKey)) {
         listener();
       }
     };
-    return this.subscribeToTranslationSet(wrappedListener);
+    return this.subscribeToTranslateSet(wrappedListener);
+  }
+
+  subscribeToTranslateMany<T extends Translation>(
+    lookups: readonly TranslateLookup<T>[],
+    listener: StoreListener
+  ): Unsubscribe {
+    const unsubscribes = lookups.map((lookup) =>
+      this.subscribeToTranslate(lookup, listener)
+    );
+    return () => {
+      unsubscribes.forEach((unsubscribe) => unsubscribe());
+    };
   }
 
   subscribeToDictionaryEntry(
@@ -166,16 +165,6 @@ export class I18nExternalStore {
     );
   }
 
-  // ===== Locale Snapshots ===== //
-
-  getLocaleSnapshot = (): string => {
-    return this.conditionStore.getLocale();
-  };
-
-  getRegionSnapshot = (): string | undefined => {
-    return this.conditionStore.getRegion?.();
-  };
-
   // ===== Manager Config Snapshots ===== //
 
   getDefaultLocaleSnapshot = (): string => {
@@ -194,14 +183,35 @@ export class I18nExternalStore {
     return this.i18nManager.isTranslationEnabled();
   };
 
-  // ===== Translation Snapshots ===== //
+  // ===== Translate Snapshots ===== //
 
-  getTranslationSnapshot = <T extends Translation>({
+  getTranslateSnapshot = <T extends Translation>({
     locale,
     message,
     options,
-  }: TranslationLookup<T>): TranslationSnapshot<T> => {
+  }: TranslateLookup<T>): TranslateSnapshot<T> => {
     return this.i18nManager.lookupTranslation<T>(locale, message, options);
+  };
+
+  getTranslateManySnapshot = <T extends Translation>(
+    lookups: readonly TranslateLookup<T>[]
+  ): TranslateManySnapshot<T> => {
+    const nextSnapshot = lookups.map((lookup) =>
+      this.getTranslateSnapshot(lookup)
+    );
+    const previousSnapshot = this.translateManySnapshotCache.get(lookups);
+    if (
+      previousSnapshot &&
+      previousSnapshot.length === nextSnapshot.length &&
+      previousSnapshot.every((value, index) =>
+        Object.is(value, nextSnapshot[index])
+      )
+    ) {
+      return previousSnapshot as TranslateManySnapshot<T>;
+    }
+
+    this.translateManySnapshotCache.set(lookups, nextSnapshot);
+    return nextSnapshot;
   };
 
   getDictionaryEntrySnapshot = ({
@@ -218,26 +228,6 @@ export class I18nExternalStore {
     return this.i18nManager.lookupDictionaryObj(locale, id);
   };
 
-  // ===== Setters ===== //
-
-  setLocale = (locale: string): void => {
-    if (!this.conditionStore.setLocale) {
-      throw new Error(
-        'setLocale(): Unable to update locale because the active condition store is not writable.'
-      );
-    }
-    this.conditionStore.setLocale(locale);
-  };
-
-  setRegion = (region: string | undefined): void => {
-    if (!this.conditionStore.setRegion) {
-      throw new Error(
-        'setRegion(): Unable to update region because the active condition store is not writable.'
-      );
-    }
-    this.conditionStore.setRegion(region);
-  };
-
   // ===== Subscription Lifecycle ===== //
 
   private subscribeToStaticSet(
@@ -250,35 +240,17 @@ export class I18nExternalStore {
     };
   }
 
-  private subscribeToSet(
-    listenerSet: ListenerSet,
-    listener: StoreListener
+  private subscribeToTranslateSet(
+    listener: TranslateStoreListener
   ): Unsubscribe {
     const hadListeners = this.sourceListenerCount() > 0;
-    listenerSet.add(listener);
+    this.translateListeners.add(listener);
     if (!hadListeners) {
       this.connect();
     }
 
     return () => {
-      listenerSet.delete(listener);
-      if (this.sourceListenerCount() === 0) {
-        this.disconnect();
-      }
-    };
-  }
-
-  private subscribeToTranslationSet(
-    listener: TranslationStoreListener
-  ): Unsubscribe {
-    const hadListeners = this.sourceListenerCount() > 0;
-    this.translationListeners.add(listener);
-    if (!hadListeners) {
-      this.connect();
-    }
-
-    return () => {
-      this.translationListeners.delete(listener);
+      this.translateListeners.delete(listener);
       if (this.sourceListenerCount() === 0) {
         this.disconnect();
       }
@@ -304,26 +276,16 @@ export class I18nExternalStore {
   }
 
   private connect(): void {
-    this.unsubscribeLocale = this.conditionStore.subscribeToLocale(() => {
-      this.emit(this.localeListeners);
-    });
-    this.unsubscribeRegion = this.conditionStore.subscribeToRegion?.(() => {
-      this.emit(this.regionListeners);
-    });
     this.subscribeToManager();
   }
 
   private disconnect(): void {
-    this.unsubscribeLocale?.();
-    this.unsubscribeRegion?.();
     this.unsubscribeLocalesEvents?.();
-    this.unsubscribeTranslationEvents?.();
+    this.unsubscribeTranslateEvents?.();
     this.unsubscribeLocalesDictionaryEvents?.();
     this.unsubscribeDictionaryEntryEvents?.();
-    this.unsubscribeLocale = undefined;
-    this.unsubscribeRegion = undefined;
     this.unsubscribeLocalesEvents = undefined;
-    this.unsubscribeTranslationEvents = undefined;
+    this.unsubscribeTranslateEvents = undefined;
     this.unsubscribeLocalesDictionaryEvents = undefined;
     this.unsubscribeDictionaryEntryEvents = undefined;
   }
@@ -336,16 +298,16 @@ export class I18nExternalStore {
     this.unsubscribeLocalesEvents = this.i18nManager.subscribe(
       LOCALES_EVENT_NAME,
       (event) => {
-        this.emitTranslationEvent({
+        this.emitTranslateEvent({
           locale: event.locale,
           value: event.translations,
         });
       }
     );
-    this.unsubscribeTranslationEvents = this.i18nManager.subscribe(
+    this.unsubscribeTranslateEvents = this.i18nManager.subscribe(
       TRANSLATION_EVENT_NAME,
       (event) => {
-        this.emitTranslationEvent({
+        this.emitTranslateEvent({
           locale: event.locale,
           id: event.hash,
           value: event.translation,
@@ -375,12 +337,8 @@ export class I18nExternalStore {
 
   // ===== Listener Utilities ===== //
 
-  private emit(listenerSet: ListenerSet): void {
-    listenerSet.forEach((listener) => listener());
-  }
-
-  private emitTranslationEvent(event: TranslationStoreEvent): void {
-    this.translationListeners.forEach((listener) => listener(event));
+  private emitTranslateEvent(event: TranslateStoreEvent): void {
+    this.translateListeners.forEach((listener) => listener(event));
   }
 
   private emitDictionaryEvent(event: DictionaryStoreEvent): void {
@@ -392,9 +350,7 @@ export class I18nExternalStore {
 
   private sourceListenerCount(): number {
     return (
-      this.localeListeners.size +
-      this.regionListeners.size +
-      this.translationListeners.size +
+      this.translateListeners.size +
       this.dictionaryEntryListeners.size +
       this.dictionaryObjectListeners.size
     );
@@ -403,13 +359,13 @@ export class I18nExternalStore {
 
 // ===== Lookup Keys ===== //
 
-function getTranslationListenerKey<T extends Translation>(
-  lookup: TranslationLookup<T> | { locale: string; hash: string }
+function getTranslateListenerKey<T extends Translation>(
+  lookup: TranslateLookup<T> | { locale: string; hash: string }
 ): string {
   const hash =
     'hash' in lookup
       ? lookup.hash
-      : getTranslationHash(lookup.message, lookup.options);
+      : getTranslateHash(lookup.message, lookup.options);
   return `${lookup.locale}:${hash}`;
 }
 
@@ -427,13 +383,13 @@ function getDictionaryLookupFromKey(lookupKey: string): DictionaryLookup {
 
 // ===== Event Matching ===== //
 
-function translationEventMatchesLookup(
-  event: TranslationStoreEvent,
+function translateEventMatchesLookup(
+  event: TranslateStoreEvent,
   lookupKey: string
 ): boolean {
   if ('id' in event) {
     return (
-      getTranslationListenerKey({
+      getTranslateListenerKey({
         locale: event.locale,
         hash: event.id,
       }) === lookupKey
@@ -441,7 +397,7 @@ function translationEventMatchesLookup(
   }
   return Object.keys(event.value).some(
     (hash) =>
-      getTranslationListenerKey({ locale: event.locale, hash }) === lookupKey
+      getTranslateListenerKey({ locale: event.locale, hash }) === lookupKey
   );
 }
 
@@ -473,7 +429,7 @@ function dictionaryObjectEventMatchesLookup(
 
 // ===== Snapshot Helpers ===== //
 
-function getTranslationHash<T extends Translation>(
+function getTranslateHash<T extends Translation>(
   message: T,
   options: LookupOptions
 ): string {

@@ -1,29 +1,35 @@
-export { Branch, GtInternalBranch } from './external-store/branches/Branch';
-export { Plural, GtInternalPlural } from './external-store/branches/Plural';
+export {
+  Branch,
+  GtInternalBranch,
+} from './external-store/components/branches/Branch';
+export {
+  Plural,
+  GtInternalPlural,
+} from './external-store/components/branches/Plural';
 export {
   Derive,
   GtInternalDerive,
   Static,
-} from './external-store/derivation/Derive';
+} from './external-store/components/derivation/Derive';
 export {
-  useDefaultLocale,
   useLocale,
-  useLocales,
   useRegion,
   useSetLocale,
   useSetRegion,
-} from './external-store/hooks/locale-management';
+} from './external-store/hooks/condition-hooks';
 export {
   useCustomMapping,
   useEnableI18n,
-} from './external-store/hooks/other-hooks';
-export {
+  useDefaultLocale,
   useDictionaryEntry,
   useDictionaryObject,
-  useTranslation,
-} from './external-store/hooks/translation-management';
+  useLocales,
+  useTranslate,
+  useTranslateMany,
+} from './external-store/hooks/i18n-manager-hooks';
 export {
   GTContext,
+  useConditionStore,
   useI18nExternalStore,
   useI18nManager,
 } from './external-store/provider/GTContext';
@@ -39,6 +45,10 @@ export {
   ProviderConditionStore,
   type ProviderConditionStoreParams,
 } from './external-store/store/ProviderConditionStore';
+export {
+  getI18nExternalStore,
+  setI18nExternalStore,
+} from './external-store/store/singleton-operations';
 export type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
@@ -46,31 +56,32 @@ export type {
   I18nExternalConditionStore,
   ListenerSet,
   StoreListener,
-  TranslationLookup,
-  TranslationSnapshot,
+  TranslateLookup,
+  TranslateManySnapshot,
+  TranslateSnapshot,
   Unsubscribe,
 } from './external-store/store/storeTypes';
 export {
   GtInternalTranslateJsx,
   T,
-} from './external-store/translation/T';
+} from './external-store/components/translation/T';
 export {
   Currency,
   GtInternalCurrency,
-} from './external-store/variables/Currency';
+} from './external-store/components/variables/Currency';
 export {
   DateTime,
   GtInternalDateTime,
-} from './external-store/variables/DateTime';
-export { GtInternalNum, Num } from './external-store/variables/Num';
+} from './external-store/components/variables/DateTime';
+export { GtInternalNum, Num } from './external-store/components/variables/Num';
 export {
   GtInternalRelativeTime,
   RelativeTime,
-} from './external-store/variables/RelativeTime';
+} from './external-store/components/variables/RelativeTime';
 export {
   GtInternalVar,
   Var,
   computeVar,
-} from './external-store/variables/Var';
-export { renderVariable } from './external-store/variables/renderVariable';
-export { useFormatLocales } from './external-store/variables/useFormatLocales';
+} from './external-store/components/variables/Var';
+export { renderVariable } from './external-store/components/variables/renderVariable';
+export { useFormatLocales } from './external-store/components/variables/useFormatLocales';
