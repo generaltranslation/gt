@@ -4,12 +4,8 @@ import localizeStaticImports, {
   type StaticImportSettings,
 } from '../localizeStaticImports';
 
-type ExactStaticImportSettings<T extends StaticImportSettings> = T &
-  Record<Exclude<keyof T, keyof StaticImportSettings>, never>;
-
-const createSettings = <T extends StaticImportSettings>(
-  settings: ExactStaticImportSettings<T>
-): StaticImportSettings => settings;
+const createSettings = (settings: StaticImportSettings): StaticImportSettings =>
+  settings;
 
 // Mock fs module
 vi.mock('fs', () => ({

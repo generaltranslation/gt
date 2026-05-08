@@ -5,12 +5,8 @@ import localizeStaticUrls, {
   type StaticUrlSettings,
 } from '../localizeStaticUrls';
 
-type ExactStaticUrlSettings<T extends StaticUrlSettings> = T &
-  Record<Exclude<keyof T, keyof StaticUrlSettings>, never>;
-
-const createSettings = <T extends StaticUrlSettings>(
-  settings: ExactStaticUrlSettings<T>
-): StaticUrlSettings => settings;
+const createSettings = (settings: StaticUrlSettings): StaticUrlSettings =>
+  settings;
 
 // Mock fs module
 vi.mock('fs', () => ({

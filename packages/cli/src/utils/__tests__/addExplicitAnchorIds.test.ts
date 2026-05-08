@@ -749,15 +749,11 @@ This is just an example
       const settings = {
         options: { experimentalAddHeaderAnchorIds: 'mintlify' as const },
       };
-      const first = addExplicitAnchorIds(
-        input,
-        sourceHeadingMap,
-        settings as any
-      );
+      const first = addExplicitAnchorIds(input, sourceHeadingMap, settings);
       const second = addExplicitAnchorIds(
         first.content,
         sourceHeadingMap,
-        settings as any
+        settings
       );
 
       expect(first.hasChanges).toBe(true);
@@ -776,7 +772,7 @@ This is just an example
       const result = addExplicitAnchorIds(
         translatedContent,
         sourceHeadingMap,
-        settings as any
+        settings
       );
 
       expect(result.hasChanges).toBe(true);

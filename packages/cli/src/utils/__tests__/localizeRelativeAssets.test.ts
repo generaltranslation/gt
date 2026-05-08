@@ -2,7 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import localizeRelativeAssets, {
   localizeRelativeAssetsForContent,
+  type RelativeAssetSettings,
 } from '../localizeRelativeAssets';
+
+const createSettings = (
+  settings: RelativeAssetSettings
+): RelativeAssetSettings => settings;
 
 vi.mock('fs', () => ({
   promises: {
@@ -39,7 +44,7 @@ describe('localizeRelativeAssets', () => {
       "<img src='whatsapp-clawd.jpg' />"
     );
     vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+    vi.mocked(fs.existsSync).mockImplementation((p) => {
       if (p === '/proj/es/demoIndex.mdx') return true;
       if (p === '/proj/demoIndex.mdx') return true;
       if (p === '/proj/es/whatsapp-clawd.jpg') return false;
@@ -49,17 +54,16 @@ describe('localizeRelativeAssets', () => {
 
     const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue('/proj');
 
-    const settings = {
+    const settings = createSettings({
       files: {
         placeholderPaths: { docs: '/docs' },
         resolvedPaths: {},
         transformPaths: {},
       },
       locales: ['en', 'es'],
-      defaultLocale: 'en',
-    };
+    });
 
-    await localizeRelativeAssets(settings as any, ['es']);
+    await localizeRelativeAssets(settings, ['es']);
 
     expect(fs.promises.writeFile).toHaveBeenCalledTimes(1);
     const written = vi.mocked(fs.promises.writeFile).mock.calls[0][1] as string;
@@ -69,7 +73,7 @@ describe('localizeRelativeAssets', () => {
   });
 
   it('does not rewrite if target-relative asset exists', () => {
-    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+    vi.mocked(fs.existsSync).mockImplementation((p) => {
       if (p === '/proj/es/whatsapp-clawd.jpg') return true;
       return false;
     });
@@ -100,7 +104,7 @@ describe('localizeRelativeAssets', () => {
   });
 
   it('does not rewrite markdown links', () => {
-    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+    vi.mocked(fs.existsSync).mockImplementation((p) => {
       if (p === '/proj/whatsapp-clawd.jpg') return true;
       return false;
     });

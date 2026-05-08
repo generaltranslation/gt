@@ -4,10 +4,15 @@ import remarkMdx from 'remark-mdx';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
-import type { Root, Heading, Node } from 'mdast';
+import type { Root, Heading, Literal, Node } from 'mdast';
 import { logger } from '../console/logger.js';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import { decode } from 'html-entities';
+import type { AdditionalOptions } from '../types/index.js';
+
+type AnchorIdSettings = {
+  options?: Pick<AdditionalOptions, 'experimentalAddHeaderAnchorIds'>;
+};
 
 /**
  * Generates a slug from heading text
@@ -176,7 +181,7 @@ export function extractHeadingInfo(mdxContent: string): HeadingInfo[] {
 export function addExplicitAnchorIds(
   translatedContent: string,
   sourceHeadingMap: HeadingInfo[],
-  settings?: any,
+  settings?: AnchorIdSettings,
   sourcePath?: string,
   translatedPath?: string,
   fileTypeHint?: 'md' | 'mdx'
@@ -361,7 +366,7 @@ function applyInlineIds(
       .use(remarkStringify, {
         handlers: {
           // Custom handler to prevent escaping of {#id} syntax
-          text(node: any) {
+          text(node: Literal) {
             return node.value;
           },
         },

@@ -6,12 +6,26 @@ import remarkMdx from 'remark-mdx';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
-import type { Root } from 'mdast';
+import type { Literal, Root } from 'mdast';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
-import { Settings } from '../types/index.js';
+import type { StaticLocalizationSettings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 
 type RewriteResult = { content: string; hasChanges: boolean };
+export type RelativeAssetSettings = StaticLocalizationSettings;
+
+type MdxAssetNode = {
+  type?: string;
+  name?: unknown;
+  attributes?: unknown;
+  url?: unknown;
+};
+
+type MdxAttribute = {
+  type?: string;
+  name?: string;
+  value?: unknown;
+};
 
 function stripQueryAndHash(url: string): { base: string; suffix: string } {
   const match = url.match(/^[^?#]+/);
@@ -90,27 +104,28 @@ export function localizeRelativeAssetsForContent(
     return newPath + suffix;
   };
 
-  visit(ast, (node: any) => {
-    if (node.type === 'image' && typeof node.url === 'string') {
-      const newUrl = maybeRewrite(node.url);
-      if (newUrl) node.url = newUrl;
+  visit(ast, (node) => {
+    const assetNode = node as MdxAssetNode;
+    if (assetNode.type === 'image' && typeof assetNode.url === 'string') {
+      const newUrl = maybeRewrite(assetNode.url);
+      if (newUrl) assetNode.url = newUrl;
       return;
     }
     if (
-      (node.type === 'mdxJsxFlowElement' ||
-        node.type === 'mdxJsxTextElement') &&
-      node.name === 'img' &&
-      Array.isArray(node.attributes)
+      (assetNode.type === 'mdxJsxFlowElement' ||
+        assetNode.type === 'mdxJsxTextElement') &&
+      assetNode.name === 'img' &&
+      Array.isArray(assetNode.attributes)
     ) {
-      for (const attr of node.attributes) {
+      for (const attr of assetNode.attributes) {
+        const attribute = attr as MdxAttribute;
         if (
-          attr &&
-          attr.type === 'mdxJsxAttribute' &&
-          attr.name === 'src' &&
-          typeof attr.value === 'string'
+          attribute.type === 'mdxJsxAttribute' &&
+          attribute.name === 'src' &&
+          typeof attribute.value === 'string'
         ) {
-          const newUrl = maybeRewrite(attr.value);
-          if (newUrl) attr.value = newUrl;
+          const newUrl = maybeRewrite(attribute.value);
+          if (newUrl) attribute.value = newUrl;
         }
       }
     }
@@ -124,13 +139,13 @@ export function localizeRelativeAssetsForContent(
       .use(escapeHtmlInTextNodes)
       .use(remarkStringify, {
         handlers: {
-          text(node: any) {
+          text(node: Literal) {
             return node.value;
           },
         },
       });
-    const outTree = s.runSync(ast);
-    let out = s.stringify(outTree as any);
+    const outTree = s.runSync(ast) as Root;
+    let out = s.stringify(outTree);
     if (out.endsWith('\n') && !content.endsWith('\n')) out = out.slice(0, -1);
     if (content.startsWith('\n') && !out.startsWith('\n')) out = '\n' + out;
     return { content: out, hasChanges: changed };
@@ -140,7 +155,7 @@ export function localizeRelativeAssetsForContent(
 }
 
 export default async function localizeRelativeAssets(
-  settings: Settings,
+  settings: RelativeAssetSettings,
   targetLocales?: string[],
   includeFiles?: Set<string>
 ) {
@@ -158,8 +173,8 @@ export default async function localizeRelativeAssets(
   const fileMapping = createFileMapping(
     sourceFiles,
     settings.files.placeholderPaths,
-    settings.files.transformPaths,
-    settings.files.transformFormats,
+    settings.files.transformPaths ?? {},
+    settings.files.transformFormats ?? {},
     settings.locales,
     settings.defaultLocale
   );
