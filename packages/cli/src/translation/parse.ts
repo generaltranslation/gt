@@ -90,11 +90,35 @@ export async function createUpdates(
 
   // Metadata addition and validation
   const idHashMap = new Map<string, string>();
+  const hashlessIds = new Set<string>();
+  const warnedHashlessDuplicateIds = new Set<string>();
   const duplicateIds = new Set<string>();
+
+  const warnHashlessDuplicateId = (id: string) => {
+    if (warnedHashlessDuplicateIds.has(id)) return;
+    warnings.push(
+      `Duplicate id ${chalk.blue(
+        id
+      )} includes at least one entry without a hash. Hashless duplicate IDs cannot be compared, and later entries may overwrite earlier entries.`
+    );
+    warnedHashlessDuplicateIds.add(id);
+  };
 
   updates = updates.map((update) => {
     const { id, hash } = update.metadata;
-    if (!id || !hash) return update;
+    if (!id) return update;
+    if (!hash) {
+      if (hashlessIds.has(id) || idHashMap.has(id)) {
+        warnHashlessDuplicateId(id);
+      }
+      hashlessIds.add(id);
+      return update;
+    }
+
+    if (hashlessIds.has(id)) {
+      warnHashlessDuplicateId(id);
+    }
+
     const existingHash = idHashMap.get(id);
     if (existingHash !== undefined) {
       if (existingHash !== hash) {
