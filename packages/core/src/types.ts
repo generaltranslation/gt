@@ -25,6 +25,11 @@ import type {
 } from './types-dir/api/entry';
 import type { HashMetadata } from './id/types';
 export type { TranslationStatusResult } from './types-dir/api/translationStatus';
+export type {
+  JsonObject,
+  JsonPrimitive,
+  JsonValue,
+} from './types-dir/api/json';
 
 export {
   IcuMessage,
@@ -132,10 +137,13 @@ export type Metadata = {
   maxChars?: number;
   context?: string;
   id?: string;
+  hash?: string;
+  format?: string;
+  dataFormat?: DataFormat;
   sourceLocale?: string;
   actionType?: 'standard' | 'fast' | string;
   filePaths?: string[];
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export type FormatVariables = Record<

@@ -93,26 +93,29 @@ export async function createUpdates(
   const duplicateIds = new Set<string>();
 
   updates = updates.map((update) => {
-    if (!update.metadata.id) return update;
-    const existingHash = idHashMap.get(update.metadata.id);
-    if (existingHash) {
-      if (existingHash !== update.metadata.hash) {
+    const { id, hash } = update.metadata;
+    if (!id || !hash) return update;
+    const existingHash = idHashMap.get(id);
+    if (existingHash !== undefined) {
+      if (existingHash !== hash) {
         errors.push(
           `Hashes don't match on two components with the same id: ${chalk.blue(
-            update.metadata.id
+            id
           )}. Check your ${chalk.green(
             '<T>'
           )} tags and dictionary entries and make sure you're not accidentally duplicating IDs.`
         );
-        duplicateIds.add(update.metadata.id);
+        duplicateIds.add(id);
       }
     } else {
-      idHashMap.set(update.metadata.id, update.metadata.hash);
+      idHashMap.set(id, hash);
     }
     return update;
   });
 
   // Filter out updates with duplicate IDs
-  updates = updates.filter((update) => !duplicateIds.has(update.metadata.id));
+  updates = updates.filter(
+    (update) => !update.metadata.id || !duplicateIds.has(update.metadata.id)
+  );
   return { updates, errors, warnings };
 }
