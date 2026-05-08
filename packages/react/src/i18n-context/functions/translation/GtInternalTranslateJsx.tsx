@@ -25,7 +25,7 @@ function GtInternalTranslateJsx(
     children: ReactNode;
   } & JsxTranslationOptions
 ): ReactNode {
-  return computeT(props);
+  return useComputeT(props);
 }
 
 /**
@@ -36,7 +36,7 @@ function T(
     children: ReactNode;
   } & JsxTranslationOptions
 ): ReactNode {
-  return computeT(props);
+  return useComputeT(props);
 }
 
 /** @internal _gtt - The GT transformation and injection identifier for the component. */
@@ -50,7 +50,7 @@ export { GtInternalTranslateJsx, T };
 /**
  * Implementation for the T component logic
  */
-function computeT({
+function useComputeT({
   children: sourceChildren,
   ...params
 }: {
