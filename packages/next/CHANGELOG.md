@@ -1,5 +1,20 @@
 # gt-next
 
+## 6.16.26
+
+### Patch Changes
+
+- [#1386](https://github.com/generaltranslation/gt/pull/1386) [`f9f97a2`](https://github.com/generaltranslation/gt/commit/f9f97a2c1ce96fd79e50fa4bbd7d27139404bf06) Thanks [@bgub](https://github.com/bgub)! - Preserve user Next config types when wrapping with GT config.
+
+- [#1387](https://github.com/generaltranslation/gt/pull/1387) [`95f852a`](https://github.com/generaltranslation/gt/commit/95f852ae086ac79d2c446f4d3072d8fd18688796) Thanks [@bgub](https://github.com/bgub)! - Reduce explicit any usage in core and Next.js types.
+
+- Updated dependencies [[`4d77edf`](https://github.com/generaltranslation/gt/commit/4d77edf7cb2bca5c20911c20c58f702803c9acc9), [`feffb35`](https://github.com/generaltranslation/gt/commit/feffb35f75b3deee12e29878792461b8d32fad3e), [`e88fd39`](https://github.com/generaltranslation/gt/commit/e88fd399683868d5af1fe2b0ba2974fe5b17d7a7), [`86263b3`](https://github.com/generaltranslation/gt/commit/86263b3aa8f2d283200515d609d69f570b97a84f), [`95f852a`](https://github.com/generaltranslation/gt/commit/95f852ae086ac79d2c446f4d3072d8fd18688796)]:
+  - gt-i18n@0.9.1
+  - generaltranslation@8.2.13
+  - gt-react@10.19.15
+  - @generaltranslation/compiler@1.3.21
+  - @generaltranslation/supported-locales@2.0.71
+
 ## 6.16.25
 
 ### Patch Changes

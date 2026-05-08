@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.14.34
+
+### Patch Changes
+
+- [#1385](https://github.com/generaltranslation/gt/pull/1385) [`bcb2b91`](https://github.com/generaltranslation/gt/commit/bcb2b91581d1edb134a451f9713c3a899e32282a) Thanks [@bgub](https://github.com/bgub)! - Warn when duplicate source update IDs include hashless entries.
+
+- [#1379](https://github.com/generaltranslation/gt/pull/1379) [`e88fd39`](https://github.com/generaltranslation/gt/commit/e88fd399683868d5af1fe2b0ba2974fe5b17d7a7) Thanks [@bgub](https://github.com/bgub)! - Tighten public and API metadata types, and handle metadata entries without hashes in the CLI.
+
+- Updated dependencies [[`e88fd39`](https://github.com/generaltranslation/gt/commit/e88fd399683868d5af1fe2b0ba2974fe5b17d7a7), [`95f852a`](https://github.com/generaltranslation/gt/commit/95f852ae086ac79d2c446f4d3072d8fd18688796)]:
+  - generaltranslation@8.2.13
+  - @generaltranslation/python-extractor@0.2.19
+
 ## 2.14.33
 
 ### Patch Changes
@@ -1060,6 +1072,7 @@
   https://generaltranslation.com/blog/generaltranslation_v8
 
   Please update the following packages to the latest version:
+
   - generaltranslation: `7.9.1` or later
   - gtx-cli: `2.4.15` or later
   - gt-sanity: `1.0.11` or later
