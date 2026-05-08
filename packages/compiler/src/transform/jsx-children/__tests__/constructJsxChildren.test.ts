@@ -49,9 +49,7 @@ function createTest(dirPath: string) {
     const statePath = path.join(dirPath, 'state.json');
     const stateSeed = JSON.parse(fs.readFileSync(statePath, 'utf8'));
     if (!stateSeed || Object.keys(stateSeed).length === 0) {
-      test(testName, () => {
-        expect(true).toBe(true);
-      });
+      test.skip(testName, () => {});
       return;
     }
     const expectedPath = path.join(dirPath, 'expected.json');
@@ -59,9 +57,7 @@ function createTest(dirPath: string) {
 
     // Skip static tests
     if (expected && expected['static'] === true) {
-      test(testName, () => {
-        expect(true).toBe(true);
-      });
+      test.skip(testName, () => {});
       return;
     }
 
