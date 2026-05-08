@@ -38,6 +38,13 @@ import { Static, Derive } from './variables/Derive';
 
 export * from 'gt-i18n/fallbacks';
 export { declareStatic, derive, declareVar, decodeVars } from 'gt-i18n';
+export type {
+  DictionaryEntrySnapshot,
+  DictionaryLookup,
+  DictionaryObjectSnapshot,
+  TranslationLookup,
+  TranslationSnapshot,
+} from './provider/i18n-store/storeTypes';
 
 export {
   addGTIdentifier,

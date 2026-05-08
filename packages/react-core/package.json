@@ -11,7 +11,7 @@
   ],
   "sideEffects": false,
   "peerDependencies": {
-    "react": ">=16.8.0"
+    "react": ">=18.0.0"
   },
   "dependencies": {
     "@generaltranslation/supported-locales": "workspace:*",
