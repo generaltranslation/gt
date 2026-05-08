@@ -44,7 +44,7 @@ export type {
   DictionaryObjectSnapshot,
   TranslationLookup,
   TranslationSnapshot,
-} from './provider/i18n-store/storeTypes';
+} from './external-store/i18n-store/storeTypes';
 
 export {
   addGTIdentifier,
