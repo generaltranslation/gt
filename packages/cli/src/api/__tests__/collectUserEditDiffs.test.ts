@@ -12,6 +12,7 @@ import {
   DownloadedVersionsV1,
 } from '../../fs/config/downloadedVersions.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
+import type { FileReference } from 'generaltranslation/types';
 
 vi.mock('../../utils/gt.js', () => ({
   gt: {
@@ -92,7 +93,7 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     });
 
-    const files = [
+    const files: FileReference[] = [
       {
         fileName: 'docs/doc.md',
         fileFormat: 'MD',
@@ -106,7 +107,7 @@ describe('collectAndSendUserEditDiffs', () => {
     const entry = entryMap.get('file1');
     expect(entry?.translations?.ja?.postProcessHash).toBeDefined();
 
-    await collectAndSendUserEditDiffs(files as any, settings);
+    await collectAndSendUserEditDiffs(files, settings);
 
     expect(gt.queryFileData).not.toHaveBeenCalled();
     expect(gt.downloadFileBatch).not.toHaveBeenCalled();
@@ -146,7 +147,7 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     });
 
-    (gt.queryFileData as any).mockResolvedValue({
+    vi.mocked(gt.queryFileData).mockResolvedValue({
       translatedFiles: [
         {
           branchId: 'branch1',
@@ -158,7 +159,7 @@ describe('collectAndSendUserEditDiffs', () => {
       ],
     });
 
-    (gt.downloadFileBatch as any).mockResolvedValue({
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
       files: [
         {
           branchId: 'branch1',
@@ -170,9 +171,9 @@ describe('collectAndSendUserEditDiffs', () => {
       ],
     });
 
-    (getGitUnifiedDiff as any).mockResolvedValue('mock-diff');
+    vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
 
-    const files = [
+    const files: FileReference[] = [
       {
         fileName: 'docs/doc.md',
         fileFormat: 'MD',
@@ -182,7 +183,7 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     ];
 
-    await collectAndSendUserEditDiffs(files as any, settings);
+    await collectAndSendUserEditDiffs(files, settings);
 
     expect(gt.queryFileData).toHaveBeenCalledTimes(1);
     expect(gt.downloadFileBatch).toHaveBeenCalledTimes(1);
@@ -213,7 +214,7 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     });
 
-    (gt.queryFileData as any).mockResolvedValue({
+    vi.mocked(gt.queryFileData).mockResolvedValue({
       translatedFiles: [
         {
           branchId: 'branch1',
@@ -225,7 +226,7 @@ describe('collectAndSendUserEditDiffs', () => {
       ],
     });
 
-    (gt.downloadFileBatch as any).mockResolvedValue({
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
       files: [
         {
           branchId: 'branch1',
@@ -237,9 +238,9 @@ describe('collectAndSendUserEditDiffs', () => {
       ],
     });
 
-    (getGitUnifiedDiff as any).mockResolvedValue('mock-diff');
+    vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
 
-    const files = [
+    const files: FileReference[] = [
       {
         fileName: 'docs/doc.md',
         fileFormat: 'MD',
@@ -249,11 +250,11 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     ];
 
-    await collectAndSendUserEditDiffs(files as any, settings);
+    await collectAndSendUserEditDiffs(files, settings);
 
     expect(gt.queryFileData).toHaveBeenCalledTimes(1);
     expect(
-      (gt.queryFileData as any).mock.calls[0][0].translatedFiles[0].versionId
+      vi.mocked(gt.queryFileData).mock.calls[0][0].translatedFiles[0].versionId
     ).toBe('version1');
     expect(gt.downloadFileBatch).toHaveBeenCalledTimes(1);
     expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);

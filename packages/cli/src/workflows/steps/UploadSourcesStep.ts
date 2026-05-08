@@ -2,8 +2,8 @@ import type { FileToUpload } from 'generaltranslation/types';
 import { WorkflowStep } from './WorkflowStep.js';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
-import { GT } from 'generaltranslation';
-import { Settings } from '../../types/index.js';
+import type { GT } from 'generaltranslation';
+import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import { BranchData } from '../../types/branch.js';
 import type {
@@ -18,6 +18,15 @@ type MoveMapping = {
   newFileName: string;
 };
 
+type UploadSourcesClient = Pick<
+  GT,
+  | 'queryFileData'
+  | 'getOrphanedFiles'
+  | 'processFileMoves'
+  | 'uploadSourceFiles'
+>;
+type UploadSourcesSettings = Pick<Settings, 'defaultLocale' | 'modelProvider'>;
+
 export class UploadSourcesStep extends WorkflowStep<
   { files: FileToUpload[]; branchData: BranchData },
   FileReference[]
@@ -26,8 +35,8 @@ export class UploadSourcesStep extends WorkflowStep<
   private result: FileReference[] | null = null;
 
   constructor(
-    private gt: GT,
-    private settings: Settings
+    private gt: UploadSourcesClient,
+    private settings: UploadSourcesSettings
   ) {
     super();
   }

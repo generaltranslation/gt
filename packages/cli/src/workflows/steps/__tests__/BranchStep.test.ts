@@ -62,7 +62,7 @@ function makeSettings(
       remoteName: 'origin',
       currentBranch: overrides.currentBranch,
     },
-  } as any;
+  };
 }
 
 describe('BranchStep', () => {
@@ -93,7 +93,7 @@ describe('BranchStep', () => {
         defaultBranch,
       });
 
-      const step = new BranchStep(mockGt as any, makeSettings());
+      const step = new BranchStep(mockGt, makeSettings());
       const result = await step.run();
 
       expect(result?.currentBranch).toEqual(featureBranch);
@@ -109,7 +109,7 @@ describe('BranchStep', () => {
         defaultBranch,
       });
 
-      const step = new BranchStep(mockGt as any, makeSettings());
+      const step = new BranchStep(mockGt, makeSettings());
       const result = await step.run();
 
       expect(result?.currentBranch).toEqual(defaultBranch);
@@ -128,7 +128,7 @@ describe('BranchStep', () => {
         defaultBranch,
       });
 
-      const step = new BranchStep(mockGt as any, makeSettings());
+      const step = new BranchStep(mockGt, makeSettings());
       const result = await step.run();
 
       expect(result?.currentBranch).toEqual(featureBranch);
@@ -142,7 +142,7 @@ describe('BranchStep', () => {
         defaultBranch,
       });
 
-      const step = new BranchStep(mockGt as any, makeSettings());
+      const step = new BranchStep(mockGt, makeSettings());
       const result = await step.run();
 
       expect(result?.checkedOutBranch).toEqual(defaultBranch);
@@ -158,7 +158,7 @@ describe('BranchStep', () => {
       });
 
       const step = new BranchStep(
-        mockGt as any,
+        mockGt,
         makeSettings({ currentBranch: 'feature-x' })
       );
       const result = await step.run();
@@ -174,7 +174,7 @@ describe('BranchStep', () => {
       });
 
       const step = new BranchStep(
-        mockGt as any,
+        mockGt,
         makeSettings({ currentBranch: 'feature-x' })
       );
       const result = await step.run();
@@ -191,7 +191,7 @@ describe('BranchStep', () => {
       });
 
       const step = new BranchStep(
-        mockGt as any,
+        mockGt,
         makeSettings({ autoDetectBranches: false, currentBranch: 'feature-x' })
       );
       const result = await step.run();
@@ -209,10 +209,7 @@ describe('BranchStep', () => {
         defaultBranch,
       });
 
-      const step = new BranchStep(
-        mockGt as any,
-        makeSettings({ enabled: false })
-      );
+      const step = new BranchStep(mockGt, makeSettings({ enabled: false }));
       const result = await step.run();
 
       expect(result?.currentBranch).toEqual(defaultBranch);
@@ -235,7 +232,7 @@ describe('BranchStep', () => {
         branch: { id: 'new-id', name: 'new-branch' },
       });
 
-      const step = new BranchStep(mockGt as any, makeSettings());
+      const step = new BranchStep(mockGt, makeSettings());
       const result = await step.run();
 
       expect(mockGt.createBranch).toHaveBeenCalledWith({

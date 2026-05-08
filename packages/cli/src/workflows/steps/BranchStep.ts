@@ -1,8 +1,8 @@
 import { WorkflowStep } from './WorkflowStep.js';
 import { logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
-import { GT } from 'generaltranslation';
-import { Settings } from '../../types/index.js';
+import type { GT } from 'generaltranslation';
+import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import {
   getCurrentBranch,
@@ -12,14 +12,17 @@ import {
 import { BranchData } from '../../types/branch.js';
 import { ApiError } from 'generaltranslation/errors';
 
+type BranchStepClient = Pick<GT, 'queryBranchData' | 'createBranch'>;
+type BranchStepSettings = Pick<Settings, 'branchOptions'>;
+
 // Step 1: Resolve the current branch id & update API with branch information
 export class BranchStep extends WorkflowStep<null, BranchData | null> {
   private spinner = logger.createSpinner('dots');
   private branchData: BranchData;
-  private settings: Settings;
-  private gt: GT;
+  private settings: BranchStepSettings;
+  private gt: BranchStepClient;
 
-  constructor(gt: GT, settings: Settings) {
+  constructor(gt: BranchStepClient, settings: BranchStepSettings) {
     super();
     this.gt = gt;
     this.settings = settings;
