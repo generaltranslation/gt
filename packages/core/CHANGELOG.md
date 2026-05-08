@@ -1,5 +1,13 @@
 # generaltranslation
 
+## 8.2.13
+
+### Patch Changes
+
+- [#1379](https://github.com/generaltranslation/gt/pull/1379) [`e88fd39`](https://github.com/generaltranslation/gt/commit/e88fd399683868d5af1fe2b0ba2974fe5b17d7a7) Thanks [@bgub](https://github.com/bgub)! - Tighten public and API metadata types, and handle metadata entries without hashes in the CLI.
+
+- [#1387](https://github.com/generaltranslation/gt/pull/1387) [`95f852a`](https://github.com/generaltranslation/gt/commit/95f852ae086ac79d2c446f4d3072d8fd18688796) Thanks [@bgub](https://github.com/bgub)! - Reduce explicit any usage in core and Next.js types.
+
 ## 8.2.12
 
 ### Patch Changes
@@ -281,6 +289,7 @@
   https://generaltranslation.com/blog/generaltranslation_v8
 
   Please update the following packages to the latest version:
+
   - generaltranslation: `7.9.1` or later
   - gtx-cli: `2.4.15` or later
   - gt-sanity: `1.0.11` or later

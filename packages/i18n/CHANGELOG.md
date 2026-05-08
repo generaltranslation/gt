@@ -1,5 +1,19 @@
 # gt-i18n
 
+## 0.9.1
+
+### Patch Changes
+
+- [#1374](https://github.com/generaltranslation/gt/pull/1374) [`4d77edf`](https://github.com/generaltranslation/gt/commit/4d77edf7cb2bca5c20911c20c58f702803c9acc9) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore(gt-i18n): add comment documentation for t.obj()
+
+- [#1380](https://github.com/generaltranslation/gt/pull/1380) [`feffb35`](https://github.com/generaltranslation/gt/commit/feffb35f75b3deee12e29878792461b8d32fad3e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Export i18n manager cache-miss event-name constants from `gt-i18n/internal` so downstream packages such as `@generaltranslation/react-core` can consume one shared source of truth.
+
+- [#1375](https://github.com/generaltranslation/gt/pull/1375) [`86263b3`](https://github.com/generaltranslation/gt/commit/86263b3aa8f2d283200515d609d69f570b97a84f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fix dictionary getTranslations fallback to use loaded translations when a target dictionary entry is missing.
+
+- Updated dependencies [[`e88fd39`](https://github.com/generaltranslation/gt/commit/e88fd399683868d5af1fe2b0ba2974fe5b17d7a7), [`95f852a`](https://github.com/generaltranslation/gt/commit/95f852ae086ac79d2c446f4d3072d8fd18688796)]:
+  - generaltranslation@8.2.13
+  - @generaltranslation/supported-locales@2.0.71
+
 ## 0.9.0
 
 ### Minor Changes
