@@ -36,8 +36,16 @@ function makeWebpackConfig() {
   };
 }
 
+type WebpackConfig = ReturnType<typeof makeWebpackConfig>;
+type WebpackConfigArg = Parameters<NonNullable<NextConfig['webpack']>>[0];
+type WebpackOptions = Parameters<NonNullable<NextConfig['webpack']>>[1];
+
 function makeWebpackOptions() {
-  return { isServer: true } as any;
+  return { isServer: true } as WebpackOptions;
+}
+
+function runWebpack(result: NextConfig, config: WebpackConfig) {
+  return result.webpack!(config as WebpackConfigArg, makeWebpackOptions());
 }
 
 // ---- Setup ---- //
@@ -587,10 +595,12 @@ describe('withGTConfig', () => {
       try {
         withGTConfig({}, { defaultLocale: 'de' });
         expect.fail('Should have thrown');
-      } catch (e: any) {
-        expect(e.message).toContain('defaultLocale');
-        expect(e.message).toContain('fr');
-        expect(e.message).toContain('de');
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        const message = error instanceof Error ? error.message : '';
+        expect(message).toContain('defaultLocale');
+        expect(message).toContain('fr');
+        expect(message).toContain('de');
       }
     });
   });
@@ -1163,7 +1173,7 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig(
         {},
-        { experimentalCompilerOptions: { type: 'babel' } as any }
+        { experimentalCompilerOptions: { type: 'babel' } }
       );
       const params = parseConfigParams(result);
 
@@ -1189,7 +1199,7 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig(
         {},
-        { experimentalCompilerOptions: { type: 'babel' } as any }
+        { experimentalCompilerOptions: { type: 'babel' } }
       );
       const params = parseConfigParams(result);
 
@@ -1213,7 +1223,7 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig(
         {},
-        { experimentalCompilerOptions: { type: 'babel' } as any }
+        { experimentalCompilerOptions: { type: 'babel' } }
       );
       const params = parseConfigParams(result);
 
@@ -1243,10 +1253,7 @@ describe('withGTConfig', () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
 
-      const webpackResult = result.webpack!(
-        makeWebpackConfig() as any,
-        makeWebpackOptions()
-      );
+      const webpackResult = runWebpack(result, makeWebpackConfig());
 
       expect(webpackResult).toBeDefined();
       expect(webpackResult).toHaveProperty('resolve');
@@ -1254,17 +1261,14 @@ describe('withGTConfig', () => {
 
     it('calls original nextConfig.webpack if present', async () => {
       const withGTConfig = await getWithGTConfig();
-      const originalWebpack = vi.fn((config: any) => ({
+      const originalWebpack = vi.fn((config: WebpackConfig) => ({
         ...config,
         customProp: true,
       }));
 
       const result = withGTConfig({ webpack: originalWebpack });
 
-      const webpackResult = result.webpack!(
-        makeWebpackConfig() as any,
-        makeWebpackOptions()
-      );
+      const webpackResult = runWebpack(result, makeWebpackConfig());
 
       expect(originalWebpack).toHaveBeenCalled();
       expect(webpackResult).toHaveProperty('customProp', true);
@@ -1276,7 +1280,7 @@ describe('withGTConfig', () => {
       const result = withGTConfig({}, { dictionary: './my-dict.json' });
 
       const wc = makeWebpackConfig();
-      result.webpack!(wc as any, makeWebpackOptions());
+      runWebpack(result, wc);
 
       expect(wc.resolve.alias).toHaveProperty('gt-next/_dictionary');
     });
@@ -1288,7 +1292,7 @@ describe('withGTConfig', () => {
       const result = withGTConfig({}, { dictionary: './my-dict.json' });
 
       const wc = makeWebpackConfig();
-      result.webpack!(wc as any, makeWebpackOptions());
+      runWebpack(result, wc);
 
       expect(wc.resolve.alias).not.toHaveProperty('gt-next/_dictionary');
     });
@@ -1300,7 +1304,7 @@ describe('withGTConfig', () => {
       const result = withGTConfig();
 
       const wc = makeWebpackConfig();
-      result.webpack!(wc as any, makeWebpackOptions());
+      runWebpack(result, wc);
 
       expect(wc.cache).toBe(false);
     });
@@ -1332,7 +1336,7 @@ describe('withGTConfig', () => {
           turbopack: {
             resolveAlias: { 'existing-alias': '/some/path' },
           },
-        } as any,
+        },
         { dictionary: './my-dict.json' }
       );
 
@@ -1411,13 +1415,13 @@ describe('withGTConfig', () => {
         images: { domains: ['example.com'] },
         reactStrictMode: true,
         compress: false,
-      } as any);
+      });
 
-      expect((result as any).images).toEqual({
+      expect(result.images).toEqual({
         domains: ['example.com'],
       });
-      expect((result as any).reactStrictMode).toBe(true);
-      expect((result as any).compress).toBe(false);
+      expect(result.reactStrictMode).toBe(true);
+      expect(result.compress).toBe(false);
     });
 
     it('handles empty {} nextConfig', async () => {

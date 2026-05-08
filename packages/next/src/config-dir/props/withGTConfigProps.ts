@@ -46,6 +46,8 @@ export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
 } as const;
 
 export type withGTConfigProps = {
+  // Additional top-level keys are forwarded as runtime translation metadata.
+  [key: string]: unknown;
   // Request scoped filepath
   dictionary?: string;
   config?: string;
@@ -104,5 +106,4 @@ export type withGTConfigProps = {
   getStaticRegionPath?: string;
   /** @deprecated use getDomainPath instead */
   getStaticDomainPath?: string;
-  [key: string]: any;
 };
