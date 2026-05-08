@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { getGT, getLocale } from 'gt-next/server';
+import { getLocale } from 'gt-next/server';
 import { getLocaleDirection } from 'generaltranslation';
 import { GTProvider } from 'gt-next';
 

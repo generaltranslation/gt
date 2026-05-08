@@ -469,12 +469,6 @@ importers:
         specifier: ^19.2.2
         version: 19.2.3(react@19.2.3)
     devDependencies:
-      '@eslint/eslintrc':
-        specifier: ^3
-        version: 3.3.1
-      '@next/eslint-plugin-next':
-        specifier: 15.1.7
-        version: 15.1.7
       '@types/node':
         specifier: ^20
         version: 20.19.17
@@ -484,24 +478,9 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.1.9(@types/react@19.2.7)
-      eslint:
-        specifier: ^9
-        version: 9.36.0(jiti@2.6.1)
-      eslint-config-next:
-        specifier: 15.1.7
-        version: 15.1.7(eslint@9.36.0(jiti@2.6.1))(next@15.5.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.57.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(typescript@5.9.3)
-      eslint-plugin-import:
-        specifier: ^2.31.0
-        version: 2.32.0(@typescript-eslint/parser@8.53.0(eslint@9.36.0(jiti@2.6.1))(typescript@5.9.2))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@9.36.0(jiti@2.6.1)))(eslint@9.36.0(jiti@2.6.1)))(eslint@9.36.0(jiti@2.6.1))
-      eslint-plugin-jsx-a11y:
-        specifier: ^6.10.0
-        version: 6.10.2(eslint@9.36.0(jiti@2.6.1))
-      eslint-plugin-react:
-        specifier: ^7.37.0
-        version: 7.37.5(eslint@9.36.0(jiti@2.6.1))
-      eslint-plugin-react-hooks:
-        specifier: ^5.0.0
-        version: 5.2.0(eslint@9.36.0(jiti@2.6.1))
+      oxlint:
+        specifier: ^1.62.0
+        version: 1.62.0
       postcss:
         specifier: ^8
         version: 8.5.6
@@ -542,6 +521,9 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.1.9(@types/react@19.2.7)
+      oxlint:
+        specifier: ^1.62.0
+        version: 1.62.0
       postcss:
         specifier: ^8
         version: 8.5.6
@@ -570,12 +552,6 @@ importers:
         specifier: ^19.2.2
         version: 19.2.3(react@19.2.3)
     devDependencies:
-      '@eslint/eslintrc':
-        specifier: ^3
-        version: 3.3.1
-      '@next/eslint-plugin-next':
-        specifier: 15.1.7
-        version: 15.1.7
       '@types/node':
         specifier: ^20
         version: 20.19.17
@@ -585,24 +561,9 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.1.9(@types/react@19.2.7)
-      eslint:
-        specifier: ^9
-        version: 9.36.0(jiti@2.6.1)
-      eslint-config-next:
-        specifier: 15.1.7
-        version: 15.1.7(eslint@9.36.0(jiti@2.6.1))(next@15.5.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.57.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(typescript@5.9.3)
-      eslint-plugin-import:
-        specifier: ^2.31.0
-        version: 2.32.0(@typescript-eslint/parser@8.53.0(eslint@9.36.0(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.36.0(jiti@2.6.1))
-      eslint-plugin-jsx-a11y:
-        specifier: ^6.10.0
-        version: 6.10.2(eslint@9.36.0(jiti@2.6.1))
-      eslint-plugin-react:
-        specifier: ^7.37.0
-        version: 7.37.5(eslint@9.36.0(jiti@2.6.1))
-      eslint-plugin-react-hooks:
-        specifier: ^5.0.0
-        version: 5.2.0(eslint@9.36.0(jiti@2.6.1))
+      oxlint:
+        specifier: ^1.62.0
+        version: 1.62.0
       postcss:
         specifier: ^8
         version: 8.5.6
