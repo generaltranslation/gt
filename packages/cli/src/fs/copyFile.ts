@@ -1,14 +1,16 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { Settings } from '../types/index.js';
+import type { Settings } from '../types/index.js';
 import { logger } from '../console/logger.js';
+
+type CopyFileSettings = Pick<Settings, 'defaultLocale' | 'locales' | 'options'>;
 
 /**
  * Copy a file to target locale without translation
  *
  * This is a naive approach, does not allow for wild cards
  */
-export default async function copyFile(settings: Settings) {
+export default async function copyFile(settings: CopyFileSettings) {
   if (!settings.options?.copyFiles || settings.options.copyFiles.length === 0) {
     return;
   }

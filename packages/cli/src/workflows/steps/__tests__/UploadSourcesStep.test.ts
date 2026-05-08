@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UploadSourcesStep } from '../UploadSourcesStep.js';
 import type { FileToUpload } from 'generaltranslation/types';
+import type { BranchData } from '../../../types/branch.js';
 
 // Mock the GT class
 const mockGt = {
@@ -30,10 +31,10 @@ describe('UploadSourcesStep', () => {
     modelProvider: undefined,
   };
 
-  const mockBranchData = {
+  const mockBranchData: BranchData = {
     currentBranch: { id: 'branch-123', name: 'main' },
-    incomingBranch: undefined,
-    checkedOutBranch: undefined,
+    incomingBranch: null,
+    checkedOutBranch: null,
   };
 
   beforeEach(() => {
@@ -85,8 +86,8 @@ describe('UploadSourcesStep', () => {
         count: 0,
       });
 
-      const step = new UploadSourcesStep(mockGt as any, mockSettings as any);
-      await step.run({ files: localFiles, branchData: mockBranchData as any });
+      const step = new UploadSourcesStep(mockGt, mockSettings);
+      await step.run({ files: localFiles, branchData: mockBranchData });
 
       // Verify move was detected and processed
       expect(mockGt.processFileMoves).toHaveBeenCalledWith(
@@ -131,8 +132,8 @@ describe('UploadSourcesStep', () => {
         count: 1,
       });
 
-      const step = new UploadSourcesStep(mockGt as any, mockSettings as any);
-      await step.run({ files: localFiles, branchData: mockBranchData as any });
+      const step = new UploadSourcesStep(mockGt, mockSettings);
+      await step.run({ files: localFiles, branchData: mockBranchData });
 
       // No move should be processed - it's a new file
       expect(mockGt.processFileMoves).not.toHaveBeenCalled();
@@ -168,8 +169,8 @@ describe('UploadSourcesStep', () => {
         count: 0,
       });
 
-      const step = new UploadSourcesStep(mockGt as any, mockSettings as any);
-      await step.run({ files: localFiles, branchData: mockBranchData as any });
+      const step = new UploadSourcesStep(mockGt, mockSettings);
+      await step.run({ files: localFiles, branchData: mockBranchData });
 
       // No move, file already exists at same path
       expect(mockGt.processFileMoves).not.toHaveBeenCalled();
@@ -226,8 +227,8 @@ describe('UploadSourcesStep', () => {
         count: 0,
       });
 
-      const step = new UploadSourcesStep(mockGt as any, mockSettings as any);
-      await step.run({ files: localFiles, branchData: mockBranchData as any });
+      const step = new UploadSourcesStep(mockGt, mockSettings);
+      await step.run({ files: localFiles, branchData: mockBranchData });
 
       expect(mockGt.processFileMoves).toHaveBeenCalledWith(
         expect.arrayContaining([
@@ -281,10 +282,10 @@ describe('UploadSourcesStep', () => {
         count: 0,
       });
 
-      const step = new UploadSourcesStep(mockGt as any, mockSettings as any);
+      const step = new UploadSourcesStep(mockGt, mockSettings);
       const result = await step.run({
         files: localFiles,
-        branchData: mockBranchData as any,
+        branchData: mockBranchData,
       });
 
       // Upload should be called with empty array (file was moved, not uploaded)
@@ -300,10 +301,10 @@ describe('UploadSourcesStep', () => {
     });
 
     it('should handle empty files array', async () => {
-      const step = new UploadSourcesStep(mockGt as any, mockSettings as any);
+      const step = new UploadSourcesStep(mockGt, mockSettings);
       const result = await step.run({
         files: [],
-        branchData: mockBranchData as any,
+        branchData: mockBranchData,
       });
 
       expect(result).toEqual([]);
@@ -335,8 +336,8 @@ describe('UploadSourcesStep', () => {
         count: 1,
       });
 
-      const step = new UploadSourcesStep(mockGt as any, mockSettings as any);
-      await step.run({ files: localFiles, branchData: mockBranchData as any });
+      const step = new UploadSourcesStep(mockGt, mockSettings);
+      await step.run({ files: localFiles, branchData: mockBranchData });
 
       expect(mockGt.processFileMoves).not.toHaveBeenCalled();
       expect(mockGt.uploadSourceFiles).toHaveBeenCalledWith(

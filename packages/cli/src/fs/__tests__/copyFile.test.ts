@@ -46,22 +46,7 @@ describe('copyFile', () => {
         options: {},
       };
 
-      await copyFile(settings as any);
-
-      expect(fs.promises.mkdir).not.toHaveBeenCalled();
-      expect(fs.promises.copyFile).not.toHaveBeenCalled();
-    });
-
-    it('should return early if copyFiles is null', async () => {
-      const settings = {
-        defaultLocale: 'en',
-        locales: ['en', 'fr'],
-        options: {
-          copyFiles: null,
-        },
-      };
-
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       expect(fs.promises.mkdir).not.toHaveBeenCalled();
       expect(fs.promises.copyFile).not.toHaveBeenCalled();
@@ -76,7 +61,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       expect(fs.promises.mkdir).not.toHaveBeenCalled();
       expect(fs.promises.copyFile).not.toHaveBeenCalled();
@@ -111,7 +96,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       // Should create directories for target locales
       expect(fs.promises.mkdir).toHaveBeenCalledTimes(2);
@@ -146,7 +131,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       // Should create directories for both files and target locale
       expect(fs.promises.mkdir).toHaveBeenCalledTimes(2);
@@ -178,7 +163,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       // Should create directories for all target locales (excluding default)
       expect(fs.promises.mkdir).toHaveBeenCalledTimes(4);
@@ -224,7 +209,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       // Should only create directories for non-default locales
       expect(fs.promises.mkdir).toHaveBeenCalledTimes(2);
@@ -256,7 +241,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       // Should create the nested directory structure
       expect(fs.promises.mkdir).toHaveBeenCalledTimes(1);
@@ -287,7 +272,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       // Should create directory once for all files in same directory
       expect(fs.promises.mkdir).toHaveBeenCalledTimes(4);
@@ -340,9 +325,7 @@ describe('copyFile', () => {
         },
       };
 
-      await expect(copyFile(settings as any)).rejects.toThrow(
-        'Permission denied'
-      );
+      await expect(copyFile(settings)).rejects.toThrow('Permission denied');
     });
 
     it('should propagate copyFile errors', async () => {
@@ -360,9 +343,7 @@ describe('copyFile', () => {
         },
       };
 
-      await expect(copyFile(settings as any)).rejects.toThrow(
-        'Source file not found'
-      );
+      await expect(copyFile(settings)).rejects.toThrow('Source file not found');
     });
 
     it('should log error when source file does not exist', async () => {
@@ -378,7 +359,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       // Should log error for missing source file
       expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
@@ -406,7 +387,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       // Should log error for each missing source file
       expect(vi.mocked(logger.error)).toHaveBeenCalledTimes(2);
@@ -442,7 +423,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       // Should only log error for the missing file
       expect(vi.mocked(logger.error)).toHaveBeenCalledTimes(1);
@@ -487,7 +468,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       // Should not create any directories or copy any files
       expect(fs.promises.mkdir).not.toHaveBeenCalled();
@@ -503,7 +484,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       // Should create directory
       expect(fs.promises.mkdir).toHaveBeenCalledTimes(1);
@@ -528,7 +509,7 @@ describe('copyFile', () => {
         },
       };
 
-      await copyFile(settings as any);
+      await copyFile(settings);
 
       expect(fs.promises.mkdir).toHaveBeenCalledWith(
         '/project/src/components/ui/zh-CN/translations',
