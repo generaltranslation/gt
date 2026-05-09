@@ -14,11 +14,11 @@ import { Suggestion } from '@/lib/db/schema';
 import { toast } from 'sonner';
 import { getSuggestions } from '../actions';
 
-interface TextArtifactMetadata {
+export interface TextArtifactMetadata {
   suggestions: Array<Suggestion>;
 }
 
-export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
+export const textArtifact = new Artifact<'text', TextArtifactMetadata | null>({
   kind: 'text',
   description: 'Useful for text content, like drafting essays and emails.',
   initialize: async ({ documentId, setMetadata }) => {
@@ -33,7 +33,7 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
       setMetadata((metadata) => {
         return {
           suggestions: [
-            ...metadata.suggestions,
+            ...(metadata?.suggestions ?? []),
             streamPart.content as Suggestion,
           ],
         };

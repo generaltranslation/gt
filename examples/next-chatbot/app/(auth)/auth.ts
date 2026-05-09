@@ -11,7 +11,9 @@ interface ExtendedSession extends Session {
   user: User;
 }
 
-type LoginCredentials = Partial<Record<'email' | 'password', unknown>>;
+type LoginCredentials = Partial<
+  Record<'email' | 'password', FormDataEntryValue>
+>;
 
 export const {
   handlers: { GET, POST },

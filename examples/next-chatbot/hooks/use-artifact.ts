@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
-import { UIArtifact } from '@/components/artifact';
+import type { ArtifactMetadata, UIArtifact } from '@/components/artifact';
 import { useCallback, useMemo } from 'react';
 
 export const initialArtifactData: UIArtifact = {
@@ -43,10 +43,7 @@ export function useArtifact() {
     }
   );
 
-  const artifact = useMemo(() => {
-    if (!localArtifact) return initialArtifactData;
-    return localArtifact;
-  }, [localArtifact]);
+  const artifact = localArtifact ?? initialArtifactData;
 
   const setArtifact = useCallback(
     (updaterFn: UIArtifact | ((currentArtifact: UIArtifact) => UIArtifact)) => {
@@ -64,7 +61,7 @@ export function useArtifact() {
   );
 
   const { data: localArtifactMetadata, mutate: setLocalArtifactMetadata } =
-    useSWR<unknown>(
+    useSWR<ArtifactMetadata>(
       () =>
         artifact.documentId ? `artifact-metadata-${artifact.documentId}` : null,
       null,
@@ -73,13 +70,34 @@ export function useArtifact() {
       }
     );
 
+  const metadata = localArtifactMetadata ?? null;
+
+  const setMetadata = useCallback(
+    (
+      updaterFn:
+        | ArtifactMetadata
+        | ((currentMetadata: ArtifactMetadata) => ArtifactMetadata)
+    ) => {
+      setLocalArtifactMetadata((currentMetadata) => {
+        const metadataToUpdate = currentMetadata ?? null;
+
+        if (typeof updaterFn === 'function') {
+          return updaterFn(metadataToUpdate);
+        }
+
+        return updaterFn;
+      });
+    },
+    [setLocalArtifactMetadata]
+  );
+
   return useMemo(
     () => ({
       artifact,
       setArtifact,
-      metadata: localArtifactMetadata,
-      setMetadata: setLocalArtifactMetadata,
+      metadata,
+      setMetadata,
     }),
-    [artifact, setArtifact, localArtifactMetadata, setLocalArtifactMetadata]
+    [artifact, setArtifact, metadata, setMetadata]
   );
 }

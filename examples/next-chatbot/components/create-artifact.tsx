@@ -4,7 +4,7 @@ import { ComponentType, Dispatch, ReactNode, SetStateAction } from 'react';
 import { DataStreamDelta } from './data-stream-handler';
 import { UIArtifact } from './artifact';
 
-export type ArtifactActionContext<M = unknown> = {
+export type ArtifactActionContext<M = null> = {
   content: string;
   handleVersionChange: (type: 'next' | 'prev' | 'toggle' | 'latest') => void;
   currentVersionIndex: number;
@@ -14,7 +14,7 @@ export type ArtifactActionContext<M = unknown> = {
   setMetadata: Dispatch<SetStateAction<M>>;
 };
 
-type ArtifactAction<M = unknown> = {
+type ArtifactAction<M = null> = {
   icon: ReactNode;
   label?: string;
   description: string;
@@ -32,7 +32,7 @@ export type ArtifactToolbarItem = {
   onClick: (context: ArtifactToolbarContext) => void;
 };
 
-interface ArtifactContent<M = unknown> {
+interface ArtifactContent<M = null> {
   title: string;
   content: string;
   mode: 'edit' | 'diff';
@@ -48,12 +48,12 @@ interface ArtifactContent<M = unknown> {
   setMetadata: Dispatch<SetStateAction<M>>;
 }
 
-interface InitializeParameters<M = unknown> {
+interface InitializeParameters<M = null> {
   documentId: string;
   setMetadata: Dispatch<SetStateAction<M>>;
 }
 
-type ArtifactConfig<T extends string, M = unknown> = {
+type ArtifactConfig<T extends string, M = null> = {
   kind: T;
   description: string;
   content: ComponentType<ArtifactContent<M>>;
@@ -67,7 +67,7 @@ type ArtifactConfig<T extends string, M = unknown> = {
   }) => void;
 };
 
-export class Artifact<T extends string, M = unknown> {
+export class Artifact<T extends string, M = null> {
   readonly kind: T;
   readonly description: string;
   readonly content: ComponentType<ArtifactContent<M>>;
