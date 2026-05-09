@@ -14,8 +14,8 @@
     "./dist/macros.*"
   ],
   "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "dependencies": {
     "@generaltranslation/supported-locales": "workspace:*",
@@ -65,6 +65,11 @@
       "require": "./dist/internal.cjs.min.cjs",
       "import": "./dist/internal.esm.min.mjs"
     },
+    "./internal-external-store": {
+      "types": "./dist/internal-external-store.d.ts",
+      "require": "./dist/internal-external-store.cjs.min.cjs",
+      "import": "./dist/internal-external-store.esm.min.mjs"
+    },
     "./client": {
       "types": "./dist/client.d.ts",
       "require": "./dist/client.cjs.min.cjs",
@@ -92,6 +97,9 @@
       "internal": [
         "./dist/internal.d.ts"
       ],
+      "internal-external-store": [
+        "./dist/internal-external-store.d.ts"
+      ],
       "setup": [
         "./dist/setup.d.ts"
       ],
@@ -114,6 +122,9 @@
       ],
       "gt-react/internal": [
         "./dist/internal"
+      ],
+      "gt-react/internal-external-store": [
+        "./dist/internal-external-store"
       ],
       "gt-react/setup": [
         "./dist/setup.d.ts"
