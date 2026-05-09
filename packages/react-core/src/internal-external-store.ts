@@ -11,6 +11,14 @@ export {
   useTranslateMany,
 } from './external-store/hooks/i18n-manager-hooks';
 export {
+  GTContext,
+  useConditionStore,
+} from './external-store/provider/GTContext';
+export {
+  GTProvider,
+  type GTProviderProps,
+} from './external-store/provider/GTProvider';
+export {
   I18nExternalStore,
   type I18nExternalStoreParams,
 } from './external-store/store/I18nExternalStore';
