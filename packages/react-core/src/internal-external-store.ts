@@ -1,4 +1,10 @@
 export {
+  useLocale,
+  useRegion,
+  useSetLocale,
+  useSetRegion,
+} from './external-store/hooks/condition-hooks';
+export {
   useCustomMapping,
   useDefaultLocale,
   useDictionaryEntry,
