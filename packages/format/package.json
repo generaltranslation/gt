@@ -14,7 +14,7 @@
     "build:release": "pnpm run build:clean",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build": "tsdown",
-    "test": "vitest run --config=./vitest.config.ts",
+    "test": "pnpm run build && vitest run --config=./vitest.config.ts",
     "test:watch": "vitest --config=./vitest.config.ts",
     "release": "pnpm run build:clean && pnpm publish",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
@@ -72,12 +72,25 @@
         "types": "./dist/types.d.mts",
         "default": "./dist/types.mjs"
       }
+    },
+    "./internal": {
+      "require": {
+        "types": "./dist/internal.d.cts",
+        "default": "./dist/internal.cjs"
+      },
+      "import": {
+        "types": "./dist/internal.d.mts",
+        "default": "./dist/internal.mjs"
+      }
     }
   },
   "typesVersions": {
     "*": {
       "types": [
         "./dist/types.d.cts"
+      ],
+      "internal": [
+        "./dist/internal.d.cts"
       ]
     }
   },
@@ -86,6 +99,9 @@
     "paths": {
       "gt-format/types": [
         "/dist/types"
+      ],
+      "gt-format/internal": [
+        "/dist/internal"
       ]
     }
   }

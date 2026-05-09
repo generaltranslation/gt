@@ -1,10 +1,44 @@
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { describe, it } from 'vitest';
+import { beforeAll, describe, it } from 'vitest';
 
 import type { CustomMapping } from 'gt-format/types';
 
+const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+const builtArtifacts = [
+  'dist/index.cjs',
+  'dist/index.mjs',
+  'dist/types.mjs',
+  'dist/internal.mjs',
+].map((artifact) => join(packageRoot, artifact));
+
+function hasBuiltArtifacts(): boolean {
+  return builtArtifacts.every((artifact) => existsSync(artifact));
+}
+
+function buildPackage(): void {
+  if (process.env.npm_execpath) {
+    execFileSync(process.execPath, [process.env.npm_execpath, 'run', 'build'], {
+      cwd: packageRoot,
+      stdio: 'pipe',
+    });
+    return;
+  }
+  execFileSync('pnpm', ['run', 'build'], {
+    cwd: packageRoot,
+    stdio: 'pipe',
+  });
+}
+
 describe('gt-format package export', () => {
+  beforeAll(() => {
+    if (hasBuiltArtifacts()) return;
+    buildPackage();
+  });
+
   it('loads and formats from the built CJS entrypoint', () => {
     execFileSync(
       process.execPath,
@@ -95,5 +129,26 @@ describe('gt-format package export', () => {
     if (!customMapping.pirate) {
       throw new Error('CustomMapping type import did not compile');
     }
+  });
+
+  it('loads cached PluralRules from the built internal entrypoint', () => {
+    execFileSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+          import { getCachedPluralRules } from 'gt-format/internal';
+
+          const first = getCachedPluralRules(['en']);
+          const second = getCachedPluralRules(['en']);
+
+          assert.equal(first, second);
+          assert.equal(first.select(1), 'one');
+        `,
+      ],
+      { stdio: 'pipe' }
+    );
   });
 });

@@ -1,3 +1,5 @@
+import { getCachedPluralRules } from 'gt-format/internal';
+
 import { pluralForms, PluralType } from '../settings/plurals';
 import { libraryDefaultLocale } from '../settings/settings';
 
@@ -13,7 +15,7 @@ export default function _getPluralForm(
   forms: readonly PluralType[] = pluralForms,
   locales: string[] = [libraryDefaultLocale]
 ): PluralType | '' {
-  const pluralRules = new Intl.PluralRules(locales);
+  const pluralRules = getCachedPluralRules(locales);
   const provisionalBranchName = pluralRules.select(n);
   // aliases
   const absN = Math.abs(n);

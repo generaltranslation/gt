@@ -143,13 +143,13 @@ export function formatMessage(
  */
 export function formatNum(
   number: number,
-  options: {
-    locales: string | string[];
+  options?: {
+    locales?: string | string[];
   } & Intl.NumberFormatOptions
 ): string {
   return _formatNum({
     value: number,
-    locales: options.locales,
+    locales: options?.locales,
     options,
   });
 }
@@ -187,14 +187,14 @@ export function formatDateTime(
 export function formatCurrency(
   value: number,
   currency: string,
-  options: {
-    locales: string | string[];
+  options?: {
+    locales?: string | string[];
   } & Intl.NumberFormatOptions
 ): string {
   return _formatCurrency({
     value,
     currency,
-    locales: options.locales,
+    locales: options?.locales,
     options,
   });
 }
@@ -209,13 +209,13 @@ export function formatCurrency(
  */
 export function formatList(
   array: Array<string | number>,
-  options: {
-    locales: string | string[];
+  options?: {
+    locales?: string | string[];
   } & Intl.ListFormatOptions
 ): string {
   return _formatList({
     value: array,
-    locales: options.locales,
+    locales: options?.locales,
     options,
   });
 }
@@ -253,14 +253,14 @@ export function formatListToParts<T>(
 export function formatRelativeTime(
   value: number,
   unit: Intl.RelativeTimeFormatUnit,
-  options: {
-    locales: string | string[];
+  options?: {
+    locales?: string | string[];
   } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
 ): string {
   return _formatRelativeTime({
     value,
     unit,
-    locales: options.locales,
+    locales: options?.locales,
     options,
   });
 }
@@ -268,19 +268,19 @@ export function formatRelativeTime(
 /**
  * Formats a relative time string from a Date, automatically selecting the best unit.
  * @param {Date} date - The date to format relative to now.
- * @param {Object} options - Formatting options.
- * @param {string | string[]} options.locales - The locales to use for formatting.
+ * @param {Object} [options] - Formatting options.
+ * @param {string | string[]} [options.locales] - The locales to use for formatting.
  * @param {Intl.RelativeTimeFormatOptions} [options] - Additional Intl.RelativeTimeFormat options.
  * @returns {string} The formatted relative time string (e.g., "2 hours ago", "in 3 days").
  */
 export function formatRelativeTimeFromDate(
   date: Date,
-  options: {
-    locales: string | string[];
+  options?: {
+    locales?: string | string[];
     baseDate?: Date;
   } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
 ): string {
-  const { locales, baseDate, ...intlOptions } = options;
+  const { locales, baseDate, ...intlOptions } = options ?? {};
   return _formatRelativeTimeFromDate({
     date,
     baseDate: baseDate ?? new Date(),
@@ -441,10 +441,11 @@ export function getLocaleProperties(
  * @param {string} region - The region code to look up (e.g., `"US"`, `"GB"`, `"DE"`).
  * @param {string} [defaultLocale=libraryDefaultLocale] - The locale to use when localizing the region name.
  * @param {CustomRegionMapping} [customMapping] - Optional mapping of region codes to custom names and/or emojis.
- * @returns {{ code: string, name: string, emoji: string }} An object containing:
+ * @returns {{ code: string, name: string, emoji: string, locale?: string }} An object containing:
  *  - `code`: the input region code
  *  - `name`: the localized or custom region name
  *  - `emoji`: the matching emoji flag or symbol
+ *  - `locale`: the optional associated locale from custom mapping
  *
  * @example
  * getRegionProperties('US', 'en');
@@ -462,7 +463,7 @@ export function getRegionProperties(
   region: string,
   defaultLocale?: string,
   customMapping?: CustomRegionMapping
-): { code: string; name: string; emoji: string } {
+): { code: string; name: string; emoji: string; locale?: string } {
   return _getRegionProperties(region, defaultLocale, customMapping);
 }
 
