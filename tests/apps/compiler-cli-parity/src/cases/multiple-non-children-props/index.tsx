@@ -1,5 +1,27 @@
-function Layout({ header, footer, sidebar, extra, children }: any) {
-  return <div>{header}{footer}{sidebar}{extra}{children}</div>;
+import type { ReactNode } from 'react';
+
+function Layout({
+  header,
+  footer,
+  sidebar,
+  extra,
+  children,
+}: {
+  header: ReactNode;
+  footer: ReactNode;
+  sidebar: ReactNode;
+  extra: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      {header}
+      {footer}
+      {sidebar}
+      {extra}
+      {children}
+    </div>
+  );
 }
 
 export default function MultipleNonChildrenProps() {

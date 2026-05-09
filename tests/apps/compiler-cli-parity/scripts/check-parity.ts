@@ -19,6 +19,20 @@ const ROOT = path.resolve(__dirname, '..');
 const COMPILER_MANIFEST = path.join(ROOT, '_gt_debug_hash_manifest.json');
 const CLI_MANIFEST = path.join(ROOT, 'src', '_gt', 'en.json');
 
+function formatLine(values: unknown[]): string {
+  return values
+    .map((value) => (typeof value === 'string' ? value : String(value)))
+    .join(' ');
+}
+
+function writeLine(...values: unknown[]) {
+  process.stdout.write(`${formatLine(values)}\n`);
+}
+
+function writeError(...values: unknown[]) {
+  process.stderr.write(`${formatLine(values)}\n`);
+}
+
 // --- Derive detection ---
 
 /**
@@ -89,22 +103,22 @@ function main() {
   if (fs.existsSync(gtDir)) fs.rmSync(gtDir, { recursive: true });
 
   // 2. Run compiler (vite build)
-  console.log('\n📦 Running vite build...\n');
+  writeLine('\n📦 Running vite build...\n');
   execSync('pnpm vite build', { cwd: ROOT, stdio: 'inherit' });
 
   // 3. Run CLI (gt generate)
-  console.log('\n📝 Running gt generate...\n');
+  writeLine('\n📝 Running gt generate...\n');
   const MONOREPO_ROOT = path.resolve(ROOT, '..', '..', '..');
   const gtMain = path.join(MONOREPO_ROOT, 'packages', 'cli', 'dist', 'main.js');
   execFileSync('node', [gtMain, 'generate'], { cwd: ROOT, stdio: 'inherit' });
 
   // 4. Load manifests
   if (!fs.existsSync(COMPILER_MANIFEST)) {
-    console.error('ERROR: Compiler manifest not found at', COMPILER_MANIFEST);
+    writeError('ERROR: Compiler manifest not found at', COMPILER_MANIFEST);
     process.exit(1);
   }
   if (!fs.existsSync(CLI_MANIFEST)) {
-    console.error('ERROR: CLI manifest not found at', CLI_MANIFEST);
+    writeError('ERROR: CLI manifest not found at', CLI_MANIFEST);
     process.exit(1);
   }
 
@@ -183,38 +197,46 @@ function main() {
   }
 
   // 6. Report
-  console.log('\n' + '='.repeat(50));
-  console.log('  Parity Check Results');
-  console.log('='.repeat(50));
-  console.log(`  Matched:          ${matched}`);
-  console.log(`  Mismatched:       ${mismatched}`);
-  console.log(`  Compiler-only:    ${compilerOnly}`);
-  console.log(`  CLI-only:         ${cliOnly}`);
-  console.log(`  Skipped (Derive): ${skippedDerive}`);
-  console.log(`  Total hashes:     ${allHashes.size}`);
-  console.log('='.repeat(50));
+  writeLine('\n' + '='.repeat(50));
+  writeLine('  Parity Check Results');
+  writeLine('='.repeat(50));
+  writeLine(`  Matched:          ${matched}`);
+  writeLine(`  Mismatched:       ${mismatched}`);
+  writeLine(`  Compiler-only:    ${compilerOnly}`);
+  writeLine(`  CLI-only:         ${cliOnly}`);
+  writeLine(`  Skipped (Derive): ${skippedDerive}`);
+  writeLine(`  Total hashes:     ${allHashes.size}`);
+  writeLine('='.repeat(50));
 
   if (mismatches.length > 0) {
-    console.log('\n--- Mismatches ---\n');
+    writeLine('\n--- Mismatches ---\n');
     for (const m of mismatches) {
-      console.log(`Hash: ${m.hash}  (${m.reason})`);
+      writeLine(`Hash: ${m.hash}  (${m.reason})`);
       if (m.compiler !== undefined) {
-        console.log('  Compiler:', JSON.stringify(m.compiler, null, 4).replace(/\n/g, '\n  '));
+        writeLine(
+          '  Compiler:',
+          JSON.stringify(m.compiler, null, 4).replace(/\n/g, '\n  ')
+        );
       }
       if (m.cli !== undefined) {
-        console.log('  CLI:     ', JSON.stringify(m.cli, null, 4).replace(/\n/g, '\n  '));
+        writeLine(
+          '  CLI:     ',
+          JSON.stringify(m.cli, null, 4).replace(/\n/g, '\n  ')
+        );
       }
-      console.log();
+      writeLine();
     }
     process.exit(1);
   }
 
   if (matched === 0) {
-    console.log('\nWARNING: Zero matches found. Check that both tools are configured correctly.\n');
+    writeLine(
+      '\nWARNING: Zero matches found. Check that both tools are configured correctly.\n'
+    );
     process.exit(1);
   }
 
-  console.log('\nAll entries match! Parity confirmed.\n');
+  writeLine('\nAll entries match! Parity confirmed.\n');
   process.exit(0);
 }
 

@@ -57,9 +57,11 @@ export async function POST(request: Request) {
 
       return NextResponse.json(data);
     } catch (error) {
+      console.error('Blob upload failed', error);
       return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
   } catch (error) {
+    console.error('File upload request failed', error);
     return NextResponse.json(
       { error: 'Failed to process request' },
       { status: 500 }

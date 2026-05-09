@@ -10,7 +10,7 @@ import { SpreadsheetEditor } from '@/components/sheet-editor';
 import { parse, unparse } from 'papaparse';
 import { toast } from 'sonner';
 
-type Metadata = any;
+type Metadata = Record<string, never>;
 
 export const sheetArtifact = new Artifact<'sheet', Metadata>({
   kind: 'sheet',

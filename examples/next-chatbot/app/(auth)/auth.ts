@@ -1,5 +1,6 @@
 import { compare } from 'bcrypt-ts';
 import NextAuth, { type User, type Session } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 import Credentials from 'next-auth/providers/credentials';
 
 import { getUser } from '@/lib/db/queries';
@@ -9,6 +10,8 @@ import { authConfig } from './auth.config';
 interface ExtendedSession extends Session {
   user: User;
 }
+
+type LoginCredentials = Partial<Record<'email' | 'password', unknown>>;
 
 export const {
   handlers: { GET, POST },
@@ -20,12 +23,22 @@ export const {
   providers: [
     Credentials({
       credentials: {},
-      async authorize({ email, password }: any) {
+      async authorize(credentials: LoginCredentials) {
+        const email =
+          typeof credentials.email === 'string' ? credentials.email : '';
+        const password =
+          typeof credentials.password === 'string' ? credentials.password : '';
+
+        if (!email || !password) return null;
+
         const users = await getUser(email);
         if (users.length === 0) return null;
         const passwordsMatch = await compare(password, users[0].password!);
         if (!passwordsMatch) return null;
-        return users[0] as any;
+        return {
+          id: users[0].id,
+          email: users[0].email,
+        } satisfies User;
       },
     }),
   ],
@@ -42,10 +55,10 @@ export const {
       token,
     }: {
       session: ExtendedSession;
-      token: any;
+      token: JWT & { id?: string };
     }) {
-      if (session.user) {
-        session.user.id = token.id as string;
+      if (session.user && typeof token.id === 'string') {
+        session.user.id = token.id;
       }
 
       return session;

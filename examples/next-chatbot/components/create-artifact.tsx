@@ -4,7 +4,7 @@ import { ComponentType, Dispatch, ReactNode, SetStateAction } from 'react';
 import { DataStreamDelta } from './data-stream-handler';
 import { UIArtifact } from './artifact';
 
-export type ArtifactActionContext<M = any> = {
+export type ArtifactActionContext<M = unknown> = {
   content: string;
   handleVersionChange: (type: 'next' | 'prev' | 'toggle' | 'latest') => void;
   currentVersionIndex: number;
@@ -14,7 +14,7 @@ export type ArtifactActionContext<M = any> = {
   setMetadata: Dispatch<SetStateAction<M>>;
 };
 
-type ArtifactAction<M = any> = {
+type ArtifactAction<M = unknown> = {
   icon: ReactNode;
   label?: string;
   description: string;
@@ -32,7 +32,7 @@ export type ArtifactToolbarItem = {
   onClick: (context: ArtifactToolbarContext) => void;
 };
 
-interface ArtifactContent<M = any> {
+interface ArtifactContent<M = unknown> {
   title: string;
   content: string;
   mode: 'edit' | 'diff';
@@ -48,12 +48,12 @@ interface ArtifactContent<M = any> {
   setMetadata: Dispatch<SetStateAction<M>>;
 }
 
-interface InitializeParameters<M = any> {
+interface InitializeParameters<M = unknown> {
   documentId: string;
   setMetadata: Dispatch<SetStateAction<M>>;
 }
 
-type ArtifactConfig<T extends string, M = any> = {
+type ArtifactConfig<T extends string, M = unknown> = {
   kind: T;
   description: string;
   content: ComponentType<ArtifactContent<M>>;
@@ -67,13 +67,13 @@ type ArtifactConfig<T extends string, M = any> = {
   }) => void;
 };
 
-export class Artifact<T extends string, M = any> {
+export class Artifact<T extends string, M = unknown> {
   readonly kind: T;
   readonly description: string;
   readonly content: ComponentType<ArtifactContent<M>>;
   readonly actions: Array<ArtifactAction<M>>;
   readonly toolbar: ArtifactToolbarItem[];
-  readonly initialize?: (parameters: InitializeParameters) => void;
+  readonly initialize?: (parameters: InitializeParameters<M>) => void;
   readonly onStreamPart: (args: {
     setMetadata: Dispatch<SetStateAction<M>>;
     setArtifact: Dispatch<SetStateAction<UIArtifact>>;

@@ -84,7 +84,9 @@ export function Console({ consoleOutputs, setConsoleOutputs }: ConsoleProps) {
         onMouseDown={startResizing}
         style={{ bottom: height - 4 }}
         role='slider'
-        aria-valuenow={minHeight}
+        aria-valuemin={minHeight}
+        aria-valuemax={maxHeight}
+        aria-valuenow={height}
       />
 
       <T id='components.console.0'>
