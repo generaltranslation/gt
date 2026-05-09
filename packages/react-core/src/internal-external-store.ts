@@ -1,4 +1,17 @@
 export {
+  Branch,
+  GtInternalBranch,
+} from './external-store/components/branches/Branch';
+export {
+  Plural,
+  GtInternalPlural,
+} from './external-store/components/branches/Plural';
+export {
+  Derive,
+  GtInternalDerive,
+  Static,
+} from './external-store/components/derivation/Derive';
+export {
   useLocale,
   useRegion,
   useSetLocale,
@@ -6,12 +19,10 @@ export {
 } from './external-store/hooks/condition-hooks';
 export {
   useCustomMapping,
+  useEnableI18n,
   useDefaultLocale,
   useDictionaryEntry,
   useDictionaryObject,
-  useEnableI18n,
-  useI18nExternalStore,
-  useI18nManager,
   useLocales,
   useTranslate,
   useTranslateMany,
@@ -19,6 +30,8 @@ export {
 export {
   GTContext,
   useConditionStore,
+  useI18nExternalStore,
+  useI18nManager,
 } from './external-store/provider/GTContext';
 export {
   GTProvider,
@@ -48,3 +61,27 @@ export type {
   TranslateSnapshot,
   Unsubscribe,
 } from './external-store/store/storeTypes';
+export {
+  GtInternalTranslateJsx,
+  T,
+} from './external-store/components/translation/T';
+export {
+  Currency,
+  GtInternalCurrency,
+} from './external-store/components/variables/Currency';
+export {
+  DateTime,
+  GtInternalDateTime,
+} from './external-store/components/variables/DateTime';
+export { GtInternalNum, Num } from './external-store/components/variables/Num';
+export {
+  GtInternalRelativeTime,
+  RelativeTime,
+} from './external-store/components/variables/RelativeTime';
+export {
+  GtInternalVar,
+  Var,
+  computeVar,
+} from './external-store/components/variables/Var';
+export { renderVariable } from './external-store/components/variables/renderVariable';
+export { useFormatLocales } from './external-store/hooks/utils';
