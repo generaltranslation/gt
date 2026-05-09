@@ -99,10 +99,10 @@
     "baseUrl": ".",
     "paths": {
       "gt-format/types": [
-        "/dist/types"
+        "./dist/types"
       ],
       "gt-format/internal": [
-        "/dist/internal"
+        "./dist/internal"
       ]
     }
   }
