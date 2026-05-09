@@ -24,7 +24,10 @@ export function resolveLocales({
   configFilePath,
 }: {
   locales?: string[];
-  config?: { defaultLocale: string; locales: string[] } & Record<string, any>;
+  config?: { defaultLocale: string; locales: string[] } & Record<
+    string,
+    unknown
+  >;
   configFilePath?: string;
 }): string[] {
   let result: string[] = [];

@@ -13,7 +13,7 @@ export default async function loadDictionaryHelper(
     try {
       const result = await loadDictionary(currentLocale);
       if (result) {
-        return result;
+        return result as Dictionary;
       }
     } catch {
       /* empty */

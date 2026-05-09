@@ -21,7 +21,7 @@ export type GTContextType = {
   ) => string;
   _mFunction: <T extends string | null | undefined>(
     encodedMsg: T,
-    options?: Record<string, any>,
+    options?: Record<string, unknown>,
     preloadedTranslations?: Translations
   ) => T extends string ? string : T;
   _filterMessagesForPreload: (_messages: _Messages) => _Messages;

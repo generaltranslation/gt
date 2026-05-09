@@ -4,7 +4,7 @@ import { loadConfig } from '../fs/config/loadConfig.js';
 
 export function resolveConfig(cwd: string): {
   path: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 } | null {
   const configFilepath = 'gt.config.json';
   if (fs.existsSync(path.join(cwd, configFilepath))) {

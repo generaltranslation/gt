@@ -803,7 +803,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       expect(update.source).toHaveLength(2);
       expect(update.source[0]).toBe('test ');
 
-      const deriveComponent = update.source[1] as any;
+      const deriveComponent = update.source[1] as unknown;
       expect(deriveComponent.t).toBe('Derive');
       expect(deriveComponent.i).toBe(1);
       expect(deriveComponent.c).toMatch(/^(utils3-[ab]|utils1-[ab])$/);
@@ -1733,7 +1733,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
 
     // Static should still produce the legacy Static type internally
     updates.forEach((update) => {
-      expect((update.source[1] as any).t).toBe('Static');
+      expect((update.source[1] as unknown).t).toBe('Static');
     });
   });
 

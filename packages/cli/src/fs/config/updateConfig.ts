@@ -38,11 +38,15 @@ export default async function updateConfig(
 
   try {
     // if file exists
-    let oldContent: any = {};
+    let oldContent: Record<string, unknown> = {};
     if (fs.existsSync(configFilepath)) {
-      oldContent = JSON.parse(
+      const parsed = JSON.parse(
         await fs.promises.readFile(configFilepath, 'utf-8')
       );
+      oldContent =
+        typeof parsed === 'object' && parsed !== null
+          ? (parsed as Record<string, unknown>)
+          : {};
     }
 
     // merge old and new content

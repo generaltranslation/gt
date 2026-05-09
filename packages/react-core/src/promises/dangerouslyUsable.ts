@@ -28,15 +28,21 @@ export type UseableOptions = {
   /** How long to keep a resolved/rejected promise before it’s eligible for GC. Default: Infinity */
   ttl?: number;
   /** Provide your own Map if you want scoping or SSR hydration games. */
-  cache?: Map<string, Cell<any>>;
+  cache?: Map<string, Cell<unknown>>;
 };
 
 const DEFAULT_TTL = Number.POSITIVE_INFINITY;
+const REGISTRY_KEY = '__DANGEROUS_USE_REGISTRY__';
+
+type GlobalRegistry = typeof globalThis & {
+  [REGISTRY_KEY]?: Map<string, Cell<unknown>>;
+};
 
 // Module-scoped cache; you can pass your own via options.
-const globalRegistry: Map<string, Cell<any>> = (globalThis as any)
-  .__DANGEROUS_USE_REGISTRY__ ??
-((globalThis as any).__DANGEROUS_USE_REGISTRY__ = new Map());
+const registryGlobal = globalThis as GlobalRegistry;
+const globalRegistry: Map<string, Cell<unknown>> = registryGlobal[
+  REGISTRY_KEY
+] ?? (registryGlobal[REGISTRY_KEY] = new Map());
 
 /** Stable-ish stringify for keys. */
 function stableStringify(x: unknown, seen = new WeakSet<object>()): string {
@@ -81,11 +87,11 @@ function instrument<T>(p: Promise<T>): Thenable<T> {
     p.then(
       (v) => {
         t.status = 'fulfilled';
-        (t as any).value = v;
+        t.value = v;
       },
       (e) => {
         t.status = 'rejected';
-        (t as any).reason = e;
+        t.reason = e;
       }
     );
   }
@@ -162,7 +168,7 @@ export function peek<T>(key: CacheKey, opts?: UseableOptions): T | undefined {
   const registry = opts?.cache ?? globalRegistry;
   const cell = registry.get(keyToString(key));
   const t = cell?.thenable as Thenable<T> | undefined;
-  return t?.status === 'fulfilled' ? (t as any).value : undefined;
+  return t?.status === 'fulfilled' ? t.value : undefined;
 }
 
 /**
@@ -173,17 +179,17 @@ export function muteReactUncachedPromiseWarning(enable = true): void {
   if (typeof window === 'undefined') return; // only patch in browser
   const CONSOLE_FLAG = '__DANGEROUS_MUTE_REACT_UNCACHED_PROMISE__';
   const pattern = /A component was suspended by an uncached promise/i;
-  const anyConsole = console as any;
+  const patchedConsole = console as Console & Record<string, unknown>;
   if (enable) {
-    if (!anyConsole[CONSOLE_FLAG]) {
+    if (!patchedConsole[CONSOLE_FLAG]) {
       const originalError = console.error.bind(console);
-      anyConsole[CONSOLE_FLAG] = true;
-      console.error = (...args: any[]) => {
+      patchedConsole[CONSOLE_FLAG] = true;
+      console.error = (...args: unknown[]) => {
         if (typeof args[0] === 'string' && pattern.test(args[0])) return;
         originalError(...args);
       };
     }
-  } else if (anyConsole[CONSOLE_FLAG]) {
+  } else if (patchedConsole[CONSOLE_FLAG]) {
     // There is no safe way to restore the original without storing it;
     // If you need toggling, store and restore explicitly.
   }

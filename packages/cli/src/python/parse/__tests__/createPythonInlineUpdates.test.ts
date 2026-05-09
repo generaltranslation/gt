@@ -43,7 +43,7 @@ describe('createPythonInlineUpdates', () => {
 
   it('calls extractFromPythonSource for each matched .py file', async () => {
     mockMatchFiles.mockReturnValue(['/app/routes.py', '/app/models.py']);
-    mockReadFile.mockResolvedValue('# python code' as any);
+    mockReadFile.mockResolvedValue('# python code' as unknown);
     mockExtract.mockReturnValue({
       results: [],
       errors: [],
@@ -59,7 +59,7 @@ describe('createPythonInlineUpdates', () => {
 
   it('maps results through mapExtractionResultsToUpdates', async () => {
     mockMatchFiles.mockReturnValue(['/app/routes.py']);
-    mockReadFile.mockResolvedValue('code' as any);
+    mockReadFile.mockResolvedValue('code' as unknown);
     mockExtract.mockReturnValue({
       results: [
         {
@@ -82,7 +82,7 @@ describe('createPythonInlineUpdates', () => {
 
   it('propagates errors and warnings from extractor', async () => {
     mockMatchFiles.mockReturnValue(['/app/routes.py']);
-    mockReadFile.mockResolvedValue('code' as any);
+    mockReadFile.mockResolvedValue('code' as unknown);
     mockExtract.mockReturnValue({
       results: [],
       errors: ['Parse error in line 5'],
@@ -97,7 +97,7 @@ describe('createPythonInlineUpdates', () => {
 
   it('handles extraction errors gracefully', async () => {
     mockMatchFiles.mockReturnValue(['/app/routes.py']);
-    mockReadFile.mockResolvedValue('code' as any);
+    mockReadFile.mockResolvedValue('code' as unknown);
     mockExtract.mockImplementation(() => {
       throw new Error(
         'Not implemented: Python extraction is under development'

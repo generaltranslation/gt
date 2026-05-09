@@ -12,10 +12,10 @@ let reactUse: typeof React.use | undefined;
 try {
   // Indirect property access via Function constructor avoids static analysis.
   const getProp = Function('o', 'k', 'return o[k]') as (
-    o: any,
+    o: unknown,
     k: string
-  ) => any;
-  reactUse = getProp(React as any, 'use') as typeof React.use | undefined;
+  ) => unknown;
+  reactUse = getProp(React as unknown, 'use') as typeof React.use | undefined;
 } catch {
   // ignore
 }

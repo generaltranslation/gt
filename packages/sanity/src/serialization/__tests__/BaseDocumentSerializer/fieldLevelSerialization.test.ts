@@ -105,8 +105,8 @@ describe('Presence and accurancy of fields in "vanilla" deserialization -- array
     const objectInArray = findByClass(arrayField!.children, 'objectField');
     const fieldNames = getValidFields(
       fieldLevelArticle.content.en.find(
-        (block: Record<string, any>) => block._type === 'objectField'
-      )
+        (block: Record<string, unknown>) => block._type === 'objectField'
+      )!
     );
     const foundFieldNames = Array.from(objectInArray!.children).map(
       (child) => child.className
@@ -118,12 +118,12 @@ describe('Presence and accurancy of fields in "vanilla" deserialization -- array
     const objectInArray = findByClass(arrayField!.children, 'objectField');
     const nestedObject = findByClass(objectInArray!.children, 'objectAsField');
     const title = fieldLevelArticle.content.en.find(
-      (block: Record<string, any>) => block._type === 'objectField'
-    ).objectAsField.title;
+      (block: Record<string, unknown>) => block._type === 'objectField'
+    )!.objectAsField!.title;
     const blockText = toPlainText(
       fieldLevelArticle.content.en.find(
-        (block: Record<string, any>) => block._type === 'objectField'
-      ).objectAsField.content
+        (block: Record<string, unknown>) => block._type === 'objectField'
+      )!.objectAsField!.content
     ).trim();
     expect(nestedObject?.innerHTML).toContain(title);
     expect(nestedObject?.innerHTML).toContain(blockText);
@@ -137,13 +137,13 @@ test('Nested locale fields make it to serialization, but only base lang', () => 
   const slices = findByClass(nestedDocTree.children, 'slices');
   const pageFields = findByClass(nestedDocTree.children, 'pageFields');
   expect(slices?.innerHTML).toContain(
-    nestedLanguageFields.slices[0].en[0].children[0].text
+    nestedLanguageFields.slices[0]!.en![0]!.children![0]!.text
   );
   expect(pageFields?.innerHTML).toContain(
     nestedLanguageFields.pageFields.name.en
   );
   expect(slices?.innerHTML).not.toContain(
-    nestedLanguageFields.slices[0].fr_FR[0].children[0].text
+    nestedLanguageFields.slices[0]!.fr_FR![0]!.children![0]!.text
   );
   expect(pageFields?.innerHTML).not.toContain(
     nestedLanguageFields.pageFields.name.fr_FR

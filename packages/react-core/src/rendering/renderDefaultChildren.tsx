@@ -40,9 +40,14 @@ export default function renderDefaultChildren({
     // Plural
     if (generaltranslation?.transformation === 'plural') {
       const branches = generaltranslation.branches || {};
+      if (typeof child.props.n !== 'number') {
+        return child.props.children != null
+          ? handleChildren(child.props.children)
+          : null;
+      }
       return handleChildren(
-        getPluralBranch(child.props.n, [defaultLocale], branches) ||
-          child.props.children
+        (getPluralBranch(child.props.n, [defaultLocale], branches) ||
+          child.props.children) as TaggedChildren
       );
     }
 
@@ -51,7 +56,7 @@ export default function renderDefaultChildren({
       const { children, branch } = child.props;
       const branches = generaltranslation.branches || {};
       return handleChildren(
-        branches[branch] !== undefined ? branches[branch] : children
+        branch && branches[branch] !== undefined ? branches[branch] : children
       );
     }
 
@@ -68,7 +73,7 @@ export default function renderDefaultChildren({
       return React.cloneElement(child, {
         ...child.props,
         'data-_gt': undefined,
-        children: handleChildren(child.props.children),
+        children: handleChildren(child.props.children) as TaggedChildren,
       });
     }
     return React.cloneElement(child, { ...child.props, 'data-_gt': undefined });

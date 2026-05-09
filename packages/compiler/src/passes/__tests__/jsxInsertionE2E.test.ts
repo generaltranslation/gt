@@ -304,7 +304,7 @@ describe('JSX insertion → collection E2E (no soft locks)', () => {
         typeof e === 'object' &&
         e !== null &&
         't' in e &&
-        (e as any).t === 'Plural'
+        (e as unknown).t === 'Plural'
     ) as Record<string, unknown>;
     expect(pluralEntry).toBeDefined();
 

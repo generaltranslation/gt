@@ -25,7 +25,7 @@ import React from 'react';
 function Var({
   children,
 }: {
-  children?: any;
+  children?: unknown;
   name?: string;
 }): React.JSX.Element | null {
   return <>{children}</>;

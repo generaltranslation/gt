@@ -564,7 +564,7 @@ describe('injectTranslations', () => {
       const translations: Translations = {
         hash: 'Translation',
       };
-      const missingTranslations: any[] = [];
+      const missingTranslations: unknown[] = [];
 
       const result = injectTranslations(
         dictionary,

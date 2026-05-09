@@ -25,8 +25,7 @@ import {
   addedCustomSerializers,
   getDeserialized,
 } from '../helpers';
-
-const customStyles = require('../__fixtures__/customStyles');
+import customStyles from '../__fixtures__/customStyles.json';
 
 let mockTestKey = 0;
 
@@ -37,11 +36,15 @@ vi.mock('@portabletext/block-tools', async () => {
   return {
     ...originalModule,
     //not ideal but vi.mock('@portabletext/block-tools/src/util/randomKey.ts' is not working
-    htmlToBlocks: (html: string, blockContentType: any, options: any) => {
+    htmlToBlocks: (
+      html: string,
+      blockContentType: unknown,
+      options: unknown
+    ) => {
       const blocks = originalModule.htmlToBlocks(
         html,
-        blockContentType,
-        options
+        blockContentType as Parameters<typeof originalModule.htmlToBlocks>[1],
+        options as Parameters<typeof originalModule.htmlToBlocks>[2]
       );
       const newBlocks = blocks.map((block) => {
         const newChildren = (
@@ -97,20 +100,18 @@ test('Custom deserialization should manifest at all levels', () => {
     addedCustomSerializers
   );
 
-  const deserialized = BaseDocumentDeserializer.deserializeDocument(
-    serialized.content,
-    addedCustomDeserializers,
-    customBlockDeserializers
-  );
+  const deserialized = BaseDocumentDeserializer.deserializeDocument<
+    typeof documentLevelArticle
+  >(serialized.content, addedCustomDeserializers, customBlockDeserializers);
   expect(deserialized.config.title).toEqual(documentLevelArticle.config.title);
   expect(deserialized.config._type).toEqual(documentLevelArticle.config._type);
 
   const origArrayObj = documentLevelArticle.content.find(
-    (b: Record<string, any>) => b._type === 'objectField'
-  );
+    (b: Record<string, unknown>) => b._type === 'objectField'
+  )!;
   const deserializedArrayObj = deserialized.content.find(
-    (b: Record<string, any>) => b._type === 'objectField'
-  );
+    (b: Record<string, unknown>) => b._type === 'objectField'
+  )!;
 
   expect(deserializedArrayObj.title).toEqual(origArrayObj.title);
   expect(deserializedArrayObj._key).toEqual(origArrayObj._key);
@@ -129,23 +130,23 @@ test('Content with custom styles deserializes correctly and maintains style', ()
     'document'
   );
 
-  const deserialized = BaseDocumentDeserializer.deserializeDocument(
-    serialized.content
-  );
+  const deserialized = BaseDocumentDeserializer.deserializeDocument<
+    typeof customStyledDocument
+  >(serialized.content);
   const origCustomStyleBlock = customStyledDocument.content.find(
-    (b: Record<string, any>) => b._type === 'block' && b.style === 'custom1'
-  );
+    (b: Record<string, unknown>) => b._type === 'block' && b.style === 'custom1'
+  )!;
   const origCustomStyleListItem = customStyledDocument.content.find(
-    (b: Record<string, any>) =>
+    (b: Record<string, unknown>) =>
       b._type === 'block' && b.listItem === 'number' && b.style === 'custom1'
-  );
+  )!;
   const deserializedCustomStyleBlock = deserialized.content.find(
-    (b: Record<string, any>) => b._type === 'block' && b.style === 'custom1'
-  );
+    (b: Record<string, unknown>) => b._type === 'block' && b.style === 'custom1'
+  )!;
   const deserializedCustomStyleListItem = deserialized.content.find(
-    (b: Record<string, any>) =>
+    (b: Record<string, unknown>) =>
       b._type === 'block' && b.listItem === 'number' && b.style === 'custom1'
-  );
+  )!;
 
   expect(deserializedCustomStyleBlock.children[0].text).toEqual(
     origCustomStyleBlock.children[0].text
@@ -171,17 +172,15 @@ test('Handled inline objects should be accurately deserialized', () => {
     addedCustomSerializers
   );
 
-  const deserialized = BaseDocumentDeserializer.deserializeDocument(
-    serialized.content,
-    addedCustomDeserializers,
-    addedBlockDeserializers
-  );
+  const deserialized = BaseDocumentDeserializer.deserializeDocument<
+    typeof inlineDocument
+  >(serialized.content, addedCustomDeserializers, addedBlockDeserializers);
 
   const getInlineObj = (
     content: PortableTextBlock[],
     level: number | undefined = undefined
   ) => {
-    let child: Record<string, any> = {};
+    let child: Record<string, unknown> = {};
     const blocks = content.filter((block: PortableTextBlock) => {
       if (level) {
         return block.level === level;
@@ -191,7 +190,7 @@ test('Handled inline objects should be accurately deserialized', () => {
 
     blocks.forEach((block: PortableTextBlock) => {
       if (block.children && Array.isArray(block.children)) {
-        child = block.children.find((span: Record<string, any>) => {
+        child = block.children.find((span: Record<string, unknown>) => {
           if (level) {
             return span._type === 'childObjectField' && block.level === level;
           }
@@ -233,19 +232,17 @@ test('Handled annotations should be accurately deserialized', () => {
     addedCustomSerializers
   );
 
-  const deserialized = BaseDocumentDeserializer.deserializeDocument(
-    serialized.content,
-    addedCustomDeserializers,
-    addedBlockDeserializers
-  );
+  const deserialized = BaseDocumentDeserializer.deserializeDocument<
+    typeof inlineDocument
+  >(serialized.content, addedCustomDeserializers, addedBlockDeserializers);
 
-  let origAnnotation: Record<string, any> | null = null;
-  let deserializedAnnotation: Record<string, any> | null = null;
+  let origAnnotation: Record<string, unknown> | null = null;
+  let deserializedAnnotation: Record<string, unknown> | null = null;
 
   inlineDocument.content.forEach((block: PortableTextBlock) => {
     if (block.children && Array.isArray(block.children)) {
-      block.children.forEach((span: Record<string, any>) => {
-        if (span.marks && span.marks.length) {
+      block.children.forEach((span: Record<string, unknown>) => {
+        if (Array.isArray(span.marks) && span.marks.length) {
           origAnnotation = span;
         }
       });
@@ -254,8 +251,8 @@ test('Handled annotations should be accurately deserialized', () => {
 
   deserialized.content.forEach((block: PortableTextBlock) => {
     if (block.children && Array.isArray(block.children)) {
-      block.children.forEach((span: Record<string, any>) => {
-        if (span.marks && span.marks.length) {
+      block.children.forEach((span: Record<string, unknown>) => {
+        if (Array.isArray(span.marks) && span.marks.length) {
           deserializedAnnotation = span;
         }
       });
@@ -272,22 +269,22 @@ test('Deserialized content should preserve style tags', () => {
   const deserialized = getDeserialized(documentLevelArticle, 'document');
   const origH1 = documentLevelArticle.content.find(
     (block: PortableTextBlock) => block.style === 'h1'
-  );
+  )!;
   const deserializedH1 = deserialized.content.find(
     (block: PortableTextBlock) => block.style === 'h1'
-  );
+  )!;
   const origH2 = documentLevelArticle.content.find(
     (block: PortableTextBlock) => block.style === 'h2'
-  );
+  )!;
   const deserializedH2 = deserialized.content.find(
     (block: PortableTextBlock) => block.style === 'h2'
-  );
+  )!;
   expect(deserializedH1).toBeDefined();
   expect(deserializedH2).toBeDefined();
   expect(deserializedH1._key).toEqual(origH1._key);
   expect(deserializedH2._key).toEqual(origH2._key);
-  expect(deserializedH1.children[0].text).toEqual(origH1.children[0].text);
-  expect(deserializedH2.children[0].text).toEqual(origH2.children[0].text);
+  expect(deserializedH1.children![0]!.text).toEqual(origH1.children![0]!.text);
+  expect(deserializedH2.children![0]!.text).toEqual(origH2.children![0]!.text);
 });
 
 /*
@@ -298,28 +295,28 @@ test('Deserialized list items should preserve level, style and tag', () => {
   const origListItem = documentLevelArticle.content.find(
     (block: PortableTextBlock) =>
       block.listItem === 'bullet' && block.style === 'h2'
-  );
+  )!;
   const deserializedListItem = deserialized.content.find(
     (block: PortableTextBlock) =>
       block.listItem === 'bullet' && block.style === 'h2'
-  );
+  )!;
   const origNestedListItem = documentLevelArticle.content.find(
     (block: PortableTextBlock) =>
       block.listItem === 'bullet' && block.level === 2
-  );
+  )!;
   const deserializedNestedListItem = deserialized.content.find(
     (block: PortableTextBlock) =>
       block.listItem === 'bullet' && block.level === 2
-  );
+  )!;
   expect(deserializedListItem).toBeDefined();
   expect(deserializedNestedListItem).toBeDefined();
   expect(deserializedListItem._key).toEqual(origListItem._key);
   expect(deserializedNestedListItem._key).toEqual(origNestedListItem._key);
-  expect(deserializedListItem.children[0].text).toEqual(
-    origListItem.children[0].text
+  expect(deserializedListItem.children![0]!.text).toEqual(
+    origListItem.children![0]!.text
   );
-  expect(deserializedNestedListItem.children[0].text).toEqual(
-    origNestedListItem.children[0].text
+  expect(deserializedNestedListItem.children![0]!.text).toEqual(
+    origNestedListItem.children![0]!.text
   );
 });
 
@@ -335,7 +332,12 @@ test('&nbsp; whitespace should not be escaped', () => {
       encoding: 'utf-8',
     }
   );
-  const result = BaseDocumentDeserializer.deserializeDocument(content);
+  const result = BaseDocumentDeserializer.deserializeDocument<{
+    title: string;
+    content: Array<{
+      nestedArrayField: Array<{ title: string }>;
+    }>;
+  }>(content);
   expect(result.title).toEqual('Här är artikel titeln');
   expect(result.content[1].nestedArrayField[0].title).toEqual(
     'Det här är en dragspels titeln'
@@ -353,9 +355,9 @@ test('Content with anonymous inline objects deserializes all fields, at any dept
     'document'
   );
 
-  const deserialized = BaseDocumentDeserializer.deserializeDocument(
-    serialized.content
-  );
+  const deserialized = BaseDocumentDeserializer.deserializeDocument<
+    typeof inlineDocumentLevelArticle
+  >(serialized.content);
   //object in field
   expect(deserialized.tabs.config.title).toEqual(
     inlineDocumentLevelArticle.tabs.config.title
@@ -371,21 +373,25 @@ test('Content with anonymous inline objects deserializes all fields, at any dept
 
   //arrays
   expect(deserialized.tabs.content).toBeInstanceOf(Array);
-  expect(deserialized.tabs.content.map((block: any) => block._key)).toEqual(
-    inlineDocumentLevelArticle.tabs.content.map((block: any) => block._key)
+  expect(
+    deserialized.tabs.content.map((block: { _key: string }) => block._key)
+  ).toEqual(
+    inlineDocumentLevelArticle.tabs.content.map(
+      (block: { _key: string }) => block._key
+    )
   );
 
   //object in array
   const origObj = inlineDocumentLevelArticle.tabs.content.find(
-    (block: any) => block._type === 'objectField'
-  );
+    (block: { _type?: string }) => block._type === 'objectField'
+  )!;
   const deserializedObj = deserialized.tabs.content.find(
-    (block: any) => block._type === 'objectField'
-  );
+    (block: { _type?: string }) => block._type === 'objectField'
+  )!;
 
   expect(deserializedObj.title).toEqual(origObj.title);
-  expect(deserializedObj.objectAsField.content[0].children[0].text).toEqual(
-    origObj.objectAsField.content[0].children[0].text
+  expect(deserializedObj.objectAsField!.content[0].children![0]!.text).toEqual(
+    origObj.objectAsField!.content[0].children![0]!.text
   );
 
   //anonymous object in array

@@ -56,6 +56,15 @@ interface DownloadStatus {
   skipped: Set<string>;
 }
 
+type ExistingTranslationMetadata = {
+  sourceDocId: string;
+  existingTranslations?: string[];
+};
+
+type TranslationDocumentMetadata = {
+  translationDocs?: { docId?: string }[];
+};
+
 interface TranslationsContextType {
   // State
   isBusy: boolean;
@@ -238,14 +247,16 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         'existingTranslations': translations[language in $localeIds].language
       }`;
 
-      const existingMetadata = await client.fetch(query, {
+      const existingMetadata = await client.fetch<
+        ExistingTranslationMetadata[]
+      >(query, {
         sourceLocale,
         documentIds,
         localeIds: availableLocaleIds,
       });
 
       const existing = new Set<string>();
-      existingMetadata.forEach((metadata: any) => {
+      existingMetadata.forEach((metadata) => {
         metadata.existingTranslations?.forEach((localeId: string) => {
           if (localeId !== sourceLocale) {
             existing.add(
@@ -419,14 +430,16 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       'existingTranslations': translations[language in $localeIds].language
     }`;
 
-      const existingMetadata = await client.fetch(query, {
+      const existingMetadata = await client.fetch<
+        ExistingTranslationMetadata[]
+      >(query, {
         sourceLocale,
         documentIds,
         localeIds,
       });
 
       const existing = new Set<string>();
-      existingMetadata.forEach((metadata: any) => {
+      existingMetadata.forEach((metadata) => {
         metadata.existingTranslations?.forEach((localeId: string) => {
           if (localeId !== sourceLocale) {
             existing.add(
@@ -892,14 +905,16 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         }
       }`;
 
-      const translationMetadata = await client.fetch(query, {
+      const translationMetadata = await client.fetch<
+        TranslationDocumentMetadata[]
+      >(query, {
         sourceLocale,
         publishedDocumentIds,
       });
 
       const translationDocIds = new Set<string>();
-      translationMetadata.forEach((metadata: any) => {
-        metadata.translationDocs?.forEach((translation: any) => {
+      translationMetadata.forEach((metadata) => {
+        metadata.translationDocs?.forEach((translation) => {
           if (translation.docId) {
             translationDocIds.add(translation.docId);
           }

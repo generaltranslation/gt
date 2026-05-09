@@ -40,7 +40,7 @@ function Plural({
   children?: React.ReactNode;
   n?: number;
   locales?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }): React.JSX.Element {
   const context = useContext(GTContext);
   let defaultLocale;

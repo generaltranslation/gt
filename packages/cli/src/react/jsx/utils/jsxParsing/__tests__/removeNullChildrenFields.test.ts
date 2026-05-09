@@ -45,7 +45,7 @@ describe('removeNullChildrenFields', () => {
   describe('variable children', () => {
     it('should return variable unchanged', () => {
       const variable = { k: 'count' };
-      const input = variable as any; // Type assertion for test
+      const input = variable as unknown; // Type assertion for test
       const result = removeNullChildrenFields(input);
       expect(result).toBe(variable);
     });

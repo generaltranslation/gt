@@ -42,12 +42,12 @@ export const baseVariablePrefix = '_gt_';
  * @returns The name of the variable
  */
 export function getVariableName(
-  props: Record<string, any> = {},
+  props: Record<string, unknown> = {},
   variableType: keyof typeof defaultVariableNames,
   id: number
 ): string {
-  if (props.name) return props.name;
+  if (typeof props.name === 'string') return props.name;
   const baseVariableName =
-    (defaultVariableNames as Record<string, any>)[variableType] || 'value';
+    (defaultVariableNames as Record<string, string>)[variableType] || 'value';
   return `${baseVariablePrefix}${baseVariableName}_${id}`;
 }

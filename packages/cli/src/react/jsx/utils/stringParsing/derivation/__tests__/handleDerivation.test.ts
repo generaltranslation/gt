@@ -6,7 +6,7 @@ import { handleDerivation } from '../handleDerivation.js';
 import { nodeToStrings } from '../../../parseString.js';
 
 // Handle CommonJS/ESM interop
-const traverse = (traverseModule as any).default || traverseModule;
+const traverse = (traverseModule as unknown).default || traverseModule;
 
 const FILE_PATH = 'test.tsx';
 const PARSING_OPTIONS = { conditionNames: [] };

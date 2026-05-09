@@ -25,7 +25,7 @@ type MReturnType<T> = T extends string ? string : T;
 
 type RenderMessageParams = {
   message: string;
-  variables: Record<string, any> | undefined;
+  variables: Record<string, unknown> | undefined;
   locales: string[];
   fallback?: string;
   id?: string;
@@ -59,7 +59,7 @@ export default function useCreateInternalUseGTFunction({
   ) => string;
   _mFunction: <T extends string | null | undefined>(
     message: T,
-    options?: Record<string, any>,
+    options?: Record<string, unknown>,
     preloadedTranslations?: Translations
   ) => T extends string ? string : T;
   _filterMessagesForPreload: (_messages: _Messages) => _Messages;
@@ -134,7 +134,7 @@ export default function useCreateInternalUseGTFunction({
 
   function initializeGT(
     message: string,
-    options: Record<string, any> & {
+    options: Record<string, unknown> & {
       $context?: string;
       $maxChars?: number;
       $id?: string;
@@ -148,9 +148,11 @@ export default function useCreateInternalUseGTFunction({
       $context: context,
       $maxChars: maxChars,
       $_hash: _hash,
-      $format: format,
+      $format: rawFormat,
       ...variables
     } = options;
+    const format =
+      typeof rawFormat === 'string' ? (rawFormat as StringFormat) : undefined;
 
     // Update renderContent to use actual variables
     const renderMessage = (
@@ -335,7 +337,7 @@ export default function useCreateInternalUseGTFunction({
 
   const _mFunction = <T extends string | null | undefined>(
     encodedMsg: T,
-    options: Record<string, any> = {},
+    options: Record<string, unknown> = {},
     preloadedTranslations: Translations | undefined
   ): T extends string ? string : T => {
     // Return if message is not a string

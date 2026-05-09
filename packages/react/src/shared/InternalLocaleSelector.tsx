@@ -57,7 +57,7 @@ export function InternalLocaleSelector({
   customMapping?: CustomMapping;
   setLocale: (locale: string) => void;
   getLocaleProperties: (locale: string) => LocaleProperties;
-  [key: string]: any;
+  [key: string]: unknown;
 }): React.JSX.Element | null {
   // Get display name
   const getDisplayName = (locale: string) => {

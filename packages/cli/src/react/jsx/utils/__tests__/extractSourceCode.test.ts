@@ -142,7 +142,7 @@ describe('extractSourceCode', () => {
   });
 
   it('should return undefined if readFileSync returns non-string', () => {
-    mockFs.readFileSync.mockReturnValue(undefined as any);
+    mockFs.readFileSync.mockReturnValue(undefined as unknown);
 
     const result = extractSourceCode('/test/non-string.tsx', 1, 1, 5);
 

@@ -27,7 +27,7 @@ const traverse = traverseModule.default || traverseModule;
  * importAliases: any other GT related imports
  */
 export function getPathsAndAliases(
-  ast: any,
+  ast: t.Node,
   pkgs: GTLibrary[]
 ): {
   importAliases: Record<string, string>;

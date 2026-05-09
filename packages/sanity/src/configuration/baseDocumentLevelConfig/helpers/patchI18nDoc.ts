@@ -18,11 +18,11 @@ export async function patchI18nDoc(
   i18nDocId: string,
   sourceDocument: SanityDocumentLike,
   mergedDocument: SanityDocumentLike,
-  translatedFields: Record<string, any>,
+  translatedFields: Record<string, unknown>,
   client: SanityClient,
   existingDocument?: SanityDocumentLike
 ): Promise<void> {
-  const cleanedMerge: Record<string, any> = {};
+  const cleanedMerge: Record<string, unknown> = {};
   Object.entries(mergedDocument).forEach(([key, value]) => {
     if (
       //only patch those fields that had translated strings
@@ -33,7 +33,7 @@ export async function patchI18nDoc(
       cleanedMerge[key] = value;
     }
   });
-  const cleanedSourceDocument: Record<string, any> = {};
+  const cleanedSourceDocument: Record<string, unknown> = {};
   Object.entries(sourceDocument).forEach(([key, value]) => {
     if (
       // extract only the fields that are not system fields

@@ -147,7 +147,7 @@ describe('createLoadTranslationsFile', () => {
   });
 
   it('defaults to ./public/_gt when no translationsDir is provided', async () => {
-    await createLoadTranslationsFile(tmpDir, undefined as any, ['es']);
+    await createLoadTranslationsFile(tmpDir, undefined as unknown, ['es']);
 
     const filePath = path.join(tmpDir, 'loadTranslations.js');
     expect(fs.existsSync(filePath)).toBe(true);

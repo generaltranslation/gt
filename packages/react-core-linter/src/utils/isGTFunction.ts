@@ -17,8 +17,7 @@ import {
 import { RuleContext, Scope } from '@typescript-eslint/utils/ts-eslint';
 
 export type IsGTFunctionOptions = {
-  // TODO: better typing
-  context: Readonly<RuleContext<any, any>>;
+  context: Readonly<RuleContext<string, readonly unknown[]>>;
   /** Opening or closing element of the component
    * TODO: make this more selective (eg differentiate btwn JSX and Function calls)
    */

@@ -15,9 +15,9 @@ import useGTContext from '../../provider/GTContext';
  */
 export default function useTranslations(id?: string): ((
   id: string,
-  options?: Record<string, any>
+  options?: Record<string, unknown>
 ) => string) & {
-  obj: (id: string, options?: Record<string, any>) => any | undefined;
+  obj: (id: string, options?: Record<string, unknown>) => unknown | undefined;
 } {
   // Create a prefix for translation keys if an id is provided
   const getId = (suffix: string) => {
@@ -55,12 +55,15 @@ export default function useTranslations(id?: string): ((
    * // Translates item in dictionary under greetings.greeting3 and replaces {name} with 'John'
    * t('greetings.greeting3', { name: 'John' });
    */
-  function t(id: string, options: Record<string, any> = {}): string {
+  function t(id: string, options: Record<string, unknown> = {}): string {
     const prefixedId = getId(id);
     return _dictionaryFunction(prefixedId, options);
   }
 
-  function obj(id: string, options: Record<string, any> = {}): any | undefined {
+  function obj(
+    id: string,
+    options: Record<string, unknown> = {}
+  ): unknown | undefined {
     const prefixedId = getId(id);
     return _dictionaryObjFunction(id, prefixedId, options);
   }

@@ -21,7 +21,7 @@ export default function mergeYaml(
     return targets.map((target) => target.translatedContent);
   }
 
-  let originalYaml: any;
+  let originalYaml: unknown;
   try {
     originalYaml = YAML.parse(originalContent);
   } catch {
@@ -40,7 +40,7 @@ export default function mergeYaml(
     // Must clone the original YAML to avoid mutations
     const mergedYaml = JSON.parse(JSON.stringify(originalYaml));
 
-    let translatedJson: Record<string, any>;
+    let translatedJson: Record<string, unknown>;
     try {
       translatedJson = JSON.parse(target.translatedContent);
     } catch {

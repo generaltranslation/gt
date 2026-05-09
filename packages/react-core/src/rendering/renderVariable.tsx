@@ -12,17 +12,30 @@ const renderVariable: RenderVariable = ({
 }) => {
   if (variableType === 'n') {
     const numOptions = variableOptions as Intl.NumberFormatOptions | undefined;
-    return <Num options={numOptions}>{variableValue}</Num>;
+    const numValue =
+      typeof variableValue === 'string' || typeof variableValue === 'number'
+        ? variableValue
+        : variableValue == null
+          ? variableValue
+          : undefined;
+    return <Num options={numOptions}>{numValue}</Num>;
   } else if (variableType === 'd') {
     const dateTimeOptions = variableOptions as
       | Intl.DateTimeFormatOptions
       | undefined;
-    return <DateTime options={dateTimeOptions}>{variableValue}</DateTime>;
+    const dateValue = variableValue instanceof Date ? variableValue : undefined;
+    return <DateTime options={dateTimeOptions}>{dateValue}</DateTime>;
   } else if (variableType === 'c') {
     const currencyOptions = variableOptions as
       | Intl.NumberFormatOptions
       | undefined;
-    return <Currency options={currencyOptions}>{variableValue}</Currency>;
+    const currencyValue =
+      typeof variableValue === 'string' || typeof variableValue === 'number'
+        ? variableValue
+        : variableValue == null
+          ? variableValue
+          : undefined;
+    return <Currency options={currencyOptions}>{currencyValue}</Currency>;
   } else if (variableType === 'rt') {
     // RelativeTime supports two modes:
     // 1. value + unit (e.g., value=-3, unit="hour") — explicit relative time

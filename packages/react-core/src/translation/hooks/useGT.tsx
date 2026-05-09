@@ -48,7 +48,7 @@ export default function useGT(_messages?: _Messages) {
 
   function _gt(
     string: string,
-    options: Record<string, any> & {
+    options: Record<string, unknown> & {
       $id?: string;
       $context?: string;
       $maxChars?: number;

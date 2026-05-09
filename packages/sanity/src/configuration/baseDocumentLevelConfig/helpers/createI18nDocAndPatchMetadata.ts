@@ -19,7 +19,7 @@ export async function createI18nDocAndPatchMetadata(
   translatedDoc[languageField] = localeId;
   const translations = translationMetadata.translations as Record<
     string,
-    any
+    unknown
   >[];
   const existingLocaleKey = translations.find(
     (translation) => translation.language === localeId

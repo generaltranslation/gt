@@ -71,6 +71,7 @@ import { SECRETS_NAMESPACE } from './utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import { attachGTData, detachGTData } from './serialization/data';
 import { documentInternationalization } from './documentInternationalization';
+import type { CustomDeserializers } from './serialization';
 
 export type GTPluginConfig = Omit<
   Parameters<typeof gt.setConfig>[0],
@@ -91,8 +92,8 @@ export type GTPluginConfig = Omit<
   secretsNamespace?: string;
   additionalStopTypes?: string[];
   additionalSerializers?: Partial<PortableTextHtmlComponents>;
-  additionalDeserializers?: Record<string, any>;
-  additionalBlockDeserializers?: any[];
+  additionalDeserializers?: CustomDeserializers;
+  additionalBlockDeserializers?: unknown[];
   // When true (default), automatically adds the @sanity/document-internationalization plugin
   // with language badges, translation menu, and per-language templates.
   // Requires translateDocuments to specify which document types to enable translations for.

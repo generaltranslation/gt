@@ -7,7 +7,7 @@ import { parseStrings, clearParsingCaches } from '../parseStringFunction.js';
 import { resolveImportPath } from '../resolveImportPath.js';
 import { Updates } from '../../../../types/index.js';
 
-const traverse = (traverseModule as any).default || traverseModule;
+const traverse = (traverseModule as unknown).default || traverseModule;
 
 vi.mock('node:fs');
 vi.mock('../resolveImportPath.js');

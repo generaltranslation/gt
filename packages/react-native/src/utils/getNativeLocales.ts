@@ -41,9 +41,14 @@ function getWebLocales(): string[] {
     } else if (navigator.language) {
       // Fallback to single language
       locales.push(navigator.language);
-    } else if ((navigator as any).userLanguage) {
+    } else {
       // IE fallback
-      locales.push((navigator as any).userLanguage);
+      const legacyNavigator = navigator as Navigator & {
+        userLanguage?: string;
+      };
+      if (legacyNavigator.userLanguage) {
+        locales.push(legacyNavigator.userLanguage);
+      }
     }
 
     return locales;

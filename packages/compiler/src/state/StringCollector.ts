@@ -45,6 +45,13 @@ export interface TranslationHash {
   hash: string;
 }
 
+type SerializedStringCollector = {
+  contentAggregators: Record<string, TranslationContent[]>;
+  jsxAggregators: Record<string, TranslationJsx>;
+  hashAggregators: Record<string, TranslationHash>;
+  globalCallCounter: number;
+};
+
 /**
  * String collector for two-pass transformation system
  */
@@ -214,7 +221,7 @@ export class StringCollector {
   /**
    * Helper convert to string
    */
-  serialize(): any {
+  serialize(): SerializedStringCollector {
     const output = {
       contentAggregators: Object.fromEntries(this.contentAggregators),
       jsxAggregators: Object.fromEntries(this.jsxAggregators),
@@ -227,7 +234,7 @@ export class StringCollector {
   /**
    * Helper to repopulate
    */
-  unserialize(input: any): void {
+  unserialize(input: SerializedStringCollector): void {
     this.contentAggregators = Object.entries(
       input.contentAggregators as Record<number, TranslationContent[]>
     ).reduce((acc, [key, value]) => {

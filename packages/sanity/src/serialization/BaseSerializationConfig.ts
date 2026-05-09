@@ -14,6 +14,10 @@ import { htmlToBlocks } from '@portabletext/block-tools';
 import { blockContentType } from './deserialize/helpers';
 import { PortableTextObject, PortableTextTextBlock, TypedObject } from 'sanity';
 import { detachGTData } from './data';
+import type { CustomDeserializers } from './types';
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export const defaultStopTypes = [
   'reference',
@@ -67,8 +71,7 @@ const unknownBlockFunc: PortableTextBlockComponent = ({ value, children }) =>
   `<p id="${value._key}" data-type="unknown-block-style" data-style="${value.style}">${children}</p>`;
 
 export const customSerializers: Partial<PortableTextHtmlComponents> = {
-  unknownType: ({ value }: { value: Record<string, any> }) =>
-    `<div class="${value._type}"></div>`,
+  unknownType: ({ value }) => `<div class="${value._type}"></div>`,
   types: {},
   marks: defaultMarks,
   block: defaultPortableTextBlockStyles,
@@ -77,17 +80,21 @@ export const customSerializers: Partial<PortableTextHtmlComponents> = {
   unknownBlockStyle: unknownBlockFunc,
 };
 
-export const customDeserializers: Record<string, any> = { types: {} };
+export const customDeserializers: CustomDeserializers = { types: {} };
 
-export const customBlockDeserializers: Array<any> = [
+export const customBlockDeserializers: Array<unknown> = [
   // handle marks with data-gt-internal
   {
     deserialize(
-      el: HTMLParagraphElement,
+      node: Node,
       next: (
         elements: Node | Node[] | NodeList
       ) => TypedObject | TypedObject[] | undefined
     ): PortableTextTextBlock | TypedObject | undefined {
+      if (node.nodeType !== 1) {
+        return undefined;
+      }
+      const el = node as HTMLElement;
       if (!el.hasChildNodes()) {
         return undefined;
       }
@@ -108,11 +115,15 @@ export const customBlockDeserializers: Array<any> = [
       if (data?.markDef) {
         markDefs.push(data.markDef as PortableTextObject);
       }
-      if (children) {
-        (children as any).forEach((child: any) => {
+      if (Array.isArray(children)) {
+        children.forEach((child) => {
+          if (!isRecord(child)) {
+            return;
+          }
+          const marks = Array.isArray(child.marks) ? child.marks : [];
           child.marks = data?.markDef?._key
-            ? [...(child.marks || []), data.markDef._key]
-            : [...(child.marks || [])];
+            ? [...marks, data.markDef._key]
+            : marks;
         });
       }
       // Resolve marks in the child nodes
@@ -127,11 +138,15 @@ export const customBlockDeserializers: Array<any> = [
   //handle undeclared styles
   {
     deserialize(
-      el: HTMLParagraphElement,
+      node: Node,
       next: (
         elements: Node | Node[] | NodeList
       ) => TypedObject | TypedObject[] | undefined
     ): PortableTextTextBlock | TypedObject | undefined {
+      if (node.nodeType !== 1) {
+        return undefined;
+      }
+      const el = node as HTMLElement;
       if (!el.hasChildNodes()) {
         return undefined;
       }
@@ -153,11 +168,15 @@ export const customBlockDeserializers: Array<any> = [
   //handle list items
   {
     deserialize(
-      el: HTMLParagraphElement,
+      node: Node,
       next: (
         elements: Node | Node[] | NodeList
       ) => TypedObject | TypedObject[] | undefined
     ): PortableTextTextBlock | TypedObject | undefined {
+      if (node.nodeType !== 1) {
+        return undefined;
+      }
+      const el = node as HTMLElement;
       if (!el.hasChildNodes()) {
         return undefined;
       }

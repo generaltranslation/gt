@@ -1,5 +1,7 @@
 import { Schema } from '@sanity/schema';
 
+type LinkParent = { linkType?: string };
+
 const arrayField = {
   name: 'arrayField',
   title: 'Array Field',
@@ -44,7 +46,8 @@ const linkField = {
       name: 'href',
       title: 'URL',
       type: 'url',
-      hidden: ({ parent }: { parent: any }) => parent?.linkType !== 'href',
+      hidden: ({ parent }: { parent: LinkParent }) =>
+        parent?.linkType !== 'href',
     },
     {
       name: 'page',
@@ -52,7 +55,8 @@ const linkField = {
       type: 'reference',
       to: [{ type: 'page' }],
       weak: true,
-      hidden: ({ parent }: { parent: any }) => parent?.linkType !== 'page',
+      hidden: ({ parent }: { parent: LinkParent }) =>
+        parent?.linkType !== 'page',
     },
     {
       name: 'simplePage',
@@ -60,7 +64,7 @@ const linkField = {
       type: 'reference',
       to: [{ type: 'simplePage' }],
       weak: true,
-      hidden: ({ parent }: { parent: any }) =>
+      hidden: ({ parent }: { parent: LinkParent }) =>
         parent?.linkType !== 'simplePage',
     },
     {
@@ -69,13 +73,15 @@ const linkField = {
       type: 'reference',
       to: [{ type: 'post' }],
       weak: true,
-      hidden: ({ parent }: { parent: any }) => parent?.linkType !== 'post',
+      hidden: ({ parent }: { parent: LinkParent }) =>
+        parent?.linkType !== 'post',
     },
     {
       name: 'file',
       title: 'File',
       type: 'file',
-      hidden: ({ parent }: { parent: any }) => parent?.linkType !== 'file',
+      hidden: ({ parent }: { parent: LinkParent }) =>
+        parent?.linkType !== 'file',
     },
     {
       name: 'openInNewTab',
@@ -189,7 +195,10 @@ const documentLevelArticle = {
   ],
 };
 
-function createLocaleFields(locales: string[], fieldType: Record<string, any>) {
+function createLocaleFields(
+  locales: string[],
+  fieldType: Record<string, unknown>
+) {
   return locales.map((locale) => ({
     name: locale,
     ...fieldType,

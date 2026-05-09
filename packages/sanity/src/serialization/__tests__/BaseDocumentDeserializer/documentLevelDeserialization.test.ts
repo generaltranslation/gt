@@ -85,23 +85,19 @@ test('Array contains top-level block text -- document level', () => {
 
 test('Object in array contains accurate values in nested object -- document level', () => {
   const deserialized = getDeserialized(documentLevelArticle, 'document');
-  const origTitle = documentLevelArticle.content.find(
-    (block: Record<string, any>) => block._type === 'objectField'
-  ).objectAsField.title;
-  const deserializedTitle = deserialized.content.find(
-    (block: Record<string, any>) => block._type === 'objectField'
-  ).objectAsField.title;
+  const origObject = documentLevelArticle.content.find(
+    (block: Record<string, unknown>) => block._type === 'objectField'
+  )!;
+  const deserializedObject = deserialized.content.find(
+    (block: Record<string, unknown>) => block._type === 'objectField'
+  )!;
+  const origTitle = origObject.objectAsField!.title;
+  const deserializedTitle = deserializedObject.objectAsField!.title;
   expect(deserializedTitle).toEqual(origTitle);
 
-  const origBlockText = toPlainText(
-    documentLevelArticle.content.find(
-      (block: Record<string, any>) => block._type === 'objectField'
-    ).objectAsField.content
-  ).trim();
+  const origBlockText = toPlainText(origObject.objectAsField!.content).trim();
   const deserializedBlockText = toPlainText(
-    documentLevelArticle.content.find(
-      (block: Record<string, any>) => block._type === 'objectField'
-    ).objectAsField.content
+    deserializedObject.objectAsField!.content
   ).trim();
   expect(deserializedBlockText).toEqual(origBlockText);
 });

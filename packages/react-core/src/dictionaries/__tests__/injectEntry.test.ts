@@ -196,7 +196,7 @@ describe('injectEntry', () => {
           fruits: ['citron'],
         },
       });
-      expect(Array.isArray((dictionary as any).hello.fruits)).toBe(true);
+      expect(Array.isArray((dictionary as unknown).hello.fruits)).toBe(true);
     });
 
     it('should create array structure for multiple array element injections', () => {
@@ -221,7 +221,7 @@ describe('injectEntry', () => {
           fruits: ['citron', 'citron vert', 'poire'],
         },
       });
-      expect(Array.isArray((dictionary as any).hello.fruits)).toBe(true);
+      expect(Array.isArray((dictionary as unknown).hello.fruits)).toBe(true);
     });
 
     it('should overwrite existing entry', () => {
@@ -250,7 +250,7 @@ describe('injectEntry', () => {
 
     it('should handle null parent values', () => {
       const dictionary: Dictionary = {
-        user: null as any,
+        user: null as unknown,
       };
       const sourceDictionary: Dictionary = { user: { name: '' } };
       const entry: DictionaryEntry = 'John';

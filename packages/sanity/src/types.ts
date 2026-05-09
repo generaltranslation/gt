@@ -62,7 +62,7 @@ export interface Adapter {
     document: GTFile,
     localeId: string,
     secrets: Secrets | null
-  ) => Promise<any | null>;
+  ) => Promise<unknown | null>;
 }
 
 export interface TranslationFunctionContext {

@@ -53,6 +53,13 @@ function renderTranslatedElement({
   // plural (choose a branch)
   if (transformation === 'plural') {
     const n = sourceElement.props.n;
+    if (typeof n !== 'number') {
+      return renderDefaultChildren({
+        children: sourceElement,
+        defaultLocale: locales[0],
+        renderVariable,
+      });
+    }
     const sourceBranches = sourceGT.branches || {};
     const sourceBranch =
       getPluralBranch(n, locales, sourceBranches) ||
@@ -61,8 +68,8 @@ function renderTranslatedElement({
     const targetBranch =
       getPluralBranch(n, locales, targetBranches) || targetElement.c;
     return renderTranslatedChildren({
-      source: sourceBranch,
-      target: targetBranch,
+      source: sourceBranch as TaggedChildren,
+      target: targetBranch as TranslatedChildren,
       locales,
       renderVariable,
     });
@@ -71,10 +78,16 @@ function renderTranslatedElement({
   // branch (choose a branch)
   if (transformation === 'branch') {
     const { branch, children } = sourceProps;
-    const sourceBranch = (sourceGT.branches || {})[branch] || children;
-    const targetBranch = (targetElement.d?.b || {})[branch] || targetElement.c;
+    const sourceBranch =
+      branch && (sourceGT.branches || {})[branch]
+        ? (sourceGT.branches || {})[branch]
+        : children;
+    const targetBranch =
+      branch && (targetElement.d?.b || {})[branch]
+        ? (targetElement.d?.b || {})[branch]
+        : targetElement.c;
     return renderTranslatedChildren({
-      source: sourceBranch,
+      source: sourceBranch as TaggedChildren,
       target: targetBranch as TranslatedChildren,
       locales,
       renderVariable,
@@ -86,11 +99,11 @@ function renderTranslatedElement({
     return React.createElement(React.Fragment, {
       key: sourceElement.props.key,
       children: renderTranslatedChildren({
-        source: sourceProps.children,
+        source: sourceProps.children as TaggedChildren,
         target: targetElement.c,
         locales,
         renderVariable,
-      }),
+      }) as TaggedChildren,
     });
   }
 
@@ -101,11 +114,11 @@ function renderTranslatedElement({
       ...translatedProps,
       'data-_gt': undefined,
       children: renderTranslatedChildren({
-        source: sourceProps.children,
+        source: sourceProps.children as TaggedChildren,
         target: targetElement.c,
         locales,
         renderVariable,
-      }),
+      }) as TaggedChildren,
     });
   }
 

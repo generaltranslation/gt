@@ -11,7 +11,7 @@ import * as t from '@babel/types';
 import traverseModule, { NodePath } from '@babel/traverse';
 
 const traverse: typeof traverseModule.default =
-  (traverseModule as any).default || traverseModule;
+  traverseModule.default || traverseModule;
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
   TRANSLATION_COMPONENT,

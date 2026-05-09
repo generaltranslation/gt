@@ -39,7 +39,7 @@ export async function collectFiles(
       }
       // Convert updates to a file object
       const fileData: Record<string, JsxChildren> = {};
-      const fileMetadata: Record<string, any> = {};
+      const fileMetadata: Record<string, unknown> = {};
       // Convert updates to the proper data format
       for (const update of updates) {
         const { source, metadata, dataFormat } = update;

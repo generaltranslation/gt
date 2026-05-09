@@ -331,7 +331,7 @@ describe('injectFallbacks', () => {
       const translationsDictionary: Dictionary = {
         greeting: 'Hola',
       };
-      const missingTranslations: any[] = [];
+      const missingTranslations: unknown[] = [];
 
       const result = injectFallbacks(
         dictionary,

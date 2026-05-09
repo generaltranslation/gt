@@ -11,6 +11,13 @@ import { patchI18nDoc } from './helpers/patchI18nDoc';
 import type { GTFile } from '../../types';
 import { pluginConfig } from '../../adapter/core';
 
+type TranslationReference = {
+  language?: string;
+  value?: {
+    _ref?: string;
+  };
+};
+
 export const documentLevelPatch = async (
   docInfo: GTFile,
   translatedFields: SanityDocument,
@@ -53,9 +60,11 @@ export const documentLevelPatch = async (
   );
 
   //the id of the translated document should be on the metadata if it exists
-  const i18nDocId = (
-    translationMetadata.translations as Array<Record<string, any>>
-  ).find((translation) => translation.language === localeId)?.value?._ref;
+  const translations =
+    translationMetadata.translations as TranslationReference[];
+  const i18nDocId = translations.find(
+    (translation) => translation.language === localeId
+  )?.value?._ref;
 
   if (i18nDocId) {
     //get draft or published
@@ -112,9 +121,11 @@ export const documentLevelPatch = async (
       client,
       baseLanguage
     );
-    const freshI18nDocId = (
-      freshTranslationMetadata.translations as Array<Record<string, any>>
-    ).find((translation) => translation.language === localeId)?.value?._ref;
+    const freshTranslations =
+      freshTranslationMetadata.translations as TranslationReference[];
+    const freshI18nDocId = freshTranslations.find(
+      (translation) => translation.language === localeId
+    )?.value?._ref;
 
     if (freshI18nDocId) {
       const freshI18nDoc = await findLatestDraft(freshI18nDocId, client);

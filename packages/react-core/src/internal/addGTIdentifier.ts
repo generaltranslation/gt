@@ -13,6 +13,10 @@ import {
   VariableTransformationSuffix,
 } from 'generaltranslation/types';
 
+type GTComponentType = {
+  _gtt?: Transformation;
+};
+
 export default function addGTIdentifier(
   children: ReactNode,
   startingIndex: number = 0
@@ -25,14 +29,14 @@ export default function addGTIdentifier(
    * @param child - The ReactElement for which the GTTag is created
    * @returns - The GTTag object
    */
-  const createGTTag = (child: ReactElement<any>): GTTag => {
+  const createGTTag = (child: ReactElement<Record<string, unknown>>): GTTag => {
     const { type, props } = child;
     index += 1;
     const result: GTTag = { id: index, injectionType: 'manual' };
     let transformation: Transformation | undefined;
     try {
       transformation =
-        typeof type === 'function' ? (type as any)._gtt || '' : '';
+        typeof type === 'function' ? (type as GTComponentType)._gtt : undefined;
     } catch {
       /* empty */
     }
@@ -65,7 +69,7 @@ export default function addGTIdentifier(
             }
             return acc;
           },
-          {}
+          {} as Record<string, TaggedChildren>
         );
         if (Object.keys(pluralBranches).length)
           result.branches = pluralBranches;
@@ -82,7 +86,7 @@ export default function addGTIdentifier(
               addGTIdentifier(branch as ReactNode, index);
             return acc;
           },
-          {}
+          {} as Record<string, TaggedChildren>
         );
         if (Object.keys(resultBranches).length)
           result.branches = resultBranches;
@@ -92,7 +96,9 @@ export default function addGTIdentifier(
     return result;
   };
 
-  function handleSingleChildElement(child: ReactElement<any>): TaggedElement {
+  function handleSingleChildElement(
+    child: ReactElement<Record<string, unknown>>
+  ): TaggedElement {
     const { props } = child;
 
     // Create new props for the element, including the GT identifier and a key
@@ -112,7 +118,9 @@ export default function addGTIdentifier(
 
   function handleSingleChild(child: ReactNode): TaggedChild {
     if (isValidElement(child)) {
-      return handleSingleChildElement(child);
+      return handleSingleChildElement(
+        child as ReactElement<Record<string, unknown>>
+      );
     }
     return child;
   }

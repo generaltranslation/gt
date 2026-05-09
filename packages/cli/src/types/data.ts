@@ -8,8 +8,8 @@ export type DictionaryMetadata = {
   /** @deprecated use $maxChars instead */
   maxChars?: number;
   /** @deprecated */
-  variablesOptions?: Record<string, any>;
-  [key: string]: any;
+  variablesOptions?: Record<string, unknown>;
+  [key: string]: unknown;
 };
 export type DictionaryEntry = Entry | [Entry] | [Entry, DictionaryMetadata];
 export type Dictionary = {
@@ -33,7 +33,7 @@ export type {
   FileToUpload,
 } from 'generaltranslation/types';
 
-export type JsxChildren = string | string[] | any;
+export type JsxChildren = string | string[] | unknown;
 
 export type Translations = {
   // keys are sha256 hashes

@@ -40,14 +40,15 @@ const getTagName = (child: TaggedElement): string => {
 };
 const createGTProp = (
   transformation: Transformation,
-  props: Record<string, any>,
+  props: Record<string, unknown>,
   branches?: Record<string, TaggedChildren>
 ): GTProp | undefined => {
   // Add translatable HTML content props
   let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce<GTProp>(
     (acc, [minifiedName, fullName]) => {
-      if (props[fullName]) {
-        acc[minifiedName as keyof HtmlContentPropKeysRecord] = props[fullName];
+      const value = props[fullName];
+      if (typeof value === 'string') {
+        acc[minifiedName as keyof HtmlContentPropKeysRecord] = value;
       }
       return acc;
     },
@@ -119,9 +120,9 @@ const handleSingleChildElement = (
     // Add translatable HTML content props
     let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce<GTProp>(
       (acc, [minifiedName, fullName]) => {
-        if (props[fullName]) {
-          acc[minifiedName as keyof HtmlContentPropKeysRecord] =
-            props[fullName];
+        const value = props[fullName];
+        if (typeof value === 'string') {
+          acc[minifiedName as keyof HtmlContentPropKeysRecord] = value;
         }
         return acc;
       },

@@ -6,7 +6,9 @@ import path from 'node:path';
  * @param {string} filepath - The path to the JSON file.
  * @returns {Record<string, any> | null} - The parsed JSON object or null if an error occurs.
  */
-export default function loadJSON(filepath: string): Record<string, any> | null {
+export default function loadJSON(
+  filepath: string
+): Record<string, unknown> | null {
   try {
     const data = fs.readFileSync(path.resolve(filepath), 'utf-8');
     return JSON.parse(data);

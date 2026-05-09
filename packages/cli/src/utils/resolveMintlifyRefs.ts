@@ -176,13 +176,14 @@ function resolveRef(
  */
 export function shouldResolveRefs(
   filePath: string,
-  options?: { jsonSchema?: Record<string, any> }
+  options?: { jsonSchema?: Record<string, unknown> }
 ): boolean {
   if (!options?.jsonSchema) return false;
 
   const relative = path.relative(process.cwd(), filePath);
   for (const [glob, schema] of Object.entries(options.jsonSchema)) {
-    if (schema?.resolveRefs && micromatch.isMatch(relative, glob)) {
+    const jsonSchema = schema as { resolveRefs?: boolean };
+    if (jsonSchema.resolveRefs && micromatch.isMatch(relative, glob)) {
       return true;
     }
   }

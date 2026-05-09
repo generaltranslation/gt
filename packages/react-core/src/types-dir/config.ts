@@ -1,6 +1,6 @@
 import React from 'react';
 import { RenderMethod } from './types';
-import { Translations, CustomLoader } from './types';
+import { Dictionary, Translations, CustomLoader } from './types';
 import { CustomMapping } from 'generaltranslation/types';
 
 // Special overriden function types
@@ -49,7 +49,7 @@ export type InternalGTProviderProps = {
   children?: React.ReactNode;
   projectId?: string;
   devApiKey?: string;
-  dictionary?: any;
+  dictionary?: Dictionary;
   locales?: string[];
   defaultLocale?: string;
   locale?: string;
@@ -82,5 +82,5 @@ export type InternalGTProviderProps = {
   useRegionState: (params: UseRegionStateParams) => UseRegionStateReturn;
   useEnableI18n?: (params: UseEnableI18nParams) => UseEnableI18nReturn;
   reloadOnLocaleUpdate?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 };

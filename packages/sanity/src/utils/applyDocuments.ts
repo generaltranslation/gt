@@ -4,12 +4,12 @@ import type { DedupeFields, FieldMatcher, SkipFields } from '../adapter/types';
 
 export function forEachMatchingField(
   documentId: string,
-  document: Record<string, any>,
+  document: Record<string, unknown>,
   fields: FieldMatcher[],
   callback: (result: {
     pointer: string;
-    value: any;
-    parent: any;
+    value: unknown;
+    parent: Record<string, unknown> | unknown[];
     parentProperty: string;
   }) => void
 ): void {
@@ -39,15 +39,16 @@ export function forEachMatchingField(
           results.forEach(
             (result: {
               pointer: string;
-              value: any;
-              parent: any;
+              value: unknown;
+              parent: Record<string, unknown> | unknown[];
               parentProperty: string;
             }) => {
               if (type !== undefined) {
                 if (
                   typeof result.value === 'object' &&
                   result.value !== null &&
-                  result.value._type === type
+                  !Array.isArray(result.value) &&
+                  (result.value as Record<string, unknown>)._type === type
                 ) {
                   callback(result);
                 }
@@ -66,10 +67,10 @@ export function forEachMatchingField(
 
 export function deleteMatchingFields(
   documentId: string,
-  document: Record<string, any>,
+  document: Record<string, unknown>,
   fields: FieldMatcher[]
 ): void {
-  const arrayRemovals: Array<{ parent: any[]; index: number }> = [];
+  const arrayRemovals: Array<{ parent: unknown[]; index: number }> = [];
 
   forEachMatchingField(documentId, document, fields, (result) => {
     if (Array.isArray(result.parent)) {
@@ -91,8 +92,8 @@ export function deleteMatchingFields(
 
 export function applyDocuments(
   documentId: string,
-  sourceDocument: Record<string, any>,
-  targetDocument: Record<string, any>,
+  sourceDocument: Record<string, unknown>,
+  targetDocument: Record<string, unknown>,
   ignore: FieldMatcher[],
   skip: SkipFields[] = [],
   dedupe: DedupeFields[] = [],
@@ -127,7 +128,7 @@ export function applyDocuments(
   return mergedDocument;
 }
 
-function dedupeFieldValue(value: any, localeId?: string): any {
+function dedupeFieldValue(value: unknown, localeId?: string): unknown {
   if (!localeId) return value;
 
   if (typeof value === 'string') {
@@ -138,11 +139,12 @@ function dedupeFieldValue(value: any, localeId?: string): any {
     value &&
     typeof value === 'object' &&
     !Array.isArray(value) &&
-    typeof value.current === 'string'
+    typeof (value as Record<string, unknown>).current === 'string'
   ) {
+    const slug = value as Record<string, unknown>;
     return {
-      ...value,
-      current: appendLocaleSuffix(value.current, localeId),
+      ...slug,
+      current: appendLocaleSuffix(slug.current as string, localeId),
     };
   }
 

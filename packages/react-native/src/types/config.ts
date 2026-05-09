@@ -10,7 +10,7 @@ export type GTProviderProps = {
   children?: React.ReactNode;
   projectId?: string;
   devApiKey?: string;
-  dictionary?: any;
+  dictionary?: unknown;
   locales?: string[];
   defaultLocale?: string;
   locale?: string;
@@ -31,5 +31,5 @@ export type GTProviderProps = {
   fallback?: React.ReactNode;
   customMapping?: CustomMapping;
   modelProvider?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };

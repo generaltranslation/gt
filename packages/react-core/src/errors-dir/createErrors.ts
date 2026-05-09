@@ -11,7 +11,7 @@ export const apiKeyInProductionError = `${PACKAGE_NAME} Error: Production enviro
 
 export const createNoAuthError = `${PACKAGE_NAME} Error: Configuration is missing a projectId and/or devApiKey. Add these values to your environment or pass them to <GTProvider> directly.`;
 
-export const createPluralMissingError = (children: any) =>
+export const createPluralMissingError = (children: unknown) =>
   `${PACKAGE_NAME} Error: <Plural> component with children "${children}" requires "n" option.`;
 
 export const createClientSideTDictionaryCollisionError = (id: string) =>

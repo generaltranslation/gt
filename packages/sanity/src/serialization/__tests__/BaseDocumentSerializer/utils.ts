@@ -1,17 +1,19 @@
-import { createRequire } from 'module';
-
 import { SerializedDocument } from '../../types';
-
-const require = createRequire(import.meta.url);
+import documentLevelArticleFixture from '../__fixtures__/documentLevelArticle.json';
+import docWithInlineMarksFixture from '../__fixtures__/documentInlineMarks.json';
+import inlineDocumentLevelArticleFixture from '../__fixtures__/inlineDocumentLevelArticle.json';
+import fieldLevelArticleFixture from '../__fixtures__/fieldLevelArticle.json';
+import annotationAndInlineBlocksFixture from '../__fixtures__/annotationAndInlineBlocks.json';
+import nestedLanguageFieldsFixture from '../__fixtures__/nestedLanguageFields.json';
 
 export { default as inlineSchema } from '../__fixtures__/inlineSchema';
 export { default as schema } from '../__fixtures__/schema';
-export const documentLevelArticle = require('../__fixtures__/documentLevelArticle.json');
-export const docWithInlineMarks = require('../__fixtures__/documentInlineMarks.json');
-export const inlineDocumentLevelArticle = require('../__fixtures__/inlineDocumentLevelArticle.json');
-export const fieldLevelArticle = require('../__fixtures__/fieldLevelArticle.json');
-export const annotationAndInlineBlocks = require('../__fixtures__/annotationAndInlineBlocks.json');
-export const nestedLanguageFields = require('../__fixtures__/nestedLanguageFields.json');
+export const documentLevelArticle = documentLevelArticleFixture;
+export const docWithInlineMarks = docWithInlineMarksFixture;
+export const inlineDocumentLevelArticle = inlineDocumentLevelArticleFixture;
+export const fieldLevelArticle = fieldLevelArticleFixture;
+export const annotationAndInlineBlocks = annotationAndInlineBlocksFixture;
+export const nestedLanguageFields = nestedLanguageFieldsFixture;
 
 export const getHTMLNode = (serialized: SerializedDocument): Document => {
   const htmlString = serialized.content;

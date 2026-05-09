@@ -21,7 +21,7 @@ export function LocaleSelector({
   locales?: string[];
   customNames?: { [key: string]: string };
   customMapping?: CustomMapping;
-  [key: string]: any;
+  [key: string]: unknown;
 }): React.JSX.Element | null {
   // Get the sorted locales, setLocale, and locale
   const { sortedLocales, setLocale, locale, getLocaleProperties } =

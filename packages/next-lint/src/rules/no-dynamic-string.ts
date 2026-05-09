@@ -7,17 +7,13 @@
  */
 
 import type { Rule } from 'eslint';
+import { getNodeName, isAstNode, isGTModule, isStringLiteral } from './utils';
 
-const GT_MODULES = ['gt-next', 'gt-next/client', 'gt-next/server'];
 const TRANSLATION_FUNCTIONS = ['useGT', 'getGT'];
 
 interface TrackedFunction {
   name: string;
   isTranslationFunction: boolean;
-}
-
-function isGTModule(source: string): boolean {
-  return GT_MODULES.includes(source);
 }
 
 function isTranslationFunction(name: string): boolean {
@@ -70,29 +66,25 @@ export const noDynamicString: Rule.RuleModule = {
       }
     }
 
-    function isStringLiteral(node: any): boolean {
-      return (
-        (node.type === 'Literal' && typeof node.value === 'string') ||
-        (node.type === 'TemplateLiteral' && node.expressions.length === 0) // Template literal with no interpolation
-      );
-    }
-
-    function validateTranslationCall(node: any) {
+    function validateTranslationCall(node: unknown) {
+      if (!isAstNode(node) || !Array.isArray(node.arguments)) return;
       const firstArg = node.arguments[0];
       if (!firstArg) return; // No arguments
 
       if (!isStringLiteral(firstArg)) {
         context.report({
-          node: firstArg,
+          node: firstArg as never,
           messageId: 'dynamicString',
         });
       }
     }
 
-    function handleCallExpression(node: any) {
+    function handleCallExpression(node: unknown) {
+      if (!isAstNode(node) || !isAstNode(node.callee)) return;
       if (node.callee.type === 'Identifier') {
         // Direct function calls: t(), useGT(), etc.
-        const functionName = node.callee.name;
+        const functionName = getNodeName(node.callee);
+        if (!functionName) return;
 
         if (trackedFunctions.has(functionName)) {
           const tracked = trackedFunctions.get(functionName)!;
@@ -105,8 +97,9 @@ export const noDynamicString: Rule.RuleModule = {
         }
       } else if (node.callee.type === 'MemberExpression') {
         // Member expressions: GT.tx(), namespace.function()
-        const objectName = node.callee.object.name;
-        const propertyName = node.callee.property.name;
+        const objectName = getNodeName(node.callee.object);
+        const propertyName = getNodeName(node.callee.property);
+        if (!objectName || !propertyName) return;
 
         if (
           trackedFunctions.has(objectName) &&
@@ -117,99 +110,133 @@ export const noDynamicString: Rule.RuleModule = {
       }
     }
 
-    function handleAssignment(node: any) {
+    function handleAssignment(node: unknown) {
       // Track variables assigned from translation function calls
       if (
+        isAstNode(node) &&
         node.type === 'VariableDeclarator' &&
+        isAstNode(node.id) &&
         node.id.type === 'Identifier' &&
-        node.init
+        isAstNode(node.init)
       ) {
         if (node.init.type === 'CallExpression') {
           const callExpression = node.init;
 
-          if (callExpression.callee.type === 'Identifier') {
-            const functionName = callExpression.callee.name;
+          if (
+            isAstNode(callExpression.callee) &&
+            callExpression.callee.type === 'Identifier'
+          ) {
+            const functionName = getNodeName(callExpression.callee);
+            if (!functionName) return;
             if (trackedFunctions.has(functionName)) {
               const tracked = trackedFunctions.get(functionName)!;
               if (tracked.isTranslationFunction) {
                 // This variable now holds a translation function
-                translationVariables.add(node.id.name);
+                const variableName = getNodeName(node.id);
+                if (variableName) translationVariables.add(variableName);
               }
             }
-          } else if (callExpression.callee.type === 'MemberExpression') {
+          } else if (
+            isAstNode(callExpression.callee) &&
+            callExpression.callee.type === 'MemberExpression'
+          ) {
             // Handle namespace calls like: const t = GT.useGT();
-            const objectName = callExpression.callee.object.name;
-            const propertyName = callExpression.callee.property.name;
+            const objectName = getNodeName(callExpression.callee.object);
+            const propertyName = getNodeName(callExpression.callee.property);
             if (
+              objectName &&
+              propertyName &&
               trackedFunctions.has(objectName) &&
               isTranslationFunction(propertyName)
             ) {
               // This variable now holds a translation function
-              translationVariables.add(node.id.name);
+              const variableName = getNodeName(node.id);
+              if (variableName) translationVariables.add(variableName);
             }
           }
         } else if (
           node.init.type === 'AwaitExpression' &&
+          isAstNode(node.init.argument) &&
           node.init.argument.type === 'CallExpression'
         ) {
           // Handle await getGT() case
           const callExpression = node.init.argument;
 
-          if (callExpression.callee.type === 'Identifier') {
-            const functionName = callExpression.callee.name;
+          if (
+            isAstNode(callExpression.callee) &&
+            callExpression.callee.type === 'Identifier'
+          ) {
+            const functionName = getNodeName(callExpression.callee);
+            if (!functionName) return;
             if (trackedFunctions.has(functionName)) {
               const tracked = trackedFunctions.get(functionName)!;
               if (tracked.isTranslationFunction) {
                 // This variable now holds a translation function (from awaited promise)
-                translationVariables.add(node.id.name);
+                const variableName = getNodeName(node.id);
+                if (variableName) translationVariables.add(variableName);
               }
             }
-          } else if (callExpression.callee.type === 'MemberExpression') {
+          } else if (
+            isAstNode(callExpression.callee) &&
+            callExpression.callee.type === 'MemberExpression'
+          ) {
             // Handle namespace calls like: const t = await GT.getGT();
-            const objectName = callExpression.callee.object.name;
-            const propertyName = callExpression.callee.property.name;
+            const objectName = getNodeName(callExpression.callee.object);
+            const propertyName = getNodeName(callExpression.callee.property);
             if (
+              objectName &&
+              propertyName &&
               trackedFunctions.has(objectName) &&
               isTranslationFunction(propertyName)
             ) {
               // This variable now holds a translation function (from awaited promise)
-              translationVariables.add(node.id.name);
+              const variableName = getNodeName(node.id);
+              if (variableName) translationVariables.add(variableName);
             }
           }
         } else if (node.init.type === 'Identifier') {
           // Handle reassignment: const t = getTranslation;
-          const assignedFrom = node.init.name;
-          if (translationVariables.has(assignedFrom)) {
-            translationVariables.add(node.id.name);
+          const assignedFrom = getNodeName(node.init);
+          if (assignedFrom && translationVariables.has(assignedFrom)) {
+            const variableName = getNodeName(node.id);
+            if (variableName) translationVariables.add(variableName);
           }
         }
       }
     }
 
     return {
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node: unknown) {
+        if (!isAstNode(node) || !isAstNode(node.source)) return;
         const source = node.source.value;
+        if (typeof source !== 'string') return;
         if (!isGTModule(source)) return;
 
-        for (const specifier of node.specifiers) {
+        const specifiers = Array.isArray(node.specifiers)
+          ? node.specifiers
+          : [];
+        for (const specifier of specifiers) {
+          if (!isAstNode(specifier)) continue;
           if (specifier.type === 'ImportSpecifier') {
             // import { useGT, tx as serverTx } from 'gt-next'
-            const importedName = specifier.imported.name;
-            const localName = specifier.local.name;
-            trackImport(localName, importedName, source);
+            const importedName = getNodeName(specifier.imported);
+            const localName = getNodeName(specifier.local);
+            if (importedName && localName) {
+              trackImport(localName, importedName, source);
+            }
           } else if (specifier.type === 'ImportNamespaceSpecifier') {
             // import * as GT from 'gt-next'
-            const localName = specifier.local.name;
-            trackNamespaceImport(localName, source);
+            const localName = getNodeName(specifier.local);
+            if (localName) trackNamespaceImport(localName, source);
           }
         }
       },
 
-      VariableDeclarator(node: any) {
+      VariableDeclarator(node: unknown) {
         handleAssignment(node);
       },
 
-      CallExpression(node: any) {
+      CallExpression(node: unknown) {
         handleCallExpression(node);
       },
     };

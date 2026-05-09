@@ -7,7 +7,7 @@ import {
 } from '../../jsx/utils/parseString.js';
 import type { ParsingConfigOptions } from '../../../types/parsing.js';
 
-const traverse = (traverseModule as any).default || traverseModule;
+const traverse = (traverseModule as unknown).default || traverseModule;
 
 const defaultParsingOptions: ParsingConfigOptions = {
   conditionNames: [],

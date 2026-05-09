@@ -26,8 +26,12 @@ export type GTTag = {
   branches?: Record<string, TaggedChildren>;
   variableType?: VariableTransformationSuffix;
 };
-export type TaggedElementProps = Record<string, any> & {
+export type TaggedElementProps = Record<string, unknown> & {
   'data-_gt': GTTag;
+  children?: TaggedChildren;
+  branch?: string;
+  n?: number;
+  key?: React.Key;
 };
 export type TaggedElement = React.ReactElement<TaggedElementProps>;
 export type TaggedChild =
@@ -94,7 +98,7 @@ export type LocalesDictionary = {
   [locale: string]: DictionaryObject;
 };
 
-export type CustomLoader = (locale: string) => Promise<any>;
+export type CustomLoader = (locale: string) => Promise<unknown>;
 
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 
@@ -105,7 +109,7 @@ export type RelativeTimeFormatOptions = Intl.RelativeTimeFormatOptions & {
 export type VariableProps = {
   /** Whether the variable was automatically injected by the compiler */
   variableType: VariableType;
-  variableValue: any;
+  variableValue: unknown;
   variableOptions:
     | Intl.NumberFormatOptions
     | Intl.DateTimeFormatOptions

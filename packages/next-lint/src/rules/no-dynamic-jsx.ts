@@ -9,14 +9,10 @@
  */
 
 import type { Rule } from 'eslint';
+import { getNodeName, isAstNode, isGTModule, isStringLiteral } from './utils';
 
-const GT_MODULES = ['gt-next', 'gt-next/client', 'gt-next/server'];
 const TRANSLATION_COMPONENTS = ['T'];
 const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Num', 'Currency'];
-
-function isGTModule(source: string): boolean {
-  return GT_MODULES.includes(source);
-}
 
 function isTranslationComponent(name: string): boolean {
   return TRANSLATION_COMPONENTS.includes(name);
@@ -57,19 +53,29 @@ export const noDynamicJsx: Rule.RuleModule = {
       },
     };
 
-    function getElementName(node: any): string | null {
-      const name = node?.openingElement?.name;
-      if (!name) return null;
+    function getElementName(node: unknown): string | null {
+      if (!isAstNode(node) || !isAstNode(node.openingElement)) return null;
+      const name = node.openingElement.name;
+      if (!isAstNode(name)) return null;
 
       if (name.type === 'JSXIdentifier') {
-        return name.name;
+        return getNodeName(name);
       }
 
       if (name.type === 'JSXMemberExpression') {
         const obj = name.object;
         const prop = name.property;
-        if (obj?.type === 'JSXIdentifier' && prop?.type === 'JSXIdentifier') {
-          return `${obj.name}.${prop.name}`;
+        if (
+          isAstNode(obj) &&
+          isAstNode(prop) &&
+          obj.type === 'JSXIdentifier' &&
+          prop.type === 'JSXIdentifier'
+        ) {
+          const objectName = getNodeName(obj);
+          const propertyName = getNodeName(prop);
+          return objectName && propertyName
+            ? `${objectName}.${propertyName}`
+            : null;
         }
       }
 
@@ -100,9 +106,10 @@ export const noDynamicJsx: Rule.RuleModule = {
       return false;
     }
 
-    function isInsideJSXAttribute(node: any): boolean {
+    function isInsideJSXAttribute(node: unknown): boolean {
+      if (!isAstNode(node)) return false;
       // Walk up the AST to check if this expression is inside a JSX attribute
-      let currentNode = node.parent;
+      let currentNode = isAstNode(node.parent) ? node.parent : null;
       while (currentNode) {
         if (currentNode.type === 'JSXAttribute') {
           return true;
@@ -111,35 +118,27 @@ export const noDynamicJsx: Rule.RuleModule = {
         if (currentNode.type === 'JSXElement') {
           return false;
         }
-        currentNode = currentNode.parent;
+        currentNode = isAstNode(currentNode.parent) ? currentNode.parent : null;
       }
       return false;
     }
 
-    // Check if the node is a string literal or template literal
-    function isStringLiteral(expression: any): boolean {
-      // For JSXExpressionContainer, check the expression inside
-      return (
-        (expression.type === 'Literal' &&
-          typeof expression.value === 'string') ||
-        (expression.type === 'TemplateLiteral' &&
-          expression.expressions.length === 0) // No interpolation
-      );
-    }
-
     // Check if the node is a comment
-    function isComment(expression: any): boolean {
+    function isComment(expression: unknown): boolean {
+      if (!isAstNode(expression)) return false;
       return expression.type === 'Block' || expression.type === 'Line';
     }
 
     // Check if empty
-    function isEmpty(expression: any): boolean {
+    function isEmpty(expression: unknown): boolean {
+      if (!isAstNode(expression)) return false;
       return expression.type === 'JSXEmptyExpression';
     }
 
     return {
       // Track imports from GT-Next modules
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node: unknown) {
+        if (!isAstNode(node) || !isAstNode(node.source)) return;
         if (
           node.source?.type === 'Literal' &&
           typeof node.source.value === 'string'
@@ -147,10 +146,14 @@ export const noDynamicJsx: Rule.RuleModule = {
           const source = node.source.value;
 
           if (isGTModule(source)) {
-            for (const specifier of node.specifiers || []) {
+            const specifiers = Array.isArray(node.specifiers)
+              ? node.specifiers
+              : [];
+            for (const specifier of specifiers) {
+              if (!isAstNode(specifier)) continue;
               if (specifier.type === 'ImportSpecifier') {
-                const importedName = specifier.imported?.name || '';
-                const localName = specifier.local?.name || '';
+                const importedName = getNodeName(specifier.imported) || '';
+                const localName = getNodeName(specifier.local) || '';
 
                 if (isTranslationComponent(importedName)) {
                   state.imports.translationComponents.add(localName);
@@ -158,7 +161,7 @@ export const noDynamicJsx: Rule.RuleModule = {
                   state.imports.variableComponents.add(localName);
                 }
               } else if (specifier.type === 'ImportNamespaceSpecifier') {
-                const localName = specifier.local?.name || '';
+                const localName = getNodeName(specifier.local) || '';
                 state.imports.namespaceImports.add(localName);
               }
             }
@@ -167,13 +170,17 @@ export const noDynamicJsx: Rule.RuleModule = {
       },
 
       // Track variable assignments from GT components
-      VariableDeclarator(node: any) {
+      VariableDeclarator(node: unknown) {
         if (
-          node.id?.type === 'Identifier' &&
-          node.init?.type === 'Identifier'
+          isAstNode(node) &&
+          isAstNode(node.id) &&
+          isAstNode(node.init) &&
+          node.id.type === 'Identifier' &&
+          node.init.type === 'Identifier'
         ) {
-          const varName = node.id.name;
-          const assignedFrom = node.init.name;
+          const varName = getNodeName(node.id);
+          const assignedFrom = getNodeName(node.init);
+          if (!varName || !assignedFrom) return;
 
           if (state.imports.translationComponents.has(assignedFrom)) {
             state.imports.assignedTranslationComponents.add(varName);
@@ -184,7 +191,8 @@ export const noDynamicJsx: Rule.RuleModule = {
       },
 
       // Detect unwrapped dynamic content
-      JSXExpressionContainer(node: any) {
+      JSXExpressionContainer(node: unknown) {
+        if (!isAstNode(node)) return;
         // Skip expressions inside JSX attributes (e.g., <Image width={16} />)
         if (isInsideJSXAttribute(node)) {
           return;
@@ -206,7 +214,7 @@ export const noDynamicJsx: Rule.RuleModule = {
         let inVariableComponent = false;
 
         // Walk up the AST to find parent JSX elements
-        let currentNode = node.parent;
+        let currentNode = isAstNode(node.parent) ? node.parent : null;
         while (currentNode) {
           if (currentNode.type === 'JSXElement') {
             const elementName = getElementName(currentNode);
@@ -230,13 +238,15 @@ export const noDynamicJsx: Rule.RuleModule = {
               }
             }
           }
-          currentNode = currentNode.parent;
+          currentNode = isAstNode(currentNode.parent)
+            ? currentNode.parent
+            : null;
         }
 
         // Report if we're inside a translation component but not inside a variable component
         if (inTranslationComponent && !inVariableComponent) {
           context.report({
-            node,
+            node: node as never,
             messageId: 'dynamicJsx',
           });
         }

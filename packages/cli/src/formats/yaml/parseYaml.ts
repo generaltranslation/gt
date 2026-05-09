@@ -15,7 +15,7 @@ export default function parseYaml(
     return { content, fileFormat: 'YAML' };
   }
 
-  let yaml: any;
+  let yaml: unknown;
   try {
     yaml = YAML.parse(content);
   } catch {

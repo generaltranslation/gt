@@ -31,7 +31,7 @@ vi.mock('../../state/mintlifyRefMap.js', () => ({
 
 // Mock validateJsonSchema to return the schema for docs.json
 vi.mock('../../formats/json/utils.js', () => ({
-  validateJsonSchema: (_options: any, filePath: string) => {
+  validateJsonSchema: (_options: unknown, filePath: string) => {
     if (filePath.includes('docs.json')) {
       return {
         resolveRefs: true,
@@ -84,7 +84,7 @@ function makeSettings(overrides: Partial<Settings> = {}): Settings {
   } as Settings;
 }
 
-function getWritten(filePath: string): any {
+function getWritten(filePath: string): unknown {
   const call = mockWrite.mock.calls.find(
     (c) => path.resolve(c[0] as string) === path.resolve(filePath)
   );

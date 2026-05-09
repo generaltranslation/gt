@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { determineLocale, resolveAliasLocale } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { CustomMapping } from 'generaltranslation/types';
@@ -175,7 +176,7 @@ function createSetLocale({
   locales: string[];
   defaultLocale: string;
   localeCookieName: string;
-  _setLocale: any;
+  _setLocale: Dispatch<SetStateAction<string>>;
   customMapping?: CustomMapping;
   enableI18n: boolean;
 }): [(newLocale: string) => void, (newLocale: string) => void] {

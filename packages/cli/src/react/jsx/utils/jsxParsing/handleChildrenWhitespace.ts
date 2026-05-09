@@ -206,7 +206,7 @@ export function handleChildrenWhitespace(
       : Object.fromEntries(
           Object.entries(currentTree.props).map(
             ([key, value]:
-              | [string, any]
+              | [string, unknown]
               | [
                   'children',
                   (
@@ -214,7 +214,7 @@ export function handleChildrenWhitespace(
                     | MultiplicationNode
                     | (JsxTree | MultiplicationNode)[]
                   ),
-                ]): [string, any] => {
+                ]): [string, unknown] => {
               let shouldProcess = false;
               // Process children
               if (key === 'children') shouldProcess = true;
@@ -230,7 +230,21 @@ export function handleChildrenWhitespace(
               if (!shouldProcess) {
                 return [key, value];
               }
-              return [key, handleChildrenWhitespace(value)];
+              const processChild = handleChildrenWhitespace as (
+                currentTree:
+                  | JsxTree
+                  | MultiplicationNode
+                  | (JsxTree | MultiplicationNode)[]
+              ) => unknown;
+              return [
+                key,
+                processChild(
+                  value as
+                    | JsxTree
+                    | MultiplicationNode
+                    | (JsxTree | MultiplicationNode)[]
+                ),
+              ];
             }
           )
         );

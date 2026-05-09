@@ -47,18 +47,22 @@ function T({
   _hash,
   ...options
 }: {
-  children: any;
+  children: React.ReactNode;
   id?: string;
   context?: string;
   _hash?: string;
-  [key: string]: any;
+  $id?: string;
+  $context?: string;
+  $maxChars?: number;
+  [key: string]: unknown;
 }): React.JSX.Element | undefined {
   if (!children) return undefined;
 
   // Compatibility with different options
   id = id ?? options?.$id;
   context = context ?? options?.$context;
-  const maxChars = options?.$maxChars;
+  const maxChars =
+    typeof options?.$maxChars === 'number' ? options.$maxChars : undefined;
 
   const {
     translations,

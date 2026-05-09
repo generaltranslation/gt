@@ -15,6 +15,7 @@ import {
   warnInvalidMaxCharsSync,
 } from '../../console/index.js';
 import { exitSync } from '../../console/logging.js';
+import type { Dictionary, DictionaryEntry } from '../../types/data.js';
 
 export async function createDictionaryUpdates(
   dictionaryPath: string,
@@ -22,11 +23,13 @@ export async function createDictionaryUpdates(
   warnings: string[],
   esbuildConfig?: BuildOptions
 ): Promise<Updates> {
-  let dictionary;
+  let dictionary: Dictionary = {};
   // ---- HANDLE JSON STRING DICTIONARY ----- //
 
   if (dictionaryPath.endsWith('.json')) {
-    dictionary = flattenDictionary(loadJSON(dictionaryPath) || {});
+    dictionary = flattenDictionary(
+      (loadJSON(dictionaryPath) || {}) as Dictionary
+    );
   }
 
   // ----- HANDLE REACT DICTIONARY ---- //
@@ -56,7 +59,7 @@ export async function createDictionaryUpdates(
       await fs.promises.unlink(tempFilePath);
     }
     const unwrappedDictionary = unwrapDictionaryModule(dictionaryModule);
-    dictionary = flattenDictionary(unwrappedDictionary);
+    dictionary = flattenDictionary(unwrappedDictionary as Dictionary);
   }
 
   // ----- CREATE PARTIAL UPDATES ----- //
@@ -67,7 +70,7 @@ export async function createDictionaryUpdates(
     const {
       entry,
       metadata: props, // context, etc.
-    } = getEntryAndMetadata(dictionary[id]);
+    } = getEntryAndMetadata(dictionary[id] as DictionaryEntry);
 
     // Validate ICU
     const { isValid, error } = isValidIcu(entry);
@@ -92,7 +95,7 @@ export async function createDictionaryUpdates(
     // Map $context to context
     const context = props?.$context;
     const maxChars = props?.$maxChars;
-    const metadata: Record<string, any> = {
+    const metadata: Record<string, unknown> = {
       id,
       ...(context && { context }),
       ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
@@ -115,12 +118,13 @@ export async function createDictionaryUpdates(
   return updates;
 }
 
-function unwrapDictionaryModule(mod: any): any {
+function unwrapDictionaryModule(mod: unknown): Dictionary {
   let current = mod;
 
   // Keep unwrapping until we get to the actual dictionary
   while (current && typeof current === 'object') {
-    const keys = Object.keys(current);
+    const currentObject = current as Record<string, unknown>;
+    const keys = Object.keys(currentObject);
 
     // Check if this looks like a module namespace object (has only module-related keys)
     const isModuleNamespace = keys.every(
@@ -132,18 +136,18 @@ function unwrapDictionaryModule(mod: any): any {
     // Only check for named exports if it's NOT a pure module namespace
     const hasNamedDictionary =
       !isModuleNamespace &&
-      'dictionary' in current &&
-      current.dictionary &&
-      typeof current.dictionary === 'object' &&
-      !Array.isArray(current.dictionary);
+      'dictionary' in currentObject &&
+      currentObject.dictionary &&
+      typeof currentObject.dictionary === 'object' &&
+      !Array.isArray(currentObject.dictionary);
 
     if (hasNamedDictionary) {
       // If there's a named 'dictionary' export, use that
-      return current.dictionary;
+      return currentObject.dictionary as Dictionary;
     } else if (isModuleNamespace) {
       // Try to get the default export
-      if ('default' in current) {
-        let result = current.default;
+      if ('default' in currentObject) {
+        let result = currentObject.default;
 
         // If the default export is a function (getter), call it
         if (typeof result === 'function') {
@@ -174,14 +178,14 @@ function unwrapDictionaryModule(mod: any): any {
             continue;
           } else {
             // This is the actual dictionary, return it
-            return result;
+            return result as Dictionary;
           }
         }
       }
 
       // Try module.exports as fallback
-      if ('module.exports' in current) {
-        let result = current['module.exports'];
+      if ('module.exports' in currentObject) {
+        let result = currentObject['module.exports'];
 
         if (typeof result === 'function') {
           try {
@@ -210,7 +214,7 @@ function unwrapDictionaryModule(mod: any): any {
             continue;
           } else {
             // This is the actual dictionary, return it
-            return result;
+            return result as Dictionary;
           }
         }
       }
@@ -223,5 +227,5 @@ function unwrapDictionaryModule(mod: any): any {
     }
   }
 
-  return current || {};
+  return (current || {}) as Dictionary;
 }

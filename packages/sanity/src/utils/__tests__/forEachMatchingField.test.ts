@@ -78,7 +78,7 @@ describe('forEachMatchingField', () => {
 
   test('applies globally when documentId is null', () => {
     const fields: IgnoreFields[] = [
-      { documentId: null as any, fields: [{ property: '$.title' }] },
+      { documentId: null, fields: [{ property: '$.title' }] },
     ];
     const cb = vi.fn();
     forEachMatchingField('doc-1', doc, fields, cb);

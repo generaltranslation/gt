@@ -39,7 +39,7 @@ describe('normalizeCJKCharacters', () => {
       ruleRepetition: 3,
       ruleSpaces: false,
       handlers: {
-        text(node: any) {
+        text(node: unknown) {
           return node.value;
         },
       },
@@ -185,7 +185,7 @@ describe('normalizeCJKCharacters', () => {
           ruleRepetition: 3,
           ruleSpaces: false,
           handlers: {
-            text(node: any) {
+            text(node: unknown) {
               return node.value;
             },
           },

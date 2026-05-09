@@ -27,9 +27,9 @@ function Branch({
   branch,
   ...branches
 }: {
-  children?: any;
+  children?: unknown;
   branch?: string | number | boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }): React.JSX.Element {
   branch = branch?.toString();
   // ignore data-* attributes

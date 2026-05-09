@@ -16,7 +16,7 @@ const ruleTester = new RuleTester({
       },
     },
   },
-} as any);
+} as unknown);
 
 ruleTester.run('no-dynamic-string', noDynamicString, {
   valid: [

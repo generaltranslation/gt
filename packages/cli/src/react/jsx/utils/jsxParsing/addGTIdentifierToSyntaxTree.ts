@@ -26,15 +26,16 @@ import {
  */
 function constructGTProp(
   type: string,
-  props: Record<string, any>,
+  props: Record<string, unknown>,
   id: number
 ): GTProp | undefined {
   // Add translatable HTML content props
   const generaltranslation: GTProp = Object.entries(
     HTML_CONTENT_PROPS
   ).reduce<GTProp>((acc, [minifiedName, fullName]) => {
-    if (props[fullName]) {
-      acc[minifiedName as keyof HtmlContentPropKeysRecord] = props[fullName];
+    const value = props[fullName];
+    if (typeof value === 'string') {
+      acc[minifiedName as keyof HtmlContentPropKeysRecord] = value;
     }
     return acc;
   }, {});
@@ -44,7 +45,10 @@ function constructGTProp(
     const pluralBranches = Object.entries(props).reduce(
       (acc: Record<string, JsxChildren>, [branchName, branch]) => {
         if (isAcceptedPluralForm(branchName)) {
-          acc[branchName] = addGTIdentifierToSyntaxTree(branch, id);
+          acc[branchName] = addGTIdentifierToSyntaxTree(
+            branch as MultipliedTreeNode,
+            id
+          );
         }
         return acc;
       },
@@ -67,7 +71,10 @@ function constructGTProp(
     );
     const resultBranches = Object.entries(branches).reduce(
       (acc: Record<string, JsxChildren>, [branchName, branch]) => {
-        acc[branchName] = addGTIdentifierToSyntaxTree(branch, id);
+        acc[branchName] = addGTIdentifierToSyntaxTree(
+          branch as MultipliedTreeNode,
+          id
+        );
         return acc;
       },
       {}
@@ -143,7 +150,7 @@ export default function addGTIdentifierToSyntaxTree(
       // Construct the data-_gt prop
       const generaltranslation = constructGTProp(
         type as string,
-        (props || {}) as Record<string, any>,
+        (props || {}) as Record<string, unknown>,
         indexObject.index
       );
 

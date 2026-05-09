@@ -10,7 +10,7 @@ import { ParsingConfig, ParsingOutput } from '../../types.js';
 import { Updates } from '../../../../../../types/index.js';
 
 // Handle CommonJS/ESM interop
-const traverse = (traverseModule as any).default || traverseModule;
+const traverse = (traverseModule as unknown).default || traverseModule;
 
 const FILE_PATH = 'test.tsx';
 const tempFiles: string[] = [];

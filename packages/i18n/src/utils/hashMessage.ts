@@ -11,19 +11,24 @@ export function hashMessage<T extends Translation>(
   message: T,
   options: LookupOptions
 ): string {
-  if (options.$_hash != null) {
-    return options.$_hash;
+  const metadataOptions = options as {
+    $_hash?: string;
+    $context?: string;
+    $id?: string;
+    $maxChars?: number;
+  };
+  if (metadataOptions.$_hash != null) {
+    return metadataOptions.$_hash;
   }
 
   return hashSource({
     source:
       options.$format === 'ICU' ? indexVars(message as IcuMessage) : message,
-    ...(options?.$context && { context: options.$context }),
-    ...(options?.$id && { id: options.$id }),
-    ...('$maxChars' in options &&
-      options.$maxChars != null && {
-        maxChars: Math.abs(options.$maxChars),
-      }),
+    ...(metadataOptions.$context && { context: metadataOptions.$context }),
+    ...(metadataOptions.$id && { id: metadataOptions.$id }),
+    ...(metadataOptions.$maxChars != null && {
+      maxChars: Math.abs(metadataOptions.$maxChars),
+    }),
     dataFormat: options.$format,
   });
 }

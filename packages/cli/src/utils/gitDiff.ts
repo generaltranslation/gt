@@ -3,6 +3,11 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
+type ExecFileError = Error & {
+  code?: number;
+  stdout?: string;
+};
+
 /**
  * Returns a unified diff using the system's git, comparing two paths even if not in a repo.
  * Uses `git diff --no-index` so neither path needs to be tracked by git.
@@ -32,10 +37,11 @@ export async function getGitUnifiedDiff(
       }
     );
     return res.stdout || '';
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Exit code 1 means differences found; stdout contains the diff
-    if (error && error.code === 1 && typeof error.stdout === 'string') {
-      return error.stdout as string;
+    const execError = error as ExecFileError;
+    if (execError.code === 1 && typeof execError.stdout === 'string') {
+      return execError.stdout;
     }
     throw error;
   }

@@ -17,7 +17,7 @@ export default function LocaleSelector({
   locales?: string[];
   customNames?: { [key: string]: string };
   customMapping?: CustomMapping;
-  [key: string]: any;
+  [key: string]: unknown;
 }): React.JSX.Element | null {
   // Get locale selector properties
   const { locale, locales, setLocale, getLocaleProperties } =
