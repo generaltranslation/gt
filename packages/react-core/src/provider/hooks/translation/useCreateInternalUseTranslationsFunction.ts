@@ -24,7 +24,7 @@ import {
   VAR_IDENTIFIER,
   condenseVars,
 } from 'generaltranslation/internal';
-import { StringFormat } from 'generaltranslation/types';
+import type { StringFormat } from '@generaltranslation/format/types';
 
 export default function useCreateInternalUseTranslationsFunction(
   gt: GT,

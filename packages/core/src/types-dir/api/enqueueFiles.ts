@@ -1,4 +1,4 @@
-import { DataFormat, JsxChildren } from '../jsx/content';
+import type { DataFormat, JsxChildren } from '@generaltranslation/format/types';
 
 type UpdateMetadata = {
   id?: string;

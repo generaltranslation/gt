@@ -1,6 +1,6 @@
 // ---- ERRORS ---- //
 
-import { getLocaleProperties } from 'generaltranslation';
+import { getLocaleProperties } from '@generaltranslation/format';
 import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 
 export const remoteTranslationsError =

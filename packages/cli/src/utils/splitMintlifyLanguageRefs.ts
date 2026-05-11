@@ -6,7 +6,7 @@ import type { RefMap } from './resolveMintlifyRefs.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
 import { getStoredRefMap, clearStoredRefMap } from '../state/mintlifyRefMap.js';
 import { JSONPath } from 'jsonpath-plus';
-import { getLocaleProperties } from 'generaltranslation';
+import { getLocaleProperties } from '@generaltranslation/format';
 
 type JsonContainer = Record<string, unknown> | unknown[];
 

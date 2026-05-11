@@ -44,6 +44,7 @@
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@types/node": "catalog:",
+    "intl-messageformat": "^10.7.16",
     "tsdown": "catalog:",
     "typescript": "catalog:"
   },
@@ -53,8 +54,7 @@
   "dependencies": {
     "@formatjs/icu-messageformat-parser": "^2.11.4",
     "@noble/hashes": "^2.2.0",
-    "@generaltranslation/format": "workspace:*",
-    "intl-messageformat": "^10.7.16"
+    "@generaltranslation/format": "workspace:*"
   },
   "exports": {
     ".": {

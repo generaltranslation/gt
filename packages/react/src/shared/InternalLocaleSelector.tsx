@@ -1,5 +1,8 @@
 import React from 'react';
-import { CustomMapping, LocaleProperties } from 'generaltranslation/types';
+import type {
+  CustomMapping,
+  LocaleProperties,
+} from '@generaltranslation/format/types';
 
 /**
  * Capitalizes the first letter of a string if applicable.

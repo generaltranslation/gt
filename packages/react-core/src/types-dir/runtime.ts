@@ -1,4 +1,4 @@
-import { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import { TranslatedChildren } from './types';
 
 export type TranslateIcuCallback = (params: {

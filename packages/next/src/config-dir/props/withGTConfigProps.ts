@@ -1,4 +1,4 @@
-import { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import { RenderMethod } from 'gt-react/internal';
 
 export type HeadersAndCookies = {

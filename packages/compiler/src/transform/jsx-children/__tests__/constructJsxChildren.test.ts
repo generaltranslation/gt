@@ -9,7 +9,7 @@ import { Logger } from '../../../state/Logger';
 import { ErrorTracker } from '../../../state/ErrorTracker';
 import { stripTField } from './stripTField';
 import { hashSource } from 'generaltranslation/id';
-import { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import { ScopeTracker } from '../../../state/ScopeTracker';
 import { PluginSettings } from '../../../config';
 

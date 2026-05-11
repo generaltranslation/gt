@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createNextMiddleware } from '../createNextMiddleware';
 import type { PathConfig } from '../utils';
-import type { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 
 // Mock gt-react/internal — only provides a constant, avoids deep react-core build chain
 vi.mock('gt-react/internal', () => ({

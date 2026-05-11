@@ -1,4 +1,4 @@
-import { LocaleProperties } from 'generaltranslation/types';
+import type { LocaleProperties } from '@generaltranslation/format/types';
 import useGTContext from '../provider/GTContext';
 
 /**

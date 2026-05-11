@@ -10,7 +10,7 @@ import {
   EntryMetadata,
 } from '../types-dir/api/entry';
 import apiRequest from './utils/apiRequest';
-import { Content } from '../types-dir/jsx/content';
+import type { Content } from '@generaltranslation/format/types';
 import { hashSource } from '../id';
 
 /**

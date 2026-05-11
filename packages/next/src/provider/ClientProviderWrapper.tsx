@@ -3,7 +3,8 @@ import { ClientProvider } from 'gt-react/client';
 import { ClientProviderProps } from 'gt-react/internal';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useMemo } from 'react';
-import { GT, standardizeLocale } from 'generaltranslation';
+import { standardizeLocale } from '@generaltranslation/format';
+import { GT } from 'generaltranslation';
 import { useRouter } from 'next/navigation';
 
 function extractLocale(pathname: string, gt: GT): string | null {

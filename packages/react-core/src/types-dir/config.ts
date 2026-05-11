@@ -1,7 +1,7 @@
 import React from 'react';
 import { RenderMethod } from './types';
 import { Dictionary, Translations, CustomLoader } from './types';
-import { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 
 // Special overriden function types
 import { AuthFromEnvParams, AuthFromEnvReturn } from '../utils/types';

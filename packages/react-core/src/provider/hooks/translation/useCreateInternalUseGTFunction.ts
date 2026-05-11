@@ -5,7 +5,7 @@ import {
   _Messages,
   _Message,
 } from '../../../types-dir/types';
-import { StringFormat } from 'generaltranslation/types';
+import type { StringFormat } from '@generaltranslation/format/types';
 import { TranslateIcuCallback } from '../../../types-dir/runtime';
 import { GT } from 'generaltranslation';
 import {

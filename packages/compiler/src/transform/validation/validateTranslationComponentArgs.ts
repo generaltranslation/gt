@@ -4,7 +4,7 @@ import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
 import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { validateExpressionIsStringLiteral } from '../../utils/validation/validateExpressionIsStringLiteral';
-import { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import { constructJsxChildren } from '../jsx-children';
 import { validateChildrenPropertyFromObjectExpression } from '../../utils/validation/validateChildrenFromObjectExpression';
 import { validateExpressionIsNumericLiteral } from '../../utils/validation/validateExpressionIsNumericLiteral';

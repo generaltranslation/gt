@@ -17,9 +17,10 @@
     "./dist/server.*"
   ],
   "dependencies": {
-    "@generaltranslation/supported-locales": "workspace:*",
     "@generaltranslation/compiler": "workspace:*",
+    "@generaltranslation/format": "workspace:*",
     "@generaltranslation/next-internal": "workspace:*",
+    "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-react": "workspace:*",
     "gt-i18n": "workspace:*"

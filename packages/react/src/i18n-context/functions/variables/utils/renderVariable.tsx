@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { GtInternalNum, Num as GtExternalNum } from '../GtInternalNum';
 import { Var as GtExternalVar } from '../GtInternalVar';
 import { computeVar } from './computeVar';
@@ -10,7 +11,6 @@ import {
   DateTime as GtExternalDateTime,
 } from '../GtInternalDateTime';
 import { RenderVariable } from '@generaltranslation/react-core/types';
-import type { ReactNode } from 'react';
 
 /**
  * Custom override for the renderVariable function

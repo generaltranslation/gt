@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { determineLocale, GT } from 'generaltranslation';
+import { determineLocale } from '@generaltranslation/format';
+import { GT } from 'generaltranslation';
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,

@@ -2,14 +2,23 @@ import { getI18NConfig } from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
 import { hashSource } from 'generaltranslation/id';
-import { RuntimeTranslationOptions } from 'gt-react/internal';
 import {
   extractVars,
   condenseVars,
   indexVars,
   VAR_IDENTIFIER,
 } from 'generaltranslation/internal';
-import { FormatVariables, StringFormat } from 'generaltranslation/types';
+import type {
+  FormatVariables,
+  StringFormat,
+} from '@generaltranslation/format/types';
+
+type TxOptions = FormatVariables & {
+  $locale?: string;
+  $context?: string;
+  $maxChars?: number;
+  $format?: StringFormat;
+};
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -46,9 +55,7 @@ import { FormatVariables, StringFormat } from 'generaltranslation/types';
  */
 export async function tx(
   message: string,
-  options: Omit<RuntimeTranslationOptions, '$format'> & {
-    $format?: StringFormat;
-  } = {}
+  options: TxOptions = {}
 ): Promise<string> {
   if (!message || typeof message !== 'string') return '';
 

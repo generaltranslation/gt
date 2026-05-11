@@ -1,4 +1,4 @@
-import { LocaleProperties } from 'generaltranslation/types';
+import type { LocaleProperties } from '@generaltranslation/format/types';
 
 // helper function to replace locale placeholders in a string
 // with the corresponding locale properties

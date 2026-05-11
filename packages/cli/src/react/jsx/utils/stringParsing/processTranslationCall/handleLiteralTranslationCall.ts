@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import type { DataFormat } from 'generaltranslation/types';
+import type { DataFormat } from '@generaltranslation/format/types';
 import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { isValidIcu } from '../../../evaluateJsx.js';

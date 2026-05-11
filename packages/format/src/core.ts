@@ -143,8 +143,8 @@ export function formatMessage(
  */
 export function formatNum(
   number: number,
-  options?: {
-    locales?: string | string[];
+  options: {
+    locales: string | string[];
   } & Intl.NumberFormatOptions
 ): string {
   return _formatNum({
@@ -187,8 +187,8 @@ export function formatDateTime(
 export function formatCurrency(
   value: number,
   currency: string,
-  options?: {
-    locales?: string | string[];
+  options: {
+    locales: string | string[];
   } & Intl.NumberFormatOptions
 ): string {
   return _formatCurrency({
@@ -209,8 +209,8 @@ export function formatCurrency(
  */
 export function formatList(
   array: Array<string | number>,
-  options?: {
-    locales?: string | string[];
+  options: {
+    locales: string | string[];
   } & Intl.ListFormatOptions
 ): string {
   return _formatList({
@@ -253,8 +253,8 @@ export function formatListToParts<T>(
 export function formatRelativeTime(
   value: number,
   unit: Intl.RelativeTimeFormatUnit,
-  options?: {
-    locales?: string | string[];
+  options: {
+    locales: string | string[];
   } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
 ): string {
   return _formatRelativeTime({
@@ -275,8 +275,8 @@ export function formatRelativeTime(
  */
 export function formatRelativeTimeFromDate(
   date: Date,
-  options?: {
-    locales?: string | string[];
+  options: {
+    locales: string | string[];
     baseDate?: Date;
   } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
 ): string {

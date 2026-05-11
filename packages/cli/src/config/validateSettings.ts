@@ -1,4 +1,4 @@
-import { isValidLocale, isSupersetLocale } from 'generaltranslation';
+import { isValidLocale, isSupersetLocale } from '@generaltranslation/format';
 import { Settings } from '../types/index.js';
 import { logErrorAndExit } from '../console/logging.js';
 import fs from 'node:fs';

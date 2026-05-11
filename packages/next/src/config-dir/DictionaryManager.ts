@@ -1,4 +1,4 @@
-import { standardizeLocale } from 'generaltranslation';
+import { standardizeLocale } from '@generaltranslation/format';
 import { Dictionary } from 'gt-react/internal';
 import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
 import { customLoadDictionaryWarning } from '../errors/createErrors';
