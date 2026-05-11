@@ -1,6 +1,6 @@
 {
   "name": "gt-format",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Locale and formatting utilities for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
