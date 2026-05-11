@@ -45,9 +45,15 @@ export default function renderDefaultChildren({
           ? handleChildren(child.props.children)
           : null;
       }
+      const resolvedBranch = getPluralBranch(
+        child.props.n,
+        [defaultLocale],
+        branches
+      );
       return handleChildren(
-        (getPluralBranch(child.props.n, [defaultLocale], branches) ||
-          child.props.children) as TaggedChildren
+        (resolvedBranch !== null
+          ? resolvedBranch
+          : child.props.children) as TaggedChildren
       );
     }
 

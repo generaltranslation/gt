@@ -61,12 +61,15 @@ function renderTranslatedElement({
       });
     }
     const sourceBranches = sourceGT.branches || {};
+    const resolvedSourceBranch = getPluralBranch(n, locales, sourceBranches);
     const sourceBranch =
-      getPluralBranch(n, locales, sourceBranches) ||
-      sourceElement.props.children;
+      resolvedSourceBranch !== null
+        ? resolvedSourceBranch
+        : sourceElement.props.children;
     const targetBranches = targetElement.d?.b || {};
+    const resolvedTargetBranch = getPluralBranch(n, locales, targetBranches);
     const targetBranch =
-      getPluralBranch(n, locales, targetBranches) || targetElement.c;
+      resolvedTargetBranch !== null ? resolvedTargetBranch : targetElement.c;
     return renderTranslatedChildren({
       source: sourceBranch as TaggedChildren,
       target: targetBranch as TranslatedChildren,
