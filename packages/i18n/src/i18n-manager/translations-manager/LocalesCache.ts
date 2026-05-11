@@ -1,14 +1,14 @@
-import { Cache } from './Cache';
-import { Hash, TranslationKey, TranslationsCache } from './TranslationsCache';
-import type { TranslationBatchConfig } from './TranslationsCache';
-import { Translation } from './utils/types/translation-data';
-import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
-import { CreateTranslateMany } from './utils/createTranslateMany';
+import { Cache } from "./Cache";
+import { Hash, TranslationKey, TranslationsCache } from "./TranslationsCache";
+import type { TranslationBatchConfig } from "./TranslationsCache";
+import { Translation } from "./utils/types/translation-data";
+import { DEFAULT_CACHE_EXPIRY_TIME } from "./utils/constants";
+import { CreateTranslateMany } from "./utils/createTranslateMany";
 import type {
   LifecycleParam,
   LocalesCacheLifecycleCallbacks,
   TranslationsCacheLifecycleCallback,
-} from '../lifecycle-hooks/types';
+} from "../lifecycle-hooks/types";
 
 /**
  * Just being explicit about the purpose of this type
@@ -32,7 +32,7 @@ export type CacheEntry<TranslationValue extends Translation> = {
  * TODO: rename this because we are no longer doing try/catch around the translation loader
  */
 export type SafeTranslationsLoader<TranslationValue extends Translation> = (
-  locale: string
+  locale: string,
 ) => Promise<Record<Hash, TranslationValue>>;
 
 /**
@@ -42,7 +42,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
   Locale,
   Locale,
   CacheEntry<TranslationValue>,
-  CacheEntry<TranslationValue>['translationsCache']
+  CacheEntry<TranslationValue>["translationsCache"]
 > {
   /**
    * Translation loader function
@@ -81,6 +81,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
     batchConfig,
     loadTranslations,
     createTranslateMany,
+    initialTranslations,
     lifecycle: {
       onLocalesCacheHit: onHit,
       onLocalesCacheMiss: onMiss,
@@ -90,6 +91,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
   }: {
     init?: Record<string, CacheEntry<TranslationValue>>;
     ttl?: number | null;
+    initialTranslations?: Record<Locale, Record<Hash, TranslationValue>>;
     batchConfig?: TranslationBatchConfig;
     createTranslateMany: CreateTranslateMany;
     loadTranslations: SafeTranslationsLoader<TranslationValue>;
@@ -105,6 +107,13 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
     this._batchConfig = batchConfig;
     this._onTranslationsCacheHit = onTranslationsCacheHit;
     this._onTranslationsCacheMiss = onTranslationsCacheMiss;
+
+    // Populate the cache with the initial translations
+    for (const [locale, translations] of Object.entries(
+      initialTranslations ?? {},
+    )) {
+      this.setCache(locale, this._createCacheEntry(locale, translations));
+    }
   }
 
   /**
@@ -113,8 +122,8 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    * @returns The translations
    */
   public get(
-    key: Locale
-  ): CacheEntry<TranslationValue>['translationsCache'] | undefined {
+    key: Locale,
+  ): CacheEntry<TranslationValue>["translationsCache"] | undefined {
     // Get the cache entry
     const entry = this.getCache(key);
     if (!entry || (entry.expiresAt > 0 && entry.expiresAt < Date.now())) {
@@ -141,8 +150,8 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    * @returns The translations cache
    */
   public async miss(
-    key: Locale
-  ): Promise<CacheEntry<TranslationValue>['translationsCache']> {
+    key: Locale,
+  ): Promise<CacheEntry<TranslationValue>["translationsCache"]> {
     // Miss the cache
     const cacheValue = await this.missCache(key);
 
@@ -177,17 +186,30 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    * @returns The cache entry
    */
   protected async fallback(
-    locale: Locale
+    locale: Locale,
   ): Promise<CacheEntry<TranslationValue>> {
-    // Fetch translations
-    const translationsPromise = this._translationLoader(locale);
+    const translations = await this._translationLoader(locale);
+    return this._createCacheEntry(locale, translations);
+  }
 
+  // ===== PRIVATE METHODS ===== //
+
+  /**
+   * Create the cache entry for a given locale
+   * @param locale - The locale
+   * @param initialTranslations - The initial translations
+   * @returns The cache entry
+   */
+  private _createCacheEntry(
+    locale: Locale,
+    initialTranslations: Record<Hash, TranslationValue>,
+  ): CacheEntry<TranslationValue> {
     // Get cache expiry time
     const expiresAt = this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
 
     // Cache the promise and expiry timestamp
     const translationsCache = new TranslationsCache<TranslationValue>({
-      init: await translationsPromise,
+      init: initialTranslations,
       lifecycle: this._createTranslationsCacheLifecycle(locale),
       translateMany: this._createTranslateMany(locale),
       batchConfig: this._batchConfig,
@@ -196,15 +218,13 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
     return { translationsCache, expiresAt };
   }
 
-  // ===== PRIVATE METHODS ===== //
-
   /**
    * Create the translations cache lifecycle
    * @param locale - The locale
    * @returns The translations cache lifecycle
    */
   private _createTranslationsCacheLifecycle(
-    locale: Locale
+    locale: Locale,
   ): LifecycleParam<
     TranslationKey<TranslationValue>,
     Hash,
