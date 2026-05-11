@@ -3,8 +3,8 @@ import {
   requiresTranslation,
   isSameLanguage,
   isValidLocale,
-} from 'generaltranslation';
-import { CustomMapping } from 'generaltranslation/types';
+} from '@generaltranslation/format';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import {
   invalidCanonicalLocalesError,
   invalidLocalesError,

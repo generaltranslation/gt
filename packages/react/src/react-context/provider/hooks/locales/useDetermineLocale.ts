@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { determineLocale, resolveAliasLocale } from 'generaltranslation';
+import {
+  determineLocale,
+  resolveAliasLocale,
+} from '@generaltranslation/format';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocaleWarning } from '@generaltranslation/react-core/errors';
 import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
-import { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import {
   UseDetermineLocaleParams,
   UseDetermineLocaleReturn,

@@ -1,4 +1,5 @@
-import { CustomMapping, FileFormat } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
+import type { FileFormat } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
   ParsingConfigOptions,

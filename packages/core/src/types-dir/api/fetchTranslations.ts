@@ -1,4 +1,4 @@
-import type { Content } from '../jsx/content';
+import type { Content } from '@generaltranslation/format/types';
 
 // Types for the fetchTranslations function
 export type FetchTranslationsOptions = {

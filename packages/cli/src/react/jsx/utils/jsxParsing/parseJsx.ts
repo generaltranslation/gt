@@ -21,7 +21,7 @@ import {
   warnDeriveNonConstVariableSync,
   warnDeriveDestructuringSync,
 } from '../../../../console/index.js';
-import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
+import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
   DATA_ATTR_PREFIX,
@@ -31,7 +31,11 @@ import {
   INTERNAL_TRANSLATION_COMPONENT,
   VARIABLE_COMPONENTS,
 } from '../constants.js';
-import { Metadata, HTML_CONTENT_PROPS } from 'generaltranslation/types';
+import {
+  HTML_CONTENT_PROPS,
+  type JsxChildren,
+} from '@generaltranslation/format/types';
+import type { Metadata } from 'generaltranslation/types';
 import { NodePath } from '@babel/traverse';
 import { ParsingConfigOptions } from '../../../../types/parsing.js';
 import { resolveImportPath } from '../resolveImportPath.js';

@@ -9,7 +9,7 @@ import { getI18NConfig } from './config-dir/getI18NConfig';
 import { getTranslations } from './server-dir/buildtime/getTranslations';
 import { GTProvider } from './provider/GTProvider';
 import { Tx } from './server-dir/runtime/_Tx';
-import { LocaleProperties } from 'generaltranslation/types';
+import type { LocaleProperties } from '@generaltranslation/format/types';
 import { getLocaleDirection } from './request/getLocaleDirection';
 import {
   getMessages,

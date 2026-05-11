@@ -1,4 +1,4 @@
-import { isSameDialect, standardizeLocale } from 'generaltranslation';
+import { isSameDialect, standardizeLocale } from '@generaltranslation/format';
 import { GT } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
@@ -20,7 +20,7 @@ import {
   ResponseConfig,
 } from './utils';
 import { defaultLocaleHeaderName } from '../utils/headers';
-import type { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import type { HeadersAndCookies } from '../config-dir/props/withGTConfigProps';
 
 const NEXT_JS_SOURCE_MAP_PATH = '/__nextjs_source-map';

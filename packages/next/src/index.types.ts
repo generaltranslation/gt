@@ -25,7 +25,7 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-import type { StringFormat } from 'generaltranslation/types';
+import type { StringFormat } from '@generaltranslation/format/types';
 import {
   msg,
   decodeMsg,

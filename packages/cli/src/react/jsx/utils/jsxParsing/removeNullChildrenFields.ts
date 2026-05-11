@@ -1,4 +1,8 @@
-import { GTProp, JsxChild, JsxChildren } from 'generaltranslation/types';
+import type {
+  GTProp,
+  JsxChild,
+  JsxChildren,
+} from '@generaltranslation/format/types';
 
 import { isVariable } from 'generaltranslation/internal';
 

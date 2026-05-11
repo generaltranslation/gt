@@ -1,4 +1,4 @@
-import { DataFormat } from '../types-dir/jsx/content';
+import type { DataFormat } from '@generaltranslation/format/types';
 
 export type HashMetadata = {
   context?: string;

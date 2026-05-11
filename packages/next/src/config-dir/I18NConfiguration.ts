@@ -18,7 +18,7 @@ import {
   defaultResetLocaleCookieName,
 } from '../utils/cookies';
 import { defaultLocaleHeaderName } from '../utils/headers';
-import type { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import { I18nManager } from 'gt-i18n/internal';
 import type { LookupOptions } from 'gt-i18n/internal/types';
 import { loadTranslations } from './loadTranslation';

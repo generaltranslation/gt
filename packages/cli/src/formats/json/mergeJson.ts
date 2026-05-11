@@ -9,7 +9,7 @@ import {
   getSourceObjectOptionsArray,
   validateJsonSchema,
 } from './utils.js';
-import { getLocaleProperties } from 'generaltranslation';
+import { getLocaleProperties } from '@generaltranslation/format';
 import { replaceLocalePlaceholders } from '../utils.js';
 import { gt } from '../../utils/gt.js';
 import {

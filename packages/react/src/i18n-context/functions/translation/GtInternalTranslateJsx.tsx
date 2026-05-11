@@ -11,9 +11,9 @@ import {
   renderTranslatedChildren,
 } from '@generaltranslation/react-core/internal';
 import { renderVariable } from '../variables/utils/renderVariable';
-import { requiresTranslation } from 'generaltranslation';
+import { requiresTranslation } from '@generaltranslation/format';
 import { getDefaultLocale, getLocale } from '../locale-operations';
-import type { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import type { TaggedChildren } from '@generaltranslation/react-core/types';
 import { getBrowserI18nManager } from '../../browser-i18n-manager/singleton-operations';
 

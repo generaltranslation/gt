@@ -1,6 +1,6 @@
 import { getLocale, resolveJsxWithRuntimeFallback } from 'gt-i18n/internal';
 import type { JsxTranslationOptions } from 'gt-i18n/types';
-import type { JsxChildren } from 'generaltranslation/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 
 type RuntimeJsxTranslationOptions = JsxTranslationOptions & {
   $locale?: string;

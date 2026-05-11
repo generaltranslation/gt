@@ -1,4 +1,4 @@
-import { DataFormat } from '../jsx/content';
+import type { DataFormat } from '@generaltranslation/format/types';
 import { Updates } from './enqueueFiles';
 import type { JsonObject } from './json';
 

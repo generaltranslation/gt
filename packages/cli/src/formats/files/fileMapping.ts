@@ -7,7 +7,7 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../files/supportedFiles.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import path from 'node:path';
 import { getRelative } from '../../fs/findFilepath.js';
-import { getLocaleProperties } from 'generaltranslation';
+import { getLocaleProperties } from '@generaltranslation/format';
 import { replaceLocalePlaceholders } from '../utils.js';
 import { FileMapping } from '../../types/files.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';

@@ -1,4 +1,4 @@
-import { VariableType } from 'generaltranslation/types';
+import type { VariableType } from '@generaltranslation/format/types';
 
 /**
  * These are the names of the variable components as they appear in gt-next and gt-react

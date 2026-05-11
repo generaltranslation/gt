@@ -1,10 +1,10 @@
+import type { ReactNode } from 'react';
 import { Num } from '../../variables/Num';
 import { Var } from '../../variables/Var';
 import { Currency } from '../../variables/Currency';
 import { DateTime } from '../../variables/DateTime';
 import { RelativeTime } from '../../variables/RelativeTime';
 import { RenderVariable } from 'gt-react/internal';
-import type { ReactNode } from 'react';
 
 export const renderVariable: RenderVariable = ({
   variableType,

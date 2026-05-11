@@ -1,9 +1,11 @@
-import {
+import type {
   Variable,
-  VariableTransformationSuffix,
-  TransformationPrefix,
   GTProp,
   VariableType,
+} from '@generaltranslation/format/types';
+import type {
+  VariableTransformationSuffix,
+  TransformationPrefix,
   InjectionType,
 } from 'generaltranslation/types';
 import React from 'react';

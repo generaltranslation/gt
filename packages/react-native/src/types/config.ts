@@ -5,7 +5,7 @@ import type {
   CustomLoader,
   GTConfig,
 } from '@generaltranslation/react-core/types';
-import type { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 
 export type GTProviderProps = {
   children?: React.ReactNode;

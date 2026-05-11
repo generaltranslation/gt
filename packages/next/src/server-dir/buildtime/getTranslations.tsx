@@ -39,7 +39,10 @@ import {
   VAR_IDENTIFIER,
   indexVars,
 } from 'generaltranslation/internal';
-import { FormatVariables, StringFormat } from 'generaltranslation/types';
+import type {
+  FormatVariables,
+  StringFormat,
+} from '@generaltranslation/format/types';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.

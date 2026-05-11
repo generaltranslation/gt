@@ -14,7 +14,7 @@ import {
   TranslateIcuCallback,
   TranslateChildrenCallback,
 } from '../../types-dir/runtime';
-import { JsxChildren } from 'generaltranslation/internal';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import {
   maxConcurrentRequests,
   maxBatchSize,

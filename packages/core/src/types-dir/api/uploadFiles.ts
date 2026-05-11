@@ -1,4 +1,4 @@
-import { DataFormat } from '../jsx/content';
+import type { DataFormat } from '@generaltranslation/format/types';
 import { FileFormat, FileReference, type FormatMetadata } from './file';
 
 /**

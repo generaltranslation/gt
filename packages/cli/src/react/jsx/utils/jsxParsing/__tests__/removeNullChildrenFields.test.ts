@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { removeNullChildrenFields } from '../removeNullChildrenFields.js';
-import type { JsxChildren, JsxElement } from 'generaltranslation/types';
+import type { JsxChildren, JsxElement } from '@generaltranslation/format/types';
 
 describe('removeNullChildrenFields', () => {
   describe('string children', () => {

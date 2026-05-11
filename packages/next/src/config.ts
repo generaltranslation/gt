@@ -25,7 +25,7 @@ import {
   getLocaleProperties,
   isValidLocale,
   standardizeLocale,
-} from 'generaltranslation';
+} from '@generaltranslation/format';
 import {
   rootParamStability,
   turboConfigStable,

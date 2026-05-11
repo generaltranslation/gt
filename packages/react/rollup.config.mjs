@@ -7,8 +7,9 @@ const baseConfig = createReactRollupBaseConfig({
   external: [
     'react',
     'react-dom',
+    '@generaltranslation/format',
+    '@generaltranslation/format/types',
     'generaltranslation',
-    'generaltranslation/core',
     '@generaltranslation/supported-locales',
     '@generaltranslation/react-core',
   ],

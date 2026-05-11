@@ -17,7 +17,8 @@ import {
 import { InternalGTProviderProps } from '../types-dir/config';
 import { useLocaleState } from './hooks/locales/useLocaleState';
 import { useErrorChecks } from './hooks/useErrorChecks';
-import { GT, resolveAliasLocale } from 'generaltranslation';
+import { resolveAliasLocale } from '@generaltranslation/format';
+import { GT } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
 import { useCreateInternalUseTranslationsObjFunction } from './hooks/translation/useCreateInternalUseTranslationsObjFunction';

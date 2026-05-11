@@ -1,4 +1,4 @@
-import { Variable } from 'generaltranslation/types';
+import type { Variable } from '@generaltranslation/format/types';
 
 export default function isVariableObject(obj: unknown): obj is Variable {
   const variableObj = obj as Variable;

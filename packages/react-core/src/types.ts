@@ -36,7 +36,7 @@ import {
 } from './provider/hooks/types';
 import { LocaleSelectorProps, RegionSelectorProps } from './ui/types';
 
-import { GTProp } from 'generaltranslation/types';
+import type { GTProp } from '@generaltranslation/format/types';
 
 import { InternalGTProviderProps, GTConfig } from './types-dir/config';
 

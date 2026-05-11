@@ -2,14 +2,15 @@ import {
   GTProp,
   HtmlContentPropKeysRecord,
   HTML_CONTENT_PROPS,
+  JsxChild,
   JsxChildren,
-} from 'generaltranslation/types';
+} from '@generaltranslation/format/types';
 import {
   defaultVariableNames,
   getVariableName,
   minifyVariableType,
 } from '../../../utils/getVariableName.js';
-import { isAcceptedPluralForm, JsxChild } from 'generaltranslation/internal';
+import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { MultipliedTreeNode } from './types.js';
 import {
   DATA_ATTR_PREFIX,

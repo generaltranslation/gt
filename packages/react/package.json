@@ -18,6 +18,7 @@
     "react-dom": ">=16.8.0"
   },
   "dependencies": {
+    "@generaltranslation/format": "workspace:*",
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*",
     "@generaltranslation/react-core": "workspace:*",

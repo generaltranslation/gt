@@ -2,7 +2,7 @@ import { VAR_IDENTIFIER } from './utils/constants';
 import { traverseIcu } from './utils/traverseIcu';
 import { GTUnindexedSelectElement } from './utils/types';
 import { isGTUnindexedSelectElement } from './utils/traverseHelpers';
-import { IcuMessage } from '../types-dir/jsx/content';
+import type { IcuMessage } from '@generaltranslation/format/types';
 
 type Location = {
   start: number;

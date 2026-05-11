@@ -6,7 +6,7 @@ import {
 import { customLoadDictionaryWarning } from '../errors/createErrors';
 import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
 import { defaultWithGTConfigProps } from '../config-dir/props/defaultWithGTConfigProps';
-import { getLocaleProperties } from 'generaltranslation';
+import { getLocaleProperties } from '@generaltranslation/format';
 
 export let internalDictionary: Dictionary | undefined = undefined;
 

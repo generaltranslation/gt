@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import hashSource from '../calculateHash';
-import { DataFormat } from 'generaltranslation/types';
+import type { DataFormat } from '@generaltranslation/format/types';
 
 // Mock the generaltranslation/id module
 vi.mock('generaltranslation/id', () => ({

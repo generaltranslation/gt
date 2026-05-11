@@ -19,7 +19,7 @@ import { parseTranslationComponent } from '../parseJsx.js';
 import { ParsingConfigOptions } from '../../../../../types/parsing.js';
 import { Updates } from '../../../../../types/index.js';
 import { Libraries } from '../../../../../types/libraries.js';
-import { JsxChild } from 'generaltranslation/types';
+import type { JsxChild } from '@generaltranslation/format/types';
 import { getPathsAndAliases } from '../../getPathsAndAliases.js';
 import {
   ensureTAndVarImported,

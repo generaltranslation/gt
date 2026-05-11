@@ -1,6 +1,6 @@
 import { tx } from 'gt-i18n/internal';
 import type { RuntimeTranslationOptions } from 'gt-i18n/types';
-import type { StringFormat } from 'generaltranslation/types';
+import type { StringFormat } from '@generaltranslation/format/types';
 
 type RuntimeStringTranslationOptions = Omit<
   RuntimeTranslationOptions,

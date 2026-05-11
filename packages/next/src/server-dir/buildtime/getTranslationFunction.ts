@@ -23,7 +23,10 @@ import {
   VAR_IDENTIFIER,
   indexVars,
 } from 'generaltranslation/internal';
-import { FormatVariables, StringFormat } from 'generaltranslation/types';
+import type {
+  FormatVariables,
+  StringFormat,
+} from '@generaltranslation/format/types';
 import { use } from '../../utils/use';
 
 type RenderFn = (msg: string, locales: string[], fallback?: string) => string;

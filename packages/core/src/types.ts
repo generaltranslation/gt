@@ -1,59 +1,42 @@
-import {
-  type IcuMessage,
-  type I18nextMessage,
-  type StringMessage,
-  type StringContent,
-  type JsxChildren,
-  type JsxChild,
-  type JsxElement,
-  type GTProp,
-  type HtmlContentPropKeysRecord,
-  type HtmlContentPropValuesRecord,
-  HTML_CONTENT_PROPS,
-  type DataFormat,
-  type Content,
-  type StringFormat,
-  type Variable,
-  type VariableType,
-  type LocaleProperties,
-  type CustomMapping,
-} from '@generaltranslation/format/types';
 import type {
-  ActionType,
+  DataFormat as FormatDataFormat,
+  JsxChildren as FormatJsxChildren,
+  Variable as FormatVariable,
+} from '@generaltranslation/format/types';
+export { HTML_CONTENT_PROPS } from '@generaltranslation/format/types';
+export type {
+  Content,
+  CustomMapping,
+  CustomRegionMapping,
+  CutoffFormatOptions,
+  DataFormat,
+  GTProp,
+  HtmlContentPropKeysRecord,
+  HtmlContentPropValuesRecord,
+  I18nextMessage,
+  IcuMessage,
+  JsxChild,
+  JsxChildren,
+  JsxElement,
+  LocaleProperties,
+  StringContent,
+  StringFormat,
+  StringMessage,
+  Variable,
+  VariableType,
+} from '@generaltranslation/format/types';
+export type {
+  ActionType as EntryActionType,
   EntryMetadata,
   TranslateManyEntry,
 } from './types-dir/api/entry';
-import type { HashMetadata } from './id/types';
+export type { HashMetadata } from './id/types';
 export type { TranslationStatusResult } from './types-dir/api/translationStatus';
 export type {
   JsonObject,
   JsonPrimitive,
   JsonValue,
 } from './types-dir/api/json';
-
-export {
-  IcuMessage,
-  StringMessage,
-  I18nextMessage,
-  StringContent,
-  JsxChildren,
-  JsxChild,
-  JsxElement,
-  GTProp,
-  HtmlContentPropKeysRecord,
-  HtmlContentPropValuesRecord,
-  HTML_CONTENT_PROPS,
-  Variable,
-  VariableType,
-  LocaleProperties,
-  DataFormat,
-  ActionType as EntryActionType,
-  EntryMetadata,
-  TranslateManyEntry,
-  Content,
-  StringFormat,
-  HashMetadata,
-};
 
 export type {
   FileTranslationQuery,
@@ -124,7 +107,7 @@ export type {
 /**
  * @deprecated Use {@link Content} instead.
  */
-export type _Content = string | Array<string | Variable>;
+export type _Content = string | Array<string | FormatVariable>;
 
 export type {
   Transformation,
@@ -139,7 +122,7 @@ export type Metadata = {
   id?: string;
   hash?: string;
   format?: string;
-  dataFormat?: DataFormat;
+  dataFormat?: FormatDataFormat;
   sourceLocale?: string;
   actionType?: 'standard' | 'fast' | string;
   filePaths?: string[];
@@ -165,7 +148,7 @@ export type Update =
   | {
       type: 'jsx';
       data: {
-        source: JsxChildren;
+        source: FormatJsxChildren;
         metadata: Metadata;
       };
     };
@@ -185,7 +168,7 @@ export type Request =
   | {
       type: 'jsx';
       data: {
-        source: JsxChildren;
+        source: FormatJsxChildren;
         targetLocale: string;
         metadata: Metadata;
       };
@@ -219,15 +202,13 @@ export type IcuTranslationResult = {
  * @deprecated Use {@link TranslationResult} instead.
  */
 export type JsxTranslationResult = {
-  translation: JsxChildren;
+  translation: FormatJsxChildren;
   locale: string;
   reference?: {
     id: string;
     key: string;
   };
 };
-
-export type { CustomMapping };
 
 // ----- VARIABLES ----- //
 

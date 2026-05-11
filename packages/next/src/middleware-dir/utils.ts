@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GT, standardizeLocale } from 'generaltranslation';
+import { standardizeLocale } from '@generaltranslation/format';
+import { GT } from 'generaltranslation';
 import { NextURL } from 'next/dist/server/web/next-url';
 
 export type PathConfig = {

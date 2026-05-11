@@ -1,11 +1,11 @@
-import {
+import type {
   DataFormat,
   JsxChild,
   JsxChildren,
   JsxElement,
   Variable,
   VariableType,
-} from 'generaltranslation/types';
+} from '@generaltranslation/format/types';
 import { hashSource as _hashSource } from 'generaltranslation/id';
 
 /**

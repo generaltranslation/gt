@@ -702,6 +702,9 @@ importers:
       '@formatjs/icu-messageformat-parser':
         specifier: ^2.11.4
         version: 2.11.4
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       '@generaltranslation/python-extractor':
         specifier: workspace:*
         version: link:../python-extractor
@@ -859,6 +862,9 @@ importers:
       '@babel/types':
         specifier: ^7.23.0
         version: 7.28.4
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       generaltranslation:
         specifier: workspace:*
         version: link:../core
@@ -896,13 +902,13 @@ importers:
       '@noble/hashes':
         specifier: ^2.2.0
         version: 2.2.0
-      intl-messageformat:
-        specifier: ^10.7.16
-        version: 10.7.16
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
+      intl-messageformat:
+        specifier: ^10.7.16
+        version: 10.7.16
       tsdown:
         specifier: 'catalog:'
         version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
@@ -1040,6 +1046,9 @@ importers:
       '@generaltranslation/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       '@generaltranslation/next-internal':
         specifier: workspace:*
         version: link:../next-internal
@@ -1186,6 +1195,9 @@ importers:
 
   packages/react:
     dependencies:
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       '@generaltranslation/react-core':
         specifier: workspace:*
         version: link:../react-core
@@ -1223,6 +1235,9 @@ importers:
 
   packages/react-core:
     dependencies:
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       '@generaltranslation/supported-locales':
         specifier: workspace:*
         version: link:../supported-locales
@@ -1315,6 +1330,9 @@ importers:
       '@formatjs/intl-relativetimeformat':
         specifier: ^11.4.13
         version: 11.4.13
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       '@generaltranslation/react-core':
         specifier: workspace:*
         version: link:../react-core

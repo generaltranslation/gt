@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocaleSelector } from '@generaltranslation/react-core';
-import { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import { InternalLocaleSelector } from '../../shared/InternalLocaleSelector';
 
 /**

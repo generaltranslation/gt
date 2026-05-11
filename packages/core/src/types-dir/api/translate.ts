@@ -3,7 +3,7 @@ import {
   IcuMessage,
   JsxChildren,
   StringMessage,
-} from '../jsx/content';
+} from '@generaltranslation/format/types';
 
 /**
  * TranslationResultReference is used to store the reference for a translation result.
