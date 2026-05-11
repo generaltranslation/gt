@@ -2,7 +2,7 @@
 
 import { useChat } from 'ai/react';
 import { useEffect, useRef } from 'react';
-import { artifactDefinitions, ArtifactKind } from './artifact';
+import { ArtifactKind, getArtifactDefinition } from './artifact';
 import { Suggestion } from '@/lib/db/schema';
 import { initialArtifactData, useArtifact } from '@/hooks/use-artifact';
 
@@ -33,9 +33,7 @@ export function DataStreamHandler({ id }: { id: string }) {
     lastProcessedIndex.current = dataStream.length - 1;
 
     (newDeltas as DataStreamDelta[]).forEach((delta: DataStreamDelta) => {
-      const artifactDefinition = artifactDefinitions.find(
-        (artifactDefinition) => artifactDefinition.kind === artifact.kind
-      );
+      const artifactDefinition = getArtifactDefinition(artifact.kind);
 
       if (artifactDefinition?.onStreamPart) {
         artifactDefinition.onStreamPart({

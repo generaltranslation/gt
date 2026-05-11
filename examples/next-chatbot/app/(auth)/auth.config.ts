@@ -17,7 +17,7 @@ export const authConfig = {
       const isOnLogin = nextUrl.pathname.startsWith('/login');
 
       if (isLoggedIn && (isOnLogin || isOnRegister)) {
-        return Response.redirect(new URL('/', nextUrl as unknown as URL));
+        return Response.redirect(new URL('/', nextUrl.href));
       }
 
       if (isOnRegister || isOnLogin) {
@@ -30,7 +30,7 @@ export const authConfig = {
       }
 
       if (isLoggedIn) {
-        return Response.redirect(new URL('/', nextUrl as unknown as URL));
+        return Response.redirect(new URL('/', nextUrl.href));
       }
 
       return true;

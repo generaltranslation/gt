@@ -1,9 +1,9 @@
 'use client';
 
+import type { ExtraProps } from 'react-markdown';
 import type { HTMLAttributes, ReactNode } from 'react';
 
-interface CodeBlockProps extends HTMLAttributes<HTMLElement> {
-  node?: unknown;
+interface CodeBlockProps extends HTMLAttributes<HTMLElement>, ExtraProps {
   inline?: boolean;
   className?: string;
   children?: ReactNode;

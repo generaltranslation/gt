@@ -1,11 +1,12 @@
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import { artifactDefinitions, UIArtifact } from './artifact';
+import {
+  type ArtifactMetadata,
+  getArtifactDefinition,
+  type UIArtifact,
+} from './artifact';
 import { Dispatch, memo, SetStateAction, useState } from 'react';
-import type {
-  Artifact as ArtifactDefinition,
-  ArtifactActionContext,
-} from './create-artifact';
+import type { ArtifactActionContext } from './create-artifact';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useGT } from 'gt-next/client';
@@ -15,8 +16,8 @@ interface ArtifactActionsProps {
   currentVersionIndex: number;
   isCurrentVersion: boolean;
   mode: 'edit' | 'diff';
-  metadata: unknown;
-  setMetadata: Dispatch<SetStateAction<unknown>>;
+  metadata: ArtifactMetadata;
+  setMetadata: Dispatch<SetStateAction<ArtifactMetadata>>;
 }
 
 function PureArtifactActions({
@@ -30,15 +31,13 @@ function PureArtifactActions({
 }: ArtifactActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const t = useGT();
-  const artifactDefinition = artifactDefinitions.find(
-    (definition) => definition.kind === artifact.kind
-  ) as ArtifactDefinition<string, unknown> | undefined;
+  const artifactDefinition = getArtifactDefinition(artifact.kind);
 
   if (!artifactDefinition) {
     throw new Error('Artifact definition not found!');
   }
 
-  const actionContext: ArtifactActionContext<unknown> = {
+  const actionContext: ArtifactActionContext<ArtifactMetadata> = {
     content: artifact.content,
     handleVersionChange,
     currentVersionIndex,
