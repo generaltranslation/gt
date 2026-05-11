@@ -1,15 +1,15 @@
-import { createLocaleResolver } from 'gt-i18n/internal';
+import { createLocaleResolver } from "gt-i18n/internal";
 import type {
   I18nExternalConditionStore,
   ListenerSet,
   StoreListener,
   Unsubscribe,
-} from './storeTypes';
+} from "./storeTypes";
 import type {
   ConditionStoreConfig,
   LocaleCandidates,
   WritableConditionStore,
-} from 'gt-i18n/internal/types';
+} from "gt-i18n/internal/types";
 
 export type ProviderConditionStoreParams = ConditionStoreConfig & {
   locale?: string;
@@ -99,7 +99,7 @@ export class ProviderConditionStore
 
 function subscribeToSet(
   listenerSet: ListenerSet,
-  listener: StoreListener
+  listener: StoreListener,
 ): Unsubscribe {
   listenerSet.add(listener);
   return () => {

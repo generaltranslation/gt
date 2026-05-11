@@ -1,16 +1,15 @@
 import type { I18nStore } from "./I18nStore";
 
-let i18nExternalStore: I18nStore | undefined;
+let i18nStore: I18nStore | undefined;
 
-export function getI18nExternalStore(): I18nStore {
-  if (!i18nExternalStore) {
-    throw new Error(
-      "I18nExternalStore is not initialized. Render GTProvider before using external-store hooks.",
-    );
+export function getI18nStore(): I18nStore {
+  if (!i18nStore) {
+    throw new Error("I18nExternalStore is not initialized.");
   }
-  return i18nExternalStore;
+  return i18nStore;
 }
 
-export function setI18nExternalStore(nextStore: I18nStore): void {
-  i18nExternalStore = nextStore;
+export function setI18nStore(nextStore: I18nStore): void {
+  i18nStore?.disconnect();
+  i18nStore = nextStore;
 }

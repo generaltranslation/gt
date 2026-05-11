@@ -46,8 +46,8 @@ export {
   type ProviderConditionStoreParams,
 } from "./refactor/context/store/ProviderConditionStore";
 export {
-  getI18nExternalStore,
-  setI18nExternalStore,
+  getI18nStore as getI18nExternalStore,
+  setI18nStore as setI18nExternalStore,
 } from "./refactor/context/store/singleton-operations";
 export type {
   DictionaryEntrySnapshot,

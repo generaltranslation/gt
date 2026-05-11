@@ -3,16 +3,14 @@ import { I18nManager } from "gt-i18n/internal";
 import { GTContext } from "./GTContext";
 import { ProviderConditionStore } from "../store/ProviderConditionStore";
 import { I18nStore } from "../store/I18nStore";
-import { setI18nExternalStore } from "../store/singleton-operations";
+import { setI18nStore } from "../store/singleton-operations";
 import type { I18nManagerConstructorParams } from "gt-i18n/internal/types";
 import type { ReactNode } from "react";
 import type { Translation } from "gt-i18n/types";
 
 export type GTProviderProps = I18nManagerConstructorParams<Translation> & {
   children?: ReactNode;
-  locale?: string;
-  region?: string;
-  getLocale?: () => string | undefined;
+  locale: string;
 };
 
 // ===== Component ===== //
@@ -27,8 +25,6 @@ export type GTProviderProps = I18nManagerConstructorParams<Translation> & {
 export function GTProvider({
   children,
   locale,
-  region,
-  getLocale,
   ...managerParams
 }: GTProviderProps) {
   const conditionStoreRef = useRef<ProviderConditionStore | undefined>(
@@ -48,7 +44,7 @@ export function GTProvider({
       getLocale,
     });
 
-    setI18nExternalStore(new I18nStore());
+    setI18nStore(new I18nStore());
     conditionStoreRef.current = conditionStore;
   }
 

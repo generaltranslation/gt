@@ -10,7 +10,7 @@ import type {
   DictionaryObjectSnapshot,
 } from "../context/store/storeTypes";
 import type { CustomMapping } from "generaltranslation/types";
-import { getI18nExternalStore } from "../context/store/singleton-operations";
+import { getI18nStore } from "../context/store/singleton-operations";
 
 export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>,
@@ -75,7 +75,7 @@ export function useEnableI18n(): boolean {
 }
 
 export function useDefaultLocale(): string {
-  const store = getI18nExternalStore();
+  const store = getI18nStore();
   return useSyncExternalStore(
     store.subscribeToDefaultLocale,
     store.getDefaultLocaleSnapshot,
@@ -84,7 +84,7 @@ export function useDefaultLocale(): string {
 }
 
 export function useLocales(): readonly string[] {
-  const store = getI18nExternalStore();
+  const store = getI18nStore();
   return useSyncExternalStore(
     store.subscribeToLocales,
     store.getLocalesSnapshot,

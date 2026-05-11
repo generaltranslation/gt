@@ -5,15 +5,6 @@ import type {
   Translation,
 } from "gt-i18n/types";
 
-export type I18nExternalConditionStore = {
-  getLocale(): string;
-  subscribeToLocale(listener: StoreListener): Unsubscribe;
-  setLocale?(locale: string): void;
-  getRegion?(): string | undefined;
-  subscribeToRegion?(listener: StoreListener): Unsubscribe;
-  setRegion?(region: string | undefined): void;
-};
-
 // ----- Listeners ----- //
 
 export type Unsubscribe = () => void;

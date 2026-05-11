@@ -217,6 +217,20 @@ export class I18nStore {
 
   // ===== Subscription Lifecycle ===== //
 
+  /**
+   * Disconnect from all events and listeners.
+   */
+  public disconnect(): void {
+    // this.unsubscribeLocalesEvents?.();
+    // this.unsubscribeTranslateEvents?.();
+    // this.unsubscribeLocalesDictionaryEvents?.();
+    // this.unsubscribeDictionaryEntryEvents?.();
+    // this.unsubscribeLocalesEvents = undefined;
+    // this.unsubscribeTranslateEvents = undefined;
+    // this.unsubscribeLocalesDictionaryEvents = undefined;
+    // this.unsubscribeDictionaryEntryEvents = undefined;
+  }
+
   private subscribeToStaticSet(
     listenerSet: ListenerSet,
     listener: StoreListener,
@@ -264,17 +278,6 @@ export class I18nStore {
 
   private connect(): void {
     this.subscribeToManager();
-  }
-
-  private disconnect(): void {
-    this.unsubscribeLocalesEvents?.();
-    this.unsubscribeTranslateEvents?.();
-    this.unsubscribeLocalesDictionaryEvents?.();
-    this.unsubscribeDictionaryEntryEvents?.();
-    this.unsubscribeLocalesEvents = undefined;
-    this.unsubscribeTranslateEvents = undefined;
-    this.unsubscribeLocalesDictionaryEvents = undefined;
-    this.unsubscribeDictionaryEntryEvents = undefined;
   }
 
   // ===== Manager Event Wiring ===== //

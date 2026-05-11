@@ -3,7 +3,7 @@ import type { I18nManager } from "gt-i18n/internal";
 import type { Translation } from "gt-i18n/types";
 import type { I18nStore } from "../store/I18nStore";
 import type { ProviderConditionStore } from "../store/ProviderConditionStore";
-import { getI18nExternalStore } from "../store/singleton-operations";
+import { getI18nStore } from "../store/singleton-operations";
 
 export const GTContext = createContext<ProviderConditionStore | null>(null);
 
@@ -22,7 +22,7 @@ export function useConditionStore(): ProviderConditionStore {
 // ===== Manager Store Access ===== //
 
 export function useI18nExternalStore(): I18nStore {
-  return getI18nExternalStore();
+  return getI18nStore();
 }
 
 export function useI18nManager(): I18nManager<Translation> {
