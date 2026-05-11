@@ -152,7 +152,13 @@ describe('I18nManager', () => {
         name: 'Nom',
       },
     });
-    expect(cachedDictionary).toBe(dictionary);
+    expect(cachedDictionary).toEqual(dictionary);
+    expect(cachedDictionary).not.toBe(dictionary);
+
+    dictionary.greeting = 'Salut';
+    await expect(manager.loadDictionary('fr')).resolves.toMatchObject({
+      greeting: 'Bonjour',
+    });
   });
 
   it.each([

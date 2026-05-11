@@ -204,7 +204,7 @@ export class DictionaryCache extends Cache<
    * Set the value for a key
    */
   protected setCache(cacheKey: DictionaryPath, value: DictionaryValue): void {
-    const cache = this.getInternalCache() as Dictionary;
+    const cache = this.getMutableCache() as Dictionary;
     const dictionaryPath = getDictionaryPath(cacheKey);
 
     if (dictionaryPath.length === 0) {
@@ -231,7 +231,7 @@ export class DictionaryCache extends Cache<
    */
   protected getCache(key: DictionaryKey): DictionaryValue | undefined {
     const dictionaryPath = getDictionaryPath(this.genKey(key));
-    let current: DictionaryValue = this.getInternalCache() as Dictionary;
+    let current: DictionaryValue = this.getMutableCache() as Dictionary;
 
     if (dictionaryPath.length === 0) {
       return current;

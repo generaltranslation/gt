@@ -182,16 +182,14 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
     // Fetch translations
     const translationsPromise = this._translationLoader(locale);
 
-    // Get cache expiry time
-    const expiresAt = this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
-
-    // Cache the promise and expiry timestamp
+    // Cache the translations and expiry timestamp
     const translationsCache = new TranslationsCache<TranslationValue>({
       init: await translationsPromise,
       lifecycle: this._createTranslationsCacheLifecycle(locale),
       translateMany: this._createTranslateMany(locale),
       batchConfig: this._batchConfig,
     });
+    const expiresAt = this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
 
     return { translationsCache, expiresAt };
   }

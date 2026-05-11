@@ -98,6 +98,19 @@ describe('TranslationsCache', () => {
     expect(mockTranslateMany).toHaveBeenCalledTimes(1);
   });
 
+  it('getInternalCache() returns a shallow copy', () => {
+    const { message, options, hash } = makeKey('Hello');
+    const cache = new TranslationsCache({
+      init: { [hash]: 'Bonjour' },
+      translateMany: mockTranslateMany,
+    });
+
+    const internal = cache.getInternalCache();
+    internal[hash] = 'Salut';
+
+    expect(cache.get({ message, options })).toBe('Bonjour');
+  });
+
   // ===== NEW BEHAVIOR TESTS ===== //
 
   it('miss() batches multiple requests within BATCH_INTERVAL', async () => {

@@ -3,6 +3,18 @@ import type {
   LifecycleParam,
 } from '../lifecycle-hooks/types';
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value == null || typeof value !== 'object') return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function copyCacheValue<CacheValue>(value: CacheValue): CacheValue {
+  if (Array.isArray(value)) return [...value] as CacheValue;
+  if (isPlainObject(value)) return { ...value } as CacheValue;
+  return value;
+}
+
 /**
  * Cache class
  * This is designed in such a way that it is the responsibility of the client
@@ -86,6 +98,18 @@ abstract class Cache<
    * @internal - used by gt-tanstack-start
    */
   public getInternalCache(): Record<CacheKey, CacheValue> {
+    return Object.fromEntries(
+      Object.entries(this.cache).map(([key, value]) => [
+        key,
+        copyCacheValue(value as CacheValue),
+      ])
+    ) as Record<CacheKey, CacheValue>;
+  }
+
+  /**
+   * Get the mutable cache for subclasses that need custom read/write behavior.
+   */
+  protected getMutableCache(): Record<CacheKey, CacheValue> {
     return this.cache;
   }
 
