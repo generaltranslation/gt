@@ -2,6 +2,7 @@ import { TranslationsLoader } from '../../translations-manager/translations-load
 import { LoadTranslationsType } from '../../utils/getLoadTranslationsType';
 import { getLoadTranslationsType } from '../../utils/getLoadTranslationsType';
 import { ValidationResult } from '../types';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 /**
  * Load translation configuration
@@ -15,9 +16,9 @@ import { ValidationResult } from '../types';
  * Requirements:
  * - REMOTE:
  * - GT_REMOTE:
- *   - projectId is required
+ *   - projectId is needed
  * - CUSTOM:
- *   - loadTranslations is required
+ *   - loadTranslations is needed
  * - DISABLED:
  *   - no requirements
  */
@@ -36,8 +37,11 @@ export function validateLoadTranslations(params: {
       if (!projectId) {
         results.push({
           type: 'warning',
-          message:
-            'projectId is required when loading translations from a remote store',
+          message: createDiagnosticMessage({
+            whatHappened:
+              'Loading translations from a remote store needs a projectId',
+            fix: 'Add projectId to the I18nManager config or disable remote translation loading',
+          }),
         });
       }
       break;
@@ -45,8 +49,10 @@ export function validateLoadTranslations(params: {
       if (!loadTranslations) {
         results.push({
           type: 'error',
-          message:
-            'loadTranslations is required when loading translations from a custom loader',
+          message: createDiagnosticMessage({
+            whatHappened: 'Custom translation loading needs loadTranslations',
+            fix: 'Provide a loadTranslations function or disable custom translation loading',
+          }),
         });
       }
       break;

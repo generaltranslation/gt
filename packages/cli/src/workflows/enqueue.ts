@@ -40,7 +40,9 @@ export async function runEnqueueWorkflow({
     const branchData = await branchStep.run();
     await branchStep.wait();
     if (!branchData) {
-      return logErrorAndExit('Failed to resolve git branch information.');
+      return logErrorAndExit(
+        'The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.'
+      );
     }
     logger.debug('Branch data: ' + JSON.stringify(branchData, null, 2));
 
@@ -58,7 +60,10 @@ export async function runEnqueueWorkflow({
     logEnqueueResult(enqueueResult, files);
     return enqueueResult;
   } catch (error) {
-    return logErrorAndExit('Failed to enqueue translations. ' + error);
+    return logErrorAndExit(
+      'Translations could not be enqueued. Check the files, branch configuration, and API credentials, then try again. Original error: ' +
+        error
+    );
   }
 }
 

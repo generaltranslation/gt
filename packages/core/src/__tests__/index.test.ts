@@ -94,7 +94,7 @@ describe.sequential('GT Translation Methods', () => {
       await expect(
         gtNoTarget.translate('Hello world', { targetLocale: '' })
       ).rejects.toThrow(
-        'GT Error: Cannot call `translate` without a specified locale. Either pass a locale to the `translate` function or specify a targetLocale in the GT constructor.'
+        'GT Error: Cannot call `translate` without a specified locale. Pass a locale to `translate` or specify targetLocale in the GT constructor.'
       );
     });
 
@@ -105,7 +105,7 @@ describe.sequential('GT Translation Methods', () => {
       });
 
       await expect(gtNoProject.translate('Hello world', 'es')).rejects.toThrow(
-        'GT Error: Cannot call `translate` without a specified project ID. Either pass a project ID to the `translate` function or specify a projectId in the GT constructor.'
+        'GT Error: Cannot call `translate` without a specified project ID. Pass a project ID to `translate` or specify projectId in the GT constructor.'
       );
     });
 
@@ -377,7 +377,7 @@ describe.sequential('GT Translation Methods', () => {
       await expect(
         gtNoTarget.translateMany(requests, { targetLocale: '' })
       ).rejects.toThrow(
-        'GT Error: Cannot call `translateMany` without a specified locale. Either pass a locale to the `translateMany` function or specify a targetLocale in the GT constructor.'
+        'GT Error: Cannot call `translateMany` without a specified locale. Pass a locale to `translateMany` or specify targetLocale in the GT constructor.'
       );
     });
 
@@ -397,7 +397,7 @@ describe.sequential('GT Translation Methods', () => {
       await expect(
         gtNoProject.translateMany(requests, { targetLocale: 'es' })
       ).rejects.toThrow(
-        'GT Error: Cannot call `translateMany` without a specified project ID. Either pass a project ID to the `translateMany` function or specify a projectId in the GT constructor.'
+        'GT Error: Cannot call `translateMany` without a specified project ID. Pass a project ID to `translateMany` or specify projectId in the GT constructor.'
       );
     });
 
@@ -549,7 +549,7 @@ describe.sequential('GT Translation Methods', () => {
       const gt = new GT();
 
       expect(() => gt.resolveCanonicalLocale()).toThrow(
-        'GT Error: Cannot call `resolveCanonicalLocale` without a specified locale. Either pass a locale to the `resolveCanonicalLocale` function or specify a targetLocale in the GT constructor.'
+        'GT Error: Cannot call `resolveCanonicalLocale` without a specified locale. Pass a locale to `resolveCanonicalLocale` or specify targetLocale in the GT constructor.'
       );
     });
   });

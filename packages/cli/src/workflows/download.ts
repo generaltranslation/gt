@@ -62,7 +62,9 @@ export async function runDownloadWorkflow({
     const branchResult = await branchStep.run();
     await branchStep.wait();
     if (!branchResult) {
-      return logErrorAndExit('Failed to resolve git branch information.');
+      return logErrorAndExit(
+        'The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.'
+      );
     }
     branchData = branchResult;
   }

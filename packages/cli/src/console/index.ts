@@ -398,13 +398,13 @@ export const warnUnresolvedImportSync = (
   );
 
 // Re-export error messages
-export const noLocalesError = `No locales found! Provide a list of locales for translation, or specify them in your gt.config.json file.`;
-export const noDefaultLocaleError = `No default locale found! Provide a default locale, or specify it in your gt.config.json file.`;
-export const noFilesError = `Incorrect or missing files configuration! Make sure your files are configured correctly in your gt.config.json file.`;
-export const noSourceFileError = `No source file found! Double-check your translations directory and default locale.`;
-export const noSupportedFormatError = `Unsupported data format! Make sure your translationsDir parameter ends with a supported file extension.`;
-export const noApiKeyError = `No API key found! Provide an API key using the --api-key flag or set the GT_API_KEY environment variable.`;
+export const noLocalesError = `No target locales were found. Add locales to gt.config.json or pass them with the --locales flag.`;
+export const noDefaultLocaleError = `No default locale was found. Add defaultLocale to gt.config.json or pass it with --default-locale.`;
+export const noFilesError = `The files configuration is missing or invalid. Check the files section in gt.config.json and try again.`;
+export const noSourceFileError = `No source translation file was found. Check your translations directory and default locale configuration.`;
+export const noSupportedFormatError = `The translation file format is not supported. Use a supported file extension in translationsDir.`;
+export const noApiKeyError = `No API key was found. Pass --api-key or set the GT_API_KEY environment variable.`;
 export const devApiKeyError = `Development API keys cannot be used with the General Translation API. Use a production API key instead.\nGenerate a production API key with: npx gt auth -t production`;
-export const noProjectIdError = `No project ID found! Provide a project ID using the --project-id flag, specify it in your gt.config.json file, or set the GT_PROJECT_ID environment variable.`;
-export const noVersionIdError = `No version ID found! Provide a version ID using the --version-id flag or specify it in your gt.config.json file as the _versionId property.`;
-export const invalidConfigurationError = `Invalid files configuration! Provide a valid configuration to download local translations or set the --publish flag to true to upload translations to the CDN.`;
+export const noProjectIdError = `No project ID was found. Pass --project-id, add projectId to gt.config.json, or set the GT_PROJECT_ID environment variable.`;
+export const noVersionIdError = `No version ID was found. Pass --version-id or add _versionId to gt.config.json.`;
+export const invalidConfigurationError = `The files configuration cannot be used for this operation. Provide a valid download configuration or set --publish true to upload translations to the CDN.`;

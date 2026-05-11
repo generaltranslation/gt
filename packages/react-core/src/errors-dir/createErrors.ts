@@ -1,117 +1,271 @@
 import { getLocaleProperties } from '@generaltranslation/format';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { PACKAGE_NAME } from './constants';
 
 // ---- ERRORS ---- //
 
-export const projectIdMissingError = `${PACKAGE_NAME} Error: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.`;
+export const projectIdMissingError = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Error',
+  whatHappened: 'Runtime translation needs a project ID',
+  fix: 'Add projectId to your <GTProvider> configuration or set GT_PROJECT_ID in your environment',
+  docsUrl: 'generaltranslation.com/dashboard',
+});
 
-export const devApiKeyProductionError = `${PACKAGE_NAME} Error: Production environments cannot include a development api key.`;
+export const devApiKeyProductionError = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Error',
+  whatHappened: 'Production environments cannot use a development API key',
+  fix: 'Replace it with a production API key before deploying',
+});
 
-export const apiKeyInProductionError = `${PACKAGE_NAME} Error: Production environments cannot include an api key.`;
+export const apiKeyInProductionError = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Error',
+  whatHappened: 'The API key is available to client-side production code',
+  fix: 'Move translation credentials to a server-only environment before deploying',
+});
 
-export const createNoAuthError = `${PACKAGE_NAME} Error: Configuration is missing a projectId and/or devApiKey. Add these values to your environment or pass them to <GTProvider> directly.`;
+export const createNoAuthError = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Error',
+  whatHappened: 'Runtime translation is not configured',
+  fix: 'Add projectId and devApiKey to your environment, or pass them to <GTProvider> directly',
+});
 
 export const createPluralMissingError = (children: unknown) =>
-  `${PACKAGE_NAME} Error: <Plural> component with children "${children}" requires "n" option.`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: `<Plural> could not choose a plural form for "${children}"`,
+    fix: 'Pass the required "n" option to <Plural>',
+  });
 
 export const createClientSideTDictionaryCollisionError = (id: string) =>
-  `${PACKAGE_NAME} Error: <T id="${id}">, "${id}" is also used as a key in the dictionary. Don't give <T> components the same ID as dictionary entries.`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: `<T id="${id}"> conflicts with a dictionary entry using the same ID`,
+    fix: 'Rename the <T> id or the dictionary key so each translation source has a unique ID',
+  });
 
 export const createClientSideTHydrationError = (id: string) =>
-  `${PACKAGE_NAME} Error: <T id="${id}"> is used in a client component without a valid saved translation. This can cause hydration errors.` +
-  `\n\nTo fix this error, consider using a dictionary with useGT() or pushing translations from the command line in advance.`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: `<T id="${id}"> is rendering in a client component without a saved translation`,
+    why: 'This can cause hydration mismatches',
+    fix: 'Use a dictionary with useGT() or push translations from the command line before rendering this component on the client',
+  });
 
-export const dynamicTranslationError = `${PACKAGE_NAME} Error: Fetching batched translations failed`;
+export const dynamicTranslationError = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Error',
+  whatHappened: 'Runtime translations could not be loaded',
+  wayOut: 'Source content will render as a fallback',
+  fix: 'Check your runtime translation configuration and try again',
+});
 
 export const createGenericRuntimeTranslationError = (
   id: string | undefined,
   hash: string
 ) => {
   if (!id) {
-    return `${PACKAGE_NAME} Error: Translation failed for hash: ${hash}`;
+    return createDiagnosticMessage({
+      source: PACKAGE_NAME,
+      severity: 'Error',
+      whatHappened: `Translation could not be found for hash "${hash}"`,
+      wayOut: 'Source content will render as a fallback',
+      fix: 'Push translations again or check that runtime translation is configured',
+    });
   } else {
-    return `${PACKAGE_NAME} Error: Translation failed for id: ${id}, hash: ${hash} `;
+    return createDiagnosticMessage({
+      source: PACKAGE_NAME,
+      severity: 'Error',
+      whatHappened: `Translation could not be found for id "${id}" and hash "${hash}"`,
+      wayOut: 'Source content will render as a fallback',
+      fix: 'Push translations again or check that runtime translation is configured',
+    });
   }
 };
 
-export const runtimeTranslationError = `${PACKAGE_NAME} Error: Runtime translation failed: `;
+export const runtimeTranslationError = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Error',
+  whatHappened: 'Runtime translation could not be completed',
+});
 
 export const customLoadTranslationsError = (locale: string = '') =>
-  `${PACKAGE_NAME} Error: Failed to fetch locally stored translations. If using a custom loadTranslations(${locale}), make sure it is correctly implemented.`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: `Locally stored translations could not be loaded${locale ? ` for "${locale}"` : ''}`,
+    fix: 'If you use loadTranslations(), make sure it returns translations for the requested locale',
+  });
 
 export const customLoadDictionaryWarning = (locale: string = '') =>
-  `${PACKAGE_NAME} Error: Failed to fetch locally stored dictionary. If using a custom loadDictionary(${locale}), make sure it is correctly implemented.`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: `The local dictionary could not be loaded${locale ? ` for "${locale}"` : ''}`,
+    fix: 'If you use loadDictionary(), make sure it returns a dictionary for the requested locale',
+  });
 
 export const missingVariablesError = (variables: string[], message: string) =>
-  `${PACKAGE_NAME} Error: missing variables: "${variables.join('", "')}" in message: "${message}"`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: `The message "${message}" is missing variables: "${variables.join('", "')}"`,
+    fix: 'Provide values for these variables before rendering the translation',
+  });
 
 export const createStringRenderError = (
   message: string,
   id: string | undefined
 ) =>
-  `${PACKAGE_NAME} Error: error rendering string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: `The string ${id ? `for id "${id}" ` : ''}could not be rendered`,
+    fix: `Check the message syntax and variables for: "${message}"`,
+  });
 
 export const createStringTranslationError = (
   string: string,
   id?: string,
   functionName = 'tx'
 ) =>
-  `${PACKAGE_NAME} Error: string translation error. ${functionName}("${string}")${
-    id ? ` with id "${id}"` : ''
-  } could not locate translation.`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: `${functionName}("${string}")${id ? ` with id "${id}"` : ''} could not find a translation`,
+    wayOut: 'Source content will render as a fallback',
+    fix: 'Push translations again or check your dictionary/runtime translation configuration',
+  });
 
 export const invalidLocalesError = (locales: string[]) =>
-  `${PACKAGE_NAME} Error: Invalid locale codes in your configuration. ` +
-  `Specify a list of valid locales or use "customMapping" to ` +
-  `define aliases for the following invalid locales: ${locales.join(', ')}.`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: 'Invalid locale codes in your configuration',
+    fix: 'Specify a list of valid locales or use "customMapping" to define aliases for the invalid locales',
+    details: locales,
+  });
 
 export const invalidCanonicalLocalesError = (locales: string[]) =>
-  `${PACKAGE_NAME} Error: Invalid canonical locale codes in your configuration: ${locales.join(', ')}.`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: 'Invalid canonical locale codes in your configuration',
+    fix: 'Use valid BCP 47 locale codes before starting translation',
+    details: locales,
+  });
 
 export const createEmptyIdError = () =>
-  `${PACKAGE_NAME} Error: You cannot provide an empty id to t.obj()`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: 't.obj() received an empty id',
+    fix: 'Pass a non-empty dictionary id',
+  });
 
 export const createSubtreeNotFoundError = (id: string) =>
-  `${PACKAGE_NAME} Error: Dictionary subtree not found for id: "${id}"`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: `Dictionary subtree "${id}" could not be found`,
+    fix: 'Check that the id matches your dictionary structure',
+  });
 
 export const createDictionaryEntryError = () =>
-  `${PACKAGE_NAME} Error: Cannot inject and merge a dictionary entry`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: 'A dictionary entry cannot be injected as a subtree',
+    fix: 'Pass a dictionary object instead',
+  });
 
 export const createCannotInjectDictionaryEntryError = () =>
-  `${PACKAGE_NAME} Error: Cannot inject and merge a dictionary entry`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened:
+      'A dictionary entry cannot be merged into another dictionary entry',
+    fix: 'Pass a dictionary subtree instead',
+  });
 
 export const createInvalidIcuDictionaryEntryError = (id: string | undefined) =>
-  `${PACKAGE_NAME} Error: Invalid ICU string dictionary entry found for id: "${id}"`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: `Dictionary entry "${id}" contains invalid ICU syntax`,
+    fix: 'Fix the ICU message before rendering this translation',
+  });
 
 // ---- WARNINGS ---- //
 
-export const projectIdMissingWarning = `${PACKAGE_NAME} Warning: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.`;
+export const projectIdMissingWarning = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Warning',
+  whatHappened: 'Runtime translation needs a project ID',
+  fix: 'Add projectId to <GTProvider> or set GT_PROJECT_ID in your environment',
+  docsUrl: 'generaltranslation.com/dashboard',
+});
 
 export const createNoEntryFoundWarning = (id: string) =>
-  `${PACKAGE_NAME} Warning: No valid dictionary entry found for id: "${id}"`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: `No valid dictionary entry was found for id "${id}"`,
+    wayOut: 'Source content will render as a fallback',
+  });
 
 export const createInvalidDictionaryEntryWarning = (id: string) =>
-  `${PACKAGE_NAME} Warning: Invalid dictionary entry found for id: "${id}"`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: `Dictionary entry "${id}" is invalid`,
+    wayOut: 'Source content will render as a fallback until the entry is fixed',
+  });
 
 export const createInvalidIcuDictionaryEntryWarning = (id: string) =>
-  `${PACKAGE_NAME} Warning: Invalid ICU string dictionary entry found for id: "${id}"`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: `Dictionary entry "${id}" contains invalid ICU syntax`,
+    wayOut: 'Source content will render as a fallback until the entry is fixed',
+  });
 
 export const createNoEntryTranslationWarning = (
   id: string,
   prefixedId: string
 ) =>
-  `${PACKAGE_NAME} Warning: t('${id}') finding no translation for dictionary item ${prefixedId} !`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: `t("${id}") could not find a translation for dictionary item "${prefixedId}"`,
+    wayOut: 'Source content will render as a fallback',
+  });
 
 export const createMismatchingHashWarning = (
   expectedHash: string,
   receivedHash: string
 ) =>
-  `${PACKAGE_NAME} Warning: Mismatching hashes! Expected hash: ${expectedHash}, but got hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: 'Translation hashes do not match',
+    reassurance: 'The translation will still render',
+    fix: 'Update your translations to the newest version to avoid stale content',
+    details: [`expected ${expectedHash}`, `received ${receivedHash}`],
+  });
 
-export const APIKeyMissingWarn =
-  `${PACKAGE_NAME} Warning: A development API key is required for runtime translation!  ` +
-  `Find your development API key: generaltranslation.com/dashboard.  ` +
-  `(Or, disable this warning message by setting runtimeUrl to an empty string which disables runtime translation.)`;
+export const APIKeyMissingWarn = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Warning',
+  whatHappened: 'Runtime translation needs a development API key',
+  fix: 'Find your development API key at generaltranslation.com/dashboard, or set runtimeUrl to an empty string to disable runtime translation',
+});
 
 export const createUnsupportedLocalesWarning = (locales: string[]) =>
   `${PACKAGE_NAME} Warning: The following locales are currently unsupported by our service: ${locales
@@ -121,7 +275,11 @@ export const createUnsupportedLocalesWarning = (locales: string[]) =>
     })
     .join(', ')}`;
 
-export const runtimeTranslationTimeoutWarning = `${PACKAGE_NAME} Warning: Runtime translation timed out.`;
+export const runtimeTranslationTimeoutWarning = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Warning',
+  whatHappened: 'Runtime translation timed out',
+});
 
 export const createUnsupportedLocaleWarning = (
   validatedLocale: string,
@@ -135,13 +293,24 @@ export const createUnsupportedLocaleWarning = (
   );
 };
 
-export const dictionaryMissingWarning = `${PACKAGE_NAME} Warning: No dictionary was found. Ensure you are either passing your dictionary to the <GTProvider>.`;
+export const dictionaryMissingWarning = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Warning',
+  whatHappened: 'No dictionary was found',
+  fix: 'Pass a dictionary to <GTProvider> or configure a dictionary loader before rendering translations',
+});
 
 export const createStringRenderWarning = (
   message: string,
   id: string | undefined
 ) =>
-  `${PACKAGE_NAME} Warning: failed to render string ${id ? `for id: "${id}"` : ''} original message: "${message}"`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: `The string ${id ? `for id "${id}" ` : ''}could not be rendered`,
+    wayOut: 'Source content will render as a fallback',
+    fix: `Check the message syntax and variables for: "${message}"`,
+  });
 
 // Unlikely edge case: A <_T> component was injected outside of a <Derive> boundary. This would be caused by the compiler overeagerly injecting <_T> components.
 export const warnNestedInternalTComponent = `${PACKAGE_NAME} Warning: A <_T> component was found injected outside of a <Derive> boundary. This may affect translation resolution for this component.`;

@@ -98,7 +98,7 @@ export async function generateSettings(
     } else {
       if (options?.requireConfig) {
         return logErrorAndExit(
-          'No gt.config.json file found. Run `npx gt init` to create one, or use --config to specify a path.'
+          'No gt.config.json file was found. Run `npx gt init` to create one, pass --config, or run this command from your project root.'
         );
       }
       gtConfig = {};
@@ -118,7 +118,7 @@ export async function generateSettings(
     gtConfig.projectId !== flags.projectId
   ) {
     logErrorAndExit(
-      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(flags.projectId)}! Use the same projectId in all configs.`
+      `Project ID mismatch: gt.config.json uses ${chalk.green(gtConfig.projectId)}, but the CLI flag uses ${chalk.green(flags.projectId)}. Use the same projectId in all configs.`
     );
   } else if (
     gtConfig.projectId &&
@@ -126,7 +126,7 @@ export async function generateSettings(
     gtConfig.projectId !== projectIdEnv
   ) {
     logErrorAndExit(
-      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(projectIdEnv)}! Use the same projectId in all configs.`
+      `Project ID mismatch: gt.config.json uses ${chalk.green(gtConfig.projectId)}, but GT_PROJECT_ID uses ${chalk.green(projectIdEnv)}. Use the same projectId in all configs.`
     );
   }
 
@@ -135,7 +135,7 @@ export async function generateSettings(
     !flags.options?.docsUrlPattern.includes('[locale]')
   ) {
     logErrorAndExit(
-      'Failed to localize static urls: URL pattern must include "[locale]" to denote the location of the locale'
+      'Static URLs could not be localized because the URL pattern is missing "[locale]". Add "[locale]" where the locale should appear in the generated URL.'
     );
   }
 
@@ -144,7 +144,7 @@ export async function generateSettings(
     !flags.options?.docsImportPattern.includes('[locale]')
   ) {
     logErrorAndExit(
-      'Failed to localize static imports: Import pattern must include "[locale]" to denote the location of the locale'
+      'Static imports could not be localized because the import pattern is missing "[locale]". Add "[locale]" where the locale should appear in the generated import path.'
     );
   }
 
@@ -152,7 +152,7 @@ export async function generateSettings(
     for (const file of flags.options.copyFiles) {
       if (!file.includes('[locale]')) {
         logErrorAndExit(
-          'Failed to copy files: File path must include "[locale]" to denote the location of the locale'
+          'Files could not be copied because the file path is missing "[locale]". Add "[locale]" where the locale should appear in the copied path.'
         );
       }
     }

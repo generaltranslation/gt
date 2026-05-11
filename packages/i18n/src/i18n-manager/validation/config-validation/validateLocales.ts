@@ -1,4 +1,5 @@
 import { isValidLocale } from '@generaltranslation/format';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { getGTServicesEnabled } from '../../utils/getGTServicesEnabled';
 import { ValidationResult } from '../types';
 import type { CustomMapping } from '@generaltranslation/format/types';
@@ -35,7 +36,10 @@ export function validateLocales(params: {
     if (!isValidLocale(locale, customMapping)) {
       results.push({
         type: 'error',
-        message: `Invalid locale: ${locale}`,
+        message: createDiagnosticMessage({
+          whatHappened: `Locale "${locale}" is not valid`,
+          fix: 'Use a valid BCP 47 locale code or add a custom mapping',
+        }),
       });
     }
   });

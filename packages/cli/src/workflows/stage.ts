@@ -49,7 +49,9 @@ export async function runStageFilesWorkflow({
     const branchData = await branchStep.run();
     await branchStep.wait();
     if (!branchData) {
-      return logErrorAndExit('Failed to resolve git branch information.');
+      return logErrorAndExit(
+        'The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.'
+      );
     }
 
     // then run the upload step
@@ -84,6 +86,9 @@ export async function runStageFilesWorkflow({
 
     return { branchData, enqueueResult };
   } catch (error) {
-    return logErrorAndExit('Failed to send files for translation. ' + error);
+    return logErrorAndExit(
+      'Files could not be sent for translation. Check the files, branch configuration, and API credentials, then try again. Original error: ' +
+        error
+    );
   }
 }

@@ -10,7 +10,7 @@ describe('validateLocales', () => {
     });
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe('error');
-    expect(result[0].message).toContain('Invalid locale: invalid-locale');
+    expect(result[0].message).toContain('Locale "invalid-locale" is not valid');
   });
 
   it('validates multiple locales when GT services enabled', () => {
@@ -22,7 +22,7 @@ describe('validateLocales', () => {
     });
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe('error');
-    expect(result[0].message).toContain('Invalid locale: invalid-locale');
+    expect(result[0].message).toContain('Locale "invalid-locale" is not valid');
   });
 
   it('skips validation when GT services disabled', () => {

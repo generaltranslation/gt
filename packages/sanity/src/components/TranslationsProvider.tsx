@@ -205,7 +205,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       setDocuments(dedupeDocumentsPreferDraft(docs));
     } catch {
       toast.push({
-        title: 'Error fetching documents',
+        title:
+          'Documents could not be loaded. Check your Sanity connection and try refreshing.',
         status: 'error',
         closable: true,
       });
@@ -221,7 +222,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       setLocales(availableLocales);
     } catch {
       toast.push({
-        title: 'Error fetching locales',
+        title:
+          'Locales could not be loaded. Check your General Translation credentials and try again.',
         status: 'error',
         closable: true,
       });
@@ -274,7 +276,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } catch (error) {
       console.error('Error fetching existing translations:', error);
       toast.push({
-        title: 'Error fetching existing translations',
+        title:
+          'Existing translations could not be loaded. Try refreshing before importing.',
         status: 'error',
         closable: true,
       });
@@ -326,7 +329,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       });
     } catch {
       toast.push({
-        title: 'Error creating translation tasks',
+        title:
+          'Translation tasks could not be created. No documents were changed. Try again or check the console for details.',
         status: 'error',
         closable: true,
       });
@@ -396,7 +400,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } catch (error) {
       console.error('Error importing translations:', error);
       toast.push({
-        title: 'Error importing translations',
+        title:
+          'Translations could not be imported. No documents were changed. Try again or check the console for details.',
         status: 'error',
         closable: true,
       });
@@ -541,7 +546,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } catch (error) {
       console.error('Error importing missing translations:', error);
       toast.push({
-        title: 'Error importing missing translations',
+        title:
+          'Missing translations could not be imported. No documents were changed. Try again or check the console for details.',
         status: 'error',
         closable: true,
       });
@@ -649,7 +655,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } catch (error) {
       console.error('Error refreshing translation status:', error);
       toast.push({
-        title: 'Error refreshing translation status',
+        title:
+          'Translation status could not be refreshed. Try again before importing.',
         status: 'error',
         closable: true,
       });
@@ -741,7 +748,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           } catch (importError) {
             console.error('Failed to import translation:', importError);
             toast.push({
-              title: `Failed to import translation for ${documentId} (${localeId})`,
+              title: `Translation for ${documentId} (${localeId}) could not be imported. This document was not changed.`,
               status: 'error',
               closable: true,
             });
@@ -756,7 +763,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       } catch (error) {
         console.error('Error importing translation:', error);
         toast.push({
-          title: `Error importing translation for ${documentId}`,
+          title: `Translation for ${documentId} could not be imported. This document was not changed.`,
           status: 'error',
           closable: true,
         });
@@ -860,7 +867,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } catch (error) {
       console.error('Error patching document references:', error);
       toast.push({
-        title: 'Error patching document references',
+        title:
+          'Document references could not be updated. Imported translations may need to be linked manually.',
         status: 'error',
         closable: true,
       });
@@ -945,7 +953,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } catch (error) {
       console.error('Error publishing translations:', error);
       toast.push({
-        title: 'Error publishing translations',
+        title:
+          'Translations could not be published. No unpublished source documents were changed.',
         status: 'error',
         closable: true,
       });
