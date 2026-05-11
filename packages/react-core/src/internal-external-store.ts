@@ -40,7 +40,7 @@ export {
 export {
   I18nStore as I18nExternalStore,
   type I18nExternalStoreParams,
-} from "./refactor/store/I18nExternalStore";
+} from "./refactor/store/I18nStore";
 export {
   ProviderConditionStore,
   type ProviderConditionStoreParams,

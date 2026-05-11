@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { I18nManager } from "gt-i18n/internal";
 import { GTContext } from "./GTContext";
 import { ProviderConditionStore } from "../store/ProviderConditionStore";
-import { I18nStore } from "../store/I18nExternalStore";
+import { I18nStore } from "../store/I18nStore";
 import { setI18nExternalStore } from "../store/singleton-operations";
 import type { I18nManagerConstructorParams } from "gt-i18n/internal/types";
 import type { ReactNode } from "react";
@@ -48,7 +48,7 @@ export function GTProvider({
       getLocale,
     });
 
-    setI18nExternalStore(new I18nStore({ i18nManager }));
+    setI18nExternalStore(new I18nStore());
     conditionStoreRef.current = conditionStore;
   }
 

@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import type { I18nManager } from "gt-i18n/internal";
 import type { Translation } from "gt-i18n/types";
-import type { I18nStore } from "../store/I18nExternalStore";
+import type { I18nStore } from "../store/I18nStore";
 import type { ProviderConditionStore } from "../store/ProviderConditionStore";
 import { getI18nExternalStore } from "../store/singleton-operations";
 

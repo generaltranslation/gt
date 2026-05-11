@@ -1,4 +1,4 @@
-import type { I18nStore } from "./I18nExternalStore";
+import type { I18nStore } from "./I18nStore";
 
 let i18nExternalStore: I18nStore | undefined;
 
