@@ -968,12 +968,12 @@ importers:
       '@formatjs/icu-messageformat-parser':
         specifier: ^2.11.4
         version: 2.11.4
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       '@noble/hashes':
         specifier: ^2.2.0
         version: 2.2.0
-      gt-format:
-        specifier: workspace:*
-        version: link:../format
       intl-messageformat:
         specifier: ^10.7.16
         version: 10.7.16
@@ -1031,15 +1031,15 @@ importers:
 
   packages/i18n:
     dependencies:
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       '@generaltranslation/supported-locales':
         specifier: workspace:*
         version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
         version: link:../core
-      gt-format:
-        specifier: workspace:*
-        version: link:../format
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

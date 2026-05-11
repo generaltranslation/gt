@@ -1,1 +1,4 @@
-export { LocaleConfig, type LocaleConfigConstructorParams } from 'gt-format';
+export {
+  LocaleConfig,
+  type LocaleConfigConstructorParams,
+} from '@generaltranslation/format';

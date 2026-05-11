@@ -1,4 +1,4 @@
-import { getCachedPluralRules } from 'gt-format/internal';
+import { getCachedPluralRules } from '@generaltranslation/format/internal';
 
 import { pluralForms, PluralType } from '../settings/plurals';
 import { libraryDefaultLocale } from '../settings/settings';

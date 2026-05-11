@@ -1,4 +1,4 @@
-# gt-format
+# @generaltranslation/format
 
 ## 0.0.1
 

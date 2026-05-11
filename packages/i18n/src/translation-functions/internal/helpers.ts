@@ -6,7 +6,7 @@ import type {
   JsxChildren,
   StringContent,
   StringFormat,
-} from 'gt-format/types';
+} from '@generaltranslation/format/types';
 
 // ----- JSX TRANSLATION FUNCTIONS ----- //
 

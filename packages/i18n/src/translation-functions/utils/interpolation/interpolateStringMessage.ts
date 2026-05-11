@@ -1,4 +1,4 @@
-import { formatCutoff } from 'gt-format';
+import { formatCutoff } from '@generaltranslation/format';
 import { InlineTranslationOptions } from '../../types/options';
 
 /**

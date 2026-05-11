@@ -1,4 +1,4 @@
-import type { JsxChildren } from 'gt-format/types';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,

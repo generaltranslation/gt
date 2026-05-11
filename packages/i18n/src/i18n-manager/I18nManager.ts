@@ -5,8 +5,8 @@ import { validateConfig } from './validation/validateConfig';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT } from 'generaltranslation';
-import { LocaleConfig, standardizeLocale } from 'gt-format';
-import type { CustomMapping } from 'gt-format/types';
+import { LocaleConfig, standardizeLocale } from '@generaltranslation/format';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import { LookupOptions } from '../translation-functions/types/options';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import {

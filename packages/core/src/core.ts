@@ -1,1 +1,1 @@
-export * from 'gt-format';
+export * from '@generaltranslation/format';

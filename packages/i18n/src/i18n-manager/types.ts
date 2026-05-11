@@ -1,5 +1,5 @@
 import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
-import type { CustomMapping } from 'gt-format/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import type { GTConfig } from '../config/types';
 import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import type { Translation } from './translations-manager/utils/types/translation-data';

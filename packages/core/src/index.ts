@@ -27,7 +27,7 @@ import {
   resolveCanonicalLocale as _resolveCanonicalLocale,
   standardizeLocale as _standardizeLocale,
   type LocaleConfigConstructorParams,
-} from 'gt-format';
+} from '@generaltranslation/format';
 import type {
   CustomMapping,
   CustomRegionMapping,
@@ -35,7 +35,7 @@ import type {
   FormatVariables,
   LocaleProperties,
   StringFormat,
-} from 'gt-format/types';
+} from '@generaltranslation/format/types';
 import {
   TranslateManyResult,
   TranslationError,
@@ -122,7 +122,10 @@ import _publishFiles, {
 import { TranslateOptions } from './types-dir/api/entry';
 import { API_VERSION as _API_VERSION } from './translate/api';
 
-export { LocaleConfig, type LocaleConfigConstructorParams } from 'gt-format';
+export {
+  LocaleConfig,
+  type LocaleConfigConstructorParams,
+} from '@generaltranslation/format';
 
 export {
   formatCutoff,
@@ -130,7 +133,7 @@ export {
   isValidLocale,
   resolveCanonicalLocale,
   standardizeLocale,
-} from 'gt-format';
+} from '@generaltranslation/format';
 
 // ============================================================ //
 //                        Core Class                            //

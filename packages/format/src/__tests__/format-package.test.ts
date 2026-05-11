@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import { beforeAll, describe, it } from 'vitest';
 
-import type { CustomMapping } from 'gt-format/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const builtArtifacts = [
@@ -33,7 +33,7 @@ function buildPackage(): void {
   });
 }
 
-describe('gt-format package export', () => {
+describe('@generaltranslation/format package export', () => {
   beforeAll(() => {
     if (hasBuiltArtifacts()) return;
     buildPackage();
@@ -52,7 +52,7 @@ describe('gt-format package export', () => {
             formatMessage,
             getRegionProperties,
             standardizeLocale,
-          } = require('gt-format');
+          } = require('@generaltranslation/format');
 
           assert.equal(
             formatMessage('Hi {name}', { variables: { name: 'Ada' } }),
@@ -83,7 +83,7 @@ describe('gt-format package export', () => {
             getRegionProperties,
             isValidLocale,
             resolveCanonicalLocale,
-          } from 'gt-format';
+          } from '@generaltranslation/format';
 
           assert.equal(
             formatMessage('Hi {name}', { variables: { name: 'Ada' } }),
@@ -103,7 +103,7 @@ describe('gt-format package export', () => {
     );
   });
 
-  it('resolves exported types from gt-format/types', () => {
+  it('resolves exported types from @generaltranslation/format/types', () => {
     const customMapping: CustomMapping = {
       pirate: {
         code: 'en-US',
@@ -118,7 +118,7 @@ describe('gt-format package export', () => {
         '-e',
         `
           import assert from 'node:assert/strict';
-          import { HTML_CONTENT_PROPS } from 'gt-format/types';
+          import { HTML_CONTENT_PROPS } from '@generaltranslation/format/types';
 
           assert.equal(HTML_CONTENT_PROPS.pl, 'placeholder');
         `,
@@ -139,7 +139,7 @@ describe('gt-format package export', () => {
         '-e',
         `
           import assert from 'node:assert/strict';
-          import { getCachedPluralRules } from 'gt-format/internal';
+          import { getCachedPluralRules } from '@generaltranslation/format/internal';
 
           const first = getCachedPluralRules(['en']);
           const second = getCachedPluralRules(['en']);

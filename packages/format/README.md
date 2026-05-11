@@ -1,4 +1,4 @@
-# gt-format
+# @generaltranslation/format
 
 Locale and formatting primitives for General Translation packages.
 

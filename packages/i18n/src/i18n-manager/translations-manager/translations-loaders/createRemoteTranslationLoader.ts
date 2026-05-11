@@ -1,8 +1,8 @@
-import { resolveCanonicalLocale } from 'gt-format';
+import { resolveCanonicalLocale } from '@generaltranslation/format';
 import { TranslationsLoader } from './types';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import { Translation } from '../utils/types/translation-data';
-import type { CustomMapping } from 'gt-format/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 
 /**
  * Parameters for the createRemoteTranslationLoader function

@@ -1,5 +1,5 @@
 {
-  "name": "gt-format",
+  "name": "@generaltranslation/format",
   "version": "0.0.1",
   "description": "Locale and formatting utilities for General Translation",
   "main": "dist/index.cjs",
@@ -17,10 +17,10 @@
     "test": "vitest run --config=./vitest.config.ts --exclude=src/__tests__/format-package.test.ts",
     "test:exports": "pnpm run build && vitest run --config=./vitest.config.ts src/__tests__/format-package.test.ts",
     "test:watch": "vitest --config=./vitest.config.ts",
-    "release": "pnpm run build:clean && pnpm publish",
-    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
-    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
-    "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
+    "release": "pnpm run build:clean && pnpm publish --access public",
+    "release:alpha": "pnpm run build:clean && pnpm publish --access public --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --access public --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --access public --tag latest",
     "typecheck": "tsc --noEmit"
   },
   "repository": {
@@ -98,10 +98,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "gt-format/types": [
+      "@generaltranslation/format/types": [
         "./dist/types"
       ],
-      "gt-format/internal": [
+      "@generaltranslation/format/internal": [
         "./dist/internal"
       ]
     }

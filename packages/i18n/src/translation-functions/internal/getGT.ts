@@ -6,7 +6,7 @@ import { InlineTranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
-import type { StringFormat } from 'gt-format/types';
+import type { StringFormat } from '@generaltranslation/format/types';
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.

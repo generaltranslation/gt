@@ -9,8 +9,8 @@
     "rootDir": "./src",
     "baseUrl": "./",
     "paths": {
-      "gt-format": ["dist/index.d.cts"],
-      "gt-format/types": ["dist/types.d.cts"]
+      "@generaltranslation/format": ["dist/index.d.cts"],
+      "@generaltranslation/format/types": ["dist/types.d.cts"]
     },
     "lib": ["ES2023"]
   },

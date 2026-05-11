@@ -1,4 +1,4 @@
-import type { CustomMapping } from 'gt-format/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import { TranslationsLoader } from './types';
 import { LoadTranslationsType } from '../../utils/getLoadTranslationsType';
 import logger from '../../../logs/logger';

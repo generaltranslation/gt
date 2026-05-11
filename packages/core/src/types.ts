@@ -17,7 +17,7 @@ import {
   type VariableType,
   type LocaleProperties,
   type CustomMapping,
-} from 'gt-format/types';
+} from '@generaltranslation/format/types';
 import type {
   ActionType,
   EntryMetadata,

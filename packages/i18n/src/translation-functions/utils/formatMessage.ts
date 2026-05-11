@@ -1,7 +1,7 @@
-import type { StringFormat } from 'gt-format/types';
+import type { StringFormat } from '@generaltranslation/format/types';
 import logger from '../../logs/logger';
 import { createInterpolationFailureMessage } from './messages';
-import { formatMessage as _formatMessage } from 'gt-format';
+import { formatMessage as _formatMessage } from '@generaltranslation/format';
 
 /**
  * Given an encoded message and variables, formats the message.

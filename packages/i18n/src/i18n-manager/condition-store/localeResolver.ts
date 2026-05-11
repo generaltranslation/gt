@@ -1,4 +1,4 @@
-import { LocaleConfig } from 'gt-format';
+import { LocaleConfig } from '@generaltranslation/format';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { ConditionStoreConfig } from '../types';
 
