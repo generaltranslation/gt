@@ -119,4 +119,36 @@ describe('LocalesCache', () => {
     vi.advanceTimersByTime(2);
     expect(cache.get('fr')).toBeUndefined();
   });
+
+  it('starts TTL after translations finish loading', async () => {
+    const cache = createCache({ ttl: 5000 });
+    let resolveTranslations!: (translations: Record<Hash, string>) => void;
+    mockLoadTranslations.mockReturnValue(
+      new Promise((resolve) => {
+        resolveTranslations = resolve;
+      })
+    );
+
+    const missPromise = cache.miss('fr');
+    vi.advanceTimersByTime(4000);
+    resolveTranslations(frTranslations);
+    await missPromise;
+
+    vi.advanceTimersByTime(4999);
+    expect(cache.get('fr')).toBeDefined();
+
+    vi.advanceTimersByTime(2);
+    expect(cache.get('fr')).toBeUndefined();
+  });
+
+  it('getInternalCache() returns copied cache entries', async () => {
+    const cache = createCache({ ttl: 5000 });
+    await cache.miss('fr');
+
+    const internal = cache.getInternalCache();
+    internal['fr'].expiresAt = 0;
+
+    expect(cache.get('fr')).toBeDefined();
+    expect(cache.getInternalCache()['fr']).not.toBe(internal['fr']);
+  });
 });

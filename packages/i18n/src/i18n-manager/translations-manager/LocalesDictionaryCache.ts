@@ -188,15 +188,13 @@ export class LocalesDictionaryCache extends Cache<
     // Fetch dictionary
     const dictionaryPromise = this._dictionaryLoader(locale);
 
-    // Get cache expiry time
-    const expiresAt = this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
-
-    // Cache the promise and expiry timestamp
+    // Cache the dictionary and expiry timestamp
     const dictionaryCache = new DictionaryCache({
       init: await dictionaryPromise,
       runtimeTranslate: this._createDictionaryRuntimeTranslate(locale),
       lifecycle: this._createDictionaryCacheLifecycle(locale),
     });
+    const expiresAt = this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
 
     return { dictionaryCache, expiresAt };
   }
