@@ -10,6 +10,7 @@
     "test:e2e:install": "npx playwright install chromium",
     "bench": "pnpm bench:e2e",
     "bench:e2e": "node runBenchE2E.mjs",
+    "lint": "oxlint --config ../../../../examples/.oxlintrc.next.json .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

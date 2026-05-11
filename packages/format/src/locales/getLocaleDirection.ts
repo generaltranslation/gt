@@ -1,5 +1,5 @@
 import { intlCache } from '../cache/IntlCache';
-import _getLocaleProperties from './getLocaleProperties';
+import { _getLocaleProperties } from './getLocaleProperties';
 
 /**
  * Get the text direction for a given locale code using the Intl.Locale API.

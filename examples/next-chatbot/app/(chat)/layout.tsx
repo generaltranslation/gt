@@ -13,7 +13,7 @@ type ScriptWithSrcProps = ScriptProps & {
   src: string;
 };
 
-const ScriptWithSrc = Script as unknown as ComponentType<ScriptWithSrcProps>;
+const ScriptWithSrc = Script as ComponentType<ScriptWithSrcProps>;
 
 export default async function Layout({
   children,

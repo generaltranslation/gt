@@ -1,4 +1,4 @@
-import type { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 
 /**
  * TODO: this is a react-only type, we need to move this

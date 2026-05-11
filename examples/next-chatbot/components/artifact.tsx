@@ -26,21 +26,44 @@ import { ArtifactCloseButton } from './artifact-close-button';
 import { ArtifactMessages } from './artifact-messages';
 import { useSidebar } from './ui/sidebar';
 import { useArtifact } from '@/hooks/use-artifact';
+import {
+  codeArtifact,
+  type CodeArtifactMetadata,
+} from '@/artifacts/code/client';
 import { imageArtifact } from '@/artifacts/image/client';
-import { codeArtifact } from '@/artifacts/code/client';
 import { sheetArtifact } from '@/artifacts/sheet/client';
-import { textArtifact } from '@/artifacts/text/client';
+import {
+  textArtifact,
+  type TextArtifactMetadata,
+} from '@/artifacts/text/client';
 import equal from 'fast-deep-equal';
 import { T } from 'gt-next';
+import type { Artifact as ArtifactConfiguration } from './create-artifact';
 
 export const artifactDefinitions = [
   textArtifact,
   codeArtifact,
   imageArtifact,
   sheetArtifact,
-];
+] as const;
 
 export type ArtifactKind = (typeof artifactDefinitions)[number]['kind'];
+export type ArtifactMetadata =
+  | CodeArtifactMetadata
+  | TextArtifactMetadata
+  | null;
+export type ArtifactDefinition = ArtifactConfiguration<
+  ArtifactKind,
+  ArtifactMetadata
+>;
+
+export function getArtifactDefinition(
+  kind: ArtifactKind
+): ArtifactDefinition | undefined {
+  return artifactDefinitions.find((definition) => definition.kind === kind) as
+    | ArtifactDefinition
+    | undefined;
+}
 
 export interface UIArtifact {
   title: string;
@@ -246,9 +269,7 @@ function PureArtifact({
   const { width: windowWidth, height: windowHeight } = useWindowSize();
   const isMobile = windowWidth ? windowWidth < 768 : false;
 
-  const artifactDefinition = artifactDefinitions.find(
-    (definition) => definition.kind === artifact.kind
-  );
+  const artifactDefinition = getArtifactDefinition(artifact.kind);
 
   if (!artifactDefinition) {
     throw new Error('Artifact definition not found!');

@@ -30,6 +30,13 @@ import { Textarea } from './ui/textarea';
 import { SuggestedActions } from './suggested-actions';
 import equal from 'fast-deep-equal';
 import { useGT } from 'gt-next/client';
+
+type UploadResponse = {
+  url: string;
+  pathname: string;
+  contentType: string;
+};
+
 function PureMultimodalInput({
   chatId,
   input,
@@ -66,8 +73,18 @@ function PureMultimodalInput({
   className?: string;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasFocusedTextareaRef = useRef(false);
   const t = useGT();
   const { width } = useWindowSize();
+
+  const setTextareaRef = useCallback((textarea: HTMLTextAreaElement | null) => {
+    textareaRef.current = textarea;
+
+    if (textarea && !hasFocusedTextareaRef.current) {
+      textarea.focus();
+      hasFocusedTextareaRef.current = true;
+    }
+  }, []);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -143,32 +160,35 @@ function PureMultimodalInput({
     chatId,
   ]);
 
-  const uploadFile = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
+  const uploadFile = useCallback(
+    async (file: File): Promise<Attachment | undefined> => {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    try {
-      const response = await fetch('/api/files/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      try {
+        const response = await fetch('/api/files/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        const { url, pathname, contentType } = data;
+        if (response.ok) {
+          const data = (await response.json()) as UploadResponse;
+          const { url, pathname, contentType } = data;
 
-        return {
-          url,
-          name: pathname,
-          contentType: contentType,
-        };
+          return {
+            url,
+            name: pathname,
+            contentType: contentType,
+          };
+        }
+        const { error } = (await response.json()) as { error?: string };
+        toast.error(error ?? t('Upload failed'));
+      } catch {
+        toast.error(t('Failed to upload file, please try again!'));
       }
-      const { error } = await response.json();
-      toast.error(error);
-    } catch (error) {
-      toast.error(t('Failed to upload file, please try again!'));
-    }
-  };
+    },
+    [t]
+  );
 
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -193,7 +213,7 @@ function PureMultimodalInput({
         setUploadQueue([]);
       }
     },
-    [setAttachments]
+    [setAttachments, uploadFile]
   );
 
   return (
@@ -234,7 +254,7 @@ function PureMultimodalInput({
       )}
 
       <Textarea
-        ref={textareaRef}
+        ref={setTextareaRef}
         placeholder={t('Send a message...')}
         value={input}
         onChange={handleInput}
@@ -243,7 +263,6 @@ function PureMultimodalInput({
           className
         )}
         rows={2}
-        autoFocus
         onKeyDown={(event) => {
           if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();

@@ -8,7 +8,8 @@
     "ios": "react-native run-ios",
     "start": "react-native start",
     "build:android": "react-native build-android --extra-params \"--no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a\"",
-    "build:ios": "react-native build-ios --mode Debug"
+    "build:ios": "react-native build-ios --mode Debug",
+    "lint": "oxlint --config ../.oxlintrc.react.json ."
   },
   "dependencies": {
     "@formatjs/intl-displaynames": "^6.8.13",

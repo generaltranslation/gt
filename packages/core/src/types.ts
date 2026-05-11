@@ -1,7 +1,3 @@
-import type { LocaleProperties } from './locales/getLocaleProperties';
-
-import type { Variable, VariableType } from './types-dir/jsx/variables';
-
 import {
   type IcuMessage,
   type I18nextMessage,
@@ -17,7 +13,11 @@ import {
   type DataFormat,
   type Content,
   type StringFormat,
-} from './types-dir/jsx/content';
+  type Variable,
+  type VariableType,
+  type LocaleProperties,
+  type CustomMapping,
+} from '@generaltranslation/format/types';
 import type {
   ActionType,
   EntryMetadata,
@@ -227,7 +227,7 @@ export type JsxTranslationResult = {
   };
 };
 
-export type { CustomMapping } from './locales/customLocaleMapping';
+export type { CustomMapping };
 
 // ----- VARIABLES ----- //
 

@@ -1,4 +1,4 @@
-import type { CustomMapping } from 'generaltranslation/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import type { TranslationsLoader } from '../../translations-loaders/types';
 
 /**

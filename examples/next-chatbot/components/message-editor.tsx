@@ -5,7 +5,6 @@ import { Button } from './ui/button';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Textarea } from './ui/textarea';
 import { deleteTrailingMessages } from '@/app/(chat)/actions';
-import { toast } from 'sonner';
 import { T, Var } from 'gt-next';
 
 export type MessageEditorProps = {

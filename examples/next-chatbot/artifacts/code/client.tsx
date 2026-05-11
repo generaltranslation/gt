@@ -62,18 +62,20 @@ function detectRequiredHandlers(code: string): string[] {
   return handlers;
 }
 
-interface Metadata {
+export interface CodeArtifactMetadata {
   outputs: Array<ConsoleOutput>;
 }
 
-export const codeArtifact = new Artifact<'code', Metadata>({
+const initialCodeArtifactMetadata: CodeArtifactMetadata = {
+  outputs: [],
+};
+
+export const codeArtifact = new Artifact<'code', CodeArtifactMetadata | null>({
   kind: 'code',
   description:
     'Useful for code generation; Code execution is only available for python code.',
   initialize: async ({ setMetadata }) => {
-    setMetadata({
-      outputs: [],
-    });
+    setMetadata(initialCodeArtifactMetadata);
   },
   onStreamPart: ({ streamPart, setArtifact }) => {
     if (streamPart.type === 'code-delta') {
@@ -121,9 +123,9 @@ export const codeArtifact = new Artifact<'code', Metadata>({
         const outputContent: Array<ConsoleOutputContent> = [];
 
         setMetadata((metadata) => ({
-          ...metadata,
+          ...(metadata ?? initialCodeArtifactMetadata),
           outputs: [
-            ...metadata.outputs,
+            ...(metadata?.outputs ?? []),
             {
               id: runId,
               contents: [],
@@ -152,9 +154,11 @@ export const codeArtifact = new Artifact<'code', Metadata>({
           await currentPyodideInstance.loadPackagesFromImports(content, {
             messageCallback: (message: string) => {
               setMetadata((metadata) => ({
-                ...metadata,
+                ...(metadata ?? initialCodeArtifactMetadata),
                 outputs: [
-                  ...metadata.outputs.filter((output) => output.id !== runId),
+                  ...(metadata?.outputs ?? []).filter(
+                    (output) => output.id !== runId
+                  ),
                   {
                     id: runId,
                     contents: [{ type: 'text', value: message }],
@@ -183,9 +187,11 @@ export const codeArtifact = new Artifact<'code', Metadata>({
           await currentPyodideInstance.runPythonAsync(content);
 
           setMetadata((metadata) => ({
-            ...metadata,
+            ...(metadata ?? initialCodeArtifactMetadata),
             outputs: [
-              ...metadata.outputs.filter((output) => output.id !== runId),
+              ...(metadata?.outputs ?? []).filter(
+                (output) => output.id !== runId
+              ),
               {
                 id: runId,
                 contents: outputContent,
@@ -193,14 +199,19 @@ export const codeArtifact = new Artifact<'code', Metadata>({
               },
             ],
           }));
-        } catch (error: any) {
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+
           setMetadata((metadata) => ({
-            ...metadata,
+            ...(metadata ?? initialCodeArtifactMetadata),
             outputs: [
-              ...metadata.outputs.filter((output) => output.id !== runId),
+              ...(metadata?.outputs ?? []).filter(
+                (output) => output.id !== runId
+              ),
               {
                 id: runId,
-                contents: [{ type: 'text', value: error.message }],
+                contents: [{ type: 'text', value: errorMessage }],
                 status: 'failed',
               },
             ],

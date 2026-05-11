@@ -1,4 +1,4 @@
-import { LocaleProperties } from './getLocaleProperties';
+import type { LocaleProperties } from './getLocaleProperties';
 import { _isValidLocale } from './isValidLocale';
 
 export type FullCustomMapping = Record<string, LocaleProperties>;

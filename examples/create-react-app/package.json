@@ -17,14 +17,9 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "gt translate && react-scripts build",
+    "lint": "oxlint --config ../.oxlintrc.react.json .",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [

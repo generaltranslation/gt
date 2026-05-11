@@ -13,6 +13,7 @@ minimumReleaseAgeExclude:
   - gt-next
   - gt-react
   - gt-sanity
+  - '@generaltranslation/format'
   - gt-i18n
   - gt
   - gtx-cli
@@ -33,6 +34,8 @@ catalog:
   '@rollup/plugin-terser': ^0.4.4
   '@rollup/plugin-typescript': ^12.1.4
   '@types/node': ^22.13.5
+  oxfmt: ^0.47.0
+  oxlint: ^1.62.0
   rollup: ^4.32.1
   rollup-plugin-dts: ^6.2.3
   rollup-plugin-peer-deps-external: ^2.2.4

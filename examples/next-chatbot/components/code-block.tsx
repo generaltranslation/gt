@@ -1,16 +1,18 @@
 'use client';
 
-interface CodeBlockProps {
-  node: any;
-  inline: boolean;
-  className: string;
-  children: any;
+import type { ExtraProps } from 'react-markdown';
+import type { HTMLAttributes, ReactNode } from 'react';
+
+interface CodeBlockProps extends HTMLAttributes<HTMLElement>, ExtraProps {
+  inline?: boolean;
+  className?: string;
+  children?: ReactNode;
 }
 
 export function CodeBlock({
-  node,
+  node: _node,
   inline,
-  className,
+  className = '',
   children,
   ...props
 }: CodeBlockProps) {

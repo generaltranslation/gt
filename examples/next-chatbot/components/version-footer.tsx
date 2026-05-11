@@ -70,19 +70,17 @@ export const VersionFooter = ({
                 }),
                 {
                   optimisticData: documents
-                    ? [
-                        ...documents.filter((document) =>
-                          isAfter(
-                            new Date(document.createdAt),
-                            new Date(
-                              getDocumentTimestampByIndex(
-                                documents,
-                                currentVersionIndex
-                              )
+                    ? documents.filter((document) =>
+                        isAfter(
+                          new Date(document.createdAt),
+                          new Date(
+                            getDocumentTimestampByIndex(
+                              documents,
+                              currentVersionIndex
                             )
                           )
-                        ),
-                      ]
+                        )
+                      )
                     : [],
                 }
               );

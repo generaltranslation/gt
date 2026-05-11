@@ -4,7 +4,7 @@ import { _standardizeLocale } from './isValidLocale';
 /**
  * @internal
  */
-export default function _isSupersetLocale(
+export function _isSupersetLocale(
   superLocale: string,
   subLocale: string
 ): boolean {

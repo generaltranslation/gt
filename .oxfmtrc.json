@@ -15,6 +15,7 @@
   "sortPackageJson": false,
   "ignorePatterns": [
     ".changeset/*.md",
+    "examples/next-chatbot/lib/db/migrations/**",
     "tests/seeds/*",
     "tests/apps/compiler-cli-parity/**"
   ]

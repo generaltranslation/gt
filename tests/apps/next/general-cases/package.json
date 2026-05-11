@@ -7,7 +7,7 @@
     "build": "next build",
     "build:turbopack": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "oxlint --config ../../../../examples/.oxlintrc.next.json .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -18,18 +18,10 @@
     "react-dom": "19.2.2"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@next/eslint-plugin-next": "15.5.2",
-    "eslint": "^9",
-    "eslint-config-next": "15.5.2",
-    "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-jsx-a11y": "^6.10.0",
-    "eslint-plugin-react": "^7.37.0",
-    "eslint-plugin-react-hooks": "^5.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

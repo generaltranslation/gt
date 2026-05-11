@@ -11,20 +11,18 @@ import 'react-data-grid/lib/styles.css';
 type SheetEditorProps = {
   content: string;
   saveContent: (content: string, isCurrentVersion: boolean) => void;
-  status: string;
-  isCurrentVersion: boolean;
-  currentVersionIndex: number;
 };
 
 const MIN_ROWS = 50;
 const MIN_COLS = 26;
 
-const PureSpreadsheetEditor = ({
-  content,
-  saveContent,
-  status,
-  isCurrentVersion,
-}: SheetEditorProps) => {
+type SheetRow = {
+  id: number;
+  rowNumber: number;
+  [columnKey: string]: string | number;
+};
+
+const PureSpreadsheetEditor = ({ content, saveContent }: SheetEditorProps) => {
   const { theme } = useTheme();
 
   const parseData = useMemo(() => {
@@ -75,7 +73,7 @@ const PureSpreadsheetEditor = ({
 
   const initialRows = useMemo(() => {
     return parseData.map((row, rowIndex) => {
-      const rowData: any = {
+      const rowData: SheetRow = {
         id: rowIndex,
         rowNumber: rowIndex + 1,
       };
@@ -94,15 +92,15 @@ const PureSpreadsheetEditor = ({
     setLocalRows(initialRows);
   }, [initialRows]);
 
-  const generateCsv = (data: any[][]) => {
+  const generateCsv = (data: string[][]) => {
     return unparse(data);
   };
 
-  const handleRowsChange = (newRows: any[]) => {
+  const handleRowsChange = (newRows: SheetRow[]) => {
     setLocalRows(newRows);
 
     const updatedData = newRows.map((row) => {
-      return columns.slice(1).map((col) => row[col.key] || '');
+      return columns.slice(1).map((col) => String(row[col.key] || ''));
     });
 
     const newCsvContent = generateCsv(updatedData);
@@ -116,7 +114,7 @@ const PureSpreadsheetEditor = ({
       rows={localRows}
       enableVirtualization
       onRowsChange={handleRowsChange}
-      onCellClick={(args: CellClickArgs<any>) => {
+      onCellClick={(args: CellClickArgs<SheetRow>) => {
         if (args.column.key !== 'rowNumber') {
           args.selectCell(true);
         }
@@ -132,9 +130,6 @@ const PureSpreadsheetEditor = ({
 
 function areEqual(prevProps: SheetEditorProps, nextProps: SheetEditorProps) {
   return (
-    prevProps.currentVersionIndex === nextProps.currentVersionIndex &&
-    prevProps.isCurrentVersion === nextProps.isCurrentVersion &&
-    !(prevProps.status === 'streaming' && nextProps.status === 'streaming') &&
     prevProps.content === nextProps.content &&
     prevProps.saveContent === nextProps.saveContent
   );

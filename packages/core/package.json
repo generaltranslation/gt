@@ -53,6 +53,7 @@
   "dependencies": {
     "@formatjs/icu-messageformat-parser": "^2.11.4",
     "@noble/hashes": "^2.2.0",
+    "@generaltranslation/format": "workspace:*",
     "intl-messageformat": "^10.7.16"
   },
   "exports": {

@@ -7,7 +7,7 @@ import { TFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
 import { extractVariables } from '../../utils/extractVariables';
-import type { StringFormat } from 'generaltranslation/types';
+import type { StringFormat } from '@generaltranslation/format/types';
 import type {
   DictionaryEntry,
   DictionaryValue,
