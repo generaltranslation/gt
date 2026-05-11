@@ -1,12 +1,12 @@
-import { useRef } from 'react';
-import { I18nManager } from 'gt-i18n/internal';
-import { GTContext } from './GTContext';
-import { ProviderConditionStore } from '../store/ProviderConditionStore';
-import { I18nExternalStore } from '../store/I18nExternalStore';
-import { setI18nExternalStore } from '../store/singleton-operations';
-import type { I18nManagerConstructorParams } from 'gt-i18n/internal/types';
-import type { ReactNode } from 'react';
-import type { Translation } from 'gt-i18n/types';
+import { useRef } from "react";
+import { I18nManager } from "gt-i18n/internal";
+import { GTContext } from "./GTContext";
+import { ProviderConditionStore } from "../store/ProviderConditionStore";
+import { I18nStore } from "../store/I18nExternalStore";
+import { setI18nExternalStore } from "../store/singleton-operations";
+import type { I18nManagerConstructorParams } from "gt-i18n/internal/types";
+import type { ReactNode } from "react";
+import type { Translation } from "gt-i18n/types";
 
 export type GTProviderProps = I18nManagerConstructorParams<Translation> & {
   children?: ReactNode;
@@ -32,12 +32,12 @@ export function GTProvider({
   ...managerParams
 }: GTProviderProps) {
   const conditionStoreRef = useRef<ProviderConditionStore | undefined>(
-    undefined
+    undefined,
   );
 
   if (!conditionStoreRef.current) {
     const i18nManager = new I18nManager<Translation>(
-      managerParams as I18nManagerConstructorParams<Translation>
+      managerParams as I18nManagerConstructorParams<Translation>,
     );
     const conditionStore = new ProviderConditionStore({
       defaultLocale: i18nManager.getDefaultLocale(),
@@ -48,13 +48,13 @@ export function GTProvider({
       getLocale,
     });
 
-    setI18nExternalStore(new I18nExternalStore({ i18nManager }));
+    setI18nExternalStore(new I18nStore({ i18nManager }));
     conditionStoreRef.current = conditionStore;
   }
 
   const conditionStore = conditionStoreRef.current;
   if (!conditionStore) {
-    throw new Error('GTProvider failed to initialize a condition store.');
+    throw new Error("GTProvider failed to initialize a condition store.");
   }
 
   return (

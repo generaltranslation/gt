@@ -38,7 +38,7 @@ export {
   type GTProviderProps,
 } from "./refactor/provider/GTProvider";
 export {
-  I18nExternalStore,
+  I18nStore as I18nExternalStore,
   type I18nExternalStoreParams,
 } from "./refactor/store/I18nExternalStore";
 export {
