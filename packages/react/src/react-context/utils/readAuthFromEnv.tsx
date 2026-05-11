@@ -18,15 +18,15 @@ export function readAuthFromEnv({
     return {
       projectId:
         projectId ||
-        import.meta.env.VITE_GT_PROJECT_ID ||
-        import.meta.env.REDWOOD_ENV_GT_PROJECT_ID ||
+        import.meta.env?.VITE_GT_PROJECT_ID ||
+        import.meta.env?.REDWOOD_ENV_GT_PROJECT_ID ||
         '',
       devApiKey:
         devApiKey ||
-        import.meta.env.VITE_GT_DEV_API_KEY ||
-        import.meta.env.VITE_GT_API_KEY ||
-        import.meta.env.REDWOOD_ENV_GT_DEV_API_KEY ||
-        import.meta.env.REDWOOD_ENV_GT_API_KEY,
+        import.meta.env?.VITE_GT_DEV_API_KEY ||
+        import.meta.env?.VITE_GT_API_KEY ||
+        import.meta.env?.REDWOOD_ENV_GT_DEV_API_KEY ||
+        import.meta.env?.REDWOOD_ENV_GT_API_KEY,
     };
   } catch {
     /* emptys */

@@ -96,7 +96,7 @@ export class BrowserI18nManager extends I18nManager<Translation> {
     locale: string,
     init?: Record<string, Translation>
   ): LocalStorageTranslationCache | undefined {
-    if (!import.meta.env.DEV) return undefined;
+    if (!import.meta.env?.DEV) return undefined;
 
     if (!this._localStorageCaches[locale]) {
       this._localStorageCaches[locale] = new LocalStorageTranslationCache({
@@ -190,7 +190,7 @@ function isDevHotReloadEnabled(config: BrowserI18nManagerConstructorParams) {
   // TODO: this only works when you've defined a custom loadTranslations function
   // meaning CDN users will not have access to this feature
   const requirements: Record<string, boolean> = {
-    environment: !!import.meta.env.DEV,
+    environment: !!import.meta.env?.DEV,
     customLoadTranslations: !!config.loadTranslations,
     projectId: !!config.projectId,
     devApiKey: !!config.devApiKey,
@@ -201,7 +201,7 @@ function isDevHotReloadEnabled(config: BrowserI18nManagerConstructorParams) {
   );
   const anyEnabled = resolved.strings || resolved.jsx;
   // Only want this to log in development
-  if (import.meta.env.DEV && anyEnabled && !requirementsMet) {
+  if (import.meta.env?.DEV && anyEnabled && !requirementsMet) {
     const missingRequirements = Object.keys(requirements).filter(
       (key) => !requirements[key]
     );

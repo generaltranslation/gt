@@ -1,7 +1,6 @@
-export function createTsdownConfig(
-  entry: string[],
-  deps?: { alwaysBundle?: (string | RegExp)[] }
-) {
+import type { UserConfig } from 'tsdown';
+
+export function createTsdownConfig(entry: string[], deps?: UserConfig['deps']) {
   return [
     {
       entry,
