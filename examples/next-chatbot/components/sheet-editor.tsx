@@ -11,9 +11,6 @@ import 'react-data-grid/lib/styles.css';
 type SheetEditorProps = {
   content: string;
   saveContent: (content: string, isCurrentVersion: boolean) => void;
-  status: string;
-  isCurrentVersion: boolean;
-  currentVersionIndex: number;
 };
 
 const MIN_ROWS = 50;
@@ -133,9 +130,6 @@ const PureSpreadsheetEditor = ({ content, saveContent }: SheetEditorProps) => {
 
 function areEqual(prevProps: SheetEditorProps, nextProps: SheetEditorProps) {
   return (
-    prevProps.currentVersionIndex === nextProps.currentVersionIndex &&
-    prevProps.isCurrentVersion === nextProps.isCurrentVersion &&
-    !(prevProps.status === 'streaming' && nextProps.status === 'streaming') &&
     prevProps.content === nextProps.content &&
     prevProps.saveContent === nextProps.saveContent
   );

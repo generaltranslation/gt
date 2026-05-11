@@ -73,8 +73,18 @@ function PureMultimodalInput({
   className?: string;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasFocusedTextareaRef = useRef(false);
   const t = useGT();
   const { width } = useWindowSize();
+
+  const setTextareaRef = useCallback((textarea: HTMLTextAreaElement | null) => {
+    textareaRef.current = textarea;
+
+    if (textarea && !hasFocusedTextareaRef.current) {
+      textarea.focus();
+      hasFocusedTextareaRef.current = true;
+    }
+  }, []);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -244,7 +254,7 @@ function PureMultimodalInput({
       )}
 
       <Textarea
-        ref={textareaRef}
+        ref={setTextareaRef}
         placeholder={t('Send a message...')}
         value={input}
         onChange={handleInput}
