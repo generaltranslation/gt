@@ -10,7 +10,7 @@ import { SpreadsheetEditor } from '@/components/sheet-editor';
 import { parse, unparse } from 'papaparse';
 import { toast } from 'sonner';
 
-type Metadata = any;
+type Metadata = Record<string, never>;
 
 export const sheetArtifact = new Artifact<'sheet', Metadata>({
   kind: 'sheet',
@@ -26,22 +26,8 @@ export const sheetArtifact = new Artifact<'sheet', Metadata>({
       }));
     }
   },
-  content: ({
-    content,
-    currentVersionIndex,
-    isCurrentVersion,
-    onSaveContent,
-    status,
-  }) => {
-    return (
-      <SpreadsheetEditor
-        content={content}
-        currentVersionIndex={currentVersionIndex}
-        isCurrentVersion={isCurrentVersion}
-        saveContent={onSaveContent}
-        status={status}
-      />
-    );
+  content: ({ content, onSaveContent }) => {
+    return <SpreadsheetEditor content={content} saveContent={onSaveContent} />;
   },
   actions: [
     {

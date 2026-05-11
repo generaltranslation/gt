@@ -34,7 +34,6 @@ export function AuthForm({
             placeholder='user@acme.com'
             autoComplete='email'
             required
-            autoFocus
             defaultValue={defaultEmail}
           />
         </div>

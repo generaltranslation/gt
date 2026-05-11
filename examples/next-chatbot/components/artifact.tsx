@@ -32,6 +32,7 @@ import { sheetArtifact } from '@/artifacts/sheet/client';
 import { textArtifact } from '@/artifacts/text/client';
 import equal from 'fast-deep-equal';
 import { T } from 'gt-next';
+import type { Artifact as ArtifactDefinition } from './create-artifact';
 
 export const artifactDefinitions = [
   textArtifact,
@@ -248,7 +249,7 @@ function PureArtifact({
 
   const artifactDefinition = artifactDefinitions.find(
     (definition) => definition.kind === artifact.kind
-  );
+  ) as ArtifactDefinition<string, unknown> | undefined;
 
   if (!artifactDefinition) {
     throw new Error('Artifact definition not found!');

@@ -47,14 +47,19 @@ export function MessageReasoning({
         <T id='components.message_reasoning.1'>
           <div className='flex flex-row gap-2 items-center'>
             <div className='font-medium'>Reasoned for a few seconds</div>
-            <div
-              className='cursor-pointer'
+            <button
+              type='button'
+              className='cursor-pointer border-0 bg-transparent p-0 text-current'
+              aria-expanded={isExpanded}
+              aria-label={
+                isExpanded ? 'Collapse reasoning' : 'Expand reasoning'
+              }
               onClick={() => {
                 setIsExpanded(!isExpanded);
               }}
             >
               <ChevronDownIcon />
-            </div>
+            </button>
           </div>
         </T>
       )}

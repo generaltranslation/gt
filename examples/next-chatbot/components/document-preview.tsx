@@ -24,9 +24,20 @@ import { ImageEditor } from './image-editor';
 
 interface DocumentPreviewProps {
   isReadonly: boolean;
-  result?: any;
-  args?: any;
+  result?: DocumentPreviewResult;
+  args?: DocumentPreviewArgs;
 }
+
+type DocumentPreviewResult = {
+  id: string;
+  title: string;
+  kind: ArtifactKind;
+};
+
+type DocumentPreviewArgs = {
+  title: string;
+  kind: ArtifactKind;
+};
 
 export function DocumentPreview({
   isReadonly,
@@ -81,7 +92,11 @@ export function DocumentPreview({
   }
 
   if (isDocumentsFetching) {
-    return <LoadingSkeleton artifactKind={result.kind ?? args.kind} />;
+    return (
+      <LoadingSkeleton
+        artifactKind={result?.kind ?? args?.kind ?? artifact.kind}
+      />
+    );
   }
 
   const document: Document | null = previewDocument
@@ -147,7 +162,7 @@ const PureHitboxLayer = ({
   setArtifact,
 }: {
   hitboxRef: React.RefObject<HTMLDivElement | null>;
-  result: any;
+  result?: DocumentPreviewResult;
   setArtifact: (
     updaterFn: UIArtifact | ((currentArtifact: UIArtifact) => UIArtifact)
   ) => void;
@@ -157,7 +172,7 @@ const PureHitboxLayer = ({
       const boundingBox = event.currentTarget.getBoundingClientRect();
 
       setArtifact((artifact) =>
-        artifact.status === 'streaming'
+        artifact.status === 'streaming' || !result
           ? { ...artifact, isVisible: true }
           : {
               ...artifact,

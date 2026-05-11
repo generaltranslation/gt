@@ -1,5 +1,21 @@
-function Card({ header, footer, children }: any) {
-  return <div>{header}{children}{footer}</div>;
+import type { ReactNode } from 'react';
+
+function Card({
+  header,
+  footer,
+  children,
+}: {
+  header: ReactNode;
+  footer: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      {header}
+      {children}
+      {footer}
+    </div>
+  );
 }
 
 export default function CardHeaderFooterDynamic() {

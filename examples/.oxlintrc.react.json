@@ -1,0 +1,16 @@
+{
+  "$schema": "../node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+  "ignorePatterns": [
+    ".next/**",
+    "out/**",
+    "dist/**",
+    "build/**",
+    "coverage/**"
+  ],
+  "env": {
+    "browser": true,
+    "builtin": true,
+    "node": true
+  }
+}
