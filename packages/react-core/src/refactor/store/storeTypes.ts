@@ -3,11 +3,7 @@ import type {
   DictionaryObject,
   LookupOptions,
   Translation,
-} from 'gt-i18n/types';
-
-export type Unsubscribe = () => void;
-export type StoreListener = () => void;
-export type ListenerSet = Set<StoreListener>;
+} from "gt-i18n/types";
 
 export type I18nExternalConditionStore = {
   getLocale(): string;
@@ -17,6 +13,14 @@ export type I18nExternalConditionStore = {
   subscribeToRegion?(listener: StoreListener): Unsubscribe;
   setRegion?(region: string | undefined): void;
 };
+
+// ----- Listeners ----- //
+
+export type Unsubscribe = () => void;
+export type StoreListener = () => void;
+export type ListenerSet = Set<StoreListener>;
+
+// ----- Lookups ----- //
 
 export type TranslateLookup<T extends Translation = Translation> = {
   locale: string;
@@ -28,6 +32,7 @@ export type DictionaryLookup = {
   locale: string;
   id: string;
 };
+// ----- Snapshots ----- //
 
 export type TranslateSnapshot<T extends Translation = Translation> =
   | T
