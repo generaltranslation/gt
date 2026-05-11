@@ -78,13 +78,17 @@ function renderTranslatedElement({
   // branch (choose a branch)
   if (transformation === 'branch') {
     const { branch, children } = sourceProps;
+    const branchKey =
+      branch == null || branch === '' ? undefined : branch.toString();
+    const sourceBranches = sourceGT.branches || {};
+    const targetBranches = targetElement.d?.b || {};
     const sourceBranch =
-      branch && (sourceGT.branches || {})[branch]
-        ? (sourceGT.branches || {})[branch]
+      branchKey && sourceBranches[branchKey] !== undefined
+        ? sourceBranches[branchKey]
         : children;
     const targetBranch =
-      branch && (targetElement.d?.b || {})[branch]
-        ? (targetElement.d?.b || {})[branch]
+      branchKey && targetBranches[branchKey] !== undefined
+        ? targetBranches[branchKey]
         : targetElement.c;
     return renderTranslatedChildren({
       source: sourceBranch as TaggedChildren,

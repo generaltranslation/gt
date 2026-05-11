@@ -29,7 +29,7 @@ export type GTTag = {
 export type TaggedElementProps = Record<string, unknown> & {
   'data-_gt': GTTag;
   children?: TaggedChildren;
-  branch?: string;
+  branch?: string | number | boolean;
   n?: number;
   key?: React.Key;
 };

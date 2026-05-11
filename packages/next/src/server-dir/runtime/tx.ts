@@ -9,7 +9,7 @@ import {
   indexVars,
   VAR_IDENTIFIER,
 } from 'generaltranslation/internal';
-import { StringFormat } from 'generaltranslation/types';
+import { FormatVariables, StringFormat } from 'generaltranslation/types';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -55,16 +55,20 @@ export async function tx(
   // Compatibility with different options
   const {
     $locale,
-    $context: context,
-    $maxChars: maxChars,
-    $format: format,
+    $context: rawContext,
+    $maxChars: rawMaxChars,
+    $format: rawFormat,
     ...variables
   } = options;
+  const context = typeof rawContext === 'string' ? rawContext : undefined;
+  const maxChars = typeof rawMaxChars === 'number' ? rawMaxChars : undefined;
+  const format = typeof rawFormat === 'string' ? rawFormat : undefined;
+  const formatVariables = variables as FormatVariables;
 
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
-  const locale = $locale || (await getLocale());
+  const locale = typeof $locale === 'string' ? $locale : await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
   const gt = I18NConfig.getGTClass();
@@ -78,7 +82,7 @@ export async function tx(
       {
         locales,
         variables: {
-          ...variables,
+          ...formatVariables,
           ...declaredVars,
           [VAR_IDENTIFIER]: 'other',
         },
@@ -107,7 +111,7 @@ export async function tx(
   const dataFormat = format || 'ICU';
   const source = dataFormat === 'ICU' ? indexVars(message) : message;
   const lookupOptions = {
-    ...variables,
+    ...formatVariables,
     $_hash: hash,
     $format: dataFormat,
     ...(context && { $context: context }),

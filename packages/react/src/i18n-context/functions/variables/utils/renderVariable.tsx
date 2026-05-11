@@ -10,6 +10,7 @@ import {
   DateTime as GtExternalDateTime,
 } from '../GtInternalDateTime';
 import { RenderVariable } from '@generaltranslation/react-core/types';
+import type { ReactNode } from 'react';
 
 /**
  * Custom override for the renderVariable function
@@ -30,40 +31,59 @@ export const renderVariable: RenderVariable = ({
   injectionType,
 }) => {
   switch (variableType) {
-    case 'n':
+    case 'n': {
       const Num = injectionType === 'automatic' ? GtExternalNum : GtInternalNum;
+      const numValue =
+        typeof variableValue === 'string' || typeof variableValue === 'number'
+          ? variableValue
+          : variableValue == null
+            ? variableValue
+            : undefined;
       return (
         <Num options={variableOptions as Intl.NumberFormatOptions | undefined}>
-          {variableValue}
+          {numValue}
         </Num>
       );
-    case 'd':
+    }
+    case 'd': {
       const DateTime =
         injectionType === 'automatic' ? GtExternalDateTime : GtInternalDateTime;
+      const dateValue =
+        variableValue instanceof Date ? variableValue : undefined;
       return (
         <DateTime
           options={variableOptions as Intl.DateTimeFormatOptions | undefined}
         >
-          {variableValue}
+          {dateValue}
         </DateTime>
       );
-    case 'c':
+    }
+    case 'c': {
       const Currency =
         injectionType === 'automatic' ? GtExternalCurrency : GtInternalCurrency;
+      const currencyValue =
+        typeof variableValue === 'string' || typeof variableValue === 'number'
+          ? variableValue
+          : variableValue == null
+            ? variableValue
+            : undefined;
       return (
         <Currency
           options={variableOptions as Intl.NumberFormatOptions | undefined}
         >
-          {variableValue}
+          {currencyValue}
         </Currency>
       );
+    }
     case 'v':
-    default:
+    default: {
+      const renderedValue = variableValue as ReactNode;
       // If we have auto injected a variable, then remove it at runtime
       return injectionType === 'automatic' ? (
-        computeVar({ children: variableValue })
+        computeVar({ children: renderedValue })
       ) : (
-        <GtExternalVar>{variableValue}</GtExternalVar>
+        <GtExternalVar>{renderedValue}</GtExternalVar>
       );
+    }
   }
 };

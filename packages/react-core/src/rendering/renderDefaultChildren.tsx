@@ -55,8 +55,12 @@ export default function renderDefaultChildren({
     if (generaltranslation?.transformation === 'branch') {
       const { children, branch } = child.props;
       const branches = generaltranslation.branches || {};
+      const branchKey =
+        branch == null || branch === '' ? undefined : branch.toString();
       return handleChildren(
-        branch && branches[branch] !== undefined ? branches[branch] : children
+        branchKey && branches[branchKey] !== undefined
+          ? branches[branchKey]
+          : children
       );
     }
 

@@ -36,7 +36,9 @@ export class DictionaryManager {
     const customLoadDictionary = resolveDictionaryLoader();
     if (customLoadDictionary) {
       try {
-        result = await customLoadDictionary(reference);
+        result = (await customLoadDictionary(reference)) as
+          | Dictionary
+          | undefined;
         if (!result) return undefined;
         this.dictionaryMap.set(reference, result);
       } catch (error) {

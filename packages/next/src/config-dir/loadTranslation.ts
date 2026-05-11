@@ -42,7 +42,9 @@ export async function loadTranslations(
     loadTranslationsFunction = async (_props: RemoteLoadTranslationsInput) => {
       // Load translation
       try {
-        return await customLoadTranslations(_props.targetLocale);
+        return (await customLoadTranslations(_props.targetLocale)) as
+          | Translations
+          | undefined;
       } catch (error) {
         console.error(customLoadTranslationsError(_props.targetLocale), error);
         return undefined;
@@ -63,7 +65,7 @@ export async function loadTranslations(
             _props._versionId ? `/${_props._versionId}` : ''
           }`
         );
-        return await response.json();
+        return (await response.json()) as Translations;
       } catch (error) {
         console.error(remoteTranslationsError, error);
         return undefined;

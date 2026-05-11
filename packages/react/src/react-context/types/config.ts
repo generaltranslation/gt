@@ -45,7 +45,7 @@ export type GTProviderProps = {
   children?: React.ReactNode;
   projectId?: string;
   devApiKey?: string;
-  dictionary?: unknown;
+  dictionary?: Dictionary;
   locales?: string[];
   defaultLocale?: string;
   locale?: string;

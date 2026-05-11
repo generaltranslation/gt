@@ -39,7 +39,7 @@ import {
   VAR_IDENTIFIER,
   indexVars,
 } from 'generaltranslation/internal';
-import { StringFormat } from 'generaltranslation/types';
+import { FormatVariables, StringFormat } from 'generaltranslation/types';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
@@ -138,6 +138,10 @@ export async function getTranslations(id?: string): Promise<
     // Extract format from options
     const { $format: format, ...variableOptions } =
       options as DictionaryTranslationOptions & { $format?: StringFormat };
+    const maxChars =
+      metadata?.$maxChars ??
+      (typeof options.$maxChars === 'number' ? options.$maxChars : undefined);
+    const formatVariables = variableOptions as FormatVariables;
 
     // Render method
     const renderContent = (
@@ -153,7 +157,7 @@ export async function getTranslations(id?: string): Promise<
           {
             locales,
             variables: {
-              ...variableOptions,
+              ...formatVariables,
               ...declaredVars,
               [VAR_IDENTIFIER]: 'other',
             },
@@ -162,7 +166,7 @@ export async function getTranslations(id?: string): Promise<
         );
         const cutoffMessage = gt.formatCutoff(formattedMessage, {
           locales,
-          maxChars: metadata?.$maxChars ?? options.$maxChars,
+          maxChars,
         });
         return cutoffMessage;
       } catch (error) {
@@ -194,7 +198,7 @@ export async function getTranslations(id?: string): Promise<
         // (3) Fallback to original message (unformatted)
         const cutoffMessage = gt.formatCutoff(message, {
           locales,
-          maxChars: metadata?.$maxChars ?? options.$maxChars,
+          maxChars,
         });
         return cutoffMessage; // fallback to original message (unformatted)}
       }
