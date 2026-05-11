@@ -1,7 +1,7 @@
-import getPluralBranch from '../../../branches/plurals/getPluralBranch';
-import { useLocale } from '../../hooks/condition-hooks';
-import { useDefaultLocale } from '../../hooks/i18n-manager-hooks';
-import type { ReactNode } from 'react';
+import getPluralBranch from "../../../branches/plurals/getPluralBranch";
+import { useLocale } from "../../hooks/context-hooks";
+import { useDefaultLocale } from "../../hooks/external-store-hooks";
+import type { ReactNode } from "react";
 
 // ===== Component ===== //
 
@@ -23,7 +23,7 @@ function Plural({
     locale,
     defaultLocale,
   ];
-  if (typeof n !== 'number') {
+  if (typeof n !== "number") {
     return children;
   }
   return getPluralBranch(n, locales, branches) || children;
@@ -39,8 +39,8 @@ function GtInternalPlural(props: {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-Plural._gtt = 'plural';
-GtInternalPlural._gtt = 'plural-automatic';
+Plural._gtt = "plural";
+GtInternalPlural._gtt = "plural-automatic";
 
 // ===== Exports ===== //
 

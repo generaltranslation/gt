@@ -27,11 +27,11 @@ export class ReactConditionStore implements WritableConditionStore {
     });
   }
 
-  getLocale(): string {
+  getLocale = (): string => {
     return this.locale;
-  }
+  };
 
-  setLocale(locale: string): void {
+  setLocale = (locale: string): void => {
     this.locale = this.resolveLocale(locale);
-  }
+  };
 }

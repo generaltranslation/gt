@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from "react";
-import { useI18nExternalStore } from "../context/provider/GTContext";
 import type { Translation } from "gt-i18n/types";
 import type {
   TranslateLookup,
@@ -12,10 +11,13 @@ import type {
 import type { CustomMapping } from "generaltranslation/types";
 import { getI18nStore } from "../context/store/singleton-operations";
 
+/**
+ * @internal
+ */
 export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>,
 ): TranslateSnapshot<T> {
-  const store = useI18nExternalStore();
+  const store = getI18nStore();
   return useSyncExternalStore(
     (listener) => store.subscribeToTranslate(lookup, listener),
     () => store.getTranslateSnapshot(lookup),
@@ -23,10 +25,13 @@ export function useTranslate<T extends Translation>(
   );
 }
 
+/**
+ * @internal
+ */
 export function useTranslateMany<T extends Translation>(
   lookups: readonly TranslateLookup<T>[],
 ): TranslateManySnapshot<T> {
-  const store = useI18nExternalStore();
+  const store = getI18nStore();
   return useSyncExternalStore(
     (listener) => store.subscribeToTranslateMany(lookups, listener),
     () => store.getTranslateManySnapshot(lookups),
@@ -34,10 +39,13 @@ export function useTranslateMany<T extends Translation>(
   );
 }
 
+/**
+ * @internal
+ */
 export function useDictionaryEntry(
   lookup: DictionaryLookup,
 ): DictionaryEntrySnapshot {
-  const store = useI18nExternalStore();
+  const store = getI18nStore();
   return useSyncExternalStore(
     (listener) => store.subscribeToDictionaryEntry(lookup, listener),
     () => store.getDictionaryEntrySnapshot(lookup),
@@ -45,10 +53,13 @@ export function useDictionaryEntry(
   );
 }
 
+/**
+ * @internal
+ */
 export function useDictionaryObject(
   lookup: DictionaryLookup,
 ): DictionaryObjectSnapshot {
-  const store = useI18nExternalStore();
+  const store = getI18nStore();
   return useSyncExternalStore(
     (listener) => store.subscribeToDictionaryObject(lookup, listener),
     () => store.getDictionaryObjectSnapshot(lookup),
@@ -57,7 +68,7 @@ export function useDictionaryObject(
 }
 
 export function useCustomMapping(): CustomMapping {
-  const store = useI18nExternalStore();
+  const store = getI18nStore();
   return useSyncExternalStore(
     store.subscribeToCustomMapping,
     store.getCustomMappingSnapshot,
@@ -66,7 +77,7 @@ export function useCustomMapping(): CustomMapping {
 }
 
 export function useEnableI18n(): boolean {
-  const store = useI18nExternalStore();
+  const store = getI18nStore();
   return useSyncExternalStore(
     store.subscribeToEnableI18n,
     store.getEnableI18nSnapshot,

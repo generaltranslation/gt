@@ -16,7 +16,7 @@ export {
   useRegion,
   useSetLocale,
   useSetRegion,
-} from "./refactor/hooks/condition-hooks";
+} from "./refactor/hooks/context-hooks";
 export {
   useCustomMapping,
   useEnableI18n,
@@ -26,7 +26,7 @@ export {
   useLocales,
   useTranslate,
   useTranslateMany,
-} from "./refactor/hooks/i18n-manager-hooks";
+} from "./refactor/hooks/external-store-hooks";
 export {
   GTContext,
   useConditionStore,
