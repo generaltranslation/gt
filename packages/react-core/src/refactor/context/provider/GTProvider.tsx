@@ -1,59 +1,79 @@
-import { useRef } from "react";
-import { I18nManager } from "gt-i18n/internal";
-import { GTContext } from "./GTContext";
-import { ProviderConditionStore } from "../store/ProviderConditionStore";
-import { I18nStore } from "../store/I18nStore";
-import { setI18nStore } from "../store/singleton-operations";
-import type { I18nManagerConstructorParams } from "gt-i18n/internal/types";
-import type { ReactNode } from "react";
-import type { Translation } from "gt-i18n/types";
+import { GTContext, GTContextType } from "./GTContext";
+import {
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+import { ReactI18nManagerConstructorParams } from "../../state/ReactI18nManager";
+import {
+  initializeState,
+  isGTInitialized,
+} from "../../state/singleton-operations";
+import { getI18nStore } from "../store/singleton-operations";
 
-export type GTProviderProps = I18nManagerConstructorParams<Translation> & {
+export type GTProviderProps = ReactI18nManagerConstructorParams & {
   children?: ReactNode;
   locale: string;
+  fallback?: ReactNode;
 };
 
 // ===== Component ===== //
 
 /**
- * Minimal external-store provider.
- *
- * The condition store is created once per provider instance and exposed
- * through context. The manager-backed external store is initialized as a
- * singleton for hooks that read I18nManager snapshots.
+ * - If you want to override i18nManager or conditionStore, do so by calling
+ *   initializeState() (or your own version of it) before GTProvider is
+ *   rendered
+ * - locale and initialTranslations are required
  */
 export function GTProvider({
   children,
-  locale,
+  locale: initialLocale,
+  fallback,
   ...managerParams
 }: GTProviderProps) {
-  const conditionStoreRef = useRef<ProviderConditionStore | undefined>(
-    undefined,
+  // ------ Initialization ------ //
+  if (!isGTInitialized()) {
+    initializeState({
+      locale: initialLocale,
+      config: managerParams,
+      renderStrategy: "server-render",
+    });
+  }
+
+  // ------ Context ------ //
+
+  const locale = useSyncExternalStore(
+    getI18nStore().subscribeToLocale,
+    getI18nStore().getLocaleSnapshot,
+    getI18nStore().getLocaleSnapshot,
+  );
+  const setLocale = useCallback((locale: string) => {
+    getI18nStore().setLocale(locale);
+  }, []);
+  const { status } = useSyncExternalStore(
+    getI18nStore().subscribeToTranslationStatus,
+    getI18nStore().getTranslationStatusSnapshot,
+    getI18nStore().getTranslationStatusSnapshot,
   );
 
-  if (!conditionStoreRef.current) {
-    const i18nManager = new I18nManager<Translation>(
-      managerParams as I18nManagerConstructorParams<Translation>,
-    );
-    const conditionStore = new ProviderConditionStore({
-      defaultLocale: i18nManager.getDefaultLocale(),
-      locales: i18nManager.getLocales(),
-      customMapping: i18nManager.getCustomMapping(),
-      locale: locale || undefined,
-      region,
-      getLocale,
-    });
+  const context: GTContextType = useMemo(
+    () => ({
+      locale,
+      setLocale,
+    }),
+    [locale, setLocale],
+  );
 
-    setI18nStore(new I18nStore());
-    conditionStoreRef.current = conditionStore;
-  }
+  // ------ Rendering ------ //
 
-  const conditionStore = conditionStoreRef.current;
-  if (!conditionStore) {
-    throw new Error("GTProvider failed to initialize a condition store.");
-  }
+  // Show fallback when translations are loading for a locale change
+  // locale will not be updated until the translations are loaded
+  const display = status !== "loading";
 
   return (
-    <GTContext.Provider value={conditionStore}>{children}</GTContext.Provider>
+    <GTContext.Provider value={context}>
+      {display ? children : fallback}
+    </GTContext.Provider>
   );
 }

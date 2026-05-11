@@ -1,4 +1,8 @@
-import { getI18nManager, type I18nManager } from "gt-i18n/internal";
+import {
+  getI18nManager,
+  LOCALES_CACHE_MISS_EVENT_NAME,
+  type I18nManager,
+} from "gt-i18n/internal";
 import { hashSource } from "generaltranslation/id";
 import { indexVars } from "generaltranslation/internal";
 import type { CustomMapping, IcuMessage } from "generaltranslation/types";
@@ -24,6 +28,11 @@ import type {
   LookupOptions,
   Translation,
 } from "gt-i18n/types";
+import { getConditionStore } from "../../state/singleton-operations";
+
+type TranslationStatusType =
+  | { status: "loading"; locale: string }
+  | { status: "ready" };
 
 type LocaleCacheEvent<T> = {
   locale: string;
@@ -67,11 +76,15 @@ export class I18nStore {
   >();
   private dictionaryEntryListeners = new Set<DictionaryStoreListener>();
   private dictionaryObjectListeners = new Set<DictionaryStoreListener>();
+  private localeListeners: ListenerSet = new Set();
 
   private unsubscribeLocalesEvents: Unsubscribe | undefined;
   private unsubscribeTranslateEvents: Unsubscribe | undefined;
   private unsubscribeLocalesDictionaryEvents: Unsubscribe | undefined;
   private unsubscribeDictionaryEntryEvents: Unsubscribe | undefined;
+
+  private translationStatusListeners: ListenerSet = new Set();
+  private translationStatus: TranslationStatusType = { status: "ready" };
 
   constructor() {}
 
@@ -93,7 +106,13 @@ export class I18nStore {
     return this.subscribeToStaticSet(this.enableI18nListeners, listener);
   };
 
-  // ===== Translate Subscriptions ===== //
+  // ===== ConditionStore Subscriptions ===== //
+
+  subscribeToLocale = (listener: StoreListener): Unsubscribe => {
+    return this.subscribeToStaticSet(this.localeListeners, listener);
+  };
+
+  // ===== I18nManager Subscriptions ===== //
 
   subscribeToTranslate<T extends Translation>(
     lookup: TranslateLookup<T>,
@@ -170,7 +189,13 @@ export class I18nStore {
     return getI18nManager().isTranslationEnabled();
   };
 
-  // ===== Translate Snapshots ===== //
+  // ===== ConditionStore Snapshots ===== //
+
+  getLocaleSnapshot = (): string => {
+    return getConditionStore().getLocale();
+  };
+
+  // ===== I18nManager Snapshots ===== //
 
   getTranslateSnapshot = <T extends Translation>({
     locale,
@@ -213,6 +238,63 @@ export class I18nStore {
     id,
   }: DictionaryLookup): DictionaryObjectSnapshot => {
     return getI18nManager().lookupDictionaryObj(locale, id);
+  };
+
+  // ===== set locale operations ===== //
+
+  /**
+   * Set locale triggers an async translation load. We only
+   * update to the new locale after the translation is complete.
+   *
+   * We push updates to translationStatus for subscribers to hook into
+   * for triggering a re-render.
+   */
+  setLocale = (locale: string): void => {
+    // If already loaded, just immediately emit the status update
+    const i18nManager = getI18nManager();
+    if (i18nManager.hasTranslations(locale)) {
+      this.updateTranslationStatus({ status: "ready" });
+      return;
+    }
+
+    // Load new translations and update status and locale
+    this.updateTranslationStatus({ status: "loading", locale });
+    getI18nManager()
+      .loadTranslations(locale)
+      .then(() => {
+        // dedupe update
+        if (
+          this.translationStatus.status === "ready" ||
+          this.translationStatus.locale !== locale
+        ) {
+          return;
+        }
+        this.updateTranslationStatus({ status: "ready" });
+        this.updateLocale(locale);
+      });
+  };
+
+  subscribeToTranslationStatus = (listener: StoreListener): Unsubscribe => {
+    return this.subscribeToStaticSet(this.translationStatusListeners, listener);
+  };
+
+  getTranslationStatusSnapshot = (): TranslationStatusType => {
+    return this.translationStatus;
+  };
+
+  private updateTranslationStatus = (txStatus: TranslationStatusType): void => {
+    // Need to create a new object, otherwise rerender will not trigger
+    if (txStatus.status === "loading") {
+      this.translationStatus = { status: "loading", locale: txStatus.locale };
+    } else {
+      this.translationStatus = { status: "ready" };
+    }
+    this.translationStatusListeners.forEach((listener) => listener());
+  };
+
+  private updateLocale = (locale: string): void => {
+    getConditionStore().setLocale(locale);
+    this.localeListeners.forEach((listener) => listener());
   };
 
   // ===== Subscription Lifecycle ===== //

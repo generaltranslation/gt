@@ -248,7 +248,19 @@ class I18nManager<
 
   // ========== Translation Resolution ========== //
 
-  // ----- New Operations ----- //
+  /**
+   * Used for checking the status of a translation load
+   */
+  hasTranslations(locale: string): boolean {
+    try {
+      const translationLocale = this.resolveCacheLocale(locale);
+      if (!translationLocale) return false;
+      return this.localesCache.get(translationLocale) !== undefined;
+    } catch (error) {
+      this.handleError(error);
+      return false;
+    }
+  }
 
   /**
    * Loads in translations for a given locale
