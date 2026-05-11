@@ -846,7 +846,7 @@ describe('auto JSX injection simulation', () => {
           child !== null &&
           't' in child &&
           child.t === 'Branch'
-      ) as any;
+      ) as unknown;
       expect(branchEl).toBeDefined();
       // Branch children should preserve "Fallback with Var" text
       // (not be a single variable with text lost)

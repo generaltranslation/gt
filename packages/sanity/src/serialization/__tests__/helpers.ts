@@ -9,26 +9,24 @@ import { SerializedDocument, TranslationLevel } from '../types';
 import schema from './__fixtures__/schema';
 import clone from 'just-clone';
 
-export const getSerialized = (
-  document: SanityDocument,
+export const getSerialized = <TDocument extends SanityDocument>(
+  document: TDocument,
   level: TranslationLevel
 ): SerializedDocument => {
   const serializer = BaseDocumentSerializer(schema);
   return serializer.serializeDocument(document, level);
 };
 
-export const getDeserialized = (
-  document: SanityDocument,
+export const getDeserialized = <TDocument extends SanityDocument>(
+  document: TDocument,
   level: TranslationLevel
-): Record<string, any> => {
+): TDocument => {
   const serialized = getSerialized(document, level);
   const deserializer = BaseDocumentDeserializer;
-  return deserializer.deserializeDocument(serialized.content);
+  return deserializer.deserializeDocument(serialized.content) as TDocument;
 };
 
-export const getValidFields = (
-  field: Record<string, any>
-): Record<string, any> => {
+export const getValidFields = (field: Record<string, unknown>): string[] => {
   const invalidFields = ['_type', '_key'];
   return Object.keys(field).filter((key) => !invalidFields.includes(key));
 };
@@ -39,7 +37,9 @@ export const toPlainText = (blocks: PortableTextBlock[]): string => {
       if (block._type !== 'block' || !block.children) {
         return '';
       }
-      return (block.children as Array<any>).map((child) => child.text).join('');
+      return (block.children as Array<{ text?: string }>)
+        .map((child) => child.text ?? '')
+        .join('');
     })
     .join('\n\n');
 };
@@ -111,7 +111,7 @@ export const addedBlockDeserializers = [
     deserialize(
       el: HTMLElement,
       //eslint-disable-next-line no-undef -- not picking up NodeListOf/ChildNode
-      next: (nodes: NodeListOf<ChildNode>) => any
+      next: (nodes: NodeListOf<ChildNode>) => unknown
     ): TypedObject | undefined {
       if (!el.className || el.className?.toLowerCase() !== 'annotation') {
         return undefined;

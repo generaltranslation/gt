@@ -92,7 +92,7 @@ export async function detectFramework(): Promise<
  * @returns True if the project is identified as a Mintlify project, false otherwise
  */
 export function isMintlifyProject(
-  _packageJson: Record<string, any> | null
+  _packageJson: Record<string, unknown> | null
 ): boolean {
   const cwd = process.cwd();
 

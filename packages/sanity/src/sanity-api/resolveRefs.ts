@@ -6,6 +6,14 @@ interface Reference {
   _ref: string;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const isReference = (value: unknown): value is Reference =>
+  isRecord(value) &&
+  value._type === 'reference' &&
+  typeof value._ref === 'string';
+
 /**
  * Function that:
  * 1. Finds all references in the document
@@ -36,7 +44,7 @@ export async function resolveRefs(
  * Recursively finds all references in a document or object
  */
 function findReferences(
-  obj: any,
+  obj: unknown,
   path: string[] = []
 ): { ref: Reference; path: string[] }[] {
   if (!obj || typeof obj !== 'object') {
@@ -45,15 +53,15 @@ function findReferences(
 
   const references: { ref: Reference; path: string[] }[] = [];
 
-  if (obj._ref) {
-    references.push({ ref: obj as Reference, path });
+  if (isReference(obj)) {
+    references.push({ ref: obj, path });
   }
 
   if (Array.isArray(obj)) {
     obj.forEach((item, index) => {
       references.push(...findReferences(item, [...path, index.toString()]));
     });
-  } else {
+  } else if (isRecord(obj)) {
     Object.keys(obj).forEach((key) => {
       references.push(...findReferences(obj[key], [...path, key]));
     });
@@ -104,21 +112,21 @@ function updateDocumentReferences(
   doc: SanityDocument,
   translatedRefs: Map<string, string>
 ): SanityDocument {
-  return updateReferencesRecursive(doc, translatedRefs);
+  return updateReferencesRecursive(doc, translatedRefs) as SanityDocument;
 }
 
 /**
  * Recursively updates references in an object
  */
 function updateReferencesRecursive(
-  obj: any,
+  obj: unknown,
   translatedRefs: Map<string, string>
-): any {
+): unknown {
   if (!obj || typeof obj !== 'object') {
     return obj;
   }
 
-  if (obj._ref && translatedRefs.has(obj._ref)) {
+  if (isReference(obj) && translatedRefs.has(obj._ref)) {
     return {
       ...obj,
       _ref: translatedRefs.get(obj._ref),
@@ -129,9 +137,12 @@ function updateReferencesRecursive(
     return obj.map((item) => updateReferencesRecursive(item, translatedRefs));
   }
 
-  const updated: any = {};
+  const updated: Record<string, unknown> = {};
   Object.keys(obj).forEach((key) => {
-    updated[key] = updateReferencesRecursive(obj[key], translatedRefs);
+    updated[key] = updateReferencesRecursive(
+      (obj as Record<string, unknown>)[key],
+      translatedRefs
+    );
   });
 
   return updated;

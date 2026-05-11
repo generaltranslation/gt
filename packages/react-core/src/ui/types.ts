@@ -5,7 +5,7 @@ export type LocaleSelectorProps = {
   locales?: string[];
   customNames?: { [key: string]: string };
   customMapping?: CustomMapping;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export type RegionSelectorProps<Regions extends string[]> = {

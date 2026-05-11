@@ -28,7 +28,8 @@ export async function tx(
   content: string,
   options: RuntimeTranslationOptionsWithFormat = {}
 ): Promise<string> {
-  const locale = options.$locale ?? getCurrentLocale();
+  const locale =
+    typeof options.$locale === 'string' ? options.$locale : getCurrentLocale();
   return resolveStringContentWithRuntimeFallback(locale, content, {
     $format: 'STRING',
     ...options,

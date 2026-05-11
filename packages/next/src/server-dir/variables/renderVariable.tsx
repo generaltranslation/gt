@@ -4,6 +4,7 @@ import { Currency } from '../../variables/Currency';
 import { DateTime } from '../../variables/DateTime';
 import { RelativeTime } from '../../variables/RelativeTime';
 import { RenderVariable } from 'gt-react/internal';
+import type { ReactNode } from 'react';
 
 export const renderVariable: RenderVariable = ({
   variableType,
@@ -11,21 +12,34 @@ export const renderVariable: RenderVariable = ({
   variableOptions,
 }) => {
   if (variableType === 'n') {
+    const numValue =
+      typeof variableValue === 'string' || typeof variableValue === 'number'
+        ? variableValue
+        : variableValue == null
+          ? variableValue
+          : undefined;
     return (
       <Num options={variableOptions as Intl.NumberFormatOptions}>
-        {variableValue}
+        {numValue}
       </Num>
     );
   } else if (variableType === 'd') {
+    const dateValue = variableValue instanceof Date ? variableValue : undefined;
     return (
       <DateTime options={variableOptions as Intl.DateTimeFormatOptions}>
-        {variableValue}
+        {dateValue}
       </DateTime>
     );
   } else if (variableType === 'c') {
+    const currencyValue =
+      typeof variableValue === 'string' || typeof variableValue === 'number'
+        ? variableValue
+        : variableValue == null
+          ? variableValue
+          : undefined;
     return (
       <Currency options={variableOptions as Intl.NumberFormatOptions}>
-        {variableValue}
+        {currencyValue}
       </Currency>
     );
   } else if (variableType === 'rt') {
@@ -60,5 +74,5 @@ export const renderVariable: RenderVariable = ({
       />
     );
   }
-  return <Var>{variableValue}</Var>;
+  return <Var>{variableValue as ReactNode}</Var>;
 };

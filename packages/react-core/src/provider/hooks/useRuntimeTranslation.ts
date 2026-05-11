@@ -25,9 +25,10 @@ import type { TranslateManyEntry } from 'generaltranslation/types';
 
 type TranslationRequestMetadata = {
   hash: string;
+  id?: string;
   context?: string;
   maxChars?: number;
-  [attr: string]: any;
+  [attr: string]: unknown;
 };
 
 type TranslationRequestQueueItem =
@@ -36,14 +37,14 @@ type TranslationRequestQueueItem =
       source: string;
       metadata: TranslationRequestMetadata;
       resolve: (value: TranslatedChildren) => void;
-      reject: (error: any) => void; // kept for API compatibility (unused after change)
+      reject: (error: unknown) => void; // kept for API compatibility (unused after change)
     }
   | {
       dataFormat: 'JSX';
       source: JsxChildren;
       metadata: TranslationRequestMetadata;
       resolve: (value: TranslatedChildren) => void;
-      reject: (error: any) => void; // kept for API compatibility (unused after change)
+      reject: (error: unknown) => void; // kept for API compatibility (unused after change)
     };
 
 export default function useRuntimeTranslation({
@@ -68,7 +69,7 @@ export default function useRuntimeTranslation({
   };
   environment: 'development' | 'production' | 'test';
   setTranslations: React.Dispatch<React.SetStateAction<Translations | null>>;
-  [key: string]: any;
+  [key: string]: unknown;
 }): {
   registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
@@ -128,10 +129,10 @@ export default function useRuntimeTranslation({
         const next = prev ? { ...prev } : {};
         let changed = false;
         for (const k of keys) {
-          const nv = (delta as any)[k];
-          const pv = (prev as any)?.[k];
+          const nv = delta[k];
+          const pv = prev?.[k];
           if (!Object.is(pv, nv)) {
-            (next as any)[k] = nv;
+            next[k] = nv;
             changed = true;
           }
         }
@@ -235,8 +236,13 @@ export default function useRuntimeTranslation({
             resultsMap.set(hash, null);
           }
         }
-      } catch (e: any) {
-        if (e?.name === 'AbortError') {
+      } catch (e: unknown) {
+        if (
+          typeof e === 'object' &&
+          e !== null &&
+          'name' in e &&
+          e.name === 'AbortError'
+        ) {
           console.warn(runtimeTranslationTimeoutWarning);
         } else {
           console.warn(dynamicTranslationError, e);

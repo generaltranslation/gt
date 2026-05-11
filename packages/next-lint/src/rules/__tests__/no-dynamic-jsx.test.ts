@@ -16,7 +16,7 @@ const ruleTester = new RuleTester({
       },
     },
   },
-} as any); // Type assertion to work around ESLint type issues
+} as unknown); // Type assertion to work around ESLint type issues
 
 ruleTester.run('no-dynamic-jsx', noDynamicJsx, {
   valid: [

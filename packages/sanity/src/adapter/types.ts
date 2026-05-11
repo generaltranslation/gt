@@ -1,5 +1,5 @@
 export type FieldMatcher = {
-  documentId?: string;
+  documentId?: string | null;
   fields?: { property: string; type?: string }[];
 };
 

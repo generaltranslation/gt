@@ -5,6 +5,7 @@ import {
   dedupeDocumentsPreferDraft,
   getPublishedId,
 } from '../documentIds';
+import type { SanityDocument } from 'sanity';
 
 describe('document ID helpers', () => {
   test('normalizes only draft prefixes', () => {
@@ -17,7 +18,7 @@ describe('document ID helpers', () => {
       { _id: 'article-1', _type: 'article', _rev: 'published' },
       { _id: 'drafts.article-1', _type: 'article', _rev: 'draft' },
       { _id: 'article-2', _type: 'article', _rev: 'published-2' },
-    ] as any);
+    ] as SanityDocument[]);
 
     expect(result).toEqual([
       { _id: 'drafts.article-1', _type: 'article', _rev: 'draft' },

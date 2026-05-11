@@ -72,6 +72,9 @@ export default function useCreateInternalUseTranslationsFunction(
       // Extract format from options
       const { $format: format, ...variableOptions } =
         options as DictionaryTranslationOptions & { $format?: StringFormat };
+      const maxChars =
+        metadata?.$maxChars ??
+        (typeof options.$maxChars === 'number' ? options.$maxChars : undefined);
 
       // Render method
       const renderMessage = (
@@ -95,7 +98,7 @@ export default function useCreateInternalUseTranslationsFunction(
             }
           );
           const cutoffMessage = gt.formatCutoff(formattedMessage, {
-            maxChars: metadata?.$maxChars ?? options.$maxChars,
+            maxChars,
           });
           return cutoffMessage;
         } catch (error) {
@@ -126,7 +129,7 @@ export default function useCreateInternalUseTranslationsFunction(
 
           // (3) Fallback to original message (unformatted)
           const cutoffMessage = gt.formatCutoff(message, {
-            maxChars: metadata?.$maxChars ?? options.$maxChars,
+            maxChars,
           });
           return cutoffMessage; // fallback to original message (unformatted)}
         }

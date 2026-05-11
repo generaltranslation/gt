@@ -12,7 +12,7 @@ import {
 import { CustomMapping } from 'generaltranslation/types';
 
 export type ClientProviderProps = {
-  children: any;
+  children: React.ReactNode;
   dictionary: Dictionary;
   dictionaryTranslations: Dictionary;
   translations: Translations;
@@ -45,7 +45,7 @@ export type GTProviderProps = {
   children?: React.ReactNode;
   projectId?: string;
   devApiKey?: string;
-  dictionary?: any;
+  dictionary?: Dictionary;
   locales?: string[];
   defaultLocale?: string;
   locale?: string;
@@ -76,5 +76,5 @@ export type GTProviderProps = {
     params: UseDetermineLocaleParams
   ) => UseDetermineLocaleReturn;
   reloadOnLocaleUpdate?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 };

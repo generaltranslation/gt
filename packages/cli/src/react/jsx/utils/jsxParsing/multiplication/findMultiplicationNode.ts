@@ -12,7 +12,7 @@ import {
 } from '../../constants.js';
 
 export type MultiplicationNodeResult = {
-  parent: any | undefined;
+  parent: Record<string, unknown> | unknown[] | undefined;
   key: string | undefined;
   node: WhitespaceMultiplicationNode;
 };
@@ -38,7 +38,7 @@ export function findMultiplicationNode(
       | WhitespaceJsxTreeResult
       | WhitespaceMultiplicationNode
       | (WhitespaceJsxTreeResult | WhitespaceMultiplicationNode)[],
-    parent: any | undefined,
+    parent: MultiplicationNodeResult['parent'],
     key: string | undefined
   ): MultiplicationNodeResult | undefined {
     if (Array.isArray(curr)) {
@@ -55,7 +55,7 @@ export function findMultiplicationNode(
   // Helper function to handle a single child
   function handleChild(
     curr: WhitespaceJsxTreeResult | WhitespaceMultiplicationNode,
-    parent: any | undefined,
+    parent: MultiplicationNodeResult['parent'],
     key: string | undefined
   ): MultiplicationNodeResult | undefined {
     if (isWhitespaceMultiplicationNode(curr)) {
@@ -83,7 +83,14 @@ export function findMultiplicationNode(
           if (elementIsPlural && !isAcceptedPluralForm(propKey)) continue;
           if (elementIsBranch && BRANCH_CONTROL_PROPS.has(propKey)) continue;
           if (propValue && typeof propValue === 'object') {
-            const result = handleChildren(propValue, curr.props, propKey);
+            const result = handleChildren(
+              propValue as
+                | WhitespaceJsxTreeResult
+                | WhitespaceMultiplicationNode
+                | (WhitespaceJsxTreeResult | WhitespaceMultiplicationNode)[],
+              curr.props,
+              propKey
+            );
             if (result) return result;
           }
         }

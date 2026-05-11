@@ -1,4 +1,7 @@
-import { getPluralForm } from 'generaltranslation/internal';
+import {
+  getPluralForm,
+  isAcceptedPluralForm,
+} from 'generaltranslation/internal';
 
 /**
  * Main function to get the appropriate branch based on the provided number and branches.
@@ -10,12 +13,14 @@ import { getPluralForm } from 'generaltranslation/internal';
 export default function getPluralBranch(
   n: number,
   locales: string[],
-  branches: Record<string, any>
+  branches: Record<string, unknown>
 ) {
   let branchName = '';
   let branch = null;
-  if (typeof n === 'number' && !branch && branches)
-    branchName = getPluralForm(n, Object.keys(branches) as any, locales);
+  if (typeof n === 'number' && !branch && branches) {
+    const pluralForms = Object.keys(branches).filter(isAcceptedPluralForm);
+    branchName = getPluralForm(n, pluralForms, locales);
+  }
   if (branchName && !branch) branch = branches[branchName];
   return branch;
 }

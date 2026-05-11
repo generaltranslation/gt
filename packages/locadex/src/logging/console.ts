@@ -12,6 +12,7 @@ import {
   taskLog,
   progress,
 } from '@clack/prompts';
+import type { Option } from '@clack/prompts';
 import chalk from 'chalk';
 import { getLocadexVersion } from '../utils/getPaths.js';
 import { exit } from '../utils/shutdown.js';
@@ -135,11 +136,11 @@ export async function promptSelect<T>({
     value: opt.value,
     label: opt.label,
     hint: opt.hint,
-  }));
+  })) as Option<T>[];
 
   const result = await select({
     message,
-    options: clackOptions as any,
+    options: clackOptions,
     initialValue: defaultValue,
   });
 
@@ -165,11 +166,11 @@ export async function promptMultiSelect<T extends string>({
     value: opt.value,
     label: opt.label,
     hint: opt.hint,
-  }));
+  })) as Option<T>[];
 
   const result = await multiselect({
     message,
-    options: clackOptions as any,
+    options: clackOptions,
     required,
   });
 

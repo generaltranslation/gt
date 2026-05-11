@@ -53,16 +53,26 @@ function renderTranslatedElement({
   // plural (choose a branch)
   if (transformation === 'plural') {
     const n = sourceElement.props.n;
+    if (typeof n !== 'number') {
+      return renderDefaultChildren({
+        children: sourceElement,
+        defaultLocale: locales[0],
+        renderVariable,
+      });
+    }
     const sourceBranches = sourceGT.branches || {};
+    const resolvedSourceBranch = getPluralBranch(n, locales, sourceBranches);
     const sourceBranch =
-      getPluralBranch(n, locales, sourceBranches) ||
-      sourceElement.props.children;
+      resolvedSourceBranch !== null
+        ? resolvedSourceBranch
+        : sourceElement.props.children;
     const targetBranches = targetElement.d?.b || {};
+    const resolvedTargetBranch = getPluralBranch(n, locales, targetBranches);
     const targetBranch =
-      getPluralBranch(n, locales, targetBranches) || targetElement.c;
+      resolvedTargetBranch !== null ? resolvedTargetBranch : targetElement.c;
     return renderTranslatedChildren({
-      source: sourceBranch,
-      target: targetBranch,
+      source: sourceBranch as TaggedChildren,
+      target: targetBranch as TranslatedChildren,
       locales,
       renderVariable,
     });
@@ -71,10 +81,20 @@ function renderTranslatedElement({
   // branch (choose a branch)
   if (transformation === 'branch') {
     const { branch, children } = sourceProps;
-    const sourceBranch = (sourceGT.branches || {})[branch] || children;
-    const targetBranch = (targetElement.d?.b || {})[branch] || targetElement.c;
+    const branchKey =
+      branch == null || branch === '' ? undefined : branch.toString();
+    const sourceBranches = sourceGT.branches || {};
+    const targetBranches = targetElement.d?.b || {};
+    const sourceBranch =
+      branchKey && sourceBranches[branchKey] !== undefined
+        ? sourceBranches[branchKey]
+        : children;
+    const targetBranch =
+      branchKey && targetBranches[branchKey] !== undefined
+        ? targetBranches[branchKey]
+        : targetElement.c;
     return renderTranslatedChildren({
-      source: sourceBranch,
+      source: sourceBranch as TaggedChildren,
       target: targetBranch as TranslatedChildren,
       locales,
       renderVariable,
@@ -86,11 +106,11 @@ function renderTranslatedElement({
     return React.createElement(React.Fragment, {
       key: sourceElement.props.key,
       children: renderTranslatedChildren({
-        source: sourceProps.children,
+        source: sourceProps.children as TaggedChildren,
         target: targetElement.c,
         locales,
         renderVariable,
-      }),
+      }) as TaggedChildren,
     });
   }
 
@@ -101,11 +121,11 @@ function renderTranslatedElement({
       ...translatedProps,
       'data-_gt': undefined,
       children: renderTranslatedChildren({
-        source: sourceProps.children,
+        source: sourceProps.children as TaggedChildren,
         target: targetElement.c,
         locales,
         renderVariable,
-      }),
+      }) as TaggedChildren,
     });
   }
 

@@ -15,13 +15,13 @@ describe('addGTIdentifierToSyntaxTree', () => {
           inactive: 'Inactive content',
           'data-testid': 'branch-test',
         },
-      } as any;
+      } as unknown;
 
       const result = addGTIdentifierToSyntaxTree(tree);
 
       // The result should be a JsxElement with a 'd' (GTProp) field
       expect(result).toBeDefined();
-      const element = result as any;
+      const element = result as unknown;
       expect(element.d).toBeDefined();
       expect(element.d.t).toBe('b');
       expect(element.d.b).toBeDefined();
@@ -44,11 +44,11 @@ describe('addGTIdentifierToSyntaxTree', () => {
           active: 'Active content',
           inactive: 'Inactive content',
         },
-      } as any;
+      } as unknown;
 
       const result = addGTIdentifierToSyntaxTree(tree);
 
-      const element = result as any;
+      const element = result as unknown;
       expect(element.d).toBeDefined();
       expect(element.d.t).toBe('b');
       expect(element.d.b).toHaveProperty('active');

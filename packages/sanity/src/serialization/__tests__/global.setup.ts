@@ -14,11 +14,15 @@ vi.mock('@portabletext/block-tools', async () => {
   return {
     ...originalModule,
     //not ideal but vi.mock('@portabletext/block-tools/src/util/randomKey.ts' is not working
-    htmlToBlocks: (html: string, blockContentType: any, options: any) => {
+    htmlToBlocks: (
+      html: string,
+      blockContentType: unknown,
+      options: unknown
+    ) => {
       const blocks = originalModule.htmlToBlocks(
         html,
-        blockContentType,
-        options
+        blockContentType as Parameters<typeof originalModule.htmlToBlocks>[1],
+        options as Parameters<typeof originalModule.htmlToBlocks>[2]
       );
       const newBlocks = blocks.map((block) => {
         const newChildren = (

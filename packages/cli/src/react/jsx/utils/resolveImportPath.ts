@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import resolve from 'resolve';
 import enhancedResolve from 'enhanced-resolve';
+import type { FileSystem } from 'enhanced-resolve';
 const { ResolverFactory } = enhancedResolve;
 
 /**
@@ -76,7 +77,7 @@ export function resolveImportPath(
   try {
     const resolver = ResolverFactory.createResolver({
       useSyncFileSystemCalls: true,
-      fileSystem: fs as any,
+      fileSystem: fs as unknown as FileSystem,
       extensions,
       // Include 'development' condition to resolve to source files in monorepos
       conditionNames: parsingOptions.conditionNames, // defaults to ['browser', 'module', 'import', 'require', 'default']. See generateSettings.ts for more details

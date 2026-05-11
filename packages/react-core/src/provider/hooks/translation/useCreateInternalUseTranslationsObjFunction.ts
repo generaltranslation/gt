@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { TranslateIcuCallback } from '../../../types-dir/runtime';
 import {
   Dictionary,
+  DictionaryEntry,
   DictionaryTranslationOptions,
   TranslatedChildren,
   Translations,
@@ -44,7 +45,7 @@ export function useCreateInternalUseTranslationsObjFunction(
       id: string,
       idWithParent: string,
       options: DictionaryTranslationOptions = {}
-    ): any => {
+    ): Dictionary | DictionaryEntry | undefined => {
       if (idWithParent === '') {
         throw new Error(createEmptyIdError());
       }

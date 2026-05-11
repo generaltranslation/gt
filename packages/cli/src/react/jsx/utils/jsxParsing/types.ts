@@ -15,7 +15,7 @@ type ElementNode = {
   type: string;
   props?: {
     children?: JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[];
-    [key: string]: any;
+    [key: string]: unknown;
   };
 };
 type JsxTree = ElementNode | ExpressionNode | string | number | boolean | null;
@@ -71,7 +71,7 @@ type WhitespaceJsxTree = {
   props?: {
     children?: (WhitespaceJsxTreeResult | WhitespaceMultiplicationNode)[];
     // Other attributess
-    [key: string]: any;
+    [key: string]: unknown;
   };
 };
 type WhitespaceJsxTreeResult =

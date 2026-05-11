@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { determineLocale, resolveAliasLocale } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocaleWarning } from '@generaltranslation/react-core/errors';
@@ -144,8 +145,10 @@ function getNewLocale({
     }
     if (navigator?.languages) return navigator.languages;
     if (navigator?.language) return [navigator.language];
-    if ((navigator as any)?.userLanguage)
-      return [(navigator as any)?.userLanguage];
+    const legacyNavigator = navigator as Navigator & {
+      userLanguage?: string;
+    };
+    if (legacyNavigator.userLanguage) return [legacyNavigator.userLanguage];
     return [];
   })() as string[];
   browserLocales = browserLocales.map((locale) =>
@@ -194,7 +197,7 @@ function createSetLocale({
   locales: string[];
   defaultLocale: string;
   localeCookieName: string;
-  _setLocale: any;
+  _setLocale: Dispatch<SetStateAction<string>>;
   customMapping?: CustomMapping;
   enableI18n?: boolean;
   reloadOnLocaleUpdate?: boolean;

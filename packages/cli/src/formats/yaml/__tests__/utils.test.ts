@@ -374,7 +374,7 @@ describe('validateYamlSchema', () => {
       const result = validateYamlSchema(
         {
           yamlSchema: {
-            '**/*.yaml': null as any,
+            '**/*.yaml': null as unknown,
           },
         },
         'path/to/test.yaml'

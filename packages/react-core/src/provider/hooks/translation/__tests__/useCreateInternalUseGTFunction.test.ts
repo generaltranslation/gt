@@ -48,9 +48,9 @@ vi.mock('../../../../messages/messages', () => ({
 
 describe('useCreateInternalUseGTFunction', () => {
   let mockGT: GT;
-  let mockRegisterIcuForTranslation: any;
-  let consoleWarnSpy: any;
-  let consoleErrorSpy: any;
+  let mockRegisterIcuForTranslation: unknown;
+  let consoleWarnSpy: unknown;
+  let consoleErrorSpy: unknown;
 
   const defaultProps = {
     translations: {} as Translations,
@@ -70,7 +70,7 @@ describe('useCreateInternalUseGTFunction', () => {
         return message;
       }),
       formatCutoff: vi.fn((message) => message),
-    } as any;
+    } as unknown;
 
     mockRegisterIcuForTranslation = vi
       .fn()
@@ -96,9 +96,9 @@ describe('useCreateInternalUseGTFunction', () => {
         });
 
         expect(_gtFunction('')).toBe('');
-        expect(_gtFunction(null as any)).toBe('');
-        expect(_gtFunction(undefined as any)).toBe('');
-        expect(_gtFunction(123 as any)).toBe('');
+        expect(_gtFunction(null as unknown)).toBe('');
+        expect(_gtFunction(undefined as unknown)).toBe('');
+        expect(_gtFunction(123 as unknown)).toBe('');
       });
 
       it('should handle basic message without translation', () => {
@@ -322,7 +322,7 @@ describe('useCreateInternalUseGTFunction', () => {
             throw new Error('Formatting failed');
           }),
           formatCutoff: vi.fn((message) => message),
-        } as any;
+        } as unknown;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
           gt: mockGTWithError,
@@ -346,7 +346,7 @@ describe('useCreateInternalUseGTFunction', () => {
             })
             .mockImplementationOnce(() => 'Fallback message'),
           formatCutoff: vi.fn((message) => message),
-        } as any;
+        } as unknown;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
           gt: mockGTWithError,
@@ -558,7 +558,7 @@ describe('useCreateInternalUseGTFunction', () => {
         const mockGT = {
           formatMessage: vi.fn(() => 'Formatted default message'),
           formatCutoff: vi.fn((message) => message),
-        } as any;
+        } as unknown;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
           gt: mockGT,
@@ -588,7 +588,7 @@ describe('useCreateInternalUseGTFunction', () => {
         const mockGT = {
           formatMessage: vi.fn(() => 'You have 5 items in your cart'),
           formatCutoff: vi.fn((message) => message),
-        } as any;
+        } as unknown;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
           gt: mockGT,
@@ -627,7 +627,7 @@ describe('useCreateInternalUseGTFunction', () => {
               return 'Successfully formatted fallback';
             }),
           formatCutoff: vi.fn((message) => message),
-        } as any;
+        } as unknown;
 
         const translations = {
           'hash-hello-world':
@@ -686,7 +686,7 @@ describe('useCreateInternalUseGTFunction', () => {
             return message;
           }),
           formatCutoff: vi.fn((message) => message),
-        } as any;
+        } as unknown;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
           gt: mockGT,
@@ -722,7 +722,7 @@ describe('useCreateInternalUseGTFunction', () => {
               return 'Fallback message rendered';
             }),
           formatCutoff: vi.fn((message) => message),
-        } as any;
+        } as unknown;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
           gt: mockGT,
@@ -747,7 +747,7 @@ describe('useCreateInternalUseGTFunction', () => {
         const mockGT = {
           formatMessage: vi.fn(() => 'Simple message'),
           formatCutoff: vi.fn((message) => message),
-        } as any;
+        } as unknown;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
           gt: mockGT,
@@ -774,7 +774,7 @@ describe('useCreateInternalUseGTFunction', () => {
         const mockGT = {
           formatMessage: vi.fn(() => 'Empty vars message'),
           formatCutoff: vi.fn((message) => message),
-        } as any;
+        } as unknown;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
           gt: mockGT,
@@ -810,7 +810,7 @@ describe('useCreateInternalUseGTFunction', () => {
               return 'Fallback rendered successfully';
             }),
           formatCutoff: vi.fn((message) => message),
-        } as any;
+        } as unknown;
 
         const { _gtFunction } = useCreateInternalUseGTFunction({
           gt: mockGT,

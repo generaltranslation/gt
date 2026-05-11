@@ -485,7 +485,7 @@ settings:
   describe('Edge Cases', () => {
     it('should handle empty targets array', () => {
       const originalContent = 'test: "value"';
-      const targets: any[] = [];
+      const targets: unknown[] = [];
 
       const result = mergeYaml(
         originalContent,

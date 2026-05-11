@@ -8,6 +8,12 @@ import { getStoredRefMap, clearStoredRefMap } from '../state/mintlifyRefMap.js';
 import { JSONPath } from 'jsonpath-plus';
 import { getLocaleProperties } from 'generaltranslation';
 
+type JsonContainer = Record<string, unknown> | unknown[];
+
+function isJsonContainer(value: unknown): value is JsonContainer {
+  return typeof value === 'object' && value !== null;
+}
+
 /**
  * Post-processing step for composite JSON files with splitEntries enabled.
  *
@@ -35,7 +41,7 @@ export async function splitMintlifyLanguageRefs(
     const { filePath: compositeFilePath, splitConfig } = targetFile;
     if (!fs.existsSync(compositeFilePath)) return;
 
-    let fileJson: any;
+    let fileJson: unknown;
     try {
       fileJson = JSON.parse(fs.readFileSync(compositeFilePath, 'utf-8'));
     } catch {
@@ -134,7 +140,7 @@ function findTargetFile(
  * Process splitEntries: extract non-default keyed entries into ref files.
  */
 function processSplitEntries(
-  fileJson: any,
+  fileJson: unknown,
   compositeFilePath: string,
   docsDir: string,
   splitConfig: SplitConfig,
@@ -146,15 +152,17 @@ function processSplitEntries(
   // Find the composite array — may be behind a $ref
   const parentPointer = jsonPointer.split('/').slice(0, -1).join('/') || '';
   const arrayKey = jsonPointer.split('/').pop() || '';
-  const navRefEntry = refMap?.get(parentPointer || (undefined as any));
+  const navRefEntry = parentPointer ? refMap?.get(parentPointer) : undefined;
 
   // Get the array from the file
   const arrayContainer = parentPointer
     ? getAtPointer(fileJson, parentPointer)
     : fileJson;
-  if (!arrayContainer) return;
+  if (!isJsonContainer(arrayContainer)) return;
 
-  const entries: any[] = arrayContainer[arrayKey];
+  const entries = Array.isArray(arrayContainer)
+    ? arrayContainer[Number(arrayKey)]
+    : arrayContainer[arrayKey];
   if (!Array.isArray(entries) || entries.length <= 1) return;
 
   // Determine the default key value (the source entry)
@@ -163,7 +171,7 @@ function processSplitEntries(
     splitConfig.sourceObjectOptions
   );
 
-  const defaultIndex = entries.findIndex((e: any) => {
+  const defaultIndex = entries.findIndex((e: unknown) => {
     if (!e || typeof e !== 'object') return false;
     const values = JSONPath({
       json: e,
@@ -171,7 +179,7 @@ function processSplitEntries(
       resultType: 'value',
       flatten: true,
       wrap: true,
-    });
+    }) as unknown[];
     return values?.[0] === defaultKeyValue;
   });
   if (defaultIndex < 0) return;
@@ -199,7 +207,7 @@ function processSplitEntries(
           resultType: 'value',
           flatten: true,
           wrap: true,
-        });
+        }) as unknown[];
         if (entryKeyValues?.[0] === defaultKeyValue) continue;
 
         for (const ref of internalRefs) {
@@ -208,7 +216,10 @@ function processSplitEntries(
 
           const originalAbsPath = path.resolve(ref.resolvedDir, ref.refPath);
           const relToNavDir = path.relative(navDir, originalAbsPath);
-          const keyValue = entryKeyValues?.[0] || 'unknown';
+          const keyValue =
+            typeof entryKeyValues?.[0] === 'string'
+              ? entryKeyValues[0]
+              : 'unknown';
           const localeRelPath = path.join(keyValue, relToNavDir);
           const outputPath = path.resolve(navDir, localeRelPath);
           writeJsonFile(outputPath, subtree);
@@ -239,10 +250,11 @@ function processSplitEntries(
       resultType: 'value',
       flatten: true,
       wrap: true,
-    });
+    }) as unknown[];
     const keyValue = keyValues?.[0];
-    if (!keyValue || keyValue === defaultKeyValue) continue;
+    if (typeof keyValue !== 'string' || keyValue === defaultKeyValue) continue;
 
+    if (!isJsonContainer(entry) || Array.isArray(entry)) continue;
     const { [keyPropertyName]: _, ...contentWithoutKey } = entry;
     const entryFileName = `${keyValue}/${navFileName}`;
     const entryFilePath = path.resolve(navDir, entryFileName);
@@ -264,7 +276,7 @@ function getDefaultKeyValue(
   const localeProperty = sourceObjectOptions.localeProperty || 'code';
   const localeProperties = getLocaleProperties(defaultLocale);
   return (
-    (localeProperties as any)[localeProperty] ||
+    (localeProperties as Record<string, string | undefined>)[localeProperty] ||
     localeProperties.code ||
     defaultLocale
   );
@@ -287,7 +299,7 @@ function jsonPathToPointer(jsonPath: string): string {
  * Sorted deepest-first so nested refs are written before parents.
  */
 function restoreTopLevelRefs(
-  fileJson: any,
+  fileJson: unknown,
   refMap: RefMap,
   splitConfig: SplitConfig | null
 ): void {
@@ -348,28 +360,39 @@ function writeJsonFile(filePath: string, data: unknown): void {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-function getAtPointer(obj: any, pointer: string): any {
+function getAtPointer(obj: unknown, pointer: string): unknown {
   if (!pointer || pointer === '/') return obj;
   const parts = pointer.split('/').filter(Boolean);
   let current = obj;
   for (const part of parts) {
-    if (current === null || current === undefined) return undefined;
+    if (!isJsonContainer(current)) return undefined;
     const index = /^\d+$/.test(part) ? parseInt(part) : part;
-    current = current[index];
+    current = Array.isArray(current)
+      ? current[index as number]
+      : current[index];
   }
   return current;
 }
 
-function setAtPointer(obj: any, pointer: string, value: any): void {
+function setAtPointer(obj: unknown, pointer: string, value: unknown): void {
   if (!pointer || pointer === '/') return;
   const parts = pointer.split('/').filter(Boolean);
   let current = obj;
   for (let i = 0; i < parts.length - 1; i++) {
+    if (!isJsonContainer(current)) return;
     const index = /^\d+$/.test(parts[i]) ? parseInt(parts[i]) : parts[i];
-    if (current[index] === undefined) return;
-    current = current[index];
+    const next = Array.isArray(current)
+      ? current[index as number]
+      : current[index];
+    if (next === undefined) return;
+    current = next;
   }
   const lastPart = parts[parts.length - 1];
   const lastIndex = /^\d+$/.test(lastPart) ? parseInt(lastPart) : lastPart;
-  current[lastIndex] = value;
+  if (!isJsonContainer(current)) return;
+  if (Array.isArray(current)) {
+    current[lastIndex as number] = value;
+  } else {
+    current[lastIndex] = value;
+  }
 }

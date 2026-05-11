@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import type { SanityClient, SanityDocument } from 'sanity';
 import { pluginConfig } from '../../adapter/core';
 import { documentLevelPatch } from './documentLevelPatch';
 
@@ -59,11 +60,18 @@ describe('documentLevelPatch', () => {
     const patch = vi.fn().mockReturnValue({ commit });
     const create = vi.fn();
 
-    const client = { fetch, patch, create } as any;
+    const client = { fetch, patch, create } as unknown as SanityClient;
 
     await documentLevelPatch(
       { documentId: 'article-1' },
-      { _id: 'article-1', _type: 'article', title: 'Hola' } as any,
+      {
+        _id: 'article-1',
+        _type: 'article',
+        _rev: 'translated-rev',
+        _createdAt: '2024-01-01T00:00:00Z',
+        _updatedAt: '2024-01-01T00:00:00Z',
+        title: 'Hola',
+      } as SanityDocument,
       'es',
       client
     );

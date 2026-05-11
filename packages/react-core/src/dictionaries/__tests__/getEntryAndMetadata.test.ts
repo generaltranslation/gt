@@ -136,7 +136,7 @@ describe('getEntryAndMetadata', () => {
   describe('should handle edge cases', () => {
     it('should handle array with more than 2 elements (fallback to string)', () => {
       // Note: This is technically an invalid DictionaryEntry, but testing the function's behavior
-      const value: any = ['Hello', { $context: 'greeting' }, 'extra'];
+      const value: unknown = ['Hello', { $context: 'greeting' }, 'extra'];
 
       const result = getEntryAndMetadata(value);
 
@@ -147,7 +147,7 @@ describe('getEntryAndMetadata', () => {
 
     it('should handle empty array (fallback to string)', () => {
       // Note: This is technically an invalid DictionaryEntry, but testing the function's behavior
-      const value: any = [];
+      const value: unknown = [];
 
       const result = getEntryAndMetadata(value);
 
@@ -206,7 +206,7 @@ describe('getEntryAndMetadata', () => {
           falseField: false,
           zeroField: 0,
           emptyStringField: '',
-        } as any,
+        } as unknown,
       ];
 
       const result = getEntryAndMetadata(value);

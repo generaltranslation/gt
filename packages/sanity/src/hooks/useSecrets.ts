@@ -18,7 +18,7 @@ export function useSecrets<T>(id: string): ReturnProps<T> {
       client
         .fetch('* [_id == $id][0]', { id })
         .then((doc: SanityDocumentLike) => {
-          const result: Record<string, any> = {};
+          const result: Record<string, unknown> = {};
           for (const key in doc) {
             if (key[0] !== '_') {
               result[key] = doc[key];

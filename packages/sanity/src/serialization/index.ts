@@ -7,5 +7,10 @@ export {
   customBlockDeserializers,
 } from './BaseSerializationConfig';
 
-export type { SerializedDocument, Deserializer, Merger } from './types';
+export type {
+  CustomDeserializers,
+  SerializedDocument,
+  Deserializer,
+  Merger,
+} from './types';
 export { attachGTData, detachGTData } from './data';

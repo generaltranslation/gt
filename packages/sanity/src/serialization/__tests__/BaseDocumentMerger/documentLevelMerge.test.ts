@@ -1,11 +1,7 @@
-import { createRequire } from 'module';
 import { expect, test } from 'vitest';
 import { BaseDocumentMerger } from '../../index';
 import { getNewDocument, getNewObject } from './utils';
-
-const require = createRequire(import.meta.url);
-
-const documentLevelArticle = require('../__fixtures__/documentLevelArticle.json');
+import documentLevelArticle from '../__fixtures__/documentLevelArticle.json';
 
 const newDocument = getNewDocument();
 const mergedDocument = BaseDocumentMerger.documentLevelMerge(
@@ -51,19 +47,19 @@ test('Nested object merge uses old fields when not present on new object', () =>
  * Arrays
  */
 test('Arrays will use new objects when they exist', () => {
-  expect(mergedDocument.content[0].children[0].text).toEqual(
-    newDocument.content[0].children[0].text
+  expect(mergedDocument.content[0]!.children![0]!.text).toEqual(
+    newDocument.content[0]!.children![0]!.text
   );
-  expect(mergedDocument.content[0].children[0].text).not.toEqual(
-    documentLevelArticle.content[0].children[0].text
+  expect(mergedDocument.content[0]!.children![0]!.text).not.toEqual(
+    documentLevelArticle.content[0]!.children![0]!.text
   );
 });
 
 test('Arrays will use old blocks if they do not exist on new object', () => {
   expect(newDocument.content[1]).toBeUndefined();
   expect(mergedDocument.content[1]).toBeDefined();
-  expect(mergedDocument.content[1]._key).toEqual(
-    documentLevelArticle.content[1]._key
+  expect(mergedDocument.content[1]!._key).toEqual(
+    documentLevelArticle.content[1]!._key
   );
 });
 
@@ -73,24 +69,26 @@ test('Arrays will merge objects in the array', () => {
 
   //add a new block with some new content, but not all new content
   documentWithIncompleteObj.content.push({
-    _key: documentLevelArticle.content[1]._key,
+    _key: documentLevelArticle.content[1]!._key,
     objectAsField: incompleteObj.objectAsField,
     title: incompleteObj.title,
-  });
+  } as (typeof documentWithIncompleteObj.content)[number]);
   const documentWithMergedObj = BaseDocumentMerger.documentLevelMerge(
     documentWithIncompleteObj,
     documentLevelArticle
   );
 
-  expect(documentWithMergedObj.content[1].title).toEqual(
-    documentWithIncompleteObj.content[1].title
+  expect(documentWithMergedObj.content[1]!.title).toEqual(
+    documentWithIncompleteObj.content[1]!.title
   );
-  expect(documentWithMergedObj.content[1].objectAsField.title).toEqual(
-    documentWithIncompleteObj.content[1].objectAsField.title
+  expect(documentWithMergedObj.content[1]!.objectAsField!.title).toEqual(
+    documentWithIncompleteObj.content[1]!.objectAsField!.title
   );
   //content existed on old doc but not new, so the two coexist happily
   expect(
-    documentWithIncompleteObj.content[1].objectAsField.content
+    documentWithIncompleteObj.content[1]!.objectAsField!.content
   ).toBeUndefined();
-  expect(documentWithMergedObj.content[1].objectAsField.content).toBeDefined();
+  expect(
+    documentWithMergedObj.content[1]!.objectAsField!.content
+  ).toBeDefined();
 });

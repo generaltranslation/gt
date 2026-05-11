@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import type { SanityClient } from 'sanity';
 import { pluginConfig } from '../../../adapter/core';
 import { patchI18nDoc } from './patchI18nDoc';
 
@@ -16,7 +17,7 @@ describe('patchI18nDoc', () => {
 
     const commit = vi.fn().mockResolvedValue({});
     const patch = vi.fn().mockReturnValue({ commit });
-    const client = { patch } as any;
+    const client = { patch } as unknown as SanityClient;
 
     await patchI18nDoc(
       'doc-1',

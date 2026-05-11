@@ -84,7 +84,11 @@ function multiplyBranches(
         newBranches.push(subBranch);
       } else {
         // Replace the multiplication node with the sub branch
-        parent[key] = subBranch;
+        if (Array.isArray(parent)) {
+          parent[Number(key)] = subBranch;
+        } else {
+          parent[key] = subBranch;
+        }
         newBranch = structuredClone(branch);
         // Add the new branch to the list
         branchQueue.push(newBranch);

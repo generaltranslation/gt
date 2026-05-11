@@ -84,8 +84,8 @@ test('Custom serialization should manifest at all levels', () => {
   const arrayField = findByClass(docTree.children, 'content');
   const nestedSerialized = findByClass(arrayField!.children, 'objectField');
   const requiredNestedTitle = documentLevelArticle.content.find(
-    (b: Record<string, any>) => b._type === 'objectField'
-  ).title;
+    (b: Record<string, unknown>) => b._type === 'objectField'
+  )!.title!;
   expect(nestedSerialized?.innerHTML).toContain(
     createCustomInnerHTML(requiredNestedTitle)
   );
@@ -128,7 +128,7 @@ test('Expect custom stop types to be absent at all levels', () => {
   const arrayField = findByClass(docTree.children, 'content');
   const nestedSerialized = findByClass(arrayField!.children, 'objectField');
   const nestedObjField = documentLevelArticle.content.find(
-    (b: Record<string, any>) => b._type === 'objectField'
+    (b: Record<string, unknown>) => b._type === 'objectField'
   );
   expect(nestedObjField).toBeDefined();
   expect(nestedSerialized).toBeUndefined();
@@ -182,18 +182,18 @@ test('Handled inline objects should be accurately represented per serializer', (
   const docTree = getHTMLNode(serialized).body.children[0];
   const arrayField = findByClass(docTree.children, 'content');
   let inlineObject: Element | null = null;
-  let inlineObjectBlock: Record<string, any> | null = null;
+  let inlineObjectBlock: Record<string, unknown> | null = null;
 
-  Array.from(arrayField!.children).forEach((block: any) => {
+  Array.from(arrayField!.children).forEach((block) => {
     if (!inlineObject) {
       inlineObject =
         findByClass(block.children, 'childObjectField') ?? inlineObject;
     }
   });
 
-  inlineDocument.content.forEach((block: Record<string, any>) => {
-    if (block.children) {
-      block.children.forEach((span: Record<string, any>) => {
+  inlineDocument.content.forEach((block: Record<string, unknown>) => {
+    if (Array.isArray(block.children)) {
+      block.children.forEach((span: Record<string, unknown>) => {
         if (span._type === 'childObjectField') {
           inlineObjectBlock = span;
         }
@@ -202,7 +202,7 @@ test('Handled inline objects should be accurately represented per serializer', (
   });
 
   expect(inlineObject!.innerHTML).toContain(
-    createCustomInnerHTML(inlineObjectBlock!.title)
+    createCustomInnerHTML(inlineObjectBlock!.title as string)
   );
 });
 
@@ -223,9 +223,9 @@ test('Handled annotations should be accurately represented per serializer', () =
   const docTree = getHTMLNode(serialized).body.children[0];
   const arrayField = findByClass(docTree.children, 'content');
   let annotation: Element | null = null;
-  let annotationBlock: Record<string, any> | null = null;
+  let annotationBlock: Record<string, unknown> | null = null;
 
-  Array.from(arrayField!.children).forEach((block: any) => {
+  Array.from(arrayField!.children).forEach((block) => {
     if (!annotation) {
       annotation = findByClass(block.children, 'annotation') ?? annotation;
     }
@@ -233,8 +233,8 @@ test('Handled annotations should be accurately represented per serializer', () =
 
   inlineDocument.content.forEach((block: PortableTextBlock) => {
     if (block.children && Array.isArray(block.children)) {
-      block.children.forEach((span: Record<string, any>) => {
-        if (span.marks && span.marks.length) {
+      block.children.forEach((span: Record<string, unknown>) => {
+        if (Array.isArray(span.marks) && span.marks.length) {
           annotationBlock = span;
         }
       });
@@ -253,14 +253,14 @@ test('Serialized content should preserve style tags from Portable Text', () => {
   const arrayField = findByClass(docTree.children, 'content');
   const blockH1 = documentLevelArticle.content.find(
     (block: PortableTextBlock) => block.style === 'h1'
-  );
+  )!;
   const serializedH1 = arrayField?.querySelector('h1');
   const blockH2 = documentLevelArticle.content.find(
     (block: PortableTextBlock) => block.style === 'h2'
-  );
+  )!;
   const serializedH2 = arrayField?.querySelector('h2');
-  expect(serializedH1?.innerHTML).toEqual(blockH1.children[0].text);
-  expect(serializedH2?.innerHTML).toEqual(blockH2.children[0].text);
+  expect(serializedH1?.innerHTML).toEqual(blockH1.children![0]!.text);
+  expect(serializedH2?.innerHTML).toEqual(blockH2.children![0]!.text);
 });
 
 /*
@@ -291,7 +291,7 @@ test('Content with anonymous inline objects serializes all fields, at any depth'
   const content = findByClass(tabs!.children, 'content')!;
   const keysHTML = Array.from(content.children).map((child) => child.id);
   const keysJSON = inlineDocumentLevelArticle.tabs.content.map(
-    (child: any) => child._key
+    (child: { _key: string }) => child._key
   );
   expect(keysHTML.sort()).toEqual(keysJSON.sort());
 
@@ -300,8 +300,8 @@ test('Content with anonymous inline objects serializes all fields, at any depth'
     objectInArrayHTML!.children
   ).map((child) => child.className);
   const objectInArray = inlineDocumentLevelArticle.tabs.content.find(
-    (obj: any) => obj._type === 'objectField'
-  );
+    (obj: { _type?: string }) => obj._type === 'objectField'
+  )!;
   expect(objectInArrayHTMLFieldNames.sort()).toEqual(
     getValidFields(objectInArray).sort()
   );
@@ -323,14 +323,14 @@ test('Serialized content should preserve list style and depth from Portable text
   const nestedListItem = documentLevelArticle.content.find(
     (block: PortableTextBlock) =>
       block.listItem === 'bullet' && block.level === 2
-  );
+  )!;
   const serializedNestedListItem = arrayField?.querySelectorAll('li')[1];
   //include quote style for completeness
-  expect(serializedListItem?.innerHTML).toContain(listItem.children[0].text);
+  expect(serializedListItem?.innerHTML).toContain(listItem!.children![0]!.text);
   expect(serializedListItem?.innerHTML).toContain('h2');
 
   expect(serializedNestedListItem?.innerHTML).toEqual(
-    nestedListItem.children[0].text
+    nestedListItem.children![0]!.text
   );
 });
 

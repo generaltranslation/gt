@@ -9,6 +9,12 @@ import * as babel from '@babel/types';
 import { ImportDeclaration, VariableDeclaration } from '@babel/types';
 import { GTLibrary } from '../../../types/libraries.js';
 
+type NodeWithParentBody = t.Node & {
+  parent?: {
+    body?: t.Statement[];
+  };
+};
+
 export function determineModuleType(ast: ParseResult<t.File>) {
   let isESM = false;
   traverse(ast, {
@@ -331,12 +337,13 @@ export function extractImportName(
         // Handle intermediate variable case: const temp = require('gt-next')
         else if (declaration.id.type === 'Identifier') {
           const requireVarName = declaration.id.name;
-          const parentBody = (node as any).parent?.body;
+          const parentBody = (node as NodeWithParentBody).parent?.body;
           if (parentBody) {
             for (let i = 0; i < parentBody.length; i++) {
               const stmt = parentBody[i];
               if (
                 stmt.type === 'VariableDeclaration' &&
+                stmt.declarations[0]?.id.type === 'Identifier' &&
                 stmt.declarations[0]?.init?.type === 'MemberExpression' &&
                 stmt.declarations[0].init.object.type === 'Identifier' &&
                 stmt.declarations[0].init.object.name === requireVarName &&

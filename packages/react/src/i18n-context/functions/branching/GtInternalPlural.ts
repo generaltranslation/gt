@@ -27,7 +27,8 @@ function Plural({
   if (typeof n !== 'number') {
     return children;
   }
-  return getPluralBranch(n, locales, branches) || children;
+  const branch = getPluralBranch(n, locales, branches);
+  return branch != null ? (branch as React.ReactNode) : children;
 }
 
 /**

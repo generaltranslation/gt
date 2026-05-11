@@ -196,7 +196,10 @@ export const PNPM: PackageManager = {
     if (!packageDotJson) {
       return;
     }
-    const pnpm = packageDotJson.pnpm || {};
+    const pnpm =
+      (packageDotJson.pnpm as
+        | { overrides?: Record<string, string> }
+        | undefined) || {};
     const overrides = pnpm.overrides || {};
 
     await updatePackageJson({

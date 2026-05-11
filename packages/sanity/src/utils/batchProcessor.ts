@@ -2,31 +2,31 @@ import { GTFile, TranslationFunctionContext } from '../types';
 import { importDocument } from '../translation/importDocument';
 import { createStableTranslationKey } from './documentIds';
 
-export interface BatchProcessorOptions {
+export interface BatchProcessorOptions<T = unknown, R = unknown> {
   batchSize?: number;
-  getConcurrencyKey?: (item: any) => string | undefined;
+  getConcurrencyKey?: (item: T) => string | undefined;
   onProgress?: (current: number, total: number) => void;
-  onItemSuccess?: (item: any, result: any) => void;
-  onItemFailure?: (item: any, error: any) => void;
+  onItemSuccess?: (item: T, result: R) => void;
+  onItemFailure?: (item: T, error: unknown) => void;
 }
 
 export interface ImportBatchItem {
   docInfo: GTFile;
   locale: string;
-  data: any;
+  data: string;
   translationContext: TranslationFunctionContext;
   key: string;
 }
 
-export async function processBatch<T>(
+export async function processBatch<T, R = unknown>(
   items: T[],
-  processor: (item: T) => Promise<any>,
-  options: BatchProcessorOptions = {}
+  processor: (item: T) => R | Promise<R>,
+  options: BatchProcessorOptions<T, Awaited<R>> = {}
 ): Promise<{
   successCount: number;
   failureCount: number;
-  successfulItems: any[];
-  failedItems: { item: T; error: any }[];
+  successfulItems: Awaited<R>[];
+  failedItems: { item: T; error: unknown }[];
 }> {
   const {
     batchSize = 20,
@@ -38,15 +38,18 @@ export async function processBatch<T>(
 
   let successCount = 0;
   let failureCount = 0;
-  const successfulItems: any[] = [];
-  const failedItems: { item: T; error: any }[] = [];
+  const successfulItems: Awaited<R>[] = [];
+  const failedItems: { item: T; error: unknown }[] = [];
 
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
 
     const pendingByKey = new Map<string, Promise<void>>();
 
-    const batchPromises = batch.map(async (item) => {
+    const batchPromises: Promise<
+      | { success: true; item: T; result: Awaited<R> }
+      | { success: false; item: T; error: unknown }
+    >[] = batch.map(async (item) => {
       const concurrencyKey = getConcurrencyKey?.(item);
       const pending = concurrencyKey
         ? pendingByKey.get(concurrencyKey)
@@ -68,10 +71,10 @@ export async function processBatch<T>(
 
         const result = await processor(item);
         onItemSuccess?.(item, result);
-        return { success: true, item, result };
+        return { success: true as const, item, result };
       } catch (error) {
         onItemFailure?.(item, error);
-        return { success: false, item, error };
+        return { success: false as const, item, error };
       } finally {
         release();
         if (concurrencyKey && pendingByKey.get(concurrencyKey) === current) {
@@ -100,12 +103,12 @@ export async function processBatch<T>(
 
 export async function processImportBatch(
   items: ImportBatchItem[],
-  options: BatchProcessorOptions = {}
+  options: BatchProcessorOptions<ImportBatchItem, string> = {}
 ): Promise<{
   successCount: number;
   failureCount: number;
   successfulImports: string[];
-  failedItems: { item: ImportBatchItem; error: any }[];
+  failedItems: { item: ImportBatchItem; error: unknown }[];
 }> {
   const successfulImports: string[] = [];
 
@@ -133,7 +136,7 @@ export async function processImportBatch(
         successfulImports.push(key);
         options.onItemSuccess?.(item, key);
       },
-      onItemFailure: (item: ImportBatchItem, error: any) => {
+      onItemFailure: (item: ImportBatchItem, error: unknown) => {
         console.error(
           `Failed to import ${item.docInfo.documentId} (${item.locale}):`,
           error

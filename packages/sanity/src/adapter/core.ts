@@ -9,6 +9,7 @@ import type {
 } from './types';
 import { SECRETS_NAMESPACE } from '../utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
+import type { CustomDeserializers } from '../serialization/types';
 export const gt = new GT();
 
 export function overrideConfig(secrets: Secrets | null) {
@@ -31,8 +32,8 @@ export class GTConfig {
   translateDocuments: TranslateDocumentFilter[];
   additionalStopTypes: string[];
   additionalSerializers: Partial<PortableTextHtmlComponents>;
-  additionalDeserializers: Record<string, any>;
-  additionalBlockDeserializers: any[];
+  additionalDeserializers: CustomDeserializers;
+  additionalBlockDeserializers: unknown[];
 
   private static instance: GTConfig;
   constructor(
@@ -48,8 +49,8 @@ export class GTConfig {
     translateDocuments: TranslateDocumentFilter[],
     additionalStopTypes: string[] = [],
     additionalSerializers: Partial<PortableTextHtmlComponents> = {},
-    additionalDeserializers: Partial<PortableTextHtmlComponents> = {},
-    additionalBlockDeserializers: any[] = []
+    additionalDeserializers: CustomDeserializers = { types: {} },
+    additionalBlockDeserializers: unknown[] = []
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -81,7 +82,7 @@ export class GTConfig {
         [],
         [],
         [],
-        {},
+        { types: {} },
         {},
         []
       );
@@ -102,8 +103,8 @@ export class GTConfig {
     translateDocuments: TranslateDocumentFilter[],
     additionalStopTypes: string[] = [],
     additionalSerializers: Partial<PortableTextHtmlComponents> = {},
-    additionalDeserializers: Partial<PortableTextHtmlComponents> = {},
-    additionalBlockDeserializers: any[] = []
+    additionalDeserializers: CustomDeserializers = { types: {} },
+    additionalBlockDeserializers: unknown[] = []
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;

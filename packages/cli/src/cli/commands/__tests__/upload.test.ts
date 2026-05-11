@@ -16,7 +16,7 @@ vi.mock('../../../console/logging.js', () => ({
 }));
 vi.mock('../../../fs/findFilepath.js', () => ({
   readFile: vi.fn((filePath: string) => {
-    const files = (vi as any).__mockFiles;
+    const files = (vi as unknown).__mockFiles;
     return files?.[filePath] ?? '';
   }),
   getRelative: vi.fn((filePath: string) => filePath),
@@ -46,7 +46,7 @@ import { createFileMapping } from '../../../formats/files/fileMapping.js';
 import { existsSync, readFileSync } from 'node:fs';
 
 function setMockFiles(files: Record<string, string>) {
-  (vi as any).__mockFiles = files;
+  (vi as unknown).__mockFiles = files;
   vi.mocked(readFile).mockImplementation((filePath: string) => {
     return files[filePath] ?? '';
   });

@@ -80,13 +80,13 @@ describe('indexDict', () => {
 
     describe('should handle edge cases and errors', () => {
       it('should throw error for null dictionary', () => {
-        expect(() => get(null as any, 'key')).toThrow(
+        expect(() => get(null as unknown, 'key')).toThrow(
           'Cannot index into an undefined dictionary'
         );
       });
 
       it('should throw error for undefined dictionary', () => {
-        expect(() => get(undefined as any, 'key')).toThrow(
+        expect(() => get(undefined as unknown, 'key')).toThrow(
           'Cannot index into an undefined dictionary'
         );
       });
@@ -193,7 +193,7 @@ describe('indexDict', () => {
       it('should handle setting string keys on arrays', () => {
         const dictionary: Dictionary = ['a', 'b'];
         set(dictionary, 'length', 5);
-        expect((dictionary as any).length).toBe(5);
+        expect((dictionary as unknown).length).toBe(5);
       });
 
       it('should preserve other properties when setting', () => {

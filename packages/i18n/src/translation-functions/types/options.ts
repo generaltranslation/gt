@@ -4,7 +4,7 @@ import type {
 } from '@generaltranslation/format/types';
 
 // TODO: next major version, this should be Record<string, string>
-export type BaseTranslationOptions = Record<string, any>;
+export type BaseTranslationOptions = Record<string, unknown>;
 
 // For t()
 export type DictionaryTranslationOptions = BaseTranslationOptions;

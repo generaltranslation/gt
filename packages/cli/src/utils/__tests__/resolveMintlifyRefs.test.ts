@@ -425,7 +425,7 @@ describe('resolveMintlifyRefs', () => {
     const { resolved } = resolveMintlifyRefs(json, '/project/docs.json');
 
     // Non-object: sibling keys are dropped, value replaces the object
-    expect((resolved as any).description).toBe('A simple string value');
+    expect((resolved as unknown).description).toBe('A simple string value');
   });
 
   it('handles multiple $ref at the same level', () => {

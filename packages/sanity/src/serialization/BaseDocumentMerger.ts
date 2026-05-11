@@ -4,40 +4,46 @@ import { Merger } from './types';
 import { SanityDocument } from 'sanity';
 import { extractWithPath, arrayToJSONMatchPath } from '@sanity/mutator';
 
-const reconcileArray = (origArray: any[], translatedArray: any[]): any[] => {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const reconcileArray = (
+  origArray: unknown[],
+  translatedArray: unknown[]
+): unknown[] => {
   //arrays of strings don't have keys, so just replace the array and return
   if (translatedArray && translatedArray.some((el) => typeof el === 'string')) {
     return translatedArray;
   }
 
   //deep copy needed for field level patching
-  const combined = JSON.parse(JSON.stringify(origArray));
+  const combined = JSON.parse(JSON.stringify(origArray)) as unknown[];
 
-  translatedArray.forEach((block) => {
-    if (!block._key) {
+  translatedArray.forEach((translatedItem) => {
+    if (!isRecord(translatedItem) || !translatedItem._key) {
       return;
     }
     const foundBlockIdx = origArray.findIndex(
-      (origBlock) => origBlock._key === block._key
+      (origBlock) =>
+        isRecord(origBlock) && origBlock._key === translatedItem._key
     );
     if (foundBlockIdx < 0) {
       //eslint-disable-next-line no-console
       console.warn(
         `This block no longer exists on the original document. Was it removed? ${JSON.stringify(
-          block
+          translatedItem
         )}`
       );
     } else if (
-      origArray[foundBlockIdx]._type === 'block' ||
-      origArray[foundBlockIdx]._type === 'span'
+      isRecord(origArray[foundBlockIdx]) &&
+      (origArray[foundBlockIdx]._type === 'block' ||
+        origArray[foundBlockIdx]._type === 'span')
     ) {
-      combined[foundBlockIdx] = block;
-    } else if (Array.isArray(origArray[foundBlockIdx])) {
-      combined[foundBlockIdx] = reconcileArray(origArray[foundBlockIdx], block);
-    } else {
+      combined[foundBlockIdx] = translatedItem;
+    } else if (isRecord(origArray[foundBlockIdx])) {
       combined[foundBlockIdx] = reconcileObject(
         origArray[foundBlockIdx],
-        block
+        translatedItem
       );
     }
   });
@@ -45,9 +51,9 @@ const reconcileArray = (origArray: any[], translatedArray: any[]): any[] => {
 };
 
 const reconcileObject = (
-  origObject: Record<string, any>,
-  translatedObject: Record<string, any>
-): Record<string, any> => {
+  origObject: Record<string, unknown>,
+  translatedObject: Record<string, unknown>
+): Record<string, unknown> => {
   if (
     typeof translatedObject !== 'object' ||
     !Object.keys(translatedObject).length
@@ -55,7 +61,10 @@ const reconcileObject = (
     return origObject;
   }
 
-  const updatedObj = JSON.parse(JSON.stringify(origObject));
+  const updatedObj = JSON.parse(JSON.stringify(origObject)) as Record<
+    string,
+    unknown
+  >;
   Object.entries(translatedObject).forEach(([key, value]) => {
     if (!value || key[0] === '_') {
       return;
@@ -63,22 +72,28 @@ const reconcileObject = (
     if (typeof value === 'string') {
       updatedObj[key] = value;
     } else if (Array.isArray(value)) {
-      updatedObj[key] = reconcileArray(origObject[key] ?? [], value);
-    } else {
-      updatedObj[key] = reconcileObject(origObject[key] ?? {}, value);
+      updatedObj[key] = reconcileArray(
+        Array.isArray(origObject[key]) ? origObject[key] : [],
+        value
+      );
+    } else if (isRecord(value)) {
+      updatedObj[key] = reconcileObject(
+        isRecord(origObject[key]) ? origObject[key] : {},
+        value
+      );
     }
   });
   return updatedObj;
 };
 
 const fieldLevelMerge = (
-  translatedFields: Record<string, any>,
+  translatedFields: Record<string, unknown>,
   //should be fetched according to the revision and id of the translated obj above
   baseDoc: SanityDocument,
   localeId: string,
   baseLang: string = 'en'
-): Record<string, any> => {
-  const merged: Record<string, any> = {};
+): Record<string, unknown> => {
+  const merged: Record<string, unknown> = {};
   const metaKeys = ['_rev', '_id', '_type'];
   metaKeys.forEach((metaKey) => {
     if (translatedFields[metaKey]) {
@@ -101,14 +116,17 @@ const fieldLevelMerge = (
     if (typeof translatedVal === 'string') {
       valToPatch = translatedVal;
     } else if (Array.isArray(translatedVal) && translatedVal.length) {
-      valToPatch = reconcileArray((origVal as Array<any>) ?? [], translatedVal);
+      valToPatch = reconcileArray(
+        (origVal as Array<unknown>) ?? [],
+        translatedVal
+      );
     } else if (
       typeof translatedVal === 'object' &&
-      Object.keys(translatedVal as Record<string, any>).length
+      Object.keys(translatedVal as Record<string, unknown>).length
     ) {
       valToPatch = reconcileObject(
-        origVal ?? {},
-        translatedVal as Record<string, any>
+        isRecord(origVal) ? origVal : {},
+        translatedVal as Record<string, unknown>
       );
     }
     const destinationPath = [
@@ -122,12 +140,18 @@ const fieldLevelMerge = (
   return merged;
 };
 
-const documentLevelMerge = (
-  translatedFields: Record<string, any>,
+const documentLevelMerge = <
+  TTranslatedFields extends Record<string, unknown>,
+  TBaseDoc extends SanityDocument,
+>(
+  translatedFields: TTranslatedFields,
   //should be fetched according to the revision and id of the translated obj above
-  baseDoc: SanityDocument
-): Record<string, any> => {
-  return reconcileObject(baseDoc, translatedFields);
+  baseDoc: TBaseDoc
+): TBaseDoc & TTranslatedFields => {
+  return reconcileObject(
+    baseDoc as Record<string, unknown>,
+    translatedFields
+  ) as TBaseDoc & TTranslatedFields;
 };
 
 export const BaseDocumentMerger: Merger = {

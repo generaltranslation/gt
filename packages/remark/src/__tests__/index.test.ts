@@ -42,7 +42,7 @@ describe('escapeHtmlInTextNodes', () => {
       ruleSpaces: false,
       handlers: {
         // Custom handler to prevent escaping (matches production usage)
-        text(node: any) {
+        text(node: unknown) {
           return node.value;
         },
       },
@@ -435,7 +435,7 @@ describe('remarkGfmCustom', () => {
         ruleRepetition: 3,
         ruleSpaces: false,
         handlers: {
-          text(node: any) {
+          text(node: unknown) {
             return node.value;
           },
         },

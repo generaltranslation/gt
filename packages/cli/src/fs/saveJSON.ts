@@ -1,7 +1,10 @@
 import path from 'node:path';
 import fs from 'node:fs';
 
-export async function saveJSON(filepath: string, data: Record<string, any>) {
+export async function saveJSON(
+  filepath: string,
+  data: Record<string, unknown>
+) {
   // Ensure directory exists
   await fs.promises.mkdir(path.dirname(filepath), { recursive: true });
 

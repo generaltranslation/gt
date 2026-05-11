@@ -1,6 +1,6 @@
 export function attachGTData(
   html: string,
-  data: Record<string, any>,
+  data: Record<string, unknown>,
   type: 'markDef'
 ): string {
   // Parse the HTML string to find the first element
@@ -24,7 +24,7 @@ export function attachGTData(
 
 export function detachGTData(html: string): {
   html: string;
-  data?: Record<'markDef', Record<string, any>>;
+  data?: Record<'markDef', Record<string, unknown>>;
 } {
   // Parse the HTML string to find the first element
   const parser = new DOMParser();
@@ -39,7 +39,7 @@ export function detachGTData(html: string): {
   // Get the encoded data
   const encodedData = firstElement.getAttribute('data-gt-internal');
 
-  let extractedData: Record<'markDef', Record<string, any>> | undefined;
+  let extractedData: Record<'markDef', Record<string, unknown>> | undefined;
   if (encodedData) {
     try {
       // Decode and parse the data

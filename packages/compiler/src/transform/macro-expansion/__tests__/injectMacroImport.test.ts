@@ -10,7 +10,7 @@ function parseAndGetProgramPath(code: string) {
     sourceType: 'module',
     plugins: ['typescript'],
   });
-  let programPath: any;
+  let programPath: unknown;
   traverse(ast, {
     Program(path) {
       programPath = path;

@@ -118,7 +118,7 @@ export class InlineCLI extends BaseCLI {
     );
 
     // Convert updates to the proper data format
-    const newData: Record<string, any> = {};
+    const newData: Record<string, unknown> = {};
     for (const update of updates) {
       const { source, metadata } = update;
       const { hash, id } = metadata;

@@ -46,6 +46,29 @@ export const DEFAULT_PYTHON_SRC_EXCLUDES = [
   '**/*_test.py',
 ];
 
+type GenerateSettingsInput = Partial<Omit<Settings, 'tag'>> & {
+  config?: string;
+  projectId?: string;
+  locales?: string[];
+  options?: Settings['options'];
+  files?: unknown;
+  publish?: boolean;
+  tag?: string | boolean;
+  message?: string;
+  branch?: string;
+  enableBranching?: boolean;
+  disableBranchDetection?: boolean;
+  remoteName?: string;
+  experimentalLocalizeStaticImports?: boolean;
+  experimentalLocalizeStaticUrls?: boolean;
+  experimentalLocalizeRelativeAssets?: boolean;
+  experimentalHideDefaultLocale?: boolean;
+  experimentalFlattenJsonFiles?: boolean;
+  experimentalClearLocaleDirs?: boolean;
+  clearLocaleDirsExclude?: string[];
+  [key: string]: unknown;
+};
+
 /**
  * Generates settings from any
  * @param flags - The CLI flags to generate settings from
@@ -55,12 +78,12 @@ export const DEFAULT_PYTHON_SRC_EXCLUDES = [
  * @returns The generated settings
  */
 export async function generateSettings(
-  flags: Record<string, any>,
+  flags: GenerateSettingsInput,
   cwd: string = process.cwd(),
   options?: { requireConfig?: boolean }
 ): Promise<Settings> {
   // Load config file
-  let gtConfig: Record<string, any> = {};
+  let gtConfig: GenerateSettingsInput = {};
 
   if (flags.config && !flags.config.endsWith('.json')) {
     flags.config = `${flags.config}.json`;
@@ -70,7 +93,7 @@ export async function generateSettings(
   } else {
     const config = resolveConfig(cwd);
     if (config) {
-      gtConfig = config.config;
+      gtConfig = config.config as GenerateSettingsInput;
       flags.config = config.path;
     } else {
       if (options?.requireConfig) {
@@ -84,7 +107,7 @@ export async function generateSettings(
 
   // Warn if apiKey is present in gt.config.json
   if (gtConfig.apiKey) {
-    warnApiKeyInConfig(flags.config);
+    warnApiKeyInConfig(flags.config ?? 'gt.config.json');
     exitSync(1);
   }
   const projectIdEnv = resolveProjectId();
@@ -136,7 +159,8 @@ export async function generateSettings(
   }
 
   // Warn on deprecated includeSourceCodeContext
-  if (gtConfig.files?.gt?.includeSourceCodeContext != null) {
+  const configuredFiles = gtConfig.files as FilesOptions | undefined;
+  if (configuredFiles?.gt?.includeSourceCodeContext != null) {
     warnDeprecatedField(
       'files.gt.includeSourceCodeContext',
       'files.gt.parsingFlags.includeSourceCodeContext'

@@ -28,6 +28,7 @@ export function set(
   if (Array.isArray(dictionary)) {
     dictionary[id as number] = value;
   } else {
-    (dictionary as any)[id as string] = value;
+    (dictionary as Record<string, Dictionary | DictionaryEntry>)[id as string] =
+      value;
   }
 }

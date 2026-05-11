@@ -51,7 +51,7 @@ export default function useMessages(_messages?: _Messages): MFunctionType {
 
   function _m<T extends string | null | undefined>(
     encodedMsg: T,
-    options: Record<string, any> = {}
+    options: Record<string, unknown> = {}
   ): T extends string ? string : T {
     return _mFunction(encodedMsg, options, preloadedTranslations);
   }

@@ -71,7 +71,7 @@ describe('generateSettings - composite patterns', () => {
       publishPaths: new Set(),
       unpublishPaths: new Set(),
       parsingFlags: {},
-      gtJson: { parsingFlags: {} as any },
+      gtJson: { parsingFlags: {} as unknown },
     });
   });
 
@@ -274,7 +274,7 @@ describe('generateSettings - openapi config', () => {
       publishPaths: new Set(),
       unpublishPaths: new Set(),
       parsingFlags: {},
-      gtJson: { parsingFlags: {} as any },
+      gtJson: { parsingFlags: {} as unknown },
     });
   });
 

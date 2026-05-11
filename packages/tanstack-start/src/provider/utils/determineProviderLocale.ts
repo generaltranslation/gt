@@ -7,8 +7,8 @@ import { getLocale } from 'gt-i18n';
  */
 export function determineProviderLocale(
   props: Partial<Pick<GTProviderProps, 'locale'>>
-): GTProviderProps['locale'] {
-  if (props.locale) {
+): string | undefined {
+  if (typeof props.locale === 'string') {
     return props.locale;
   } else if (isSSREnabled()) {
     return getLocale();

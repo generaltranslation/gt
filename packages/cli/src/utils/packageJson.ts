@@ -9,7 +9,7 @@ import { PACKAGE_VERSION } from '../generated/version.js';
 // search for package.json such that we can run init in non-js projects
 export async function searchForPackageJson(
   cwd: string = process.cwd()
-): Promise<Record<string, any> | null> {
+): Promise<Record<string, unknown> | null> {
   // Get the current working directory (where the CLI is being run)
   const packageJsonPath = path.join(cwd, 'package.json');
 
@@ -26,7 +26,7 @@ export async function searchForPackageJson(
 
 export async function getPackageJson(
   cwd: string = process.cwd()
-): Promise<Record<string, any> | null> {
+): Promise<Record<string, unknown> | null> {
   const packageJsonPath = path.join(cwd, 'package.json');
 
   // Check if package.json exists
@@ -45,7 +45,7 @@ export function getCLIVersion(): string {
 }
 
 export async function updatePackageJson(
-  packageJson: Record<string, any>,
+  packageJson: Record<string, unknown>,
   cwd: string = process.cwd()
 ) {
   try {
@@ -62,18 +62,22 @@ export async function updatePackageJson(
 // check if a package is installed in the package.json file
 export function isPackageInstalled(
   packageName: string,
-  packageJson: Record<string, any>,
+  packageJson: Record<string, unknown>,
   asDevDependency: boolean = false,
   checkBoth: boolean = false
 ): boolean {
+  const devDependencies =
+    (packageJson.devDependencies as Record<string, string> | undefined) ?? {};
+  const prodDependencies =
+    (packageJson.dependencies as Record<string, string> | undefined) ?? {};
   const dependencies = checkBoth
     ? {
-        ...packageJson.devDependencies,
-        ...packageJson.dependencies,
+        ...devDependencies,
+        ...prodDependencies,
       }
     : asDevDependency
-      ? packageJson.devDependencies
-      : packageJson.dependencies;
+      ? devDependencies
+      : prodDependencies;
 
   if (!dependencies) {
     return false;
@@ -83,11 +87,15 @@ export function isPackageInstalled(
 
 export function getPackageVersion(
   packageName: string,
-  packageJson: Record<string, any>
+  packageJson: Record<string, unknown>
 ): string | undefined {
+  const devDependencies =
+    (packageJson.devDependencies as Record<string, string> | undefined) ?? {};
+  const prodDependencies =
+    (packageJson.dependencies as Record<string, string> | undefined) ?? {};
   const dependencies = {
-    ...packageJson.dependencies,
-    ...packageJson.devDependencies,
+    ...prodDependencies,
+    ...devDependencies,
   };
   return dependencies[packageName] ?? undefined;
 }

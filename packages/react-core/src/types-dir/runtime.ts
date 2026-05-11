@@ -6,7 +6,7 @@ export type TranslateIcuCallback = (params: {
   targetLocale: string;
   metadata: { hash: string; context?: string; maxChars?: number } & Record<
     string,
-    any
+    unknown
   >;
 }) => Promise<TranslatedChildren>;
 
@@ -17,6 +17,6 @@ export type TranslateChildrenCallback = (params: {
   targetLocale: string;
   metadata: { hash: string; context?: string; maxChars?: number } & Record<
     string,
-    any
+    unknown
   >;
 }) => Promise<TranslatedChildren>;

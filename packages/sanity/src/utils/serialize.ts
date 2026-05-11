@@ -12,12 +12,13 @@ import merge from 'lodash.merge';
 import { deleteMatchingFields } from './applyDocuments';
 import type { FieldMatcher } from '../adapter/types';
 import { getPublishedId } from './documentIds';
+import type { CustomDeserializers } from '../serialization';
 
 export function deserializeDocument(document: string) {
   const deserializers = merge(
     { types: {} },
     pluginConfig.getAdditionalDeserializers()
-  ) satisfies Partial<PortableTextHtmlComponents>;
+  ) as CustomDeserializers;
   const blockDeserializers = [
     ...customBlockDeserializers,
     ...pluginConfig.getAdditionalBlockDeserializers(),

@@ -24,8 +24,8 @@ import {
   INTERNAL_VAR_COMPONENT,
 } from '../../constants.js';
 
-const traverse = (traverseModule as any).default || traverseModule;
-const generate = (generateModule as any).default || generateModule;
+const traverse = (traverseModule as unknown).default || traverseModule;
+const generate = (generateModule as unknown).default || generateModule;
 
 // ================================================================ //
 //  Helper
@@ -37,7 +37,7 @@ function injectAndAnalyze(sourceCode: string) {
     plugins: ['jsx', 'typescript'],
   });
 
-  const pkgs = [Libraries.GT_NEXT, Libraries.GT_REACT] as any[];
+  const pkgs = [Libraries.GT_NEXT, Libraries.GT_REACT] as unknown[];
   const result = getPathsAndAliases(ast, pkgs);
   // getPathsAndAliases puts T/GtInternalTranslateJsx into translationComponentPaths,
   // not importAliases. But autoInsertJsxComponents needs them in importAliases for

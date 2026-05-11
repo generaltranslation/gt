@@ -355,7 +355,11 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     const decodedOptions = decodeOptions(encodedMsg);
 
     // Fallback to t() if not an encoded message
-    if (!decodedOptions || !decodedOptions.$_hash || !decodedOptions.$_source) {
+    if (
+      !decodedOptions ||
+      typeof decodedOptions.$_hash !== 'string' ||
+      typeof decodedOptions.$_source !== 'string'
+    ) {
       return gt(encodedMsg, options) as T extends string ? string : T;
     }
 
@@ -368,15 +372,20 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       $format,
       ...decodedVariables
     } = decodedOptions;
+    const context = typeof $context === 'string' ? $context : undefined;
+    const id = typeof $id === 'string' ? $id : undefined;
+    const maxChars = typeof $maxChars === 'number' ? $maxChars : undefined;
+    const format = typeof $format === 'string' ? $format : undefined;
+    const formatVariables = decodedVariables as FormatVariables;
 
     const renderMessage: RenderFn = (msg, locales, fallback) => {
       return renderMessageHelper({
         message: msg,
         locales,
-        variables: decodedVariables,
+        variables: formatVariables,
         fallback,
-        maxChars: $maxChars,
-        format: $format,
+        maxChars,
+        format,
       });
     };
 
@@ -429,9 +438,9 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     // On-demand translate
     scheduleTranslateOnDemand({
       source: $_source,
-      context: $context,
-      maxChars: $maxChars,
-      id: $id,
+      context,
+      maxChars,
+      id,
       hash: $_hash,
       renderMessage,
     });

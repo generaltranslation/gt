@@ -1,4 +1,5 @@
 import type {
+  Dictionary,
   RenderMethod,
   Translations,
   CustomLoader,
@@ -10,7 +11,7 @@ export type GTProviderProps = {
   children?: React.ReactNode;
   projectId?: string;
   devApiKey?: string;
-  dictionary?: any;
+  dictionary?: Dictionary;
   locales?: string[];
   defaultLocale?: string;
   locale?: string;
@@ -31,5 +32,5 @@ export type GTProviderProps = {
   fallback?: React.ReactNode;
   customMapping?: CustomMapping;
   modelProvider?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };

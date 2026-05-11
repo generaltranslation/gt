@@ -23,7 +23,10 @@ export interface PluginOptions {
   /* List of locales to polyfill */
   locales?: string[];
   /* Gt config object */
-  config?: { defaultLocale: string; locales: string[] } & Record<string, any>;
+  config?: { defaultLocale: string; locales: string[] } & Record<
+    string,
+    unknown
+  >;
   /* Path to the gt config file */
   configFilePath?: string;
   /* Resolved from package.json */

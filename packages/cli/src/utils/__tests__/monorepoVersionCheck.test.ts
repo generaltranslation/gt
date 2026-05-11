@@ -40,7 +40,7 @@ describe('checkMonorepoVersionConsistency', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.cwd = () => '/repo/packages/app-a';
-    process.exit = vi.fn() as any;
+    process.exit = vi.fn() as unknown;
   });
 
   afterEach(() => {

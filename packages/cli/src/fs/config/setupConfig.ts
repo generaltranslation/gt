@@ -34,11 +34,15 @@ export async function createOrUpdateConfig(
   };
   try {
     // if file exists
-    let oldContent: any = {};
+    let oldContent: Record<string, unknown> = {};
     if (fs.existsSync(configFilepath)) {
-      oldContent = JSON.parse(
+      const parsed = JSON.parse(
         await fs.promises.readFile(configFilepath, 'utf-8')
       );
+      oldContent =
+        typeof parsed === 'object' && parsed !== null
+          ? (parsed as Record<string, unknown>)
+          : {};
     }
 
     // merge old and new content
@@ -46,7 +50,7 @@ export async function createOrUpdateConfig(
       $schema: GT_CONFIG_SCHEMA_URL,
       ...oldContent,
       ...newContent,
-    };
+    } as Record<string, unknown> & { locales?: string[] };
 
     // Add locales to mergedContent if they exist
     if (options.locales) {

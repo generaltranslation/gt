@@ -57,16 +57,22 @@ export async function importTranslations(
 
   const downloadedFiles = await downloadTranslations(readyFiles, secrets);
 
-  const importItems: ImportBatchItem[] = downloadedFiles.map((file) => ({
-    docInfo: {
-      documentId: file.fileId,
-      versionId: file.versionId,
-    },
-    locale: file.locale!,
-    data: file.data,
-    translationContext,
-    key: `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`,
-  }));
+  const importItems: ImportBatchItem[] = downloadedFiles.map((file) => {
+    const data =
+      typeof file.data === 'string'
+        ? file.data
+        : JSON.stringify(file.data ?? '');
+    return {
+      docInfo: {
+        documentId: file.fileId,
+        versionId: file.versionId,
+      },
+      locale: file.locale!,
+      data,
+      translationContext,
+      key: `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`,
+    };
+  });
 
   const result = await processImportBatch(importItems, {
     onProgress: options.onProgress,

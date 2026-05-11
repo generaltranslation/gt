@@ -1,14 +1,20 @@
-import { createRequire } from 'module';
 import { expect, test } from 'vitest';
 import { BaseDocumentMerger } from '../../index';
 import { getDeserialized } from '../helpers';
 import { getNewFieldLevelDocument, getNewObject } from './utils';
 import clone from 'just-clone';
+import fieldLevelArticle from '../__fixtures__/fieldLevelArticle.json';
+import nestedLanguageFields from '../__fixtures__/nestedLanguageFields.json';
 
-const require = createRequire(import.meta.url);
-
-const fieldLevelArticle = require('../__fixtures__/fieldLevelArticle.json');
-const nestedLanguageFields = require('../__fixtures__/nestedLanguageFields.json');
+type FieldLevelPatches = {
+  'config.es_ES': typeof fieldLevelArticle.config.en;
+  'content.es_ES': typeof fieldLevelArticle.content.en;
+  'slices[0].es_ES': NonNullable<
+    (typeof nestedLanguageFields.slices)[number]['en']
+  >;
+  'pageFields.name.es_ES': string;
+  [key: string]: unknown;
+};
 
 const newDocument = getNewFieldLevelDocument();
 const fieldLevelPatches = BaseDocumentMerger.fieldLevelMerge(
@@ -16,7 +22,7 @@ const fieldLevelPatches = BaseDocumentMerger.fieldLevelMerge(
   fieldLevelArticle,
   'es_ES',
   'en'
-);
+) as FieldLevelPatches;
 test('Global field level snapshot test', () => {
   expect(fieldLevelPatches).toMatchSnapshot();
 });
@@ -46,11 +52,11 @@ test('Nested object fields override old object fields', () => {
   );
   expect(
     fieldLevelPatches['config.es_ES'].nestedArrayField[0].children[0].text
-  ).toEqual(newDocument.config.en.nestedArrayField[0].children[0].text);
+  ).toEqual(newDocument.config.en.nestedArrayField[0]!.children![0]!.text);
   expect(
     fieldLevelPatches['config.es_ES'].nestedArrayField[0].children[0].text
   ).not.toEqual(
-    fieldLevelArticle.config.en.nestedArrayField[0].children[0].text
+    fieldLevelArticle.config.en.nestedArrayField[0]!.children![0]!.text
   );
 });
 
@@ -64,11 +70,11 @@ test('Nested object merge uses old fields when not present on new object', () =>
  * Arrays
  */
 test('Arrays will use new objects when they exist', () => {
-  expect(fieldLevelPatches['content.es_ES'][0].children[0].text).toEqual(
-    newDocument.content.en[0].children[0].text
+  expect(fieldLevelPatches['content.es_ES'][0]!.children![0]!.text).toEqual(
+    newDocument.content.en[0]!.children![0]!.text
   );
-  expect(fieldLevelPatches['content.es_ES'][0].children[0].text).not.toEqual(
-    fieldLevelArticle.content.en[0].children[0].text
+  expect(fieldLevelPatches['content.es_ES'][0]!.children![0]!.text).not.toEqual(
+    fieldLevelArticle.content.en[0]!.children![0]!.text
   );
 });
 
@@ -76,7 +82,7 @@ test('Arrays will use old blocks if they do not exist on new object', () => {
   expect(newDocument.content.en[1]).toBeUndefined();
   expect(fieldLevelPatches['content.es_ES'][1]).toBeDefined();
   expect(fieldLevelPatches['content.es_ES'][1]._key).toEqual(
-    fieldLevelArticle.content.en[1]._key
+    fieldLevelArticle.content.en[1]!._key
   );
 });
 
@@ -86,38 +92,39 @@ test('Arrays will merge objects in the array', () => {
 
   //add a new block with some new content, but not all new content
   documentWithIncompleteObj.content.en.push({
-    _key: fieldLevelArticle.content.en[1]._key,
+    _key: fieldLevelArticle.content.en[1]!._key,
     objectAsField: incompleteObj.objectAsField,
     title: incompleteObj.title,
     //does not include "content" field -- we want that to be merged with the old
-  });
+  } as (typeof documentWithIncompleteObj.content.en)[number]);
 
   const fieldDocWithMergedObj = BaseDocumentMerger.fieldLevelMerge(
     documentWithIncompleteObj,
     fieldLevelArticle,
     'es_ES',
     'en'
-  );
+  ) as FieldLevelPatches;
 
   expect(fieldDocWithMergedObj['content.es_ES'][1].title).toEqual(
-    documentWithIncompleteObj.content.en[1].title
+    documentWithIncompleteObj.content.en[1]!.title
   );
-  expect(fieldDocWithMergedObj['content.es_ES'][1].objectAsField.title).toEqual(
-    documentWithIncompleteObj.content.en[1].objectAsField.title
-  );
+  expect(
+    fieldDocWithMergedObj['content.es_ES'][1]!.objectAsField!.title
+  ).toEqual(documentWithIncompleteObj.content.en[1]!.objectAsField!.title);
   //"content" field existed on old doc but not new, so the two coexist happily
   expect(
-    documentWithIncompleteObj.content.en[1].objectAsField.content
+    documentWithIncompleteObj.content.en[1]!.objectAsField!.content
   ).toBeUndefined();
   expect(
-    fieldDocWithMergedObj['content.es_ES'][1].objectAsField.content
+    fieldDocWithMergedObj['content.es_ES'][1]!.objectAsField!.content
   ).toBeDefined();
 });
 
 test('nested locale fields will be merged', () => {
   const newNestedFields = clone(nestedLanguageFields);
   newNestedFields.pageFields.name.en = 'This is a new page field name';
-  newNestedFields.slices[0].en[0].children[0].text = 'This is new slice text';
+  newNestedFields.slices[0]!.en![0]!.children![0]!.text =
+    'This is new slice text';
   const baseDocumentWithNestedFields = {
     ...fieldLevelArticle,
     ...nestedLanguageFields,
@@ -131,11 +138,11 @@ test('nested locale fields will be merged', () => {
     baseDocumentWithNestedFields,
     'es_ES',
     'en'
-  );
+  ) as FieldLevelPatches;
 
   expect(
-    nestedFieldLevelPatches['slices[0].es_ES'][0].children[0].text
-  ).toEqual(newDocumentWithNestedFields.slices[0].en[0].children[0].text);
+    nestedFieldLevelPatches['slices[0].es_ES'][0]!.children![0]!.text
+  ).toEqual(newDocumentWithNestedFields.slices[0]!.en![0]!.children![0]!.text);
   expect(nestedFieldLevelPatches['pageFields.name.es_ES']).toEqual(
     newDocumentWithNestedFields.pageFields.name.en
   );

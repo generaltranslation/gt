@@ -77,7 +77,7 @@ async function createSingletons() {
   const transaction = client.transaction();
 
   documents.forEach((doc) => {
-    transaction.createOrReplace(doc as any);
+    transaction.createOrReplace(doc as unknown);
   });
 
   await transaction

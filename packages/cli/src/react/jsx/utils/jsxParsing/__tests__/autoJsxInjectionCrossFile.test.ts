@@ -32,8 +32,8 @@ import {
 import { resolveImportPath } from '../../resolveImportPath.js';
 import generateModule from '@babel/generator';
 
-const traverse = (traverseModule as any).default || traverseModule;
-const generate = (generateModule as any).default || generateModule;
+const traverse = (traverseModule as unknown).default || traverseModule;
+const generate = (generateModule as unknown).default || generateModule;
 
 vi.mock('node:fs');
 vi.mock('../../resolveImportPath.js');
@@ -132,7 +132,7 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
       plugins: ['jsx', 'typescript'],
     });
 
-    const pkgs = [Libraries.GT_NEXT, Libraries.GT_REACT] as any[];
+    const pkgs = [Libraries.GT_NEXT, Libraries.GT_REACT] as unknown[];
 
     // --- PASS 1: Extract user-written T components ---
     const pass1Result = getPathsAndAliases(ast, pkgs);

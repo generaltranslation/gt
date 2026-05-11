@@ -55,6 +55,15 @@ export interface ScopedGTFunction extends ScopedVariable {
   type: 'generaltranslation';
 }
 
+type SerializedScopeTracker = {
+  nextScopeId: number;
+  currentScope: number;
+  scopeStack: number[];
+  scopeInfo: Record<string, ScopeInfo>;
+  scopedVariables: Record<string, ScopedVariable[]>;
+  namespaceImports: string[];
+};
+
 /**
  * Tracks scope hierarchy and variable assignments within scopes
  */
@@ -292,7 +301,7 @@ export class ScopeTracker {
   /**
    * Helper convert to string
    */
-  serialize(): any {
+  serialize(): SerializedScopeTracker {
     return {
       nextScopeId: this.nextScopeId,
       currentScope: this.currentScope,
@@ -306,7 +315,7 @@ export class ScopeTracker {
   /**
    * Helper to repopulate
    */
-  unserialize(input: any): void {
+  unserialize(input: SerializedScopeTracker): void {
     this.nextScopeId = input.nextScopeId;
     this.currentScope = input.currentScope;
     this.scopeStack = input.scopeStack;

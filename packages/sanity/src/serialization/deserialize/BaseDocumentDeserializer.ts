@@ -4,19 +4,19 @@ import {
   customDeserializers,
   customBlockDeserializers,
 } from '../BaseSerializationConfig';
-import { Deserializer } from '../types';
+import { CustomDeserializers, Deserializer } from '../types';
 import { blockContentType, preprocess } from './helpers';
 import { mergeBlocks } from '../helpers';
 
 export const deserializeArray = (
   arrayHTML: Element,
-  deserializers: Record<string, any> = customDeserializers,
-  blockDeserializers = customBlockDeserializers
+  deserializers: CustomDeserializers = customDeserializers,
+  blockDeserializers: Array<unknown> = customBlockDeserializers
 ) => {
-  const output: any[] = [];
+  const output: unknown[] = [];
   const children = Array.from(arrayHTML.children);
   children.forEach((child) => {
-    let deserializedObject: any;
+    let deserializedObject: unknown;
     try {
       if (child.tagName?.toLowerCase() === 'span') {
         deserializedObject = preprocess(child.innerHTML);
@@ -31,13 +31,23 @@ export const deserializeArray = (
           deserializers,
           blockDeserializers
         );
-        deserializedObject._key = child.id;
+        if (
+          deserializedObject &&
+          typeof deserializedObject === 'object' &&
+          !Array.isArray(deserializedObject)
+        ) {
+          (deserializedObject as Record<string, unknown>)._key = child.id;
+        }
       } else {
-        deserializedObject = htmlToBlocks(child.outerHTML, blockContentType, {
-          rules: blockDeserializers,
+        const blocks = htmlToBlocks(child.outerHTML, blockContentType, {
+          rules: blockDeserializers as NonNullable<
+            Parameters<typeof htmlToBlocks>[2]
+          >['rules'],
         });
-        deserializedObject = mergeBlocks(deserializedObject);
-        deserializedObject._key = child.id;
+        deserializedObject = mergeBlocks(
+          blocks as unknown as Parameters<typeof mergeBlocks>[0]
+        );
+        (deserializedObject as Record<string, unknown>)._key = child.id;
       }
     } catch (e) {
       //eslint-disable-next-line no-console
@@ -52,15 +62,15 @@ export const deserializeArray = (
 
 export const deserializeObject = (
   objectHTML: Element,
-  deserializers: Record<string, any> = customDeserializers,
-  blockDeserializers = customBlockDeserializers
+  deserializers: CustomDeserializers = customDeserializers,
+  blockDeserializers: Array<unknown> = customBlockDeserializers
 ) => {
-  const deserialize = deserializers.types[objectHTML.className];
+  const deserialize = deserializers.types?.[objectHTML.className];
   if (deserialize) {
-    return deserialize(objectHTML);
+    return deserialize(objectHTML as HTMLElement);
   }
 
-  const output: Record<string, any> = {};
+  const output: Record<string, unknown> = {};
   //account for anonymous inline objects
   if (objectHTML.className) {
     output._type = objectHTML.className;
@@ -100,9 +110,9 @@ export const deserializeObject = (
 
 export const deserializeHTML = (
   html: string,
-  deserializers: Record<string, any>,
-  blockDeserializers: Array<any>
-): Record<string, any> | any[] => {
+  deserializers: CustomDeserializers,
+  blockDeserializers: Array<unknown>
+): Record<string, unknown> | unknown[] => {
   //parent node is always div with classname of field -- get its child
   let HTMLnode = new DOMParser().parseFromString(html, 'text/html').body
     .children[0];
@@ -116,12 +126,12 @@ export const deserializeHTML = (
     return {};
   }
 
-  let output: Record<string, any> | any[];
+  let output: Record<string, unknown> | unknown[];
 
   //prioritize custom deserialization
-  const deserialize = deserializers.types[HTMLnode.className];
+  const deserialize = deserializers.types?.[HTMLnode.className];
   if (deserialize) {
-    output = deserialize(HTMLnode);
+    output = deserialize(HTMLnode as HTMLElement);
   } else if (HTMLnode.getAttribute('data-type') === 'object') {
     output = deserializeObject(HTMLnode, deserializers, blockDeserializers);
   } else if (HTMLnode.getAttribute('data-type') === 'array') {
@@ -137,12 +147,14 @@ export const deserializeHTML = (
   return output;
 };
 
-export const deserializeDocument = (
+export const deserializeDocument = <
+  TDocument extends Record<string, unknown> = Record<string, unknown>,
+>(
   serializedDoc: string,
-  deserializers: Record<string, any> = customDeserializers,
-  blockDeserializers = customBlockDeserializers
-): Record<string, any> => {
-  const metadata: Record<string, any> = {};
+  deserializers: CustomDeserializers = customDeserializers,
+  blockDeserializers: Array<unknown> = customBlockDeserializers
+): TDocument => {
+  const metadata: Record<string, unknown> = {};
   const head = new DOMParser().parseFromString(serializedDoc, 'text/html').head;
 
   Array.from(head.children).forEach((metaTag) => {
@@ -153,16 +165,16 @@ export const deserializeDocument = (
     }
   });
 
-  const content: Record<string, any> = deserializeHTML(
+  const content = deserializeHTML(
     serializedDoc,
     deserializers,
     blockDeserializers
-  );
+  ) as Record<string, unknown>;
 
   return {
     ...content,
     ...metadata,
-  };
+  } as TDocument;
 };
 
 export const BaseDocumentDeserializer: Deserializer = {

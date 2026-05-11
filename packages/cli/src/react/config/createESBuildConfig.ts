@@ -3,7 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { displayResolvedPaths } from '../../console/logging.js';
 
-export default function createESBuildConfig(config: Record<string, any> = {}) {
+type TSConfig = {
+  compilerOptions?: {
+    paths?: Record<string, string[]>;
+  };
+};
+
+export default function createESBuildConfig(config: TSConfig = {}) {
   const esbuildOptions: esbuild.BuildOptions = {
     bundle: true,
     format: 'cjs',
@@ -23,9 +29,9 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
   };
 
   // Add the custom plugin to handle 'server-only' imports
-  (esbuildOptions.plugins as any).push({
+  esbuildOptions.plugins?.push({
     name: 'ignore-server-only',
-    setup(build: any) {
+    setup(build: esbuild.PluginBuild) {
       build.onResolve({ filter: /^server-only$/ }, () => {
         return {
           path: 'server-only',
@@ -46,10 +52,10 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
   });
 
   // Add a plugin to handle CSS imports
-  (esbuildOptions.plugins as any).push({
+  esbuildOptions.plugins?.push({
     name: 'css-module',
-    setup(build: any) {
-      build.onResolve({ filter: /\.css$/ }, (args: any) => {
+    setup(build: esbuild.PluginBuild) {
+      build.onResolve({ filter: /\.css$/ }, (args: esbuild.OnResolveArgs) => {
         return {
           path: path.resolve(args.resolveDir, args.path),
           namespace: 'css-module',
@@ -58,7 +64,7 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
 
       build.onLoad(
         { filter: /\.css$/, namespace: 'css-module' },
-        async (args: any) => {
+        async (args: esbuild.OnLoadArgs) => {
           const css = await fs.promises.readFile(args.path, 'utf8');
           const contents = `
                     const style = document.createElement('style');
@@ -73,7 +79,7 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
 
   if (config.compilerOptions) {
     if (config.compilerOptions.paths) {
-      const aliases: any = {};
+      const aliases: Record<string, string> = {};
 
       const resolvedPaths: [string, string][] = [];
       for (const [key, value] of Object.entries(config.compilerOptions.paths)) {

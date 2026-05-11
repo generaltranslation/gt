@@ -41,7 +41,7 @@ export default function RegionSelector<Regions extends string[]>({
   prioritizeCurrentLocaleRegion?: boolean;
   sortRegionsAlphabetically?: boolean;
   asLocaleSelector?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }): React.JSX.Element | null {
   const { region, setRegion, regions, regionData, locale, setLocale } =
     useRegionSelector({

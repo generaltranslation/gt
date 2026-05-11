@@ -281,18 +281,24 @@ export class TranslationsCache<
   ): Promise<TranslationValue> {
     const hash = this.genKey(key);
     const options = key.options;
+    const metadataOptions = options as {
+      $context?: string;
+      $id?: string;
+      $maxChars?: number;
+    };
     return new Promise<TranslationValue>((resolve, reject) => {
       this._queue.push({
         key: hash,
         source: key.message,
         metadata: {
           hash,
-          ...(options?.$context && { context: options.$context }),
-          ...(options?.$id && { id: options.$id }),
-          ...('$maxChars' in options &&
-            options.$maxChars != null && {
-              maxChars: Math.abs(options.$maxChars),
-            }),
+          ...(metadataOptions.$context && {
+            context: metadataOptions.$context,
+          }),
+          ...(metadataOptions.$id && { id: metadataOptions.$id }),
+          ...(metadataOptions.$maxChars != null && {
+            maxChars: Math.abs(metadataOptions.$maxChars),
+          }),
           dataFormat: options.$format,
         },
         resolve: (value) => resolve(value as TranslationValue),

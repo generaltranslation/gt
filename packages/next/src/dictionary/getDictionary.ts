@@ -39,7 +39,9 @@ export async function getDictionary(): Promise<Dictionary | undefined> {
 
     // Check for [defaultLocale.json] file
     try {
-      internalDictionary = await customLoadDictionary(defaultLocale);
+      internalDictionary = (await customLoadDictionary(defaultLocale)) as
+        | Dictionary
+        | undefined;
     } catch {
       // Missing default-locale dictionaries fall through to language fallback.
     }
@@ -48,7 +50,9 @@ export async function getDictionary(): Promise<Dictionary | undefined> {
     const languageCode = getLocaleProperties(defaultLocale)?.languageCode;
     if (!internalDictionary && languageCode && languageCode !== defaultLocale) {
       try {
-        internalDictionary = await customLoadDictionary(languageCode);
+        internalDictionary = (await customLoadDictionary(languageCode)) as
+          | Dictionary
+          | undefined;
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
           console.warn(customLoadDictionaryWarning(languageCode), error);

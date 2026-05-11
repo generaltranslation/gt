@@ -40,9 +40,20 @@ export default function renderDefaultChildren({
     // Plural
     if (generaltranslation?.transformation === 'plural') {
       const branches = generaltranslation.branches || {};
+      if (typeof child.props.n !== 'number') {
+        return child.props.children != null
+          ? handleChildren(child.props.children)
+          : null;
+      }
+      const resolvedBranch = getPluralBranch(
+        child.props.n,
+        [defaultLocale],
+        branches
+      );
       return handleChildren(
-        getPluralBranch(child.props.n, [defaultLocale], branches) ||
-          child.props.children
+        (resolvedBranch !== null
+          ? resolvedBranch
+          : child.props.children) as TaggedChildren
       );
     }
 
@@ -50,8 +61,12 @@ export default function renderDefaultChildren({
     if (generaltranslation?.transformation === 'branch') {
       const { children, branch } = child.props;
       const branches = generaltranslation.branches || {};
+      const branchKey =
+        branch == null || branch === '' ? undefined : branch.toString();
       return handleChildren(
-        branches[branch] !== undefined ? branches[branch] : children
+        branchKey && branches[branchKey] !== undefined
+          ? branches[branchKey]
+          : children
       );
     }
 
@@ -68,7 +83,7 @@ export default function renderDefaultChildren({
       return React.cloneElement(child, {
         ...child.props,
         'data-_gt': undefined,
-        children: handleChildren(child.props.children),
+        children: handleChildren(child.props.children) as TaggedChildren,
       });
     }
     return React.cloneElement(child, { ...child.props, 'data-_gt': undefined });
