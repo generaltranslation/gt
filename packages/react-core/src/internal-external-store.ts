@@ -32,23 +32,23 @@ export {
   useConditionStore,
   useI18nExternalStore,
   useI18nManager,
-} from "./refactor/provider/GTContext";
+} from "./refactor/context/provider/GTContext";
 export {
   GTProvider,
   type GTProviderProps,
-} from "./refactor/provider/GTProvider";
+} from "./refactor/context/provider/GTProvider";
 export {
   I18nStore as I18nExternalStore,
   type I18nExternalStoreParams,
-} from "./refactor/store/I18nStore";
+} from "./refactor/context/store/I18nStore";
 export {
   ProviderConditionStore,
   type ProviderConditionStoreParams,
-} from "./refactor/store/ProviderConditionStore";
+} from "./refactor/context/store/ProviderConditionStore";
 export {
   getI18nExternalStore,
   setI18nExternalStore,
-} from "./refactor/store/singleton-operations";
+} from "./refactor/context/store/singleton-operations";
 export type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
@@ -60,7 +60,7 @@ export type {
   TranslateManySnapshot,
   TranslateSnapshot,
   Unsubscribe,
-} from "./refactor/store/storeTypes";
+} from "./refactor/context/store/storeTypes";
 export { GtInternalTranslateJsx, T } from "./refactor/components/translation/T";
 export {
   Currency,

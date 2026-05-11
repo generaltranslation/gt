@@ -1,11 +1,11 @@
-import { useI18nManager } from '../../provider/GTContext';
-import { useFormatLocales } from '../../hooks/utils';
+import { useI18nManager } from "../../context/provider/GTContext";
+import { useFormatLocales } from "../../hooks/utils";
 
 // ===== Component ===== //
 
 function GtInternalCurrency({
   children,
-  currency = 'USD',
+  currency = "USD",
   options = {},
   locales: localesProp = [],
 }: {
@@ -19,7 +19,7 @@ function GtInternalCurrency({
   const gt = useI18nManager().getGTClass();
   if (children == null) return null;
   const parsedNumber =
-    typeof children === 'string' ? parseFloat(children) : children;
+    typeof children === "string" ? parseFloat(children) : children;
   return gt.formatCurrency(parsedNumber, currency, {
     locales,
     ...options,
@@ -37,8 +37,8 @@ function Currency(props: {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-GtInternalCurrency._gtt = 'variable-currency-automatic';
-Currency._gtt = 'variable-currency';
+GtInternalCurrency._gtt = "variable-currency-automatic";
+Currency._gtt = "variable-currency";
 
 // ===== Exports ===== //
 

@@ -1,12 +1,12 @@
-import { useSyncExternalStore } from 'react';
-import { useConditionStore } from '../provider/GTContext';
+import { useSyncExternalStore } from "react";
+import { useConditionStore } from "../context/provider/GTContext";
 
 export function useLocale(): string {
   const store = useConditionStore();
   return useSyncExternalStore(
     store.subscribeToLocale,
     store.getLocale,
-    store.getLocale
+    store.getLocale,
   );
 }
 
@@ -15,7 +15,7 @@ export function useRegion(): string | undefined {
   return useSyncExternalStore(
     store.subscribeToRegion,
     store.getRegion,
-    store.getRegion
+    store.getRegion,
   );
 }
 
