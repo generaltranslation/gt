@@ -639,6 +639,16 @@ class I18nManager<
     );
   }
 
+  public isValidLocale(locale: string): boolean {
+    try {
+      this.resolveLocale(locale);
+      return true;
+    } catch (error) {
+      this.handleError(error);
+      return false;
+    }
+  }
+
   /**
    * Handle errors
    * Soft error in production, throw in development

@@ -250,10 +250,19 @@ export class I18nStore {
    * for triggering a re-render.
    */
   setLocale = (locale: string): void => {
-    // If already loaded, just immediately emit the status update
+    // Sanitize locale
     const i18nManager = getI18nManager();
-    if (i18nManager.hasTranslations(locale)) {
+    if (!i18nManager.isValidLocale(locale)) {
+      return;
+    }
+
+    // If already loaded, just immediately emit the status update
+    if (
+      !i18nManager.requiresTranslation(locale) ||
+      i18nManager.hasTranslations(locale)
+    ) {
       this.updateTranslationStatus({ status: "ready" });
+      this.updateLocale(locale);
       return;
     }
 
