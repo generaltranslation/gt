@@ -3,9 +3,7 @@ import { intlCache } from '../cache/IntlCache';
 /**
  * @internal
  */
-export default function _isSameLanguage(
-  ...locales: (string | string[])[]
-): boolean {
+export function _isSameLanguage(...locales: (string | string[])[]): boolean {
   try {
     const flattenedCodes = locales.flat();
     // Get the language for each code

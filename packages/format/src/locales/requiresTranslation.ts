@@ -1,6 +1,6 @@
 import { CustomMapping } from './customLocaleMapping';
-import _isSameDialect from './isSameDialect';
-import _isSameLanguage from './isSameLanguage';
+import { _isSameDialect } from './isSameDialect';
+import { _isSameLanguage } from './isSameLanguage';
 import { _isValidLocale } from './isValidLocale';
 
 /**
@@ -9,7 +9,7 @@ import { _isValidLocale } from './isValidLocale';
  * If a translation is not possible due to the target locale being outside of the optional approvedLanguages scope, also returns false
  * @internal
  */
-export default function _requiresTranslation(
+export function _requiresTranslation(
   sourceLocale: string,
   targetLocale: string,
   approvedLocales?: string[],

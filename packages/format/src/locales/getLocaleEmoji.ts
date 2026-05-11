@@ -9,7 +9,7 @@ import { _standardizeLocale } from './isValidLocale';
 /**
  * @internal
  */
-export default function _getLocaleEmoji(
+export function _getLocaleEmoji(
   locale: string,
   customMapping?: CustomMapping
 ): string {

@@ -1,7 +1,7 @@
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
-import _isSameLanguage from './isSameLanguage';
-import _isSameDialect from './isSameDialect';
-import _getLocaleProperties from './getLocaleProperties';
+import { _isSameLanguage } from './isSameLanguage';
+import { _isSameDialect } from './isSameDialect';
+import { _getLocaleProperties } from './getLocaleProperties';
 import { CustomMapping } from './customLocaleMapping';
 
 /**
@@ -9,7 +9,7 @@ import { CustomMapping } from './customLocaleMapping';
  * Determines which locale is the best match among the approved locales, prioritizing exact matches and falling back to dialects of the same language
  * @internal
  */
-export default function _determineLocale(
+export function _determineLocale(
   locales: string | string[],
   approvedLocales: string[],
   customMapping?: CustomMapping

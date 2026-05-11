@@ -1,7 +1,7 @@
 // ========== Translation Data Types ========== //
 // TODO: reduce duplication between this file and packages/react-core/src/types-dir/types.ts
 
-import type { Content } from 'generaltranslation/types';
+import type { Content } from '@generaltranslation/format/types';
 
 /**
  * A single string translation

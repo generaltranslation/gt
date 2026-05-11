@@ -4,7 +4,7 @@ import {
 } from '../../types/options';
 import { interpolateIcuMessage } from './interpolateIcuMessage';
 import { interpolateStringMessage } from './interpolateStringMessage';
-import type { StringFormat } from 'generaltranslation/types';
+import type { StringFormat } from '@generaltranslation/format/types';
 
 /**
  * Options for string interpolation

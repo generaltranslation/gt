@@ -1,7 +1,7 @@
 import { libraryDefaultLocale } from '../settings/settings';
 import { defaultEmoji } from './getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
-import _getLocaleEmoji from './getLocaleEmoji';
+import { _getLocaleEmoji } from './getLocaleEmoji';
 import { intlCache } from '../cache/IntlCache';
 import { CustomMapping, shouldUseCanonicalLocale } from './customLocaleMapping';
 
@@ -75,7 +75,7 @@ export function createCustomLocaleProperties(
 /**
  * @internal
  */
-export default function _getLocaleProperties(
+export function _getLocaleProperties(
   locale: string,
   defaultLocale: string = libraryDefaultLocale,
   customMapping?: CustomMapping

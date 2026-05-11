@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import _determineLocale from '../determineLocale';
+import { _determineLocale } from '../determineLocale';
 import { CustomMapping } from '../customLocaleMapping';
 
 describe('_determineLocale', () => {

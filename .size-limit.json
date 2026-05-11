@@ -6,6 +6,12 @@
     "brotli": true
   },
   {
+    "name": "@generaltranslation/format",
+    "path": "packages/format/dist/index.mjs",
+    "limit": "15 kB",
+    "brotli": true
+  },
+  {
     "name": "gt-i18n",
     "path": "packages/i18n/dist/index.mjs",
     "limit": "35 kB",
