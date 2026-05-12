@@ -329,7 +329,7 @@ export class I18nStore {
   /**
    * This is triggered by a locale change coming from a new locale prop
    * from the GTProvider (along with new translations for that locale)
-   * 
+   *
    * This case does not require an event emission because this occurs
    * before the useSyncExternalStore call in the GTProvider which means
    * that the new locale will be immediately available to the subscribers.
