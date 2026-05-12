@@ -35,6 +35,19 @@ import {
   previousIndex,
 } from './inkUtils.js';
 
+function resolveLocaleChoice({
+  query,
+  highlightedLocale,
+  preferHighlightedLocale,
+}: {
+  query: string;
+  highlightedLocale?: string;
+  preferHighlightedLocale: boolean;
+}) {
+  if (preferHighlightedLocale) return highlightedLocale;
+  return parseTypedLocale(query) ?? highlightedLocale;
+}
+
 function TextPrompt({
   message,
   defaultValue,
@@ -97,6 +110,7 @@ function LocalePrompt({
     : 0;
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(defaultIndex);
+  const [preferHighlightedLocale, setPreferHighlightedLocale] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const filteredOptions = getFilteredLocaleOptions(query);
   const activeIndex = getSafeIndex(index, filteredOptions.length);
@@ -115,22 +129,28 @@ function LocalePrompt({
       return;
     }
     if (key.upArrow) {
+      setPreferHighlightedLocale(true);
       setIndex((current) => previousIndex(current, filteredOptions.length));
       return;
     }
     if (key.downArrow) {
+      setPreferHighlightedLocale(true);
       setIndex((current) => nextIndex(current, filteredOptions.length));
       return;
     }
     if (key.backspace || key.delete) {
       setQuery((current) => current.slice(0, -1));
       setIndex(0);
+      setPreferHighlightedLocale(false);
       setError(undefined);
       return;
     }
     if (key.return) {
-      const selectedLocale = filteredOptions[activeIndex]?.code;
-      const finalLocale = parseTypedLocale(query) ?? selectedLocale;
+      const finalLocale = resolveLocaleChoice({
+        query,
+        highlightedLocale: filteredOptions[activeIndex]?.code,
+        preferHighlightedLocale,
+      });
       if (!finalLocale) {
         setError('Enter a valid locale (e.g., en)');
         return;
@@ -141,6 +161,7 @@ function LocalePrompt({
     if (input && !key.ctrl && !key.meta) {
       setQuery((current) => current + input);
       setIndex(0);
+      setPreferHighlightedLocale(false);
       setError(undefined);
     }
   });
@@ -175,6 +196,7 @@ function LocaleMultiPrompt({
   const { columns, rows } = useTerminalSize();
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
+  const [preferHighlightedLocale, setPreferHighlightedLocale] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set(defaultValue));
   const [error, setError] = useState<string | undefined>();
   const selectedLocales = [...selected];
@@ -210,8 +232,11 @@ function LocaleMultiPrompt({
     setError(undefined);
   };
   const toggleVisibleLocale = () => {
-    const selectedLocale =
-      parseTypedLocale(query) ?? filteredOptions[activeOptionIndex]?.code;
+    const selectedLocale = resolveLocaleChoice({
+      query,
+      highlightedLocale: filteredOptions[activeOptionIndex]?.code,
+      preferHighlightedLocale,
+    });
     if (!selectedLocale) {
       setError('Enter a valid locale (e.g., es fr de)');
       return;
@@ -234,6 +259,7 @@ function LocaleMultiPrompt({
       return;
     }
     if (key.upArrow) {
+      setPreferHighlightedLocale(true);
       setIndex((current) => {
         if (current === SELECTED_TAG_ROW_INDEX) {
           if (selectedTagIndex > 0) {
@@ -254,6 +280,7 @@ function LocaleMultiPrompt({
       return;
     }
     if (key.downArrow) {
+      setPreferHighlightedLocale(true);
       setIndex((current) => {
         if (filteredOptions.length === 0) return 0;
         if (current === SELECTED_TAG_ROW_INDEX) {
@@ -280,6 +307,7 @@ function LocaleMultiPrompt({
     if (key.backspace || key.delete) {
       setQuery((current) => current.slice(0, -1));
       setIndex(0);
+      setPreferHighlightedLocale(false);
       setError(undefined);
       return;
     }
@@ -302,6 +330,7 @@ function LocaleMultiPrompt({
     if (input && !key.ctrl && !key.meta) {
       setQuery((current) => current + input);
       setIndex(0);
+      setPreferHighlightedLocale(false);
       setError(undefined);
     }
   });

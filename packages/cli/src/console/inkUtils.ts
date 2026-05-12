@@ -1,4 +1,6 @@
 import type { PromptResult } from './inkTypes.js';
+import { stripAnsi } from './logging.js';
+export { stripAnsi };
 
 const MIN_CONTENT_WIDTH = 20;
 const MAX_CONTENT_WIDTH = 96;
@@ -7,11 +9,6 @@ const MAX_VISIBLE_LOCALES = 7;
 
 export const CANCELLED: PromptResult<never> = { cancelled: true };
 export const SELECTED_TAG_ROW_INDEX = -1;
-
-export function stripAnsi(str: string): string {
-  // eslint-disable-next-line no-control-regex
-  return str.replace(/\x1B\[[0-9;]*m/g, '');
-}
 
 export function normalizedMessage(message: string): string {
   return stripAnsi(message).trim();
