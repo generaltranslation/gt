@@ -10,8 +10,11 @@ import {
   initializeState,
   isGTInitialized,
 } from "../../state/singleton-operations";
-import { getI18nStore, initializeStores } from "../stores/singleton-operations";
-import type { ReloadServerSideProps } from "../stores/storeTypes";
+import {
+  getI18nStore,
+  initializeStores,
+} from "../I18nStore/singleton-operations";
+import type { ReloadServerSideProps } from "../I18nStore/storeTypes";
 
 export type GTProviderProps = SharedGTProviderProps & {
   /**

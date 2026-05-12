@@ -13,14 +13,14 @@ import type {
   TranslateSnapshot,
   Unsubscribe,
   ReloadServerSideProps,
-} from "../storeTypes";
+} from "./storeTypes";
 import type {
   DictionaryValue,
   LookupOptions,
   Translation,
 } from "gt-i18n/types";
-import { getConditionStore } from "../../../state/singleton-operations";
-import { ReactI18nManagerConstructorParams } from "../../../state/ReactI18nManager";
+import { getConditionStore } from "../ConditionStore/singleton-operations";
+import { ReactI18nManagerConstructorParams } from "../../state/ReactI18nManager";
 
 type TranslationStatusType =
   | { status: "loading"; locale: string }
@@ -75,10 +75,8 @@ export class I18nStore {
     try {
       getConditionStore();
       getI18nManager();
-    } catch {
-      throw new Error(
-        "I18nStore must be initialized after ConditionStore and I18nManager",
-      );
+    } catch (error) {
+      throw new Error("Failed to initialize I18nStore. Reason: " + error);
     }
     this.reloadServerSideProps = reloadServerSideProps;
   }

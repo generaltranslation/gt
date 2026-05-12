@@ -14,7 +14,7 @@ export {
   SharedGTProvider as GTProvider,
   type SharedGTProviderProps as GTProviderProps,
 } from "./refactor/context/provider/GTProvider";
-export type { ReloadServerSideProps } from "./refactor/context/stores/storeTypes";
+export type { ReloadServerSideProps } from "./refactor/context/I18nStore/storeTypes";
 
 export { useLocale, useSetLocale } from "./refactor/hooks/context-hooks";
 export {

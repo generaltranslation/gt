@@ -57,6 +57,12 @@ export type I18nManagerConfig = {
   defaultLocale: string;
   locales: string[];
   customMapping: CustomMapping;
+  /**
+   * @deprecated
+   * Perhaps we can keep this around, but more for
+   * doing an initial load, but it may get overwritten
+   * so like a "initialI18nEnabled" flag?
+   */
   enableI18n: boolean;
   projectId?: string;
   devApiKey?: string;
@@ -75,7 +81,7 @@ export type I18nManagerConfig = {
 /**
  * Shared configuration used by condition stores to resolve locales.
  */
-export type ConditionStoreConfig = {
+export type LocaleResolverConfig = {
   defaultLocale?: string;
   locales?: string[];
   customMapping?: CustomMapping;
@@ -89,6 +95,7 @@ export type ConditionStoreConfig = {
  */
 export interface ConditionStore {
   getLocale(): string;
+  getI18nEnabled(): boolean;
 }
 
 /**
@@ -96,6 +103,7 @@ export interface ConditionStore {
  */
 export interface WritableConditionStore extends ConditionStore {
   setLocale(locale: string): void;
+  setI18nEnabled(enabled: boolean): void;
 }
 
 /**

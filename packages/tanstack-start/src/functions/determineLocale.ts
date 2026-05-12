@@ -1,8 +1,8 @@
-import { defaultLocaleCookieName } from 'gt-react/internal';
-import { createIsomorphicFn } from '@tanstack/react-start';
-import { getRequestHeader, getCookie } from '@tanstack/react-start/server';
-import { resolveSupportedLocale } from 'gt-i18n/internal';
-import type { ConditionStoreConfig } from 'gt-i18n/internal/types';
+import { defaultLocaleCookieName } from "gt-react/internal";
+import { createIsomorphicFn } from "@tanstack/react-start";
+import { getRequestHeader, getCookie } from "@tanstack/react-start/server";
+import { resolveSupportedLocale } from "gt-i18n/internal";
+import type { LocaleResolverConfig } from "gt-i18n/internal/types";
 
 /**
  * Determines the locale isomorphicly.
@@ -21,7 +21,7 @@ function determineLocaleServer({
   defaultLocale,
   locales,
   customMapping,
-}: ConditionStoreConfig) {
+}: LocaleResolverConfig) {
   const candidates: string[] = [];
 
   // (1) Check cookie
@@ -29,21 +29,21 @@ function determineLocaleServer({
   if (cookie) candidates.push(cookie);
 
   // (2) Check headers
-  if (process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false') {
+  if (process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === "false") {
     const headers =
-      getRequestHeader('accept-language')
-        ?.split(',')
-        .map((item) => item.split(';')?.[0].trim()) || [];
+      getRequestHeader("accept-language")
+        ?.split(",")
+        .map((item) => item.split(";")?.[0].trim()) || [];
     if (headers) candidates.push(...headers);
   }
 
   // Warn if no locales could be determined
   if (
     candidates.length === 0 &&
-    process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false'
+    process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === "false"
   ) {
     console.warn(
-      'gt-tanstack-start(server): no locales could be determined for this request'
+      "gt-tanstack-start(server): no locales could be determined for this request",
     );
   }
 
@@ -61,14 +61,14 @@ function determineLocaleClient({
   defaultLocale,
   locales,
   customMapping,
-}: ConditionStoreConfig) {
+}: LocaleResolverConfig) {
   const candidates: string[] = [];
 
   // (1) Check cookie
   const cookie = document.cookie
-    .split('; ')
+    .split("; ")
     .find((row) => row.startsWith(`${defaultLocaleCookieName}=`))
-    ?.split('=')[1];
+    ?.split("=")[1];
   if (cookie) candidates.push(cookie);
 
   // (2) Check browser locale
@@ -77,7 +77,7 @@ function determineLocaleClient({
 
   if (candidates.length === 0) {
     console.warn(
-      'gt-tanstack-start(client): no locales could be determined for this request'
+      "gt-tanstack-start(client): no locales could be determined for this request",
     );
   }
 

@@ -1,6 +1,6 @@
 import { initializeState } from "../state/singleton-operations";
 import { ReactI18nManagerConstructorParams } from "../state/ReactI18nManager";
-import { initializeStores } from "../context/stores/singleton-operations";
+import { initializeStores } from "../context/I18nStore/singleton-operations";
 
 /**
  * Initialize GT for an SPA

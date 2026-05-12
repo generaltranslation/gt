@@ -1,9 +1,9 @@
 import { createConditionStoreSingleton } from "gt-i18n/internal";
-import { I18nStore, I18nStoreParams } from "./I18nStore/I18nStore";
+import { I18nStore, I18nStoreParams } from "./I18nStore";
 import {
   ReactConditionStore,
   ReactConditionStoreParams,
-} from "./ConditionStore/ReactConditionStore";
+} from "../ConditionStore/ReactConditionStore";
 import type { ReloadServerSideProps } from "./storeTypes";
 
 // ===== I18n Store ===== //

@@ -2,14 +2,10 @@ import {
   ReactI18nManager,
   ReactI18nManagerConstructorParams,
 } from "./ReactI18nManager";
-import { createConditionStoreSingleton } from "gt-i18n/internal";
-import { ReactConditionStore } from "../context/stores/ConditionStore/ReactConditionStore";
 import {
   getI18nManager as getI18nManagerInternal,
   setI18nManager as setI18nManagerInternal,
 } from "gt-i18n/internal";
-
-// ===== Condition Store ===== //
 
 // ===== I18n Manager ===== //
 
@@ -32,13 +28,11 @@ type RenderStrategy = "SPA" | "server-render";
 
 declare global {
   var __generaltranslation: {
-    initialized: boolean;
     renderStrategy: RenderStrategy | undefined;
   };
 }
 
 globalThis.__generaltranslation = {
-  initialized: false,
   renderStrategy: undefined,
 };
 
@@ -49,10 +43,6 @@ export function getRenderStrategy(): RenderStrategy {
     );
   }
   return globalThis.__generaltranslation.renderStrategy;
-}
-
-export function isGTInitialized(): boolean {
-  return globalThis.__generaltranslation.initialized;
 }
 
 // ===== Initialize State ===== //
@@ -69,17 +59,8 @@ export function initializeState({
   renderStrategy: RenderStrategy;
   config: ReactI18nManagerConstructorParams;
 }): void {
-  globalThis.__generaltranslation.initialized = true;
   globalThis.__generaltranslation.renderStrategy = renderStrategy;
 
   const i18nManager = new ReactI18nManager(config);
   setI18nManager(i18nManager);
-
-  const conditionStore = new ReactConditionStore({
-    defaultLocale: config.defaultLocale,
-    locales: config.locales,
-    customMapping: config.customMapping,
-    locale,
-  });
-  setConditionStore(conditionStore);
 }

@@ -231,6 +231,8 @@ class I18nManager<
 
   /**
    * Is translation enabled?
+   * @deprecated use condition store instead
+   * TODO: move this to condition store
    */
   isTranslationEnabled(): boolean {
     return this.config.enableI18n;
