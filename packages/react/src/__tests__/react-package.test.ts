@@ -41,7 +41,7 @@ function buildPackage(): void {
 }
 
 function node(args: string[]): void {
-  execFileSync(process.execPath, args, { stdio: 'pipe' });
+  execFileSync(process.execPath, args, { cwd: packageRoot, stdio: 'pipe' });
 }
 
 describe('gt-react package exports', () => {

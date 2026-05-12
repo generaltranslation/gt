@@ -7,3 +7,7 @@ enforceBrowser(BROWSER_ENVIRONMENT_ERROR);
 export * from './i18n-context/setup/index';
 export * from './i18n-context/functions';
 export { LocaleSelector } from './i18n-context/ui/LocaleSelector';
+export type {
+  SyncResolutionFunction,
+  SyncResolutionFunctionWithFallback,
+} from 'gt-i18n/types';

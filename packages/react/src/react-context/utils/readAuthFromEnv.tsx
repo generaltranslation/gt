@@ -17,6 +17,8 @@ export function readAuthFromEnv({
 }: AuthFromEnvParams): AuthFromEnvReturn {
   const env = {
     ...(typeof process !== 'undefined' ? process.env : undefined),
+    // CJS builds define import.meta.env as {}, so Vite/Redwood vars are only
+    // reachable in ESM/browser bundles.
     ...(import.meta.env as unknown as Env | undefined),
   };
 
