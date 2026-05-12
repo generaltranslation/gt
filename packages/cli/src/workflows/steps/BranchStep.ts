@@ -119,7 +119,7 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     } else {
       if (!current) {
         return logErrorAndExit(
-          'Failed to determine the current branch. Specify a custom branch or enable automatic branch detection.'
+          'The current git branch could not be determined. Specify a custom branch or enable automatic branch detection.'
         );
       }
       const currentBranch = branchData.branches.find(

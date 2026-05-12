@@ -1,16 +1,39 @@
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+
 export const PACKAGE_NAME = 'gt-react';
 
 // ---- Errors ---- //
 
-export const BROWSER_ENVIRONMENT_ERROR = `${PACKAGE_NAME}/browser Error: The ${PACKAGE_NAME}/browser module requires a browser environment`;
-export const GENERIC_BROWSER_ENVIRONMENT_ERROR = `${PACKAGE_NAME} Error: You are trying to import a browser-only module into a non-browser environment.`;
-export const BROWSER_I18N_MANAGER_NOT_INITIALIZED_ERROR = `${PACKAGE_NAME} Error: BrowserI18nManager not initialized. Invoke initializeGT() to initialize.`;
+export const BROWSER_ENVIRONMENT_ERROR = createDiagnosticMessage({
+  source: `${PACKAGE_NAME}/browser`,
+  severity: 'Error',
+  whatHappened: 'This module requires a browser environment',
+  fix: 'Import it only from client-side code',
+});
+export const GENERIC_BROWSER_ENVIRONMENT_ERROR = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Error',
+  whatHappened: 'A browser-only module was imported outside the browser',
+  fix: 'Move this import to client-side code',
+});
+export const BROWSER_I18N_MANAGER_NOT_INITIALIZED_ERROR =
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Error',
+    whatHappened: 'BrowserI18nManager is not initialized',
+    fix: 'Call initializeGT() before using browser translation APIs',
+  });
 
 // ---- Warnings ---- //
 export const createTranslationFailedDueToBrowserEnvironmentWarning = (
   message: string | TemplateStringsArray | undefined
 ) =>
-  `${PACKAGE_NAME} Warning: Translation failed for t("${typeof message === 'string' ? message : '`' + message?.join('${}') + '`'}") because it was used outside of a browser environment. Falling back to original message.`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: `t("${typeof message === 'string' ? message : '`' + message?.join('${}') + '`'}") could not be translated because it ran outside the browser`,
+    wayOut: 'The original message will render as a fallback',
+  });
 
 export const createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning = ({
   customLocale,
@@ -19,7 +42,18 @@ export const createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning = ({
   customLocale: string;
   defaultLocale: string;
 }) =>
-  `${PACKAGE_NAME} Warning: Custom getLocale() function returned an unsupported locale: "${customLocale}". Falling back to default locale: "${defaultLocale}".`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: `Custom getLocale() returned unsupported locale "${customLocale}"`,
+    wayOut: `Falling back to default locale "${defaultLocale}"`,
+    fix: 'Add the locale to your config if you want to support it',
+  });
 
 export const createInvalidLocaleWarning = (locale: string) =>
-  `${PACKAGE_NAME} Warning: Invalid locale: "${locale}".`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: `Locale "${locale}" is not valid`,
+    fix: 'Use a valid BCP 47 locale code or add a custom mapping',
+  });

@@ -9,7 +9,7 @@ export function validateSettings(settings: Settings) {
   for (const locale of settings.locales) {
     if (!isValidLocale(locale, settings.customMapping)) {
       return logErrorAndExit(
-        `Provided locales: "${settings?.locales?.join()}", ${locale} is not a valid locale!`
+        `Locale "${locale}" is not valid in the provided locales: "${settings?.locales?.join()}". Use a valid BCP 47 locale code or add a custom mapping in gt.config.json.`
       );
     }
   }
@@ -18,7 +18,7 @@ export function validateSettings(settings: Settings) {
     !isValidLocale(settings.defaultLocale, settings.customMapping)
   ) {
     return logErrorAndExit(
-      `defaultLocale: ${settings.defaultLocale} is not a valid locale!`
+      `defaultLocale "${settings.defaultLocale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping in gt.config.json.`
     );
   }
 
@@ -35,7 +35,7 @@ export function validateSettings(settings: Settings) {
       isSupersetLocale(settings.defaultLocale, locale)
     );
     return logErrorAndExit(
-      `defaultLocale: ${settings.defaultLocale} is a superset of another locale (${locale})! Change the defaultLocale to a more specific locale.`
+      `defaultLocale "${settings.defaultLocale}" is broader than configured locale "${locale}". Change defaultLocale to a more specific locale.`
     );
   }
 }
@@ -52,6 +52,6 @@ export function validateConfigExists() {
     }
   }
   return logErrorAndExit(
-    'No gt.config.json file found. Are you in the correct directory?'
+    'No gt.config.json file was found. Run this command from your project root, pass --config, or run npx gt init to create one.'
   );
 }

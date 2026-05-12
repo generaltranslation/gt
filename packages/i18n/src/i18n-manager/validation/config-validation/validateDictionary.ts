@@ -1,6 +1,7 @@
 import type { DictionaryLoader } from '../../translations-manager/LocalesDictionaryCache';
 import type { Dictionary } from '../../translations-manager/DictionaryCache';
 import type { ValidationResult } from '../types';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 /**
  * Dictionary configuration
@@ -17,7 +18,10 @@ export function validateDictionary(params: {
   if (params.loadDictionary && !params.dictionary) {
     results.push({
       type: 'error',
-      message: 'dictionary is required when loadDictionary is provided',
+      message: createDiagnosticMessage({
+        whatHappened: 'loadDictionary needs a source dictionary',
+        fix: 'Provide dictionary so the default locale has source content',
+      }),
     });
   }
 

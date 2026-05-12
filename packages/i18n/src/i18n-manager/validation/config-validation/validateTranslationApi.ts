@@ -1,4 +1,5 @@
 import { ValidationResult } from '../types';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import {
   TranslationApiType,
   getTranslationApiType,
@@ -17,8 +18,8 @@ import {
  * Requirements:
  * - CUSTOM:
  * - GT:
- *   - projectId is required
- *   - devApiKey or apiKey is required
+ *   - projectId is needed
+ *   - devApiKey or apiKey is needed
  * - DISABLED:
  *   - no requirements
  *
@@ -40,13 +41,19 @@ export function validateTranslationApi(params: {
       if (!params.projectId) {
         results.push({
           type: 'warning',
-          message: 'projectId is required',
+          message: createDiagnosticMessage({
+            whatHappened: 'Runtime translation needs a projectId',
+            fix: 'Add projectId to the I18nManager config or disable runtime translation',
+          }),
         });
       }
       if (!params.devApiKey && !params.apiKey) {
         results.push({
           type: 'warning',
-          message: 'devApiKey or apiKey is required',
+          message: createDiagnosticMessage({
+            whatHappened: 'Runtime translation needs devApiKey or apiKey',
+            fix: 'Add credentials to the I18nManager config or disable runtime translation',
+          }),
         });
       }
       break;

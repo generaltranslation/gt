@@ -1113,7 +1113,7 @@ describe('I18nManager', () => {
         options: {},
       })
     ).rejects.toThrow(
-      'I18nManager: dictionaryRuntimeTranslate(): unable to translate dictionary entry greeting'
+      'Dictionary entry "greeting" could not be translated into a string. Check the source entry and translation loader output.'
     );
   });
 

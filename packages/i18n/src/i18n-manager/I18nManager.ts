@@ -640,7 +640,7 @@ class I18nManager<
     const resolvedLocale = this.localeConfig.determineLocale(locale);
     if (!this.localeConfig.isValidLocale(locale) || !resolvedLocale) {
       throw new Error(
-        `I18nManager: validateLocale(): locale ${locale} is not valid`
+        `Locale "${locale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping.`
       );
     }
     return resolvedLocale;
@@ -728,7 +728,7 @@ class I18nManager<
     );
     if (typeof translation !== 'string') {
       throw new Error(
-        `I18nManager: dictionaryRuntimeTranslate(): unable to translate dictionary entry ${id}`
+        `Dictionary entry "${id}" could not be translated into a string. Check the source entry and translation loader output.`
       );
     }
 

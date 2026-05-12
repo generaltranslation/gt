@@ -8,7 +8,9 @@ describe('validateLoadTranslations', () => {
     });
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe('warning');
-    expect(result[0].message).toContain('projectId is required');
+    expect(result[0].message).toContain(
+      'Loading translations from a remote store needs a projectId'
+    );
   });
 
   it('requires customTranslationLoader for custom loading', () => {
@@ -25,6 +27,8 @@ describe('validateLoadTranslations', () => {
     });
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe('warning');
-    expect(result[0].message).toContain('projectId is required');
+    expect(result[0].message).toContain(
+      'Loading translations from a remote store needs a projectId'
+    );
   });
 });

@@ -1,16 +1,37 @@
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 import { PACKAGE_NAME } from './constants';
 
-export const resolveLocalesFailedWarning = `${PACKAGE_NAME}: Failed to resolve locales for polyfill. Falling back to ${libraryDefaultLocale}.
-Specify a list of locales for the gt-react-native babel plugin by:
-(1) Providing a list of locales
-(2) Providing your GT Config to the plugin
-(3) Providing the path to your GT Config file.`;
+export const resolveLocalesFailedWarning = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Warning',
+  whatHappened: 'Locales for the polyfill could not be resolved',
+  fix: 'Provide locales directly, pass your GT Config to the plugin, or provide the path to your GT Config file',
+  wayOut: `The library will fall back to ${libraryDefaultLocale}`,
+});
 
 export const couldNotLocateConfigWarning = (filePath: string) =>
-  `${PACKAGE_NAME}: Could not locate GT Config at ${filePath}.`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: `GT Config could not be found at ${filePath}`,
+    fix: 'Check the path or pass locales directly to the plugin',
+  });
 
 export const invalidLocalesWarning = (invalidLocales: string[]) =>
-  `${PACKAGE_NAME}: Invalid locales found in GT Config: ${invalidLocales.join(', ')}.`;
+  createDiagnosticMessage({
+    source: PACKAGE_NAME,
+    severity: 'Warning',
+    whatHappened: 'GT Config contains invalid locales',
+    fix: 'Use valid BCP 47 locale codes or add custom mappings',
+    details: invalidLocales,
+  });
 
-export const ssrUnsupportedWarning = `${PACKAGE_NAME}: Server-side environments are not explicitly supported. Some features may not work as expected.`;
+export const ssrUnsupportedWarning = createDiagnosticMessage({
+  source: PACKAGE_NAME,
+  severity: 'Warning',
+  whatHappened: 'Server-side environments are not explicitly supported',
+  wayOut: 'Some features may not work as expected',
+});

@@ -23,7 +23,7 @@ export function getI18nManager<U extends Translation = Translation>():
   | I18nManager<Translation> {
   if (!i18nManager) {
     logger.warn(
-      'getI18nManager(): Translation failed because I18nManager not initialized.'
+      'getI18nManager(): I18nManager was not initialized. Falling back to the default locale until initializeGT() configures translations.'
     );
     i18nManager = new I18nManager({
       defaultLocale: libraryDefaultLocale,
