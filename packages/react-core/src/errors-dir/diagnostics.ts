@@ -1,5 +1,6 @@
 import {
   createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
   type DiagnosticMessageInput,
 } from 'generaltranslation/internal';
 import { PACKAGE_NAME } from './constants';
@@ -15,9 +16,4 @@ export function createReactCoreDiagnostic(
   });
 }
 
-export function formatDiagnosticErrorDetails(
-  error: unknown
-): string | undefined {
-  if (error == null) return undefined;
-  return String(error);
-}
+export { formatDiagnosticErrorDetails };

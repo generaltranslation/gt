@@ -44,6 +44,13 @@ function formatDetails(details: string | string[] | undefined): string {
   return ensureSentence(`Details: ${detailText}`);
 }
 
+export function formatDiagnosticErrorDetails(
+  error: unknown
+): string | undefined {
+  if (error == null) return undefined;
+  return String(error);
+}
+
 export function createDiagnosticMessage({
   source,
   severity,

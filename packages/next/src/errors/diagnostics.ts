@@ -1,5 +1,6 @@
 import {
   createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
   type DiagnosticMessageInput,
 } from 'generaltranslation/internal';
 
@@ -21,9 +22,4 @@ export function createGtNextPluginDiagnostic(
   });
 }
 
-export function formatDiagnosticErrorDetails(
-  error: unknown
-): string | undefined {
-  if (error == null) return undefined;
-  return String(error);
-}
+export { formatDiagnosticErrorDetails };

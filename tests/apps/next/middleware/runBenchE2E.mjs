@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { readFileSync, writeFileSync, readdirSync, unlinkSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -27,8 +27,12 @@ function logSection(message) {
   log(`\n=== ${message} ===\n`);
 }
 
+function runPnpm(args, options) {
+  return execFileSync('pnpm', args, options);
+}
+
 function packWorkspacePackage(name, dir) {
-  const packOutput = execSync(`pnpm pack --pack-destination ${__dirname}`, {
+  const packOutput = runPnpm(['pack', '--pack-destination', __dirname], {
     cwd: join(ROOT, dir),
     encoding: 'utf-8',
   }).trim();
@@ -52,7 +56,7 @@ function removePackedTarballs() {
 
 // --- Step 1: Build all packages ---
 logSection('Building packages');
-execSync('pnpm build', { cwd: ROOT, stdio: 'inherit' });
+runPnpm(['build'], { cwd: ROOT, stdio: 'inherit' });
 
 // --- Step 2: Pack gt-next and its local workspace dependency closure ---
 logSection('Packing gt-next workspace package closure');
@@ -72,47 +76,62 @@ const originalPkg = readFileSync(PKG_PATH, 'utf-8');
 const originalRootPkg = readFileSync(ROOT_PKG_PATH, 'utf-8');
 const pkg = JSON.parse(originalPkg);
 const rootPkg = JSON.parse(originalRootPkg);
-pkg.dependencies['gt-next'] = `file:./${gtNextTarballName}`;
-writeFileSync(PKG_PATH, JSON.stringify(pkg, null, 2) + '\n');
-
-rootPkg.pnpm = {
-  ...rootPkg.pnpm,
-  overrides: {
-    ...rootPkg.pnpm?.overrides,
-    ...dependencyOverrides,
-  },
-};
-writeFileSync(ROOT_PKG_PATH, JSON.stringify(rootPkg, null, 2) + '\n');
+let pkgWasWritten = false;
+let rootPkgWasWritten = false;
+let installNeedsRestore = false;
 
 try {
+  pkg.dependencies['gt-next'] = `file:./${gtNextTarballName}`;
+  writeFileSync(PKG_PATH, JSON.stringify(pkg, null, 2) + '\n');
+  pkgWasWritten = true;
+
+  rootPkg.pnpm = {
+    ...rootPkg.pnpm,
+    overrides: {
+      ...rootPkg.pnpm?.overrides,
+      ...dependencyOverrides,
+    },
+  };
+  writeFileSync(ROOT_PKG_PATH, JSON.stringify(rootPkg, null, 2) + '\n');
+  rootPkgWasWritten = true;
+
   // --- Step 4: Install with tarball ---
   logSection('Installing with packed gt-next workspace package closure');
-  execSync('pnpm install --no-frozen-lockfile', {
+  installNeedsRestore = true;
+  runPnpm(['install', '--no-frozen-lockfile'], {
     cwd: ROOT,
     stdio: 'inherit',
   });
 
   // --- Step 5: Build + run benchmark ---
   logSection('Building app');
-  execSync('NEXT_PUBLIC_USE_CASE=main pnpm build', {
+  runPnpm(['build'], {
     cwd: __dirname,
+    env: { ...process.env, NEXT_PUBLIC_USE_CASE: 'main' },
     stdio: 'inherit',
   });
 
   logSection('Running e2e benchmarks');
-  execSync('npx playwright test --config=benchmarks/playwright.config.ts', {
-    cwd: __dirname,
-    stdio: 'inherit',
-  });
+  execFileSync(
+    'npx',
+    ['playwright', 'test', '--config=benchmarks/playwright.config.ts'],
+    {
+      cwd: __dirname,
+      stdio: 'inherit',
+    }
+  );
 } finally {
   // --- Step 6: Restore workspace dependency ---
   logSection('Restoring workspace dependency');
-  writeFileSync(PKG_PATH, originalPkg);
-  writeFileSync(ROOT_PKG_PATH, originalRootPkg);
-  execSync('pnpm install --no-frozen-lockfile', {
-    cwd: ROOT,
-    stdio: 'inherit',
-  });
+  if (pkgWasWritten) writeFileSync(PKG_PATH, originalPkg);
+  if (rootPkgWasWritten) writeFileSync(ROOT_PKG_PATH, originalRootPkg);
+
+  if (installNeedsRestore) {
+    runPnpm(['install', '--no-frozen-lockfile'], {
+      cwd: ROOT,
+      stdio: 'inherit',
+    });
+  }
 
   removePackedTarballs();
 }
