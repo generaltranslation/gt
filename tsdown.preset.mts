@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { basename, extname, resolve } from 'node:path';
 import { rm } from 'node:fs/promises';
 
@@ -86,8 +87,11 @@ type TsdownMinifiedDualFormatConfigOptions = Pick<
 > & {
   entries: string[];
   packageDir?: string;
+  /** Defaults to the conventional type entry when it exists. Pass false to skip the types-only CJS artifact. */
   typeEntry?: string | false;
 };
+
+const defaultTypeEntry = 'src/types.ts';
 
 const minifiedOutExtensions: UserConfig['outExtensions'] = ({ format }) => ({
   js: format === 'cjs' ? '.cjs.min.cjs' : '.esm.min.mjs',
@@ -119,10 +123,16 @@ function createRemoveTypeRuntimeArtifactsHook(
 export function createTsdownMinifiedDualFormatConfig({
   entries,
   packageDir = process.cwd(),
-  typeEntry = 'src/types.ts',
+  typeEntry,
   deps,
   outDir = 'dist',
 }: TsdownMinifiedDualFormatConfigOptions) {
+  const resolvedTypeEntry =
+    typeEntry ??
+    (existsSync(resolve(packageDir, defaultTypeEntry))
+      ? defaultTypeEntry
+      : false);
+
   const outputOptions = {
     outDir,
     sourcemap: true,
@@ -146,16 +156,16 @@ export function createTsdownMinifiedDualFormatConfig({
     },
   ]);
 
-  if (typeEntry) {
+  if (resolvedTypeEntry) {
     configs.push({
       ...outputOptions,
-      entry: [typeEntry],
+      entry: [resolvedTypeEntry],
       format: ['cjs'] as const,
       dts: true,
       clean: false,
       onSuccess: createRemoveTypeRuntimeArtifactsHook(
         outDir,
-        typeEntry,
+        resolvedTypeEntry,
         packageDir
       ),
     });
