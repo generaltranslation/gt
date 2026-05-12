@@ -17,15 +17,19 @@ export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
       return textInfoDirection;
     }
   } catch {
-    // silent
+    // Fall back to language/script heuristics below.
   }
 
   // Fallback to simple heuristics
   const { scriptCode, languageCode } = _getLocaleProperties(code);
 
   // Handle RTL script or language
-  if (scriptCode) return isRtlScript(scriptCode) ? 'rtl' : 'ltr';
-  if (languageCode) return isRtlLanguage(languageCode) ? 'rtl' : 'ltr';
+  if (scriptCode) {
+    return RTL_SCRIPTS.has(scriptCode.toLowerCase()) ? 'rtl' : 'ltr';
+  }
+  if (languageCode) {
+    return RTL_LANGUAGES.has(languageCode.toLowerCase()) ? 'rtl' : 'ltr';
+  }
 
   return 'ltr';
 }
@@ -75,27 +79,13 @@ const RTL_LANGUAGES = new Set([
  * This is not supported by all browsers yet.
  * See: {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo#browser_compatibility}
  */
-function extractDirectionWithTextInfo(
-  locale: Intl.Locale
-): 'ltr' | 'rtl' | undefined {
-  if (
+function extractDirectionWithTextInfo(locale: Intl.Locale) {
+  const direction =
     'textInfo' in locale &&
     typeof locale.textInfo === 'object' &&
     locale.textInfo !== null &&
-    'direction' in locale.textInfo &&
-    (locale.textInfo?.direction === 'rtl' ||
-      locale.textInfo?.direction === 'ltr')
-  ) {
-    return locale.textInfo?.direction;
-  }
-
-  return undefined;
-}
-
-function isRtlScript(script: string | undefined): boolean {
-  return script ? RTL_SCRIPTS.has(script.toLowerCase()) : false;
-}
-
-function isRtlLanguage(language: string | undefined): boolean {
-  return language ? RTL_LANGUAGES.has(language.toLowerCase()) : false;
+    'direction' in locale.textInfo
+      ? locale.textInfo.direction
+      : undefined;
+  return direction === 'rtl' || direction === 'ltr' ? direction : undefined;
 }

@@ -1,10 +1,7 @@
 import { intlCache } from '../cache/IntlCache';
-import {
-  getCustomProperty,
-  shouldUseCanonicalLocale,
-  type CustomMapping,
-} from './customLocaleMapping';
+import { getCustomProperty, type CustomMapping } from './customLocaleMapping';
 import { _standardizeLocale } from './isValidLocale';
+import { _resolveCanonicalLocale } from './resolveCanonicalLocale';
 
 /**
  * @internal
@@ -14,9 +11,7 @@ export function _getLocaleEmoji(
   customMapping?: CustomMapping
 ): string {
   const aliasedLocale = locale;
-  if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
-    locale = (customMapping[locale] as { code: string }).code;
-  }
+  locale = _resolveCanonicalLocale(locale, customMapping);
 
   try {
     const standardizedLocale = _standardizeLocale(locale);
@@ -322,11 +317,11 @@ const flagRegions = new Set([
 
 const regionalIndicatorOffset = 0x1f1e6 - 'A'.charCodeAt(0);
 
-export function getRegionEmoji(region: string): string {
+export function getRegionEmoji(region: string) {
   return getSupportedRegionEmoji(region) || defaultEmoji;
 }
 
-function getSupportedRegionEmoji(region: string): string | undefined {
+function getSupportedRegionEmoji(region: string) {
   const normalizedRegion = region.toUpperCase();
   const specialEmoji = specialRegionEmojis[normalizedRegion];
   if (specialEmoji) return specialEmoji;

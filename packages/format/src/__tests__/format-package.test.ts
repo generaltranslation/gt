@@ -47,9 +47,14 @@ describe('@generaltranslation/format package export', () => {
         `
           const assert = require('node:assert/strict');
           const {
+            formatCurrency,
             LocaleConfig,
             formatCutoff,
+            formatList,
             formatMessage,
+            formatNum,
+            formatRelativeTime,
+            formatRelativeTimeFromDate,
             getRegionProperties,
             standardizeLocale,
           } = require('@generaltranslation/format');
@@ -59,6 +64,15 @@ describe('@generaltranslation/format package export', () => {
             'Hi Ada'
           );
           assert.equal(formatCutoff('Hello, world!', { maxChars: 8 }), 'Hello, …');
+          assert.equal(formatNum(1234.5), '1,234.5');
+          assert.equal(formatCurrency(1234.5, 'USD'), '$1,234.50');
+          assert.equal(formatList(['apples', 'bananas']), 'apples and bananas');
+          assert.equal(formatRelativeTime(-1, 'day'), 'yesterday');
+          const relativeFromDate = formatRelativeTimeFromDate(
+            new Date(Date.now() - 24 * 60 * 60 * 1000),
+            undefined,
+          );
+          assert.equal(typeof relativeFromDate, 'string');
           assert.equal(new LocaleConfig().formatNum(1234.5, 'en-US'), '1,234.5');
           assert.equal(getRegionProperties('US').name, 'United States');
           assert.equal(standardizeLocale('en-us'), 'en-US');
@@ -78,8 +92,13 @@ describe('@generaltranslation/format package export', () => {
           import assert from 'node:assert/strict';
           import {
             LocaleConfig,
+            formatCurrency,
             formatCutoff,
+            formatList,
             formatMessage,
+            formatNum,
+            formatRelativeTime,
+            formatRelativeTimeFromDate,
             getRegionProperties,
             isValidLocale,
             resolveCanonicalLocale,
@@ -90,6 +109,15 @@ describe('@generaltranslation/format package export', () => {
             'Hi Ada'
           );
           assert.equal(formatCutoff('Hello, world!', { maxChars: 8 }), 'Hello, …');
+          assert.equal(formatNum(1234.5), '1,234.5');
+          assert.equal(formatCurrency(1234.5, 'USD'), '$1,234.50');
+          assert.equal(formatList(['apples', 'bananas']), 'apples and bananas');
+          assert.equal(formatRelativeTime(-1, 'day'), 'yesterday');
+          const relativeFromDate = formatRelativeTimeFromDate(
+            new Date(Date.now() - 24 * 60 * 60 * 1000),
+            undefined,
+          );
+          assert.equal(typeof relativeFromDate, 'string');
           assert.equal(
             new LocaleConfig({ customMapping: { en: 'English' } }).getLocaleName('en'),
             'English'

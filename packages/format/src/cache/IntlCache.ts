@@ -29,17 +29,13 @@ const CustomIntl: CustomIntlType = {
  * Uses a two-level structure: constructor name -> cache key -> instance.
  */
 class IntlCache {
-  private cache: IntlCacheObject;
-
-  constructor() {
-    this.cache = {};
-  }
+  private cache: IntlCacheObject = {};
 
   /**
    * Generates a consistent cache key from locales and options.
    * Handles all LocalesArgument types (string, Locale, array, undefined).
    */
-  private _generateKey(locales: Intl.LocalesArgument, options = {}) {
+  private generateKey(locales: Intl.LocalesArgument, options = {}) {
     // Normalize locales to string representation
     const localeKey = !locales
       ? 'undefined'
@@ -65,14 +61,18 @@ class IntlCache {
     ...args: ConstructorParameters<CustomIntlConstructors[K]>
   ): InstanceType<ConstructorType<K>> {
     const [locales = libraryDefaultLocale, options = {}] = args;
-    const key = this._generateKey(locales, options);
-    let intlObject = this.cache[constructor]?.[key];
+    const key = this.generateKey(locales, options);
+    let cache = this.cache[constructor];
+    if (cache === undefined) {
+      cache = {};
+      this.cache[constructor] = cache;
+    }
+    let intlObject = cache[key];
 
     if (intlObject === undefined) {
       // Create new instance and cache it
       intlObject = new CustomIntl[constructor](...args);
-      if (!this.cache[constructor]) this.cache[constructor] = {};
-      this.cache[constructor][key] = intlObject;
+      cache[key] = intlObject;
     }
 
     return intlObject;

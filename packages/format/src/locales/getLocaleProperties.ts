@@ -3,7 +3,8 @@ import { defaultEmoji } from './getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 import { _getLocaleEmoji } from './getLocaleEmoji';
 import { intlCache } from '../cache/IntlCache';
-import { CustomMapping, shouldUseCanonicalLocale } from './customLocaleMapping';
+import { CustomMapping } from './customLocaleMapping';
+import { _resolveCanonicalLocale } from './resolveCanonicalLocale';
 
 export type LocaleProperties = {
   // assume code = "de-AT", defaultLocale = "en-US"
@@ -55,21 +56,20 @@ export function createCustomLocaleProperties(
   lArray: string[],
   customMapping?: CustomMapping
 ): Partial<LocaleProperties> | undefined {
-  if (customMapping) {
-    let merged: Partial<LocaleProperties> = {};
-    for (const l of lArray) {
-      const value = customMapping[l];
-      if (value) {
-        if (typeof value === 'string') {
-          merged.name ||= value;
-        } else if (value) {
-          merged = { ...value, ...merged };
-        }
+  if (!customMapping) return undefined;
+
+  let merged: Partial<LocaleProperties> = {};
+  for (const l of lArray) {
+    const value = customMapping[l];
+    if (value) {
+      if (typeof value === 'string') {
+        merged.name ||= value;
+      } else {
+        merged = { ...value, ...merged };
       }
     }
-    return merged;
   }
-  return undefined;
+  return merged;
 }
 
 /**
@@ -82,10 +82,8 @@ export function _getLocaleProperties(
 ): LocaleProperties {
   // Check for canonical locale
   const aliasedLocale = locale;
-  if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
-    // Override locale with canonical locale
-    locale = (customMapping[locale] as { code: string }).code;
-  }
+  // Override locale with canonical locale
+  locale = _resolveCanonicalLocale(locale, customMapping);
 
   defaultLocale ||= libraryDefaultLocale;
 
@@ -174,9 +172,8 @@ export function _getLocaleProperties(
       locale; // "Deutsch"
 
     const nameWithRegionCode =
-      customLocaleProperties?.nameWithRegionCode || baseRegion
-        ? `${languageName} (${baseRegion})`
-        : name; // German (AT)
+      customLocaleProperties?.nameWithRegionCode ||
+      (baseRegion ? `${languageName} (${baseRegion})` : name); // German (AT)
     const nativeNameWithRegionCode =
       customLocaleProperties?.nativeNameWithRegionCode ||
       (baseRegion ? `${nativeLanguageName} (${baseRegion})` : nativeName) ||
@@ -253,11 +250,10 @@ export function _getLocaleProperties(
     };
   } catch {
     let code = _isValidLocale(locale) ? _standardizeLocale(locale) : locale;
-    const codeParts = code?.split('-');
-    let languageCode = codeParts?.[0] || code || '';
-    let regionCode =
-      codeParts.length > 2 ? codeParts?.[2] : codeParts?.[1] || '';
-    let scriptCode = codeParts?.[3] || '';
+    const codeParts = code.split('-');
+    let languageCode = codeParts[0] || code;
+    let regionCode = codeParts.length > 2 ? codeParts[2] : codeParts[1] || '';
+    let scriptCode = codeParts[3] || '';
 
     const customLocaleProperties = createCustomLocaleProperties(
       [code, languageCode],

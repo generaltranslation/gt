@@ -1,23 +1,6 @@
 import { intlCache } from '../cache/IntlCache';
 import { _standardizeLocale } from './isValidLocale';
 
-function checkTwoLocalesAreSameDialect(codeA: string, codeB: string) {
-  const {
-    language: languageA,
-    region: regionA,
-    script: scriptA,
-  } = intlCache.get('Locale', codeA);
-  const {
-    language: languageB,
-    region: regionB,
-    script: scriptB,
-  } = intlCache.get('Locale', codeB);
-  if (languageA !== languageB) return false;
-  if (regionA && regionB && regionA !== regionB) return false;
-  if (scriptA && scriptB && scriptA !== scriptB) return false;
-  return true;
-}
-
 /**
  * Test two or more language codes to determine if they are exactly the same
  * e.g. "en-US" and "en" would be exactly the same.
@@ -28,18 +11,24 @@ function checkTwoLocalesAreSameDialect(codeA: string, codeB: string) {
 export function _isSameDialect(...locales: (string | string[])[]): boolean {
   try {
     // standardize codes
-    const flattenedCodes = locales.flat().map(_standardizeLocale);
+    const localeObjects = locales
+      .flat()
+      .map((locale) => intlCache.get('Locale', _standardizeLocale(locale)));
+    const [firstLocale] = localeObjects;
+    const regions = new Set(
+      localeObjects.map(({ region }) => region).filter(Boolean)
+    );
+    const scripts = new Set(
+      localeObjects.map(({ script }) => script).filter(Boolean)
+    );
 
-    for (let i = 0; i < flattenedCodes.length; i++) {
-      for (let j = i + 1; j < flattenedCodes.length; j++) {
-        if (
-          !checkTwoLocalesAreSameDialect(flattenedCodes[i], flattenedCodes[j])
-        )
-          return false;
-      }
-    }
-
-    return true;
+    return (
+      localeObjects.every(
+        ({ language }) => language === firstLocale?.language
+      ) &&
+      regions.size <= 1 &&
+      scripts.size <= 1
+    );
   } catch (error) {
     console.error(error);
     return false;

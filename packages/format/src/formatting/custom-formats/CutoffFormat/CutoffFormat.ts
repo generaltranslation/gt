@@ -8,17 +8,31 @@ import {
 import {
   CutoffFormat,
   CutoffFormatOptions,
-  CutoffFormatStyle,
   PostpendedCutoffParts,
   PrependedCutoffParts,
   ResolvedCutoffFormatOptions,
-  ResolvedTerminatorOptions,
 } from './types';
 
 export class CutoffFormatConstructor implements CutoffFormat {
   private locale: string;
   private options: ResolvedCutoffFormatOptions;
   private additionLength: number;
+
+  private static resolveLocale(locales: Intl.LocalesArgument) {
+    try {
+      // Normalize locales to string
+      const localesList = !locales
+        ? [libraryDefaultLocale]
+        : Array.isArray(locales)
+          ? locales.map(String)
+          : [String(locales)];
+      const [canonicalLocale] = Intl.getCanonicalLocales(localesList);
+      return canonicalLocale ?? libraryDefaultLocale;
+    } catch {
+      return libraryDefaultLocale;
+    }
+  }
+
   /**
    * Constructor
    * @param {Intl.LocalesArgument} locales - The locales to use for formatting.
@@ -45,48 +59,27 @@ export class CutoffFormatConstructor implements CutoffFormat {
     options: CutoffFormatOptions = {}
   ) {
     // Determine locale (this replicates Intl.NumberFormat behavior including silent failure)
-    try {
-      // Normalize locales to string
-      const localesList = !locales
-        ? [libraryDefaultLocale]
-        : Array.isArray(locales)
-          ? locales.map((l) => String(l))
-          : [String(locales)];
-      const canonicalLocales = Intl.getCanonicalLocales(localesList);
-      this.locale = canonicalLocales.length
-        ? canonicalLocales[0]
-        : libraryDefaultLocale;
-    } catch {
-      this.locale = libraryDefaultLocale;
-    }
+    this.locale = CutoffFormatConstructor.resolveLocale(locales);
 
     // Follows Intl.NumberFormat behavior of throwing an error when currency is invalid
-    if (!TERMINATOR_MAP[options.style ?? DEFAULT_CUTOFF_FORMAT_STYLE]) {
-      throw new Error(
-        createInvalidCutoffStyleError(
-          options.style ?? DEFAULT_CUTOFF_FORMAT_STYLE
-        )
-      );
+    const style = options.style ?? DEFAULT_CUTOFF_FORMAT_STYLE;
+    if (!TERMINATOR_MAP[style]) {
+      throw new Error(createInvalidCutoffStyleError(style));
     }
 
     // Resolve terminator options.
-    let style: CutoffFormatStyle | undefined;
-    let presetTerminatorOptions: ResolvedTerminatorOptions | undefined;
-    if (options.maxChars !== undefined) {
-      style = options.style ?? DEFAULT_CUTOFF_FORMAT_STYLE;
-      // TODO: need more sophisticated locale negotiation if we want to add support for region/script/etc.-specific terminators in the future
-      const languageCode = new Intl.Locale(this.locale).language;
-      presetTerminatorOptions =
-        TERMINATOR_MAP[style][languageCode] ||
-        TERMINATOR_MAP[style][DEFAULT_TERMINATOR_KEY];
-    }
-    let terminator: ResolvedTerminatorOptions['terminator'] =
-      options.terminator ?? presetTerminatorOptions?.terminator;
-    let separator: ResolvedTerminatorOptions['separator'] =
+    // TODO: need more sophisticated locale negotiation if we want to add support for region/script/etc.-specific terminators in the future
+    const presetTerminatorOptions =
+      options.maxChars === undefined
+        ? undefined
+        : TERMINATOR_MAP[style][new Intl.Locale(this.locale).language] ||
+          TERMINATOR_MAP[style][DEFAULT_TERMINATOR_KEY];
+    let terminator = options.terminator ?? presetTerminatorOptions?.terminator;
+    let separator =
       terminator != null
         ? (options.separator ?? presetTerminatorOptions?.separator)
         : undefined;
-    // // Remove terminator and separator if maxChars does have enough space
+    // Remove terminator and separator if maxChars cannot fit them.
     this.additionLength = (terminator?.length ?? 0) + (separator?.length ?? 0);
     if (
       options.maxChars !== undefined &&
@@ -98,7 +91,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
 
     this.options = {
       maxChars: options.maxChars,
-      style,
+      style: options.maxChars === undefined ? undefined : style,
       terminator,
       separator,
     };
@@ -135,8 +128,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
   formatToParts(value: string): PrependedCutoffParts | PostpendedCutoffParts {
     const { maxChars, terminator, separator } = this.options;
 
-    // Slice our value
-    // const additionLength = (terminator?.length ?? 0) + (separator?.length ?? 0);
+    // Slice our value.
     const adjustedChars =
       maxChars === undefined || Math.abs(maxChars) >= value.length
         ? maxChars
@@ -166,11 +158,9 @@ export class CutoffFormatConstructor implements CutoffFormat {
         : [slicedValue, terminator];
     }
     // Prepended cutoff.
-    else {
-      return separator != null
-        ? [terminator, separator, slicedValue]
-        : [terminator, slicedValue];
-    }
+    return separator != null
+      ? [terminator, separator, slicedValue]
+      : [terminator, slicedValue];
   }
 
   /**

@@ -1,41 +1,13 @@
-import { FormatVariables, I18nextMessage } from '../types';
+import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
 import { IntlMessageFormat } from 'intl-messageformat';
-import { formatI18nextWarning, formatJsxWarning } from '../logging/warnings';
-import { warnFormatting } from '../logging/warnFormatting';
-import { JsxChildren } from '../types';
-import { CutoffFormatOptions } from './custom-formats/CutoffFormat/types';
 
-/**
- * Formats a string value with cutoff behavior according to the specified locales and options.
- *
- * @param {Object} params - The parameters for the cutoff formatting.
- * @param {string} params.value - The string value to format with cutoff behavior.
- * @param {string | string[]} [params.locales='en'] - The locales to use for formatting.
- * @param {CutoffFormatOptions} [params.options={}] - Additional options for cutoff formatting.
- * @param {number} [params.options.maxChars] - The maximum number of characters to display.
- * @param {CutoffFormatStyle} [params.options.style='ellipsis'] - The style of the terminator.
- * @param {string} [params.options.terminator] - Optional override for the terminator to use.
- * @param {string} [params.options.separator] - Optional override for the separator between terminator and value.
- *
- * @returns {string} The formatted string with terminator applied if cutoff occurs.
- * @internal
- *
- * @example
- * _formatCutoff({ value: 'Hello, world!', options: { maxChars: 8 } }); // Returns 'Hello, w...'
- */
-export function _formatCutoff({
-  value,
-  locales = libraryDefaultLocale,
-  options = {},
-}: {
-  value: string;
+type FormatParams<Value, Options> = {
+  value: Value;
   locales?: string | string[];
-  options?: CutoffFormatOptions;
-}): string {
-  return intlCache.get('CutoffFormat', locales, options).format(value);
-}
+  options?: Options;
+};
 
 /**
  * Formats a message according to the specified locales and options.
@@ -59,19 +31,6 @@ export function _formatMessageICU(
 }
 
 /**
- * Returns the message as-is without any formatting.
- *
- * @param {string} message - The message to return.
- * @returns {string} The original message, unchanged.
- * @internal
- *
- * TODO: Add this to custom formats.
- */
-export function _formatMessageString(message: string): string {
-  return message;
-}
-
-/**
  * Formats a number according to the specified locales and options.
  *
  * @param {Object} params - The parameters for the number formatting.
@@ -86,18 +45,13 @@ export function _formatNum({
   value,
   locales = [libraryDefaultLocale],
   options = {},
-}: {
-  value: number;
-  locales?: string | string[];
-  options?: Intl.NumberFormatOptions;
-}): string {
-  const res = intlCache
+}: FormatParams<number, Intl.NumberFormatOptions>): string {
+  return intlCache
     .get('NumberFormat', locales, {
       numberingSystem: 'latn',
       ...options,
     })
     .format(value);
-  return res;
 }
 
 /**
@@ -115,11 +69,7 @@ export function _formatDateTime({
   value,
   locales = [libraryDefaultLocale],
   options = {},
-}: {
-  value: Date;
-  locales?: string | string[];
-  options?: Intl.DateTimeFormatOptions;
-}): string {
+}: FormatParams<Date, Intl.DateTimeFormatOptions>): string {
   return intlCache
     .get('DateTimeFormat', locales, {
       calendar: 'gregory',
@@ -147,11 +97,9 @@ export function _formatCurrency({
   locales = [libraryDefaultLocale],
   currency = 'USD',
   options = {},
-}: {
+}: FormatParams<number, Intl.NumberFormatOptions> & {
   value: number;
   currency?: string;
-  locales?: string | string[];
-  options?: Intl.NumberFormatOptions;
 }): string {
   return intlCache
     .get('NumberFormat', locales, {
@@ -178,11 +126,7 @@ export function _formatList({
   value,
   locales = [libraryDefaultLocale],
   options = {},
-}: {
-  value: Array<string | number>;
-  locales?: string | string[];
-  options?: Intl.ListFormatOptions;
-}): string {
+}: FormatParams<Array<string | number>, Intl.ListFormatOptions>): string {
   return intlCache
     .get('ListFormat', locales, {
       type: 'conjunction', // Default type, can be overridden via options
@@ -205,11 +149,7 @@ export function _formatListToParts<T>({
   value,
   locales = [libraryDefaultLocale],
   options = {},
-}: {
-  value: Array<T>;
-  locales?: string | string[];
-  options?: Intl.ListFormatOptions;
-}) {
+}: FormatParams<Array<T>, Intl.ListFormatOptions>) {
   const formatListParts = intlCache
     .get('ListFormat', locales, {
       type: 'conjunction', // Default type, can be overridden via options
@@ -266,25 +206,6 @@ export function _selectRelativeTimeUnit(
 }
 
 /**
- * Formats a relative time from a Date, automatically selecting the best unit.
- * @internal
- */
-export function _formatRelativeTimeFromDate({
-  date,
-  baseDate,
-  locales = [libraryDefaultLocale],
-  options = {},
-}: {
-  date: Date;
-  baseDate: Date;
-  locales?: string | string[];
-  options?: Intl.RelativeTimeFormatOptions;
-}): string {
-  const { value, unit } = _selectRelativeTimeUnit(date, baseDate);
-  return _formatRelativeTime({ value, unit, locales, options });
-}
-
-/**
  * Formats a relative time value according to the specified locales and options.
  *
  * @param {Object} params - The parameters for the relative time formatting.
@@ -301,11 +222,8 @@ export function _formatRelativeTime({
   unit,
   locales = [libraryDefaultLocale],
   options = {},
-}: {
-  value: number;
+}: FormatParams<number, Intl.RelativeTimeFormatOptions> & {
   unit: Intl.RelativeTimeFormatUnit;
-  locales?: string | string[];
-  options?: Intl.RelativeTimeFormatOptions;
 }): string {
   return intlCache
     .get('RelativeTimeFormat', locales, {
@@ -314,40 +232,4 @@ export function _formatRelativeTime({
       ...options,
     })
     .format(value, unit);
-}
-
-/**
- * @experimental This function is not currently supported but will be implemented in a future version.
- * Use {@link _formatMessageICU} for current ICU message format support.
- * Formats an I18next message according to the specified locales and options.
- *
- * @param message - The I18next message to format.
- * @param variables - The variables to use for formatting.
- * @returns The formatted I18next message.
- * @internal
- */
-export function _formatI18next(
-  message: I18nextMessage,
-  _variables: FormatVariables = {}
-): string {
-  warnFormatting(formatI18nextWarning);
-  return message;
-}
-
-/**
- * @experimental This function is not currently supported but will be implemented in a future version.
- * Use {@link _formatMessageICU} for current ICU message format support.
- * Formats a JSX message according to the specified locales and options.
- *
- * @param message - The JSX message to format.
- * @param variables - The variables to use for formatting.
- * @returns The formatted JSX message.
- * @internal
- */
-export function _formatJsx(
-  message: JsxChildren,
-  _variables: FormatVariables = {}
-): JsxChildren {
-  warnFormatting(formatJsxWarning);
-  return message;
 }

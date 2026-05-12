@@ -16,13 +16,13 @@ export function _requiresTranslation(
   customMapping?: CustomMapping
 ): boolean {
   // If codes are invalid
+  const localesToValidate = [
+    sourceLocale,
+    targetLocale,
+    ...(approvedLocales ?? []),
+  ];
   if (
-    !_isValidLocale(sourceLocale, customMapping) ||
-    !_isValidLocale(targetLocale, customMapping) ||
-    (approvedLocales &&
-      approvedLocales.some(
-        (approvedLocale) => !_isValidLocale(approvedLocale, customMapping)
-      ))
+    localesToValidate.some((locale) => !_isValidLocale(locale, customMapping))
   ) {
     return false;
   }
@@ -34,14 +34,8 @@ export function _requiresTranslation(
 
   // Check that the target locale is within the approvedLocales scope, if not, a translation is not required
   // isSameLanguage rather than checkTwoLocalesAreSameDialect so we can show different dialects as a fallback
-  if (
-    approvedLocales &&
-    !approvedLocales.some((approvedLocale) =>
-      _isSameLanguage(targetLocale, approvedLocale)
-    )
-  ) {
-    return false;
-  }
-  // Otherwise, a translation is required!
-  return true;
+  if (!approvedLocales) return true;
+  return approvedLocales.some((approvedLocale) =>
+    _isSameLanguage(targetLocale, approvedLocale)
+  );
 }
