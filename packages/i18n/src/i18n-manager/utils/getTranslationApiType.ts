@@ -23,14 +23,17 @@ export function getTranslationApiType(params: {
   apiKey?: string;
   runtimeUrl?: string | null;
 }): TranslationApiType {
+  const usesDefaultRuntimeUrl =
+    params.runtimeUrl === undefined ||
+    params.runtimeUrl === defaultRuntimeApiUrl;
+
   if (
-    (params.runtimeUrl === undefined ||
-      params.runtimeUrl === defaultRuntimeApiUrl) &&
+    usesDefaultRuntimeUrl &&
     params.projectId &&
     (params.devApiKey || params.apiKey)
   ) {
     return TranslationApiType.GT;
-  } else if (params.runtimeUrl) {
+  } else if (params.runtimeUrl && !usesDefaultRuntimeUrl) {
     return TranslationApiType.CUSTOM;
   } else {
     return TranslationApiType.DISABLED;

@@ -27,7 +27,7 @@ import {
   mFallback,
   gtFallback,
 } from 'gt-react/internal';
-import {
+import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
@@ -81,9 +81,6 @@ export {
   useMessages,
   useLocale,
   useLocaleDirection,
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
   msg,
   decodeMsg,
   decodeOptions,
@@ -93,4 +90,9 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+};
+export type {
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
 };

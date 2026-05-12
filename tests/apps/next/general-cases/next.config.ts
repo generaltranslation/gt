@@ -1,8 +1,11 @@
 import { withGTConfig } from 'gt-next/config';
 import type { NextConfig } from 'next';
+import { getTurbopackRoot } from '../turbopackRoot';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  turbopack: {
+    root: getTurbopackRoot(import.meta.url),
+  },
 };
 
 export default withGTConfig(nextConfig, {});

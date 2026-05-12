@@ -1,8 +1,5 @@
 import {
   collectUntranslatedEntries,
-  Dictionary,
-  DictionaryEntry,
-  DictionaryTranslationOptions,
   getDictionaryEntry,
   getEntryAndMetadata,
   getSubtreeWithCreation,
@@ -15,6 +12,11 @@ import {
   isValidDictionaryEntry,
   mergeDictionaries,
   stripMetadataFromEntries,
+} from 'gt-react/internal';
+import type {
+  Dictionary,
+  DictionaryEntry,
+  DictionaryTranslationOptions,
 } from 'gt-react/internal';
 
 import { getDictionary } from '../../dictionary/getDictionary';

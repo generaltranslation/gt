@@ -23,12 +23,15 @@
     "@types/jest": "^29.5.14",
     "@types/micromatch": "^4.0.9",
     "@types/node": "catalog:",
+    "tsdown": "catalog:",
     "tsx": "^4.16.5",
     "typescript": "catalog:"
   },
   "scripts": {
     "patch": "pnpm version patch",
-    "build": "tsc",
+    "emit-types": "sh ../../scripts/emit-types.sh",
+    "transpile": "tsdown && pnpm run emit-types",
+    "build": "pnpm run transpile",
     "build:release": "pnpm run build:clean",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "dev": "pnpm run build && node dist/index.js",

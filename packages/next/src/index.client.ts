@@ -37,7 +37,7 @@ import {
   gtProviderUseClientError,
   txUseClientError,
 } from './errors/createErrors';
-import {
+import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
@@ -76,9 +76,6 @@ export {
   useLocaleDirection,
   useVersionId,
   useMessages,
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
   msg,
   decodeMsg,
   decodeOptions,
@@ -88,4 +85,9 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+};
+export type {
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
 };

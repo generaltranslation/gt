@@ -6,8 +6,10 @@
   "types": "dist/index.d.ts",
   "author": "General Translation, Inc.",
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc --watch",
+    "emit-types": "sh ../../scripts/emit-types.sh",
+    "transpile": "tsdown && pnpm run emit-types",
+    "build": "pnpm run transpile",
+    "build:watch": "tsdown --watch",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "format": "oxfmt src",
@@ -47,6 +49,7 @@
     "@types/babel__generator": "^7.6.0",
     "@types/babel__traverse": "^7.20.0",
     "@types/node": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

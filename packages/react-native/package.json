@@ -4,23 +4,23 @@
   "description": "An i18n package for React Native",
   "main": "./dist/commonjs/index.js",
   "module": "./dist/module/index.js",
-  "types": "./dist/typescript/module/src/index.d.ts",
+  "types": "./dist/module/index.d.ts",
   "exports": {
     ".": {
       "source": "./src/index.tsx",
-      "types": "./dist/typescript/module/src/index.d.ts",
+      "types": "./dist/module/index.d.ts",
       "default": "./dist/module/index.js"
     },
     "./plugin": {
       "source": "./src/plugin.ts",
-      "types": "./dist/typescript/module/src/plugin.d.ts",
+      "types": "./dist/module/plugin.d.ts",
       "require": "./dist/commonjs/plugin.js",
       "import": "./dist/module/plugin.js",
       "default": "./dist/commonjs/plugin.js"
     },
     "./internal": {
       "source": "./src/internal.ts",
-      "types": "./dist/typescript/module/src/internal.d.ts",
+      "types": "./dist/module/internal.d.ts",
       "default": "./dist/module/internal.js"
     },
     "./package.json": "./package.json"
@@ -28,10 +28,10 @@
   "typesVersions": {
     "*": {
       "plugin": [
-        "./dist/typescript/module/src/plugin.d.ts"
+        "./dist/module/plugin.d.ts"
       ],
       "internal": [
-        "./dist/typescript/module/src/internal.d.ts"
+        "./dist/module/internal.d.ts"
       ]
     }
   },
@@ -59,8 +59,9 @@
   ],
   "scripts": {
     "patch": "pnpm version patch",
-    "transpile": "tsc",
-    "build": "bob build",
+    "emit-types": "sh ../../scripts/emit-types.sh -p tsconfig.build.json --declaration --outDir dist/module --rootDir src",
+    "transpile": "tsdown && pnpm run emit-types",
+    "build": "pnpm run transpile",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "clean": "del-cli android/build dist",
@@ -114,37 +115,14 @@
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",
-    "@babel/types": "^7.28.4",
-    "@react-native/babel-preset": "0.81.1",
     "@types/babel__core": "^7.20.5",
     "@types/node": "catalog:",
     "@types/react": "^19.1.0",
     "del-cli": "^6.0.0",
     "react": "19.1.0",
     "react-native": "0.81.1",
-    "react-native-builder-bob": "^0.40.13",
+    "tsdown": "catalog:",
     "typescript": "catalog:"
-  },
-  "react-native-builder-bob": {
-    "source": "src",
-    "output": "dist",
-    "targets": [
-      [
-        "commonjs"
-      ],
-      [
-        "module",
-        {
-          "esm": true
-        }
-      ],
-      [
-        "typescript",
-        {
-          "project": "tsconfig.build.json"
-        }
-      ]
-    ]
   },
   "codegenConfig": {
     "name": "GtReactNativeSpec",

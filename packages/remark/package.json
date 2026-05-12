@@ -20,7 +20,9 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc -p ./tsconfig.json",
+    "emit-types": "sh ../../scripts/emit-types.sh",
+    "transpile": "tsdown && pnpm run emit-types",
+    "build": "pnpm run transpile",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "test": "vitest run",
@@ -58,6 +60,7 @@
     "@types/mdast": "^4.0.4",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "unified": "^11.0.5",
     "vitest": "catalog:"

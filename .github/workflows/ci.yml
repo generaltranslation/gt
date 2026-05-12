@@ -84,6 +84,7 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         node: [20, 24]
+        next: ['15.5.9', '16.0.10', '16.1.6']
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -120,14 +121,18 @@ jobs:
         if: steps.gt_next_changed.outputs.changed == 'true'
         run: pnpm install
 
+      - name: Use Next.js ${{ matrix.next }}
+        if: steps.gt_next_changed.outputs.changed == 'true'
+        run: pnpm --filter base --filter general-cases add next@${{ matrix.next }} --save-exact
+
       - name: Test Builds
         if: steps.gt_next_changed.outputs.changed == 'true'
         run: |
-          pnpm exec turbo build --filter=base...
-          pnpm exec turbo build:turbopack --filter=base...
+          pnpm exec turbo build --filter=base... --force
+          pnpm exec turbo build:turbopack --filter=base... --force
 
-          pnpm exec turbo build --filter=general-cases...
-          pnpm exec turbo build:turbopack --filter=general-cases...
+          pnpm exec turbo build --filter=general-cases... --force
+          pnpm exec turbo build:turbopack --filter=general-cases... --force
 
   test-cli-binaries:
     strategy:

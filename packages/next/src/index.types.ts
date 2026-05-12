@@ -20,7 +20,7 @@ import {
   useLocaleDirection as _useLocaleDirection,
   useVersionId as _useVersionId,
 } from 'gt-react/client';
-import {
+import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
@@ -553,7 +553,7 @@ export const useMessages: (
   throw new Error(typesFileError);
 };
 
-export {
+export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
