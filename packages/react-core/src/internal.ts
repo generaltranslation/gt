@@ -38,11 +38,6 @@ import { Static, Derive } from "./variables/Derive";
 
 export * from "gt-i18n/fallbacks";
 export { declareStatic, derive, declareVar, decodeVars } from "gt-i18n";
-export type {
-  DictionaryEntrySnapshot,
-  DictionaryLookup,
-  DictionaryObjectSnapshot,
-} from "./refactor/context/I18nStore/storeTypes";
 
 export {
   addGTIdentifier,

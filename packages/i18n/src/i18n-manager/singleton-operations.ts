@@ -19,6 +19,8 @@ let conditionStore: ConditionStore = fallbackConditionStore;
  * Get the singleton instance of I18nManager
  * @returns The singleton instance of I18nManager
  * @template U - The type of the translation that will be cached
+ *
+ * Note: should not be consumed by gt-react, consumers should use a wrapper
  */
 export function getI18nManager<U extends Translation = Translation>():
   | I18nManager<U>
@@ -33,6 +35,22 @@ export function getI18nManager<U extends Translation = Translation>():
     });
   }
   return i18nManager;
+}
+
+/**
+ * Configure the singleton instance of I18nManager
+ * @param config - The configuration for the I18nManager
+ *
+ * Wrapper libraries will export a configure function that will call this function.
+ *
+ * Note: should not be consumed by gt-react, consumers should use a wrapper
+ */
+export function setI18nManager<TranslationValue extends Translation>(
+  i18nManagerInstance: I18nManager<TranslationValue>,
+): void {
+  i18nManager = i18nManagerInstance as unknown as I18nManager;
+  fallbackDefaultLocale = i18nManagerInstance.getDefaultLocale();
+  resetConditionStore();
 }
 
 /**
@@ -54,18 +72,4 @@ export function setConditionStore(nextConditionStore: ConditionStore): void {
  */
 function resetConditionStore(): void {
   conditionStore = fallbackConditionStore;
-}
-
-/**
- * Configure the singleton instance of I18nManager
- * @param config - The configuration for the I18nManager
- *
- * Wrapper libraries will export a configure function that will call this function.
- */
-export function setI18nManager<TranslationValue extends Translation>(
-  i18nManagerInstance: I18nManager<TranslationValue>,
-): void {
-  i18nManager = i18nManagerInstance as unknown as I18nManager;
-  fallbackDefaultLocale = i18nManagerInstance.getDefaultLocale();
-  resetConditionStore();
 }

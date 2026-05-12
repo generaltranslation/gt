@@ -19,8 +19,8 @@ import type {
   LookupOptions,
   Translation,
 } from "gt-i18n/types";
-import { getConditionStore } from "../../condition-store/singleton-operations";
-import { ReactI18nManagerConstructorParams } from "../../i18n-manager/ReactI18nManager";
+import { getConditionStore } from "../condition-store/singleton-operations";
+import { ReactI18nManagerConstructorParams } from "../i18n-manager/ReactI18nManager";
 
 type TranslationStatusType =
   | { status: "loading"; locale: string }

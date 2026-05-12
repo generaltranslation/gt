@@ -7,10 +7,10 @@ import {
   ReactConditionStore,
   ReactConditionStoreParams,
 } from "../condition-store/ReactConditionStore";
-import { I18nStore, I18nStoreParams } from "../context/I18nStore/I18nStore";
+import { I18nStore, I18nStoreParams } from "../i18n-store/I18nStore";
 import { setRenderStrategy, setStoresInitialized } from "./globals";
 import { setConditionStore } from "../condition-store/singleton-operations";
-import { setI18nStore } from "../context/I18nStore/singleton-operations";
+import { setI18nStore } from "../i18n-store/singleton-operations";
 
 /**
  * Initialize GT for an SPA

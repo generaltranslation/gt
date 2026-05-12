@@ -29,4 +29,6 @@ export { InternalGTProvider } from "./refactor/context/provider/InternalGTProvid
 export { internalInitializeGTSPA } from "./refactor/setup/initializeGTSPA";
 export { internalInitializeGTSSR } from "./refactor/setup/initializeGTSSR";
 export type { InternalGTProviderProps } from "./refactor/context/provider/InternalGTProvider";
-export type { OverrideSetLocaleType } from "./refactor/context/I18nStore/storeTypes";
+export type { OverrideSetLocaleType } from "./refactor/i18n-store/storeTypes";
+export { getI18nManager } from "./refactor/i18n-manager/singleton-operations";
+export { setI18nManager } from "./refactor/i18n-manager/singleton-operations";

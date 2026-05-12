@@ -5,10 +5,13 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { getI18nStore, setI18nStore } from "../I18nStore/singleton-operations";
-import type { OverrideSetLocaleType } from "../I18nStore/storeTypes";
+import {
+  getI18nStore,
+  setI18nStore,
+} from "../../i18n-store/singleton-operations";
+import type { OverrideSetLocaleType } from "../../i18n-store/storeTypes";
 import { setStoresInitialized, storesInitialized } from "../../setup/globals";
-import { I18nStore, I18nStoreParams } from "../I18nStore/I18nStore";
+import { I18nStore, I18nStoreParams } from "../../i18n-store/I18nStore";
 import {
   ReactConditionStore,
   ReactConditionStoreParams,

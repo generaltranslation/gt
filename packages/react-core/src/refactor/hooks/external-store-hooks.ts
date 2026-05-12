@@ -7,9 +7,9 @@ import type {
   DictionaryLookup,
   DictionaryEntrySnapshot,
   DictionaryObjectSnapshot,
-} from "../context/I18nStore/storeTypes";
+} from "../i18n-store/storeTypes";
 import type { CustomMapping } from "generaltranslation/types";
-import { getI18nStore } from "../context/I18nStore/singleton-operations";
+import { getI18nStore } from "../i18n-store/singleton-operations";
 
 /**
  * @internal

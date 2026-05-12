@@ -1,6 +1,6 @@
 import { InternalGTProvider } from "@generaltranslation/react-core/context";
 import type { SharedGTProviderProps } from "./types";
-import { getI18nManager } from "gt-i18n/internal";
+import { getI18nManager } from "@generaltranslation/react-core/context";
 
 /**
  * Client side GTProvider, this is different from server side
