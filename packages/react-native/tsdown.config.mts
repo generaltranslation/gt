@@ -1,7 +1,6 @@
 import { defineConfig } from 'tsdown';
 import { createTsdownUnbundleConfig } from '../../tsdown.preset.mts';
 
-const entry = ['src/**/*.{ts,tsx}', '!src/**/*.test.{ts,tsx}'];
 const deps = {
   neverBundle: [
     /^react$/,
@@ -17,14 +16,15 @@ const deps = {
 
 export default defineConfig([
   createTsdownUnbundleConfig({
-    entry,
     format: 'cjs',
     outDir: 'dist/commonjs',
     dts: false,
     deps,
+    outputOptions: {
+      exports: 'named',
+    },
   }),
   createTsdownUnbundleConfig({
-    entry,
     format: 'esm',
     outDir: 'dist/module',
     clean: false,

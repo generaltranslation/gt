@@ -1,4 +1,4 @@
-import { basename, extname, join } from 'node:path';
+import { basename, extname, resolve } from 'node:path';
 import { rm } from 'node:fs/promises';
 
 import type { UserConfig } from 'tsdown';
@@ -85,6 +85,7 @@ type TsdownMinifiedDualFormatConfigOptions = Pick<
   'deps' | 'outDir'
 > & {
   entries: string[];
+  packageDir?: string;
   typeEntry?: string | false;
 };
 
@@ -99,12 +100,13 @@ function getEntryName(entry: string) {
 
 function createRemoveTypeRuntimeArtifactsHook(
   outDir: string,
-  typeEntry: string
+  typeEntry: string,
+  packageDir: string
 ) {
   const typeEntryName = getEntryName(typeEntry);
   const artifacts = [
-    join(outDir, `${typeEntryName}.cjs.min.cjs`),
-    join(outDir, `${typeEntryName}.cjs.min.cjs.map`),
+    resolve(packageDir, outDir, `${typeEntryName}.cjs.min.cjs`),
+    resolve(packageDir, outDir, `${typeEntryName}.cjs.min.cjs.map`),
   ];
 
   return async () => {
@@ -116,6 +118,7 @@ function createRemoveTypeRuntimeArtifactsHook(
 
 export function createTsdownMinifiedDualFormatConfig({
   entries,
+  packageDir = process.cwd(),
   typeEntry = 'src/types.ts',
   deps,
   outDir = 'dist',
@@ -150,7 +153,11 @@ export function createTsdownMinifiedDualFormatConfig({
       format: ['cjs'] as const,
       dts: true,
       clean: false,
-      onSuccess: createRemoveTypeRuntimeArtifactsHook(outDir, typeEntry),
+      onSuccess: createRemoveTypeRuntimeArtifactsHook(
+        outDir,
+        typeEntry,
+        packageDir
+      ),
     });
   }
 

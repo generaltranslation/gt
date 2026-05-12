@@ -16,3 +16,5 @@ export function GTProvider(props: GTProviderProps): React.JSX.Element {
     />
   );
 }
+
+export default GTProvider;
