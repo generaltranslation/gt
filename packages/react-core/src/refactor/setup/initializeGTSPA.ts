@@ -18,7 +18,7 @@ import { setI18nStore } from "../context/I18nStore/singleton-operations";
  * - conditionStore
  * - i18nStore
  */
-export function initializeGTSPA(
+export function internalInitializeGTSPA(
   config: ReactConditionStoreParams &
     I18nStoreParams &
     ReactI18nManagerConstructorParams,

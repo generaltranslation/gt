@@ -1,3 +1,4 @@
+// ===== Components ===== //
 export { Branch } from "./refactor/components/branches/Branch";
 export { Plural } from "./refactor/components/branches/Plural";
 export { Derive } from "./refactor/components/derivation/Derive";
@@ -8,12 +9,10 @@ export { DateTime } from "./refactor/components/variables/DateTime";
 export { Num } from "./refactor/components/variables/Num";
 export { RelativeTime } from "./refactor/components/variables/RelativeTime";
 export { Var } from "./refactor/components/variables/Var";
-export {
-  InternalGTProvider,
-  type InternalGTProviderProps,
-} from "./refactor/context/provider/GTProvider";
-export type { OverrideSetLocaleType as ReloadServerSideProps } from "./refactor/context/I18nStore/storeTypes";
+export type { InternalGTProviderProps } from "./refactor/context/provider/InternalGTProvider";
+export type { OverrideSetLocaleType } from "./refactor/context/I18nStore/storeTypes";
 
+// ===== Hooks ===== //
 export { useLocale, useSetLocale } from "./refactor/hooks/context-hooks";
 export {
   useCustomMapping,
@@ -23,3 +22,8 @@ export {
 } from "./refactor/hooks/external-store-hooks";
 export { useLocaleSelector } from "./refactor/hooks/useLocaleSelector";
 export { useFormatLocales } from "./refactor/hooks/utils";
+
+// ===== Internal ===== //
+export { InternalGTProvider } from "./refactor/context/provider/InternalGTProvider";
+export { internalInitializeGTSPA } from "./refactor/setup/initializeGTSPA";
+export { internalInitializeGTSSR } from "./refactor/setup/initializeGTSSR";

@@ -11,7 +11,7 @@ import { setI18nManager } from "../i18n-manager/singleton-operations";
  *
  * ConditionStore and I18nStore are initialized in the provider at request time
  */
-export function initializeGTSSR(
+export function internalInitializeGTSSR(
   config: ReactI18nManagerConstructorParams,
 ): void {
   setRenderStrategy("server-render");

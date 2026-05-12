@@ -13,7 +13,6 @@ import {
   ReactConditionStore,
   ReactConditionStoreParams,
 } from "../../condition-store/ReactConditionStore";
-import { initializeContextStores } from "./initializeContextStores";
 import { setConditionStore } from "../../condition-store/singleton-operations";
 
 export type InternalGTProviderProps = ReactConditionStoreParams &
