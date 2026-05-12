@@ -4,7 +4,7 @@ import {
   resolveTranslationSyncWithFallback,
 } from "gt-i18n/internal";
 import type { InlineTranslationOptions } from "gt-i18n/types";
-import { getRenderStrategy } from "../../i18n-manager/singleton-operations";
+import { getRenderStrategy } from "../../setup/globals";
 
 /**
  * NOTE: t() is the only function exported from the 'gt-react' entry point.

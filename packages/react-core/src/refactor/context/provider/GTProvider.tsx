@@ -5,14 +5,18 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { getI18nStore } from "../I18nStore/singleton-operations";
-import type { ReloadServerSideProps } from "../I18nStore/storeTypes";
-import { storesInitialized } from "./globals";
-import { I18nStoreParams } from "../I18nStore/I18nStore";
-import { ReactConditionStoreParams } from "../../condition-store/ReactConditionStore";
+import { getI18nStore, setI18nStore } from "../I18nStore/singleton-operations";
+import type { OverrideSetLocaleType } from "../I18nStore/storeTypes";
+import { setStoresInitialized, storesInitialized } from "../../setup/globals";
+import { I18nStore, I18nStoreParams } from "../I18nStore/I18nStore";
+import {
+  ReactConditionStore,
+  ReactConditionStoreParams,
+} from "../../condition-store/ReactConditionStore";
 import { initializeContextStores } from "./initializeContextStores";
+import { setConditionStore } from "../../condition-store/singleton-operations";
 
-export type GTProviderProps = ReactConditionStoreParams &
+export type InternalGTProviderProps = ReactConditionStoreParams &
   I18nStoreParams & {
     children?: ReactNode;
     fallback?: ReactNode;
@@ -21,12 +25,11 @@ export type GTProviderProps = ReactConditionStoreParams &
      * To reload translations only from the client,
      * omit this prop
      * */
-    reloadServerSideProps?: ReloadServerSideProps;
+    reloadServerSideProps?: OverrideSetLocaleType;
     /**
      * From the server
      */
     locale: string;
-    translations: ;
   };
 
 // ===== Component ===== //
@@ -42,34 +45,24 @@ export type GTProviderProps = ReactConditionStoreParams &
  *
  * TODO: server side: only pass newly loaded translations to the client
  */
-export function GTProvider({
+export function InternalGTProvider({
   children,
-  locale: initialLocale,
-  defaultLocale,
-  locales,
-  customMapping,
-  i18nEnabled,
-  reloadServerSideProps,
   fallback,
-  translations,
-}: GTProviderProps) {
+  ...config
+}: InternalGTProviderProps) {
   // ------ Initialization ------ //
   if (!storesInitialized()) {
-    initializeContextStores({
-      locale: initialLocale,
-      renderStrategy: "server-render",
-      defaultLocale,
-      locales,
-      customMapping,
-      i18nEnabled,
-      reloadServerSideProps,
-    });
+    const conditionStore = new ReactConditionStore(config);
+    setConditionStore(conditionStore);
+
+    const i18nStore = new I18nStore(config);
+    setI18nStore(i18nStore);
+
+    setStoresInitialized(true);
   } else {
     // This represents an update from server
-    getI18nStore().updateLocale(initialLocale);
-    // TODO: translations cache gets updated differently depending on runtime environment (client, server, hermes)
+    getI18nStore().updateLocale(config.locale);
   }
-
 
   // ------ Context ------ //
 
@@ -99,7 +92,7 @@ export function GTProvider({
 
   // Show fallback when translations are loading (client only) from a locale change
   // locale will not be updated until the translations are loaded
-  const display = !(status === "loading" && !reloadServerSideProps);
+  const display = !(status === "loading" && !config.overrideSetLocale);
 
   return (
     <GTContext.Provider value={context}>

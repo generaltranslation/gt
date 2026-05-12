@@ -75,6 +75,12 @@
       "require": "./dist/client.cjs.min.cjs",
       "import": "./dist/client.esm.min.mjs"
     },
+    "./context": {
+      "react-server": "./dist/context.server.esm.min.mjs",
+      "browser": "./dist/context.client.esm.min.mjs",
+      "types": "./dist/context.types.d.ts",
+      "default": "./dist/context.client.esm.min.mjs"
+    },
     "./browser": {
       "types": "./dist/browser.d.ts",
       "require": "./dist/browser.cjs.min.cjs",
@@ -93,6 +99,9 @@
     "*": {
       "client": [
         "./dist/client.d.ts"
+      ],
+      "context": [
+        "./dist/context.types.d.ts"
       ],
       "internal": [
         "./dist/internal.d.ts"
@@ -119,6 +128,9 @@
     "paths": {
       "gt-react/client": [
         "./dist/client"
+      ],
+      "gt-react/context": [
+        "./dist/context.types.d.ts"
       ],
       "gt-react/internal": [
         "./dist/internal"

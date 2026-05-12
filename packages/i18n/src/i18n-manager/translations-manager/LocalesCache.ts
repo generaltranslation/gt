@@ -198,6 +198,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
     for (const [locale, translations] of Object.entries(translationsObj)) {
       const cacheEntry = this.getCache(this.genKey(locale));
       if (cacheEntry) {
+        // TODO: if a specific translation entry changes, there would be no subscriber update triggered here
         cacheEntry.translationsCache.updateCache(translations);
         cacheEntry.expiresAt = this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
       } else {

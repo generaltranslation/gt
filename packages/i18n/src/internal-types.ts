@@ -28,3 +28,7 @@ export type * from "./translation-functions/types/options";
 
 // Config
 export type * from "./config/types";
+
+// Internal types
+export type { Hash } from "./i18n-manager/translations-manager/TranslationsCache";
+export type { Locale } from "./i18n-manager/translations-manager/LocalesCache";

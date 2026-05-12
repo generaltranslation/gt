@@ -8,13 +8,11 @@ export { DateTime } from "./refactor/components/variables/DateTime";
 export { Num } from "./refactor/components/variables/Num";
 export { RelativeTime } from "./refactor/components/variables/RelativeTime";
 export { Var } from "./refactor/components/variables/Var";
-export { t } from "./refactor/functions/translation/t";
 export {
-  GTProvider as ReactCoreGTProvider,
-  GTProvider as GTProvider,
-  type SharedGTProviderProps as GTProviderProps,
+  InternalGTProvider,
+  type InternalGTProviderProps,
 } from "./refactor/context/provider/GTProvider";
-export type { ReloadServerSideProps } from "./refactor/context/I18nStore/storeTypes";
+export type { OverrideSetLocaleType as ReloadServerSideProps } from "./refactor/context/I18nStore/storeTypes";
 
 export { useLocale, useSetLocale } from "./refactor/hooks/context-hooks";
 export {

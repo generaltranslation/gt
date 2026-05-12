@@ -12,7 +12,7 @@ import type {
   TranslateManySnapshot,
   TranslateSnapshot,
   Unsubscribe,
-  ReloadServerSideProps,
+  OverrideSetLocaleType,
 } from "./storeTypes";
 import type {
   DictionaryValue,
@@ -39,7 +39,19 @@ type TranslateStoreListener = (lookup: TranslateLookup) => void;
 type DictionaryStoreEvent = LocaleCacheEvent<DictionaryValue> | EntryCacheEvent;
 type DictionaryStoreListener = (event: DictionaryStoreEvent) => void;
 
-export type I18nStoreParams = { reloadServerSideProps?: ReloadServerSideProps };
+/**
+ * @param overrideSetLocale - If provided, will trigger on a locale change
+ * instead of a locale state update. This is used when triggering this function
+ * will (1) load in new translations and (2) update the locale:
+ * - SSR apps: reload server side props, pass new tx obj and new locale to client
+ *   thru the provider
+ * - SPA: trigger a module-level reload of the app (eg browser refresh or RN reload)
+ *
+ * If it is not provided, this will trigger an async load of translations. In the meantime,
+ * a loading state will be shown. Finally, an event will be emitted updating locale state
+ * with synchronous access to new translations.
+ */
+export type I18nStoreParams = { overrideSetLocale?: OverrideSetLocaleType };
 
 /**
  * A subscription wrapper around the I18nManager and the ConditionStore
@@ -66,19 +78,19 @@ export class I18nStore {
   private translationStatusListeners: ListenerSet = new Set();
   private translationStatus: TranslationStatusType = { status: "ready" };
 
-  private reloadServerSideProps?: ReloadServerSideProps;
+  private overrideSetLocale?: OverrideSetLocaleType;
 
   /**
    * ConditionStore and I18nManager must be already initialized
    */
-  constructor({ reloadServerSideProps }: I18nStoreParams) {
+  constructor({ overrideSetLocale }: I18nStoreParams) {
     try {
       getConditionStore();
       getI18nManager();
     } catch (error) {
       throw new Error("Failed to initialize I18nStore. Reason: " + error);
     }
-    this.reloadServerSideProps = reloadServerSideProps;
+    this.overrideSetLocale = overrideSetLocale;
   }
 
   // ===== Manager Config Subscriptions ===== //
@@ -271,8 +283,8 @@ export class I18nStore {
     }
 
     // TODO: If translations loaded on server, trigger a server reload instead
-    if (this.reloadServerSideProps) {
-      this.reloadServerSideProps(locale);
+    if (this.overrideSetLocale) {
+      this.overrideSetLocale(locale);
       return;
     }
 
@@ -282,7 +294,8 @@ export class I18nStore {
       i18nManager.hasTranslations(locale)
     ) {
       this.updateTranslationStatus({ status: "ready" });
-      this.updateLocale(locale);
+      getConditionStore().setLocale(locale);
+      this.localeListeners.forEach((listener) => listener());
       return;
     }
 
@@ -299,7 +312,8 @@ export class I18nStore {
           return;
         }
         this.updateTranslationStatus({ status: "ready" });
-        this.updateLocale(locale);
+        getConditionStore().setLocale(locale);
+        this.localeListeners.forEach((listener) => listener());
       });
   };
 
@@ -321,11 +335,6 @@ export class I18nStore {
     this.translationStatusListeners.forEach((listener) => listener());
   };
 
-  private updateLocale = (locale: string): void => {
-    getConditionStore().setLocale(locale);
-    this.localeListeners.forEach((listener) => listener());
-  };
-
   /**
    * This is triggered by a locale change coming from a new locale prop
    * from the GTProvider (along with new translations for that locale)
@@ -335,15 +344,18 @@ export class I18nStore {
    * that the new locale will be immediately available to the subscribers.
    * Same for the translations too.
    */
-  update = ({
-    locale,
-    translationsObj = {},
-  }: {
-    locale: string;
-    translationsObj: ReactI18nManagerConstructorParams["initialTranslations"];
-  }): void => {
-    getI18nManager().updateTranslations(translationsObj);
+  updateLocale = (locale: string): void => {
     getConditionStore().setLocale(locale);
+  };
+
+  /**
+   * This is triggered by a GTProvider on client so synchronize with server
+   * or if done on the server, probably triggered manually
+   */
+  updateTranslations = (
+    translationsObj: ReactI18nManagerConstructorParams["initialTranslations"] = {},
+  ): void => {
+    getI18nManager().updateTranslations(translationsObj);
   };
 
   // ===== Subscription Lifecycle ===== //

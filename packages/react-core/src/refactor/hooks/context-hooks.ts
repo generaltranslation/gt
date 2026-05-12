@@ -1,9 +1,7 @@
-import { useContext, useSyncExternalStore } from "react";
+import { useContext } from "react";
 import { GTContext, GTContextType } from "../context/provider/GTContext";
-import {
-  getConditionStore,
-  getRenderStrategy,
-} from "../i18n-manager/singleton-operations";
+import { getRenderStrategy } from "../setup/globals";
+import { getConditionStore } from "../condition-store/singleton-operations";
 
 /**
  * @internal

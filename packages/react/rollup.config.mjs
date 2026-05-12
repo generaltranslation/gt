@@ -23,6 +23,13 @@ export default createReactBundleConfigs(
       outputName: 'internal-external-store',
     },
     { input: 'src/client.ts', outputName: 'client' },
+    { input: './src/context.client.ts', outputName: 'context.client' },
+    { input: './src/context.server.ts', outputName: 'context.server' },
+    {
+      input: './src/context.types.ts',
+      outputName: 'context.types',
+      bundle: false,
+    },
     { input: './src/browser.ts', outputName: 'browser' },
     {
       input: './src/browser-types.ts',

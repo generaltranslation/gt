@@ -10,7 +10,11 @@ import type {
 export type Unsubscribe = () => void;
 export type StoreListener = () => void;
 export type ListenerSet = Set<StoreListener>;
-export type ReloadServerSideProps = (locale: string) => void;
+
+/**
+ * A function that is called when a locale changes.
+ */
+export type OverrideSetLocaleType = (locale: string) => void;
 
 // ----- Lookups ----- //
 
