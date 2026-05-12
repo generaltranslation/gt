@@ -1,3 +1,5 @@
+import { rm } from 'node:fs/promises';
+
 import { defineConfig } from 'tsdown';
 
 const deps = {
@@ -16,7 +18,11 @@ const deps = {
   onlyBundle: false,
 };
 
-const entryNames = ['index', 'internal', 'errors', 'types'];
+const runtimeEntryNames = ['index', 'internal', 'errors'];
+const typeRuntimeArtifacts = [
+  'dist/types.cjs.min.cjs',
+  'dist/types.cjs.min.cjs.map',
+];
 
 const outputOptions = {
   sourcemap: true,
@@ -30,8 +36,8 @@ const outputOptions = {
   },
 };
 
-export default defineConfig(
-  entryNames.flatMap((entryName, index) => [
+export default defineConfig([
+  ...runtimeEntryNames.flatMap((entryName, index) => [
     {
       ...outputOptions,
       entry: [`src/${entryName}.ts`],
@@ -44,5 +50,17 @@ export default defineConfig(
       entry: [`src/${entryName}.ts`],
       format: ['esm'],
     },
-  ])
-);
+  ]),
+  {
+    ...outputOptions,
+    entry: ['src/types.ts'],
+    format: ['cjs'],
+    dts: true,
+    clean: false,
+    onSuccess: async () => {
+      await Promise.all(
+        typeRuntimeArtifacts.map((artifact) => rm(artifact, { force: true }))
+      );
+    },
+  },
+]);

@@ -3,17 +3,29 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  createSourceFile,
+  forEachChild,
+  isCallExpression,
+  isExportDeclaration,
+  isIdentifier,
+  isImportDeclaration,
+  isStringLiteralLike,
+  type Node,
+  ScriptKind,
+  ScriptTarget,
+} from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
-const runtimeEntryNames = ['errors', 'index', 'internal', 'types'];
+const runtimeEntryNames = ['errors', 'index', 'internal'];
 const runtimeArtifactNames = runtimeEntryNames
   .flatMap((entryName) => [
     `${entryName}.cjs.min.cjs`,
     `${entryName}.esm.min.mjs`,
   ])
   .sort();
-const builtArtifacts = runtimeArtifactNames.map((artifact) =>
+const builtArtifacts = [...runtimeArtifactNames, 'types.d.ts'].map((artifact) =>
   join(packageRoot, 'dist', artifact)
 );
 const workspaceSubpathPackages = [
@@ -22,8 +34,6 @@ const workspaceSubpathPackages = [
   'generaltranslation',
   'gt-i18n',
 ];
-const moduleSpecifierPattern =
-  /\b(?:import|export)\b\s*(?:[^;"']*?\bfrom\s*)?["']([^"']+)["']|require\(\s*["']([^"']+)["']\s*\)/g;
 
 function hasBuiltArtifacts(): boolean {
   return builtArtifacts.every((artifact) => existsSync(artifact));
@@ -55,6 +65,43 @@ function isWorkspaceSubpath(specifier: string): boolean {
   return workspaceSubpathPackages.some((packageName) =>
     specifier.startsWith(`${packageName}/`)
   );
+}
+
+function getModuleSpecifiers(file: string): string[] {
+  const code = readFileSync(join(packageRoot, 'dist', file), 'utf8');
+  const sourceFile = createSourceFile(
+    file,
+    code,
+    ScriptTarget.Latest,
+    false,
+    ScriptKind.JS
+  );
+  const specifiers: string[] = [];
+
+  function visit(node: Node): void {
+    if (
+      (isImportDeclaration(node) || isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      isStringLiteralLike(node.moduleSpecifier)
+    ) {
+      specifiers.push(node.moduleSpecifier.text);
+    }
+
+    if (
+      isCallExpression(node) &&
+      isIdentifier(node.expression) &&
+      node.expression.text === 'require' &&
+      node.arguments.length === 1 &&
+      isStringLiteralLike(node.arguments[0])
+    ) {
+      specifiers.push(node.arguments[0].text);
+    }
+
+    forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+  return specifiers;
 }
 
 describe('@generaltranslation/react-core package exports', () => {
@@ -104,9 +151,7 @@ describe('@generaltranslation/react-core package exports', () => {
 
   it('bundles workspace subpath imports in runtime artifacts', () => {
     const externalizedSubpaths = getRuntimeArtifactNames().flatMap((file) => {
-      const code = readFileSync(join(packageRoot, 'dist', file), 'utf8');
-      return [...code.matchAll(moduleSpecifierPattern)]
-        .map((match) => match[1] || match[2])
+      return getModuleSpecifiers(file)
         .filter(isWorkspaceSubpath)
         .map((specifier) => `${file}: ${specifier}`);
     });
