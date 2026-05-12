@@ -40,6 +40,7 @@ function lowercaseFirstWord(text: string): string {
 function formatDetails(details: string | string[] | undefined): string {
   if (!details) return '';
   const detailText = Array.isArray(details) ? details.join(', ') : details;
+  if (!detailText.trim()) return '';
   return ensureSentence(`Details: ${detailText}`);
 }
 

@@ -1,4 +1,5 @@
 import { logCollectedFiles, logErrorAndExit } from '../console/logging.js';
+import { branchResolutionError, withOriginalError } from '../console/index.js';
 import { logger } from '../console/logger.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
@@ -49,9 +50,7 @@ export async function runStageFilesWorkflow({
     const branchData = await branchStep.run();
     await branchStep.wait();
     if (!branchData) {
-      return logErrorAndExit(
-        'The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.'
-      );
+      return logErrorAndExit(branchResolutionError);
     }
 
     // then run the upload step
@@ -87,8 +86,10 @@ export async function runStageFilesWorkflow({
     return { branchData, enqueueResult };
   } catch (error) {
     return logErrorAndExit(
-      'Files could not be sent for translation. Check the files, branch configuration, and API credentials, then try again. Original error: ' +
+      withOriginalError(
+        'Files could not be sent for translation. Check the files, branch configuration, and API credentials, then try again.',
         error
+      )
     );
   }
 }

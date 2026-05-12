@@ -408,3 +408,7 @@ export const devApiKeyError = `Development API keys cannot be used with the Gene
 export const noProjectIdError = `No project ID was found. Pass --project-id, add projectId to gt.config.json, or set the GT_PROJECT_ID environment variable.`;
 export const noVersionIdError = `No version ID was found. Pass --version-id or add _versionId to gt.config.json.`;
 export const invalidConfigurationError = `The files configuration cannot be used for this operation. Provide a valid download configuration or set --publish true to upload translations to the CDN.`;
+export const branchResolutionError = `The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.`;
+
+export const withOriginalError = (message: string, error: unknown): string =>
+  `${message} Original error: ${String(error)}`;

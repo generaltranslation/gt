@@ -223,15 +223,24 @@ export default function useRuntimeTranslation({
             newTranslations[hash] = value;
             resultsMap.set(hash, value);
           } else if (result && result.error) {
-            const msg = createGenericRuntimeTranslationError(id, hash);
             console.warn(
-              `${msg} ${result.error || 'An upstream error occurred.'}`
+              createGenericRuntimeTranslationError(
+                id,
+                hash,
+                result.error || 'An upstream error occurred.'
+              )
             );
             newTranslations[hash] = null;
             resultsMap.set(hash, null);
           } else {
-            const msg = createGenericRuntimeTranslationError(id, hash);
-            console.warn(`${msg} Unknown response format.`, result);
+            console.warn(
+              createGenericRuntimeTranslationError(
+                id,
+                hash,
+                'Unknown response format'
+              ),
+              result
+            );
             newTranslations[hash] = null;
             resultsMap.set(hash, null);
           }

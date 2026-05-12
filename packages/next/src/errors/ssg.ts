@@ -1,11 +1,13 @@
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  createGtNextDiagnostic,
+  formatDiagnosticErrorDetails,
+} from './diagnostics';
 import { DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY } from '../config-dir/props/withGTConfigProps';
 import { RequestFunctions, StaticRequestFunctions } from '../request/types';
 
 // ========== ERRORS ========== //
 
-export const ssgMissingGetStaticLocaleFunctionError = createDiagnosticMessage({
-  source: 'gt-next',
+export const ssgMissingGetStaticLocaleFunctionError = createGtNextDiagnostic({
   whatHappened: 'SSG is enabled, but getStaticLocale() is not configured',
   fix: 'Define getStaticLocale() so gt-next can resolve locales during static generation',
   docsUrl: 'https://generaltranslation.com/en/docs/next/guides/ssg',
@@ -14,8 +16,7 @@ export const ssgMissingGetStaticLocaleFunctionError = createDiagnosticMessage({
 // ========== WARNINGS ========== //
 
 // This was (1) triggered by SSG without running middleware, or (2) triggered by a request with no locale headers (also no middleware).
-export const noLocalesCouldBeDeterminedWarning = createDiagnosticMessage({
-  source: 'gt-next',
+export const noLocalesCouldBeDeterminedWarning = createGtNextDiagnostic({
   whatHappened: 'No locale could be determined for this request',
   wayOut: 'gt-next will fall back to the default locale',
   fix: 'If you use SSG, configure locale resolution',
@@ -33,31 +34,32 @@ export const createSsgMissingCustomFunctionWarning = (
     ? ''
     : `gt-next: ${functionName.replace('Static', '')}() was invoked during SSG. ${createCustomSSGFunctionSuffix(functionName)}`;
 
-export const invalidSSGConfigurationWarning = createDiagnosticMessage({
-  source: 'gt-next',
+export const invalidSSGConfigurationWarning = createGtNextDiagnostic({
   whatHappened: 'SSG is in use, but withGTConfig() is not configured for SSG',
   fix: 'Add the SSG configuration before building static localized pages',
   docsUrl: 'https://generaltranslation.com/en/docs/next/guides/ssg',
 });
 
 export const createGetRequestFunctionWarning = (
-  functionName: RequestFunctions | StaticRequestFunctions
+  functionName: RequestFunctions | StaticRequestFunctions,
+  error?: unknown
 ) =>
-  createDiagnosticMessage({
-    source: 'gt-next',
+  createGtNextDiagnostic({
     whatHappened: `${functionName}() could not be resolved`,
     wayOut: 'gt-next will fall back where possible',
     fix: 'Check that the function is exported from the configured request file',
+    details: formatDiagnosticErrorDetails(error),
   });
 
 export const createCustomGetRequestFunctionWarning = (
-  functionName: RequestFunctions | StaticRequestFunctions
+  functionName: RequestFunctions | StaticRequestFunctions,
+  error?: unknown
 ) =>
-  createDiagnosticMessage({
-    source: 'gt-next',
+  createGtNextDiagnostic({
     whatHappened: `Custom ${functionName}() could not be resolved`,
     wayOut: 'gt-next will fall back where possible',
     fix: 'Check that the function is exported from the configured request file',
+    details: formatDiagnosticErrorDetails(error),
   });
 
 export const createSsrFunctionDuringSsgWarning = (
@@ -65,21 +67,20 @@ export const createSsrFunctionDuringSsgWarning = (
 ) =>
   process.env._GENERALTRANSLATION_DISABLE_SSG_WARNINGS === 'true'
     ? ''
-    : createDiagnosticMessage({
-        source: 'gt-next',
+    : createGtNextDiagnostic({
         whatHappened: `${functionName}() was invoked during SSG`,
         wayOut: 'Rendering will likely fall back to SSR behavior',
         fix: 'Define a static locale function to avoid this fallback',
       });
 
-export const ssrDetectionFailedWarning = createDiagnosticMessage({
-  source: 'gt-next',
-  whatHappened: 'The runtime mode could not be determined as SSR or SSG',
-  wayOut: 'gt-next will fall back to SSR behavior',
-});
+export const createSsrDetectionFailedWarning = (error: unknown) =>
+  createGtNextDiagnostic({
+    whatHappened: 'The runtime mode could not be determined as SSR or SSG',
+    wayOut: 'gt-next will fall back to SSR behavior',
+    details: formatDiagnosticErrorDetails(error),
+  });
 
-export const deprecatedExperimentalEnableSSGWarning = createDiagnosticMessage({
-  source: 'gt-next',
+export const deprecatedExperimentalEnableSSGWarning = createGtNextDiagnostic({
   whatHappened:
     'experimentalEnableSSG is deprecated and will be removed in a future version',
   fix: 'Move to experimentalLocaleResolution when you update your SSG configuration',

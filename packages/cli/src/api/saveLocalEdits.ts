@@ -5,6 +5,7 @@ import { gt } from '../utils/gt.js';
 import { BranchStep } from '../workflows/steps/BranchStep.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
+import { branchResolutionError } from '../console/index.js';
 import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
 import { runPublishWorkflow } from '../workflows/publish.js';
@@ -26,9 +27,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   const branchResult = await branchStep.run();
   await branchStep.wait();
   if (!branchResult) {
-    return logErrorAndExit(
-      'The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.'
-    );
+    return logErrorAndExit(branchResolutionError);
   }
 
   const uploads = files.map((file) => ({
