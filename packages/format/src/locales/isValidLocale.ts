@@ -1,10 +1,17 @@
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
-import { CustomMapping } from './customLocaleMapping';
+import { getCustomLocaleCode, type CustomMapping } from './customLocaleMapping';
 
-const scriptExceptions = ['Cham', 'Jamo', 'Kawi', 'Lisu', 'Toto', 'Thai'];
+const scriptExceptions = new Set([
+  'Cham',
+  'Jamo',
+  'Kawi',
+  'Lisu',
+  'Toto',
+  'Thai',
+]);
 
-//// According to BCP 47, the range qaa–qtz is reserved for private-use language codes
+// According to BCP 47, the range qaa-qtz is reserved for private-use language codes
 const isCustomLanguage = (language: string) => {
   return language >= 'qaa' && language <= 'qtz';
 };
@@ -20,28 +27,13 @@ export const _isValidLocale = (
   locale: string,
   customMapping?: CustomMapping
 ): boolean => {
-  // If in custom mapping, return true
-  if (
-    customMapping?.[locale] &&
-    typeof customMapping[locale] === 'object' &&
-    'code' in (customMapping[locale] as object) &&
-    (customMapping[locale] as { code: string }).code
-  ) {
-    locale = (customMapping[locale] as { code: string }).code;
-  }
+  // Use the canonical code from custom mappings when one is configured.
+  locale = getCustomLocaleCode(customMapping, locale) || locale;
 
   try {
     const { language, region, script } = intlCache.get('Locale', locale);
-    if (
-      locale.split('-').length !==
-      (() => {
-        let partCount = 1;
-        if (region) partCount += 1;
-        if (script) partCount += 1;
-        return partCount;
-      })()
-    )
-      return false;
+    const partCount = 1 + Number(Boolean(region)) + Number(Boolean(script));
+    if (locale.split('-').length !== partCount) return false;
     const displayLanguageNames = intlCache.get(
       'DisplayNames',
       [libraryDefaultLocale],
@@ -74,7 +66,7 @@ export const _isValidLocale = (
       );
       if (
         displayScriptNames.of(script) === script &&
-        !scriptExceptions.includes(script)
+        !scriptExceptions.has(script)
       )
         return false;
     }

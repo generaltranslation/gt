@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  _selectRelativeTimeUnit,
-  _formatRelativeTimeFromDate,
-  _formatRelativeTime,
-} from '../format';
+import { _selectRelativeTimeUnit, _formatRelativeTime } from '../format';
+import { formatRelativeTimeFromDate } from '../../core';
 
 describe('_selectRelativeTimeUnit', () => {
   beforeEach(() => {
@@ -111,7 +108,7 @@ describe('_selectRelativeTimeUnit', () => {
   });
 });
 
-describe('_formatRelativeTimeFromDate', () => {
+describe('formatRelativeTimeFromDate', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-06-15T12:00:00Z'));
@@ -123,8 +120,7 @@ describe('_formatRelativeTimeFromDate', () => {
 
   it('should format a date 2 hours ago', () => {
     const date = new Date(Date.now() - 2 * 60 * 60 * 1000);
-    const result = _formatRelativeTimeFromDate({
-      date,
+    const result = formatRelativeTimeFromDate(date, {
       baseDate: new Date(),
       locales: ['en'],
     });
@@ -133,8 +129,7 @@ describe('_formatRelativeTimeFromDate', () => {
 
   it('should format a future date', () => {
     const date = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
-    const result = _formatRelativeTimeFromDate({
-      date,
+    const result = formatRelativeTimeFromDate(date, {
       baseDate: new Date(),
       locales: ['en'],
     });
@@ -143,8 +138,7 @@ describe('_formatRelativeTimeFromDate', () => {
 
   it('should format 2 weeks ago', () => {
     const date = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-    const result = _formatRelativeTimeFromDate({
-      date,
+    const result = formatRelativeTimeFromDate(date, {
       baseDate: new Date(),
       locales: ['en'],
     });

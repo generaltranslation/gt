@@ -23,25 +23,25 @@ export type CustomRegionMapping = {
  * @param {string} region - The region code to look up (e.g., `"US"`, `"GB"`, `"DE"`).
  * @param {string} [defaultLocale=libraryDefaultLocale] - The locale to use when localizing the region name.
  * @param {CustomRegionMapping} [customMapping] - Optional mapping of region codes to custom names and/or emojis.
- * @returns {{ code: string, name: string, emoji: string }} An object containing:
+ * @returns {{ code: string, name: string, emoji: string, locale?: string }} An object containing:
  *  - `code`: the input region code
  *  - `name`: the localized or custom region name
  *  - `emoji`: the matching emoji flag or symbol
- * @internal
+ *  - `locale`: the optional associated locale from custom mapping
  *
  * @example
- * _getRegionProperties('US', 'en');
+ * getRegionProperties('US', 'en');
  * // => { code: 'US', name: 'United States', emoji: '🇺🇸' }
  *
  * @example
- * _getRegionProperties('US', 'fr');
+ * getRegionProperties('US', 'fr');
  * // => { code: 'US', name: 'États-Unis', emoji: '🇺🇸' }
  *
  * @example
- * _getRegionProperties('US', 'en', { US: { name: 'USA', emoji: '🗽' } });
+ * getRegionProperties('US', 'en', { US: { name: 'USA', emoji: '🗽' } });
  * // => { code: 'US', name: 'USA', emoji: '🗽' }
  */
-export function _getRegionProperties(
+export function getRegionProperties(
   region: string,
   defaultLocale: string = libraryDefaultLocale,
   customMapping?: CustomRegionMapping
@@ -52,24 +52,18 @@ export function _getRegionProperties(
   locale?: string; // locale is a hidden return field, because we don't want to guarantee it, but we also need customMapping to work with it
 } {
   defaultLocale ||= libraryDefaultLocale;
+  let name = region;
+  let emoji = defaultEmoji;
   try {
     const displayNames = intlCache.get(
       'DisplayNames',
       [defaultLocale, libraryDefaultLocale], // default language order
       { type: 'region' }
     );
-    return {
-      code: region,
-      name: displayNames.of(region) || region,
-      emoji: getRegionEmoji(region),
-      ...customMapping?.[region],
-    };
+    name = displayNames.of(region) || region;
+    emoji = getRegionEmoji(region);
   } catch {
-    return {
-      code: region,
-      name: region,
-      emoji: defaultEmoji,
-      ...customMapping?.[region],
-    };
+    // Keep fallbacks initialized above.
   }
+  return { code: region, name, emoji, ...customMapping?.[region] };
 }

@@ -1,5 +1,5 @@
-import { shouldUseCanonicalLocale } from './customLocaleMapping';
-import { CustomMapping } from './customLocaleMapping';
+import { getCustomLocaleCode, type CustomMapping } from './customLocaleMapping';
+import { _isValidLocale } from './isValidLocale';
 
 /**
  * Resolves the canonical locale for a given locale.
@@ -11,9 +11,8 @@ export function _resolveCanonicalLocale(
   locale: string,
   customMapping?: CustomMapping
 ): string {
-  if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
-    return (customMapping[locale] as { code: string }).code;
-  }
-
-  return locale;
+  const customLocaleCode = getCustomLocaleCode(customMapping, locale);
+  return customLocaleCode && _isValidLocale(customLocaleCode)
+    ? customLocaleCode
+    : locale;
 }

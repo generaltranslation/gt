@@ -128,6 +128,22 @@ describe('_getLocaleProperties', () => {
     expect(result.emoji).toBe('🎯');
   });
 
+  it('should apply custom region-code display names', () => {
+    const customMapping: CustomMapping = {
+      'en-US': {
+        nameWithRegionCode: 'Custom English Region',
+        nativeNameWithRegionCode: 'Custom Native English Region',
+      },
+    };
+
+    const result = _getLocaleProperties('en-US', 'en', customMapping);
+
+    expect(result.nameWithRegionCode).toBe('Custom English Region');
+    expect(result.nativeNameWithRegionCode).toBe(
+      'Custom Native English Region'
+    );
+  });
+
   it('should handle custom mapping with region and script overrides', () => {
     const customMapping: CustomMapping = {
       'test-locale': {

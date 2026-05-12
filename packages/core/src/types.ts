@@ -10,6 +10,7 @@ export type {
   CustomRegionMapping,
   CutoffFormatOptions,
   DataFormat,
+  FormatVariables,
   GTProp,
   HtmlContentPropKeysRecord,
   HtmlContentPropValuesRecord,
@@ -128,11 +129,6 @@ export type Metadata = {
   filePaths?: string[];
   [key: string]: unknown;
 };
-
-export type FormatVariables = Record<
-  string,
-  string | number | boolean | null | undefined | Date
->;
 
 /**
  * @deprecated This type is deprecated and will be removed in a future version.

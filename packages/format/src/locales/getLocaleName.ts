@@ -1,11 +1,8 @@
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
-import {
-  CustomMapping,
-  getCustomProperty,
-  shouldUseCanonicalLocale,
-} from './customLocaleMapping';
+import { CustomMapping, getCustomProperty } from './customLocaleMapping';
 import { _standardizeLocale } from './isValidLocale';
+import { _resolveCanonicalLocale } from './resolveCanonicalLocale';
 
 /**
  * Retrieves the display name(s) of locale code(s) using Intl.DisplayNames.
@@ -22,10 +19,7 @@ export function _getLocaleName(
 ): string {
   // Check for canonical locale
   const aliasedLocale = locale;
-  if (customMapping && shouldUseCanonicalLocale(locale, customMapping)) {
-    // Override locale with canonical locale
-    locale = (customMapping[locale] as { code: string }).code;
-  }
+  locale = _resolveCanonicalLocale(locale, customMapping);
 
   defaultLocale ||= libraryDefaultLocale;
   try {

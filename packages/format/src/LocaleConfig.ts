@@ -1,15 +1,14 @@
 import {
   _formatCurrency,
-  _formatCutoff,
   _formatDateTime,
   _formatList,
   _formatListToParts,
   _formatMessageICU,
-  _formatMessageString,
   _formatNum,
   _formatRelativeTime,
-  _formatRelativeTimeFromDate,
+  _selectRelativeTimeUnit,
 } from './formatting/format';
+import { intlCache } from './cache/IntlCache';
 import { _requiresTranslation } from './locales/requiresTranslation';
 import { _determineLocale } from './locales/determineLocale';
 import { _isSameLanguage } from './locales/isSameLanguage';
@@ -62,36 +61,17 @@ export class LocaleConfig {
     this.customMapping = customMapping;
   }
 
-  private get translationLocales() {
-    return this.locales.length ? this.locales : undefined;
-  }
-
-  private resolveCanonicalLocaleList(locales: string[]) {
-    return locales.map((locale) => this.resolveCanonicalLocale(locale));
-  }
-
-  private resolveCanonicalLocaleArgs(locales: (string | string[])[]) {
-    return locales.map((locale) =>
-      Array.isArray(locale)
-        ? this.resolveCanonicalLocaleList(locale)
-        : this.resolveCanonicalLocale(locale)
-    );
-  }
-
-  private toLocaleList(locales: string | string[]) {
-    return Array.isArray(locales) ? locales : [locales];
-  }
-
   private getFormattingLocales(
     targetLocale?: string,
     locales?: string | string[]
   ) {
-    const localeList =
-      locales !== undefined
-        ? this.toLocaleList(locales)
-        : [targetLocale, this.defaultLocale, libraryDefaultLocale];
-
-    return localeList
+    return (
+      locales === undefined
+        ? [targetLocale, this.defaultLocale, libraryDefaultLocale]
+        : Array.isArray(locales)
+          ? locales
+          : [locales]
+    )
       .filter((locale): locale is string => !!locale)
       .map((locale) => this.resolveCanonicalLocale(locale));
   }
@@ -160,9 +140,13 @@ export class LocaleConfig {
     > = {}
   ) {
     const { locales, baseDate, ...intlOptions } = options;
-    return _formatRelativeTimeFromDate({
+    const { value, unit } = _selectRelativeTimeUnit(
       date,
-      baseDate: baseDate ?? new Date(),
+      baseDate ?? new Date()
+    );
+    return _formatRelativeTime({
+      value,
+      unit,
       locales: this.getFormattingLocales(targetLocale, locales),
       options: intlOptions,
     });
@@ -174,11 +158,13 @@ export class LocaleConfig {
     options: WithLocales<CutoffFormatOptions> = {}
   ) {
     const { locales, ...formatOptions } = options;
-    return _formatCutoff({
-      value,
-      locales: this.getFormattingLocales(targetLocale, locales),
-      options: formatOptions,
-    });
+    return intlCache
+      .get(
+        'CutoffFormat',
+        this.getFormattingLocales(targetLocale, locales),
+        formatOptions
+      )
+      .format(value);
   }
 
   formatMessage(
@@ -190,7 +176,7 @@ export class LocaleConfig {
     }> = {}
   ) {
     const { locales, variables, dataFormat } = options;
-    if (dataFormat === 'STRING') return _formatMessageString(message);
+    if (dataFormat === 'STRING') return message;
     return _formatMessageICU(
       message,
       this.getFormattingLocales(targetLocale, locales),
@@ -239,13 +225,15 @@ export class LocaleConfig {
   requiresTranslation(
     targetLocale: string,
     sourceLocale: string = this.defaultLocale,
-    approvedLocales: string[] | undefined = this.translationLocales
+    approvedLocales: string[] | undefined = this.locales.length
+      ? this.locales
+      : undefined
   ) {
     return _requiresTranslation(
       this.resolveCanonicalLocale(sourceLocale),
       this.resolveCanonicalLocale(targetLocale),
       approvedLocales
-        ? this.resolveCanonicalLocaleList(approvedLocales)
+        ? approvedLocales.map((locale) => this.resolveCanonicalLocale(locale))
         : undefined,
       this.customMapping
     );
@@ -261,17 +249,16 @@ export class LocaleConfig {
     }));
     const resolvedLocale = _determineLocale(
       Array.isArray(locales)
-        ? this.resolveCanonicalLocaleList(locales)
+        ? locales.map((locale) => this.resolveCanonicalLocale(locale))
         : this.resolveCanonicalLocale(locales),
       approvedLocalePairs.map(({ canonicalLocale }) => canonicalLocale),
       this.customMapping
     );
     if (!resolvedLocale) return undefined;
-    return (
-      approvedLocalePairs.find(
-        ({ canonicalLocale }) => canonicalLocale === resolvedLocale
-      )?.locale || this.resolveAliasLocale(resolvedLocale)
+    const approvedLocale = approvedLocalePairs.find(
+      ({ canonicalLocale }) => canonicalLocale === resolvedLocale
     );
+    return approvedLocale?.locale ?? this.resolveAliasLocale(resolvedLocale);
   }
 
   getLocaleDirection(locale: string) {
@@ -295,11 +282,23 @@ export class LocaleConfig {
   }
 
   isSameDialect(...locales: (string | string[])[]) {
-    return _isSameDialect(...this.resolveCanonicalLocaleArgs(locales));
+    return _isSameDialect(
+      ...locales.map((locale) =>
+        Array.isArray(locale)
+          ? locale.map((code) => this.resolveCanonicalLocale(code))
+          : this.resolveCanonicalLocale(locale)
+      )
+    );
   }
 
   isSameLanguage(...locales: (string | string[])[]) {
-    return _isSameLanguage(...this.resolveCanonicalLocaleArgs(locales));
+    return _isSameLanguage(
+      ...locales.map((locale) =>
+        Array.isArray(locale)
+          ? locale.map((code) => this.resolveCanonicalLocale(code))
+          : this.resolveCanonicalLocale(locale)
+      )
+    );
   }
 
   isSupersetLocale(superLocale: string, subLocale: string) {

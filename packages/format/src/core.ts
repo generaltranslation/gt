@@ -1,15 +1,14 @@
 import {
   _formatCurrency,
-  _formatCutoff,
   _formatDateTime,
   _formatList,
   _formatListToParts,
   _formatMessageICU,
-  _formatMessageString,
   _formatNum,
   _formatRelativeTime,
-  _formatRelativeTimeFromDate,
+  _selectRelativeTimeUnit,
 } from './formatting/format';
+import { intlCache } from './cache/IntlCache';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import { _determineLocale } from './locales/determineLocale';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
@@ -19,10 +18,6 @@ import {
   type LocaleProperties,
 } from './locales/getLocaleProperties';
 import { _getLocaleName } from './locales/getLocaleName';
-import {
-  _getRegionProperties,
-  type CustomRegionMapping,
-} from './locales/getRegionProperties';
 import { _isSameDialect } from './locales/isSameDialect';
 import { _isSameLanguage } from './locales/isSameLanguage';
 import { _isSupersetLocale } from './locales/isSupersetLocale';
@@ -37,6 +32,19 @@ export {
   LocaleConfig,
   type LocaleConfigConstructorParams,
 } from './LocaleConfig';
+export {
+  getRegionProperties,
+  type CustomRegionMapping,
+} from './locales/getRegionProperties';
+
+type LocalesOption = {
+  locales?: string | string[];
+};
+
+type MessageFormatOptions = LocalesOption & {
+  variables?: FormatVariables;
+  dataFormat?: StringFormat;
+};
 
 /**
  * Core formatting and locale helpers.
@@ -90,11 +98,10 @@ export {
  */
 export function formatCutoff(
   value: string,
-  options?: {
-    locales?: string | string[];
-  } & CutoffFormatOptions
+  options?: LocalesOption & CutoffFormatOptions
 ) {
-  return _formatCutoff({ value, locales: options?.locales, options });
+  const { locales, ...formatOptions } = options ?? {};
+  return intlCache.get('CutoffFormat', locales, formatOptions).format(value);
 }
 
 /**
@@ -117,20 +124,9 @@ export function formatCutoff(
  *   variables: { name: 'John' }
  * });
  */
-export function formatMessage(
-  message: string,
-  options?: {
-    locales?: string | string[];
-    variables?: FormatVariables;
-    dataFormat?: StringFormat;
-  }
-) {
-  switch (options?.dataFormat) {
-    case 'STRING':
-      return _formatMessageString(message);
-    default:
-      return _formatMessageICU(message, options?.locales, options?.variables);
-  }
+export function formatMessage(message: string, options?: MessageFormatOptions) {
+  if (options?.dataFormat === 'STRING') return message;
+  return _formatMessageICU(message, options?.locales, options?.variables);
 }
 
 /**
@@ -143,14 +139,13 @@ export function formatMessage(
  */
 export function formatNum(
   number: number,
-  options: {
-    locales: string | string[];
-  } & Intl.NumberFormatOptions
+  options?: LocalesOption & Intl.NumberFormatOptions
 ): string {
+  const { locales, ...intlOptions } = options ?? {};
   return _formatNum({
     value: number,
-    locales: options?.locales,
-    options,
+    locales,
+    options: intlOptions,
   });
 }
 
@@ -164,14 +159,13 @@ export function formatNum(
  */
 export function formatDateTime(
   date: Date,
-  options?: {
-    locales?: string | string[];
-  } & Intl.DateTimeFormatOptions
+  options?: LocalesOption & Intl.DateTimeFormatOptions
 ): string {
+  const { locales, ...intlOptions } = options ?? {};
   return _formatDateTime({
     value: date,
-    locales: options?.locales,
-    options,
+    locales,
+    options: intlOptions,
   });
 }
 
@@ -187,15 +181,14 @@ export function formatDateTime(
 export function formatCurrency(
   value: number,
   currency: string,
-  options: {
-    locales: string | string[];
-  } & Intl.NumberFormatOptions
+  options?: LocalesOption & Intl.NumberFormatOptions
 ): string {
+  const { locales, ...intlOptions } = options ?? {};
   return _formatCurrency({
     value,
     currency,
-    locales: options?.locales,
-    options,
+    locales,
+    options: intlOptions,
   });
 }
 
@@ -209,14 +202,13 @@ export function formatCurrency(
  */
 export function formatList(
   array: Array<string | number>,
-  options: {
-    locales: string | string[];
-  } & Intl.ListFormatOptions
+  options?: LocalesOption & Intl.ListFormatOptions
 ): string {
+  const { locales, ...intlOptions } = options ?? {};
   return _formatList({
     value: array,
-    locales: options?.locales,
-    options,
+    locales,
+    options: intlOptions,
   });
 }
 
@@ -230,14 +222,13 @@ export function formatList(
  */
 export function formatListToParts<T>(
   array: Array<T>,
-  options?: {
-    locales?: string | string[];
-  } & Intl.ListFormatOptions
+  options?: LocalesOption & Intl.ListFormatOptions
 ): Array<T | string> {
+  const { locales, ...intlOptions } = options ?? {};
   return _formatListToParts<T>({
     value: array,
-    locales: options?.locales,
-    options,
+    locales,
+    options: intlOptions,
   });
 }
 
@@ -253,15 +244,14 @@ export function formatListToParts<T>(
 export function formatRelativeTime(
   value: number,
   unit: Intl.RelativeTimeFormatUnit,
-  options: {
-    locales: string | string[];
-  } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
+  options?: LocalesOption & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
 ): string {
+  const { locales, ...intlOptions } = options ?? {};
   return _formatRelativeTime({
     value,
     unit,
-    locales: options?.locales,
-    options,
+    locales,
+    options: intlOptions,
   });
 }
 
@@ -275,15 +265,16 @@ export function formatRelativeTime(
  */
 export function formatRelativeTimeFromDate(
   date: Date,
-  options: {
-    locales: string | string[];
-    baseDate?: Date;
-  } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
+  options?: LocalesOption &
+    Omit<Intl.RelativeTimeFormatOptions, 'locales'> & {
+      baseDate?: Date;
+    }
 ): string {
   const { locales, baseDate, ...intlOptions } = options ?? {};
-  return _formatRelativeTimeFromDate({
-    date,
-    baseDate: baseDate ?? new Date(),
+  const { value, unit } = _selectRelativeTimeUnit(date, baseDate ?? new Date());
+  return _formatRelativeTime({
+    value,
+    unit,
     locales,
     options: intlOptions,
   });
@@ -422,49 +413,6 @@ export function getLocaleProperties(
   customMapping?: CustomMapping
 ): LocaleProperties {
   return _getLocaleProperties(locale, defaultLocale, customMapping);
-}
-
-/**
- * Retrieves multiple properties for a given region code, including:
- * - `code`: the original region code
- * - `name`: the localized display name
- * - `emoji`: the associated flag or symbol
- *
- * Behavior:
- * - Accepts ISO 3166-1 alpha-2 or UN M.49 region codes (e.g., `"US"`, `"FR"`, `"419"`).
- * - If `customMapping` contains a `name` or `emoji` for the region, those override the default values.
- * - Otherwise, uses `Intl.DisplayNames` to get the localized region name in the given `defaultLocale`,
- *   falling back to `libraryDefaultLocale`.
- * - Falls back to the region code as `name` if display name resolution fails.
- * - Falls back to `defaultEmoji` if no emoji mapping is found in `emojis` or `customMapping`.
- *
- * @param {string} region - The region code to look up (e.g., `"US"`, `"GB"`, `"DE"`).
- * @param {string} [defaultLocale=libraryDefaultLocale] - The locale to use when localizing the region name.
- * @param {CustomRegionMapping} [customMapping] - Optional mapping of region codes to custom names and/or emojis.
- * @returns {{ code: string, name: string, emoji: string, locale?: string }} An object containing:
- *  - `code`: the input region code
- *  - `name`: the localized or custom region name
- *  - `emoji`: the matching emoji flag or symbol
- *  - `locale`: the optional associated locale from custom mapping
- *
- * @example
- * getRegionProperties('US', 'en');
- * // => { code: 'US', name: 'United States', emoji: '🇺🇸' }
- *
- * @example
- * getRegionProperties('US', 'fr');
- * // => { code: 'US', name: 'États-Unis', emoji: '🇺🇸' }
- *
- * @example
- * getRegionProperties('US', 'en', { US: { name: 'USA', emoji: '🗽' } });
- * // => { code: 'US', name: 'USA', emoji: '🗽' }
- */
-export function getRegionProperties(
-  region: string,
-  defaultLocale?: string,
-  customMapping?: CustomRegionMapping
-): { code: string; name: string; emoji: string; locale?: string } {
-  return _getRegionProperties(region, defaultLocale, customMapping);
 }
 
 /**

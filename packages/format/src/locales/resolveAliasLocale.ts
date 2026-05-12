@@ -1,4 +1,4 @@
-import { CustomMapping } from './customLocaleMapping';
+import { getCustomLocaleCode, type CustomMapping } from './customLocaleMapping';
 
 /**
  * Resolves the alias locale for a given locale.
@@ -10,16 +10,11 @@ export function _resolveAliasLocale(
   locale: string,
   customMapping?: CustomMapping
 ): string {
-  let reverseCustomMapping: Record<string, string> | undefined;
-  if (customMapping) {
-    reverseCustomMapping = Object.fromEntries(
-      Object.entries(customMapping)
-        .filter(
-          ([, value]) => value && typeof value === 'object' && 'code' in value
-        )
-        .map(([key, value]) => [(value as { code: string }).code, key])
-    );
-  }
+  if (!customMapping) return locale;
 
-  return reverseCustomMapping?.[locale] || locale;
+  return (
+    Object.keys(customMapping).find(
+      (alias) => getCustomLocaleCode(customMapping, alias) === locale
+    ) ?? locale
+  );
 }
