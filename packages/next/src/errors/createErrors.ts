@@ -1,8 +1,8 @@
 // ---- ERRORS ---- //
 
 import { getLocaleProperties } from '@generaltranslation/format';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
-import { createDiagnosticMessage } from './diagnostics';
 
 export const remoteTranslationsError = createDiagnosticMessage({
   source: 'gt-next',
@@ -95,7 +95,7 @@ export const dictionaryDisabledError = createDiagnosticMessage({
   severity: 'Error',
   whatHappened: 'Dictionaries are not enabled',
   fix: 'Add the withGTConfig() plugin to your Next.js config before using dictionary translations',
-  docsUrl: 'generaltranslation.com/docs',
+  docsUrl: 'https://generaltranslation.com/docs',
 });
 
 export const unresolvedCustomLoadDictionaryError = createDiagnosticMessage({
@@ -274,7 +274,7 @@ export const projectIdMissingWarn = createDiagnosticMessage({
   source: 'gt-next',
   whatHappened: 'Runtime translation needs a project ID',
   fix: 'Set GT_PROJECT_ID in your environment or pass projectId to withGTConfig()',
-  docsUrl: 'generaltranslation.com/dashboard',
+  docsUrl: 'https://generaltranslation.com/dashboard',
 });
 
 export const noInitGTWarn =

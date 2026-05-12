@@ -1,4 +1,4 @@
-import { createDiagnosticMessage } from './diagnostics';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 // ---- ERRORS ---- //
 export const cacheComponentsLegacySsgConflictError = createDiagnosticMessage({

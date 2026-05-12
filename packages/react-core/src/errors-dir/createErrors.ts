@@ -9,7 +9,7 @@ export const projectIdMissingError = createDiagnosticMessage({
   severity: 'Error',
   whatHappened: 'Runtime translation needs a project ID',
   fix: 'Add projectId to your <GTProvider> configuration or set GT_PROJECT_ID in your environment',
-  docsUrl: 'generaltranslation.com/dashboard',
+  docsUrl: 'https://generaltranslation.com/dashboard',
 });
 
 export const devApiKeyProductionError = createDiagnosticMessage({
@@ -209,7 +209,7 @@ export const projectIdMissingWarning = createDiagnosticMessage({
   severity: 'Warning',
   whatHappened: 'Runtime translation needs a project ID',
   fix: 'Add projectId to <GTProvider> or set GT_PROJECT_ID in your environment',
-  docsUrl: 'generaltranslation.com/dashboard',
+  docsUrl: 'https://generaltranslation.com/dashboard',
 });
 
 export const createNoEntryFoundWarning = (id: string) =>
