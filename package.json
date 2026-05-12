@@ -23,7 +23,7 @@
     "format": "oxfmt --check .",
     "format:fix": "oxfmt .",
     "changeset": "changeset",
-    "version-packages": "changeset version"
+    "version-packages": "changeset version && oxfmt packages/*/CHANGELOG.md"
   },
   "repository": {
     "type": "git",
