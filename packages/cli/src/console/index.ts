@@ -411,4 +411,4 @@ export const invalidConfigurationError = `The files configuration cannot be used
 export const branchResolutionError = `The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.`;
 
 export const withOriginalError = (message: string, error: unknown): string =>
-  `${message} Original error: ${String(error)}`;
+  error != null ? `${message} Original error: ${String(error)}` : message;
