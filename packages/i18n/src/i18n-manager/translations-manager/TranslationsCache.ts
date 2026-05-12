@@ -1,14 +1,14 @@
-import { LookupOptions } from '../../translation-functions/types/options';
-import { Cache } from './Cache';
-import type { LifecycleParam } from '../lifecycle-hooks/types';
-import { Translation } from './utils/types/translation-data';
-import { hashMessage } from '../../utils/hashMessage';
-import type { Content } from '@generaltranslation/format/types';
+import { LookupOptions } from "../../translation-functions/types/options";
+import { Cache } from "./Cache";
+import type { LifecycleParam } from "../lifecycle-hooks/types";
+import { Translation } from "./utils/types/translation-data";
+import { hashMessage } from "../../utils/hashMessage";
+import type { Content } from "@generaltranslation/format/types";
 import type {
   EntryMetadata,
   TranslateManyEntry,
   TranslationResult,
-} from 'generaltranslation/types';
+} from "generaltranslation/types";
 
 // See gt-next
 const MAX_BATCH_SIZE = 25;
@@ -41,20 +41,20 @@ function getPositiveInteger(value: number | undefined, defaultValue: number) {
 }
 
 function normalizeBatchConfig(
-  batchConfig?: TranslationBatchConfig
+  batchConfig?: TranslationBatchConfig,
 ): Required<TranslationBatchConfig> {
   return {
     maxConcurrentRequests: getPositiveInteger(
       batchConfig?.maxConcurrentRequests,
-      DEFAULT_BATCH_CONFIG.maxConcurrentRequests
+      DEFAULT_BATCH_CONFIG.maxConcurrentRequests,
     ),
     maxBatchSize: getPositiveInteger(
       batchConfig?.maxBatchSize,
-      DEFAULT_BATCH_CONFIG.maxBatchSize
+      DEFAULT_BATCH_CONFIG.maxBatchSize,
     ),
     batchInterval: getPositiveValue(
       batchConfig?.batchInterval,
-      DEFAULT_BATCH_CONFIG.batchInterval
+      DEFAULT_BATCH_CONFIG.batchInterval,
     ),
   };
 }
@@ -90,7 +90,7 @@ type QueueEntry<TranslationValue extends Translation> = {
  * TranslateMany call signature
  */
 export type TranslateMany = (
-  sources: Record<Hash, TranslateManyEntry>
+  sources: Record<Hash, TranslateManyEntry>,
 ) => Promise<Record<string, TranslationResult>>;
 
 /**
@@ -164,7 +164,7 @@ export class TranslationsCache<
    * @returns The translation value
    */
   public get<T extends TranslationValue>(
-    key: TranslationKey<T>
+    key: TranslationKey<T>,
   ): T | undefined {
     const value = this.getCache(key) as T | undefined;
     if (value != null && this.onHit) {
@@ -184,7 +184,7 @@ export class TranslationsCache<
    * @returns The translation value
    */
   public async miss<T extends TranslationValue>(
-    key: TranslationKey<T>
+    key: TranslationKey<T>,
   ): Promise<T> {
     const value = await this.missCache(key);
     if (value != null && this.onMiss) {
@@ -213,7 +213,7 @@ export class TranslationsCache<
    * @returns The fallback value
    */
   protected fallback(
-    key: TranslationKey<TranslationValue>
+    key: TranslationKey<TranslationValue>,
   ): Promise<TranslationValue> {
     // Add translation request to queue
     const translationPromise = this._enqueueTranslation(key);
@@ -277,7 +277,7 @@ export class TranslationsCache<
    * @returns {Promise<TranslationValue>} The translation promise
    */
   private _enqueueTranslation(
-    key: TranslationKey<TranslationValue>
+    key: TranslationKey<TranslationValue>,
   ): Promise<TranslationValue> {
     const hash = this.genKey(key);
     const options = key.options;
@@ -289,7 +289,7 @@ export class TranslationsCache<
           hash,
           ...(options?.$context && { context: options.$context }),
           ...(options?.$id && { id: options.$id }),
-          ...('$maxChars' in options &&
+          ...("$maxChars" in options &&
             options.$maxChars != null && {
               maxChars: Math.abs(options.$maxChars),
             }),
@@ -308,14 +308,14 @@ export class TranslationsCache<
    * @param {QueueEntry<TranslationValue>[]} batch - The batch of requests to send
    */
   private async _sendBatchRequest(
-    batch: QueueEntry<TranslationValue>[]
+    batch: QueueEntry<TranslationValue>[],
   ): Promise<void> {
     this._activeRequests++;
 
     const requests = convertBatchToTranslateManyParams(batch);
     const response = await this._sendBatchRequestWithErrorHandling(
       batch,
-      requests
+      requests,
     );
     if (response) {
       this._handleTranslationResponse(batch, response);
@@ -329,7 +329,7 @@ export class TranslationsCache<
    */
   private async _sendBatchRequestWithErrorHandling(
     batch: QueueEntry<TranslationValue>[],
-    requests: Record<Hash, TranslateManyEntry>
+    requests: Record<Hash, TranslateManyEntry>,
   ): Promise<ReturnType<TranslateMany> | undefined> {
     try {
       return await this._translateMany(requests);
@@ -346,7 +346,7 @@ export class TranslationsCache<
    */
   private _handleTranslationResponse(
     batch: QueueEntry<TranslationValue>[],
-    response: Awaited<ReturnType<TranslateMany>>
+    response: Awaited<ReturnType<TranslateMany>>,
   ): void {
     for (const entry of batch) {
       const { key } = entry;

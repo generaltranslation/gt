@@ -1,17 +1,7 @@
-import {
-  getI18nManager,
-  LOCALES_CACHE_MISS_EVENT_NAME,
-  type I18nManager,
-} from "gt-i18n/internal";
+import { getI18nManager, type I18nManager } from "gt-i18n/internal";
 import { hashSource } from "generaltranslation/id";
 import { indexVars } from "generaltranslation/internal";
 import type { CustomMapping, IcuMessage } from "generaltranslation/types";
-import {
-  DICTIONARY_ENTRY_EVENT_NAME,
-  LOCALES_DICTIONARY_EVENT_NAME,
-  LOCALES_EVENT_NAME,
-  TRANSLATION_EVENT_NAME,
-} from "./managerEvents";
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
@@ -22,15 +12,15 @@ import type {
   TranslateManySnapshot,
   TranslateSnapshot,
   Unsubscribe,
-} from "./storeTypes";
+  ReloadServerSideProps,
+} from "../storeTypes";
 import type {
   DictionaryValue,
   LookupOptions,
   Translation,
 } from "gt-i18n/types";
-import { getConditionStore } from "../../state/singleton-operations";
-import { I18nManagerConstructorParams } from "gt-i18n/internal/types";
-import { ReactI18nManagerConstructorParams } from "../../state/ReactI18nManager";
+import { getConditionStore } from "../../../state/singleton-operations";
+import { ReactI18nManagerConstructorParams } from "../../../state/ReactI18nManager";
 
 type TranslationStatusType =
   | { status: "loading"; locale: string }
@@ -40,23 +30,16 @@ type LocaleCacheEvent<T> = {
   locale: string;
   value: Record<string, T>;
 };
-type EntryCacheEvent<T> = {
+type EntryCacheEvent = {
   locale: string;
   id: string;
-  value: T;
 };
-type TranslateStoreEvent =
-  | LocaleCacheEvent<Translation>
-  | EntryCacheEvent<Translation>;
-type TranslateStoreListener = (event: TranslateStoreEvent) => void;
-type DictionaryStoreEvent =
-  | LocaleCacheEvent<DictionaryValue>
-  | EntryCacheEvent<DictionaryEntrySnapshot>;
+type TranslateStoreEvent = LocaleCacheEvent<Translation> | EntryCacheEvent;
+type TranslateStoreListener = (lookup: TranslateLookup) => void;
+type DictionaryStoreEvent = LocaleCacheEvent<DictionaryValue> | EntryCacheEvent;
 type DictionaryStoreListener = (event: DictionaryStoreEvent) => void;
 
-export type I18nExternalStoreParams = {
-  i18nManager: I18nManager<Translation>;
-};
+export type I18nStoreParams = { reloadServerSideProps?: ReloadServerSideProps };
 
 /**
  * A subscription wrapper around the I18nManager and the ConditionStore
@@ -80,21 +63,23 @@ export class I18nStore {
   private dictionaryObjectListeners = new Set<DictionaryStoreListener>();
   private localeListeners: ListenerSet = new Set();
 
-  private unsubscribeLocalesEvents: Unsubscribe | undefined;
-  private unsubscribeTranslateEvents: Unsubscribe | undefined;
-  private unsubscribeLocalesDictionaryEvents: Unsubscribe | undefined;
-  private unsubscribeDictionaryEntryEvents: Unsubscribe | undefined;
-
   private translationStatusListeners: ListenerSet = new Set();
   private translationStatus: TranslationStatusType = { status: "ready" };
 
-  private reloadServerSideProps?: () => void;
+  private reloadServerSideProps?: ReloadServerSideProps;
 
-  constructor({
-    reloadServerSideProps,
-  }: {
-    reloadServerSideProps?: () => void;
-  }) {
+  /**
+   * ConditionStore and I18nManager must be already initialized
+   */
+  constructor({ reloadServerSideProps }: I18nStoreParams) {
+    try {
+      getConditionStore();
+      getI18nManager();
+    } catch {
+      throw new Error(
+        "I18nStore must be initialized after ConditionStore and I18nManager",
+      );
+    }
     this.reloadServerSideProps = reloadServerSideProps;
   }
 
@@ -129,8 +114,8 @@ export class I18nStore {
     listener: StoreListener,
   ): Unsubscribe {
     const lookupKey = getTranslateListenerKey(lookup);
-    const wrappedListener: TranslateStoreListener = (event) => {
-      if (translateEventMatchesLookup(event, lookupKey)) {
+    const wrappedListener: TranslateStoreListener = (lookup) => {
+      if (getTranslateListenerKey(lookup) === lookupKey) {
         listener();
       }
     };
@@ -250,6 +235,23 @@ export class I18nStore {
     return getI18nManager().lookupDictionaryObj(locale, id);
   };
 
+  // ===== runtime translation ===== //
+
+  translate = <T extends Translation>(lookup: TranslateLookup<T>): void => {
+    getI18nManager()
+      .lookupTranslationWithFallback(
+        lookup.locale,
+        lookup.message,
+        lookup.options,
+      )
+      .then((translation) => {
+        if (translation == null) {
+          // TODO: warn about runtime translation failure
+        }
+        this.emitTranslateEvent(lookup);
+      });
+  };
+
   // ===== set locale operations ===== //
 
   /**
@@ -272,7 +274,7 @@ export class I18nStore {
 
     // TODO: If translations loaded on server, trigger a server reload instead
     if (this.reloadServerSideProps) {
-      this.reloadServerSideProps();
+      this.reloadServerSideProps(locale);
       return;
     }
 
@@ -337,12 +339,12 @@ export class I18nStore {
    */
   update = ({
     locale,
-    translations,
+    translationsObj = {},
   }: {
     locale: string;
-    translations: ReactI18nManagerConstructorParams["initialTranslations"];
+    translationsObj: ReactI18nManagerConstructorParams["initialTranslations"];
   }): void => {
-    getI18nManager().updateTranslations(locale, translations[locale] ?? {});
+    getI18nManager().updateTranslations(translationsObj);
     getConditionStore().setLocale(locale);
   };
 
@@ -414,51 +416,55 @@ export class I18nStore {
   // ===== Manager Event Wiring ===== //
 
   private subscribeToManager(): void {
-    // Cache events are invalidation signals. Listeners reread snapshots instead
-    // of receiving payload values, matching useSyncExternalStore's contract.
-    this.unsubscribeLocalesEvents = getI18nManager().subscribe(
-      LOCALES_EVENT_NAME,
-      (event) => {
-        this.emitTranslateEvent({
-          locale: event.locale,
-          value: event.translations,
-        });
-      },
-    );
-    this.unsubscribeTranslateEvents = getI18nManager().subscribe(
-      TRANSLATION_EVENT_NAME,
-      (event) => {
-        this.emitTranslateEvent({
-          locale: event.locale,
-          id: event.hash,
-          value: event.translation,
-        });
-      },
-    );
-    this.unsubscribeLocalesDictionaryEvents = getI18nManager().subscribe(
-      LOCALES_DICTIONARY_EVENT_NAME,
-      (event) => {
-        this.emitDictionaryEvent({
-          locale: event.locale,
-          value: event.dictionary,
-        });
-      },
-    );
-    this.unsubscribeDictionaryEntryEvents = getI18nManager().subscribe(
-      DICTIONARY_ENTRY_EVENT_NAME,
-      (event) => {
-        this.emitDictionaryEvent({
-          locale: event.locale,
-          id: event.id,
-          value: event.dictionaryEntry,
-        });
-      },
-    );
+    // // Cache events are invalidation signals. Listeners reread snapshots instead
+    // // of receiving payload values, matching useSyncExternalStore's contract.
+    // this.unsubscribeLocalesEvents = getI18nManager().subscribe(
+    //   LOCALES_EVENT_NAME,
+    //   (event) => {
+    //     this.emitTranslateEvent({
+    //       locale: event.locale,
+    //       value: event.translations,
+    //     });
+    //   },
+    // );
+    // this.unsubscribeTranslateEvents = getI18nManager().subscribe(
+    //   TRANSLATION_EVENT_NAME,
+    //   (event) => {
+    //     this.emitTranslateEvent({
+    //       locale: event.locale,
+    //       id: event.hash,
+    //       value: event.translation,
+    //     });
+    //   },
+    // );
+    // this.unsubscribeLocalesDictionaryEvents = getI18nManager().subscribe(
+    //   LOCALES_DICTIONARY_EVENT_NAME,
+    //   (event) => {
+    //     this.emitDictionaryEvent({
+    //       locale: event.locale,
+    //       value: event.dictionary,
+    //     });
+    //   },
+    // );
+    // this.unsubscribeDictionaryEntryEvents = getI18nManager().subscribe(
+    //   DICTIONARY_ENTRY_EVENT_NAME,
+    //   (event) => {
+    //     this.emitDictionaryEvent({
+    //       locale: event.locale,
+    //       id: event.id,
+    //       value: event.dictionaryEntry,
+    //     });
+    //   },
+    // );
   }
 
   // ===== Listener Utilities ===== //
 
-  private emitTranslateEvent(event: TranslateStoreEvent): void {
+  // private emitTranslateEvent(event: TranslateStoreEvent): void {
+  //   this.translateListeners.forEach((listener) => listener(event));
+  // }
+
+  private emitTranslateEvent(event: TranslateLookup): void {
     this.translateListeners.forEach((listener) => listener(event));
   }
 

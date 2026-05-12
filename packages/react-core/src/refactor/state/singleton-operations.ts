@@ -3,18 +3,13 @@ import {
   ReactI18nManagerConstructorParams,
 } from "./ReactI18nManager";
 import { createConditionStoreSingleton } from "gt-i18n/internal";
-import { ReactConditionStore } from "./ReactConditionStore";
+import { ReactConditionStore } from "../context/stores/ConditionStore/ReactConditionStore";
 import {
   getI18nManager as getI18nManagerInternal,
   setI18nManager as setI18nManagerInternal,
 } from "gt-i18n/internal";
 
 // ===== Condition Store ===== //
-
-export const { getConditionStore, setConditionStore } =
-  createConditionStoreSingleton<ReactConditionStore>(
-    "Cannot access condition store. GT has not been initialized.",
-  );
 
 // ===== I18n Manager ===== //
 

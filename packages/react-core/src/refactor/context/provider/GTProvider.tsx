@@ -10,26 +10,29 @@ import {
   initializeState,
   isGTInitialized,
 } from "../../state/singleton-operations";
-import {
-  getI18nStore,
-  initializeI18nStore,
-} from "../store/singleton-operations";
+import { getI18nStore, initializeStores } from "../stores/singleton-operations";
+import type { ReloadServerSideProps } from "../stores/storeTypes";
 
-export type GTProviderProps = ReactI18nManagerConstructorParams & {
-  children?: ReactNode;
-  locale: string;
-  fallback?: ReactNode;
+export type GTProviderProps = SharedGTProviderProps & {
   /**
    * Reloads server side props when locale changes
    * To reload translations only from the client,
    * omit this prop
    * */
-  reloadServerSideProps?: () => void;
+  reloadServerSideProps?: ReloadServerSideProps;
+};
+
+export type SharedGTProviderProps = ReactI18nManagerConstructorParams & {
+  children?: ReactNode;
+  locale: string;
+  fallback?: ReactNode;
 };
 
 // ===== Component ===== //
 
 /**
+ * - Shared provider logic btwn client and server providers
+ * - It is assumed that the I18nManager, ConditionStore, and I18nStore are already initialized
  * - This is not userfacing, it should be wrapped in a userfacing provider
  * - If you want to override i18nManager or conditionStore, do so by calling
  *   initializeState() (or your own version of it) before GTProvider is
@@ -38,25 +41,27 @@ export type GTProviderProps = ReactI18nManagerConstructorParams & {
  *
  * TODO: server side: only pass newly loaded translations to the client
  */
-export function ReactCoreGTProvider({
+export function SharedGTProvider({
   children,
   locale: initialLocale,
   fallback,
-  reloadServerSideProps,
   ...managerParams
-}: GTProviderProps) {
+}: SharedGTProviderProps) {
   // ------ Initialization ------ //
   if (!isGTInitialized()) {
+    throw new Error(
+      "I18nManager, ConditionStore, and I18nStore must be initialized before using the SharedGTProvider",
+    );
     initializeState({
       locale: initialLocale,
       config: managerParams,
       renderStrategy: "server-render",
     });
-    initializeI18nStore({ reloadServerSideProps });
+    initializeStores({ reloadServerSideProps });
   } else {
     getI18nStore().update({
       locale: initialLocale,
-      translations: managerParams.initialTranslations,
+      translationsObj: managerParams.initialTranslations,
     });
   }
 
@@ -88,7 +93,7 @@ export function ReactCoreGTProvider({
 
   // Show fallback when translations are loading (client only) from a locale change
   // locale will not be updated until the translations are loaded
-  const display = status !== "loading" && !reloadServerSideProps;
+  const display = !(status === "loading" && !reloadServerSideProps);
 
   return (
     <GTContext.Provider value={context}>

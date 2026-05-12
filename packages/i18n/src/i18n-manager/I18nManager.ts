@@ -238,14 +238,10 @@ class I18nManager<
 
   // ========== Translation Updates ========== //
 
-  /**
-   * Update the translations for a given locale
-   */
   updateTranslations(
-    locale: string,
-    translations: Record<Hash, TranslationValue>,
+    translationsObj: Record<Locale, Record<Hash, TranslationValue>>,
   ): void {
-    this.localesCache.update(locale, translations);
+    this.localesCache.update(translationsObj);
   }
 
   // ========== Translation Loading ========== //

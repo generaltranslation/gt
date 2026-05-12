@@ -42,7 +42,7 @@ export type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
   DictionaryObjectSnapshot,
-} from "./refactor/context/store/storeTypes";
+} from "./refactor/context/stores/storeTypes";
 
 export {
   addGTIdentifier,

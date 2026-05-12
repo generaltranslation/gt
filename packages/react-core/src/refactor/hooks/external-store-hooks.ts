@@ -7,9 +7,9 @@ import type {
   DictionaryLookup,
   DictionaryEntrySnapshot,
   DictionaryObjectSnapshot,
-} from "../context/store/storeTypes";
+} from "../context/stores/storeTypes";
 import type { CustomMapping } from "generaltranslation/types";
-import { getI18nStore } from "../context/store/singleton-operations";
+import { getI18nStore } from "../context/stores/singleton-operations";
 
 /**
  * @internal
@@ -18,11 +18,17 @@ export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>,
 ): TranslateSnapshot<T> {
   const store = getI18nStore();
-  return useSyncExternalStore(
+  const translation = useSyncExternalStore(
     (listener) => store.subscribeToTranslate(lookup, listener),
     () => store.getTranslateSnapshot(lookup),
     () => store.getTranslateSnapshot(lookup),
   );
+  // TODO: add runtime translation
+  // if (translation == null && isDevelopmentApiEnabled()) {
+  if (translation == null) {
+    store.translate(lookup);
+  }
+  return translation;
 }
 
 /**

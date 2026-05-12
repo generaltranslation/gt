@@ -193,11 +193,19 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
   }
 
   public update(
-    locale: Locale,
-    translations: Record<Hash, TranslationValue>,
+    translationsObj: Record<Locale, Record<Hash, TranslationValue>>,
   ): void {
-    // TODO: would we be orphaning subscribers here? or is it okay?
-    this.setCache(locale, this._createCacheEntry(locale, translations));
+    for (const [locale, translations] of Object.entries(translationsObj)) {
+      const cacheEntry = this.getCache(this.genKey(locale));
+      if (cacheEntry) {
+        cacheEntry.translationsCache.updateCache(translations);
+        cacheEntry.expiresAt = this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
+      } else {
+        // TODO: would we be orphaning subscribers here? or is it okay?
+        // perhaps we can merge in existing translations with new translations, but ofc could lead to stale data
+        this.setCache(locale, this._createCacheEntry(locale, translations));
+      }
+    }
   }
 
   // ===== PRIVATE METHODS ===== //

@@ -6,10 +6,7 @@ import type { Translation } from "gt-i18n/types";
  * initialTranslations required
  */
 export type ReactI18nManagerConstructorParams =
-  I18nManagerConstructorParams<Translation> &
-    Required<
-      Pick<I18nManagerConstructorParams<Translation>, "initialTranslations">
-    >;
+  I18nManagerConstructorParams<Translation>;
 
 export class ReactI18nManager extends I18nManager<Translation> {
   constructor(config: ReactI18nManagerConstructorParams) {

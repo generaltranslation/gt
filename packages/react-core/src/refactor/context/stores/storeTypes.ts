@@ -10,6 +10,7 @@ import type {
 export type Unsubscribe = () => void;
 export type StoreListener = () => void;
 export type ListenerSet = Set<StoreListener>;
+export type ReloadServerSideProps = (locale: string) => void;
 
 // ----- Lookups ----- //
 

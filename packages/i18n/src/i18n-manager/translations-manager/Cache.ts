@@ -1,7 +1,7 @@
 import type {
   LifecycleCallback,
   LifecycleParam,
-} from '../lifecycle-hooks/types';
+} from "../lifecycle-hooks/types";
 
 /**
  * Cache class
@@ -20,7 +20,7 @@ abstract class Cache<
   /**
    * Cache of items
    */
-  private cache: Record<CacheKey, CacheValue> = {} as Record<
+  public cache: Record<CacheKey, CacheValue> = {} as Record<
     CacheKey,
     CacheValue
   >;
@@ -57,11 +57,15 @@ abstract class Cache<
    */
   constructor(
     init: Record<CacheKey, CacheValue>,
-    lifecycle?: LifecycleParam<InputKey, CacheKey, CacheValue, OutputValue>
+    lifecycle?: LifecycleParam<InputKey, CacheKey, CacheValue, OutputValue>,
   ) {
     this.cache = structuredClone(init);
     this.onHit = lifecycle?.onHit;
     this.onMiss = lifecycle?.onMiss;
+  }
+
+  public updateCache(cache: Record<CacheKey, CacheValue>): void {
+    this.cache = { ...this.cache, ...structuredClone(cache) };
   }
 
   /**

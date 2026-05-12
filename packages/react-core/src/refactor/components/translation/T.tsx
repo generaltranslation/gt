@@ -75,11 +75,13 @@ function useComputeT({
   });
 
   // Render source children
-  if (!translationRequired || !targetJsxChildren) {
+  if (!translationRequired || targetJsxChildren == null) {
+    console.log("rendering source children");
     return renderSourceChildren();
   }
 
   // Render translated children if found in cache
+  console.log("rendering translated children");
   return renderTranslatedChildren({
     source: taggedSourceChildren,
     target: targetJsxChildren,
