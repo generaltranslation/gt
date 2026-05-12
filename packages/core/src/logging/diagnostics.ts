@@ -40,7 +40,15 @@ function lowercaseFirstWord(text: string): string {
 function formatDetails(details: string | string[] | undefined): string {
   if (!details) return '';
   const detailText = Array.isArray(details) ? details.join(', ') : details;
+  if (!detailText.trim()) return '';
   return ensureSentence(`Details: ${detailText}`);
+}
+
+export function formatDiagnosticErrorDetails(
+  error: unknown
+): string | undefined {
+  if (error == null) return undefined;
+  return String(error);
 }
 
 export function createDiagnosticMessage({

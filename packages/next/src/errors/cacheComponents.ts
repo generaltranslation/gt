@@ -1,25 +1,26 @@
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  createGtNextDiagnostic,
+  formatDiagnosticErrorDetails,
+} from './diagnostics';
 
 // ---- ERRORS ---- //
-export const cacheComponentsLegacySsgConflictError = createDiagnosticMessage({
-  source: 'gt-next',
+export const cacheComponentsLegacySsgConflictError = createGtNextDiagnostic({
   severity: 'Error',
   whatHappened:
     'experimentalLocaleResolution and deprecated experimentalEnableSSG are both enabled',
   fix: 'Disable one of them before building your app',
 });
 
-export const experimentalLocaleResolutionError =
-  createDiagnosticMessage({
-    source: 'gt-next',
+export const createExperimentalLocaleResolutionError = (error: unknown) =>
+  createGtNextDiagnostic({
     whatHappened: 'Locale resolution with experimentalLocaleResolution failed',
     wayOut: 'gt-next will fall back where possible',
-  }) + ' Original error: ';
+    details: formatDiagnosticErrorDetails(error),
+  });
 
 // ---- WARNINGS ---- //
 export const cacheComponentsMissingExperimentalLocaleResolutionWarning =
-  createDiagnosticMessage({
-    source: 'gt-next',
+  createGtNextDiagnostic({
     whatHappened:
       'cacheComponents is enabled, but experimentalLocaleResolution is not enabled',
     fix: 'Enable experimentalLocaleResolution so i18n can work inside cached components',
@@ -35,8 +36,7 @@ export const cacheComponentsExperimentalLocaleResolutionDisableCustomGetLocaleWa
   'gt-next: experimentalLocaleResolution is enabled. The provided getLocale function will be ignored.';
 
 export const cacheComponentsNonLocalTranslationsWarning =
-  createDiagnosticMessage({
-    source: 'gt-next',
+  createGtNextDiagnostic({
     severity: 'Warning',
     whatHappened:
       'cacheComponents is enabled, but translations are not stored locally',

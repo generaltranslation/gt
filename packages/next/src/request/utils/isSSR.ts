@@ -1,5 +1,5 @@
 import { PHASE_PRODUCTION_BUILD } from 'next/constants';
-import { ssrDetectionFailedWarning } from '../../errors/ssg';
+import { createSsrDetectionFailedWarning } from '../../errors/ssg';
 
 /**
  * @deprecated
@@ -22,7 +22,7 @@ export function isSSR() {
       return false;
     }
   } catch (error) {
-    console.warn(ssrDetectionFailedWarning + ' Error: ' + error);
+    console.warn(createSsrDetectionFailedWarning(error));
   }
   return isSSR;
 }

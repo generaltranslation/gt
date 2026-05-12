@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { branchResolutionError, withOriginalError } from '../console/index.js';
 import { logger } from '../console/logger.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { Settings } from '../types/index.js';
@@ -47,9 +48,7 @@ export async function runUploadFilesWorkflow({
     await branchStep.wait();
 
     if (!branchData) {
-      return logErrorAndExit(
-        'The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.'
-      );
+      return logErrorAndExit(branchResolutionError);
     }
 
     await uploadStep.run({ files: files.map((f) => f.source), branchData });
@@ -71,8 +70,10 @@ export async function runUploadFilesWorkflow({
     return { branchData };
   } catch (error) {
     return logErrorAndExit(
-      'Files could not be uploaded. Check the files, branch configuration, and API credentials, then try again. Original error: ' +
+      withOriginalError(
+        'Files could not be uploaded. Check the files, branch configuration, and API credentials, then try again.',
         error
+      )
     );
   }
 }

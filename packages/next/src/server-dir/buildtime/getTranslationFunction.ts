@@ -118,15 +118,14 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       return cutoffMessage;
     } catch (error) {
       if (process.env.NODE_ENV === 'production') {
-        console.warn(createStringRenderWarning(message, id), 'Error: ', error);
+        console.warn(createStringRenderWarning(message, id, error));
       } else {
         // (3) If no fallback, throw error (non-prod)
-        if (!fallback)
-          throw new Error(
-            `${createStringRenderError(message, id)} Error: ${error}`
-          );
+        if (!fallback) {
+          throw new Error(createStringRenderError(message, id, error));
+        }
 
-        console.error(createStringRenderError(message, id), 'Error: ', error);
+        console.error(createStringRenderError(message, id, error));
       }
 
       // (2) If format fails, format fallback

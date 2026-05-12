@@ -1,4 +1,5 @@
 import { logErrorAndExit } from '../console/logging.js';
+import { branchResolutionError, withOriginalError } from '../console/index.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import { FileToUpload } from 'generaltranslation/types';
@@ -40,9 +41,7 @@ export async function runSetupProjectWorkflow(
     await branchStep.wait();
 
     if (!branchData) {
-      return logErrorAndExit(
-        'The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.'
-      );
+      return logErrorAndExit(branchResolutionError);
     }
 
     // then run the upload step
@@ -56,8 +55,10 @@ export async function runSetupProjectWorkflow(
     return { branchData };
   } catch (error) {
     return logErrorAndExit(
-      'Project setup could not be completed. Check the files, branch configuration, and API credentials, then try again. Original error: ' +
+      withOriginalError(
+        'Project setup could not be completed. Check the files, branch configuration, and API credentials, then try again.',
         error
+      )
     );
   }
 }

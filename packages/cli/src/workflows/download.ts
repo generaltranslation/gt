@@ -9,6 +9,7 @@ import {
 } from './steps/PollJobsStep.js';
 import { DownloadTranslationsStep } from './steps/DownloadStep.js';
 import { BranchData } from '../types/branch.js';
+import { branchResolutionError } from '../console/index.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { recordWarning } from '../state/translateWarnings.js';
@@ -62,9 +63,7 @@ export async function runDownloadWorkflow({
     const branchResult = await branchStep.run();
     await branchStep.wait();
     if (!branchResult) {
-      return logErrorAndExit(
-        'The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.'
-      );
+      return logErrorAndExit(branchResolutionError);
     }
     branchData = branchResult;
   }

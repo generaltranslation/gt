@@ -1,4 +1,5 @@
 import { logCollectedFiles, logErrorAndExit } from '../console/logging.js';
+import { branchResolutionError, withOriginalError } from '../console/index.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
@@ -40,9 +41,7 @@ export async function runEnqueueWorkflow({
     const branchData = await branchStep.run();
     await branchStep.wait();
     if (!branchData) {
-      return logErrorAndExit(
-        'The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.'
-      );
+      return logErrorAndExit(branchResolutionError);
     }
     logger.debug('Branch data: ' + JSON.stringify(branchData, null, 2));
 
@@ -61,8 +60,10 @@ export async function runEnqueueWorkflow({
     return enqueueResult;
   } catch (error) {
     return logErrorAndExit(
-      'Translations could not be enqueued. Check the files, branch configuration, and API credentials, then try again. Original error: ' +
+      withOriginalError(
+        'Translations could not be enqueued. Check the files, branch configuration, and API credentials, then try again.',
         error
+      )
     );
   }
 }

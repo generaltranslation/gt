@@ -109,9 +109,7 @@ function getModule(functionName: RequestFunctions | StaticRequestFunctions):
       module,
     };
   } catch (error) {
-    console.warn(
-      createGetRequestFunctionWarning(functionName) + ' Error: ' + error
-    );
+    console.warn(createGetRequestFunctionWarning(functionName, error));
     return {
       error: true,
       module: undefined as never,
@@ -202,9 +200,7 @@ function extractCustomFunction(
     }
     throw new Error(undefinedNamespaceError);
   } catch (error) {
-    console.warn(
-      createCustomGetRequestFunctionWarning(functionName) + ' Error: ' + error
-    );
+    console.warn(createCustomGetRequestFunctionWarning(functionName, error));
     return {
       error: true,
       value: undefined as never,

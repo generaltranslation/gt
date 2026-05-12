@@ -44,6 +44,17 @@ describe('createDiagnosticMessage', () => {
     );
   });
 
+  it('omits empty details', () => {
+    expect(
+      createDiagnosticMessage({
+        source: 'GT',
+        severity: 'Warning',
+        whatHappened: 'Translation hashes do not match',
+        details: [],
+      })
+    ).toBe('GT Warning: Translation hashes do not match.');
+  });
+
   it('formats message bodies without a source prefix', () => {
     expect(
       createDiagnosticMessage({

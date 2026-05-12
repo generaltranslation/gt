@@ -5,7 +5,7 @@ import {
 } from '../../errors/ssg';
 import { getRootParam } from '@generaltranslation/next-internal';
 import { defaultExperimentalLocaleResolutionParam } from '../../utils/constants';
-import { experimentalLocaleResolutionError } from '../../errors/cacheComponents';
+import { createExperimentalLocaleResolutionError } from '../../errors/cacheComponents';
 import { getI18NConfig } from '../../config-dir/getI18NConfig';
 
 /**
@@ -68,7 +68,7 @@ function handleExperimentalLocaleResolution(
           ? unverifiedLocale
           : undefined;
       } catch (error) {
-        console.warn(experimentalLocaleResolutionError + error);
+        console.warn(createExperimentalLocaleResolutionError(error));
         return undefined;
       }
     };
@@ -109,9 +109,7 @@ function getModule(functionName: RequestFunctions):
       module,
     };
   } catch (error) {
-    console.warn(
-      createGetRequestFunctionWarning(functionName) + ' Error: ' + error
-    );
+    console.warn(createGetRequestFunctionWarning(functionName, error));
     return {
       error: true,
       module: undefined as never,
@@ -188,9 +186,7 @@ function extractCustomFunction(
     }
     throw new Error(undefinedNamespaceError);
   } catch (error) {
-    console.warn(
-      createCustomGetRequestFunctionWarning(functionName) + ' Error: ' + error
-    );
+    console.warn(createCustomGetRequestFunctionWarning(functionName, error));
     return {
       error: true,
       value: undefined as never,
