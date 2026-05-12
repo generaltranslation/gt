@@ -17,29 +17,33 @@ const deps = {
   ],
 };
 
-const configs = createTsdownConfig(
-  [
-    'src/index.ts',
-    'src/internal.ts',
-    'src/client.ts',
-    'src/browser.ts',
-    'src/macros.ts',
-  ],
-  deps
-);
+const entries = [
+  'src/index.ts',
+  'src/internal.ts',
+  'src/client.ts',
+  'src/browser.ts',
+  'src/macros.ts',
+];
 
-export default defineConfig([
-  {
-    ...configs[0],
-    define: {
-      'import.meta.env': '{}',
-    },
-  },
-  {
-    ...configs[1],
-    deps: {
-      onlyBundle: false,
-      ...deps,
-    },
-  },
-]);
+export default defineConfig(
+  entries.flatMap((entry, index) => {
+    const [cjsConfig, esmConfig] = createTsdownConfig([entry], deps);
+
+    return [
+      {
+        ...cjsConfig,
+        clean: index === 0,
+        define: {
+          'import.meta.env': '{}',
+        },
+      },
+      {
+        ...esmConfig,
+        deps: {
+          onlyBundle: false,
+          ...deps,
+        },
+      },
+    ];
+  })
+);

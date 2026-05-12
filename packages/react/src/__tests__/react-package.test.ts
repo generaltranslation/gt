@@ -6,16 +6,21 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
-const builtArtifacts = [
-  'dist/index.cjs',
-  'dist/index.mjs',
-  'dist/client.cjs',
-  'dist/client.mjs',
-  'dist/internal.cjs',
-  'dist/internal.mjs',
-  'dist/macros.cjs',
-  'dist/macros.mjs',
-].map((artifact) => join(packageRoot, artifact));
+const runtimeArtifactNames = [
+  'browser.cjs',
+  'browser.mjs',
+  'client.cjs',
+  'client.mjs',
+  'index.cjs',
+  'index.mjs',
+  'internal.cjs',
+  'internal.mjs',
+  'macros.cjs',
+  'macros.mjs',
+].sort();
+const builtArtifacts = runtimeArtifactNames.map((artifact) =>
+  join(packageRoot, 'dist', artifact)
+);
 
 function hasBuiltArtifacts(): boolean {
   return builtArtifacts.every((artifact) => existsSync(artifact));
@@ -93,7 +98,7 @@ describe('gt-react package exports', () => {
     ]);
   });
 
-  it('preserves use client in emitted ClientProvider chunks', () => {
+  it('preserves use client in emitted ClientProvider entrypoints', () => {
     for (const file of ['dist/client.cjs', 'dist/client.mjs']) {
       expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
         /^['"]use client['"];?/
@@ -101,9 +106,17 @@ describe('gt-react package exports', () => {
     }
   });
 
+  it('emits independent runtime entrypoints without shared chunks', () => {
+    expect(
+      readdirSync(join(packageRoot, 'dist'))
+        .filter((file) => /\.(cjs|mjs)$/.test(file))
+        .sort()
+    ).toEqual(runtimeArtifactNames);
+  });
+
   it('bundles workspace subpath imports in runtime artifacts', () => {
     const workspaceSubpathImportPattern =
-      /(?:from\s*|require\()\s*["']((?:@generaltranslation\/format|@generaltranslation\/react-core|generaltranslation|gt-i18n)\/[^"']+)["']/g;
+      /(?:import\s+(?:[^"']+\s+from\s+)?|require\(\s*)["']((?:@generaltranslation\/format|@generaltranslation\/react-core|generaltranslation|gt-i18n)\/[^"']+)["']/g;
     const externalizedSubpaths = readdirSync(join(packageRoot, 'dist'))
       .filter((file) => /\.(cjs|mjs)$/.test(file))
       .flatMap((file) => {
