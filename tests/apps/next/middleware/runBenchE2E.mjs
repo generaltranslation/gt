@@ -7,6 +7,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../../../..');
 const PKG_PATH = join(__dirname, 'package.json');
 const ROOT_PKG_PATH = join(ROOT, 'package.json');
+const INSTALL_ARGS = ['install', '--no-frozen-lockfile'];
+const FORCE_INSTALL_ARGS = process.env.CI ? [] : ['--force'];
+// Keep package realpaths under the repo while Turbopack uses the repo root.
+const PACKED_INSTALL_ARGS = [
+  ...INSTALL_ARGS,
+  ...FORCE_INSTALL_ARGS,
+  '--config.enable-global-virtual-store=false',
+];
+const RESTORE_INSTALL_ARGS = [...INSTALL_ARGS, ...FORCE_INSTALL_ARGS];
 
 const PACKED_WORKSPACE_DEPENDENCIES = [
   ['@generaltranslation/compiler', 'packages/compiler'],
@@ -98,7 +107,7 @@ try {
   // --- Step 4: Install with tarball ---
   logSection('Installing with packed gt-next workspace package closure');
   installNeedsRestore = true;
-  runPnpm(['install', '--no-frozen-lockfile'], {
+  runPnpm(PACKED_INSTALL_ARGS, {
     cwd: ROOT,
     stdio: 'inherit',
   });
@@ -126,12 +135,14 @@ try {
   if (pkgWasWritten) writeFileSync(PKG_PATH, originalPkg);
   if (rootPkgWasWritten) writeFileSync(ROOT_PKG_PATH, originalRootPkg);
 
-  if (installNeedsRestore) {
-    runPnpm(['install', '--no-frozen-lockfile'], {
-      cwd: ROOT,
-      stdio: 'inherit',
-    });
+  try {
+    if (installNeedsRestore) {
+      runPnpm(RESTORE_INSTALL_ARGS, {
+        cwd: ROOT,
+        stdio: 'inherit',
+      });
+    }
+  } finally {
+    removePackedTarballs();
   }
-
-  removePackedTarballs();
 }
