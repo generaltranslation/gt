@@ -116,7 +116,7 @@ describe('gt-react package exports', () => {
 
   it('bundles workspace subpath imports in runtime artifacts', () => {
     const workspaceSubpathImportPattern =
-      /(?:import\s+(?:[^"']+\s+from\s+)?|require\(\s*)["']((?:@generaltranslation\/format|@generaltranslation\/react-core|generaltranslation|gt-i18n)\/[^"']+)["']/g;
+      /(?:(?:import|export)\s+(?:[^"']+\s+from\s+)?|require\(\s*)["']((?:@generaltranslation\/format|@generaltranslation\/react-core|generaltranslation|gt-i18n)\/[^"']+)["']/g;
     const externalizedSubpaths = readdirSync(join(packageRoot, 'dist'))
       .filter((file) => /\.(cjs|mjs)$/.test(file))
       .flatMap((file) => {
