@@ -1,5 +1,19 @@
 # gt-next
 
+## 6.16.27
+
+### Patch Changes
+
+- [#1408](https://github.com/generaltranslation/gt/pull/1408) [`425d3e4`](https://github.com/generaltranslation/gt/commit/425d3e4e6c61afd108c65c27f7693ba2470b33c6) Thanks [@bgub](https://github.com/bgub)! - Use @generaltranslation/format directly for shared formatting and locale helpers.
+
+- Updated dependencies [[`73f3ac1`](https://github.com/generaltranslation/gt/commit/73f3ac1308df11c1e6230c13c1999bfc5f6afc99), [`425d3e4`](https://github.com/generaltranslation/gt/commit/425d3e4e6c61afd108c65c27f7693ba2470b33c6), [`8650ae9`](https://github.com/generaltranslation/gt/commit/8650ae9ced69755bf3eebc1bafdf7743ba0c5136)]:
+  - @generaltranslation/format@0.1.0
+  - generaltranslation@8.2.14
+  - gt-i18n@0.9.2
+  - gt-react@10.19.16
+  - @generaltranslation/compiler@1.3.22
+  - @generaltranslation/supported-locales@2.0.72
+
 ## 6.16.26
 
 ### Patch Changes
