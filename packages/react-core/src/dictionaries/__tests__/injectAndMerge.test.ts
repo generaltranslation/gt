@@ -232,7 +232,7 @@ describe('injectAndMerge', () => {
       };
 
       expect(() => injectAndMerge(dictionary, subtree, 'nonexistent')).toThrow(
-        '@generaltranslation/react-core Error: Dictionary subtree not found for id: "nonexistent"'
+        '@generaltranslation/react-core Error: Dictionary subtree "nonexistent" could not be found. Check that the id matches your dictionary structure.'
       );
     });
 
@@ -245,7 +245,7 @@ describe('injectAndMerge', () => {
       };
 
       expect(() => injectAndMerge(dictionary, subtree, 'greeting')).toThrow(
-        'Cannot inject and merge a dictionary entry'
+        '@generaltranslation/react-core Error: A dictionary entry cannot be injected as a subtree. Pass a dictionary object instead.'
       );
     });
 
@@ -258,7 +258,7 @@ describe('injectAndMerge', () => {
       };
 
       expect(() => injectAndMerge(dictionary, subtree, 'greeting')).toThrow(
-        'Cannot inject and merge a dictionary entry'
+        '@generaltranslation/react-core Error: A dictionary entry cannot be injected as a subtree. Pass a dictionary object instead.'
       );
     });
 
@@ -275,7 +275,7 @@ describe('injectAndMerge', () => {
       expect(() =>
         injectAndMerge(dictionary, subtree, 'level1.level2.level3')
       ).toThrow(
-        '@generaltranslation/react-core Error: Dictionary subtree not found for id: "level1.level2.level3"'
+        '@generaltranslation/react-core Error: Dictionary subtree "level1.level2.level3" could not be found. Check that the id matches your dictionary structure.'
       );
     });
 
@@ -292,7 +292,7 @@ describe('injectAndMerge', () => {
       expect(() =>
         injectAndMerge(dictionary, subtree, 'messages.greeting.invalid')
       ).toThrow(
-        '@generaltranslation/react-core Error: Dictionary subtree not found for id: "messages.greeting.invalid"'
+        '@generaltranslation/react-core Error: Dictionary subtree "messages.greeting.invalid" could not be found. Check that the id matches your dictionary structure.'
       );
     });
   });

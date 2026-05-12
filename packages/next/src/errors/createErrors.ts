@@ -1,8 +1,8 @@
 // ---- ERRORS ---- //
 
 import { getLocaleProperties } from '@generaltranslation/format';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
+import { createDiagnosticMessage } from './diagnostics';
 
 export const remoteTranslationsError = createDiagnosticMessage({
   source: 'gt-next',

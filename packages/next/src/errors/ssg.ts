@@ -1,6 +1,6 @@
-import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY } from '../config-dir/props/withGTConfigProps';
 import { RequestFunctions, StaticRequestFunctions } from '../request/types';
+import { createDiagnosticMessage } from './diagnostics';
 
 // ========== ERRORS ========== //
 
