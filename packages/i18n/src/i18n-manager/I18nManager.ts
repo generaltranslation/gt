@@ -236,6 +236,18 @@ class I18nManager<
     return this.config.enableI18n;
   }
 
+  // ========== Translation Updates ========== //
+
+  /**
+   * Update the translations for a given locale
+   */
+  updateTranslations(
+    locale: string,
+    translations: Record<Hash, TranslationValue>,
+  ): void {
+    this.localesCache.update(locale, translations);
+  }
+
   // ========== Translation Loading ========== //
 
   /**
@@ -639,13 +651,12 @@ class I18nManager<
     );
   }
 
-  public isValidLocale(locale: string): boolean {
+  public sanitizeLocale(locale: string): string | undefined {
     try {
-      this.resolveLocale(locale);
-      return true;
+      return this.resolveLocale(locale);
     } catch (error) {
       this.handleError(error);
-      return false;
+      return undefined;
     }
   }
 
@@ -681,6 +692,7 @@ class I18nManager<
   /**
    * Resolve the locale key used to load/read locale caches.
    * Returns undefined when the requested locale can use source content.
+   * TODO: this maybe made redundant by resolveLocale()
    */
   private resolveCacheLocale(locale: string) {
     const resolvedLocale = this.resolveLocale(locale);

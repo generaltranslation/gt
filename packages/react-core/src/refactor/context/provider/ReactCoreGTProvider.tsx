@@ -10,26 +10,39 @@ import {
   initializeState,
   isGTInitialized,
 } from "../../state/singleton-operations";
-import { getI18nStore } from "../store/singleton-operations";
+import {
+  getI18nStore,
+  initializeI18nStore,
+} from "../store/singleton-operations";
 
 export type GTProviderProps = ReactI18nManagerConstructorParams & {
   children?: ReactNode;
   locale: string;
   fallback?: ReactNode;
+  /**
+   * Reloads server side props when locale changes
+   * To reload translations only from the client,
+   * omit this prop
+   * */
+  reloadServerSideProps?: () => void;
 };
 
 // ===== Component ===== //
 
 /**
+ * - This is not userfacing, it should be wrapped in a userfacing provider
  * - If you want to override i18nManager or conditionStore, do so by calling
  *   initializeState() (or your own version of it) before GTProvider is
  *   rendered
  * - locale and initialTranslations are required
+ *
+ * TODO: server side: only pass newly loaded translations to the client
  */
-export function GTProvider({
+export function ReactCoreGTProvider({
   children,
   locale: initialLocale,
   fallback,
+  reloadServerSideProps,
   ...managerParams
 }: GTProviderProps) {
   // ------ Initialization ------ //
@@ -38,6 +51,12 @@ export function GTProvider({
       locale: initialLocale,
       config: managerParams,
       renderStrategy: "server-render",
+    });
+    initializeI18nStore({ reloadServerSideProps });
+  } else {
+    getI18nStore().update({
+      locale: initialLocale,
+      translations: managerParams.initialTranslations,
     });
   }
 
@@ -67,9 +86,9 @@ export function GTProvider({
 
   // ------ Rendering ------ //
 
-  // Show fallback when translations are loading for a locale change
+  // Show fallback when translations are loading (client only) from a locale change
   // locale will not be updated until the translations are loaded
-  const display = status !== "loading";
+  const display = status !== "loading" && !reloadServerSideProps;
 
   return (
     <GTContext.Provider value={context}>

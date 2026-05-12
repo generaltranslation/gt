@@ -34,9 +34,9 @@ export {
   useI18nManager,
 } from "./refactor/context/provider/GTContext";
 export {
-  GTProvider,
+  ReactCoreGTProvider as GTProvider,
   type GTProviderProps,
-} from "./refactor/context/provider/GTProvider";
+} from "./refactor/context/provider/ReactCoreGTProvider";
 export {
   I18nStore as I18nExternalStore,
   type I18nExternalStoreParams,

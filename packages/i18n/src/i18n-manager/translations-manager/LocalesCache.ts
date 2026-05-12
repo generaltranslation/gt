@@ -192,6 +192,14 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
     return this._createCacheEntry(locale, translations);
   }
 
+  public update(
+    locale: Locale,
+    translations: Record<Hash, TranslationValue>,
+  ): void {
+    // TODO: would we be orphaning subscribers here? or is it okay?
+    this.setCache(locale, this._createCacheEntry(locale, translations));
+  }
+
   // ===== PRIVATE METHODS ===== //
 
   /**

@@ -29,6 +29,8 @@ import type {
   Translation,
 } from "gt-i18n/types";
 import { getConditionStore } from "../../state/singleton-operations";
+import { I18nManagerConstructorParams } from "gt-i18n/internal/types";
+import { ReactI18nManagerConstructorParams } from "../../state/ReactI18nManager";
 
 type TranslationStatusType =
   | { status: "loading"; locale: string }
@@ -86,7 +88,15 @@ export class I18nStore {
   private translationStatusListeners: ListenerSet = new Set();
   private translationStatus: TranslationStatusType = { status: "ready" };
 
-  constructor() {}
+  private reloadServerSideProps?: () => void;
+
+  constructor({
+    reloadServerSideProps,
+  }: {
+    reloadServerSideProps?: () => void;
+  }) {
+    this.reloadServerSideProps = reloadServerSideProps;
+  }
 
   // ===== Manager Config Subscriptions ===== //
 
@@ -248,11 +258,21 @@ export class I18nStore {
    *
    * We push updates to translationStatus for subscribers to hook into
    * for triggering a re-render.
+   *
+   * For any SSR, instead we would want to skip a lot of this logic and
+   * trigger the server side props to be reloaded instead.
    */
-  setLocale = (locale: string): void => {
+  setLocale = (newLocale: string): void => {
     // Sanitize locale
     const i18nManager = getI18nManager();
-    if (!i18nManager.isValidLocale(locale)) {
+    const locale = i18nManager.sanitizeLocale(newLocale);
+    if (!locale) {
+      return;
+    }
+
+    // TODO: If translations loaded on server, trigger a server reload instead
+    if (this.reloadServerSideProps) {
+      this.reloadServerSideProps();
       return;
     }
 
@@ -304,6 +324,26 @@ export class I18nStore {
   private updateLocale = (locale: string): void => {
     getConditionStore().setLocale(locale);
     this.localeListeners.forEach((listener) => listener());
+  };
+
+  /**
+   * This is triggered by a locale change coming from a new locale prop
+   * from the GTProvider (along with new translations for that locale)
+   * 
+   * This case does not require an event emission because this occurs
+   * before the useSyncExternalStore call in the GTProvider which means
+   * that the new locale will be immediately available to the subscribers.
+   * Same for the translations too.
+   */
+  update = ({
+    locale,
+    translations,
+  }: {
+    locale: string;
+    translations: ReactI18nManagerConstructorParams["initialTranslations"];
+  }): void => {
+    getI18nManager().updateTranslations(locale, translations[locale] ?? {});
+    getConditionStore().setLocale(locale);
   };
 
   // ===== Subscription Lifecycle ===== //
