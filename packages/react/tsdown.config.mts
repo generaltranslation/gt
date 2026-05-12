@@ -1,22 +1,31 @@
 import { defineConfig } from 'tsdown';
 import { createTsdownConfig } from '../../tsdown.preset.mts';
 
+const deps = {
+  neverBundle: [
+    /^react$/,
+    /^react\//,
+    /^react-dom$/,
+    /^react-dom\//,
+    /^@generaltranslation\/react-core$/,
+  ],
+  alwaysBundle: [
+    /^@generaltranslation\/format\//,
+    /^@generaltranslation\/react-core\//,
+    /^generaltranslation\//,
+    /^gt-i18n\//,
+  ],
+};
+
 const configs = createTsdownConfig(
   [
     'src/index.ts',
     'src/internal.ts',
     'src/client.ts',
     'src/browser.ts',
-    'src/browser-types.ts',
     'src/macros.ts',
   ],
-  {
-    neverBundle: [
-      /^react($|\/)/,
-      /^react-dom($|\/)/,
-      /^@generaltranslation\/react-core($|\/)/,
-    ],
-  }
+  deps
 );
 
 export default defineConfig([
@@ -26,5 +35,11 @@ export default defineConfig([
       'import.meta.env': '{}',
     },
   },
-  configs[1],
+  {
+    ...configs[1],
+    deps: {
+      onlyBundle: false,
+      ...deps,
+    },
+  },
 ]);

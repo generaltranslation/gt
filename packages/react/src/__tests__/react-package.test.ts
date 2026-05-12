@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { beforeAll, describe, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const builtArtifacts = [
@@ -35,6 +35,10 @@ function buildPackage(): void {
   });
 }
 
+function node(args: string[]): void {
+  execFileSync(process.execPath, args, { stdio: 'pipe' });
+}
+
 describe('gt-react package exports', () => {
   beforeAll(() => {
     if (hasBuiltArtifacts()) return;
@@ -42,13 +46,10 @@ describe('gt-react package exports', () => {
   });
 
   it('loads named exports from built CJS entrypoints', () => {
-    execFileSync(
-      process.execPath,
-      [
-        '-e',
-        `
+    node([
+      '-e',
+      `
           const assert = require('node:assert/strict');
-
           const react = require('gt-react');
           const client = require('gt-react/client');
           const internal = require('gt-react/internal');
@@ -58,18 +59,14 @@ describe('gt-react package exports', () => {
           assert.equal(typeof client.ClientProvider, 'function');
           assert.equal(typeof internal.renderDefaultChildren, 'function');
         `,
-      ],
-      { stdio: 'pipe' }
-    );
+    ]);
   });
 
   it('loads named exports from built ESM entrypoints', () => {
-    execFileSync(
-      process.execPath,
-      [
-        '--input-type=module',
-        '-e',
-        `
+    node([
+      '--input-type=module',
+      '-e',
+      `
           import assert from 'node:assert/strict';
           import { GTProvider, T } from 'gt-react';
           import { ClientProvider } from 'gt-react/client';
@@ -80,25 +77,42 @@ describe('gt-react package exports', () => {
           assert.equal(typeof ClientProvider, 'function');
           assert.equal(typeof renderDefaultChildren, 'function');
         `,
-      ],
-      { stdio: 'pipe' }
-    );
+    ]);
   });
 
   it('loads side-effect entrypoints without default-export interop', () => {
-    execFileSync(
-      process.execPath,
-      [
-        '-e',
-        `
+    node([
+      '-e',
+      `
           const assert = require('node:assert/strict');
 
           assert.equal(globalThis.t, undefined);
           require('gt-react/macros');
           assert.equal(typeof globalThis.t, 'function');
         `,
-      ],
-      { stdio: 'pipe' }
-    );
+    ]);
+  });
+
+  it('preserves use client in emitted ClientProvider chunks', () => {
+    for (const file of ['dist/client.cjs', 'dist/client.mjs']) {
+      expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
+        /^['"]use client['"];?/
+      );
+    }
+  });
+
+  it('bundles workspace subpath imports in runtime artifacts', () => {
+    const workspaceSubpathImportPattern =
+      /(?:from\s*|require\()\s*["']((?:@generaltranslation\/format|@generaltranslation\/react-core|generaltranslation|gt-i18n)\/[^"']+)["']/g;
+    const externalizedSubpaths = readdirSync(join(packageRoot, 'dist'))
+      .filter((file) => /\.(cjs|mjs)$/.test(file))
+      .flatMap((file) => {
+        const code = readFileSync(join(packageRoot, 'dist', file), 'utf8');
+        return [...code.matchAll(workspaceSubpathImportPattern)].map(
+          (match) => `${file}: ${match[1]}`
+        );
+      });
+
+    expect(externalizedSubpaths).toEqual([]);
   });
 });

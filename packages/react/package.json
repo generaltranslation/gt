@@ -118,9 +118,6 @@
       "internal": [
         "./dist/internal.d.cts"
       ],
-      "setup": [
-        "./dist/setup.d.cts"
-      ],
       "browser": [
         "./dist/browser.d.cts"
       ],
@@ -140,9 +137,6 @@
       ],
       "gt-react/internal": [
         "./dist/internal"
-      ],
-      "gt-react/setup": [
-        "./dist/setup.d.cts"
       ],
       "gt-react/browser": [
         "./dist/browser.d.cts"
