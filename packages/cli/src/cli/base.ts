@@ -12,8 +12,10 @@ import {
   promptConfirm,
   promptMultiSelect,
   promptSelect,
+  promptGlobPatterns,
 } from '../console/logging.js';
 import { logger } from '../console/logger.js';
+import { parseGlobPatterns } from '../console/promptParsing.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import {
@@ -639,13 +641,15 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
 
     const files: FilesOptions = {};
     for (const fileExtension of fileExtensions) {
-      const paths = await promptText({
+      const label = FILE_EXT_TO_EXT_LABEL[fileExtension];
+      const paths = await promptGlobPatterns({
+        label,
         message: `${chalk.cyan(FILE_EXT_TO_EXT_LABEL[fileExtension])}: Enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_EXT_LABEL[fileExtension]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
         defaultValue: `./**/[locale]/*.${fileExtension}`,
       });
 
       files[fileExtension] = {
-        include: paths.split(' '),
+        include: parseGlobPatterns(paths),
       };
     }
 
