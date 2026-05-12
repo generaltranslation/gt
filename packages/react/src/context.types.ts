@@ -13,6 +13,7 @@ export const GTProvider: typeof CSRGTProvider = () => {
  * TODO: throw error if any of these functions are called
  */
 export {
+  // ===== Components ===== //
   Branch,
   Plural,
   Derive,
@@ -23,6 +24,7 @@ export {
   RelativeTime,
   Var,
   Num,
+  // ===== Hooks ===== //
   useLocale,
   useSetLocale,
   useCustomMapping,
@@ -31,4 +33,8 @@ export {
   useLocales,
   useLocaleSelector,
   useFormatLocales,
+  // ===== Functions ===== //
+  getTranslationsSnapshot,
+  // ===== Setup ===== //
+  internalInitializeGTSSR as initializeGT,
 } from "@generaltranslation/react-core/context";

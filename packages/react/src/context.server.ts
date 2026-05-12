@@ -3,6 +3,7 @@
 export { SSRGTProvider as GTProvider } from "./refactor/provider/SSRGTProvider";
 
 export {
+  // ===== Components ===== //
   Branch,
   Plural,
   Derive,
@@ -13,6 +14,7 @@ export {
   RelativeTime,
   Var,
   Num,
+  // ===== Hooks ===== //
   useLocale,
   useSetLocale,
   useCustomMapping,
@@ -21,4 +23,8 @@ export {
   useLocales,
   useLocaleSelector,
   useFormatLocales,
+  // ===== Functions ===== //
+  getTranslationsSnapshot,
+  // ===== Setup ===== //
+  internalInitializeGTSSR as initializeGT,
 } from "@generaltranslation/react-core/context";
