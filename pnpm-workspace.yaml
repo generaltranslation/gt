@@ -6,7 +6,7 @@ packages:
 enableGlobalVirtualStore: true
 hoist: false
 
-minimumReleaseAge: 1440
+minimumReleaseAge: 2880
 
 minimumReleaseAgeExclude:
   - '@generaltranslation/*'
