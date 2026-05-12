@@ -42,8 +42,6 @@ export type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
   DictionaryObjectSnapshot,
-  TranslationLookup,
-  TranslationSnapshot,
 } from "./refactor/context/store/storeTypes";
 
 export {

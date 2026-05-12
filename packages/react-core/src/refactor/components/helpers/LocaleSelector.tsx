@@ -10,7 +10,7 @@ import { InternalLocaleSelector } from "./InternalLocaleSelector";
  * @param {CustomMapping} [customMapping] - An optional object to map locales to custom display names, emojis, or other properties.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
-export default function LocaleSelector({
+export function LocaleSelector({
   locales: _locales,
   ...props
 }: {

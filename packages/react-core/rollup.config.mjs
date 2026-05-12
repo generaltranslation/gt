@@ -16,10 +16,7 @@ export default createReactBundleConfigs(
   [
     { input: './src/index.ts', outputName: 'index' },
     { input: './src/internal.ts', outputName: 'internal' },
-    {
-      input: './src/internal-external-store.ts',
-      outputName: 'internal-external-store',
-    },
+    { input: './src/context.ts', outputName: 'context' },
     { input: './src/errors.ts', outputName: 'errors' },
     { input: './src/types.ts', outputName: 'types', bundle: false },
   ],

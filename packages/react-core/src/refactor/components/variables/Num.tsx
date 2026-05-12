@@ -1,4 +1,4 @@
-import { useI18nManager } from "../../context/provider/GTContext";
+import { getI18nManager } from "gt-i18n/internal";
 import { useFormatLocales } from "../../hooks/utils";
 
 // ===== Component ===== //
@@ -14,7 +14,7 @@ function GtInternalNum({
   name?: string;
 }): string | null {
   const locales = useFormatLocales(localesProp);
-  const gt = useI18nManager().getGTClass();
+  const gt = getI18nManager().getGTClass();
   if (children == null) return null;
   const parsedNumber =
     typeof children === "string" ? parseFloat(children) : children;
