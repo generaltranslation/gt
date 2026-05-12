@@ -4,8 +4,8 @@ import type {
   LocaleCandidates,
 } from "gt-i18n/internal/types";
 import { createLocaleResolver } from "gt-i18n/internal";
-import { getI18nManager } from "../../state/singleton-operations";
-import { getConditionStore } from "./singleton-operations";
+import { getI18nManager } from "../i18n-manager/singleton-operations";
+import { ReactI18nManager } from "../i18n-manager/ReactI18nManager";
 
 /**
  * We want to include LocaleResolverConfig because at runtime,
@@ -31,19 +31,20 @@ export class ReactConditionStore implements WritableConditionStore {
     customMapping,
     i18nEnabled = true,
   }: ReactConditionStoreParams) {
+    let i18nManager: ReactI18nManager;
     try {
-      getI18nManager();
+      i18nManager = getI18nManager();
     } catch (error) {
       throw new Error(
         "Failed to initialize ReactConditionStore. Reason: " + error,
       );
     }
+    this.defaultLocale = defaultLocale ?? i18nManager.getDefaultLocale();
     this.resolveLocale = createLocaleResolver({
-      defaultLocale,
-      locales,
-      customMapping,
+      defaultLocale: this.defaultLocale,
+      locales: locales ?? i18nManager.getLocales(),
+      customMapping: customMapping ?? i18nManager.getCustomMapping(),
     });
-    this.defaultLocale = defaultLocale ?? getI18nManager().getDefaultLocale();
     this.locale = this.resolveLocale(locale);
     this.i18nEnabled = i18nEnabled;
   }

@@ -1,4 +1,4 @@
-import { getI18nManager, type I18nManager } from "gt-i18n/internal";
+import { getI18nManager } from "gt-i18n/internal";
 import { hashSource } from "generaltranslation/id";
 import { indexVars } from "generaltranslation/internal";
 import type { CustomMapping, IcuMessage } from "generaltranslation/types";
@@ -19,8 +19,8 @@ import type {
   LookupOptions,
   Translation,
 } from "gt-i18n/types";
-import { getConditionStore } from "../ConditionStore/singleton-operations";
-import { ReactI18nManagerConstructorParams } from "../../state/ReactI18nManager";
+import { getConditionStore } from "../../condition-store/singleton-operations";
+import { ReactI18nManagerConstructorParams } from "../../i18n-manager/ReactI18nManager";
 
 type TranslationStatusType =
   | { status: "loading"; locale: string }

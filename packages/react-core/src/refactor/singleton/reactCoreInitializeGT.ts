@@ -1,6 +1,6 @@
-import { initializeState } from "../state/singleton-operations";
-import { ReactI18nManagerConstructorParams } from "../state/ReactI18nManager";
-import { initializeStores } from "../context/I18nStore/singleton-operations";
+import { initializeState } from "../i18n-manager/singleton-operations";
+import { ReactI18nManagerConstructorParams } from "../i18n-manager/ReactI18nManager";
+import { initializeContextStores } from "../context/provider/initializeContextStores";
 
 /**
  * Initialize GT for an SPA
@@ -11,6 +11,7 @@ export function initializeGT({
 }: {
   locale: string;
 } & ReactI18nManagerConstructorParams): void {
+  // TODO: this is not envrionment agnostic, this function (or check) should be moved to gt-react
   if (typeof window === "undefined") {
     throw new Error(
       'initializeGT() failed. You have imported initializeGT() from the "/browser" entrypoint. Did you mean to import initializeGT() from the main entrypoint?',
@@ -21,5 +22,8 @@ export function initializeGT({
     config,
     renderStrategy: "SPA",
   });
-  initializeStores({ reloadServerSideProps });
+  initializeContextStores({ reloadServerSideProps });
+  throw new Error(
+    "TODO: this is not envrionment agnostic, this function (or check) should be moved to gt-react",
+  );
 }

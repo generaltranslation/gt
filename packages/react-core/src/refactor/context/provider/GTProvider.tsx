@@ -5,31 +5,29 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { ReactI18nManagerConstructorParams } from "../../state/ReactI18nManager";
-import {
-  initializeState,
-  isGTInitialized,
-} from "../../state/singleton-operations";
-import {
-  getI18nStore,
-  initializeStores,
-} from "../I18nStore/singleton-operations";
+import { getI18nStore } from "../I18nStore/singleton-operations";
 import type { ReloadServerSideProps } from "../I18nStore/storeTypes";
+import { storesInitialized } from "./globals";
+import { I18nStoreParams } from "../I18nStore/I18nStore";
+import { ReactConditionStoreParams } from "../../condition-store/ReactConditionStore";
+import { initializeContextStores } from "./initializeContextStores";
 
-export type GTProviderProps = SharedGTProviderProps & {
-  /**
-   * Reloads server side props when locale changes
-   * To reload translations only from the client,
-   * omit this prop
-   * */
-  reloadServerSideProps?: ReloadServerSideProps;
-};
-
-export type SharedGTProviderProps = ReactI18nManagerConstructorParams & {
-  children?: ReactNode;
-  locale: string;
-  fallback?: ReactNode;
-};
+export type GTProviderProps = ReactConditionStoreParams &
+  I18nStoreParams & {
+    children?: ReactNode;
+    fallback?: ReactNode;
+    /**
+     * Reloads server side props when locale changes
+     * To reload translations only from the client,
+     * omit this prop
+     * */
+    reloadServerSideProps?: ReloadServerSideProps;
+    /**
+     * From the server
+     */
+    locale: string;
+    translations: ;
+  };
 
 // ===== Component ===== //
 
@@ -44,29 +42,34 @@ export type SharedGTProviderProps = ReactI18nManagerConstructorParams & {
  *
  * TODO: server side: only pass newly loaded translations to the client
  */
-export function SharedGTProvider({
+export function GTProvider({
   children,
   locale: initialLocale,
+  defaultLocale,
+  locales,
+  customMapping,
+  i18nEnabled,
+  reloadServerSideProps,
   fallback,
-  ...managerParams
-}: SharedGTProviderProps) {
+  translations,
+}: GTProviderProps) {
   // ------ Initialization ------ //
-  if (!isGTInitialized()) {
-    throw new Error(
-      "I18nManager, ConditionStore, and I18nStore must be initialized before using the SharedGTProvider",
-    );
-    initializeState({
+  if (!storesInitialized()) {
+    initializeContextStores({
       locale: initialLocale,
-      config: managerParams,
       renderStrategy: "server-render",
+      defaultLocale,
+      locales,
+      customMapping,
+      i18nEnabled,
+      reloadServerSideProps,
     });
-    initializeStores({ reloadServerSideProps });
   } else {
-    getI18nStore().update({
-      locale: initialLocale,
-      translationsObj: managerParams.initialTranslations,
-    });
+    // This represents an update from server
+    getI18nStore().updateLocale(initialLocale);
+    // TODO: translations cache gets updated differently depending on runtime environment (client, server, hermes)
   }
+
 
   // ------ Context ------ //
 

@@ -3,7 +3,7 @@ import { GTContext, GTContextType } from "../context/provider/GTContext";
 import {
   getConditionStore,
   getRenderStrategy,
-} from "../state/singleton-operations";
+} from "../i18n-manager/singleton-operations";
 
 /**
  * @internal

@@ -10,8 +10,8 @@ export { RelativeTime } from "./refactor/components/variables/RelativeTime";
 export { Var } from "./refactor/components/variables/Var";
 export { t } from "./refactor/functions/translation/t";
 export {
-  SharedGTProvider as ReactCoreGTProvider,
-  SharedGTProvider as GTProvider,
+  GTProvider as ReactCoreGTProvider,
+  GTProvider as GTProvider,
   type SharedGTProviderProps as GTProviderProps,
 } from "./refactor/context/provider/GTProvider";
 export type { ReloadServerSideProps } from "./refactor/context/I18nStore/storeTypes";
