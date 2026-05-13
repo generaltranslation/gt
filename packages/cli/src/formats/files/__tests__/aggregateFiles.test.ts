@@ -76,6 +76,25 @@ describe('aggregateFiles - Empty File Handling', () => {
   });
 
   describe('JSON files', () => {
+    it('detects JSON data format without project warnings', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            json: ['/full/path/valid.json'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce('{"key": "value"}');
+
+      await aggregateTestFiles(settings);
+
+      expect(mockDetermineLibrary).toHaveBeenCalledWith();
+    });
+
     it('should skip empty JSON files and log warning', async () => {
       const settings = {
         files: {

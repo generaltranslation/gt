@@ -1,29 +1,30 @@
-import { logger } from '../../console/logger.js';
-import { recordWarning } from '../../state/translateWarnings.js';
-import { getRelative, readFile } from '../../fs/findFilepath.js';
-import { Settings } from '../../types/index.js';
-import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
-import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
-import { parseJson } from '../json/parseJson.js';
+import { logger } from "../../console/logger.js";
+import { recordWarning } from "../../state/translateWarnings.js";
+import { getRelative, readFile } from "../../fs/findFilepath.js";
+import { Settings } from "../../types/index.js";
+import type { FileFormat, DataFormat, FileToUpload } from "../../types/data.js";
+import { SUPPORTED_FILE_EXTENSIONS } from "./supportedFiles.js";
+import { parseJson } from "../json/parseJson.js";
 import {
   resolveMintlifyRefs,
   shouldResolveRefs,
-} from '../../utils/resolveMintlifyRefs.js';
-import { storeRefMap } from '../../state/mintlifyRefMap.js';
-import parseYaml from '../yaml/parseYaml.js';
-import { validateYamlSchema } from '../yaml/utils.js';
-import { flattenJson } from '../json/flattenJson.js';
-import type { JSONObject } from '../../types/data/json.js';
-import YAML from 'yaml';
-import { determineLibrary } from '../../fs/determineFramework/index.js';
-import { hashStringSync } from '../../utils/hash.js';
-import { preprocessContent } from './preprocessContent.js';
+} from "../../utils/resolveMintlifyRefs.js";
+import { storeRefMap } from "../../state/mintlifyRefMap.js";
+import parseYaml from "../yaml/parseYaml.js";
+import { validateYamlSchema } from "../yaml/utils.js";
+import { flattenJson } from "../json/flattenJson.js";
+import type { JSONObject } from "../../types/data/json.js";
+import YAML from "yaml";
+import { determineLibrary } from "../../fs/determineFramework/index.js";
+import { hashStringSync } from "../../utils/hash.js";
+import { preprocessContent } from "./preprocessContent.js";
 import {
   parseKeyedMetadata,
   type KeyedMetadata,
-} from '../parseKeyedMetadata.js';
-import { buildPublishMap } from '../../utils/resolvePublish.js';
-import { getTransformFormatProperty } from './transformFormat.js';
+} from "../parseKeyedMetadata.js";
+import { buildPublishMap } from "../../utils/resolvePublish.js";
+import { getTransformFormatProperty } from "./transformFormat.js";
+import chalk from "chalk";
 
 /**
  * Checks if a file path is a metadata companion file (e.g. foo.metadata.json)
@@ -32,7 +33,7 @@ import { getTransformFormatProperty } from './transformFormat.js';
  */
 function isCompanionMetadataFile(
   filePath: string,
-  allFilePaths: string[]
+  allFilePaths: string[],
 ): boolean {
   const metadataPattern = /\.metadata\.(json|yaml|yml)$/;
   if (!metadataPattern.test(filePath)) return false;
@@ -40,14 +41,14 @@ function isCompanionMetadataFile(
   // Derive the source file path: foo.metadata.json -> foo.json
   const sourceFilePath = filePath.replace(
     /\.metadata\.(json|yaml|yml)$/,
-    '.$1'
+    ".$1",
   );
   return allFilePaths.includes(sourceFilePath);
 }
-export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
+export const SUPPORTED_DATA_FORMATS = ["JSX", "ICU", "I18NEXT"];
 
 export async function aggregateFiles(
-  settings: Settings
+  settings: Settings,
 ): Promise<{ files: FileToUpload[]; publishMap: Map<string, boolean> }> {
   // Aggregate all files to translate
   const files: FileToUpload[] = [];
@@ -71,16 +72,25 @@ export async function aggregateFiles(
 
     // Determine dataFormat for JSONs
     let dataFormat: DataFormat;
-    if (library === 'next-intl') {
-      dataFormat = 'ICU';
-    } else if (library === 'i18next') {
-      if (additionalModules.includes('i18next-icu')) {
-        dataFormat = 'ICU';
+    if (library === "next-intl") {
+      dataFormat = "ICU";
+    } else if (library === "i18next") {
+      if (additionalModules.includes("i18next-icu")) {
+        dataFormat = "ICU";
       } else {
-        dataFormat = 'I18NEXT';
+        dataFormat = "I18NEXT";
       }
     } else {
-      dataFormat = 'STRING';
+      dataFormat = "STRING";
+    }
+
+    // Warn if no library is found and no files to translate
+    if (library === "base" && Object.keys(filePaths).length === 0) {
+      logger.warn(
+        chalk.yellow(
+          "No package.json or Python project file found in the current directory. Run this command from the root of your project.",
+        ),
+      );
     }
 
     const jsonFiles = filePaths.json
@@ -96,9 +106,9 @@ export async function aggregateFiles(
           } catch {
             logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
             recordWarning(
-              'skipped_file',
+              "skipped_file",
               relativePath,
-              'JSON file is not parsable'
+              "JSON file is not parsable",
             );
             return null;
           }
@@ -121,7 +131,7 @@ export async function aggregateFiles(
           contentForParsing,
           filePath,
           settings.options || {},
-          settings.defaultLocale
+          settings.defaultLocale,
         );
 
         // Detect companion metadata file
@@ -142,7 +152,7 @@ export async function aggregateFiles(
               filePath,
               settings.options || {},
               settings.defaultLocale,
-              false
+              false,
             );
             const transformedMetadata = JSON.parse(transformed);
 
@@ -151,15 +161,15 @@ export async function aggregateFiles(
             const sourceKeys = new Set(Object.keys(JSON.parse(parsedJson)));
             const filtered = Object.fromEntries(
               Object.entries(transformedMetadata).filter(([k]) =>
-                sourceKeys.has(k)
-              )
+                sourceKeys.has(k),
+              ),
             ) as KeyedMetadata;
 
             if (Object.keys(filtered).length > 0) {
               keyedMetadata = filtered;
             } else {
               logger.warn(
-                `Companion metadata found for ${relativePath} but no keys aligned with the JSON schema — metadata was not attached`
+                `Companion metadata found for ${relativePath} but no keys aligned with the JSON schema — metadata was not attached`,
               );
             }
           }
@@ -170,8 +180,8 @@ export async function aggregateFiles(
           versionId: hashStringSync(parsedJson),
           content: parsedJson,
           fileName: relativePath,
-          fileFormat: 'JSON' as const,
-          ...getTransformFormatProperty(settings, 'json'),
+          fileFormat: "JSON" as const,
+          ...getTransformFormatProperty(settings, "json"),
           dataFormat,
           locale: settings.defaultLocale,
           ...(keyedMetadata && {
@@ -181,9 +191,9 @@ export async function aggregateFiles(
       })
       .filter((file) => {
         if (!file) return false;
-        if (typeof file.content !== 'string' || !file.content.trim()) {
+        if (typeof file.content !== "string" || !file.content.trim()) {
           logger.warn(`Skipping ${file.fileName}: JSON file is empty`);
-          recordWarning('skipped_file', file.fileName, 'JSON file is empty');
+          recordWarning("skipped_file", file.fileName, "JSON file is empty");
           return false;
         }
         return true;
@@ -206,9 +216,9 @@ export async function aggregateFiles(
           } catch {
             logger.warn(`Skipping ${relativePath}: YAML file is not parsable`);
             recordWarning(
-              'skipped_file',
+              "skipped_file",
               relativePath,
-              'YAML file is not parsable'
+              "YAML file is not parsable",
             );
             return null;
           }
@@ -217,7 +227,7 @@ export async function aggregateFiles(
         const { content: parsedYaml, fileFormat } = parseYaml(
           content,
           filePath,
-          settings.options || {}
+          settings.options || {},
         );
 
         // Detect companion metadata file
@@ -228,7 +238,7 @@ export async function aggregateFiles(
           if (rawMetadata) {
             const yamlSchema = validateYamlSchema(
               settings.options || {},
-              filePath
+              filePath,
             );
             if (yamlSchema?.include) {
               // Flatten metadata through the same include schema as the source
@@ -236,13 +246,13 @@ export async function aggregateFiles(
               // Filter to only keep keys that exist in the transformed source
               const sourceKeys = new Set(Object.keys(JSON.parse(parsedYaml)));
               const filtered = Object.fromEntries(
-                Object.entries(flattened).filter(([k]) => sourceKeys.has(k))
+                Object.entries(flattened).filter(([k]) => sourceKeys.has(k)),
               ) as KeyedMetadata;
               if (Object.keys(filtered).length > 0) {
                 keyedMetadata = filtered;
               } else {
                 logger.warn(
-                  `Companion metadata found for ${relativePath} but no keys aligned with the YAML schema — metadata was not attached`
+                  `Companion metadata found for ${relativePath} but no keys aligned with the YAML schema — metadata was not attached`,
                 );
               }
             } else {
@@ -257,7 +267,7 @@ export async function aggregateFiles(
           content: parsedYaml,
           fileName: relativePath,
           fileFormat,
-          ...getTransformFormatProperty(settings, 'yaml'),
+          ...getTransformFormatProperty(settings, "yaml"),
           fileId: hashStringSync(relativePath),
           versionId: hashStringSync(parsedYaml),
           locale: settings.defaultLocale,
@@ -267,14 +277,14 @@ export async function aggregateFiles(
         } satisfies FileToUpload;
       })
       .filter((file) => {
-        if (!file || typeof file.content !== 'string' || !file.content.trim()) {
+        if (!file || typeof file.content !== "string" || !file.content.trim()) {
           logger.warn(
-            `Skipping ${file?.fileName ?? 'unknown'}: YAML file is empty`
+            `Skipping ${file?.fileName ?? "unknown"}: YAML file is empty`,
           );
           recordWarning(
-            'skipped_file',
-            file?.fileName ?? 'unknown',
-            'YAML file is empty'
+            "skipped_file",
+            file?.fileName ?? "unknown",
+            "YAML file is empty",
           );
           return false;
         }
@@ -297,9 +307,9 @@ export async function aggregateFiles(
           } catch {
             logger.warn(`Skipping ${relativePath}: JSON file is not parsable`);
             recordWarning(
-              'skipped_file',
+              "skipped_file",
               relativePath,
-              'JSON file is not parsable'
+              "JSON file is not parsable",
             );
             return null;
           }
@@ -309,7 +319,7 @@ export async function aggregateFiles(
           content,
           filePath,
           settings.options || {},
-          settings.defaultLocale
+          settings.defaultLocale,
         );
 
         return {
@@ -317,17 +327,17 @@ export async function aggregateFiles(
           versionId: hashStringSync(parsedJson),
           content: parsedJson,
           fileName: relativePath,
-          fileFormat: 'TWILIO_CONTENT_JSON' as const,
-          ...getTransformFormatProperty(settings, 'twilioContentJson'),
-          dataFormat: 'STRING' as const,
+          fileFormat: "TWILIO_CONTENT_JSON" as const,
+          ...getTransformFormatProperty(settings, "twilioContentJson"),
+          dataFormat: "STRING" as const,
           locale: settings.defaultLocale,
         } satisfies FileToUpload;
       })
       .filter((file) => {
         if (!file) return false;
-        if (typeof file.content !== 'string' || !file.content.trim()) {
+        if (typeof file.content !== "string" || !file.content.trim()) {
           logger.warn(`Skipping ${file.fileName}: JSON file is empty`);
-          recordWarning('skipped_file', file.fileName, 'JSON file is empty');
+          recordWarning("skipped_file", file.fileName, "JSON file is empty");
           return false;
         }
         return true;
@@ -337,9 +347,9 @@ export async function aggregateFiles(
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
     if (
-      fileType === 'json' ||
-      fileType === 'yaml' ||
-      fileType === 'twilioContentJson'
+      fileType === "json" ||
+      fileType === "yaml" ||
+      fileType === "twilioContentJson"
     )
       continue;
     if (filePaths[fileType]) {
@@ -352,12 +362,12 @@ export async function aggregateFiles(
             content,
             relativePath,
             fileType,
-            settings
+            settings,
           );
 
-          if (typeof processed !== 'string') {
+          if (typeof processed !== "string") {
             logger.warn(`Skipping ${relativePath}: ${processed.skip}`);
-            recordWarning('skipped_file', relativePath, processed.skip);
+            recordWarning("skipped_file", relativePath, processed.skip);
             return null;
           }
 
@@ -374,16 +384,16 @@ export async function aggregateFiles(
         .filter((file) => {
           if (
             !file ||
-            typeof file.content !== 'string' ||
+            typeof file.content !== "string" ||
             !file.content.trim()
           ) {
             logger.warn(
-              `Skipping ${file?.fileName ?? 'unknown'}: File is empty after sanitization`
+              `Skipping ${file?.fileName ?? "unknown"}: File is empty after sanitization`,
             );
             recordWarning(
-              'skipped_file',
-              file?.fileName ?? 'unknown',
-              'File is empty after sanitization'
+              "skipped_file",
+              file?.fileName ?? "unknown",
+              "File is empty after sanitization",
             );
             return false;
           }
@@ -395,7 +405,7 @@ export async function aggregateFiles(
 
   if (files.length === 0 && !settings.publish) {
     logger.error(
-      'No files to translate were found. Check your configuration and try again.'
+      "No files to translate were found. Check your configuration and try again.",
     );
   }
 
