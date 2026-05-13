@@ -28,6 +28,8 @@ import { getRenderStrategy } from "../../setup/globals";
  * @example
  * t`Hello, ${name}` // Translate via tagged template literal
  *
+ * TODO: enforce enableI18n
+ *
  */
 export const t: StringOrTemplateSyncResolutionFunction = (
   messageOrStrings: string | TemplateStringsArray,

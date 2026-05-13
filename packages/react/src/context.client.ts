@@ -20,6 +20,7 @@ export {
   useCustomMapping,
   useDefaultLocale,
   useEnableI18n,
+  useSetEnableI18n,
   useLocales,
   useLocaleSelector,
   useFormatLocales,

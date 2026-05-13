@@ -27,7 +27,7 @@ export type InternalGTProviderProps = ReactConditionStoreParams &
      * To reload translations only from the client,
      * omit this prop
      * */
-    reloadServerSideProps?: OverrideSetLocaleType;
+    overrideSetLocale?: OverrideSetLocaleType;
     /**
      * From the server
      */
