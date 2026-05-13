@@ -114,6 +114,8 @@ jobs:
             node: 24
             next: '16.0.10'
     runs-on: ${{ matrix.os }}
+    env:
+      npm_config_store_dir: ${{ github.workspace }}/.pnpm-store
 
     steps:
       - name: Checkout code
