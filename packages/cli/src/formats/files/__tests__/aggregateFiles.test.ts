@@ -77,6 +77,11 @@ describe('aggregateFiles - Empty File Handling', () => {
 
   describe('JSON files', () => {
     it('detects JSON data format without project warnings', async () => {
+      mockDetermineLibrary.mockReturnValueOnce({
+        library: 'base',
+        additionalModules: [],
+      });
+
       const settings = {
         files: {
           resolvedPaths: {
@@ -93,6 +98,9 @@ describe('aggregateFiles - Empty File Handling', () => {
       await aggregateTestFiles(settings);
 
       expect(mockDetermineLibrary).toHaveBeenCalledWith();
+      expect(mockLogWarning).not.toHaveBeenCalledWith(
+        expect.stringContaining('No package.json')
+      );
     });
 
     it('should skip empty JSON files and log warning', async () => {
