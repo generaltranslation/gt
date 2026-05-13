@@ -66,13 +66,26 @@ function useComputeT({
       defaultLocale: getLocale(),
       renderVariable,
     });
-  const options = {
-    $format: 'JSX' as const,
-    $context: params.context,
-    $id: params.id,
-    $_hash: params._hash,
-    ...params,
-  };
+  const options = useMemo(
+    () => ({
+      $format: 'JSX' as const,
+      $context: params.context,
+      $id: params.id,
+      $_hash: params._hash,
+      ...params,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      params.format,
+      params.context,
+      params.id,
+      params._hash,
+      params.$format,
+      params.$context,
+      params.$id,
+      params.$_hash,
+    ]
+  );
 
   // --- (1) Check if translation is even required --- //
   const targetLocale = getLocale();

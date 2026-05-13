@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   determineLocale,
   resolveAliasLocale,
@@ -46,53 +46,63 @@ export function useDetermineLocale({
    * (5) fallback to defaultLocale
    * Update the cookie locale to be correct
    */
-  const getNewLocale = (locale: string) => {
-    if (!enableI18n) return defaultLocale;
+  const getNewLocale = useCallback(
+    (locale: string) => {
+      if (!enableI18n) return defaultLocale;
 
-    // No change, return
-    if (
-      _locale &&
-      _locale === locale &&
-      determineLocale(_locale, locales, customMapping) === locale
-    ) {
-      return _locale;
-    }
+      // No change, return
+      if (
+        _locale &&
+        _locale === locale &&
+        determineLocale(_locale, locales, customMapping) === locale
+      ) {
+        return _locale;
+      }
 
-    // Check for locale in cookie
-    let cookieLocale = getCookieValue(localeCookieName);
-    if (cookieLocale) {
-      cookieLocale = resolveAliasLocale(cookieLocale, customMapping);
-    }
+      // Check for locale in cookie
+      let cookieLocale = getCookieValue(localeCookieName);
+      if (cookieLocale) {
+        cookieLocale = resolveAliasLocale(cookieLocale, customMapping);
+      }
 
-    // check user's configured locales
-    const browserLocales = getBrowserLocales(customMapping);
+      // check user's configured locales
+      const browserLocales = getBrowserLocales(customMapping);
 
-    // determine locale
-    let newLocale =
-      determineLocale(
-        [
-          // prefer user passed locale
-          ...(_locale ? [_locale] : []),
-          // then prefer cookie locale
-          ...(cookieLocale ? [cookieLocale] : []),
-          // then prefer browser locale
-          ...browserLocales,
-        ],
-        locales,
-        customMapping
-      ) || defaultLocale;
-    if (newLocale) {
-      newLocale = resolveAliasLocale(newLocale, customMapping);
-    }
+      // determine locale
+      let newLocale =
+        determineLocale(
+          [
+            // prefer user passed locale
+            ...(_locale ? [_locale] : []),
+            // then prefer cookie locale
+            ...(cookieLocale ? [cookieLocale] : []),
+            // then prefer browser locale
+            ...browserLocales,
+          ],
+          locales,
+          customMapping
+        ) || defaultLocale;
+      if (newLocale) {
+        newLocale = resolveAliasLocale(newLocale, customMapping);
+      }
 
-    // if cookie not valid, change it back to whatever we use for fallback
-    if (cookieLocale && cookieLocale !== newLocale) {
-      setCookieValue(localeCookieName, newLocale);
-    }
+      // if cookie not valid, change it back to whatever we use for fallback
+      if (cookieLocale && cookieLocale !== newLocale) {
+        setCookieValue(localeCookieName, newLocale);
+      }
 
-    // return new locale
-    return newLocale;
-  };
+      // return new locale
+      return newLocale;
+    },
+    [
+      _locale,
+      customMapping,
+      defaultLocale,
+      enableI18n,
+      localeCookieName,
+      locales,
+    ]
+  );
 
   const initializeLocale = () => {
     if (!enableI18n) return defaultLocale;
@@ -110,27 +120,34 @@ export function useDetermineLocale({
   const [locale, _setLocale] = useState<string>(initializeLocale);
 
   const currentLocale = resolveAliasLocale(locale, customMapping);
-  const setLocaleWithoutSettingCookie = (newLocale: string): string => {
-    if (!enableI18n) return defaultLocale;
-    // avoid superfluous updates
-    if (newLocale === currentLocale) return currentLocale;
+  const setLocaleWithoutSettingCookie = useCallback(
+    (newLocale: string): string => {
+      if (!enableI18n) return defaultLocale;
+      // avoid superfluous updates
+      if (newLocale === currentLocale) return currentLocale;
 
-    // validate locale
-    const validatedLocale = resolveAliasLocale(
-      determineLocale(newLocale, locales, customMapping) ||
-        currentLocale ||
-        defaultLocale,
-      customMapping
-    );
-    if (validatedLocale !== newLocale) {
-      console.warn(
-        createUnsupportedLocaleWarning(validatedLocale, newLocale, PACKAGE_NAME)
+      // validate locale
+      const validatedLocale = resolveAliasLocale(
+        determineLocale(newLocale, locales, customMapping) ||
+          currentLocale ||
+          defaultLocale,
+        customMapping
       );
-    }
-    // persist locale
-    _setLocale(validatedLocale);
-    return validatedLocale;
-  };
+      if (validatedLocale !== newLocale) {
+        console.warn(
+          createUnsupportedLocaleWarning(
+            validatedLocale,
+            newLocale,
+            PACKAGE_NAME
+          )
+        );
+      }
+      // persist locale
+      _setLocale(validatedLocale);
+      return validatedLocale;
+    },
+    [currentLocale, customMapping, defaultLocale, enableI18n, locales]
+  );
 
   // update locale and store it in cookie
   const setLocale = (newLocale: string): void => {
@@ -153,7 +170,7 @@ export function useDetermineLocale({
   // check browser for locales
   useEffect(() => {
     setLocaleWithoutSettingCookie(getNewLocale(locale));
-  }, [_locale, locale, locales, defaultLocale, localeCookieName, enableI18n]);
+  }, [locale, setLocaleWithoutSettingCookie, getNewLocale]);
 
   return [locale, setLocale];
 }
