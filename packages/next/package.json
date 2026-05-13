@@ -27,7 +27,8 @@
   },
   "scripts": {
     "patch": "pnpm version patch",
-    "transpile": "tsc",
+    "emit-types": "sh ../../scripts/emit-types.sh",
+    "transpile": "tsdown && pnpm run emit-types",
     "build": "pnpm run build:swc-plugin && pnpm run transpile",
     "build:clean": "rm -rf ./swc-plugin/target && sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
@@ -61,6 +62,7 @@
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
     "next": "15.2.3",
+    "tsdown": "catalog:",
     "typescript": "catalog:"
   },
   "exports": {

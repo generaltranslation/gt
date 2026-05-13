@@ -19,12 +19,14 @@
     "@modelcontextprotocol/inspector": "^0.14.2",
     "@types/jest": "^29.5.14",
     "@types/node": "catalog:",
+    "tsdown": "catalog:",
     "tsx": "^4.16.5",
     "typescript": "catalog:"
   },
   "scripts": {
     "patch": "pnpm version patch",
-    "transpile": "tsc",
+    "emit-types": "sh ../../scripts/emit-types.sh",
+    "transpile": "tsdown && pnpm run emit-types",
     "build": "pnpm run transpile",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",

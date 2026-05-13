@@ -22,7 +22,7 @@
     "generaltranslation": "workspace:*"
   },
   "scripts": {
-    "build": "rollup -c",
+    "build": "tsdown",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "release": "pnpm run build:clean && pnpm publish",
@@ -44,14 +44,10 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
-    "@rollup/plugin-commonjs": "catalog:",
-    "@rollup/plugin-node-resolve": "catalog:",
-    "@rollup/plugin-typescript": "catalog:",
     "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
-    "rollup": "catalog:",
-    "tslib": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

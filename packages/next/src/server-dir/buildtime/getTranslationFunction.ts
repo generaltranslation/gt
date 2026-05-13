@@ -9,13 +9,11 @@ import {
   createStringTranslationError,
   createTranslationLoadingWarning,
 } from '../../errors/createErrors';
-import {
+import { decodeMsg, decodeOptions, reactHasUse } from 'gt-react/internal';
+import type {
   InlineTranslationOptions,
   _Message,
   _Messages,
-  decodeMsg,
-  decodeOptions,
-  reactHasUse,
 } from 'gt-react/internal';
 import {
   extractVars,

@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "build:turbopack": "next build --turbopack",
+    "build": "node ../runNext.mjs build",
+    "build:turbopack": "node ../runNext.mjs build --turbopack",
     "start": "next start",
     "lint": "oxlint --config ../../../../examples/.oxlintrc.next.json .",
     "typecheck": "tsc --noEmit"

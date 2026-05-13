@@ -82,9 +82,40 @@ jobs:
   test-builds:
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-        node: [20, 24]
+        include:
+          - os: windows-latest
+            node: 20
+            next: '16.1.6'
+          - os: windows-latest
+            node: 24
+            next: '16.1.6'
+          - os: ubuntu-latest
+            node: 20
+            next: '16.1.6'
+          - os: ubuntu-latest
+            node: 24
+            next: '16.1.6'
+          - os: macos-latest
+            node: 20
+            next: '16.1.6'
+          - os: macos-latest
+            node: 24
+            next: '16.1.6'
+          - os: ubuntu-latest
+            node: 20
+            next: '15.5.9'
+          - os: ubuntu-latest
+            node: 24
+            next: '15.5.9'
+          - os: ubuntu-latest
+            node: 20
+            next: '16.0.10'
+          - os: ubuntu-latest
+            node: 24
+            next: '16.0.10'
     runs-on: ${{ matrix.os }}
+    env:
+      npm_config_store_dir: ${{ github.workspace }}/.pnpm-store
 
     steps:
       - name: Checkout code
@@ -120,14 +151,18 @@ jobs:
         if: steps.gt_next_changed.outputs.changed == 'true'
         run: pnpm install
 
+      - name: Use Next.js ${{ matrix.next }}
+        if: steps.gt_next_changed.outputs.changed == 'true'
+        run: pnpm --filter base --filter general-cases add next@${{ matrix.next }} --save-exact
+
       - name: Test Builds
         if: steps.gt_next_changed.outputs.changed == 'true'
         run: |
-          pnpm exec turbo build --filter=base...
-          pnpm exec turbo build:turbopack --filter=base...
+          pnpm exec turbo build --filter=base... --force
+          pnpm exec turbo build:turbopack --filter=base... --force
 
-          pnpm exec turbo build --filter=general-cases...
-          pnpm exec turbo build:turbopack --filter=general-cases...
+          pnpm exec turbo build --filter=general-cases... --force
+          pnpm exec turbo build:turbopack --filter=general-cases... --force
 
   test-cli-binaries:
     strategy:

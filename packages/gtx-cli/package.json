@@ -12,12 +12,14 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "emit-types": "sh ../../scripts/emit-types.sh",
+    "transpile": "tsdown && pnpm run emit-types",
+    "build": "pnpm run transpile",
     "build:clean": "sh ../../scripts/clean.sh && pnpm bin:restore && rm -rf binaries && pnpm run build",
     "build:release": "pnpm run build:clean",
-    "build:bin": "tsc && sh scripts/build-exe.sh all",
+    "build:bin": "pnpm run build && sh scripts/build-exe.sh all",
     "build:bin:clean": "sh ../../scripts/clean.sh && rm -rf binaries && pnpm run build:bin",
-    "build:bin:release": "pnpm run build:bin:clean && pnpm run build:bin",
+    "build:bin:release": "pnpm run build:bin:clean",
     "build:bin:darwin-x64": "sh scripts/build-exe.sh darwin-x64",
     "build:bin:darwin-arm64": "sh scripts/build-exe.sh darwin-arm64",
     "build:bin:linux-x64": "sh scripts/build-exe.sh linux-x64",
@@ -70,6 +72,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

@@ -1,10 +1,10 @@
-import {
+import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react/internal';
 
-export {
+export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,

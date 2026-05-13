@@ -12,10 +12,22 @@ import {
 /**
  * Get the next version of the package.
  */
+function getPackageVersion(packageName: string): string {
+  const packageJsonPath = `${packageName}/package.json`;
+
+  try {
+    const resolvedPackageJsonPath = require.resolve(packageJsonPath, {
+      paths: [process.cwd()],
+    });
+    return require(resolvedPackageJsonPath).version;
+  } catch (_error) {
+    return require(packageJsonPath).version;
+  }
+}
+
 function getNextVersion(): string {
   try {
-    const pkg = require('next/package.json');
-    return pkg.version;
+    return getPackageVersion('next');
   } catch (error) {
     throw new Error(createUnresolvedNextVersionError(error as Error));
   }
@@ -27,8 +39,7 @@ function getNextVersion(): string {
  */
 function getReactVersion(): string {
   try {
-    const pkg = require('react/package.json');
-    return pkg.version;
+    return getPackageVersion('react');
   } catch (error) {
     throw new Error(createUnresolvedReactVersionError(error as Error));
   }
