@@ -27,6 +27,8 @@ import { gt } from '../utils/gt.js';
 import { generatePreset } from './optionPresets.js';
 import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
 import { normalizeFilesOptions } from '../formats/files/transformFormat.js';
+import { determineLibrary } from '../fs/determineFramework/index.js';
+import { logger } from '../console/logger.js';
 
 export const DEFAULT_SRC_PATTERNS = [
   'src/**/*.{js,jsx,ts,tsx}',
@@ -68,6 +70,13 @@ type GenerateSettingsInput = Partial<Omit<Settings, 'tag'>> & {
   clearLocaleDirsExclude?: string[];
   [key: string]: unknown;
 };
+
+function hasConfiguredTranslationFiles(files: unknown): boolean {
+  if (!files || typeof files !== 'object' || Array.isArray(files)) {
+    return false;
+  }
+  return Object.keys(files).some((key) => key !== 'gt');
+}
 
 /**
  * Generates settings from any
@@ -169,6 +178,17 @@ export async function generateSettings(
 
   // merge options
   const mergedOptions: Settings = { ...gtConfig, ...flags } as Settings;
+
+  if (
+    determineLibrary().library === 'base' &&
+    !hasConfiguredTranslationFiles(mergedOptions.files)
+  ) {
+    logger.warn(
+      chalk.yellow(
+        'No package.json or Python project file found in the current directory. Run this command from the root of your project.'
+      )
+    );
+  }
 
   // Add defaultLocale if not provided
   mergedOptions.defaultLocale =

@@ -1,10 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateSettings } from '../generateSettings';
 import { resolveFiles } from '../../fs/config/parseFilesConfig';
+import { determineLibrary } from '../../fs/determineFramework/index.js';
+import { logger } from '../../console/logger.js';
 
 // Mock resolveFiles
 vi.mock('../../fs/config/parseFilesConfig', () => ({
   resolveFiles: vi.fn(),
+}));
+
+vi.mock('../../fs/determineFramework/index.js', () => ({
+  determineLibrary: vi.fn(() => ({
+    library: 'base',
+    additionalModules: [],
+  })),
 }));
 
 // Mock other dependencies
@@ -60,6 +69,9 @@ vi.mock('../optionPresets.js', () => ({
   generatePreset: vi.fn(),
 }));
 
+const mockDetermineLibrary = vi.mocked(determineLibrary);
+const mockLogWarning = vi.mocked(logger.warn);
+
 describe('generateSettings - composite patterns', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -72,6 +84,10 @@ describe('generateSettings - composite patterns', () => {
       unpublishPaths: new Set(),
       parsingFlags: {},
       gtJson: { parsingFlags: {} as unknown },
+    });
+    mockDetermineLibrary.mockReturnValue({
+      library: 'base',
+      additionalModules: [],
     });
   });
 
@@ -122,6 +138,45 @@ describe('generateSettings - composite patterns', () => {
       ['fr', 'es'],
       '/test/cwd',
       []
+    );
+  });
+
+  it('warns when no library or file translation config is found', async () => {
+    await generateSettings({}, '/test/cwd');
+
+    expect(mockLogWarning).toHaveBeenCalledWith(
+      expect.stringContaining('No package.json or Python project file found')
+    );
+  });
+
+  it('does not count files.gt as file translation config', async () => {
+    await generateSettings(
+      {
+        files: {
+          gt: { output: 'translations/[locale].json' },
+        },
+      },
+      '/test/cwd'
+    );
+
+    expect(mockLogWarning).toHaveBeenCalledWith(
+      expect.stringContaining('No package.json or Python project file found')
+    );
+  });
+
+  it('suppresses the warning when file translation config is present', async () => {
+    await generateSettings(
+      {
+        files: {
+          gt: { output: 'translations/[locale].json' },
+          pot: { include: ['locales/*.pot'] },
+        },
+      },
+      '/test/cwd'
+    );
+
+    expect(mockLogWarning).not.toHaveBeenCalledWith(
+      expect.stringContaining('No package.json')
     );
   });
 
