@@ -82,15 +82,6 @@ export function useCustomMapping(): CustomMapping {
   );
 }
 
-export function useEnableI18n(): boolean {
-  const store = getI18nStore();
-  return useSyncExternalStore(
-    store.subscribeToEnableI18n,
-    store.getEnableI18nSnapshot,
-    store.getEnableI18nSnapshot,
-  );
-}
-
 export function useDefaultLocale(): string {
   const store = getI18nStore();
   return useSyncExternalStore(

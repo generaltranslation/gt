@@ -107,14 +107,14 @@ export class I18nStore {
     return this.subscribeToStaticSet(this.customMappingListeners, listener);
   };
 
-  subscribeToEnableI18n = (listener: StoreListener): Unsubscribe => {
-    return this.subscribeToStaticSet(this.enableI18nListeners, listener);
-  };
-
   // ===== ConditionStore Subscriptions ===== //
 
   subscribeToLocale = (listener: StoreListener): Unsubscribe => {
     return this.subscribeToStaticSet(this.localeListeners, listener);
+  };
+
+  subscribeToEnableI18n = (listener: StoreListener): Unsubscribe => {
+    return this.subscribeToStaticSet(this.enableI18nListeners, listener);
   };
 
   // ===== I18nManager Subscriptions ===== //
@@ -190,14 +190,14 @@ export class I18nStore {
     return getI18nManager().getCustomMapping();
   };
 
-  getEnableI18nSnapshot = (): boolean => {
-    return getI18nManager().isTranslationEnabled();
-  };
-
   // ===== ConditionStore Snapshots ===== //
 
   getLocaleSnapshot = (): string => {
     return getConditionStore().getLocale();
+  };
+
+  getEnableI18nSnapshot = (): boolean => {
+    return getConditionStore().getEnableI18n();
   };
 
   // ===== I18nManager Snapshots ===== //
@@ -282,7 +282,7 @@ export class I18nStore {
       return;
     }
 
-    // TODO: If translations loaded on server, trigger a server reload instead
+    // Abort client-reload logic if overrideSetLocale is provided
     if (this.overrideSetLocale) {
       this.overrideSetLocale(locale);
       return;
@@ -315,6 +315,16 @@ export class I18nStore {
         getConditionStore().setLocale(locale);
         this.localeListeners.forEach((listener) => listener());
       });
+  };
+
+  /**
+   * When disabled, we don't show any translations, no formatting, no new requests
+   * technically, a user can still switch locales, but we do not fire off any requests
+   */
+  setEnableI18n = (enableI18n: boolean): void => {
+    getConditionStore().setEnableI18n(enableI18n);
+    this.updateTranslationStatus({ status: "ready" });
+    this.enableI18nListeners.forEach((listener) => listener());
   };
 
   subscribeToTranslationStatus = (listener: StoreListener): Unsubscribe => {

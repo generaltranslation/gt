@@ -13,7 +13,9 @@ function useGTContext(property: keyof GTContextType): GTContextType {
       // No need for useSyncExternalStore for SPA apps as reload will always trigger a re-render
       return {
         locale: getConditionStore().getLocale(),
+        enableI18n: getConditionStore().getEnableI18n(),
         setLocale: getConditionStore().setLocale,
+        setEnableI18n: getConditionStore().setEnableI18n,
       };
     }
     throw new Error(
@@ -29,4 +31,12 @@ export function useLocale(): string {
 
 export function useSetLocale(): (locale: string) => void {
   return useGTContext("setLocale").setLocale;
+}
+
+export function useEnableI18n(): boolean {
+  return useGTContext("enableI18n").enableI18n;
+}
+
+export function useSetEnableI18n(): (enableI18n: boolean) => void {
+  return useGTContext("setEnableI18n").setEnableI18n;
 }

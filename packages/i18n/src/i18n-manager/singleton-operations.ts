@@ -7,11 +7,11 @@ import type { ConditionStore } from "./types";
 // Singleton instance of I18nManager
 let i18nManager: I18nManager | undefined = undefined;
 let fallbackDefaultLocale: string = libraryDefaultLocale;
-let fallbackI18nEnabled: boolean = true;
+let fallbackEnableI18n: boolean = true;
 // Used before wrapper runtimes install a condition store; tracks the active manager default.
 const fallbackConditionStore: ConditionStore = {
   getLocale: () => fallbackDefaultLocale,
-  getI18nEnabled: () => fallbackI18nEnabled,
+  getEnableI18n: () => fallbackEnableI18n,
 };
 let conditionStore: ConditionStore = fallbackConditionStore;
 

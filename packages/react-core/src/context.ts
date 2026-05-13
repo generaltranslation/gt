@@ -11,11 +11,15 @@ export { RelativeTime } from "./refactor/components/variables/RelativeTime";
 export { Var } from "./refactor/components/variables/Var";
 
 // ===== Hooks ===== //
-export { useLocale, useSetLocale } from "./refactor/hooks/context-hooks";
+export {
+  useLocale,
+  useSetLocale,
+  useEnableI18n,
+  useSetEnableI18n,
+} from "./refactor/hooks/context-hooks";
 export {
   useCustomMapping,
   useDefaultLocale,
-  useEnableI18n,
   useLocales,
 } from "./refactor/hooks/external-store-hooks";
 export { useLocaleSelector } from "./refactor/hooks/useLocaleSelector";

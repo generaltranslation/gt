@@ -13,6 +13,8 @@ export function CSRGTProvider({
 }: SharedGTProviderProps) {
   // This represents an update from server
   // TODO: if a specific translation entry changes, but not the locale, this does not trigger a re-render
+  // TODO: optimize by skipping updateTranslations() if client is responsible for reloading translations
+  // (eg overrideSetLocale === undefined), see getI18nStore().updateLocale() in InternalGTProvider
   getI18nManager().updateTranslations(translations);
   return <InternalGTProvider {...props} />;
 }

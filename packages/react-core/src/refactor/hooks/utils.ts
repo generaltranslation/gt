@@ -1,10 +1,31 @@
-import { useDefaultLocale } from "./external-store-hooks";
-import { useLocale } from "./context-hooks";
+import {
+  useCustomMapping,
+  useDefaultLocale,
+  useLocales,
+} from "./external-store-hooks";
+import { useEnableI18n, useLocale } from "./context-hooks";
+import { requiresTranslation } from "generaltranslation/core";
 
-function useFormatLocales(localesProp: string[] = []): string[] {
+export function useFormatLocales(localesProp: string[] = []): string[] {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
-  return [...localesProp, locale, defaultLocale];
+  const shouldTranslate = useShouldTranslate();
+  return shouldTranslate
+    ? [...localesProp, locale, defaultLocale]
+    : [defaultLocale];
 }
 
-export { useFormatLocales };
+/**
+ * Returns true if (1) i18n enabled and (2) translation is required
+ */
+export function useShouldTranslate(): boolean {
+  const enableI18n = useEnableI18n();
+  const defaultLocale = useDefaultLocale();
+  const locale = useLocale();
+  const locales = useLocales();
+  const customMapping = useCustomMapping();
+  return (
+    enableI18n &&
+    requiresTranslation(defaultLocale, locale, [...locales], customMapping)
+  );
+}

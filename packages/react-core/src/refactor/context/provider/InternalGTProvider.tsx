@@ -53,6 +53,7 @@ export function InternalGTProvider({
   ...config
 }: InternalGTProviderProps) {
   // ------ Initialization ------ //
+
   if (!storesInitialized()) {
     const conditionStore = new ReactConditionStore(config);
     setConditionStore(conditionStore);
@@ -61,8 +62,9 @@ export function InternalGTProvider({
     setI18nStore(i18nStore);
 
     setStoresInitialized(true);
-  } else {
+  } else if (config.overrideSetLocale) {
     // This represents an update from server
+    // we only listen to it if we trigger server-side reloads on locale change
     getI18nStore().updateLocale(config.locale);
   }
 
@@ -76,6 +78,14 @@ export function InternalGTProvider({
   const setLocale = useCallback((locale: string) => {
     getI18nStore().setLocale(locale);
   }, []);
+  const enableI18n = useSyncExternalStore(
+    getI18nStore().subscribeToEnableI18n,
+    getI18nStore().getEnableI18nSnapshot,
+    getI18nStore().getEnableI18nSnapshot,
+  );
+  const setEnableI18n = useCallback((enableI18n: boolean) => {
+    getI18nStore().setEnableI18n(enableI18n);
+  }, []);
   const { status } = useSyncExternalStore(
     getI18nStore().subscribeToTranslationStatus,
     getI18nStore().getTranslationStatusSnapshot,
@@ -85,9 +95,11 @@ export function InternalGTProvider({
   const context: GTContextType = useMemo(
     () => ({
       locale,
+      enableI18n,
       setLocale,
+      setEnableI18n,
     }),
-    [locale, setLocale],
+    [locale, enableI18n, setLocale, setEnableI18n],
   );
 
   // ------ Rendering ------ //

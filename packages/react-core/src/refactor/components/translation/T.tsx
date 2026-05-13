@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from "react";
-import { requiresTranslation } from "generaltranslation";
 import addGTIdentifier from "../../../internal/addGTIdentifier";
 import { removeInjectedT } from "../../../internal/removeInjectedT";
 import writeChildrenAsObjects from "../../../internal/writeChildrenAsObjects";
@@ -8,16 +7,14 @@ import renderTranslatedChildren from "../../../rendering/renderTranslatedChildre
 import { renderVariable } from "../variables/renderVariable";
 import { useLocale } from "../../hooks/context-hooks";
 import {
-  useCustomMapping,
-  useEnableI18n,
   useDefaultLocale,
-  useLocales,
   useTranslate,
 } from "../../hooks/external-store-hooks";
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from "gt-i18n/types";
 import type { JsxChildren } from "generaltranslation/types";
 import type { TaggedChildren } from "../../../types-dir/types";
 import type { ReactNode } from "react";
+import { useShouldTranslate } from "../../hooks/utils";
 
 // ===== Component ===== //
 
@@ -52,7 +49,7 @@ function useComputeT({
     targetOptions,
     taggedSourceChildren,
     sourceJsxChildren,
-    translationRequired,
+    shouldTranslate,
   } = usePrepSourceRender({
     sourceChildren,
     params,
@@ -75,13 +72,11 @@ function useComputeT({
   });
 
   // Render source children
-  if (!translationRequired || targetJsxChildren == null) {
-    console.log("rendering source children");
+  if (!shouldTranslate || targetJsxChildren == null) {
     return renderSourceChildren();
   }
 
   // Render translated children if found in cache
-  console.log("rendering translated children");
   return renderTranslatedChildren({
     source: taggedSourceChildren,
     target: targetJsxChildren,
@@ -107,13 +102,11 @@ function usePrepSourceRender({
     $format: "JSX";
     $locale: string;
   };
-  translationRequired: boolean;
+  shouldTranslate: boolean;
 } {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
-  const locales = useLocales();
-  const customMapping = useCustomMapping();
-  const enableI18n = useEnableI18n();
+  const shouldTranslate = useShouldTranslate();
   const taggedSourceChildren = useMemo(
     () => addGTIdentifier(removeInjectedT(sourceChildren)),
     [sourceChildren],
@@ -127,9 +120,6 @@ function usePrepSourceRender({
     () => ({ ...options, $locale: locale }),
     [locale, options],
   );
-  const translationRequired =
-    enableI18n &&
-    requiresTranslation(defaultLocale, locale, [...locales], customMapping);
 
   return {
     defaultLocale,
@@ -137,7 +127,7 @@ function usePrepSourceRender({
     taggedSourceChildren,
     sourceJsxChildren,
     targetOptions,
-    translationRequired,
+    shouldTranslate,
   };
 }
 

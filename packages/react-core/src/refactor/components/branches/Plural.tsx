@@ -1,28 +1,21 @@
 import getPluralBranch from "../../../branches/plurals/getPluralBranch";
-import { useLocale } from "../../hooks/context-hooks";
-import { useDefaultLocale } from "../../hooks/external-store-hooks";
 import type { ReactNode } from "react";
+import { useFormatLocales } from "../../hooks/utils";
 
 // ===== Component ===== //
 
 function Plural({
   children,
   n,
-  locales: localesProp,
+  locales: localesProp = [],
   ...branches
 }: {
   children?: ReactNode;
   n: number;
-  locales?: string;
+  locales?: string[];
   [key: string]: ReactNode;
 }): ReactNode {
-  const locale = useLocale();
-  const defaultLocale = useDefaultLocale();
-  const locales = [
-    ...(localesProp ? [localesProp] : []),
-    locale,
-    defaultLocale,
-  ];
+  const locales = useFormatLocales(localesProp);
   if (typeof n !== "number") {
     return children;
   }
@@ -32,7 +25,7 @@ function Plural({
 function GtInternalPlural(props: {
   children?: ReactNode;
   n: number;
-  locales?: string;
+  locales?: string[];
   [key: string]: ReactNode;
 }): ReactNode {
   return Plural(props);

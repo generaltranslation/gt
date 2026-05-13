@@ -61,7 +61,7 @@ export type I18nManagerConfig = {
    * @deprecated
    * Perhaps we can keep this around, but more for
    * doing an initial load, but it may get overwritten
-   * so like a "initialI18nEnabled" flag?
+   * so like a "initialEnableI18n" flag?
    */
   enableI18n: boolean;
   projectId?: string;
@@ -95,7 +95,7 @@ export type LocaleResolverConfig = {
  */
 export interface ConditionStore {
   getLocale(): string;
-  getI18nEnabled(): boolean;
+  getEnableI18n(): boolean;
 }
 
 /**
@@ -103,7 +103,7 @@ export interface ConditionStore {
  */
 export interface WritableConditionStore extends ConditionStore {
   setLocale(locale: string): void;
-  setI18nEnabled(enabled: boolean): void;
+  setEnableI18n(enabled: boolean): void;
 }
 
 /**

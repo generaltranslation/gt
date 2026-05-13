@@ -15,13 +15,13 @@ import { ReactI18nManager } from "../i18n-manager/ReactI18nManager";
  */
 export type ReactConditionStoreParams = LocaleResolverConfig & {
   locale: string;
-  i18nEnabled?: boolean;
+  enableI18n?: boolean;
 };
 
 export class ReactConditionStore implements WritableConditionStore {
   private defaultLocale: string;
   private locale: string;
-  private i18nEnabled: boolean;
+  private enableI18n: boolean;
   private resolveLocale: (candidates?: LocaleCandidates) => string;
 
   constructor({
@@ -29,7 +29,7 @@ export class ReactConditionStore implements WritableConditionStore {
     locale,
     locales,
     customMapping,
-    i18nEnabled = true,
+    enableI18n = true,
   }: ReactConditionStoreParams) {
     let i18nManager: ReactI18nManager;
     try {
@@ -46,10 +46,13 @@ export class ReactConditionStore implements WritableConditionStore {
       customMapping: customMapping ?? i18nManager.getCustomMapping(),
     });
     this.locale = this.resolveLocale(locale);
-    this.i18nEnabled = i18nEnabled;
+    this.enableI18n = enableI18n;
   }
 
   getLocale = (): string => {
+    // TODO: users can still select a locale, but we just don't translate
+    // when i18n is disabled
+    // if (!this.getEnableI18n()) return this.defaultLocale;
     return this.locale ?? this.defaultLocale;
   };
 
@@ -57,11 +60,11 @@ export class ReactConditionStore implements WritableConditionStore {
     this.locale = this.resolveLocale(locale);
   };
 
-  getI18nEnabled = (): boolean => {
-    return this.i18nEnabled;
+  getEnableI18n = (): boolean => {
+    return this.enableI18n;
   };
 
-  setI18nEnabled = (i18nEnabled: boolean): void => {
-    this.i18nEnabled = i18nEnabled;
+  setEnableI18n = (enableI18n: boolean): void => {
+    this.enableI18n = enableI18n;
   };
 }
