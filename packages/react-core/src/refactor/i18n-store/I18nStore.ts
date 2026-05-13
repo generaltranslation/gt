@@ -283,7 +283,10 @@ export class I18nStore {
     }
 
     // Abort client-reload logic if overrideSetLocale is provided
+    // We dont emit an event here because it is assumed that the locale
+    // gets updated via this reload (eg browser refresh/SSR reload)
     if (this.overrideSetLocale) {
+      getConditionStore().setLocale(locale);
       this.overrideSetLocale(locale);
       return;
     }

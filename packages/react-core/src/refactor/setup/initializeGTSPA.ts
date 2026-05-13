@@ -19,19 +19,22 @@ import { setI18nStore } from "../i18n-store/singleton-operations";
  * - i18nStore
  */
 export function internalInitializeGTSPA(
-  config: ReactConditionStoreParams &
-    I18nStoreParams &
-    ReactI18nManagerConstructorParams,
+  config: I18nStoreParams &
+    ReactI18nManagerConstructorParams &
+    ReactConditionStoreParams,
+  i18nManager?: ReactI18nManager,
+  conditionStore?: ReactConditionStore,
+  i18nStore?: I18nStore,
 ): void {
   setRenderStrategy("SPA");
 
-  const i18nManager = new ReactI18nManager(config);
+  i18nManager ||= new ReactI18nManager(config);
   setI18nManager(i18nManager);
 
-  const conditionStore = new ReactConditionStore(config);
+  conditionStore ||= new ReactConditionStore(config);
   setConditionStore(conditionStore);
 
-  const i18nStore = new I18nStore(config);
+  i18nStore ||= new I18nStore(config);
   setI18nStore(i18nStore);
 
   setStoresInitialized(true);

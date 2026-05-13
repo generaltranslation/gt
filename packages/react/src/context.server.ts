@@ -1,6 +1,7 @@
 "server-only";
 
 export { SSRGTProvider as GTProvider } from "./refactor/provider/SSRGTProvider";
+export { initializeGTSPA } from "./refactor/setup/initializeGTSPA";
 
 export {
   // ===== Components ===== //
@@ -28,4 +29,5 @@ export {
   getTranslationsSnapshot,
   // ===== Setup ===== //
   internalInitializeGTSSR as initializeGT,
+  internalInitializeGTSPA,
 } from "@generaltranslation/react-core/context";

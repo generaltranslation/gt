@@ -36,3 +36,5 @@ export type { InternalGTProviderProps } from "./refactor/context/provider/Intern
 export type { OverrideSetLocaleType } from "./refactor/i18n-store/storeTypes";
 export { getI18nManager } from "./refactor/i18n-manager/singleton-operations";
 export { setI18nManager } from "./refactor/i18n-manager/singleton-operations";
+export { ReactConditionStore } from "./refactor/condition-store/ReactConditionStore";
+export type { ReactConditionStoreParams } from "./refactor/condition-store/ReactConditionStore";

@@ -1,6 +1,7 @@
 "use client";
 
 export { CSRGTProvider as GTProvider } from "./refactor/provider/CSRGTProvider";
+export { initializeGTSPA } from "./refactor/setup/initializeGTSPA";
 
 export {
   // ===== Components ===== //

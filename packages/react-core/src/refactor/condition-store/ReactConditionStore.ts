@@ -19,10 +19,9 @@ export type ReactConditionStoreParams = LocaleResolverConfig & {
 };
 
 export class ReactConditionStore implements WritableConditionStore {
-  private defaultLocale: string;
   private locale: string;
   private enableI18n: boolean;
-  private resolveLocale: (candidates?: LocaleCandidates) => string;
+  protected resolveLocale: (candidates?: LocaleCandidates) => string;
 
   constructor({
     defaultLocale,
@@ -39,9 +38,8 @@ export class ReactConditionStore implements WritableConditionStore {
         "Failed to initialize ReactConditionStore. Reason: " + error,
       );
     }
-    this.defaultLocale = defaultLocale ?? i18nManager.getDefaultLocale();
     this.resolveLocale = createLocaleResolver({
-      defaultLocale: this.defaultLocale,
+      defaultLocale: defaultLocale ?? i18nManager.getDefaultLocale(),
       locales: locales ?? i18nManager.getLocales(),
       customMapping: customMapping ?? i18nManager.getCustomMapping(),
     });
@@ -50,10 +48,7 @@ export class ReactConditionStore implements WritableConditionStore {
   }
 
   getLocale = (): string => {
-    // TODO: users can still select a locale, but we just don't translate
-    // when i18n is disabled
-    // if (!this.getEnableI18n()) return this.defaultLocale;
-    return this.locale ?? this.defaultLocale;
+    return this.locale;
   };
 
   setLocale = (locale: string): void => {

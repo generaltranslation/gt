@@ -9,6 +9,8 @@ export const GTProvider: typeof CSRGTProvider = () => {
   );
 };
 
+export { initializeGTSPA } from "./refactor/setup/initializeGTSPA";
+
 /**
  * TODO: throw error if any of these functions are called
  */

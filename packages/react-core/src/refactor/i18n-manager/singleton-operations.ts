@@ -11,6 +11,5 @@ export function getI18nManager(): ReactI18nManager {
 }
 
 export function setI18nManager(i18nManager: ReactI18nManager): void {
-  console.log("react-core: setI18nManager (singleton-operations)");
   setI18nManagerInternal(i18nManager);
 }
