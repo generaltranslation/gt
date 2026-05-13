@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getCookieValue, setCookieValue } from '../../../shared/cookies';
 
-function getNewRegion(
-  _region: string | undefined,
-  regionCookieName: string
-) {
+function getNewRegion(_region: string | undefined, regionCookieName: string) {
   // Check for region in cookie
   const cookieRegion = getCookieValue(regionCookieName);
   const newRegion = _region || cookieRegion;

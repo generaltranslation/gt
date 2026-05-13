@@ -249,9 +249,7 @@ export function ClientProvider({
         _versionId,
       }}
     >
-      <Suspense fallback={display && children}>
-        {display && children}
-      </Suspense>
+      <Suspense fallback={display && children}>{display && children}</Suspense>
     </GTContext.Provider>
   );
 }

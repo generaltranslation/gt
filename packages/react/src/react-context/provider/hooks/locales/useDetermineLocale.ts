@@ -153,14 +153,7 @@ export function useDetermineLocale({
   // check browser for locales
   useEffect(() => {
     setLocaleWithoutSettingCookie(getNewLocale(locale));
-  }, [
-    _locale,
-    locale,
-    locales,
-    defaultLocale,
-    localeCookieName,
-    enableI18n,
-  ]);
+  }, [_locale, locale, locales, defaultLocale, localeCookieName, enableI18n]);
 
   return [locale, setLocale];
 }

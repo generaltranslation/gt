@@ -13,11 +13,7 @@ type BranchProps = {
  *
  * This is the i18n-context version — does not use React Context.
  */
-function Branch({
-  children,
-  branch,
-  ...branches
-}: BranchProps): ReactNode {
+function Branch({ children, branch, ...branches }: BranchProps): ReactNode {
   const branchKey = branch?.toString();
   if (branchKey?.startsWith('data-')) return children;
   return branchKey && typeof branches[branchKey] !== 'undefined'
