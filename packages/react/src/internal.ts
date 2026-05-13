@@ -67,7 +67,7 @@ import type {
   GTProp,
 } from '@generaltranslation/react-core/types';
 
-import {
+import type {
   ClientProviderProps,
   GTProviderProps,
 } from './react-context/types/config';

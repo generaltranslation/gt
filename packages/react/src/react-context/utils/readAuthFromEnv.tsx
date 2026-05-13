@@ -1,4 +1,4 @@
-import {
+import type {
   AuthFromEnvParams,
   AuthFromEnvReturn,
 } from '@generaltranslation/react-core/types';

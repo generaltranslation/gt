@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useRegionSelector } from '@generaltranslation/react-core';
 
 /**
@@ -22,7 +22,7 @@ import { useRegionSelector } from '@generaltranslation/react-core';
  * />
  * ```
  */
-export default function RegionSelector<Regions extends string[]>({
+export function RegionSelector<Regions extends string[]>({
   regions: _regions,
   placeholder,
   customMapping,
@@ -42,7 +42,7 @@ export default function RegionSelector<Regions extends string[]>({
   sortRegionsAlphabetically?: boolean;
   asLocaleSelector?: boolean;
   [key: string]: unknown;
-}): React.JSX.Element | null {
+}): JSX.Element {
   const { region, setRegion, regions, regionData, locale, setLocale } =
     useRegionSelector({
       regions: _regions,

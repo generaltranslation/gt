@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
+import type { JSX } from 'react';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { InternalLocaleSelector } from '../../shared/InternalLocaleSelector';
 import { getI18nManager } from 'gt-i18n/internal';
@@ -22,7 +23,7 @@ export function LocaleSelector({
   customNames?: { [key: string]: string };
   customMapping?: CustomMapping;
   [key: string]: unknown;
-}): React.JSX.Element | null {
+}): JSX.Element | null {
   // Get the sorted locales, setLocale, and locale
   const { sortedLocales, setLocale, locale, getLocaleProperties } =
     useMemo(() => {

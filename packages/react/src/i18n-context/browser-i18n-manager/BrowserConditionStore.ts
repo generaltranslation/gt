@@ -1,7 +1,7 @@
 import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
-import { setCookieValue } from './utils/cookies';
+import { setCookieValue } from '../../shared/cookies';
 import { determineLocale } from './utils/determineLocale';
-import { GetLocale } from './utils/types';
+import type { GetLocale } from './utils/types';
 import type {
   ConditionStoreConfig,
   WritableConditionStore,
@@ -23,9 +23,9 @@ type BrowserConditionStoreConstructorParams = ConditionStoreConfig & {
  * Condition store implementation for Browser.
  */
 export class BrowserConditionStore implements WritableConditionStore {
-  private localeConfig: ConditionStoreConfig;
-  private customGetLocale?: GetLocale;
-  private localeCookieName: string;
+  private readonly localeConfig: ConditionStoreConfig;
+  private readonly customGetLocale?: GetLocale;
+  private readonly localeCookieName: string;
 
   /**
    * @param {BrowserConditionStoreConstructorParams} params - The configuration for the BrowserConditionStore
@@ -52,9 +52,6 @@ export class BrowserConditionStore implements WritableConditionStore {
   }
 
   setLocale(locale: string): void {
-    setCookieValue({
-      cookieName: this.localeCookieName,
-      value: locale,
-    });
+    setCookieValue(this.localeCookieName, locale);
   }
 }

@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   determineLocale,
   resolveAliasLocale,
@@ -8,21 +7,25 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocaleWarning } from '@generaltranslation/react-core/errors';
 import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
 import type { CustomMapping } from '@generaltranslation/format/types';
-import {
+import type {
   UseDetermineLocaleParams,
   UseDetermineLocaleReturn,
 } from '@generaltranslation/react-core/types';
 import { PACKAGE_NAME } from '../../../../shared/messages';
+import { getCookieValue, setCookieValue } from '../../../../shared/cookies';
 
 export function useDetermineLocale({
   locale: initialLocale = '',
   defaultLocale = libraryDefaultLocale,
   locales: initialLocales = [],
   localeCookieName = defaultLocaleCookieName,
-  ssr = true, // when false, breaks server side rendering by accessing document and navigator on first render
+  // when false, breaks server side rendering by accessing document and navigator on first render
+  ssr = true,
   customMapping,
-  enableI18n, // when enabled, don't change locale cookie (feature flag might be loaded async, updating cookie means state is lost on refresh)
-  reloadOnLocaleUpdate = false, // for syncing server locale with client locale
+  // when enabled, don't change locale cookie (feature flag might be loaded async, updating cookie means state is lost on refresh)
+  enableI18n,
+  // for syncing server locale with client locale
+  reloadOnLocaleUpdate = false,
 }: UseDetermineLocaleParams): UseDetermineLocaleReturn {
   // resolve alias locale
   const _locale = useMemo(
@@ -35,214 +38,127 @@ export function useDetermineLocale({
     [initialLocales, customMapping]
   );
 
+  /**
+   * Choose a locale to use
+   * (1) use provided locale
+   * (2) use cookie locale
+   * (3) use preferred locale
+   * (5) fallback to defaultLocale
+   * Update the cookie locale to be correct
+   */
+  const getNewLocale = useCallback(
+    (locale: string) => {
+      if (!enableI18n) return defaultLocale;
+
+      // No change, return
+      if (
+        _locale &&
+        _locale === locale &&
+        determineLocale(_locale, locales, customMapping) === locale
+      ) {
+        return _locale;
+      }
+
+      // Check for locale in cookie
+      let cookieLocale = getCookieValue(localeCookieName);
+      if (cookieLocale) {
+        cookieLocale = resolveAliasLocale(cookieLocale, customMapping);
+      }
+
+      // check user's configured locales
+      const browserLocales = getBrowserLocales(customMapping);
+
+      // determine locale
+      let newLocale =
+        determineLocale(
+          [
+            // prefer user passed locale
+            ...(_locale ? [_locale] : []),
+            // then prefer cookie locale
+            ...(cookieLocale ? [cookieLocale] : []),
+            // then prefer browser locale
+            ...browserLocales,
+          ],
+          locales,
+          customMapping
+        ) || defaultLocale;
+      if (newLocale) {
+        newLocale = resolveAliasLocale(newLocale, customMapping);
+      }
+
+      // if cookie not valid, change it back to whatever we use for fallback
+      if (cookieLocale && cookieLocale !== newLocale) {
+        setCookieValue(localeCookieName, newLocale);
+      }
+
+      // return new locale
+      return newLocale;
+    },
+    [
+      _locale,
+      customMapping,
+      defaultLocale,
+      enableI18n,
+      localeCookieName,
+      locales,
+    ]
+  );
+
   const initializeLocale = () => {
-    if (!enableI18n) {
-      return defaultLocale;
-    }
-    const result = resolveAliasLocale(
+    if (!enableI18n) return defaultLocale;
+    return resolveAliasLocale(
       ssr
         ? _locale
           ? determineLocale(_locale, locales, customMapping) || ''
           : ''
-        : getNewLocale({
-            _locale,
-            locale: _locale,
-            locales,
-            defaultLocale,
-            localeCookieName,
-            customMapping,
-            enableI18n,
-          }),
+        : getNewLocale(_locale),
       customMapping
     );
-    return result;
   };
 
   // maintaining the state of locale
   const [locale, _setLocale] = useState<string>(initializeLocale);
 
-  // Functions for setting internal locale state
-  const [setLocale, setLocaleWithoutSettingCookie] = createSetLocale({
-    locale,
-    locales,
-    defaultLocale,
-    localeCookieName,
-    _setLocale,
-    customMapping,
-    enableI18n,
-    reloadOnLocaleUpdate,
-  });
+  const currentLocale = resolveAliasLocale(locale, customMapping);
+  const setLocaleWithoutSettingCookie = useCallback(
+    (newLocale: string): string => {
+      if (!enableI18n) return defaultLocale;
+      // avoid superfluous updates
+      if (newLocale === currentLocale) return currentLocale;
 
-  // check browser for locales
-  useEffect(() => {
-    const newLocale = getNewLocale({
-      _locale,
-      locale,
-      locales,
-      defaultLocale,
-      localeCookieName,
-      customMapping,
-      enableI18n,
-    });
-    setLocaleWithoutSettingCookie(newLocale);
-  }, [_locale, locale, locales, defaultLocale, localeCookieName, enableI18n]);
-
-  return [locale, setLocale];
-}
-
-// ----- HELPER FUNCTIONS ---- //
-
-/**
- * Choose a locale to use
- * (1) use provided locale
- * (2) use cookie locale
- * (3) use preferred locale
- * (5) fallback to defaultLocale
- * Update the cookie locale to be correct
- */
-function getNewLocale({
-  _locale,
-  locale,
-  locales,
-  defaultLocale,
-  localeCookieName,
-  customMapping,
-  enableI18n,
-}: {
-  _locale: string;
-  locale: string;
-  locales: string[];
-  defaultLocale: string;
-  localeCookieName: string;
-  customMapping?: CustomMapping;
-  enableI18n: boolean;
-}): string {
-  if (!enableI18n) {
-    return defaultLocale;
-  }
-  // No change, return
-  if (
-    _locale &&
-    _locale === locale &&
-    determineLocale(_locale, locales, customMapping) === locale
-  ) {
-    return resolveAliasLocale(_locale, customMapping);
-  }
-
-  // Check for locale in cookie
-  let cookieLocale =
-    typeof document !== 'undefined'
-      ? document.cookie
-          .split('; ')
-          .find((row) => row.startsWith(`${localeCookieName}=`))
-          ?.split('=')[1]
-      : undefined;
-  if (cookieLocale) {
-    cookieLocale = resolveAliasLocale(cookieLocale, customMapping);
-  }
-
-  // check user's configured locales
-  let browserLocales = (() => {
-    if (typeof navigator === 'undefined') {
-      return [];
-    }
-    if (navigator?.languages) return navigator.languages;
-    if (navigator?.language) return [navigator.language];
-    const legacyNavigator = navigator as Navigator & {
-      userLanguage?: string;
-    };
-    if (legacyNavigator.userLanguage) return [legacyNavigator.userLanguage];
-    return [];
-  })() as string[];
-  browserLocales = browserLocales.map((locale) =>
-    resolveAliasLocale(locale, customMapping)
+      // validate locale
+      const validatedLocale = resolveAliasLocale(
+        determineLocale(newLocale, locales, customMapping) ||
+          currentLocale ||
+          defaultLocale,
+        customMapping
+      );
+      if (validatedLocale !== newLocale) {
+        console.warn(
+          createUnsupportedLocaleWarning(
+            validatedLocale,
+            newLocale,
+            PACKAGE_NAME
+          )
+        );
+      }
+      // persist locale
+      _setLocale(validatedLocale);
+      return validatedLocale;
+    },
+    [currentLocale, customMapping, defaultLocale, enableI18n, locales]
   );
 
-  // determine locale
-  let newLocale =
-    determineLocale(
-      [
-        ...(_locale ? [_locale] : []), // prefer user passed locale
-        ...(cookieLocale ? [cookieLocale] : []), // then prefer cookie locale
-        ...browserLocales, // then prefer browser locale
-      ],
-      locales,
-      customMapping
-    ) || defaultLocale;
-  if (newLocale) {
-    newLocale = resolveAliasLocale(newLocale, customMapping);
-  }
-
-  // if cookie not valid, change it back to whatever we use for fallback
-  if (
-    cookieLocale &&
-    cookieLocale !== newLocale &&
-    typeof document !== 'undefined'
-  ) {
-    document.cookie = `${localeCookieName}=${newLocale};path=/`;
-  }
-
-  // return new locale
-  return newLocale;
-}
-
-function createSetLocale({
-  locale,
-  locales,
-  defaultLocale,
-  localeCookieName,
-  _setLocale,
-  customMapping,
-  enableI18n,
-  reloadOnLocaleUpdate,
-}: {
-  locale: string;
-  locales: string[];
-  defaultLocale: string;
-  localeCookieName: string;
-  _setLocale: Dispatch<SetStateAction<string>>;
-  customMapping?: CustomMapping;
-  enableI18n?: boolean;
-  reloadOnLocaleUpdate?: boolean;
-}) {
-  locale = resolveAliasLocale(locale, customMapping);
-  const setLocaleWithoutSettingCookie = (newLocale: string): string => {
-    if (!enableI18n) {
-      return defaultLocale;
-    }
-    // avoid superfluous updates
-    if (newLocale === locale) {
-      return locale;
-    }
-    // validate locale
-    const validatedLocale = resolveAliasLocale(
-      determineLocale(newLocale, locales, customMapping) ||
-        locale ||
-        defaultLocale,
-      customMapping
-    );
-    if (validatedLocale !== newLocale) {
-      console.warn(
-        createUnsupportedLocaleWarning(validatedLocale, newLocale, PACKAGE_NAME)
-      );
-    }
-    // persist locale
-    _setLocale(validatedLocale);
-
-    return validatedLocale;
-  };
   // update locale and store it in cookie
   const setLocale = (newLocale: string): void => {
     if (!enableI18n) return;
     newLocale = resolveAliasLocale(newLocale);
     const validatedLocale = setLocaleWithoutSettingCookie(newLocale);
-    if (typeof document !== 'undefined') {
-      document.cookie = `${localeCookieName}=${validatedLocale};path=/`;
-    }
+    setCookieValue(localeCookieName, validatedLocale);
 
     if (
       typeof window !== 'undefined' &&
-      newLocale !== locale &&
+      newLocale !== currentLocale &&
       reloadOnLocaleUpdate
     ) {
       // Reload the page so server responses will be using the same locale as the client
@@ -250,5 +166,32 @@ function createSetLocale({
       window.location.reload();
     }
   };
-  return [setLocale, setLocaleWithoutSettingCookie];
+
+  // check browser for locales
+  useEffect(() => {
+    setLocaleWithoutSettingCookie(getNewLocale(locale));
+  }, [locale, setLocaleWithoutSettingCookie, getNewLocale]);
+
+  return [locale, setLocale];
+}
+
+// ----- HELPER FUNCTIONS ---- //
+
+function getBrowserLocales(customMapping?: CustomMapping) {
+  if (typeof navigator === 'undefined') {
+    return [];
+  }
+
+  const legacyNavigator = navigator as Navigator & {
+    userLanguage?: string;
+  };
+  const locales =
+    navigator.languages ||
+    (navigator.language
+      ? [navigator.language]
+      : legacyNavigator.userLanguage
+        ? [legacyNavigator.userLanguage]
+        : []);
+
+  return locales.map((locale) => resolveAliasLocale(locale, customMapping));
 }

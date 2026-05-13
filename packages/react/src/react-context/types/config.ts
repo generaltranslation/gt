@@ -1,6 +1,6 @@
 // Type definition for the params extracted from gt.config.json
 
-import {
+import type {
   RenderMethod,
   Dictionary,
   Translations,
@@ -10,9 +10,10 @@ import {
   UseDetermineLocaleReturn,
 } from '@generaltranslation/react-core/types';
 import type { CustomMapping } from '@generaltranslation/format/types';
+import type { ReactNode } from 'react';
 
 export type ClientProviderProps = {
-  children: React.ReactNode;
+  children: ReactNode;
   dictionary: Dictionary;
   dictionaryTranslations: Dictionary;
   translations: Translations;
@@ -42,7 +43,7 @@ export type ClientProviderProps = {
 };
 
 export type GTProviderProps = {
-  children?: React.ReactNode;
+  children?: ReactNode;
   projectId?: string;
   devApiKey?: string;
   dictionary?: Dictionary;
@@ -63,7 +64,7 @@ export type GTProviderProps = {
   loadDictionary?: CustomLoader;
   loadTranslations?: CustomLoader;
   config?: GTConfig;
-  fallback?: React.ReactNode;
+  fallback?: ReactNode;
   customMapping?: CustomMapping;
   modelProvider?: string;
   enableI18n?: boolean;

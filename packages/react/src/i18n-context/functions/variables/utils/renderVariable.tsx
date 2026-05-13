@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { GtInternalNum, Num as GtExternalNum } from '../GtInternalNum';
 import { Var as GtExternalVar } from '../GtInternalVar';
-import { computeVar } from './computeVar';
 import {
   GtInternalCurrency,
   Currency as GtExternalCurrency,
@@ -10,7 +9,12 @@ import {
   GtInternalDateTime,
   DateTime as GtExternalDateTime,
 } from '../GtInternalDateTime';
-import { RenderVariable } from '@generaltranslation/react-core/types';
+import type { RenderVariable } from '@generaltranslation/react-core/types';
+
+const getStringOrNumberValue = (value: unknown) =>
+  typeof value === 'string' || typeof value === 'number' || value == null
+    ? value
+    : undefined;
 
 /**
  * Custom override for the renderVariable function
@@ -33,15 +37,9 @@ export const renderVariable: RenderVariable = ({
   switch (variableType) {
     case 'n': {
       const Num = injectionType === 'automatic' ? GtExternalNum : GtInternalNum;
-      const numValue =
-        typeof variableValue === 'string' || typeof variableValue === 'number'
-          ? variableValue
-          : variableValue == null
-            ? variableValue
-            : undefined;
       return (
         <Num options={variableOptions as Intl.NumberFormatOptions | undefined}>
-          {numValue}
+          {getStringOrNumberValue(variableValue)}
         </Num>
       );
     }
@@ -61,17 +59,11 @@ export const renderVariable: RenderVariable = ({
     case 'c': {
       const Currency =
         injectionType === 'automatic' ? GtExternalCurrency : GtInternalCurrency;
-      const currencyValue =
-        typeof variableValue === 'string' || typeof variableValue === 'number'
-          ? variableValue
-          : variableValue == null
-            ? variableValue
-            : undefined;
       return (
         <Currency
           options={variableOptions as Intl.NumberFormatOptions | undefined}
         >
-          {currencyValue}
+          {getStringOrNumberValue(variableValue)}
         </Currency>
       );
     }
@@ -80,7 +72,7 @@ export const renderVariable: RenderVariable = ({
       const renderedValue = variableValue as ReactNode;
       // If we have auto injected a variable, then remove it at runtime
       return injectionType === 'automatic' ? (
-        computeVar({ children: renderedValue })
+        renderedValue
       ) : (
         <GtExternalVar>{renderedValue}</GtExternalVar>
       );

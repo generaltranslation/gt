@@ -1,6 +1,13 @@
 import { getI18nManager } from 'gt-i18n/internal';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 
+type NumProps = {
+  children: number | string | null | undefined;
+  options?: Intl.NumberFormatOptions;
+  locales?: string[];
+  name?: string;
+};
+
 /**
  * Equivalent to the `<Num>` component, but used for auto insertion
  */
@@ -8,12 +15,7 @@ function GtInternalNum({
   children,
   options = {},
   locales: localesProp = [],
-}: {
-  children: number | string | null | undefined;
-  options?: Intl.NumberFormatOptions;
-  locales?: string[];
-  name?: string;
-}): string | null {
+}: NumProps): string | null {
   // Parse input
   if (children == null) return null;
   const parsedNumber =
@@ -32,12 +34,7 @@ function GtInternalNum({
 /**
  * User facing component for the `<Num>` variable
  */
-function Num(props: {
-  children: number | string | null | undefined;
-  options?: Intl.NumberFormatOptions;
-  locales?: string[];
-  name?: string;
-}): string | null {
+function Num(props: NumProps): string | null {
   return GtInternalNum(props);
 }
 

@@ -1,6 +1,6 @@
-import React from 'react';
 import { useLocaleSelector } from '@generaltranslation/react-core';
 import type { CustomMapping } from '@generaltranslation/format/types';
+import type { JSX } from 'react';
 import { InternalLocaleSelector } from '../../shared/InternalLocaleSelector';
 
 /**
@@ -10,7 +10,7 @@ import { InternalLocaleSelector } from '../../shared/InternalLocaleSelector';
  * @param {CustomMapping} [customMapping] - An optional object to map locales to custom display names, emojis, or other properties.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
-export default function LocaleSelector({
+export function LocaleSelector({
   locales: _locales,
   ...props
 }: {
@@ -18,7 +18,7 @@ export default function LocaleSelector({
   customNames?: { [key: string]: string };
   customMapping?: CustomMapping;
   [key: string]: unknown;
-}): React.JSX.Element | null {
+}): JSX.Element | null {
   // Get locale selector properties
   const { locale, locales, setLocale, getLocaleProperties } =
     useLocaleSelector(_locales);
