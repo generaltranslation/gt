@@ -1,4 +1,6 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+
+type DeriveProps<T extends ReactNode> = { children: T };
 
 /**
  * Marks JSX children as derivable by the GT compiler and CLI.
@@ -13,19 +15,15 @@ import { ReactNode } from 'react';
  *
  * This is the i18n-context version and does not use React Context.
  */
-function Derive<T extends ReactNode>({ children }: { children: T }): T {
+function Derive<T extends ReactNode>({ children }: DeriveProps<T>): T {
   return children;
 }
 
 /**
  * Equivalent to the `<Derive>` component, but used for auto insertion.
  */
-function GtInternalDerive<T extends ReactNode>({
-  children,
-}: {
-  children: T;
-}): T {
-  return children;
+function GtInternalDerive<T extends ReactNode>(props: DeriveProps<T>): T {
+  return Derive(props);
 }
 
 /** @internal _gtt - The GT transformation and injection identifier for the component. */

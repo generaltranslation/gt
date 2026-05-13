@@ -1,7 +1,7 @@
 'use client';
 
-import * as React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import type { JSX } from 'react';
 import { determineLocale } from '@generaltranslation/format';
 import { GT } from 'generaltranslation';
 import {
@@ -15,11 +15,15 @@ import {
   useCreateInternalUseTranslationsFunction,
   useCreateInternalUseTranslationsObjFunction,
 } from '@generaltranslation/react-core';
-import { Dictionary, Translations } from '@generaltranslation/react-core/types';
-import { ClientProviderProps } from '../types/config';
+import type {
+  Dictionary,
+  Translations,
+} from '@generaltranslation/react-core/types';
+import type { ClientProviderProps } from '../types/config';
+import { getCookieValue, setCookieValue } from '../../shared/cookies';
 
 // meant to be used inside the server-side <GTProvider>
-export default function ClientProvider({
+export function ClientProvider({
   children,
   dictionary: _dictionary,
   dictionaryTranslations: _dictionaryTranslations,
@@ -42,12 +46,11 @@ export default function ClientProvider({
   customMapping,
   environment,
   reloadServer,
-}: ClientProviderProps): React.JSX.Element {
+}: ClientProviderProps): JSX.Element {
   const didMount = useRef(false);
   // ----- TRANSLATIONS STATE ----- //
 
   const [translations, setTranslations] = useState<Translations | null>(
-    // devApiKey ? null : _translations
     _translations // likely to induce hydration error
   );
 
@@ -69,15 +72,12 @@ export default function ClientProvider({
 
   // Check for an invalid cookie and update it
   useEffect(() => {
-    let cookieLocale = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith(`${localeCookieName}=`))
-      ?.split('=')[1];
+    let cookieLocale = getCookieValue(localeCookieName);
     if (cookieLocale) {
       cookieLocale = gt.resolveAliasLocale(cookieLocale);
     }
     if (locale && cookieLocale && cookieLocale !== locale) {
-      document.cookie = `${localeCookieName}=;path=/`;
+      setCookieValue(localeCookieName, '');
     }
   }, [locale, localeCookieName]);
 
@@ -87,16 +87,12 @@ export default function ClientProvider({
     useState<Dictionary>(_dictionaryTranslations || {});
   const [dictionary, setDictionary] = useState<Dictionary>(_dictionary || {});
 
-  // Update the dictionary translations when locale changes (see useEffect for _translations above)
+  // Update the dictionary translations when locale changes (see useEffect for translations above)
   useEffect(() => {
     if (!didMount.current) return;
     setDictionaryTranslations(_dictionaryTranslations);
-  }, [_dictionaryTranslations]);
-
-  useEffect(() => {
-    if (!didMount.current) return;
     setDictionary(_dictionary);
-  }, [_dictionary]);
+  }, [_dictionaryTranslations, _dictionary]);
 
   // ----- REGION STATE ----- //
 
@@ -104,21 +100,18 @@ export default function ClientProvider({
   const [region, _setRegion] = useState(_region);
 
   // Set the region via cookies. No page reload needed.
-  const setRegion = (newRegion: string | undefined): void => {
+  const setRegion = (newRegion: string | undefined) => {
     // persist region
-    document.cookie = `${regionCookieName}=${newRegion || ''};path=/`;
+    setCookieValue(regionCookieName, newRegion || '');
     // set region
     _setRegion(newRegion);
   };
 
   // Check for an invalid cookie and update it
   useEffect(() => {
-    const cookieRegion = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith(`${regionCookieName}=`))
-      ?.split('=')[1];
+    const cookieRegion = getCookieValue(regionCookieName);
     if (region && cookieRegion && cookieRegion !== region) {
-      document.cookie = `${regionCookieName}=;path=/`;
+      setCookieValue(regionCookieName, '');
     }
   }, [region, regionCookieName]);
 
@@ -140,7 +133,7 @@ export default function ClientProvider({
   );
 
   // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
-  const setLocale = (newLocale: string): void => {
+  const setLocale = (newLocale: string) => {
     // validate locale
     newLocale =
       determineLocale(newLocale, locales, customMapping) ||
@@ -148,8 +141,8 @@ export default function ClientProvider({
       defaultLocale;
     newLocale = gt.resolveAliasLocale(newLocale);
     // persist locale
-    document.cookie = `${localeCookieName}=${newLocale};path=/`;
-    document.cookie = `${resetLocaleCookieName}=true;path=/`;
+    setCookieValue(localeCookieName, newLocale);
+    setCookieValue(resetLocaleCookieName, 'true');
     // set locale
     _setLocale(newLocale);
     // re-render server components
@@ -256,9 +249,9 @@ export default function ClientProvider({
         _versionId,
       }}
     >
-      <React.Suspense fallback={display && children}>
+      <Suspense fallback={display && children}>
         {display && children}
-      </React.Suspense>
+      </Suspense>
     </GTContext.Provider>
   );
 }

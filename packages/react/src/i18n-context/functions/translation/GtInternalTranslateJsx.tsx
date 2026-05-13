@@ -1,15 +1,14 @@
-import { ReactNode, Suspense, use, useCallback, useMemo } from 'react';
+import { Suspense, use, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { resolveJsx, resolveJsxWithRuntimeFallback } from 'gt-i18n/internal';
 import {
   writeChildrenAsObjects,
   addGTIdentifier,
   removeInjectedT,
-} from '@generaltranslation/react-core/internal';
-import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
-import {
   renderDefaultChildren,
   renderTranslatedChildren,
 } from '@generaltranslation/react-core/internal';
+import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import { renderVariable } from '../variables/utils/renderVariable';
 import { requiresTranslation } from '@generaltranslation/format';
 import { getDefaultLocale, getLocale } from '../locale-operations';
@@ -17,25 +16,21 @@ import type { JsxChildren } from '@generaltranslation/format/types';
 import type { TaggedChildren } from '@generaltranslation/react-core/types';
 import { getBrowserI18nManager } from '../../browser-i18n-manager/singleton-operations';
 
+type TranslateJsxProps = {
+  children: ReactNode;
+} & JsxTranslationOptions;
+
 /**
  * Equivalent to the `<T>` component, but used for auto insertion
  */
-function GtInternalTranslateJsx(
-  props: {
-    children: ReactNode;
-  } & JsxTranslationOptions
-): ReactNode {
+function GtInternalTranslateJsx(props: TranslateJsxProps): ReactNode {
   return useComputeT(props);
 }
 
 /**
  * User facing component for translation.
  */
-function T(
-  props: {
-    children: ReactNode;
-  } & JsxTranslationOptions
-): ReactNode {
+function T(props: TranslateJsxProps): ReactNode {
   return useComputeT(props);
 }
 
@@ -53,19 +48,31 @@ export { GtInternalTranslateJsx, T };
 function useComputeT({
   children: sourceChildren,
   ...params
-}: {
-  children: ReactNode;
-} & JsxTranslationOptions): ReactNode {
+}: TranslateJsxProps): ReactNode {
   // --- (0) Prepare our source children for rendering --- //
-  const {
-    taggedSourceChildren,
-    sourceJsxChildren,
-    renderSourceChildren,
-    options,
-  } = usePrepSourceRender({
-    sourceChildren,
-    params,
-  });
+  // Remove any injected _T components after a derive invocation
+  // Add GT identifying tags for easy analysis
+  const taggedSourceChildren = useMemo(
+    () => addGTIdentifier(removeInjectedT(sourceChildren)),
+    [sourceChildren]
+  );
+  const sourceJsxChildren = useMemo(
+    () => writeChildrenAsObjects(taggedSourceChildren),
+    [taggedSourceChildren]
+  );
+  const renderSourceChildren = () =>
+    renderDefaultChildren({
+      children: taggedSourceChildren,
+      defaultLocale: getLocale(),
+      renderVariable,
+    });
+  const options = {
+    $format: 'JSX' as const,
+    $context: params.context,
+    $id: params.id,
+    $_hash: params._hash,
+    ...params,
+  };
 
   // --- (1) Check if translation is even required --- //
   const targetLocale = getLocale();
@@ -105,75 +112,6 @@ function useComputeT({
   }
 
   return renderSourceChildren();
-}
-
-/**
- * Returns the tagged source children and the default render function for the source children
- */
-function usePrepSourceRender({
-  sourceChildren,
-  params,
-}: {
-  sourceChildren: ReactNode;
-  params: JsxTranslationOptions;
-}): {
-  taggedSourceChildren: TaggedChildren;
-  sourceJsxChildren: JsxChildren;
-  renderSourceChildren: () => ReactNode;
-  options: JsxTranslationOptionsWithSugar;
-} {
-  // Remove any injected _T components after a derive invocation
-  // Add GT identifying tags for easy analysis
-  const taggedSourceChildren = useMemo(
-    () => addGTIdentifier(removeInjectedT(sourceChildren)),
-    [sourceChildren]
-  );
-  const sourceJsxChildren = useMemo(
-    () => writeChildrenAsObjects(taggedSourceChildren),
-    [taggedSourceChildren]
-  );
-  const renderSourceChildren = useCallback(() => {
-    return renderDefaultChildren({
-      children: taggedSourceChildren,
-      defaultLocale: getLocale(),
-      renderVariable,
-    });
-  }, [taggedSourceChildren]);
-  const options = useMemo(
-    () => normalizeParameters(params),
-    [
-      params.context,
-      params.id,
-      params._hash,
-      params.$format,
-      params.$context,
-      params.$id,
-      params.$_hash,
-    ]
-  );
-  return {
-    taggedSourceChildren,
-    sourceJsxChildren,
-    renderSourceChildren,
-    options,
-  };
-}
-
-/**
- * Normalizes the parameters into a lookup options object.
- */
-function normalizeParameters(parameters: {
-  context?: string;
-  id?: string;
-  _hash?: string;
-}): JsxTranslationOptionsWithSugar {
-  return {
-    $format: 'JSX',
-    $context: parameters.context,
-    $id: parameters.id,
-    $_hash: parameters._hash,
-    ...parameters,
-  };
 }
 
 // ----- Dev Hot Reload ----- //

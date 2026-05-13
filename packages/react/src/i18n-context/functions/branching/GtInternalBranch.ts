@@ -1,4 +1,10 @@
-import React from 'react';
+import type { ReactNode } from 'react';
+
+type BranchProps = {
+  children?: ReactNode;
+  branch: string | number | boolean | undefined;
+  [key: string]: ReactNode;
+};
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content
@@ -11,31 +17,18 @@ function Branch({
   children,
   branch,
   ...branches
-}: {
-  children?: React.ReactNode;
-  branch: string | number | boolean | undefined;
-  [key: string]: React.ReactNode;
-}): React.ReactNode {
+}: BranchProps): ReactNode {
   const branchKey = branch?.toString();
-  // ignore data-* attributes
-  if (typeof branch === 'string' && branch.startsWith('data-')) {
-    branch = undefined;
-  }
-  const renderedBranch =
-    branchKey && typeof branches[branchKey] !== 'undefined'
-      ? branches[branchKey]
-      : children;
-  return renderedBranch;
+  if (branchKey?.startsWith('data-')) return children;
+  return branchKey && typeof branches[branchKey] !== 'undefined'
+    ? branches[branchKey]
+    : children;
 }
 
 /**
  * Equivalent to the `<Branch>` component, but used for auto insertion.
  */
-function GtInternalBranch(props: {
-  children?: React.ReactNode;
-  branch: string | number | boolean | undefined;
-  [key: string]: React.ReactNode;
-}): React.ReactNode {
+function GtInternalBranch(props: BranchProps): ReactNode {
   return Branch(props);
 }
 

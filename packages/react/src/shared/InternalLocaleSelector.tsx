@@ -1,8 +1,8 @@
-import React from 'react';
 import type {
   CustomMapping,
   LocaleProperties,
 } from '@generaltranslation/format/types';
+import type { JSX } from 'react';
 
 /**
  * Capitalizes the first letter of a string if applicable.
@@ -61,19 +61,17 @@ export function InternalLocaleSelector({
   setLocale: (locale: string) => void;
   getLocaleProperties: (locale: string) => LocaleProperties;
   [key: string]: unknown;
-}): React.JSX.Element | null {
+}): JSX.Element | null {
   // Get display name
   const getDisplayName = (locale: string) => {
-    if (customMapping && customMapping[locale]) {
-      if (typeof customMapping[locale] === 'string')
-        return customMapping[locale];
-      if (customMapping[locale].name) return customMapping[locale].name;
-    }
+    const customLocale = customMapping?.[locale];
+    if (typeof customLocale === 'string') return customLocale;
+    if (customLocale?.name) return customLocale.name;
     return capitalizeName(getLocaleProperties(locale).nativeNameWithRegionCode);
   };
 
   // If no locales are returned, just render nothing or handle gracefully
-  if (!locales || locales.length === 0 || !setLocale) {
+  if (!locales?.length || !setLocale) {
     return null;
   }
 

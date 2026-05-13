@@ -5,7 +5,7 @@ import {
 } from 'gt-i18n/internal';
 import type { InlineTranslationOptions } from 'gt-i18n/types';
 import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../shared/messages';
-import { StringOrTemplateSyncResolutionFunction } from './types';
+import type { StringOrTemplateSyncResolutionFunction } from './types';
 
 /**
  * NOTE: t() is the only function exported from the 'gt-react' entry point.
@@ -76,10 +76,9 @@ function handleTaggedTemplateLiteralTranslation(
   const locale = getLocale();
   // for tagged template literals, there has been no compiler transformation
   // (1) lookup interpolated template (aka derived message)
-  const interpolatedTemplate = interpolateTemplateLiteral(
-    messageOrStrings,
-    values
-  );
+  const interpolatedTemplate = messageOrStrings
+    .map((string, index) => string + (values[index] ?? ''))
+    .join('');
   const translatedInterpolatedTemplate = resolveTranslationSync(
     locale,
     interpolatedTemplate
@@ -130,21 +129,4 @@ function extractInterpolatableValues(
     message: parts.join(''),
     variables,
   };
-}
-
-/**
- * Interpolate a template literal
- * @param message - The message to interpolate.
- * @param variables - The variables to interpolate.
- * @returns The interpolated message.
- */
-function interpolateTemplateLiteral(
-  strings: TemplateStringsArray,
-  values: unknown[]
-): string {
-  return strings
-    .map((string, index) => {
-      return string + (values[index] ?? '');
-    })
-    .join('');
 }
