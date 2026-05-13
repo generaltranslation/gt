@@ -1,4 +1,3 @@
-import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
 import { SupportedLibraries } from '../../types/index.js';
@@ -53,12 +52,6 @@ export function determineLibrary(): {
       const pythonLibrary = detectPythonLibrary(cwd);
       if (pythonLibrary) {
         library = pythonLibrary;
-      } else if (!fs.existsSync(path.join(cwd, 'package.json'))) {
-        logger.warn(
-          chalk.yellow(
-            'No package.json or Python project file found in the current directory. Run this command from the root of your project.'
-          )
-        );
       }
     }
 
