@@ -55,6 +55,10 @@ export class DictionaryCache {
     DictionaryKey,
     Promise<DictionaryEntry>
   >();
+  private pendingMaterializations = new Map<
+    DictionaryKey,
+    Promise<DictionaryValue>
+  >();
   private runtimeTranslate: DictionaryRuntimeTranslate;
   private lifecycle: DictionaryCacheLifecycle;
 
@@ -121,15 +125,28 @@ export class DictionaryCache {
     sourceValue: DictionaryValue,
     targetValue = getDictionaryValueAtPath(this.cache, key)
   ): Promise<DictionaryValue> {
-    const value = await materializeDictionaryValue({
-      key,
-      sourceValue,
-      targetValue,
-      translateEntry: async (entryKey, sourceEntry) =>
-        getDictionaryValue(await this.materializeEntry(entryKey, sourceEntry)),
-    });
-    this.setValue(key, value);
-    return value;
+    let materializationPromise = this.pendingMaterializations.get(key);
+    if (!materializationPromise) {
+      materializationPromise = materializeDictionaryValue({
+        key,
+        sourceValue,
+        targetValue,
+        translateEntry: async (entryKey, sourceEntry) =>
+          getDictionaryValue(
+            await this.materializeEntry(entryKey, sourceEntry)
+          ),
+      }).then((value) => {
+        this.setValue(key, value);
+        return value;
+      });
+      this.pendingMaterializations.set(key, materializationPromise);
+    }
+
+    try {
+      return await materializationPromise;
+    } finally {
+      this.pendingMaterializations.delete(key);
+    }
   }
 
   public async materializeEntry(

@@ -557,4 +557,50 @@ describe('DictionaryCache', () => {
       },
     });
   });
+
+  it('materializeValue() deduplicates concurrent subtree materializations', async () => {
+    runtimeTranslate.mockClear();
+    runtimeTranslate.mockImplementation(async (key) => {
+      if (key === 'user.profile.name') {
+        return 'Nom';
+      }
+      if (key === 'user.profile.title') {
+        return 'Titre';
+      }
+      throw new Error(`Unexpected key: ${key}`);
+    });
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+    const setValueSpy = vi.spyOn(cache, 'setValue');
+    const sourceObject = {
+      name: 'Name',
+      title: 'Title',
+    };
+    const expectedValue = {
+      name: 'Nom',
+      title: 'Titre',
+    };
+
+    await expect(
+      Promise.all([
+        cache.materializeValue('user.profile', sourceObject),
+        cache.materializeValue('user.profile', sourceObject),
+        cache.materializeValue('user.profile', sourceObject),
+      ])
+    ).resolves.toEqual([expectedValue, expectedValue, expectedValue]);
+
+    expect(runtimeTranslate).toHaveBeenCalledTimes(2);
+    expect(setValueSpy).toHaveBeenCalledTimes(1);
+    expect(setValueSpy).toHaveBeenCalledWith('user.profile', expectedValue);
+    expect(cache.getInternalCache()).toEqual({
+      user: {
+        profile: {
+          name: 'Nom',
+          title: 'Titre',
+        },
+      },
+    });
+  });
 });
