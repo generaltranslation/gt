@@ -10,15 +10,10 @@ import type {
 } from './translations-manager/DictionaryCache';
 import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
 
-export type DictionaryConfig =
-  | {
-      dictionary: Dictionary;
-      loadDictionary?: DictionaryLoader;
-    }
-  | {
-      dictionary?: Dictionary;
-      loadDictionary?: undefined;
-    };
+export type DictionaryConfig = {
+  dictionary?: Dictionary;
+  loadDictionary?: DictionaryLoader;
+};
 
 type RuntimeTranslationConfig = {
   timeout?: number;

@@ -261,12 +261,6 @@ export const createUnsupportedLocaleWarning = (
   );
 };
 
-export const dictionaryMissingWarning = createReactCoreDiagnostic({
-  severity: 'Warning',
-  whatHappened: 'No dictionary was found',
-  fix: 'Pass a dictionary to <GTProvider> or configure a dictionary loader before rendering translations',
-});
-
 export const createStringRenderWarning = (
   message: string,
   id: string | undefined,

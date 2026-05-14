@@ -1,4 +1,4 @@
-import type { GTConfig, TranslationsLoader } from 'gt-i18n/internal/types';
+import type { I18nManagerConstructorParams } from 'gt-i18n/internal/types';
 
 /**
  * Parameters for the initializing GT
@@ -6,9 +6,12 @@ import type { GTConfig, TranslationsLoader } from 'gt-i18n/internal/types';
  * @param {string[]} params.locales - The locales to support
  * @param {object} params.loadTranslations - The custom translation loader to use
  */
-export type InitializeGTParams = GTConfig & {
-  loadTranslations?: TranslationsLoader;
-};
+export type InitializeGTParams = I18nManagerConstructorParams;
 
 // Other Reexports
-export type { GTConfig, TranslationsLoader } from 'gt-i18n/internal/types';
+export type {
+  DictionaryConfig,
+  GTConfig,
+  I18nManagerConstructorParams,
+  TranslationsLoader,
+} from 'gt-i18n/internal/types';

@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Dictionary } from 'gt-react/internal';
 import { I18NConfiguration } from '../I18NConfiguration';
 
 const mockI18nManagerParams = vi.hoisted(() => vi.fn());
 const mockLookupTranslationWithFallback = vi.hoisted(() => vi.fn());
+const mockResolveDictionaryLoader = vi.hoisted(() => vi.fn());
+const mockSetDictionary = vi.hoisted(() => vi.fn());
 
 vi.mock('gt-i18n/internal', () => ({
   I18nManager: class {
@@ -14,6 +17,10 @@ vi.mock('gt-i18n/internal', () => ({
       return {
         translateMany: async () => ({}),
       };
+    }
+
+    getDefaultLocale() {
+      return 'en';
     }
 
     requiresTranslation() {
@@ -28,6 +35,14 @@ vi.mock('gt-i18n/internal', () => ({
       return {};
     }
 
+    async loadDictionary() {
+      return {};
+    }
+
+    setDictionary(...args: unknown[]) {
+      mockSetDictionary(...args);
+    }
+
     lookupTranslation() {
       return undefined;
     }
@@ -36,6 +51,10 @@ vi.mock('gt-i18n/internal', () => ({
       return mockLookupTranslationWithFallback(...args);
     }
   },
+}));
+
+vi.mock('../../resolvers/resolveDictionaryLoader', () => ({
+  resolveDictionaryLoader: mockResolveDictionaryLoader,
 }));
 
 type ConfigParams = ConstructorParameters<typeof I18NConfiguration>[0];
@@ -71,6 +90,8 @@ describe('I18NConfiguration', () => {
     mockI18nManagerParams.mockReset();
     mockLookupTranslationWithFallback.mockReset();
     mockLookupTranslationWithFallback.mockResolvedValue('translated');
+    mockResolveDictionaryLoader.mockReset();
+    mockSetDictionary.mockReset();
   });
 
   it.each<[string, Partial<ConfigParams>, number | null]>([
@@ -122,6 +143,61 @@ describe('I18NConfiguration', () => {
           modelProvider: 'openai',
         },
       },
+    });
+  });
+
+  it('passes custom dictionary loading to I18nManager when enabled', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Bonjour',
+    });
+    mockResolveDictionaryLoader.mockReturnValue(loadDictionary);
+
+    createConfig({
+      loadDictionaryEnabled: true,
+    });
+
+    const managerParams = mockI18nManagerParams.mock.calls.at(-1)?.[0] as {
+      dictionary?: unknown;
+      loadDictionary?: (locale: string) => Promise<unknown>;
+    };
+
+    expect(mockResolveDictionaryLoader).toHaveBeenCalledOnce();
+    expect(managerParams.dictionary).toEqual({});
+    await expect(managerParams.loadDictionary?.('fr')).resolves.toEqual({
+      greeting: 'Bonjour',
+    });
+    expect(loadDictionary).toHaveBeenCalledWith('fr');
+  });
+
+  it.each([
+    ['same reference', (dictionary: Dictionary) => dictionary],
+    ['same content', () => ({ greeting: 'Hello' })],
+  ])('skips resetting the source dictionary for %s', (_name, getNext) => {
+    const config = createConfig();
+    const dictionary = {
+      greeting: 'Hello',
+    };
+
+    config.setSourceDictionary(dictionary);
+    config.setSourceDictionary(getNext(dictionary));
+
+    expect(mockSetDictionary).toHaveBeenCalledOnce();
+    expect(mockSetDictionary).toHaveBeenCalledWith('en', dictionary);
+  });
+
+  it('resets the source dictionary when the content changes', () => {
+    const config = createConfig();
+
+    config.setSourceDictionary({
+      greeting: 'Hello',
+    });
+    config.setSourceDictionary({
+      greeting: 'Hi',
+    });
+
+    expect(mockSetDictionary).toHaveBeenCalledTimes(2);
+    expect(mockSetDictionary).toHaveBeenLastCalledWith('en', {
+      greeting: 'Hi',
     });
   });
 

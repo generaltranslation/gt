@@ -31,11 +31,12 @@ import type { DictionaryObjectTranslation } from '../types/functions';
 export async function getTranslations(): Promise<TFunctionType> {
   const i18nManager = getI18nManager();
   const locale = getCurrentLocale();
+  const sourceLocale = i18nManager.getDefaultLocale();
   await Promise.all([
+    i18nManager.loadDictionary(sourceLocale),
     i18nManager.loadDictionary(locale),
     i18nManager.loadTranslations(locale),
   ]);
-  const sourceLocale = i18nManager.getDefaultLocale();
 
   /**
    * Dictionary resolution

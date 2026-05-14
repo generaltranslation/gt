@@ -39,6 +39,7 @@ export function GTProvider(props: GTProviderProps): React.ReactNode {
       loadTranslations={(locale: string) =>
         i18nManager.loadTranslations(locale)
       }
+      loadDictionary={(locale: string) => i18nManager.loadDictionary(locale)}
       _versionId={i18nManager.getVersionId()}
       {...props}
       reloadOnLocaleUpdate={true}

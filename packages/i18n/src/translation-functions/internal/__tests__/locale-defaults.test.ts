@@ -78,6 +78,31 @@ describe('translation function locale defaults', () => {
     expect(t('greeting', { name: 'Alice' })).toBe('Bonjour Alice !');
   });
 
+  it('getTranslations loads the source dictionary when it was not provided eagerly', async () => {
+    const loadDictionary = vi.fn(async (locale: string) =>
+      locale === 'en'
+        ? {
+            greeting: 'Hello {name}!',
+          }
+        : {
+            greeting: 'Bonjour {name} !',
+          }
+    );
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      loadDictionary,
+    });
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+
+    const t = await getTranslations();
+
+    expect(t('greeting', { name: 'Alice' })).toBe('Bonjour Alice !');
+    expect(loadDictionary).toHaveBeenCalledWith('en');
+    expect(loadDictionary).toHaveBeenCalledWith('fr');
+  });
+
   it('getTranslations returns source dictionary entries when no target translation exists', async () => {
     const manager = new I18nManager({
       defaultLocale: 'en',

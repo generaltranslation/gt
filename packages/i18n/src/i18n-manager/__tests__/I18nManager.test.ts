@@ -148,6 +148,55 @@ describe('I18nManager', () => {
     });
   });
 
+  it('loadDictionary() loads the default locale when no source dictionary is provided', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Hello',
+    });
+    const manager = createManager({
+      loadDictionary,
+    });
+
+    const dictionary = await manager.loadDictionary('en');
+    const cachedDictionary = await manager.loadDictionary('en');
+
+    expect(loadDictionary).toHaveBeenCalledTimes(1);
+    expect(loadDictionary).toHaveBeenCalledWith('en');
+    expect(dictionary).toEqual({
+      greeting: 'Hello',
+    });
+    expect(cachedDictionary).toEqual(dictionary);
+    expect(cachedDictionary).not.toBe(dictionary);
+  });
+
+  it('loadDictionary() falls back to the language code when locale dictionary is missing', async () => {
+    const loadDictionary = vi.fn(async (locale: string) => {
+      if (locale === 'en-US') return undefined;
+      if (locale === 'en') {
+        return {
+          greeting: 'Hello',
+        };
+      }
+      return {};
+    });
+    const manager = createManager({
+      defaultLocale: 'fr',
+      locales: ['fr', 'en-US', 'en'],
+      dictionary: {
+        greeting: 'Bonjour',
+      },
+      loadDictionary,
+    });
+
+    const dictionary = await manager.loadDictionary('en-US');
+
+    expect(loadDictionary).toHaveBeenCalledTimes(2);
+    expect(loadDictionary).toHaveBeenNthCalledWith(1, 'en-US');
+    expect(loadDictionary).toHaveBeenNthCalledWith(2, 'en');
+    expect(dictionary).toEqual({
+      greeting: 'Hello',
+    });
+  });
+
   it('loadDictionary() returns deep copies of cached dictionaries', async () => {
     const manager = createManager({
       dictionary: {
@@ -182,6 +231,38 @@ describe('I18nManager', () => {
         },
       },
     });
+  });
+
+  it('setDictionary() replaces source and target dictionary caches', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Bonjour',
+    });
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+    });
+
+    manager.setDictionary('en', {
+      greeting: 'Hi',
+    });
+    manager.setDictionary('fr', {
+      greeting: 'Salut',
+    });
+
+    expect(manager.lookupDictionary('en', 'greeting')).toEqual({
+      entry: 'Hi',
+      options: {},
+    });
+    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+      entry: 'Salut',
+      options: {},
+    });
+    await expect(manager.loadDictionary('fr')).resolves.toEqual({
+      greeting: 'Salut',
+    });
+    expect(loadDictionary).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -529,6 +610,24 @@ describe('I18nManager', () => {
     expect(loadDictionary).not.toHaveBeenCalled();
   });
 
+  it('lookupDictionaryWithFallback() loads the source dictionary when it was not provided eagerly', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Hello',
+    });
+    const manager = createManager({
+      loadDictionary,
+    });
+
+    await expect(
+      manager.lookupDictionaryWithFallback('en', 'greeting')
+    ).resolves.toEqual({
+      entry: 'Hello',
+      options: {},
+    });
+    expect(loadDictionary).toHaveBeenCalledOnce();
+    expect(loadDictionary).toHaveBeenCalledWith('en');
+  });
+
   it('lookupDictionaryWithFallback() throws when source entry is missing and translation is not required', async () => {
     const manager = createManager({
       dictionary: {
@@ -585,6 +684,30 @@ describe('I18nManager', () => {
       options: {},
     });
     expect(loadDictionary).toHaveBeenCalledTimes(1);
+    expect(loadDictionary).toHaveBeenCalledWith('fr');
+  });
+
+  it('lookupDictionaryWithFallback() does not load the source dictionary when the target entry exists', async () => {
+    const loadDictionary = vi.fn(async (locale: string) =>
+      locale === 'fr'
+        ? {
+            greeting: 'Bonjour',
+          }
+        : {
+            greeting: 'Hello',
+          }
+    );
+    const manager = createManager({
+      loadDictionary,
+    });
+
+    await expect(
+      manager.lookupDictionaryWithFallback('fr', 'greeting')
+    ).resolves.toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
+    expect(loadDictionary).toHaveBeenCalledOnce();
     expect(loadDictionary).toHaveBeenCalledWith('fr');
   });
 
@@ -663,6 +786,42 @@ describe('I18nManager', () => {
       entry: 'Bonjour',
       options: {},
     });
+    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
+  });
+
+  it('lookupDictionaryWithFallback() materializes target entries from a loaded source dictionary', async () => {
+    const source = 'Hello';
+    const sourceHash = hashMessage(source, { $format: 'ICU' });
+    const loadDictionary = vi.fn(async (locale: string) =>
+      locale === 'en'
+        ? {
+            greeting: source,
+          }
+        : {}
+    );
+    const manager = createManager({
+      loadDictionary,
+      runtimeTranslation: {},
+    });
+
+    mockTranslateMany.mockResolvedValue({
+      [sourceHash]: {
+        success: true,
+        translation: 'Bonjour',
+      },
+    });
+
+    await expect(
+      manager.lookupDictionaryWithFallback('fr', 'greeting')
+    ).resolves.toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
+    expect(loadDictionary).toHaveBeenCalledWith('en');
+    expect(loadDictionary).toHaveBeenCalledWith('fr');
     expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
       entry: 'Bonjour',
       options: {},

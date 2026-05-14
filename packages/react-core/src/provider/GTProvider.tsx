@@ -37,7 +37,7 @@ export default function GTProvider({
   projectId: _projectId = config?.projectId || '',
   devApiKey: _devApiKey = config?.devApiKey || '',
   _versionId = config?._versionId,
-  dictionary: _dictionary = {},
+  dictionary: _dictionary,
   locales = config?.locales || [],
   defaultLocale = config?.defaultLocale || libraryDefaultLocale,
   cacheUrl = config?.cacheUrl || defaultCacheUrl,

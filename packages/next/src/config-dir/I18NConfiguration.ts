@@ -10,7 +10,6 @@ import type {
   Translations,
 } from 'gt-react/internal';
 import { defaultWithGTConfigProps } from './props/defaultWithGTConfigProps';
-import { dictionaryManager, DictionaryManager } from './DictionaryManager';
 import type { HeadersAndCookies } from './props/withGTConfigProps';
 import {
   defaultLocaleRoutingEnabledCookieName,
@@ -20,8 +19,12 @@ import {
 import { defaultLocaleHeaderName } from '../utils/headers';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { I18nManager } from 'gt-i18n/internal';
-import type { LookupOptions } from 'gt-i18n/internal/types';
+import type {
+  Dictionary as I18nDictionary,
+  LookupOptions,
+} from 'gt-i18n/internal/types';
 import { loadTranslations } from './loadTranslation';
+import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
 
 type I18NConfigurationParams = {
   apiKey?: string;
@@ -71,7 +74,8 @@ export class I18NConfiguration {
   };
   // Dictionaries
   private _i18nManager: I18nManager<TranslatedChildren>;
-  private _dictionaryManager: DictionaryManager | undefined;
+  private sourceDictionary: Dictionary | undefined;
+  private sourceDictionaryContent: string | undefined;
   // Headers and cookies
   private localeHeaderName: string;
   private localeCookieName: string;
@@ -95,8 +99,8 @@ export class I18NConfiguration {
     // Render method
     renderSettings,
     // Dictionaries
-    // Dictionary files are resolved by dictionaryManager; do not forward the
-    // public dictionary prop as runtime translation metadata.
+    // Dictionary files are resolved separately; do not forward the public
+    // dictionary prop as runtime translation metadata.
     dictionary: _dictionary,
     // Batching config
     maxConcurrentRequests,
@@ -159,6 +163,9 @@ export class I18NConfiguration {
     };
     // Translation and dictionary managers
     const shouldLoadTranslations = loadTranslationsType !== 'disabled';
+    const loadDictionary = loadDictionaryEnabled
+      ? resolveDictionaryLoader()
+      : undefined;
     const runtimeTranslationTimeout = this.renderSettings.timeout;
     this._i18nManager = new I18nManager<TranslatedChildren>({
       apiKey,
@@ -198,7 +205,9 @@ export class I18NConfiguration {
         loadTranslationsType === 'remote' ? (cacheExpiryTime ?? null) : null,
       _versionId,
       environment:
-        process.env.NODE_ENV === 'development' ? 'development' : 'production',
+        process.env.NODE_ENV === 'development'
+          ? ('development' as const)
+          : ('production' as const),
       ...(shouldLoadTranslations && {
         loadTranslations: async (locale: string) =>
           (await loadTranslations({
@@ -208,8 +217,12 @@ export class I18NConfiguration {
             ...(_versionId && { _versionId }),
           })) || {},
       }),
+      dictionary: {} as I18nDictionary,
+      ...(loadDictionary && {
+        loadDictionary: async (locale: string) =>
+          (await loadDictionary(locale)) as I18nDictionary | undefined,
+      }),
     });
-    this._dictionaryManager = dictionaryManager;
     // Headers and cookies
     this.localeHeaderName =
       headersAndCookies?.localeHeaderName || defaultLocaleHeaderName;
@@ -375,7 +388,7 @@ export class I18NConfiguration {
   async getDictionaryTranslations(
     locale: string
   ): Promise<Dictionary | undefined> {
-    return await this._dictionaryManager?.getDictionary(locale);
+    return (await this._i18nManager.loadDictionary(locale)) as Dictionary;
   }
 
   /**
@@ -384,7 +397,26 @@ export class I18NConfiguration {
    * @param {Dictionary} dictionary - The dictionary data.
    */
   setDictionaryTranslations(locale: string, dictionary: Dictionary) {
-    this._dictionaryManager?.setDictionary(locale, dictionary);
+    this._i18nManager.setDictionary(locale, dictionary as I18nDictionary);
+  }
+
+  /**
+   * Set the source dictionary after gt-next resolves it from user config.
+   */
+  setSourceDictionary(dictionary: Dictionary) {
+    if (this.sourceDictionary === dictionary) {
+      return;
+    }
+
+    const sourceDictionaryContent = JSON.stringify(dictionary);
+    if (this.sourceDictionaryContent === sourceDictionaryContent) {
+      this.sourceDictionary = dictionary;
+      return;
+    }
+
+    this.sourceDictionary = dictionary;
+    this.sourceDictionaryContent = sourceDictionaryContent;
+    this.setDictionaryTranslations(this.getDefaultLocale(), dictionary);
   }
 
   // ----- CACHED TRANSLATIONS ----- //

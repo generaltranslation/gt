@@ -30,7 +30,9 @@ export async function GTProvider({
   const [translationRequired, dialectTranslationRequired] =
     I18NConfig.requiresTranslation(locale);
 
-  // load dictionary
+  // Register source dictionary before loading target dictionaries.
+  const sourceDictionary = (await getDictionary()) || {};
+  I18NConfig.setSourceDictionary(sourceDictionary);
   const dictionaryTranslations =
     (await I18NConfig.getDictionaryTranslations(locale)) || {};
 
@@ -45,7 +47,7 @@ export async function GTProvider({
 
   // Get dictionary subset
   let dictionary: Dictionary | DictionaryEntry =
-    (prefixId ? getDictionaryEntry(prefixId) : await getDictionary()) || {};
+    (prefixId ? getDictionaryEntry(prefixId) : sourceDictionary) || {};
 
   // Check provisional dictionary
   if (

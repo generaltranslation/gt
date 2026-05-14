@@ -5,7 +5,11 @@ import { validateConfig } from './validation/validateConfig';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT } from 'generaltranslation';
-import { LocaleConfig, standardizeLocale } from '@generaltranslation/format';
+import {
+  getLocaleProperties,
+  LocaleConfig,
+  standardizeLocale,
+} from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { LookupOptions } from '../translation-functions/types/options';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
@@ -22,6 +26,7 @@ import type { Hash } from './translations-manager/TranslationsCache';
 import type {
   Dictionary,
   DictionaryEntry,
+  DictionaryLoader,
   DictionaryObject,
 } from './translations-manager/DictionaryCache';
 import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
@@ -114,7 +119,9 @@ class I18nManager<
         customMapping: params.customMapping,
       },
     }) as SafeTranslationsLoader<TranslationValue>;
-    const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
+    const loadDictionary = createDictionaryLoader(
+      params.loadDictionary ?? (() => Promise.resolve({}))
+    );
     const runtimeTranslationTimeout =
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT;
     const runtimeTranslationMetadata =
@@ -271,18 +278,32 @@ class I18nManager<
   async loadDictionary(locale: string): Promise<Dictionary> {
     try {
       // Validate
-      const dictionaryLocale = this.resolveCacheLocale(locale);
-      if (!dictionaryLocale) {
-        return this.getDefaultDictionaryCache()?.getInternalCache() ?? {};
-      }
-
+      const dictionaryLocale = this.resolveDictionaryCacheLocale(locale);
       const dictionaryCache =
         await this.localesCache.getOrLoadDictionary(dictionaryLocale);
-
       return dictionaryCache.getInternalCache();
     } catch (error) {
       this.handleError(error);
       return {};
+    }
+  }
+
+  /**
+   * Replace the cached dictionary for a locale.
+   *
+   * Edge case usage: frameworks that resolve dictionaries asynchronously before
+   * handing lookup work to the manager.
+   */
+  setDictionary(locale: string, dictionary: Dictionary): void {
+    try {
+      const dictionaryLocale = this.resolveDictionaryCacheLocale(locale);
+      this.localesCache.setDictionary(
+        dictionaryLocale,
+        dictionary,
+        dictionaryLocale === this.config.defaultLocale ? -1 : undefined
+      );
+    } catch (error) {
+      this.handleError(error);
     }
   }
 
@@ -330,20 +351,21 @@ class I18nManager<
     try {
       const dictionaryLocale = this.resolveCacheLocale(locale);
       if (!dictionaryLocale) {
-        return this.getSourceDictionaryEntry(id);
+        return await this.getSourceDictionaryEntry(id);
       }
 
       const dictionaryCache =
         await this.localesCache.getOrLoadDictionary(dictionaryLocale);
 
-      let dictionaryEntry = dictionaryCache.getEntry(id);
-      if (dictionaryEntry === undefined) {
-        dictionaryEntry = await dictionaryCache.materializeEntry(
-          id,
-          this.getSourceDictionaryEntry(id)
-        );
+      const dictionaryEntry = dictionaryCache.getEntry(id);
+      if (dictionaryEntry !== undefined) {
+        return dictionaryEntry;
       }
-      return dictionaryEntry;
+
+      return await dictionaryCache.materializeEntry(
+        id,
+        await this.getSourceDictionaryEntry(id)
+      );
     } catch (error) {
       this.handleError(error);
       return undefined;
@@ -362,13 +384,13 @@ class I18nManager<
       const dictionaryLocale = this.resolveCacheLocale(locale);
 
       if (!dictionaryLocale) {
-        return this.getSourceDictionaryObject(id);
+        return await this.getSourceDictionaryObject(id);
       }
 
       const dictionaryCache =
         await this.localesCache.getOrLoadDictionary(dictionaryLocale);
       const targetObject = dictionaryCache.getValue(id);
-      const sourceObject = this.getSourceDictionaryObject(id, {
+      const sourceObject = await this.getSourceDictionaryObject(id, {
         throwOnMissing: false,
       });
       if (sourceObject === undefined) {
@@ -407,27 +429,34 @@ class I18nManager<
     return translation;
   }
 
-  private getSourceDictionaryEntry(id: string): DictionaryEntry {
-    const sourceEntry = this.getDefaultDictionaryCache()?.getEntry(id);
+  private async getSourceDictionaryEntry(id: string): Promise<DictionaryEntry> {
+    const sourceEntry = (
+      await this.getOrLoadDefaultDictionaryCache()
+    )?.getEntry(id);
     if (sourceEntry === undefined) {
       throw new DictionarySourceNotFoundError(id);
     }
     return sourceEntry;
   }
 
-  private getSourceDictionaryObject(
+  private async getSourceDictionaryObject(
     id: string,
     { throwOnMissing = true }: { throwOnMissing?: boolean } = {}
-  ): DictionaryObject | undefined {
-    const sourceObject = this.getDefaultDictionaryCache()?.getValue(id);
+  ): Promise<DictionaryObject | undefined> {
+    const sourceObject = (
+      await this.getOrLoadDefaultDictionaryCache()
+    )?.getValue(id);
     if (sourceObject === undefined && throwOnMissing) {
       throw new DictionarySourceNotFoundError(id);
     }
     return sourceObject;
   }
 
-  private getDefaultDictionaryCache() {
-    return this.localesCache.getDictionary(this.config.defaultLocale);
+  private getOrLoadDefaultDictionaryCache() {
+    return (
+      this.localesCache.getDictionary(this.config.defaultLocale) ??
+      this.localesCache.getOrLoadDictionary(this.config.defaultLocale)
+    );
   }
 
   private resolveDictionaryCacheLocale(locale: string): Locale {
@@ -754,6 +783,33 @@ class I18nManager<
 export { I18nManager };
 
 // ===== Helper Functions ===== //
+
+function createDictionaryLoader(
+  loadDictionary: DictionaryLoader
+): DictionaryLoader {
+  return async (locale: string) => {
+    for (const currentLocale of getDictionaryLoaderLocales(locale)) {
+      try {
+        const dictionary = await loadDictionary(currentLocale);
+        if (dictionary) {
+          return dictionary;
+        }
+      } catch {
+        // Try the next locale candidate.
+      }
+    }
+    return {};
+  };
+}
+
+function getDictionaryLoaderLocales(locale: string): string[] {
+  try {
+    const { languageCode } = getLocaleProperties(locale);
+    return languageCode === locale ? [locale] : [locale, languageCode];
+  } catch {
+    return [locale];
+  }
+}
 
 /**
  * Standardize the config

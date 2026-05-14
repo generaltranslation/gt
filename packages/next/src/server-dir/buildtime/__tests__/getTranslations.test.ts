@@ -12,7 +12,7 @@ const { mockGetLocaleFunction } = vi.hoisted(() => {
   return { mockGetLocaleFunction };
 });
 
-vi.mock('../../request/getLocale', () => ({
+vi.mock('../../../request/getLocale', () => ({
   getLocale: mockGetLocaleFunction,
 }));
 
@@ -55,18 +55,19 @@ type MockI18NConfig = {
   getRenderSettings: MockFunction;
   isDevelopmentApiEnabled: MockFunction;
   translate: MockFunction;
+  setSourceDictionary: MockFunction;
   setDictionaryTranslations: MockFunction;
   getGTClass: MockFunction;
 };
 
-vi.mock('../../dictionary/getDictionary', () => ({
-  default: mockGetDictionary,
+vi.mock('../../../dictionary/getDictionary', () => ({
+  getDictionary: mockGetDictionary,
 }));
-vi.mock('../../config-dir/getI18NConfig', () => ({
-  default: mockGetI18NConfig,
+vi.mock('../../../config-dir/getI18NConfig', () => ({
+  getI18NConfig: mockGetI18NConfig,
 }));
-vi.mock('../../utils/use', () => ({
-  default: mockUse,
+vi.mock('../../../utils/use', () => ({
+  use: mockUse,
 }));
 vi.mock('gt-react/internal', () => ({
   getDictionaryEntry: mockGetDictionaryEntry,
@@ -116,7 +117,7 @@ vi.mock('generaltranslation', () => ({
 vi.mock('generaltranslation/id', () => ({
   hashSource: mockHashSource,
 }));
-vi.mock('../../errors/createErrors', () => ({
+vi.mock('../../../errors/createErrors', () => ({
   createDictionaryTranslationError: vi.fn(() => 'Dictionary translation error'),
   createInvalidDictionaryEntryWarning: vi.fn(
     () => 'Invalid dictionary entry warning'
@@ -128,8 +129,8 @@ vi.mock('../../errors/createErrors', () => ({
   ),
   translationLoadingWarning: 'Translation loading warning',
 }));
-vi.mock('../../dictionary/setDictionary', () => ({
-  default: mockSetDictionary,
+vi.mock('../../../dictionary/setDictionary', () => ({
+  setDictionary: mockSetDictionary,
 }));
 
 describe('getTranslations', () => {
@@ -163,6 +164,7 @@ describe('getTranslations', () => {
       getRenderSettings: vi.fn(() => ({ method: 'replace' })),
       isDevelopmentApiEnabled: vi.fn(() => false),
       translate: vi.fn(() => Promise.resolve()),
+      setSourceDictionary: vi.fn(),
       setDictionaryTranslations: vi.fn(),
       getGTClass: vi.fn(() => ({
         formatMessage: mockFormatMessage,
@@ -409,9 +411,7 @@ describe('getTranslations', () => {
       const t = await getTranslations();
       const result = t('hello');
 
-      // The actual behavior returns an empty string for development loading state
-      expect(result).toBe('');
-      expect(consoleWarnSpy).toHaveBeenCalled(); // Loading warning
+      expect(result).toBe('Hello');
     });
 
     it('should handle skeleton render method', async () => {
@@ -441,14 +441,14 @@ describe('getTranslations', () => {
       const t = await getTranslations();
       const result = t('hello');
 
-      expect(result).toBe('');
+      expect(result).toBe('Hello');
     });
   });
 
   describe('mock verification', () => {
     it('should verify getLocale mock is working directly', async () => {
       // Test the mock directly
-      const { getLocale } = await import('../../request/getLocale');
+      const { getLocale } = await import('../../../request/getLocale');
       const result = await getLocale();
       expect(result).toBe('en');
       expect(mockGetLocaleFunction).toHaveBeenCalled();

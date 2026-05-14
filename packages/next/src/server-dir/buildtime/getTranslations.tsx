@@ -76,9 +76,10 @@ export async function getTranslations(id?: string): Promise<
     return id ? `${id}.${suffix}` : suffix;
   };
 
-  const dictionary = (await getDictionary()) || {};
-
   const I18NConfig = getI18NConfig();
+  const dictionary = (await getDictionary()) || {};
+  I18NConfig.setSourceDictionary(dictionary);
+
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
@@ -314,6 +315,7 @@ export async function getTranslations(id?: string): Promise<
 
         // inject
         injectEntry(result as string, dictionaryTranslations!, id, dictionary);
+        I18NConfig.setDictionaryTranslations(locale, dictionaryTranslations!);
       });
     } catch (error) {
       console.warn(error);
@@ -422,6 +424,7 @@ export async function getTranslations(id?: string): Promise<
             id,
             dictionary
           );
+          I18NConfig.setDictionaryTranslations(locale, dictionaryTranslations!);
         });
     }
 

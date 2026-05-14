@@ -1,26 +1,31 @@
 import { getLocaleProperties } from '@generaltranslation/format';
-import { dictionaryMissingWarning } from '../errors-dir/createErrors';
+import { customLoadDictionaryWarning } from '../errors-dir/createErrors';
 import { CustomLoader, Dictionary } from '../types-dir/types';
 
-export default async function loadDictionaryHelper(
+export async function loadDictionaryHelper(
   locale: string,
   loadDictionary: CustomLoader
 ): Promise<Dictionary | undefined> {
-  const locales = Array.from(
-    new Set([locale, getLocaleProperties(locale).languageCode])
-  );
-  for (const currentLocale of locales) {
+  for (const currentLocale of getDictionaryLoaderLocales(locale)) {
     try {
       const result = await loadDictionary(currentLocale);
       if (result) {
         return result as Dictionary;
       }
     } catch {
-      /* empty */
+      // Try the next locale candidate.
     }
   }
-  // eslint-disable-next-line no-console
-  console.warn(dictionaryMissingWarning);
 
+  console.warn(customLoadDictionaryWarning(locale));
   return undefined;
+}
+
+function getDictionaryLoaderLocales(locale: string): string[] {
+  try {
+    const { languageCode } = getLocaleProperties(locale);
+    return languageCode === locale ? [locale] : [locale, languageCode];
+  } catch {
+    return [locale];
+  }
 }

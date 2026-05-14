@@ -33,7 +33,9 @@ export type DictionaryRuntimeTranslate = (
   sourceEntry: DictionaryEntry
 ) => Promise<string>;
 
-export type DictionaryLoader = (locale: string) => Promise<Dictionary>;
+export type DictionaryLoader = (
+  locale: string
+) => Promise<Dictionary | undefined>;
 
 type DictionaryCacheLifecycle = LifecycleParam<
   DictionaryKey,

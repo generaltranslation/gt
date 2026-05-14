@@ -50,18 +50,34 @@ export class LocalesCache<TranslationValue extends Translation> {
     TranslationsCache<TranslationValue>
   >;
   private readonly dictionaries: ResourceCache<Locale, DictionaryCache>;
+  private readonly createDictionaryCache: (
+    locale: Locale,
+    dictionary: Dictionary
+  ) => DictionaryCache;
 
   constructor({
     ttl,
     batchConfig,
     defaultLocale,
-    dictionary = {},
+    dictionary,
     loadTranslations,
     loadDictionary,
     createTranslateMany,
     translateDictionaryEntry,
     lifecycle,
   }: LocalesCacheParams<TranslationValue>) {
+    const createLocaleDictionaryCache = (
+      locale: Locale,
+      dictionary: Dictionary
+    ) =>
+      createDictionaryCache({
+        locale,
+        dictionary,
+        translate: translateDictionaryEntry,
+        lifecycle,
+      });
+    this.createDictionaryCache = createLocaleDictionaryCache;
+
     this.translations = new ResourceCache({
       ttl,
       load: async (locale) =>
@@ -80,28 +96,23 @@ export class LocalesCache<TranslationValue extends Translation> {
     this.dictionaries = new ResourceCache({
       ttl,
       load: async (locale) =>
-        createDictionaryCache({
+        createLocaleDictionaryCache(
           locale,
-          dictionary: await loadDictionary(locale),
-          translate: translateDictionaryEntry,
-          lifecycle,
-        }),
+          (await loadDictionary(locale)) ?? {}
+        ),
       lifecycle: {
         onHit: lifecycle.onLocalesDictionaryCacheHit,
         onMiss: lifecycle.onLocalesDictionaryCacheMiss,
       },
     });
 
-    this.dictionaries.set(
-      defaultLocale,
-      createDictionaryCache({
-        locale: defaultLocale,
-        dictionary,
-        translate: translateDictionaryEntry,
-        lifecycle,
-      }),
-      { expiresAt: -1 }
-    );
+    if (dictionary !== undefined) {
+      this.dictionaries.set(
+        defaultLocale,
+        createLocaleDictionaryCache(defaultLocale, dictionary),
+        { expiresAt: -1 }
+      );
+    }
   }
 
   public getTranslations(
@@ -122,6 +133,18 @@ export class LocalesCache<TranslationValue extends Translation> {
 
   public getOrLoadDictionary(locale: Locale): Promise<DictionaryCache> {
     return this.dictionaries.getOrLoad(locale);
+  }
+
+  public setDictionary(
+    locale: Locale,
+    dictionary: Dictionary,
+    expiresAt?: number
+  ): void {
+    this.dictionaries.set(
+      locale,
+      this.createDictionaryCache(locale, dictionary),
+      { expiresAt }
+    );
   }
 }
 
