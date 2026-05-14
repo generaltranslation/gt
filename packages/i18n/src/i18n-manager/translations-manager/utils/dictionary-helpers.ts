@@ -81,7 +81,7 @@ export function setDictionaryValueAtPath(
   for (const segment of segments.slice(0, -1)) {
     const next = current[segment];
     if (!isDictionaryObject(next)) {
-      current[segment] = Object.create(null) as Dictionary;
+      current[segment] = {} as Dictionary;
     }
     current = current[segment] as Dictionary;
   }

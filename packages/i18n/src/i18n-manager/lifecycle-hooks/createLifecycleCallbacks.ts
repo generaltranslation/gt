@@ -1,8 +1,13 @@
 import { EventEmitter } from '../event-subscription/EventEmitter';
 import {
+  DICTIONARY_CACHE_HIT_EVENT_NAME,
   DICTIONARY_CACHE_MISS_EVENT_NAME,
+  DICTIONARY_OBJECT_CACHE_HIT_EVENT_NAME,
+  LOCALES_CACHE_HIT_EVENT_NAME,
   LOCALES_CACHE_MISS_EVENT_NAME,
+  LOCALES_DICTIONARY_CACHE_HIT_EVENT_NAME,
   LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME,
+  TRANSLATIONS_CACHE_HIT_EVENT_NAME,
   TRANSLATIONS_CACHE_MISS_EVENT_NAME,
 } from '../event-subscription/types';
 import type { Translation } from '../translations-manager/utils/types/translation-data';
@@ -23,10 +28,10 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
 ): I18nManagerCacheLifecycleCallbacks<TranslationValue> {
   return {
     onLocalesCacheHit: (params) => {
-      if (!hasListeners('locales-cache-hit')) {
+      if (!hasListeners(LOCALES_CACHE_HIT_EVENT_NAME)) {
         return;
       }
-      emit('locales-cache-hit', {
+      emit(LOCALES_CACHE_HIT_EVENT_NAME, {
         locale: params.inputKey,
         translations: params.outputValue.getInternalCache(),
       });
@@ -41,7 +46,7 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
       });
     },
     onTranslationsCacheHit: (params) => {
-      emit('translations-cache-hit', {
+      emit(TRANSLATIONS_CACHE_HIT_EVENT_NAME, {
         locale: params.locale,
         hash: params.cacheKey,
         translation: params.outputValue,
@@ -55,10 +60,10 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
       });
     },
     onLocalesDictionaryCacheHit: (params) => {
-      if (!hasListeners('locales-dictionary-cache-hit')) {
+      if (!hasListeners(LOCALES_DICTIONARY_CACHE_HIT_EVENT_NAME)) {
         return;
       }
-      emit('locales-dictionary-cache-hit', {
+      emit(LOCALES_DICTIONARY_CACHE_HIT_EVENT_NAME, {
         locale: params.inputKey,
         dictionary: params.outputValue.getInternalCache(),
       });
@@ -73,7 +78,7 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
       });
     },
     onDictionaryCacheHit: (params) => {
-      emit('dictionary-cache-hit', {
+      emit(DICTIONARY_CACHE_HIT_EVENT_NAME, {
         locale: params.locale,
         id: params.cacheKey,
         dictionaryEntry: params.outputValue,
@@ -87,7 +92,7 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
       });
     },
     onDictionaryObjectCacheHit: (params) => {
-      emit('dictionary-object-cache-hit', {
+      emit(DICTIONARY_OBJECT_CACHE_HIT_EVENT_NAME, {
         locale: params.locale,
         id: params.cacheKey,
         dictionaryValue: params.outputValue,

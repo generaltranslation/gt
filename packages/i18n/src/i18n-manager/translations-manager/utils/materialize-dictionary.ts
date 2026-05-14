@@ -17,6 +17,10 @@ export type TranslateDictionaryEntry = (
   sourceEntry: DictionaryEntry
 ) => Promise<DictionaryValue>;
 
+/**
+ * Builds the dictionary value for a requested path by combining existing target
+ * translations with runtime translations of any source leaves that are missing.
+ */
 export async function materializeDictionaryValue({
   key,
   sourceValue,

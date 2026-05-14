@@ -42,6 +42,18 @@ describe('dictionary helpers', () => {
     expect(dictionary).toEqual({});
   });
 
+  it('creates plain objects for missing intermediate dictionary paths', () => {
+    const dictionary: Dictionary = {};
+
+    setDictionaryValueAtPath(dictionary, 'safe.path.leaf', 'value');
+
+    expect(Object.getPrototypeOf(dictionary.safe)).toBe(Object.prototype);
+    expect(Object.getPrototypeOf((dictionary.safe as Dictionary).path)).toBe(
+      Object.prototype
+    );
+    expect(dictionary).toEqual({ safe: { path: { leaf: 'value' } } });
+  });
+
   it('rejects unsafe root dictionary keys without mutating the cache prototype', () => {
     const dictionary: Dictionary = {};
     const value = JSON.parse('{"__proto__":{"polluted":"yes"}}') as Dictionary;

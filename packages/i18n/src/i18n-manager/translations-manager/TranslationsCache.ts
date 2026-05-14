@@ -58,18 +58,6 @@ function normalizeBatchConfig(
   };
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (value == null || typeof value !== 'object') return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
-function copyCacheValue<CacheValue>(value: CacheValue): CacheValue {
-  if (Array.isArray(value)) return [...value] as CacheValue;
-  if (isPlainObject(value)) return { ...value } as CacheValue;
-  return value;
-}
-
 /**
  * InputKey type for lookups
  * @typedef {Object} TranslationKey
@@ -208,12 +196,7 @@ export class TranslationsCache<TranslationValue extends Translation> {
   }
 
   public getInternalCache(): Record<Hash, TranslationValue> {
-    return Object.fromEntries(
-      Object.entries(this.cache).map(([key, value]) => [
-        key,
-        copyCacheValue(value as TranslationValue),
-      ])
-    ) as Record<Hash, TranslationValue>;
+    return structuredClone(this.cache);
   }
 
   private getCacheKey(key: TranslationKey<TranslationValue>): Hash {
