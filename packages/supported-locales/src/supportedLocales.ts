@@ -143,6 +143,7 @@ const supportedLocales = {
   te: ['te'], // Telugu
   th: ['th'], // Thai
   tl: ['tl'], // Tagalog
+  tok: ['tok'], // Toki Pona
   tr: ['tr'], // Turkish
   uk: ['uk'], // Ukrainian
   ur: ['ur'], // Urdu
