@@ -49,6 +49,13 @@ type DictionaryCacheLifecycle = LifecycleParam<
   >;
 };
 
+function cloneDictionaryEntry(entry: DictionaryEntry): DictionaryEntry {
+  return {
+    entry: entry.entry,
+    options: structuredClone(entry.options),
+  };
+}
+
 export class DictionaryCache {
   private cache: Dictionary;
   private pendingTranslations = new Map<
@@ -82,10 +89,7 @@ export class DictionaryCache {
     if (entry === undefined) {
       return undefined;
     }
-    const outputEntry = {
-      entry: entry.entry,
-      options: structuredClone(entry.options),
-    };
+    const outputEntry = cloneDictionaryEntry(entry);
 
     this.lifecycle.onHit?.({
       inputKey: key,
@@ -169,16 +173,16 @@ export class DictionaryCache {
             inputKey: key,
             cacheKey: key,
             cacheValue: value,
-            outputValue: entry,
+            outputValue: cloneDictionaryEntry(entry),
           });
-          return entry;
+          return cloneDictionaryEntry(entry);
         }
       );
       this.pendingTranslations.set(key, translationPromise);
     }
 
     try {
-      return await translationPromise;
+      return cloneDictionaryEntry(await translationPromise);
     } finally {
       this.pendingTranslations.delete(key);
     }

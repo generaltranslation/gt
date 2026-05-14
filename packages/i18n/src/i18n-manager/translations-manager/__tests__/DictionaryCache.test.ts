@@ -231,6 +231,38 @@ describe('DictionaryCache', () => {
     });
   });
 
+  it('materializeEntry() returns independent entries for concurrent callers', async () => {
+    let resolveTranslation!: (value: ['Name', { $context: string }]) => void;
+    runtimeTranslate.mockImplementation(
+      () =>
+        new Promise<['Name', { $context: string }]>((resolve) => {
+          resolveTranslation = resolve;
+        })
+    );
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+    const sourceEntry = { entry: 'Name', options: { $context: 'source' } };
+
+    const firstEntry = cache.materializeEntry('user.profile.name', sourceEntry);
+    const secondEntry = cache.materializeEntry(
+      'user.profile.name',
+      sourceEntry
+    );
+
+    resolveTranslation(['Name', { $context: 'runtime' }]);
+    const [first, second] = await Promise.all([firstEntry, secondEntry]);
+    first.options.$context = 'mutated';
+
+    expect(first).not.toBe(second);
+    expect(first.options).not.toBe(second.options);
+    expect(second.options.$context).toBe('runtime');
+    expect(cache.getEntry('user.profile.name')?.options.$context).toBe(
+      'runtime'
+    );
+  });
+
   it('materializeEntry() rejects unsafe dictionary paths without polluting Object.prototype', async () => {
     runtimeTranslate.mockResolvedValue('Value');
     const cache = new DictionaryCache({
