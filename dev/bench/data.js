@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778610698469,
+  "lastUpdate": 1778719252535,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -5684,6 +5684,122 @@ window.BENCHMARK_DATA = {
             "value": 89.39999999999418,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.27\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "daa09614e6ffffd0e72afbaa03cb38e3b144d96d",
+          "message": "[ci] release (#1418)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.14.36\n\n### Patch Changes\n\n- [#1363](https://github.com/generaltranslation/gt/pull/1363)\n[`6a0e55b`](https://github.com/generaltranslation/gt/commit/6a0e55b6787b8e05f6c1fef7796e1b8b68f6d87b)\nThanks [@bgub](https://github.com/bgub)! - Add an Ink-powered\nfull-screen setup wizard for interactive CLI prompts.\n\n- [#1419](https://github.com/generaltranslation/gt/pull/1419)\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)\nThanks [@bgub](https://github.com/bgub)! - Improve diagnostic messages\nand package-local diagnostic formatting.\n\n- [#1423](https://github.com/generaltranslation/gt/pull/1423)\n[`347cb48`](https://github.com/generaltranslation/gt/commit/347cb4844bba2007c7942f3f0e6a2ede4a1aa73e)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Suppress\nunnecessary project detection warnings for file-only translations.\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   @generaltranslation/format@0.1.1\n    -   generaltranslation@8.2.15\n    -   @generaltranslation/python-extractor@0.2.21\n    -   @generaltranslation/supported-locales@2.0.73\n\n## @generaltranslation/compiler@1.3.23\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   @generaltranslation/format@0.1.1\n    -   generaltranslation@8.2.15\n\n## generaltranslation@8.2.15\n\n### Patch Changes\n\n- [#1416](https://github.com/generaltranslation/gt/pull/1416)\n[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa)\nThanks [@bgub](https://github.com/bgub)! - Honor custom locale region\ndisplay-name overrides and simplify shared locale formatting helpers.\n\n- [#1419](https://github.com/generaltranslation/gt/pull/1419)\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)\nThanks [@bgub](https://github.com/bgub)! - Improve diagnostic messages\nand package-local diagnostic formatting.\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa)]:\n    -   @generaltranslation/format@0.1.1\n\n## @generaltranslation/format@0.1.1\n\n### Patch Changes\n\n- [#1416](https://github.com/generaltranslation/gt/pull/1416)\n[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa)\nThanks [@bgub](https://github.com/bgub)! - Honor custom locale region\ndisplay-name overrides and simplify shared locale formatting helpers.\n\n## gtx-cli@2.14.36\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`6a0e55b`](https://github.com/generaltranslation/gt/commit/6a0e55b6787b8e05f6c1fef7796e1b8b68f6d87b),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300),\n[`347cb48`](https://github.com/generaltranslation/gt/commit/347cb4844bba2007c7942f3f0e6a2ede4a1aa73e)]:\n    -   gt@2.14.36\n\n## gt-i18n@0.9.3\n\n### Patch Changes\n\n- [#1419](https://github.com/generaltranslation/gt/pull/1419)\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)\nThanks [@bgub](https://github.com/bgub)! - Improve diagnostic messages\nand package-local diagnostic formatting.\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   @generaltranslation/format@0.1.1\n    -   generaltranslation@8.2.15\n    -   @generaltranslation/supported-locales@2.0.73\n\n## locadex@1.0.171\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`6a0e55b`](https://github.com/generaltranslation/gt/commit/6a0e55b6787b8e05f6c1fef7796e1b8b68f6d87b),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300),\n[`347cb48`](https://github.com/generaltranslation/gt/commit/347cb4844bba2007c7942f3f0e6a2ede4a1aa73e)]:\n    -   gt@2.14.36\n\n## gt-next@6.16.28\n\n### Patch Changes\n\n- [#1419](https://github.com/generaltranslation/gt/pull/1419)\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)\nThanks [@bgub](https://github.com/bgub)! - Improve diagnostic messages\nand package-local diagnostic formatting.\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   @generaltranslation/format@0.1.1\n    -   generaltranslation@8.2.15\n    -   gt-i18n@0.9.3\n    -   gt-react@10.19.17\n    -   @generaltranslation/compiler@1.3.23\n    -   @generaltranslation/supported-locales@2.0.73\n\n## @generaltranslation/gt-next-lint@14.0.28\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   gt-next@6.16.28\n\n## gt-node@0.7.3\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   generaltranslation@8.2.15\n    -   gt-i18n@0.9.3\n\n## @generaltranslation/python-extractor@0.2.21\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   generaltranslation@8.2.15\n\n## gt-react@10.19.17\n\n### Patch Changes\n\n- [#1419](https://github.com/generaltranslation/gt/pull/1419)\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)\nThanks [@bgub](https://github.com/bgub)! - Improve diagnostic messages\nand package-local diagnostic formatting.\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   @generaltranslation/format@0.1.1\n    -   generaltranslation@8.2.15\n    -   gt-i18n@0.9.3\n    -   @generaltranslation/react-core@1.8.19\n    -   @generaltranslation/supported-locales@2.0.73\n\n## @generaltranslation/react-core@1.8.19\n\n### Patch Changes\n\n- [#1419](https://github.com/generaltranslation/gt/pull/1419)\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)\nThanks [@bgub](https://github.com/bgub)! - Improve diagnostic messages\nand package-local diagnostic formatting.\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   @generaltranslation/format@0.1.1\n    -   generaltranslation@8.2.15\n    -   gt-i18n@0.9.3\n    -   @generaltranslation/supported-locales@2.0.73\n\n## gt-react-native@10.19.17\n\n### Patch Changes\n\n- [#1419](https://github.com/generaltranslation/gt/pull/1419)\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)\nThanks [@bgub](https://github.com/bgub)! - Improve diagnostic messages\nand package-local diagnostic formatting.\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   @generaltranslation/format@0.1.1\n    -   generaltranslation@8.2.15\n    -   @generaltranslation/react-core@1.8.19\n    -   @generaltranslation/supported-locales@2.0.73\n\n## gt-sanity@2.0.17\n\n### Patch Changes\n\n- [#1419](https://github.com/generaltranslation/gt/pull/1419)\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)\nThanks [@bgub](https://github.com/bgub)! - Improve diagnostic messages\nand package-local diagnostic formatting.\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   generaltranslation@8.2.15\n\n## @generaltranslation/supported-locales@2.0.73\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   generaltranslation@8.2.15\n\n## gt-tanstack-start@0.4.21\n\n### Patch Changes\n\n- Updated dependencies\n\\[[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa),\n[`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:\n    -   generaltranslation@8.2.15\n    -   gt-i18n@0.9.3\n    -   @generaltranslation/react-core@1.8.19\n    -   gt-react@10.19.17\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-05-14T00:32:54Z",
+          "url": "https://github.com/generaltranslation/gt/commit/daa09614e6ffffd0e72afbaa03cb38e3b144d96d"
+        },
+        "date": 1778719251897,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.03223479216090786,
+            "range": "±0.0109",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.19850058475585752,
+            "range": "±0.0612",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.3653005639152679,
+            "range": "±0.0658",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.36866755858511013,
+            "range": "±0.0758",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 154.80000000001746,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 164.10000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 233.89999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 165,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 23.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 45,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 144.39999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 596,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 10.89999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 25.10000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 110.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"6.16.28\"\n}"
           }
         ]
       }
