@@ -1,5 +1,11 @@
 # @generaltranslation/format
 
+## 0.1.1
+
+### Patch Changes
+
+- [#1416](https://github.com/generaltranslation/gt/pull/1416) [`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa) Thanks [@bgub](https://github.com/bgub)! - Honor custom locale region display-name overrides and simplify shared locale formatting helpers.
+
 ## 0.1.0
 
 ### Minor Changes
