@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.37
+
+### Patch Changes
+
+- [#1425](https://github.com/generaltranslation/gt/pull/1425) [`a5e6975`](https://github.com/generaltranslation/gt/commit/a5e697561776466763ee1d6cae1f4b905eed581d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Resolve TypeScript path aliases that point to directory index barrel files during CLI extraction.
+
 ## 2.14.36
 
 ### Patch Changes
