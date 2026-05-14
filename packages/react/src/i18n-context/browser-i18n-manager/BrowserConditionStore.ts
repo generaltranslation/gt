@@ -1,11 +1,14 @@
-import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
-import { setCookieValue } from './utils/cookies';
-import { determineLocale } from './utils/determineLocale';
-import { GetLocale } from './utils/types';
+import { defaultLocaleCookieName } from "@generaltranslation/react-core/internal";
+import { setCookieValue } from "./utils/cookies";
+import { determineLocale } from "./utils/determineLocale";
+import { GetLocale } from "./utils/types";
 import type {
   ConditionStoreConfig,
   WritableConditionStore,
-} from 'gt-i18n/internal/types';
+} from "gt-i18n/internal/types";
+
+type StoreListener = () => void;
+type Unsubscribe = () => void;
 
 /**
  * The configuration for the BrowserConditionStore
@@ -23,6 +26,7 @@ type BrowserConditionStoreConstructorParams = ConditionStoreConfig & {
  * Condition store implementation for Browser.
  */
 export class BrowserConditionStore implements WritableConditionStore {
+  private listeners = new Set<StoreListener>();
   private localeConfig: ConditionStoreConfig;
   private customGetLocale?: GetLocale;
   private localeCookieName: string;
@@ -52,9 +56,25 @@ export class BrowserConditionStore implements WritableConditionStore {
   }
 
   setLocale(locale: string): void {
+    const previousLocale = this.getLocale();
     setCookieValue({
       cookieName: this.localeCookieName,
       value: locale,
     });
+    const nextLocale = this.getLocale();
+    if (nextLocale !== previousLocale) {
+      this.emitLocaleChange();
+    }
+  }
+
+  subscribeToLocale(listener: StoreListener): Unsubscribe {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private emitLocaleChange(): void {
+    this.listeners.forEach((listener) => listener());
   }
 }

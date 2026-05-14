@@ -1,5 +1,5 @@
-import { defineConfig } from 'tsdown';
-import { createTsdownMinifiedDualFormatConfig } from '../../tsdown.preset.mts';
+import { defineConfig } from "tsdown";
+import { createTsdownMinifiedDualFormatConfig } from "../../tsdown.preset.mts";
 
 const deps = {
   neverBundle: [
@@ -16,8 +16,13 @@ const deps = {
   ],
 };
 
-const entries = ['src/index.ts', 'src/internal.ts', 'src/errors.ts'];
+const entries = [
+  "src/index.ts",
+  "src/internal.ts",
+  "src/context.ts",
+  "src/errors.ts",
+];
 
 export default defineConfig(
-  createTsdownMinifiedDualFormatConfig({ entries, deps })
+  createTsdownMinifiedDualFormatConfig({ entries, deps }),
 );

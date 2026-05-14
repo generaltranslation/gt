@@ -1,9 +1,11 @@
 import type {
   DataFormat,
   StringFormat,
-} from '@generaltranslation/format/types';
+} from "@generaltranslation/format/types";
 
-// TODO: next major version, this should be Record<string, string>
+/**
+ * Values that get interpolated
+ */
 export type BaseTranslationOptions = Record<string, unknown>;
 
 // For t()
@@ -21,7 +23,7 @@ export type DictionaryOptions = BaseTranslationOptions & {
  * Options for string resolution
  * Used by the gt() function
  */
-export type InlineTranslationOptions = BaseTranslationOptions & {
+export type InlineTranslationOptionsFields = {
   $context?: string;
   $id?: string;
   /** The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'. */
@@ -40,11 +42,20 @@ export type InlineTranslationOptions = BaseTranslationOptions & {
   $_source?: string;
 };
 
+export type InlineTranslationOptions = InlineTranslationOptionsFields &
+  BaseTranslationOptions;
+
 /**
  * Options for string resolution
  * Used by the m() function
  */
-export type InlineResolveOptions = BaseTranslationOptions;
+export type InlineResolveOptions = BaseTranslationOptions & {
+  $_hash?: string;
+  $locale?: string;
+  $format?: StringFormat;
+  $maxChars?: number;
+  $id?: string;
+};
 
 /**
  * Options for string registration
@@ -65,7 +76,7 @@ export type EncodedTranslationOptions = BaseTranslationOptions & {
 export type RuntimeTranslationOptions = {
   $locale?: string;
   $format?: DataFormat;
-} & Omit<InlineTranslationOptions, '$id' | '$format'>;
+} & Omit<InlineTranslationOptions, "$id" | "$format">;
 
 /**
  * Options for JSX translation
@@ -73,7 +84,7 @@ export type RuntimeTranslationOptions = {
  */
 export type JsxTranslationOptions = {
   // TODO: make this required, but internally, not user facing
-  $format?: 'JSX';
+  $format?: "JSX";
   $context?: string;
   $id?: string;
   $_hash?: string;
@@ -83,18 +94,19 @@ export type JsxTranslationOptions = {
  * Resolution options - options needed to perform a resolution for a given content
  */
 export type LookupOptions =
-  | (Omit<InlineTranslationOptions, '$format'> & {
-      $format: StringFormat;
-      $locale?: string;
-    })
+  | (BaseTranslationOptions &
+      (Omit<InlineTranslationOptionsFields, "$format"> & {
+        $format: StringFormat;
+        $locale?: string;
+      }))
   | (JsxTranslationOptions & {
-      $format: 'JSX';
+      $format: "JSX";
       $locale?: string;
     });
 
 export type DictionaryLookupOptions = Omit<
   InlineTranslationOptions,
-  '$format'
+  "$format"
 > & {
   $format: StringFormat;
 };
@@ -104,11 +116,11 @@ export type ResolutionOptions<T extends DataFormat> = {
    * The locale to use for formatting looking up and formatting the message.
    */
   $locale?: string;
-} & (T extends 'JSX'
+} & (T extends "JSX"
   ? JsxTranslationOptions & {
-      $format?: 'JSX';
+      $format?: "JSX";
     }
-  : Omit<InlineTranslationOptions, '$format'> & {
+  : Omit<InlineTranslationOptions, "$format"> & {
       $format?: T;
     });
 
@@ -117,7 +129,7 @@ export type ResolutionOptions<T extends DataFormat> = {
  */
 export type NormalizedLookupOptions<T extends DataFormat> = Omit<
   ResolutionOptions<T>,
-  '$format' | '$locale'
+  "$format" | "$locale"
 > & {
   $format: T;
   $locale: string;

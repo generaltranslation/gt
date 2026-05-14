@@ -14,8 +14,8 @@
     "./dist/macros.*"
   ],
   "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "dependencies": {
     "@generaltranslation/format": "workspace:*",
@@ -76,6 +76,11 @@
         "default": "./dist/internal.mjs"
       }
     },
+    "./internal-external-store": {
+      "types": "./dist/internal-external-store.d.cts",
+      "require": "./dist/internal-external-store.cjs.min.cjs",
+      "import": "./dist/internal-external-store.esm.min.mjs"
+    },
     "./client": {
       "require": {
         "types": "./dist/client.d.cts",
@@ -85,6 +90,12 @@
         "types": "./dist/client.d.mts",
         "default": "./dist/client.mjs"
       }
+    },
+    "./context": {
+      "react-server": "./dist/context.server.mjs",
+      "browser": "./dist/context.client.mjs",
+      "types": "./dist/context.types.d.cts",
+      "default": "./dist/context.client.mjs"
     },
     "./browser": {
       "require": {
@@ -115,8 +126,17 @@
       "client": [
         "./dist/client.d.cts"
       ],
+      "context": [
+        "./dist/context.types.d.cts"
+      ],
       "internal": [
         "./dist/internal.d.cts"
+      ],
+      "internal-external-store": [
+        "./dist/internal-external-store.d.cts"
+      ],
+      "setup": [
+        "./dist/setup.d.cts"
       ],
       "browser": [
         "./dist/browser.d.cts"
@@ -135,8 +155,17 @@
       "gt-react/client": [
         "./dist/client"
       ],
+      "gt-react/context": [
+        "./dist/context.types.d.cts"
+      ],
       "gt-react/internal": [
         "./dist/internal"
+      ],
+      "gt-react/internal-external-store": [
+        "./dist/internal-external-store"
+      ],
+      "gt-react/setup": [
+        "./dist/setup.d.cts"
       ],
       "gt-react/browser": [
         "./dist/browser.d.cts"

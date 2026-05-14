@@ -1,12 +1,16 @@
-import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
-import type { CustomMapping } from '@generaltranslation/format/types';
-import type { GTConfig } from '../config/types';
-import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
-import type { Translation } from './translations-manager/utils/types/translation-data';
-import type { LifecycleCallbacks } from './lifecycle-hooks/types';
-import type { Dictionary } from './translations-manager/DictionaryCache';
-import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
-import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
+import type { RuntimeTranslateManyOptions } from "generaltranslation/internal";
+import type { CustomMapping } from "@generaltranslation/format/types";
+import type { GTConfig } from "../config/types";
+import type { TranslationsLoader } from "./translations-manager/translations-loaders/types";
+import type { Translation } from "./translations-manager/utils/types/translation-data";
+import type { LifecycleCallbacks } from "./lifecycle-hooks/types";
+import type { Dictionary } from "./translations-manager/DictionaryCache";
+import type { DictionaryLoader } from "./translations-manager/LocalesDictionaryCache";
+import type {
+  Hash,
+  TranslationBatchConfig,
+} from "./translations-manager/TranslationsCache";
+import { Locale } from "./translations-manager/LocalesCache";
 
 export type DictionaryConfig =
   | {
@@ -29,16 +33,17 @@ type RuntimeTranslationConfig = {
 export type I18nManagerConstructorParams<
   TranslationValue extends Translation = Translation,
 > = DictionaryConfig &
-  Omit<GTConfig, 'cacheExpiryTime'> & {
+  Omit<GTConfig, "cacheExpiryTime"> & {
     /**
      * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
      * disables expiry, and a number sets an explicit TTL.
      */
     cacheExpiryTime?: number | null;
     loadTranslations?: TranslationsLoader;
-    environment?: 'development' | 'production';
+    environment?: "development" | "production";
     batchConfig?: TranslationBatchConfig;
     runtimeTranslation?: RuntimeTranslationConfig;
+    initialTranslations?: Record<Locale, Record<Hash, TranslationValue>>;
     // Cache lifecycle hooks
     /** @deprecated - move to subscription api instead */
     lifecycle?: LifecycleCallbacks<TranslationValue>;
@@ -48,10 +53,16 @@ export type I18nManagerConstructorParams<
  * I18nManager class configuration
  */
 export type I18nManagerConfig = {
-  environment: 'development' | 'production';
+  environment: "development" | "production";
   defaultLocale: string;
   locales: string[];
   customMapping: CustomMapping;
+  /**
+   * @deprecated
+   * Perhaps we can keep this around, but more for
+   * doing an initial load, but it may get overwritten
+   * so like a "initialEnableI18n" flag?
+   */
   enableI18n: boolean;
   projectId?: string;
   devApiKey?: string;
@@ -70,7 +81,7 @@ export type I18nManagerConfig = {
 /**
  * Shared configuration used by condition stores to resolve locales.
  */
-export type ConditionStoreConfig = {
+export type LocaleResolverConfig = {
   defaultLocale?: string;
   locales?: string[];
   customMapping?: CustomMapping;
@@ -84,6 +95,7 @@ export type ConditionStoreConfig = {
  */
 export interface ConditionStore {
   getLocale(): string;
+  getEnableI18n(): boolean;
 }
 
 /**
@@ -91,6 +103,7 @@ export interface ConditionStore {
  */
 export interface WritableConditionStore extends ConditionStore {
   setLocale(locale: string): void;
+  setEnableI18n(enabled: boolean): void;
 }
 
 /**

@@ -1,16 +1,16 @@
-import { determineLocale } from '../functions/determineLocale';
+import { determineLocale } from "../functions/determineLocale";
 import type {
   ConditionStore,
-  ConditionStoreConfig,
-} from 'gt-i18n/internal/types';
+  LocaleResolverConfig,
+} from "gt-i18n/internal/types";
 
 /**
  * Condition store implementation for Tanstack Start.
  */
 export class TanstackConditionStore implements ConditionStore {
-  private localeConfig: ConditionStoreConfig;
+  private localeConfig: LocaleResolverConfig;
 
-  constructor(localeConfig: ConditionStoreConfig = {}) {
+  constructor(localeConfig: LocaleResolverConfig = {}) {
     this.localeConfig = localeConfig;
   }
 

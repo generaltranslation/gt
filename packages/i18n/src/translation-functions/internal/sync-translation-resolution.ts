@@ -1,8 +1,8 @@
-import { InlineTranslationOptions } from '../types/options';
+import { InlineTranslationOptions } from "../types/options";
 import {
   resolveStringContent,
   resolveStringContentWithFallback,
-} from './helpers';
+} from "./helpers";
 
 /**
  * Synchronously resolve a translation for a given message and options
@@ -14,9 +14,9 @@ import {
 export function resolveTranslationSync(
   locale: string,
   message: string,
-  options: InlineTranslationOptions = {}
+  options: InlineTranslationOptions = {},
 ) {
-  return resolveStringContent(locale, message, { $format: 'ICU', ...options });
+  return resolveStringContent(locale, message, { $format: "ICU", ...options });
 }
 
 /**
@@ -29,10 +29,10 @@ export function resolveTranslationSync(
 export function resolveTranslationSyncWithFallback(
   locale: string,
   message: string,
-  options: InlineTranslationOptions = {}
+  options: InlineTranslationOptions = {},
 ) {
   return resolveStringContentWithFallback(locale, message, {
-    $format: 'ICU',
+    $format: "ICU",
     ...options,
   });
 }

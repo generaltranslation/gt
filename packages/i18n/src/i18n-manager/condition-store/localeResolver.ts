@@ -1,6 +1,6 @@
-import { LocaleConfig } from '@generaltranslation/format';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { ConditionStoreConfig } from '../types';
+import { LocaleConfig } from "@generaltranslation/format";
+import { libraryDefaultLocale } from "generaltranslation/internal";
+import type { LocaleResolverConfig } from "../types";
 
 export type LocaleCandidates = string | string[] | undefined;
 
@@ -8,7 +8,7 @@ function normalizeConditionStoreConfig({
   defaultLocale,
   locales,
   customMapping,
-}: ConditionStoreConfig = {}) {
+}: LocaleResolverConfig = {}) {
   const fallbackLocale = defaultLocale || libraryDefaultLocale;
   return {
     defaultLocale: fallbackLocale,
@@ -26,17 +26,17 @@ type NormalizedConditionStoreConfig = ReturnType<
  */
 export function determineSupportedLocale(
   candidates: LocaleCandidates,
-  config: ConditionStoreConfig = {}
+  config: LocaleResolverConfig = {},
 ): string | undefined {
   return determineSupportedLocaleWithConfig(
     candidates,
-    normalizeConditionStoreConfig(config)
+    normalizeConditionStoreConfig(config),
   );
 }
 
 function determineSupportedLocaleWithConfig(
   candidates: LocaleCandidates,
-  config: NormalizedConditionStoreConfig
+  config: NormalizedConditionStoreConfig,
 ): string | undefined {
   if (
     candidates == null ||
@@ -54,7 +54,7 @@ function determineSupportedLocaleWithConfig(
  */
 export function resolveSupportedLocale(
   candidates: LocaleCandidates,
-  config: ConditionStoreConfig = {}
+  config: LocaleResolverConfig = {},
 ): string {
   const normalizedConfig = normalizeConditionStoreConfig(config);
   return (
@@ -63,7 +63,7 @@ export function resolveSupportedLocale(
   );
 }
 
-export function createLocaleResolver(config: ConditionStoreConfig = {}) {
+export function createLocaleResolver(config: LocaleResolverConfig = {}) {
   const normalizedConfig = normalizeConditionStoreConfig(config);
   return (candidates?: LocaleCandidates): string =>
     determineSupportedLocaleWithConfig(candidates, normalizedConfig) ||

@@ -1,4 +1,5 @@
-import { BaseTranslationOptions } from '../translation-functions/types/options';
+import { BaseTranslationOptions } from "../translation-functions/types/options";
+
 /**
  * Given an object of options, returns an object with no gt-related options
  *
@@ -6,21 +7,21 @@ import { BaseTranslationOptions } from '../translation-functions/types/options';
  * TODO: next major version, options should be Record<string, string>
  */
 export function extractVariables<T extends BaseTranslationOptions>(
-  options: T
+  options: T,
 ): BaseTranslationOptions {
   return Object.fromEntries(
     Object.entries(options).filter(
       ([key]) =>
-        key !== '$id' &&
-        key !== '$context' &&
-        key !== '$maxChars' &&
-        key !== '$hash' && // this is already being done in @gt/react-core
-        key !== '$_hash' &&
-        key !== '$_source' &&
-        key !== '$_fallback' &&
-        key !== '$format' &&
-        key !== '$_locales' &&
-        key !== '$locale'
-    )
+        key !== "$id" &&
+        key !== "$context" &&
+        key !== "$maxChars" &&
+        key !== "$hash" && // this is already being done in @gt/react-core
+        key !== "$_hash" &&
+        key !== "$_source" &&
+        key !== "$_fallback" &&
+        key !== "$format" &&
+        key !== "$_locales" &&
+        key !== "$locale",
+    ),
   );
 }
