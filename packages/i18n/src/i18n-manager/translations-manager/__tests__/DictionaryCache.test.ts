@@ -250,6 +250,43 @@ describe('DictionaryCache', () => {
     expect(cache.getInternalCache()).toEqual({});
   });
 
+  it('materializeValue() rejects unsafe target-only root keys without mutating the cache prototype', async () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+    const targetValue = JSON.parse(
+      '{"__proto__":{"polluted":"yes"}}'
+    ) as Dictionary;
+
+    await expect(cache.materializeValue('', {}, targetValue)).rejects.toThrow(
+      'Dictionary path "__proto__" contains an unsafe segment'
+    );
+
+    expect(cache.getValue('polluted')).toBeUndefined();
+    expect(({} as { polluted?: string }).polluted).toBeUndefined();
+    expect(cache.getInternalCache()).toEqual({});
+  });
+
+  it('materializeValue() rejects unsafe target subtrees under safe source leaves', async () => {
+    const cache = new DictionaryCache({
+      init: {},
+      runtimeTranslate,
+    });
+    const targetValue = JSON.parse(
+      '{"__proto__":{"polluted":"yes"}}'
+    ) as Dictionary;
+
+    await expect(
+      cache.materializeValue('safe', 'Source', targetValue)
+    ).rejects.toThrow(
+      'Dictionary path "safe.__proto__" contains an unsafe segment'
+    );
+
+    expect(cache.getValue('safe')).toBeUndefined();
+    expect(({} as { polluted?: string }).polluted).toBeUndefined();
+  });
+
   // ===== NEW BEHAVIOR TESTS ===== //
 
   it('getEntry() returns undefined for the root dictionary object', () => {

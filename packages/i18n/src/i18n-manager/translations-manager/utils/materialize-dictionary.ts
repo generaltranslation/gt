@@ -1,5 +1,6 @@
 import { DictionarySourceNotFoundError } from './DictionarySourceNotFoundError';
 import {
+  assertSafeDictionaryPathSegment,
   cloneDictionaryValue,
   getDictionaryEntry,
   isDictionaryObject,
@@ -51,6 +52,9 @@ export async function materializeDictionaryValue({
   ]);
   const entries = await Promise.all(
     Array.from(keys).map(async (childKey) => {
+      const childPath = key ? `${key}.${childKey}` : childKey;
+      assertSafeDictionaryPathSegment(childKey, childPath);
+
       const childSource = sourceValue[childKey];
       if (childSource === undefined) {
         return [
@@ -62,7 +66,7 @@ export async function materializeDictionaryValue({
       return [
         childKey,
         await materializeDictionaryValue({
-          key: key ? `${key}.${childKey}` : childKey,
+          key: childPath,
           sourceValue: childSource,
           targetValue: targetDictionary[childKey],
           translateEntry,

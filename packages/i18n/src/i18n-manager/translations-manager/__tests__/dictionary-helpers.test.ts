@@ -41,4 +41,26 @@ describe('dictionary helpers', () => {
     expect(({} as { polluted?: string }).polluted).toBeUndefined();
     expect(dictionary).toEqual({});
   });
+
+  it('rejects unsafe root dictionary keys without mutating the cache prototype', () => {
+    const dictionary: Dictionary = {};
+    const value = JSON.parse('{"__proto__":{"polluted":"yes"}}') as Dictionary;
+
+    expect(() => setDictionaryValueAtPath(dictionary, '', value)).toThrow(
+      'Dictionary path "__proto__" contains an unsafe segment'
+    );
+    expect(dictionary).toEqual({});
+    expect((dictionary as { polluted?: string }).polluted).toBeUndefined();
+    expect(({} as { polluted?: string }).polluted).toBeUndefined();
+  });
+
+  it('rejects unsafe nested dictionary keys before storing subtrees', () => {
+    const dictionary: Dictionary = {};
+    const value = JSON.parse('{"__proto__":{"polluted":"yes"}}') as Dictionary;
+
+    expect(() => setDictionaryValueAtPath(dictionary, 'safe', value)).toThrow(
+      'Dictionary path "safe.__proto__" contains an unsafe segment'
+    );
+    expect(dictionary).toEqual({});
+  });
 });

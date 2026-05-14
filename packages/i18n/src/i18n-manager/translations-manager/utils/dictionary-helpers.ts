@@ -18,7 +18,7 @@ function getDictionaryPath(id: DictionaryPath): string[] {
   return path;
 }
 
-function assertSafeDictionaryPathSegment(
+export function assertSafeDictionaryPathSegment(
   segment: string,
   path: DictionaryPath
 ): void {
@@ -66,6 +66,9 @@ export function setDictionaryValueAtPath(
   value: DictionaryValue
 ): void {
   const segments = getDictionaryPath(path);
+  if (isDictionaryObject(value)) {
+    assertSafeDictionaryObject(value, path);
+  }
 
   if (segments.length === 0) {
     if (isDictionaryObject(value)) {
@@ -156,5 +159,20 @@ function replaceDictionary(target: Dictionary, source: Dictionary): void {
   for (const key of Object.keys(target)) {
     delete target[key];
   }
-  Object.assign(target, source);
+  for (const key of Object.keys(source)) {
+    target[key] = source[key];
+  }
+}
+
+function assertSafeDictionaryObject(
+  dictionary: Dictionary,
+  parentPath = ''
+): void {
+  for (const [key, value] of Object.entries(dictionary)) {
+    const path = parentPath ? `${parentPath}.${key}` : key;
+    assertSafeDictionaryPathSegment(key, path);
+    if (isDictionaryObject(value)) {
+      assertSafeDictionaryObject(value, path);
+    }
+  }
 }
