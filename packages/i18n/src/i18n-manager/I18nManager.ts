@@ -16,17 +16,15 @@ import {
 import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
 import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
-import { Locale, LocalesCache } from './translations-manager/LocalesCache';
-import { Hash } from './translations-manager/TranslationsCache';
+import { LocalesCache } from './translations-manager/LocalesCache';
+import type { Locale } from './translations-manager/LocalesCache';
+import type { Hash } from './translations-manager/TranslationsCache';
 import type {
   Dictionary,
   DictionaryEntry,
-  DictionaryKey,
   DictionaryObject,
 } from './translations-manager/DictionaryCache';
 import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
-import { LocalesDictionaryCache } from './translations-manager/LocalesDictionaryCache';
-import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 import { EventEmitter } from './event-subscription/EventEmitter';
@@ -75,14 +73,9 @@ class I18nManager<
   protected config: I18nManagerConfig;
 
   /**
-   * Cache for translations
+   * Locale-scoped caches for translations and dictionaries
    */
   private localesCache: LocalesCache<TranslationValue>;
-
-  /**
-   * Cache for dictionaries
-   */
-  private localesDictionaryCache: LocalesDictionaryCache;
 
   /**
    * Runtime-safe locale and formatting helpers
@@ -110,8 +103,18 @@ class I18nManager<
       customMapping: this.config.customMapping,
     });
     // Create cache miss handlers
-    const loadTranslations = createTranslationLoader<TranslationValue>(params);
-    const loadDictionary = createDictionaryLoader(params);
+    const loadTranslations = routeCreateTranslationLoader({
+      loadTranslations: params.loadTranslations,
+      type: getLoadTranslationsType(params),
+      remoteTranslationLoaderParams: {
+        cacheUrl: params.cacheUrl,
+        projectId: params.projectId,
+        _versionId: params._versionId,
+        _branchId: params._branchId,
+        customMapping: params.customMapping,
+      },
+    }) as SafeTranslationsLoader<TranslationValue>;
+    const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
     const runtimeTranslationTimeout =
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT;
     const runtimeTranslationMetadata =
@@ -127,27 +130,22 @@ class I18nManager<
       this.subscribe(...args)
     );
 
-    const lifecycle = createLifecycleCallbacks<TranslationValue>((...args) =>
-      this.emit(...args)
+    const lifecycle = createLifecycleCallbacks<TranslationValue>(
+      (...args) => this.emit(...args),
+      (eventName) => this.hasListeners(eventName)
     );
 
-    // Setup translations cache
+    // Setup locale-scoped caches
     this.localesCache = new LocalesCache<TranslationValue>({
-      loadTranslations,
-      createTranslateMany,
-      lifecycle,
-      ttl: this.config.cacheExpiryTime,
-      batchConfig: this.config.batchConfig,
-    });
-
-    // Setup dictionary cache
-    this.localesDictionaryCache = new LocalesDictionaryCache({
       defaultLocale: this.config.defaultLocale,
       dictionary: params.dictionary,
+      loadTranslations,
       loadDictionary,
-      runtimeTranslate: (locale, id, sourceEntry) =>
-        this.dictionaryRuntimeTranslate(locale, id, sourceEntry),
+      createTranslateMany,
+      translateDictionaryEntry: (locale, id, sourceEntry) =>
+        this.translateDictionaryEntry(locale, id, sourceEntry),
       ttl: this.config.cacheExpiryTime,
+      batchConfig: this.config.batchConfig,
       lifecycle,
     });
   }
@@ -254,9 +252,8 @@ class I18nManager<
         return {};
       }
 
-      // Get the locale cache
-      let txCache = this.localesCache.get(translationLocale);
-      if (!txCache) txCache = await this.localesCache.miss(translationLocale);
+      const txCache =
+        await this.localesCache.getOrLoadTranslations(translationLocale);
 
       // Get the translations
       const translations = txCache.getInternalCache();
@@ -276,23 +273,13 @@ class I18nManager<
       // Validate
       const dictionaryLocale = this.resolveCacheLocale(locale);
       if (!dictionaryLocale) {
-        return (
-          this.localesDictionaryCache
-            .get(this.config.defaultLocale)
-            ?.getInternalCache() ?? {}
-        );
+        return this.getDefaultDictionaryCache()?.getInternalCache() ?? {};
       }
 
-      // Get the locale dictionary cache
-      let dictionaryCache = this.localesDictionaryCache.get(dictionaryLocale);
-      if (!dictionaryCache) {
-        dictionaryCache =
-          await this.localesDictionaryCache.miss(dictionaryLocale);
-      }
+      const dictionaryCache =
+        await this.localesCache.getOrLoadDictionary(dictionaryLocale);
 
-      // Get the dictionary
-      const dictionary = dictionaryCache.getInternalCache();
-      return dictionary;
+      return dictionaryCache.getInternalCache();
     } catch (error) {
       this.handleError(error);
       return {};
@@ -304,11 +291,10 @@ class I18nManager<
    */
   lookupDictionary(locale: string, id: string): DictionaryEntry | undefined {
     try {
-      const dictionaryLocale =
-        this.resolveCacheLocale(locale) ?? this.config.defaultLocale;
-      const dictionaryEntry = this.localesDictionaryCache
-        .get(dictionaryLocale)
-        ?.get(id);
+      const dictionaryLocale = this.resolveDictionaryCacheLocale(locale);
+      const dictionaryEntry = this.localesCache
+        .getDictionary(dictionaryLocale)
+        ?.getEntry(id);
 
       return dictionaryEntry;
     } catch (error) {
@@ -325,9 +311,8 @@ class I18nManager<
     id: string
   ): DictionaryObject | undefined {
     try {
-      const dictionaryLocale =
-        this.resolveCacheLocale(locale) ?? this.config.defaultLocale;
-      return this.localesDictionaryCache.get(dictionaryLocale)?.getObj(id);
+      const dictionaryLocale = this.resolveDictionaryCacheLocale(locale);
+      return this.localesCache.getDictionary(dictionaryLocale)?.getValue(id);
     } catch (error) {
       this.handleError(error);
       return undefined;
@@ -345,30 +330,18 @@ class I18nManager<
     try {
       const dictionaryLocale = this.resolveCacheLocale(locale);
       if (!dictionaryLocale) {
-        const sourceEntry = this.localesDictionaryCache
-          .get(this.config.defaultLocale)
-          ?.get(id);
-        if (sourceEntry === undefined) {
-          throw new DictionarySourceNotFoundError(id);
-        }
-        return sourceEntry;
+        return this.getSourceDictionaryEntry(id);
       }
 
-      let dictionaryCache = this.localesDictionaryCache.get(dictionaryLocale);
-      if (!dictionaryCache) {
-        dictionaryCache =
-          await this.localesDictionaryCache.miss(dictionaryLocale);
-      }
+      const dictionaryCache =
+        await this.localesCache.getOrLoadDictionary(dictionaryLocale);
 
-      let dictionaryEntry = dictionaryCache.get(id);
+      let dictionaryEntry = dictionaryCache.getEntry(id);
       if (dictionaryEntry === undefined) {
-        const sourceEntry = this.localesDictionaryCache
-          .get(this.config.defaultLocale)
-          ?.get(id);
-        if (sourceEntry === undefined) {
-          throw new DictionarySourceNotFoundError(id);
-        }
-        dictionaryEntry = await dictionaryCache.miss(id, sourceEntry);
+        dictionaryEntry = await dictionaryCache.materializeEntry(
+          id,
+          this.getSourceDictionaryEntry(id)
+        );
       }
       return dictionaryEntry;
     } catch (error) {
@@ -387,37 +360,78 @@ class I18nManager<
   ): Promise<DictionaryObject | undefined> {
     try {
       const dictionaryLocale = this.resolveCacheLocale(locale);
+
       if (!dictionaryLocale) {
-        const sourceObject = this.localesDictionaryCache
-          .get(this.config.defaultLocale)
-          ?.getObj(id);
-        if (sourceObject === undefined) {
-          throw new DictionarySourceNotFoundError(id);
-        }
-        return sourceObject;
+        return this.getSourceDictionaryObject(id);
       }
 
-      let dictionaryCache = this.localesDictionaryCache.get(dictionaryLocale);
-      if (!dictionaryCache) {
-        dictionaryCache =
-          await this.localesDictionaryCache.miss(dictionaryLocale);
+      const dictionaryCache =
+        await this.localesCache.getOrLoadDictionary(dictionaryLocale);
+      const targetObject = dictionaryCache.getValue(id);
+      const sourceObject = this.getSourceDictionaryObject(id, {
+        throwOnMissing: false,
+      });
+      if (sourceObject === undefined) {
+        if (targetObject !== undefined) {
+          return targetObject;
+        }
+        throw new DictionarySourceNotFoundError(id);
       }
 
-      let dictionaryObject = dictionaryCache.getObj(id);
-      if (dictionaryObject === undefined) {
-        const sourceObject = this.localesDictionaryCache
-          .get(this.config.defaultLocale)
-          ?.getObj(id);
-        if (sourceObject === undefined) {
-          throw new DictionarySourceNotFoundError(id);
-        }
-        dictionaryObject = await dictionaryCache.missObj(id, sourceObject);
-      }
-      return dictionaryObject;
+      return await dictionaryCache.materializeValue(
+        id,
+        sourceObject,
+        targetObject
+      );
     } catch (error) {
       this.handleError(error);
       return undefined;
     }
+  }
+
+  private async translateDictionaryEntry(
+    locale: Locale,
+    id: string,
+    sourceEntry: DictionaryEntry
+  ): Promise<string> {
+    const translation = await this.lookupTranslationWithFallbackResolved(
+      locale,
+      sourceEntry.entry as TranslationValue,
+      resolveDictionaryLookupOptions(sourceEntry.options)
+    );
+    if (typeof translation !== 'string') {
+      throw new Error(
+        `Dictionary entry "${id}" could not be translated into a string. Check the source entry and translation loader output.`
+      );
+    }
+    return translation;
+  }
+
+  private getSourceDictionaryEntry(id: string): DictionaryEntry {
+    const sourceEntry = this.getDefaultDictionaryCache()?.getEntry(id);
+    if (sourceEntry === undefined) {
+      throw new DictionarySourceNotFoundError(id);
+    }
+    return sourceEntry;
+  }
+
+  private getSourceDictionaryObject(
+    id: string,
+    { throwOnMissing = true }: { throwOnMissing?: boolean } = {}
+  ): DictionaryObject | undefined {
+    const sourceObject = this.getDefaultDictionaryCache()?.getValue(id);
+    if (sourceObject === undefined && throwOnMissing) {
+      throw new DictionarySourceNotFoundError(id);
+    }
+    return sourceObject;
+  }
+
+  private getDefaultDictionaryCache() {
+    return this.localesCache.getDictionary(this.config.defaultLocale);
+  }
+
+  private resolveDictionaryCacheLocale(locale: string): Locale {
+    return this.resolveCacheLocale(locale) ?? this.config.defaultLocale;
   }
 
   /**
@@ -439,7 +453,7 @@ class I18nManager<
       }
 
       // Get the locale cache
-      const txCache = this.localesCache.get(translationLocale);
+      const txCache = this.localesCache.getTranslations(translationLocale);
       if (!txCache) return undefined;
 
       // Get the translation
@@ -512,10 +526,8 @@ class I18nManager<
         );
       }
 
-      // Get Locale Cache
-      let txCache = this.localesCache.get(translationLocale);
-      if (!txCache) txCache = await this.localesCache.miss(translationLocale);
-      if (!txCache) return () => undefined;
+      const txCache =
+        await this.localesCache.getOrLoadTranslations(translationLocale);
 
       // Prefetch any entries during async block
       await Promise.all(
@@ -702,36 +714,13 @@ class I18nManager<
       return message;
     }
 
-    let txCache = this.localesCache.get(translationLocale);
-    if (!txCache) txCache = await this.localesCache.miss(translationLocale);
+    const txCache =
+      await this.localesCache.getOrLoadTranslations(translationLocale);
 
     let translation = txCache.get({ message, options: lookupOptions });
     if (translation == null) {
       translation = await txCache.miss({ message, options: lookupOptions });
     }
-    return translation;
-  }
-
-  /**
-   * Runtime lookup function for dictionaries
-   */
-  private async dictionaryRuntimeTranslate(
-    locale: Locale,
-    id: DictionaryKey,
-    sourceEntry: DictionaryEntry
-  ): Promise<string> {
-    // Runtime translation
-    const translation = await this.lookupTranslationWithFallbackResolved(
-      locale,
-      sourceEntry.entry as TranslationValue,
-      resolveDictionaryLookupOptions(sourceEntry.options)
-    );
-    if (typeof translation !== 'string') {
-      throw new Error(
-        `Dictionary entry "${id}" could not be translated into a string. Check the source entry and translation loader output.`
-      );
-    }
-
     return translation;
   }
 
@@ -893,32 +882,4 @@ function resolvePrefetchEntriesByLocale<TranslationType extends Translation>(
       return [];
     }
   });
-}
-
-/**
- * Helper function for creating a translation loader
- */
-function createTranslationLoader<TranslationType extends Translation>(
-  params: I18nManagerConstructorParams<TranslationType>
-) {
-  return routeCreateTranslationLoader({
-    loadTranslations: params.loadTranslations,
-    type: getLoadTranslationsType(params),
-    remoteTranslationLoaderParams: {
-      cacheUrl: params.cacheUrl,
-      projectId: params.projectId,
-      _versionId: params._versionId,
-      _branchId: params._branchId,
-      customMapping: params.customMapping,
-    },
-  }) as SafeTranslationsLoader<TranslationType>;
-}
-
-/**
- * Helper function for creating a dictionary loader
- */
-function createDictionaryLoader<TranslationType extends Translation>(
-  params: I18nManagerConstructorParams<TranslationType>
-): DictionaryLoader {
-  return params.loadDictionary ?? (() => Promise.resolve({}));
 }

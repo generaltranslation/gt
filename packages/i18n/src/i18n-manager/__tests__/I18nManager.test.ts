@@ -3,7 +3,6 @@ import { I18nManager } from '../I18nManager';
 import { createTranslateManyFactory } from '../translations-manager/utils/createTranslateMany';
 import { hashMessage } from '../../utils/hashMessage';
 import { LookupOptions } from '../../translation-functions/types/options';
-import type { DictionaryEntry } from '../translations-manager/DictionaryCache';
 
 // Mock createTranslateManyFactory to inject a controlled translateMany
 const mockTranslateMany = vi.fn();
@@ -29,18 +28,6 @@ function createManager(overrides: Record<string, unknown> = {}) {
       .mockResolvedValue({ [expectedHash]: translatedString }),
     ...overrides,
   });
-}
-
-function getDictionaryRuntimeTranslate(
-  manager: ReturnType<typeof createManager>
-) {
-  return manager as unknown as {
-    dictionaryRuntimeTranslate(
-      locale: string,
-      id: string,
-      sourceEntry: DictionaryEntry
-    ): Promise<string>;
-  };
 }
 
 describe('I18nManager', () => {
@@ -158,6 +145,42 @@ describe('I18nManager', () => {
     dictionary.greeting = 'Salut';
     await expect(manager.loadDictionary('fr')).resolves.toMatchObject({
       greeting: 'Bonjour',
+    });
+  });
+
+  it('loadDictionary() returns deep copies of cached dictionaries', async () => {
+    const manager = createManager({
+      dictionary: {
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        user: {
+          profile: {
+            name: 'Nom',
+          },
+        },
+      }),
+    });
+
+    const dictionary = (await manager.loadDictionary('fr')) as {
+      user: {
+        profile: {
+          name: string;
+        };
+      };
+    };
+    dictionary.user.profile.name = 'Changed';
+
+    await expect(manager.loadDictionary('fr')).resolves.toEqual({
+      user: {
+        profile: {
+          name: 'Nom',
+        },
+      },
     });
   });
 
@@ -790,6 +813,69 @@ describe('I18nManager', () => {
     });
   });
 
+  it('lookupDictionaryObjWithFallback() fills missing leaves in partial target subtrees', async () => {
+    const name = 'Name';
+    const title = 'Title';
+    const titleHash = hashMessage(title, { $format: 'ICU' });
+    const manager = createManager({
+      dictionary: {
+        user: {
+          profile: {
+            name,
+            title,
+          },
+        },
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        user: {
+          profile: {
+            name: 'Nom',
+          },
+        },
+      }),
+      runtimeTranslation: {},
+    });
+
+    mockTranslateMany.mockResolvedValue({
+      [titleHash]: {
+        success: true,
+        translation: 'Titre',
+      },
+    });
+
+    await expect(
+      manager.lookupDictionaryObjWithFallback('fr', 'user.profile')
+    ).resolves.toEqual({
+      name: 'Nom',
+      title: 'Titre',
+    });
+    expect(manager.lookupDictionaryObj('fr', 'user.profile')).toEqual({
+      name: 'Nom',
+      title: 'Titre',
+    });
+  });
+
+  it('lookupDictionaryObjWithFallback() returns loaded target subtrees when source is missing', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        extra: {
+          label: 'Supplement',
+        },
+      }),
+      runtimeTranslation: {},
+    });
+
+    await expect(
+      manager.lookupDictionaryObjWithFallback('fr', 'extra')
+    ).resolves.toEqual({
+      label: 'Supplement',
+    });
+    expect(mockTranslateMany).not.toHaveBeenCalled();
+  });
+
   it('lookupDictionaryObjWithFallback() throws when source dictionary object is missing', async () => {
     const manager = createManager({
       dictionary: {
@@ -1028,7 +1114,7 @@ describe('I18nManager', () => {
     );
   });
 
-  it('dictionaryRuntimeTranslate() respects source dictionary format options', async () => {
+  it('lookupDictionaryWithFallback() respects source dictionary format options', async () => {
     const source = 'Hello {name}';
     const sourceOptions: LookupOptions = {
       $format: 'I18NEXT',
@@ -1041,7 +1127,6 @@ describe('I18nManager', () => {
       },
       runtimeTranslation: {},
     });
-    const runtimeTranslate = getDictionaryRuntimeTranslate(manager);
 
     mockTranslateMany.mockResolvedValue({
       [sourceHash]: {
@@ -1051,14 +1136,14 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting', {
-        entry: source,
-        options: { $format: 'I18NEXT', context: 'homepage' },
-      })
-    ).resolves.toBe('Bonjour {name}');
+      manager.lookupDictionaryWithFallback('fr', 'greeting')
+    ).resolves.toEqual({
+      entry: 'Bonjour {name}',
+      options: {},
+    });
   });
 
-  it('dictionaryRuntimeTranslate() defaults missing source dictionary format to ICU', async () => {
+  it('lookupDictionaryWithFallback() defaults missing source dictionary format to ICU', async () => {
     const source = 'Hello {name}';
     const sourceOptions: LookupOptions = {
       $format: 'ICU',
@@ -1071,7 +1156,6 @@ describe('I18nManager', () => {
       },
       runtimeTranslation: {},
     });
-    const runtimeTranslate = getDictionaryRuntimeTranslate(manager);
 
     mockTranslateMany.mockResolvedValue({
       [sourceHash]: {
@@ -1081,14 +1165,14 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting', {
-        entry: source,
-        options: { context: 'homepage' },
-      })
-    ).resolves.toBe('Bonjour {name}');
+      manager.lookupDictionaryWithFallback('fr', 'greeting')
+    ).resolves.toEqual({
+      entry: 'Bonjour {name}',
+      options: {},
+    });
   });
 
-  it('dictionaryRuntimeTranslate() rejects when runtime translation is not a string', async () => {
+  it('lookupDictionaryWithFallback() rejects when runtime translation is not a string', async () => {
     const source = 'Hello';
     const sourceOptions: LookupOptions = { $format: 'ICU' };
     const sourceHash = hashMessage(source, sourceOptions);
@@ -1096,9 +1180,9 @@ describe('I18nManager', () => {
       dictionary: {
         greeting: source,
       },
+      environment: 'development',
       runtimeTranslation: {},
     });
-    const runtimeTranslate = getDictionaryRuntimeTranslate(manager);
 
     mockTranslateMany.mockResolvedValue({
       [sourceHash]: {
@@ -1108,10 +1192,7 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      runtimeTranslate.dictionaryRuntimeTranslate('fr', 'greeting', {
-        entry: source,
-        options: {},
-      })
+      manager.lookupDictionaryWithFallback('fr', 'greeting')
     ).rejects.toThrow(
       'Dictionary entry "greeting" could not be translated into a string. Check the source entry and translation loader output.'
     );
@@ -1196,6 +1277,29 @@ describe('I18nManager', () => {
     expect(manager.requiresTranslation('fr')).toBe(true);
     expect(manager.requiresDialectTranslation('fr')).toBe(false);
     expect(() => manager.getGTClass('fr')).not.toThrow();
+  });
+
+  it('does not clone loaded dictionaries for cache hit events without subscribers', async () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary: vi.fn().mockResolvedValue({
+        greeting: 'Bonjour',
+        nested: {
+          title: 'Titre',
+        },
+      }),
+    });
+
+    await manager.loadDictionary('fr');
+    const structuredCloneSpy = vi.spyOn(globalThis, 'structuredClone');
+    try {
+      expect(manager.lookupDictionaryObj('fr', 'greeting')).toBe('Bonjour');
+      expect(structuredCloneSpy).not.toHaveBeenCalled();
+    } finally {
+      structuredCloneSpy.mockRestore();
+    }
   });
 
   it('emits dictionary cache lifecycle events', async () => {

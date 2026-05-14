@@ -16,16 +16,25 @@ import type { I18nEvents } from '../event-subscription/types';
  * @deprecated - move to subscription api instead
  */
 export function createLifecycleCallbacks<TranslationValue extends Translation>(
-  emit: EventEmitter<I18nEvents<TranslationValue>>['emit']
+  emit: EventEmitter<I18nEvents<TranslationValue>>['emit'],
+  hasListeners: <EventName extends keyof I18nEvents<TranslationValue>>(
+    eventName: EventName
+  ) => boolean = () => true
 ): I18nManagerCacheLifecycleCallbacks<TranslationValue> {
   return {
     onLocalesCacheHit: (params) => {
+      if (!hasListeners('locales-cache-hit')) {
+        return;
+      }
       emit('locales-cache-hit', {
         locale: params.inputKey,
         translations: params.outputValue.getInternalCache(),
       });
     },
     onLocalesCacheMiss: (params) => {
+      if (!hasListeners(LOCALES_CACHE_MISS_EVENT_NAME)) {
+        return;
+      }
       emit(LOCALES_CACHE_MISS_EVENT_NAME, {
         locale: params.inputKey,
         translations: params.outputValue.getInternalCache(),
@@ -46,12 +55,18 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
       });
     },
     onLocalesDictionaryCacheHit: (params) => {
+      if (!hasListeners('locales-dictionary-cache-hit')) {
+        return;
+      }
       emit('locales-dictionary-cache-hit', {
         locale: params.inputKey,
         dictionary: params.outputValue.getInternalCache(),
       });
     },
     onLocalesDictionaryCacheMiss: (params) => {
+      if (!hasListeners(LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME)) {
+        return;
+      }
       emit(LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME, {
         locale: params.inputKey,
         dictionary: params.outputValue.getInternalCache(),

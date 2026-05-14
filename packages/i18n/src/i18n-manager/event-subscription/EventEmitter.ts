@@ -41,4 +41,10 @@ export class EventEmitter<Events extends BaseEvent> {
   ) {
     this.listeners[eventName]?.forEach((subscriber) => subscriber(event));
   }
+
+  protected hasListeners<EventName extends keyof Events>(
+    eventName: EventName
+  ): boolean {
+    return (this.listeners[eventName]?.size ?? 0) > 0;
+  }
 }

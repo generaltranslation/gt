@@ -2,16 +2,18 @@ import type { Translation } from '../translations-manager/utils/types/translatio
 import type {
   TranslationKey,
   Hash,
+  TranslationsCache,
 } from '../translations-manager/TranslationsCache';
-import type { Locale, CacheEntry } from '../translations-manager/LocalesCache';
+import type { Locale } from '../translations-manager/LocalesCache';
 import type {
   DictionaryKey,
   DictionaryPath,
   DictionaryValue,
   Dictionary,
   DictionaryEntry,
+  DictionaryCache,
 } from '../translations-manager/DictionaryCache';
-import type { DictionaryCacheEntry } from '../translations-manager/LocalesDictionaryCache';
+import type { ResourceCacheEntry } from '../translations-manager/ResourceCache';
 
 // ===== Base Cache Lifecycle ===== //
 
@@ -39,13 +41,13 @@ export type LifecycleParam<InputKey, CacheKey, CacheValue, OutputValue> = {
 /**
  * Locales cache lifecycle callback
  */
-export type LocalesCacheLifecycleCallback<
+export type LocalesTranslationsCacheLifecycleCallback<
   TranslationValue extends Translation,
 > = LifecycleCallback<
   Locale,
   Locale,
-  CacheEntry<TranslationValue>,
-  CacheEntry<TranslationValue>['translationsCache']
+  ResourceCacheEntry<TranslationsCache<TranslationValue>>,
+  TranslationsCache<TranslationValue>
 >;
 
 /**
@@ -65,11 +67,11 @@ export type TranslationsCacheLifecycleCallback<
 /**
  * Combined locales cache lifecycle callbacks
  */
-export type LocalesCacheLifecycleCallbacks<
+export type LocalesTranslationsCacheLifecycleCallbacks<
   TranslationValue extends Translation,
 > = {
-  onLocalesCacheHit?: LocalesCacheLifecycleCallback<TranslationValue>;
-  onLocalesCacheMiss?: LocalesCacheLifecycleCallback<TranslationValue>;
+  onLocalesCacheHit?: LocalesTranslationsCacheLifecycleCallback<TranslationValue>;
+  onLocalesCacheMiss?: LocalesTranslationsCacheLifecycleCallback<TranslationValue>;
   onTranslationsCacheHit?: TranslationsCacheLifecycleCallback<TranslationValue>;
   onTranslationsCacheMiss?: TranslationsCacheLifecycleCallback<TranslationValue>;
 };
@@ -82,8 +84,8 @@ export type LocalesCacheLifecycleCallbacks<
 export type LocalesDictionaryCacheLifecycleCallback = LifecycleCallback<
   Locale,
   Locale,
-  DictionaryCacheEntry,
-  DictionaryCacheEntry['dictionaryCache']
+  ResourceCacheEntry<DictionaryCache>,
+  DictionaryCache
 >;
 
 /**
@@ -124,7 +126,7 @@ export type LocalesDictionaryCacheLifecycleCallbacks = {
  */
 export type I18nManagerCacheLifecycleCallbacks<
   TranslationValue extends Translation,
-> = LocalesCacheLifecycleCallbacks<TranslationValue> &
+> = LocalesTranslationsCacheLifecycleCallbacks<TranslationValue> &
   LocalesDictionaryCacheLifecycleCallbacks;
 
 // ===== Consumer API ===== //

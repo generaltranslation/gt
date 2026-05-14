@@ -1,154 +1,292 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { LocalesCache, SafeTranslationsLoader } from '../LocalesCache';
-import { Hash } from '../TranslationsCache';
-import { CreateTranslateMany } from '../utils/createTranslateMany';
+import { LocalesCache } from '../LocalesCache';
 import { DEFAULT_CACHE_EXPIRY_TIME } from '../utils/constants';
+import type { Dictionary, DictionaryLoader } from '../DictionaryCache';
+import type { Hash } from '../TranslationsCache';
+import type { CreateTranslateMany } from '../utils/createTranslateMany';
+import type { I18nManagerCacheLifecycleCallbacks } from '../../lifecycle-hooks/types';
+import type { SafeTranslationsLoader } from '../translations-loaders/types';
 
 describe('LocalesCache', () => {
   let mockLoadTranslations: ReturnType<typeof vi.fn>;
+  let mockLoadDictionary: ReturnType<typeof vi.fn>;
   let mockCreateTranslateMany: ReturnType<typeof vi.fn>;
+  let mockRuntimeTranslate: ReturnType<typeof vi.fn>;
   const frTranslations: Record<Hash, string> = {
     hash1: 'Bonjour',
     hash2: 'Au revoir',
+  };
+  const enDictionary: Dictionary = {
+    greeting: 'Hello',
+    cta: ['Click me', { $context: 'button', $maxChars: 12 }],
+  };
+  const frDictionary: Dictionary = {
+    greeting: 'Bonjour',
+    cta: ['Cliquez', { context: 'button' }],
+    user: {
+      name: 'Nom',
+    },
   };
 
   beforeEach(() => {
     vi.useFakeTimers();
     mockLoadTranslations = vi.fn().mockResolvedValue(frTranslations);
+    mockLoadDictionary = vi.fn().mockResolvedValue(frDictionary);
     mockCreateTranslateMany = vi.fn().mockReturnValue(vi.fn());
+    mockRuntimeTranslate = vi.fn();
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  function createCache(opts?: { ttl?: number | null }) {
+  function createCache(opts?: {
+    ttl?: number | null;
+    lifecycle?: I18nManagerCacheLifecycleCallbacks<string>;
+  }) {
     return new LocalesCache<string>({
+      defaultLocale: 'en',
+      dictionary: enDictionary,
       loadTranslations: mockLoadTranslations as SafeTranslationsLoader<string>,
+      loadDictionary: mockLoadDictionary as DictionaryLoader,
       createTranslateMany: mockCreateTranslateMany as CreateTranslateMany,
-      lifecycle: {},
+      translateDictionaryEntry: mockRuntimeTranslate,
+      lifecycle: opts?.lifecycle ?? {},
       ...(opts?.ttl !== undefined ? { ttl: opts.ttl } : {}),
     });
   }
 
-  // ===== REGRESSION TESTS ===== //
+  describe('translations', () => {
+    it('getTranslations() returns undefined when locale is not loaded', () => {
+      const cache = createCache();
 
-  it('get() returns undefined when locale not loaded', () => {
-    const cache = createCache();
-    const result = cache.get('fr');
-    expect(result).toBeUndefined();
+      expect(cache.getTranslations('fr')).toBeUndefined();
+    });
+
+    it('getOrLoadTranslations() loads and returns a TranslationsCache', async () => {
+      const cache = createCache();
+      const translationsCache = await cache.getOrLoadTranslations('fr');
+
+      expect(mockLoadTranslations).toHaveBeenCalledWith('fr');
+      expect(translationsCache.getInternalCache()).toEqual(frTranslations);
+    });
+
+    it('getOrLoadTranslations() deduplicates concurrent loads', async () => {
+      const cache = createCache();
+
+      const firstCache = cache.getOrLoadTranslations('fr');
+      const secondCache = cache.getOrLoadTranslations('fr');
+      const [firstResult, secondResult] = await Promise.all([
+        firstCache,
+        secondCache,
+      ]);
+
+      expect(mockLoadTranslations).toHaveBeenCalledTimes(1);
+      expect(firstResult).toBe(secondResult);
+    });
+
+    it('getOrLoadTranslations() emits one locale miss for concurrent loads', async () => {
+      const onLocalesCacheMiss = vi.fn();
+      let resolveTranslations!: (translations: Record<Hash, string>) => void;
+      mockLoadTranslations.mockReturnValue(
+        new Promise((resolve) => {
+          resolveTranslations = resolve;
+        })
+      );
+      const cache = createCache({
+        lifecycle: {
+          onLocalesCacheMiss,
+        },
+      });
+
+      const firstCache = cache.getOrLoadTranslations('fr');
+      const secondCache = cache.getOrLoadTranslations('fr');
+      resolveTranslations(frTranslations);
+      const [firstResult, secondResult] = await Promise.all([
+        firstCache,
+        secondCache,
+      ]);
+
+      expect(firstResult).toBe(secondResult);
+      expect(mockLoadTranslations).toHaveBeenCalledTimes(1);
+      expect(onLocalesCacheMiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('getTranslations() returns cache after getOrLoadTranslations() populates it', async () => {
+      const cache = createCache();
+
+      expect(cache.getTranslations('fr')).toBeUndefined();
+      await cache.getOrLoadTranslations('fr');
+
+      expect(cache.getTranslations('fr')?.getInternalCache()).toEqual(
+        frTranslations
+      );
+    });
+
+    it('getTranslations() returns undefined after default TTL expires', async () => {
+      const cache = createCache();
+
+      await cache.getOrLoadTranslations('fr');
+      expect(cache.getTranslations('fr')).toBeDefined();
+      vi.advanceTimersByTime(DEFAULT_CACHE_EXPIRY_TIME + 1);
+
+      expect(cache.getTranslations('fr')).toBeUndefined();
+    });
+
+    it('ttl: null means translation cache never expires', async () => {
+      const cache = createCache({ ttl: null });
+
+      await cache.getOrLoadTranslations('fr');
+      expect(cache.getTranslations('fr')).toBeDefined();
+      vi.advanceTimersByTime(999_999_999);
+
+      expect(cache.getTranslations('fr')).toBeDefined();
+    });
+
+    it('custom translation TTL is respected', async () => {
+      const cache = createCache({ ttl: 5000 });
+
+      await cache.getOrLoadTranslations('fr');
+      vi.advanceTimersByTime(4999);
+      expect(cache.getTranslations('fr')).toBeDefined();
+      vi.advanceTimersByTime(2);
+
+      expect(cache.getTranslations('fr')).toBeUndefined();
+    });
+
+    it('starts translation TTL after translations finish loading', async () => {
+      const cache = createCache({ ttl: 5000 });
+      let resolveTranslations!: (translations: Record<Hash, string>) => void;
+      mockLoadTranslations.mockReturnValue(
+        new Promise((resolve) => {
+          resolveTranslations = resolve;
+        })
+      );
+
+      const loadPromise = cache.getOrLoadTranslations('fr');
+      vi.advanceTimersByTime(4000);
+      resolveTranslations(frTranslations);
+      await loadPromise;
+      vi.advanceTimersByTime(4999);
+      expect(cache.getTranslations('fr')).toBeDefined();
+      vi.advanceTimersByTime(2);
+
+      expect(cache.getTranslations('fr')).toBeUndefined();
+    });
   });
 
-  it('miss() calls loadTranslations and returns a TranslationsCache', async () => {
-    const cache = createCache();
-    const txCache = await cache.miss('fr');
+  describe('dictionaries', () => {
+    it('getDictionary() returns the default locale dictionary cache without loading', () => {
+      const cache = createCache();
+      const dictionaryCache = cache.getDictionary('en');
 
-    expect(mockLoadTranslations).toHaveBeenCalledWith('fr');
-    expect(txCache).toBeDefined();
-    // The returned TranslationsCache should have the loaded translations
-    const internal = txCache.getInternalCache();
-    expect(internal['hash1']).toBe('Bonjour');
-    expect(internal['hash2']).toBe('Au revoir');
-  });
+      expect(dictionaryCache).toBeDefined();
+      expect(dictionaryCache!.getInternalCache()).toEqual(enDictionary);
+      expect(mockLoadDictionary).not.toHaveBeenCalled();
+    });
 
-  it('miss() deduplicates concurrent loads for same locale', async () => {
-    const cache = createCache();
+    it('getDictionary() returns undefined when non-default locale is not loaded', () => {
+      const cache = createCache();
 
-    const p1 = cache.miss('fr');
-    const p2 = cache.miss('fr');
+      expect(cache.getDictionary('fr')).toBeUndefined();
+    });
 
-    const [r1, r2] = await Promise.all([p1, p2]);
+    it('getOrLoadDictionary() loads and returns a DictionaryCache', async () => {
+      const cache = createCache();
+      const dictionaryCache = await cache.getOrLoadDictionary('fr');
 
-    expect(mockLoadTranslations).toHaveBeenCalledTimes(1);
-    // Both resolve to the same TranslationsCache
-    expect(r1).toBe(r2);
-  });
+      expect(mockLoadDictionary).toHaveBeenCalledWith('fr');
+      expect(dictionaryCache.getInternalCache()).toEqual(frDictionary);
+    });
 
-  // ===== NEW BEHAVIOR TESTS ===== //
+    it('getOrLoadDictionary() deduplicates concurrent loads', async () => {
+      const cache = createCache();
 
-  it('get() returns TranslationsCache after miss() populates it', async () => {
-    const cache = createCache();
+      const firstCache = cache.getOrLoadDictionary('fr');
+      const secondCache = cache.getOrLoadDictionary('fr');
+      const [firstResult, secondResult] = await Promise.all([
+        firstCache,
+        secondCache,
+      ]);
 
-    // Before load
-    expect(cache.get('fr')).toBeUndefined();
+      expect(mockLoadDictionary).toHaveBeenCalledTimes(1);
+      expect(firstResult).toBe(secondResult);
+    });
 
-    // Load
-    await cache.miss('fr');
+    it('getOrLoadDictionary() emits one locale miss for concurrent loads', async () => {
+      const onLocalesDictionaryCacheMiss = vi.fn();
+      let resolveDictionary!: (dictionary: Dictionary) => void;
+      mockLoadDictionary.mockReturnValue(
+        new Promise((resolve) => {
+          resolveDictionary = resolve;
+        })
+      );
+      const cache = createCache({
+        lifecycle: {
+          onLocalesDictionaryCacheMiss,
+        },
+      });
 
-    // After load
-    const txCache = cache.get('fr');
-    expect(txCache).toBeDefined();
-    expect(txCache!.getInternalCache()['hash1']).toBe('Bonjour');
-  });
+      const firstCache = cache.getOrLoadDictionary('fr');
+      const secondCache = cache.getOrLoadDictionary('fr');
+      resolveDictionary(frDictionary);
+      const [firstResult, secondResult] = await Promise.all([
+        firstCache,
+        secondCache,
+      ]);
 
-  it('get() returns undefined after default TTL (60s) expires', async () => {
-    const cache = createCache(); // default TTL = 60s
+      expect(firstResult).toBe(secondResult);
+      expect(mockLoadDictionary).toHaveBeenCalledTimes(1);
+      expect(onLocalesDictionaryCacheMiss).toHaveBeenCalledTimes(1);
+    });
 
-    await cache.miss('fr');
-    expect(cache.get('fr')).toBeDefined();
+    it('getDictionary() returns cache after getOrLoadDictionary() populates it', async () => {
+      const cache = createCache();
 
-    // Advance past default TTL
-    vi.advanceTimersByTime(DEFAULT_CACHE_EXPIRY_TIME + 1);
+      expect(cache.getDictionary('fr')).toBeUndefined();
+      await cache.getOrLoadDictionary('fr');
 
-    expect(cache.get('fr')).toBeUndefined();
-  });
+      expect(cache.getDictionary('fr')?.getInternalCache()).toEqual(
+        frDictionary
+      );
+    });
 
-  it('ttl: null means cache never expires', async () => {
-    const cache = createCache({ ttl: null });
+    it('getDictionary() returns undefined after default TTL expires', async () => {
+      const cache = createCache();
 
-    await cache.miss('fr');
-    expect(cache.get('fr')).toBeDefined();
+      await cache.getOrLoadDictionary('fr');
+      expect(cache.getDictionary('fr')).toBeDefined();
+      vi.advanceTimersByTime(DEFAULT_CACHE_EXPIRY_TIME + 1);
 
-    // Advance by a very large amount
-    vi.advanceTimersByTime(999_999_999);
+      expect(cache.getDictionary('fr')).toBeUndefined();
+    });
 
-    // Still valid
-    expect(cache.get('fr')).toBeDefined();
-  });
+    it('ttl: null means dictionary cache never expires', async () => {
+      const cache = createCache({ ttl: null });
 
-  it('custom TTL is respected', async () => {
-    const cache = createCache({ ttl: 5000 });
+      await cache.getOrLoadDictionary('fr');
+      expect(cache.getDictionary('fr')).toBeDefined();
+      vi.advanceTimersByTime(999_999_999);
 
-    await cache.miss('fr');
+      expect(cache.getDictionary('fr')).toBeDefined();
+    });
 
-    // Just before expiry
-    vi.advanceTimersByTime(4999);
-    expect(cache.get('fr')).toBeDefined();
+    it('getOrLoadDictionary() returns a DictionaryCache with entry metadata', async () => {
+      const cache = createCache();
+      const dictionaryCache = await cache.getOrLoadDictionary('fr');
 
-    // After expiry
-    vi.advanceTimersByTime(2);
-    expect(cache.get('fr')).toBeUndefined();
-  });
+      expect(dictionaryCache.getEntry('cta')).toEqual({
+        entry: 'Cliquez',
+        options: { context: 'button' },
+      });
+    });
 
-  it('starts TTL after translations finish loading', async () => {
-    const cache = createCache({ ttl: 5000 });
-    let resolveTranslations!: (translations: Record<Hash, string>) => void;
-    mockLoadTranslations.mockReturnValue(
-      new Promise((resolve) => {
-        resolveTranslations = resolve;
-      })
-    );
+    it('default locale dictionary never expires', () => {
+      const cache = createCache();
 
-    const missPromise = cache.miss('fr');
-    vi.advanceTimersByTime(4000);
-    resolveTranslations(frTranslations);
-    await missPromise;
+      vi.advanceTimersByTime(999_999_999);
 
-    vi.advanceTimersByTime(4999);
-    expect(cache.get('fr')).toBeDefined();
-
-    vi.advanceTimersByTime(2);
-    expect(cache.get('fr')).toBeUndefined();
-  });
-
-  it('getInternalCache() returns copied cache entries', async () => {
-    const cache = createCache({ ttl: 5000 });
-    await cache.miss('fr');
-
-    const internal = cache.getInternalCache();
-    internal['fr'].expiresAt = 0;
-
-    expect(cache.get('fr')).toBeDefined();
-    expect(cache.getInternalCache()['fr']).not.toBe(internal['fr']);
+      expect(cache.getDictionary('en')).toBeDefined();
+    });
   });
 });
