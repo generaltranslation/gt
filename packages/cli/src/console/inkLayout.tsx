@@ -1,6 +1,7 @@
 import { Box, Text } from 'ink';
 import { PACKAGE_VERSION } from '../generated/version.js';
 import { useTerminalSize } from './inkTerminal.js';
+import { INK_ACCENT_COLOR } from './inkTheme.js';
 import type { PromptFrameProps } from './inkTypes.js';
 import {
   getContentWidth,
@@ -35,7 +36,7 @@ export function PromptFrame({ message, children, footer }: PromptFrameProps) {
   return (
     <Box width={columns} height={rows} flexDirection='column'>
       <Box width={columns}>
-        <Text bold color='black' backgroundColor='cyan'>
+        <Text bold color='black' backgroundColor={INK_ACCENT_COLOR}>
           {headerText}
         </Text>
       </Box>
@@ -48,7 +49,7 @@ export function PromptFrame({ message, children, footer }: PromptFrameProps) {
       >
         <Box width={width} flexDirection='column'>
           <Box justifyContent='center'>
-            <Text bold color='cyan'>
+            <Text bold color={INK_ACCENT_COLOR}>
               GT Wizard
             </Text>
           </Box>
@@ -65,7 +66,11 @@ export function PromptFrame({ message, children, footer }: PromptFrameProps) {
 
       <Box flexGrow={1} />
       <Box width={columns}>
-        <Text color='black' backgroundColor='cyan' wrap='truncate-end'>
+        <Text
+          color='black'
+          backgroundColor={INK_ACCENT_COLOR}
+          wrap='truncate-end'
+        >
           {footerLine}
         </Text>
       </Box>
@@ -112,7 +117,12 @@ export function InputBox({
     const visibleValue = truncate(value, Math.max(0, innerWidth - 1));
     const padding = Math.max(0, innerWidth - visibleValue.length - 1);
     return (
-      <Box width={width} borderStyle='round' borderColor='cyan' paddingX={1}>
+      <Box
+        width={width}
+        borderStyle='round'
+        borderColor={INK_ACCENT_COLOR}
+        paddingX={1}
+      >
         <Text>{visibleValue}</Text>
         <Text inverse> </Text>
         <Text>{' '.repeat(padding)}</Text>
@@ -128,7 +138,12 @@ export function InputBox({
   if (!placeholderText) {
     const padding = Math.max(0, innerWidth - 1);
     return (
-      <Box width={width} borderStyle='round' borderColor='cyan' paddingX={1}>
+      <Box
+        width={width}
+        borderStyle='round'
+        borderColor={INK_ACCENT_COLOR}
+        paddingX={1}
+      >
         <Text inverse> </Text>
         <Text>{' '.repeat(padding)}</Text>
       </Box>
@@ -137,7 +152,12 @@ export function InputBox({
 
   const padding = Math.max(0, innerWidth - placeholderText.length);
   return (
-    <Box width={width} borderStyle='round' borderColor='cyan' paddingX={1}>
+    <Box
+      width={width}
+      borderStyle='round'
+      borderColor={INK_ACCENT_COLOR}
+      paddingX={1}
+    >
       <Text inverse dimColor>
         {placeholderText.slice(0, 1)}
       </Text>
