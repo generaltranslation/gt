@@ -1,5 +1,18 @@
 # gt-react
 
+## 10.19.17
+
+### Patch Changes
+
+- [#1419](https://github.com/generaltranslation/gt/pull/1419) [`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300) Thanks [@bgub](https://github.com/bgub)! - Improve diagnostic messages and package-local diagnostic formatting.
+
+- Updated dependencies [[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa), [`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:
+  - @generaltranslation/format@0.1.1
+  - generaltranslation@8.2.15
+  - gt-i18n@0.9.3
+  - @generaltranslation/react-core@1.8.19
+  - @generaltranslation/supported-locales@2.0.73
+
 ## 10.19.16
 
 ### Patch Changes
