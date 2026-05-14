@@ -1,11 +1,11 @@
-import { Cache } from './Cache';
 import {
+  cloneDictionaryValue,
   getDictionaryEntry,
-  getDictionaryPath,
   getDictionaryValue,
-  isDictionaryValue,
-  replaceDictionary,
+  getDictionaryValueAtPath,
+  setDictionaryValueAtPath,
 } from './utils/dictionary-helpers';
+import { materializeDictionaryValue } from './utils/materialize-dictionary';
 import type {
   LifecycleCallback,
   LifecycleParam,
@@ -17,7 +17,6 @@ import type {
   DictionaryPath,
   DictionaryValue,
 } from './utils/types/dictionary';
-import { DictionarySourceNotFoundError } from './utils/DictionarySourceNotFoundError';
 export type {
   Dictionary,
   DictionaryEntry,
@@ -34,14 +33,15 @@ export type DictionaryRuntimeTranslate = (
   sourceEntry: DictionaryEntry
 ) => Promise<string>;
 
-export type DictionaryObjectLifecycleParam = {
-  onHitObj?: LifecycleCallback<
-    DictionaryKey,
-    DictionaryPath,
-    DictionaryValue,
-    DictionaryValue
-  >;
-  onMissObj?: LifecycleCallback<
+export type DictionaryLoader = (locale: string) => Promise<Dictionary>;
+
+type DictionaryCacheLifecycle = LifecycleParam<
+  DictionaryKey,
+  DictionaryPath,
+  DictionaryValue,
+  DictionaryEntry
+> & {
+  onDictionaryObjectCacheHit?: LifecycleCallback<
     DictionaryKey,
     DictionaryPath,
     DictionaryValue,
@@ -49,224 +49,142 @@ export type DictionaryObjectLifecycleParam = {
   >;
 };
 
-/**
- * A cache for a single locale's dictionary
- *
- * Principles:
- * - This class is language agnostic, and should never store the locale code as a parameter.
- *   Locale logic is handled at the LocalesDictionaryCache level. Use a callback function
- *   that has the locale parameter embedded if you wish to use the locale code.
- */
-export class DictionaryCache extends Cache<
-  DictionaryKey,
-  DictionaryPath,
-  DictionaryValue,
-  DictionaryEntry,
-  [DictionaryKey, DictionaryEntry]
-> {
-  private _runtimeTranslate: DictionaryRuntimeTranslate;
-  private onHitObj?: DictionaryObjectLifecycleParam['onHitObj'];
-  // TODO: Wire this when object miss handling is introduced.
-  private onMissObj?: DictionaryObjectLifecycleParam['onMissObj'];
+function cloneDictionaryEntry(entry: DictionaryEntry): DictionaryEntry {
+  return {
+    entry: entry.entry,
+    options: structuredClone(entry.options),
+  };
+}
 
-  /**
-   * Constructor
-   * @param {Object} params - The parameters for the cache
-   * @param {Dictionary} params.init - The initial cache
-   */
+export class DictionaryCache {
+  private cache: Dictionary;
+  private pendingTranslations = new Map<
+    DictionaryKey,
+    Promise<DictionaryEntry>
+  >();
+  private pendingMaterializations = new Map<
+    DictionaryKey,
+    Promise<DictionaryValue>
+  >();
+  private runtimeTranslate: DictionaryRuntimeTranslate;
+  private lifecycle: DictionaryCacheLifecycle;
+
   constructor({
     init,
-    lifecycle,
+    lifecycle = {},
     runtimeTranslate,
   }: {
     init: Dictionary;
     runtimeTranslate: DictionaryRuntimeTranslate;
-    lifecycle?: LifecycleParam<
-      DictionaryKey,
-      DictionaryPath,
-      DictionaryValue,
-      DictionaryEntry
-    > &
-      DictionaryObjectLifecycleParam;
+    lifecycle?: DictionaryCacheLifecycle;
   }) {
-    super(init, lifecycle);
-    this._runtimeTranslate = runtimeTranslate;
-    this.onHitObj = lifecycle?.onHitObj;
-    this.onMissObj = lifecycle?.onMissObj;
+    this.cache = structuredClone(init);
+    this.runtimeTranslate = runtimeTranslate;
+    this.lifecycle = lifecycle;
   }
 
-  /**
-   * Get the dictionary value for a given key
-   * @param key - The dictionary key
-   * @returns The dictionary value
-   */
-  public get(key: DictionaryKey): DictionaryEntry | undefined {
-    const value = this.getCache(key);
+  public getEntry(key: DictionaryKey): DictionaryEntry | undefined {
+    const value = getDictionaryValueAtPath(this.cache, key);
     const entry = getDictionaryEntry(value);
     if (entry === undefined) {
       return undefined;
     }
+    const outputEntry = cloneDictionaryEntry(entry);
 
-    if (this.onHit) {
-      this.onHit({
-        inputKey: key,
-        cacheKey: this.genKey(key),
-        cacheValue: value as DictionaryValue,
-        outputValue: entry,
-      });
-    }
-    return entry;
+    this.lifecycle.onHit?.({
+      inputKey: key,
+      cacheKey: key,
+      cacheValue: value as DictionaryValue,
+      outputValue: outputEntry,
+    });
+    return outputEntry;
   }
 
-  public set(key: DictionaryKey, value: DictionaryEntry): void {
-    const dictionaryValue = getDictionaryValue(value);
-    this.setCache(this.genKey(key), dictionaryValue);
-  }
-
-  public getObj(key: DictionaryKey): DictionaryValue | undefined {
-    const value = this.getCache(key);
+  public getValue(key: DictionaryKey): DictionaryValue | undefined {
+    const value = getDictionaryValueAtPath(this.cache, key);
     if (value === undefined) {
       return undefined;
     }
-    const outputValue = structuredClone(value);
+    const outputValue = cloneDictionaryValue(value);
 
-    if (this.onHitObj) {
-      this.onHitObj({
-        inputKey: key,
-        cacheKey: this.genKey(key),
-        cacheValue: value as DictionaryValue,
-        outputValue,
-      });
-    }
+    this.lifecycle.onDictionaryObjectCacheHit?.({
+      inputKey: key,
+      cacheKey: key,
+      cacheValue: value as DictionaryValue,
+      outputValue,
+    });
     return outputValue;
   }
 
-  public setObj(key: DictionaryKey, value: DictionaryValue): void {
-    this.setCache(this.genKey(key), structuredClone(value));
+  public setValue(key: DictionaryKey, value: DictionaryValue): void {
+    setDictionaryValueAtPath(this.cache, key, cloneDictionaryValue(value));
   }
 
-  public async missObj(
+  public getInternalCache(): Dictionary {
+    return cloneDictionaryValue(this.cache);
+  }
+
+  public async materializeValue(
     key: DictionaryKey,
-    sourceObject: DictionaryValue
+    sourceValue: DictionaryValue,
+    targetValue = getDictionaryValueAtPath(this.cache, key)
   ): Promise<DictionaryValue> {
-    const sourceEntry = getDictionaryEntry(sourceObject);
-    if (sourceEntry !== undefined) {
-      const entry = await this.miss(key, sourceEntry);
-      return getDictionaryValue(entry);
+    let materializationPromise = this.pendingMaterializations.get(key);
+    if (!materializationPromise) {
+      materializationPromise = materializeDictionaryValue({
+        key,
+        sourceValue,
+        targetValue,
+        translateEntry: async (entryKey, sourceEntry) =>
+          getDictionaryValue(
+            await this.materializeEntry(entryKey, sourceEntry)
+          ),
+      }).then((value) => {
+        this.setValue(key, value);
+        return value;
+      });
+      this.pendingMaterializations.set(key, materializationPromise);
     }
 
-    if (!isDictionaryValue(sourceObject)) {
-      throw new DictionarySourceNotFoundError(key);
+    try {
+      return await materializationPromise;
+    } finally {
+      this.pendingMaterializations.delete(key);
     }
-
-    const translatedEntries = await Promise.all(
-      Object.entries(sourceObject).map(async ([childKey, childSource]) => {
-        const childPath = key ? `${key}.${childKey}` : childKey;
-        return [childKey, await this.missObj(childPath, childSource)] as const;
-      })
-    );
-    const translatedObject = Object.fromEntries(
-      translatedEntries
-    ) as Dictionary;
-    this.setObj(key, translatedObject);
-    return translatedObject;
   }
 
-  /**
-   * Miss the cache
-   * @param key - The dictionary key
-   * @returns The dictionary value
-   */
-  public async miss(
+  public async materializeEntry(
     key: DictionaryKey,
     sourceEntry: DictionaryEntry
   ): Promise<DictionaryEntry> {
-    const value = await this.missCache(key, sourceEntry);
-    const entry = getDictionaryEntry(value);
-    if (entry === undefined) {
-      // Never will happen
-      throw new Error(
-        'DictionaryCache missCache did not return a DictionaryEntry'
+    let translationPromise = this.pendingTranslations.get(key);
+    if (!translationPromise) {
+      translationPromise = this.runtimeTranslate(key, sourceEntry).then(
+        (value) => {
+          setDictionaryValueAtPath(this.cache, key, value);
+          const entry = getDictionaryEntry(value);
+          if (entry === undefined) {
+            // Never will happen
+            throw new Error(
+              'DictionaryCache materializeEntry did not return a DictionaryEntry'
+            );
+          }
+          this.lifecycle.onMiss?.({
+            inputKey: key,
+            cacheKey: key,
+            cacheValue: value,
+            outputValue: cloneDictionaryEntry(entry),
+          });
+          return cloneDictionaryEntry(entry);
+        }
       );
-    }
-    if (this.onMiss) {
-      this.onMiss({
-        inputKey: key,
-        cacheKey: this.genKey(key),
-        cacheValue: value,
-        outputValue: entry,
-      });
-    }
-    return entry;
-  }
-
-  /**
-   * Set the value for a key
-   */
-  protected setCache(cacheKey: DictionaryPath, value: DictionaryValue): void {
-    const cache = this.getMutableCache() as Dictionary;
-    const dictionaryPath = getDictionaryPath(cacheKey);
-
-    if (dictionaryPath.length === 0) {
-      if (isDictionaryValue(value)) {
-        replaceDictionary(cache, value);
-      }
-      return;
+      this.pendingTranslations.set(key, translationPromise);
     }
 
-    let current = cache;
-    for (const key of dictionaryPath.slice(0, -1)) {
-      const next = current[key];
-      if (!isDictionaryValue(next)) {
-        current[key] = {};
-      }
-      current = current[key] as Dictionary;
+    try {
+      return cloneDictionaryEntry(await translationPromise);
+    } finally {
+      this.pendingTranslations.delete(key);
     }
-
-    current[dictionaryPath[dictionaryPath.length - 1]] = value;
-  }
-
-  /**
-   * Look up the key
-   */
-  protected getCache(key: DictionaryKey): DictionaryValue | undefined {
-    const dictionaryPath = getDictionaryPath(this.genKey(key));
-    let current: DictionaryValue = this.getMutableCache() as Dictionary;
-
-    if (dictionaryPath.length === 0) {
-      return current;
-    }
-
-    for (const pathSegment of dictionaryPath) {
-      if (!isDictionaryValue(current)) {
-        return undefined;
-      }
-      current = current[pathSegment];
-    }
-
-    return current;
-  }
-
-  /**
-   * Generate a key for the cache
-   * @param key - The dictionary key
-   * @returns The key
-   */
-  protected genKey(key: DictionaryKey): DictionaryPath {
-    return key;
-  }
-
-  /**
-   * Get the fallback value for a cache miss
-   * @param key - The dictionary key
-   * @returns The fallback value
-   *
-   * @throws {Error} - If the fallback is not implemented
-   */
-  protected fallback(
-    key: DictionaryKey,
-    sourceEntry: DictionaryEntry
-  ): Promise<DictionaryValue> {
-    return this._runtimeTranslate(key, sourceEntry);
   }
 }

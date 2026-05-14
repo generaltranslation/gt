@@ -14,7 +14,7 @@ import type {
 } from '../../i18n-manager/translations-manager/DictionaryCache';
 import {
   getDictionaryEntry,
-  isDictionaryValue,
+  isDictionaryObject,
   resolveDictionaryLookupOptions,
 } from '../../i18n-manager/translations-manager/utils/dictionary-helpers';
 import type { DictionaryObjectTranslation } from '../types/functions';
@@ -114,8 +114,8 @@ export async function getTranslations(): Promise<TFunctionType> {
       return targetEntry.entry;
     }
 
-    if (isDictionaryValue(targetObject)) {
-      if (!isDictionaryValue(sourceObject)) {
+    if (isDictionaryObject(targetObject)) {
+      if (!isDictionaryObject(sourceObject)) {
         return renderObject({
           sourceObject: targetObject,
           targetObject: undefined,
@@ -148,7 +148,7 @@ export async function getTranslations(): Promise<TFunctionType> {
       return sourceEntry.entry;
     }
 
-    if (isDictionaryValue(sourceObject)) {
+    if (isDictionaryObject(sourceObject)) {
       return renderDictionaryObject({
         sourceObject,
         targetObject: undefined,
@@ -165,19 +165,19 @@ export async function getTranslations(): Promise<TFunctionType> {
     sourceObject: DictionaryValue;
     targetObject: DictionaryValue | undefined;
   }): DictionaryObjectTranslation {
-    if (!isDictionaryValue(sourceObject)) {
+    if (!isDictionaryObject(sourceObject)) {
       return renderObject({ sourceObject, targetObject });
     }
     const result: Record<string, DictionaryObjectTranslation> = {};
     const keys = new Set([
       ...Object.keys(sourceObject),
-      ...(isDictionaryValue(targetObject) ? Object.keys(targetObject) : []),
+      ...(isDictionaryObject(targetObject) ? Object.keys(targetObject) : []),
     ]);
 
     for (const key of Array.from(keys)) {
       const renderedChild = renderObject({
         sourceObject: sourceObject[key],
-        targetObject: isDictionaryValue(targetObject)
+        targetObject: isDictionaryObject(targetObject)
           ? targetObject[key]
           : undefined,
       });

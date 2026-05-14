@@ -1,8 +1,13 @@
 import { EventEmitter } from '../event-subscription/EventEmitter';
 import {
+  DICTIONARY_CACHE_HIT_EVENT_NAME,
   DICTIONARY_CACHE_MISS_EVENT_NAME,
+  DICTIONARY_OBJECT_CACHE_HIT_EVENT_NAME,
+  LOCALES_CACHE_HIT_EVENT_NAME,
   LOCALES_CACHE_MISS_EVENT_NAME,
+  LOCALES_DICTIONARY_CACHE_HIT_EVENT_NAME,
   LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME,
+  TRANSLATIONS_CACHE_HIT_EVENT_NAME,
   TRANSLATIONS_CACHE_MISS_EVENT_NAME,
 } from '../event-subscription/types';
 import type { Translation } from '../translations-manager/utils/types/translation-data';
@@ -33,7 +38,7 @@ export function subscribeLifecycleCallbacks<
   subscribe: EventEmitter<I18nEvents<TranslationValue>>['subscribe']
 ) {
   if (onLocalesCacheHit) {
-    subscribe('locales-cache-hit', (event) => {
+    subscribe(LOCALES_CACHE_HIT_EVENT_NAME, (event) => {
       onLocalesCacheHit({
         ...event,
         value: event.translations,
@@ -49,7 +54,7 @@ export function subscribeLifecycleCallbacks<
     });
   }
   if (onTranslationsCacheHit) {
-    subscribe('translations-cache-hit', (event) => {
+    subscribe(TRANSLATIONS_CACHE_HIT_EVENT_NAME, (event) => {
       onTranslationsCacheHit({
         ...event,
         value: event.translation,
@@ -65,7 +70,7 @@ export function subscribeLifecycleCallbacks<
     });
   }
   if (onLocalesDictionaryCacheHit) {
-    subscribe('locales-dictionary-cache-hit', (event) => {
+    subscribe(LOCALES_DICTIONARY_CACHE_HIT_EVENT_NAME, (event) => {
       onLocalesDictionaryCacheHit(event);
     });
   }
@@ -75,7 +80,7 @@ export function subscribeLifecycleCallbacks<
     });
   }
   if (onDictionaryCacheHit) {
-    subscribe('dictionary-cache-hit', (event) => {
+    subscribe(DICTIONARY_CACHE_HIT_EVENT_NAME, (event) => {
       onDictionaryCacheHit(event);
     });
   }
@@ -85,7 +90,7 @@ export function subscribeLifecycleCallbacks<
     });
   }
   if (onDictionaryObjectCacheHit) {
-    subscribe('dictionary-object-cache-hit', (event) => {
+    subscribe(DICTIONARY_OBJECT_CACHE_HIT_EVENT_NAME, (event) => {
       onDictionaryObjectCacheHit(event);
     });
   }

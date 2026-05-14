@@ -1,5 +1,4 @@
 import { LookupOptions } from '../../translation-functions/types/options';
-import { Cache } from './Cache';
 import type { LifecycleParam } from '../lifecycle-hooks/types';
 import { Translation } from './utils/types/translation-data';
 import { hashMessage } from '../../utils/hashMessage';
@@ -101,35 +100,20 @@ export type TranslateMany = (
  *   Locale logic is handled at the LocalesCache level. Use a callback function that has the
  *   locale parameter embedded if you wish to use the locale code.
  */
-export class TranslationsCache<
-  TranslationValue extends Translation,
-> extends Cache<
-  TranslationKey<TranslationValue>,
-  Hash,
-  TranslationValue,
-  TranslationValue
-> {
-  /**
-   * Queue of translation requests
-   */
-  private _queue: Array<QueueEntry<TranslationValue>> = [];
-
-  /**
-   * Timer for batching
-   */
-  private _batchTimer: ReturnType<typeof setTimeout> | null = null;
-
-  /**
-   * Number of active requests
-   */
-  private _activeRequests = 0;
-
-  private _batchConfig: Required<TranslationBatchConfig>;
-
-  /**
-   * Translate many function
-   */
-  private _translateMany: TranslateMany;
+export class TranslationsCache<TranslationValue extends Translation> {
+  private cache: Record<Hash, TranslationValue>;
+  private pendingTranslations = new Map<Hash, Promise<TranslationValue>>();
+  private queue: Array<QueueEntry<TranslationValue>> = [];
+  private batchTimer: ReturnType<typeof setTimeout> | null = null;
+  private activeRequests = 0;
+  private batchConfig: Required<TranslationBatchConfig>;
+  private translateMany: TranslateMany;
+  private lifecycle: LifecycleParam<
+    TranslationKey<TranslationValue>,
+    Hash,
+    TranslationValue,
+    TranslationValue
+  >;
 
   /**
    * Constructor
@@ -140,22 +124,23 @@ export class TranslationsCache<
   constructor({
     init,
     translateMany,
-    lifecycle,
+    lifecycle = {},
     batchConfig,
   }: {
     init: Record<Hash, TranslationValue>;
     translateMany: TranslateMany;
     batchConfig?: TranslationBatchConfig;
-    lifecycle: LifecycleParam<
+    lifecycle?: LifecycleParam<
       TranslationKey<TranslationValue>,
       Hash,
       TranslationValue,
       TranslationValue
     >;
   }) {
-    super(init, lifecycle);
-    this._translateMany = translateMany;
-    this._batchConfig = normalizeBatchConfig(batchConfig);
+    this.cache = structuredClone(init);
+    this.translateMany = translateMany;
+    this.batchConfig = normalizeBatchConfig(batchConfig);
+    this.lifecycle = lifecycle;
   }
 
   /**
@@ -166,11 +151,12 @@ export class TranslationsCache<
   public get<T extends TranslationValue>(
     key: TranslationKey<T>
   ): T | undefined {
-    const value = this.getCache(key) as T | undefined;
-    if (value != null && this.onHit) {
-      this.onHit({
+    const cacheKey = this.getCacheKey(key);
+    const value = this.cache[cacheKey] as T | undefined;
+    if (value != null) {
+      this.lifecycle.onHit?.({
         inputKey: key,
-        cacheKey: this.genKey(key),
+        cacheKey,
         cacheValue: value,
         outputValue: value,
       });
@@ -186,100 +172,85 @@ export class TranslationsCache<
   public async miss<T extends TranslationValue>(
     key: TranslationKey<T>
   ): Promise<T> {
-    const value = await this.missCache(key);
-    if (value != null && this.onMiss) {
-      this.onMiss({
-        inputKey: key,
-        cacheKey: this.genKey(key),
-        cacheValue: value,
-        outputValue: value,
-      });
+    const cacheKey = this.getCacheKey(key);
+    let translationPromise = this.pendingTranslations.get(cacheKey);
+    if (!translationPromise) {
+      translationPromise = this.translate(key);
+      this.pendingTranslations.set(cacheKey, translationPromise);
     }
-    return value as T;
+
+    try {
+      const value = await translationPromise;
+      if (value != null) {
+        this.lifecycle.onMiss?.({
+          inputKey: key,
+          cacheKey,
+          cacheValue: value,
+          outputValue: value,
+        });
+      }
+      return value as T;
+    } finally {
+      this.pendingTranslations.delete(cacheKey);
+    }
   }
 
-  /**
-   * Generate a key for the cache
-   * @param key - The translation key
-   * @returns The key
-   */
-  protected genKey(key: TranslationKey<TranslationValue>): Hash {
+  public getInternalCache(): Record<Hash, TranslationValue> {
+    return structuredClone(this.cache);
+  }
+
+  private getCacheKey(key: TranslationKey<TranslationValue>): Hash {
     return hashMessage(key.message, key.options);
   }
 
-  /**
-   * Get the fallback value for a cache miss
-   * @param key - The translation key
-   * @returns The fallback value
-   */
-  protected fallback(
+  private translate(
     key: TranslationKey<TranslationValue>
   ): Promise<TranslationValue> {
-    // Add translation request to queue
-    const translationPromise = this._enqueueTranslation(key);
+    const translationPromise = this.enqueueTranslation(key);
 
-    // If batch is full, flush now
-    if (this._queue.length >= this._batchConfig.maxBatchSize) {
-      this._flushNow();
+    if (this.queue.length >= this.batchConfig.maxBatchSize) {
+      this.flushNow();
     } else {
-      this._scheduleBatch();
+      this.scheduleBatch();
     }
 
     return translationPromise;
   }
 
-  // ===== PRIVATE METHODS ===== //
-
-  // --- QUEUE MANAGEMENT --- //
-
-  /**
-   * Flush the queue now
-   */
-  private _flushNow(): void {
-    if (this._batchTimer) {
-      clearTimeout(this._batchTimer);
-      this._batchTimer = null;
+  private flushNow(): void {
+    if (this.batchTimer) {
+      clearTimeout(this.batchTimer);
+      this.batchTimer = null;
     }
-    this._drainQueue();
+    this.drainQueue();
   }
 
-  /**
-   * Schedule a batch of translations
-   */
-  private _scheduleBatch(): void {
-    if (this._batchTimer) return; // already scheduled
-    this._batchTimer = setTimeout(() => {
-      this._batchTimer = null;
-      this._drainQueue();
-    }, this._batchConfig.batchInterval);
+  private scheduleBatch(): void {
+    if (this.batchTimer) return;
+    this.batchTimer = setTimeout(() => {
+      this.batchTimer = null;
+      this.drainQueue();
+    }, this.batchConfig.batchInterval);
   }
 
-  /**
-   * Drain the queue
-   */
-  private _drainQueue(): void {
+  private drainQueue(): void {
     while (
-      this._queue.length > 0 &&
-      this._activeRequests < this._batchConfig.maxConcurrentRequests
+      this.queue.length > 0 &&
+      this.activeRequests < this.batchConfig.maxConcurrentRequests
     ) {
-      const batch = this._queue.splice(0, this._batchConfig.maxBatchSize);
-      this._sendBatchRequest(batch);
+      const batch = this.queue.splice(0, this.batchConfig.maxBatchSize);
+      this.sendBatchRequest(batch);
     }
-    // If items remain (hit concurrency limit), schedule again
-    if (this._queue.length > 0) {
-      this._scheduleBatch();
+
+    if (this.queue.length > 0) {
+      this.scheduleBatch();
     }
   }
 
-  /**
-   * Enqueue translation request and return a promise that resolves when the translation is ready
-   * @param {TranslationKey<TranslationValue>} key - The translation key
-   * @returns {Promise<TranslationValue>} The translation promise
-   */
-  private _enqueueTranslation(
+  private enqueueTranslation(
     key: TranslationKey<TranslationValue>
   ): Promise<TranslationValue> {
-    const hash = this.genKey(key);
+    const hash = this.getCacheKey(key);
     const options = key.options;
     const metadataOptions = options as {
       $context?: string;
@@ -287,7 +258,7 @@ export class TranslationsCache<
       $maxChars?: number;
     };
     return new Promise<TranslationValue>((resolve, reject) => {
-      this._queue.push({
+      this.queue.push({
         key: hash,
         source: key.message,
         metadata: {
@@ -307,38 +278,29 @@ export class TranslationsCache<
     });
   }
 
-  // --- SEND REQUESTS --- //
-
-  /**
-   * Send a batch request for translations
-   * @param {QueueEntry<TranslationValue>[]} batch - The batch of requests to send
-   */
-  private async _sendBatchRequest(
+  private async sendBatchRequest(
     batch: QueueEntry<TranslationValue>[]
   ): Promise<void> {
-    this._activeRequests++;
+    this.activeRequests++;
 
     const requests = convertBatchToTranslateManyParams(batch);
-    const response = await this._sendBatchRequestWithErrorHandling(
+    const response = await this.sendBatchRequestWithErrorHandling(
       batch,
       requests
     );
     if (response) {
-      this._handleTranslationResponse(batch, response);
+      this.handleTranslationResponse(batch, response);
     }
 
-    this._activeRequests--;
+    this.activeRequests--;
   }
 
-  /**
-   * Send a translation request with error handling
-   */
-  private async _sendBatchRequestWithErrorHandling(
+  private async sendBatchRequestWithErrorHandling(
     batch: QueueEntry<TranslationValue>[],
     requests: Record<Hash, TranslateManyEntry>
   ): Promise<ReturnType<TranslateMany> | undefined> {
     try {
-      return await this._translateMany(requests);
+      return await this.translateMany(requests);
     } catch (error) {
       for (const entry of batch) {
         entry.reject(error);
@@ -347,10 +309,7 @@ export class TranslationsCache<
     }
   }
 
-  /**
-   * Handle a translation response
-   */
-  private _handleTranslationResponse(
+  private handleTranslationResponse(
     batch: QueueEntry<TranslationValue>[],
     response: Awaited<ReturnType<TranslateMany>>
   ): void {
@@ -359,7 +318,7 @@ export class TranslationsCache<
       const result = response[key];
       if (result && result.success) {
         const translation = result.translation as TranslationValue;
-        this.setCache(key, translation);
+        this.cache[key] = translation;
         entry.resolve(translation);
       } else {
         entry.reject(result?.error);

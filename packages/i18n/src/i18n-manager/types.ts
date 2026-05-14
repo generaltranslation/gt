@@ -4,8 +4,10 @@ import type { GTConfig } from '../config/types';
 import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import type { Translation } from './translations-manager/utils/types/translation-data';
 import type { LifecycleCallbacks } from './lifecycle-hooks/types';
-import type { Dictionary } from './translations-manager/DictionaryCache';
-import type { DictionaryLoader } from './translations-manager/LocalesDictionaryCache';
+import type {
+  Dictionary,
+  DictionaryLoader,
+} from './translations-manager/DictionaryCache';
 import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
 
 export type DictionaryConfig =

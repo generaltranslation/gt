@@ -1,5 +1,7 @@
-import type { DictionaryLoader } from '../../translations-manager/LocalesDictionaryCache';
-import type { Dictionary } from '../../translations-manager/DictionaryCache';
+import type {
+  Dictionary,
+  DictionaryLoader,
+} from '../../translations-manager/DictionaryCache';
 import type { ValidationResult } from '../types';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 
