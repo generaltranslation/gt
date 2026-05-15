@@ -1,4 +1,4 @@
-import { I18nStore } from "./I18nStore";
+import { I18nStore } from './I18nStore';
 
 // ===== I18n Store ===== //
 
@@ -6,7 +6,7 @@ let i18nStore: I18nStore | undefined;
 
 export function getI18nStore(): I18nStore {
   if (!i18nStore) {
-    throw new Error("I18nExternalStore is not initialized.");
+    throw new Error('I18nExternalStore is not initialized.');
   }
   return i18nStore;
 }

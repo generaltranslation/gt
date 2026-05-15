@@ -22,7 +22,9 @@ export function getTranslateListenerKey<T extends Translation>(
   lookup: TranslateListenerLookup<T>
 ): string {
   const hash =
-    'hash' in lookup ? lookup.hash : hashMessage(lookup.message, lookup.options);
+    'hash' in lookup
+      ? lookup.hash
+      : hashMessage(lookup.message, lookup.options);
   return `${lookup.locale}:${hash}`;
 }
 

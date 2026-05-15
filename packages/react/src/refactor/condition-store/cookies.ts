@@ -8,11 +8,11 @@ export function getCookieValue({
 }: {
   cookieName: string;
 }): string | undefined {
-  if (typeof document === "undefined") return undefined;
+  if (typeof document === 'undefined') return undefined;
   const rawCookieValue = document.cookie
-    .split("; ")
+    .split('; ')
     .find((row) => row.startsWith(`${cookieName}=`))
-    ?.split("=")[1];
+    ?.split('=')[1];
   return rawCookieValue;
 }
 
@@ -29,6 +29,6 @@ export function setCookieValue({
   cookieName: string;
   value: string;
 }): void {
-  if (typeof document === "undefined") return;
+  if (typeof document === 'undefined') return;
   document.cookie = `${cookieName}=${value};path=/`;
 }

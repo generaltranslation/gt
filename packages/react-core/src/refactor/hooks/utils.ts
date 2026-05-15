@@ -2,9 +2,9 @@ import {
   useCustomMapping,
   useDefaultLocale,
   useLocales,
-} from "./external-store-hooks";
-import { useEnableI18n, useLocale } from "./context-hooks";
-import { requiresTranslation } from "generaltranslation/core";
+} from './external-store-hooks';
+import { useEnableI18n, useLocale } from './context-hooks';
+import { requiresTranslation } from 'generaltranslation/core';
 
 export function useFormatLocales(localesProp: string[] = []): string[] {
   const locale = useLocale();

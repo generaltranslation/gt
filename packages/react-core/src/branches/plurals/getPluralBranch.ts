@@ -1,8 +1,8 @@
 import {
   getPluralForm,
   isAcceptedPluralForm,
-} from "generaltranslation/internal";
-import { ReactNode } from "react";
+} from 'generaltranslation/internal';
+import { ReactNode } from 'react';
 
 /**
  * Main function to get the appropriate branch based on the provided number and branches.
@@ -14,11 +14,11 @@ import { ReactNode } from "react";
 export default function getPluralBranch<T>(
   n: number,
   locales: string[],
-  branches: Record<string, T>,
+  branches: Record<string, T>
 ) {
-  let branchName = "";
+  let branchName = '';
   let branch = null;
-  if (typeof n === "number" && !branch && branches) {
+  if (typeof n === 'number' && !branch && branches) {
     const pluralForms = Object.keys(branches).filter(isAcceptedPluralForm);
     branchName = getPluralForm(n, pluralForms, locales);
   }

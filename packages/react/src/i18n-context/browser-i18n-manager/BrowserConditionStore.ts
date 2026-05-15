@@ -1,11 +1,11 @@
-import { defaultLocaleCookieName } from "@generaltranslation/react-core/internal";
-import { setCookieValue } from "./utils/cookies";
-import { determineLocale } from "./utils/determineLocale";
-import { GetLocale } from "./utils/types";
+import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
+import { setCookieValue } from './utils/cookies';
+import { determineLocale } from './utils/determineLocale';
+import { GetLocale } from './utils/types';
 import type {
   ConditionStoreConfig,
   WritableConditionStore,
-} from "gt-i18n/internal/types";
+} from 'gt-i18n/internal/types';
 
 type StoreListener = () => void;
 type Unsubscribe = () => void;

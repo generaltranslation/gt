@@ -3,7 +3,7 @@ import type {
   DictionaryObject,
   LookupOptions,
   Translation,
-} from "gt-i18n/types";
+} from 'gt-i18n/types';
 
 // ----- Listeners ----- //
 

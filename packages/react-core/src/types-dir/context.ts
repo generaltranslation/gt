@@ -6,10 +6,10 @@ import {
   _Messages,
   Dictionary,
   DictionaryEntry,
-} from "./types";
-import { TranslateIcuCallback, TranslateChildrenCallback } from "./runtime";
-import { GT } from "generaltranslation";
-import { InlineResolveOptions } from "gt-i18n/types";
+} from './types';
+import { TranslateIcuCallback, TranslateChildrenCallback } from './runtime';
+import { GT } from 'generaltranslation';
+import { InlineResolveOptions } from 'gt-i18n/types';
 
 export type GTContextType = {
   gt: GT;
@@ -18,23 +18,23 @@ export type GTContextType = {
   _gtFunction: (
     message: string,
     options?: InlineTranslationOptions,
-    preloadedTranslations?: Translations,
+    preloadedTranslations?: Translations
   ) => string;
   _mFunction: <T extends string | null | undefined>(
     encodedMsg: T,
     options?: InlineResolveOptions,
-    preloadedTranslations?: Translations,
+    preloadedTranslations?: Translations
   ) => T extends string ? string : T;
   _filterMessagesForPreload: (_messages: _Messages) => _Messages;
   _preloadMessages: (_messages: _Messages) => Promise<Translations>;
   _dictionaryFunction: (
     id: string,
-    options?: DictionaryTranslationOptions,
+    options?: DictionaryTranslationOptions
   ) => string;
   _dictionaryObjFunction: (
     id: string,
     idWithParent: string,
-    options?: DictionaryTranslationOptions,
+    options?: DictionaryTranslationOptions
   ) => Dictionary | DictionaryEntry | string | undefined;
   developmentApiEnabled: boolean;
   locale: string;

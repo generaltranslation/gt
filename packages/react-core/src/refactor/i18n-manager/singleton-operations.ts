@@ -1,8 +1,8 @@
-import { ReactI18nManager } from "./ReactI18nManager";
+import { ReactI18nManager } from './ReactI18nManager';
 import {
   getI18nManager as getI18nManagerInternal,
   setI18nManager as setI18nManagerInternal,
-} from "gt-i18n/internal";
+} from 'gt-i18n/internal';
 
 // ===== I18n Manager ===== //
 

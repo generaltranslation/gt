@@ -1,17 +1,17 @@
-import { AsyncLocalStorage } from "node:async_hooks";
-import { createLocaleResolver } from "gt-i18n/internal";
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { createLocaleResolver } from 'gt-i18n/internal';
 import type {
   LocaleCandidates,
   LocaleResolverConfig,
   ScopedConditionStore,
-} from "gt-i18n/internal/types";
+} from 'gt-i18n/internal/types';
 
 type Store = {
   locale: string;
 };
 
 const OUTSIDE_SCOPE_MESSAGE =
-  "AsyncConditionStore: getLocale() called outside of a withGT() scope.";
+  'AsyncConditionStore: getLocale() called outside of a withGT() scope.';
 
 type AsyncConditionStoreConstructorParams = LocaleResolverConfig & {
   store?: AsyncLocalStorage<Store>;
@@ -45,7 +45,7 @@ export class AsyncConditionStore implements ScopedConditionStore {
   getLocale(): string {
     const store = this.store.getStore();
     if (!store) {
-      if (process.env.NODE_ENV === "production") {
+      if (process.env.NODE_ENV === 'production') {
         console.warn(OUTSIDE_SCOPE_MESSAGE);
         return this.resolveLocale();
       }

@@ -41,8 +41,7 @@ describe('external store i18n wiring', () => {
   it('notifies only locale subscribers when locale changes', () => {
     const conditionStore = createConditionStore('en');
     const localeListener = vi.fn();
-    const unsubscribeLocale =
-      conditionStore.subscribeToLocale(localeListener);
+    const unsubscribeLocale = conditionStore.subscribeToLocale(localeListener);
 
     conditionStore.setLocale('fr');
 
@@ -55,8 +54,7 @@ describe('external store i18n wiring', () => {
   it('notifies region subscribers when region changes', () => {
     const conditionStore = createConditionStore('en');
     const regionListener = vi.fn();
-    const unsubscribeRegion =
-      conditionStore.subscribeToRegion(regionListener);
+    const unsubscribeRegion = conditionStore.subscribeToRegion(regionListener);
 
     conditionStore.setRegion('US');
 
@@ -159,16 +157,14 @@ describe('external store i18n wiring', () => {
     const matchingListener = vi.fn();
     const otherListener = vi.fn();
 
-    const unsubscribeMatching =
-      externalStore.subscribeToDictionaryEntry(
-        { locale: 'fr', id: 'greeting' },
-        matchingListener
-      );
-    const unsubscribeOther =
-      externalStore.subscribeToDictionaryEntry(
-        { locale: 'fr', id: 'other' },
-        otherListener
-      );
+    const unsubscribeMatching = externalStore.subscribeToDictionaryEntry(
+      { locale: 'fr', id: 'greeting' },
+      matchingListener
+    );
+    const unsubscribeOther = externalStore.subscribeToDictionaryEntry(
+      { locale: 'fr', id: 'other' },
+      otherListener
+    );
 
     await manager.lookupDictionaryWithFallback('fr', 'greeting');
 
@@ -185,16 +181,14 @@ describe('external store i18n wiring', () => {
     const matchingListener = vi.fn();
     const otherListener = vi.fn();
 
-    const unsubscribeMatching =
-      externalStore.subscribeToDictionaryObject(
-        { locale: 'fr', id: 'user.profile' },
-        matchingListener
-      );
-    const unsubscribeOther =
-      externalStore.subscribeToDictionaryObject(
-        { locale: 'fr', id: 'other' },
-        otherListener
-      );
+    const unsubscribeMatching = externalStore.subscribeToDictionaryObject(
+      { locale: 'fr', id: 'user.profile' },
+      matchingListener
+    );
+    const unsubscribeOther = externalStore.subscribeToDictionaryObject(
+      { locale: 'fr', id: 'other' },
+      otherListener
+    );
 
     await manager.lookupDictionaryObjWithFallback('fr', 'user.profile');
 

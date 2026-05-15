@@ -1,7 +1,7 @@
 import type {
   DataFormat,
   StringFormat,
-} from "@generaltranslation/format/types";
+} from '@generaltranslation/format/types';
 
 /**
  * Values that get interpolated
@@ -76,7 +76,7 @@ export type EncodedTranslationOptions = BaseTranslationOptions & {
 export type RuntimeTranslationOptions = {
   $locale?: string;
   $format?: DataFormat;
-} & Omit<InlineTranslationOptions, "$id" | "$format">;
+} & Omit<InlineTranslationOptions, '$id' | '$format'>;
 
 /**
  * Options for JSX translation
@@ -84,7 +84,7 @@ export type RuntimeTranslationOptions = {
  */
 export type JsxTranslationOptions = {
   // TODO: make this required, but internally, not user facing
-  $format?: "JSX";
+  $format?: 'JSX';
   $context?: string;
   $id?: string;
   $_hash?: string;
@@ -95,18 +95,18 @@ export type JsxTranslationOptions = {
  */
 export type LookupOptions =
   | (BaseTranslationOptions &
-      (Omit<InlineTranslationOptionsFields, "$format"> & {
+      (Omit<InlineTranslationOptionsFields, '$format'> & {
         $format: StringFormat;
         $locale?: string;
       }))
   | (JsxTranslationOptions & {
-      $format: "JSX";
+      $format: 'JSX';
       $locale?: string;
     });
 
 export type DictionaryLookupOptions = Omit<
   InlineTranslationOptions,
-  "$format"
+  '$format'
 > & {
   $format: StringFormat;
 };
@@ -116,11 +116,11 @@ export type ResolutionOptions<T extends DataFormat> = {
    * The locale to use for formatting looking up and formatting the message.
    */
   $locale?: string;
-} & (T extends "JSX"
+} & (T extends 'JSX'
   ? JsxTranslationOptions & {
-      $format?: "JSX";
+      $format?: 'JSX';
     }
-  : Omit<InlineTranslationOptions, "$format"> & {
+  : Omit<InlineTranslationOptions, '$format'> & {
       $format?: T;
     });
 
@@ -129,7 +129,7 @@ export type ResolutionOptions<T extends DataFormat> = {
  */
 export type NormalizedLookupOptions<T extends DataFormat> = Omit<
   ResolutionOptions<T>,
-  "$format" | "$locale"
+  '$format' | '$locale'
 > & {
   $format: T;
   $locale: string;

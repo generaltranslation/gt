@@ -1,5 +1,5 @@
-import { getI18nManager } from "gt-i18n/internal";
-import { useFormatLocales } from "../../hooks/utils";
+import { getI18nManager } from 'gt-i18n/internal';
+import { useFormatLocales } from '../../hooks/utils';
 
 // ===== Component ===== //
 
@@ -17,7 +17,7 @@ function GtInternalNum({
   const gt = getI18nManager().getGTClass();
   if (children == null) return null;
   const parsedNumber =
-    typeof children === "string" ? parseFloat(children) : children;
+    typeof children === 'string' ? parseFloat(children) : children;
   return gt.formatNum(parsedNumber, { locales, ...options });
 }
 
@@ -31,8 +31,8 @@ function Num(props: {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-GtInternalNum._gtt = "variable-number-automatic";
-Num._gtt = "variable-number";
+GtInternalNum._gtt = 'variable-number-automatic';
+Num._gtt = 'variable-number';
 
 // ===== Exports ===== //
 

@@ -1,5 +1,5 @@
-import { defineConfig } from "tsdown";
-import { createTsdownConfig } from "../../tsdown.preset.mts";
+import { defineConfig } from 'tsdown';
+import { createTsdownConfig } from '../../tsdown.preset.mts';
 
 const deps = {
   neverBundle: [
@@ -18,14 +18,14 @@ const deps = {
 };
 
 const entries = [
-  "src/index.ts",
-  "src/internal.ts",
-  "src/client.ts",
-  "src/context.client.ts",
-  "src/context.server.ts",
-  "src/context.types.ts",
-  "src/browser.ts",
-  "src/macros.ts",
+  'src/index.ts',
+  'src/internal.ts',
+  'src/client.ts',
+  'src/context.client.ts',
+  'src/context.server.ts',
+  'src/context.types.ts',
+  'src/browser.ts',
+  'src/macros.ts',
 ];
 
 export default defineConfig(
@@ -37,7 +37,7 @@ export default defineConfig(
         ...cjsConfig,
         clean: index === 0,
         define: {
-          "import.meta.env": "{}",
+          'import.meta.env': '{}',
         },
       },
       {
@@ -48,5 +48,5 @@ export default defineConfig(
         },
       },
     ];
-  }),
+  })
 );

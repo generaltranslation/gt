@@ -1,5 +1,5 @@
-import { useMemo, useSyncExternalStore } from "react";
-import type { Translation } from "gt-i18n/types";
+import { useMemo, useSyncExternalStore } from 'react';
+import type { Translation } from 'gt-i18n/types';
 import type {
   TranslateLookup,
   TranslateManySnapshot,
@@ -7,23 +7,23 @@ import type {
   DictionaryLookup,
   DictionaryEntrySnapshot,
   DictionaryObjectSnapshot,
-} from "../i18n-store/storeTypes";
-import type { CustomMapping } from "generaltranslation/types";
-import { getI18nStore } from "../i18n-store/singleton-operations";
-import type { RuntimeTranslationScope } from "../i18n-store/RuntimeTranslationScope";
-import type { RuntimeDictionaryScope } from "../i18n-store/RuntimeDictionaryScope";
+} from '../i18n-store/storeTypes';
+import type { CustomMapping } from 'generaltranslation/types';
+import { getI18nStore } from '../i18n-store/singleton-operations';
+import type { RuntimeTranslationScope } from '../i18n-store/RuntimeTranslationScope';
+import type { RuntimeDictionaryScope } from '../i18n-store/RuntimeDictionaryScope';
 
 /**
  * @internal
  */
 export function useTranslate<T extends Translation>(
-  lookup: TranslateLookup<T>,
+  lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
   const store = getI18nStore();
   const translation = useSyncExternalStore(
     (listener) => store.subscribeToTranslate(lookup, listener),
     () => store.getTranslateSnapshot(lookup),
-    () => store.getTranslateSnapshot(lookup),
+    () => store.getTranslateSnapshot(lookup)
   );
   // TODO: add runtime translation
   // if (translation == null && isDevelopmentApiEnabled()) {
@@ -37,13 +37,13 @@ export function useTranslate<T extends Translation>(
  * @internal
  */
 export function useTranslateMany<T extends Translation>(
-  lookups: readonly TranslateLookup<T>[],
+  lookups: readonly TranslateLookup<T>[]
 ): TranslateManySnapshot<T> {
   const store = getI18nStore();
   const translations = useSyncExternalStore(
     (listener) => store.subscribeToTranslateMany(lookups, listener),
     () => store.getTranslateManySnapshot(lookups),
-    () => store.getTranslateManySnapshot(lookups),
+    () => store.getTranslateManySnapshot(lookups)
   );
   translations.forEach((translation, index) => {
     // TODO: this should only be executed in dev mode
@@ -58,13 +58,13 @@ export function useTranslateMany<T extends Translation>(
  * @internal
  */
 export function useDictionaryEntry(
-  lookup: DictionaryLookup,
+  lookup: DictionaryLookup
 ): DictionaryEntrySnapshot {
   const store = getI18nStore();
   const dictionaryEntry = useSyncExternalStore(
     (listener) => store.subscribeToDictionaryEntry(lookup, listener),
     () => store.getDictionaryEntrySnapshot(lookup),
-    () => store.getDictionaryEntrySnapshot(lookup),
+    () => store.getDictionaryEntrySnapshot(lookup)
   );
   if (dictionaryEntry == null) {
     store.translateDictionaryEntry(lookup);
@@ -76,13 +76,13 @@ export function useDictionaryEntry(
  * @internal
  */
 export function useDictionaryObject(
-  lookup: DictionaryLookup,
+  lookup: DictionaryLookup
 ): DictionaryObjectSnapshot {
   const store = getI18nStore();
   const dictionaryObject = useSyncExternalStore(
     (listener) => store.subscribeToDictionaryObject(lookup, listener),
     () => store.getDictionaryObjectSnapshot(lookup),
-    () => store.getDictionaryObjectSnapshot(lookup),
+    () => store.getDictionaryObjectSnapshot(lookup)
   );
   if (dictionaryObject == null) {
     store.translateDictionaryObject(lookup);
@@ -95,7 +95,7 @@ export function useCustomMapping(): CustomMapping {
   return useSyncExternalStore(
     store.subscribeToCustomMapping,
     store.getCustomMappingSnapshot,
-    store.getCustomMappingSnapshot,
+    store.getCustomMappingSnapshot
   );
 }
 
@@ -104,7 +104,7 @@ export function useDefaultLocale(): string {
   return useSyncExternalStore(
     store.subscribeToDefaultLocale,
     store.getDefaultLocaleSnapshot,
-    store.getDefaultLocaleSnapshot,
+    store.getDefaultLocaleSnapshot
   );
 }
 
@@ -113,7 +113,7 @@ export function useLocales(): readonly string[] {
   return useSyncExternalStore(
     store.subscribeToLocales,
     store.getLocalesSnapshot,
-    store.getLocalesSnapshot,
+    store.getLocalesSnapshot
   );
 }
 

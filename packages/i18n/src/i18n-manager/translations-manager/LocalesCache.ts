@@ -1,14 +1,14 @@
-import { Cache } from "./Cache";
-import { Hash, TranslationKey, TranslationsCache } from "./TranslationsCache";
-import type { TranslationBatchConfig } from "./TranslationsCache";
-import { Translation } from "./utils/types/translation-data";
-import { DEFAULT_CACHE_EXPIRY_TIME } from "./utils/constants";
-import { CreateTranslateMany } from "./utils/createTranslateMany";
+import { Cache } from './Cache';
+import { Hash, TranslationKey, TranslationsCache } from './TranslationsCache';
+import type { TranslationBatchConfig } from './TranslationsCache';
+import { Translation } from './utils/types/translation-data';
+import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
+import { CreateTranslateMany } from './utils/createTranslateMany';
 import type {
   LifecycleParam,
   LocalesCacheLifecycleCallbacks,
   TranslationsCacheLifecycleCallback,
-} from "../lifecycle-hooks/types";
+} from '../lifecycle-hooks/types';
 
 /**
  * Just being explicit about the purpose of this type
@@ -32,7 +32,7 @@ export type CacheEntry<TranslationValue extends Translation> = {
  * TODO: rename this because we are no longer doing try/catch around the translation loader
  */
 export type SafeTranslationsLoader<TranslationValue extends Translation> = (
-  locale: string,
+  locale: string
 ) => Promise<Record<Hash, TranslationValue>>;
 
 /**
@@ -42,7 +42,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
   Locale,
   Locale,
   CacheEntry<TranslationValue>,
-  CacheEntry<TranslationValue>["translationsCache"]
+  CacheEntry<TranslationValue>['translationsCache']
 > {
   /**
    * Translation loader function
@@ -110,7 +110,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
 
     // Populate the cache with the initial translations
     for (const [locale, translations] of Object.entries(
-      initialTranslations ?? {},
+      initialTranslations ?? {}
     )) {
       this.setCache(locale, this._createCacheEntry(locale, translations));
     }
@@ -122,8 +122,8 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    * @returns The translations
    */
   public get(
-    key: Locale,
-  ): CacheEntry<TranslationValue>["translationsCache"] | undefined {
+    key: Locale
+  ): CacheEntry<TranslationValue>['translationsCache'] | undefined {
     // Get the cache entry
     const entry = this.getCache(key);
     if (!entry || (entry.expiresAt > 0 && entry.expiresAt < Date.now())) {
@@ -150,8 +150,8 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    * @returns The translations cache
    */
   public async miss(
-    key: Locale,
-  ): Promise<CacheEntry<TranslationValue>["translationsCache"]> {
+    key: Locale
+  ): Promise<CacheEntry<TranslationValue>['translationsCache']> {
     // Miss the cache
     const cacheValue = await this.missCache(key);
 
@@ -186,14 +186,14 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    * @returns The cache entry
    */
   protected async fallback(
-    locale: Locale,
+    locale: Locale
   ): Promise<CacheEntry<TranslationValue>> {
     const translations = await this._translationLoader(locale);
     return this._createCacheEntry(locale, translations);
   }
 
   public update(
-    translationsObj: Record<Locale, Record<Hash, TranslationValue>>,
+    translationsObj: Record<Locale, Record<Hash, TranslationValue>>
   ): void {
     for (const [locale, translations] of Object.entries(translationsObj)) {
       const cacheEntry = this.getCache(this.genKey(locale));
@@ -219,7 +219,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    */
   private _createCacheEntry(
     locale: Locale,
-    initialTranslations: Record<Hash, TranslationValue>,
+    initialTranslations: Record<Hash, TranslationValue>
   ): CacheEntry<TranslationValue> {
     // Cache the promise and expiry timestamp
     const translationsCache = new TranslationsCache<TranslationValue>({
@@ -239,7 +239,7 @@ export class LocalesCache<TranslationValue extends Translation> extends Cache<
    * @returns The translations cache lifecycle
    */
   private _createTranslationsCacheLifecycle(
-    locale: Locale,
+    locale: Locale
   ): LifecycleParam<
     TranslationKey<TranslationValue>,
     Hash,

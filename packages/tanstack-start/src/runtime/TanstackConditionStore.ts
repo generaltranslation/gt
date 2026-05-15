@@ -1,8 +1,8 @@
-import { determineLocale } from "../functions/determineLocale";
+import { determineLocale } from '../functions/determineLocale';
 import type {
   ConditionStore,
   LocaleResolverConfig,
-} from "gt-i18n/internal/types";
+} from 'gt-i18n/internal/types';
 
 /**
  * Condition store implementation for Tanstack Start.

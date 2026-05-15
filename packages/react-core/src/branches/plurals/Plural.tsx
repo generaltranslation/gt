@@ -1,8 +1,8 @@
-import { ReactNode, useContext } from "react";
-import { getPluralBranch } from "../../internal";
-import { createPluralMissingError } from "../../errors-dir/createErrors";
-import { libraryDefaultLocale } from "generaltranslation/internal";
-import { GTContext } from "../../provider/GTContext";
+import { ReactNode, useContext } from 'react';
+import { getPluralBranch } from '../../internal';
+import { createPluralMissingError } from '../../errors-dir/createErrors';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { GTContext } from '../../provider/GTContext';
 
 /**
  * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
@@ -52,11 +52,11 @@ function Plural({
     ...(locales ? [locales] : []),
     defaultLocale || libraryDefaultLocale,
   ];
-  if (typeof n !== "number")
+  if (typeof n !== 'number')
     throw new Error(createPluralMissingError(children));
   return <>{getPluralBranch(n, providerLocales, branches) || children}</>;
 }
 
-Plural._gtt = "plural";
+Plural._gtt = 'plural';
 
 export default Plural;

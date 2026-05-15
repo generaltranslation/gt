@@ -1,5 +1,5 @@
-import { getI18nManager } from "gt-i18n/internal";
-import { useFormatLocales } from "../../hooks/utils";
+import { getI18nManager } from 'gt-i18n/internal';
+import { useFormatLocales } from '../../hooks/utils';
 
 // ===== Component ===== //
 
@@ -25,10 +25,10 @@ function GtInternalRelativeTime({
   const gt = getI18nManager().getGTClass();
   const resolvedDate = date ?? children;
 
-  if (process.env.NODE_ENV === "development" && value !== undefined && !unit) {
+  if (process.env.NODE_ENV === 'development' && value !== undefined && !unit) {
     // eslint-disable-next-line no-console
     console.warn(
-      "<RelativeTime>: `value` was provided without `unit`. The `value` prop will be ignored.",
+      '<RelativeTime>: `value` was provided without `unit`. The `value` prop will be ignored.'
     );
   }
 
@@ -67,8 +67,8 @@ function RelativeTime(props: {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-GtInternalRelativeTime._gtt = "variable-relative-time-automatic";
-RelativeTime._gtt = "variable-relative-time";
+GtInternalRelativeTime._gtt = 'variable-relative-time-automatic';
+RelativeTime._gtt = 'variable-relative-time';
 
 // ===== Exports ===== //
 

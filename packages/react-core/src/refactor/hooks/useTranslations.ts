@@ -1,23 +1,23 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo } from 'react';
 import {
   extractVariables,
   renderDictionaryEntry,
   renderDictionaryObject,
   resolveDictionaryLookupOptions,
-} from "gt-i18n/internal";
+} from 'gt-i18n/internal';
 import {
   useDefaultLocale,
   useDictionaryObject,
   useRuntimeDictionaryScope,
-} from "./external-store-hooks";
-import { useLocale } from "./context-hooks";
-import { useShouldTranslate } from "./utils";
-import { getI18nManager } from "../i18n-manager/singleton-operations";
-import { useGT } from "./useGT";
+} from './external-store-hooks';
+import { useLocale } from './context-hooks';
+import { useShouldTranslate } from './utils';
+import { getI18nManager } from '../i18n-manager/singleton-operations';
+import { useGT } from './useGT';
 import type {
   DictionaryObjectTranslation,
   DictionaryTranslationOptions,
-} from "gt-i18n/types";
+} from 'gt-i18n/types';
 
 // ===== Hook ===== //
 
@@ -27,7 +27,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
   const shouldTranslate = useShouldTranslate();
   const scope = useRuntimeDictionaryScope();
   const gt = useGT();
-  const rootId = id ?? "";
+  const rootId = id ?? '';
 
   useDictionaryObject({ locale: defaultLocale, id: rootId });
   useDictionaryObject({ locale, id: rootId });
@@ -61,7 +61,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
           sourceEntry,
           target: targetEntry.entry,
           dictionaryOptions: resolveDictionaryLookupOptions(
-            sourceEntry.options,
+            sourceEntry.options
           ),
           options,
         });
@@ -73,7 +73,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
         $locale: locale,
       });
     },
-    [defaultLocale, gt, id, locale, scope, shouldTranslate],
+    [defaultLocale, gt, id, locale, scope, shouldTranslate]
   );
 
   const translateObject = useCallback(
@@ -82,7 +82,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
       const entryId = getEntryId(id, suffix);
       const sourceObject = i18nManager.lookupDictionaryObj(
         defaultLocale,
-        entryId,
+        entryId
       );
       if (sourceObject === undefined) {
         throw new Error(`Dictionary entry ${entryId} cannot be found`);
@@ -104,16 +104,16 @@ export function useTranslations(id?: string): UseTranslationsFunction {
           i18nManager.lookupTranslation(
             shouldTranslate ? locale : defaultLocale,
             sourceEntry.entry,
-            dictionaryOptions,
+            dictionaryOptions
           ),
       });
     },
-    [defaultLocale, id, locale, scope, shouldTranslate],
+    [defaultLocale, id, locale, scope, shouldTranslate]
   );
 
   return useMemo(
     () => Object.assign(translateEntry, { obj: translateObject }),
-    [translateEntry, translateObject],
+    [translateEntry, translateObject]
   );
 }
 
@@ -127,7 +127,7 @@ function getEntryId(prefix: string | undefined, suffix: string): string {
 
 export type UseTranslationsFunction = ((
   id: string,
-  options?: DictionaryTranslationOptions,
+  options?: DictionaryTranslationOptions
 ) => string) & {
   obj: (id: string) => DictionaryObjectTranslation;
 };

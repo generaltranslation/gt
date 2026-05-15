@@ -1,7 +1,7 @@
-import { initializeGT } from "./initializeGT";
-import { getBrowserI18nManager } from "../browser-i18n-manager/singleton-operations";
-import { InitializeGTParams } from "./types";
-import { getLocale } from "../functions/locale-operations";
+import { initializeGT } from './initializeGT';
+import { getBrowserI18nManager } from '../browser-i18n-manager/singleton-operations';
+import { InitializeGTParams } from './types';
+import { getLocale } from '../functions/locale-operations';
 
 /**
  * Initialization function for react-core library invoked to enable synchronous resolution

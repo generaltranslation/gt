@@ -1,6 +1,6 @@
-import { Hash, Locale } from "gt-i18n/internal/types";
-import { Translation } from "gt-i18n/types";
-import { getI18nManager } from "../../i18n-manager/singleton-operations";
+import { Hash, Locale } from 'gt-i18n/internal/types';
+import { Translation } from 'gt-i18n/types';
+import { getI18nManager } from '../../i18n-manager/singleton-operations';
 
 /**
  * Returns a promise of serializable cached translations that
@@ -9,7 +9,7 @@ import { getI18nManager } from "../../i18n-manager/singleton-operations";
  * TODO: perhaps should be moved to /i18n if allowing for type generics
  */
 export async function getTranslationsSnapshot(
-  locale: Locale,
+  locale: Locale
 ): Promise<Record<Locale, Record<Hash, Translation>>> {
   const i18nManager = getI18nManager();
   const translations = await i18nManager.loadTranslations(locale);

@@ -1,7 +1,7 @@
-import { useCallback, useMemo } from "react";
-import { useCustomMapping, useLocales } from "./external-store-hooks";
-import { useLocale, useSetLocale } from "./context-hooks";
-import { getLocaleProperties } from "generaltranslation";
+import { useCallback, useMemo } from 'react';
+import { useCustomMapping, useLocales } from './external-store-hooks';
+import { useLocale, useSetLocale } from './context-hooks';
+import { getLocaleProperties } from 'generaltranslation';
 
 /**
  *
@@ -31,8 +31,8 @@ export function useLocaleSelector(locales?: string[]) {
     return [...contextLocales].sort((a, b) =>
       collator.compare(
         getLocaleProperties(a, locale, customMapping).nativeNameWithRegionCode,
-        getLocaleProperties(b, locale, customMapping).nativeNameWithRegionCode,
-      ),
+        getLocaleProperties(b, locale, customMapping).nativeNameWithRegionCode
+      )
     );
   }, [contextLocales, locale, customMapping]);
 
@@ -41,7 +41,7 @@ export function useLocaleSelector(locales?: string[]) {
     (locale: string) => {
       return getLocaleProperties(locale, locale, customMapping);
     },
-    [locale, customMapping],
+    [locale, customMapping]
   );
 
   return {

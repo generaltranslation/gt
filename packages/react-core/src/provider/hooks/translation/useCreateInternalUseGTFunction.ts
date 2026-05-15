@@ -1,26 +1,26 @@
-import { hashSource } from "generaltranslation/id";
+import { hashSource } from 'generaltranslation/id';
 import {
   InlineTranslationOptions,
   Translations,
   _Messages,
   _Message,
-} from "../../../types-dir/types";
-import type { StringFormat } from "@generaltranslation/format/types";
-import { TranslateIcuCallback } from "../../../types-dir/runtime";
-import { GT } from "generaltranslation";
+} from '../../../types-dir/types';
+import type { StringFormat } from '@generaltranslation/format/types';
+import { TranslateIcuCallback } from '../../../types-dir/runtime';
+import { GT } from 'generaltranslation';
 import {
   createStringRenderError,
   createStringRenderWarning,
   createStringTranslationError,
-} from "../../../errors-dir/createErrors";
-import { decodeMsg, decodeOptions } from "../../../messages/messages";
+} from '../../../errors-dir/createErrors';
+import { decodeMsg, decodeOptions } from '../../../messages/messages';
 import {
   extractVars,
   condenseVars,
   indexVars,
   VAR_IDENTIFIER,
-} from "generaltranslation/internal";
-import { InlineResolveOptions } from "gt-i18n/types";
+} from 'generaltranslation/internal';
+import { InlineResolveOptions } from 'gt-i18n/types';
 
 type MReturnType<T> = T extends string ? string : T;
 
@@ -51,17 +51,17 @@ export default function useCreateInternalUseGTFunction({
   translationRequired: boolean;
   developmentApiEnabled: boolean;
   registerIcuForTranslation: TranslateIcuCallback;
-  environment: "development" | "production" | "test";
+  environment: 'development' | 'production' | 'test';
 }): {
   _gtFunction: (
     message: string,
     options?: InlineTranslationOptions,
-    preloadedTranslations?: Translations,
+    preloadedTranslations?: Translations
   ) => string;
   _mFunction: <T extends string | null | undefined>(
     message: T,
     options?: InlineResolveOptions,
-    preloadedTranslations?: Translations,
+    preloadedTranslations?: Translations
   ) => T extends string ? string : T;
   _filterMessagesForPreload: (_messages: _Messages) => _Messages;
   _preloadMessages: (_messages: _Messages) => Promise<Translations>;
@@ -87,7 +87,7 @@ export default function useCreateInternalUseGTFunction({
   }: RenderMessageParams) {
     try {
       // (1) Try to format message
-      const declaredVars = extractVars(fallback || "");
+      const declaredVars = extractVars(fallback || '');
       const formattedMessage = gt.formatMessage(
         Object.keys(declaredVars).length ? condenseVars(message) : message,
         {
@@ -95,16 +95,16 @@ export default function useCreateInternalUseGTFunction({
           variables: {
             ...variables,
             ...declaredVars,
-            [VAR_IDENTIFIER]: "other",
+            [VAR_IDENTIFIER]: 'other',
           },
           dataFormat: format,
-        },
+        }
       );
       // Apply cutoff formatting
       const cutoffMessage = gt.formatCutoff(formattedMessage, { maxChars });
       return cutoffMessage;
     } catch (error) {
-      if (environment === "production") {
+      if (environment === 'production') {
         console.warn(createStringRenderWarning(message, id, error));
       } else {
         // (3) If no fallback, throw error (non-prod)
@@ -139,9 +139,9 @@ export default function useCreateInternalUseGTFunction({
       $maxChars?: number;
       $id?: string;
       $_hash?: string;
-    } = {},
+    } = {}
   ) {
-    if (!message || typeof message !== "string") return null;
+    if (!message || typeof message !== 'string') return null;
 
     const {
       $id: id,
@@ -152,13 +152,13 @@ export default function useCreateInternalUseGTFunction({
       ...variables
     } = options;
     const format =
-      typeof rawFormat === "string" ? (rawFormat as StringFormat) : undefined;
+      typeof rawFormat === 'string' ? (rawFormat as StringFormat) : undefined;
 
     // Update renderContent to use actual variables
     const renderMessage = (
       msg: string,
       locales: string[],
-      fallback?: string,
+      fallback?: string
     ) => {
       return renderMessageHelper({
         message: msg,
@@ -178,7 +178,7 @@ export default function useCreateInternalUseGTFunction({
         ...(context && { context }),
         ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         ...(id && { id }),
-        dataFormat: format || "ICU",
+        dataFormat: format || 'ICU',
       });
 
     return {
@@ -195,19 +195,19 @@ export default function useCreateInternalUseGTFunction({
   function getTranslationData(
     calculateHash: () => string,
     id?: string,
-    _hash?: string,
+    _hash?: string
   ) {
     let translationEntry;
-    let hash = ""; // empty string because 1) it has to be a string but 2) we don't always need to calculate it
+    let hash = ''; // empty string because 1) it has to be a string but 2) we don't always need to calculate it
     if (id) {
       translationEntry = translations?.[id];
     }
-    if (_hash && typeof translationEntry === "undefined") {
+    if (_hash && typeof translationEntry === 'undefined') {
       hash = _hash;
       translationEntry = translations?.[_hash];
     }
     // Use calculated hash to index
-    if (typeof translationEntry === "undefined") {
+    if (typeof translationEntry === 'undefined') {
       hash = calculateHash();
       translationEntry = translations?.[hash];
     }
@@ -226,7 +226,7 @@ export default function useCreateInternalUseGTFunction({
       const { translationEntry, hash } = getTranslationData(
         calculateHash,
         id,
-        _hash,
+        _hash
       );
       if (!translationEntry) {
         result.push({ message, ...options, $_hash: hash });
@@ -245,7 +245,7 @@ export default function useCreateInternalUseGTFunction({
       const { translationEntry, hash } = getTranslationData(
         calculateHash,
         id,
-        _hash,
+        _hash
       );
       // Return if no translation needed
       if (translationEntry) {
@@ -271,11 +271,11 @@ export default function useCreateInternalUseGTFunction({
   const _gtFunction = (
     message: string,
     options: InlineTranslationOptions = {},
-    preloadedTranslations: Translations | undefined,
+    preloadedTranslations: Translations | undefined
   ) => {
     // ----- SET UP ----- //
     const init = initializeGT(message, options);
-    if (!init) return "";
+    if (!init) return '';
     const { id, context, maxChars, _hash, calculateHash, renderMessage } = init;
 
     // ----- EARLY RETURN IF TRANSLATION NOT REQUIRED ----- //
@@ -287,7 +287,7 @@ export default function useCreateInternalUseGTFunction({
     const { translationEntry, hash } = getTranslationData(
       calculateHash,
       id,
-      _hash,
+      _hash
     );
 
     // ----- RENDER TRANSLATION ----- //
@@ -301,23 +301,23 @@ export default function useCreateInternalUseGTFunction({
       return renderMessage(
         translationEntry as string,
         [locale, defaultLocale],
-        message,
+        message
       );
     }
 
-    if (typeof preloadedTranslations?.[hash] !== "undefined") {
+    if (typeof preloadedTranslations?.[hash] !== 'undefined') {
       if (preloadedTranslations?.[hash]) {
         return renderMessage(
           preloadedTranslations?.[hash] as string,
           [locale, defaultLocale],
-          message,
+          message
         );
       }
       return renderMessage(message, [defaultLocale]);
     }
 
     if (!developmentApiEnabled) {
-      console.warn(createStringTranslationError(message, id, "gt"));
+      console.warn(createStringTranslationError(message, id, 'gt'));
       return renderMessage(message, [defaultLocale]);
     }
 
@@ -328,7 +328,7 @@ export default function useCreateInternalUseGTFunction({
         ...(context && { context }),
         ...(id && { id }),
         ...(maxChars != null && { maxChars }),
-        hash: hash || "",
+        hash: hash || '',
       },
     });
 
@@ -338,7 +338,7 @@ export default function useCreateInternalUseGTFunction({
   const _mFunction = <T extends string | null | undefined>(
     encodedMsg: T,
     options: InlineResolveOptions = {},
-    preloadedTranslations: Translations | undefined,
+    preloadedTranslations: Translations | undefined
   ): T extends string ? string : T => {
     // Return if message is not a string
     if (!encodedMsg) return encodedMsg as MReturnType<T>;
@@ -348,7 +348,7 @@ export default function useCreateInternalUseGTFunction({
       return _gtFunction(
         encodedMsg,
         options,
-        preloadedTranslations,
+        preloadedTranslations
       ) as MReturnType<T>;
     }
 
@@ -368,7 +368,7 @@ export default function useCreateInternalUseGTFunction({
     const renderMessage = (
       msg: string,
       locales: string[],
-      fallback?: string,
+      fallback?: string
     ) => {
       return renderMessageHelper({
         message: msg,
@@ -397,23 +397,23 @@ export default function useCreateInternalUseGTFunction({
       return renderMessage(
         translationEntry as string,
         [locale, defaultLocale],
-        $_source,
+        $_source
       ) as MReturnType<T>;
     }
 
     if (!developmentApiEnabled) {
       console.warn(
-        createStringTranslationError($_source, decodeMsg(encodedMsg), "m"),
+        createStringTranslationError($_source, decodeMsg(encodedMsg), 'm')
       );
       return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
     }
 
-    if (typeof preloadedTranslations?.[$_hash] !== "undefined") {
+    if (typeof preloadedTranslations?.[$_hash] !== 'undefined') {
       if (preloadedTranslations?.[$_hash]) {
         return renderMessage(
           preloadedTranslations?.[$_hash] as string,
           [locale, defaultLocale],
-          $_source,
+          $_source
         ) as MReturnType<T>;
       }
       return renderMessage($_source, [defaultLocale]) as MReturnType<T>;

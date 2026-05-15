@@ -1,5 +1,5 @@
-import { getI18nManager } from "gt-i18n/internal";
-import { useFormatLocales } from "../../hooks/utils";
+import { getI18nManager } from 'gt-i18n/internal';
+import { useFormatLocales } from '../../hooks/utils';
 
 // ===== Component ===== //
 
@@ -19,7 +19,7 @@ function GtInternalDateTime({
   if (children == null) return null;
   return gt
     .formatDateTime(children, { locales, ...options })
-    .replace(/[\u200F\u202B\u202E]/g, "");
+    .replace(/[\u200F\u202B\u202E]/g, '');
 }
 
 function DateTime(props: {
@@ -32,8 +32,8 @@ function DateTime(props: {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-GtInternalDateTime._gtt = "variable-datetime-automatic";
-DateTime._gtt = "variable-datetime";
+GtInternalDateTime._gtt = 'variable-datetime-automatic';
+DateTime._gtt = 'variable-datetime';
 
 // ===== Exports ===== //
 

@@ -2,10 +2,10 @@ import {
   getLocale,
   resolveTranslationSync,
   resolveTranslationSyncWithFallback,
-} from "gt-i18n/internal";
-import type { InlineTranslationOptions } from "gt-i18n/types";
-import { createTranslationFailedDueToBrowserEnvironmentWarning } from "../../../shared/messages";
-import { StringOrTemplateSyncResolutionFunction } from "./types";
+} from 'gt-i18n/internal';
+import type { InlineTranslationOptions } from 'gt-i18n/types';
+import { createTranslationFailedDueToBrowserEnvironmentWarning } from '../../../shared/messages';
+import { StringOrTemplateSyncResolutionFunction } from './types';
 
 /**
  * NOTE: t() is the only function exported from the 'gt-react' entry point.
@@ -36,24 +36,24 @@ export const t: StringOrTemplateSyncResolutionFunction = (
 ) => {
   // Trigger browser environment warning
   // TODO: this is not envrionment agnostic, this function (or check) should be moved to gt-react
-  if (typeof window === "undefined") {
+  if (typeof window === 'undefined') {
     console.warn(
-      createTranslationFailedDueToBrowserEnvironmentWarning(messageOrStrings),
+      createTranslationFailedDueToBrowserEnvironmentWarning(messageOrStrings)
     );
   }
   if (1 === 1) {
     throw new Error(
-      "TODO: this is not envrionment agnostic, this function (or check) should be moved to gt-react",
+      'TODO: this is not envrionment agnostic, this function (or check) should be moved to gt-react'
     );
   }
   //  t("Hello, {name}!", { name: "John" })
-  if (typeof messageOrStrings === "string") {
+  if (typeof messageOrStrings === 'string') {
     const options = values.at(0) as InlineTranslationOptions | undefined;
     const locale = options?.$locale ?? getLocale();
     return resolveTranslationSyncWithFallback(
       locale,
       messageOrStrings,
-      options,
+      options
     );
   }
 
@@ -76,25 +76,25 @@ export const t: StringOrTemplateSyncResolutionFunction = (
  */
 function handleTaggedTemplateLiteralTranslation(
   messageOrStrings: TemplateStringsArray,
-  values: unknown[],
+  values: unknown[]
 ): string {
   const locale = getLocale();
   // for tagged template literals, there has been no compiler transformation
   // (1) lookup interpolated template (aka derived message)
   const interpolatedTemplate = interpolateTemplateLiteral(
     messageOrStrings,
-    values,
+    values
   );
   const translatedInterpolatedTemplate = resolveTranslationSync(
     locale,
-    interpolatedTemplate,
+    interpolatedTemplate
   );
   if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
 
   // (2) resolve uninterpolated message
   const { message, variables } = extractInterpolatableValues(
     messageOrStrings,
-    values,
+    values
   );
   return resolveTranslationSyncWithFallback(locale, message, variables);
 }
@@ -107,7 +107,7 @@ function handleTaggedTemplateLiteralTranslation(
  */
 function extractInterpolatableValues(
   strings: TemplateStringsArray,
-  values: unknown[],
+  values: unknown[]
 ): {
   message: string;
   variables: Record<string, unknown>;
@@ -132,7 +132,7 @@ function extractInterpolatableValues(
   }
 
   return {
-    message: parts.join(""),
+    message: parts.join(''),
     variables,
   };
 }
@@ -145,11 +145,11 @@ function extractInterpolatableValues(
  */
 function interpolateTemplateLiteral(
   strings: TemplateStringsArray,
-  values: unknown[],
+  values: unknown[]
 ): string {
   return strings
     .map((string, index) => {
-      return string + (values[index] ?? "");
+      return string + (values[index] ?? '');
     })
-    .join("");
+    .join('');
 }

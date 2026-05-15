@@ -1,4 +1,4 @@
-import { Translation } from "gt-i18n/types";
+import { Translation } from 'gt-i18n/types';
 
 // TODO: Add purge key/locks to prevent concurrent purges across tabs
 // TODO: Add cache key/locks for non-atomic read-modify-write operations across tabs
@@ -10,8 +10,8 @@ type CachedEntry = { t: Translation; exp: number };
 
 // ===== Constants ===== //
 
-const STORAGE_KEY_PREFIX = "gt:tx:";
-const PURGE_TIMESTAMP_PREFIX = "gt:tx:purge:";
+const STORAGE_KEY_PREFIX = 'gt:tx:';
+const PURGE_TIMESTAMP_PREFIX = 'gt:tx:purge:';
 const FLUSH_INTERVAL = 500;
 const DEFAULT_MAX_SIZE = 1_000_000; // ~1M characters (localStorage uses UTF-16)
 const DEFAULT_TTL_MS = 86_400_000; // 24 hours
@@ -81,7 +81,7 @@ export class LocalStorageTranslationCache {
     }
     const intervalId = setInterval(
       () => this._backgroundPurge(),
-      this._purgeInterval,
+      this._purgeInterval
     );
     activeIntervals.set(this._storageKey, intervalId);
   }
@@ -292,7 +292,7 @@ export class LocalStorageTranslationCache {
  */
 function deleteExpiredEntries(
   cache: Record<string, CachedEntry>,
-  now: number = Date.now(),
+  now: number = Date.now()
 ): void {
   for (const key of Object.keys(cache)) {
     if (cache[key].exp <= now) {

@@ -1,6 +1,6 @@
-import { getI18nStore } from "./singleton-operations";
-import type { DictionaryLookup, Unsubscribe } from "./storeTypes";
-import { getDictionaryListenerKey } from "gt-i18n/internal";
+import { getI18nStore } from './singleton-operations';
+import type { DictionaryLookup, Unsubscribe } from './storeTypes';
+import { getDictionaryListenerKey } from 'gt-i18n/internal';
 
 /**
  * Tracks dictionary lookups discovered by useTranslations callbacks.
@@ -18,7 +18,7 @@ export class RuntimeDictionaryScope {
 
     const store = getI18nStore();
     const unsubscribe = store.subscribeToDictionaryEntry(lookup, () =>
-      this.notifyResolved(key, this.pendingEntries),
+      this.notifyResolved(key, this.pendingEntries)
     );
     this.pendingEntries.set(key, unsubscribe);
     store.translateDictionaryEntry(lookup);
@@ -31,7 +31,7 @@ export class RuntimeDictionaryScope {
 
     const store = getI18nStore();
     const unsubscribe = store.subscribeToDictionaryObject(lookup, () =>
-      this.notifyResolved(key, this.pendingObjects),
+      this.notifyResolved(key, this.pendingObjects)
     );
     this.pendingObjects.set(key, unsubscribe);
     store.translateDictionaryObject(lookup);

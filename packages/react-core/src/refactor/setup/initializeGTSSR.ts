@@ -1,9 +1,9 @@
 import {
   ReactI18nManager,
   ReactI18nManagerParams,
-} from "../i18n-manager/ReactI18nManager";
-import { setRenderStrategy } from "./globals";
-import { setI18nManager } from "../i18n-manager/singleton-operations";
+} from '../i18n-manager/ReactI18nManager';
+import { setRenderStrategy } from './globals';
+import { setI18nManager } from '../i18n-manager/singleton-operations';
 
 /**
  * Initialize GT for a server-side rendered application
@@ -12,7 +12,7 @@ import { setI18nManager } from "../i18n-manager/singleton-operations";
  * ConditionStore and I18nStore are initialized in the provider at request time
  */
 export function internalInitializeGTSSR(config: ReactI18nManagerParams): void {
-  setRenderStrategy("server-render");
+  setRenderStrategy('server-render');
 
   const i18nManager = new ReactI18nManager(config);
   setI18nManager(i18nManager);

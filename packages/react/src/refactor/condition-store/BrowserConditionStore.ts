@@ -1,13 +1,13 @@
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
-} from "@generaltranslation/react-core/internal";
+} from '@generaltranslation/react-core/internal';
 import {
   ReactConditionStore,
   ReactConditionStoreParams,
-} from "@generaltranslation/react-core/context";
-import { getCookieValue, setCookieValue } from "./cookies";
-import { readBrowserLocale } from "./readBrowserLocale";
+} from '@generaltranslation/react-core/context';
+import { getCookieValue, setCookieValue } from './cookies';
+import { readBrowserLocale } from './readBrowserLocale';
 
 /**
  * The configuration for the BrowserConditionStore
@@ -18,7 +18,7 @@ import { readBrowserLocale } from "./readBrowserLocale";
  */
 export type BrowserConditionStoreParams = Omit<
   ReactConditionStoreParams,
-  "locale"
+  'locale'
 > & {
   locale?: string;
   localeCookieName?: string;
@@ -62,13 +62,13 @@ export class BrowserConditionStore extends ReactConditionStore {
     const cookieEnableI18n = getCookieValue({
       cookieName: this.enableI18nCookieName,
     });
-    return cookieEnableI18n === "true" || cookieEnableI18n === undefined;
+    return cookieEnableI18n === 'true' || cookieEnableI18n === undefined;
   };
 
   setEnableI18n = (enableI18n: boolean): void => {
     setCookieValue({
       cookieName: this.enableI18nCookieName,
-      value: enableI18n ? "true" : "false",
+      value: enableI18n ? 'true' : 'false',
     });
   };
 }

@@ -1,12 +1,12 @@
-import { getCookieValue } from "./cookies";
-import { defaultLocaleCookieName } from "@generaltranslation/react-core/internal";
-import { createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning } from "../../../shared/messages";
-import type { GetLocale } from "./types";
+import { getCookieValue } from './cookies';
+import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
+import { createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning } from '../../../shared/messages';
+import type { GetLocale } from './types';
 import {
   determineSupportedLocale,
   resolveSupportedLocale,
-} from "gt-i18n/internal";
-import type { LocaleResolverConfig } from "gt-i18n/internal/types";
+} from 'gt-i18n/internal';
+import type { LocaleResolverConfig } from 'gt-i18n/internal/types';
 
 /**
  * Determine a user's locale from their browser settings
@@ -39,14 +39,14 @@ export function determineLocale({
     // A custom getLocale is authoritative: if it returns an unsupported locale, warn and fall back.
     const determinedLocale = determineSupportedLocale(
       customLocale,
-      localeConfig,
+      localeConfig
     );
     if (!determinedLocale) {
       console.warn(
         createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning({
           customLocale,
           defaultLocale: resolvedDefaultLocale,
-        }),
+        })
       );
       return resolvedDefaultLocale;
     }
