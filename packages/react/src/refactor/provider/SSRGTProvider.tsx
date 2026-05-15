@@ -1,6 +1,6 @@
 import { ReadonlyConditionStore } from "gt-i18n/internal";
 import { setReadonlyConditionStore } from "../condition-store/singleton-operations";
-import type { SharedGTProviderProps } from "./types";
+import type { SharedGTProviderProps } from "./SharedGTProviderProps";
 import {
   getReactI18nManager,
   InternalGTProvider,

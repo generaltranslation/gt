@@ -2,7 +2,7 @@ import {
   getReactI18nManager,
   InternalGTProvider,
 } from "@generaltranslation/react-core/context";
-import type { SharedGTProviderProps } from "./types";
+import type { SharedGTProviderProps } from "./SharedGTProviderProps";
 import {
   getBrowserConditionStore,
   isBrowserConditionStoreInitialized,

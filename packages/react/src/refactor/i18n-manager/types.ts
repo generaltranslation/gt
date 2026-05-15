@@ -2,6 +2,7 @@
  * Type for custom getLocale function
  */
 export type GetLocale = () => string;
+export type GetEnableI18n = () => boolean;
 
 /**
  * Html tag options

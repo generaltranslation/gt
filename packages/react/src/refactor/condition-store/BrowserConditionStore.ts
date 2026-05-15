@@ -9,7 +9,7 @@ import {
 } from "@generaltranslation/react-core/context";
 import { getCookieValue, setCookieValue } from "./cookies";
 import { readBrowserLocale } from "./readBrowserLocale";
-import { GetLocale } from "../i18n-manager/types";
+import { GetEnableI18n, GetLocale } from "../i18n-manager/types";
 import { LocaleCandidates } from "gt-i18n/internal/types";
 
 /**
@@ -27,6 +27,7 @@ export type BrowserConditionStoreParams = Omit<
   localeCookieName?: string;
   enableI18nCookieName?: string;
   getLocale?: GetLocale;
+  getEnableI18n?: GetEnableI18n;
 };
 
 /**
@@ -35,6 +36,8 @@ export type BrowserConditionStoreParams = Omit<
 export class BrowserConditionStore extends WritableConditionStore {
   private localeCookieName: string;
   private enableI18nCookieName: string;
+  private customGetLocale?: GetLocale;
+  private customGetEnableI18n?: GetEnableI18n;
 
   constructor({
     localeCookieName = defaultLocaleCookieName,
@@ -42,17 +45,19 @@ export class BrowserConditionStore extends WritableConditionStore {
     ...config
   }: BrowserConditionStoreParams) {
     const locale = getBrowserLocale(localeCookieName, config.getLocale);
+    const enableI18n = config.enableI18n ?? config.getEnableI18n?.() ?? true;
 
     super({
       ...config,
       locale,
+      enableI18n,
     });
     this.localeCookieName = localeCookieName;
     this.enableI18nCookieName = enableI18nCookieName;
   }
 
   getLocale = (): string => {
-    return getBrowserLocale(this.localeCookieName, this.getLocale);
+    return getBrowserLocale(this.localeCookieName, this.customGetLocale);
   };
 
   setLocale = (locale: LocaleCandidates): void => {
@@ -67,7 +72,10 @@ export class BrowserConditionStore extends WritableConditionStore {
     const cookieEnableI18n = getCookieValue({
       cookieName: this.enableI18nCookieName,
     });
-    return cookieEnableI18n === "true" || cookieEnableI18n === undefined;
+    if (cookieEnableI18n === undefined) {
+      return this.customGetEnableI18n?.() ?? true;
+    }
+    return cookieEnableI18n === "true";
   };
 
   setEnableI18n = (enableI18n: boolean): void => {
