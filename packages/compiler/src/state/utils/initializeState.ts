@@ -25,6 +25,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   autoderive: { jsx: false, strings: false },
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
+  projectDerivation: false,
 };
 
 /**

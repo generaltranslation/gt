@@ -48,6 +48,8 @@ export interface PluginConfig {
   _debugHashManifest?: boolean;
   /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
   devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
+  /** Enable project-aware derivation. Currently reserved for shared extraction rollout. */
+  projectDerivation?: boolean;
 }
 
 /**
@@ -72,6 +74,8 @@ export interface PluginSettings {
   _debugHashManifest: boolean;
   /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
   devHotReload: { strings: boolean; jsx: boolean };
+  /** Enable project-aware derivation. Currently reserved for shared extraction rollout. */
+  projectDerivation: boolean;
 }
 
 /**

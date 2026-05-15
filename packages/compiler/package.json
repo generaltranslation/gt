@@ -4,6 +4,18 @@
   "description": "Universal plugin for compile-time optimization of GT translation components",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    },
+    "./extraction": {
+      "types": "./dist/extraction/index.d.ts",
+      "require": "./dist/extraction/index.js",
+      "import": "./dist/extraction/index.js"
+    }
+  },
   "author": "General Translation, Inc.",
   "scripts": {
     "emit-types": "sh ../../scripts/emit-types.sh",
