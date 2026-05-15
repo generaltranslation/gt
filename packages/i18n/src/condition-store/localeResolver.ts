@@ -1,6 +1,6 @@
-import { LocaleConfig } from '@generaltranslation/format';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { LocaleResolverConfig } from '../types';
+import { LocaleConfig } from "@generaltranslation/format";
+import { libraryDefaultLocale } from "generaltranslation/internal";
+import type { LocaleResolverConfig } from "../i18n-manager/types";
 
 export type LocaleCandidates = string | string[] | undefined;
 
@@ -26,17 +26,17 @@ type NormalizedConditionStoreConfig = ReturnType<
  */
 export function determineSupportedLocale(
   candidates: LocaleCandidates,
-  config: LocaleResolverConfig = {}
+  config: LocaleResolverConfig = {},
 ): string | undefined {
   return determineSupportedLocaleWithConfig(
     candidates,
-    normalizeConditionStoreConfig(config)
+    normalizeConditionStoreConfig(config),
   );
 }
 
 function determineSupportedLocaleWithConfig(
   candidates: LocaleCandidates,
-  config: NormalizedConditionStoreConfig
+  config: NormalizedConditionStoreConfig,
 ): string | undefined {
   if (
     candidates == null ||
@@ -54,7 +54,7 @@ function determineSupportedLocaleWithConfig(
  */
 export function resolveSupportedLocale(
   candidates: LocaleCandidates,
-  config: LocaleResolverConfig = {}
+  config: LocaleResolverConfig = {},
 ): string {
   const normalizedConfig = normalizeConditionStoreConfig(config);
   return (

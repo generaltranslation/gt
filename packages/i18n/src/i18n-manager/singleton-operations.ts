@@ -2,7 +2,7 @@ import { libraryDefaultLocale } from "generaltranslation/internal";
 import { I18nManager } from "./I18nManager";
 import logger from "../logs/logger";
 import { Translation } from "./translations-manager/utils/types/translation-data";
-import { createConditionStoreSingleton } from "./condition-store/createConditionStoreSingleton";
+import { createConditionStoreSingleton } from "../condition-store/createConditionStoreSingleton";
 import { WritableConditionStore } from "./types";
 
 // Singleton instance of I18nManager

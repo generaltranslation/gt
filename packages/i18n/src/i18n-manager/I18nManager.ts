@@ -34,7 +34,7 @@ import type { I18nEvents } from "./event-subscription/types";
 import {
   createLocaleResolver,
   LocaleCandidates,
-} from "./condition-store/localeResolver";
+} from "../condition-store/localeResolver";
 
 type RuntimeEnvironment = {
   DEV?: boolean;

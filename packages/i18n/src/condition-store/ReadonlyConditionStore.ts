@@ -1,7 +1,7 @@
 import type {
   LocaleResolverConfig,
   ReadonlyConditionStore as ReadonlyConditionStoreContract,
-} from "../types";
+} from "../i18n-manager/types";
 import { createLocaleResolver, type LocaleCandidates } from "./localeResolver";
 
 export type ReadonlyConditionStoreParams = LocaleResolverConfig & {
