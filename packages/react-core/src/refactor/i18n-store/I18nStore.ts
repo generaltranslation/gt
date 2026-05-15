@@ -1,6 +1,5 @@
 import {
   getDictionaryListenerKey,
-  getI18nManager,
   getTranslateListenerKey,
 } from 'gt-i18n/internal';
 import type { CustomMapping, IcuMessage } from 'generaltranslation/types';
@@ -22,6 +21,7 @@ import type {
 } from 'gt-i18n/types';
 import type { Hash, Locale } from 'gt-i18n/internal/types';
 import { getConditionStore } from '../condition-store/singleton-operations';
+import { getReactI18nManager } from '../i18n-manager/singleton-operations';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
 
@@ -85,7 +85,7 @@ export class I18nStore {
   constructor({ overrideSetLocale }: I18nStoreParams) {
     try {
       getConditionStore();
-      getI18nManager();
+      getReactI18nManager();
     } catch (error) {
       throw new Error('Failed to initialize I18nStore. Reason: ' + error);
     }
@@ -178,15 +178,15 @@ export class I18nStore {
   // ===== Manager Config Snapshots ===== //
 
   getDefaultLocaleSnapshot = (): string => {
-    return getI18nManager().getDefaultLocale();
+    return getReactI18nManager().getDefaultLocale();
   };
 
   getLocalesSnapshot = (): readonly string[] => {
-    return getI18nManager().getLocales();
+    return getReactI18nManager().getLocales();
   };
 
   getCustomMappingSnapshot = (): CustomMapping => {
-    return getI18nManager().getCustomMapping();
+    return getReactI18nManager().getCustomMapping();
   };
 
   // ===== ConditionStore Snapshots ===== //
@@ -206,7 +206,7 @@ export class I18nStore {
     message,
     options,
   }: TranslateLookup<T>): TranslateSnapshot<T> => {
-    return getI18nManager().lookupTranslation<T>(locale, message, options);
+    return getReactI18nManager().lookupTranslation<T>(locale, message, options);
   };
 
   getTranslateManySnapshot = <T extends Translation>(
@@ -234,20 +234,20 @@ export class I18nStore {
     locale,
     id,
   }: DictionaryLookup): DictionaryEntrySnapshot => {
-    return getI18nManager().lookupDictionary(locale, id);
+    return getReactI18nManager().lookupDictionary(locale, id);
   };
 
   getDictionaryObjectSnapshot = ({
     locale,
     id,
   }: DictionaryLookup): DictionaryObjectSnapshot => {
-    return getI18nManager().lookupDictionaryObj(locale, id);
+    return getReactI18nManager().lookupDictionaryObj(locale, id);
   };
 
   // ===== runtime translation ===== //
 
   translate = <T extends Translation>(lookup: TranslateLookup<T>): void => {
-    getI18nManager()
+    getReactI18nManager()
       .lookupTranslationWithFallback(
         lookup.locale,
         lookup.message,
@@ -262,7 +262,7 @@ export class I18nStore {
   };
 
   translateDictionaryEntry = (lookup: DictionaryLookup): void => {
-    getI18nManager()
+    getReactI18nManager()
       .lookupDictionaryWithFallback(lookup.locale, lookup.id)
       .then((dictionaryEntry) => {
         if (dictionaryEntry == null) {
@@ -273,7 +273,7 @@ export class I18nStore {
   };
 
   translateDictionaryObject = (lookup: DictionaryLookup): void => {
-    getI18nManager()
+    getReactI18nManager()
       .lookupDictionaryObjWithFallback(lookup.locale, lookup.id)
       .then((dictionaryObject) => {
         if (dictionaryObject == null) {
@@ -307,7 +307,7 @@ export class I18nStore {
    */
   setLocale = (newLocale: string): void => {
     // Sanitize locale
-    const i18nManager = getI18nManager();
+    const i18nManager = getReactI18nManager();
     const locale = i18nManager.sanitizeLocale(newLocale);
     if (!locale) {
       return;
@@ -335,7 +335,7 @@ export class I18nStore {
 
     // Load new translations and update status and locale
     this.updateTranslationStatus({ status: 'loading', locale });
-    getI18nManager()
+    getReactI18nManager()
       .loadTranslations(locale)
       .then(() => {
         // dedupe update
@@ -399,7 +399,7 @@ export class I18nStore {
   updateTranslations = (
     translationsObj: TranslationsSnapshot = {}
   ): void => {
-    getI18nManager().updateTranslations(translationsObj);
+    getReactI18nManager().updateTranslations(translationsObj);
   };
 
   private subscribeToStaticSet(

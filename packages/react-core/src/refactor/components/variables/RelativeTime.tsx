@@ -1,4 +1,4 @@
-import { getI18nManager } from 'gt-i18n/internal';
+import { getReactI18nManager } from '../../i18n-manager/singleton-operations';
 import { useFormatLocales } from '../../hooks/utils';
 
 // ===== Component ===== //
@@ -22,7 +22,7 @@ function GtInternalRelativeTime({
   options?: Intl.RelativeTimeFormatOptions;
 }): string | null {
   const locales = useFormatLocales(localesProp);
-  const gt = getI18nManager().getGTClass();
+  const gt = getReactI18nManager().getGTClass();
   const resolvedDate = date ?? children;
 
   if (process.env.NODE_ENV === 'development' && value !== undefined && !unit) {

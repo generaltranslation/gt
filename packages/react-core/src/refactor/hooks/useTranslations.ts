@@ -12,7 +12,7 @@ import {
 } from './external-store-hooks';
 import { useLocale } from './context-hooks';
 import { useShouldTranslate } from './utils';
-import { getI18nManager } from '../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../i18n-manager/singleton-operations';
 import { useGT } from './useGT';
 import type {
   DictionaryObjectTranslation,
@@ -28,14 +28,14 @@ export function useTranslations(id?: string): UseTranslationsFunction {
   const scope = useRuntimeDictionaryScope();
   const gt = useGT();
   const rootId = id ?? '';
-  const devHotReloadEnabled = getI18nManager().isDevHotReloadEnabled();
+  const devHotReloadEnabled = getReactI18nManager().isDevHotReloadEnabled();
 
   useDictionaryObject({ locale: defaultLocale, id: rootId });
   useDictionaryObject({ locale, id: rootId });
 
   const translateEntry = useCallback(
     (suffix: string, options: DictionaryTranslationOptions = {}) => {
-      const i18nManager = getI18nManager();
+      const i18nManager = getReactI18nManager();
       const entryId = getEntryId(id, suffix);
       const sourceEntry = i18nManager.lookupDictionary(defaultLocale, entryId);
       if (sourceEntry === undefined) {
@@ -78,7 +78,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
 
   const translateObject = useCallback(
     (suffix: string) => {
-      const i18nManager = getI18nManager();
+      const i18nManager = getReactI18nManager();
       const entryId = getEntryId(id, suffix);
       const sourceObject = i18nManager.lookupDictionaryObj(
         defaultLocale,

@@ -1,7 +1,7 @@
 import { getI18nStore } from './singleton-operations';
 import type { TranslateLookup, Unsubscribe } from './storeTypes';
 import { getTranslateListenerKey } from 'gt-i18n/internal';
-import { getI18nManager } from '../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../i18n-manager/singleton-operations';
 
 /**
  * Owned by I18nStore, this should not be imported to any other files
@@ -12,7 +12,7 @@ export class RuntimeTranslationScope {
   private pendingKeys = new Map<string, Unsubscribe>();
 
   translate(lookup: TranslateLookup) {
-    if (!getI18nManager().isDevHotReloadEnabled()) return;
+    if (!getReactI18nManager().isDevHotReloadEnabled()) return;
 
     const key = getTranslateListenerKey(lookup);
     if (this.pendingKeys.has(key)) return;

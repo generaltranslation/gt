@@ -1,4 +1,4 @@
-import { getI18nManager } from 'gt-i18n/internal';
+import { getReactI18nManager } from '../../i18n-manager/singleton-operations';
 import { useFormatLocales } from '../../hooks/utils';
 
 // ===== Component ===== //
@@ -15,7 +15,7 @@ function GtInternalDateTime({
 }): string | null {
   const locales = useFormatLocales(localesProp);
   // TODO: theres a world in which we don't need the i18n manager, if user passes their own params
-  const gt = getI18nManager().getGTClass();
+  const gt = getReactI18nManager().getGTClass();
   if (children == null) return null;
   return gt
     .formatDateTime(children, { locales, ...options })

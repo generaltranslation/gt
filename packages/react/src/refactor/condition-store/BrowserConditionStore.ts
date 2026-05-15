@@ -3,7 +3,7 @@ import {
   defaultLocaleCookieName,
 } from "@generaltranslation/react-core/internal";
 import {
-  getI18nManager,
+  getReactI18nManager,
   ReactConditionStore,
   ReactConditionStoreParams,
 } from "@generaltranslation/react-core/context";
@@ -80,5 +80,5 @@ export class BrowserConditionStore extends ReactConditionStore {
 function resolveLocale(cookieName: string, getLocale?: GetLocale): string {
   const candidates = readBrowserLocale(cookieName);
   if (getLocale) candidates.push(getLocale());
-  return getI18nManager().determineLocale(candidates);
+  return getReactI18nManager().determineLocale(candidates);
 }

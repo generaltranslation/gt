@@ -1,5 +1,5 @@
 import {
-  getI18nManager,
+  getReactI18nManager,
   InternalGTProvider,
 } from '@generaltranslation/react-core/context';
 import type { SharedGTProviderProps } from './types';
@@ -18,9 +18,9 @@ export function CSRGTProvider({
   // TODO: if a specific translation entry changes, but not the locale, this does not trigger a re-render
   // TODO: optimize by skipping updateTranslations() if client is responsible for reloading translations
   // (eg overrideSetLocale === undefined), see getI18nStore().updateLocale() in InternalGTProvider
-  getI18nManager().updateTranslations(translations);
+  getReactI18nManager().updateTranslations(translations);
   if (dictionary) {
-    getI18nManager().updateDictionaries(dictionary);
+    getReactI18nManager().updateDictionaries(dictionary);
   }
   return <InternalGTProvider {...props} />;
 }

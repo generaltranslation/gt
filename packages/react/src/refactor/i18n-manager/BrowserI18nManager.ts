@@ -2,11 +2,11 @@ import type {
   I18nManagerConstructorParams,
   TranslationsLoader,
 } from 'gt-i18n/internal/types';
+import { I18nManager } from 'gt-i18n/internal';
 import type { HtmlTagOptions } from './types';
 import type { Translation } from 'gt-i18n/types';
 import { DEFAULT_HTML_TAG_OPTIONS } from './constants';
 import { createInvalidLocaleWarning } from '../../shared/messages';
-import { ReactI18nManager } from '@generaltranslation/react-core/context';
 import { LocalStorageTranslationCache } from './LocalStorageTranslationCache';
 
 /**
@@ -20,7 +20,7 @@ export type BrowserI18nManagerParams =
 /**
  * I18nManager implementation for Browser.
  */
-export class BrowserI18nManager extends ReactI18nManager {
+export class BrowserI18nManager extends I18nManager<Translation> {
   /** Customize browser-related behavior */
   private htmlTagOptions?: HtmlTagOptions;
 

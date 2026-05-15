@@ -1,5 +1,4 @@
 import { getCookieValue } from "./cookies";
-import { getI18nManager } from "@generaltranslation/react-core/context";
 
 export function readBrowserLocale(localeCookieName: string): string[] {
   const candidates = [];

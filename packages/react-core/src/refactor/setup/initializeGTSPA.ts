@@ -1,8 +1,7 @@
-import { setI18nManager } from '../i18n-manager/singleton-operations';
-import {
-  ReactI18nManager,
-  ReactI18nManagerParams,
-} from '../i18n-manager/ReactI18nManager';
+import { I18nManager } from 'gt-i18n/internal';
+import type { Translation } from 'gt-i18n/types';
+import { setReactI18nManager } from '../i18n-manager/singleton-operations';
+import type { ReactI18nManagerParams } from '../i18n-manager/ReactI18nManager';
 import {
   ReactConditionStore,
   ReactConditionStoreParams,
@@ -25,8 +24,8 @@ export function internalInitializeGTSPA(
 ): void {
   setRenderStrategy('SPA');
 
-  const i18nManager = new ReactI18nManager(config);
-  setI18nManager(i18nManager);
+  const i18nManager = new I18nManager<Translation>(config);
+  setReactI18nManager(i18nManager);
 
   const conditionStore = new ReactConditionStore(config);
   setConditionStore(conditionStore);

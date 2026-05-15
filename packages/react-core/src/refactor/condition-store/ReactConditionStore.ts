@@ -1,6 +1,6 @@
 import type { WritableConditionStore } from 'gt-i18n/internal/types';
-import { getI18nManager } from '../i18n-manager/singleton-operations';
-import { ReactI18nManager } from '../i18n-manager/ReactI18nManager';
+import { getReactI18nManager } from '../i18n-manager/singleton-operations';
+import type { ReactI18nManager } from '../i18n-manager/ReactI18nManager';
 
 export type ReactConditionStoreParams = {
   locale: string;
@@ -17,7 +17,7 @@ export class ReactConditionStore implements WritableConditionStore {
   constructor({ locale, enableI18n = true }: ReactConditionStoreParams) {
     let i18nManager: ReactI18nManager;
     try {
-      i18nManager = getI18nManager();
+      i18nManager = getReactI18nManager();
     } catch (error) {
       throw new Error(
         'Failed to initialize ReactConditionStore. Reason: ' + error
@@ -32,7 +32,7 @@ export class ReactConditionStore implements WritableConditionStore {
   };
 
   setLocale = (locale: string): void => {
-    this.locale = getI18nManager().determineLocale(locale);
+    this.locale = getReactI18nManager().determineLocale(locale);
   };
 
   getEnableI18n = (): boolean => {

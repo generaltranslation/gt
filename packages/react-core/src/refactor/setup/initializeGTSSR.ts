@@ -1,9 +1,8 @@
-import {
-  ReactI18nManager,
-  ReactI18nManagerParams,
-} from '../i18n-manager/ReactI18nManager';
+import { I18nManager } from 'gt-i18n/internal';
+import type { Translation } from 'gt-i18n/types';
+import type { ReactI18nManagerParams } from '../i18n-manager/ReactI18nManager';
 import { setRenderStrategy } from './globals';
-import { setI18nManager } from '../i18n-manager/singleton-operations';
+import { setReactI18nManager } from '../i18n-manager/singleton-operations';
 
 /**
  * Initialize GT for a server-side rendered application
@@ -14,6 +13,6 @@ import { setI18nManager } from '../i18n-manager/singleton-operations';
 export function internalInitializeGTSSR(config: ReactI18nManagerParams): void {
   setRenderStrategy('server-render');
 
-  const i18nManager = new ReactI18nManager(config);
-  setI18nManager(i18nManager);
+  const i18nManager = new I18nManager<Translation>(config);
+  setReactI18nManager(i18nManager);
 }

@@ -1,21 +1,18 @@
-import { useCallback, useMemo } from 'react';
-import { createLookupOptions } from 'gt-i18n/internal';
-import type { InlineTranslationOptionsFields } from 'gt-i18n/internal/types';
+import { useCallback, useMemo } from "react";
+import { createLookupOptions } from "gt-i18n/internal";
+import type { InlineTranslationOptionsFields } from "gt-i18n/internal/types";
 import {
   useDefaultLocale,
   useRuntimeTranslationScope,
   useTranslateMany,
-} from './external-store-hooks';
-import { useLocale } from './context-hooks';
-import { useShouldTranslate } from './utils';
-import { getI18nManager } from '../i18n-manager/singleton-operations';
-import type { TranslateLookup } from '../i18n-store/storeTypes';
-import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
-import type {
-  StringContent,
-  StringFormat,
-} from '@generaltranslation/format/types';
-import { interpolateMessage } from 'gt-i18n/internal';
+} from "./external-store-hooks";
+import { useLocale } from "./context-hooks";
+import { useShouldTranslate } from "./utils";
+import { getReactI18nManager } from "../i18n-manager/singleton-operations";
+import type { TranslateLookup } from "../i18n-store/storeTypes";
+import type { GTFunctionType, InlineTranslationOptions } from "gt-i18n/types";
+import type { StringFormat } from "@generaltranslation/format/types";
+import { interpolateMessage } from "gt-i18n/internal";
 
 const EMPTY_TRANSLATE_LOOKUPS: TranslateLookup<string>[] = [];
 
@@ -30,14 +27,14 @@ export function useGT(_messages?: Message[]): GTFunctionType {
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
   const scope = useRuntimeTranslationScope();
-  const devHotReloadEnabled = getI18nManager().isDevHotReloadEnabled();
+  const devHotReloadEnabled = getReactI18nManager().isDevHotReloadEnabled();
 
   // Compiler optimization: pre-fetch translations
   useSubscribeToExtractedMessages(
     locale,
     shouldTranslate,
     devHotReloadEnabled,
-    _messages ?? []
+    _messages ?? [],
   );
 
   /**
@@ -56,12 +53,12 @@ export function useGT(_messages?: Message[]): GTFunctionType {
       const lookupOptions = createLookupOptions<StringFormat>(
         options.$locale ?? locale,
         options,
-        'ICU'
+        "ICU",
       );
-      const translation = getI18nManager().lookupTranslation(
+      const translation = getReactI18nManager().lookupTranslation(
         lookupOptions.$locale,
         message,
-        lookupOptions
+        lookupOptions,
       );
 
       if (translation == null && devHotReloadEnabled) {
@@ -79,7 +76,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         sourceLocale: defaultLocale,
       });
     },
-    [defaultLocale, devHotReloadEnabled, locale, scope, shouldTranslate]
+    [defaultLocale, devHotReloadEnabled, locale, scope, shouldTranslate],
   );
 }
 
@@ -89,7 +86,7 @@ function useSubscribeToExtractedMessages(
   locale: string,
   shouldTranslate: boolean,
   devHotReloadEnabled: boolean,
-  messages: Message[]
+  messages: Message[],
 ) {
   const lookups = useMemo(() => {
     if (!messages?.length || !shouldTranslate || !devHotReloadEnabled) {
@@ -100,7 +97,7 @@ function useSubscribeToExtractedMessages(
       const lookupOptions = createLookupOptions<StringFormat>(
         targetLocale,
         options,
-        'ICU'
+        "ICU",
       );
       return {
         locale: targetLocale,

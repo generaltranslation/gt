@@ -12,7 +12,7 @@ import type { CustomMapping } from 'generaltranslation/types';
 import { getI18nStore } from '../i18n-store/singleton-operations';
 import type { RuntimeTranslationScope } from '../i18n-store/RuntimeTranslationScope';
 import type { RuntimeDictionaryScope } from '../i18n-store/RuntimeDictionaryScope';
-import { getI18nManager } from '../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../i18n-manager/singleton-operations';
 
 /**
  * @internal
@@ -26,7 +26,7 @@ export function useTranslate<T extends Translation>(
     () => store.getTranslateSnapshot(lookup),
     () => store.getTranslateSnapshot(lookup)
   );
-  if (translation == null && getI18nManager().isDevHotReloadEnabled()) {
+  if (translation == null && getReactI18nManager().isDevHotReloadEnabled()) {
     store.translate(lookup);
   }
   return translation;
@@ -44,7 +44,7 @@ export function useTranslateMany<T extends Translation>(
     () => store.getTranslateManySnapshot(lookups),
     () => store.getTranslateManySnapshot(lookups)
   );
-  const devHotReloadEnabled = getI18nManager().isDevHotReloadEnabled();
+  const devHotReloadEnabled = getReactI18nManager().isDevHotReloadEnabled();
   translations.forEach((translation, index) => {
     if (translation == null && devHotReloadEnabled) {
       store.translate(lookups[index]);
@@ -65,7 +65,7 @@ export function useDictionaryEntry(
     () => store.getDictionaryEntrySnapshot(lookup),
     () => store.getDictionaryEntrySnapshot(lookup)
   );
-  if (dictionaryEntry == null && getI18nManager().isDevHotReloadEnabled()) {
+  if (dictionaryEntry == null && getReactI18nManager().isDevHotReloadEnabled()) {
     store.translateDictionaryEntry(lookup);
   }
   return dictionaryEntry;
@@ -83,7 +83,7 @@ export function useDictionaryObject(
     () => store.getDictionaryObjectSnapshot(lookup),
     () => store.getDictionaryObjectSnapshot(lookup)
   );
-  if (dictionaryObject == null && getI18nManager().isDevHotReloadEnabled()) {
+  if (dictionaryObject == null && getReactI18nManager().isDevHotReloadEnabled()) {
     store.translateDictionaryObject(lookup);
   }
   return dictionaryObject;
