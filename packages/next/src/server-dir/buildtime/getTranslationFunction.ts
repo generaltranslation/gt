@@ -193,23 +193,9 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     };
   }
 
-  function getTranslationData(
-    calculateHash: () => string,
-    id?: string,
-    _hash?: string
-  ) {
-    let translationEntry;
-    let hash = ''; // lazily computed if needed
-    if (id) translationEntry = translations?.[id];
-    if (!translationEntry && _hash && translations?.[_hash] !== undefined) {
-      hash = _hash;
-      translationEntry = translations?.[_hash];
-    }
-    if (!translationEntry) {
-      hash = calculateHash();
-      translationEntry = translations?.[hash];
-    }
-    return { translationEntry, hash };
+  function getTranslationData(calculateHash: () => string, _hash?: string) {
+    const hash = _hash || calculateHash();
+    return { translationEntry: translations?.[hash], hash };
   }
 
   function scheduleTranslateOnDemand(args: {
@@ -271,7 +257,6 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       const { id, context, maxChars, _hash, calculateHash } = init;
       const { translationEntry, hash } = getTranslationData(
         calculateHash,
-        id,
         _hash
       );
       if (translationEntry) return; // exists already
@@ -305,11 +290,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     // Early: no translation needed
     if (!translationRequired) return renderMessage(message, [defaultLocale]);
 
-    const { translationEntry, hash } = getTranslationData(
-      calculateHash,
-      id,
-      _hash
-    );
+    const { translationEntry, hash } = getTranslationData(calculateHash, _hash);
 
     if (translationEntry) {
       return renderMessage(

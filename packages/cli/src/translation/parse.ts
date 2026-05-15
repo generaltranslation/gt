@@ -92,7 +92,7 @@ export async function createUpdates(
   const idHashMap = new Map<string, string>();
   const hashlessIds = new Set<string>();
   const warnedHashlessDuplicateIds = new Set<string>();
-  const duplicateIds = new Set<string>();
+  const warnedDuplicateIds = new Set<string>();
 
   const warnHashlessDuplicateId = (id: string) => {
     if (warnedHashlessDuplicateIds.has(id)) return;
@@ -121,15 +121,15 @@ export async function createUpdates(
 
     const existingHash = idHashMap.get(id);
     if (existingHash !== undefined) {
-      if (existingHash !== hash) {
-        errors.push(
-          `Hashes don't match on two components with the same id: ${chalk.blue(
+      if (existingHash !== hash && !warnedDuplicateIds.has(id)) {
+        warnings.push(
+          `Found multiple entries with the same custom id ${chalk.blue(
             id
-          )}. Check your ${chalk.green(
+          )} but different hashes. Translations are keyed by hash, so both entries can be uploaded, but check your ${chalk.green(
             '<T>'
-          )} tags and dictionary entries and make sure you're not accidentally duplicating IDs.`
+          )} tags and dictionary entries to make sure you are not accidentally reusing an id.`
         );
-        duplicateIds.add(id);
+        warnedDuplicateIds.add(id);
       }
     } else {
       idHashMap.set(id, hash);
@@ -137,9 +137,5 @@ export async function createUpdates(
     return update;
   });
 
-  // Filter out updates with duplicate IDs
-  updates = updates.filter(
-    (update) => !update.metadata.id || !duplicateIds.has(update.metadata.id)
-  );
   return { updates, errors, warnings };
 }

@@ -79,50 +79,26 @@ function T({
 
   // ----- FETCH TRANSLATION ----- //
 
-  // Dependency flag to avoid recalculating hash whenever translation object changes
-
-  let translationEntry: TranslatedChildren | null | undefined;
-
-  if (id) {
-    translationEntry = translations?.[id];
-  }
-
-  if (typeof translationEntry === 'undefined' && _hash) {
-    translationEntry = translations?.[_hash];
-  }
-
   // Calculate necessary info for fetching translation / generating translation
   const [childrenAsObjects, hash] = useMemo(() => {
-    // skip hashing:
-    if (
-      !translationRequired || // Translation not required
-      translationEntry // Translation already exists under the id
-    ) {
-      return [undefined, ''];
+    if (!translationRequired) {
+      return [undefined, _hash || ''];
     }
-    // calculate hash
-    const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    const hash: string = hashSource({
-      source: childrenAsObjects,
-      ...(context && { context }),
-      ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
-      ...(id && { id }),
-      dataFormat: 'JSX',
-    });
-    return [childrenAsObjects, hash];
-  }, [
-    taggedChildren,
-    context,
-    id,
-    maxChars,
-    translationRequired,
-    translationEntry,
-  ]);
 
-  // get translation entry on hash
-  if (typeof translationEntry === 'undefined') {
-    translationEntry = translations?.[hash];
-  }
+    const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+    const hash: string =
+      _hash ||
+      hashSource({
+        source: childrenAsObjects,
+        ...(context && { context }),
+        ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
+        ...(id && { id }),
+        dataFormat: 'JSX',
+      });
+    return [childrenAsObjects, hash];
+  }, [taggedChildren, context, id, maxChars, translationRequired, _hash]);
+
+  const translationEntry = translations?.[hash];
 
   // ----- RENDER METHODS ----- //
 

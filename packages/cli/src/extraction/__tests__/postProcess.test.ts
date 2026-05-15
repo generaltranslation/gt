@@ -32,6 +32,23 @@ describe('calculateHashes', () => {
 
     expect(updates[0].metadata.hash).not.toBe(updates[1].metadata.hash);
   });
+
+  it('generates a new hash when source changes under the same custom id', async () => {
+    const updates: Updates = [
+      { dataFormat: 'ICU', source: 'hello', metadata: { id: 'custom-id' } },
+      {
+        dataFormat: 'ICU',
+        source: 'hello again',
+        metadata: { id: 'custom-id' },
+      },
+    ];
+
+    await calculateHashes(updates);
+
+    expect(updates[0].metadata.hash).toBeDefined();
+    expect(updates[1].metadata.hash).toBeDefined();
+    expect(updates[0].metadata.hash).not.toBe(updates[1].metadata.hash);
+  });
 });
 
 describe('dedupeUpdates', () => {

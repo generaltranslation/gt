@@ -59,7 +59,7 @@ describe('injectHashes', () => {
       expect(result.updateDictionary).toBe(true);
     });
 
-    it('should not modify entries that already have hashes', () => {
+    it('should refresh entries that already have stale hashes', () => {
       const dictionary: Dictionary = {
         greeting: ['Hello world', { $_hash: 'existing_hash' }],
         farewell: 'Goodbye',
@@ -68,7 +68,7 @@ describe('injectHashes', () => {
       const result = injectHashes(dictionary);
 
       expect(result.dictionary).toEqual({
-        greeting: ['Hello world', { $_hash: 'existing_hash' }],
+        greeting: ['Hello world', { $_hash: 'hash_Hello world_none_greeting' }],
         farewell: ['Goodbye', { $_hash: 'hash_Goodbye_none_farewell' }],
       });
       expect(result.updateDictionary).toBe(true);
@@ -168,7 +168,7 @@ describe('injectHashes', () => {
 
       expect(result.dictionary).toEqual({
         section1: {
-          item1: ['Item 1', { $_hash: 'existing_hash_1' }],
+          item1: ['Item 1', { $_hash: 'hash_Item 1_none_section1.item1' }],
           item2: ['Item 2', { $_hash: 'hash_Item 2_none_section1.item2' }],
         },
         section2: {
@@ -289,29 +289,35 @@ describe('injectHashes', () => {
   describe('should return correct updateDictionary flag', () => {
     it('should return false when no updates needed', () => {
       const dictionary: Dictionary = {
-        greeting: ['Hello world', { $_hash: 'existing_hash' }],
-        farewell: ['Goodbye', { $_hash: 'another_hash' }],
+        greeting: ['Hello world', { $_hash: 'hash_Hello world_none_greeting' }],
+        farewell: ['Goodbye', { $_hash: 'hash_Goodbye_none_farewell' }],
       };
 
       const result = injectHashes(dictionary);
 
       expect(result.dictionary).toEqual({
-        greeting: ['Hello world', { $_hash: 'existing_hash' }],
-        farewell: ['Goodbye', { $_hash: 'another_hash' }],
+        greeting: ['Hello world', { $_hash: 'hash_Hello world_none_greeting' }],
+        farewell: ['Goodbye', { $_hash: 'hash_Goodbye_none_farewell' }],
       });
       expect(result.updateDictionary).toBe(false);
     });
 
     it('should return true when some entries need hashes', () => {
       const dictionary: Dictionary = {
-        existing: ['Already has hash', { $_hash: 'existing' }],
+        existing: [
+          'Already has hash',
+          { $_hash: 'hash_Already has hash_none_existing' },
+        ],
         needsHash: 'Needs a hash',
       };
 
       const result = injectHashes(dictionary);
 
       expect(result.dictionary).toEqual({
-        existing: ['Already has hash', { $_hash: 'existing' }],
+        existing: [
+          'Already has hash',
+          { $_hash: 'hash_Already has hash_none_existing' },
+        ],
         needsHash: [
           'Needs a hash',
           { $_hash: 'hash_Needs a hash_none_needsHash' },
@@ -323,7 +329,10 @@ describe('injectHashes', () => {
     it('should return true when nested entries need hashes', () => {
       const dictionary: Dictionary = {
         section: {
-          withHash: ['Has hash', { $_hash: 'existing' }],
+          withHash: [
+            'Has hash',
+            { $_hash: 'hash_Has hash_none_section.withHash' },
+          ],
           nested: {
             needsHash: 'Needs hash',
           },
@@ -334,7 +343,10 @@ describe('injectHashes', () => {
 
       expect(result.dictionary).toEqual({
         section: {
-          withHash: ['Has hash', { $_hash: 'existing' }],
+          withHash: [
+            'Has hash',
+            { $_hash: 'hash_Has hash_none_section.withHash' },
+          ],
           nested: {
             needsHash: [
               'Needs hash',

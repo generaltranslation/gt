@@ -104,28 +104,18 @@ export async function T({
   // Get the translation entry object
   const translations = await translationsPromise;
 
-  let translationEntry = translations?.[id || ''];
-
-  let hash;
-  if (_hash && typeof translationEntry === 'undefined') {
-    translationEntry = translations?.[_hash];
-  }
-
-  let childrenAsObjects;
-
-  if (!translationEntry) {
-    // Turns tagged children into objects
-    // The hash is used to identify the translation
-    childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    hash = hashSource({
+  const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+  const hash =
+    _hash ||
+    hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
-    translationEntry = translations?.[hash];
-  }
+
+  const translationEntry = translations?.[hash];
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
 
@@ -166,16 +156,6 @@ export async function T({
   // (no entry has been found, this means that the translation is either (1) loading or (2) missing)
   const translationPromise = (async () => {
     try {
-      childrenAsObjects ||= writeChildrenAsObjects(taggedChildren);
-      hash ||=
-        _hash ||
-        hashSource({
-          source: childrenAsObjects,
-          ...(context && { context }),
-          ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
-          ...(id && { id }),
-          dataFormat: 'JSX',
-        });
       const target = await I18NConfig.translate({
         // do on demand translation
         source: childrenAsObjects,

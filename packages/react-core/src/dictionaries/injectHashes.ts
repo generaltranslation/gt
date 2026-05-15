@@ -20,17 +20,18 @@ export function injectHashes(
     if (isDictionaryEntry(value)) {
       // eslint-disable-next-line prefer-const
       let { entry, metadata } = getEntryAndMetadata(value);
-      if (!metadata?.$_hash) {
+      const hash = hashSource({
+        source: indexVars(entry),
+        ...(metadata?.$context && { context: metadata.$context }),
+        ...(metadata?.$maxChars != null && {
+          maxChars: Math.abs(metadata.$maxChars),
+        }),
+        id: wholeId,
+        dataFormat: 'ICU',
+      });
+      if (metadata?.$_hash !== hash) {
         metadata ||= {};
-        metadata.$_hash = hashSource({
-          source: indexVars(entry),
-          ...(metadata?.$context && { context: metadata.$context }),
-          ...(metadata?.$maxChars != null && {
-            maxChars: Math.abs(metadata.$maxChars),
-          }),
-          id: wholeId,
-          dataFormat: 'ICU',
-        });
+        metadata.$_hash = hash;
         set(dictionary, key, [entry, metadata]);
         updateDictionary = true;
       }

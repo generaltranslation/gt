@@ -153,22 +153,16 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // ----- CHECK TRANSLATIONS ----- //
 
-      let translationEntry = translations?.[id];
-      let hash = '';
-      const getHash = () =>
-        hashSource({
-          source: indexVars(entry),
-          ...(metadata?.$context && { context: metadata.$context }),
-          ...(metadata?.$maxChars != null && {
-            maxChars: Math.abs(metadata.$maxChars),
-          }),
-          id,
-          dataFormat: 'ICU',
-        });
-      if (!translationEntry) {
-        hash = getHash();
-        translationEntry = translations?.[hash];
-      }
+      const hash = hashSource({
+        source: indexVars(entry),
+        ...(metadata?.$context && { context: metadata.$context }),
+        ...(metadata?.$maxChars != null && {
+          maxChars: Math.abs(metadata.$maxChars),
+        }),
+        id,
+        dataFormat: 'ICU',
+      });
+      const translationEntry = translations?.[hash];
 
       // Check translation successful
       if (translationEntry) {
@@ -201,7 +195,7 @@ export default function useCreateInternalUseTranslationsFunction(
             maxChars: metadata.$maxChars,
           }),
           id,
-          hash: hash || getHash(),
+          hash,
         },
       });
 

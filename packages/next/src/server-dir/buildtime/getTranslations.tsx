@@ -240,28 +240,20 @@ export async function getTranslations(id?: string): Promise<
 
     // ---------- TRANSLATION ---------- //
 
-    let translationEntry = translations?.[id];
-    let hash = '';
-    const getHash = () => {
-      if (metadata?.$_hash) return metadata.$_hash;
-      const hash = hashSource({
-        source: indexVars(entry),
-        ...(metadata?.$context && { context: metadata.$context }),
-        ...(metadata?.$maxChars != null && {
-          maxChars: Math.abs(metadata.$maxChars),
-        }),
-        id,
-        dataFormat: 'ICU',
-      });
-      // Inject hash if not there yet
+    const hash = hashSource({
+      source: indexVars(entry),
+      ...(metadata?.$context && { context: metadata.$context }),
+      ...(metadata?.$maxChars != null && {
+        maxChars: Math.abs(metadata.$maxChars),
+      }),
+      id,
+      dataFormat: 'ICU',
+    });
+    if (metadata?.$_hash !== hash) {
       metadata = { ...metadata, $_hash: hash };
       injectEntry([entry, metadata], dictionary, id, dictionary);
-      return hash;
-    };
-    if (!translationEntry) {
-      hash = getHash();
-      translationEntry = translations?.[hash];
     }
+    const translationEntry = translations?.[hash];
 
     // ----- RENDER TRANSLATION ----- //
 
@@ -295,7 +287,7 @@ export async function getTranslations(id?: string): Promise<
             $maxChars: metadata.$maxChars,
           }),
           $id: id,
-          $_hash: getHash(),
+          $_hash: hash,
           $format: 'ICU',
         },
       }).then((result) => {

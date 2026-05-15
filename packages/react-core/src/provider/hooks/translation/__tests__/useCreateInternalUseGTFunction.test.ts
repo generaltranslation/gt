@@ -313,6 +313,29 @@ describe('useCreateInternalUseGTFunction', () => {
           },
         });
       });
+
+      it('should not use a stale id-keyed translation when the current hash is missing', () => {
+        const { _gtFunction } = useCreateInternalUseGTFunction({
+          gt: mockGT,
+          registerIcuForTranslation: mockRegisterIcuForTranslation,
+          ...defaultProps,
+          translations: {
+            greeting: 'Stale translation',
+          },
+        });
+
+        const result = _gtFunction('Hello World', { $id: 'greeting' });
+
+        expect(result).toBe('Hello World');
+        expect(mockRegisterIcuForTranslation).toHaveBeenCalledWith({
+          source: 'Hello World',
+          targetLocale: 'es',
+          metadata: {
+            id: 'greeting',
+            hash: 'hash-hello-world',
+          },
+        });
+      });
     });
 
     describe('error handling', () => {
@@ -513,8 +536,9 @@ describe('useCreateInternalUseGTFunction', () => {
       const result = await _preloadMessages(messages);
 
       expect(result).toEqual({
-        'hash-hello-world': 'Translated message',
+        'hash-hello-world': 'Existing translation',
       });
+      expect(mockRegisterIcuForTranslation).not.toHaveBeenCalled();
     });
   });
 

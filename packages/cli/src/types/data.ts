@@ -33,12 +33,12 @@ export type { FileFormat, FileToUpload } from 'generaltranslation/types';
 export type JsxChildren = string | string[] | unknown;
 
 export type Translations = {
-  // keys are sha256 hashes
+  // keys are current content hashes; custom ids live in metadata
   [key: string]: JsxChildren;
 };
 
 export type TranslationsMetadata = {
-  // keys are sha256 hashes
+  // keys are current content hashes; id is stable user metadata
   [key: string]: {
     id?: string;
     hash?: string;

@@ -191,27 +191,10 @@ export default function useCreateInternalUseGTFunction({
     };
   }
 
-  function getTranslationData(
-    calculateHash: () => string,
-    id?: string,
-    _hash?: string
-  ) {
-    let translationEntry;
-    let hash = ''; // empty string because 1) it has to be a string but 2) we don't always need to calculate it
-    if (id) {
-      translationEntry = translations?.[id];
-    }
-    if (_hash && typeof translationEntry === 'undefined') {
-      hash = _hash;
-      translationEntry = translations?.[_hash];
-    }
-    // Use calculated hash to index
-    if (typeof translationEntry === 'undefined') {
-      hash = calculateHash();
-      translationEntry = translations?.[hash];
-    }
+  function getTranslationData(calculateHash: () => string, _hash?: string) {
+    const hash = _hash || calculateHash();
     return {
-      translationEntry,
+      translationEntry: translations?.[hash],
       hash,
     };
   }
@@ -221,10 +204,9 @@ export default function useCreateInternalUseGTFunction({
     for (const { message, ...options } of _messages) {
       const init = initializeGT(message, options);
       if (!init) continue;
-      const { id, _hash, calculateHash } = init;
+      const { _hash, calculateHash } = init;
       const { translationEntry, hash } = getTranslationData(
         calculateHash,
-        id,
         _hash
       );
       if (!translationEntry) {
@@ -243,12 +225,12 @@ export default function useCreateInternalUseGTFunction({
       const { id, context, maxChars, _hash, calculateHash } = init;
       const { translationEntry, hash } = getTranslationData(
         calculateHash,
-        id,
         _hash
       );
       // Return if no translation needed
       if (translationEntry) {
         preloadedTranslations[hash] = translationEntry;
+        return;
       }
       // Await the creation of the translation
       // Should update the translations object
@@ -283,11 +265,7 @@ export default function useCreateInternalUseGTFunction({
 
     // ----- GET TRANSLATION ----- //
 
-    const { translationEntry, hash } = getTranslationData(
-      calculateHash,
-      id,
-      _hash
-    );
+    const { translationEntry, hash } = getTranslationData(calculateHash, _hash);
 
     // ----- RENDER TRANSLATION ----- //
 
@@ -327,7 +305,7 @@ export default function useCreateInternalUseGTFunction({
         ...(context && { context }),
         ...(id && { id }),
         ...(maxChars != null && { maxChars }),
-        hash: hash || '',
+        hash,
       },
     });
 
