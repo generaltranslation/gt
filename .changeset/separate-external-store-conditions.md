@@ -3,4 +3,4 @@
 'gt-react': patch
 ---
 
-Separate external-store manager subscriptions from provider condition subscriptions and add translate-many snapshots.
+Refactor context providers around react-core external-store subscriptions and publish the `gt-react/context` conditional entrypoint.

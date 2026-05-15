@@ -69,6 +69,54 @@ describe('I18nManager', () => {
     expect(result).toBe(translatedString);
   });
 
+  it('enables dev hot reload with dev credentials, a project id, and development environment', () => {
+    const manager = createManager({
+      devApiKey: 'dev-key',
+      projectId: 'project-id',
+      environment: 'development',
+    });
+
+    expect(manager.isDevHotReloadEnabled()).toBe(true);
+  });
+
+  it.each([
+    {
+      name: 'missing dev API key',
+      config: {
+        projectId: 'project-id',
+        environment: 'development',
+      },
+    },
+    {
+      name: 'missing project id',
+      config: {
+        devApiKey: 'dev-key',
+        environment: 'development',
+      },
+    },
+    {
+      name: 'disabled runtime URL',
+      config: {
+        devApiKey: 'dev-key',
+        projectId: 'project-id',
+        runtimeUrl: null,
+        environment: 'development',
+      },
+    },
+    {
+      name: 'production environment',
+      config: {
+        devApiKey: 'dev-key',
+        projectId: 'project-id',
+        environment: 'production',
+      },
+    },
+  ])('disables dev hot reload for $name', ({ config }) => {
+    const manager = createManager(config);
+
+    expect(manager.isDevHotReloadEnabled()).toBe(false);
+  });
+
   // ===== NEW BEHAVIOR TESTS ===== //
 
   it('loadTranslations() returns Record<Hash, Translation>', async () => {

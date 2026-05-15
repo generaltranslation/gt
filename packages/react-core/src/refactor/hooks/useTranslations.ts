@@ -28,6 +28,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
   const scope = useRuntimeDictionaryScope();
   const gt = useGT();
   const rootId = id ?? '';
+  const devHotReloadEnabled = getI18nManager().isDevHotReloadEnabled();
 
   useDictionaryObject({ locale: defaultLocale, id: rootId });
   useDictionaryObject({ locale, id: rootId });
@@ -49,8 +50,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
       }
 
       const targetEntry = i18nManager.lookupDictionary(locale, entryId);
-      // TODO: this should only be executed in dev mode
-      if (targetEntry === undefined) {
+      if (targetEntry === undefined && devHotReloadEnabled) {
         scope.translateEntry({ locale, id: entryId });
       }
 
@@ -73,7 +73,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
         $locale: locale,
       });
     },
-    [defaultLocale, gt, id, locale, scope, shouldTranslate]
+    [defaultLocale, devHotReloadEnabled, gt, id, locale, scope, shouldTranslate]
   );
 
   const translateObject = useCallback(
@@ -91,8 +91,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
       let targetObject = undefined;
       if (shouldTranslate) {
         targetObject = i18nManager.lookupDictionaryObj(locale, entryId);
-        // TODO: this should only be executed in dev mode
-        if (targetObject === undefined) {
+        if (targetObject === undefined && devHotReloadEnabled) {
           scope.translateObject({ locale, id: entryId });
         }
       }
@@ -108,7 +107,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
           ),
       });
     },
-    [defaultLocale, id, locale, scope, shouldTranslate]
+    [defaultLocale, devHotReloadEnabled, id, locale, scope, shouldTranslate]
   );
 
   return useMemo(

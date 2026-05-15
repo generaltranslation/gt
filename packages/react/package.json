@@ -76,11 +76,6 @@
         "default": "./dist/internal.mjs"
       }
     },
-    "./internal-external-store": {
-      "types": "./dist/internal-external-store.d.cts",
-      "require": "./dist/internal-external-store.cjs.min.cjs",
-      "import": "./dist/internal-external-store.esm.min.mjs"
-    },
     "./client": {
       "require": {
         "types": "./dist/client.d.cts",
@@ -92,10 +87,37 @@
       }
     },
     "./context": {
-      "react-server": "./dist/context.server.mjs",
-      "browser": "./dist/context.client.mjs",
       "types": "./dist/context.types.d.cts",
-      "default": "./dist/context.client.mjs"
+      "react-server": {
+        "types": "./dist/context.types.d.cts",
+        "require": {
+          "types": "./dist/context.types.d.cts",
+          "default": "./dist/context.server.cjs"
+        },
+        "import": {
+          "types": "./dist/context.types.d.mts",
+          "default": "./dist/context.server.mjs"
+        }
+      },
+      "browser": {
+        "types": "./dist/context.types.d.cts",
+        "require": {
+          "types": "./dist/context.types.d.cts",
+          "default": "./dist/context.client.cjs"
+        },
+        "import": {
+          "types": "./dist/context.types.d.mts",
+          "default": "./dist/context.client.mjs"
+        }
+      },
+      "require": {
+        "types": "./dist/context.types.d.cts",
+        "default": "./dist/context.client.cjs"
+      },
+      "import": {
+        "types": "./dist/context.types.d.mts",
+        "default": "./dist/context.client.mjs"
+      }
     },
     "./browser": {
       "require": {
@@ -132,9 +154,6 @@
       "internal": [
         "./dist/internal.d.cts"
       ],
-      "internal-external-store": [
-        "./dist/internal-external-store.d.cts"
-      ],
       "setup": [
         "./dist/setup.d.cts"
       ],
@@ -160,9 +179,6 @@
       ],
       "gt-react/internal": [
         "./dist/internal"
-      ],
-      "gt-react/internal-external-store": [
-        "./dist/internal-external-store"
       ],
       "gt-react/setup": [
         "./dist/setup.d.cts"

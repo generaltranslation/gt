@@ -30,9 +30,15 @@ export function useGT(_messages?: Message[]): GTFunctionType {
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
   const scope = useRuntimeTranslationScope();
+  const devHotReloadEnabled = getI18nManager().isDevHotReloadEnabled();
 
   // Compiler optimization: pre-fetch translations
-  useSubscribeToExtractedMessages(locale, shouldTranslate, _messages ?? []);
+  useSubscribeToExtractedMessages(
+    locale,
+    shouldTranslate,
+    devHotReloadEnabled,
+    _messages ?? []
+  );
 
   /**
    * gt() string translation callback
@@ -58,8 +64,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         lookupOptions
       );
 
-      // TODO: this should only be executed in dev mode
-      if (translation == null) {
+      if (translation == null && devHotReloadEnabled) {
         scope.translate({
           locale: lookupOptions.$locale,
           message,
@@ -74,7 +79,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         sourceLocale: defaultLocale,
       });
     },
-    [defaultLocale, locale, scope, shouldTranslate]
+    [defaultLocale, devHotReloadEnabled, locale, scope, shouldTranslate]
   );
 }
 
@@ -83,11 +88,11 @@ export function useGT(_messages?: Message[]): GTFunctionType {
 function useSubscribeToExtractedMessages(
   locale: string,
   shouldTranslate: boolean,
+  devHotReloadEnabled: boolean,
   messages: Message[]
 ) {
   const lookups = useMemo(() => {
-    // TODO: this should only be executed in dev mode
-    if (!messages?.length || !shouldTranslate) {
+    if (!messages?.length || !shouldTranslate || !devHotReloadEnabled) {
       return EMPTY_TRANSLATE_LOOKUPS;
     }
     return messages.map(({ message, ...options }) => {
@@ -103,6 +108,6 @@ function useSubscribeToExtractedMessages(
         options: lookupOptions,
       };
     });
-  }, [messages, locale, shouldTranslate]);
+  }, [messages, locale, shouldTranslate, devHotReloadEnabled]);
   useTranslateMany(lookups);
 }

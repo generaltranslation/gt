@@ -40,6 +40,12 @@ import {
   LocaleCandidates,
 } from './condition-store/localeResolver';
 
+type RuntimeEnvironment = {
+  DEV?: boolean;
+  MODE?: string;
+  NODE_ENV?: string;
+};
+
 /**
  * Default translation timeout in milliseconds for a runtime translation request
  */
@@ -244,6 +250,18 @@ class I18nManager<
    */
   isTranslationEnabled(): boolean {
     return this.config.enableI18n;
+  }
+
+  /**
+   * Returns true when development hot reload runtime translation requests can run.
+   */
+  isDevHotReloadEnabled(): boolean {
+    return (
+      !!this.config.devApiKey &&
+      !!this.config.projectId &&
+      this.isRuntimeUrlEnabled() &&
+      this.config.environment === 'development'
+    );
   }
 
   // ========== Translation Updates ========== //
@@ -756,6 +774,10 @@ class I18nManager<
     };
   }
 
+  private isRuntimeUrlEnabled(): boolean {
+    return this.config.runtimeUrl !== null && this.config.runtimeUrl !== '';
+  }
+
   private async lookupTranslationWithFallbackResolved<
     T extends TranslationValue = TranslationValue,
   >(locale: string, message: T, options: LookupOptions): Promise<T> {
@@ -824,7 +846,7 @@ function standardizeConfig<TranslationValue extends Translation>(
   });
 
   return {
-    environment: config.environment || 'production',
+    environment: config.environment || getRuntimeEnvironment(),
     enableI18n: config.enableI18n !== undefined ? config.enableI18n : true,
     projectId: config.projectId,
     devApiKey: config.devApiKey,
@@ -838,6 +860,27 @@ function standardizeConfig<TranslationValue extends Translation>(
       ? standardizeLocales(dedupedLocales)
       : dedupedLocales),
   };
+}
+
+function getRuntimeEnvironment(): 'development' | 'production' {
+  const processEnv = typeof process === 'undefined' ? undefined : process.env;
+  if (processEnv?.NODE_ENV === 'development') {
+    return 'development';
+  }
+
+  const importMetaEnv = (
+    import.meta as ImportMeta & {
+      env?: RuntimeEnvironment;
+    }
+  ).env;
+  if (importMetaEnv?.MODE) {
+    return importMetaEnv.MODE === 'development' ? 'development' : 'production';
+  }
+  if (importMetaEnv?.DEV === true) {
+    return 'development';
+  }
+
+  return 'production';
 }
 
 /**
