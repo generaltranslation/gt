@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { I18nManager } from 'gt-i18n/internal';
-import { I18nExternalStore } from '../../external-store/store/I18nExternalStore';
-import { ProviderConditionStore } from '../../external-store/store/ProviderConditionStore';
+import { ReactConditionStore } from '../../refactor/condition-store/ReactConditionStore';
+import { setConditionStore } from '../../refactor/condition-store/singleton-operations';
+import { ReactI18nManager } from '../../refactor/i18n-manager/ReactI18nManager';
+import { setI18nManager } from '../../refactor/i18n-manager/singleton-operations';
+import { I18nStore } from '../../refactor/i18n-store/I18nStore';
 
 function createManager() {
-  return new I18nManager({
+  return new ReactI18nManager({
     defaultLocale: 'en',
     locales: ['en', 'fr', 'es'],
     dictionary: {
@@ -29,49 +31,42 @@ function createManager() {
   });
 }
 
-function createConditionStore(locale = 'en') {
-  return new ProviderConditionStore({
-    defaultLocale: 'en',
-    locales: ['en', 'fr', 'es'],
-    locale,
-  });
+function createStores(locale = 'en') {
+  const manager = createManager();
+  setI18nManager(manager);
+
+  const conditionStore = new ReactConditionStore({ locale });
+  setConditionStore(conditionStore);
+
+  const i18nStore = new I18nStore({});
+  return { i18nStore };
+}
+
+async function flushAsyncUpdates() {
+  await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 describe('external store i18n wiring', () => {
-  it('notifies only locale subscribers when locale changes', () => {
-    const conditionStore = createConditionStore('en');
+  it('notifies locale subscribers when locale changes', () => {
+    const { i18nStore } = createStores('fr');
     const localeListener = vi.fn();
-    const unsubscribeLocale = conditionStore.subscribeToLocale(localeListener);
+    const unsubscribeLocale = i18nStore.subscribeToLocale(localeListener);
 
-    conditionStore.setLocale('fr');
+    i18nStore.setLocale('en');
 
-    expect(conditionStore.getLocale()).toBe('fr');
+    expect(i18nStore.getLocaleSnapshot()).toBe('en');
     expect(localeListener).toHaveBeenCalledTimes(1);
 
     unsubscribeLocale();
   });
 
-  it('notifies region subscribers when region changes', () => {
-    const conditionStore = createConditionStore('en');
-    const regionListener = vi.fn();
-    const unsubscribeRegion = conditionStore.subscribeToRegion(regionListener);
-
-    conditionStore.setRegion('US');
-
-    expect(conditionStore.getRegion()).toBe('US');
-    expect(regionListener).toHaveBeenCalledTimes(1);
-
-    unsubscribeRegion();
-  });
-
   it('notifies translation subscribers for matching cache updates', async () => {
-    const manager = createManager();
-    const externalStore = new I18nExternalStore({ i18nManager: manager });
+    const { i18nStore } = createStores();
     const matchingListener = vi.fn();
     const otherHashListener = vi.fn();
     const otherLocaleListener = vi.fn();
 
-    const unsubscribeMatching = externalStore.subscribeToTranslate(
+    const unsubscribeMatching = i18nStore.subscribeToTranslate(
       {
         locale: 'fr',
         message: 'Hello',
@@ -79,7 +74,7 @@ describe('external store i18n wiring', () => {
       },
       matchingListener
     );
-    const unsubscribeOtherHash = externalStore.subscribeToTranslate(
+    const unsubscribeOtherHash = i18nStore.subscribeToTranslate(
       {
         locale: 'fr',
         message: 'Other',
@@ -87,7 +82,7 @@ describe('external store i18n wiring', () => {
       },
       otherHashListener
     );
-    const unsubscribeOtherLocale = externalStore.subscribeToTranslate(
+    const unsubscribeOtherLocale = i18nStore.subscribeToTranslate(
       {
         locale: 'es',
         message: 'Hello',
@@ -96,10 +91,26 @@ describe('external store i18n wiring', () => {
       otherLocaleListener
     );
 
-    await manager.lookupTranslationWithFallback('fr', 'Hello', {
-      $format: 'ICU',
-      $_hash: 'hash',
+    i18nStore.translate({
+      locale: 'fr',
+      message: 'Hello',
+      options: {
+        $format: 'ICU',
+        $_hash: 'hash',
+      },
     });
+    await flushAsyncUpdates();
+
+    expect(
+      i18nStore.getTranslateSnapshot({
+        locale: 'fr',
+        message: 'Hello',
+        options: {
+          $format: 'ICU',
+          $_hash: 'hash',
+        },
+      })
+    ).toBe('Bonjour');
 
     expect(matchingListener).toHaveBeenCalledTimes(1);
     expect(otherHashListener).not.toHaveBeenCalled();
@@ -111,8 +122,7 @@ describe('external store i18n wiring', () => {
   });
 
   it('notifies translate many subscribers for matching cache updates', async () => {
-    const manager = createManager();
-    const externalStore = new I18nExternalStore({ i18nManager: manager });
+    const { i18nStore } = createStores();
     const listener = vi.fn();
     const lookups = [
       {
@@ -127,23 +137,23 @@ describe('external store i18n wiring', () => {
       },
     ];
 
-    const initialSnapshot = externalStore.getTranslateManySnapshot(lookups);
-    expect(externalStore.getTranslateManySnapshot(lookups)).toBe(
-      initialSnapshot
-    );
+    const initialSnapshot = i18nStore.getTranslateManySnapshot(lookups);
+    expect(i18nStore.getTranslateManySnapshot(lookups)).toBe(initialSnapshot);
 
-    const unsubscribe = externalStore.subscribeToTranslateMany(
-      lookups,
-      listener
-    );
+    const unsubscribe = i18nStore.subscribeToTranslateMany(lookups, listener);
 
-    await manager.lookupTranslationWithFallback('fr', 'Hello', {
-      $format: 'ICU',
-      $_hash: 'hash',
+    i18nStore.translate({
+      locale: 'fr',
+      message: 'Hello',
+      options: {
+        $format: 'ICU',
+        $_hash: 'hash',
+      },
     });
+    await flushAsyncUpdates();
 
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(externalStore.getTranslateManySnapshot(lookups)).toEqual([
+    expect(i18nStore.getTranslateManySnapshot(lookups)).toEqual([
       'Bonjour',
       undefined,
     ]);
@@ -152,21 +162,21 @@ describe('external store i18n wiring', () => {
   });
 
   it('notifies dictionary entry subscribers for matching cache misses', async () => {
-    const manager = createManager();
-    const externalStore = new I18nExternalStore({ i18nManager: manager });
+    const { i18nStore } = createStores();
     const matchingListener = vi.fn();
     const otherListener = vi.fn();
 
-    const unsubscribeMatching = externalStore.subscribeToDictionaryEntry(
+    const unsubscribeMatching = i18nStore.subscribeToDictionaryEntry(
       { locale: 'fr', id: 'greeting' },
       matchingListener
     );
-    const unsubscribeOther = externalStore.subscribeToDictionaryEntry(
+    const unsubscribeOther = i18nStore.subscribeToDictionaryEntry(
       { locale: 'fr', id: 'other' },
       otherListener
     );
 
-    await manager.lookupDictionaryWithFallback('fr', 'greeting');
+    i18nStore.translateDictionaryEntry({ locale: 'fr', id: 'greeting' });
+    await flushAsyncUpdates();
 
     expect(matchingListener).toHaveBeenCalledTimes(1);
     expect(otherListener).not.toHaveBeenCalled();
@@ -176,21 +186,21 @@ describe('external store i18n wiring', () => {
   });
 
   it('notifies dictionary object subscribers for matching cache misses', async () => {
-    const manager = createManager();
-    const externalStore = new I18nExternalStore({ i18nManager: manager });
+    const { i18nStore } = createStores();
     const matchingListener = vi.fn();
     const otherListener = vi.fn();
 
-    const unsubscribeMatching = externalStore.subscribeToDictionaryObject(
+    const unsubscribeMatching = i18nStore.subscribeToDictionaryObject(
       { locale: 'fr', id: 'user.profile' },
       matchingListener
     );
-    const unsubscribeOther = externalStore.subscribeToDictionaryObject(
+    const unsubscribeOther = i18nStore.subscribeToDictionaryObject(
       { locale: 'fr', id: 'other' },
       otherListener
     );
 
-    await manager.lookupDictionaryObjWithFallback('fr', 'user.profile');
+    i18nStore.translateDictionaryObject({ locale: 'fr', id: 'user.profile' });
+    await flushAsyncUpdates();
 
     expect(matchingListener).toHaveBeenCalledTimes(1);
     expect(otherListener).not.toHaveBeenCalled();

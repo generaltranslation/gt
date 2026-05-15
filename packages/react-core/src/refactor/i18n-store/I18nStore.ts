@@ -17,7 +17,6 @@ import type {
   OverrideSetLocaleType,
 } from './storeTypes';
 import type {
-  DictionaryValue,
   LookupOptions,
   Translation,
 } from 'gt-i18n/types';
@@ -30,17 +29,12 @@ type TranslationStatusType =
   | { status: 'loading'; locale: string }
   | { status: 'ready' };
 
-type LocaleCacheEvent<T> = {
-  locale: string;
-  value: Record<string, T>;
-};
 type EntryCacheEvent = {
   locale: string;
   id: string;
 };
-type TranslateStoreEvent = LocaleCacheEvent<Translation> | EntryCacheEvent;
 type TranslateStoreListener = (lookup: TranslateLookup) => void;
-type DictionaryStoreEvent = LocaleCacheEvent<DictionaryValue> | EntryCacheEvent;
+type DictionaryStoreEvent = EntryCacheEvent;
 type DictionaryStoreListener = (event: DictionaryStoreEvent) => void;
 
 /**
@@ -407,22 +401,6 @@ export class I18nStore {
     getI18nManager().updateTranslations(translationsObj);
   };
 
-  // ===== Subscription Lifecycle ===== //
-
-  /**
-   * Disconnect from all events and listeners.
-   */
-  public disconnect(): void {
-    // this.unsubscribeLocalesEvents?.();
-    // this.unsubscribeTranslateEvents?.();
-    // this.unsubscribeLocalesDictionaryEvents?.();
-    // this.unsubscribeDictionaryEntryEvents?.();
-    // this.unsubscribeLocalesEvents = undefined;
-    // this.unsubscribeTranslateEvents = undefined;
-    // this.unsubscribeLocalesDictionaryEvents = undefined;
-    // this.unsubscribeDictionaryEntryEvents = undefined;
-  }
-
   private subscribeToStaticSet(
     listenerSet: ListenerSet,
     listener: StoreListener
@@ -436,17 +414,9 @@ export class I18nStore {
   private subscribeToTranslateSet(
     listener: TranslateStoreListener
   ): Unsubscribe {
-    const hadListeners = this.sourceListenerCount() > 0;
     this.translateListeners.add(listener);
-    if (!hadListeners) {
-      this.connect();
-    }
-
     return () => {
       this.translateListeners.delete(listener);
-      if (this.sourceListenerCount() === 0) {
-        this.disconnect();
-      }
     };
   }
 
@@ -454,74 +424,13 @@ export class I18nStore {
     listenerSet: Set<DictionaryStoreListener>,
     listener: DictionaryStoreListener
   ): Unsubscribe {
-    const hadListeners = this.sourceListenerCount() > 0;
     listenerSet.add(listener);
-    if (!hadListeners) {
-      this.connect();
-    }
-
     return () => {
       listenerSet.delete(listener);
-      if (this.sourceListenerCount() === 0) {
-        this.disconnect();
-      }
     };
   }
 
-  private connect(): void {
-    this.subscribeToManager();
-  }
-
-  // ===== Manager Event Wiring ===== //
-
-  private subscribeToManager(): void {
-    // // Cache events are invalidation signals. Listeners reread snapshots instead
-    // // of receiving payload values, matching useSyncExternalStore's contract.
-    // this.unsubscribeLocalesEvents = getI18nManager().subscribe(
-    //   LOCALES_EVENT_NAME,
-    //   (event) => {
-    //     this.emitTranslateEvent({
-    //       locale: event.locale,
-    //       value: event.translations,
-    //     });
-    //   },
-    // );
-    // this.unsubscribeTranslateEvents = getI18nManager().subscribe(
-    //   TRANSLATION_EVENT_NAME,
-    //   (event) => {
-    //     this.emitTranslateEvent({
-    //       locale: event.locale,
-    //       id: event.hash,
-    //       value: event.translation,
-    //     });
-    //   },
-    // );
-    // this.unsubscribeLocalesDictionaryEvents = getI18nManager().subscribe(
-    //   LOCALES_DICTIONARY_EVENT_NAME,
-    //   (event) => {
-    //     this.emitDictionaryEvent({
-    //       locale: event.locale,
-    //       value: event.dictionary,
-    //     });
-    //   },
-    // );
-    // this.unsubscribeDictionaryEntryEvents = getI18nManager().subscribe(
-    //   DICTIONARY_ENTRY_EVENT_NAME,
-    //   (event) => {
-    //     this.emitDictionaryEvent({
-    //       locale: event.locale,
-    //       id: event.id,
-    //       value: event.dictionaryEntry,
-    //     });
-    //   },
-    // );
-  }
-
   // ===== Listener Utilities ===== //
-
-  // private emitTranslateEvent(event: TranslateStoreEvent): void {
-  //   this.translateListeners.forEach((listener) => listener(event));
-  // }
 
   private emitTranslateEvent(event: TranslateLookup): void {
     this.translateListeners.forEach((listener) => listener(event));
@@ -532,14 +441,6 @@ export class I18nStore {
     this.dictionaryObjectListeners.forEach((listener) => {
       listener(event);
     });
-  }
-
-  private sourceListenerCount(): number {
-    return (
-      this.translateListeners.size +
-      this.dictionaryEntryListeners.size +
-      this.dictionaryObjectListeners.size
-    );
   }
 }
 
@@ -555,34 +456,11 @@ function getDictionaryLookupFromKey(lookupKey: string): DictionaryLookup {
 
 // ===== Event Matching ===== //
 
-function translateEventMatchesLookup(
-  event: TranslateStoreEvent,
-  lookupKey: string
-): boolean {
-  if ('id' in event) {
-    return (
-      getTranslateListenerKey({
-        locale: event.locale,
-        hash: event.id,
-      }) === lookupKey
-    );
-  }
-  return Object.keys(event.value).some(
-    (hash) =>
-      getTranslateListenerKey({ locale: event.locale, hash }) === lookupKey
-  );
-}
-
 function dictionaryEntryEventMatchesLookup(
   event: DictionaryStoreEvent,
   lookupKey: string
 ): boolean {
-  if ('id' in event) {
-    return getDictionaryListenerKey(event) === lookupKey;
-  }
-  const { locale, id } = getDictionaryLookupFromKey(lookupKey);
-  const value = getDictionaryPathValue(event.value, id);
-  return locale === event.locale && value != null && !isDictionaryObject(value);
+  return getDictionaryListenerKey(event) === lookupKey;
 }
 
 function dictionaryObjectEventMatchesLookup(
@@ -593,31 +471,5 @@ function dictionaryObjectEventMatchesLookup(
   if (locale !== event.locale) {
     return false;
   }
-  if ('id' in event) {
-    return id === '' || event.id === id || event.id.startsWith(`${id}.`);
-  }
-  return getDictionaryPathValue(event.value, id) != null;
-}
-
-// ===== Snapshot Helpers ===== //
-
-function getDictionaryPathValue(
-  dictionary: Record<string, DictionaryValue>,
-  id: string
-): DictionaryValue | undefined {
-  return id
-    .split('.')
-    .filter(Boolean)
-    .reduce<DictionaryValue | undefined>((value, key) => {
-      if (!isDictionaryObject(value)) {
-        return undefined;
-      }
-      return value[key];
-    }, dictionary);
-}
-
-function isDictionaryObject(
-  value: DictionaryValue | undefined
-): value is Record<string, DictionaryValue> {
-  return typeof value === 'object' && value != null && !Array.isArray(value);
+  return id === '' || event.id === id || event.id.startsWith(`${id}.`);
 }

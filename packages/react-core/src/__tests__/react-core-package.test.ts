@@ -18,7 +18,7 @@ import {
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
-const runtimeEntryNames = ['errors', 'index', 'internal'];
+const runtimeEntryNames = ['context', 'errors', 'index', 'internal'];
 const runtimeArtifactNames = runtimeEntryNames
   .flatMap((entryName) => [
     `${entryName}.cjs.min.cjs`,

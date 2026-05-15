@@ -26,7 +26,6 @@ export function useTranslate<T extends Translation>(
     () => store.getTranslateSnapshot(lookup)
   );
   // TODO: add runtime translation
-  // if (translation == null && isDevelopmentApiEnabled()) {
   if (translation == null) {
     store.translate(lookup);
   }
