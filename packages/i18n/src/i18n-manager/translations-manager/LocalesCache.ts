@@ -1,25 +1,25 @@
-import { DictionaryCache } from "./DictionaryCache";
+import { DictionaryCache } from './DictionaryCache';
 import type {
   Dictionary,
   DictionaryEntry,
   DictionaryKey,
   DictionaryLoader,
-} from "./DictionaryCache";
-import { ResourceCache } from "./ResourceCache";
-import { TranslationsCache } from "./TranslationsCache";
+} from './DictionaryCache';
+import { ResourceCache } from './ResourceCache';
+import { TranslationsCache } from './TranslationsCache';
 import type {
   Hash,
   TranslationBatchConfig,
   TranslationKey,
-} from "./TranslationsCache";
-import type { CreateTranslateMany } from "./utils/createTranslateMany";
-import type { Translation } from "./utils/types/translation-data";
-import type { SafeTranslationsLoader } from "./translations-loaders/types";
+} from './TranslationsCache';
+import type { CreateTranslateMany } from './utils/createTranslateMany';
+import type { Translation } from './utils/types/translation-data';
+import type { SafeTranslationsLoader } from './translations-loaders/types';
 import type {
   I18nManagerCacheLifecycleCallbacks,
   LifecycleCallback,
   LifecycleParam,
-} from "../lifecycle-hooks/types";
+} from '../lifecycle-hooks/types';
 
 /**
  * Just being explicit about the purpose of this type
@@ -29,7 +29,7 @@ export type Locale = string;
 type TranslateLocaleDictionaryEntry = (
   locale: Locale,
   key: DictionaryKey,
-  sourceEntry: DictionaryEntry,
+  sourceEntry: DictionaryEntry
 ) => Promise<string>;
 
 type LocalesCacheParams<TranslationValue extends Translation> = {
@@ -52,7 +52,7 @@ export class LocalesCache<TranslationValue extends Translation> {
   private readonly dictionaries: ResourceCache<Locale, DictionaryCache>;
   private readonly createTranslationsCache: (
     locale: Locale,
-    init: Record<Hash, TranslationValue>,
+    init: Record<Hash, TranslationValue>
   ) => TranslationsCache<TranslationValue>;
 
   constructor({
@@ -104,18 +104,18 @@ export class LocalesCache<TranslationValue extends Translation> {
         translate: translateDictionaryEntry,
         lifecycle,
       }),
-      { expiresAt: -1 },
+      { expiresAt: -1 }
     );
   }
 
   public getTranslations(
-    locale: Locale,
+    locale: Locale
   ): TranslationsCache<TranslationValue> | undefined {
     return this.translations.get(locale);
   }
 
   public getOrLoadTranslations(
-    locale: Locale,
+    locale: Locale
   ): Promise<TranslationsCache<TranslationValue>> {
     return this.translations.getOrLoad(locale);
   }
@@ -129,7 +129,7 @@ export class LocalesCache<TranslationValue extends Translation> {
   }
 
   public update(
-    translations: Record<Locale, Record<Hash, TranslationValue>>,
+    translations: Record<Locale, Record<Hash, TranslationValue>>
   ): void {
     for (const locale in translations) {
       const translationsCache = this.translations.get(locale);
@@ -138,7 +138,7 @@ export class LocalesCache<TranslationValue extends Translation> {
       } else {
         this.translations.set(
           locale,
-          this.createTranslationsCache(locale, translations[locale]),
+          this.createTranslationsCache(locale, translations[locale])
         );
       }
     }
@@ -165,7 +165,7 @@ function createTranslationsCacheFactory<TranslationValue extends Translation>({
 
 function createTranslationsCacheLifecycle<TranslationValue extends Translation>(
   locale: Locale,
-  lifecycle: I18nManagerCacheLifecycleCallbacks<TranslationValue>,
+  lifecycle: I18nManagerCacheLifecycleCallbacks<TranslationValue>
 ): LifecycleParam<
   TranslationKey<TranslationValue>,
   Hash,
@@ -202,7 +202,7 @@ function createDictionaryCache<TranslationValue extends Translation>({
       onMiss: withLocale(locale, onDictionaryCacheMiss),
       onDictionaryObjectCacheHit: withLocale(
         locale,
-        onDictionaryObjectCacheHit,
+        onDictionaryObjectCacheHit
       ),
     },
   });
@@ -218,7 +218,7 @@ function withLocale<InputKey, CacheKey, CacheValue, OutputValue>(
         cacheValue: CacheValue;
         outputValue: OutputValue;
       }) => void)
-    | undefined,
+    | undefined
 ): LifecycleCallback<InputKey, CacheKey, CacheValue, OutputValue> | undefined {
   return callback ? (params) => callback({ locale, ...params }) : undefined;
 }

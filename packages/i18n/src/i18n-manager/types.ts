@@ -1,18 +1,18 @@
-import type { RuntimeTranslateManyOptions } from "generaltranslation/internal";
-import type { CustomMapping } from "@generaltranslation/format/types";
-import type { GTConfig } from "../config/types";
-import type { TranslationsLoader } from "./translations-manager/translations-loaders/types";
-import type { Translation } from "./translations-manager/utils/types/translation-data";
-import type { LifecycleCallbacks } from "./lifecycle-hooks/types";
+import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
+import type { CustomMapping } from '@generaltranslation/format/types';
+import type { GTConfig } from '../config/types';
+import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
+import type { Translation } from './translations-manager/utils/types/translation-data';
+import type { LifecycleCallbacks } from './lifecycle-hooks/types';
 import type {
   Hash,
   TranslationBatchConfig,
-} from "./translations-manager/TranslationsCache";
-import { Locale } from "./translations-manager/LocalesCache";
+} from './translations-manager/TranslationsCache';
+import { Locale } from './translations-manager/LocalesCache';
 import type {
   Dictionary,
   DictionaryLoader,
-} from "./translations-manager/DictionaryCache";
+} from './translations-manager/DictionaryCache';
 
 export type DictionaryConfig =
   | {
@@ -35,14 +35,14 @@ type RuntimeTranslationConfig = {
 export type I18nManagerConstructorParams<
   TranslationValue extends Translation = Translation,
 > = DictionaryConfig &
-  Omit<GTConfig, "cacheExpiryTime"> & {
+  Omit<GTConfig, 'cacheExpiryTime'> & {
     /**
      * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
      * disables expiry, and a number sets an explicit TTL.
      */
     cacheExpiryTime?: number | null;
     loadTranslations?: TranslationsLoader;
-    environment?: "development" | "production";
+    environment?: 'development' | 'production';
     batchConfig?: TranslationBatchConfig;
     runtimeTranslation?: RuntimeTranslationConfig;
     initialTranslations?: Record<Locale, Record<Hash, TranslationValue>>;
@@ -55,7 +55,7 @@ export type I18nManagerConstructorParams<
  * I18nManager class configuration
  */
 export type I18nManagerConfig = {
-  environment: "development" | "production";
+  environment: 'development' | 'production';
   defaultLocale: string;
   locales: string[];
   customMapping: CustomMapping;

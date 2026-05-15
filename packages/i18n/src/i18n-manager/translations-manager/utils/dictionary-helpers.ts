@@ -4,14 +4,14 @@ import type {
   DictionaryLeaf,
   DictionaryPath,
   DictionaryValue,
-} from "./types/dictionary";
+} from './types/dictionary';
 import type {
   DictionaryLookupOptions,
   DictionaryOptions,
-} from "../../../translation-functions/types/options";
+} from '../../../translation-functions/types/options';
 
 function getDictionaryPath(id: DictionaryPath): string[] {
-  const path = id ? id.split(".") : [];
+  const path = id ? id.split('.') : [];
   for (const segment of path) {
     assertSafeDictionaryPathSegment(segment, id);
   }
@@ -20,19 +20,19 @@ function getDictionaryPath(id: DictionaryPath): string[] {
 
 export function assertSafeDictionaryPathSegment(
   segment: string,
-  path: DictionaryPath,
+  path: DictionaryPath
 ): void {
   if (
-    segment === "__proto__" ||
-    segment === "constructor" ||
-    segment === "prototype"
+    segment === '__proto__' ||
+    segment === 'constructor' ||
+    segment === 'prototype'
   ) {
     throw new Error(`Dictionary path "${path}" contains an unsafe segment`);
   }
 }
 
 export function isDictionaryValue(value: unknown): value is Dictionary {
-  return typeof value === "object" && value != null && !Array.isArray(value);
+  return typeof value === 'object' && value != null && !Array.isArray(value);
 }
 
 export function isDictionaryObject(value: unknown): value is Dictionary {
@@ -40,9 +40,9 @@ export function isDictionaryObject(value: unknown): value is Dictionary {
 }
 
 export function cloneDictionaryValue<Value extends DictionaryValue | undefined>(
-  value: Value,
+  value: Value
 ): Value {
-  if (value === undefined || typeof value === "string") {
+  if (value === undefined || typeof value === 'string') {
     return value;
   }
   return structuredClone(value) as Value;
@@ -50,7 +50,7 @@ export function cloneDictionaryValue<Value extends DictionaryValue | undefined>(
 
 export function getDictionaryValueAtPath(
   dictionary: Dictionary,
-  path: DictionaryPath,
+  path: DictionaryPath
 ): DictionaryValue | undefined {
   let current: DictionaryValue = dictionary;
 
@@ -67,7 +67,7 @@ export function getDictionaryValueAtPath(
 export function setDictionaryValueAtPath(
   dictionary: Dictionary,
   path: DictionaryPath,
-  value: DictionaryValue,
+  value: DictionaryValue
 ): void {
   const segments = getDictionaryPath(path);
   if (isDictionaryObject(value)) {
@@ -95,7 +95,7 @@ export function setDictionaryValueAtPath(
 }
 
 export function getDictionaryEntry(
-  value: DictionaryValue | undefined,
+  value: DictionaryValue | undefined
 ): DictionaryEntry | undefined {
   if (!isDictionaryLeafNode(value)) {
     return undefined;
@@ -114,22 +114,22 @@ export function getDictionaryValue(value: DictionaryEntry): DictionaryValue {
 }
 
 export function resolveDictionaryLookupOptions(
-  options: DictionaryEntry["options"],
+  options: DictionaryEntry['options']
 ): DictionaryLookupOptions {
   const { $format, context, ...rest } = options;
   return {
     ...rest,
-    $format: isStringFormat($format) ? $format : "ICU",
+    $format: isStringFormat($format) ? $format : 'ICU',
     ...(rest.$context === undefined &&
-      typeof context === "string" && { $context: context }),
+      typeof context === 'string' && { $context: context }),
   };
 }
 
 function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     return true;
   }
-  if (!Array.isArray(value) || typeof value[0] !== "string") {
+  if (!Array.isArray(value) || typeof value[0] !== 'string') {
     return false;
   }
   if (value.length === 1) {
@@ -139,24 +139,24 @@ function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
 }
 
 function isDictionaryOptions(value: unknown): value is DictionaryOptions {
-  if (typeof value !== "object" || value == null || Array.isArray(value)) {
+  if (typeof value !== 'object' || value == null || Array.isArray(value)) {
     return false;
   }
 
   const options = value as Record<string, unknown>;
   return (
-    (options.$context === undefined || typeof options.$context === "string") &&
+    (options.$context === undefined || typeof options.$context === 'string') &&
     (options.$format === undefined || isStringFormat(options.$format)) &&
     (options.$maxChars === undefined ||
-      typeof options.$maxChars === "number") &&
-    (options.context === undefined || typeof options.context === "string")
+      typeof options.$maxChars === 'number') &&
+    (options.context === undefined || typeof options.context === 'string')
   );
 }
 
 function isStringFormat(
-  value: unknown,
-): value is DictionaryLookupOptions["$format"] {
-  return value === "ICU" || value === "I18NEXT" || value === "STRING";
+  value: unknown
+): value is DictionaryLookupOptions['$format'] {
+  return value === 'ICU' || value === 'I18NEXT' || value === 'STRING';
 }
 
 function replaceDictionary(target: Dictionary, source: Dictionary): void {
@@ -170,7 +170,7 @@ function replaceDictionary(target: Dictionary, source: Dictionary): void {
 
 function assertSafeDictionaryObject(
   dictionary: Dictionary,
-  parentPath = "",
+  parentPath = ''
 ): void {
   for (const [key, value] of Object.entries(dictionary)) {
     const path = parentPath ? `${parentPath}.${key}` : key;
