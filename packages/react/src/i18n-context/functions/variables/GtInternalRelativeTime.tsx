@@ -1,6 +1,19 @@
 import { getI18nManager } from 'gt-i18n/internal';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 
+type RelativeTimeProps = {
+  date?: Date | null | undefined;
+  children?: Date | null | undefined;
+  /** Used by the GT CLI for additional context during extraction. */
+  name?: string;
+  value?: number;
+  unit?: Intl.RelativeTimeFormatUnit;
+  /** Base date for computing relative time. Defaults to `new Date()` at render time. Required for hydration safety. */
+  baseDate?: Date;
+  locales?: string[];
+  options?: Intl.RelativeTimeFormatOptions;
+};
+
 /**
  * Equivalent to the `<RelativeTime>` component, but used for auto insertion
  */
@@ -12,18 +25,7 @@ function GtInternalRelativeTime({
   baseDate,
   locales: localesProp = [],
   options = {},
-}: {
-  date?: Date | null | undefined;
-  children?: Date | null | undefined;
-  /** Used by the GT CLI for additional context during extraction. */
-  name?: string;
-  value?: number;
-  unit?: Intl.RelativeTimeFormatUnit;
-  /** Base date for computing relative time. Defaults to `new Date()` at render time. Required for hydration safety. */
-  baseDate?: Date;
-  locales?: string[];
-  options?: Intl.RelativeTimeFormatOptions;
-}): string | null {
+}: RelativeTimeProps): string | null {
   const i18nManager = getI18nManager();
   const gt = i18nManager.getGTClass();
   const locales = [...localesProp, getLocale(), getDefaultLocale()];
@@ -71,15 +73,7 @@ function GtInternalRelativeTime({
 /**
  * User facing component for the `<RelativeTime>` variable
  */
-function RelativeTime(props: {
-  date?: Date | null | undefined;
-  children?: Date | null | undefined;
-  value?: number;
-  unit?: Intl.RelativeTimeFormatUnit;
-  baseDate?: Date;
-  locales?: string[];
-  options?: Intl.RelativeTimeFormatOptions;
-}): string | null {
+function RelativeTime(props: RelativeTimeProps): string | null {
   return GtInternalRelativeTime(props);
 }
 

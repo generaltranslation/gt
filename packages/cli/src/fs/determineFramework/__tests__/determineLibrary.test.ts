@@ -17,9 +17,11 @@ vi.mock('../../../console/logger.js', () => ({
 
 import fs from 'node:fs';
 import { determineLibrary } from '../index.js';
+import { logger } from '../../../console/logger.js';
 
 const mockExistsSync = vi.mocked(fs.existsSync);
 const mockReadFileSync = vi.mocked(fs.readFileSync);
+const mockWarn = vi.mocked(logger.warn);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -69,6 +71,15 @@ describe('determineLibrary', () => {
 
       const result = determineLibrary();
       expect(result.library).toBe('base');
+    });
+
+    it("returns 'base' without warning when no JS or Python project file exists", () => {
+      mockExistsSync.mockReturnValue(false);
+
+      const result = determineLibrary();
+
+      expect(result.library).toBe('base');
+      expect(mockWarn).not.toHaveBeenCalled();
     });
 
     it('detects i18next-icu as additional module', () => {

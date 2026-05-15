@@ -2,13 +2,13 @@ import {
   getDictionaryEntry,
   isDictionaryValue,
   resolveDictionaryLookupOptions,
-} from '../../i18n-manager/translations-manager/utils/dictionary-helpers';
-import type { DictionaryObjectTranslation } from '../types/functions';
-import type { DictionaryLookupOptions } from '../types/options';
+} from "../../i18n-manager/translations-manager/utils/dictionary-helpers";
+import type { DictionaryObjectTranslation } from "../types/functions";
+import type { DictionaryLookupOptions } from "../types/options";
 import type {
   DictionaryEntry,
   DictionaryValue,
-} from '../../i18n-manager/translations-manager/DictionaryCache';
+} from "../../i18n-manager/translations-manager/DictionaryCache";
 
 export function renderDictionaryObject({
   sourceObject,
@@ -19,7 +19,7 @@ export function renderDictionaryObject({
   targetObject: DictionaryValue | undefined;
   translate?: (
     sourceEntry: DictionaryEntry,
-    dictionaryOptions: DictionaryLookupOptions
+    dictionaryOptions: DictionaryLookupOptions,
   ) => string | undefined;
 }): DictionaryObjectTranslation {
   const targetEntry = getDictionaryEntry(targetObject);
@@ -46,7 +46,7 @@ export function renderDictionaryObject({
   const sourceEntry = getDictionaryEntry(sourceObject);
   if (sourceEntry !== undefined) {
     const dictionaryOptions = resolveDictionaryLookupOptions(
-      sourceEntry.options
+      sourceEntry.options,
     );
     return translate?.(sourceEntry, dictionaryOptions) ?? sourceEntry.entry;
   }
@@ -59,7 +59,7 @@ export function renderDictionaryObject({
     });
   }
 
-  throw new Error('Dictionary object cannot be rendered');
+  throw new Error("Dictionary object cannot be rendered");
 }
 
 function renderDictionaryObjectChildren({
@@ -71,7 +71,7 @@ function renderDictionaryObjectChildren({
   targetObject: DictionaryValue | undefined;
   translate?: (
     sourceEntry: DictionaryEntry,
-    dictionaryOptions: DictionaryLookupOptions
+    dictionaryOptions: DictionaryLookupOptions,
   ) => string | undefined;
 }): DictionaryObjectTranslation {
   if (!isDictionaryValue(sourceObject)) {

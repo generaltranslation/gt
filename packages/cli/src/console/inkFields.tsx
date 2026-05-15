@@ -1,5 +1,6 @@
 import { Box, Text } from 'ink';
 import { getLocaleCodeWidth } from './inkLocaleData.js';
+import { INK_ACCENT_COLOR } from './inkTheme.js';
 import type { LocaleOption } from './inkTypes.js';
 import { stripAnsi, truncate } from './inkUtils.js';
 
@@ -23,7 +24,7 @@ export function OptionRow({
   }`;
 
   return active ? (
-    <Text color='cyan' bold>
+    <Text color={INK_ACCENT_COLOR} bold>
       {width ? truncate(text, width) : text}
     </Text>
   ) : (
@@ -52,7 +53,7 @@ export function SelectedTags({
         return (
           <Text key={locale}>
             <Text
-              backgroundColor={isActive ? 'cyanBright' : 'gray'}
+              backgroundColor={isActive ? INK_ACCENT_COLOR : 'gray'}
               color='black'
               bold={isActive}
             >{` ${locale} `}</Text>
@@ -118,7 +119,7 @@ function LocaleRow({
 
   if (active) {
     return (
-      <Text color='cyan' bold>
+      <Text color={INK_ACCENT_COLOR} bold>
         {`${marker} ${codeStr}  ${truncatedName}`}
         {sameName ? '' : `  ${truncatedNative}`}
       </Text>

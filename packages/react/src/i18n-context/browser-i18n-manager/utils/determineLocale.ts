@@ -1,4 +1,4 @@
-import { getCookieValue } from './cookies';
+import { getCookieValue } from '../../../shared/cookies';
 import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
 import { createNoLocaleCouldBeDeterminedFromCustomGetLocaleWarning } from '../../../shared/messages';
 import type { GetLocale } from './types';
@@ -56,9 +56,7 @@ export function determineLocale({
   const candidates = [];
 
   // (2) Check cookie
-  const cookieLocale = getCookieValue({
-    cookieName: localeCookieName,
-  });
+  const cookieLocale = getCookieValue(localeCookieName);
   if (cookieLocale) candidates.push(cookieLocale);
 
   // (2) Check navigator locales

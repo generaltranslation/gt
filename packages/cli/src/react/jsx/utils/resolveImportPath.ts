@@ -1,11 +1,49 @@
 import { createMatchPath, loadConfig } from 'tsconfig-paths';
-import { ParsingConfigOptions } from '../../../types/parsing.js';
+import type { ParsingConfigOptions } from '../../../types/parsing.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import resolve from 'resolve';
 import enhancedResolve from 'enhanced-resolve';
 import type { FileSystem } from 'enhanced-resolve';
 const { ResolverFactory } = enhancedResolve;
+
+function resolveExistingPath(
+  filePath: string | undefined,
+  extensions: string[]
+): string | null {
+  if (!filePath) {
+    return null;
+  }
+
+  if (fs.existsSync(filePath)) {
+    const stats = fs.statSync(filePath);
+    if (stats.isFile()) {
+      return filePath;
+    }
+
+    if (stats.isDirectory()) {
+      for (const ext of extensions) {
+        const indexPath = path.join(filePath, `index${ext}`);
+        if (fs.existsSync(indexPath) && fs.statSync(indexPath).isFile()) {
+          return indexPath;
+        }
+      }
+      return null;
+    }
+  }
+
+  for (const ext of extensions) {
+    const resolvedWithExt = filePath + ext;
+    if (
+      fs.existsSync(resolvedWithExt) &&
+      fs.statSync(resolvedWithExt).isFile()
+    ) {
+      return resolvedWithExt;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Resolves import paths to absolute file paths using battle-tested libraries.
@@ -44,27 +82,32 @@ export function resolveImportPath(
     );
 
     // First try without any extension
-    let tsResolved = matchPath(importPath);
-    if (tsResolved && fs.existsSync(tsResolved)) {
-      result = tsResolved;
+    let tsResolved = matchPath(importPath, undefined, undefined, extensions);
+    const resolvedTsPath = resolveExistingPath(tsResolved, extensions);
+    if (resolvedTsPath) {
+      result = resolvedTsPath;
       resolveImportPathCache.set(cacheKey, result);
       return result;
     }
 
     // Then try with each extension
+    const tsResolvedBase = matchPath(importPath);
     for (const ext of extensions) {
       tsResolved = matchPath(importPath + ext);
-      if (tsResolved && fs.existsSync(tsResolved)) {
-        result = tsResolved;
+      const resolvedPathWithExt = resolveExistingPath(tsResolved, extensions);
+      if (resolvedPathWithExt) {
+        result = resolvedPathWithExt;
         resolveImportPathCache.set(cacheKey, result);
         return result;
       }
 
       // Also try the resolved path with extension
-      tsResolved = matchPath(importPath);
-      if (tsResolved) {
-        const resolvedWithExt = tsResolved + ext;
-        if (fs.existsSync(resolvedWithExt)) {
+      if (tsResolvedBase) {
+        const resolvedWithExt = resolveExistingPath(
+          tsResolvedBase + ext,
+          extensions
+        );
+        if (resolvedWithExt) {
           result = resolvedWithExt;
           resolveImportPathCache.set(cacheKey, result);
           return result;

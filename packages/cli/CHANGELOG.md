@@ -1,5 +1,27 @@
 # gtx-cli
 
+## 2.14.37
+
+### Patch Changes
+
+- [#1425](https://github.com/generaltranslation/gt/pull/1425) [`a5e6975`](https://github.com/generaltranslation/gt/commit/a5e697561776466763ee1d6cae1f4b905eed581d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Resolve TypeScript path aliases that point to directory index barrel files during CLI extraction.
+
+## 2.14.36
+
+### Patch Changes
+
+- [#1363](https://github.com/generaltranslation/gt/pull/1363) [`6a0e55b`](https://github.com/generaltranslation/gt/commit/6a0e55b6787b8e05f6c1fef7796e1b8b68f6d87b) Thanks [@bgub](https://github.com/bgub)! - Add an Ink-powered full-screen setup wizard for interactive CLI prompts.
+
+- [#1419](https://github.com/generaltranslation/gt/pull/1419) [`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300) Thanks [@bgub](https://github.com/bgub)! - Improve diagnostic messages and package-local diagnostic formatting.
+
+- [#1423](https://github.com/generaltranslation/gt/pull/1423) [`347cb48`](https://github.com/generaltranslation/gt/commit/347cb4844bba2007c7942f3f0e6a2ede4a1aa73e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Suppress unnecessary project detection warnings for file-only translations.
+
+- Updated dependencies [[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa), [`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300)]:
+  - @generaltranslation/format@0.1.1
+  - generaltranslation@8.2.15
+  - @generaltranslation/python-extractor@0.2.21
+  - @generaltranslation/supported-locales@2.0.73
+
 ## 2.14.35
 
 ### Patch Changes

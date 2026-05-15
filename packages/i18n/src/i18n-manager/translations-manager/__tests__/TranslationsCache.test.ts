@@ -2,9 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TranslationsCache } from '../TranslationsCache';
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../../translation-functions/types/options';
+import type { Content } from '@generaltranslation/format/types';
 
 // Helper to build a key and hash for test messages
-function makeKey(message: string, options: LookupOptions = { $format: 'ICU' }) {
+function makeKey<T extends Content>(
+  message: T,
+  options: LookupOptions = { $format: 'ICU' }
+) {
   const hash = hashMessage(message, options);
   return { message, options, hash };
 }
@@ -98,17 +102,29 @@ describe('TranslationsCache', () => {
     expect(mockTranslateMany).toHaveBeenCalledTimes(1);
   });
 
-  it('getInternalCache() returns a shallow copy', () => {
-    const { message, options, hash } = makeKey('Hello');
+  it('getInternalCache() returns a deep copy', () => {
+    const message = {
+      t: 'p',
+      c: [{ t: 'strong', c: 'Hello' }],
+    } satisfies Content;
+    const cachedTranslation = {
+      t: 'p',
+      c: [{ t: 'strong', c: 'Bonjour' }],
+    } satisfies Content;
+    const { options, hash } = makeKey(message, { $format: 'JSX' });
     const cache = new TranslationsCache({
-      init: { [hash]: 'Bonjour' },
+      init: { [hash]: cachedTranslation },
       translateMany: mockTranslateMany,
     });
 
     const internal = cache.getInternalCache();
-    internal[hash] = 'Salut';
+    const internalTranslation = internal[hash] as typeof cachedTranslation;
+    internalTranslation.c[0].c = 'Salut';
 
-    expect(cache.get({ message, options })).toBe('Bonjour');
+    expect(cache.get({ message, options })).toEqual({
+      t: 'p',
+      c: [{ t: 'strong', c: 'Bonjour' }],
+    });
   });
 
   // ===== NEW BEHAVIOR TESTS ===== //

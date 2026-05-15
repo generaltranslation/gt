@@ -4,25 +4,98 @@ import type {
   DictionaryLeaf,
   DictionaryPath,
   DictionaryValue,
-} from './types/dictionary';
+} from "./types/dictionary";
 import type {
   DictionaryLookupOptions,
   DictionaryOptions,
-} from '../../../translation-functions/types/options';
+} from "../../../translation-functions/types/options";
 
-export function getDictionaryPath(id: DictionaryPath): string[] {
-  if (!id) {
-    return [];
+function getDictionaryPath(id: DictionaryPath): string[] {
+  const path = id ? id.split(".") : [];
+  for (const segment of path) {
+    assertSafeDictionaryPathSegment(segment, id);
   }
-  return id.split('.');
+  return path;
+}
+
+export function assertSafeDictionaryPathSegment(
+  segment: string,
+  path: DictionaryPath,
+): void {
+  if (
+    segment === "__proto__" ||
+    segment === "constructor" ||
+    segment === "prototype"
+  ) {
+    throw new Error(`Dictionary path "${path}" contains an unsafe segment`);
+  }
 }
 
 export function isDictionaryValue(value: unknown): value is Dictionary {
-  return typeof value === 'object' && value != null && !Array.isArray(value);
+  return typeof value === "object" && value != null && !Array.isArray(value);
+}
+
+export function isDictionaryObject(value: unknown): value is Dictionary {
+  return isDictionaryValue(value);
+}
+
+export function cloneDictionaryValue<Value extends DictionaryValue | undefined>(
+  value: Value,
+): Value {
+  if (value === undefined || typeof value === "string") {
+    return value;
+  }
+  return structuredClone(value) as Value;
+}
+
+export function getDictionaryValueAtPath(
+  dictionary: Dictionary,
+  path: DictionaryPath,
+): DictionaryValue | undefined {
+  let current: DictionaryValue = dictionary;
+
+  for (const segment of getDictionaryPath(path)) {
+    if (!isDictionaryObject(current)) {
+      return undefined;
+    }
+    current = current[segment];
+  }
+
+  return current;
+}
+
+export function setDictionaryValueAtPath(
+  dictionary: Dictionary,
+  path: DictionaryPath,
+  value: DictionaryValue,
+): void {
+  const segments = getDictionaryPath(path);
+  if (isDictionaryObject(value)) {
+    assertSafeDictionaryObject(value, path);
+  }
+
+  if (segments.length === 0) {
+    if (isDictionaryObject(value)) {
+      replaceDictionary(dictionary, value);
+    }
+    return;
+  }
+
+  let current = dictionary;
+  for (const segment of segments.slice(0, -1)) {
+    const next = current[segment];
+    if (!isDictionaryObject(next)) {
+      current[segment] = {} as Dictionary;
+    }
+    current = current[segment] as Dictionary;
+  }
+
+  const leafSegment = segments[segments.length - 1];
+  current[leafSegment] = value;
 }
 
 export function getDictionaryEntry(
-  value: DictionaryValue | undefined
+  value: DictionaryValue | undefined,
 ): DictionaryEntry | undefined {
   if (!isDictionaryLeafNode(value)) {
     return undefined;
@@ -41,22 +114,22 @@ export function getDictionaryValue(value: DictionaryEntry): DictionaryValue {
 }
 
 export function resolveDictionaryLookupOptions(
-  options: DictionaryEntry['options']
+  options: DictionaryEntry["options"],
 ): DictionaryLookupOptions {
-  const { $format, ...rest } = options;
+  const { $format, context, ...rest } = options;
   return {
     ...rest,
-    $format: isStringFormat($format) ? $format : 'ICU',
+    $format: isStringFormat($format) ? $format : "ICU",
     ...(rest.$context === undefined &&
-      typeof rest.context === 'string' && { $context: rest.context }),
+      typeof context === "string" && { $context: context }),
   };
 }
 
 function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return true;
   }
-  if (!Array.isArray(value) || typeof value[0] !== 'string') {
+  if (!Array.isArray(value) || typeof value[0] !== "string") {
     return false;
   }
   if (value.length === 1) {
@@ -65,41 +138,45 @@ function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
   return value.length === 2 && isDictionaryOptions(value[1]);
 }
 
-export function isDictionaryEntry(value: unknown): value is DictionaryEntry {
-  if (!isDictionaryValue(value)) {
-    return false;
-  }
-
-  return typeof value.entry === 'string' && isDictionaryOptions(value.options);
-}
-
 function isDictionaryOptions(value: unknown): value is DictionaryOptions {
-  if (typeof value !== 'object' || value == null || Array.isArray(value)) {
+  if (typeof value !== "object" || value == null || Array.isArray(value)) {
     return false;
   }
 
   const options = value as Record<string, unknown>;
   return (
-    (options.$context === undefined || typeof options.$context === 'string') &&
+    (options.$context === undefined || typeof options.$context === "string") &&
     (options.$format === undefined || isStringFormat(options.$format)) &&
     (options.$maxChars === undefined ||
-      typeof options.$maxChars === 'number') &&
-    (options.context === undefined || typeof options.context === 'string')
+      typeof options.$maxChars === "number") &&
+    (options.context === undefined || typeof options.context === "string")
   );
 }
 
 function isStringFormat(
-  value: unknown
-): value is DictionaryLookupOptions['$format'] {
-  return value === 'ICU' || value === 'I18NEXT' || value === 'STRING';
+  value: unknown,
+): value is DictionaryLookupOptions["$format"] {
+  return value === "ICU" || value === "I18NEXT" || value === "STRING";
 }
 
-export function replaceDictionary(
-  target: Dictionary,
-  source: Dictionary
-): void {
+function replaceDictionary(target: Dictionary, source: Dictionary): void {
   for (const key of Object.keys(target)) {
     delete target[key];
   }
-  Object.assign(target, source);
+  for (const key of Object.keys(source)) {
+    target[key] = source[key];
+  }
+}
+
+function assertSafeDictionaryObject(
+  dictionary: Dictionary,
+  parentPath = "",
+): void {
+  for (const [key, value] of Object.entries(dictionary)) {
+    const path = parentPath ? `${parentPath}.${key}` : key;
+    assertSafeDictionaryPathSegment(key, path);
+    if (isDictionaryObject(value)) {
+      assertSafeDictionaryObject(value, path);
+    }
+  }
 }

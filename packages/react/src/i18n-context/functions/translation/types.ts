@@ -1,4 +1,4 @@
-import { InlineTranslationOptions } from 'gt-i18n/types';
+import type { InlineTranslationOptions } from 'gt-i18n/types';
 
 /**
  * Overloaded type for the `t` function.

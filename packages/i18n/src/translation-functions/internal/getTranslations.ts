@@ -1,13 +1,13 @@
 import {
   getCurrentLocale,
   getI18nManager,
-} from '../../i18n-manager/singleton-operations';
-import { DictionaryTranslationOptions } from '../types/options';
-import { TFunctionType } from '../types/functions';
-import { renderDictionaryEntry } from './renderDictionaryEntry';
-import { renderDictionaryObject } from './renderDictionaryObject';
-import { resolveDictionaryLookupOptions } from '../../i18n-manager/translations-manager/utils/dictionary-helpers';
-import type { DictionaryObjectTranslation } from '../types/functions';
+} from "../../i18n-manager/singleton-operations";
+import { DictionaryTranslationOptions } from "../types/options";
+import { TFunctionType } from "../types/functions";
+import { renderDictionaryEntry } from "./renderDictionaryEntry";
+import { renderDictionaryObject } from "./renderDictionaryObject";
+import { resolveDictionaryLookupOptions } from "../../i18n-manager/translations-manager/utils/dictionary-helpers";
+import type { DictionaryObjectTranslation } from "../types/functions";
 
 /**
  * Returns the t function that translates a dictionary entry based on its id and options.
@@ -45,7 +45,7 @@ export async function getTranslations(): Promise<TFunctionType> {
    */
   const t = ((
     id: string,
-    options: DictionaryTranslationOptions = {}
+    options: DictionaryTranslationOptions = {},
   ): string => {
     const sourceEntry = i18nManager.lookupDictionary(sourceLocale, id);
     if (sourceEntry === undefined) {
@@ -53,14 +53,14 @@ export async function getTranslations(): Promise<TFunctionType> {
     }
     const targetEntry = i18nManager.lookupDictionary(locale, id);
     const dictionaryOptions = resolveDictionaryLookupOptions(
-      sourceEntry.options
+      sourceEntry.options,
     );
     const target =
       targetEntry?.entry ??
       i18nManager.lookupTranslation(
         locale,
         sourceEntry.entry,
-        dictionaryOptions
+        dictionaryOptions,
       );
     return renderDictionaryEntry({
       sourceLocale,
@@ -96,10 +96,97 @@ export async function getTranslations(): Promise<TFunctionType> {
         i18nManager.lookupTranslation(
           locale,
           sourceEntry.entry,
-          dictionaryOptions
+          dictionaryOptions,
         ),
     });
   };
+
+  // function renderObject({
+  //   sourceObject,
+  //   targetObject,
+  // }: {
+  //   sourceObject: DictionaryValue | undefined;
+  //   targetObject: DictionaryValue | undefined;
+  // }): DictionaryObjectTranslation {
+  //   const targetEntry = getDictionaryEntry(targetObject);
+  //   if (targetEntry !== undefined) {
+  //     return targetEntry.entry;
+  //   }
+
+  //   if (isDictionaryObject(targetObject)) {
+  //     if (!isDictionaryObject(sourceObject)) {
+  //       return renderObject({
+  //         sourceObject: targetObject,
+  //         targetObject: undefined,
+  //       });
+  //     }
+
+  //     return renderDictionaryObject({
+  //       sourceObject,
+  //       targetObject,
+  //     });
+  //   }
+
+  //   const sourceEntry = getDictionaryEntry(sourceObject);
+  //   if (sourceEntry !== undefined) {
+  //     // Fallback to translations cache
+  //     const dictionaryOptions = resolveDictionaryLookupOptions(
+  //       sourceEntry.options,
+  //     );
+
+  //     const target = i18nManager.lookupTranslation(
+  //       locale,
+  //       sourceEntry.entry,
+  //       dictionaryOptions,
+  //     );
+  //     if (target !== undefined) {
+  //       return target;
+  //     }
+
+  //     // Fallback to source entry
+  //     return sourceEntry.entry;
+  //   }
+
+  //   if (isDictionaryObject(sourceObject)) {
+  //     return renderDictionaryObject({
+  //       sourceObject,
+  //       targetObject: undefined,
+  //     });
+  //   }
+
+  //   throw new Error("Dictionary object cannot be rendered");
+  // }
+
+  // function renderDictionaryObject({
+  //   sourceObject,
+  //   targetObject,
+  // }: {
+  //   sourceObject: DictionaryValue;
+  //   targetObject: DictionaryValue | undefined;
+  // }): DictionaryObjectTranslation {
+  //   if (!isDictionaryObject(sourceObject)) {
+  //     return renderObject({ sourceObject, targetObject });
+  //   }
+  //   const result: Record<string, DictionaryObjectTranslation> = {};
+  //   const keys = new Set([
+  //     ...Object.keys(sourceObject),
+  //     ...(isDictionaryObject(targetObject) ? Object.keys(targetObject) : []),
+  //   ]);
+
+  //   for (const key of Array.from(keys)) {
+  //     const renderedChild = renderObject({
+  //       sourceObject: sourceObject[key],
+  //       targetObject: isDictionaryObject(targetObject)
+  //         ? targetObject[key]
+  //         : undefined,
+  //     });
+  //     if (renderedChild !== undefined) {
+  //       result[key] = renderedChild;
+  //     }
+  //   }
+
+  //   return result;
+  // }
 
   return t;
 }

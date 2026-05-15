@@ -1,6 +1,14 @@
 import { getI18nManager } from 'gt-i18n/internal';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 
+type CurrencyProps = {
+  children: number | string | null | undefined;
+  currency?: string;
+  options?: Intl.NumberFormatOptions;
+  locales?: string[];
+  name?: string;
+};
+
 /**
  * Equivalent to the `<Currency>` component, but used for auto insertion
  */
@@ -9,13 +17,7 @@ function GtInternalCurrency({
   currency = 'USD',
   options = {},
   locales: localesProp = [],
-}: {
-  children: number | string | null | undefined;
-  currency?: string;
-  options?: Intl.NumberFormatOptions;
-  locales?: string[];
-  name?: string;
-}): string | null {
+}: CurrencyProps): string | null {
   // Parse input
   if (children == null) return null;
   const parsedNumber =
@@ -37,13 +39,7 @@ function GtInternalCurrency({
 /**
  * User facing component for the `<Currency>` variable
  */
-function Currency(props: {
-  children: number | string | null | undefined;
-  currency?: string;
-  options?: Intl.NumberFormatOptions;
-  locales?: string[];
-  name?: string;
-}): string | null {
+function Currency(props: CurrencyProps): string | null {
   return GtInternalCurrency(props);
 }
 

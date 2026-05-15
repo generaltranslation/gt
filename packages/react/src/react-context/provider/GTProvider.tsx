@@ -4,8 +4,8 @@ import { useRegionState } from './hooks/useRegionState';
 import { useEnableI18n } from './hooks/useEnableI18n';
 import { useDetermineLocale } from './hooks/locales/useDetermineLocale';
 import { isSSREnabled } from './helpers/isSSREnabled';
-import { GTProviderProps } from '../types/config';
-import React from 'react';
+import type { GTProviderProps } from '../types/config';
+import type { JSX } from 'react';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -31,7 +31,7 @@ import React from 'react';
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export function GTProvider(props: GTProviderProps): React.JSX.Element {
+export function GTProvider(props: GTProviderProps): JSX.Element {
   return (
     <_GTProvider
       ssr={isSSREnabled()}
@@ -46,5 +46,3 @@ export function GTProvider(props: GTProviderProps): React.JSX.Element {
     />
   );
 }
-
-export default GTProvider;

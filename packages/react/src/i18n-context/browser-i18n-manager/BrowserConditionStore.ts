@@ -1,14 +1,11 @@
-import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
-import { setCookieValue } from './utils/cookies';
-import { determineLocale } from './utils/determineLocale';
-import { GetLocale } from './utils/types';
+import { defaultLocaleCookieName } from "@generaltranslation/react-core/internal";
+import { setCookieValue } from "../../shared/cookies";
+import { determineLocale } from "./utils/determineLocale";
+import type { GetLocale } from "./utils/types";
 import type {
-  ConditionStoreConfig,
+  LocaleResolverConfig,
   WritableConditionStore,
-} from 'gt-i18n/internal/types';
-
-type StoreListener = () => void;
-type Unsubscribe = () => void;
+} from "gt-i18n/internal/types";
 
 /**
  * The configuration for the BrowserConditionStore
@@ -17,7 +14,7 @@ type Unsubscribe = () => void;
  * @param {GetLocale} getLocale - The function to get the locale
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the locale cookie to check
  */
-type BrowserConditionStoreConstructorParams = ConditionStoreConfig & {
+type BrowserConditionStoreConstructorParams = LocaleResolverConfig & {
   getLocale?: GetLocale;
   localeCookieName?: string;
 };
@@ -26,10 +23,9 @@ type BrowserConditionStoreConstructorParams = ConditionStoreConfig & {
  * Condition store implementation for Browser.
  */
 export class BrowserConditionStore implements WritableConditionStore {
-  private listeners = new Set<StoreListener>();
-  private localeConfig: ConditionStoreConfig;
-  private customGetLocale?: GetLocale;
-  private localeCookieName: string;
+  private readonly localeConfig: LocaleResolverConfig;
+  private readonly customGetLocale?: GetLocale;
+  private readonly localeCookieName: string;
 
   /**
    * @param {BrowserConditionStoreConstructorParams} params - The configuration for the BrowserConditionStore
@@ -56,25 +52,6 @@ export class BrowserConditionStore implements WritableConditionStore {
   }
 
   setLocale(locale: string): void {
-    const previousLocale = this.getLocale();
-    setCookieValue({
-      cookieName: this.localeCookieName,
-      value: locale,
-    });
-    const nextLocale = this.getLocale();
-    if (nextLocale !== previousLocale) {
-      this.emitLocaleChange();
-    }
-  }
-
-  subscribeToLocale(listener: StoreListener): Unsubscribe {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
-  }
-
-  private emitLocaleChange(): void {
-    this.listeners.forEach((listener) => listener());
+    setCookieValue(this.localeCookieName, locale);
   }
 }

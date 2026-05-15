@@ -1,5 +1,16 @@
 # generaltranslation
 
+## 8.2.15
+
+### Patch Changes
+
+- [#1416](https://github.com/generaltranslation/gt/pull/1416) [`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa) Thanks [@bgub](https://github.com/bgub)! - Honor custom locale region display-name overrides and simplify shared locale formatting helpers.
+
+- [#1419](https://github.com/generaltranslation/gt/pull/1419) [`a877a2a`](https://github.com/generaltranslation/gt/commit/a877a2a5bd5ca47b199c6caf53a6d60d96e3a300) Thanks [@bgub](https://github.com/bgub)! - Improve diagnostic messages and package-local diagnostic formatting.
+
+- Updated dependencies [[`bb3624e`](https://github.com/generaltranslation/gt/commit/bb3624e58546c334c04370a1f5a262238bd040fa)]:
+  - @generaltranslation/format@0.1.1
+
 ## 8.2.14
 
 ### Patch Changes

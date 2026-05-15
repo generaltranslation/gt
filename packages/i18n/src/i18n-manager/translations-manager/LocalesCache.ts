@@ -1,266 +1,224 @@
-import { Cache } from './Cache';
-import { Hash, TranslationKey, TranslationsCache } from './TranslationsCache';
-import type { TranslationBatchConfig } from './TranslationsCache';
-import { Translation } from './utils/types/translation-data';
-import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
-import { CreateTranslateMany } from './utils/createTranslateMany';
+import { DictionaryCache } from "./DictionaryCache";
 import type {
+  Dictionary,
+  DictionaryEntry,
+  DictionaryKey,
+  DictionaryLoader,
+} from "./DictionaryCache";
+import { ResourceCache } from "./ResourceCache";
+import { TranslationsCache } from "./TranslationsCache";
+import type {
+  Hash,
+  TranslationBatchConfig,
+  TranslationKey,
+} from "./TranslationsCache";
+import type { CreateTranslateMany } from "./utils/createTranslateMany";
+import type { Translation } from "./utils/types/translation-data";
+import type { SafeTranslationsLoader } from "./translations-loaders/types";
+import type {
+  I18nManagerCacheLifecycleCallbacks,
+  LifecycleCallback,
   LifecycleParam,
-  LocalesCacheLifecycleCallbacks,
-  TranslationsCacheLifecycleCallback,
-} from '../lifecycle-hooks/types';
+} from "../lifecycle-hooks/types";
 
 /**
  * Just being explicit about the purpose of this type
  */
 export type Locale = string;
 
-/**
- * Cache entry
- * @typedef {Object} CacheEntry
- * @property {number} expiresAt - The time at which the cache entry expires.
- * @property {TranslationsCache<TranslationValue>} translationsCache - The translations cache for the locale.
- */
-export type CacheEntry<TranslationValue extends Translation> = {
-  expiresAt: number;
-  translationsCache: TranslationsCache<TranslationValue>;
+type TranslateLocaleDictionaryEntry = (
+  locale: Locale,
+  key: DictionaryKey,
+  sourceEntry: DictionaryEntry,
+) => Promise<string>;
+
+type LocalesCacheParams<TranslationValue extends Translation> = {
+  ttl?: number | null;
+  batchConfig?: TranslationBatchConfig;
+  defaultLocale: Locale;
+  dictionary?: Dictionary;
+  createTranslateMany: CreateTranslateMany;
+  loadTranslations: SafeTranslationsLoader<TranslationValue>;
+  loadDictionary: DictionaryLoader;
+  translateDictionaryEntry: TranslateLocaleDictionaryEntry;
+  lifecycle: I18nManagerCacheLifecycleCallbacks<TranslationValue>;
 };
 
-/**
- * Safe translations loader function type
- * @returns A promise that resolves to a mapping of strings to {@link Translation}
- * TODO: rename this because we are no longer doing try/catch around the translation loader
- */
-export type SafeTranslationsLoader<TranslationValue extends Translation> = (
-  locale: string
-) => Promise<Record<Hash, TranslationValue>>;
+export class LocalesCache<TranslationValue extends Translation> {
+  private readonly translations: ResourceCache<
+    Locale,
+    TranslationsCache<TranslationValue>
+  >;
+  private readonly dictionaries: ResourceCache<Locale, DictionaryCache>;
+  private readonly createTranslationsCache: (
+    locale: Locale,
+    init: Record<Hash, TranslationValue>,
+  ) => TranslationsCache<TranslationValue>;
 
-/**
- * Cache for looking up translations by locale
- */
-export class LocalesCache<TranslationValue extends Translation> extends Cache<
-  Locale,
-  Locale,
-  CacheEntry<TranslationValue>,
-  CacheEntry<TranslationValue>['translationsCache']
-> {
-  /**
-   * Translation loader function
-   */
-  private _translationLoader: SafeTranslationsLoader<TranslationValue>;
-
-  /**
-   * Translate many function
-   */
-  private _createTranslateMany: CreateTranslateMany;
-
-  /**
-   * Time to live for cache entries
-   */
-  private ttl: number = DEFAULT_CACHE_EXPIRY_TIME;
-
-  private _batchConfig?: TranslationBatchConfig;
-
-  /**
-   * Translations cache lifecycle callbacks (locale embedded)
-   */
-  private _onTranslationsCacheHit?: TranslationsCacheLifecycleCallback<TranslationValue>;
-  private _onTranslationsCacheMiss?: TranslationsCacheLifecycleCallback<TranslationValue>;
-
-  /**
-   * Constructor
-   * @param {Object} params - The parameters for the cache
-   * @param {Record<string, CacheEntry<TranslationValue>>} params.init - The initial cache
-   * @param {number | null} params.ttl - The time to live for cache entries
-   * @param {SafeTranslationsLoader<TranslationValue>} params.loadTranslations - The translation loader function
-   * @param {CreateTranslateMany} params.createTranslateMany - Factory function for creating a translate many function
-   */
   constructor({
-    init = {},
     ttl,
     batchConfig,
+    defaultLocale,
+    dictionary = {},
     loadTranslations,
+    loadDictionary,
     createTranslateMany,
-    initialTranslations,
-    lifecycle: {
-      onLocalesCacheHit: onHit,
-      onLocalesCacheMiss: onMiss,
-      onTranslationsCacheHit,
-      onTranslationsCacheMiss,
-    },
-  }: {
-    init?: Record<string, CacheEntry<TranslationValue>>;
-    ttl?: number | null;
-    initialTranslations?: Record<Locale, Record<Hash, TranslationValue>>;
-    batchConfig?: TranslationBatchConfig;
-    createTranslateMany: CreateTranslateMany;
-    loadTranslations: SafeTranslationsLoader<TranslationValue>;
-    lifecycle: LocalesCacheLifecycleCallbacks<TranslationValue>;
-  }) {
-    super(init, { onHit, onMiss });
+    translateDictionaryEntry,
+    lifecycle,
+  }: LocalesCacheParams<TranslationValue>) {
+    this.createTranslationsCache = createTranslationsCacheFactory({
+      lifecycle,
+      createTranslateMany,
+      batchConfig,
+    });
+    this.translations = new ResourceCache({
+      ttl,
+      load: async (locale) =>
+        this.createTranslationsCache(locale, await loadTranslations(locale)),
+      lifecycle: {
+        onHit: lifecycle.onLocalesCacheHit,
+        onMiss: lifecycle.onLocalesCacheMiss,
+      },
+    });
 
-    // Set time to live
-    this.ttl = ttl === null ? -1 : (ttl ?? DEFAULT_CACHE_EXPIRY_TIME);
+    this.dictionaries = new ResourceCache({
+      ttl,
+      load: async (locale) =>
+        createDictionaryCache({
+          locale,
+          dictionary: await loadDictionary(locale),
+          translate: translateDictionaryEntry,
+          lifecycle,
+        }),
+      lifecycle: {
+        onHit: lifecycle.onLocalesDictionaryCacheHit,
+        onMiss: lifecycle.onLocalesDictionaryCacheMiss,
+      },
+    });
 
-    this._translationLoader = loadTranslations;
-    this._createTranslateMany = createTranslateMany;
-    this._batchConfig = batchConfig;
-    this._onTranslationsCacheHit = onTranslationsCacheHit;
-    this._onTranslationsCacheMiss = onTranslationsCacheMiss;
-
-    // Populate the cache with the initial translations
-    for (const [locale, translations] of Object.entries(
-      initialTranslations ?? {}
-    )) {
-      this.setCache(locale, this._createCacheEntry(locale, translations));
-    }
+    this.dictionaries.set(
+      defaultLocale,
+      createDictionaryCache({
+        locale: defaultLocale,
+        dictionary,
+        translate: translateDictionaryEntry,
+        lifecycle,
+      }),
+      { expiresAt: -1 },
+    );
   }
 
-  /**
-   * Get the translations for a given locale
-   * @param key - The locale
-   * @returns The translations
-   */
-  public get(
-    key: Locale
-  ): CacheEntry<TranslationValue>['translationsCache'] | undefined {
-    // Get the cache entry
-    const entry = this.getCache(key);
-    if (!entry || (entry.expiresAt > 0 && entry.expiresAt < Date.now())) {
-      return undefined;
-    }
-    const value = entry.translationsCache;
-
-    // Life cycle callback
-    if (value != null && this.onHit) {
-      this.onHit({
-        inputKey: key,
-        cacheKey: this.genKey(key),
-        cacheValue: entry,
-        outputValue: value,
-      });
-    }
-
-    return value;
+  public getTranslations(
+    locale: Locale,
+  ): TranslationsCache<TranslationValue> | undefined {
+    return this.translations.get(locale);
   }
 
-  /**
-   * Miss the cache
-   * @param key - The locale
-   * @returns The translations cache
-   */
-  public async miss(
-    key: Locale
-  ): Promise<CacheEntry<TranslationValue>['translationsCache']> {
-    // Miss the cache
-    const cacheValue = await this.missCache(key);
-
-    // Life cycle callback
-    const value = cacheValue.translationsCache;
-    if (value != null && this.onMiss) {
-      this.onMiss({
-        inputKey: key,
-        cacheKey: this.genKey(key),
-        cacheValue: cacheValue,
-        outputValue: value,
-      });
-    }
-
-    return value;
+  public getOrLoadTranslations(
+    locale: Locale,
+  ): Promise<TranslationsCache<TranslationValue>> {
+    return this.translations.getOrLoad(locale);
   }
 
-  /**
-   * Generate the cache key for a given locale
-   * @param key - The locale
-   * @returns The cache key
-   *
-   * This is just an identity function, no transformation needed
-   */
-  protected genKey(key: Locale): Locale {
-    return key;
+  public getDictionary(locale: Locale): DictionaryCache | undefined {
+    return this.dictionaries.get(locale);
   }
 
-  /**
-   * Fallback for a cache miss
-   * @param locale - The locale
-   * @returns The cache entry
-   */
-  protected async fallback(
-    locale: Locale
-  ): Promise<CacheEntry<TranslationValue>> {
-    const translations = await this._translationLoader(locale);
-    return this._createCacheEntry(locale, translations);
+  public getOrLoadDictionary(locale: Locale): Promise<DictionaryCache> {
+    return this.dictionaries.getOrLoad(locale);
   }
 
   public update(
-    translationsObj: Record<Locale, Record<Hash, TranslationValue>>
+    translations: Record<Locale, Record<Hash, TranslationValue>>,
   ): void {
-    for (const [locale, translations] of Object.entries(translationsObj)) {
-      const cacheEntry = this.getCache(this.genKey(locale));
-      if (cacheEntry) {
-        // TODO: if a specific translation entry changes, there would be no subscriber update triggered here
-        cacheEntry.translationsCache.updateCache(translations);
-        cacheEntry.expiresAt = this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
+    for (const locale in translations) {
+      const translationsCache = this.translations.get(locale);
+      if (translationsCache) {
+        translationsCache.update(translations[locale]);
       } else {
-        // TODO: would we be orphaning subscribers here? or is it okay?
-        // perhaps we can merge in existing translations with new translations, but ofc could lead to stale data
-        this.setCache(locale, this._createCacheEntry(locale, translations));
+        this.translations.set(
+          locale,
+          this.createTranslationsCache(locale, translations[locale]),
+        );
       }
     }
   }
+}
 
-  // ===== PRIVATE METHODS ===== //
-
-  /**
-   * Create the cache entry for a given locale
-   * @param locale - The locale
-   * @param initialTranslations - The initial translations
-   * @returns The cache entry
-   */
-  private _createCacheEntry(
-    locale: Locale,
-    initialTranslations: Record<Hash, TranslationValue>
-  ): CacheEntry<TranslationValue> {
-    // Cache the promise and expiry timestamp
-    const translationsCache = new TranslationsCache<TranslationValue>({
-      init: initialTranslations,
-      lifecycle: this._createTranslationsCacheLifecycle(locale),
-      translateMany: this._createTranslateMany(locale),
-      batchConfig: this._batchConfig,
+function createTranslationsCacheFactory<TranslationValue extends Translation>({
+  lifecycle,
+  createTranslateMany,
+  batchConfig,
+}: {
+  lifecycle: I18nManagerCacheLifecycleCallbacks<TranslationValue>;
+  createTranslateMany: CreateTranslateMany;
+  batchConfig?: TranslationBatchConfig;
+}) {
+  return (locale: Locale, init: Record<Hash, TranslationValue>) =>
+    new TranslationsCache<TranslationValue>({
+      init,
+      lifecycle: createTranslationsCacheLifecycle(locale, lifecycle),
+      translateMany: createTranslateMany(locale),
+      batchConfig,
     });
-    const expiresAt = this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
+}
 
-    return { translationsCache, expiresAt };
-  }
+function createTranslationsCacheLifecycle<TranslationValue extends Translation>(
+  locale: Locale,
+  lifecycle: I18nManagerCacheLifecycleCallbacks<TranslationValue>,
+): LifecycleParam<
+  TranslationKey<TranslationValue>,
+  Hash,
+  TranslationValue,
+  TranslationValue
+> {
+  return {
+    onHit: withLocale(locale, lifecycle.onTranslationsCacheHit),
+    onMiss: withLocale(locale, lifecycle.onTranslationsCacheMiss),
+  };
+}
 
-  /**
-   * Create the translations cache lifecycle
-   * @param locale - The locale
-   * @returns The translations cache lifecycle
-   */
-  private _createTranslationsCacheLifecycle(
-    locale: Locale
-  ): LifecycleParam<
-    TranslationKey<TranslationValue>,
-    Hash,
-    TranslationValue,
-    TranslationValue
-  > {
-    return {
-      onHit: this._onTranslationsCacheHit
-        ? (params) =>
-            this._onTranslationsCacheHit!({
-              locale,
-              ...params,
-            })
-        : undefined,
-      onMiss: this._onTranslationsCacheMiss
-        ? (params) =>
-            this._onTranslationsCacheMiss!({
-              locale,
-              ...params,
-            })
-        : undefined,
-    };
-  }
+function createDictionaryCache<TranslationValue extends Translation>({
+  locale,
+  dictionary,
+  translate,
+  lifecycle,
+}: {
+  locale: Locale;
+  dictionary: Dictionary;
+  translate: TranslateLocaleDictionaryEntry;
+  lifecycle: I18nManagerCacheLifecycleCallbacks<TranslationValue>;
+}) {
+  const {
+    onDictionaryCacheHit,
+    onDictionaryCacheMiss,
+    onDictionaryObjectCacheHit,
+  } = lifecycle;
+  return new DictionaryCache({
+    init: dictionary,
+    runtimeTranslate: (key, sourceEntry) => translate(locale, key, sourceEntry),
+    lifecycle: {
+      onHit: withLocale(locale, onDictionaryCacheHit),
+      onMiss: withLocale(locale, onDictionaryCacheMiss),
+      onDictionaryObjectCacheHit: withLocale(
+        locale,
+        onDictionaryObjectCacheHit,
+      ),
+    },
+  });
+}
+
+function withLocale<InputKey, CacheKey, CacheValue, OutputValue>(
+  locale: Locale,
+  callback:
+    | ((params: {
+        locale: Locale;
+        inputKey: InputKey;
+        cacheKey: CacheKey;
+        cacheValue: CacheValue;
+        outputValue: OutputValue;
+      }) => void)
+    | undefined,
+): LifecycleCallback<InputKey, CacheKey, CacheValue, OutputValue> | undefined {
+  return callback ? (params) => callback({ locale, ...params }) : undefined;
 }
