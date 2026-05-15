@@ -1,13 +1,15 @@
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
-} from '@generaltranslation/react-core/internal';
+} from "@generaltranslation/react-core/internal";
 import {
+  getI18nManager,
   ReactConditionStore,
   ReactConditionStoreParams,
-} from '@generaltranslation/react-core/context';
-import { getCookieValue, setCookieValue } from './cookies';
-import { readBrowserLocale } from './readBrowserLocale';
+} from "@generaltranslation/react-core/context";
+import { getCookieValue, setCookieValue } from "./cookies";
+import { readBrowserLocale } from "./readBrowserLocale";
+import { GetLocale } from "../i18n-manager/types";
 
 /**
  * The configuration for the BrowserConditionStore
@@ -18,11 +20,12 @@ import { readBrowserLocale } from './readBrowserLocale';
  */
 export type BrowserConditionStoreParams = Omit<
   ReactConditionStoreParams,
-  'locale'
+  "locale"
 > & {
   locale?: string;
   localeCookieName?: string;
   enableI18nCookieName?: string;
+  getLocale?: GetLocale;
 };
 
 /**
@@ -37,7 +40,8 @@ export class BrowserConditionStore extends ReactConditionStore {
     enableI18nCookieName = defaultEnableI18nCookieName,
     ...config
   }: BrowserConditionStoreParams) {
-    const locale = config.locale ?? readBrowserLocale(localeCookieName);
+    const locale = resolveLocale(localeCookieName, config.getLocale);
+
     super({
       ...config,
       locale,
@@ -47,7 +51,7 @@ export class BrowserConditionStore extends ReactConditionStore {
   }
 
   getLocale = (): string => {
-    return readBrowserLocale(this.localeCookieName);
+    return resolveLocale(this.localeCookieName, this.getLocale);
   };
 
   setLocale = (locale: string): void => {
@@ -62,13 +66,19 @@ export class BrowserConditionStore extends ReactConditionStore {
     const cookieEnableI18n = getCookieValue({
       cookieName: this.enableI18nCookieName,
     });
-    return cookieEnableI18n === 'true' || cookieEnableI18n === undefined;
+    return cookieEnableI18n === "true" || cookieEnableI18n === undefined;
   };
 
   setEnableI18n = (enableI18n: boolean): void => {
     setCookieValue({
       cookieName: this.enableI18nCookieName,
-      value: enableI18n ? 'true' : 'false',
+      value: enableI18n ? "true" : "false",
     });
   };
+}
+
+function resolveLocale(cookieName: string, getLocale?: GetLocale): string {
+  const candidates = readBrowserLocale(cookieName);
+  if (getLocale) candidates.push(getLocale());
+  return getI18nManager().determineLocale(candidates);
 }
