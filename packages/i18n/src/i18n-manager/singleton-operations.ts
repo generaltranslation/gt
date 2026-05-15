@@ -2,8 +2,8 @@ import { libraryDefaultLocale } from "generaltranslation/internal";
 import { I18nManager } from "./I18nManager";
 import logger from "../logs/logger";
 import { Translation } from "./translations-manager/utils/types/translation-data";
-import type { ReadonlyConditionStore } from "./types";
 import { createConditionStoreSingleton } from "./condition-store/createConditionStoreSingleton";
+import { WritableConditionStore } from "./types";
 
 // Singleton instance of I18nManager
 let i18nManager: I18nManager | undefined = undefined;
@@ -45,4 +45,6 @@ export function setI18nManager<TranslationValue extends Translation>(
 }
 
 export const { getConditionStore, setConditionStore } =
-  createConditionStoreSingleton("ConditionStore is not initialized.");
+  createConditionStoreSingleton<WritableConditionStore>(
+    "WritableConditionStore is not initialized.",
+  );

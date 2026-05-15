@@ -1,25 +1,31 @@
-import type { ReadonlyConditionStore } from '../types';
-import { setConditionStore as setCurrentConditionStore } from '../singleton-operations';
+import type { ReadonlyConditionStore } from "../types";
+
+let conditionStore: ReadonlyConditionStore | undefined;
 
 export function createConditionStoreSingleton<T extends ReadonlyConditionStore>(
-  notInitializedMessage: string
+  notInitializedMessage: string,
 ) {
-  let conditionStore: T | undefined;
-
   function getConditionStore(): T {
+    /**
+     * TODO: each package throws a different error message
+     */
     if (!conditionStore) {
       throw new Error(notInitializedMessage);
     }
-    return conditionStore;
+    return conditionStore as T;
   }
 
   function setConditionStore(nextConditionStore: T): void {
     conditionStore = nextConditionStore;
-    setCurrentConditionStore(nextConditionStore);
+  }
+
+  function isConditionStoreInitialized(): boolean {
+    return conditionStore !== undefined;
   }
 
   return {
     getConditionStore,
     setConditionStore,
+    isConditionStoreInitialized,
   };
 }

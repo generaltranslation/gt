@@ -1,6 +1,6 @@
 import { GTContext, GTContextType } from "../context/provider/GTContext";
 import { getRenderStrategy } from "../setup/globals";
-import { getConditionStore } from "../condition-store/singleton-operations";
+import { getWritableConditionStore } from "../condition-store/singleton-operations";
 import { useContext } from "react";
 
 /**
@@ -11,11 +11,12 @@ function useGTContext(property: keyof GTContextType): GTContextType {
   if (!conditionStore) {
     if (getRenderStrategy() === "SPA") {
       // No need for useSyncExternalStore for SPA apps as reload will always trigger a re-render
+      const conditionStore = getWritableConditionStore();
       return {
-        locale: getConditionStore().getLocale(),
-        enableI18n: getConditionStore().getEnableI18n(),
-        setLocale: getConditionStore().setLocale,
-        setEnableI18n: getConditionStore().setEnableI18n,
+        locale: conditionStore.getLocale(),
+        enableI18n: conditionStore.getEnableI18n(),
+        setLocale: conditionStore.setLocale,
+        setEnableI18n: conditionStore.setEnableI18n,
       };
     }
     throw new Error(

@@ -1,6 +1,5 @@
 // Classes
 export { I18nManager } from "./I18nManager";
-export { createConditionStoreSingleton } from "./condition-store/createConditionStoreSingleton";
 export { ReadonlyConditionStore } from "./condition-store/ReadonlyConditionStore";
 export type { ReadonlyConditionStoreParams } from "./condition-store/ReadonlyConditionStore";
 export { WritableConditionStore } from "./condition-store/WritableConditionStore";

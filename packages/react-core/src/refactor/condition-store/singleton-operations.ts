@@ -1,9 +1,11 @@
 import {
   createConditionStoreSingleton,
   WritableConditionStore,
-} from 'gt-i18n/internal';
+} from "gt-i18n/internal";
 
-export const { getConditionStore, setConditionStore } =
-  createConditionStoreSingleton<WritableConditionStore>(
-    'ConditionStore is not initialized.'
-  );
+export const {
+  getConditionStore: getWritableConditionStore,
+  setConditionStore: setWritableConditionStore,
+} = createConditionStoreSingleton<WritableConditionStore>(
+  "WritableConditionStore is not initialized.",
+);

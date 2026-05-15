@@ -16,8 +16,8 @@ import type {
   OverrideSetLocaleType,
 } from "./storeTypes";
 import type { Translation } from "gt-i18n/types";
-import type { Hash, Locale } from "gt-i18n/internal/types";
-import { getConditionStore } from "../condition-store/singleton-operations";
+import type { Hash, Locale, LocaleCandidates } from "gt-i18n/internal/types";
+import { getWritableConditionStore } from "../condition-store/singleton-operations";
 import { getReactI18nManager } from "../i18n-manager/singleton-operations";
 import { RuntimeTranslationScope } from "./RuntimeTranslationScope";
 import { RuntimeDictionaryScope } from "./RuntimeDictionaryScope";
@@ -81,7 +81,7 @@ export class I18nStore {
    */
   constructor({ overrideSetLocale }: I18nStoreParams) {
     try {
-      getConditionStore();
+      getWritableConditionStore();
       getReactI18nManager();
     } catch (error) {
       throw new Error("Failed to initialize I18nStore. Reason: " + error);
@@ -189,11 +189,11 @@ export class I18nStore {
   // ===== ConditionStore Snapshots ===== //
 
   getLocaleSnapshot = (): string => {
-    return getConditionStore().getLocale();
+    return getWritableConditionStore().getLocale();
   };
 
   getEnableI18nSnapshot = (): boolean => {
-    return getConditionStore().getEnableI18n();
+    return getWritableConditionStore().getEnableI18n();
   };
 
   // ===== I18nManager Snapshots ===== //
@@ -314,7 +314,7 @@ export class I18nStore {
     // We dont emit an event here because it is assumed that the locale
     // gets updated via this reload (eg browser refresh/SSR reload)
     if (this.overrideSetLocale) {
-      getConditionStore().setLocale(locale);
+      getWritableConditionStore().setLocale(locale);
       this.overrideSetLocale(locale);
       return;
     }
@@ -325,7 +325,7 @@ export class I18nStore {
       i18nManager.hasTranslations(locale)
     ) {
       this.updateTranslationStatus({ status: "ready" });
-      getConditionStore().setLocale(locale);
+      getWritableConditionStore().setLocale(locale);
       this.localeListeners.forEach((listener) => listener());
       return;
     }
@@ -343,7 +343,7 @@ export class I18nStore {
           return;
         }
         this.updateTranslationStatus({ status: "ready" });
-        getConditionStore().setLocale(locale);
+        getWritableConditionStore().setLocale(locale);
         this.localeListeners.forEach((listener) => listener());
       });
   };
@@ -353,7 +353,7 @@ export class I18nStore {
    * technically, a user can still switch locales, but we do not fire off any requests
    */
   setEnableI18n = (enableI18n: boolean): void => {
-    getConditionStore().setEnableI18n(enableI18n);
+    getWritableConditionStore().setEnableI18n(enableI18n);
     this.updateTranslationStatus({ status: "ready" });
     this.enableI18nListeners.forEach((listener) => listener());
   };
@@ -374,27 +374,6 @@ export class I18nStore {
       this.translationStatus = { status: "ready" };
     }
     this.translationStatusListeners.forEach((listener) => listener());
-  };
-
-  /**
-   * This is triggered by a locale change coming from a new locale prop
-   * from the GTProvider (along with new translations for that locale)
-   *
-   * This case does not require an event emission because this occurs
-   * before the useSyncExternalStore call in the GTProvider which means
-   * that the new locale will be immediately available to the subscribers.
-   * Same for the translations too.
-   */
-  updateLocale = (locale: string): void => {
-    getConditionStore().setLocale(locale);
-  };
-
-  /**
-   * This is triggered by a GTProvider on client so synchronize with server
-   * or if done on the server, probably triggered manually
-   */
-  updateTranslations = (translationsObj: TranslationsSnapshot = {}): void => {
-    getReactI18nManager().updateTranslations(translationsObj);
   };
 
   private subscribeToStaticSet(

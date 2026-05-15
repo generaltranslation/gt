@@ -10,6 +10,7 @@ import {
 import { getCookieValue, setCookieValue } from "./cookies";
 import { readBrowserLocale } from "./readBrowserLocale";
 import { GetLocale } from "../i18n-manager/types";
+import { LocaleCandidates } from "gt-i18n/internal/types";
 
 /**
  * The configuration for the BrowserConditionStore
@@ -40,7 +41,7 @@ export class BrowserConditionStore extends WritableConditionStore {
     enableI18nCookieName = defaultEnableI18nCookieName,
     ...config
   }: BrowserConditionStoreParams) {
-    const locale = resolveLocale(localeCookieName, config.getLocale);
+    const locale = getBrowserLocale(localeCookieName, config.getLocale);
 
     super({
       ...config,
@@ -51,13 +52,13 @@ export class BrowserConditionStore extends WritableConditionStore {
   }
 
   getLocale = (): string => {
-    return resolveLocale(this.localeCookieName, this.getLocale);
+    return getBrowserLocale(this.localeCookieName, this.getLocale);
   };
 
-  setLocale = (locale: string): void => {
+  setLocale = (locale: LocaleCandidates): void => {
     setCookieValue({
       cookieName: this.localeCookieName,
-      value: locale,
+      value: getReactI18nManager().determineLocale(locale),
     });
     window.location.reload();
   };
@@ -77,7 +78,7 @@ export class BrowserConditionStore extends WritableConditionStore {
   };
 }
 
-function resolveLocale(cookieName: string, getLocale?: GetLocale): string {
+function getBrowserLocale(cookieName: string, getLocale?: GetLocale): string {
   const candidates = readBrowserLocale(cookieName);
   if (getLocale) candidates.push(getLocale());
   return getReactI18nManager().determineLocale(candidates);

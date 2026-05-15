@@ -1,3 +1,4 @@
+import type { LocaleCandidates } from "..";
 import type { WritableConditionStore as WritableConditionStoreContract } from "../types";
 import {
   ReadonlyConditionStore,
@@ -10,7 +11,7 @@ export class WritableConditionStore
   extends ReadonlyConditionStore
   implements WritableConditionStoreContract
 {
-  setLocale = (locale: string): void => {
+  setLocale = (locale: LocaleCandidates): void => {
     this.locale = this.resolveLocale(locale);
   };
 
