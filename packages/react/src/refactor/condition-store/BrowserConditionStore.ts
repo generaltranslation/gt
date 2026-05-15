@@ -19,13 +19,9 @@ import { LocaleCandidates } from "gt-i18n/internal/types";
  * @param {GetLocale} getLocale - The function to get the locale
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the locale cookie to check
  */
-export type BrowserConditionStoreParams = Omit<
-  WritableConditionStoreParams,
-  "locale"
-> & {
-  locale?: string;
-  localeCookieName?: string;
-  enableI18nCookieName?: string;
+export type BrowserConditionStoreParams = WritableConditionStoreParams & {
+  localeCookieName: string;
+  enableI18nCookieName: string;
   getLocale?: GetLocale;
   getEnableI18n?: GetEnableI18n;
 };
@@ -39,21 +35,12 @@ export class BrowserConditionStore extends WritableConditionStore {
   private customGetLocale?: GetLocale;
   private customGetEnableI18n?: GetEnableI18n;
 
-  constructor({
-    localeCookieName = defaultLocaleCookieName,
-    enableI18nCookieName = defaultEnableI18nCookieName,
-    ...config
-  }: BrowserConditionStoreParams) {
-    const locale = getBrowserLocale(localeCookieName, config.getLocale);
-    const enableI18n = config.enableI18n ?? config.getEnableI18n?.() ?? true;
-
-    super({
-      ...config,
-      locale,
-      enableI18n,
-    });
-    this.localeCookieName = localeCookieName;
-    this.enableI18nCookieName = enableI18nCookieName;
+  constructor(config: BrowserConditionStoreParams) {
+    super(config);
+    this.customGetLocale = config.getLocale;
+    this.customGetEnableI18n = config.getEnableI18n;
+    this.localeCookieName = config.localeCookieName;
+    this.enableI18nCookieName = config.enableI18nCookieName;
   }
 
   getLocale = (): string => {

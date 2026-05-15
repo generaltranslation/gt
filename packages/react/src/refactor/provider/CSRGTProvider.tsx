@@ -9,6 +9,7 @@ import {
   setBrowserConditionStore,
 } from "../condition-store/singleton-operations";
 import { BrowserConditionStore } from "../condition-store/BrowserConditionStore";
+import { createBrowserConditionStore } from "../condition-store/createBrowserConditionStore";
 
 /**
  * Client side GTProvider, this is different from server side
@@ -25,7 +26,7 @@ export function CSRGTProvider({
   // (eg overrideSetLocale === undefined), see getI18nStore().updateLocale() in InternalGTProvider
 
   if (!isBrowserConditionStoreInitialized()) {
-    const conditionStore = new BrowserConditionStore(props);
+    const conditionStore = createBrowserConditionStore(props);
     setBrowserConditionStore(conditionStore);
   } else if (props.overrideSetLocale) {
     // This represents an update from server, so bypass I18nStore
