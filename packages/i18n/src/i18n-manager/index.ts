@@ -1,6 +1,8 @@
 // Classes
 export { I18nManager } from './I18nManager';
 export { createConditionStoreSingleton } from './condition-store/createConditionStoreSingleton';
+export { WritableConditionStore } from './condition-store/WritableConditionStore';
+export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
 export {
   createLocaleResolver,
   determineSupportedLocale,

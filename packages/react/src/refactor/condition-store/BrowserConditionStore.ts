@@ -4,8 +4,8 @@ import {
 } from "@generaltranslation/react-core/internal";
 import {
   getReactI18nManager,
-  ReactConditionStore,
-  ReactConditionStoreParams,
+  WritableConditionStore,
+  WritableConditionStoreParams,
 } from "@generaltranslation/react-core/context";
 import { getCookieValue, setCookieValue } from "./cookies";
 import { readBrowserLocale } from "./readBrowserLocale";
@@ -19,7 +19,7 @@ import { GetLocale } from "../i18n-manager/types";
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the locale cookie to check
  */
 export type BrowserConditionStoreParams = Omit<
-  ReactConditionStoreParams,
+  WritableConditionStoreParams,
   "locale"
 > & {
   locale?: string;
@@ -31,7 +31,7 @@ export type BrowserConditionStoreParams = Omit<
 /**
  * Condition store implementation for Browser.
  */
-export class BrowserConditionStore extends ReactConditionStore {
+export class BrowserConditionStore extends WritableConditionStore {
   private localeCookieName: string;
   private enableI18nCookieName: string;
 

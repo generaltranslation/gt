@@ -48,13 +48,13 @@ export {
   getConditionStore,
   setConditionStore,
 } from './refactor/condition-store/singleton-operations';
+export { WritableConditionStore } from 'gt-i18n/internal';
+export type { WritableConditionStoreParams } from 'gt-i18n/internal';
 export {
   getReactI18nManager,
   setReactI18nManager,
 } from './refactor/i18n-manager/singleton-operations';
 export { I18nStore } from './refactor/i18n-store/I18nStore';
-export { ReactConditionStore } from './refactor/condition-store/ReactConditionStore';
-export type { ReactConditionStoreParams } from './refactor/condition-store/ReactConditionStore';
 export type { I18nStoreParams } from './refactor/i18n-store/I18nStore';
 export type { InternalGTProviderProps } from './refactor/context/provider/InternalGTProvider';
 export type { OverrideSetLocaleType } from './refactor/i18n-store/storeTypes';

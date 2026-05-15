@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ReactConditionStore } from '../../refactor/condition-store/ReactConditionStore';
+import { I18nManager, WritableConditionStore } from 'gt-i18n/internal';
 import { setConditionStore } from '../../refactor/condition-store/singleton-operations';
-import { ReactI18nManager } from '../../refactor/i18n-manager/ReactI18nManager';
-import { setI18nManager } from '../../refactor/i18n-manager/singleton-operations';
+import { setReactI18nManager } from '../../refactor/i18n-manager/singleton-operations';
 import { I18nStore } from '../../refactor/i18n-store/I18nStore';
 
 function createManager() {
-  return new ReactI18nManager({
+  return new I18nManager({
     defaultLocale: 'en',
     locales: ['en', 'fr', 'es'],
     dictionary: {
@@ -33,9 +32,9 @@ function createManager() {
 
 function createStores(locale = 'en') {
   const manager = createManager();
-  setI18nManager(manager);
+  setReactI18nManager(manager);
 
-  const conditionStore = new ReactConditionStore({ locale });
+  const conditionStore = new WritableConditionStore({ locale });
   setConditionStore(conditionStore);
 
   const i18nStore = new I18nStore({});

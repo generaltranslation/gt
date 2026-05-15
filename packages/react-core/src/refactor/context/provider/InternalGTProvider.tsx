@@ -9,16 +9,16 @@ import {
   getI18nStore,
   setI18nStore,
 } from '../../i18n-store/singleton-operations';
+import {
+  WritableConditionStore,
+  type WritableConditionStoreParams,
+} from 'gt-i18n/internal';
 import type { OverrideSetLocaleType } from '../../i18n-store/storeTypes';
 import { setStoresInitialized, storesInitialized } from '../../setup/globals';
 import { I18nStore, I18nStoreParams } from '../../i18n-store/I18nStore';
-import {
-  ReactConditionStore,
-  ReactConditionStoreParams,
-} from '../../condition-store/ReactConditionStore';
 import { setConditionStore } from '../../condition-store/singleton-operations';
 
-export type InternalGTProviderProps = ReactConditionStoreParams &
+export type InternalGTProviderProps = WritableConditionStoreParams &
   I18nStoreParams & {
     children?: ReactNode;
     fallback?: ReactNode;
@@ -55,7 +55,7 @@ export function InternalGTProvider({
   // ------ Initialization ------ //
 
   if (!storesInitialized()) {
-    const conditionStore = new ReactConditionStore(config);
+    const conditionStore = new WritableConditionStore(config);
     setConditionStore(conditionStore);
 
     const i18nStore = new I18nStore(config);
