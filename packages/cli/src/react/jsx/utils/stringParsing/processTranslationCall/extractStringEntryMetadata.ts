@@ -184,8 +184,6 @@ function extractInlineMetadata({
                 );
               }
             } else {
-              // Add the $context or $id or other attributes value to the metadata
-              // TODO: why are we including everything? arent we only interested in relevant inline metadata?
               metadata[mappedKey] = result.value;
             }
           }

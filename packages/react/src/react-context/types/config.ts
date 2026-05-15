@@ -32,6 +32,7 @@ export type ClientProviderProps = {
   projectId?: string;
   devApiKey?: string;
   runtimeUrl?: string | null;
+  runtimeTranslationMetadata?: Record<string, unknown>;
   gtServicesEnabled?: boolean;
   localeCookieName?: string;
   resetLocaleCookieName: string;

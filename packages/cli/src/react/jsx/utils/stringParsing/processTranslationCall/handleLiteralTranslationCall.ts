@@ -54,29 +54,33 @@ export function handleLiteralTranslationCall({
     }
   }
 
+  const { format, ...entryMetadata } = metadata;
+  const dataFormat = (format || 'ICU') as DataFormat;
+
   if (contextVariants) {
     const staticId = `derive-temp-id-${randomUUID()}`;
     for (const context of contextVariants) {
       output.updates.push({
-        dataFormat: (metadata.format || 'ICU') as DataFormat,
+        dataFormat,
         source,
         metadata: {
-          ...metadata,
+          ...entryMetadata,
           context,
-          ...(metadata.id &&
-            index != null && { id: `${metadata.id}.${index}` }),
+          ...(entryMetadata.id &&
+            index != null && { id: `${entryMetadata.id}.${index}` }),
           staticId,
         },
       });
     }
   } else {
     output.updates.push({
-      dataFormat: (metadata.format || 'ICU') as DataFormat,
+      dataFormat,
       source,
       metadata: {
-        ...metadata,
+        ...entryMetadata,
         // Add the index if an id and index is provided (for handling when registering an array of strings)
-        ...(metadata.id && index != null && { id: `${metadata.id}.${index}` }),
+        ...(entryMetadata.id &&
+          index != null && { id: `${entryMetadata.id}.${index}` }),
       },
     });
   }

@@ -78,6 +78,7 @@ export class I18NConfiguration {
   private referrerLocaleCookieName: string;
   private localeRoutingEnabledCookieName: string;
   private resetLocaleCookieName: string;
+  private runtimeTranslationMetadata: Record<string, unknown>;
   constructor({
     // Cloud integration
     apiKey,
@@ -106,8 +107,8 @@ export class I18NConfiguration {
     _usingPlugin,
     headersAndCookies,
     customMapping,
-    // Other metadata
-    ...metadata
+    // Runtime translation metadata
+    ...additionalMetadata
   }: I18NConfigurationParams) {
     void _dictionary;
 
@@ -160,6 +161,17 @@ export class I18NConfiguration {
     // Translation and dictionary managers
     const shouldLoadTranslations = loadTranslationsType !== 'disabled';
     const runtimeTranslationTimeout = this.renderSettings.timeout;
+    const runtimeTranslationMetadata = {
+      sourceLocale: defaultLocale,
+      ...(runtimeTranslationTimeout && {
+        timeout: runtimeTranslationTimeout,
+      }),
+      projectId,
+      publish: true,
+      fast: true,
+      ...additionalMetadata,
+    };
+    this.runtimeTranslationMetadata = runtimeTranslationMetadata;
     this._i18nManager = new I18nManager<TranslatedChildren>({
       apiKey,
       devApiKey,
@@ -179,17 +191,7 @@ export class I18NConfiguration {
       },
       runtimeTranslation: {
         timeout: runtimeTranslationTimeout,
-        // Other metadata
-        metadata: {
-          sourceLocale: defaultLocale,
-          ...(runtimeTranslationTimeout && {
-            timeout: runtimeTranslationTimeout,
-          }),
-          projectId,
-          publish: true,
-          fast: true,
-          ...metadata,
-        },
+        metadata: runtimeTranslationMetadata,
       },
       cacheUrl: shouldLoadTranslations ? cacheUrl : null,
       // Only apply cache expiry for remote translations; custom loaders manage
@@ -256,6 +258,7 @@ export class I18NConfiguration {
       referrerLocaleCookieName,
       localeCookieName,
       resetLocaleCookieName,
+      runtimeTranslationMetadata,
     } = this;
     const customMapping = this._i18nManager.getCustomMapping();
     const _versionId = this._i18nManager.getVersionId();
@@ -273,6 +276,7 @@ export class I18NConfiguration {
       resetLocaleCookieName,
       customMapping,
       _versionId,
+      runtimeTranslationMetadata,
     };
   }
 

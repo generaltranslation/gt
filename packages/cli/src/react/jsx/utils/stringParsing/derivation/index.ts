@@ -93,17 +93,19 @@ export function deriveExpression({
 
   const temporaryDeriveId = `derive-temp-id-${randomUUID()}`;
   const contexts = contextVariants ?? [metadata.context];
+  const { format, ...entryMetadata } = metadata;
+  const dataFormat = (format || 'ICU') as DataFormat;
   for (const string of strings) {
     for (const context of contexts) {
       output.updates.push({
-        dataFormat: (metadata.format || 'ICU') as DataFormat,
+        dataFormat,
         source: string,
         metadata: {
-          ...metadata,
+          ...entryMetadata,
           ...(context != null && { context }),
           // Add the index if an id and index is provided (for handling when registering an array of strings)
-          ...(metadata.id &&
-            index != null && { id: `${metadata.id}.${index}` }),
+          ...(entryMetadata.id &&
+            index != null && { id: `${entryMetadata.id}.${index}` }),
           staticId: temporaryDeriveId,
         },
       });

@@ -35,6 +35,7 @@ export default function ClientProvider({
   projectId,
   devApiKey,
   runtimeUrl,
+  runtimeTranslationMetadata,
   developmentApiEnabled,
   resetLocaleCookieName,
   localeCookieName = defaultLocaleCookieName,
@@ -167,8 +168,8 @@ export default function ClientProvider({
       setTranslations,
       defaultLocale,
       renderSettings,
-      developmentApiEnabled,
       environment,
+      ...(runtimeTranslationMetadata ?? {}),
     });
 
   // ---------- USE GT() TRANSLATION ---------- //

@@ -242,6 +242,7 @@ describe('$format option support', () => {
       source: 'Hello',
       metadata: { id: 'greeting', context: 'home' },
     });
+    expect(output.updates[0].metadata).not.toHaveProperty('format');
   });
 
   it('should warn on invalid $format value', () => {
@@ -265,6 +266,8 @@ describe('$format option support', () => {
     expect(output.updates).toHaveLength(2);
     expect(output.updates[0]).toMatchObject({ dataFormat: 'STRING' });
     expect(output.updates[1]).toMatchObject({ dataFormat: 'STRING' });
+    expect(output.updates[0].metadata).not.toHaveProperty('format');
+    expect(output.updates[1].metadata).not.toHaveProperty('format');
   });
 
   it('should not warn on invalid ICU when $format is STRING', () => {

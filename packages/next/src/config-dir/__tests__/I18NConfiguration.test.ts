@@ -35,6 +35,14 @@ vi.mock('gt-i18n/internal', () => ({
     async lookupTranslationWithFallback(...args: unknown[]) {
       return mockLookupTranslationWithFallback(...args);
     }
+
+    getCustomMapping() {
+      return undefined;
+    }
+
+    getVersionId() {
+      return undefined;
+    }
   },
 }));
 
@@ -91,7 +99,16 @@ describe('I18NConfiguration', () => {
   });
 
   it('passes batch, runtime metadata, and timeout config to I18nManager', () => {
-    createConfig({
+    const runtimeTranslationMetadata = {
+      sourceLocale: 'en',
+      timeout: 4321,
+      projectId: 'project-id',
+      publish: true,
+      fast: true,
+      description: 'Translate for clinicians.',
+      modelProvider: 'openai',
+    };
+    const config = createConfig({
       maxConcurrentRequests: 7,
       maxBatchSize: 3,
       batchInterval: 11,
@@ -112,16 +129,11 @@ describe('I18NConfiguration', () => {
       },
       runtimeTranslation: {
         timeout: 4321,
-        metadata: {
-          sourceLocale: 'en',
-          timeout: 4321,
-          projectId: 'project-id',
-          publish: true,
-          fast: true,
-          description: 'Translate for clinicians.',
-          modelProvider: 'openai',
-        },
+        metadata: runtimeTranslationMetadata,
       },
+    });
+    expect(config.getClientSideConfig()).toMatchObject({
+      runtimeTranslationMetadata,
     });
   });
 
