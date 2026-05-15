@@ -90,7 +90,7 @@ export type LocaleResolverConfig = {
  * Locale is the first condition exposed by this contract; additional runtime
  * conditions can be added here as needed.
  */
-export interface ConditionStore {
+export interface ReadonlyConditionStore {
   getLocale(): string;
   getEnableI18n(): boolean;
 }
@@ -98,7 +98,7 @@ export interface ConditionStore {
 /**
  * Condition store contract for runtimes that can persist locale changes.
  */
-export interface WritableConditionStore extends ConditionStore {
+export interface WritableConditionStore extends ReadonlyConditionStore {
   setLocale(locale: string): void;
   setEnableI18n(enabled: boolean): void;
 }
@@ -106,7 +106,7 @@ export interface WritableConditionStore extends ConditionStore {
 /**
  * Condition store contract for runtimes with scoped locale context.
  */
-export interface ScopedConditionStore extends ConditionStore {
+export interface ScopedConditionStore extends ReadonlyConditionStore {
   run<T>(locale: string, callback: () => T): T;
 }
 

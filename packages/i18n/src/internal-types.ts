@@ -5,7 +5,7 @@ export type {
   I18nManagerConfig,
   LifecycleCallbacks,
   LocaleResolverConfig,
-  ConditionStore,
+  ReadonlyConditionStore,
   WritableConditionStore,
   ScopedConditionStore,
   Dictionary,

@@ -1,19 +1,12 @@
-import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { I18nManager } from './I18nManager';
-import logger from '../logs/logger';
-import { Translation } from './translations-manager/utils/types/translation-data';
-import type { ConditionStore } from './types';
+import { libraryDefaultLocale } from "generaltranslation/internal";
+import { I18nManager } from "./I18nManager";
+import logger from "../logs/logger";
+import { Translation } from "./translations-manager/utils/types/translation-data";
+import type { ReadonlyConditionStore } from "./types";
+import { createConditionStoreSingleton } from "./condition-store/createConditionStoreSingleton";
 
 // Singleton instance of I18nManager
 let i18nManager: I18nManager | undefined = undefined;
-let fallbackDefaultLocale: string = libraryDefaultLocale;
-const fallbackEnableI18n: boolean = true;
-// Used before wrapper runtimes install a condition store; tracks the active manager default.
-const fallbackConditionStore: ConditionStore = {
-  getLocale: () => fallbackDefaultLocale,
-  getEnableI18n: () => fallbackEnableI18n,
-};
-let conditionStore: ConditionStore = fallbackConditionStore;
 
 /**
  * Get the singleton instance of I18nManager
@@ -27,7 +20,7 @@ export function getI18nManager<U extends Translation = Translation>():
   | I18nManager<Translation> {
   if (!i18nManager) {
     logger.warn(
-      'getI18nManager(): I18nManager was not initialized. Falling back to the default locale until initializeGT() configures translations.'
+      "getI18nManager(): I18nManager was not initialized. Falling back to the default locale until initializeGT() configures translations.",
     );
     i18nManager = new I18nManager({
       defaultLocale: libraryDefaultLocale,
@@ -46,30 +39,10 @@ export function getI18nManager<U extends Translation = Translation>():
  * Note: should not be consumed by gt-react, consumers should use a wrapper
  */
 export function setI18nManager<TranslationValue extends Translation>(
-  i18nManagerInstance: I18nManager<TranslationValue>
+  i18nManagerInstance: I18nManager<TranslationValue>,
 ): void {
   i18nManager = i18nManagerInstance as unknown as I18nManager;
-  fallbackDefaultLocale = i18nManagerInstance.getDefaultLocale();
-  resetConditionStore();
 }
 
-/**
- * Resolve the current locale from the configured runtime condition source.
- */
-export function getCurrentLocale(): string {
-  return conditionStore.getLocale();
-}
-
-/**
- * Configure the runtime condition source.
- */
-export function setConditionStore(nextConditionStore: ConditionStore): void {
-  conditionStore = nextConditionStore;
-}
-
-/**
- * Reset the runtime condition source to the active manager's default-locale fallback.
- */
-function resetConditionStore(): void {
-  conditionStore = fallbackConditionStore;
-}
+export const { getConditionStore, setConditionStore } =
+  createConditionStoreSingleton("ConditionStore is not initialized.");

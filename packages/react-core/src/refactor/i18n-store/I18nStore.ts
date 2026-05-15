@@ -1,8 +1,8 @@
 import {
   getDictionaryListenerKey,
   getTranslateListenerKey,
-} from 'gt-i18n/internal';
-import type { CustomMapping, IcuMessage } from 'generaltranslation/types';
+} from "gt-i18n/internal";
+import type { CustomMapping } from "generaltranslation/types";
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
@@ -14,20 +14,17 @@ import type {
   TranslateSnapshot,
   Unsubscribe,
   OverrideSetLocaleType,
-} from './storeTypes';
-import type {
-  LookupOptions,
-  Translation,
-} from 'gt-i18n/types';
-import type { Hash, Locale } from 'gt-i18n/internal/types';
-import { getConditionStore } from '../condition-store/singleton-operations';
-import { getReactI18nManager } from '../i18n-manager/singleton-operations';
-import { RuntimeTranslationScope } from './RuntimeTranslationScope';
-import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
+} from "./storeTypes";
+import type { Translation } from "gt-i18n/types";
+import type { Hash, Locale } from "gt-i18n/internal/types";
+import { getConditionStore } from "../condition-store/singleton-operations";
+import { getReactI18nManager } from "../i18n-manager/singleton-operations";
+import { RuntimeTranslationScope } from "./RuntimeTranslationScope";
+import { RuntimeDictionaryScope } from "./RuntimeDictionaryScope";
 
 type TranslationStatusType =
-  | { status: 'loading'; locale: string }
-  | { status: 'ready' };
+  | { status: "loading"; locale: string }
+  | { status: "ready" };
 
 type EntryCacheEvent = {
   locale: string;
@@ -75,7 +72,7 @@ export class I18nStore {
   private localeListeners: ListenerSet = new Set();
 
   private translationStatusListeners: ListenerSet = new Set();
-  private translationStatus: TranslationStatusType = { status: 'ready' };
+  private translationStatus: TranslationStatusType = { status: "ready" };
 
   private overrideSetLocale?: OverrideSetLocaleType;
 
@@ -87,7 +84,7 @@ export class I18nStore {
       getConditionStore();
       getReactI18nManager();
     } catch (error) {
-      throw new Error('Failed to initialize I18nStore. Reason: ' + error);
+      throw new Error("Failed to initialize I18nStore. Reason: " + error);
     }
     this.overrideSetLocale = overrideSetLocale;
   }
@@ -120,7 +117,7 @@ export class I18nStore {
 
   subscribeToTranslate<T extends Translation>(
     lookup: TranslateLookup<T>,
-    listener: StoreListener
+    listener: StoreListener,
   ): Unsubscribe {
     const lookupKey = getTranslateListenerKey(lookup);
     const wrappedListener: TranslateStoreListener = (lookup) => {
@@ -133,10 +130,10 @@ export class I18nStore {
 
   subscribeToTranslateMany<T extends Translation>(
     lookups: readonly TranslateLookup<T>[],
-    listener: StoreListener
+    listener: StoreListener,
   ): Unsubscribe {
     const unsubscribes = lookups.map((lookup) =>
-      this.subscribeToTranslate(lookup, listener)
+      this.subscribeToTranslate(lookup, listener),
     );
     return () => {
       unsubscribes.forEach((unsubscribe) => unsubscribe());
@@ -145,7 +142,7 @@ export class I18nStore {
 
   subscribeToDictionaryEntry(
     lookup: DictionaryLookup,
-    listener: StoreListener
+    listener: StoreListener,
   ): Unsubscribe {
     const lookupKey = getDictionaryListenerKey(lookup);
     const wrappedListener: DictionaryStoreListener = (event) => {
@@ -155,13 +152,13 @@ export class I18nStore {
     };
     return this.subscribeToDictionarySet(
       this.dictionaryEntryListeners,
-      wrappedListener
+      wrappedListener,
     );
   }
 
   subscribeToDictionaryObject(
     lookup: DictionaryLookup,
-    listener: StoreListener
+    listener: StoreListener,
   ): Unsubscribe {
     const lookupKey = getDictionaryListenerKey(lookup);
     const wrappedListener: DictionaryStoreListener = (event) => {
@@ -171,7 +168,7 @@ export class I18nStore {
     };
     return this.subscribeToDictionarySet(
       this.dictionaryObjectListeners,
-      wrappedListener
+      wrappedListener,
     );
   }
 
@@ -210,17 +207,17 @@ export class I18nStore {
   };
 
   getTranslateManySnapshot = <T extends Translation>(
-    lookups: readonly TranslateLookup<T>[]
+    lookups: readonly TranslateLookup<T>[],
   ): TranslateManySnapshot<T> => {
     const nextSnapshot = lookups.map((lookup) =>
-      this.getTranslateSnapshot(lookup)
+      this.getTranslateSnapshot(lookup),
     );
     const previousSnapshot = this.translateManySnapshotCache.get(lookups);
     if (
       previousSnapshot &&
       previousSnapshot.length === nextSnapshot.length &&
       previousSnapshot.every((value, index) =>
-        Object.is(value, nextSnapshot[index])
+        Object.is(value, nextSnapshot[index]),
       )
     ) {
       return previousSnapshot as TranslateManySnapshot<T>;
@@ -251,7 +248,7 @@ export class I18nStore {
       .lookupTranslationWithFallback(
         lookup.locale,
         lookup.message,
-        lookup.options
+        lookup.options,
       )
       .then((translation) => {
         if (translation == null) {
@@ -327,25 +324,25 @@ export class I18nStore {
       !i18nManager.requiresTranslation(locale) ||
       i18nManager.hasTranslations(locale)
     ) {
-      this.updateTranslationStatus({ status: 'ready' });
+      this.updateTranslationStatus({ status: "ready" });
       getConditionStore().setLocale(locale);
       this.localeListeners.forEach((listener) => listener());
       return;
     }
 
     // Load new translations and update status and locale
-    this.updateTranslationStatus({ status: 'loading', locale });
+    this.updateTranslationStatus({ status: "loading", locale });
     getReactI18nManager()
       .loadTranslations(locale)
       .then(() => {
         // dedupe update
         if (
-          this.translationStatus.status === 'ready' ||
+          this.translationStatus.status === "ready" ||
           this.translationStatus.locale !== locale
         ) {
           return;
         }
-        this.updateTranslationStatus({ status: 'ready' });
+        this.updateTranslationStatus({ status: "ready" });
         getConditionStore().setLocale(locale);
         this.localeListeners.forEach((listener) => listener());
       });
@@ -357,7 +354,7 @@ export class I18nStore {
    */
   setEnableI18n = (enableI18n: boolean): void => {
     getConditionStore().setEnableI18n(enableI18n);
-    this.updateTranslationStatus({ status: 'ready' });
+    this.updateTranslationStatus({ status: "ready" });
     this.enableI18nListeners.forEach((listener) => listener());
   };
 
@@ -371,10 +368,10 @@ export class I18nStore {
 
   private updateTranslationStatus = (txStatus: TranslationStatusType): void => {
     // Need to create a new object, otherwise rerender will not trigger
-    if (txStatus.status === 'loading') {
-      this.translationStatus = { status: 'loading', locale: txStatus.locale };
+    if (txStatus.status === "loading") {
+      this.translationStatus = { status: "loading", locale: txStatus.locale };
     } else {
-      this.translationStatus = { status: 'ready' };
+      this.translationStatus = { status: "ready" };
     }
     this.translationStatusListeners.forEach((listener) => listener());
   };
@@ -396,15 +393,13 @@ export class I18nStore {
    * This is triggered by a GTProvider on client so synchronize with server
    * or if done on the server, probably triggered manually
    */
-  updateTranslations = (
-    translationsObj: TranslationsSnapshot = {}
-  ): void => {
+  updateTranslations = (translationsObj: TranslationsSnapshot = {}): void => {
     getReactI18nManager().updateTranslations(translationsObj);
   };
 
   private subscribeToStaticSet(
     listenerSet: ListenerSet,
-    listener: StoreListener
+    listener: StoreListener,
   ): Unsubscribe {
     listenerSet.add(listener);
     return () => {
@@ -413,7 +408,7 @@ export class I18nStore {
   }
 
   private subscribeToTranslateSet(
-    listener: TranslateStoreListener
+    listener: TranslateStoreListener,
   ): Unsubscribe {
     this.translateListeners.add(listener);
     return () => {
@@ -423,7 +418,7 @@ export class I18nStore {
 
   private subscribeToDictionarySet(
     listenerSet: Set<DictionaryStoreListener>,
-    listener: DictionaryStoreListener
+    listener: DictionaryStoreListener,
   ): Unsubscribe {
     listenerSet.add(listener);
     return () => {
@@ -448,7 +443,7 @@ export class I18nStore {
 // ===== Lookup Keys ===== //
 
 function getDictionaryLookupFromKey(lookupKey: string): DictionaryLookup {
-  const separatorIndex = lookupKey.indexOf(':');
+  const separatorIndex = lookupKey.indexOf(":");
   return {
     locale: lookupKey.slice(0, separatorIndex),
     id: lookupKey.slice(separatorIndex + 1),
@@ -459,18 +454,18 @@ function getDictionaryLookupFromKey(lookupKey: string): DictionaryLookup {
 
 function dictionaryEntryEventMatchesLookup(
   event: DictionaryStoreEvent,
-  lookupKey: string
+  lookupKey: string,
 ): boolean {
   return getDictionaryListenerKey(event) === lookupKey;
 }
 
 function dictionaryObjectEventMatchesLookup(
   event: DictionaryStoreEvent,
-  lookupKey: string
+  lookupKey: string,
 ): boolean {
   const { locale, id } = getDictionaryLookupFromKey(lookupKey);
   if (locale !== event.locale) {
     return false;
   }
-  return id === '' || event.id === id || event.id.startsWith(`${id}.`);
+  return id === "" || event.id === id || event.id.startsWith(`${id}.`);
 }

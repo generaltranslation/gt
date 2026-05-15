@@ -1,7 +1,7 @@
 import {
-  getCurrentLocale,
+  getConditionStore,
   getI18nManager,
-} from '../i18n-manager/singleton-operations';
+} from "../i18n-manager/singleton-operations";
 
 /**
  * Get the current locale
@@ -12,7 +12,7 @@ import {
  * console.log(locale); // 'en-US'
  */
 export function getLocale() {
-  return getCurrentLocale();
+  return getConditionStore().getLocale();
 }
 
 /**
@@ -52,7 +52,7 @@ export function getDefaultLocale() {
  * @example
  * const localeProperties = getLocaleProperties('en-US');
  */
-export function getLocaleProperties(locale = getCurrentLocale()) {
+export function getLocaleProperties(locale = getLocale()) {
   const i18nManager = getI18nManager();
   const gtInstance = i18nManager.getGTClass();
   return gtInstance.getLocaleProperties(locale);

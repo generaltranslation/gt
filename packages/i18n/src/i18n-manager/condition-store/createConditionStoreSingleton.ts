@@ -1,7 +1,7 @@
-import type { ConditionStore } from '../types';
+import type { ReadonlyConditionStore } from '../types';
 import { setConditionStore as setCurrentConditionStore } from '../singleton-operations';
 
-export function createConditionStoreSingleton<T extends ConditionStore>(
+export function createConditionStoreSingleton<T extends ReadonlyConditionStore>(
   notInitializedMessage: string
 ) {
   let conditionStore: T | undefined;
