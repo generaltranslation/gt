@@ -1,6 +1,6 @@
 import type {
   LocaleResolverConfig,
-  ReadonlyConditionStore as ReadonlyConditionStoreContract,
+  ReadonlyConditionStoreInterface as ReadonlyConditionStoreContract,
 } from "../i18n-manager/types";
 import { createLocaleResolver, type LocaleCandidates } from "./localeResolver";
 
@@ -38,4 +38,10 @@ export class ReadonlyConditionStore implements ReadonlyConditionStoreContract {
   getEnableI18n = (): boolean => {
     return this.enableI18n;
   };
+
+  // --- no-op methods --- //
+
+  setLocale = (locale: LocaleCandidates): void => {};
+
+  setEnableI18n = (enableI18n: boolean): void => {};
 }

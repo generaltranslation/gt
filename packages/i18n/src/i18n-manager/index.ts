@@ -20,8 +20,4 @@ export {
 } from "./event-subscription/types";
 
 // Functions
-export {
-  getI18nManager,
-  setI18nManager,
-  setConditionStore,
-} from "./singleton-operations";
+export { getI18nManager, setI18nManager } from "./singleton-operations";

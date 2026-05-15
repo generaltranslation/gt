@@ -3,7 +3,7 @@ import { I18nManager } from "./I18nManager";
 import logger from "../logs/logger";
 import { Translation } from "./translations-manager/utils/types/translation-data";
 import { createConditionStoreSingleton } from "../condition-store/createConditionStoreSingleton";
-import { WritableConditionStore } from "./types";
+import { WritableConditionStoreInterface } from "./types";
 
 // Singleton instance of I18nManager
 let i18nManager: I18nManager | undefined = undefined;
@@ -43,8 +43,3 @@ export function setI18nManager<TranslationValue extends Translation>(
 ): void {
   i18nManager = i18nManagerInstance as unknown as I18nManager;
 }
-
-export const { getConditionStore, setConditionStore } =
-  createConditionStoreSingleton<WritableConditionStore>(
-    "WritableConditionStore is not initialized.",
-  );

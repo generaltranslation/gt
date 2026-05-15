@@ -1,5 +1,8 @@
 import { ReadonlyConditionStore } from "gt-i18n/internal";
-import { setReadonlyConditionStore } from "../condition-store/singleton-operations";
+import {
+  isReadonlyConditionStoreInitialized,
+  setReadonlyConditionStore,
+} from "../condition-store/singleton-operations";
 import type { SharedGTProviderProps } from "./SharedGTProviderProps";
 import {
   getReactI18nManager,
@@ -17,8 +20,11 @@ export function SSRGTProvider({
   dictionary,
   ...props
 }: SharedGTProviderProps) {
-  const conditionStore = new ReadonlyConditionStore(props);
-  setReadonlyConditionStore(conditionStore);
+  // The condition store may already be created at the module level
+  if (!isReadonlyConditionStoreInitialized()) {
+    const conditionStore = new ReadonlyConditionStore(props);
+    setReadonlyConditionStore(conditionStore);
+  }
   getReactI18nManager().updateTranslations(translations);
   getReactI18nManager().updateDictionaries(dictionary ?? {});
   return <InternalGTProvider {...props} />;

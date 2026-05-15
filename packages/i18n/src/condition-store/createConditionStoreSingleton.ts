@@ -1,10 +1,10 @@
-import type { ReadonlyConditionStore } from "../i18n-manager/types";
+import type { ReadonlyConditionStoreInterface } from "../i18n-manager/types";
 
-let conditionStore: ReadonlyConditionStore | undefined;
+let conditionStore: ReadonlyConditionStoreInterface | undefined;
 
-export function createConditionStoreSingleton<T extends ReadonlyConditionStore>(
-  notInitializedMessage: string,
-) {
+export function createConditionStoreSingleton<
+  T extends ReadonlyConditionStoreInterface,
+>(notInitializedMessage: string) {
   function getConditionStore(): T {
     /**
      * TODO: each package throws a different error message

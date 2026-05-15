@@ -31,8 +31,8 @@ export function CSRGTProvider({
     // This represents an update from server, so bypass I18nStore
     // we only listen to it if we trigger server-side reloads on locale change
     getBrowserConditionStore().setLocale(props.locale);
-    getReactI18nManager().updateTranslations(translations);
-    getReactI18nManager().updateDictionaries(dictionary ?? {});
   }
+  getReactI18nManager().updateTranslations(translations);
+  getReactI18nManager().updateDictionaries(dictionary ?? {});
   return <InternalGTProvider {...props} />;
 }

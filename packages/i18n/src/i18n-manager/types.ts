@@ -1,14 +1,14 @@
-import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
-import type { CustomMapping } from '@generaltranslation/format/types';
-import type { GTConfig } from '../config/types';
-import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
-import type { Translation } from './translations-manager/utils/types/translation-data';
-import type { LifecycleCallbacks } from './lifecycle-hooks/types';
-import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
+import type { RuntimeTranslateManyOptions } from "generaltranslation/internal";
+import type { CustomMapping } from "@generaltranslation/format/types";
+import type { GTConfig } from "../config/types";
+import type { TranslationsLoader } from "./translations-manager/translations-loaders/types";
+import type { Translation } from "./translations-manager/utils/types/translation-data";
+import type { LifecycleCallbacks } from "./lifecycle-hooks/types";
+import type { TranslationBatchConfig } from "./translations-manager/TranslationsCache";
 import type {
   Dictionary,
   DictionaryLoader,
-} from './translations-manager/DictionaryCache';
+} from "./translations-manager/DictionaryCache";
 
 export type DictionaryConfig =
   | {
@@ -31,14 +31,14 @@ type RuntimeTranslationConfig = {
 export type I18nManagerConstructorParams<
   TranslationValue extends Translation = Translation,
 > = DictionaryConfig &
-  Omit<GTConfig, 'cacheExpiryTime'> & {
+  Omit<GTConfig, "cacheExpiryTime"> & {
     /**
      * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
      * disables expiry, and a number sets an explicit TTL.
      */
     cacheExpiryTime?: number | null;
     loadTranslations?: TranslationsLoader;
-    environment?: 'development' | 'production';
+    environment?: "development" | "production";
     batchConfig?: TranslationBatchConfig;
     runtimeTranslation?: RuntimeTranslationConfig;
     // Cache lifecycle hooks
@@ -50,7 +50,7 @@ export type I18nManagerConstructorParams<
  * I18nManager class configuration
  */
 export type I18nManagerConfig = {
-  environment: 'development' | 'production';
+  environment: "development" | "production";
   defaultLocale: string;
   locales: string[];
   customMapping: CustomMapping;
@@ -90,15 +90,26 @@ export type LocaleResolverConfig = {
  * Locale is the first condition exposed by this contract; additional runtime
  * conditions can be added here as needed.
  */
-export interface ReadonlyConditionStore {
+export interface ReadonlyConditionStoreInterface {
   getLocale(): string;
   getEnableI18n(): boolean;
+
+  // --- no-op methods --- //
+  /**
+   * ReadonlyConditionStore is used in SSR GTProvider
+   * These have to be included to avoid throwing errors during SSR
+   * const setLocale = useSetLocale();
+   * setLocale('es-ES'); // -> cannot invoke undefined function
+   */
+  setLocale(locale: string): void;
+  setEnableI18n(enabled: boolean): void;
 }
 
 /**
  * Condition store contract for runtimes that can persist locale changes.
  */
-export interface WritableConditionStore extends ReadonlyConditionStore {
+export interface WritableConditionStoreInterface
+  extends ReadonlyConditionStoreInterface {
   setLocale(locale: string): void;
   setEnableI18n(enabled: boolean): void;
 }
@@ -106,7 +117,8 @@ export interface WritableConditionStore extends ReadonlyConditionStore {
 /**
  * Condition store contract for runtimes with scoped locale context.
  */
-export interface ScopedConditionStore extends ReadonlyConditionStore {
+export interface ScopedConditionStoreInterface
+  extends ReadonlyConditionStoreInterface {
   run<T>(locale: string, callback: () => T): T;
 }
 

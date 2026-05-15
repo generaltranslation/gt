@@ -1,7 +1,5 @@
-import {
-  getConditionStore,
-  getI18nManager,
-} from "../i18n-manager/singleton-operations";
+import { getWritableConditionStore } from "../condition-store/singleton-operations";
+import { getI18nManager } from "../i18n-manager/singleton-operations";
 
 /**
  * Get the current locale
@@ -12,7 +10,7 @@ import {
  * console.log(locale); // 'en-US'
  */
 export function getLocale() {
-  return getConditionStore().getLocale();
+  return getWritableConditionStore().getLocale();
 }
 
 /**

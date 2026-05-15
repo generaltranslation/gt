@@ -5,9 +5,9 @@ export type {
   I18nManagerConfig,
   LifecycleCallbacks,
   LocaleResolverConfig,
-  ReadonlyConditionStore,
-  WritableConditionStore,
-  ScopedConditionStore,
+  ReadonlyConditionStoreInterface,
+  WritableConditionStoreInterface,
+  ScopedConditionStoreInterface,
   Dictionary,
   DictionaryLoader,
   DictionaryConfig,
@@ -22,6 +22,8 @@ export type {
   DictionaryPath,
   DictionaryKey,
 } from "./i18n-manager/translations-manager/DictionaryCache";
+export type { ReadonlyConditionStoreParams } from "./condition-store/ReadonlyConditionStore";
+export type { WritableConditionStoreParams } from "./condition-store/WritableConditionStore";
 
 // Translation Options (Function types exported by /types)
 export type * from "./translation-functions/types/options";
