@@ -7,6 +7,7 @@ import { InternalGTProvider } from '@generaltranslation/react-core/context';
  */
 export function SSRGTProvider({
   translations: _translations,
+  dictionary: _dictionary,
   ...props
 }: SharedGTProviderProps) {
   return <InternalGTProvider {...props} />;

@@ -20,8 +20,8 @@ import type {
   LookupOptions,
   Translation,
 } from 'gt-i18n/types';
+import type { Hash, Locale } from 'gt-i18n/internal/types';
 import { getConditionStore } from '../condition-store/singleton-operations';
-import { ReactI18nManagerParams } from '../i18n-manager/ReactI18nManager';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
 
@@ -36,6 +36,7 @@ type EntryCacheEvent = {
 type TranslateStoreListener = (lookup: TranslateLookup) => void;
 type DictionaryStoreEvent = EntryCacheEvent;
 type DictionaryStoreListener = (event: DictionaryStoreEvent) => void;
+type TranslationsSnapshot = Record<Locale, Record<Hash, Translation>>;
 
 /**
  * @param overrideSetLocale - If provided, will trigger on a locale change
@@ -396,7 +397,7 @@ export class I18nStore {
    * or if done on the server, probably triggered manually
    */
   updateTranslations = (
-    translationsObj: ReactI18nManagerParams['initialTranslations'] = {}
+    translationsObj: TranslationsSnapshot = {}
   ): void => {
     getI18nManager().updateTranslations(translationsObj);
   };

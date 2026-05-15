@@ -6,7 +6,6 @@ import { Translation } from './translations-manager/utils/types/translation-data
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT } from 'generaltranslation';
 import {
-  determineLocale,
   LocaleConfig,
   standardizeLocale,
 } from '@generaltranslation/format';
@@ -158,10 +157,6 @@ class I18nManager<
     );
 
     // Setup locale-scoped caches
-    const initialTranslations = filterInitialTranslations<TranslationValue>(
-      params.initialTranslations ?? {},
-      this.localeConfig
-    );
     this.localesCache = new LocalesCache<TranslationValue>({
       defaultLocale: this.config.defaultLocale,
       dictionary: params.dictionary,
@@ -270,6 +265,10 @@ class I18nManager<
     translationsSnapshot: Record<Locale, Record<Hash, TranslationValue>>
   ): void {
     this.localesCache.update(translationsSnapshot);
+  }
+
+  updateDictionaries(dictionarySnapshot: Record<Locale, Dictionary>): void {
+    this.localesCache.updateDictionaries(dictionarySnapshot);
   }
 
   // ========== Translation Loading ========== //
@@ -902,31 +901,6 @@ function dedupeLocales({
   };
 }
 
-/**
- * Remove any invalid locales from initial translations
- */
-function filterInitialTranslations<TranslationValue extends Translation>(
-  initialTranslations: Record<Locale, Record<Hash, TranslationValue>>,
-  { locales, customMapping }: LocaleConfig
-) {
-  return Object.fromEntries(
-    Object.entries(initialTranslations)
-      .map(([locale, translations]) => [
-        determineLocale(locale, locales, customMapping),
-        translations,
-      ])
-      .filter(([locale]) => {
-        if (locale != null) {
-          return true;
-        } else {
-          console.warn(
-            `I18nManager: filterInitialTranslations(): locale ${locale} is not valid. Removing from initial translations.`
-          );
-          return false;
-        }
-      })
-  );
-}
 /**
  * Standardize all locales in config
  * Only apply if using GT services

@@ -87,9 +87,7 @@
       }
     },
     "./context": {
-      "types": "./dist/context.types.d.cts",
       "react-server": {
-        "types": "./dist/context.types.d.cts",
         "require": {
           "types": "./dist/context.types.d.cts",
           "default": "./dist/context.server.cjs"
@@ -97,10 +95,10 @@
         "import": {
           "types": "./dist/context.types.d.mts",
           "default": "./dist/context.server.mjs"
-        }
+        },
+        "default": "./dist/context.server.mjs"
       },
       "browser": {
-        "types": "./dist/context.types.d.cts",
         "require": {
           "types": "./dist/context.types.d.cts",
           "default": "./dist/context.client.cjs"
@@ -108,7 +106,8 @@
         "import": {
           "types": "./dist/context.types.d.mts",
           "default": "./dist/context.client.mjs"
-        }
+        },
+        "default": "./dist/context.client.mjs"
       },
       "require": {
         "types": "./dist/context.types.d.cts",
@@ -117,7 +116,8 @@
       "import": {
         "types": "./dist/context.types.d.mts",
         "default": "./dist/context.client.mjs"
-      }
+      },
+      "default": "./dist/context.client.mjs"
     },
     "./browser": {
       "require": {

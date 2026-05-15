@@ -54,6 +54,10 @@ export class LocalesCache<TranslationValue extends Translation> {
     locale: Locale,
     init: Record<Hash, TranslationValue>
   ) => TranslationsCache<TranslationValue>;
+  private readonly createDictionaryCache: (
+    locale: Locale,
+    init: Dictionary
+  ) => DictionaryCache;
 
   constructor({
     ttl,
@@ -71,6 +75,13 @@ export class LocalesCache<TranslationValue extends Translation> {
       createTranslateMany,
       batchConfig,
     });
+    this.createDictionaryCache = (locale, init) =>
+      createDictionaryCache({
+        locale,
+        dictionary: init,
+        translate: translateDictionaryEntry,
+        lifecycle,
+      });
     this.translations = new ResourceCache({
       ttl,
       load: async (locale) =>
@@ -84,12 +95,7 @@ export class LocalesCache<TranslationValue extends Translation> {
     this.dictionaries = new ResourceCache({
       ttl,
       load: async (locale) =>
-        createDictionaryCache({
-          locale,
-          dictionary: await loadDictionary(locale),
-          translate: translateDictionaryEntry,
-          lifecycle,
-        }),
+        this.createDictionaryCache(locale, await loadDictionary(locale)),
       lifecycle: {
         onHit: lifecycle.onLocalesDictionaryCacheHit,
         onMiss: lifecycle.onLocalesDictionaryCacheMiss,
@@ -98,12 +104,7 @@ export class LocalesCache<TranslationValue extends Translation> {
 
     this.dictionaries.set(
       defaultLocale,
-      createDictionaryCache({
-        locale: defaultLocale,
-        dictionary,
-        translate: translateDictionaryEntry,
-        lifecycle,
-      }),
+      this.createDictionaryCache(defaultLocale, dictionary),
       { expiresAt: -1 }
     );
   }
@@ -139,6 +140,20 @@ export class LocalesCache<TranslationValue extends Translation> {
         this.translations.set(
           locale,
           this.createTranslationsCache(locale, translations[locale])
+        );
+      }
+    }
+  }
+
+  public updateDictionaries(dictionaries: Record<Locale, Dictionary>): void {
+    for (const locale in dictionaries) {
+      const dictionaryCache = this.dictionaries.get(locale);
+      if (dictionaryCache) {
+        dictionaryCache.update(dictionaries[locale]);
+      } else {
+        this.dictionaries.set(
+          locale,
+          this.createDictionaryCache(locale, dictionaries[locale])
         );
       }
     }

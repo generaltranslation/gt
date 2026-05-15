@@ -1,5 +1,5 @@
 import type { InternalGTProviderProps } from '@generaltranslation/react-core/context';
-import type { Translation } from 'gt-i18n/types';
+import type { Dictionary, Translation } from 'gt-i18n/types';
 import type { Locale, Hash } from 'gt-i18n/internal/types';
 
 /**
@@ -7,4 +7,5 @@ import type { Locale, Hash } from 'gt-i18n/internal/types';
  */
 export type SharedGTProviderProps = InternalGTProviderProps & {
   translations: Record<Locale, Record<Hash, Translation>>;
+  dictionary?: Record<Locale, Dictionary>;
 };

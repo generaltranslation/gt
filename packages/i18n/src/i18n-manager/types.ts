@@ -4,11 +4,7 @@ import type { GTConfig } from '../config/types';
 import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import type { Translation } from './translations-manager/utils/types/translation-data';
 import type { LifecycleCallbacks } from './lifecycle-hooks/types';
-import type {
-  Hash,
-  TranslationBatchConfig,
-} from './translations-manager/TranslationsCache';
-import { Locale } from './translations-manager/LocalesCache';
+import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
 import type {
   Dictionary,
   DictionaryLoader,
@@ -45,7 +41,6 @@ export type I18nManagerConstructorParams<
     environment?: 'development' | 'production';
     batchConfig?: TranslationBatchConfig;
     runtimeTranslation?: RuntimeTranslationConfig;
-    initialTranslations?: Record<Locale, Record<Hash, TranslationValue>>;
     // Cache lifecycle hooks
     /** @deprecated - move to subscription api instead */
     lifecycle?: LifecycleCallbacks<TranslationValue>;

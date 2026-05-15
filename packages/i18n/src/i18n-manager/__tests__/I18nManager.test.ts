@@ -232,6 +232,53 @@ describe('I18nManager', () => {
     });
   });
 
+  it('updateDictionaries() updates locale dictionary lookups', () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+        cta: 'Click me',
+        navigation: {
+          about: 'About',
+        },
+      },
+    });
+
+    manager.updateDictionaries({
+      en: {
+        greeting: 'Hi',
+        navigation: {
+          home: 'Home',
+        },
+      },
+      fr: {
+        greeting: 'Bonjour',
+        navigation: {
+          home: 'Accueil',
+        },
+      },
+    });
+
+    expect(manager.lookupDictionary('en', 'greeting')).toEqual({
+      entry: 'Hi',
+      options: {},
+    });
+    expect(manager.lookupDictionaryObj('en', 'navigation')).toEqual({
+      about: 'About',
+      home: 'Home',
+    });
+    expect(manager.lookupDictionary('en', 'cta')).toEqual({
+      entry: 'Click me',
+      options: {},
+    });
+    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
+    expect(manager.lookupDictionaryObj('fr', 'navigation')).toEqual({
+      home: 'Accueil',
+    });
+  });
+
   it.each([
     {
       name: 'dialect locale',

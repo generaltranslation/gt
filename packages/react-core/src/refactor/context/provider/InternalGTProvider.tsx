@@ -43,7 +43,7 @@ export type InternalGTProviderProps = ReactConditionStoreParams &
  * - If you want to override i18nManager or conditionStore, do so by calling
  *   initializeState() (or your own version of it) before GTProvider is
  *   rendered
- * - locale and initialTranslations are required
+ * - locale is required
  *
  * TODO: server side: only pass newly loaded translations to the client
  */

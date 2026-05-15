@@ -11,6 +11,7 @@ import type { SharedGTProviderProps } from './types';
  */
 export function CSRGTProvider({
   translations,
+  dictionary,
   ...props
 }: SharedGTProviderProps) {
   // This represents an update from server
@@ -18,5 +19,8 @@ export function CSRGTProvider({
   // TODO: optimize by skipping updateTranslations() if client is responsible for reloading translations
   // (eg overrideSetLocale === undefined), see getI18nStore().updateLocale() in InternalGTProvider
   getI18nManager().updateTranslations(translations);
+  if (dictionary) {
+    getI18nManager().updateDictionaries(dictionary);
+  }
   return <InternalGTProvider {...props} />;
 }
