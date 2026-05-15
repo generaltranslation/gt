@@ -7,7 +7,7 @@
 The compiler uses a **4-pass Babel pipeline** on `.tsx/.jsx/.ts/.js` files:
 
 1. **JSX Insertion Pass** — Auto-wraps translatable JSX in `_T` / `_Var` components (when `enableAutoJsxInjection` is enabled)
-2. **Macro Expansion Pass** — Transforms `t`\`...\``tagged templates and`t("...")` calls
+2. **Macro Expansion Pass** — Transforms unbound global `t`\`...\`` tagged templates
 3. **Collection Pass** — Collects translation data, computes hashes, validates usage
 4. **Injection Pass** — Injects hashes and metadata into the AST
 

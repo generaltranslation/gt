@@ -2,7 +2,7 @@ import { InlineTranslationOptions } from 'gt-i18n/types';
 
 /**
  * Overloaded type for the `t` function.
- * - Tagged template: t`Hello, ${name}` (transformed by the compiler plugin at build time)
+ * - Tagged template: t`Hello, ${name}`
  * - Function call: t("Hello, {name}", { name: "John" })
  *
  * {@link TemplateSyncResolutionFunction}

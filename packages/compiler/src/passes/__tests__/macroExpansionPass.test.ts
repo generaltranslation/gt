@@ -95,40 +95,6 @@ function assertStillTaggedTemplate(ast: t.File): void {
   expect(found).toBe(true);
 }
 
-/** Check that no transformation occurred (template literal arg is still present) */
-function assertStillTemplateLiteralArg(ast: t.File): void {
-  let found = false;
-  traverse(ast, {
-    CallExpression(path) {
-      if (
-        t.isIdentifier(path.node.callee, { name: 't' }) &&
-        t.isTemplateLiteral(path.node.arguments[0])
-      ) {
-        found = true;
-        path.stop();
-      }
-    },
-  });
-  expect(found).toBe(true);
-}
-
-/** Check that no transformation occurred (concatenation arg is still present) */
-function assertStillConcatenationArg(ast: t.File): void {
-  let found = false;
-  traverse(ast, {
-    CallExpression(path) {
-      if (
-        t.isIdentifier(path.node.callee, { name: 't' }) &&
-        t.isBinaryExpression(path.node.arguments[0], { operator: '+' })
-      ) {
-        found = true;
-        path.stop();
-      }
-    },
-  });
-  expect(found).toBe(true);
-}
-
 // --- Tests ---
 
 describe('macroExpansionPass', () => {
@@ -136,22 +102,6 @@ describe('macroExpansionPass', () => {
 
   it('transforms tagged template: t`Hello, ${name}`', () => {
     const { tCalls } = transform('const x = t`Hello, ${name}`;');
-    expect(tCalls).toHaveLength(1);
-    expect(getMessageString(tCalls[0])).toBe('Hello, {0}');
-    expect(getVarKeys(tCalls[0])).toEqual(['0']);
-    expect(getVarIdentifiers(tCalls[0])).toEqual(['name']);
-  });
-
-  it.skip('transforms template literal in call: t(`Hello, ${name}`)', () => {
-    const { tCalls } = transform('const x = t(`Hello, ${name}`);');
-    expect(tCalls).toHaveLength(1);
-    expect(getMessageString(tCalls[0])).toBe('Hello, {0}');
-    expect(getVarKeys(tCalls[0])).toEqual(['0']);
-    expect(getVarIdentifiers(tCalls[0])).toEqual(['name']);
-  });
-
-  it.skip('transforms concatenation in call: t("Hello, " + name)', () => {
-    const { tCalls } = transform('const x = t("Hello, " + name);');
     expect(tCalls).toHaveLength(1);
     expect(getMessageString(tCalls[0])).toBe('Hello, {0}');
     expect(getVarKeys(tCalls[0])).toEqual(['0']);
@@ -174,35 +124,24 @@ describe('macroExpansionPass', () => {
     expect(t.isIdentifier(tCalls[0].callee, { name: 't' })).toBe(true);
   });
 
-  // --- Feature flags ---
-
-  it('does nothing when enableTaggedTemplate is false', () => {
-    const { ast } = transform('const x = t`Hello, ${name}`;', {
-      enableTaggedTemplate: false,
-    });
-    assertStillTaggedTemplate(ast);
-  });
-
-  it('enableTemplateLiteralArg: false skips template literal args', () => {
-    const { ast } = transform('const x = t(`Hello, ${name}`);', {
-      enableTemplateLiteralArg: false,
-    });
-    assertStillTemplateLiteralArg(ast);
-  });
-
-  it('enableConcatenationArg: false skips concatenation args', () => {
-    const { ast } = transform('const x = t("Hello, " + name);', {
-      enableConcatenationArg: false,
-    });
-    assertStillConcatenationArg(ast);
-  });
-
   // --- Auto-import ---
 
   it('adds auto-import when macros are expanded', () => {
     const { imports } = transform('const x = t`hello`;');
     const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
     expect(gtImport).toBeDefined();
+  });
+
+  it('adds auto-import when the existing browser t import is aliased', () => {
+    const { imports } = transform(
+      "import { t as browserT } from 'gt-react/browser';\nconst x = t`hello`;"
+    );
+    const localTImports = imports.filter(
+      (i) =>
+        i.source.value === 'gt-react/browser' &&
+        i.specifiers.some((s) => t.isImportSpecifier(s) && s.local.name === 't')
+    );
+    expect(localTImports).toHaveLength(1);
   });
 
   it('does NOT add auto-import when no macros are found', () => {
@@ -224,16 +163,15 @@ describe('macroExpansionPass', () => {
     expect(getMessageString(tCalls[1])).toBe('goodbye {0}');
   });
 
-  it('does NOT add import when t is already imported from gt-react/browser', () => {
-    const { tCalls, imports } = transform(
+  it('does NOT transform tagged template t imported from gt-react/browser', () => {
+    const { ast, imports } = transform(
       "import { t } from 'gt-react/browser';\nconst x = t`hello ${name}`;"
     );
     const gtImports = imports.filter(
       (i) => i.source.value === 'gt-react/browser'
     );
     expect(gtImports).toHaveLength(1);
-    expect(tCalls).toHaveLength(1);
-    expect(getMessageString(tCalls[0])).toBe('hello {0}');
+    assertStillTaggedTemplate(ast);
   });
 
   // --- Scope guarding ---
@@ -252,20 +190,6 @@ describe('macroExpansionPass', () => {
     assertStillTaggedTemplate(ast);
   });
 
-  it('does NOT transform template literal arg t imported from a non-GT source', () => {
-    const { ast } = transform(
-      "import { t } from 'i18next';\nconst x = t(`hello ${name}`);"
-    );
-    assertStillTemplateLiteralArg(ast);
-  });
-
-  it('does NOT transform concatenation arg t imported from a non-GT source', () => {
-    const { ast } = transform(
-      'import { t } from \'i18next\';\nconst x = t("hello " + name);'
-    );
-    assertStillConcatenationArg(ast);
-  });
-
   it('does NOT transform tagged template when t is a local variable', () => {
     const { ast } = transform(
       'const t = (s) => s;\nconst x = t`hello ${name}`;'
@@ -280,85 +204,7 @@ describe('macroExpansionPass', () => {
     assertStillTaggedTemplate(ast);
   });
 
-  it('does NOT transform template literal arg when t is a local variable', () => {
-    const { ast } = transform(
-      'const t = (s) => s;\nconst x = t(`hello ${name}`);'
-    );
-    assertStillTemplateLiteralArg(ast);
-  });
-
-  it('does NOT add import when enableMacroImportInjection is false', () => {
-    const { tCalls, imports } = transform('const x = t`hello`;', {
-      enableMacroImportInjection: false,
-    });
-    expect(tCalls).toHaveLength(1);
-    expect(getMessageString(tCalls[0])).toBe('hello');
-    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
-    expect(gtImport).toBeUndefined();
-  });
-
-  // --- Recursive string simplification ---
-
-  it.skip('recursively simplifies nested concatenation and templates', () => {
-    const code = 'const x = t("A" + "B" + `C${"D" + `${`E`}F`}`);';
-    const { tCalls } = transform(code);
-    expect(tCalls).toHaveLength(1);
-    expect(getMessageString(tCalls[0])).toBe('ABCDEF');
-    expect(tCalls[0].arguments).toHaveLength(1);
-  });
-
-  it.skip('simplifies numeric literal in concatenation', () => {
-    const { tCalls } = transform('const x = t("count: " + 42);');
-    expect(getMessageString(tCalls[0])).toBe('count: 42');
-    expect(tCalls[0].arguments).toHaveLength(1);
-  });
-
-  it.skip('simplifies boolean literal in concatenation', () => {
-    const { tCalls } = transform('const x = t(true + " value");');
-    expect(getMessageString(tCalls[0])).toBe('true value');
-    expect(tCalls[0].arguments).toHaveLength(1);
-  });
-
-  it.skip('deeply nested static simplification', () => {
-    const code = 'const x = t(`A${`B${"C" + "D"}E`}F`);';
-    const { tCalls } = transform(code);
-    expect(getMessageString(tCalls[0])).toBe('ABCDEF');
-    expect(tCalls[0].arguments).toHaveLength(1);
-  });
-
   // --- Derive preservation ---
-
-  it('preserves derive in template literal', () => {
-    const code =
-      "import { derive } from 'gt-react/browser';\nconst x = t(`Hello ${derive(getName())}`);";
-    const { tCalls } = transform(code);
-    expect(tCalls).toHaveLength(1);
-    const tl = getMessageTemplate(tCalls[0]);
-    const derives = findDeriveExpressions(tl);
-    expect(derives).toHaveLength(1);
-    expect(
-      t.isIdentifier((derives[0].arguments[0] as t.CallExpression).callee, {
-        name: 'getName',
-      })
-    ).toBe(true);
-    expect(tl.quasis[0].value.cooked).toBe('Hello ');
-    expect(tl.quasis[1].value.cooked).toBe('');
-    expect(tCalls[0].arguments).toHaveLength(1); // no variables arg
-  });
-
-  it.skip('preserves derive in concatenation with static collapse and dynamic extraction', () => {
-    const code =
-      'import { derive } from \'gt-react/browser\';\nconst x = t(`A${derive(getName())}B` + "C" + name);';
-    const { tCalls } = transform(code);
-    expect(tCalls).toHaveLength(1);
-    const tl = getMessageTemplate(tCalls[0]);
-    const derives = findDeriveExpressions(tl);
-    expect(derives).toHaveLength(1);
-    expect(tl.quasis[0].value.cooked).toBe('A');
-    expect(tl.quasis[1].value.cooked).toBe('BC{0}');
-    expect(getVarKeys(tCalls[0])).toEqual(['0']);
-    expect(getVarIdentifiers(tCalls[0])).toEqual(['name']);
-  });
 
   it('multiple derives in tagged template', () => {
     const code =
@@ -386,19 +232,6 @@ describe('macroExpansionPass', () => {
     expect(tl.quasis[1].value.cooked).toBe('');
     expect(getVarKeys(tCalls[0])).toEqual(['0']);
     expect(getVarIdentifiers(tCalls[0])).toEqual(['name']);
-  });
-
-  it.skip('derive adjacent to static string collapses around it', () => {
-    const code =
-      'import { derive } from \'gt-react/browser\';\nconst x = t(`A${"B"}${derive(x)}${"C"}D`);';
-    const { tCalls } = transform(code);
-    expect(tCalls).toHaveLength(1);
-    const tl = getMessageTemplate(tCalls[0]);
-    const derives = findDeriveExpressions(tl);
-    expect(derives).toHaveLength(1);
-    expect(tl.quasis[0].value.cooked).toBe('AB');
-    expect(tl.quasis[1].value.cooked).toBe('CD');
-    expect(tCalls[0].arguments).toHaveLength(1); // no variables
   });
 
   it('three derives with text between each', () => {

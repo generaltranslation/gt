@@ -71,7 +71,6 @@ function transform(
 
 /**
  * Runs macro expansion → collection → runtime translate passes.
- * Used for tagged template tests where macro expansion must run first.
  */
 function transformWithMacro(
   code: string,
@@ -87,7 +86,7 @@ function transformWithMacro(
     plugins: ['jsx', 'typescript'],
   });
 
-  // Pass 1: Macro expansion (transforms t`...` → t("..."))
+  // Pass 1: Macro expansion (only unbound global t`...` is rewritten)
   traverse(ast, macroExpansionPass(state));
 
   // Pass 2: Collection (populates StringCollector)
@@ -563,24 +562,23 @@ describe('runtimeTranslatePass', () => {
   // ===== Tagged template extraction =====
 
   describe('tagged template extraction', () => {
-    // t`Hello` (post-macro-expansion becomes t("Hello"))
+    // t`Hello`
     // → GtInternalRuntimeTranslateString("Hello", { $_hash: "..." })
-    it('extracts tagged template with interpolation via macro expansion', () => {
+    it('extracts imported tagged template with interpolation', () => {
       const { runtimeCalls } = transformWithMacro(`
         import { t } from 'gt-react/browser';
         const x = t\`Hello \${name}\`;
       `);
 
       expect(runtimeCalls.length).toBeGreaterThanOrEqual(1);
-      // After macro expansion: t`Hello ${name}` → t("Hello {0}", {"0": name})
-      // The message should be "Hello {0}"
+      // The collection pass extracts the message as "Hello {0}".
       const messages = runtimeCalls.map((c) => getMessageString(c));
       expect(messages).toContain('Hello {0}');
     });
 
     // t`Hello` with no interpolation
     // → GtInternalRuntimeTranslateString("Hello", { $_hash: "..." })
-    it('extracts simple tagged template via macro expansion', () => {
+    it('extracts simple imported tagged template', () => {
       const { runtimeCalls } = transformWithMacro(`
         import { t } from 'gt-react/browser';
         const x = t\`Hello\`;

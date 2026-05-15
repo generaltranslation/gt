@@ -55,7 +55,8 @@ function writeInvalidGTConfig(cwd: string): string {
   return configPath;
 }
 
-async function transformWithPlugin(
+async function transformCodeWithPlugin(
+  code: string,
   options: GTUnpluginOptions | undefined,
   cwd: string
 ): Promise<string | null> {
@@ -77,13 +78,20 @@ async function transformWithPlugin(
 
   const result: TransformResult = await transform.call(
     context,
-    JSX_RUNTIME_CODE,
+    code,
     path.join(cwd, 'App.tsx')
   );
   if (!result) {
     return null;
   }
   return typeof result === 'string' ? result : result.code;
+}
+
+async function transformWithPlugin(
+  options: GTUnpluginOptions | undefined,
+  cwd: string
+): Promise<string | null> {
+  return transformCodeWithPlugin(JSX_RUNTIME_CODE, options, cwd);
 }
 
 describe('gtUnplugin config loading', () => {
@@ -202,6 +210,22 @@ describe('gtUnplugin config loading', () => {
     } finally {
       warnSpy.mockRestore();
     }
+  });
+
+  it('preserves imported browser t tagged templates while collecting them', async () => {
+    const cwd = createTempDir();
+    const output = await transformCodeWithPlugin(
+      `
+        import { t } from 'gt-react/browser';
+        const name = 'Ada';
+        export const value = t\`Hello \${name}\`;
+      `,
+      { logLevel: 'silent' },
+      cwd
+    );
+
+    expect(output).toContain('t`Hello ${name}`');
+    expect(output).not.toContain('t("Hello {0}"');
   });
 
   it('warns once per plugin instance when gtConfig cannot be loaded', async () => {
