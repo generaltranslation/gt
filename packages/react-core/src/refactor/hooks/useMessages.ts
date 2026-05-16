@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { decodeOptions } from 'gt-i18n';
 import { useGT } from './useGT';
-import type { _Messages } from '../../types-dir/types';
+import type { _Messages } from '../types/types';
 import type { InlineResolveOptions, MFunctionType } from 'gt-i18n/types';
 import { isEncodedTranslationOptions } from 'gt-i18n/internal';
 

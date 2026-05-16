@@ -6,7 +6,7 @@ import { I18nManager } from 'gt-i18n/internal';
 import type { HtmlTagOptions } from './types';
 import type { Translation } from 'gt-i18n/types';
 import { DEFAULT_HTML_TAG_OPTIONS } from './constants';
-import { createInvalidLocaleWarning } from '../../shared/messages';
+import { createInvalidLocaleWarning } from '../shared/messages';
 import { LocalStorageTranslationCache } from './LocalStorageTranslationCache';
 
 /**

@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from 'react';
-import addGTIdentifier from '../../../internal/addGTIdentifier';
-import { removeInjectedT } from '../../../internal/removeInjectedT';
-import writeChildrenAsObjects from '../../../internal/writeChildrenAsObjects';
-import renderDefaultChildren from '../../../rendering/renderDefaultChildren';
-import renderTranslatedChildren from '../../../rendering/renderTranslatedChildren';
+import addGTIdentifier from '../../internal/addGTIdentifier';
+import { removeInjectedT } from '../../internal/removeInjectedT';
+import writeChildrenAsObjects from '../../internal/writeChildrenAsObjects';
+import renderDefaultChildren from '../../rendering/renderDefaultChildren';
+import renderTranslatedChildren from '../../rendering/renderTranslatedChildren';
 import { renderVariable } from '../variables/renderVariable';
 import { useLocale } from '../../hooks/context-hooks';
 import {
@@ -12,7 +12,7 @@ import {
 } from '../../hooks/external-store-hooks';
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
-import type { TaggedChildren } from '../../../types-dir/types';
+import type { TaggedChildren } from '../../types/types';
 import type { ReactNode } from 'react';
 import { useShouldTranslate } from '../../hooks/utils';
 

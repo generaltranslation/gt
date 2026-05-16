@@ -9,7 +9,7 @@ import { computeVar, Var as GtExternalVar } from './Var';
 import type {
   RelativeTimeFormatOptions,
   RenderVariable,
-} from '../../../types-dir/types';
+} from '../../types/types';
 import { ReactNode } from 'react';
 
 // ===== Renderer ===== //
