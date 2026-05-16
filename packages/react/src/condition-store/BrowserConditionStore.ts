@@ -6,7 +6,10 @@ import {
 import { getCookieValue, setCookieValue } from "./cookies";
 import { readBrowserLocale } from "./readBrowserLocale";
 import { GetEnableI18n, GetLocale } from "../i18n-manager/types";
-import { LocaleCandidates } from "gt-i18n/internal/types";
+import {
+  LocaleCandidates,
+  WritableConditionStoreInterface,
+} from "gt-i18n/internal/types";
 
 /**
  * The configuration for the BrowserConditionStore
@@ -25,18 +28,18 @@ export type BrowserConditionStoreParams = WritableConditionStoreParams & {
 /**
  * Condition store implementation for Browser.
  */
-export class BrowserConditionStore extends WritableConditionStore {
+export class BrowserConditionStore implements WritableConditionStoreInterface {
   private localeCookieName: string;
   private enableI18nCookieName: string;
   private customGetLocale?: GetLocale;
   private customGetEnableI18n?: GetEnableI18n;
 
   constructor(config: BrowserConditionStoreParams) {
-    super(config);
     this.customGetLocale = config.getLocale;
     this.customGetEnableI18n = config.getEnableI18n;
     this.localeCookieName = config.localeCookieName;
     this.enableI18nCookieName = config.enableI18nCookieName;
+    this.setLocale(config.locale);
   }
 
   getLocale = (): string => {
