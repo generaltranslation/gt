@@ -509,11 +509,14 @@ class I18nManager<
       }
 
       // Get the locale cache
+      console.log("lookupTranslation", translationLocale);
       const txCache = this.localesCache.getTranslations(translationLocale);
       if (!txCache) return undefined;
 
       // Get the translation
-      return txCache.get({ message, options: lookupOptions });
+      const translation = txCache.get({ message, options: lookupOptions });
+      console.log("translation", translation);
+      return translation;
     } catch (error) {
       this.handleError(error);
       return undefined;

@@ -17,7 +17,9 @@ import {
 } from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+const packageRoot = dirname(
+  dirname(dirname(dirname(fileURLToPath(import.meta.url))))
+);
 const runtimeEntryNames = ['context', 'errors', 'index', 'internal'];
 const runtimeArtifactNames = runtimeEntryNames
   .flatMap((entryName) => [
@@ -65,6 +67,10 @@ function isWorkspaceSubpath(specifier: string): boolean {
   return workspaceSubpathPackages.some((packageName) =>
     specifier.startsWith(`${packageName}/`)
   );
+}
+
+function isAllowedExternalizedSubpath(file: string, specifier: string): boolean {
+  return file.startsWith('context.') && specifier.startsWith('gt-i18n/');
 }
 
 function getModuleSpecifiers(file: string): string[] {
@@ -153,6 +159,7 @@ describe('@generaltranslation/react-core package exports', () => {
     const externalizedSubpaths = getRuntimeArtifactNames().flatMap((file) => {
       return getModuleSpecifiers(file)
         .filter(isWorkspaceSubpath)
+        .filter((specifier) => !isAllowedExternalizedSubpath(file, specifier))
         .map((specifier) => `${file}: ${specifier}`);
     });
 

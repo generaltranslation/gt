@@ -39,7 +39,10 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     this.customGetEnableI18n = config.getEnableI18n;
     this.localeCookieName = config.localeCookieName;
     this.enableI18nCookieName = config.enableI18nCookieName;
-    this.setLocale(config.locale);
+    setCookieValue({
+      cookieName: this.localeCookieName,
+      value: getReactI18nManager().determineLocale(config.locale),
+    });
   }
 
   getLocale = (): string => {

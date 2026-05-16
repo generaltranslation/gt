@@ -1,5 +1,12 @@
 "use client";
 
+import { I18nManager } from "gt-i18n/internal";
+import type { Translation } from "gt-i18n/types";
+import {
+  setReactI18nManager,
+  type ReactI18nManagerParams,
+} from "@generaltranslation/react-core/context";
+
 export {
   // ===== Components ===== //
   Branch,
@@ -31,5 +38,6 @@ export {
 } from "gt-react/context";
 
 // ===== Setup ===== //
-// This is a no-op for the client
-export function initializeGT(): void {}
+export function initializeGT(config: ReactI18nManagerParams): void {
+  setReactI18nManager(new I18nManager<Translation>(config));
+}

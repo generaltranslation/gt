@@ -30,6 +30,8 @@ export {
   useTranslations,
   // ===== Functions ===== //
   getTranslationsSnapshot,
+  getReactI18nManager,
+  setReactI18nManager,
   // ===== Setup ===== //
   internalInitializeGTSSR as initializeGT,
   internalInitializeGTSPA,

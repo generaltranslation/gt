@@ -77,13 +77,13 @@
       },
       "require": {
         "types": "./dist/index.types.d.cts",
-        "default": "./dist/index.client.cjs"
+        "default": "./dist/index.server.cjs"
       },
       "import": {
         "types": "./dist/index.types.d.mts",
-        "default": "./dist/index.client.mjs"
+        "default": "./dist/index.server.mjs"
       },
-      "default": "./dist/index.client.mjs"
+      "default": "./dist/index.server.mjs"
     },
     "./types": {
       "types": "./dist/types.d.cts"

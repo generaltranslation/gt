@@ -1,5 +1,5 @@
-import { defineConfig } from "tsdown";
-import { createTsdownConfig } from "../../tsdown.preset.mts";
+import { defineConfig } from 'tsdown';
+import { createTsdownConfig } from '../../tsdown.preset.mts';
 
 const deps = {
   neverBundle: [
@@ -10,23 +10,21 @@ const deps = {
     /^@tanstack\/react-start$/,
     /^@tanstack\/react-start\//,
     /^@generaltranslation\/react-core$/,
+    /^@generaltranslation\/react-core\//,
     /^gt-react$/,
+    /^gt-react\//,
     /^gt-i18n$/,
+    /^gt-i18n\//,
     /^generaltranslation$/,
   ],
-  alwaysBundle: [
-    /^@generaltranslation\/react-core\//,
-    /^gt-react\//,
-    /^gt-i18n\//,
-    /^generaltranslation\//,
-  ],
+  alwaysBundle: [/^generaltranslation\//],
 };
 
 const entries = [
-  "src/index.client.ts",
-  "src/index.server.ts",
-  "src/index.types.ts",
-  "src/types.ts",
+  'src/index.client.ts',
+  'src/index.server.ts',
+  'src/index.types.ts',
+  'src/types.ts',
 ];
 
 export default defineConfig(
@@ -37,7 +35,7 @@ export default defineConfig(
         ...cjsConfig,
         clean: index === 0,
         define: {
-          "import.meta.env": "{}",
+          'import.meta.env': '{}',
         },
       },
       {
@@ -48,5 +46,5 @@ export default defineConfig(
         },
       },
     ];
-  }),
+  })
 );

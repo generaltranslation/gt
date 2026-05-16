@@ -18,13 +18,28 @@ import {
 export function SSRGTProvider({
   translations,
   dictionary,
+  defaultLocale = getReactI18nManager().getDefaultLocale(),
+  locales = getReactI18nManager().getLocales(),
+  customMapping = getReactI18nManager().getCustomMapping(),
   ...props
 }: SharedGTProviderProps) {
   // The condition store may already be created at the module level
   if (!isReadonlyConditionStoreInitialized()) {
-    const conditionStore = new ReadonlyConditionStore(props);
+    console.log("SSRGTProvider initializing condition store", {
+      locale: props.locale,
+      defaultLocale: props.defaultLocale,
+      locales: props.locales,
+      customMapping: props.customMapping,
+    });
+    const conditionStore = new ReadonlyConditionStore({
+      defaultLocale,
+      locales,
+      customMapping,
+      ...props,
+    });
     setReadonlyConditionStore(conditionStore);
   }
+  console.log("SSRGTProvider", props.locale);
   getReactI18nManager().updateTranslations(translations);
   getReactI18nManager().updateDictionaries(dictionary ?? {});
   return <InternalGTProvider {...props} />;

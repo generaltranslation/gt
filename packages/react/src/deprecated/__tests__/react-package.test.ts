@@ -52,6 +52,14 @@ function node(args: string[]): void {
   execFileSync(process.execPath, args, { cwd: packageRoot, stdio: 'pipe' });
 }
 
+function isAllowedExternalizedSubpath(file: string, specifier: string): boolean {
+  return (
+    file.startsWith('context.') &&
+    (specifier.startsWith('@generaltranslation/react-core/') ||
+      specifier.startsWith('gt-i18n/'))
+  );
+}
+
 describe('gt-react package exports', () => {
   beforeAll(() => {
     if (hasBuiltArtifacts()) return;
@@ -138,6 +146,10 @@ describe('gt-react package exports', () => {
         return [...code.matchAll(workspaceSubpathImportPattern)].map(
           (match) => `${file}: ${match[1]}`
         );
+      })
+      .filter((externalizedSubpath) => {
+        const [file, specifier] = externalizedSubpath.split(': ');
+        return !isAllowedExternalizedSubpath(file, specifier);
       });
 
     expect(externalizedSubpaths).toEqual([]);

@@ -111,13 +111,13 @@
       },
       "require": {
         "types": "./dist/context.types.d.cts",
-        "default": "./dist/context.client.cjs"
+        "default": "./dist/context.server.cjs"
       },
       "import": {
         "types": "./dist/context.types.d.mts",
-        "default": "./dist/context.client.mjs"
+        "default": "./dist/context.server.mjs"
       },
-      "default": "./dist/context.client.mjs"
+      "default": "./dist/context.server.mjs"
     },
     "./browser": {
       "require": {

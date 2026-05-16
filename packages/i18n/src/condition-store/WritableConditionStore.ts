@@ -12,6 +12,7 @@ export class WritableConditionStore
   implements WritableConditionStoreContract
 {
   setLocale = (locale: LocaleCandidates): void => {
+    console.log("WritableConditionStore.setLocale", locale);
     this.locale = this.resolveLocale(locale);
   };
 
