@@ -9,6 +9,7 @@ export type UseDetermineLocaleParams = {
   ssr?: boolean;
   customMapping?: CustomMapping;
   reloadOnLocaleUpdate?: boolean;
+  onLocaleUpdate?: (locale: string) => void;
 };
 
 export type UseDetermineLocaleReturn = [string, (locale: string) => void];

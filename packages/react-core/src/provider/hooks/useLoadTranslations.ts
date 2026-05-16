@@ -1,9 +1,24 @@
 import { customLoadTranslationsError } from '../../errors-dir/createErrors';
 import fetchTranslations from '../../utils/fetchTranslations';
 import { CustomLoader, Translations } from '../../types-dir/types';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { GT } from 'generaltranslation';
 import { defaultCacheUrl } from 'generaltranslation/internal';
+
+export function getTranslationsState({
+  _translations,
+  translationRequired,
+  loadTranslationsType,
+}: {
+  _translations: Translations | null;
+  translationRequired: boolean;
+  loadTranslationsType: string;
+}) {
+  return (
+    _translations ??
+    (translationRequired && loadTranslationsType !== 'disabled' ? null : {})
+  );
+}
 
 export function useLoadTranslations({
   _translations,
@@ -32,26 +47,22 @@ export function useLoadTranslations({
    * Cache Fail (for hash)    -> translations[hash] = undefined
    */
 
-  /**
-   * Initialize translations
-   */
-  function initializeTranslations() {
-    if (_translations) {
-      return _translations;
-    } else if (translationRequired && loadTranslationsType !== 'disabled') {
-      return null;
-    } else {
-      // No need to load translations ever
-      return {};
-    }
-  }
+  const nextTranslations = useMemo(
+    () =>
+      getTranslationsState({
+        _translations,
+        translationRequired,
+        loadTranslationsType,
+      }),
+    [_translations, translationRequired, loadTranslationsType]
+  );
 
   const [translations, setTranslations] = useState<Translations | null>(
-    initializeTranslations()
+    nextTranslations
   );
 
   /**
-   * Reset translations if locale changes (null to trigger a new cache fetch)
+   * Sync server-provided translations and reset if locale changes.
    * Should never run on mount
    *
    * TODO: its possible that this adds an unnecessary re-render, perhaps the request could be embeded directly in this useEffect instead?
@@ -64,10 +75,8 @@ export function useLoadTranslations({
       return;
     }
 
-    setTranslations(
-      translationRequired && loadTranslationsType !== 'disabled' ? null : {}
-    );
-  }, [locale, loadTranslationsType]);
+    setTranslations(nextTranslations);
+  }, [locale, nextTranslations]);
 
   /**
    * Update translations
@@ -82,10 +91,10 @@ export function useLoadTranslations({
       return;
     }
 
-    // Fetch translations
     let storeResults = true;
     (async () => {
       let result;
+      // Fetch translations
       switch (loadTranslationsType) {
         case 'custom':
           // check is redundant, but makes ts happy

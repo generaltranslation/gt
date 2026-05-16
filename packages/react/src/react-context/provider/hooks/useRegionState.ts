@@ -23,7 +23,7 @@ export function useRegionState({
   regionCookieName: string;
 }) {
   const [region, _setRegion] = useState<string | undefined>(
-    ssr ? undefined : getNewRegion(_region, regionCookieName)
+    ssr && !_region ? undefined : getNewRegion(_region, regionCookieName)
   );
   const setRegion = (region: string | undefined) => {
     _setRegion(region);

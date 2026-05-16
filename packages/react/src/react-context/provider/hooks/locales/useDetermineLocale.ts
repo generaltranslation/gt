@@ -26,6 +26,7 @@ export function useDetermineLocale({
   enableI18n,
   // for syncing server locale with client locale
   reloadOnLocaleUpdate = false,
+  onLocaleUpdate,
 }: UseDetermineLocaleParams): UseDetermineLocaleReturn {
   // resolve alias locale
   const _locale = useMemo(
@@ -152,9 +153,10 @@ export function useDetermineLocale({
   // update locale and store it in cookie
   const setLocale = (newLocale: string): void => {
     if (!enableI18n) return;
-    newLocale = resolveAliasLocale(newLocale);
+    newLocale = resolveAliasLocale(newLocale, customMapping);
     const validatedLocale = setLocaleWithoutSettingCookie(newLocale);
     setCookieValue(localeCookieName, validatedLocale);
+    onLocaleUpdate?.(validatedLocale);
 
     if (
       typeof window !== 'undefined' &&

@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-import { CustomLoader } from '../../types-dir/types';
-import { Dictionary } from '../../types-dir/types';
+import { useEffect, useRef, useState } from 'react';
+import { CustomLoader, Dictionary } from '../../types-dir/types';
 import loadDictionaryHelper from '../../dictionaries/loadDictionaryHelper';
 
 export function useLoadDictionary({
@@ -23,9 +22,20 @@ export function useLoadDictionary({
     Dictionary | undefined
   >(_dictionaryTranslations);
 
+  // Update dictionary props when the provider receives new server data.
+  const didMount = useRef(false);
+  useEffect(() => {
+    if (!didMount.current) {
+      didMount.current = true;
+      return;
+    }
+    if (loadDictionary) return;
+    setDictionary(_dictionary);
+    setDictionaryTranslations(_dictionaryTranslations);
+  }, [_dictionary, _dictionaryTranslations, loadDictionary]);
+
   // Resolve dictionary when not provided, but using custom dictionary loader
   useEffect(() => {
-    // Early return if dictionary is provided or not loading translation dictionary
     if (!loadDictionary) return;
 
     let storeResults = true;
@@ -39,20 +49,10 @@ export function useLoadDictionary({
       const localeDictionary =
         (await loadDictionaryHelper(locale, loadDictionary)) || {};
 
-      // // Merge dictionaries
-      // const mergedDictionary = mergeDictionaries(
-      //   defaultLocaleDictionary,
-      //   localeDictionary
-      // );
-
-      // Update dictionary
+      // Update dictionary and dictionary translations
       if (storeResults) {
-        setDictionary(defaultLocaleDictionary || {});
-      }
-
-      // Update dictionary translations
-      if (storeResults) {
-        setDictionaryTranslations(localeDictionary || {});
+        setDictionary(defaultLocaleDictionary);
+        setDictionaryTranslations(localeDictionary);
       }
     })();
 

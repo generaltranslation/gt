@@ -50,6 +50,7 @@ export type InternalGTProviderProps = {
   projectId?: string;
   devApiKey?: string;
   dictionary?: Dictionary;
+  dictionaryTranslations?: Dictionary;
   locales?: string[];
   defaultLocale?: string;
   locale?: string;
@@ -63,7 +64,10 @@ export type InternalGTProviderProps = {
   _versionId?: string;
   ssr?: boolean;
   localeCookieName?: string;
+  regionCookieName?: string;
   translations?: Translations | null;
+  translationRequired?: boolean;
+  dialectTranslationRequired?: boolean;
   loadDictionary?: CustomLoader;
   loadTranslations?: CustomLoader;
   config?: GTConfig;
@@ -71,6 +75,7 @@ export type InternalGTProviderProps = {
   customMapping?: CustomMapping;
   modelProvider?: string;
   environment: 'development' | 'production' | 'test';
+  developmentApiEnabled?: boolean;
   /* flag to enable i18n, true by default */
   enableI18n?: boolean;
   /** Flag to indicate if the enableI18n flag is finished loading asynchronously */
@@ -82,5 +87,6 @@ export type InternalGTProviderProps = {
   useRegionState: (params: UseRegionStateParams) => UseRegionStateReturn;
   useEnableI18n?: (params: UseEnableI18nParams) => UseEnableI18nReturn;
   reloadOnLocaleUpdate?: boolean;
+  onLocaleUpdate?: (locale: string) => void;
   [key: string]: unknown;
 };

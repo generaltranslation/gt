@@ -21,14 +21,33 @@ import { resolveAliasLocale } from '@generaltranslation/format';
 import { GT } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
-import { useCreateInternalUseTranslationsObjFunction } from './hooks/translation/useCreateInternalUseTranslationsObjFunction';
 import { useEnableI18n as _useEnableI18n } from './hooks/useEnableI18n';
+import { useCreateInternalUseTranslationsObjFunction } from './hooks/translation/useCreateInternalUseTranslationsObjFunction';
 
 // Deprecated functions, will be removed in a future version
 import { readAuthFromEnv as _readAuthFromEnv } from '../utils/utils';
 import { isSSREnabled } from './helpers/isSSREnabled';
 import { useDetermineLocale as _useDetermineLocale } from './hooks/locales/useDetermineLocale';
 import { useRegionState as _useRegionState } from './hooks/useRegionState';
+
+export function getTranslationRequirements({
+  translationRequiredOverride,
+  dialectTranslationRequiredOverride,
+  localeTranslationRequired,
+  localeDialectTranslationRequired,
+}: {
+  translationRequiredOverride?: boolean;
+  dialectTranslationRequiredOverride?: boolean;
+  localeTranslationRequired: boolean;
+  localeDialectTranslationRequired: boolean;
+}) {
+  const translationRequired =
+    translationRequiredOverride ?? localeTranslationRequired;
+  const dialectTranslationRequired = translationRequired
+    ? (dialectTranslationRequiredOverride ?? localeDialectTranslationRequired)
+    : false;
+  return { translationRequired, dialectTranslationRequired };
+}
 
 export default function GTProvider({
   children,
@@ -37,7 +56,8 @@ export default function GTProvider({
   projectId: _projectId = config?.projectId || '',
   devApiKey: _devApiKey = config?.devApiKey || '',
   _versionId = config?._versionId,
-  dictionary: _dictionary = {},
+  dictionary: _dictionary,
+  dictionaryTranslations: _dictionaryTranslations,
   locales = config?.locales || [],
   defaultLocale = config?.defaultLocale || libraryDefaultLocale,
   cacheUrl = config?.cacheUrl || defaultCacheUrl,
@@ -46,18 +66,23 @@ export default function GTProvider({
     getDefaultRenderSettings(environment),
   ssr = config?.ssr || isSSREnabled(),
   localeCookieName = config?.localeCookieName || defaultLocaleCookieName,
+  regionCookieName = defaultRegionCookieName,
   locale: _locale = '',
   region: _region,
   loadDictionary,
   loadTranslations,
   fallback = undefined,
   translations: _translations = null,
+  translationRequired: translationRequiredOverride,
+  dialectTranslationRequired: dialectTranslationRequiredOverride,
   customMapping = config?.customMapping,
   enableI18n: _enableI18n = config?.enableI18n !== undefined
     ? config.enableI18n
     : true,
   enableI18nLoaded,
   reloadOnLocaleUpdate,
+  onLocaleUpdate,
+  developmentApiEnabled: developmentApiEnabledOverride,
   useEnableI18n = _useEnableI18n,
   readAuthFromEnv = _readAuthFromEnv,
   useDetermineLocale = _useDetermineLocale,
@@ -93,8 +118,8 @@ export default function GTProvider({
     locale,
     setLocale,
     locales: approvedLocales,
-    translationRequired,
-    dialectTranslationRequired,
+    translationRequired: localeTranslationRequired,
+    dialectTranslationRequired: localeDialectTranslationRequired,
   } = useLocaleState({
     _locale,
     defaultLocale,
@@ -105,13 +130,21 @@ export default function GTProvider({
     useDetermineLocale,
     enableI18n,
     reloadOnLocaleUpdate,
+    onLocaleUpdate,
   });
+  const { translationRequired, dialectTranslationRequired } =
+    getTranslationRequirements({
+      translationRequiredOverride,
+      dialectTranslationRequiredOverride,
+      localeTranslationRequired,
+      localeDialectTranslationRequired,
+    });
 
   // Define the region instance
   const { region, setRegion } = useRegionState({
     _region,
     ssr,
-    regionCookieName: defaultRegionCookieName,
+    regionCookieName,
   });
 
   // Define the GT instance
@@ -126,7 +159,7 @@ export default function GTProvider({
         baseUrl: runtimeUrl || undefined,
         customMapping,
       }),
-    [devApiKey, defaultLocale, projectId, runtimeUrl, customMapping]
+    [devApiKey, defaultLocale, locale, projectId, runtimeUrl, customMapping]
   );
 
   // Determine the type of translation loading
@@ -142,6 +175,11 @@ export default function GTProvider({
   }, [loadTranslations, cacheUrl, projectId]);
 
   // ---------- LOAD DICTIONARY ---------- //
+  const dictionaryInput = useMemo(() => _dictionary ?? {}, [_dictionary]);
+  const dictionaryTranslationsInput = useMemo(
+    () => _dictionaryTranslations ?? {},
+    [_dictionaryTranslations]
+  );
 
   const {
     dictionary,
@@ -149,8 +187,8 @@ export default function GTProvider({
     dictionaryTranslations,
     setDictionaryTranslations,
   } = useLoadDictionary({
-    _dictionary,
-    _dictionaryTranslations: {},
+    _dictionary: dictionaryInput,
+    _dictionaryTranslations: dictionaryTranslationsInput,
     loadDictionary,
     locale,
     defaultLocale,
@@ -187,7 +225,7 @@ export default function GTProvider({
   const {
     registerIcuForTranslation,
     registerJsxForTranslation,
-    developmentApiEnabled,
+    developmentApiEnabled: runtimeDevelopmentApiEnabled,
   } = useRuntimeTranslation({
     gt,
     locale,
@@ -199,6 +237,9 @@ export default function GTProvider({
     environment,
     ...metadata,
   });
+
+  const developmentApiEnabled =
+    developmentApiEnabledOverride ?? runtimeDevelopmentApiEnabled;
 
   // ---------- USE GT ---------- //
 
