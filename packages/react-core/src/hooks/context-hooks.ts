@@ -1,4 +1,4 @@
-import { GTContext, GTContextType } from "../context/provider/GTContext";
+import { GTContext, GTContextType } from "../context/GTContext";
 import { getRenderStrategy } from "../setup/globals";
 import { getWritableConditionStore } from "../condition-store/singleton-operations";
 import { useContext } from "react";
@@ -20,7 +20,7 @@ function useGTContext(property: keyof GTContextType): GTContextType {
       };
     }
     throw new Error(
-      `use${property.charAt(0).toUpperCase() + property.slice(1)}() is being accessed outside of a <GTProvider>. Make sure to add a <GTProvider> to the top of your component tree.`,
+      `use${(property as string).charAt(0).toUpperCase() + (property as string).slice(1)}() is being accessed outside of a <GTProvider>. Make sure to add a <GTProvider> to the top of your component tree.`,
     );
   }
   return conditionStore;

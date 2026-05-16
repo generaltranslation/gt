@@ -5,21 +5,14 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import {
-  getI18nStore,
-  setI18nStore,
-} from "../../i18n-store/singleton-operations";
-import {
-  WritableConditionStore,
-  type WritableConditionStoreParams,
-} from "gt-i18n/internal";
-import type { OverrideSetLocaleType } from "../../i18n-store/storeTypes";
+import { getI18nStore, setI18nStore } from "../i18n-store/singleton-operations";
+import { type WritableConditionStoreParams } from "gt-i18n/internal";
+import type { OverrideSetLocaleType } from "../i18n-store/storeTypes";
 import {
   setStoresInitialized,
   getI18nStoreInitialized,
-} from "../../setup/globals";
-import { I18nStore, I18nStoreParams } from "../../i18n-store/I18nStore";
-import { setWritableConditionStore } from "../../condition-store/singleton-operations";
+} from "../setup/globals";
+import { I18nStore, I18nStoreParams } from "../i18n-store/I18nStore";
 
 export type InternalGTProviderProps = WritableConditionStoreParams &
   I18nStoreParams & {

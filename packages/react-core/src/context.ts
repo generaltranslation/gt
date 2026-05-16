@@ -32,7 +32,7 @@ export { useFormatLocales } from "./hooks/utils";
 export { getTranslationsSnapshot } from "./functions/helpers/getTranslationsSnapshot";
 
 // ===== Internal ===== //
-export { InternalGTProvider } from "./context/provider/InternalGTProvider";
+export { InternalGTProvider } from "./context/InternalGTProvider";
 export { internalInitializeGTSPA } from "./setup/initializeGTSPA";
 export { internalInitializeGTSSR } from "./setup/initializeGTSSR";
 export { getI18nStore, setI18nStore } from "./i18n-store/singleton-operations";
@@ -53,7 +53,7 @@ export {
 } from "./i18n-manager/singleton-operations";
 export { I18nStore } from "./i18n-store/I18nStore";
 export type { I18nStoreParams } from "./i18n-store/I18nStore";
-export type { InternalGTProviderProps } from "./context/provider/InternalGTProvider";
+export type { InternalGTProviderProps } from "./deprecated/types-dir/config";
 export type { OverrideSetLocaleType } from "./i18n-store/storeTypes";
 export type {
   ReactI18nManager,
