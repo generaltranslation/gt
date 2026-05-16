@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode } from "react";
 import {
   TaggedChildren,
   TaggedElement,
@@ -6,18 +6,18 @@ import {
   RenderVariable,
   TranslatedElement,
   VariableProps,
-} from '../types/types';
+} from "../types/types";
 import getVariableProps, {
   isVariableElementProps,
-} from '../variables/_getVariableProps';
-import renderDefaultChildren from './renderDefaultChildren';
-import { isVariable, libraryDefaultLocale } from 'generaltranslation/internal';
-import getPluralBranch from '../branches/plurals/getPluralBranch';
+} from "../variables/_getVariableProps";
+import renderDefaultChildren from "./renderDefaultChildren";
+import { isVariable, libraryDefaultLocale } from "generaltranslation/internal";
+import getPluralBranch from "../plurals/getPluralBranch";
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
-} from '@generaltranslation/format/types';
-import getGTTag from './getGTTag';
+} from "@generaltranslation/format/types";
+import getGTTag from "./getGTTag";
 
 function renderTranslatedElement({
   sourceElement,
@@ -32,7 +32,7 @@ function renderTranslatedElement({
 }): React.ReactNode {
   // Get props and generaltranslation
   const { props: sourceProps } = sourceElement;
-  const sourceGT = sourceProps['data-_gt'];
+  const sourceGT = sourceProps["data-_gt"];
   const transformation = sourceGT?.transformation;
 
   // Get translated props
@@ -51,9 +51,9 @@ function renderTranslatedElement({
   }
 
   // plural (choose a branch)
-  if (transformation === 'plural') {
+  if (transformation === "plural") {
     const n = sourceElement.props.n;
-    if (typeof n !== 'number') {
+    if (typeof n !== "number") {
       return renderDefaultChildren({
         children: sourceElement,
         defaultLocale: locales[0],
@@ -79,10 +79,10 @@ function renderTranslatedElement({
   }
 
   // branch (choose a branch)
-  if (transformation === 'branch') {
+  if (transformation === "branch") {
     const { branch, children } = sourceProps;
     const branchKey =
-      branch == null || branch === '' ? undefined : branch.toString();
+      branch == null || branch === "" ? undefined : branch.toString();
     const sourceBranches = sourceGT.branches || {};
     const targetBranches = targetElement.d?.b || {};
     const sourceBranch =
@@ -102,7 +102,7 @@ function renderTranslatedElement({
   }
 
   // fragment (create a valid fragment)
-  if (transformation === 'fragment' && targetElement.c) {
+  if (transformation === "fragment" && targetElement.c) {
     return React.createElement(React.Fragment, {
       key: sourceElement.props.key,
       children: renderTranslatedChildren({
@@ -119,7 +119,7 @@ function renderTranslatedElement({
     return React.cloneElement(sourceElement, {
       ...sourceProps,
       ...translatedProps,
-      'data-_gt': undefined,
+      "data-_gt": undefined,
       children: renderTranslatedChildren({
         source: sourceProps.children as TaggedChildren,
         target: targetElement.c,
@@ -149,13 +149,13 @@ export default function renderTranslatedChildren({
   renderVariable: RenderVariable;
 }): ReactNode {
   // Most straightforward case, return a valid React node
-  if ((target === null || typeof target === 'undefined') && source)
+  if ((target === null || typeof target === "undefined") && source)
     return renderDefaultChildren({
       children: source,
       defaultLocale: locales[0],
       renderVariable,
     });
-  if (typeof target === 'string') return target;
+  if (typeof target === "string") return target;
 
   // Convert source to an array in case target has multiple children where source only has one
   if (Array.isArray(target) && !Array.isArray(source) && source)
@@ -164,12 +164,12 @@ export default function renderTranslatedChildren({
   // Multiple children
   if (Array.isArray(source) && Array.isArray(target)) {
     // Track the variables
-    const variables: Record<string, VariableProps['variableValue']> = {};
-    const variablesOptions: Record<string, VariableProps['variableOptions']> =
+    const variables: Record<string, VariableProps["variableValue"]> = {};
+    const variablesOptions: Record<string, VariableProps["variableOptions"]> =
       {};
     const variableInjectionTypes: Record<
       string,
-      VariableProps['injectionType']
+      VariableProps["injectionType"]
     > = {};
 
     // Extract source elements
@@ -193,17 +193,17 @@ export default function renderTranslatedChildren({
           }
         }
         return false;
-      }
+      },
     );
 
     // TODO: pre-index these to avoid O(n/2) lookups
     const findMatchingSourceElement = (
-      targetElement: TranslatedElement
+      targetElement: TranslatedElement,
     ): TaggedElement | undefined => {
       return (
         sourceElements.find((sourceChild): sourceChild is TaggedElement => {
           const generaltranslation = getGTTag(sourceChild);
-          if (typeof generaltranslation?.id !== 'undefined') {
+          if (typeof generaltranslation?.id !== "undefined") {
             const sourceId = generaltranslation.id;
             const targetId = targetElement.i;
             return sourceId === targetId;
@@ -215,7 +215,7 @@ export default function renderTranslatedChildren({
 
     // map target to source
     return target.map((targetChild, index) => {
-      if (typeof targetChild === 'string')
+      if (typeof targetChild === "string")
         return (
           <React.Fragment key={`string_${index}`}>{targetChild}</React.Fragment>
         );
@@ -225,11 +225,11 @@ export default function renderTranslatedChildren({
         return (
           <React.Fragment key={`var_${index}`}>
             {renderVariable({
-              variableType: targetChild.v || 'v',
+              variableType: targetChild.v || "v",
               variableValue: variables[targetChild.k],
               variableOptions: variablesOptions[targetChild.k],
               locales,
-              injectionType: variableInjectionTypes[targetChild.k] || 'manual',
+              injectionType: variableInjectionTypes[targetChild.k] || "manual",
             })}
           </React.Fragment>
         );
@@ -237,7 +237,7 @@ export default function renderTranslatedChildren({
 
       // Render element (targetChild is a TranslatedElement)
       const matchingSourceElement = findMatchingSourceElement(
-        targetChild as TranslatedElement
+        targetChild as TranslatedElement,
       );
       if (!matchingSourceElement) return null;
       return (
@@ -254,13 +254,13 @@ export default function renderTranslatedChildren({
   }
 
   // Single child
-  if (target && typeof target === 'object' && !Array.isArray(target)) {
-    const targetType: 'variable' | 'element' = isVariable(target)
-      ? 'variable'
-      : 'element';
+  if (target && typeof target === "object" && !Array.isArray(target)) {
+    const targetType: "variable" | "element" = isVariable(target)
+      ? "variable"
+      : "element";
 
     if (React.isValidElement(source)) {
-      if (targetType === 'element') {
+      if (targetType === "element") {
         return renderTranslatedElement({
           sourceElement: source,
           targetElement: target as TranslatedElement,

@@ -1,7 +1,7 @@
 import {
   getReactI18nManager,
   InternalGTProvider,
-} from "../../../../components/branches/Branch";
+} from "@generaltranslation/react-core/context";
 import type { SharedGTProviderProps } from "./SharedGTProviderProps";
 import {
   getBrowserConditionStore,

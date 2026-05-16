@@ -1,12 +1,8 @@
 import {
-  defaultEnableI18nCookieName,
-  defaultLocaleCookieName,
-} from "@generaltranslation/react-core/internal";
-import {
   getReactI18nManager,
   WritableConditionStore,
   WritableConditionStoreParams,
-} from "../../../../components/branches/Branch";
+} from "@generaltranslation/react-core/context";
 import { getCookieValue, setCookieValue } from "./cookies";
 import { readBrowserLocale } from "./readBrowserLocale";
 import { GetEnableI18n, GetLocale } from "../i18n-manager/types";
