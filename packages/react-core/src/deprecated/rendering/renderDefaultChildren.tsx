@@ -1,16 +1,16 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode } from "react";
 import getVariableProps, {
   isVariableElementProps,
-} from '../variables/_getVariableProps';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
-import getPluralBranch from '../branches/plurals/getPluralBranch';
+} from "../variables/_getVariableProps";
+import { libraryDefaultLocale } from "generaltranslation/internal";
+import getPluralBranch from "../branches/plurals/getPluralBranch";
 import {
   RenderVariable,
   TaggedChild,
   TaggedChildren,
   TaggedElement,
-} from '../types-dir/types';
-import getGTTag from './getGTTag';
+} from "../types-dir/types";
+import getGTTag from "./getGTTag";
 
 export default function renderDefaultChildren({
   children,
@@ -38,9 +38,9 @@ export default function renderDefaultChildren({
     }
 
     // Plural
-    if (generaltranslation?.transformation === 'plural') {
+    if (generaltranslation?.transformation === "plural") {
       const branches = generaltranslation.branches || {};
-      if (typeof child.props.n !== 'number') {
+      if (typeof child.props.n !== "number") {
         return child.props.children != null
           ? handleChildren(child.props.children)
           : null;
@@ -48,30 +48,30 @@ export default function renderDefaultChildren({
       const resolvedBranch = getPluralBranch(
         child.props.n,
         [defaultLocale],
-        branches
+        branches,
       );
       return handleChildren(
         (resolvedBranch !== null
           ? resolvedBranch
-          : child.props.children) as TaggedChildren
+          : child.props.children) as TaggedChildren,
       );
     }
 
     // Branch
-    if (generaltranslation?.transformation === 'branch') {
+    if (generaltranslation?.transformation === "branch") {
       const { children, branch } = child.props;
       const branches = generaltranslation.branches || {};
       const branchKey =
-        branch == null || branch === '' ? undefined : branch.toString();
+        branch == null || branch === "" ? undefined : branch.toString();
       return handleChildren(
         branchKey && branches[branchKey] !== undefined
           ? branches[branchKey]
-          : children
+          : children,
       );
     }
 
     // Fragment
-    if (generaltranslation?.transformation === 'fragment') {
+    if (generaltranslation?.transformation === "fragment") {
       return React.createElement(React.Fragment, {
         key: child.props.key,
         children: handleChildren(child.props.children),
@@ -82,11 +82,11 @@ export default function renderDefaultChildren({
     if (child.props.children) {
       return React.cloneElement(child, {
         ...child.props,
-        'data-_gt': undefined,
+        "data-_gt": undefined,
         children: handleChildren(child.props.children) as TaggedChildren,
       });
     }
-    return React.cloneElement(child, { ...child.props, 'data-_gt': undefined });
+    return React.cloneElement(child, { ...child.props, "data-_gt": undefined });
   };
 
   const handleSingleChild = (child: TaggedChild): ReactNode => {

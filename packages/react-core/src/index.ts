@@ -1,43 +1,43 @@
-import T from './translation/T';
-import useGT from './translation/hooks/useGT';
-import useTranslations from './translation/hooks/useTranslations';
-import useDefaultLocale from './hooks/useDefaultLocale';
-import useLocale from './hooks/useLocale';
-import useVersionId from './hooks/useVersionId';
-import useRegion from './hooks/useRegion';
-import GTProvider from './provider/GTProvider';
-import Var from './variables/Var';
-import Num from './variables/Num';
-import Currency from './variables/Currency';
-import DateTime from './variables/DateTime';
-import RelativeTime from './variables/RelativeTime';
-import { Static, Derive } from './variables/Derive';
-import Plural from './branches/plurals/Plural';
-import Branch from './branches/Branch';
-import useLocales from './hooks/useLocales';
-import useSetLocale from './hooks/useSetLocale';
-import LocaleSelector from './ui/LocaleSelector';
-import useLocaleSelector from './hooks/useLocaleSelector';
-import RegionSelector from './ui/RegionSelector';
+import T from "./deprecated/translation/T";
+import useGT from "./deprecated/translation/hooks/useGT";
+import useTranslations from "./deprecated/translation/hooks/useTranslations";
+import useDefaultLocale from "./deprecated/hooks/useDefaultLocale";
+import useLocale from "./deprecated/hooks/useLocale";
+import useVersionId from "./deprecated/hooks/useVersionId";
+import useRegion from "./deprecated/hooks/useRegion";
+import GTProvider from "./deprecated/provider/GTProvider";
+import Var from "./deprecated/variables/Var";
+import Num from "./deprecated/variables/Num";
+import Currency from "./deprecated/variables/Currency";
+import DateTime from "./deprecated/variables/DateTime";
+import RelativeTime from "./deprecated/variables/RelativeTime";
+import { Static, Derive } from "./deprecated/variables/Derive";
+import Plural from "./deprecated/branches/plurals/Plural";
+import Branch from "./deprecated/branches/Branch";
+import useLocales from "./deprecated/hooks/useLocales";
+import useSetLocale from "./deprecated/hooks/useSetLocale";
+import LocaleSelector from "./deprecated/ui/LocaleSelector";
+import useLocaleSelector from "./deprecated/hooks/useLocaleSelector";
+import RegionSelector from "./deprecated/ui/RegionSelector";
 import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-} from './types-dir/types';
-import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
-import { useRegionSelector } from './hooks/useRegionSelector';
-import { useLocaleDirection } from './hooks/useLocaleDirection';
-import { msg, decodeMsg, decodeOptions } from './messages/messages';
-import useMessages from './translation/hooks/useMessages';
-import { GTContext } from './provider/GTContext';
-import useRuntimeTranslation from './provider/hooks/useRuntimeTranslation';
-import useCreateInternalUseGTFunction from './provider/hooks/translation/useCreateInternalUseGTFunction';
-import useCreateInternalUseTranslationsFunction from './provider/hooks/translation/useCreateInternalUseTranslationsFunction';
-import { useCreateInternalUseTranslationsObjFunction } from './provider/hooks/translation/useCreateInternalUseTranslationsObjFunction';
+} from "./deprecated/types-dir/types";
+import { useGTClass, useLocaleProperties } from "./deprecated/hooks/useGTClass";
+import { useRegionSelector } from "./deprecated/hooks/useRegionSelector";
+import { useLocaleDirection } from "./deprecated/hooks/useLocaleDirection";
+import { msg, decodeMsg, decodeOptions } from "./deprecated/messages/messages";
+import useMessages from "./deprecated/translation/hooks/useMessages";
+import { GTContext } from "./deprecated/provider/GTContext";
+import useRuntimeTranslation from "./deprecated/provider/hooks/useRuntimeTranslation";
+import useCreateInternalUseGTFunction from "./deprecated/provider/hooks/translation/useCreateInternalUseGTFunction";
+import useCreateInternalUseTranslationsFunction from "./deprecated/provider/hooks/translation/useCreateInternalUseTranslationsFunction";
+import { useCreateInternalUseTranslationsObjFunction } from "./deprecated/provider/hooks/translation/useCreateInternalUseTranslationsObjFunction";
 
-export * from 'gt-i18n/fallbacks';
+export * from "gt-i18n/fallbacks";
 
-export { declareStatic, derive, declareVar, decodeVars } from 'gt-i18n';
+export { declareStatic, derive, declareVar, decodeVars } from "gt-i18n";
 
 export {
   Var,

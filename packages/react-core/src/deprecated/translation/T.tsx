@@ -1,15 +1,15 @@
-import React, { Suspense } from 'react';
-import renderDefaultChildren from '../rendering/renderDefaultChildren';
-import { addGTIdentifier, writeChildrenAsObjects } from '../internal';
-import useGTContext from '../provider/GTContext';
-import renderTranslatedChildren from '../rendering/renderTranslatedChildren';
-import { useMemo } from 'react';
-import renderVariable from '../rendering/renderVariable';
-import { hashSource } from 'generaltranslation/id';
-import renderSkeleton from '../rendering/renderSkeleton';
-import { TranslatedChildren } from '../types-dir/types';
-import { useable } from '../promises/dangerouslyUsable';
-import reactUse from '../utils/use';
+import React, { Suspense } from "react";
+import renderDefaultChildren from "../rendering/renderDefaultChildren";
+import { addGTIdentifier, writeChildrenAsObjects } from "../../internal";
+import useGTContext from "../provider/GTContext";
+import renderTranslatedChildren from "../rendering/renderTranslatedChildren";
+import { useMemo } from "react";
+import renderVariable from "../rendering/renderVariable";
+import { hashSource } from "generaltranslation/id";
+import renderSkeleton from "../rendering/renderSkeleton";
+import { TranslatedChildren } from "../types-dir/types";
+import { useable } from "../promises/dangerouslyUsable";
+import reactUse from "../utils/use";
 
 /**
  * Build-time translation component that renders its children in the user's given locale.
@@ -62,7 +62,7 @@ function T({
   id = id ?? options?.$id;
   context = context ?? options?.$context;
   const maxChars =
-    typeof options?.$maxChars === 'number' ? options.$maxChars : undefined;
+    typeof options?.$maxChars === "number" ? options.$maxChars : undefined;
 
   const {
     translations,
@@ -87,7 +87,7 @@ function T({
     translationEntry = translations?.[id];
   }
 
-  if (typeof translationEntry === 'undefined' && _hash) {
+  if (typeof translationEntry === "undefined" && _hash) {
     translationEntry = translations?.[_hash];
   }
 
@@ -98,7 +98,7 @@ function T({
       !translationRequired || // Translation not required
       translationEntry // Translation already exists under the id
     ) {
-      return [undefined, ''];
+      return [undefined, ""];
     }
     // calculate hash
     const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
@@ -107,7 +107,7 @@ function T({
       ...(context && { context }),
       ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
       ...(id && { id }),
-      dataFormat: 'JSX',
+      dataFormat: "JSX",
     });
     return [childrenAsObjects, hash];
   }, [
@@ -120,7 +120,7 @@ function T({
   ]);
 
   // get translation entry on hash
-  if (typeof translationEntry === 'undefined') {
+  if (typeof translationEntry === "undefined") {
     translationEntry = translations?.[hash];
   }
 
@@ -195,7 +195,7 @@ function T({
     const resolvedTranslation = reactUse(
       useable(
         [
-          'getTranslationPromise', // prefix key
+          "getTranslationPromise", // prefix key
           developmentApiEnabled,
           JSON.stringify(childrenAsObjects),
           locale,
@@ -204,8 +204,8 @@ function T({
           context,
           maxChars,
         ],
-        () => getTranslationPromise()
-      )
+        () => getTranslationPromise(),
+      ),
     );
     return (
       <Suspense fallback={resolvedTranslation}>{resolvedTranslation}</Suspense>
@@ -213,9 +213,9 @@ function T({
   }
 
   let loadingFallback;
-  if (renderSettings.method === 'skeleton') {
+  if (renderSettings.method === "skeleton") {
     loadingFallback = renderSkeleton();
-  } else if (renderSettings.method === 'replace') {
+  } else if (renderSettings.method === "replace") {
     loadingFallback = renderDefault();
   } else {
     // default
@@ -229,6 +229,6 @@ function T({
   );
 }
 /** @internal _gtt - The GT transformation for the component. */
-T._gtt = 'translate-client';
+T._gtt = "translate-client";
 
 export default T;
