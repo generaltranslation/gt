@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
-const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+const packageRoot = dirname(
+  dirname(dirname(dirname(fileURLToPath(import.meta.url))))
+);
 const runtimeArtifactNames = [
   'browser.cjs',
   'browser.mjs',

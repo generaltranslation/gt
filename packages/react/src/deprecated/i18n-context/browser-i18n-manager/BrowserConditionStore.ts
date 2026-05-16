@@ -7,7 +7,7 @@ import { determineLocale } from './utils/determineLocale';
 import type { GetLocale } from './utils/types';
 import type {
   LocaleResolverConfig,
-  WritableConditionStore,
+  WritableConditionStoreInterface,
 } from 'gt-i18n/internal/types';
 
 /**
@@ -26,7 +26,7 @@ type BrowserConditionStoreConstructorParams = LocaleResolverConfig & {
 /**
  * Condition store implementation for Browser.
  */
-export class BrowserConditionStore implements WritableConditionStore {
+export class BrowserConditionStore implements WritableConditionStoreInterface {
   private readonly localeConfig: LocaleResolverConfig;
   private readonly customGetLocale?: GetLocale;
   private readonly localeCookieName: string;
