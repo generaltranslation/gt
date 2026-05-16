@@ -1,5 +1,5 @@
-import { defineConfig } from 'tsdown';
-import { createTsdownMinifiedDualFormatConfig } from '../../tsdown.preset.mts';
+import { defineConfig } from "tsdown";
+import { createTsdownConfig } from "../../tsdown.preset.mts";
 
 const deps = {
   neverBundle: [
@@ -22,9 +22,31 @@ const deps = {
   ],
 };
 
+const entries = [
+  "src/index.client.ts",
+  "src/index.server.ts",
+  "src/index.types.ts",
+  "src/types.ts",
+];
+
 export default defineConfig(
-  createTsdownMinifiedDualFormatConfig({
-    entries: ['src/index.ts'],
-    deps,
-  })
+  entries.flatMap((entry, index) => {
+    const [cjsConfig, esmConfig] = createTsdownConfig([entry], deps);
+    return [
+      {
+        ...cjsConfig,
+        clean: index === 0,
+        define: {
+          "import.meta.env": "{}",
+        },
+      },
+      {
+        ...esmConfig,
+        deps: {
+          onlyBundle: false,
+          ...deps,
+        },
+      },
+    ];
+  }),
 );
