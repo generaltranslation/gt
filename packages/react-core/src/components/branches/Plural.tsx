@@ -1,4 +1,4 @@
-import getPluralBranch from "../../plurals/getPluralBranch";
+import getPluralBranch from "../../utils/plurals/getPluralBranch";
 import type { ReactNode } from "react";
 import { useFormatLocales } from "../../hooks/utils";
 

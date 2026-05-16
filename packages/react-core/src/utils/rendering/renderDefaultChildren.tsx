@@ -8,7 +8,7 @@ import {
   TaggedChild,
   TaggedChildren,
   TaggedElement,
-} from "../types/types";
+} from "../types";
 import getGTTag from "./getGTTag";
 import getPluralBranch from "../plurals/getPluralBranch";
 

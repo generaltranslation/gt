@@ -1,13 +1,12 @@
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
-import { InjectionType, TransformationPrefix } from 'generaltranslation/types';
+import { isAcceptedPluralForm } from "generaltranslation/internal";
+import { InjectionType, TransformationPrefix } from "generaltranslation/types";
 import {
   ReactNode,
   ReactElement,
   isValidElement,
   cloneElement,
   Children,
-} from 'react';
-import { warnNestedInternalTComponent } from '../errors/createErrors';
+} from "react";
 
 /**
  * Remove injected _T components at runtime. This is only for i18n-context T components to use.
@@ -40,12 +39,12 @@ export function removeInjectedT(children: ReactNode): ReactNode {
  */
 function handleSingleChildElement(
   child: ReactElement,
-  derivationDepth: number
+  derivationDepth: number,
 ): ReactNode {
   const { type: elementType, props: elementProps } = child;
   const transformation = getTransformation(elementType);
   // unlikely edge case: encountered an element with props that cannot be processed
-  if (typeof elementProps !== 'object' || elementProps === null) {
+  if (typeof elementProps !== "object" || elementProps === null) {
     return child;
   }
 
@@ -53,17 +52,17 @@ function handleSingleChildElement(
     const { componentType, injectionType } = transformation;
 
     // (1) If the element is a variable component, hands off
-    if (componentType === 'variable') {
+    if (componentType === "variable") {
       return child;
     }
 
     // (2) If the element is a branching component, explore respective branches
-    else if (componentType === 'branch') {
+    else if (componentType === "branch") {
       // Traverse into each branch (this also includes the children property)
       const newProps = Object.entries(elementProps).reduce<
         Record<string, unknown>
       >((acc, [branchName, branch]) => {
-        if (branchName !== 'branch' && !branchName.startsWith('data-')) {
+        if (branchName !== "branch" && !branchName.startsWith("data-")) {
           acc[branchName] = handleSingleChild(branch, derivationDepth);
         } else {
           // Skip recursion on non-translated branches
@@ -75,12 +74,12 @@ function handleSingleChildElement(
       return cloneElement(child, {
         ...newProps,
       });
-    } else if (componentType === 'plural') {
+    } else if (componentType === "plural") {
       // Traverse into each branch (this also includes the children property)
       const newProps = Object.entries(elementProps).reduce<
         Record<string, unknown>
       >((acc, [branchName, branch]) => {
-        if (isAcceptedPluralForm(branchName) || branchName === 'children') {
+        if (isAcceptedPluralForm(branchName) || branchName === "children") {
           acc[branchName] = handleSingleChild(branch, derivationDepth);
         } else {
           // Skip Recursion on non-translated branches
@@ -95,13 +94,13 @@ function handleSingleChildElement(
     }
 
     // (3) If the element is a derivation component, add/remove derivation depth
-    else if (componentType === 'derive') {
+    else if (componentType === "derive") {
       return cloneElement(child, {
         ...elementProps,
-        ...('children' in elementProps && {
+        ...("children" in elementProps && {
           children: handleChildren(
             elementProps.children as ReactNode,
-            derivationDepth + 1
+            derivationDepth + 1,
           ),
         }),
       });
@@ -109,17 +108,17 @@ function handleSingleChildElement(
 
     // (4) If the element is a translation component, remove _T if within a derivation context, just return the children
     else if (
-      componentType === 'translate' &&
-      injectionType === 'automatic' &&
+      componentType === "translate" &&
+      injectionType === "automatic" &&
       derivationDepth > 0
     ) {
-      return 'children' in elementProps
+      return "children" in elementProps
         ? handleChildren(elementProps.children as ReactNode, derivationDepth)
         : undefined;
     }
 
     // Note: componentType === 'translate': means that there is a <_T> inside of a <T>/<_T>
-    else if (componentType === 'translate' && injectionType === 'automatic') {
+    else if (componentType === "translate" && injectionType === "automatic") {
       console.warn(warnNestedInternalTComponent);
     }
   }
@@ -127,10 +126,10 @@ function handleSingleChildElement(
   // (5) Recurse into children
   return cloneElement(child, {
     ...elementProps,
-    ...('children' in elementProps && {
+    ...("children" in elementProps && {
       children: handleChildren(
         elementProps.children as ReactNode,
-        derivationDepth
+        derivationDepth,
       ),
     }),
   });
@@ -143,7 +142,7 @@ function handleSingleChildElement(
  */
 function handleSingleChild(
   child: ReactNode,
-  derivationDepth: number
+  derivationDepth: number,
 ): ReactNode {
   if (isValidElement(child)) {
     return handleSingleChildElement(child, derivationDepth);
@@ -157,11 +156,11 @@ function handleSingleChild(
  */
 function handleChildren(
   children: ReactNode,
-  derivationDepth: number
+  derivationDepth: number,
 ): ReactNode {
   if (Array.isArray(children)) {
     return Children.map(children, (child) =>
-      handleSingleChild(child, derivationDepth)
+      handleSingleChild(child, derivationDepth),
     );
   }
   return handleSingleChild(children, derivationDepth);
@@ -174,7 +173,7 @@ function handleChildren(
  * @param elementType - The element type to extract the transformation from.
  * @returns The transformation.
  */
-function getTransformation(elementType: ReactElement['type']):
+function getTransformation(elementType: ReactElement["type"]):
   | {
       componentType: TransformationPrefix;
       injectionType: InjectionType;
@@ -182,22 +181,24 @@ function getTransformation(elementType: ReactElement['type']):
   | undefined {
   // Extract transformation string
   const transformation =
-    typeof elementType === 'function' && '_gtt' in elementType
+    typeof elementType === "function" && "_gtt" in elementType
       ? elementType._gtt
       : undefined;
-  if (transformation == null || typeof transformation !== 'string')
+  if (transformation == null || typeof transformation !== "string")
     return undefined;
 
   // Extract metadata from transformation string
-  const parts = transformation.split('-');
+  const parts = transformation.split("-");
   const componentType = parts[0] as TransformationPrefix;
   const injectionType =
-    parts[1] === 'automatic' || parts[2] === 'automatic'
-      ? 'automatic'
-      : 'manual';
+    parts[1] === "automatic" || parts[2] === "automatic"
+      ? "automatic"
+      : "manual";
 
   return {
     componentType,
     injectionType,
   };
 }
+
+const warnNestedInternalTComponent = `'@generaltranslation/react-core Warning: A <_T> component was found injected outside of a <Derive> boundary. This may affect translation resolution for this component.`;
