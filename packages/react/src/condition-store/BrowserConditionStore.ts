@@ -6,7 +6,7 @@ import {
   getReactI18nManager,
   WritableConditionStore,
   WritableConditionStoreParams,
-} from "@generaltranslation/react-core/context";
+} from "../../../../components/branches/Branch";
 import { getCookieValue, setCookieValue } from "./cookies";
 import { readBrowserLocale } from "./readBrowserLocale";
 import { GetEnableI18n, GetLocale } from "../i18n-manager/types";

@@ -1,4 +1,4 @@
-import type { InternalGTProviderProps } from "@generaltranslation/react-core/context";
+import type { InternalGTProviderProps } from "../../../../components/branches/Branch";
 import type { Dictionary, Translation } from "gt-i18n/types";
 import type {
   Locale,

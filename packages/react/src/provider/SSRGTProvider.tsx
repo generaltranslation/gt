@@ -7,7 +7,7 @@ import type { SharedGTProviderProps } from "./SharedGTProviderProps";
 import {
   getReactI18nManager,
   InternalGTProvider,
-} from "@generaltranslation/react-core/context";
+} from "../../../../components/branches/Branch";
 
 /**
  * For the server side GTProvider, we don't need to synchronize translations

@@ -7,7 +7,7 @@ import {
   setStoresInitialized,
   setConditionStore,
   setReactI18nManager,
-} from "@generaltranslation/react-core/context";
+} from "../../../../components/branches/Branch";
 import { BrowserI18nManager } from "../i18n-manager/BrowserI18nManager";
 import type { BrowserI18nManagerParams } from "../i18n-manager/BrowserI18nManager";
 import {
