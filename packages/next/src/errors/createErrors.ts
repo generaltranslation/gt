@@ -142,7 +142,7 @@ export const typesFileError = createGtNextDiagnostic({
 export const gtProviderUseClientError =
   `The Next.js <GTProvider> was imported in a client component. This prevents gt-next from fetching translations on the server. ` +
   `Move <GTProvider> to a file without 'use client'. ` +
-  `If you really need to put <GTProvider> on the client, import <GTClientProvider> from 'gt-next/client' instead (discouraged when using the Next.js App Router).`;
+  `If you really need to put <GTProvider> on the client, import { GTClientProvider } from 'gt-react/client' instead (discouraged when using the Next.js App Router).`;
 
 export const txUseClientError =
   `The <Tx> runtime translation component was rendered in a client component, which is not supported. ` +

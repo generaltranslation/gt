@@ -62,6 +62,7 @@ describe('gt-react package exports', () => {
           assert.equal(typeof react.GTProvider, 'function');
           assert.equal(typeof react.T, 'function');
           assert.equal(typeof client.ClientProvider, 'function');
+          assert.equal(client.GTClientProvider, client.GTProvider);
           assert.equal(typeof internal.renderDefaultChildren, 'function');
         `,
     ]);
@@ -74,12 +75,17 @@ describe('gt-react package exports', () => {
       `
           import assert from 'node:assert/strict';
           import { GTProvider, T } from 'gt-react';
-          import { ClientProvider } from 'gt-react/client';
+          import {
+            ClientProvider,
+            GTClientProvider,
+            GTProvider as ClientGTProvider,
+          } from 'gt-react/client';
           import { renderDefaultChildren } from 'gt-react/internal';
 
           assert.equal(typeof GTProvider, 'function');
           assert.equal(typeof T, 'function');
           assert.equal(typeof ClientProvider, 'function');
+          assert.equal(GTClientProvider, ClientGTProvider);
           assert.equal(typeof renderDefaultChildren, 'function');
         `,
     ]);

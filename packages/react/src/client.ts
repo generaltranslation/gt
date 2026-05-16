@@ -43,6 +43,7 @@ import {
 
 export {
   GTProvider,
+  GTProvider as GTClientProvider,
   ClientProvider,
   useGT,
   useTranslations,

@@ -9,8 +9,7 @@ import { AuthForm } from '@/components/auth-form';
 import { SubmitButton } from '@/components/submit-button';
 
 import { login, type LoginActionState } from '../actions';
-import { T } from 'gt-next';
-import { useGT } from 'gt-next/client';
+import { T, useGT } from 'gt-next';
 export default function Page() {
   const router = useRouter();
   const t = useGT();

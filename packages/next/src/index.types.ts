@@ -5,7 +5,11 @@ import {
   useTranslations as _useTranslations,
   useLocale as _useLocale,
   useLocales as _useLocales,
+  useSetLocale as _useSetLocale,
   useDefaultLocale as _useDefaultLocale,
+  useLocaleSelector as _useLocaleSelector,
+  useRegion as _useRegion,
+  useRegionSelector as _useRegionSelector,
   useGTClass as _useGTClass,
   useLocaleProperties as _useLocaleProperties,
   Currency as _Currency,
@@ -417,6 +421,22 @@ export const useLocales: typeof _useLocales = () => {
 };
 
 /**
+ * Sets the user's locale in the `<GTProvider>` context.
+ *
+ * If the locale passed is not supported, it will fall back on the current
+ * locale and then `defaultLocale` if necessary.
+ *
+ * @returns {(locale: string) => void} A function that sets the user's locale.
+ *
+ * @example
+ * const setLocale = useSetLocale();
+ * setLocale('en-US');
+ */
+export const useSetLocale: typeof _useSetLocale = () => {
+  throw new Error(typesFileError);
+};
+
+/**
  * Returns the application's default locale.
  *
  * If no default locale is provided, it defaults to 'en'.
@@ -428,6 +448,18 @@ export const useLocales: typeof _useLocales = () => {
  * console.log(locale); // 'en-US'
  */
 export const useDefaultLocale: typeof _useDefaultLocale = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * Gets the list of properties for using a locale selector.
+ *
+ * @param {string[]} [locales] - Optional list of locales to use for the
+ * selector. These must be a subset of the locales provided by `<GTProvider>`.
+ *
+ * @returns Locale selector state and helpers.
+ */
+export const useLocaleSelector: typeof _useLocaleSelector = () => {
   throw new Error(typesFileError);
 };
 
@@ -488,6 +520,16 @@ export const useVersionId: typeof _useVersionId = () => {
 };
 
 /**
+ * Returns the user's currently selected region.
+ *
+ * @returns {string | undefined} The currently active region code, or
+ * `undefined` if not set.
+ */
+export const useRegion: typeof _useRegion = () => {
+  throw new Error(typesFileError);
+};
+
+/**
  * A dropdown component that allows users to select a region.
  *
  * @param {string[]} [regions] - An optional array of ISO 3166 region codes to display. If not provided, regions are inferred from supported locales in the `<GTProvider>` context.
@@ -509,6 +551,16 @@ export const useVersionId: typeof _useVersionId = () => {
  * ```
  */
 export const RegionSelector: typeof _RegionSelector = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * Provides region selector state and helpers for building custom region
+ * selection UIs.
+ *
+ * @returns Region selector state and helpers.
+ */
+export const useRegionSelector: typeof _useRegionSelector = () => {
   throw new Error(typesFileError);
 };
 
