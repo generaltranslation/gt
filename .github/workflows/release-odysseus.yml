@@ -1,0 +1,72 @@
+name: Odysseus Release
+
+on:
+  push:
+    branches:
+      - odysseus
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: write
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+env:
+  CI: true
+
+jobs:
+  release:
+    name: Odysseus Release
+    runs-on: ubuntu-latest
+    environment:
+      name: 'release'
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Verify Odysseus prerelease mode
+        run: |
+          test -f .changeset/pre.json
+          test "$(jq -r '.mode' .changeset/pre.json)" = "pre"
+          test "$(jq -r '.tag' .changeset/pre.json)" = "odysseus"
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Install Dependencies
+        # not frozen since we are using workspaces & package versions will change
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build:release
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: Configure Changesets for Odysseus
+        run: |
+          jq '.baseBranch = "odysseus"' .changeset/config.json > .changeset/config.tmp.json
+          mv .changeset/config.tmp.json .changeset/config.json
+
+      - name: Create Odysseus Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm run version-packages
+          publish: pnpm run release
+          commit: '[ci] odysseus release'
+          title: '[ci] odysseus release'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
