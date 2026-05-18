@@ -6,7 +6,6 @@ on:
       - odysseus
 
 permissions:
-  id-token: write # Required for OIDC
   contents: write
   pull-requests: write
   packages: write
@@ -25,6 +24,12 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+
+      - name: Verify Odysseus prerelease mode
+        run: |
+          test -f .changeset/pre.json
+          test "$(jq -r '.mode' .changeset/pre.json)" = "pre"
+          test "$(jq -r '.tag' .changeset/pre.json)" = "odysseus"
 
       - uses: pnpm/action-setup@v4
         name: Install pnpm
@@ -54,12 +59,6 @@ jobs:
         run: |
           jq '.baseBranch = "odysseus"' .changeset/config.json > .changeset/config.tmp.json
           mv .changeset/config.tmp.json .changeset/config.json
-
-      - name: Verify Odysseus prerelease mode
-        run: |
-          test -f .changeset/pre.json
-          test "$(jq -r '.mode' .changeset/pre.json)" = "pre"
-          test "$(jq -r '.tag' .changeset/pre.json)" = "odysseus"
 
       - name: Create Odysseus Release Pull Request or Publish to npm
         id: changesets
