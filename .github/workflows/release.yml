@@ -292,6 +292,7 @@ jobs:
         run: |
           jq '.baseBranch = "odysseus"' .changeset/config.json > .changeset/config.tmp.json
           mv .changeset/config.tmp.json .changeset/config.json
+          git update-index --assume-unchanged .changeset/config.json
 
       - name: Create Odysseus Release Pull Request or Publish to npm
         id: changesets
