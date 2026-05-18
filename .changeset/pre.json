@@ -22,7 +22,22 @@
     "gt-remark": "1.0.7",
     "gt-sanity": "2.0.17",
     "@generaltranslation/supported-locales": "2.0.73",
-    "gt-tanstack-start": "0.4.21"
+    "gt-tanstack-start": "0.4.21",
+    "create-react-app": "0.1.0",
+    "ai-chatbot": "0.1.0",
+    "next-create-app": "0.1.0",
+    "next-starter": "0.1.0",
+    "next-pages-router": "0.1.0",
+    "next-ssg": "0.1.1",
+    "gt-react-native-example": "0.0.1",
+    "vite-create-app": "0.0.0",
+    "cli-test-app": "0.1.0",
+    "compiler-cli-parity": "0.0.0",
+    "base": "0.1.0",
+    "general-cases": "0.1.0",
+    "gt-next-middleware-e2e": "0.1.22"
   },
-  "changesets": []
+  "changesets": [
+    "odysseus-sanity-release-test"
+  ]
 }
