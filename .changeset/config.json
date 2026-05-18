@@ -11,7 +11,7 @@
   ],
   "linked": [],
   "access": "public",
-  "baseBranch": "main",
+  "baseBranch": "odysseus",
   "updateInternalDependencies": "minor",
   "ignore": [
     "base",
