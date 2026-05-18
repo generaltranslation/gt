@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "10.19.17",
+  "version": "10.19.18",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
