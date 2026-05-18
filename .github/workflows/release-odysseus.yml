@@ -50,6 +50,11 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
+      - name: Configure Changesets for Odysseus
+        run: |
+          jq '.baseBranch = "odysseus"' .changeset/config.json > .changeset/config.tmp.json
+          mv .changeset/config.tmp.json .changeset/config.json
+
       - name: Verify Odysseus prerelease mode
         run: |
           test -f .changeset/pre.json
