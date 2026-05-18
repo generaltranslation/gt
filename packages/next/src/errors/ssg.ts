@@ -83,7 +83,7 @@ export const createSsrDetectionFailedWarning = (error: unknown) =>
 export const deprecatedExperimentalEnableSSGWarning = createGtNextDiagnostic({
   whatHappened:
     'experimentalEnableSSG is deprecated and will be removed in a future version',
-  fix: 'Move to experimentalLocaleResolution when you update your SSG configuration',
+  fix: 'Define custom getLocalePath and getRegionPath request functions instead',
 });
 
 export const createDeprecatedGetStaticLocaleFunctionWarning = (
