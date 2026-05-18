@@ -1,6 +1,9 @@
 ---
-'@generaltranslation/react-core': patch
-'gt-react': patch
+"@generaltranslation/react-core": major
+"gt-react": major
+"gt-i18n": major
+"gt-tanstack-start": major
+"gt-next": major
 ---
 
-Refactor context providers around react-core external-store subscriptions and publish the `gt-react/context` conditional entrypoint.
+useSyncExternalStore refactor
