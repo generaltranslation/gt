@@ -1,5 +1,11 @@
 # gt-sanity
 
+## 2.0.18-odysseus.0
+
+### Patch Changes
+
+- [#1443](https://github.com/generaltranslation/gt/pull/1443) [`8673f8f`](https://github.com/generaltranslation/gt/commit/8673f8f710824784659686750f4e41e2cd4ff067) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Test the odysseus prerelease publishing flow with gt-sanity.
+
 ## 2.0.17
 
 ### Patch Changes
