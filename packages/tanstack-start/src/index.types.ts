@@ -25,8 +25,15 @@ export {
   useMessages,
   useTranslations,
   // ===== Functions ===== //
+  msg,
+  decodeMsg,
+  decodeOptions,
+  derive,
+  declareVar,
+  decodeVars,
+  mFallback,
+  gtFallback,
   getTranslationsSnapshot,
+  // ===== Setup ===== //
+  initializeGT,
 } from "gt-react/context";
-
-// ===== Setup ===== //
-export { internalInitializeGTSSR as initializeGT } from "@generaltranslation/react-core/context";

@@ -34,10 +34,15 @@ export {
   useMessages,
   useTranslations,
   // ===== Functions ===== //
+  msg,
+  decodeMsg,
+  decodeOptions,
+  derive,
+  declareVar,
+  decodeVars,
+  mFallback,
+  gtFallback,
   getTranslationsSnapshot,
+  // ===== Setup ===== //
+  initializeGT,
 } from "gt-react/context";
-
-// ===== Setup ===== //
-export function initializeGT(config: ReactI18nManagerParams): void {
-  setReactI18nManager(new I18nManager<Translation>(config));
-}

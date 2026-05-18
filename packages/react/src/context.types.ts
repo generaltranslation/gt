@@ -40,9 +40,17 @@ export {
   useMessages,
   useTranslations,
   // ===== Functions ===== //
+  msg,
+  decodeMsg,
+  decodeOptions,
+  derive,
+  declareVar,
+  decodeVars,
+  mFallback,
+  gtFallback,
   getTranslationsSnapshot,
-  getReactI18nManager,
-  setReactI18nManager,
   // ===== Setup ===== //
   internalInitializeGTSSR as initializeGT,
+  getReactI18nManager,
+  setReactI18nManager,
 } from "@generaltranslation/react-core/context";

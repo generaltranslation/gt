@@ -30,6 +30,16 @@ export { useFormatLocales } from "./hooks/utils";
 
 // ===== Functions ===== //
 export { getTranslationsSnapshot } from "./functions/helpers/getTranslationsSnapshot";
+export {
+  msg,
+  decodeMsg,
+  decodeOptions,
+  derive,
+  declareVar,
+  decodeVars,
+  mFallback,
+  gtFallback,
+} from "gt-i18n";
 
 // ===== Internal ===== //
 export { InternalGTProvider } from "./context/InternalGTProvider";

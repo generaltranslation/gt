@@ -33,7 +33,6 @@ type EntryCacheEvent = {
 type TranslateStoreListener = (lookup: TranslateLookup) => void;
 type DictionaryStoreEvent = EntryCacheEvent;
 type DictionaryStoreListener = (event: DictionaryStoreEvent) => void;
-type TranslationsSnapshot = Record<Locale, Record<Hash, Translation>>;
 
 /**
  * @param reloadLocale - If provided, will trigger on a locale change
