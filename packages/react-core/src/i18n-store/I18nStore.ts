@@ -13,7 +13,7 @@ import type {
   TranslateManySnapshot,
   TranslateSnapshot,
   Unsubscribe,
-  OverrideSetLocaleType,
+  ReloadLocaleType,
 } from "./storeTypes";
 import type { Translation } from "gt-i18n/types";
 import type { Hash, Locale, LocaleCandidates } from "gt-i18n/internal/types";
@@ -36,7 +36,7 @@ type DictionaryStoreListener = (event: DictionaryStoreEvent) => void;
 type TranslationsSnapshot = Record<Locale, Record<Hash, Translation>>;
 
 /**
- * @param overrideSetLocale - If provided, will trigger on a locale change
+ * @param reloadLocale - If provided, will trigger on a locale change
  * instead of a locale state update. This is used when triggering this function
  * will (1) load in new translations and (2) update the locale:
  * - SSR apps: reload server side props, pass new tx obj and new locale to client
@@ -47,7 +47,7 @@ type TranslationsSnapshot = Record<Locale, Record<Hash, Translation>>;
  * a loading state will be shown. Finally, an event will be emitted updating locale state
  * with synchronous access to new translations.
  */
-export type I18nStoreParams = { overrideSetLocale?: OverrideSetLocaleType };
+export type I18nStoreParams = { reloadLocale?: ReloadLocaleType };
 
 /**
  * A subscription wrapper around the I18nManager and the ConditionStore
@@ -74,19 +74,19 @@ export class I18nStore {
   private translationStatusListeners: ListenerSet = new Set();
   private translationStatus: TranslationStatusType = { status: "ready" };
 
-  private overrideSetLocale?: OverrideSetLocaleType;
+  private reloadLocale?: ReloadLocaleType;
 
   /**
    * ConditionStore and I18nManager must be already initialized
    */
-  constructor({ overrideSetLocale }: I18nStoreParams) {
+  constructor({ reloadLocale }: I18nStoreParams) {
     try {
       getWritableConditionStore();
       getReactI18nManager();
     } catch (error) {
       throw new Error("Failed to initialize I18nStore. Reason: " + error);
     }
-    this.overrideSetLocale = overrideSetLocale;
+    this.reloadLocale = reloadLocale;
   }
 
   // ===== Manager Config Subscriptions ===== //
@@ -313,9 +313,9 @@ export class I18nStore {
     // Abort client-reload logic if overrideSetLocale is provided
     // We dont emit an event here because it is assumed that the locale
     // gets updated via this reload (eg browser refresh/SSR reload)
-    if (this.overrideSetLocale) {
+    if (this.reloadLocale) {
       getWritableConditionStore().setLocale(locale);
-      this.overrideSetLocale(locale);
+      this.reloadLocale(locale);
       return;
     }
 

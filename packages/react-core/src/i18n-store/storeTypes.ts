@@ -3,7 +3,7 @@ import type {
   DictionaryObject,
   LookupOptions,
   Translation,
-} from 'gt-i18n/types';
+} from "gt-i18n/types";
 
 // ----- Listeners ----- //
 
@@ -13,8 +13,10 @@ export type ListenerSet = Set<StoreListener>;
 
 /**
  * A function that is called when a locale changes.
+ * Typically used to reload server-rendered props or
+ * trigger a client-side reload of the app.
  */
-export type OverrideSetLocaleType = (locale: string) => void;
+export type ReloadLocaleType = (locale: string) => void;
 
 // ----- Lookups ----- //
 

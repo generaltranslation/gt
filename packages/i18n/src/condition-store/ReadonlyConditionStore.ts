@@ -26,20 +26,12 @@ export class ReadonlyConditionStore implements ReadonlyConditionStoreContract {
      * TODO: change this to getI18nManager().determineLocale() but this
      * currently creates a circular dependency
      */
-    const { defaultLocale, locales, customMapping } = localeConfig;
-    console.log("ReadonlyConditionStore", locale, {
-      defaultLocale,
-      locales,
-      customMapping,
-    });
     this.resolveLocale = createLocaleResolver(localeConfig);
     this.locale = this.resolveLocale(locale);
-    console.log("ReadonlyConditionStore.locale 2", this.locale);
     this.enableI18n = enableI18n;
   }
 
   getLocale = (): string => {
-    console.log("ReadonlyConditionStore.getLocale", this.locale);
     return this.locale;
   };
 

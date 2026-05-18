@@ -7,7 +7,7 @@ import {
 } from "react";
 import { getI18nStore, setI18nStore } from "../i18n-store/singleton-operations";
 import { type WritableConditionStoreParams } from "gt-i18n/internal";
-import type { OverrideSetLocaleType } from "../i18n-store/storeTypes";
+import type { ReloadLocaleType } from "../i18n-store/storeTypes";
 import {
   setStoresInitialized,
   getI18nStoreInitialized,
@@ -23,7 +23,7 @@ export type InternalGTProviderProps = WritableConditionStoreParams &
      * To reload translations only from the client,
      * omit this prop
      * */
-    overrideSetLocale?: OverrideSetLocaleType;
+    reloadLocale?: ReloadLocaleType;
   };
 
 // ===== Component ===== //
@@ -91,7 +91,7 @@ export function InternalGTProvider({
 
   // Show fallback when translations are loading (client only) from a locale change
   // locale will not be updated until the translations are loaded
-  const display = !(status === "loading" && !config.overrideSetLocale);
+  const display = !(status === "loading" && !config.reloadLocale);
 
   return (
     <GTContext.Provider value={context}>

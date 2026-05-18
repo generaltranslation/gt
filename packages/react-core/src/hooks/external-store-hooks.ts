@@ -21,7 +21,6 @@ export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>,
 ): TranslateSnapshot<T> {
   const store = getI18nStore();
-  console.log("useTranslate", lookup);
   const translation = useSyncExternalStore(
     (listener) => store.subscribeToTranslate(lookup, listener),
     () => store.getTranslateSnapshot(lookup),

@@ -54,7 +54,7 @@ export {
 export { I18nStore } from "./i18n-store/I18nStore";
 export type { I18nStoreParams } from "./i18n-store/I18nStore";
 export type { InternalGTProviderProps } from "./deprecated/types-dir/config";
-export type { OverrideSetLocaleType } from "./i18n-store/storeTypes";
+export type { ReloadLocaleType } from "./i18n-store/storeTypes";
 export type {
   ReactI18nManager,
   ReactI18nManagerParams,
