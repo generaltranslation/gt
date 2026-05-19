@@ -47,11 +47,12 @@ function normalizeMintlifyFrontmatterUrl(
 
   const leadingWhitespace = url.match(/^\s*/)?.[0] ?? '';
   const trailingWhitespace = url.match(/\s*$/)?.[0] ?? '';
+  const leadingSlash = trimmed.startsWith('/') ? '/' : '';
   const pathBody = trimmed.replace(/^\/+/, '');
   const [firstSegment, ...restSegments] = pathBody.split('/');
 
   if (firstSegment === targetLocale) {
-    const normalized = `${leadingWhitespace}${pathBody}${trailingWhitespace}`;
+    const normalized = `${leadingWhitespace}${leadingSlash}${pathBody}${trailingWhitespace}`;
     return normalized === url ? null : normalized;
   }
 
@@ -61,7 +62,7 @@ function normalizeMintlifyFrontmatterUrl(
   const localizedPath = unprefixedPath
     ? `${targetLocale}/${unprefixedPath}`
     : `${targetLocale}/`;
-  const normalized = `${leadingWhitespace}${localizedPath}${trailingWhitespace}`;
+  const normalized = `${leadingWhitespace}${leadingSlash}${localizedPath}${trailingWhitespace}`;
 
   return normalized === url ? null : normalized;
 }

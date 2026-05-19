@@ -8,7 +8,7 @@ import localizeMintlifyFrontmatterUrls, {
 import type { Settings } from '../../types/index.js';
 
 describe('localizeMintlifyFrontmatterUrlForContent', () => {
-  it('prefixes a root-relative Mintlify frontmatter url with the target locale', () => {
+  it('prefixes an absolute Mintlify frontmatter url with the target locale and preserves the leading slash', () => {
     const result = localizeMintlifyFrontmatterUrlForContent(
       [
         '---',
@@ -18,6 +18,17 @@ describe('localizeMintlifyFrontmatterUrlForContent', () => {
         '---',
         '',
       ].join('\n'),
+      'ja',
+      ['en', 'ja']
+    );
+
+    expect(result.changed).toBe(true);
+    expect(result.content).toContain('url: "/ja/sandboxes"');
+  });
+
+  it('prefixes a relative Mintlify frontmatter url without adding a leading slash', () => {
+    const result = localizeMintlifyFrontmatterUrlForContent(
+      ['---', 'url: "sandboxes"', '---', ''].join('\n'),
       'ja',
       ['en', 'ja']
     );
@@ -39,7 +50,7 @@ describe('localizeMintlifyFrontmatterUrlForContent', () => {
     );
 
     expect(result.changed).toBe(true);
-    expect(result.content).toContain('url: "ja/sandboxes"');
+    expect(result.content).toContain('url: "/ja/sandboxes"');
     expect(repeated.changed).toBe(false);
     expect(repeated.content).toBe(result.content);
   });
@@ -106,7 +117,7 @@ describe('localizeMintlifyFrontmatterUrls', () => {
     await localizeMintlifyFrontmatterUrls(settings);
 
     expect(fs.readFileSync(targetPath, 'utf8')).toContain(
-      'url: "ja/sandboxes"'
+      'url: "/ja/sandboxes"'
     );
   });
 });
