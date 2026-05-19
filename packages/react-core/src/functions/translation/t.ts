@@ -1,13 +1,16 @@
-import { createLookupOptions, interpolateMessage } from "gt-i18n/internal";
+import {
+  createLookupOptions,
+  getRuntimeEnvironment,
+  interpolateMessage,
+} from "gt-i18n/internal";
 import type {
   InlineTranslationOptions,
   ResolutionOptions,
 } from "gt-i18n/types";
 import { getRenderStrategy } from "../../setup/globals";
 import { isWritableConditionStoreInitialized } from "../../condition-store/singleton-operations";
-import { StringContent } from "generaltranslation/types";
+import { StringContent, StringFormat } from "generaltranslation/types";
 import { getReactI18nManager } from "../../i18n-manager/singleton-operations";
-import { StringFormat } from "generaltranslation/types";
 import { getShouldTranslate } from "../../hooks/utils";
 import { getLocale } from "../../hooks/context-hooks";
 
@@ -32,8 +35,6 @@ import { getLocale } from "../../hooks/context-hooks";
  *
  * @example
  * t`Hello, ${name}` // Translate via tagged template literal
- *
- * TODO: enforce enableI18n
  *
  */
 export const t: StringOrTemplateSyncResolutionFunction = (
@@ -178,8 +179,6 @@ function interpolateTemplateLiteral(
     .join("");
 }
 
-// ----- Warnings and errors ----- //
-
 /**
  * If detect SSR + module level:
  * - Build: Error
@@ -196,27 +195,16 @@ function enforceSSRRules(messageOrStrings: string | TemplateStringsArray) {
       ? messageOrStrings
       : messageOrStrings.join("");
   const errorMessage = createSSRRulesError(message);
-  // TODO: find a more runtime agnostic way to check this
-  if (process.env.NODE_ENV === "development") {
+  if (getRuntimeEnvironment() === "development") {
     throw new Error(errorMessage);
   } else {
     console.warn(errorMessage);
   }
 }
 
-// ----- Constants ----- //
-
 // SSR Rules Error
 const createSSRRulesError = (message: string) =>
   `@generaltranslation/react-core Failed to translate "${message}" because it is being used in an SSR environment at the module level. Please use an msg() function instead, and translate with an m() function. See: https://generaltranslation.com/en-US/docs/react/api/strings/msg`;
-
-// TODO: for following three functions, resturcture them to be more organized
-
-// TODO: rename this
-const createTranslationFailedDueToBrowserEnvironmentWarning = (
-  message: string | TemplateStringsArray | undefined,
-) =>
-  `@generaltranslation/react-core Warning: Translation failed for t("${typeof message === "string" ? message : "`" + message?.join("${}") + "`"}") because it was used outside of a browser environment or your SPA did not initialize GT correctly. Falling back to original message.`;
 
 /**
  * Overloaded type for the `t` function.
