@@ -1,18 +1,18 @@
-import { GTContext, GTContextType } from "./GTContext";
+import { GTContext, GTContextType } from './GTContext';
 import {
   useCallback,
   useMemo,
   useSyncExternalStore,
   type ReactNode,
-} from "react";
-import { getI18nStore, setI18nStore } from "../i18n-store/singleton-operations";
-import { type WritableConditionStoreParams } from "gt-i18n/internal";
-import type { ReloadLocaleType } from "../i18n-store/storeTypes";
+} from 'react';
+import { getI18nStore, setI18nStore } from '../i18n-store/singleton-operations';
+import { type WritableConditionStoreParams } from 'gt-i18n/internal';
+import type { ReloadLocaleType } from '../i18n-store/storeTypes';
 import {
   setStoresInitialized,
   getI18nStoreInitialized,
-} from "../setup/globals";
-import { I18nStore, I18nStoreParams } from "../i18n-store/I18nStore";
+} from '../setup/globals';
+import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
 
 export type InternalGTProviderProps = WritableConditionStoreParams &
   I18nStoreParams & {
@@ -58,7 +58,7 @@ export function InternalGTProvider({
   const locale = useSyncExternalStore(
     getI18nStore().subscribeToLocale,
     getI18nStore().getLocaleSnapshot,
-    getI18nStore().getLocaleSnapshot,
+    getI18nStore().getLocaleSnapshot
   );
   const setLocale = useCallback((locale: string) => {
     getI18nStore().setLocale(locale);
@@ -66,7 +66,7 @@ export function InternalGTProvider({
   const enableI18n = useSyncExternalStore(
     getI18nStore().subscribeToEnableI18n,
     getI18nStore().getEnableI18nSnapshot,
-    getI18nStore().getEnableI18nSnapshot,
+    getI18nStore().getEnableI18nSnapshot
   );
   const setEnableI18n = useCallback((enableI18n: boolean) => {
     getI18nStore().setEnableI18n(enableI18n);
@@ -74,7 +74,7 @@ export function InternalGTProvider({
   const { status } = useSyncExternalStore(
     getI18nStore().subscribeToTranslationStatus,
     getI18nStore().getTranslationStatusSnapshot,
-    getI18nStore().getTranslationStatusSnapshot,
+    getI18nStore().getTranslationStatusSnapshot
   );
 
   const context: GTContextType = useMemo(
@@ -84,14 +84,14 @@ export function InternalGTProvider({
       setLocale,
       setEnableI18n,
     }),
-    [locale, enableI18n, setLocale, setEnableI18n],
+    [locale, enableI18n, setLocale, setEnableI18n]
   );
 
   // ------ Rendering ------ //
 
   // Show fallback when translations are loading (client only) from a locale change
   // locale will not be updated until the translations are loaded
-  const display = !(status === "loading" && !config.reloadLocale);
+  const display = !(status === 'loading' && !config.reloadLocale);
 
   return (
     <GTContext.Provider value={context}>

@@ -1,9 +1,9 @@
-import type { LocaleCandidates } from "../i18n-manager";
-import type { WritableConditionStoreInterface as WritableConditionStoreContract } from "../i18n-manager/types";
+import type { LocaleCandidates } from '../i18n-manager';
+import type { WritableConditionStoreInterface as WritableConditionStoreContract } from '../i18n-manager/types';
 import {
   ReadonlyConditionStore,
   type ReadonlyConditionStoreParams,
-} from "./ReadonlyConditionStore";
+} from './ReadonlyConditionStore';
 
 export type WritableConditionStoreParams = ReadonlyConditionStoreParams;
 
@@ -12,7 +12,7 @@ export class WritableConditionStore
   implements WritableConditionStoreContract
 {
   setLocale = (locale: LocaleCandidates): void => {
-    console.log("WritableConditionStore.setLocale", locale);
+    console.log('WritableConditionStore.setLocale', locale);
     this.locale = this.resolveLocale(locale);
   };
 

@@ -1,13 +1,13 @@
 import type {
   I18nManagerConstructorParams,
   TranslationsLoader,
-} from "gt-i18n/internal/types";
-import { I18nManager } from "gt-i18n/internal";
-import type { HtmlTagOptions } from "./types";
-import type { Translation } from "gt-i18n/types";
-import { DEFAULT_HTML_TAG_OPTIONS } from "./constants";
-import { LocalStorageTranslationCache } from "./LocalStorageTranslationCache";
-import { createDiagnosticMessage } from "generaltranslation/internal";
+} from 'gt-i18n/internal/types';
+import { I18nManager } from 'gt-i18n/internal';
+import type { HtmlTagOptions } from './types';
+import type { Translation } from 'gt-i18n/types';
+import { DEFAULT_HTML_TAG_OPTIONS } from './constants';
+import { LocalStorageTranslationCache } from './LocalStorageTranslationCache';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 /**
  * The configuration for the BrowserI18nManager
@@ -39,7 +39,7 @@ export class BrowserI18nManager extends I18nManager<Translation> {
       ? wrapLoaderWithLocalStorage(
           config.loadTranslations!,
           config.projectId!,
-          localStorageCaches,
+          localStorageCaches
         )
       : config.loadTranslations;
 
@@ -60,7 +60,7 @@ export class BrowserI18nManager extends I18nManager<Translation> {
     // For dev hot reload, we need to write the translations to the localStorage cache
     if (devHotReloadEnabled) {
       this.subscribe(
-        "translations-cache-miss",
+        'translations-cache-miss',
         ({ locale, hash, translation }) => {
           const cache = localStorageCaches[locale];
           if (cache) {
@@ -72,7 +72,7 @@ export class BrowserI18nManager extends I18nManager<Translation> {
               init: { [hash]: translation },
             });
           }
-        },
+        }
       );
     }
   }
@@ -91,7 +91,7 @@ export class BrowserI18nManager extends I18nManager<Translation> {
    */
   getLocalStorageTranslationCache(
     locale: string,
-    init?: Record<string, Translation>,
+    init?: Record<string, Translation>
   ): LocalStorageTranslationCache | undefined {
     if (!import.meta.env?.DEV) return undefined;
 
@@ -113,7 +113,7 @@ export class BrowserI18nManager extends I18nManager<Translation> {
    */
   updateHtmlTag(
     locale: string,
-    htmlTagOptions?: { lang?: string; dir?: "ltr" | "rtl" } & HtmlTagOptions,
+    htmlTagOptions?: { lang?: string; dir?: 'ltr' | 'rtl' } & HtmlTagOptions
   ): void {
     // Get parameters
     const htmlLocale = htmlTagOptions?.lang || locale;
@@ -158,7 +158,7 @@ export class BrowserI18nManager extends I18nManager<Translation> {
 function wrapLoaderWithLocalStorage(
   originalLoader: TranslationsLoader,
   projectId: string,
-  localStorageCaches: Record<string, LocalStorageTranslationCache>,
+  localStorageCaches: Record<string, LocalStorageTranslationCache>
 ) {
   return async (locale: string) => {
     const loaderTranslations = await originalLoader(locale);
@@ -189,8 +189,8 @@ function isDevHotReloadEnabled(config: BrowserI18nManagerParams) {
 
 const createInvalidLocaleWarning = (locale: string) =>
   createDiagnosticMessage({
-    source: "gt-react",
-    severity: "Warning",
+    source: 'gt-react',
+    severity: 'Warning',
     whatHappened: `Locale "${locale}" is not valid`,
-    fix: "Use a valid BCP 47 locale code or add a custom mapping",
+    fix: 'Use a valid BCP 47 locale code or add a custom mapping',
   });
