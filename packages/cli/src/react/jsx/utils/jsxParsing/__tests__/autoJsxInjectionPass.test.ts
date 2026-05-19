@@ -663,18 +663,6 @@ describe('autoInsertJsxComponents — injection pass', () => {
       expect(r.varCount).toBe(0);
     });
 
-    it('Static (deprecated) treated like Derive', () => {
-      const code = `
-        import { Static } from "gt-next";
-        export default function Page() {
-          return <div>Hello <Static>{getLabel()}</Static></div>;
-        }
-      `;
-      const r = injectAndAnalyze(code);
-      expect(r.tCount).toBe(1);
-      expect(r.varCount).toBe(0);
-    });
-
     it('multiple Derive siblings — single T', () => {
       const code = `
         import { Derive } from "gt-next";

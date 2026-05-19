@@ -1,5 +1,4 @@
 export {
-  declareStatic,
   derive,
   declareVar,
   decodeVars,

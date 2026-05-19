@@ -242,7 +242,7 @@ describe('icu-validation: $format ICU still validates', () => {
 });
 
 // ===================================================================
-// 4. derive()/declareStatic() — skip ICU validation
+// 4. derive() — skip ICU validation
 // ===================================================================
 
 // gt("Hello {unclosed" + derive(x))  — has derive, skip validation

@@ -30,12 +30,10 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
-  declareStatic,
   derive,
   declareVar,
   decodeVars,
   _Messages,
-  Static as _Static,
   Derive as _Derive,
   mFallback,
   gtFallback,
@@ -235,41 +233,6 @@ export const Derive: typeof _Derive = () => {
 };
 /** @internal _gtt - The GT transformation for the component. */
 Derive._gtt = 'derive';
-
-/**
- * @deprecated Use `<Derive>` instead.
- *
- * Marks JSX children as derivable by the GT compiler and CLI.
- *
- * Use `<Derive>` instead of `<Static>` for new code. This alias is kept for
- * backwards compatibility and renders its children unchanged at runtime.
- *
- * Run `gt validate` after adding or changing derived JSX content to verify that
- * each derivable expression can be resolved by the CLI before translating or
- * building.
- *
- * @example
- * ```jsx
- * function getSubject() {
- *   return (Math.random() > 0.5) ? "Alice" : "Brian";
- * }
- * ...
- * <T>
- *   <Static>
- *      {getSubject()}
- *   </Static>
- *   is going to school today.
- * </T>
- * ```
- *
- * @param {T extends React.ReactNode} children - JSX content to derive for translation extraction.
- * @returns {T} The same children, unchanged at runtime.
- */
-export const Static: typeof _Static = () => {
-  throw new Error(typesFileError);
-};
-/** @internal _gtt - The GT transformation for the component. */
-Static._gtt = 'derive';
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -571,6 +534,3 @@ export {
   declareVar,
   decodeVars,
 };
-
-/** @deprecated Use derive() instead. */
-export { declareStatic };

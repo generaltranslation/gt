@@ -37,10 +37,10 @@ import { injectFallbacks } from "./deprecated/dictionaries/injectFallbacks";
 import { injectAndMerge } from "./deprecated/dictionaries/injectAndMerge";
 import { collectUntranslatedEntries } from "./deprecated/dictionaries/collectUntranslatedEntries";
 import { msg, decodeMsg, decodeOptions } from "./deprecated/messages/messages";
-import { Static, Derive } from "./deprecated/variables/Derive";
+import { Derive } from "./deprecated/variables/Derive";
 
 export * from "gt-i18n/fallbacks";
-export { declareStatic, derive, declareVar, decodeVars } from "gt-i18n";
+export { derive, declareVar, decodeVars } from "gt-i18n";
 
 export {
   addGTIdentifier,
@@ -76,6 +76,5 @@ export {
   msg,
   decodeMsg,
   decodeOptions,
-  Static,
   Derive,
 };

@@ -445,17 +445,6 @@ describe('static-string: existing valid patterns remain valid with new fix logic
         `,
         options: [{ libs: ['gt-react'] }],
       },
-      // gt("Hello " + declareStatic(getValue()))  — declareStatic() is allowed
-      {
-        code: `
-          import { useGT, declareStatic } from 'gt-react';
-          function Component() {
-            const gt = useGT();
-            return gt("Hello " + declareStatic(getValue()));
-          }
-        `,
-        options: [{ libs: ['gt-react'] }],
-      },
       // msg(["Hello", "World"])  — array form is valid for msg()
       {
         code: `

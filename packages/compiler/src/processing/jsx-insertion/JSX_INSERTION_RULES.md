@@ -305,7 +305,7 @@ Branch and Plural components trigger \_T insertion at the **parent** level. The 
 // This works because _Var is auto-inserted, so JSX inside it is still fair game.
 ```
 
-## Rule 9: Derive and Static — same treatment as Branch/Plural
+## Rule 9: Derive — same treatment as Branch/Plural
 
 Same as Branch/Plural. \_T wraps from the parent level. Static JSX props are left alone; dynamic props get \_Var wrapped. JSX inside auto-inserted \_Var is still eligible for \_T.
 
@@ -314,20 +314,16 @@ Same as Branch/Plural. \_T wraps from the parent level. Static JSX props are lef
 <div><Derive>{getName()}</Derive></div>
 <div><_T><Derive>{getName()}</Derive></_T></div>
 
-// Static as only child
-<div><Static>{getLabel()}</Static></div>
-<div><_T><Static>{getLabel()}</Static></_T></div>
-
 // Derive with dynamic prop — gets _Var
 <div><Derive context={someVar}>{getName()}</Derive></div>
 <div><_T><Derive context={<_Var>{someVar}</_Var>}>{getName()}</Derive></_T></div>
 ```
 
-## Rule 10: Non-children props are independent (except Branch/Plural/Derive/Static)
+## Rule 10: Non-children props are independent (except Branch/Plural/Derive)
 
 For **regular components**, JSX in non-`children` props (e.g. `header`, `icon`, `footer`) is an independent subtree. The pass processes it separately — the parent's \_T state does not carry over. This is the default behavior for any component that is not a GT opaque component.
 
-**Exception:** Branch, Plural, Derive, and Static (see Rules 8-9). Their props are not processed independently as separate subtrees. Instead, static JSX props are left alone and dynamic props get \_Var wrapped within the parent's \_T context.
+**Exception:** Branch, Plural, and Derive (see Rules 8-9). Their props are not processed independently as separate subtrees. Instead, static JSX props are left alone and dynamic props get \_Var wrapped within the parent's \_T context.
 
 ```jsx
 // header prop has its own JSX — processed independently
@@ -479,13 +475,13 @@ The compiler would have to trace every call site of `getName()` and prove it is 
 
 ### Runtime solution: `removeInjectedT()`
 
-Instead of relying on the compiler to never emit nested \_T, the **runtime removes them**. The `_T` component (`GtInternalTranslateJsx`) calls `removeInjectedT()` on its children before processing. This function traverses the React element tree and unwraps any auto-injected \_T components that appear inside a `<Derive>` or `<Static>` context.
+Instead of relying on the compiler to never emit nested \_T, the **runtime removes them**. The `_T` component (`GtInternalTranslateJsx`) calls `removeInjectedT()` on its children before processing. This function traverses the React element tree and unwraps any auto-injected \_T components that appear inside a `<Derive>` context.
 
 **Key invariant that makes this safe:** \_T is always inserted by wrapping the children of an existing element. This means removing \_T is always a simple child replacement — unwrap \_T's children back into the parent. No merging or restructuring needed.
 
 The function uses a `derivationDepth` counter:
 
-- Entering `<Derive>` or `<Static>` increments the depth
+- Entering `<Derive>` increments the depth
 - When depth > 0 and an auto-injected \_T is encountered, it is unwrapped (replaced by its children)
 - User-written `<T>` components are never removed (distinguished by the `_gtt` transformation tag: `'translate-client'` vs `'translate-client-automatic'`)
 

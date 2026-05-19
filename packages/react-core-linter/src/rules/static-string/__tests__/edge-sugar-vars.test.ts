@@ -352,17 +352,16 @@ describe('edge: shorthand sugar property is error (variable reference)', () => {
   });
 });
 
-// 17. $context with declareStatic (deprecated alias) — valid
-// isDeriveFunction checks for both 'derive' and 'declareStatic'.
-describe('edge: $context with declareStatic is valid (deprecated alias)', () => {
-  ruleTester.run('context-declare-static', staticString, {
+// 17. $context with derive is valid
+describe('edge: $context with derive is valid', () => {
+  ruleTester.run('context-derive', staticString, {
     valid: [
       {
         code: `
-          import { useGT, declareStatic } from 'gt-react';
+          import { useGT, derive } from 'gt-react';
           function Component() {
             const gt = useGT();
-            return gt("Hello", { $context: declareStatic(x) });
+            return gt("Hello", { $context: derive(x) });
           }
         `,
         options: [{ libs: ['gt-react'] }],

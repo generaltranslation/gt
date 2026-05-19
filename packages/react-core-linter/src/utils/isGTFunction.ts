@@ -7,9 +7,7 @@ import {
   PLURAL_COMPONENT_NAME,
   BRANCH_COMPONENT_NAME,
   BRANCH_COMPONENT_NAMES,
-  STATIC_COMPONENT_NAME,
   DERIVE_COMPONENT_NAME,
-  DECLARE_STATIC_FUNCTION_NAME,
   DERIVE_FUNCTION_NAME,
   MSG_FUNCTION_NAME,
   GT_CALLBACK_DECLARATOR_FUNCTION_NAMES,
@@ -136,26 +134,13 @@ export function isDeriveComponent({
   node,
   libs,
 }: Omit<IsGTFunctionOptions, 'targetName'>): boolean {
-  return (
-    isGTFunction({
-      context,
-      node,
-      libs,
-      targetName: DERIVE_COMPONENT_NAME,
-    }) ||
-    isGTFunction({
-      context,
-      node,
-      libs,
-      targetName: STATIC_COMPONENT_NAME,
-    })
-  );
+  return isGTFunction({
+    context,
+    node,
+    libs,
+    targetName: DERIVE_COMPONENT_NAME,
+  });
 }
-
-/**
- * @deprecated Use `isDeriveComponent` instead.
- */
-export const isStaticComponent = isDeriveComponent;
 
 export function isVariableComponent({
   context,
@@ -214,26 +199,13 @@ export function isDeriveFunction({
   node,
   libs,
 }: Omit<IsGTFunctionOptions, 'targetName'>): boolean {
-  return (
-    isGTFunction({
-      context,
-      node,
-      libs,
-      targetName: DERIVE_FUNCTION_NAME,
-    }) ||
-    isGTFunction({
-      context,
-      node,
-      libs,
-      targetName: DECLARE_STATIC_FUNCTION_NAME,
-    })
-  );
+  return isGTFunction({
+    context,
+    node,
+    libs,
+    targetName: DERIVE_FUNCTION_NAME,
+  });
 }
-
-/**
- * @deprecated Use `isDeriveFunction` instead.
- */
-export const isDeclareStaticFunction = isDeriveFunction;
 
 export function isMsgFunction({
   context,

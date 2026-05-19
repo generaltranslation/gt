@@ -2,7 +2,7 @@
  * Sugar variable validation for gt()/msg() options objects.
  *
  * Validates that metadata keys ($context, $id, $format, $maxChars) are static:
- * - $context: static string or derive()/declareStatic() in concatenation
+ * - $context: static string or derive() in concatenation
  * - $id:      static string only
  * - $format:  static string only
  * - $maxChars: number literal only
@@ -67,7 +67,7 @@ function isStaticNumber(node: TSESTree.Expression): boolean {
 }
 
 /**
- * $context allows static strings, derive()/declareStatic(), and concatenation of those.
+ * $context allows static strings, derive(), and concatenation of those.
  */
 function isStaticOrDerive(
   expr: TSESTree.Expression,

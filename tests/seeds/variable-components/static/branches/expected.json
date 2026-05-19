@@ -2,7 +2,7 @@
   "151c5ea756354da4": [
     "Hello there",
     {
-      "t": "Static",
+      "t": "Derive",
       "i": 1,
       "c": [
         "Hello my good friend",
@@ -40,7 +40,7 @@
   "429180eccd81dee8": [
     "Hello there",
     {
-      "t": "Static",
+      "t": "Derive",
       "i": 1,
       "c": [
         "Hello my good friend",
@@ -78,7 +78,7 @@
   "da0a2ee4ca370cf3": [
     "Hello there",
     {
-      "t": "Static",
+      "t": "Derive",
       "i": 1,
       "c": [
         "Hello my good friend",
