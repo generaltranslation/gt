@@ -41,7 +41,6 @@ type DefaultGTConfigProps = {
     resetLocaleCookieName: string;
   };
   experimentalCompilerOptions: CompilerOptions;
-  disableSSGWarnings: boolean;
   experimentalEnableSSG: boolean;
   experimentalLocaleResolution: boolean;
   experimentalLocaleResolutionParam: string;
@@ -73,7 +72,6 @@ export const defaultWithGTConfigProps: DefaultGTConfigProps = {
     compileTimeHash: true,
     disableBuildChecks: false,
   },
-  disableSSGWarnings: false,
   experimentalEnableSSG: false,
   experimentalLocaleResolution: false,
   experimentalLocaleResolutionParam: defaultExperimentalLocaleResolutionParam,
