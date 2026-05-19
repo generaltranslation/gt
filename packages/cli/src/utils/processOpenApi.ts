@@ -290,6 +290,20 @@ function rewriteDocsJsonOpenApi(
           changed = true;
         }
       }
+
+      const directoryValue = openapiConfig.directory;
+      if (typeof directoryValue === 'string') {
+        const localizedDirectory = localizeDocsJsonDirectory(
+          directoryValue,
+          locale,
+          defaultLocale,
+          new Set([defaultLocale, ...Object.keys(fileMappingRel)])
+        );
+        if (localizedDirectory && localizedDirectory !== directoryValue) {
+          openapiConfig.directory = localizedDirectory;
+          changed = true;
+        }
+      }
     }
 
     if (Array.isArray(node.pages)) {
@@ -324,6 +338,39 @@ function stripLocaleFromOpenApiPage(value: string, locale: string): string {
   const parsed = parseOpenApiValue(candidate);
   if (!parsed) return value;
   return candidate;
+}
+
+function localizeDocsJsonDirectory(
+  directory: string,
+  locale: string,
+  defaultLocale: string,
+  knownLocales: Set<string>
+): string | null {
+  if (locale === defaultLocale) return null;
+
+  const trimmed = directory.trim();
+  if (!trimmed || /^(?:[a-z][a-z0-9+.-]*:|\/\/|#|\.\/|\.\.\/)/i.test(trimmed)) {
+    return null;
+  }
+
+  const leadingWhitespace = directory.match(/^\s*/)?.[0] ?? '';
+  const trailingWhitespace = directory.match(/\s*$/)?.[0] ?? '';
+  const leadingSlash = trimmed.startsWith('/') ? '/' : '';
+  const pathBody = trimmed.replace(/^\/+/, '');
+  const [firstSegment, ...restSegments] = pathBody.split('/');
+
+  if (firstSegment === locale) {
+    const normalized = `${leadingWhitespace}${leadingSlash}${pathBody}${trailingWhitespace}`;
+    return normalized === directory ? null : normalized;
+  }
+
+  const unprefixedPath = knownLocales.has(firstSegment)
+    ? restSegments.join('/')
+    : pathBody;
+  const localizedPath = unprefixedPath ? `${locale}/${unprefixedPath}` : locale;
+  const normalized = `${leadingWhitespace}${leadingSlash}${localizedPath}${trailingWhitespace}`;
+
+  return normalized === directory ? null : normalized;
 }
 
 function localizeDocsJsonSpecPath(
