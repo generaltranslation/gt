@@ -18,6 +18,7 @@
     "release:gtx-cli-bin": "pnpm --filter gtx-cli run release:bin",
     "build:clean": "turbo run build:clean --filter='./packages/*'",
     "build:release": "turbo run build:release --filter='./packages/*'",
+    "build:watch": "turbo watch build --filter='./packages/*' --ui tui",
     "bench": "turbo run bench",
     "size": "size-limit",
     "format": "oxfmt --check .",
