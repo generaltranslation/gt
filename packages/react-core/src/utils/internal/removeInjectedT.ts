@@ -13,7 +13,7 @@ import {
  * This is necessary because when dealing with deriving fragmented content. The compiler will always
  * inject a `_T` component.
  *
- * Only remove if within a `<Derive>` or `<Static>` component as this scopes this behavior
+ * Only remove if within a `<Derive>` component as this scopes this behavior
  * to only where it can actually appear.
  */
 export function removeInjectedT(children: ReactNode): ReactNode {
@@ -33,7 +33,7 @@ export function removeInjectedT(children: ReactNode): ReactNode {
  * Rules:
  * 1. Variable components (Var, Num, Currency, DateTime) - hands off
  * 2. Branching components (Branch, Plural) - explore respective branches
- * 3. Derivation components (Derive, Static) - add/remove derivation depth
+ * 3. Derivation components (Derive) - add/remove derivation depth
  * 4. Translation components (T) - remove _T if within a derivation context
  * 5. Then move on to processing the element's children
  */

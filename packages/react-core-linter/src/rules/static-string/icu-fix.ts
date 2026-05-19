@@ -213,7 +213,7 @@ export function flattenConcat(
 }
 
 /**
- * Checks whether a binary "+" tree contains a derive()/declareStatic() call.
+ * Checks whether a binary "+" tree contains a derive() call.
  */
 function concatContainsDerive(
   expr: TSESTree.Expression,

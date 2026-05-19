@@ -3,7 +3,6 @@ import type { ImportAlias } from './extractImports.js';
 import {
   PYTHON_METADATA_KWARGS,
   PYTHON_DERIVE,
-  PYTHON_DECLARE_STATIC,
   PYTHON_DECLARE_VAR,
 } from './constants.js';
 import {
@@ -41,13 +40,12 @@ export async function extractCalls(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Only track t/msg as translation functions (not derive/declare_static/declare_var)
+  // Only track t/msg as translation functions (not derive/declare_var)
   const trackedNames = new Set(
     imports
       .filter(
         (imp) =>
           imp.originalName !== PYTHON_DERIVE &&
-          imp.originalName !== PYTHON_DECLARE_STATIC &&
           imp.originalName !== PYTHON_DECLARE_VAR
       )
       .map((imp) => imp.localName)
@@ -139,7 +137,7 @@ async function processCall(
     return;
   }
 
-  // Check if this expression contains declare_static/declare_var
+  // Check if this expression contains derive/declare_var
   const hasStaticHelpers =
     (firstArg.type === 'string' &&
       isFString(firstArg) &&
@@ -231,7 +229,7 @@ async function processCall(
     return;
   }
 
-  // Check for f-strings (without declare_static/declare_var)
+  // Check for f-strings (without derive/declare_var)
   if (isFString(firstArg)) {
     errors.push(
       `${locationStr(callNode)}: translation call uses an f-string — use a plain string literal or derive()/declare_var()`

@@ -11,7 +11,7 @@ import Num from "./deprecated/variables/Num";
 import Currency from "./deprecated/variables/Currency";
 import DateTime from "./deprecated/variables/DateTime";
 import RelativeTime from "./deprecated/variables/RelativeTime";
-import { Static, Derive } from "./deprecated/variables/Derive";
+import { Derive } from "./deprecated/variables/Derive";
 import Plural from "./deprecated/branches/plurals/Plural";
 import Branch from "./deprecated/branches/Branch";
 import useLocales from "./deprecated/hooks/useLocales";
@@ -37,7 +37,7 @@ import { useCreateInternalUseTranslationsObjFunction } from "./deprecated/provid
 
 export * from "gt-i18n/fallbacks";
 
-export { declareStatic, derive, declareVar, decodeVars } from "gt-i18n";
+export { derive, declareVar, decodeVars } from "gt-i18n";
 
 export {
   Var,
@@ -45,7 +45,6 @@ export {
   Currency,
   DateTime,
   RelativeTime,
-  Static,
   Derive,
   T,
   GTProvider,

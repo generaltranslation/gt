@@ -1,3 +1,3 @@
-from gt_flask import t, declare_static, declare_var
+from gt_flask import t, derive, declare_var
 
-a = t(f"{declare_static('day' if x else 'night')} for {declare_var(name)}")
+a = t(f"{derive('day' if x else 'night')} for {declare_var(name)}")

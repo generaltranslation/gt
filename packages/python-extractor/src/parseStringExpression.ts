@@ -5,7 +5,6 @@ import type { StringNode } from './stringNode.js';
 import type { ImportAlias } from './extractImports.js';
 import {
   PYTHON_DERIVE,
-  PYTHON_DECLARE_STATIC,
   PYTHON_DECLARE_VAR,
 } from './constants.js';
 import {
@@ -24,16 +23,14 @@ type ParseContext = {
 };
 
 /**
- * Returns true if the original import name is derive() or declare_static() (deprecated).
+ * Returns true if the original import name is derive().
  */
 function isDeriveFunction(originalName: string | null): boolean {
-  return (
-    originalName === PYTHON_DERIVE || originalName === PYTHON_DECLARE_STATIC
-  );
+  return originalName === PYTHON_DERIVE;
 }
 
 /**
- * Checks if an expression contains derive/declare_static or declare_var calls.
+ * Checks if an expression contains derive or declare_var calls.
  */
 export function containsStaticCalls(
   node: SyntaxNode,
@@ -99,7 +96,7 @@ export async function parseStringExpression(
     return parseBinaryOperator(node, ctx);
   }
 
-  // Standalone call: derive/declare_static(...)
+  // Standalone call: derive(...)
   if (node.type === 'call') {
     const funcNode = node.childForFieldName('function');
     if (funcNode && funcNode.type === 'identifier') {
@@ -263,7 +260,7 @@ async function resolveDeclareStaticArg(
   const arg = getFirstPositionalArg(callNode);
   if (!arg) {
     ctx.errors.push(
-      `${locationStr(callNode)}: derive() / declare_static() requires an argument`
+      `${locationStr(callNode)}: derive() requires an argument`
     );
     return null;
   }

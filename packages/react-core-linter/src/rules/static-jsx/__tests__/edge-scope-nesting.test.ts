@@ -243,14 +243,14 @@ describe('edge: member expression inside Var inside T — no error', () => {
   });
 });
 
-describe('edge: dynamic content inside Static (deprecated) inside T — suppresses checking', () => {
-  ruleTester.run('dynamic-in-Static', staticJsx, {
+describe('edge: dynamic content inside Derive inside T — suppresses checking', () => {
+  ruleTester.run('dynamic-in-Derive', staticJsx, {
     valid: [
       {
         code: `
-          import { T, Static } from 'gt-react';
+          import { T, Derive } from 'gt-react';
           function Component({ cond }) {
-            return <T><Static>{cond ? "a" : "b"}</Static></T>;
+            return <T><Derive>{cond ? "a" : "b"}</Derive></T>;
           }
         `,
         options: [{ libs: ['gt-react'] }],

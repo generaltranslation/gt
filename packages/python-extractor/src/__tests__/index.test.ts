@@ -8,7 +8,6 @@ import {
   PYTHON_GT_DEPENDENCIES,
   PYTHON_T_FUNCTION,
   PYTHON_DERIVE,
-  PYTHON_DECLARE_STATIC,
   PYTHON_DECLARE_VAR,
   PYTHON_METADATA_KWARGS,
 } from '../index.js';
@@ -486,15 +485,15 @@ t(f"The {derive(get_gender(variant))}")`;
     });
   });
 
-  // ===== declare_static tests (backwards compatibility) ===== //
+  // ===== derive tests ===== //
 
-  describe('declare_static (backwards compatibility)', () => {
+  describe('derive', () => {
     it('expands simple ternary into 2 variants', async () => {
       const { results } = await extractFromPythonSource(
-        fixture('declare_static_ternary.py'),
+        fixture('derive_ternary.py'),
         'test.py'
       );
-      // First call: t(f"It is {declare_static('day' if is_day() else 'night')}!")
+      // First call: t(f"It is {derive('day' if is_day() else 'night')}!")
       const ternaryResults = results.filter(
         (r) => r.source === 'It is day!' || r.source === 'It is night!'
       );
@@ -507,7 +506,7 @@ t(f"The {derive(get_gender(variant))}")`;
 
     it('expands nested ternary into 3 variants', async () => {
       const { results } = await extractFromPythonSource(
-        fixture('declare_static_ternary.py'),
+        fixture('derive_ternary.py'),
         'test.py'
       );
       const nestedResults = results.filter(
@@ -521,9 +520,9 @@ t(f"The {derive(get_gender(variant))}")`;
       );
     });
 
-    it('handles plain string in declare_static', async () => {
+    it('handles plain string in derive', async () => {
       const { results } = await extractFromPythonSource(
-        fixture('declare_static_ternary.py'),
+        fixture('derive_ternary.py'),
         'test.py'
       );
       const plainResult = results.find((r) => r.source === 'Hello world!');
@@ -531,9 +530,9 @@ t(f"The {derive(get_gender(variant))}")`;
       expect(plainResult!.metadata.staticId).toBeDefined();
     });
 
-    it('resolves local function returns in declare_static', async () => {
+    it('resolves local function returns in derive', async () => {
       const { results, errors } = await extractFromPythonSource(
-        fixture('declare_static_func.py'),
+        fixture('derive_func.py'),
         'test.py'
       );
       expect(errors).toEqual([]);
@@ -546,13 +545,13 @@ t(f"The {derive(get_gender(variant))}")`;
       );
     });
 
-    it('resolves cross-file function in declare_static', async () => {
-      const code = `from gt_flask import t, declare_static
-from declare_static_helper import get_time
-t(f"It is {declare_static(get_time())}!")`;
+    it('resolves cross-file function in derive', async () => {
+      const code = `from gt_flask import t, derive
+from derive_helper import get_time
+t(f"It is {derive(get_time())}!")`;
       const { results, errors } = await extractFromPythonSource(
         code,
-        path.join(__dirname, 'fixtures', 'declare_static_crossfile.py')
+        path.join(__dirname, 'fixtures', 'derive_crossfile.py')
       );
       expect(errors).toEqual([]);
       expect(results).toHaveLength(2);
@@ -561,12 +560,12 @@ t(f"It is {declare_static(get_time())}!")`;
       expect(results[0].metadata.staticId).toBe(results[1].metadata.staticId);
     });
 
-    it('handles concatenation with declare_static', async () => {
+    it('handles concatenation with derive', async () => {
       const { results } = await extractFromPythonSource(
-        fixture('declare_static_concat.py'),
+        fixture('derive_concat.py'),
         'test.py'
       );
-      // t("Hello " + declare_static("day" if x else "night") + "!")
+      // t("Hello " + derive("day" if x else "night") + "!")
       const concatResults = results.filter(
         (r) => r.source === 'Hello day!' || r.source === 'Hello night!'
       );
@@ -576,7 +575,7 @@ t(f"It is {declare_static(get_time())}!")`;
       );
     });
 
-    it('produces cartesian product for multiple declare_statics', async () => {
+    it('produces cartesian product for multiple derives', async () => {
       const { results, errors } = await extractFromPythonSource(
         fixture('declare_cartesian.py'),
         'test.py'
@@ -596,9 +595,9 @@ t(f"It is {declare_static(get_time())}!")`;
       expect(results.every((r) => r.metadata.staticId === staticId)).toBe(true);
     });
 
-    it('preserves metadata kwargs with declare_static', async () => {
-      const code = `from gt_flask import t, declare_static
-t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="greeting")`;
+    it('preserves metadata kwargs with derive', async () => {
+      const code = `from gt_flask import t, derive
+t(f"It is {derive('day' if x else 'night')}", _id="time_msg", _context="greeting")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -624,9 +623,9 @@ t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="
       expect(results[0].metadata.staticId).toBeUndefined();
     });
 
-    it('handles string concatenation inside declare_static', async () => {
+    it('handles string concatenation inside derive', async () => {
       const { results, errors } = await extractFromPythonSource(
-        fixture('declare_static_string_concat.py'),
+        fixture('derive_string_concat.py'),
         'test.py'
       );
       expect(errors).toEqual([]);
@@ -635,9 +634,9 @@ t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="
       expect(results[0].metadata.staticId).toBeDefined();
     });
 
-    it('resolves single-return function in declare_static', async () => {
+    it('resolves single-return function in derive', async () => {
       const { results, errors } = await extractFromPythonSource(
-        fixture('declare_static_func_simple.py'),
+        fixture('derive_func_simple.py'),
         'test.py'
       );
       expect(errors).toEqual([]);
@@ -646,7 +645,7 @@ t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="
       expect(results[0].metadata.staticId).toBeDefined();
     });
 
-    it('resolves function returning declare_var + concat in declare_static', async () => {
+    it('resolves function returning declare_var + concat in derive', async () => {
       const { results, errors } = await extractFromPythonSource(
         fixture('declare_var_in_func_only.py'),
         'test.py'
@@ -660,7 +659,7 @@ t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="
       expect(results[0].metadata.staticId).toBeDefined();
     });
 
-    it('resolves function with declare_var in ternary with declare_static', async () => {
+    it('resolves function with declare_var in ternary with derive', async () => {
       const { results, errors } = await extractFromPythonSource(
         fixture('declare_var_in_func.py'),
         'test.py'
@@ -679,9 +678,9 @@ t(f"It is {declare_static('day' if x else 'night')}", _id="time_msg", _context="
     });
 
     it('handles parenthesized expression wrapping static concat', async () => {
-      // t(("hello " + declare_static("world"))) — first arg is parenthesized_expression
-      const code = `from gt_flask import t, declare_static
-t(("hello " + declare_static("world")))`;
+      // t(("hello " + derive("world"))) — first arg is parenthesized_expression
+      const code = `from gt_flask import t, derive
+t(("hello " + derive("world")))`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -693,8 +692,8 @@ t(("hello " + declare_static("world")))`;
     });
 
     it('handles parenthesized expression wrapping static ternary', async () => {
-      const code = `from gt_flask import t, declare_static
-t((declare_static("day" if x else "night")))`;
+      const code = `from gt_flask import t, derive
+t((derive("day" if x else "night")))`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -706,8 +705,8 @@ t((declare_static("day" if x else "night")))`;
     });
 
     it('handles deeply nested parentheses around static expression', async () => {
-      const code = `from gt_flask import t, declare_static
-t((((("hello " + declare_static("day" if x else "night"))))))`;
+      const code = `from gt_flask import t, derive
+t((((("hello " + derive("day" if x else "night"))))))`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -718,9 +717,9 @@ t((((("hello " + declare_static("day" if x else "night"))))))`;
       expect(sources).toEqual(['hello day', 'hello night']);
     });
 
-    it('handles declare_static with inline concat of ternary + string', async () => {
-      const code = `from gt_flask import t, declare_static
-t(f"Result: {declare_static(('yes' if x else 'no') + '!')}")`;
+    it('handles derive with inline concat of ternary + string', async () => {
+      const code = `from gt_flask import t, derive
+t(f"Result: {derive(('yes' if x else 'no') + '!')}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -731,9 +730,9 @@ t(f"Result: {declare_static(('yes' if x else 'no') + '!')}")`;
       expect(sources).toEqual(['Result: no!', 'Result: yes!']);
     });
 
-    it('handles declare_static with declare_var nested directly', async () => {
-      const code = `from gt_flask import t, declare_static, declare_var
-t(f"Hello, {declare_static(declare_var(name) + '!')}")`;
+    it('handles derive with declare_var nested directly', async () => {
+      const code = `from gt_flask import t, derive, declare_var
+t(f"Hello, {derive(declare_var(name) + '!')}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -748,10 +747,10 @@ t(f"Hello, {declare_static(declare_var(name) + '!')}")`;
 
     it('handles aliased imports with functions returning conditionals and declare_var', async () => {
       // This exercises:
-      // - aliased declare_static/declare_var imports
+      // - aliased derive/declare_var imports
       // - function resolution with conditional return expressions
       // - declare_var inside a function return branch
-      // - cartesian product across two declare_static calls (2 × 2 = 4 variants)
+      // - cartesian product across two derive calls (2 × 2 = 4 variants)
       const { results, errors } = await extractFromPythonSource(
         fixture('declare_complex_aliased.py'),
         'test.py'
@@ -792,9 +791,9 @@ t(f"Hello, {declare_static(declare_var(name) + '!')}")`;
       );
       fs.writeFileSync(reexportFile, 'from . import get_time\n');
       try {
-        const code = `from gt_flask import t, declare_static
+        const code = `from gt_flask import t, derive
 from dotpkg.reexport import get_time
-t(f"It is {declare_static(get_time())}!")`;
+t(f"It is {derive(get_time())}!")`;
         const { results, errors } = await extractFromPythonSource(
           code,
           path.join(__dirname, 'fixtures', 'test_dot_import.py')
@@ -815,9 +814,9 @@ t(f"It is {declare_static(get_time())}!")`;
     it('follows single-level re-export to resolve functions', async () => {
       // main imports get_gender from reexport_funcs.py,
       // which re-exports from static_test_defs.py where it's defined
-      const code = `from gt_fastapi import t, declare_static as alias_declare_static
+      const code = `from gt_fastapi import t, derive as alias_derive
 from reexport_funcs import get_gender
-t(f"The {alias_declare_static(get_gender(variant))}")`;
+t(f"The {alias_derive(get_gender(variant))}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         path.join(__dirname, 'fixtures', 'reexport_main.py')
@@ -831,9 +830,9 @@ t(f"The {alias_declare_static(get_gender(variant))}")`;
     it('follows re-export with declare_var in the definition file', async () => {
       // get_adjective is defined in static_test_defs.py with alias_declare_var,
       // re-exported through reexport_funcs.py
-      const code = `from gt_fastapi import t, declare_static as alias_declare_static
+      const code = `from gt_fastapi import t, derive as alias_derive
 from reexport_funcs import get_adjective
-t(f"She is {alias_declare_static(get_adjective(variant))}")`;
+t(f"She is {alias_derive(get_adjective(variant))}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         path.join(__dirname, 'fixtures', 'reexport_main.py')
@@ -849,9 +848,9 @@ t(f"She is {alias_declare_static(get_adjective(variant))}")`;
 
     it('follows two-level re-export chain', async () => {
       // main → reexport_chain_top → reexport_chain_mid → static_test_defs
-      const code = `from gt_fastapi import t, declare_static as alias_declare_static
+      const code = `from gt_fastapi import t, derive as alias_derive
 from reexport_chain_top import get_gender
-t(f"The {alias_declare_static(get_gender(variant))}")`;
+t(f"The {alias_derive(get_gender(variant))}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         path.join(__dirname, 'fixtures', 'reexport_chain_main.py')
@@ -865,11 +864,11 @@ t(f"The {alias_declare_static(get_gender(variant))}")`;
     it('handles full complex re-export scenario with cartesian product', async () => {
       // The exact user scenario: main imports from reexport_funcs,
       // definitions in static_test_defs with aliased declare_var
-      const code = `from gt_fastapi import t, declare_static as alias_declare_static
+      const code = `from gt_fastapi import t, derive as alias_derive
 from reexport_funcs import get_gender, get_adjective
 
 def get_string(variant):
-    return t(f'The {alias_declare_static(get_gender(variant))} is {alias_declare_static(get_adjective(variant))}')`;
+    return t(f'The {alias_derive(get_gender(variant))} is {alias_derive(get_adjective(variant))}')`;
       const { results, errors } = await extractFromPythonSource(
         code,
         path.join(__dirname, 'fixtures', 'reexport_main.py')
@@ -890,9 +889,9 @@ def get_string(variant):
 
     it('handles re-export with aliased name', async () => {
       // Import with alias in re-export: from static_test_defs import get_gender as gg
-      const code = `from gt_fastapi import t, declare_static
+      const code = `from gt_fastapi import t, derive
 from reexport_alias import gg
-t(f"{declare_static(gg(v))}")`;
+t(f"{derive(gg(v))}")`;
       // Create aliased re-export inline
       const aliasReexportPath = path.join(
         __dirname,
@@ -951,9 +950,9 @@ t(f"Hello {declare_var(name, _name='user')}!")`;
     });
   });
 
-  // ===== mixed declare_static + declare_var tests ===== //
+  // ===== mixed derive + declare_var tests ===== //
 
-  describe('mixed declare_static + declare_var', () => {
+  describe('mixed derive + declare_var', () => {
     it('combines static variants with var placeholders', async () => {
       const { results, errors } = await extractFromPythonSource(
         fixture('declare_mixed.py'),
@@ -975,11 +974,11 @@ t(f"Hello {declare_var(name, _name='user')}!")`;
   // ===== resolveStaticBinaryOperator edge cases ===== //
 
   describe('static binary operator with unusual operand types', () => {
-    it('handles subscript operand in declare_static concat', async () => {
-      // obj["key"] + "!" inside declare_static — subscript handler tries to
+    it('handles subscript operand in derive concat', async () => {
+      // obj["key"] + "!" inside derive — subscript handler tries to
       // resolve obj as a dictionary but can't find it
-      const code = `from gt_flask import t, declare_static
-t(f"{declare_static(obj['key'] + '!')}")`;
+      const code = `from gt_flask import t, derive
+t(f"{derive(obj['key'] + '!')}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
       // Should complain about the subscript/dictionary, NOT the operator
@@ -987,11 +986,11 @@ t(f"{declare_static(obj['key'] + '!')}")`;
       expect(errors.join(' ')).toContain('dictionary');
     });
 
-    it('handles attribute operand in declare_static concat', async () => {
-      // obj.attr + "!" inside declare_static — attribute handler tries to
+    it('handles attribute operand in derive concat', async () => {
+      // obj.attr + "!" inside derive — attribute handler tries to
       // resolve obj as a dictionary but can't find it
-      const code = `from gt_flask import t, declare_static
-t(f"{declare_static(obj.attr + '!')}")`;
+      const code = `from gt_flask import t, derive
+t(f"{derive(obj.attr + '!')}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
       expect(errors.join(' ')).not.toContain('unsupported binary operator');
@@ -1000,8 +999,8 @@ t(f"{declare_static(obj.attr + '!')}")`;
 
     it('correctly rejects non-plus operator in static context', async () => {
       // * operator should mention the operator in the error
-      const code = `from gt_flask import t, declare_static
-t(f"{declare_static('a' * 3)}")`;
+      const code = `from gt_flask import t, derive
+t(f"{derive('a' * 3)}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
     });
@@ -1011,9 +1010,9 @@ t(f"{declare_static('a' * 3)}")`;
 
   describe('identifier resolution', () => {
     it('resolves constant string identifier', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 GREETING = "hello"
-t(f"{declare_static(GREETING)}")`;
+t(f"{derive(GREETING)}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1024,10 +1023,10 @@ t(f"{declare_static(GREETING)}")`;
     });
 
     it('resolves chained constant assignment', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 A = "hi"
 B = A
-t(f"{declare_static(B)}")`;
+t(f"{derive(B)}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1038,9 +1037,9 @@ t(f"{declare_static(B)}")`;
     });
 
     it('resolves constant in template', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 PREFIX = "Hello"
-t(f"{declare_static(PREFIX)} world")`;
+t(f"{derive(PREFIX)} world")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1051,8 +1050,8 @@ t(f"{declare_static(PREFIX)} world")`;
     });
 
     it('errors on unresolvable identifier', async () => {
-      const code = `from gt_flask import t, declare_static
-t(f"{declare_static(NONEXISTENT)}")`;
+      const code = `from gt_flask import t, derive
+t(f"{derive(NONEXISTENT)}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
       expect(errors.join(' ')).toContain('identifier');
@@ -1063,9 +1062,9 @@ t(f"{declare_static(NONEXISTENT)}")`;
 
   describe('dictionary access', () => {
     it('extracts all dict values with subscript', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 LABELS = {0: "Bad", 1: "OK", 2: "Good"}
-t(f"{declare_static(LABELS[score])}")`;
+t(f"{derive(LABELS[score])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1077,9 +1076,9 @@ t(f"{declare_static(LABELS[score])}")`;
     });
 
     it('handles dict with conditional values', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 LABELS = {0: "x" if cond else "y", 1: "z"}
-t(f"{declare_static(LABELS[k])}")`;
+t(f"{derive(LABELS[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1091,9 +1090,9 @@ t(f"{declare_static(LABELS[k])}")`;
     });
 
     it('handles dict in f-string template', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 LABELS = {0: "Bad", 1: "Good"}
-t(f"Score: {declare_static(LABELS[s])}")`;
+t(f"Score: {derive(LABELS[s])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1105,17 +1104,17 @@ t(f"Score: {declare_static(LABELS[s])}")`;
     });
 
     it('errors on empty dict', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 LABELS = {}
-t(f"{declare_static(LABELS[k])}")`;
+t(f"{derive(LABELS[k])}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
     });
 
     it('resolves chained subscript access', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 LABELS = {0: {"a": "x"}}
-t(f"{declare_static(LABELS[k]["a"])}")`;
+t(f"{derive(LABELS[k]["a"])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1130,18 +1129,18 @@ t(f"{declare_static(LABELS[k]["a"])}")`;
 
   describe('infinite recursion guard', () => {
     it('handles circular variable references without hanging', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 x = y
 y = x
-t(f"{declare_static(x)}")`;
+t(f"{derive(x)}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
     }, 5000);
 
     it('handles self-referencing variable without hanging', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 x = x
-t(f"{declare_static(x)}")`;
+t(f"{derive(x)}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
     }, 5000);
@@ -1151,10 +1150,10 @@ t(f"{declare_static(x)}")`;
 
   describe('reassignment behavior', () => {
     it('resolves first assignment for reassigned variable', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 x = "old"
 x = "new"
-t(f"{declare_static(x)}")`;
+t(f"{derive(x)}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1169,10 +1168,10 @@ t(f"{declare_static(x)}")`;
     });
 
     it('resolves first dict for reassigned dict', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {0: "a"}
 D = {0: "b"}
-t(f"{declare_static(D[k])}")`;
+t(f"{derive(D[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1188,9 +1187,9 @@ t(f"{declare_static(D[k])}")`;
 
   describe('subscript edge cases', () => {
     it('resolves list subscript with static integer key', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = ["a", "b"]
-t(f"{declare_static(L[0])}")`;
+t(f"{derive(L[0])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1201,18 +1200,18 @@ t(f"{declare_static(L[0])}")`;
     });
 
     it('errors on tuple subscript', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 T = ("a", "b")
-t(f"{declare_static(T[0])}")`;
+t(f"{derive(T[0])}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
       expect(errors.join(' ')).toContain('dictionary or list');
     });
 
     it('extracts values from dict with mixed key types', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {0: "zero", "a": "alpha"}
-t(f"{declare_static(D[k])}")`;
+t(f"{derive(D[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1228,9 +1227,9 @@ t(f"{declare_static(D[k])}")`;
 
   describe('non-resolvable dict value errors', () => {
     it('errors on list value in dict (dynamic key)', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {0: "Bad", 1: "OK", 2: "Good", 3: ["yyoyoo"]}
-t(f"{declare_static(D[score])}")`;
+t(f"{derive(D[score])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1242,18 +1241,18 @@ t(f"{declare_static(D[score])}")`;
     });
 
     it('errors on list value in dict (static key)', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {"items": ["a", "b"]}
-t(f"{declare_static(D['items'])}")`;
+t(f"{derive(D['items'])}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
       expect(errors.join(' ')).toContain('unsupported derive() argument type');
     });
 
     it('errors on nested dict value without further access', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {"a": "ok", "b": {"nested": "value"}}
-t(f"{declare_static(D[k])}")`;
+t(f"{derive(D[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1266,9 +1265,9 @@ t(f"{declare_static(D[k])}")`;
     });
 
     it('errors on tuple value in dict', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {0: "ok", 1: ("a", "b")}
-t(f"{declare_static(D[k])}")`;
+t(f"{derive(D[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1282,24 +1281,24 @@ t(f"{declare_static(D[k])}")`;
   // ===== identifier edge cases ===== //
 
   describe('identifier edge cases', () => {
-    it('errors on Python builtin True in declare_static', async () => {
-      const code = `from gt_flask import t, declare_static
-t(f"{declare_static(True)}")`;
+    it('errors on Python builtin True in derive', async () => {
+      const code = `from gt_flask import t, derive
+t(f"{derive(True)}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       // True is tree-sitter type 'true', not 'identifier'
       expect(errors.length).toBeGreaterThan(0);
     });
 
-    it('errors on integer literal in declare_static', async () => {
-      const code = `from gt_flask import t, declare_static
-t(f"{declare_static(42)}")`;
+    it('errors on integer literal in derive', async () => {
+      const code = `from gt_flask import t, derive
+t(f"{derive(42)}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
     });
 
-    it('errors on None in declare_static', async () => {
-      const code = `from gt_flask import t, declare_static
-t(f"{declare_static(None)}")`;
+    it('errors on None in derive', async () => {
+      const code = `from gt_flask import t, derive
+t(f"{derive(None)}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
     });
@@ -1420,10 +1419,6 @@ t(f"{declare_static(None)}")`;
       expect(PYTHON_DERIVE).toBe('derive');
     });
 
-    it('exports PYTHON_DECLARE_STATIC (deprecated)', () => {
-      expect(PYTHON_DECLARE_STATIC).toBe('declare_static');
-    });
-
     it('exports PYTHON_DECLARE_VAR', () => {
       expect(PYTHON_DECLARE_VAR).toBe('declare_var');
     });
@@ -1441,9 +1436,9 @@ t(f"{declare_static(None)}")`;
 
   describe('nested dictionary access', () => {
     it('PN1: static.static subscript', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {"a": {"x": "hello"}}
-t(f"{declare_static(D['a']['x'])}")`;
+t(f"{derive(D['a']['x'])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1454,9 +1449,9 @@ t(f"{declare_static(D['a']['x'])}")`;
     });
 
     it('PN2: computed all values from nested', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {"a": {"x": "p", "y": "q"}}
-t(f"{declare_static(D['a'][k])}")`;
+t(f"{derive(D['a'][k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1468,9 +1463,9 @@ t(f"{declare_static(D['a'][k])}")`;
     });
 
     it('PN3: outer computed, inner static', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {"a": {"x": "p"}, "b": {"x": "q"}}
-t(f"{declare_static(D[k]['x'])}")`;
+t(f"{derive(D[k]['x'])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1482,9 +1477,9 @@ t(f"{declare_static(D[k]['x'])}")`;
     });
 
     it('PN4: 3-deep static', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {"a": {"b": {"c": "deep"}}}
-t(f"{declare_static(D['a']['b']['c'])}")`;
+t(f"{derive(D['a']['b']['c'])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1499,10 +1494,10 @@ t(f"{declare_static(D['a']['b']['c'])}")`;
 
   describe('dict spread resolution', () => {
     it('PS1: dict unpacking', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 base = {"a": "x"}
 D = {**base, "b": "y"}
-t(f"{declare_static(D[k])}")`;
+t(f"{derive(D[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1514,10 +1509,10 @@ t(f"{declare_static(D[k])}")`;
     });
 
     it('PS2: unpack static access', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 base = {"greeting": "Hi"}
 D = {**base}
-t(f"{declare_static(D['greeting'])}")`;
+t(f"{derive(D['greeting'])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1532,9 +1527,9 @@ t(f"{declare_static(D['greeting'])}")`;
 
   describe('nested dict false-positive guards', () => {
     it('PF1: static key excludes siblings', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {"a": {"x": "yes"}, "b": {"x": "no"}}
-t(f"{declare_static(D['a']['x'])}")`;
+t(f"{derive(D['a']['x'])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1545,9 +1540,9 @@ t(f"{declare_static(D['a']['x'])}")`;
     });
 
     it('PF2: computed.static only gets matching prop', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {"a": {"label": "A", "desc": "AA"}, "b": {"label": "B", "desc": "BB"}}
-t(f"{declare_static(D[k]['label'])}")`;
+t(f"{derive(D[k]['label'])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1563,9 +1558,9 @@ t(f"{declare_static(D[k]['label'])}")`;
 
   describe('list access', () => {
     it('extracts all list values with dynamic subscript', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = ["Bad", "OK", "Good"]
-t(f"{declare_static(L[score])}")`;
+t(f"{derive(L[score])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1577,9 +1572,9 @@ t(f"{declare_static(L[score])}")`;
     });
 
     it('narrows to one value with static integer subscript', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = ["zero", "one", "two"]
-t(f"{declare_static(L[0])}")`;
+t(f"{derive(L[0])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1590,9 +1585,9 @@ t(f"{declare_static(L[0])}")`;
     });
 
     it('handles list with conditional values', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = ["a" if cond else "b", "c"]
-t(f"{declare_static(L[k])}")`;
+t(f"{derive(L[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1604,9 +1599,9 @@ t(f"{declare_static(L[k])}")`;
     });
 
     it('handles list in f-string template', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = ["Bad", "Good"]
-t(f"Score: {declare_static(L[s])}")`;
+t(f"Score: {derive(L[s])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1618,18 +1613,18 @@ t(f"Score: {declare_static(L[s])}")`;
     });
 
     it('errors on empty list', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = []
-t(f"{declare_static(L[k])}")`;
+t(f"{derive(L[k])}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
       expect(errors.join(' ')).toContain('no resolvable values');
     });
 
     it('errors on unresolvable list element', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = ["ok", ["nested"]]
-t(f"{declare_static(L[k])}")`;
+t(f"{derive(L[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1645,10 +1640,10 @@ t(f"{declare_static(L[k])}")`;
 
   describe('list spread resolution', () => {
     it('resolves list spread (*base)', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 base = ["a", "b"]
 L = [*base, "c"]
-t(f"{declare_static(L[k])}")`;
+t(f"{derive(L[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1660,11 +1655,11 @@ t(f"{declare_static(L[k])}")`;
     });
 
     it('resolves multiple list spreads', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 a = ["x"]
 b = ["y"]
 L = [*a, *b, "z"]
-t(f"{declare_static(L[k])}")`;
+t(f"{derive(L[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1680,9 +1675,9 @@ t(f"{declare_static(L[k])}")`;
 
   describe('nested list/dict access', () => {
     it('resolves nested list access L[0][1]', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = [["a", "b"], ["c", "d"]]
-t(f"{declare_static(L[0][1])}")`;
+t(f"{derive(L[0][1])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1693,9 +1688,9 @@ t(f"{declare_static(L[0][1])}")`;
     });
 
     it('resolves dict nested in list', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = [{"x": "hi"}, {"x": "bye"}]
-t(f"{declare_static(L[k]['x'])}")`;
+t(f"{derive(L[k]['x'])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1707,9 +1702,9 @@ t(f"{declare_static(L[k]['x'])}")`;
     });
 
     it('resolves list nested in dict', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {"items": ["a", "b"]}
-t(f"{declare_static(D['items'][k])}")`;
+t(f"{derive(D['items'][k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1725,10 +1720,10 @@ t(f"{declare_static(D['items'][k])}")`;
 
   describe('dict spread override', () => {
     it('collects both entries for spread + own key', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 base = {"x": "first"}
 D = {**base, "x": "second"}
-t(f"{declare_static(D['x'])}")`;
+t(f"{derive(D['x'])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1748,9 +1743,9 @@ t(f"{declare_static(D['x'])}")`;
       // L[-1] in Python would resolve to "c", but tree-sitter parses -1 as
       // a unary_operator (not an integer literal), so we treat it as a
       // dynamic key and return ALL values instead of narrowing.
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = ["a", "b", "c"]
-t(f"{declare_static(L[-1])}")`;
+t(f"{derive(L[-1])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1766,9 +1761,9 @@ t(f"{declare_static(L[-1])}")`;
       // L[5] on a 2-element list: resolveSubscript finds no matching entry,
       // pushes an error, returns null. But the f-string wrapper still
       // produces an empty-string result from the remaining (empty) template.
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = ["a", "b"]
-t(f"{declare_static(L[5])}")`;
+t(f"{derive(L[5])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1783,9 +1778,9 @@ t(f"{declare_static(L[5])}")`;
     it('integer and string keys cross-match (unlike Python)', async () => {
       // In Python, D[0] and D["0"] access different keys.
       // Our extractor normalizes both to the string "0", so they match.
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {0: "zero"}
-t(f"{declare_static(D['0'])}")`;
+t(f"{derive(D['0'])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1797,9 +1792,9 @@ t(f"{declare_static(D['0'])}")`;
     });
 
     it('string key matches integer subscript (unlike Python)', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 D = {"0": "zero", "1": "one"}
-t(f"{declare_static(D[0])}")`;
+t(f"{derive(D[0])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1812,10 +1807,10 @@ t(f"{declare_static(D[0])}")`;
     it('spread of non-list (dict) silently drops with no error', async () => {
       // *base where base is a dict — collectListEntries only handles
       // list_splat sources that resolve to lists. A dict is silently skipped.
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 base = {"x": "y"}
 L = [*base, "c"]
-t(f"{declare_static(L[k])}")`;
+t(f"{derive(L[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1827,10 +1822,10 @@ t(f"{declare_static(L[k])}")`;
     });
 
     it('spread of non-list (tuple) silently drops with no error', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 base = ("a", "b")
 L = [*base, "c"]
-t(f"{declare_static(L[k])}")`;
+t(f"{derive(L[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1842,9 +1837,9 @@ t(f"{declare_static(L[k])}")`;
     });
 
     it('spread of undefined variable silently drops with no error', async () => {
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = [*missing, "c"]
-t(f"{declare_static(L[k])}")`;
+t(f"{derive(L[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1858,9 +1853,9 @@ t(f"{declare_static(L[k])}")`;
     it('attribute access on list reports "dictionary or list" in error', async () => {
       // L.x on a list — the attribute handler looks for a dict key "x",
       // which doesn't exist. Error message should mention both types.
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = ["a", "b"]
-t(f"{declare_static(L.x)}")`;
+t(f"{derive(L.x)}")`;
       const { errors } = await extractFromPythonSource(code, 'test.py');
       expect(errors.length).toBeGreaterThan(0);
       expect(errors.join(' ')).toContain('dictionary or list');
@@ -1869,9 +1864,9 @@ t(f"{declare_static(L.x)}")`;
     it('list with non-string elements errors per element', async () => {
       // Non-string elements (integer, None) each produce their own error
       // while string elements still resolve successfully.
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = ["ok", 42, None]
-t(f"{declare_static(L[k])}")`;
+t(f"{derive(L[k])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'
@@ -1888,9 +1883,9 @@ t(f"{declare_static(L[k])}")`;
     it('nested dynamic-dynamic list access returns all leaf values', async () => {
       // L[i][j] where both indices are dynamic: first resolves all
       // inner lists, then resolves all elements within each.
-      const code = `from gt_flask import t, declare_static
+      const code = `from gt_flask import t, derive
 L = [["a", "b"], ["c", "d"]]
-t(f"{declare_static(L[i][j])}")`;
+t(f"{derive(L[i][j])}")`;
       const { results, errors } = await extractFromPythonSource(
         code,
         'test.py'

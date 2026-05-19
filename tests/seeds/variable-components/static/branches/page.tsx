@@ -1,5 +1,5 @@
 'use client'
-import { Static, T, Branch } from 'gt-next'
+import { Derive, T, Branch } from 'gt-next'
 
 export function fn2() {
   return 'fn2'
@@ -19,7 +19,7 @@ export default function Home() {
   return <div>
     <T>
       Hello there
-      <Static>
+      <Derive>
         Hello my good friend
         {true ? fn1() : 'no'} 
         <Branch
@@ -28,7 +28,7 @@ export default function Home() {
           no={<>no</>}
           other="yo"
         />
-      </Static>
+      </Derive>
     </T>
   </div>;
 }

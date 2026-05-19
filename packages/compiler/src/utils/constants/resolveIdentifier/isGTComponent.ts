@@ -61,12 +61,10 @@ export function isGTBranchComponent(
   );
 }
 
-/** Check if first arg is Derive or Static */
+/** Check if first arg is Derive */
 export function isGTDeriveComponent(
   firstArgPath: NodePath<t.Expression>
 ): boolean {
   const name = resolveFirstArgGTName(firstArgPath);
-  return (
-    name === GT_COMPONENT_TYPES.Derive || name === GT_COMPONENT_TYPES.Static
-  );
+  return name === GT_COMPONENT_TYPES.Derive;
 }

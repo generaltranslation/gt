@@ -32,7 +32,7 @@ export function isDeriveCall({
     : undefined;
   if (!GT_LIBRARIES.includes(source as GTLibrary)) return false;
 
-  // Fail if the original name is not 'derive' (or the deprecated 'declareStatic')
+  // Fail if the original name is not 'derive'
   const imported = binding.path.node.imported;
   const originalName = t.isIdentifier(imported)
     ? imported.name

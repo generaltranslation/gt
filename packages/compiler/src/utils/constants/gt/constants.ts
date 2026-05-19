@@ -9,7 +9,6 @@ export enum GT_COMPONENT_TYPES {
   DateTime = 'DateTime',
   RelativeTime = 'RelativeTime',
   Num = 'Num',
-  Static = 'Static',
   Derive = 'Derive',
   Branch = 'Branch',
   Plural = 'Plural',
@@ -38,7 +37,6 @@ export enum GT_FUNCTIONS_WITH_CALLBACKS {
  */
 export enum GT_OTHER_FUNCTIONS {
   msg = 'msg',
-  declareStatic = 'declareStatic',
   t = 't',
   derive = 'derive',
   GtInternalRuntimeTranslateString = 'GtInternalRuntimeTranslateString',
@@ -84,7 +82,6 @@ export const GT_FUNCTIONS_TO_CALLBACKS: Record<
  * GT derive functions
  */
 export const GT_DERIVE_STRING_FUNCTIONS = [
-  GT_OTHER_FUNCTIONS.declareStatic,
   GT_OTHER_FUNCTIONS.derive,
 ] as const;
 
@@ -161,7 +158,6 @@ export const MINIFY_CANONICAL_NAME_MAP = {
   [GT_COMPONENT_TYPES.DateTime]: 'd',
   [GT_COMPONENT_TYPES.GtInternalDateTime]: 'd',
   [GT_COMPONENT_TYPES.RelativeTime]: 'rt',
-  [GT_COMPONENT_TYPES.Static]: 's',
   [GT_COMPONENT_TYPES.Derive]: 's',
   [GT_COMPONENT_TYPES.Branch]: 'b',
   [GT_COMPONENT_TYPES.Plural]: 'p',
