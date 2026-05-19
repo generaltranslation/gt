@@ -11,7 +11,7 @@ interface GTIndexedArgumentElement extends ArgumentElement {
   value: `${typeof VAR_IDENTIFIER}${number}`;
 }
 
-const GT_INDEXED_IDENTIFIER_REGEX = new RegExp(`${VAR_IDENTIFIER}\\d+`);
+const CONTAINS_INDEXED_GT_REGEX = new RegExp(`${VAR_IDENTIFIER}\\d+`);
 
 /**
  * Given an indexed ICU string, condenses any select to an argument
@@ -23,7 +23,7 @@ const GT_INDEXED_IDENTIFIER_REGEX = new RegExp(`${VAR_IDENTIFIER}\\d+`);
  */
 export function condenseVars(icuString: string): string {
   // Check if the string contains an indexed _gt_ identifier.
-  if (!GT_INDEXED_IDENTIFIER_REGEX.test(icuString)) {
+  if (!CONTAINS_INDEXED_GT_REGEX.test(icuString)) {
     return icuString;
   }
 
