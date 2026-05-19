@@ -1,4 +1,4 @@
-import { getCookieValue } from "./cookies";
+import { getCookieValue } from './cookies';
 
 export function readBrowserLocale(localeCookieName: string): string[] {
   const candidates = [];

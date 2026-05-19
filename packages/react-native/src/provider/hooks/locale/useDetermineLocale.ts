@@ -1,25 +1,25 @@
-import { useEffect, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import {
   determineLocale,
   resolveAliasLocale,
-} from "@generaltranslation/format";
-import { libraryDefaultLocale } from "generaltranslation/internal";
-import type { CustomMapping } from "@generaltranslation/format/types";
+} from '@generaltranslation/format';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import type {
   UseDetermineLocaleParams,
   UseDetermineLocaleReturn,
-} from "@generaltranslation/react-core/types";
-import { createUnsupportedLocaleWarning } from "@generaltranslation/react-core/errors";
-import { PACKAGE_NAME } from "../../../errors-dir/constants";
-import { getNativeLocales } from "../../../utils/getNativeLocales";
-import { nativeStoreGet, nativeStoreSet } from "../../../utils/nativeStore";
+} from '@generaltranslation/react-core/types';
+import { createUnsupportedLocaleWarning } from '@generaltranslation/react-core/errors';
+import { PACKAGE_NAME } from '../../../errors-dir/constants';
+import { getNativeLocales } from '../../../utils/getNativeLocales';
+import { nativeStoreGet, nativeStoreSet } from '../../../utils/nativeStore';
 
 export function useDetermineLocale({
-  locale: _locale = "",
+  locale: _locale = '',
   defaultLocale = libraryDefaultLocale,
   locales = [],
-  localeCookieName = "generaltranslation.locale",
+  localeCookieName = 'generaltranslation.locale',
   ssr = false, // not relevant
   customMapping,
   enableI18n,
@@ -35,8 +35,8 @@ export function useDetermineLocale({
     const result = resolveAliasLocale(
       ssr
         ? _locale
-          ? determineLocale(_locale, locales, customMapping) || ""
-          : ""
+          ? determineLocale(_locale, locales, customMapping) || ''
+          : ''
         : getNewLocale({
             _locale,
             locale: _locale,
@@ -46,7 +46,7 @@ export function useDetermineLocale({
             customMapping,
             enableI18n,
           }),
-      customMapping,
+      customMapping
     );
     return result;
   };
@@ -139,7 +139,7 @@ function getNewLocale({
   let preferredLocales = getNativeLocales();
   if (preferredLocales.length === 0) preferredLocales = [defaultLocale];
   preferredLocales = preferredLocales.map((l) =>
-    resolveAliasLocale(l, customMapping),
+    resolveAliasLocale(l, customMapping)
   );
 
   // determine locale
@@ -151,7 +151,7 @@ function getNewLocale({
         ...preferredLocales, // then prefer browser locale
       ],
       locales,
-      customMapping,
+      customMapping
     ) || defaultLocale;
   if (newLocale) {
     newLocale = resolveAliasLocale(newLocale, customMapping);
@@ -194,15 +194,11 @@ function createSetLocale({
       determineLocale(newLocale, locales, customMapping) ||
         locale ||
         defaultLocale,
-      customMapping,
+      customMapping
     );
     if (validatedLocale !== newLocale) {
       console.warn(
-        createUnsupportedLocaleWarning(
-          validatedLocale,
-          newLocale,
-          PACKAGE_NAME,
-        ),
+        createUnsupportedLocaleWarning(validatedLocale, newLocale, PACKAGE_NAME)
       );
     }
     // persist locale

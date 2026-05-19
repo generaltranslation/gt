@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { I18nManager } from "gt-i18n/internal";
-import type { Translation } from "gt-i18n/types";
+import { I18nManager } from 'gt-i18n/internal';
+import type { Translation } from 'gt-i18n/types';
 import {
   setReactI18nManager,
   type ReactI18nManagerParams,
-} from "@generaltranslation/react-core/context";
+} from '@generaltranslation/react-core/context';
 
 export {
   // ===== Components ===== //
@@ -43,6 +43,7 @@ export {
   mFallback,
   gtFallback,
   getTranslationsSnapshot,
+  t,
   // ===== Setup ===== //
   initializeGT,
-} from "gt-react/context";
+} from 'gt-react/context';

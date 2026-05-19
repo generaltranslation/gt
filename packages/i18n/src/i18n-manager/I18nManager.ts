@@ -1,46 +1,41 @@
-import { publishValidationResults } from "./validation/publishValidationResults";
-import logger from "../logs/logger";
-import { I18nManagerConfig, I18nManagerConstructorParams } from "./types";
-import { validateConfig } from "./validation/validateConfig";
-import { Translation } from "./translations-manager/utils/types/translation-data";
-import { libraryDefaultLocale } from "generaltranslation/internal";
-import { GT } from "generaltranslation";
-import { LocaleConfig, standardizeLocale } from "@generaltranslation/format";
-import type { CustomMapping } from "@generaltranslation/format/types";
-import { LookupOptions } from "../translation-functions/types/options";
-import { getGTServicesEnabled } from "./utils/getGTServicesEnabled";
+import { publishValidationResults } from './validation/publishValidationResults';
+import logger from '../logs/logger';
+import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
+import { validateConfig } from './validation/validateConfig';
+import { Translation } from './translations-manager/utils/types/translation-data';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { GT } from 'generaltranslation';
+import { LocaleConfig, standardizeLocale } from '@generaltranslation/format';
+import type { CustomMapping } from '@generaltranslation/format/types';
+import { LookupOptions } from '../translation-functions/types/options';
+import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import {
   SafeTranslationsLoader,
   TranslationsLoader,
-} from "./translations-manager/translations-loaders/types";
-import { createTranslateManyFactory } from "./translations-manager/utils/createTranslateMany";
-import { routeCreateTranslationLoader } from "./translations-manager/translations-loaders/routeCreateTranslationLoader";
-import { getLoadTranslationsType } from "./utils/getLoadTranslationsType";
-import { LocalesCache } from "./translations-manager/LocalesCache";
-import type { Locale } from "./translations-manager/LocalesCache";
-import type { Hash } from "./translations-manager/TranslationsCache";
+} from './translations-manager/translations-loaders/types';
+import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
+import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
+import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
+import { LocalesCache } from './translations-manager/LocalesCache';
+import type { Locale } from './translations-manager/LocalesCache';
+import type { Hash } from './translations-manager/TranslationsCache';
 import type {
   Dictionary,
   DictionaryEntry,
   DictionaryObject,
-} from "./translations-manager/DictionaryCache";
-import { resolveDictionaryLookupOptions } from "./translations-manager/utils/dictionary-helpers";
-import { DictionarySourceNotFoundError } from "./translations-manager/utils/DictionarySourceNotFoundError";
-import { createLifecycleCallbacks } from "./lifecycle-hooks/createLifecycleCallbacks";
-import { EventEmitter } from "./event-subscription/EventEmitter";
-import { subscribeLifecycleCallbacks } from "./lifecycle-hooks/subscribeLifecycleCallbacks";
-import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from "./event-subscription/types";
-import type { I18nEvents } from "./event-subscription/types";
+} from './translations-manager/DictionaryCache';
+import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
+import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
+import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
+import { EventEmitter } from './event-subscription/EventEmitter';
+import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
+import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
+import type { I18nEvents } from './event-subscription/types';
 import {
   createLocaleResolver,
   LocaleCandidates,
-} from "../condition-store/localeResolver";
-
-type RuntimeEnvironment = {
-  DEV?: boolean;
-  MODE?: string;
-  NODE_ENV?: string;
-};
+} from '../condition-store/localeResolver';
+import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -58,7 +53,7 @@ type TranslationResolver<U extends Translation = Translation> = <
   T extends U = U,
 >(
   message: T,
-  options?: LookupOptions,
+  options?: LookupOptions
 ) => T | undefined;
 
 /**
@@ -105,7 +100,7 @@ class I18nManager<
 
     // Validation
     const validationResults = validateConfig(params);
-    publishValidationResults(validationResults, "I18nManager: ");
+    publishValidationResults(validationResults, 'I18nManager: ');
 
     // Setup
     this.config = standardizeConfig(params);
@@ -140,17 +135,17 @@ class I18nManager<
     const createTranslateMany = createTranslateManyFactory(
       this.getGTClassClean(),
       runtimeTranslationTimeout,
-      runtimeTranslationMetadata,
+      runtimeTranslationMetadata
     );
 
     // Subscribe lifecycle callbacks
     subscribeLifecycleCallbacks(params.lifecycle ?? {}, (...args) =>
-      this.subscribe(...args),
+      this.subscribe(...args)
     );
 
     const lifecycle = createLifecycleCallbacks<TranslationValue>(
       (...args) => this.emit(...args),
-      (eventName) => this.hasListeners(eventName),
+      (eventName) => this.hasListeners(eventName)
     );
 
     // Setup locale-scoped caches
@@ -181,10 +176,10 @@ class I18nManager<
    */
   subscribeToTranslationsCacheMiss(
     listener: (
-      event: I18nEvents<TranslationValue>[typeof TRANSLATIONS_CACHE_MISS_EVENT_NAME],
+      event: I18nEvents<TranslationValue>[typeof TRANSLATIONS_CACHE_MISS_EVENT_NAME]
     ) => void,
     locale: Locale,
-    hash: Hash,
+    hash: Hash
   ) {
     return this.subscribe(TRANSLATIONS_CACHE_MISS_EVENT_NAME, (event) => {
       if (event.locale !== locale || event.hash !== hash) {
@@ -231,7 +226,7 @@ class I18nManager<
    */
   getGTClass(locale?: string): GT {
     return this.getGTClassClean(
-      locale ? this._resolveLocale(locale) : undefined,
+      locale ? this._resolveLocale(locale) : undefined
     );
   }
 
@@ -252,14 +247,14 @@ class I18nManager<
       !!this.config.devApiKey &&
       !!this.config.projectId &&
       this.isRuntimeUrlEnabled() &&
-      this.config.environment === "development"
+      this.config.environment === 'development'
     );
   }
 
   // ========== Translation Updates ========== //
 
   updateTranslations(
-    translationsSnapshot: Record<Locale, Record<Hash, TranslationValue>>,
+    translationsSnapshot: Record<Locale, Record<Hash, TranslationValue>>
   ): void {
     this.localesCache.updateTranslations(translationsSnapshot);
   }
@@ -299,7 +294,7 @@ class I18nManager<
    * Edge case usage: access the translations object directly
    */
   async loadTranslations(
-    locale: string,
+    locale: string
   ): Promise<Record<Hash, TranslationValue>> {
     try {
       // Validate
@@ -364,7 +359,7 @@ class I18nManager<
    */
   lookupDictionaryObj(
     locale: string,
-    id: string,
+    id: string
   ): DictionaryObject | undefined {
     try {
       const dictionaryLocale = this.resolveDictionaryCacheLocale(locale);
@@ -381,7 +376,7 @@ class I18nManager<
    */
   async lookupDictionaryWithFallback(
     locale: string,
-    id: string,
+    id: string
   ): Promise<DictionaryEntry | undefined> {
     try {
       const dictionaryLocale = this.resolveCacheLocale(locale);
@@ -396,7 +391,7 @@ class I18nManager<
       if (dictionaryEntry === undefined) {
         dictionaryEntry = await dictionaryCache.materializeEntry(
           id,
-          this.getSourceDictionaryEntry(id),
+          this.getSourceDictionaryEntry(id)
         );
       }
       return dictionaryEntry;
@@ -412,7 +407,7 @@ class I18nManager<
    */
   async lookupDictionaryObjWithFallback(
     locale: string,
-    id: string,
+    id: string
   ): Promise<DictionaryObject | undefined> {
     try {
       const dictionaryLocale = this.resolveCacheLocale(locale);
@@ -437,7 +432,7 @@ class I18nManager<
       return await dictionaryCache.materializeValue(
         id,
         sourceObject,
-        targetObject,
+        targetObject
       );
     } catch (error) {
       this.handleError(error);
@@ -448,16 +443,16 @@ class I18nManager<
   private async translateDictionaryEntry(
     locale: Locale,
     id: string,
-    sourceEntry: DictionaryEntry,
+    sourceEntry: DictionaryEntry
   ): Promise<string> {
     const translation = await this.lookupTranslationWithFallbackResolved(
       locale,
       sourceEntry.entry as TranslationValue,
-      resolveDictionaryLookupOptions(sourceEntry.options),
+      resolveDictionaryLookupOptions(sourceEntry.options)
     );
-    if (typeof translation !== "string") {
+    if (typeof translation !== 'string') {
       throw new Error(
-        `Dictionary entry "${id}" could not be translated into a string. Check the source entry and translation loader output.`,
+        `Dictionary entry "${id}" could not be translated into a string. Check the source entry and translation loader output.`
       );
     }
     return translation;
@@ -473,7 +468,7 @@ class I18nManager<
 
   private getSourceDictionaryObject(
     id: string,
-    { throwOnMissing = true }: { throwOnMissing?: boolean } = {},
+    { throwOnMissing = true }: { throwOnMissing?: boolean } = {}
   ): DictionaryObject | undefined {
     const sourceObject = this.getDefaultDictionaryCache()?.getValue(id);
     if (sourceObject === undefined && throwOnMissing) {
@@ -496,7 +491,7 @@ class I18nManager<
   lookupTranslation<T extends TranslationValue = TranslationValue>(
     locale: string,
     message: T,
-    options: LookupOptions,
+    options: LookupOptions
   ): T | undefined {
     try {
       // Validate
@@ -529,13 +524,13 @@ class I18nManager<
   >(
     locale: string,
     message: T,
-    options: LookupOptions,
+    options: LookupOptions
   ): Promise<T | undefined> {
     try {
       return await this.lookupTranslationWithFallbackResolved(
         locale,
         message,
-        options,
+        options
       );
     } catch (error) {
       this.handleError(error);
@@ -557,7 +552,7 @@ class I18nManager<
     prefetchEntries: {
       message: TranslationValue;
       options: LookupOptions;
-    }[] = [],
+    }[] = []
   ): Promise<TranslationResolver<TranslationValue>> {
     try {
       // Validate
@@ -574,11 +569,11 @@ class I18nManager<
         translationLocale,
         (entryLocale) =>
           this.resolveCacheLocale(entryLocale) ??
-          this._resolveLocale(entryLocale),
+          this._resolveLocale(entryLocale)
       );
       if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
         logger.warn(
-          `I18nManager: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${translationLocale}`,
+          `I18nManager: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${translationLocale}`
         );
       }
 
@@ -589,7 +584,7 @@ class I18nManager<
       await Promise.all(
         resolvedPrefetchEntries
           .filter((entry) => txCache.get(entry) == null)
-          .map((entry) => txCache.miss(entry)),
+          .map((entry) => txCache.miss(entry))
       );
 
       // Create translation resolver
@@ -618,7 +613,7 @@ class I18nManager<
   resolveTranslationSync = <T extends TranslationValue = TranslationValue>(
     locale: string,
     message: T,
-    options: LookupOptions,
+    options: LookupOptions
   ) => {
     return this.lookupTranslation(locale, message, options);
   };
@@ -630,7 +625,7 @@ class I18nManager<
    * @deprecated use loadTranslations instead
    */
   async getTranslations(
-    locale: string,
+    locale: string
   ): Promise<Record<Hash, TranslationValue>> {
     try {
       return this.loadTranslations(locale);
@@ -651,7 +646,7 @@ class I18nManager<
    * @deprecated use getLookupTranslation instead
    */
   async getTranslationResolver(
-    locale: string,
+    locale: string
   ): Promise<TranslationResolver<TranslationValue>> {
     return this.getLookupTranslation(locale);
   }
@@ -704,11 +699,11 @@ class I18nManager<
     }
 
     switch (this.config.environment) {
-      case "development":
+      case 'development':
         throw error;
-      case "production":
+      case 'production':
       default:
-        logger.error("I18nManager: " + error);
+        logger.error('I18nManager: ' + error);
         break;
     }
   }
@@ -717,7 +712,7 @@ class I18nManager<
     const resolvedLocale = this.localeConfig.determineLocale(locale);
     if (!this.localeConfig.isValidLocale(locale) || !resolvedLocale) {
       throw new Error(
-        `Locale "${locale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping.`,
+        `Locale "${locale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping.`
       );
     }
     return resolvedLocale;
@@ -735,7 +730,7 @@ class I18nManager<
     }
 
     const aliasLocale = this.localeConfig.resolveAliasLocale(
-      standardizeLocale(locale),
+      standardizeLocale(locale)
     );
     if (this.requiresTranslation(aliasLocale)) {
       return aliasLocale;
@@ -756,7 +751,7 @@ class I18nManager<
 
   private resolveLookupOptions(
     options: LookupOptions = {} as LookupOptions,
-    translationLocale?: string,
+    translationLocale?: string
   ) {
     if (!options.$locale) {
       return options;
@@ -771,7 +766,7 @@ class I18nManager<
   }
 
   private isRuntimeUrlEnabled(): boolean {
-    return this.config.runtimeUrl !== null && this.config.runtimeUrl !== "";
+    return this.config.runtimeUrl !== null && this.config.runtimeUrl !== '';
   }
 
   private async lookupTranslationWithFallbackResolved<
@@ -808,9 +803,9 @@ class I18nManager<
       locales: Array.from(
         new Set(
           this.config.locales.map((locale) =>
-            this.localeConfig.resolveCanonicalLocale(locale),
-          ),
-        ),
+            this.localeConfig.resolveCanonicalLocale(locale)
+          )
+        )
       ),
       customMapping: this.config.customMapping,
       projectId: this.config.projectId,
@@ -831,7 +826,7 @@ export { I18nManager };
  * @returns The standardized config
  */
 function standardizeConfig<TranslationValue extends Translation>(
-  config: I18nManagerConstructorParams<TranslationValue>,
+  config: I18nManagerConstructorParams<TranslationValue>
 ) {
   const gtServicesEnabled = getGTServicesEnabled(config);
 
@@ -856,27 +851,6 @@ function standardizeConfig<TranslationValue extends Translation>(
       ? standardizeLocales(dedupedLocales)
       : dedupedLocales),
   };
-}
-
-function getRuntimeEnvironment(): "development" | "production" {
-  const processEnv = typeof process === "undefined" ? undefined : process.env;
-  if (processEnv?.NODE_ENV === "development") {
-    return "development";
-  }
-
-  const importMetaEnv = (
-    import.meta as ImportMeta & {
-      env?: RuntimeEnvironment;
-    }
-  ).env;
-  if (importMetaEnv?.MODE) {
-    return importMetaEnv.MODE === "development" ? "development" : "production";
-  }
-  if (importMetaEnv?.DEV === true) {
-    return "development";
-  }
-
-  return "production";
 }
 
 /**
@@ -911,7 +885,7 @@ function standardizeLocales(config: {
   const defaultLocale = standardizeLocale(config.defaultLocale);
   const locales = config.locales.map((locale) => {
     const mappedLocale =
-      typeof config.customMapping?.[locale] === "string"
+      typeof config.customMapping?.[locale] === 'string'
         ? config.customMapping?.[locale]
         : config.customMapping?.[locale]?.code;
     if (mappedLocale) {
@@ -925,13 +899,13 @@ function standardizeLocales(config: {
   const customMapping = Object.fromEntries(
     Object.entries(config.customMapping || {}).map(([key, value]) => [
       key,
-      typeof value === "string"
+      typeof value === 'string'
         ? standardizeLocale(value)
         : {
             ...value,
             ...(value.code ? { code: standardizeLocale(value.code) } : {}),
           },
-    ]),
+    ])
   );
 
   return {
@@ -951,7 +925,7 @@ function standardizeLocales(config: {
 function resolvePrefetchEntriesByLocale<TranslationType extends Translation>(
   prefetchEntries: PrefetchEntry<TranslationType>[],
   locale: string,
-  resolveLocale: (locale: string) => string,
+  resolveLocale: (locale: string) => string
 ) {
   return prefetchEntries.flatMap((entry) => {
     const entryLocale = entry.options.$locale;

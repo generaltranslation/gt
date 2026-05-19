@@ -52,7 +52,10 @@ function node(args: string[]): void {
   execFileSync(process.execPath, args, { cwd: packageRoot, stdio: 'pipe' });
 }
 
-function isAllowedExternalizedSubpath(file: string, specifier: string): boolean {
+function isAllowedExternalizedSubpath(
+  file: string,
+  specifier: string
+): boolean {
   return (
     file.startsWith('context.') &&
     (specifier.startsWith('@generaltranslation/react-core/') ||

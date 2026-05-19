@@ -1,23 +1,24 @@
 import {
-  getLocale,
-  resolveTranslationSync,
-  resolveTranslationSyncWithFallback,
+  createLookupOptions,
+  getRuntimeEnvironment,
+  interpolateMessage,
 } from 'gt-i18n/internal';
-import type { InlineTranslationOptions } from 'gt-i18n/types';
+import type {
+  InlineTranslationOptions,
+  ResolutionOptions,
+} from 'gt-i18n/types';
 import { getRenderStrategy } from '../../setup/globals';
-
-/**
- * NOTE: t() is the only function exported from the 'gt-react' entry point.
- * All other functions in i18n-context are exported from the 'gt-react/browser' entry point.
- */
+import { isWritableConditionStoreInitialized } from '../../condition-store/singleton-operations';
+import { StringContent, StringFormat } from 'generaltranslation/types';
+import { getReactI18nManager } from '../../i18n-manager/singleton-operations';
+import { getShouldTranslate } from '../../hooks/utils';
+import { getLocale } from '../../hooks/context-hooks';
 
 /**
  * Translate a message
  * @param {string} message - The message to translate.
  * @param {InlineTranslationOptions} [options] - The options for the translation.
  * @returns {string} The translated message.
- *
- * This is a BROWSER ONLY function.
  *
  * @example
  * t('Hello, world!'); // Translates 'Hello, world!'
@@ -28,29 +29,19 @@ import { getRenderStrategy } from '../../setup/globals';
  * @example
  * t`Hello, ${name}` // Translate via tagged template literal
  *
- * TODO: enforce enableI18n
- *
  */
 export const t: StringOrTemplateSyncResolutionFunction = (
   messageOrStrings: string | TemplateStringsArray,
   ...values: unknown[]
 ) => {
-  // Fail on SSR applications
-  if (getRenderStrategy() === 'server-render') {
-    console.warn(
-      createTranslationFailedDueToBrowserEnvironmentWarning(messageOrStrings)
-    );
-  }
+  // Warnings and errors
+  enforceSSRRules(messageOrStrings);
 
   //  t("Hello, {name}!", { name: "John" })
   if (typeof messageOrStrings === 'string') {
     const options = values.at(0) as InlineTranslationOptions | undefined;
     const locale = options?.$locale ?? getLocale();
-    return resolveTranslationSyncWithFallback(
-      locale,
-      messageOrStrings,
-      options
-    );
+    return resolveStringContent(locale, messageOrStrings, options);
   }
 
   // t`Hello, ${name}`
@@ -58,6 +49,35 @@ export const t: StringOrTemplateSyncResolutionFunction = (
 };
 
 // ----- Helper Functions ----- //
+
+export function resolveStringContent(
+  locale: string,
+  content: StringContent,
+  options: ResolutionOptions<StringFormat> = {}
+): StringContent {
+  const i18nManager = getReactI18nManager();
+  const defaultLocale = i18nManager.getDefaultLocale();
+  if (!getShouldTranslate()) {
+    return interpolateMessage({
+      options,
+      source: content,
+      sourceLocale: defaultLocale,
+    });
+  }
+
+  const lookupOptions = createLookupOptions(locale, options, 'ICU');
+  const translation = i18nManager.lookupTranslation(
+    lookupOptions.$locale,
+    content,
+    lookupOptions
+  );
+  return interpolateMessage({
+    source: content,
+    target: translation,
+    options: lookupOptions,
+    sourceLocale: defaultLocale,
+  });
+}
 
 /**
  * Handle tagged template literal translation
@@ -81,9 +101,11 @@ function handleTaggedTemplateLiteralTranslation(
     messageOrStrings,
     values
   );
-  const translatedInterpolatedTemplate = resolveTranslationSync(
+  const i18nManager = getReactI18nManager();
+  const translatedInterpolatedTemplate = i18nManager.lookupTranslation(
     locale,
-    interpolatedTemplate
+    interpolatedTemplate,
+    { $format: 'STRING' }
   );
   if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
 
@@ -92,7 +114,7 @@ function handleTaggedTemplateLiteralTranslation(
     messageOrStrings,
     values
   );
-  return resolveTranslationSyncWithFallback(locale, message, variables);
+  return resolveStringContent(locale, message, variables);
 }
 
 /**
@@ -150,15 +172,32 @@ function interpolateTemplateLiteral(
     .join('');
 }
 
-// ----- Constants ----- //
+/**
+ * If detect SSR + module level:
+ * - Build: Error
+ * - Dev: Error
+ * - Prod: Warn
+ */
+function enforceSSRRules(messageOrStrings: string | TemplateStringsArray) {
+  const ssrEnabled = getRenderStrategy() === 'server-render';
+  const moduleLevel = !isWritableConditionStoreInitialized();
+  if (!ssrEnabled || !moduleLevel) return;
 
-// TODO: for following three functions, resturcture them to be more organized
+  const message =
+    typeof messageOrStrings === 'string'
+      ? messageOrStrings
+      : messageOrStrings.join('');
+  const errorMessage = createSSRRulesError(message);
+  if (getRuntimeEnvironment() === 'development') {
+    throw new Error(errorMessage);
+  } else {
+    console.warn(errorMessage);
+  }
+}
 
-// TODO: rename this
-const createTranslationFailedDueToBrowserEnvironmentWarning = (
-  message: string | TemplateStringsArray | undefined
-) =>
-  `@generaltranslation/react-core Warning: Translation failed for t("${typeof message === 'string' ? message : '`' + message?.join('${}') + '`'}") because it was used outside of a browser environment or your SPA did not initialize GT correctly. Falling back to original message.`;
+// SSR Rules Error
+const createSSRRulesError = (message: string) =>
+  `@generaltranslation/react-core Failed to translate "${message}" because it is being used in an SSR environment at the module level. Please use an msg() function instead, and translate with an m() function. See: https://generaltranslation.com/en-US/docs/react/api/strings/msg`;
 
 /**
  * Overloaded type for the `t` function.

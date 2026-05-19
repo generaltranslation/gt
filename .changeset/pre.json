@@ -37,8 +37,5 @@
     "general-cases": "0.1.0",
     "gt-next-middleware-e2e": "0.1.22"
   },
-  "changesets": [
-    "odysseus-sanity-followup",
-    "odysseus-sanity-release-test"
-  ]
+  "changesets": ["odysseus-sanity-followup", "odysseus-sanity-release-test"]
 }

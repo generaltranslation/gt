@@ -1,7 +1,7 @@
 import type {
   MFunctionType,
   GTFunctionType,
-} from "./deprecated/types-dir/types";
+} from './deprecated/types-dir/types';
 import type {
   Dictionary,
   RenderMethod,
@@ -23,34 +23,34 @@ import type {
   _Message,
   _Messages,
   TaggedChildren,
-} from "./deprecated/types-dir/types";
-import type { GTContextType } from "./deprecated/types-dir/context";
+} from './deprecated/types-dir/types';
+import type { GTContextType } from './deprecated/types-dir/context';
 
 import type {
   AuthFromEnvParams,
   AuthFromEnvReturn,
-} from "./deprecated/utils/types";
+} from './deprecated/utils/types';
 import type {
   UseDetermineLocaleParams,
   UseDetermineLocaleReturn,
-} from "./deprecated/provider/hooks/locales/types";
+} from './deprecated/provider/hooks/locales/types';
 import type {
   UseRegionStateParams,
   UseRegionStateReturn,
   UseEnableI18nParams,
   UseEnableI18nReturn,
-} from "./deprecated/provider/hooks/types";
+} from './deprecated/provider/hooks/types';
 import type {
   LocaleSelectorProps,
   RegionSelectorProps,
-} from "./deprecated/ui/types";
+} from './deprecated/ui/types';
 
-import type { GTProp } from "@generaltranslation/format/types";
+import type { GTProp } from '@generaltranslation/format/types';
 
 import type {
   InternalGTProviderProps,
   GTConfig,
-} from "./deprecated/types-dir/config";
+} from './deprecated/types-dir/config';
 
 export type {
   Dictionary,
