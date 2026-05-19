@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "build": "turbo run build --filter='./packages/*' --ui tui",
+    "build:watch": "turbo watch build --filter='./packages/*' --ui tui",
     "test": "turbo run test --filter='./packages/*'",
     "lint": "oxlint packages && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present run lint && oxfmt --check .",
     "lint:fix": "oxlint packages --fix && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present lint --fix && oxfmt .",

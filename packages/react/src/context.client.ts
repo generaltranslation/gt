@@ -40,6 +40,7 @@ export {
   getTranslationsSnapshot,
   getReactI18nManager,
   setReactI18nManager,
+  t,
   // ===== Setup ===== //
   internalInitializeGTSSR as initializeGT,
 } from "@generaltranslation/react-core/context";

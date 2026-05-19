@@ -35,12 +35,7 @@ import {
   createLocaleResolver,
   LocaleCandidates,
 } from "../condition-store/localeResolver";
-
-type RuntimeEnvironment = {
-  DEV?: boolean;
-  MODE?: string;
-  NODE_ENV?: string;
-};
+import { getRuntimeEnvironment } from "../utils/getRuntimeEnvironment";
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -856,27 +851,6 @@ function standardizeConfig<TranslationValue extends Translation>(
       ? standardizeLocales(dedupedLocales)
       : dedupedLocales),
   };
-}
-
-function getRuntimeEnvironment(): "development" | "production" {
-  const processEnv = typeof process === "undefined" ? undefined : process.env;
-  if (processEnv?.NODE_ENV === "development") {
-    return "development";
-  }
-
-  const importMetaEnv = (
-    import.meta as ImportMeta & {
-      env?: RuntimeEnvironment;
-    }
-  ).env;
-  if (importMetaEnv?.MODE) {
-    return importMetaEnv.MODE === "development" ? "development" : "production";
-  }
-  if (importMetaEnv?.DEV === true) {
-    return "development";
-  }
-
-  return "production";
 }
 
 /**
