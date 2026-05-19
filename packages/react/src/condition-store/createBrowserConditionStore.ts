@@ -1,19 +1,19 @@
-import { getReactI18nManager } from "@generaltranslation/react-core/context";
-import type { LocaleCandidates } from "gt-i18n/internal";
+import { getReactI18nManager } from '@generaltranslation/react-core/context';
+import type { LocaleCandidates } from 'gt-i18n/internal';
 import {
   BrowserConditionStore,
   BrowserConditionStoreParams,
-} from "./BrowserConditionStore";
-import { readBrowserLocale } from "./readBrowserLocale";
+} from './BrowserConditionStore';
+import { readBrowserLocale } from './readBrowserLocale';
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
-} from "@generaltranslation/react-core/internal";
-import { getCookieValue } from "./cookies";
+} from '@generaltranslation/react-core/internal';
+import { getCookieValue } from './cookies';
 
 export type CreateBrowserConditionStoreParams = Omit<
   BrowserConditionStoreParams,
-  "locale" | "enableI18n" | "localeCookieName" | "enableI18nCookieName"
+  'locale' | 'enableI18n' | 'localeCookieName' | 'enableI18nCookieName'
 > & {
   locale?: LocaleCandidates;
   enableI18n?: boolean;
@@ -30,7 +30,7 @@ export type CreateBrowserConditionStoreParams = Omit<
  * persists state across page reloads
  */
 export function createBrowserConditionStore(
-  config: CreateBrowserConditionStoreParams,
+  config: CreateBrowserConditionStoreParams
 ): BrowserConditionStore {
   return new BrowserConditionStore({
     ...config,
@@ -64,5 +64,5 @@ function determineEnableI18n({
   if (cookieEnableI18n === undefined) {
     return getEnableI18n?.() ?? enableI18n ?? true;
   }
-  return cookieEnableI18n === "true";
+  return cookieEnableI18n === 'true';
 }

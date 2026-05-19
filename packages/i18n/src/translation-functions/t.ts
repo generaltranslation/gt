@@ -1,6 +1,6 @@
-import { resolveStringContentWithFallback } from "./internal/helpers";
-import { InlineTranslationOptions } from "./types/options";
-import { getLocale } from "../helpers/locale";
+import { resolveStringContentWithFallback } from './internal/helpers';
+import { InlineTranslationOptions } from './types/options';
+import { getLocale } from '../helpers/locale';
 
 /**
  * Translate a message
@@ -11,7 +11,7 @@ import { getLocale } from "../helpers/locale";
 export function t(message: string, options: InlineTranslationOptions = {}) {
   const locale = options.$locale ?? getLocale();
   return resolveStringContentWithFallback(locale, message, {
-    $format: "ICU",
+    $format: 'ICU',
     ...options,
   });
 }

@@ -69,7 +69,10 @@ function isWorkspaceSubpath(specifier: string): boolean {
   );
 }
 
-function isAllowedExternalizedSubpath(file: string, specifier: string): boolean {
+function isAllowedExternalizedSubpath(
+  file: string,
+  specifier: string
+): boolean {
   return file.startsWith('context.') && specifier.startsWith('gt-i18n/');
 }
 

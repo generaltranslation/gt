@@ -4,10 +4,10 @@ export type RuntimeEnvironment = {
   NODE_ENV?: string;
 };
 
-export function getRuntimeEnvironment(): "development" | "production" {
-  const processEnv = typeof process === "undefined" ? undefined : process.env;
-  if (processEnv?.NODE_ENV === "development") {
-    return "development";
+export function getRuntimeEnvironment(): 'development' | 'production' {
+  const processEnv = typeof process === 'undefined' ? undefined : process.env;
+  if (processEnv?.NODE_ENV === 'development') {
+    return 'development';
   }
 
   const importMetaEnv = (
@@ -16,11 +16,11 @@ export function getRuntimeEnvironment(): "development" | "production" {
     }
   ).env;
   if (importMetaEnv?.MODE) {
-    return importMetaEnv.MODE === "development" ? "development" : "production";
+    return importMetaEnv.MODE === 'development' ? 'development' : 'production';
   }
   if (importMetaEnv?.DEV === true) {
-    return "development";
+    return 'development';
   }
 
-  return "production";
+  return 'production';
 }

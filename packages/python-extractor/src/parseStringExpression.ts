@@ -3,10 +3,7 @@ import type { SyntaxNode } from './parser.js';
 import { getParser } from './parser.js';
 import type { StringNode } from './stringNode.js';
 import type { ImportAlias } from './extractImports.js';
-import {
-  PYTHON_DERIVE,
-  PYTHON_DECLARE_VAR,
-} from './constants.js';
+import { PYTHON_DERIVE, PYTHON_DECLARE_VAR } from './constants.js';
 import {
   resolveFunctionInCurrentFile,
   resolveFunctionInFile,
@@ -259,9 +256,7 @@ async function resolveDeclareStaticArg(
 ): Promise<StringNode | null> {
   const arg = getFirstPositionalArg(callNode);
   if (!arg) {
-    ctx.errors.push(
-      `${locationStr(callNode)}: derive() requires an argument`
-    );
+    ctx.errors.push(`${locationStr(callNode)}: derive() requires an argument`);
     return null;
   }
 

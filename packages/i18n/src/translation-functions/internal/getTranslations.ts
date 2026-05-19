@@ -1,11 +1,11 @@
-import { getI18nManager } from "../../i18n-manager/singleton-operations";
-import { DictionaryTranslationOptions } from "../types/options";
-import { TFunctionType } from "../types/functions";
-import { renderDictionaryEntry } from "./renderDictionaryEntry";
-import { renderDictionaryObject } from "./renderDictionaryObject";
-import { resolveDictionaryLookupOptions } from "../../i18n-manager/translations-manager/utils/dictionary-helpers";
-import type { DictionaryObjectTranslation } from "../types/functions";
-import { getLocale } from "../../helpers/locale";
+import { getI18nManager } from '../../i18n-manager/singleton-operations';
+import { DictionaryTranslationOptions } from '../types/options';
+import { TFunctionType } from '../types/functions';
+import { renderDictionaryEntry } from './renderDictionaryEntry';
+import { renderDictionaryObject } from './renderDictionaryObject';
+import { resolveDictionaryLookupOptions } from '../../i18n-manager/translations-manager/utils/dictionary-helpers';
+import type { DictionaryObjectTranslation } from '../types/functions';
+import { getLocale } from '../../helpers/locale';
 
 /**
  * Returns the t function that translates a dictionary entry based on its id and options.
@@ -43,7 +43,7 @@ export async function getTranslations(): Promise<TFunctionType> {
    */
   const t = ((
     id: string,
-    options: DictionaryTranslationOptions = {},
+    options: DictionaryTranslationOptions = {}
   ): string => {
     const sourceEntry = i18nManager.lookupDictionary(sourceLocale, id);
     if (sourceEntry === undefined) {
@@ -51,14 +51,14 @@ export async function getTranslations(): Promise<TFunctionType> {
     }
     const targetEntry = i18nManager.lookupDictionary(locale, id);
     const dictionaryOptions = resolveDictionaryLookupOptions(
-      sourceEntry.options,
+      sourceEntry.options
     );
     const target =
       targetEntry?.entry ??
       i18nManager.lookupTranslation(
         locale,
         sourceEntry.entry,
-        dictionaryOptions,
+        dictionaryOptions
       );
     return renderDictionaryEntry({
       sourceLocale,
@@ -94,7 +94,7 @@ export async function getTranslations(): Promise<TFunctionType> {
         i18nManager.lookupTranslation(
           locale,
           sourceEntry.entry,
-          dictionaryOptions,
+          dictionaryOptions
         ),
     });
   };

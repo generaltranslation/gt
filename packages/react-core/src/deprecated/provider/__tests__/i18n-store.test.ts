@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { I18nManager, WritableConditionStore } from 'gt-i18n/internal';
-import {
-  setWritableConditionStore as setConditionStore,
-} from '../../../condition-store/singleton-operations';
+import { setWritableConditionStore as setConditionStore } from '../../../condition-store/singleton-operations';
 import { setReactI18nManager } from '../../../i18n-manager/singleton-operations';
 import { I18nStore } from '../../../i18n-store/I18nStore';
 

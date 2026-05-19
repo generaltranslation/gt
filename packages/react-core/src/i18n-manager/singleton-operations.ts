@@ -10,7 +10,5 @@ export function getReactI18nManager(): ReactI18nManager {
 }
 
 export function setReactI18nManager(i18nManager: ReactI18nManager): void {
-  i18nInternal.setI18nManager(
-    i18nManager as I18nManager<Translation>
-  );
+  i18nInternal.setI18nManager(i18nManager as I18nManager<Translation>);
 }

@@ -782,8 +782,7 @@ function parseJSXElement({
       ? new Set(
           Object.values(config.importAliases).filter(
             (name) =>
-              VARIABLE_COMPONENTS.includes(name) &&
-              name !== DERIVE_COMPONENT
+              VARIABLE_COMPONENTS.includes(name) && name !== DERIVE_COMPONENT
           )
         )
       : undefined;
