@@ -24,10 +24,7 @@ const contextDeps = {
     /^gt-i18n$/,
     /^gt-i18n\//,
   ],
-  alwaysBundle: [
-    /^@generaltranslation\/format\//,
-    /^generaltranslation\//,
-  ],
+  alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };
 
 const entries = [

@@ -1,11 +1,11 @@
-import { RuntimeTranslationOptions } from "../types/options";
-import type { StringFormat } from "@generaltranslation/format/types";
-import { resolveStringContentWithRuntimeFallback } from "./helpers";
-import { getLocale } from "../../helpers/locale";
+import { RuntimeTranslationOptions } from '../types/options';
+import type { StringFormat } from '@generaltranslation/format/types';
+import { resolveStringContentWithRuntimeFallback } from './helpers';
+import { getLocale } from '../../helpers/locale';
 
 type RuntimeTranslationOptionsWithFormat = Omit<
   RuntimeTranslationOptions,
-  "$format"
+  '$format'
 > & {
   $format?: StringFormat;
 };
@@ -26,12 +26,12 @@ type RuntimeTranslationOptionsWithFormat = Omit<
  */
 export async function tx(
   content: string,
-  options: RuntimeTranslationOptionsWithFormat = {},
+  options: RuntimeTranslationOptionsWithFormat = {}
 ): Promise<string> {
   const locale =
-    typeof options.$locale === "string" ? options.$locale : getLocale();
+    typeof options.$locale === 'string' ? options.$locale : getLocale();
   return resolveStringContentWithRuntimeFallback(locale, content, {
-    $format: "STRING",
+    $format: 'STRING',
     ...options,
   });
 }

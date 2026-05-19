@@ -1,20 +1,20 @@
-import { useCallback, useMemo } from "react";
-import addGTIdentifier from "../../utils/internal/addGTIdentifier";
-import { removeInjectedT } from "../../utils/internal/removeInjectedT";
-import writeChildrenAsObjects from "../../utils/internal/writeChildrenAsObjects";
-import renderDefaultChildren from "../../utils/rendering/renderDefaultChildren";
-import renderTranslatedChildren from "../../utils/rendering/renderTranslatedChildren";
-import { renderVariable } from "../../utils/rendering/renderVariable";
-import { useLocale } from "../../hooks/context-hooks";
+import { useCallback, useMemo } from 'react';
+import addGTIdentifier from '../../utils/internal/addGTIdentifier';
+import { removeInjectedT } from '../../utils/internal/removeInjectedT';
+import writeChildrenAsObjects from '../../utils/internal/writeChildrenAsObjects';
+import renderDefaultChildren from '../../utils/rendering/renderDefaultChildren';
+import renderTranslatedChildren from '../../utils/rendering/renderTranslatedChildren';
+import { renderVariable } from '../../utils/rendering/renderVariable';
+import { useLocale } from '../../hooks/context-hooks';
 import {
   useDefaultLocale,
   useTranslate,
-} from "../../hooks/external-store-hooks";
-import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from "gt-i18n/types";
-import type { JsxChildren } from "generaltranslation/types";
-import type { TaggedChildren } from "../../utils/types";
-import type { ReactNode } from "react";
-import { useShouldTranslate } from "../../hooks/utils";
+} from '../../hooks/external-store-hooks';
+import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
+import type { JsxChildren } from 'generaltranslation/types';
+import type { TaggedChildren } from '../../utils/types';
+import type { ReactNode } from 'react';
+import { useShouldTranslate } from '../../hooks/utils';
 
 // ===== Component ===== //
 
@@ -24,13 +24,13 @@ import { useShouldTranslate } from "../../hooks/utils";
 function T(
   props: {
     children: ReactNode;
-  } & JsxTranslationOptions,
+  } & JsxTranslationOptions
 ): ReactNode {
   return useComputeT(props);
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-T._gtt = "translate-client";
+T._gtt = 'translate-client';
 
 export { T };
 
@@ -99,7 +99,7 @@ function usePrepSourceRender({
   taggedSourceChildren: TaggedChildren;
   sourceJsxChildren: JsxChildren;
   targetOptions: JsxTranslationOptionsWithSugar & {
-    $format: "JSX";
+    $format: 'JSX';
     $locale: string;
   };
   shouldTranslate: boolean;
@@ -109,16 +109,16 @@ function usePrepSourceRender({
   const shouldTranslate = useShouldTranslate();
   const taggedSourceChildren = useMemo(
     () => addGTIdentifier(removeInjectedT(sourceChildren)),
-    [sourceChildren],
+    [sourceChildren]
   );
   const sourceJsxChildren = useMemo(
     () => writeChildrenAsObjects(taggedSourceChildren),
-    [taggedSourceChildren],
+    [taggedSourceChildren]
   );
   const options = useMemo(() => normalizeParameters(params), [params]);
   const targetOptions = useMemo(
     () => ({ ...options, $locale: locale }),
-    [locale, options],
+    [locale, options]
   );
 
   return {
@@ -138,11 +138,11 @@ function normalizeParameters(
     context?: string;
     id?: string;
     _hash?: string;
-  } & JsxTranslationOptions,
-): JsxTranslationOptionsWithSugar & { $format: "JSX" } {
+  } & JsxTranslationOptions
+): JsxTranslationOptionsWithSugar & { $format: 'JSX' } {
   return {
     ...parameters,
-    $format: "JSX",
+    $format: 'JSX',
     $context: parameters.$context ?? parameters.context,
     $id: parameters.$id ?? parameters.id,
     $_hash: parameters.$_hash ?? parameters._hash,

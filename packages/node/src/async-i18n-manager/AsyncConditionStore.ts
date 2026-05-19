@@ -1,9 +1,9 @@
-import { AsyncLocalStorage } from "node:async_hooks";
+import { AsyncLocalStorage } from 'node:async_hooks';
 import type {
   LocaleResolverConfig,
   ScopedConditionStore,
-} from "gt-i18n/internal/types";
-import { getI18nManager } from "gt-i18n/internal";
+} from 'gt-i18n/internal/types';
+import { getI18nManager } from 'gt-i18n/internal';
 
 type Store = {
   locale: string;
@@ -11,10 +11,10 @@ type Store = {
 };
 
 const OUTSIDE_SCOPE_MESSAGE =
-  "AsyncConditionStore: getLocale() called outside of a withGT() scope.";
+  'AsyncConditionStore: getLocale() called outside of a withGT() scope.';
 
 const ENABLE_I18N_MESSAGE =
-  "AsyncConditionStore: getEnableI18n() called outside of a withGT() scope.";
+  'AsyncConditionStore: getEnableI18n() called outside of a withGT() scope.';
 
 type AsyncConditionStoreConstructorParams = LocaleResolverConfig & {
   store?: AsyncLocalStorage<Store>;
@@ -41,14 +41,14 @@ export class AsyncConditionStore implements ScopedConditionStore {
   run<T>(locale: string, callback: () => T): T {
     return this.store.run(
       { locale: getI18nManager().determineLocale(locale) },
-      callback,
+      callback
     );
   }
 
   getLocale(): string {
     const store = this.store.getStore();
     if (!store) {
-      if (process.env.NODE_ENV === "production") {
+      if (process.env.NODE_ENV === 'production') {
         console.warn(OUTSIDE_SCOPE_MESSAGE);
         return getI18nManager().determineLocale();
       }
@@ -63,7 +63,7 @@ export class AsyncConditionStore implements ScopedConditionStore {
   getEnableI18n(): boolean {
     const store = this.store.getStore();
     if (!store) {
-      if (process.env.NODE_ENV === "production") {
+      if (process.env.NODE_ENV === 'production') {
         console.warn(ENABLE_I18N_MESSAGE);
         return true;
       }

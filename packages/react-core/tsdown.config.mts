@@ -17,34 +17,21 @@ const deps = {
 };
 
 const contextDeps = {
-  neverBundle: [
-    ...deps.neverBundle,
-    /^gt-i18n$/,
-    /^gt-i18n\//,
-  ],
-  alwaysBundle: [
-    /^@generaltranslation\/format\//,
-    /^generaltranslation\//,
-  ],
+  neverBundle: [...deps.neverBundle, /^gt-i18n$/, /^gt-i18n\//],
+  alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };
 
-const bundledEntries = [
-  'src/index.ts',
-  'src/internal.ts',
-  'src/errors.ts',
-];
+const bundledEntries = ['src/index.ts', 'src/internal.ts', 'src/errors.ts'];
 
-export default defineConfig(
-  [
-    ...createTsdownMinifiedDualFormatConfig({
-      entries: bundledEntries,
-      deps,
-    }),
-    ...createTsdownMinifiedDualFormatConfig({
-      entries: ['src/context.ts'],
-      deps: contextDeps,
-      clean: false,
-      typeEntry: false,
-    }),
-  ]
-);
+export default defineConfig([
+  ...createTsdownMinifiedDualFormatConfig({
+    entries: bundledEntries,
+    deps,
+  }),
+  ...createTsdownMinifiedDualFormatConfig({
+    entries: ['src/context.ts'],
+    deps: contextDeps,
+    clean: false,
+    typeEntry: false,
+  }),
+]);

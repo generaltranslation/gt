@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-export { CSRGTProvider as GTProvider } from "./provider/CSRGTProvider";
-export { initializeGTSPA } from "./setup/initializeGTSPA";
+export { CSRGTProvider as GTProvider } from './provider/CSRGTProvider';
+export { initializeGTSPA } from './setup/initializeGTSPA';
 
 export {
   // ===== Components ===== //
@@ -43,4 +43,4 @@ export {
   t,
   // ===== Setup ===== //
   internalInitializeGTSSR as initializeGT,
-} from "@generaltranslation/react-core/context";
+} from '@generaltranslation/react-core/context';
