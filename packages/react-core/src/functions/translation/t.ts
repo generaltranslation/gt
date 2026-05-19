@@ -15,17 +15,10 @@ import { getShouldTranslate } from "../../hooks/utils";
 import { getLocale } from "../../hooks/context-hooks";
 
 /**
- * NOTE: t() is the only function exported from the 'gt-react' entry point.
- * All other functions in i18n-context are exported from the 'gt-react/browser' entry point.
- */
-
-/**
  * Translate a message
  * @param {string} message - The message to translate.
  * @param {InlineTranslationOptions} [options] - The options for the translation.
  * @returns {string} The translated message.
- *
- * This is a BROWSER ONLY function.
  *
  * @example
  * t('Hello, world!'); // Translates 'Hello, world!'
