@@ -163,6 +163,7 @@
     "mdast-util-mdx-jsx": "^3.2.0",
     "mdast-util-mdxjs-esm": "^2.0.1",
     "prettier": "^3.4.2",
+    "react-devtools-core": "^4.28.5",
     "ts-node": "^10.9.2",
     "tsdown": "catalog:",
     "tslib": "catalog:",

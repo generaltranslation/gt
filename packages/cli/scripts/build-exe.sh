@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eu
+
 # Check if architecture argument is provided
 if [ $# -eq 0 ]; then
     echo "Usage: $0 <architecture>"
