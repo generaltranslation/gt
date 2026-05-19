@@ -40,6 +40,7 @@ export {
   mFallback,
   gtFallback,
 } from "gt-i18n";
+export { t } from "./functions/translation/t";
 
 // ===== Internal ===== //
 export { InternalGTProvider } from "./context/InternalGTProvider";
