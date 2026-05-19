@@ -11,7 +11,7 @@
   ],
   "sideEffects": false,
   "peerDependencies": {
-    "react": ">=16.8.0"
+    "react": ">=18.0.0"
   },
   "dependencies": {
     "@generaltranslation/format": "workspace:*",
@@ -60,6 +60,11 @@
       "require": "./dist/internal.cjs.min.cjs",
       "import": "./dist/internal.esm.min.mjs"
     },
+    "./context": {
+      "types": "./dist/context.d.ts",
+      "require": "./dist/context.cjs.min.cjs",
+      "import": "./dist/context.esm.min.mjs"
+    },
     "./errors": {
       "types": "./dist/errors.d.ts",
       "require": "./dist/errors.cjs.min.cjs",
@@ -77,6 +82,9 @@
       "internal": [
         "./dist/internal.d.ts"
       ],
+      "context": [
+        "./dist/context.d.ts"
+      ],
       "errors": [
         "./dist/errors.d.ts"
       ]
@@ -87,6 +95,9 @@
     "paths": {
       "@generaltranslation/react-core/internal": [
         "./dist/internal"
+      ],
+      "@generaltranslation/react-core/context": [
+        "./dist/context"
       ],
       "@generaltranslation/react-core/types": [
         "./dist/types.d.ts"

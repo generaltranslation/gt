@@ -217,6 +217,10 @@ export class TranslationsCache<TranslationValue extends Translation> {
     return translationPromise;
   }
 
+  public update(translations: Record<Hash, TranslationValue>): void {
+    this.cache = { ...this.cache, ...translations };
+  }
+
   private flushNow(): void {
     if (this.batchTimer) {
       clearTimeout(this.batchTimer);

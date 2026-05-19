@@ -1,6 +1,1 @@
-export {
-  declareStatic,
-  derive,
-  declareVar,
-  decodeVars,
-} from 'generaltranslation/internal';
+export { derive, declareVar, decodeVars } from 'generaltranslation/internal';

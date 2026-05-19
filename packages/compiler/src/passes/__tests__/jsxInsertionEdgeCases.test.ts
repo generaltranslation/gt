@@ -540,19 +540,6 @@ describe('jsxInsertionPass edge cases', () => {
   // ===== 15. Derive edge cases =====
 
   describe('Derive edge cases', () => {
-    it('Static (deprecated alias) treated exactly like Derive', () => {
-      // BEFORE JSX:  <div>Hello <Static>{getLabel()}</Static></div>
-      // AFTER JSX:   <div><_T>Hello <Static>{getLabel()}</Static></_T></div>
-      const code = `
-        import { jsx, jsxs } from 'react/jsx-runtime';
-        import { Static } from 'gt-react';
-        jsxs("div", { children: ["Hello ", jsx(Static, { children: getLabel() })] });
-      `;
-      const { gtTranslateCalls, gtVarCalls } = transform(code);
-      expect(gtTranslateCalls).toHaveLength(1);
-      expect(gtVarCalls).toHaveLength(0);
-    });
-
     it('multiple Derive siblings — single _T, both opaque', () => {
       // BEFORE JSX:  <div>The <Derive>{getSubject()}</Derive> plays with the <Derive>{getObject()}</Derive></div>
       // AFTER JSX:   <div><_T>The <Derive>...</Derive> plays with the <Derive>...</Derive></_T></div>

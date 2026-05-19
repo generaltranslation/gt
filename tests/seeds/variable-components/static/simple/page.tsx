@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Branch, Static, T, Var } from 'gt-next';
+import { Branch, Derive, T, Var } from 'gt-next';
 
 // Subjects
 const getFourthSubject = () => "Lily"
@@ -33,7 +33,7 @@ const getSecondSubject = (subject: string) => {
   } else {
     return (
       <>
-        The beautiful <Static>{getThirdSubject(subject)}</Static>
+        The beautiful <Derive>{getThirdSubject(subject)}</Derive>
       </>
     );
   }
@@ -156,9 +156,9 @@ export default function Page() {
         <button onClick={handleEnumerate}>Enumerate All Combinations</button>
       </div>
       <T>
-        <Static>{getSubjectName(subject)}</Static>{' '}
-        <Static>{getPredicate(predicate)}</Static>{' '}
-        <Static>{getObject(object)}</Static>
+        <Derive>{getSubjectName(subject)}</Derive>{' '}
+        <Derive>{getPredicate(predicate)}</Derive>{' '}
+        <Derive>{getObject(object)}</Derive>
       </T>
     </>
   );

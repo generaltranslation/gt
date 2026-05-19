@@ -5,3 +5,5 @@ export * from './tx';
 export * from './sync-translation-resolution';
 export * from './jsx-resolution';
 export * from './helpers';
+export * from './renderDictionaryEntry';
+export * from './renderDictionaryObject';

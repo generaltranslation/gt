@@ -288,5 +288,52 @@ describe('LocalesCache', () => {
 
       expect(cache.getDictionary('en')).toBeDefined();
     });
+
+    it('updateDictionaries() updates locale dictionary caches', async () => {
+      const cache = createCache();
+      await cache.getOrLoadDictionary('fr');
+
+      cache.updateDictionaries({
+        en: {
+          greeting: 'Hi',
+          navigation: {
+            home: 'Home',
+          },
+        },
+        fr: {
+          greeting: 'Salut',
+          user: {
+            title: 'Titre',
+          },
+          navigation: {
+            home: 'Accueil',
+          },
+        },
+      });
+
+      expect(cache.getDictionary('en')?.getInternalCache()).toEqual({
+        greeting: 'Hi',
+        navigation: {
+          home: 'Home',
+        },
+        cta: ['Click me', { $context: 'button', $maxChars: 12 }],
+      });
+      expect(cache.getDictionary('en')?.getEntry('cta')).toEqual({
+        entry: 'Click me',
+        options: { $context: 'button', $maxChars: 12 },
+      });
+      expect(cache.getDictionary('fr')?.getInternalCache()).toEqual({
+        greeting: 'Salut',
+        cta: ['Cliquez', { context: 'button' }],
+        user: {
+          name: 'Nom',
+          title: 'Titre',
+        },
+        navigation: {
+          home: 'Accueil',
+        },
+      });
+      expect(mockLoadDictionary).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -1,7 +1,7 @@
-import { Static } from 'gt-react';
+import { Derive } from 'gt-react';
 
 function getLabel() { return 'label'; }
 
 export default function StaticComponent() {
-  return <div>Hello <Static>{getLabel()}</Static></div>;
+  return <div>Hello <Derive>{getLabel()}</Derive></div>;
 }

@@ -40,7 +40,6 @@ export {
   msg,
   decodeMsg,
   decodeOptions,
-  declareStatic,
   derive,
   declareVar,
   decodeVars,

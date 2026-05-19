@@ -32,11 +32,9 @@ import {
   msg,
   decodeMsg,
   decodeOptions,
-  declareStatic,
   derive,
   declareVar,
   decodeVars,
-  Static,
   Derive,
   mFallback,
   gtFallback,
@@ -70,7 +68,7 @@ import type {
 import type {
   ClientProviderProps,
   GTProviderProps,
-} from './react-context/types/config';
+} from './deprecated/react-context/types/config';
 
 // Type exports
 export type {
@@ -105,7 +103,6 @@ export { defaultLocaleCookieName, defaultRegionCookieName, reactHasUse };
 
 // Function exports
 export {
-  Static,
   Derive,
   addGTIdentifier,
   writeChildrenAsObjects,
@@ -134,7 +131,6 @@ export {
   msg,
   decodeMsg,
   decodeOptions,
-  declareStatic,
   derive,
   declareVar,
   decodeVars,

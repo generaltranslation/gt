@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from 'react';
-import useGTContext from '../provider/GTContext';
+import { useCustomMapping, useLocales } from './external-store-hooks';
+import { useLocale, useSetLocale } from './context-hooks';
+import { getLocaleProperties } from 'generaltranslation';
 
 /**
  *
@@ -13,9 +15,12 @@ import useGTContext from '../provider/GTContext';
  * @returns {(locale: string) => void} return.setLocale - Function to update the current locale.
  * @returns {(locale: string) => LocaleProperties} return.getLocaleProperties - Function to retrieve properties for a given locale.
  */
-export default function useLocaleSelector(locales?: string[]) {
+export function useLocaleSelector(locales?: string[]) {
   // Retrieve the locale, locales, and setLocale function
-  const { locales: contextLocales, locale, setLocale, gt } = useGTContext();
+  const contextLocales = useLocales();
+  const customMapping = useCustomMapping();
+  const locale = useLocale();
+  const setLocale = useSetLocale();
 
   // sort
   const sortedLocales = useMemo(() => {
@@ -25,18 +30,18 @@ export default function useLocaleSelector(locales?: string[]) {
     const collator = new Intl.Collator();
     return [...contextLocales].sort((a, b) =>
       collator.compare(
-        gt.getLocaleProperties(a).nativeNameWithRegionCode,
-        gt.getLocaleProperties(b).nativeNameWithRegionCode
+        getLocaleProperties(a, locale, customMapping).nativeNameWithRegionCode,
+        getLocaleProperties(b, locale, customMapping).nativeNameWithRegionCode
       )
     );
-  }, [contextLocales, gt]);
+  }, [contextLocales, locale, customMapping]);
 
   // create getLocaleProperties callback
   const getLocalePropertiesCallback = useCallback(
     (locale: string) => {
-      return gt.getLocaleProperties(locale);
+      return getLocaleProperties(locale, locale, customMapping);
     },
-    [gt]
+    [locale, customMapping]
   );
 
   return {

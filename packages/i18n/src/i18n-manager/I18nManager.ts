@@ -31,6 +31,11 @@ import { EventEmitter } from './event-subscription/EventEmitter';
 import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
 import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
 import type { I18nEvents } from './event-subscription/types';
+import {
+  createLocaleResolver,
+  LocaleCandidates,
+} from '../condition-store/localeResolver';
+import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -82,6 +87,8 @@ class I18nManager<
    */
   private localeConfig: LocaleConfig;
 
+  public determineLocale: (candidates?: LocaleCandidates) => string;
+
   /**
    * Creates an instance of I18nManager.
    * TODO: resolve gtConfig from just file path
@@ -102,6 +109,12 @@ class I18nManager<
       locales: this.config.locales,
       customMapping: this.config.customMapping,
     });
+    this.determineLocale = createLocaleResolver({
+      defaultLocale: this.config.defaultLocale,
+      locales: this.config.locales,
+      customMapping: this.config.customMapping,
+    });
+
     // Create cache miss handlers
     const loadTranslations = routeCreateTranslationLoader({
       loadTranslations: params.loadTranslations,
@@ -213,15 +226,41 @@ class I18nManager<
    */
   getGTClass(locale?: string): GT {
     return this.getGTClassClean(
-      locale ? this.resolveLocale(locale) : undefined
+      locale ? this._resolveLocale(locale) : undefined
     );
   }
 
   /**
    * Is translation enabled?
+   * @deprecated use condition store instead
+   * TODO: move this to condition store
    */
   isTranslationEnabled(): boolean {
     return this.config.enableI18n;
+  }
+
+  /**
+   * Returns true when development hot reload runtime translation requests can run.
+   */
+  isDevHotReloadEnabled(): boolean {
+    return (
+      !!this.config.devApiKey &&
+      !!this.config.projectId &&
+      this.isRuntimeUrlEnabled() &&
+      this.config.environment === 'development'
+    );
+  }
+
+  // ========== Translation Updates ========== //
+
+  updateTranslations(
+    translationsSnapshot: Record<Locale, Record<Hash, TranslationValue>>
+  ): void {
+    this.localesCache.updateTranslations(translationsSnapshot);
+  }
+
+  updateDictionaries(dictionarySnapshot: Record<Locale, Dictionary>): void {
+    this.localesCache.updateDictionaries(dictionarySnapshot);
   }
 
   // ========== Translation Loading ========== //
@@ -236,7 +275,19 @@ class I18nManager<
 
   // ========== Translation Resolution ========== //
 
-  // ----- New Operations ----- //
+  /**
+   * Used for checking the status of a translation load
+   */
+  hasTranslations(locale: string): boolean {
+    try {
+      const translationLocale = this.resolveCacheLocale(locale);
+      if (!translationLocale) return false;
+      return this.localesCache.getTranslations(translationLocale) !== undefined;
+    } catch (error) {
+      this.handleError(error);
+      return false;
+    }
+  }
 
   /**
    * Loads in translations for a given locale
@@ -518,7 +569,7 @@ class I18nManager<
         translationLocale,
         (entryLocale) =>
           this.resolveCacheLocale(entryLocale) ??
-          this.resolveLocale(entryLocale)
+          this._resolveLocale(entryLocale)
       );
       if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
         logger.warn(
@@ -629,6 +680,15 @@ class I18nManager<
     );
   }
 
+  public sanitizeLocale(locale: string): string | undefined {
+    try {
+      return this._resolveLocale(locale);
+    } catch (error) {
+      this.handleError(error);
+      return undefined;
+    }
+  }
+
   /**
    * Handle errors
    * Soft error in production, throw in development
@@ -648,7 +708,7 @@ class I18nManager<
     }
   }
 
-  private resolveLocale(locale: string) {
+  private _resolveLocale(locale: string) {
     const resolvedLocale = this.localeConfig.determineLocale(locale);
     if (!this.localeConfig.isValidLocale(locale) || !resolvedLocale) {
       throw new Error(
@@ -661,9 +721,10 @@ class I18nManager<
   /**
    * Resolve the locale key used to load/read locale caches.
    * Returns undefined when the requested locale can use source content.
+   * TODO: this maybe made redundant by resolveLocale()
    */
   private resolveCacheLocale(locale: string) {
-    const resolvedLocale = this.resolveLocale(locale);
+    const resolvedLocale = this._resolveLocale(locale);
     if (this.requiresTranslation(resolvedLocale)) {
       return resolvedLocale;
     }
@@ -700,8 +761,12 @@ class I18nManager<
       $locale:
         translationLocale ??
         this.resolveCacheLocale(options.$locale) ??
-        this.resolveLocale(options.$locale),
+        this._resolveLocale(options.$locale),
     };
+  }
+
+  private isRuntimeUrlEnabled(): boolean {
+    return this.config.runtimeUrl !== null && this.config.runtimeUrl !== '';
   }
 
   private async lookupTranslationWithFallbackResolved<
@@ -772,7 +837,7 @@ function standardizeConfig<TranslationValue extends Translation>(
   });
 
   return {
-    environment: config.environment || 'production',
+    environment: config.environment || getRuntimeEnvironment(),
     enableI18n: config.enableI18n !== undefined ? config.enableI18n : true,
     projectId: config.projectId,
     devApiKey: config.devApiKey,

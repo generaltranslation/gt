@@ -17,17 +17,31 @@ const deps = {
   ],
 };
 
+const contextDeps = {
+  neverBundle: [
+    ...deps.neverBundle,
+    /^@generaltranslation\/react-core\//,
+    /^gt-i18n$/,
+    /^gt-i18n\//,
+  ],
+  alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
+};
+
 const entries = [
   'src/index.ts',
   'src/internal.ts',
   'src/client.ts',
+  'src/context.client.ts',
+  'src/context.server.ts',
+  'src/context.types.ts',
   'src/browser.ts',
   'src/macros.ts',
 ];
 
 export default defineConfig(
   entries.flatMap((entry, index) => {
-    const [cjsConfig, esmConfig] = createTsdownConfig([entry], deps);
+    const entryDeps = entry.startsWith('src/context.') ? contextDeps : deps;
+    const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
     return [
       {
@@ -41,7 +55,7 @@ export default defineConfig(
         ...esmConfig,
         deps: {
           onlyBundle: false,
-          ...deps,
+          ...entryDeps,
         },
       },
     ];

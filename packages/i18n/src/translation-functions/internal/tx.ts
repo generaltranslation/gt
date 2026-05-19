@@ -1,7 +1,7 @@
 import { RuntimeTranslationOptions } from '../types/options';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { resolveStringContentWithRuntimeFallback } from './helpers';
-import { getCurrentLocale } from '../../i18n-manager/singleton-operations';
+import { getLocale } from '../../helpers/locale';
 
 type RuntimeTranslationOptionsWithFormat = Omit<
   RuntimeTranslationOptions,
@@ -29,7 +29,7 @@ export async function tx(
   options: RuntimeTranslationOptionsWithFormat = {}
 ): Promise<string> {
   const locale =
-    typeof options.$locale === 'string' ? options.$locale : getCurrentLocale();
+    typeof options.$locale === 'string' ? options.$locale : getLocale();
   return resolveStringContentWithRuntimeFallback(locale, content, {
     $format: 'STRING',
     ...options,

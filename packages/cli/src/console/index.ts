@@ -60,7 +60,7 @@ export const warnMissingReturnSync = (
 ): string =>
   withLocation(
     file,
-    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Derive>')} (formerly ${colorizeComponent('<Static>')}) tags but does not have an explicit return statement. Derivable functions must have an explicit return statement.`,
+    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Derive>')} tags but does not have an explicit return statement. Derivable functions must have an explicit return statement.`,
     location
   );
 
@@ -290,7 +290,7 @@ export const warnDeriveFunctionNotWrappedSync = (
   withLocation(
     file,
     withDeriveFunctionError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in derive() (formerly declareStatic()). Ensure the function is properly wrapped with derive() and does not have circular import dependencies.`
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in derive(). Ensure the function is properly wrapped with derive() and does not have circular import dependencies.`
     ),
     location
   );
@@ -317,7 +317,7 @@ export const warnDeriveFunctionNoResultsSync = (
   withLocation(
     file,
     withDeriveFunctionError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. derive() (formerly declareStatic()) can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. derive() can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
     ),
     location
   );

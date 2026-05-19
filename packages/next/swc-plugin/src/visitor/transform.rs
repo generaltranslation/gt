@@ -4,7 +4,7 @@ use crate::config::PluginSettings;
 use crate::logging::{LogLevel, Logger};
 use crate::visitor::errors::create_dynamic_function_warning;
 use crate::visitor::expr_utils::{
-  create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, has_prop, inject_new_args, validate_declare_static,
+  create_spread_options_call_expr, create_string_prop, extract_id_and_context_from_options, extract_string_from_expr, has_prop, inject_new_args, validate_derive,
 };
 use swc_core::{
   common::SyntaxContext,
@@ -12,7 +12,7 @@ use swc_core::{
 };
 
 use crate::visitor::analysis::{
-  is_branch_name, is_declare_static_name, is_translation_component_name,
+  is_branch_name, is_derive_name, is_translation_component_name,
   is_translation_function_name, is_variable_component_name,
 };
 
@@ -240,14 +240,14 @@ impl TransformVisitor {
     false
   }
 
-  /// Check if a name is declareStatic or an alias of it
-  pub fn is_declare_static(&self, name: &Atom) -> bool {
+  /// Check if a name is derive or an alias of it
+  pub fn is_derive(&self, name: &Atom) -> bool {
     if let Some(variable) = self
       .import_tracker
       .scope_tracker
       .get_translation_variable(name)
     {
-      return is_declare_static_name(&variable.original_name);
+      return is_derive_name(&variable.original_name);
     }
     false
   }
@@ -287,7 +287,7 @@ impl TransformVisitor {
                 || is_variable_component_name(&original_name)
                 || is_branch_name(&original_name)
                 || is_translation_function_name(&original_name)
-                || is_declare_static_name(&original_name)
+                || is_derive_name(&original_name)
               {
                 self
                   .import_tracker
@@ -316,9 +316,9 @@ impl TransformVisitor {
 
   /// Check for violations in a call expression
   pub fn check_call_expr_for_violations(&mut self, arg: &ExprOrSpread, function_name: &str) {
-    // First, validate if the expression is a string literal or contains a declareStatic call
+    // First, validate if the expression is a string literal or contains a derive call
     let mut errors = Vec::new();
-    self.validate_string_literal_or_declare_static(arg.expr.as_ref(), &mut errors);
+    self.validate_string_literal_or_derive(arg.expr.as_ref(), &mut errors);
 
     if !errors.is_empty() {
       if !self.settings.disable_build_checks && !self.settings.autoderive_strings {
@@ -341,75 +341,75 @@ impl TransformVisitor {
 /**
  * Validates if an expression is composed only of:
  * - String literals (including static strings)
- * - declareStatic()/derive() function calls
+ * - derive() function calls
  * - Combinations of the above using string concatenation or template literals
  *
  * Valid examples:
  * - "Hello World"
- * - declareStatic(getName())
- * - "Hello World" + declareStatic(getName())
- * - `Hello there ${declareStatic(getName())}`
+ * - derive(getName())
+ * - "Hello World" + derive(getName())
+ * - `Hello there ${derive(getName())}`
  *
  * Invalid examples:
  * - variable
  * - otherFunction()
  * - `Hello ${variable}`
  */
-pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut Vec<String>) {
+pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<String>) {
   match expr {
     // String literal - always valid
     Expr::Lit(Lit::Str(_)) => {
       // Valid
     }
 
-    // Template literal - check all expressions are declareStatic calls
+    // Template literal - check all expressions are derive calls
     Expr::Tpl(tpl) => {
       for expr in &tpl.exprs {
-        self.validate_string_literal_or_declare_static(expr.as_ref(), errors);
+        self.validate_string_literal_or_derive(expr.as_ref(), errors);
       }
     }
 
     // Binary operation (e.g., string concatenation) - check both sides
     Expr::Bin(bin_expr) => {
-      self.validate_string_literal_or_declare_static(bin_expr.left.as_ref(), errors);
-      self.validate_string_literal_or_declare_static(bin_expr.right.as_ref(), errors);
+      self.validate_string_literal_or_derive(bin_expr.left.as_ref(), errors);
+      self.validate_string_literal_or_derive(bin_expr.right.as_ref(), errors);
     }
 
-    // Call expression - must be declareStatic
+    // Call expression - must be derive
     Expr::Call(call_expr) => {
       if let Callee::Expr(callee_expr) = &call_expr.callee {
         if let Expr::Ident(ident) = callee_expr.as_ref() {
-          if self.is_declare_static(&ident.sym) {
+          if self.is_derive(&ident.sym) {
             // Validate that the call expression has exactly one argument and the argument is a call expression
-            validate_declare_static(call_expr, errors);
+            validate_derive(call_expr, errors);
           } else {
             errors.push(format!(
-              "Only declareStatic()/derive() function calls are allowed, found: {}()",
+              "Only derive() function calls are allowed, found: {}()",
               ident.sym
             ));
           }
-          // If it's declareStatic, it's valid
+          // If it's derive, it's valid
         } else {
           errors.push(
-            "Only declareStatic()/derive() function calls are allowed".to_string()
+            "Only derive() function calls are allowed".to_string()
           );
         }
       } else {
         errors.push(
-          "Only declareStatic()/derive() function calls are allowed".to_string()
+          "Only derive() function calls are allowed".to_string()
         );
       }
     }
 
     // Parenthesized expression - check the inner expression
     Expr::Paren(paren_expr) => {
-      self.validate_string_literal_or_declare_static(paren_expr.expr.as_ref(), errors);
+      self.validate_string_literal_or_derive(paren_expr.expr.as_ref(), errors);
     }
 
     // Variables are not allowed
     Expr::Ident(ident) => {
       errors.push(format!(
-        "Variables are not allowed. Use a string literal or declareStatic()/derive() instead. Found: {}",
+        "Variables are not allowed. Use a string literal or derive() instead. Found: {}",
         ident.sym
       ));
     }
@@ -417,7 +417,7 @@ pub fn validate_string_literal_or_declare_static(&self,expr: &Expr, errors: &mut
     // Any other expression type is invalid
     _ => {
       errors.push(
-        "Expression must be a string literal, declareStatic()/derive() call, or a combination of both".to_string()
+        "Expression must be a string literal, derive() call, or a combination of both".to_string()
       );
     }
   }
@@ -1450,20 +1450,20 @@ mod tests {
     }
 
     #[test]
-    fn allows_declare_static_calls() {
+    fn allows_derive_calls() {
       let mut visitor = create_visitor_with_imports();
-      // Track declareStatic import
+      // Track derive import
       visitor
         .import_tracker
         .scope_tracker
-        .track_translation_variable(Atom::new("declareStatic"), Atom::new("declareStatic"), 0);
+        .track_translation_variable(Atom::new("derive"), Atom::new("derive"), 0);
 
-      // Create declareStatic(getName()) expression
-      let declare_static_call = Expr::Call(CallExpr {
+      // Create derive(getName()) expression
+      let derive_call = Expr::Call(CallExpr {
         span: DUMMY_SP,
         callee: Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
-          sym: Atom::new("declareStatic"),
+          sym: Atom::new("derive"),
           optional: false,
           ctxt: SyntaxContext::empty(),
         }))),
@@ -1486,7 +1486,7 @@ mod tests {
         ctxt: SyntaxContext::empty(),
       });
 
-      let call_expr = create_call_expr("t", declare_static_call);
+      let call_expr = create_call_expr("t", derive_call);
 
       let initial_violations = visitor.statistics.dynamic_content_violations;
       if let Some(first_arg) = call_expr.args.first() {
@@ -1500,15 +1500,15 @@ mod tests {
     }
 
     #[test]
-    fn allows_string_concatenation_with_declare_static() {
+    fn allows_string_concatenation_with_derive() {
       let mut visitor = create_visitor_with_imports();
-      // Track declareStatic import
+      // Track derive import
       visitor
         .import_tracker
         .scope_tracker
-        .track_translation_variable(Atom::new("declareStatic"), Atom::new("declareStatic"), 0);
+        .track_translation_variable(Atom::new("derive"), Atom::new("derive"), 0);
 
-      // Create "Hello " + declareStatic(getName())
+      // Create "Hello " + derive(getName())
       let concat_expr = Expr::Bin(BinExpr {
         span: DUMMY_SP,
         op: BinaryOp::Add,
@@ -1521,7 +1521,7 @@ mod tests {
           span: DUMMY_SP,
           callee: Callee::Expr(Box::new(Expr::Ident(Ident {
             span: DUMMY_SP,
-            sym: Atom::new("declareStatic"),
+            sym: Atom::new("derive"),
             optional: false,
             ctxt: SyntaxContext::empty(),
           }))),
@@ -1559,22 +1559,22 @@ mod tests {
     }
 
     #[test]
-    fn allows_template_literal_with_declare_static() {
+    fn allows_template_literal_with_derive() {
       let mut visitor = create_visitor_with_imports();
-      // Track declareStatic import
+      // Track derive import
       visitor
         .import_tracker
         .scope_tracker
-        .track_translation_variable(Atom::new("declareStatic"), Atom::new("declareStatic"), 0);
+        .track_translation_variable(Atom::new("derive"), Atom::new("derive"), 0);
 
-      // Create `Hello ${declareStatic(getName())}`
+      // Create `Hello ${derive(getName())}`
       let template_expr = Expr::Tpl(Tpl {
         span: DUMMY_SP,
         exprs: vec![Box::new(Expr::Call(CallExpr {
           span: DUMMY_SP,
           callee: Callee::Expr(Box::new(Expr::Ident(Ident {
             span: DUMMY_SP,
-            sym: Atom::new("declareStatic"),
+            sym: Atom::new("derive"),
             optional: false,
             ctxt: SyntaxContext::empty(),
           }))),
@@ -1626,16 +1626,16 @@ mod tests {
     }
 
     #[test]
-    fn allows_declare_static_with_alias() {
+    fn allows_derive_with_alias() {
       let mut visitor = create_visitor_with_imports();
-      // Track declareStatic import with alias: import { declareStatic as ds }
+      // Track derive import with alias: import { derive as ds }
       visitor
         .import_tracker
         .scope_tracker
-        .track_translation_variable(Atom::new("ds"), Atom::new("declareStatic"), 0);
+        .track_translation_variable(Atom::new("ds"), Atom::new("derive"), 0);
 
       // Create ds(getName()) expression
-      let declare_static_call = Expr::Call(CallExpr {
+      let derive_call = Expr::Call(CallExpr {
         span: DUMMY_SP,
         callee: Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
@@ -1662,7 +1662,7 @@ mod tests {
         ctxt: SyntaxContext::empty(),
       });
 
-      let call_expr = create_call_expr("t", declare_static_call);
+      let call_expr = create_call_expr("t", derive_call);
 
       let initial_violations = visitor.statistics.dynamic_content_violations;
       if let Some(first_arg) = call_expr.args.first() {
@@ -1731,20 +1731,20 @@ mod tests {
     }
 
     #[test]
-    fn detects_declare_static_with_invalid_arguments() {
+    fn detects_derive_with_invalid_arguments() {
       let mut visitor = create_visitor_with_imports();
-      // Track declareStatic import
+      // Track derive import
       visitor
         .import_tracker
         .scope_tracker
-        .track_translation_variable(Atom::new("declareStatic"), Atom::new("declareStatic"), 0);
+        .track_translation_variable(Atom::new("derive"), Atom::new("derive"), 0);
 
-      // Create declareStatic("string literal") - should fail because arg must be a call expression
-      let declare_static_call = Expr::Call(CallExpr {
+      // Create derive("string literal") - should fail because arg must be a call expression
+      let derive_call = Expr::Call(CallExpr {
         span: DUMMY_SP,
         callee: Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
-          sym: Atom::new("declareStatic"),
+          sym: Atom::new("derive"),
           optional: false,
           ctxt: SyntaxContext::empty(),
         }))),
@@ -1760,7 +1760,7 @@ mod tests {
         ctxt: SyntaxContext::empty(),
       });
 
-      let call_expr = create_call_expr("t", declare_static_call);
+      let call_expr = create_call_expr("t", derive_call);
 
       let initial_violations = visitor.statistics.dynamic_content_violations;
       if let Some(first_arg) = call_expr.args.first() {
@@ -1980,7 +1980,7 @@ mod tests {
       visitor
         .import_tracker
         .scope_tracker
-        .track_translation_variable(Atom::new("derive"), Atom::new("declareStatic"), 0);
+        .track_translation_variable(Atom::new("derive"), Atom::new("derive"), 0);
 
       let template_expr = Expr::Tpl(Tpl {
         span: DUMMY_SP,

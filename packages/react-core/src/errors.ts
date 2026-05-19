@@ -1,3 +1,3 @@
-import { createUnsupportedLocaleWarning } from './errors-dir/createErrors';
+import { createUnsupportedLocaleWarning } from './deprecated/errors-dir/createErrors';
 
 export { createUnsupportedLocaleWarning };

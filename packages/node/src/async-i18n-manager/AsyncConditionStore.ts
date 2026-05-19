@@ -1,19 +1,22 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { createLocaleResolver } from 'gt-i18n/internal';
 import type {
-  LocaleCandidates,
-  ConditionStoreConfig,
+  LocaleResolverConfig,
   ScopedConditionStore,
 } from 'gt-i18n/internal/types';
+import { getI18nManager } from 'gt-i18n/internal';
 
 type Store = {
   locale: string;
+  enableI18n?: boolean;
 };
 
 const OUTSIDE_SCOPE_MESSAGE =
   'AsyncConditionStore: getLocale() called outside of a withGT() scope.';
 
-type AsyncConditionStoreConstructorParams = ConditionStoreConfig & {
+const ENABLE_I18N_MESSAGE =
+  'AsyncConditionStore: getEnableI18n() called outside of a withGT() scope.';
+
+type AsyncConditionStoreConstructorParams = LocaleResolverConfig & {
   store?: AsyncLocalStorage<Store>;
 };
 
@@ -22,7 +25,6 @@ type AsyncConditionStoreConstructorParams = ConditionStoreConfig & {
  */
 export class AsyncConditionStore implements ScopedConditionStore {
   private store: AsyncLocalStorage<Store>;
-  private resolveLocale: (candidates?: LocaleCandidates) => string;
 
   constructor({
     defaultLocale,
@@ -31,15 +33,16 @@ export class AsyncConditionStore implements ScopedConditionStore {
     store,
   }: AsyncConditionStoreConstructorParams = {}) {
     this.store = store ?? new AsyncLocalStorage();
-    this.resolveLocale = createLocaleResolver({
-      defaultLocale,
-      locales,
-      customMapping,
-    });
   }
 
+  /**
+   * TODO: should this be a static function
+   * */
   run<T>(locale: string, callback: () => T): T {
-    return this.store.run({ locale: this.resolveLocale(locale) }, callback);
+    return this.store.run(
+      { locale: getI18nManager().determineLocale(locale) },
+      callback
+    );
   }
 
   getLocale(): string {
@@ -47,10 +50,25 @@ export class AsyncConditionStore implements ScopedConditionStore {
     if (!store) {
       if (process.env.NODE_ENV === 'production') {
         console.warn(OUTSIDE_SCOPE_MESSAGE);
-        return this.resolveLocale();
+        return getI18nManager().determineLocale();
       }
       throw new Error(OUTSIDE_SCOPE_MESSAGE);
     }
-    return this.resolveLocale(store.locale);
+    return getI18nManager().determineLocale(store.locale);
+  }
+
+  /**
+   * TODO: implement
+   */
+  getEnableI18n(): boolean {
+    const store = this.store.getStore();
+    if (!store) {
+      if (process.env.NODE_ENV === 'production') {
+        console.warn(ENABLE_I18N_MESSAGE);
+        return true;
+      }
+      throw new Error(ENABLE_I18N_MESSAGE);
+    }
+    return store.enableI18n ?? true;
   }
 }

@@ -1,0 +1,82 @@
+import {
+  getReactI18nManager,
+  WritableConditionStore,
+  WritableConditionStoreParams,
+} from '@generaltranslation/react-core/context';
+import { getCookieValue, setCookieValue } from './cookies';
+import { readBrowserLocale } from './readBrowserLocale';
+import { GetEnableI18n, GetLocale } from '../i18n-manager/types';
+import {
+  LocaleCandidates,
+  WritableConditionStoreInterface,
+} from 'gt-i18n/internal/types';
+
+/**
+ * The configuration for the BrowserConditionStore
+ * @param {string[]} locales - The accepted locales
+ * @param {CustomMapping} [customMapping] - The custom mapping
+ * @param {GetLocale} getLocale - The function to get the locale
+ * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the locale cookie to check
+ */
+export type BrowserConditionStoreParams = WritableConditionStoreParams & {
+  localeCookieName: string;
+  enableI18nCookieName: string;
+  getLocale?: GetLocale;
+  getEnableI18n?: GetEnableI18n;
+};
+
+/**
+ * Condition store implementation for Browser.
+ */
+export class BrowserConditionStore implements WritableConditionStoreInterface {
+  private localeCookieName: string;
+  private enableI18nCookieName: string;
+  private customGetLocale?: GetLocale;
+  private customGetEnableI18n?: GetEnableI18n;
+
+  constructor(config: BrowserConditionStoreParams) {
+    this.customGetLocale = config.getLocale;
+    this.customGetEnableI18n = config.getEnableI18n;
+    this.localeCookieName = config.localeCookieName;
+    this.enableI18nCookieName = config.enableI18nCookieName;
+    setCookieValue({
+      cookieName: this.localeCookieName,
+      value: getReactI18nManager().determineLocale(config.locale),
+    });
+  }
+
+  getLocale = (): string => {
+    return getBrowserLocale(this.localeCookieName, this.customGetLocale);
+  };
+
+  setLocale = (locale: LocaleCandidates): void => {
+    setCookieValue({
+      cookieName: this.localeCookieName,
+      value: getReactI18nManager().determineLocale(locale),
+    });
+    window.location.reload();
+  };
+
+  getEnableI18n = (): boolean => {
+    const cookieEnableI18n = getCookieValue({
+      cookieName: this.enableI18nCookieName,
+    });
+    if (cookieEnableI18n === undefined) {
+      return this.customGetEnableI18n?.() ?? true;
+    }
+    return cookieEnableI18n === 'true';
+  };
+
+  setEnableI18n = (enableI18n: boolean): void => {
+    setCookieValue({
+      cookieName: this.enableI18nCookieName,
+      value: enableI18n ? 'true' : 'false',
+    });
+  };
+}
+
+function getBrowserLocale(cookieName: string, getLocale?: GetLocale): string {
+  const candidates = readBrowserLocale(cookieName);
+  if (getLocale) candidates.push(getLocale());
+  return getReactI18nManager().determineLocale(candidates);
+}
