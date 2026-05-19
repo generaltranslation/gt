@@ -33,16 +33,20 @@ export function resolveRequestFunctionPaths(
 ): RequestFunctionPaths {
   const result = {} as RequestFunctionPaths;
 
-  for (const functionName of [
-    ...REQUEST_FUNCTIONS,
-    ...STATIC_REQUEST_FUNCTIONS,
-  ]) {
+  for (const functionName of REQUEST_FUNCTIONS) {
     const configKey = REQUEST_FUNCTION_TO_CONFIG_KEY[functionName];
     const path =
       typeof mergedConfig[configKey] === 'string'
         ? mergedConfig[configKey]
         : resolveConfigFilepath(functionName, ['.ts', '.js']);
 
+    if (path) {
+      result[functionName] = path;
+    }
+  }
+
+  for (const functionName of STATIC_REQUEST_FUNCTIONS) {
+    const path = resolveConfigFilepath(functionName, ['.ts', '.js']);
     if (path) {
       result[functionName] = path;
     }
