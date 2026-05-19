@@ -130,7 +130,7 @@ describe('processOpenApi', () => {
     expect(updatedTranslated).toContain('/es/openapi.demo.yaml POST /foo');
   });
 
-  it('rewrites Mintlify docs.json openapi source and strips locale prefixes from openapi pages', async () => {
+  it('rewrites Mintlify docs.json openapi source, directory, and strips locale prefixes from openapi pages', async () => {
     const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
     const specPath = path.join(tmpDir, 'openapi.json');
     fs.writeFileSync(specPath, JSON.stringify(spec));
@@ -206,9 +206,19 @@ describe('processOpenApi', () => {
     const enGroup = updatedDocs.navigation.languages[0].tabs[0].groups[0];
     const esGroup = updatedDocs.navigation.languages[1].tabs[0].groups[0];
     expect(enGroup.openapi.source).toBe('openapi.json');
+    expect(enGroup.openapi.directory).toBe('api');
     expect(enGroup.pages[0]).toBe('GET /foo');
     expect(esGroup.openapi.source).toBe('es/openapi.json');
+    expect(esGroup.openapi.directory).toBe('es/api');
     expect(esGroup.pages[0]).toBe('GET /foo');
+
+    await processOpenApi(settings);
+
+    const repeatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
+    const repeatedEsGroup =
+      repeatedDocs.navigation.languages[1].tabs[0].groups[0];
+    expect(repeatedEsGroup.openapi.source).toBe('es/openapi.json');
+    expect(repeatedEsGroup.openapi.directory).toBe('es/api');
   });
 
   it('rewrites docs.json string openapi field with locale-specific spec path', async () => {
