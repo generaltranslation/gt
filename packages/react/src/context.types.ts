@@ -49,6 +49,7 @@ export {
   mFallback,
   gtFallback,
   getTranslationsSnapshot,
+  t,
   // ===== Setup ===== //
   internalInitializeGTSSR as initializeGT,
   getReactI18nManager,

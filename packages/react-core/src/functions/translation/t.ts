@@ -1,10 +1,15 @@
-import {
-  getLocale,
-  resolveTranslationSync,
-  resolveTranslationSyncWithFallback,
-} from 'gt-i18n/internal';
-import type { InlineTranslationOptions } from 'gt-i18n/types';
-import { getRenderStrategy } from '../../setup/globals';
+import { createLookupOptions, interpolateMessage } from "gt-i18n/internal";
+import type {
+  InlineTranslationOptions,
+  ResolutionOptions,
+} from "gt-i18n/types";
+import { getRenderStrategy } from "../../setup/globals";
+import { isWritableConditionStoreInitialized } from "../../condition-store/singleton-operations";
+import { StringContent } from "generaltranslation/types";
+import { getReactI18nManager } from "../../i18n-manager/singleton-operations";
+import { StringFormat } from "generaltranslation/types";
+import { getShouldTranslate } from "../../hooks/utils";
+import { getLocale } from "../../hooks/context-hooks";
 
 /**
  * NOTE: t() is the only function exported from the 'gt-react' entry point.
@@ -35,22 +40,14 @@ export const t: StringOrTemplateSyncResolutionFunction = (
   messageOrStrings: string | TemplateStringsArray,
   ...values: unknown[]
 ) => {
-  // Fail on SSR applications
-  if (getRenderStrategy() === 'server-render') {
-    console.warn(
-      createTranslationFailedDueToBrowserEnvironmentWarning(messageOrStrings)
-    );
-  }
+  // Warnings and errors
+  enforceSSRRules(messageOrStrings);
 
   //  t("Hello, {name}!", { name: "John" })
-  if (typeof messageOrStrings === 'string') {
+  if (typeof messageOrStrings === "string") {
     const options = values.at(0) as InlineTranslationOptions | undefined;
     const locale = options?.$locale ?? getLocale();
-    return resolveTranslationSyncWithFallback(
-      locale,
-      messageOrStrings,
-      options
-    );
+    return resolveStringContent(locale, messageOrStrings, options);
   }
 
   // t`Hello, ${name}`
@@ -58,6 +55,35 @@ export const t: StringOrTemplateSyncResolutionFunction = (
 };
 
 // ----- Helper Functions ----- //
+
+export function resolveStringContent(
+  locale: string,
+  content: StringContent,
+  options: ResolutionOptions<StringFormat> = {},
+): StringContent {
+  const i18nManager = getReactI18nManager();
+  const defaultLocale = i18nManager.getDefaultLocale();
+  if (!getShouldTranslate()) {
+    return interpolateMessage({
+      options,
+      source: content,
+      sourceLocale: defaultLocale,
+    });
+  }
+
+  const lookupOptions = createLookupOptions(locale, options, "ICU");
+  const translation = i18nManager.lookupTranslation(
+    lookupOptions.$locale,
+    content,
+    lookupOptions,
+  );
+  return interpolateMessage({
+    source: content,
+    target: translation,
+    options: lookupOptions,
+    sourceLocale: defaultLocale,
+  });
+}
 
 /**
  * Handle tagged template literal translation
@@ -72,27 +98,29 @@ export const t: StringOrTemplateSyncResolutionFunction = (
  */
 function handleTaggedTemplateLiteralTranslation(
   messageOrStrings: TemplateStringsArray,
-  values: unknown[]
+  values: unknown[],
 ): string {
   const locale = getLocale();
   // for tagged template literals, there has been no compiler transformation
   // (1) lookup interpolated template (aka derived message)
   const interpolatedTemplate = interpolateTemplateLiteral(
     messageOrStrings,
-    values
+    values,
   );
-  const translatedInterpolatedTemplate = resolveTranslationSync(
+  const i18nManager = getReactI18nManager();
+  const translatedInterpolatedTemplate = i18nManager.lookupTranslation(
     locale,
-    interpolatedTemplate
+    interpolatedTemplate,
+    { $format: "STRING" },
   );
   if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
 
   // (2) resolve uninterpolated message
   const { message, variables } = extractInterpolatableValues(
     messageOrStrings,
-    values
+    values,
   );
-  return resolveTranslationSyncWithFallback(locale, message, variables);
+  return resolveStringContent(locale, message, variables);
 }
 
 /**
@@ -103,7 +131,7 @@ function handleTaggedTemplateLiteralTranslation(
  */
 function extractInterpolatableValues(
   strings: TemplateStringsArray,
-  values: unknown[]
+  values: unknown[],
 ): {
   message: string;
   variables: Record<string, unknown>;
@@ -128,7 +156,7 @@ function extractInterpolatableValues(
   }
 
   return {
-    message: parts.join(''),
+    message: parts.join(""),
     variables,
   };
 }
@@ -141,24 +169,54 @@ function extractInterpolatableValues(
  */
 function interpolateTemplateLiteral(
   strings: TemplateStringsArray,
-  values: unknown[]
+  values: unknown[],
 ): string {
   return strings
     .map((string, index) => {
-      return string + (values[index] ?? '');
+      return string + (values[index] ?? "");
     })
-    .join('');
+    .join("");
+}
+
+// ----- Warnings and errors ----- //
+
+/**
+ * If detect SSR + module level:
+ * - Build: Error
+ * - Dev: Error
+ * - Prod: Warn
+ */
+function enforceSSRRules(messageOrStrings: string | TemplateStringsArray) {
+  const ssrEnabled = getRenderStrategy() === "server-render";
+  const moduleLevel = !isWritableConditionStoreInitialized();
+  if (!ssrEnabled || !moduleLevel) return;
+
+  const message =
+    typeof messageOrStrings === "string"
+      ? messageOrStrings
+      : messageOrStrings.join("");
+  const errorMessage = createSSRRulesError(message);
+  // TODO: find a more runtime agnostic way to check this
+  if (process.env.NODE_ENV === "development") {
+    throw new Error(errorMessage);
+  } else {
+    console.warn(errorMessage);
+  }
 }
 
 // ----- Constants ----- //
+
+// SSR Rules Error
+const createSSRRulesError = (message: string) =>
+  `@generaltranslation/react-core Failed to translate "${message}" because it is being used in an SSR environment at the module level. Please use an msg() function instead, and translate with an m() function. See: https://generaltranslation.com/en-US/docs/react/api/strings/msg`;
 
 // TODO: for following three functions, resturcture them to be more organized
 
 // TODO: rename this
 const createTranslationFailedDueToBrowserEnvironmentWarning = (
-  message: string | TemplateStringsArray | undefined
+  message: string | TemplateStringsArray | undefined,
 ) =>
-  `@generaltranslation/react-core Warning: Translation failed for t("${typeof message === 'string' ? message : '`' + message?.join('${}') + '`'}") because it was used outside of a browser environment or your SPA did not initialize GT correctly. Falling back to original message.`;
+  `@generaltranslation/react-core Warning: Translation failed for t("${typeof message === "string" ? message : "`" + message?.join("${}") + "`"}") because it was used outside of a browser environment or your SPA did not initialize GT correctly. Falling back to original message.`;
 
 /**
  * Overloaded type for the `t` function.
