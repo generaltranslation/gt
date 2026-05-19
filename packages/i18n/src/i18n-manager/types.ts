@@ -3,7 +3,6 @@ import type { CustomMapping } from '@generaltranslation/format/types';
 import type { GTConfig } from '../config/types';
 import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import type { Translation } from './translations-manager/utils/types/translation-data';
-import type { LifecycleCallbacks } from './lifecycle-hooks/types';
 import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
 import type {
   Dictionary,
@@ -29,7 +28,7 @@ type RuntimeTranslationConfig = {
  * Parameters for the I18nManager constructor
  */
 export type I18nManagerConstructorParams<
-  TranslationValue extends Translation = Translation,
+  _TranslationValue extends Translation = Translation,
 > = DictionaryConfig &
   Omit<GTConfig, 'cacheExpiryTime'> & {
     /**
@@ -41,9 +40,6 @@ export type I18nManagerConstructorParams<
     environment?: 'development' | 'production';
     batchConfig?: TranslationBatchConfig;
     runtimeTranslation?: RuntimeTranslationConfig;
-    // Cache lifecycle hooks
-    /** @deprecated - move to subscription api instead */
-    lifecycle?: LifecycleCallbacks<TranslationValue>;
   };
 
 /**
@@ -120,9 +116,4 @@ export interface ScopedConditionStoreInterface extends ReadonlyConditionStoreInt
   run<T>(locale: string, callback: () => T): T;
 }
 
-export type {
-  TranslationsLoader,
-  LifecycleCallbacks,
-  Dictionary,
-  DictionaryLoader,
-};
+export type { TranslationsLoader, Dictionary, DictionaryLoader };

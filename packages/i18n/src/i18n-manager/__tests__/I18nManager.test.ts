@@ -42,28 +42,28 @@ describe('I18nManager', () => {
 
   // ===== REGRESSION TESTS ===== //
 
-  it('resolveTranslationSync returns translation after loadTranslations', async () => {
+  it('lookupTranslation returns translation after loadTranslations', async () => {
     const manager = createManager();
 
     // Load translations first
     await manager.loadTranslations('fr');
 
     // Now sync resolution should work
-    const result = manager.resolveTranslationSync('fr', message, lookupOptions);
+    const result = manager.lookupTranslation('fr', message, lookupOptions);
     expect(result).toBe(translatedString);
   });
 
-  it('getTranslations returns empty object for invalid locale', async () => {
+  it('loadTranslations returns empty object for invalid locale', async () => {
     const manager = createManager();
 
-    const result = await manager.getTranslations('zh');
+    const result = await manager.loadTranslations('zh');
     expect(result).toEqual({});
   });
 
-  it('getTranslationResolver returns a working resolver function', async () => {
+  it('getLookupTranslation returns a working resolver function', async () => {
     const manager = createManager();
 
-    const resolver = await manager.getTranslationResolver('fr');
+    const resolver = await manager.getLookupTranslation('fr');
     const result = resolver(message, lookupOptions);
 
     expect(result).toBe(translatedString);

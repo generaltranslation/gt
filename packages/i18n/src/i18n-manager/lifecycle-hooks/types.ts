@@ -9,7 +9,6 @@ import type {
   DictionaryKey,
   DictionaryPath,
   DictionaryValue,
-  Dictionary,
   DictionaryEntry,
   DictionaryCache,
 } from '../translations-manager/DictionaryCache';
@@ -128,64 +127,3 @@ export type I18nManagerCacheLifecycleCallbacks<
   TranslationValue extends Translation,
 > = LocalesTranslationsCacheLifecycleCallbacks<TranslationValue> &
   LocalesDictionaryCacheLifecycleCallbacks;
-
-// ===== Consumer API ===== //
-
-/**
- * Simplified lifecycle callbacks for I18nManager consumers.
- * These provide a cleaner interface than the internal cache lifecycle types,
- * with locale and hash exposed directly instead of the full cache internals.
- *
- * @deprecated - move to subscription api instead
- */
-export type LifecycleCallbacks<TranslationValue extends Translation> = {
-  onTranslationsCacheHit?: (params: {
-    locale: Locale;
-    hash: Hash;
-    translation: TranslationValue;
-    /** @deprecated - use translation instead */
-    value: TranslationValue;
-  }) => void;
-  onTranslationsCacheMiss?: (params: {
-    locale: Locale;
-    hash: Hash;
-    translation: TranslationValue;
-    /** @deprecated - use translation instead */
-    value: TranslationValue;
-  }) => void;
-  onLocalesCacheHit?: (params: {
-    locale: Locale;
-    translations: Record<Hash, TranslationValue>;
-    /** @deprecated - use translations instead */
-    value: Record<Hash, TranslationValue>;
-  }) => void;
-  onLocalesCacheMiss?: (params: {
-    locale: Locale;
-    translations: Record<Hash, TranslationValue>;
-    /** @deprecated - use translations instead */
-    value: Record<Hash, TranslationValue>;
-  }) => void;
-  onDictionaryCacheHit?: (params: {
-    locale: Locale;
-    id: DictionaryPath;
-    dictionaryEntry: DictionaryEntry;
-  }) => void;
-  onDictionaryCacheMiss?: (params: {
-    locale: Locale;
-    id: DictionaryPath;
-    dictionaryEntry: DictionaryEntry;
-  }) => void;
-  onDictionaryObjectCacheHit?: (params: {
-    locale: Locale;
-    id: DictionaryPath;
-    dictionaryValue: DictionaryValue;
-  }) => void;
-  onLocalesDictionaryCacheHit?: (params: {
-    locale: Locale;
-    dictionary: Dictionary;
-  }) => void;
-  onLocalesDictionaryCacheMiss?: (params: {
-    locale: Locale;
-    dictionary: Dictionary;
-  }) => void;
-};

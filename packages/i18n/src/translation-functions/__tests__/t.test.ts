@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nManager } from '../../i18n-manager/I18nManager';
 import {
+  getConditionStore,
   setI18nManager,
   setConditionStore,
 } from '../../i18n-manager/singleton-operations';
@@ -97,6 +98,19 @@ describe('t', () => {
     );
 
     expect(getLocale()).toBe('es');
+  });
+
+  it('preserves enableI18n when replacing the singleton manager', () => {
+    setI18nManager(
+      new I18nManager({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        enableI18n: false,
+        loadTranslations: vi.fn(),
+      })
+    );
+
+    expect(getConditionStore().getEnableI18n()).toBe(false);
   });
 
   it('returns locale properties outside configured translation locales', () => {

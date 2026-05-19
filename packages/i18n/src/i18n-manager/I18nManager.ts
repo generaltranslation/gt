@@ -9,10 +9,7 @@ import { LocaleConfig, standardizeLocale } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { LookupOptions } from '../translation-functions/types/options';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
-import {
-  SafeTranslationsLoader,
-  TranslationsLoader,
-} from './translations-manager/translations-loaders/types';
+import { SafeTranslationsLoader } from './translations-manager/translations-loaders/types';
 import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
 import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
@@ -26,11 +23,20 @@ import type {
 } from './translations-manager/DictionaryCache';
 import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
-import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 import { EventEmitter } from './event-subscription/EventEmitter';
-import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
-import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
+import {
+  DICTIONARY_CACHE_HIT_EVENT_NAME,
+  DICTIONARY_CACHE_MISS_EVENT_NAME,
+  DICTIONARY_OBJECT_CACHE_HIT_EVENT_NAME,
+  LOCALES_CACHE_HIT_EVENT_NAME,
+  LOCALES_CACHE_MISS_EVENT_NAME,
+  LOCALES_DICTIONARY_CACHE_HIT_EVENT_NAME,
+  LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME,
+  TRANSLATIONS_CACHE_HIT_EVENT_NAME,
+  TRANSLATIONS_CACHE_MISS_EVENT_NAME,
+} from './event-subscription/types';
 import type { I18nEvents } from './event-subscription/types';
+import type { I18nManagerCacheLifecycleCallbacks } from './lifecycle-hooks/types';
 import {
   createLocaleResolver,
   LocaleCandidates,
@@ -138,15 +144,7 @@ class I18nManager<
       runtimeTranslationMetadata
     );
 
-    // Subscribe lifecycle callbacks
-    subscribeLifecycleCallbacks(params.lifecycle ?? {}, (...args) =>
-      this.subscribe(...args)
-    );
-
-    const lifecycle = createLifecycleCallbacks<TranslationValue>(
-      (...args) => this.emit(...args),
-      (eventName) => this.hasListeners(eventName)
-    );
+    const lifecycle = this.createCacheLifecycleCallbacks();
 
     // Setup locale-scoped caches
     this.localesCache = new LocalesCache<TranslationValue>({
@@ -161,6 +159,82 @@ class I18nManager<
       batchConfig: this.config.batchConfig,
       lifecycle,
     });
+  }
+
+  private createCacheLifecycleCallbacks(): I18nManagerCacheLifecycleCallbacks<TranslationValue> {
+    return {
+      onLocalesCacheHit: (params) => {
+        if (!this.hasListeners(LOCALES_CACHE_HIT_EVENT_NAME)) {
+          return;
+        }
+        this.emit(LOCALES_CACHE_HIT_EVENT_NAME, {
+          locale: params.inputKey,
+          translations: params.outputValue.getInternalCache(),
+        });
+      },
+      onLocalesCacheMiss: (params) => {
+        if (!this.hasListeners(LOCALES_CACHE_MISS_EVENT_NAME)) {
+          return;
+        }
+        this.emit(LOCALES_CACHE_MISS_EVENT_NAME, {
+          locale: params.inputKey,
+          translations: params.outputValue.getInternalCache(),
+        });
+      },
+      onTranslationsCacheHit: (params) => {
+        this.emit(TRANSLATIONS_CACHE_HIT_EVENT_NAME, {
+          locale: params.locale,
+          hash: params.cacheKey,
+          translation: params.outputValue,
+        });
+      },
+      onTranslationsCacheMiss: (params) => {
+        this.emit(TRANSLATIONS_CACHE_MISS_EVENT_NAME, {
+          locale: params.locale,
+          hash: params.cacheKey,
+          translation: params.outputValue,
+        });
+      },
+      onLocalesDictionaryCacheHit: (params) => {
+        if (!this.hasListeners(LOCALES_DICTIONARY_CACHE_HIT_EVENT_NAME)) {
+          return;
+        }
+        this.emit(LOCALES_DICTIONARY_CACHE_HIT_EVENT_NAME, {
+          locale: params.inputKey,
+          dictionary: params.outputValue.getInternalCache(),
+        });
+      },
+      onLocalesDictionaryCacheMiss: (params) => {
+        if (!this.hasListeners(LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME)) {
+          return;
+        }
+        this.emit(LOCALES_DICTIONARY_CACHE_MISS_EVENT_NAME, {
+          locale: params.inputKey,
+          dictionary: params.outputValue.getInternalCache(),
+        });
+      },
+      onDictionaryCacheHit: (params) => {
+        this.emit(DICTIONARY_CACHE_HIT_EVENT_NAME, {
+          locale: params.locale,
+          id: params.cacheKey,
+          dictionaryEntry: params.outputValue,
+        });
+      },
+      onDictionaryCacheMiss: (params) => {
+        this.emit(DICTIONARY_CACHE_MISS_EVENT_NAME, {
+          locale: params.locale,
+          id: params.cacheKey,
+          dictionaryEntry: params.outputValue,
+        });
+      },
+      onDictionaryObjectCacheHit: (params) => {
+        this.emit(DICTIONARY_OBJECT_CACHE_HIT_EVENT_NAME, {
+          locale: params.locale,
+          id: params.cacheKey,
+          dictionaryValue: params.outputValue,
+        });
+      },
+    };
   }
 
   // ========== Subscribers and Emitters ========== //
@@ -213,6 +287,13 @@ class I18nManager<
   }
 
   /**
+   * Get the initial i18n enabled flag.
+   */
+  getEnableI18n(): boolean {
+    return this.config.enableI18n;
+  }
+
+  /**
    * Get the version ID
    */
   getVersionId(): string | undefined {
@@ -228,15 +309,6 @@ class I18nManager<
     return this.getGTClassClean(
       locale ? this._resolveLocale(locale) : undefined
     );
-  }
-
-  /**
-   * Is translation enabled?
-   * @deprecated use condition store instead
-   * TODO: move this to condition store
-   */
-  isTranslationEnabled(): boolean {
-    return this.config.enableI18n;
   }
 
   /**
@@ -261,16 +333,6 @@ class I18nManager<
 
   updateDictionaries(dictionarySnapshot: Record<Locale, Dictionary>): void {
     this.localesCache.updateDictionaries(dictionarySnapshot);
-  }
-
-  // ========== Translation Loading ========== //
-
-  /**
-   * Get the translation loader function
-   * @deprecated wrap a cb around loadTranslations instead
-   */
-  getTranslationLoader(): TranslationsLoader {
-    return (locale: string) => this.loadTranslations(locale);
   }
 
   // ========== Translation Resolution ========== //
@@ -601,56 +663,6 @@ class I18nManager<
     }
   }
 
-  // ----- Sync Operations ----- //
-
-  /**
-   * Get the translations (error on unloaded translations)
-   * @param {string} message - The message to get the translation for
-   * @param {LookupOptions} [options] - The options for the translation
-   * @returns {TranslationValue | undefined} The translation for the given message and options synchronously
-   * @deprecated use lookupTranslation instead
-   */
-  resolveTranslationSync = <T extends TranslationValue = TranslationValue>(
-    locale: string,
-    message: T,
-    options: LookupOptions
-  ) => {
-    return this.lookupTranslation(locale, message, options);
-  };
-
-  // ----- Async Operations ----- //
-
-  /**
-   * Get the translations
-   * @deprecated use loadTranslations instead
-   */
-  async getTranslations(
-    locale: string
-  ): Promise<Record<Hash, TranslationValue>> {
-    try {
-      return this.loadTranslations(locale);
-    } catch (error) {
-      this.handleError(error);
-      return {};
-    }
-  }
-
-  /**
-   * Get translation for a given locale and message
-   *
-   * @param {string} locale - The locale to get the translation for
-   * @returns A function that resolves the translations for a given message and options synchronously
-   *
-   * Note: we can assume that the translation is a string because we are passing a string
-   *
-   * @deprecated use getLookupTranslation instead
-   */
-  async getTranslationResolver(
-    locale: string
-  ): Promise<TranslationResolver<TranslationValue>> {
-    return this.getLookupTranslation(locale);
-  }
-
   // ========== Metadata ========== //
 
   /**
@@ -662,7 +674,7 @@ class I18nManager<
     const defaultLocale = this.getDefaultLocale();
     const locales = this.getLocales();
     return (
-      this.isTranslationEnabled() &&
+      this.config.enableI18n &&
       this.localeConfig.requiresTranslation(locale, defaultLocale, locales)
     );
   }

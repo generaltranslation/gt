@@ -3,7 +3,6 @@ export type {
   I18nManagerConstructorParams,
   TranslationsLoader,
   I18nManagerConfig,
-  LifecycleCallbacks,
   LocaleResolverConfig,
   ReadonlyConditionStoreInterface,
   WritableConditionStoreInterface,

@@ -35,7 +35,7 @@ export function GTProvider(props: GTProviderProps): React.ReactNode {
       defaultLocale={i18nManager.getDefaultLocale()}
       locales={i18nManager.getLocales()}
       customMapping={i18nManager.getCustomMapping()}
-      enableI18n={i18nManager.isTranslationEnabled()}
+      enableI18n={i18nManager.getEnableI18n()}
       loadTranslations={(locale: string) =>
         i18nManager.loadTranslations(locale)
       }
