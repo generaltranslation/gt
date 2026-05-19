@@ -12,36 +12,6 @@ import type {
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { ReactNode } from 'react';
 
-export type ClientProviderProps = {
-  children: ReactNode;
-  dictionary: Dictionary;
-  dictionaryTranslations: Dictionary;
-  translations: Translations;
-  locale: string;
-  locales: string[];
-  region?: string; // should be made mandatory if we ever make region a server-side variable
-  _versionId?: string;
-  dictionaryEnabled?: boolean;
-  defaultLocale: string;
-  translationRequired: boolean;
-  dialectTranslationRequired: boolean;
-  renderSettings: {
-    method: RenderMethod;
-    timeout?: number;
-  };
-  developmentApiEnabled: boolean;
-  projectId?: string;
-  devApiKey?: string;
-  runtimeUrl?: string | null;
-  gtServicesEnabled?: boolean;
-  localeCookieName?: string;
-  resetLocaleCookieName: string;
-  regionCookieName?: string;
-  customMapping?: CustomMapping;
-  environment: 'development' | 'production' | 'test';
-  reloadServer: () => void;
-};
-
 export type GTProviderProps = {
   children?: ReactNode;
   projectId?: string;

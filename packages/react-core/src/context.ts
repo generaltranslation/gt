@@ -13,6 +13,10 @@ export { Var } from "./components/variables/Var";
 // ===== Hooks ===== //
 export {
   useLocale,
+  useGTClass,
+  useLocaleProperties,
+  useLocaleDirection,
+  useVersionId,
   useSetLocale,
   useEnableI18n,
   useSetEnableI18n,
@@ -42,7 +46,10 @@ export {
 } from "gt-i18n";
 
 // ===== Internal ===== //
-export { InternalGTProvider } from "./context/InternalGTProvider";
+export {
+  InternalGTProvider,
+  type InternalGTProviderProps,
+} from "./context/InternalGTProvider";
 export { internalInitializeGTSPA } from "./setup/initializeGTSPA";
 export { internalInitializeGTSSR } from "./setup/initializeGTSSR";
 export { getI18nStore, setI18nStore } from "./i18n-store/singleton-operations";
@@ -63,7 +70,6 @@ export {
 } from "./i18n-manager/singleton-operations";
 export { I18nStore } from "./i18n-store/I18nStore";
 export type { I18nStoreParams } from "./i18n-store/I18nStore";
-export type { InternalGTProviderProps } from "./deprecated/types-dir/config";
 export type { ReloadLocaleType } from "./i18n-store/storeTypes";
 export type {
   ReactI18nManager,

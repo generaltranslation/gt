@@ -17,6 +17,10 @@ export {
   Num,
   // ===== Hooks ===== //
   useLocale,
+  useGTClass,
+  useLocaleProperties,
+  useLocaleDirection,
+  useVersionId,
   useSetLocale,
   useCustomMapping,
   useDefaultLocale,

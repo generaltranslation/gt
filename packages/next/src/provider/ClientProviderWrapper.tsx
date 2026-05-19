@@ -1,25 +1,66 @@
 'use client';
-import { ClientProvider } from 'gt-react/client';
-import { ClientProviderProps } from 'gt-react/internal';
-import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useMemo } from 'react';
+import { GTProvider, setReactI18nManager } from 'gt-react/context';
+import { useCallback, useEffect, useMemo, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { I18nManager } from 'gt-i18n/internal';
+import type { Hash, Locale } from 'gt-i18n/internal/types';
+import type { Dictionary, Translation } from 'gt-i18n/types';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import { standardizeLocale } from '@generaltranslation/format';
-import { GT } from 'generaltranslation';
-import { useRouter } from 'next/navigation';
 
-function extractLocale(pathname: string, gt: GT): string | null {
+type ClientRenderSettings = {
+  timeout?: number;
+};
+
+type ClientProviderWrapperProps = {
+  children: ReactNode;
+  dictionary: LegacyDictionary;
+  dictionaryTranslations: LegacyDictionary;
+  translations: LegacyTranslations;
+  locale: string;
+  locales: string[];
+  _versionId?: string;
+  defaultLocale: string;
+  translationEnabled: boolean;
+  renderSettings: ClientRenderSettings;
+  projectId?: string;
+  devApiKey?: string;
+  runtimeUrl?: string | null;
+  gtServicesEnabled?: boolean;
+  localeCookieName: string;
+  resetLocaleCookieName: string;
+  customMapping?: CustomMapping;
+  environment: 'development' | 'production' | 'test';
+  localeRoutingEnabledCookieName: string;
+  referrerLocaleCookieName: string;
+};
+
+type LegacyDictionaryEntry =
+  | string
+  | [string]
+  | [string, Record<string, unknown>];
+type LegacyDictionary =
+  | {
+      [key: string]: LegacyDictionary | LegacyDictionaryEntry;
+    }
+  | (LegacyDictionary | LegacyDictionaryEntry)[];
+type LegacyTranslations = Record<Hash, Translation | null>;
+
+function extractLocale(
+  pathname: string,
+  gt: { resolveAliasLocale: (locale: string) => string }
+): string | null {
   const matches = pathname.match(/^\/([^/]+)(?:\/|$)/);
   return matches ? gt.resolveAliasLocale(matches[1]) : null;
 }
 
-export function ClientProviderWrapper(
-  props: Omit<ClientProviderProps, 'reloadServer'> & {
-    localeRoutingEnabledCookieName: string;
-    referrerLocaleCookieName: string;
-  }
-) {
+export function ClientProviderWrapper(props: ClientProviderWrapperProps) {
   const router = useRouter();
   const {
+    children,
+    dictionary,
+    dictionaryTranslations,
+    translations,
     locale,
     locales,
     defaultLocale,
@@ -30,31 +71,102 @@ export function ClientProviderWrapper(
     projectId,
     runtimeUrl,
     customMapping,
+    localeCookieName,
+    resetLocaleCookieName,
+    translationEnabled,
+    renderSettings,
+    environment,
+    _versionId,
   } = props;
+
+  const translationsSnapshot = useMemo(
+    () => ({ [locale]: normalizeTranslations(translations) }),
+    [locale, translations]
+  );
+  const dictionarySnapshot = useMemo(
+    () => {
+      const dictionaries = {
+        [defaultLocale]: dictionary as Dictionary,
+      } as Record<Locale, Dictionary>;
+      if (locale !== defaultLocale) {
+        dictionaries[locale] = dictionaryTranslations as Dictionary;
+      }
+      return dictionaries;
+    },
+    [defaultLocale, dictionary, dictionaryTranslations, locale]
+  );
+
+  const i18nManager = useMemo(
+    () =>
+      new I18nManager<Translation>({
+        defaultLocale,
+        locales,
+        customMapping,
+        projectId,
+        devApiKey,
+        runtimeUrl,
+        _versionId,
+        enableI18n: translationEnabled,
+        environment:
+          environment === 'development' ? 'development' : 'production',
+        dictionary: dictionary as Dictionary,
+        runtimeTranslation: {
+          timeout: renderSettings.timeout,
+          metadata: {
+            sourceLocale: defaultLocale,
+            ...(renderSettings.timeout && {
+              timeout: renderSettings.timeout,
+            }),
+            projectId,
+            publish: true,
+            fast: true,
+          },
+        },
+        lifecycle: {
+          onTranslationsCacheMiss({ locale, translation, hash }) {
+            translationsSnapshot[locale] ||= {};
+            translationsSnapshot[locale][hash] = translation;
+          },
+        },
+      }),
+    [
+      customMapping,
+      defaultLocale,
+      devApiKey,
+      dictionary,
+      environment,
+      locales,
+      projectId,
+      renderSettings.timeout,
+      runtimeUrl,
+      translationEnabled,
+      translationsSnapshot,
+      _versionId,
+    ]
+  );
+  i18nManager.updateTranslations(translationsSnapshot);
+  i18nManager.updateDictionaries(dictionarySnapshot);
+  setReactI18nManager(i18nManager);
 
   /**
    * Reloads server components
    * Must pass as a callback so the refresh function does not lose access to the router instance
    */
-  const reloadServer = useCallback(() => {
-    router.refresh();
-  }, [router]);
-
-  const gt = useMemo(
-    () =>
-      new GT({
-        devApiKey,
-        sourceLocale: defaultLocale,
-        targetLocale: locale,
-        projectId,
-        baseUrl: runtimeUrl || undefined,
-        customMapping,
-      }),
-    [devApiKey, defaultLocale, locale, projectId, runtimeUrl, customMapping]
+  const reloadLocale = useCallback(
+    (nextLocale: string) => {
+      document.cookie = `${localeCookieName}=${nextLocale};path=/`;
+      document.cookie = `${resetLocaleCookieName}=true;path=/`;
+      document.cookie = `${referrerLocaleCookieName}=${nextLocale};path=/`;
+      router.refresh();
+    },
+    [localeCookieName, referrerLocaleCookieName, resetLocaleCookieName, router]
   );
 
-  // Trigger page reload when locale changes
-  // When nav to same route but in diff locale, client components were cached and not re-rendered
+  const gt = useMemo(
+    () => i18nManager.getGTClass(locale),
+    [i18nManager, locale]
+  );
+
   const pathname = usePathname();
   useEffect(() => {
     // ----- Referrer Locale ----- //
@@ -62,16 +174,13 @@ export function ClientProviderWrapper(
       document.cookie = `${referrerLocaleCookieName}=${gt.resolveAliasLocale(locale)};path=/`;
     }
 
-    // ----- Middleware ----- //
-    // Trigger page reload when locale changes
-    // When nav to same route but in diff locale (ie, /en/blog -> /fr/blog), client components were cached and not re-rendered
+    // ----- Middleware Locale Routing ----- //
     const middlewareEnabled =
       document.cookie
         .split('; ')
         .find((row) => row.startsWith(`${localeRoutingEnabledCookieName}=`))
         ?.split('=')[1] === 'true';
     if (middlewareEnabled) {
-      // Extract locale from pathname
       const extractedLocale = extractLocale(pathname, gt) || defaultLocale;
       let pathLocale = gt.determineLocale(
         [
@@ -87,11 +196,11 @@ export function ClientProviderWrapper(
       }
 
       if (pathLocale && locales.includes(pathLocale) && pathLocale !== locale) {
-        // clear cookie (avoids infinite loop when there is no middleware)
+        // Clear the middleware marker before refreshing to avoid a refresh loop.
         document.cookie = `${localeRoutingEnabledCookieName}=;path=/`;
 
-        // reload page
-        reloadServer();
+        // Refresh Server Components when the URL locale and provider locale diverge.
+        router.refresh();
       }
     }
   }, [
@@ -102,8 +211,33 @@ export function ClientProviderWrapper(
     gtServicesEnabled,
     referrerLocaleCookieName,
     localeRoutingEnabledCookieName,
-    reloadServer,
+    router,
+    gt,
   ]);
 
-  return <ClientProvider {...props} reloadServer={reloadServer} />;
+  return (
+    <GTProvider
+      dictionary={dictionarySnapshot}
+      translations={translationsSnapshot}
+      locale={locale}
+      locales={locales}
+      defaultLocale={defaultLocale}
+      customMapping={customMapping}
+      enableI18n={translationEnabled}
+      localeCookieName={localeCookieName}
+      reloadLocale={reloadLocale}
+    >
+      {children}
+    </GTProvider>
+  );
+}
+
+function normalizeTranslations(
+  translations: LegacyTranslations
+): Record<Hash, Translation> {
+  return Object.fromEntries(
+    Object.entries(translations).filter(
+      (entry): entry is [Hash, Translation] => entry[1] != null
+    )
+  );
 }

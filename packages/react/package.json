@@ -76,16 +76,6 @@
         "default": "./dist/internal.mjs"
       }
     },
-    "./client": {
-      "require": {
-        "types": "./dist/client.d.cts",
-        "default": "./dist/client.cjs"
-      },
-      "import": {
-        "types": "./dist/client.d.mts",
-        "default": "./dist/client.mjs"
-      }
-    },
     "./context": {
       "react-server": {
         "require": {
@@ -145,9 +135,6 @@
   },
   "typesVersions": {
     "*": {
-      "client": [
-        "./dist/client.d.cts"
-      ],
       "context": [
         "./dist/context.types.d.cts"
       ],
@@ -171,9 +158,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "gt-react/client": [
-        "./dist/client"
-      ],
       "gt-react/context": [
         "./dist/context.types.d.cts"
       ],

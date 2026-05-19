@@ -5,11 +5,14 @@ import {
   useLocale,
   useDefaultLocale,
   LocaleSelector,
-  RegionSelector,
   GTProvider,
   useLocales,
   useSetLocale,
   useLocaleSelector,
+  useGTClass,
+  useLocaleProperties,
+  useLocaleDirection,
+  useVersionId,
   Var,
   Currency,
   DateTime,
@@ -17,18 +20,12 @@ import {
   Num,
   Plural,
   Branch,
-  useLocaleProperties,
-  useGTClass,
   useTranslations,
-  useRegion,
-  useRegionSelector,
-  useLocaleDirection,
-  useVersionId,
   msg,
   decodeMsg,
   decodeOptions,
   useMessages,
-} from 'gt-react/client';
+} from 'gt-react/context';
 
 export {
   // Hooks
@@ -39,8 +36,6 @@ export {
   useSetLocale,
   useDefaultLocale,
   useLocaleSelector,
-  useRegion,
-  useRegionSelector,
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
@@ -60,5 +55,4 @@ export {
   Plural,
   Branch,
   LocaleSelector,
-  RegionSelector,
 };

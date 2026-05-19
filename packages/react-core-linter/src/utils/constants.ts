@@ -2,6 +2,7 @@ import { TSESTree } from '@typescript-eslint/utils';
 
 export const GT_LIBRARIES = [
   'gt-react',
+  'gt-react/context',
   'gt-next',
   'gt-react-native',
   'gt-i18n',

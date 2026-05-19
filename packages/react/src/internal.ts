@@ -65,10 +65,7 @@ import type {
   GTProp,
 } from '@generaltranslation/react-core/types';
 
-import type {
-  ClientProviderProps,
-  GTProviderProps,
-} from './deprecated/react-context/types/config';
+import type { GTProviderProps } from './deprecated/react-context/types/config';
 
 // Type exports
 export type {
@@ -81,7 +78,6 @@ export type {
   Entry,
   TranslatedChildren,
   Translations,
-  ClientProviderProps,
   GTProviderProps,
   DictionaryTranslationOptions,
   InlineTranslationOptions,

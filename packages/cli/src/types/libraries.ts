@@ -3,6 +3,7 @@
  */
 export enum Libraries {
   GT_REACT = 'gt-react',
+  GT_REACT_CONTEXT = 'gt-react/context',
   GT_NEXT = 'gt-next',
   GT_REACT_NATIVE = 'gt-react-native',
   GT_NODE = 'gt-node',
@@ -18,6 +19,7 @@ export enum Libraries {
  */
 export const GT_LIBRARIES = [
   Libraries.GT_REACT,
+  Libraries.GT_REACT_CONTEXT,
   Libraries.GT_NEXT,
   Libraries.GT_REACT_NATIVE,
   Libraries.GT_NODE,
@@ -34,6 +36,7 @@ export type GTLibrary = (typeof GT_LIBRARIES)[number];
  */
 export const INLINE_LIBRARIES = [
   Libraries.GT_REACT,
+  Libraries.GT_REACT_CONTEXT,
   Libraries.GT_NEXT,
   Libraries.GT_NODE,
   Libraries.GT_REACT_NATIVE,
@@ -55,6 +58,7 @@ export function isInlineLibrary(lib: string): lib is InlineLibrary {
 export const REACT_LIBRARIES = [
   Libraries.GT_NEXT,
   Libraries.GT_REACT,
+  Libraries.GT_REACT_CONTEXT,
   Libraries.GT_REACT_NATIVE,
   Libraries.GT_REACT_CORE,
   Libraries.GT_TANSTACK_START,
@@ -88,13 +92,21 @@ export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
     Libraries.GT_I18N,
     Libraries.GT_REACT_CORE,
     Libraries.GT_REACT,
+    Libraries.GT_REACT_CONTEXT,
     Libraries.GT_NEXT,
   ],
   [Libraries.GT_REACT]: [
     Libraries.GT_I18N,
     Libraries.GT_REACT_CORE,
     Libraries.GT_REACT,
+    Libraries.GT_REACT_CONTEXT,
     Libraries.GT_REACT_NATIVE, // allow for cross-library compatibility (gt-react/gt-react-native only)
+  ],
+  [Libraries.GT_REACT_CONTEXT]: [
+    Libraries.GT_I18N,
+    Libraries.GT_REACT_CORE,
+    Libraries.GT_REACT,
+    Libraries.GT_REACT_CONTEXT,
   ],
   [Libraries.GT_REACT_NATIVE]: [
     Libraries.GT_I18N,
@@ -108,6 +120,7 @@ export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
     Libraries.GT_I18N,
     Libraries.GT_REACT_CORE,
     Libraries.GT_REACT,
+    Libraries.GT_REACT_CONTEXT,
     Libraries.GT_TANSTACK_START,
   ],
   [Libraries.GT_I18N]: [Libraries.GT_I18N],

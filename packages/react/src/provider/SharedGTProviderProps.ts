@@ -13,4 +13,6 @@ export type SharedGTProviderProps = InternalGTProviderProps &
   ReadonlyConditionStoreParams & {
     translations: Record<Locale, Record<Hash, Translation>>;
     dictionary?: Record<Locale, Dictionary>;
+    localeCookieName?: string;
+    enableI18nCookieName?: string;
   };

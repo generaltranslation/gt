@@ -34,8 +34,9 @@ export function createBrowserConditionStore(
 ): BrowserConditionStore {
   return new BrowserConditionStore({
     ...config,
-    localeCookieName: defaultLocaleCookieName,
-    enableI18nCookieName: defaultEnableI18nCookieName,
+    localeCookieName: config.localeCookieName ?? defaultLocaleCookieName,
+    enableI18nCookieName:
+      config.enableI18nCookieName ?? defaultEnableI18nCookieName,
     locale: determineLocale(config),
     enableI18n: determineEnableI18n(config),
   });

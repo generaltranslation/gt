@@ -1,6 +1,5 @@
 import {
   getReactI18nManager,
-  WritableConditionStore,
   WritableConditionStoreParams,
 } from "@generaltranslation/react-core/context";
 import { getCookieValue, setCookieValue } from "./cookies";
@@ -54,7 +53,6 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
       cookieName: this.localeCookieName,
       value: getReactI18nManager().determineLocale(locale),
     });
-    window.location.reload();
   };
 
   getEnableI18n = (): boolean => {

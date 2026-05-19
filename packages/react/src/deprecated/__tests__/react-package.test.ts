@@ -11,8 +11,6 @@ const packageRoot = dirname(
 const runtimeArtifactNames = [
   'browser.cjs',
   'browser.mjs',
-  'client.cjs',
-  'client.mjs',
   'context.client.cjs',
   'context.client.mjs',
   'context.server.cjs',
@@ -72,13 +70,11 @@ describe('gt-react package exports', () => {
       `
           const assert = require('node:assert/strict');
           const react = require('gt-react');
-          const client = require('gt-react/client');
           const context = require('gt-react/context');
           const internal = require('gt-react/internal');
 
           assert.equal(typeof react.GTProvider, 'function');
           assert.equal(typeof react.T, 'function');
-          assert.equal(typeof client.ClientProvider, 'function');
           assert.equal(typeof context.GTProvider, 'function');
           assert.equal(typeof context.T, 'function');
           assert.equal(typeof internal.renderDefaultChildren, 'function');
@@ -93,13 +89,11 @@ describe('gt-react package exports', () => {
       `
           import assert from 'node:assert/strict';
           import { GTProvider, T } from 'gt-react';
-          import { ClientProvider } from 'gt-react/client';
           import { GTProvider as ContextProvider, T as ContextT } from 'gt-react/context';
           import { renderDefaultChildren } from 'gt-react/internal';
 
           assert.equal(typeof GTProvider, 'function');
           assert.equal(typeof T, 'function');
-          assert.equal(typeof ClientProvider, 'function');
           assert.equal(typeof ContextProvider, 'function');
           assert.equal(typeof ContextT, 'function');
           assert.equal(typeof renderDefaultChildren, 'function');
@@ -120,8 +114,8 @@ describe('gt-react package exports', () => {
     ]);
   });
 
-  it('preserves use client in emitted ClientProvider entrypoints', () => {
-    for (const file of ['dist/client.cjs', 'dist/client.mjs']) {
+  it('preserves use client in emitted browser entrypoints', () => {
+    for (const file of ['dist/context.client.cjs', 'dist/context.client.mjs']) {
       expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
         /^['"]use client['"];?/
       );

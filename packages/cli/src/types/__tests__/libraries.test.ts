@@ -34,6 +34,13 @@ describe('Python library types', () => {
     ).toBe(true);
   });
 
+  it('gt-react/context is treated as a React inline library', () => {
+    expect(INLINE_LIBRARIES).toContain(Libraries.GT_REACT_CONTEXT);
+    expect(GT_LIBRARIES_UPSTREAM[Libraries.GT_REACT_CONTEXT]).toContain(
+      Libraries.GT_REACT_CONTEXT
+    );
+  });
+
   it('GT_LIBRARIES_UPSTREAM has entries for both Python libraries', () => {
     expect(GT_LIBRARIES_UPSTREAM[Libraries.GT_FLASK]).toBeDefined();
     expect(GT_LIBRARIES_UPSTREAM[Libraries.GT_FASTAPI]).toBeDefined();

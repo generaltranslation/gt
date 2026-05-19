@@ -11,7 +11,6 @@ import {
   Branch,
   Plural,
   LocaleSelector,
-  RegionSelector,
   useGT,
   useTranslations,
   useLocale,
@@ -30,7 +29,7 @@ import {
   decodeVars,
   mFallback,
   gtFallback,
-} from 'gt-react/client';
+} from 'gt-react/context';
 import {
   gtProviderUseClientError,
   txUseClientError,
@@ -62,7 +61,6 @@ export {
   Branch,
   Plural,
   LocaleSelector,
-  RegionSelector,
   useGT,
   useTranslations,
   useLocale,

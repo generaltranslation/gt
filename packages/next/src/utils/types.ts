@@ -4,7 +4,6 @@ export type GTProviderProps = {
   children?: ReactNode;
   id?: string;
   locale?: string;
-  region?: string | undefined;
 };
 
 export type TxProps = Record<string, ReactNode> & {

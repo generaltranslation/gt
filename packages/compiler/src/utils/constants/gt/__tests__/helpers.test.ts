@@ -5,8 +5,13 @@ import {
   isDeriveComponent,
   defaultVariableNames,
   getVariableName,
+  isGTImportSource,
 } from '../helpers';
-import { GT_COMPONENT_TYPES, MINIFY_CANONICAL_NAME_MAP } from '../constants';
+import {
+  GT_COMPONENT_TYPES,
+  GT_IMPORT_SOURCES,
+  MINIFY_CANONICAL_NAME_MAP,
+} from '../constants';
 
 describe('isGTComponent', () => {
   it('should recognize all variable components', () => {
@@ -65,6 +70,13 @@ describe('isDeriveComponent', () => {
 describe('GT_COMPONENT_TYPES enum', () => {
   it('should include RelativeTime', () => {
     expect(GT_COMPONENT_TYPES.RelativeTime).toBe('RelativeTime');
+  });
+});
+
+describe('isGTImportSource', () => {
+  it('should recognize the gt-react context subpath', () => {
+    expect(isGTImportSource(GT_IMPORT_SOURCES.GT_REACT_CONTEXT)).toBe(true);
+    expect(isGTImportSource('gt-react/context')).toBe(true);
   });
 });
 

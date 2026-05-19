@@ -1,4 +1,4 @@
-import { DictionaryEntry, mergeDictionaries } from 'gt-react/internal';
+import { DictionaryEntry } from 'gt-react/internal';
 import { isValidElement } from 'react';
 import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { getLocale } from '../request/getLocale';
@@ -7,28 +7,23 @@ import { Dictionary, Translations } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';
 import { ClientProviderWrapper } from './ClientProviderWrapper';
 import { GTProviderProps } from '../utils/types';
-import { getRegion } from '../request/getRegion';
 
 /*
-Note: In normal circumstances, both _locale and _region would be at risk of causing hydration errors.
-They would be advised against as parameters of GTProvider.
-However:
-- _region is used only on the client side, and is accessed on the server purely downstream of being set as a cookie by the client
-- A disparity between _locale and the server side locale will cause the window to reload in order to set _locale as the server side locale too
+Note: In normal circumstances, _locale would be at risk of causing hydration errors.
+A disparity between _locale and the server side locale will refresh Server Components
+so _locale is also reflected by server-rendered content.
 */
 
 export async function GTProvider({
   children,
   id: prefixId,
   locale: _locale,
-  region: _region,
 }: GTProviderProps) {
   // ---------- SETUP ---------- //
   const I18NConfig = getI18NConfig();
   const locale = _locale || (await getLocale());
   const defaultLocale = I18NConfig.getDefaultLocale();
-  const [translationRequired, dialectTranslationRequired] =
-    I18NConfig.requiresTranslation(locale);
+  const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
   // load dictionary
   const dictionaryTranslations =
@@ -67,9 +62,6 @@ export async function GTProvider({
     }, dictionary as Dictionary);
   }
 
-  // Merge dictionary with dictionary translations
-  dictionary = mergeDictionaries(dictionary, dictionaryTranslations);
-
   // Block until cache check resolves
   const translations = await cachedTranslationsPromise;
 
@@ -81,9 +73,6 @@ export async function GTProvider({
       locale={locale}
       locales={I18NConfig.getLocales()}
       defaultLocale={defaultLocale}
-      translationRequired={translationRequired}
-      dialectTranslationRequired={dialectTranslationRequired}
-      region={_region || (await getRegion())}
       environment={
         process.env.NODE_ENV as 'development' | 'production' | 'test'
       }
