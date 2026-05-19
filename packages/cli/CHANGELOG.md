@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.40
+
+### Patch Changes
+
+- [#1456](https://github.com/generaltranslation/gt/pull/1456) [`8094012`](https://github.com/generaltranslation/gt/commit/8094012f9827f3a35e053776946bea67492da9db) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handling slash in Mint `url` fields
+
 ## 2.14.39
 
 ### Patch Changes
