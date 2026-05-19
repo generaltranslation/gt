@@ -1,7 +1,7 @@
 /**
  * ICU format validation for static strings in gt()/msg() calls.
  *
- * Only validates strings that are fully static (no derive/declareStatic)
+ * Only validates strings that are fully static (no derive)
  * and use ICU format (the default, or explicit $format: "ICU").
  * Reports parse errors but does not auto-fix.
  */

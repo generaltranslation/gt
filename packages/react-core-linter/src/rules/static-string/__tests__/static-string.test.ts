@@ -38,10 +38,10 @@ describe('static-string rule', () => {
         },
         {
           code: `
-            import { useGT, declareStatic } from '@generaltranslation/react-core';
+            import { useGT, derive } from '@generaltranslation/react-core';
             function Component() {
               const gt = useGT();
-              return gt("Hello " + declareStatic("world"));
+              return gt("Hello " + derive("world"));
             }
           `,
           options: [{ libs: ['@generaltranslation/react-core'] }],
@@ -133,7 +133,7 @@ describe('static-string rule', () => {
     });
   });
 
-  it('should allow derive() as equivalent to declareStatic()', () => {
+  it('should allow derive()', () => {
     ruleTester.run('static-string', staticString, {
       valid: [
         {

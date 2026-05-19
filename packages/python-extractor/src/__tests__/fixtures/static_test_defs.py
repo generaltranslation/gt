@@ -1,4 +1,4 @@
-from gt_fastapi import declare_var as alias_declare_var, declare_static as alias_declare_static
+from gt_fastapi import declare_var as alias_declare_var, derive as alias_derive
 
 
 def get_name():

@@ -11,7 +11,7 @@ import {
   Num,
   Currency,
   DateTime,
-  Static,
+  Derive,
   Plural,
   Branch,
   useVersionId,
@@ -28,7 +28,7 @@ import {
   decodeOptions,
   gtFallback,
   mFallback,
-  declareStatic,
+  derive,
   declareVar,
   decodeVars,
 } from '@generaltranslation/react-core';
@@ -39,7 +39,7 @@ import type {
 } from '@generaltranslation/react-core/types';
 
 export {
-  Static,
+  Derive,
   Var,
   Num,
   Currency,
@@ -70,7 +70,7 @@ export {
   useMessages,
   gtFallback,
   mFallback,
-  declareStatic,
+  derive,
   declareVar,
   decodeVars,
 };

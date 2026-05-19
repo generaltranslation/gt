@@ -32,7 +32,6 @@ describe('VARIABLE_COMPONENTS', () => {
       'RelativeTime',
       'Currency',
       'Num',
-      'Static',
       'Derive',
     ];
     for (const component of expected) {

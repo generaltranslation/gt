@@ -1,5 +1,5 @@
 "use client";
-import { T, Static, LocaleSelector } from "gt-next";
+import { T, Derive, LocaleSelector } from "gt-next";
 import { useState } from "react";
 const getSubjectName = (condition: boolean) => condition ? (<>The boy</>) : (<>The girl</>)
 
@@ -11,7 +11,7 @@ export default function Page() {
   return (
     <>
     <LocaleSelector />
-      <T><Static>{getSubjectName(state)}</Static> is beautiful</T>
+      <T><Derive>{getSubjectName(state)}</Derive> is beautiful</T>
 
       <div>
         <button onClick={toggleState}>Toggle</button>

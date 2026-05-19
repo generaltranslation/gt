@@ -285,7 +285,7 @@ function constructJsxElement(
       );
       return { errors };
     }
-    // Derive/Static - opaque element, skip children validation
+    // Derive - opaque element, skip children validation
     // The compiler doesn't resolve Derive functions; the CLI handles that.
     if (isDeriveComponent(canonicalName)) {
       return {

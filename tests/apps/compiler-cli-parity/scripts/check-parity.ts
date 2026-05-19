@@ -36,7 +36,7 @@ function writeError(...values: unknown[]) {
 // --- Derive detection ---
 
 /**
- * Recursively check if a jsxChildren value contains Derive/Static content.
+ * Recursively check if a jsxChildren value contains Derive content.
  * The compiler doesn't extract Derive, so these entries are expected to differ.
  */
 function containsDerive(value: unknown): boolean {
@@ -50,8 +50,8 @@ function containsDerive(value: unknown): boolean {
 
   if (typeof value === 'object') {
     const obj = value as Record<string, unknown>;
-    // Check element type — 's' is minified Derive/Static
-    if (obj.t === 's' || obj.t === 'Derive' || obj.t === 'Static') return true;
+    // Check element type — 's' is minified Derive
+    if (obj.t === 's' || obj.t === 'Derive') return true;
     // Recurse into children
     if (containsDerive(obj.c)) return true;
     // Recurse into branch data
