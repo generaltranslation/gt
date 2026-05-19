@@ -26,3 +26,4 @@ export {
   setI18nManager,
 } from "./i18n-manager/singleton-operations";
 export { createConditionStoreSingleton } from "./condition-store/createConditionStoreSingleton";
+export { getRuntimeEnvironment } from "./utils/getRuntimeEnvironment";

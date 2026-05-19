@@ -5,6 +5,7 @@ import { useContext } from "react";
 
 /**
  * @internal
+ * @deprecated use condition store directly instead
  */
 function useGTContext(property: keyof GTContextType): GTContextType {
   const conditionStore = useContext(GTContext);
@@ -27,7 +28,11 @@ function useGTContext(property: keyof GTContextType): GTContextType {
 }
 
 export function useLocale(): string {
-  return useGTContext("locale").locale;
+  return getLocale();
+}
+
+export function getLocale(): string {
+  return getWritableConditionStore().getLocale();
 }
 
 export function useSetLocale(): (locale: string) => void {
