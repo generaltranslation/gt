@@ -15,6 +15,8 @@ const GT_INDEXED_IDENTIFIER_REGEX = new RegExp(`${VAR_IDENTIFIER}\\d+`);
 
 /**
  * Given an indexed ICU string, condenses any select to an argument
+ * Unindexed _gt_ source strings and indexed _gt_# translation strings
+ * are mutually exclusive.
  * indexVars('Hello {_gt_1, select, other {World}}') => 'Hello {_gt_1}'
  * @param {string} icuString - The ICU string to condense.
  * @returns {string} The condensed ICU string.
