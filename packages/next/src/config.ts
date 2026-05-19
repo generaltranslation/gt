@@ -11,7 +11,6 @@ import {
   conflictingConfigurationBuildError,
   createBadFilepathWarning,
   createGTCompilerUnresolvedWarning,
-  deprecatedLocaleMappingWarning,
   devApiKeyIncludedInProductionError,
   invalidCanonicalLocalesError,
   invalidLocalesError,
@@ -26,6 +25,7 @@ import {
   isValidLocale,
   standardizeLocale,
 } from '@generaltranslation/format';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import {
   rootParamStability,
   turboConfigStable,
@@ -42,11 +42,11 @@ import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 
 type ConfigFileShape = {
+  customMapping?: CustomMapping;
   files?: {
     gt?: {
       parsingFlags?: {
         autoderive?: AutoderiveConfig;
-        autoDerive?: AutoderiveConfig;
       };
     };
   };
@@ -103,10 +103,6 @@ type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
  * @param {boolean} [experimentalEnableSSG=false] - Whether to enable SSG.
- * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings. (deprecated)
- * @param {string|undefined} [getStaticLocalePath="getStaticLocale"] - The path to the static getLocale function. (deprecated)
- * @param {string|undefined} [getStaticRegionPath="getStaticRegion"] - The path to the static getRegion function. (deprecated)
- * @param {string|undefined} [getStaticDomainPath="getStaticDomain"] - The path to the static getDomain function. (deprecated)
  * @param {boolean} [experimentalLocaleResolution=defaultWithGTConfigProps.experimentalLocaleResolution] - Whether to use special server side locale resolution logic (required for Cached Components).
  * @param {string|undefined} [experimentalLocaleResolutionParam=defaultWithGTConfigProps.experimentalLocaleResolutionParam] - The parameter to use for experimental locale resolution.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
@@ -234,10 +230,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     ...props.headersAndCookies,
   };
 
-  // Merge experimentalSwcPluginOptions
+  // Merge compiler options
   const mergedExperimentalCompilerOptions = {
     ...defaultWithGTConfigProps.experimentalCompilerOptions,
-    ...props.experimentalSwcPluginOptions,
     ...props.experimentalCompilerOptions,
   };
 
@@ -483,11 +478,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // ---------- ERROR CHECKS ---------- //
 
-  // Check: using deprecated localeMapping
-  if (props.customMapping) {
-    console.warn(deprecatedLocaleMappingWarning);
-  }
-
   // Check: invalid locale
   if (!mergedConfig.customMapping && gtServicesEnabled) {
     const invalidLocales: string[] = [];
@@ -563,9 +553,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // Read autoderive from parsingFlags (single source of truth shared with CLI)
   const rawAutoderive: boolean | { jsx?: boolean; strings?: boolean } =
-    loadedConfig?.files?.gt?.parsingFlags?.autoderive ??
-    loadedConfig?.files?.gt?.parsingFlags?.autoDerive ??
-    false;
+    loadedConfig?.files?.gt?.parsingFlags?.autoderive ?? false;
   const autoderiveJsx =
     typeof rawAutoderive === 'boolean'
       ? rawAutoderive
@@ -647,8 +635,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         requestFunctionPaths.getStaticRegion ? 'true' : 'false',
       _GENERALTRANSLATION_STATIC_GET_DOMAIN_ENABLED:
         requestFunctionPaths.getStaticDomain ? 'true' : 'false',
-      _GENERALTRANSLATION_DISABLE_SSG_WARNINGS:
-        mergedConfig.disableSSGWarnings?.toString() || 'false',
       _GENERALTRANSLATION_ENABLE_SSG:
         mergedConfig.experimentalEnableSSG?.toString() || 'false',
       _GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION:

@@ -2,7 +2,6 @@ import {
   createGtNextDiagnostic,
   formatDiagnosticErrorDetails,
 } from './diagnostics';
-import { DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY } from '../config-dir/props/withGTConfigProps';
 import { RequestFunctions, StaticRequestFunctions } from '../request/types';
 
 // ========== ERRORS ========== //
@@ -25,14 +24,12 @@ export const noLocalesCouldBeDeterminedWarning = createGtNextDiagnostic({
 });
 
 const createCustomSSGFunctionSuffix = (functionName: StaticRequestFunctions) =>
-  `To use ${functionName.replace('Static', '')} during SSG, define a custom ${functionName.replace('Static', '')}() function. For more information, visit https://generaltranslation.com/en/docs/next/guides/ssg. To disable this warning, set "disableSSGWarnings" to true.`;
+  `To use ${functionName.replace('Static', '')} during SSG, define a custom ${functionName.replace('Static', '')}() function. For more information, visit https://generaltranslation.com/en/docs/next/guides/ssg.`;
 
 export const createSsgMissingCustomFunctionWarning = (
   functionName: StaticRequestFunctions
 ) =>
-  process.env._GENERALTRANSLATION_DISABLE_SSG_WARNINGS === 'true'
-    ? ''
-    : `gt-next: ${functionName.replace('Static', '')}() was invoked during SSG. ${createCustomSSGFunctionSuffix(functionName)}`;
+  `gt-next: ${functionName.replace('Static', '')}() was invoked during SSG. ${createCustomSSGFunctionSuffix(functionName)}`;
 
 export const invalidSSGConfigurationWarning = createGtNextDiagnostic({
   whatHappened: 'SSG is in use, but withGTConfig() is not configured for SSG',
@@ -65,13 +62,11 @@ export const createCustomGetRequestFunctionWarning = (
 export const createSsrFunctionDuringSsgWarning = (
   functionName: RequestFunctions
 ) =>
-  process.env._GENERALTRANSLATION_DISABLE_SSG_WARNINGS === 'true'
-    ? ''
-    : createGtNextDiagnostic({
-        whatHappened: `${functionName}() was invoked during SSG`,
-        wayOut: 'Rendering will likely fall back to SSR behavior',
-        fix: 'Define a static locale function to avoid this fallback',
-      });
+  createGtNextDiagnostic({
+    whatHappened: `${functionName}() was invoked during SSG`,
+    wayOut: 'Rendering will likely fall back to SSR behavior',
+    fix: 'Define a static locale function to avoid this fallback',
+  });
 
 export const createSsrDetectionFailedWarning = (error: unknown) =>
   createGtNextDiagnostic({
@@ -85,8 +80,3 @@ export const deprecatedExperimentalEnableSSGWarning = createGtNextDiagnostic({
     'experimentalEnableSSG is deprecated and will be removed in a future version',
   fix: 'Move to experimentalLocaleResolution when you update your SSG configuration',
 });
-
-export const createDeprecatedGetStaticLocaleFunctionWarning = (
-  functionName: keyof typeof DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY
-) =>
-  `gt-next: ${functionName} is deprecated. Use ${functionName.replace('Static', '')} instead.`;
