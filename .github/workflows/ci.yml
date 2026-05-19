@@ -233,7 +233,15 @@ jobs:
 
       - name: Build CLI binaries
         if: steps.gt_cli_changed.outputs.changed == 'true'
-        run: cd packages/cli && pnpm run build:bin:clean
+        shell: bash
+        run: |
+          cd packages/cli
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            pnpm run build
+            pnpm run build:bin:windows-x64
+          else
+            pnpm run build:bin:clean
+          fi
 
       - name: Test CLI in test environment
         if: steps.gt_cli_changed.outputs.changed == 'true'

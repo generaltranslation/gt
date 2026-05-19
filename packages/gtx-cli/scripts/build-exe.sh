@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eu
+set -euo pipefail
 
 # Check if architecture argument is provided
 if [ $# -eq 0 ]; then
