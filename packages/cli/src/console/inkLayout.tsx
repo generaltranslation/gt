@@ -109,7 +109,6 @@ function ultraCompactFooter(footer: string) {
     .replace('enter done', 'done')
     .replace('enter choose', 'choose')
     .replace('enter save', 'save')
-    .replace('enter confirm', 'done')
     .replace('type to edit', 'type')
     .replace('y/n select', 'y/n')
     .replace('←→ choose', '←→');
@@ -145,9 +144,10 @@ export function InputBox({
   }
 
   const placeholderText = truncate(placeholder ?? '', innerWidth);
+  const cursorWidth = placeholderText ? 0 : 1;
   const padding = Math.max(
     0,
-    width - prefix.length - placeholderText.length
+    width - prefix.length - placeholderText.length - cursorWidth
   );
 
   return (
