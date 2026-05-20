@@ -14,6 +14,25 @@ import type {
 import { PACKAGE_NAME } from '../../../../shared/messages';
 import { getCookieValue, setCookieValue } from '../../../../shared/cookies';
 
+export function clearMismatchedLocaleCookie({
+  locale,
+  localeCookieName,
+  customMapping,
+}: {
+  locale: string;
+  localeCookieName: string;
+  customMapping?: CustomMapping;
+}) {
+  let cookieLocale = getCookieValue(localeCookieName);
+  if (cookieLocale) {
+    cookieLocale = resolveAliasLocale(cookieLocale, customMapping);
+  }
+  const resolvedLocale = resolveAliasLocale(locale, customMapping);
+  if (resolvedLocale && cookieLocale && cookieLocale !== resolvedLocale) {
+    setCookieValue(localeCookieName, '');
+  }
+}
+
 export function useDetermineLocale({
   locale: initialLocale = '',
   defaultLocale = libraryDefaultLocale,
@@ -173,6 +192,15 @@ export function useDetermineLocale({
   useEffect(() => {
     setLocaleWithoutSettingCookie(getNewLocale(locale));
   }, [locale, setLocaleWithoutSettingCookie, getNewLocale]);
+
+  // Clear stale locale cookies that disagree with the server-provided locale.
+  useEffect(() => {
+    clearMismatchedLocaleCookie({
+      locale,
+      localeCookieName,
+      customMapping,
+    });
+  }, [locale, localeCookieName, customMapping]);
 
   return [locale, setLocale];
 }

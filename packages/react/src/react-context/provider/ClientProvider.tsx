@@ -15,12 +15,18 @@ export function ClientProvider({
   reloadServer,
   ...props
 }: ClientProviderProps): JSX.Element {
+  const display = !!(
+    (!props.translationRequired || props.translations) &&
+    props.locale
+  );
+
   return (
     <CoreGTProvider
       {...props}
       ssr={true}
       environment={environment}
       cacheUrl={null}
+      fallback={display ? props.children : undefined}
       readAuthFromEnv={readAuthFromEnv}
       useDetermineLocale={useDetermineLocale}
       useRegionState={useRegionState}

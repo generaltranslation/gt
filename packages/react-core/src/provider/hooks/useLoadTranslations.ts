@@ -1,7 +1,7 @@
 import { customLoadTranslationsError } from '../../errors-dir/createErrors';
 import fetchTranslations from '../../utils/fetchTranslations';
 import { CustomLoader, Translations } from '../../types-dir/types';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GT } from 'generaltranslation';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 
@@ -47,18 +47,12 @@ export function useLoadTranslations({
    * Cache Fail (for hash)    -> translations[hash] = undefined
    */
 
-  const nextTranslations = useMemo(
-    () =>
-      getTranslationsState({
-        _translations,
-        translationRequired,
-        loadTranslationsType,
-      }),
-    [_translations, translationRequired, loadTranslationsType]
-  );
-
   const [translations, setTranslations] = useState<Translations | null>(
-    nextTranslations
+    getTranslationsState({
+      _translations,
+      translationRequired,
+      loadTranslationsType,
+    })
   );
 
   /**
@@ -75,8 +69,14 @@ export function useLoadTranslations({
       return;
     }
 
-    setTranslations(nextTranslations);
-  }, [locale, nextTranslations]);
+    setTranslations(
+      getTranslationsState({
+        _translations,
+        translationRequired,
+        loadTranslationsType,
+      })
+    );
+  }, [locale, _translations, translationRequired, loadTranslationsType]);
 
   /**
    * Update translations

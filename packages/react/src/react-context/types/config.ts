@@ -16,7 +16,7 @@ export type ClientProviderProps = {
   children: ReactNode;
   dictionary: Dictionary;
   dictionaryTranslations: Dictionary;
-  translations: Translations;
+  translations: Translations | null;
   locale: string;
   locales: string[];
   region?: string; // should be made mandatory if we ever make region a server-side variable

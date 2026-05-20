@@ -62,6 +62,43 @@ describe('ClientProvider', () => {
     expect(element.props.dialectTranslationRequired).toBe(false);
   });
 
+  it('uses the current children as the suspense fallback after server data has loaded', () => {
+    const element = ClientProvider(
+      getClientProviderProps({
+        children: 'Current content',
+        locale: 'fr',
+        translationRequired: true,
+        translations: {
+          hello: 'Bonjour',
+        },
+      })
+    ) as ReactElement<InternalGTProviderProps>;
+
+    expect(element.props.fallback).toBe('Current content');
+  });
+
+  it('keeps the suspense fallback empty while waiting for initial server data', () => {
+    const element = ClientProvider(
+      getClientProviderProps({
+        locale: '',
+      })
+    ) as ReactElement<InternalGTProviderProps>;
+
+    expect(element.props.fallback).toBeUndefined();
+  });
+
+  it('keeps the suspense fallback empty while required translations are loading', () => {
+    const element = ClientProvider(
+      getClientProviderProps({
+        locale: 'fr',
+        translationRequired: true,
+        translations: null,
+      })
+    ) as ReactElement<InternalGTProviderProps>;
+
+    expect(element.props.fallback).toBeUndefined();
+  });
+
   it('seeds the region from the server prop on first render', () => {
     expect(
       renderToString(createElement(RegionStateProbe, { region: 'CA' }))
