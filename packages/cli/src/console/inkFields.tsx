@@ -105,6 +105,17 @@ function LocaleRow({
   const sameName = option.name === option.nativeName;
   const codeStr = option.code.padEnd(codeWidth);
   const reserved = 2 + codeWidth + 2;
+  if (width < reserved) {
+    const compactText = truncate(`${marker} ${option.code}`, width);
+    return active ? (
+      <Text color={INK_ACCENT_COLOR} bold>
+        {compactText}
+      </Text>
+    ) : (
+      <Text>{compactText}</Text>
+    );
+  }
+
   const remainingForName = Math.max(1, width - reserved);
   const nameMax = sameName
     ? remainingForName
