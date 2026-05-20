@@ -1,18 +1,20 @@
 import { getReactI18nManager } from '../../i18n-manager/singleton-operations';
 import { useFormatLocales } from '../../hooks/utils';
 
+type NumProps = {
+  children: number | string | null | undefined;
+  options?: Intl.NumberFormatOptions;
+  locales?: string[];
+  name?: string;
+};
+
 // ===== Component ===== //
 
 function GtInternalNum({
   children,
   options = {},
   locales: localesProp = [],
-}: {
-  children: number | string | null | undefined;
-  options?: Intl.NumberFormatOptions;
-  locales?: string[];
-  name?: string;
-}): string | null {
+}: NumProps): string | null {
   const locales = useFormatLocales(localesProp);
   const gt = getReactI18nManager().getGTClass();
   if (children == null) return null;
@@ -21,13 +23,8 @@ function GtInternalNum({
   return gt.formatNum(parsedNumber, { locales, ...options });
 }
 
-function Num(props: {
-  children: number | string | null | undefined;
-  options?: Intl.NumberFormatOptions;
-  locales?: string[];
-  name?: string;
-}): string | null {
-  return GtInternalNum(props);
+function Num(props: NumProps): React.JSX.Element {
+  return <GtInternalNum {...props} />;
 }
 
 /** @internal _gtt - The GT transformation for the component. */
