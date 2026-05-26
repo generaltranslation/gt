@@ -2,19 +2,21 @@ import getPluralBranch from '../../utils/plurals/getPluralBranch';
 import type { ReactNode } from 'react';
 import { useFormatLocales } from '../../hooks/utils';
 
-// ===== Component ===== //
-
-function Plural({
-  children,
-  n,
-  locales: localesProp = [],
-  ...branches
-}: {
+type PluralProps = {
   children?: ReactNode;
   n: number;
   locales?: string[];
   [key: string]: ReactNode;
-}): ReactNode {
+};
+
+// ===== Component ===== //
+
+function GtInternalPlural({
+  children,
+  n,
+  locales: localesProp = [],
+  ...branches
+}: PluralProps): ReactNode {
   const locales = useFormatLocales(localesProp);
   if (typeof n !== 'number') {
     return children;
@@ -22,13 +24,8 @@ function Plural({
   return getPluralBranch(n, locales, branches) || children;
 }
 
-function GtInternalPlural(props: {
-  children?: ReactNode;
-  n: number;
-  locales?: string[];
-  [key: string]: ReactNode;
-}): ReactNode {
-  return Plural(props);
+function Plural(props: PluralProps): React.JSX.Element {
+  return <GtInternalPlural {...props} />;
 }
 
 /** @internal _gtt - The GT transformation for the component. */
