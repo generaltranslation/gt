@@ -78,16 +78,6 @@ export class I18nStore {
     return this.subscribeToStaticSet(this.customMappingListeners, listener);
   };
 
-  // ===== ConditionStore Subscriptions ===== //
-
-  subscribeToLocale = (listener: StoreListener): Unsubscribe => {
-    return this.subscribeToStaticSet(this.localeListeners, listener);
-  };
-
-  subscribeToEnableI18n = (listener: StoreListener): Unsubscribe => {
-    return this.subscribeToStaticSet(this.enableI18nListeners, listener);
-  };
-
   // ===== I18nManager Subscriptions ===== //
 
   subscribeToTranslate<T extends Translation>(
