@@ -57,10 +57,6 @@ export {
   getReactI18nCache,
   setReactI18nCache,
 } from './i18n-cache/singleton-operations';
-/** @deprecated use getReactI18nCache instead */
-export { getReactI18nCache as getReactI18nManager } from './i18n-cache/singleton-operations';
-/** @deprecated use setReactI18nCache instead */
-export { setReactI18nCache as setReactI18nManager } from './i18n-cache/singleton-operations';
 export { I18nStore } from './i18n-store/I18nStore';
 export type { I18nStoreParams } from './i18n-store/I18nStore';
 export type { InternalGTProviderProps } from './context/InternalGTProvider';
@@ -68,7 +64,3 @@ export type {
   ReactI18nCache,
   ReactI18nCacheParams,
 } from './i18n-cache/ReactI18nCache';
-/** @deprecated use ReactI18nCache instead */
-export type { ReactI18nCache as ReactI18nManager } from './i18n-cache/ReactI18nCache';
-/** @deprecated use ReactI18nCacheParams instead */
-export type { ReactI18nCacheParams as ReactI18nManagerParams } from './i18n-cache/ReactI18nCache';

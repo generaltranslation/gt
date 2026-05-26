@@ -59,8 +59,3 @@ export {
   getReactI18nCache,
   setReactI18nCache,
 } from '@generaltranslation/react-core/context';
-
-/** @deprecated use getReactI18nCache instead */
-export { getReactI18nCache as getReactI18nManager } from '@generaltranslation/react-core/context';
-/** @deprecated use setReactI18nCache instead */
-export { setReactI18nCache as setReactI18nManager } from '@generaltranslation/react-core/context';
