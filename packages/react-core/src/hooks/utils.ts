@@ -1,12 +1,8 @@
-import {
-  useCustomMapping,
-  useDefaultLocale,
-  useLocales,
-} from './external-store-hooks';
-import { useEnableI18n, useLocale } from './context-hooks';
-import { requiresTranslation } from 'generaltranslation/core';
-import { getReadonlyConditionStoreWithFallback } from '../condition-store/singleton-operations';
-import { getReactI18nManager } from '../i18n-manager/singleton-operations';
+import { useDefaultLocale } from "./external-store-hooks";
+import { useLocale } from "./condition-store";
+import { requiresTranslation } from "generaltranslation/core";
+import { getReadonlyConditionStoreWithFallback } from "../condition-store/singleton-operations";
+import { getReactI18nManager } from "../i18n-manager/singleton-operations";
 
 export function useFormatLocales(localesProp: string[] = []): string[] {
   const locale = useLocale();
