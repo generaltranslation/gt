@@ -4,6 +4,7 @@ import { AsyncConditionStore } from '../AsyncConditionStore';
 
 describe('AsyncConditionStore', () => {
   afterEach(() => {
+    setTestCache();
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
