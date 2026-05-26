@@ -15,8 +15,6 @@ import {
   renderTranslatedChildren,
   renderSkeleton,
   getDefaultRenderSettings,
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
   mergeDictionaries,
   reactHasUse,
   getSubtree,
@@ -39,6 +37,11 @@ import {
   mFallback,
   gtFallback,
 } from '@generaltranslation/react-core/internal';
+import {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from './cookie-names';
 
 import type {
   MFunctionType,
@@ -99,7 +102,12 @@ export type {
 };
 
 // Constant exports
-export { defaultLocaleCookieName, defaultRegionCookieName, reactHasUse };
+export {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+  reactHasUse,
+};
 
 // Function exports
 export {
