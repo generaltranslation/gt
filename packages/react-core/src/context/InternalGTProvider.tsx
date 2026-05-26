@@ -1,13 +1,13 @@
-import { type ReactNode } from 'react';
-import { setI18nStore } from '../i18n-store/singleton-operations';
+import { useMemo, type ReactNode } from "react";
+import { setI18nStore } from "../i18n-store/singleton-operations";
 import {
   setStoresInitialized,
   getI18nStoreInitialized,
-} from '../setup/globals';
-import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
-import { getI18nManager } from 'gt-i18n/internal';
-import type { Dictionary, Translation } from 'gt-i18n/types';
-import type { Locale, Hash } from 'gt-i18n/internal/types';
+} from "../setup/globals";
+import { I18nStore, I18nStoreParams } from "../i18n-store/I18nStore";
+import { getI18nManager } from "gt-i18n/internal";
+import type { Dictionary, Translation } from "gt-i18n/types";
+import type { Locale, Hash } from "gt-i18n/internal/types";
 
 export type InternalGTProviderProps = I18nStoreParams & {
   children?: ReactNode;
@@ -41,8 +41,10 @@ export function InternalGTProvider({
   }
 
   // This represents an update from server, so bypass I18nStore
-  getI18nManager().updateTranslations(translations);
-  getI18nManager().updateDictionaries(dictionaries ?? {});
+  useMemo(() => {
+    getI18nManager().updateTranslations(translations);
+    getI18nManager().updateDictionaries(dictionaries ?? {});
+  }, [translations, dictionaries]);
 
   return children;
 }
