@@ -5,8 +5,8 @@ import {
   I18nStore,
   setI18nStore,
   setStoresInitialized,
-  setConditionStore,
   setReactI18nManager,
+  getReadonlyConditionStoreWithFallback,
 } from '@generaltranslation/react-core/context';
 import { BrowserI18nManager } from '../i18n-manager/BrowserI18nManager';
 import type { BrowserI18nManagerParams } from '../i18n-manager/BrowserI18nManager';
@@ -33,8 +33,7 @@ export async function initializeGTSPA(
   const i18nManager = new BrowserI18nManager(config);
   setReactI18nManager(i18nManager);
 
-  const conditionStore = createOrUpdateBrowserConditionStore(config);
-  setConditionStore(conditionStore);
+  createOrUpdateBrowserConditionStore(config);
 
   const i18nStore = new I18nStore(config);
   setI18nStore(i18nStore);
@@ -42,5 +41,7 @@ export async function initializeGTSPA(
   setStoresInitialized(true);
 
   // Block until translations are loaded
-  await getTranslationsSnapshot(conditionStore.getLocale());
+  await getTranslationsSnapshot(
+    getReadonlyConditionStoreWithFallback().getLocale()
+  );
 }

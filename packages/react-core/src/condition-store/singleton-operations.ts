@@ -46,9 +46,9 @@ function getReadonlyConditionStoreWithFallback(): ReadonlyConditionStoreInterfac
       wayOut:
         runtimeEnvironment === 'development'
           ? undefined
-          : 'Request-specific values will fallback to default configuration.' +
-            (renderStrategy === 'SPA' &&
-              'This may cause hydration mismatches.'),
+          : renderStrategy === 'SPA'
+            ? 'Request-specific values will fall back to the default configuration.'
+            : 'Request-specific values will fall back to the default configuration. This may cause hydration mismatches.',
     });
 
     if (runtimeEnvironment === 'development') {

@@ -14,7 +14,6 @@ export function CSRGTProvider({
   defaultLocale = getReactI18nManager().getDefaultLocale(),
   locales = getReactI18nManager().getLocales(),
   customMapping = getReactI18nManager().getCustomMapping(),
-  locale,
   ...props
 }: SharedGTProviderProps) {
   // TODO: if a specific translation entry changes, but not the locale, this does not trigger a re-render
