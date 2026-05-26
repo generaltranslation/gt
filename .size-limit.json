@@ -33,7 +33,7 @@
   },
   {
     "name": "gt-tanstack-start",
-    "path": "packages/tanstack-start/dist/index.esm.min.mjs",
+    "path": "packages/tanstack-start/dist/index.client.mjs",
     "limit": "56 kB",
     "brotli": true,
     "ignore": ["react", "react-dom", "@tanstack/react-start"]
