@@ -2,6 +2,7 @@ import { publishValidationResults } from './validation/publishValidationResults'
 import logger from '../logs/logger';
 import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
 import { validateConfig } from './validation/validateConfig';
+import { validateLocales } from './validation/config-validation/validateLocales';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT } from 'generaltranslation';
@@ -99,8 +100,11 @@ class I18nCache<
     super();
 
     // Validation
-    const validationResults = validateConfig(params);
-    publishValidationResults(validationResults, 'I18nCache: ');
+    publishValidationResults(
+      validateLocales(params, getGTServicesEnabled(params)),
+      'I18nCache: '
+    );
+    publishValidationResults(validateConfig(params), 'I18nCache: ');
 
     // Setup
     this.config = standardizeConfig(params);

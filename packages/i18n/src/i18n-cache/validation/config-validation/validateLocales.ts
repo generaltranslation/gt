@@ -1,8 +1,7 @@
 import { isValidLocale } from '@generaltranslation/format';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
-import { getGTServicesEnabled } from '../../utils/getGTServicesEnabled';
 import { ValidationResult } from '../types';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type { I18nConfigParams } from '../../../i18n-config/I18nConfig';
 
 /**
  * Validate the locales configuration
@@ -11,18 +10,12 @@ import type { CustomMapping } from '@generaltranslation/format/types';
  *
  * Only apply if using GT services
  */
-export function validateLocales(params: {
-  projectId?: string;
-  devApiKey?: string;
-  apiKey?: string;
-  defaultLocale?: string;
-  locales?: string[];
-  customMapping?: CustomMapping;
-  cacheUrl?: string | null;
-  runtimeUrl?: string | null;
-}): ValidationResult[] {
+export function validateLocales(
+  params: I18nConfigParams,
+  shouldValidate = true
+): ValidationResult[] {
   const results: ValidationResult[] = [];
-  if (!getGTServicesEnabled(params)) {
+  if (!shouldValidate) {
     return results;
   }
   const { defaultLocale, locales, customMapping } = params;
