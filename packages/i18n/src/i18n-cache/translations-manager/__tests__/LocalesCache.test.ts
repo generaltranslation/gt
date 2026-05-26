@@ -4,7 +4,7 @@ import { DEFAULT_CACHE_EXPIRY_TIME } from '../utils/constants';
 import type { Dictionary, DictionaryLoader } from '../DictionaryCache';
 import type { Hash } from '../TranslationsCache';
 import type { CreateTranslateMany } from '../utils/createTranslateMany';
-import type { I18nManagerCacheLifecycleCallbacks } from '../../lifecycle-hooks/types';
+import type { I18nCacheLifecycleCallbacks } from '../../lifecycle-hooks/types';
 import type { SafeTranslationsLoader } from '../translations-loaders/types';
 
 describe('LocalesCache', () => {
@@ -42,7 +42,7 @@ describe('LocalesCache', () => {
 
   function createCache(opts?: {
     ttl?: number | null;
-    lifecycle?: I18nManagerCacheLifecycleCallbacks<string>;
+    lifecycle?: I18nCacheLifecycleCallbacks<string>;
   }) {
     return new LocalesCache<string>({
       defaultLocale: 'en',

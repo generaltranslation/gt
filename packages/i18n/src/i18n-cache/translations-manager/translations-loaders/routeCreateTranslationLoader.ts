@@ -31,7 +31,7 @@ export function routeCreateTranslationLoader({
   if (type === LoadTranslationsType.DISABLED) {
     // TODO: move this warning to validation layer
     logger.warn(
-      'I18nManager: No translation loader found. No translations will be loaded.'
+      'I18nCache: No translation loader found. No translations will be loaded.'
     );
   }
 

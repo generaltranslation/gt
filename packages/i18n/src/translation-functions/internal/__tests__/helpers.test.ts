@@ -4,7 +4,7 @@ import {
   resolveStringContentWithFallback,
   resolveStringContentWithRuntimeFallback,
 } from '../helpers';
-import { getI18nManager } from '../../../i18n-cache/singleton-operations';
+import { getI18nCache } from '../../../i18n-cache/singleton-operations';
 import { interpolateMessage } from '../../utils/interpolation/interpolateMessage';
 
 vi.mock('../../../i18n-cache/singleton-operations');
@@ -19,12 +19,12 @@ describe('translation helpers', () => {
   // ===== REGRESSION ===== //
 
   it('resolveJsx returns undefined when lookupTranslation returns undefined', () => {
-    const mockManager = {
+    const mockCache = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue(undefined),
     };
-    vi.mocked(getI18nManager).mockReturnValue(
-      mockManager as unknown as ReturnType<typeof getI18nManager>
+    vi.mocked(getI18nCache).mockReturnValue(
+      mockCache as unknown as ReturnType<typeof getI18nCache>
     );
 
     const result = resolveJsx('fr', ['Hello']);
@@ -32,16 +32,16 @@ describe('translation helpers', () => {
   });
 
   it('resolveJsx uses the provided locale', () => {
-    const mockManager = {
+    const mockCache = {
       lookupTranslation: vi.fn().mockReturnValue(undefined),
     };
-    vi.mocked(getI18nManager).mockReturnValue(
-      mockManager as unknown as ReturnType<typeof getI18nManager>
+    vi.mocked(getI18nCache).mockReturnValue(
+      mockCache as unknown as ReturnType<typeof getI18nCache>
     );
 
     resolveJsx('fr', ['Hello']);
 
-    expect(mockManager.lookupTranslation).toHaveBeenCalledWith(
+    expect(mockCache.lookupTranslation).toHaveBeenCalledWith(
       'fr',
       ['Hello'],
       expect.objectContaining({ $format: 'JSX', $locale: 'fr' })
@@ -51,20 +51,20 @@ describe('translation helpers', () => {
   // ===== NEW BEHAVIOR ===== //
 
   it('resolveStringContentWithRuntimeFallback calls lookupTranslationWithFallback and interpolates', async () => {
-    const mockManager = {
+    const mockCache = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslationWithFallback: vi
         .fn()
         .mockResolvedValue('Bonjour {name} !'),
       getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
-    vi.mocked(getI18nManager).mockReturnValue(
-      mockManager as unknown as ReturnType<typeof getI18nManager>
+    vi.mocked(getI18nCache).mockReturnValue(
+      mockCache as unknown as ReturnType<typeof getI18nCache>
     );
 
     await resolveStringContentWithRuntimeFallback('fr', 'Hello {name}!');
 
-    expect(mockManager.lookupTranslationWithFallback).toHaveBeenCalled();
+    expect(mockCache.lookupTranslationWithFallback).toHaveBeenCalled();
     expect(interpolateMessage).toHaveBeenCalledWith({
       source: 'Hello {name}!',
       target: 'Bonjour {name} !',
@@ -74,13 +74,13 @@ describe('translation helpers', () => {
   });
 
   it('resolveStringContentWithFallback interpolates source when no translation found', () => {
-    const mockManager = {
+    const mockCache = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue(undefined),
       getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
-    vi.mocked(getI18nManager).mockReturnValue(
-      mockManager as unknown as ReturnType<typeof getI18nManager>
+    vi.mocked(getI18nCache).mockReturnValue(
+      mockCache as unknown as ReturnType<typeof getI18nCache>
     );
 
     resolveStringContentWithFallback('fr', 'Hello {name}!');
