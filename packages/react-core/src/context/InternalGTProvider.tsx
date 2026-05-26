@@ -1,9 +1,8 @@
 import { useMemo, type ReactNode } from 'react';
-import { setI18nStore } from '../i18n-store/singleton-operations';
 import {
-  setStoresInitialized,
-  getI18nStoreInitialized,
-} from '../setup/globals';
+  isI18nStoreInitialized,
+  setI18nStore,
+} from '../i18n-store/singleton-operations';
 import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
 import { getI18nManager } from 'gt-i18n/internal';
 import type { Dictionary, Translation } from 'gt-i18n/types';
@@ -33,11 +32,9 @@ export function InternalGTProvider({
   dictionaries,
   ...config
 }: InternalGTProviderProps) {
-  if (!getI18nStoreInitialized()) {
+  if (!isI18nStoreInitialized()) {
     const i18nStore = new I18nStore(config);
     setI18nStore(i18nStore);
-
-    setStoresInitialized(true);
   }
 
   // This represents an update from server, so bypass I18nStore
