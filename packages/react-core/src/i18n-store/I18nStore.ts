@@ -18,6 +18,7 @@ import type { Translation } from 'gt-i18n/types';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 type EntryCacheEvent = {
   locale: string;
@@ -138,15 +139,15 @@ export class I18nStore {
   // ===== Manager Config Snapshots ===== //
 
   getDefaultLocaleSnapshot = (): string => {
-    return getReactI18nCache().getDefaultLocale();
+    return getI18nConfig().getDefaultLocale();
   };
 
   getLocalesSnapshot = (): readonly string[] => {
-    return getReactI18nCache().getLocales();
+    return getI18nConfig().getLocales();
   };
 
   getCustomMappingSnapshot = (): CustomMapping => {
-    return getReactI18nCache().getCustomMapping();
+    return getI18nConfig().getCustomMapping();
   };
 
   // ===== I18nCache Snapshots ===== //

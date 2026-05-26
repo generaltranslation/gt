@@ -1,5 +1,7 @@
 // Classes
 export { I18nCache } from './I18nCache';
+export { I18nConfig } from '../i18n-config/I18nConfig';
+export type { I18nConfigParams } from '../i18n-config/I18nConfig';
 export { ReadonlyConditionStore } from '../condition-store/ReadonlyConditionStore';
 export type { ReadonlyConditionStoreParams } from '../condition-store/ReadonlyConditionStore';
 export { WritableConditionStore } from '../condition-store/WritableConditionStore';
@@ -21,3 +23,9 @@ export {
 
 // Functions
 export { getI18nCache, setI18nCache } from './singleton-operations';
+export {
+  getI18nConfig,
+  initializeI18nConfig,
+  isI18nConfigInitialized,
+  setI18nConfig,
+} from '../i18n-config/singleton-operations';

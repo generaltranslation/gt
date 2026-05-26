@@ -1,4 +1,5 @@
 import { getI18nCache } from '../../i18n-cache/singleton-operations';
+import { getI18nConfig } from '../../i18n-config/singleton-operations';
 import { NormalizedLookupOptions, ResolutionOptions } from '../types/options';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import type {
@@ -83,7 +84,7 @@ export function resolveStringContent(
     source: content,
     target: translation,
     options: lookupOptions,
-    sourceLocale: i18nCache.getDefaultLocale(),
+    sourceLocale: getI18nConfig().getDefaultLocale(),
   });
 }
 
@@ -106,7 +107,7 @@ export function resolveStringContentWithFallback(
     source: content,
     target: translation,
     options: lookupOptions,
-    sourceLocale: i18nCache.getDefaultLocale(),
+    sourceLocale: getI18nConfig().getDefaultLocale(),
   });
 }
 
@@ -131,7 +132,7 @@ export async function resolveStringContentWithRuntimeFallback(
     source: content,
     target: translation,
     options: lookupOptions,
-    sourceLocale: i18nCache.getDefaultLocale(),
+    sourceLocale: getI18nConfig().getDefaultLocale(),
   });
 }
 /**

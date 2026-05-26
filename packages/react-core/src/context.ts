@@ -51,8 +51,11 @@ export {
   getReadonlyConditionStoreWithFallback,
   setReadonlyConditionStore,
 } from './condition-store/singleton-operations';
-export { WritableConditionStore } from 'gt-i18n/internal';
-export type { WritableConditionStoreParams } from 'gt-i18n/internal';
+export { initializeI18nConfig, WritableConditionStore } from 'gt-i18n/internal';
+export type {
+  I18nConfigParams,
+  WritableConditionStoreParams,
+} from 'gt-i18n/internal';
 export {
   getReactI18nCache,
   setReactI18nCache,
