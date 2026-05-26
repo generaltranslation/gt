@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import {
   isI18nStoreInitialized,
   setI18nStore,
@@ -38,8 +38,10 @@ export function InternalGTProvider({
   }
 
   // This represents an update from server, so bypass I18nStore
-  getI18nManager().updateTranslations(translations);
-  getI18nManager().updateDictionaries(dictionaries ?? {});
+  useMemo(() => {
+    getI18nManager().updateTranslations(translations);
+    getI18nManager().updateDictionaries(dictionaries ?? {});
+  }, [translations, dictionaries]);
 
   return children;
 }

@@ -1,8 +1,13 @@
 import type { ReactNode } from 'react';
 
+type VarProps<T extends ReactNode> = {
+  children: T;
+  name?: string;
+};
+
 // ===== Shared Logic ===== //
 
-function computeVar<T extends ReactNode>({ children }: { children: T }): T {
+function computeVar<T extends ReactNode>({ children }: VarProps<T>): T {
   return children;
 }
 
@@ -11,21 +16,11 @@ function computeVar<T extends ReactNode>({ children }: { children: T }): T {
 /**
  * External-store version of the `<Var>` component.
  */
-function Var<T extends ReactNode>({
-  children,
-}: {
-  children: T;
-  name?: string;
-}): T {
+function Var<T extends ReactNode>({ children }: VarProps<T>): T {
   return computeVar({ children });
 }
 
-function GtInternalVar<T extends ReactNode>({
-  children,
-}: {
-  children: T;
-  name?: string;
-}): T {
+function GtInternalVar<T extends ReactNode>({ children }: VarProps<T>): T {
   return computeVar({ children });
 }
 
