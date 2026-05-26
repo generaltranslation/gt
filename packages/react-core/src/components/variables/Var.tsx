@@ -16,12 +16,12 @@ function computeVar<T extends ReactNode>({ children }: VarProps<T>): T {
 /**
  * External-store version of the `<Var>` component.
  */
-function Var<T extends ReactNode>({ children }: VarProps<T>): T {
+function GtInternalVar<T extends ReactNode>({ children }: VarProps<T>): T {
   return computeVar({ children });
 }
 
-function GtInternalVar<T extends ReactNode>({ children }: VarProps<T>): T {
-  return computeVar({ children });
+function Var<T extends ReactNode>(props: VarProps<T>): React.JSX.Element {
+  return <GtInternalVar {...props} />;
 }
 
 /** @internal _gtt - The GT transformation for the component. */

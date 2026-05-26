@@ -1,6 +1,17 @@
 import { getReactI18nManager } from '../../i18n-manager/singleton-operations';
 import { useFormatLocales } from '../../hooks/utils';
 
+type RelativeTimeProps = {
+  date?: Date | null | undefined;
+  children?: Date | null | undefined;
+  name?: string;
+  value?: number;
+  unit?: Intl.RelativeTimeFormatUnit;
+  baseDate?: Date;
+  locales?: string[];
+  options?: Intl.RelativeTimeFormatOptions;
+};
+
 // ===== Component ===== //
 
 function GtInternalRelativeTime({
@@ -11,16 +22,7 @@ function GtInternalRelativeTime({
   baseDate,
   locales: localesProp = [],
   options = {},
-}: {
-  date?: Date | null | undefined;
-  children?: Date | null | undefined;
-  name?: string;
-  value?: number;
-  unit?: Intl.RelativeTimeFormatUnit;
-  baseDate?: Date;
-  locales?: string[];
-  options?: Intl.RelativeTimeFormatOptions;
-}): string | null {
+}: RelativeTimeProps): string | null {
   const locales = useFormatLocales(localesProp);
   const gt = getReactI18nManager().getGTClass();
   const resolvedDate = date ?? children;
@@ -54,16 +56,8 @@ function GtInternalRelativeTime({
   return null;
 }
 
-function RelativeTime(props: {
-  date?: Date | null | undefined;
-  children?: Date | null | undefined;
-  value?: number;
-  unit?: Intl.RelativeTimeFormatUnit;
-  baseDate?: Date;
-  locales?: string[];
-  options?: Intl.RelativeTimeFormatOptions;
-}): string | null {
-  return GtInternalRelativeTime(props);
+function RelativeTime(props: RelativeTimeProps): React.JSX.Element {
+  return <GtInternalRelativeTime {...props} />;
 }
 
 /** @internal _gtt - The GT transformation for the component. */
