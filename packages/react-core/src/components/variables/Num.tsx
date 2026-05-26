@@ -1,4 +1,4 @@
-import { getReactI18nManager } from '../../i18n-cache/singleton-operations';
+import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { useFormatLocales } from '../../hooks/utils';
 
 // ===== Component ===== //
@@ -14,7 +14,7 @@ function GtInternalNum({
   name?: string;
 }): string | null {
   const locales = useFormatLocales(localesProp);
-  const gt = getReactI18nManager().getGTClass();
+  const gt = getReactI18nCache().getGTClass();
   if (children == null) return null;
   const parsedNumber =
     typeof children === 'string' ? parseFloat(children) : children;

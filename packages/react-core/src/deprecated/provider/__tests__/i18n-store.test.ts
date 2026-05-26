@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { I18nManager, WritableConditionStore } from 'gt-i18n/internal';
-import { setWritableConditionStore as setConditionStore } from '../../../condition-store/singleton-operations';
-import { setReactI18nManager } from '../../../i18n-cache/singleton-operations';
+import { I18nCache, WritableConditionStore } from 'gt-i18n/internal';
+import { setReadonlyConditionStore } from '../../../condition-store/singleton-operations';
+import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
 import { I18nStore } from '../../../i18n-store/I18nStore';
 
-function createManager() {
-  return new I18nManager({
+function createCache() {
+  return new I18nCache({
     defaultLocale: 'en',
     locales: ['en', 'fr', 'es'],
     dictionary: {
@@ -31,11 +31,11 @@ function createManager() {
 }
 
 function createStores(locale = 'en') {
-  const manager = createManager();
-  setReactI18nManager(manager);
+  const cache = createCache();
+  setReactI18nCache(cache);
 
   const conditionStore = new WritableConditionStore({ locale });
-  setConditionStore(conditionStore);
+  setReadonlyConditionStore(conditionStore);
 
   const i18nStore = new I18nStore({});
   return { i18nStore };
