@@ -1,13 +1,13 @@
-import { ReadonlyConditionStore } from "gt-i18n/internal";
+import { ReadonlyConditionStore } from 'gt-i18n/internal';
 import {
   isReadonlyConditionStoreInitialized,
   setReadonlyConditionStore,
-} from "../condition-store/singleton-operations";
-import type { SharedGTProviderProps } from "./SharedGTProviderProps";
+} from '../condition-store/singleton-operations';
+import type { SharedGTProviderProps } from './SharedGTProviderProps';
 import {
   getReactI18nManager,
   InternalGTProvider,
-} from "@generaltranslation/react-core/context";
+} from '@generaltranslation/react-core/context';
 
 /**
  * For the server side GTProvider, we don't need to synchronize translations

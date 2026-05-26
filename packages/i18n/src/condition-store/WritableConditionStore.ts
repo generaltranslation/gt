@@ -1,9 +1,9 @@
-import type { LocaleCandidates } from "../i18n-manager";
-import type { WritableConditionStoreInterface } from "../i18n-manager/types";
+import type { LocaleCandidates } from '../i18n-manager';
+import type { WritableConditionStoreInterface } from '../i18n-manager/types';
 import {
   ReadonlyConditionStore,
   type ReadonlyConditionStoreParams,
-} from "./ReadonlyConditionStore";
+} from './ReadonlyConditionStore';
 
 export type WritableConditionStoreParams = ReadonlyConditionStoreParams;
 

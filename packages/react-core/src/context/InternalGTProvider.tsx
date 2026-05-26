@@ -1,13 +1,13 @@
-import { type ReactNode } from "react";
-import { setI18nStore } from "../i18n-store/singleton-operations";
+import { type ReactNode } from 'react';
+import { setI18nStore } from '../i18n-store/singleton-operations';
 import {
   setStoresInitialized,
   getI18nStoreInitialized,
-} from "../setup/globals";
-import { I18nStore, I18nStoreParams } from "../i18n-store/I18nStore";
-import { getI18nManager } from "gt-i18n/internal";
-import type { Dictionary, Translation } from "gt-i18n/types";
-import type { Locale, Hash } from "gt-i18n/internal/types";
+} from '../setup/globals';
+import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
+import { getI18nManager } from 'gt-i18n/internal';
+import type { Dictionary, Translation } from 'gt-i18n/types';
+import type { Locale, Hash } from 'gt-i18n/internal/types';
 
 export type InternalGTProviderProps = I18nStoreParams & {
   children?: ReactNode;

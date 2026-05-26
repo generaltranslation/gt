@@ -1,14 +1,14 @@
 import {
   getReactI18nManager,
   InternalGTProvider,
-} from "@generaltranslation/react-core/context";
-import type { SharedGTProviderProps } from "./SharedGTProviderProps";
+} from '@generaltranslation/react-core/context';
+import type { SharedGTProviderProps } from './SharedGTProviderProps';
 import {
   getBrowserConditionStore,
   isBrowserConditionStoreInitialized,
   setBrowserConditionStore,
-} from "../condition-store/singleton-operations";
-import { createBrowserConditionStore } from "../condition-store/createBrowserConditionStore";
+} from '../condition-store/singleton-operations';
+import { createBrowserConditionStore } from '../condition-store/createBrowserConditionStore';
 
 /**
  * Client side GTProvider, this is different from server side

@@ -1,19 +1,19 @@
-import type { ReactNode } from "react";
-import { Num } from "../../variables/Num";
-import { Var } from "../../variables/Var";
-import { Currency } from "../../variables/Currency";
-import { DateTime } from "../../variables/DateTime";
-import { RelativeTime } from "../../variables/RelativeTime";
-import { RenderVariable } from "gt-react/internal";
+import type { ReactNode } from 'react';
+import { Num } from '../../variables/Num';
+import { Var } from '../../variables/Var';
+import { Currency } from '../../variables/Currency';
+import { DateTime } from '../../variables/DateTime';
+import { RelativeTime } from '../../variables/RelativeTime';
+import { RenderVariable } from 'gt-react/internal';
 
 export const renderVariable: RenderVariable = ({
   variableType,
   variableValue,
   variableOptions,
 }) => {
-  if (variableType === "n") {
+  if (variableType === 'n') {
     const numValue =
-      typeof variableValue === "string" || typeof variableValue === "number"
+      typeof variableValue === 'string' || typeof variableValue === 'number'
         ? variableValue
         : variableValue == null
           ? variableValue
@@ -23,16 +23,16 @@ export const renderVariable: RenderVariable = ({
         {numValue}
       </Num>
     );
-  } else if (variableType === "d") {
+  } else if (variableType === 'd') {
     const dateValue = variableValue instanceof Date ? variableValue : undefined;
     return (
       <DateTime options={variableOptions as Intl.DateTimeFormatOptions}>
         {dateValue}
       </DateTime>
     );
-  } else if (variableType === "c") {
+  } else if (variableType === 'c') {
     const currencyValue =
-      typeof variableValue === "string" || typeof variableValue === "number"
+      typeof variableValue === 'string' || typeof variableValue === 'number'
         ? variableValue
         : variableValue == null
           ? variableValue
@@ -42,7 +42,7 @@ export const renderVariable: RenderVariable = ({
         {currencyValue}
       </Currency>
     );
-  } else if (variableType === "rt") {
+  } else if (variableType === 'rt') {
     const rtOptions = variableOptions as Intl.RelativeTimeFormatOptions & {
       unit?: Intl.RelativeTimeFormatUnit;
       baseDate?: Date;
@@ -50,7 +50,7 @@ export const renderVariable: RenderVariable = ({
     // RelativeTime supports two modes:
     // 1. value + unit (e.g., value=-3, unit="hour") — explicit relative time
     // 2. date (Date object) — auto-select unit from date difference
-    if (typeof variableValue === "number" && rtOptions?.unit) {
+    if (typeof variableValue === 'number' && rtOptions?.unit) {
       return (
         <RelativeTime
           value={variableValue}
@@ -63,7 +63,7 @@ export const renderVariable: RenderVariable = ({
     const dateValue =
       variableValue instanceof Date
         ? variableValue
-        : typeof variableValue === "string" || typeof variableValue === "number"
+        : typeof variableValue === 'string' || typeof variableValue === 'number'
           ? new Date(variableValue)
           : undefined;
     return (

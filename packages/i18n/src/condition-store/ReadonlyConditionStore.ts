@@ -1,4 +1,4 @@
-import { CustomMapping } from "generaltranslation/types";
+import { CustomMapping } from 'generaltranslation/types';
 import type {
   LocaleResolverConfig,
   ReadonlyConditionStoreInterface as ReadonlyConditionStoreContract,
