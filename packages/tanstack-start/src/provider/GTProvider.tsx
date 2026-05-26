@@ -3,7 +3,7 @@ import { GTProvider as GTReactProvider } from 'gt-react';
 import { GTProviderProps } from './types';
 import { isSSREnabled } from './utils/isSSREnabled';
 import { determineProviderLocale } from './utils/determineProviderLocale';
-import { getI18nManager } from 'gt-i18n/internal';
+import { getI18nCache } from 'gt-i18n/internal';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -28,18 +28,16 @@ import { getI18nManager } from 'gt-i18n/internal';
  * @returns {JSX.Element} The provider component for General Translation context.
  */
 export function GTProvider(props: GTProviderProps): React.ReactNode {
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   return (
     <GTReactProvider
       ssr={isSSREnabled()}
-      defaultLocale={i18nManager.getDefaultLocale()}
-      locales={i18nManager.getLocales()}
-      customMapping={i18nManager.getCustomMapping()}
-      enableI18n={i18nManager.isTranslationEnabled()}
-      loadTranslations={(locale: string) =>
-        i18nManager.loadTranslations(locale)
-      }
-      _versionId={i18nManager.getVersionId()}
+      defaultLocale={i18nCache.getDefaultLocale()}
+      locales={i18nCache.getLocales()}
+      customMapping={i18nCache.getCustomMapping()}
+      enableI18n={i18nCache.isTranslationEnabled()}
+      loadTranslations={(locale: string) => i18nCache.loadTranslations(locale)}
+      _versionId={i18nCache.getVersionId()}
       {...props}
       reloadOnLocaleUpdate={true}
       locale={determineProviderLocale(props)}
