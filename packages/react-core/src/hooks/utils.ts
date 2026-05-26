@@ -2,11 +2,11 @@ import {
   useCustomMapping,
   useDefaultLocale,
   useLocales,
-} from './external-store-hooks';
-import { useEnableI18n, useLocale } from './context-hooks';
-import { requiresTranslation } from 'generaltranslation/core';
-import { getReadonlyConditionStore } from '../condition-store/singleton-operations';
-import { getReactI18nManager } from '../i18n-manager/singleton-operations';
+} from "./external-store-hooks";
+import { useEnableI18n, useLocale } from "./context-hooks";
+import { requiresTranslation } from "generaltranslation/core";
+import { getReadonlyConditionStoreWithFallback } from "../condition-store/singleton-operations";
+import { getReactI18nManager } from "../i18n-manager/singleton-operations";
 
 export function useFormatLocales(localesProp: string[] = []): string[] {
   const locale = useLocale();
@@ -25,7 +25,7 @@ export function useShouldTranslate(): boolean {
  * Returns true if (1) i18n enabled and (2) translation is required
  */
 export function getShouldTranslate(): boolean {
-  const conditionStore = getReadonlyConditionStore();
+  const conditionStore = getReadonlyConditionStoreWithFallback();
   const i18nManager = getReactI18nManager();
 
   const enableI18n = conditionStore.getEnableI18n();

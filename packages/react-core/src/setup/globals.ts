@@ -3,7 +3,7 @@
  * - server-rendered apps must use context
  * - SPA apps can synchronously access the locale
  */
-export type RenderStrategy = 'SPA' | 'server-render';
+export type RenderStrategy = "SPA" | "server-render";
 
 declare global {
   var __generaltranslation: {
@@ -20,10 +20,15 @@ globalThis.__generaltranslation = {
   i18nStoreInitialized: false,
 };
 
+/**
+ * TODO: better error message (createDiagnosticMessage)
+ * TODO: move to `I18nConfig`
+ * @deprecated - move to I18nConfig
+ */
 export function getRenderStrategy(): RenderStrategy {
   if (!globalThis.__generaltranslation.renderStrategy) {
     throw new Error(
-      'Cannot access render strategy. GT has not been initialized.'
+      "Cannot access render strategy. GT has not been initialized.",
     );
   }
   return globalThis.__generaltranslation.renderStrategy;

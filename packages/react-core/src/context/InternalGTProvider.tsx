@@ -1,13 +1,13 @@
-import { type ReactNode } from 'react';
-import { setI18nStore } from '../i18n-store/singleton-operations';
+import { type ReactNode } from "react";
+import { setI18nStore } from "../i18n-store/singleton-operations";
 import {
   setStoresInitialized,
   getI18nStoreInitialized,
-} from '../setup/globals';
-import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
-import { getI18nManager } from 'gt-i18n/internal';
-import type { Dictionary, Translation } from 'gt-i18n/types';
-import type { Locale, Hash } from 'gt-i18n/internal/types';
+} from "../setup/globals";
+import { I18nStore, I18nStoreParams } from "../i18n-store/I18nStore";
+import { getI18nManager } from "gt-i18n/internal";
+import type { Dictionary, Translation } from "gt-i18n/types";
+import type { Locale, Hash } from "gt-i18n/internal/types";
 
 export type InternalGTProviderProps = I18nStoreParams & {
   children?: ReactNode;
@@ -25,6 +25,7 @@ export type InternalGTProviderProps = I18nStoreParams & {
  * - Locale and translations (and dictionaries if applicable) are required
  *
  * TODO: selectively filter to only pass new translations to client for dev hot reload
+ * TODO: rename parent directory to "/provider" (separate PR)
  */
 export function InternalGTProvider({
   children,
