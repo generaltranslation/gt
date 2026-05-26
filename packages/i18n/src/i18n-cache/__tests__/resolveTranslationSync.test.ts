@@ -1,20 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { I18nManager } from '../I18nCache';
+import { I18nCache } from '../I18nCache';
 import { hashMessage } from '../../utils/hashMessage';
 
-describe('I18nManager.resolveTranslationSync', () => {
+describe('I18nCache.resolveTranslationSync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('should return undefined when no translations loaded for locale', () => {
-    const manager = new I18nManager({
+    const cache = new I18nCache({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
       loadTranslations: vi.fn(),
     });
 
-    const result = manager.resolveTranslationSync('fr', 'Hello', {
+    const result = cache.resolveTranslationSync('fr', 'Hello', {
       $format: 'ICU',
     });
 
@@ -22,7 +22,7 @@ describe('I18nManager.resolveTranslationSync', () => {
   });
 
   it('does not throw without options in development', () => {
-    const manager = new I18nManager({
+    const cache = new I18nCache({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
       loadTranslations: vi.fn(),
@@ -32,10 +32,10 @@ describe('I18nManager.resolveTranslationSync', () => {
     const options = { $format: 'ICU' as const };
 
     expect(() =>
-      manager.resolveTranslationSync('fr', 'Hello', options)
+      cache.resolveTranslationSync('fr', 'Hello', options)
     ).not.toThrow();
     expect(
-      manager.resolveTranslationSync('fr', 'Hello', options)
+      cache.resolveTranslationSync('fr', 'Hello', options)
     ).toBeUndefined();
   });
 
@@ -49,16 +49,16 @@ describe('I18nManager.resolveTranslationSync', () => {
       [expectedHash]: translatedString,
     };
 
-    const manager = new I18nManager({
+    const cache = new I18nCache({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
       loadTranslations: vi.fn().mockResolvedValue(mockTranslations),
     });
 
     // Trigger async load to populate resolvedCache
-    await manager.getTranslations('fr');
+    await cache.getTranslations('fr');
 
-    const result = manager.resolveTranslationSync('fr', message, options);
+    const result = cache.resolveTranslationSync('fr', message, options);
 
     expect(result).toBe(translatedString);
   });

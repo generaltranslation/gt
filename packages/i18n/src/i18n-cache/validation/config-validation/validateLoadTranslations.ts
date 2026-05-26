@@ -40,7 +40,7 @@ export function validateLoadTranslations(params: {
           message: createDiagnosticMessage({
             whatHappened:
               'Loading translations from a remote store needs a projectId',
-            fix: 'Add projectId to the I18nManager config or disable remote translation loading',
+            fix: 'Add projectId to the I18nCache config or disable remote translation loading',
           }),
         });
       }

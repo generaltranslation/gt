@@ -16,7 +16,7 @@ import type { CreateTranslateMany } from './utils/createTranslateMany';
 import type { Translation } from './utils/types/translation-data';
 import type { SafeTranslationsLoader } from './translations-loaders/types';
 import type {
-  I18nManagerCacheLifecycleCallbacks,
+  I18nCacheLifecycleCallbacks,
   LifecycleCallback,
   LifecycleParam,
 } from '../lifecycle-hooks/types';
@@ -41,7 +41,7 @@ type LocalesCacheParams<TranslationValue extends Translation> = {
   loadTranslations: SafeTranslationsLoader<TranslationValue>;
   loadDictionary: DictionaryLoader;
   translateDictionaryEntry: TranslateLocaleDictionaryEntry;
-  lifecycle: I18nManagerCacheLifecycleCallbacks<TranslationValue>;
+  lifecycle: I18nCacheLifecycleCallbacks<TranslationValue>;
 };
 
 export class LocalesCache<TranslationValue extends Translation> {
@@ -165,7 +165,7 @@ function createTranslationsCacheFactory<TranslationValue extends Translation>({
   createTranslateMany,
   batchConfig,
 }: {
-  lifecycle: I18nManagerCacheLifecycleCallbacks<TranslationValue>;
+  lifecycle: I18nCacheLifecycleCallbacks<TranslationValue>;
   createTranslateMany: CreateTranslateMany;
   batchConfig?: TranslationBatchConfig;
 }) {
@@ -180,7 +180,7 @@ function createTranslationsCacheFactory<TranslationValue extends Translation>({
 
 function createTranslationsCacheLifecycle<TranslationValue extends Translation>(
   locale: Locale,
-  lifecycle: I18nManagerCacheLifecycleCallbacks<TranslationValue>
+  lifecycle: I18nCacheLifecycleCallbacks<TranslationValue>
 ): LifecycleParam<
   TranslationKey<TranslationValue>,
   Hash,
@@ -202,7 +202,7 @@ function createDictionaryCache<TranslationValue extends Translation>({
   locale: Locale;
   dictionary: Dictionary;
   translate: TranslateLocaleDictionaryEntry;
-  lifecycle: I18nManagerCacheLifecycleCallbacks<TranslationValue>;
+  lifecycle: I18nCacheLifecycleCallbacks<TranslationValue>;
 }) {
   const {
     onDictionaryCacheHit,

@@ -26,9 +26,9 @@ type RuntimeTranslationConfig = {
 };
 
 /**
- * Parameters for the I18nManager constructor
+ * Parameters for the I18nCache constructor
  */
-export type I18nManagerConstructorParams<
+export type I18nCacheConstructorParams<
   TranslationValue extends Translation = Translation,
 > = DictionaryConfig &
   Omit<GTConfig, 'cacheExpiryTime'> & {
@@ -47,9 +47,9 @@ export type I18nManagerConstructorParams<
   };
 
 /**
- * I18nManager class configuration
+ * I18nCache class configuration
  */
-export type I18nManagerConfig = {
+export type I18nCacheConfig = {
   environment: 'development' | 'production';
   defaultLocale: string;
   locales: string[];

@@ -1,5 +1,5 @@
 // Classes
-export { I18nManager } from './I18nCache';
+export { I18nCache } from './I18nCache';
 export { ReadonlyConditionStore } from '../condition-store/ReadonlyConditionStore';
 export type { ReadonlyConditionStoreParams } from '../condition-store/ReadonlyConditionStore';
 export { WritableConditionStore } from '../condition-store/WritableConditionStore';
@@ -20,4 +20,4 @@ export {
 } from './event-subscription/types';
 
 // Functions
-export { getI18nManager, setI18nManager } from './singleton-operations';
+export { getI18nCache, setI18nCache } from './singleton-operations';
