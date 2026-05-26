@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { I18nManager } from '../I18nManager';
+import { I18nManager } from '../I18nCache';
 import { hashMessage } from '../../utils/hashMessage';
 
 describe('I18nManager.resolveTranslationSync', () => {

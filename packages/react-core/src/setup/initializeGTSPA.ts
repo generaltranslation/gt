@@ -1,8 +1,8 @@
 import { I18nManager, WritableConditionStore } from 'gt-i18n/internal';
 import type { WritableConditionStoreParams } from 'gt-i18n/internal';
 import type { Translation } from 'gt-i18n/types';
-import { setReactI18nManager } from '../i18n-manager/singleton-operations';
-import type { ReactI18nManagerParams } from '../i18n-manager/ReactI18nManager';
+import { setReactI18nManager } from '../i18n-cache/singleton-operations';
+import type { ReactI18nManagerParams } from '../i18n-cache/ReactI18nCache';
 import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
 import { setRenderStrategy } from './globals';
 import { setReadonlyConditionStore } from '../condition-store/singleton-operations';

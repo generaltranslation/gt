@@ -1,4 +1,4 @@
-import { getI18nManager } from '../../i18n-manager/singleton-operations';
+import { getI18nManager } from '../../i18n-cache/singleton-operations';
 import { NormalizedLookupOptions, ResolutionOptions } from '../types/options';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import type {

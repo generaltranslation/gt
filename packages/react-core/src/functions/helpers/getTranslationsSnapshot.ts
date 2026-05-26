@@ -1,6 +1,6 @@
 import { Hash, Locale } from 'gt-i18n/internal/types';
 import { Translation } from 'gt-i18n/types';
-import { getReactI18nManager } from '../../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../../i18n-cache/singleton-operations';
 
 /**
  * Returns a promise of serializable cached translations that

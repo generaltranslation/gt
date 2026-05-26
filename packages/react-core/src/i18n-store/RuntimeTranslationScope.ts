@@ -1,7 +1,7 @@
 import { getI18nStore } from './singleton-operations';
 import type { TranslateLookup, Unsubscribe } from './storeTypes';
 import { getTranslateListenerKey } from 'gt-i18n/internal';
-import { getReactI18nManager } from '../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../i18n-cache/singleton-operations';
 
 /**
  * Owned by I18nStore, this should not be imported to any other files

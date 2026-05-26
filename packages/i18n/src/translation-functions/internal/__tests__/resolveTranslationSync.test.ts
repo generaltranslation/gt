@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolveTranslationSync } from '../sync-translation-resolution';
-import { getI18nManager } from '../../../i18n-manager/singleton-operations';
+import { getI18nManager } from '../../../i18n-cache/singleton-operations';
 import { interpolateMessage } from '../../utils/interpolation/interpolateMessage';
 
-vi.mock('../../../i18n-manager/singleton-operations');
+vi.mock('../../../i18n-cache/singleton-operations');
 vi.mock('../../utils/interpolation/interpolateMessage');
 
 describe('resolveTranslationSync', () => {

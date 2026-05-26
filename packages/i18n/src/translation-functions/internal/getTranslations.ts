@@ -1,9 +1,9 @@
-import { getI18nManager } from '../../i18n-manager/singleton-operations';
+import { getI18nManager } from '../../i18n-cache/singleton-operations';
 import { DictionaryTranslationOptions } from '../types/options';
 import { TFunctionType } from '../types/functions';
 import { renderDictionaryEntry } from './renderDictionaryEntry';
 import { renderDictionaryObject } from './renderDictionaryObject';
-import { resolveDictionaryLookupOptions } from '../../i18n-manager/translations-manager/utils/dictionary-helpers';
+import { resolveDictionaryLookupOptions } from '../../i18n-cache/translations-manager/utils/dictionary-helpers';
 import type { DictionaryObjectTranslation } from '../types/functions';
 import { getLocale } from '../../helpers/locale';
 

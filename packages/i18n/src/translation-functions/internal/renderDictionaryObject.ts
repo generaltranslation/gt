@@ -2,13 +2,13 @@ import {
   getDictionaryEntry,
   isDictionaryValue,
   resolveDictionaryLookupOptions,
-} from '../../i18n-manager/translations-manager/utils/dictionary-helpers';
+} from '../../i18n-cache/translations-manager/utils/dictionary-helpers';
 import type { DictionaryObjectTranslation } from '../types/functions';
 import type { DictionaryLookupOptions } from '../types/options';
 import type {
   DictionaryEntry,
   DictionaryValue,
-} from '../../i18n-manager/translations-manager/DictionaryCache';
+} from '../../i18n-cache/translations-manager/DictionaryCache';
 
 export function renderDictionaryObject({
   sourceObject,
