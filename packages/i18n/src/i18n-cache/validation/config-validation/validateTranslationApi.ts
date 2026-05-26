@@ -43,7 +43,7 @@ export function validateTranslationApi(params: {
           type: 'warning',
           message: createDiagnosticMessage({
             whatHappened: 'Runtime translation needs a projectId',
-            fix: 'Add projectId to the I18nManager config or disable runtime translation',
+            fix: 'Add projectId to the I18nCache config or disable runtime translation',
           }),
         });
       }
@@ -52,7 +52,7 @@ export function validateTranslationApi(params: {
           type: 'warning',
           message: createDiagnosticMessage({
             whatHappened: 'Runtime translation needs devApiKey or apiKey',
-            fix: 'Add credentials to the I18nManager config or disable runtime translation',
+            fix: 'Add credentials to the I18nCache config or disable runtime translation',
           }),
         });
       }

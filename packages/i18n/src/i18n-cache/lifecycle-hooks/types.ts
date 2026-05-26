@@ -122,17 +122,16 @@ export type LocalesDictionaryCacheLifecycleCallbacks = {
 };
 
 /**
- * Combined I18nManager cache lifecycle callbacks
+ * Combined I18nCache cache lifecycle callbacks
  */
-export type I18nManagerCacheLifecycleCallbacks<
-  TranslationValue extends Translation,
-> = LocalesTranslationsCacheLifecycleCallbacks<TranslationValue> &
-  LocalesDictionaryCacheLifecycleCallbacks;
+export type I18nCacheLifecycleCallbacks<TranslationValue extends Translation> =
+  LocalesTranslationsCacheLifecycleCallbacks<TranslationValue> &
+    LocalesDictionaryCacheLifecycleCallbacks;
 
 // ===== Consumer API ===== //
 
 /**
- * Simplified lifecycle callbacks for I18nManager consumers.
+ * Simplified lifecycle callbacks for I18nCache consumers.
  * These provide a cleaner interface than the internal cache lifecycle types,
  * with locale and hash exposed directly instead of the full cache internals.
  *

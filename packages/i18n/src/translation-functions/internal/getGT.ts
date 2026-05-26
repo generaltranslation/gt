@@ -1,4 +1,4 @@
-import { getI18nManager } from '../../i18n-cache/singleton-operations';
+import { getI18nCache } from '../../i18n-cache/singleton-operations';
 import { InlineTranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
@@ -16,10 +16,10 @@ import { getLocale } from '../../helpers/locale';
  */
 export async function getGT(): Promise<GTFunctionType> {
   // Get the translation resolver
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   const locale = getLocale();
-  await i18nManager.loadTranslations(locale);
-  const sourceLocale = i18nManager.getDefaultLocale();
+  await i18nCache.loadTranslations(locale);
+  const sourceLocale = i18nCache.getDefaultLocale();
 
   /**
    * Registers a message at build time and resolves its translation at runtime.
@@ -49,7 +49,7 @@ export async function getGT(): Promise<GTFunctionType> {
     );
 
     // Lookup translation
-    const translation = i18nManager.lookupTranslation(
+    const translation = i18nCache.lookupTranslation(
       lookupOptions.$locale,
       message,
       lookupOptions

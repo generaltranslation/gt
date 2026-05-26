@@ -1,4 +1,4 @@
-import { getI18nManager } from '../../i18n-cache/singleton-operations';
+import { getI18nCache } from '../../i18n-cache/singleton-operations';
 import { NormalizedLookupOptions, ResolutionOptions } from '../types/options';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import type {
@@ -18,9 +18,9 @@ export function resolveJsx(
   content: JsxChildren,
   options: ResolutionOptions<'JSX'> = {}
 ): JsxChildren | undefined {
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'JSX');
-  const translation = i18nManager.lookupTranslation(
+  const translation = i18nCache.lookupTranslation(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -50,9 +50,9 @@ export async function resolveJsxWithRuntimeFallback(
   content: JsxChildren,
   options: ResolutionOptions<'JSX'> = {}
 ): Promise<JsxChildren> {
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'JSX');
-  const translation = await i18nManager.lookupTranslationWithFallback(
+  const translation = await i18nCache.lookupTranslationWithFallback(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -71,9 +71,9 @@ export function resolveStringContent(
   content: StringContent,
   options: ResolutionOptions<StringFormat> = {}
 ): StringContent | undefined {
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'STRING');
-  const translation = i18nManager.lookupTranslation(
+  const translation = i18nCache.lookupTranslation(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -83,7 +83,7 @@ export function resolveStringContent(
     source: content,
     target: translation,
     options: lookupOptions,
-    sourceLocale: i18nManager.getDefaultLocale(),
+    sourceLocale: i18nCache.getDefaultLocale(),
   });
 }
 
@@ -95,9 +95,9 @@ export function resolveStringContentWithFallback(
   content: StringContent,
   options: ResolutionOptions<StringFormat> = {}
 ): StringContent {
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'STRING');
-  const translation = i18nManager.lookupTranslation(
+  const translation = i18nCache.lookupTranslation(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -106,7 +106,7 @@ export function resolveStringContentWithFallback(
     source: content,
     target: translation,
     options: lookupOptions,
-    sourceLocale: i18nManager.getDefaultLocale(),
+    sourceLocale: i18nCache.getDefaultLocale(),
   });
 }
 
@@ -120,9 +120,9 @@ export async function resolveStringContentWithRuntimeFallback(
   content: StringContent,
   options: ResolutionOptions<StringFormat> = {}
 ): Promise<StringContent> {
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'STRING');
-  const translation = await i18nManager.lookupTranslationWithFallback(
+  const translation = await i18nCache.lookupTranslationWithFallback(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -131,7 +131,7 @@ export async function resolveStringContentWithRuntimeFallback(
     source: content,
     target: translation,
     options: lookupOptions,
-    sourceLocale: i18nManager.getDefaultLocale(),
+    sourceLocale: i18nCache.getDefaultLocale(),
   });
 }
 /**
