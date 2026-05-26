@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { I18nManager } from '../../../i18n-manager/I18nManager';
+import { I18nManager } from '../../../i18n-cache/I18nCache';
 import {
   setConditionStore,
   setI18nManager,
-} from '../../../i18n-manager/singleton-operations';
+} from '../../../i18n-cache/singleton-operations';
 import { msg } from '../../msg';
 import { hashMessage } from '../../../utils/hashMessage';
 import { getGT } from '../getGT';

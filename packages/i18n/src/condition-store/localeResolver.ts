@@ -1,6 +1,6 @@
 import { LocaleConfig } from '@generaltranslation/format';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { LocaleResolverConfig } from '../i18n-manager/types';
+import type { LocaleResolverConfig } from '../i18n-cache/types';
 
 export type LocaleCandidates = string | string[] | undefined;
 

@@ -1,7 +1,7 @@
 import { getI18nStore } from './singleton-operations';
 import type { DictionaryLookup, Unsubscribe } from './storeTypes';
 import { getDictionaryListenerKey } from 'gt-i18n/internal';
-import { getReactI18nManager } from '../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../i18n-cache/singleton-operations';
 
 /**
  * Tracks dictionary lookups discovered by useTranslations callbacks.

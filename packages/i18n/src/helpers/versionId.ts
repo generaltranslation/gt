@@ -1,4 +1,4 @@
-import { getI18nManager } from '../i18n-manager/singleton-operations';
+import { getI18nManager } from '../i18n-cache/singleton-operations';
 
 /**
  * Get the version ID for the current source

@@ -1,7 +1,7 @@
-import { setAsyncConditionStore } from '../async-i18n-manager/singleton-operations';
+import { setAsyncConditionStore } from '../async-i18n-cache/singleton-operations';
 import type { InitializeGTParams } from './types';
 import { I18nManager, setI18nManager } from 'gt-i18n/internal';
-import { AsyncConditionStore } from '../async-i18n-manager/AsyncConditionStore';
+import { AsyncConditionStore } from '../async-i18n-cache/AsyncConditionStore';
 
 /**
  * Configure GT for node runtime. This must be called to setup GT for node runtime.

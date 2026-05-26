@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { I18nManager } from '../I18nManager';
+import { I18nManager } from '../I18nCache';
 
 // Mock createTranslateManyFactory so constructor doesn't need real GT
 vi.mock('../translations-manager/utils/createTranslateMany', () => ({

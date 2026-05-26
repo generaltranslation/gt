@@ -1,7 +1,7 @@
 import * as i18nInternal from 'gt-i18n/internal';
 import type { I18nManager } from 'gt-i18n/internal';
 import type { Translation } from 'gt-i18n/types';
-import type { ReactI18nManager } from './ReactI18nManager';
+import type { ReactI18nManager } from './ReactI18nCache';
 
 // ===== I18n Manager ===== //
 

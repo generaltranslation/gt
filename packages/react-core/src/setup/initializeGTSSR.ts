@@ -1,8 +1,8 @@
 import { I18nManager } from 'gt-i18n/internal';
 import type { Translation } from 'gt-i18n/types';
-import type { ReactI18nManagerParams } from '../i18n-manager/ReactI18nManager';
+import type { ReactI18nManagerParams } from '../i18n-cache/ReactI18nCache';
 import { setRenderStrategy } from './globals';
-import { setReactI18nManager } from '../i18n-manager/singleton-operations';
+import { setReactI18nManager } from '../i18n-cache/singleton-operations';
 
 /**
  * Initialize GT for a server-side rendered application

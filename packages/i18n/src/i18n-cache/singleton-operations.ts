@@ -1,5 +1,5 @@
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { I18nManager } from './I18nManager';
+import { I18nManager } from './I18nCache';
 import logger from '../logs/logger';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { createConditionStoreSingleton } from '../condition-store/createConditionStoreSingleton';

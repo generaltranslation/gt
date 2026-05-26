@@ -13,7 +13,7 @@ import {
   isReadonlyConditionStoreInitialized,
 } from '../../condition-store/singleton-operations';
 import { StringContent, StringFormat } from 'generaltranslation/types';
-import { getReactI18nManager } from '../../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 
