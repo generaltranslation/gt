@@ -19,7 +19,7 @@ import {
 } from '../utils/cookies';
 import { defaultLocaleHeaderName } from '../utils/headers';
 import type { CustomMapping } from '@generaltranslation/format/types';
-import { I18nManager } from 'gt-i18n/internal';
+import { I18nCache } from 'gt-i18n/internal';
 import type { LookupOptions } from 'gt-i18n/internal/types';
 import { loadTranslations } from './loadTranslation';
 
@@ -70,7 +70,7 @@ export class I18NConfiguration {
     timeout?: number;
   };
   // Dictionaries
-  private _i18nManager: I18nManager<TranslatedChildren>;
+  private _i18nCache: I18nCache<TranslatedChildren>;
   private _dictionaryManager: DictionaryManager | undefined;
   // Headers and cookies
   private localeHeaderName: string;
@@ -117,7 +117,7 @@ export class I18NConfiguration {
     this.projectId = projectId;
     this.runtimeUrl = runtimeUrl;
 
-    // Enables locale-based translation lookups through I18nManager. Runtime API
+    // Enables locale-based translation lookups through I18nCache. Runtime API
     // availability is tracked separately by developmentApiEnabled/productionApiEnabled.
     this.translationEnabled = !!(
       (
@@ -160,7 +160,7 @@ export class I18NConfiguration {
     // Translation and dictionary managers
     const shouldLoadTranslations = loadTranslationsType !== 'disabled';
     const runtimeTranslationTimeout = this.renderSettings.timeout;
-    this._i18nManager = new I18nManager<TranslatedChildren>({
+    this._i18nCache = new I18nCache<TranslatedChildren>({
       apiKey,
       devApiKey,
       projectId,
@@ -257,8 +257,8 @@ export class I18NConfiguration {
       localeCookieName,
       resetLocaleCookieName,
     } = this;
-    const customMapping = this._i18nManager.getCustomMapping();
-    const _versionId = this._i18nManager.getVersionId();
+    const customMapping = this._i18nCache.getCustomMapping();
+    const _versionId = this._i18nCache.getVersionId();
     return {
       projectId,
       translationEnabled,
@@ -281,7 +281,7 @@ export class I18NConfiguration {
    * @returns {GT} The GT class instance
    */
   getGTClass(): GT {
-    return this._i18nManager.getGTClass();
+    return this._i18nCache.getGTClass();
   }
 
   // ----- LOCALES ----- //
@@ -291,7 +291,7 @@ export class I18NConfiguration {
    * @returns {string} A BCP-47 locale tag
    */
   getDefaultLocale(): string {
-    return this._i18nManager.getDefaultLocale();
+    return this._i18nCache.getDefaultLocale();
   }
 
   /**
@@ -299,7 +299,7 @@ export class I18NConfiguration {
    * @returns {string[]} A list of BCP-47 locale tags, or undefined if none were provided
    */
   getLocales(): string[] {
-    return this._i18nManager.getLocales();
+    return this._i18nCache.getLocales();
   }
 
   /**
@@ -307,7 +307,7 @@ export class I18NConfiguration {
    * @returns {string | undefined} The version ID, if set
    */
   getVersionId(): string | undefined {
-    return this._i18nManager.getVersionId();
+    return this._i18nCache.getVersionId();
   }
 
   // ----- COOKIES AND HEADERS ----- //
@@ -359,8 +359,8 @@ export class I18NConfiguration {
    */
   requiresTranslation(locale: string): [boolean, boolean] {
     return [
-      this._i18nManager.requiresTranslation(locale),
-      this._i18nManager.requiresDialectTranslation(locale),
+      this._i18nCache.requiresTranslation(locale),
+      this._i18nCache.requiresDialectTranslation(locale),
     ];
   }
 
@@ -396,7 +396,7 @@ export class I18NConfiguration {
    * @returns A promise that resolves to the translations.
    */
   async getCachedTranslations(locale: string): Promise<Translations> {
-    return (await this._i18nManager.loadTranslations(locale)) as Translations;
+    return (await this._i18nCache.loadTranslations(locale)) as Translations;
   }
 
   // ----- RUNTIME TRANSLATION ----- //
@@ -406,7 +406,7 @@ export class I18NConfiguration {
     targetLocale,
     options,
   }: RuntimeTranslationParams): TranslatedChildren | undefined {
-    return this._i18nManager.lookupTranslation(targetLocale, source, options);
+    return this._i18nCache.lookupTranslation(targetLocale, source, options);
   }
 
   async translate({
@@ -414,7 +414,7 @@ export class I18NConfiguration {
     targetLocale,
     options,
   }: RuntimeTranslationParams): Promise<TranslatedChildren> {
-    const translation = await this._i18nManager.lookupTranslationWithFallback(
+    const translation = await this._i18nCache.lookupTranslationWithFallback(
       targetLocale,
       source,
       options
