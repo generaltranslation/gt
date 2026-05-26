@@ -15,7 +15,7 @@ import type {
   Unsubscribe,
 } from './storeTypes';
 import type { Translation } from 'gt-i18n/types';
-import { getReactI18nManager } from '../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../i18n-cache/singleton-operations';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
 

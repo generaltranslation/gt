@@ -12,7 +12,7 @@ import type { CustomMapping } from 'generaltranslation/types';
 import { getI18nStore } from '../i18n-store/singleton-operations';
 import type { RuntimeTranslationScope } from '../i18n-store/RuntimeTranslationScope';
 import type { RuntimeDictionaryScope } from '../i18n-store/RuntimeDictionaryScope';
-import { getReactI18nManager } from '../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../i18n-cache/singleton-operations';
 
 /**
  * @internal

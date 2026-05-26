@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { I18nManager } from '../../../i18n-manager/I18nManager';
-import { setI18nManager } from '../../../i18n-manager/singleton-operations';
+import { I18nManager } from '../../../i18n-cache/I18nCache';
+import { setI18nManager } from '../../../i18n-cache/singleton-operations';
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../types/options';
 import {
@@ -11,7 +11,7 @@ import {
 // Mock createTranslateManyFactory to inject controlled translateMany
 const mockTranslateMany = vi.fn();
 vi.mock(
-  '../../../i18n-manager/translations-manager/utils/createTranslateMany',
+  '../../../i18n-cache/translations-manager/utils/createTranslateMany',
   () => ({
     createTranslateManyFactory: vi
       .fn()

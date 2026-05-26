@@ -1,4 +1,4 @@
-import type { ReadonlyConditionStoreInterface } from '../i18n-manager/types';
+import type { ReadonlyConditionStoreInterface } from '../i18n-cache/types';
 
 let conditionStore: ReadonlyConditionStoreInterface | undefined;
 

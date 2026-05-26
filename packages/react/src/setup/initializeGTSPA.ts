@@ -7,8 +7,8 @@ import {
   setReactI18nManager,
   getReadonlyConditionStoreWithFallback,
 } from '@generaltranslation/react-core/context';
-import { BrowserI18nManager } from '../i18n-manager/BrowserI18nManager';
-import type { BrowserI18nManagerParams } from '../i18n-manager/BrowserI18nManager';
+import { BrowserI18nManager } from '../i18n-cache/BrowserI18nCache';
+import type { BrowserI18nManagerParams } from '../i18n-cache/BrowserI18nCache';
 import {
   createOrUpdateBrowserConditionStore,
   CreateBrowserConditionStoreParams,

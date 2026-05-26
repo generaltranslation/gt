@@ -2,7 +2,7 @@ import { CustomMapping } from 'generaltranslation/types';
 import type {
   LocaleResolverConfig,
   ReadonlyConditionStoreInterface as ReadonlyConditionStoreContract,
-} from '../i18n-manager/types';
+} from '../i18n-cache/types';
 import { createLocaleResolver, type LocaleCandidates } from './localeResolver';
 
 export type ReadonlyConditionStoreParams = {

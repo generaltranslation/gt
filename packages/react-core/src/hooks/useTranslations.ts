@@ -12,7 +12,7 @@ import {
 } from './external-store-hooks';
 import { useLocale } from './condition-store';
 import { useShouldTranslate } from './utils';
-import { getReactI18nManager } from '../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../i18n-cache/singleton-operations';
 import { useGT } from './useGT';
 import type {
   DictionaryObjectTranslation,

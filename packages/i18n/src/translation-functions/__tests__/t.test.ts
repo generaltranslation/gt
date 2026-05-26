@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { I18nManager } from '../../i18n-manager/I18nManager';
+import { I18nManager } from '../../i18n-cache/I18nCache';
 import {
   setI18nManager,
   setConditionStore,
-} from '../../i18n-manager/singleton-operations';
+} from '../../i18n-cache/singleton-operations';
 import { getLocale, getLocaleProperties } from '../../helpers/locale';
 import { hashMessage } from '../../utils/hashMessage';
 import { t } from '../t';
