@@ -1,4 +1,4 @@
-import { getI18nManager } from 'gt-i18n/internal';
+import { getI18nCache } from 'gt-i18n/internal';
 
 /**
  * A request object like interface
@@ -53,9 +53,9 @@ function parseAcceptLanguage(header: string): string[] {
  */
 export function getRequestLocale(request: RequestLike): string {
   // Setup
-  const i18nManager = getI18nManager<string>();
-  const defaultLocale = i18nManager.getDefaultLocale();
-  const gtInstance = i18nManager.getGTClass();
+  const i18nCache = getI18nCache<string>();
+  const defaultLocale = i18nCache.getDefaultLocale();
+  const gtInstance = i18nCache.getGTClass();
 
   // Get the accept-language header
   const acceptLanguage = request.headers['accept-language'];

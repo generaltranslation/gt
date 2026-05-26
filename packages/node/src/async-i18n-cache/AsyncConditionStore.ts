@@ -3,7 +3,7 @@ import type {
   LocaleResolverConfig,
   ScopedConditionStore,
 } from 'gt-i18n/internal/types';
-import { getI18nManager } from 'gt-i18n/internal';
+import { getI18nCache } from 'gt-i18n/internal';
 
 type Store = {
   locale: string;
@@ -40,7 +40,7 @@ export class AsyncConditionStore implements ScopedConditionStore {
    * */
   run<T>(locale: string, callback: () => T): T {
     return this.store.run(
-      { locale: getI18nManager().determineLocale(locale) },
+      { locale: getI18nCache().determineLocale(locale) },
       callback
     );
   }
@@ -50,11 +50,11 @@ export class AsyncConditionStore implements ScopedConditionStore {
     if (!store) {
       if (process.env.NODE_ENV === 'production') {
         console.warn(OUTSIDE_SCOPE_MESSAGE);
-        return getI18nManager().determineLocale();
+        return getI18nCache().determineLocale();
       }
       throw new Error(OUTSIDE_SCOPE_MESSAGE);
     }
-    return getI18nManager().determineLocale(store.locale);
+    return getI18nCache().determineLocale(store.locale);
   }
 
   /**
