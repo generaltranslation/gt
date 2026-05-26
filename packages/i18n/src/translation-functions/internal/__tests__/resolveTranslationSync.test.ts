@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolveTranslationSync } from '../sync-translation-resolution';
-import { getI18nManager } from '../../../i18n-cache/singleton-operations';
+import { getI18nCache } from '../../../i18n-cache/singleton-operations';
 import { interpolateMessage } from '../../utils/interpolation/interpolateMessage';
 
 vi.mock('../../../i18n-cache/singleton-operations');
@@ -13,13 +13,13 @@ describe('resolveTranslationSync', () => {
   });
 
   it('should call interpolateMessage with source, target, and options when translation found', () => {
-    const mockManager = {
+    const mockCache = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue('Bonjour {name} !'),
       getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
-    vi.mocked(getI18nManager).mockReturnValue(
-      mockManager as unknown as ReturnType<typeof getI18nManager>
+    vi.mocked(getI18nCache).mockReturnValue(
+      mockCache as unknown as ReturnType<typeof getI18nCache>
     );
 
     const message = 'Hello {name}!';
@@ -40,12 +40,12 @@ describe('resolveTranslationSync', () => {
   });
 
   it('should return undefined when no translation found', () => {
-    const mockManager = {
+    const mockCache = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue(undefined),
     };
-    vi.mocked(getI18nManager).mockReturnValue(
-      mockManager as unknown as ReturnType<typeof getI18nManager>
+    vi.mocked(getI18nCache).mockReturnValue(
+      mockCache as unknown as ReturnType<typeof getI18nCache>
     );
 
     const message = 'Hello {name}!';
@@ -58,13 +58,13 @@ describe('resolveTranslationSync', () => {
   });
 
   it('should preserve user options when translation found', () => {
-    const mockManager = {
+    const mockCache = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue('Translated'),
       getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
-    vi.mocked(getI18nManager).mockReturnValue(
-      mockManager as unknown as ReturnType<typeof getI18nManager>
+    vi.mocked(getI18nCache).mockReturnValue(
+      mockCache as unknown as ReturnType<typeof getI18nCache>
     );
 
     const message = 'Hello {name}!';
@@ -92,13 +92,13 @@ describe('resolveTranslationSync', () => {
   });
 
   it('should preserve $format in options passed to interpolateMessage', () => {
-    const mockManager = {
+    const mockCache = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue('Translated'),
       getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
-    vi.mocked(getI18nManager).mockReturnValue(
-      mockManager as unknown as ReturnType<typeof getI18nManager>
+    vi.mocked(getI18nCache).mockReturnValue(
+      mockCache as unknown as ReturnType<typeof getI18nCache>
     );
 
     const message = 'Hello {name}!';

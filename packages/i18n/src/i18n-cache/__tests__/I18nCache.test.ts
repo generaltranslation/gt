@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { I18nManager } from '../I18nCache';
+import { I18nCache } from '../I18nCache';
 import { createTranslateManyFactory } from '../translations-manager/utils/createTranslateMany';
 import { hashMessage } from '../../utils/hashMessage';
 import { LookupOptions } from '../../translation-functions/types/options';
@@ -19,8 +19,8 @@ const lookupOptions: LookupOptions = {
 const expectedHash = hashMessage(message, lookupOptions);
 const translatedString = 'Bonjour {name} !';
 
-function createManager(overrides: Record<string, unknown> = {}) {
-  return new I18nManager({
+function createCache(overrides: Record<string, unknown> = {}) {
+  return new I18nCache({
     defaultLocale: 'en',
     locales: ['en', 'fr', 'es'],
     loadTranslations: vi
@@ -30,7 +30,7 @@ function createManager(overrides: Record<string, unknown> = {}) {
   });
 }
 
-describe('I18nManager', () => {
+describe('I18nCache', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTranslateMany.mockReset();
@@ -43,40 +43,40 @@ describe('I18nManager', () => {
   // ===== REGRESSION TESTS ===== //
 
   it('resolveTranslationSync returns translation after loadTranslations', async () => {
-    const manager = createManager();
+    const cache = createCache();
 
     // Load translations first
-    await manager.loadTranslations('fr');
+    await cache.loadTranslations('fr');
 
     // Now sync resolution should work
-    const result = manager.resolveTranslationSync('fr', message, lookupOptions);
+    const result = cache.resolveTranslationSync('fr', message, lookupOptions);
     expect(result).toBe(translatedString);
   });
 
   it('getTranslations returns empty object for invalid locale', async () => {
-    const manager = createManager();
+    const cache = createCache();
 
-    const result = await manager.getTranslations('zh');
+    const result = await cache.getTranslations('zh');
     expect(result).toEqual({});
   });
 
   it('getTranslationResolver returns a working resolver function', async () => {
-    const manager = createManager();
+    const cache = createCache();
 
-    const resolver = await manager.getTranslationResolver('fr');
+    const resolver = await cache.getTranslationResolver('fr');
     const result = resolver(message, lookupOptions);
 
     expect(result).toBe(translatedString);
   });
 
   it('enables dev hot reload with dev credentials, a project id, and development environment', () => {
-    const manager = createManager({
+    const cache = createCache({
       devApiKey: 'dev-key',
       projectId: 'project-id',
       environment: 'development',
     });
 
-    expect(manager.isDevHotReloadEnabled()).toBe(true);
+    expect(cache.isDevHotReloadEnabled()).toBe(true);
   });
 
   it.each([
@@ -112,31 +112,31 @@ describe('I18nManager', () => {
       },
     },
   ])('disables dev hot reload for $name', ({ config }) => {
-    const manager = createManager(config);
+    const cache = createCache(config);
 
-    expect(manager.isDevHotReloadEnabled()).toBe(false);
+    expect(cache.isDevHotReloadEnabled()).toBe(false);
   });
 
   // ===== NEW BEHAVIOR TESTS ===== //
 
   it('loadTranslations() returns Record<Hash, Translation>', async () => {
-    const manager = createManager();
+    const cache = createCache();
 
-    const translations = await manager.loadTranslations('fr');
+    const translations = await cache.loadTranslations('fr');
 
     expect(translations[expectedHash]).toBe(translatedString);
   });
 
   it('loadDictionary() returns source dictionary without loading when locale does not require translation', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
       loadDictionary,
     });
 
-    const dictionary = await manager.loadDictionary('en');
+    const dictionary = await cache.loadDictionary('en');
 
     expect(dictionary).toEqual({
       greeting: 'Hello',
@@ -146,7 +146,7 @@ describe('I18nManager', () => {
 
   it('loadDictionary() returns source dictionary without loading when i18n is disabled', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-    const manager = createManager({
+    const cache = createCache({
       enableI18n: false,
       dictionary: {
         greeting: 'Hello',
@@ -154,7 +154,7 @@ describe('I18nManager', () => {
       loadDictionary,
     });
 
-    const dictionary = await manager.loadDictionary('fr');
+    const dictionary = await cache.loadDictionary('fr');
 
     expect(dictionary).toEqual({
       greeting: 'Hello',
@@ -169,15 +169,15 @@ describe('I18nManager', () => {
         name: 'Nom',
       },
     });
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
       loadDictionary,
     });
 
-    const dictionary = await manager.loadDictionary('fr');
-    const cachedDictionary = await manager.loadDictionary('fr');
+    const dictionary = await cache.loadDictionary('fr');
+    const cachedDictionary = await cache.loadDictionary('fr');
 
     expect(loadDictionary).toHaveBeenCalledTimes(1);
     expect(loadDictionary).toHaveBeenCalledWith('fr');
@@ -191,13 +191,13 @@ describe('I18nManager', () => {
     expect(cachedDictionary).not.toBe(dictionary);
 
     dictionary.greeting = 'Salut';
-    await expect(manager.loadDictionary('fr')).resolves.toMatchObject({
+    await expect(cache.loadDictionary('fr')).resolves.toMatchObject({
       greeting: 'Bonjour',
     });
   });
 
   it('loadDictionary() returns deep copies of cached dictionaries', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         user: {
           profile: {
@@ -214,7 +214,7 @@ describe('I18nManager', () => {
       }),
     });
 
-    const dictionary = (await manager.loadDictionary('fr')) as {
+    const dictionary = (await cache.loadDictionary('fr')) as {
       user: {
         profile: {
           name: string;
@@ -223,7 +223,7 @@ describe('I18nManager', () => {
     };
     dictionary.user.profile.name = 'Changed';
 
-    await expect(manager.loadDictionary('fr')).resolves.toEqual({
+    await expect(cache.loadDictionary('fr')).resolves.toEqual({
       user: {
         profile: {
           name: 'Nom',
@@ -233,7 +233,7 @@ describe('I18nManager', () => {
   });
 
   it('updateDictionaries() updates locale dictionary lookups', () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
         cta: 'Click me',
@@ -243,7 +243,7 @@ describe('I18nManager', () => {
       },
     });
 
-    manager.updateDictionaries({
+    cache.updateDictionaries({
       en: {
         greeting: 'Hi',
         navigation: {
@@ -258,23 +258,23 @@ describe('I18nManager', () => {
       },
     });
 
-    expect(manager.lookupDictionary('en', 'greeting')).toEqual({
+    expect(cache.lookupDictionary('en', 'greeting')).toEqual({
       entry: 'Hi',
       options: {},
     });
-    expect(manager.lookupDictionaryObj('en', 'navigation')).toEqual({
+    expect(cache.lookupDictionaryObj('en', 'navigation')).toEqual({
       about: 'About',
       home: 'Home',
     });
-    expect(manager.lookupDictionary('en', 'cta')).toEqual({
+    expect(cache.lookupDictionary('en', 'cta')).toEqual({
       entry: 'Click me',
       options: {},
     });
-    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
       entry: 'Bonjour',
       options: {},
     });
-    expect(manager.lookupDictionaryObj('fr', 'navigation')).toEqual({
+    expect(cache.lookupDictionaryObj('fr', 'navigation')).toEqual({
       home: 'Accueil',
     });
   });
@@ -304,7 +304,7 @@ describe('I18nManager', () => {
     },
   ])('loadDictionary() uses cache locale for $name', async (testCase) => {
     const loadDictionary = vi.fn().mockResolvedValue(testCase.dictionary);
-    const manager = createManager({
+    const cache = createCache({
       defaultLocale: 'en-US',
       locales: ['en-US', 'en'],
       dictionary: {
@@ -316,19 +316,19 @@ describe('I18nManager', () => {
       }),
     });
 
-    const dictionary = await manager.loadDictionary(testCase.locale);
+    const dictionary = await cache.loadDictionary(testCase.locale);
 
     expect(loadDictionary).toHaveBeenCalledTimes(1);
     expect(loadDictionary).toHaveBeenCalledWith(testCase.dictionaryLocale);
     expect(dictionary).toEqual(testCase.dictionary);
-    expect(manager.lookupDictionary(testCase.locale, 'greeting')).toEqual({
+    expect(cache.lookupDictionary(testCase.locale, 'greeting')).toEqual({
       entry: testCase.dictionary.greeting,
       options: {},
     });
   });
 
   it('lookupDictionary() returns a loaded target locale leaf', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -337,16 +337,16 @@ describe('I18nManager', () => {
       }),
     });
 
-    await manager.loadDictionary('fr');
+    await cache.loadDictionary('fr');
 
-    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
       entry: 'Bonjour',
       options: {},
     });
   });
 
   it('lookupDictionary() returns a loaded target locale nested leaf', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         user: {
           name: 'Name',
@@ -359,16 +359,16 @@ describe('I18nManager', () => {
       }),
     });
 
-    await manager.loadDictionary('fr');
+    await cache.loadDictionary('fr');
 
-    expect(manager.lookupDictionary('fr', 'user.name')).toEqual({
+    expect(cache.lookupDictionary('fr', 'user.name')).toEqual({
       entry: 'Nom',
       options: {},
     });
   });
 
   it('lookupDictionary() returns the entry and options from a metadata tuple leaf', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: ['Hello', { $context: 'homepage', $maxChars: 10 }],
       },
@@ -377,16 +377,16 @@ describe('I18nManager', () => {
       }),
     });
 
-    await manager.loadDictionary('fr');
+    await cache.loadDictionary('fr');
 
-    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
       entry: 'Bonjour',
       options: { context: 'homepage' },
     });
   });
 
   it('lookupDictionary() returns undefined when target locale is not loaded', () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -395,53 +395,53 @@ describe('I18nManager', () => {
       }),
     });
 
-    expect(manager.lookupDictionary('fr', 'greeting')).toBeUndefined();
-    expect(manager.lookupDictionary('en', 'greeting')).toEqual({
+    expect(cache.lookupDictionary('fr', 'greeting')).toBeUndefined();
+    expect(cache.lookupDictionary('en', 'greeting')).toEqual({
       entry: 'Hello',
       options: {},
     });
   });
 
   it('lookupDictionary() returns undefined when source leaf is missing and translation is not required', () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
     });
 
-    expect(manager.lookupDictionary('en', 'missing')).toBeUndefined();
+    expect(cache.lookupDictionary('en', 'missing')).toBeUndefined();
   });
 
   it('lookupDictionary() returns undefined when source leaf is missing and i18n is disabled', () => {
-    const manager = createManager({
+    const cache = createCache({
       enableI18n: false,
       dictionary: {
         greeting: 'Hello',
       },
     });
 
-    expect(manager.lookupDictionary('fr', 'missing')).toBeUndefined();
+    expect(cache.lookupDictionary('fr', 'missing')).toBeUndefined();
   });
 
   it('lookupDictionary() returns undefined when target leaf is missing', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
       loadDictionary: vi.fn().mockResolvedValue({}),
     });
 
-    await manager.loadDictionary('fr');
+    await cache.loadDictionary('fr');
 
-    expect(manager.lookupDictionary('fr', 'greeting')).toBeUndefined();
-    expect(manager.lookupDictionary('en', 'greeting')).toEqual({
+    expect(cache.lookupDictionary('fr', 'greeting')).toBeUndefined();
+    expect(cache.lookupDictionary('en', 'greeting')).toEqual({
       entry: 'Hello',
       options: {},
     });
   });
 
   it('lookupDictionary() returns undefined when target nested leaf is missing', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         user: {
           name: 'Name',
@@ -452,17 +452,17 @@ describe('I18nManager', () => {
       }),
     });
 
-    await manager.loadDictionary('fr');
+    await cache.loadDictionary('fr');
 
-    expect(manager.lookupDictionary('fr', 'user.name')).toBeUndefined();
-    expect(manager.lookupDictionary('en', 'user.name')).toEqual({
+    expect(cache.lookupDictionary('fr', 'user.name')).toBeUndefined();
+    expect(cache.lookupDictionary('en', 'user.name')).toEqual({
       entry: 'Name',
       options: {},
     });
   });
 
   it('lookupDictionary() does not return dictionary subtrees', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         user: {
           name: 'Name',
@@ -475,13 +475,13 @@ describe('I18nManager', () => {
       }),
     });
 
-    await manager.loadDictionary('fr');
+    await cache.loadDictionary('fr');
 
-    expect(manager.lookupDictionary('fr', 'user')).toBeUndefined();
+    expect(cache.lookupDictionary('fr', 'user')).toBeUndefined();
   });
 
   it('lookupDictionaryObj() returns source leaves and subtrees', () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
         user: {
@@ -492,14 +492,14 @@ describe('I18nManager', () => {
       },
     });
 
-    expect(manager.lookupDictionaryObj('en', 'greeting')).toBe('Hello');
-    expect(manager.lookupDictionaryObj('en', 'user.profile')).toEqual({
+    expect(cache.lookupDictionaryObj('en', 'greeting')).toBe('Hello');
+    expect(cache.lookupDictionaryObj('en', 'user.profile')).toEqual({
       name: 'Name',
     });
   });
 
   it('lookupDictionaryObj() returns loaded target leaves and subtrees', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -513,16 +513,16 @@ describe('I18nManager', () => {
       }),
     });
 
-    await manager.loadDictionary('fr');
+    await cache.loadDictionary('fr');
 
-    expect(manager.lookupDictionaryObj('fr', 'greeting')).toBe('Bonjour');
-    expect(manager.lookupDictionaryObj('fr', 'user.profile')).toEqual({
+    expect(cache.lookupDictionaryObj('fr', 'greeting')).toBe('Bonjour');
+    expect(cache.lookupDictionaryObj('fr', 'user.profile')).toEqual({
       name: 'Nom',
     });
   });
 
   it('lookupDictionaryObj() returns copies of dictionary subtrees', () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         user: {
           profile: {
@@ -532,19 +532,19 @@ describe('I18nManager', () => {
       },
     });
 
-    const profile = manager.lookupDictionaryObj('en', 'user.profile');
+    const profile = cache.lookupDictionaryObj('en', 'user.profile');
     expect(profile).toEqual({
       name: 'Name',
     });
     (profile as { name: string }).name = 'Changed';
 
-    expect(manager.lookupDictionaryObj('en', 'user.profile')).toEqual({
+    expect(cache.lookupDictionaryObj('en', 'user.profile')).toEqual({
       name: 'Name',
     });
   });
 
   it('lookupDictionaryObj() returns undefined when target locale is not loaded', () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         user: {
           profile: {
@@ -561,11 +561,11 @@ describe('I18nManager', () => {
       }),
     });
 
-    expect(manager.lookupDictionaryObj('fr', 'user.profile')).toBeUndefined();
+    expect(cache.lookupDictionaryObj('fr', 'user.profile')).toBeUndefined();
   });
 
   it('lookupDictionaryObj() returns undefined for missing paths', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -574,14 +574,14 @@ describe('I18nManager', () => {
       }),
     });
 
-    await manager.loadDictionary('fr');
+    await cache.loadDictionary('fr');
 
-    expect(manager.lookupDictionaryObj('fr', 'missing')).toBeUndefined();
-    expect(manager.lookupDictionaryObj('en', 'missing')).toBeUndefined();
+    expect(cache.lookupDictionaryObj('fr', 'missing')).toBeUndefined();
+    expect(cache.lookupDictionaryObj('en', 'missing')).toBeUndefined();
   });
 
   it('lookupDictionaryObj() uses the source dictionary when i18n is disabled', () => {
-    const manager = createManager({
+    const cache = createCache({
       enableI18n: false,
       dictionary: {
         user: {
@@ -599,7 +599,7 @@ describe('I18nManager', () => {
       }),
     });
 
-    expect(manager.lookupDictionaryObj('fr', 'user.profile')).toEqual({
+    expect(cache.lookupDictionaryObj('fr', 'user.profile')).toEqual({
       name: 'Name',
     });
   });
@@ -608,7 +608,7 @@ describe('I18nManager', () => {
     const loadDictionary = vi.fn().mockResolvedValue({
       greeting: 'Bonjour',
     });
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -616,7 +616,7 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryWithFallback('en', 'greeting')
+      cache.lookupDictionaryWithFallback('en', 'greeting')
     ).resolves.toEqual({
       entry: 'Hello',
       options: {},
@@ -625,7 +625,7 @@ describe('I18nManager', () => {
   });
 
   it('lookupDictionaryWithFallback() throws when source entry is missing and translation is not required', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -635,9 +635,9 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryWithFallback('en', 'missing')
+      cache.lookupDictionaryWithFallback('en', 'missing')
     ).rejects.toThrow(
-      'I18nManager: source dictionary entry missing is not defined'
+      'I18nCache: source dictionary entry missing is not defined'
     );
   });
 
@@ -645,7 +645,7 @@ describe('I18nManager', () => {
     const loadDictionary = vi.fn().mockResolvedValue({
       greeting: 'Bonjour',
     });
-    const manager = createManager({
+    const cache = createCache({
       enableI18n: false,
       dictionary: {
         greeting: 'Hello',
@@ -654,7 +654,7 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryWithFallback('fr', 'greeting')
+      cache.lookupDictionaryWithFallback('fr', 'greeting')
     ).resolves.toEqual({
       entry: 'Hello',
       options: {},
@@ -666,7 +666,7 @@ describe('I18nManager', () => {
     const loadDictionary = vi.fn().mockResolvedValue({
       greeting: 'Bonjour',
     });
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -674,7 +674,7 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryWithFallback('fr', 'greeting')
+      cache.lookupDictionaryWithFallback('fr', 'greeting')
     ).resolves.toEqual({
       entry: 'Bonjour',
       options: {},
@@ -710,7 +710,7 @@ describe('I18nManager', () => {
     'lookupDictionaryWithFallback() uses cache locale for $name',
     async (testCase) => {
       const loadDictionary = vi.fn().mockResolvedValue(testCase.dictionary);
-      const manager = createManager({
+      const cache = createCache({
         defaultLocale: 'en-US',
         locales: ['en-US', 'en'],
         dictionary: {
@@ -723,7 +723,7 @@ describe('I18nManager', () => {
       });
 
       await expect(
-        manager.lookupDictionaryWithFallback(testCase.locale, 'greeting')
+        cache.lookupDictionaryWithFallback(testCase.locale, 'greeting')
       ).resolves.toEqual({
         entry: testCase.dictionary.greeting,
         options: {},
@@ -737,7 +737,7 @@ describe('I18nManager', () => {
     const source = 'Hello';
     const sourceOptions: LookupOptions = { $format: 'ICU' };
     const sourceHash = hashMessage(source, sourceOptions);
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: source,
       },
@@ -753,19 +753,19 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryWithFallback('fr', 'greeting')
+      cache.lookupDictionaryWithFallback('fr', 'greeting')
     ).resolves.toEqual({
       entry: 'Bonjour',
       options: {},
     });
-    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
       entry: 'Bonjour',
       options: {},
     });
   });
 
   it('lookupDictionaryWithFallback() throws when source dictionary entry is missing', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -774,9 +774,9 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryWithFallback('fr', 'missing')
+      cache.lookupDictionaryWithFallback('fr', 'missing')
     ).rejects.toThrow(
-      'I18nManager: source dictionary entry missing is not defined'
+      'I18nCache: source dictionary entry missing is not defined'
     );
   });
 
@@ -788,7 +788,7 @@ describe('I18nManager', () => {
         },
       },
     });
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
         user: {
@@ -801,10 +801,10 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryObjWithFallback('en', 'greeting')
+      cache.lookupDictionaryObjWithFallback('en', 'greeting')
     ).resolves.toBe('Hello');
     await expect(
-      manager.lookupDictionaryObjWithFallback('en', 'user.profile')
+      cache.lookupDictionaryObjWithFallback('en', 'user.profile')
     ).resolves.toEqual({
       name: 'Name',
     });
@@ -819,7 +819,7 @@ describe('I18nManager', () => {
         },
       },
     });
-    const manager = createManager({
+    const cache = createCache({
       enableI18n: false,
       dictionary: {
         user: {
@@ -832,7 +832,7 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryObjWithFallback('fr', 'user.profile')
+      cache.lookupDictionaryObjWithFallback('fr', 'user.profile')
     ).resolves.toEqual({
       name: 'Name',
     });
@@ -847,7 +847,7 @@ describe('I18nManager', () => {
         },
       },
     });
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         user: {
           profile: {
@@ -859,7 +859,7 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryObjWithFallback('fr', 'user.profile')
+      cache.lookupDictionaryObjWithFallback('fr', 'user.profile')
     ).resolves.toEqual({
       name: 'Nom',
     });
@@ -872,7 +872,7 @@ describe('I18nManager', () => {
     const title = 'Title';
     const nameHash = hashMessage(name, { $format: 'ICU' });
     const titleHash = hashMessage(title, { $format: 'ICU' });
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         user: {
           profile: {
@@ -897,12 +897,12 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryObjWithFallback('fr', 'user.profile')
+      cache.lookupDictionaryObjWithFallback('fr', 'user.profile')
     ).resolves.toEqual({
       name: 'Nom',
       title: 'Titre',
     });
-    expect(manager.lookupDictionaryObj('fr', 'user.profile')).toEqual({
+    expect(cache.lookupDictionaryObj('fr', 'user.profile')).toEqual({
       name: 'Nom',
       title: 'Titre',
     });
@@ -912,7 +912,7 @@ describe('I18nManager', () => {
     const name = 'Name';
     const title = 'Title';
     const titleHash = hashMessage(title, { $format: 'ICU' });
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         user: {
           profile: {
@@ -939,19 +939,19 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryObjWithFallback('fr', 'user.profile')
+      cache.lookupDictionaryObjWithFallback('fr', 'user.profile')
     ).resolves.toEqual({
       name: 'Nom',
       title: 'Titre',
     });
-    expect(manager.lookupDictionaryObj('fr', 'user.profile')).toEqual({
+    expect(cache.lookupDictionaryObj('fr', 'user.profile')).toEqual({
       name: 'Nom',
       title: 'Titre',
     });
   });
 
   it('lookupDictionaryObjWithFallback() returns loaded target subtrees when source is missing', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -964,7 +964,7 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryObjWithFallback('fr', 'extra')
+      cache.lookupDictionaryObjWithFallback('fr', 'extra')
     ).resolves.toEqual({
       label: 'Supplement',
     });
@@ -972,7 +972,7 @@ describe('I18nManager', () => {
   });
 
   it('lookupDictionaryObjWithFallback() throws when source dictionary object is missing', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -981,9 +981,9 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryObjWithFallback('fr', 'missing')
+      cache.lookupDictionaryObjWithFallback('fr', 'missing')
     ).rejects.toThrow(
-      'I18nManager: source dictionary entry missing is not defined'
+      'I18nCache: source dictionary entry missing is not defined'
     );
   });
 
@@ -1022,7 +1022,7 @@ describe('I18nManager', () => {
     'lookupDictionaryObjWithFallback() uses cache locale for $name',
     async (testCase) => {
       const loadDictionary = vi.fn().mockResolvedValue(testCase.dictionary);
-      const manager = createManager({
+      const cache = createCache({
         defaultLocale: 'en-US',
         locales: ['en-US', 'en'],
         dictionary: {
@@ -1039,7 +1039,7 @@ describe('I18nManager', () => {
       });
 
       await expect(
-        manager.lookupDictionaryObjWithFallback(testCase.locale, 'user.profile')
+        cache.lookupDictionaryObjWithFallback(testCase.locale, 'user.profile')
       ).resolves.toEqual(testCase.dictionary.user.profile);
       expect(loadDictionary).toHaveBeenCalledTimes(1);
       expect(loadDictionary).toHaveBeenCalledWith(testCase.dictionaryLocale);
@@ -1047,17 +1047,17 @@ describe('I18nManager', () => {
   );
 
   it('lookupTranslation() returns undefined before load, translation after', async () => {
-    const manager = createManager();
+    const cache = createCache();
 
     // Before loading
-    const before = manager.lookupTranslation('fr', message, lookupOptions);
+    const before = cache.lookupTranslation('fr', message, lookupOptions);
     expect(before).toBeUndefined();
 
     // Load translations
-    await manager.loadTranslations('fr');
+    await cache.loadTranslations('fr');
 
     // After loading
-    const after = manager.lookupTranslation('fr', message, lookupOptions);
+    const after = cache.lookupTranslation('fr', message, lookupOptions);
     expect(after).toBe(translatedString);
   });
 
@@ -1085,22 +1085,22 @@ describe('I18nManager', () => {
       .fn()
       .mockResolvedValueOnce({ [expectedHash]: translatedString })
       .mockResolvedValueOnce({ [expectedHash]: 'Salut {name} !' });
-    const manager = createManager({
+    const cache = createCache({
       cacheExpiryTime: testCase.cacheExpiryTime,
       loadTranslations,
     });
 
-    await manager.loadTranslations('fr');
-    expect(manager.lookupTranslation('fr', message, lookupOptions)).toBe(
+    await cache.loadTranslations('fr');
+    expect(cache.lookupTranslation('fr', message, lookupOptions)).toBe(
       translatedString
     );
 
     vi.advanceTimersByTime(testCase.advanceBy);
-    expect(manager.lookupTranslation('fr', message, lookupOptions)).toBe(
+    expect(cache.lookupTranslation('fr', message, lookupOptions)).toBe(
       testCase.lookupAfter
     );
 
-    const translations = await manager.loadTranslations('fr');
+    const translations = await cache.loadTranslations('fr');
     expect(translations[expectedHash]).toBe(testCase.reloaded);
     expect(loadTranslations).toHaveBeenCalledTimes(testCase.calls);
   });
@@ -1142,7 +1142,7 @@ describe('I18nManager', () => {
       const loadTranslations = vi
         .fn()
         .mockResolvedValue({ [expectedHash]: testCase.translation });
-      const manager = createManager({
+      const cache = createCache({
         defaultLocale: 'en-US',
         locales: ['en-US', 'en'],
         loadTranslations,
@@ -1151,16 +1151,16 @@ describe('I18nManager', () => {
         }),
       });
 
-      expect(manager.requiresTranslation('en-GB')).toBe(true);
-      expect(manager.requiresDialectTranslation('en-GB')).toBe(true);
+      expect(cache.requiresTranslation('en-GB')).toBe(true);
+      expect(cache.requiresDialectTranslation('en-GB')).toBe(true);
 
-      const translations = await manager.loadTranslations(testCase.locale);
+      const translations = await cache.loadTranslations(testCase.locale);
 
       expect(loadTranslations).toHaveBeenCalledTimes(1);
       expect(loadTranslations).toHaveBeenCalledWith(testCase.translationLocale);
       expect(translations[expectedHash]).toBe(testCase.translation);
       expect(
-        manager.lookupTranslation(testCase.locale, message, lookupOptions)
+        cache.lookupTranslation(testCase.locale, message, lookupOptions)
       ).toBe(testCase.translation);
     }
   );
@@ -1171,7 +1171,7 @@ describe('I18nManager', () => {
     const unknownHash = hashMessage(unknownMessage, unknownOptions);
 
     // loadTranslations returns translations that do NOT include unknownMessage
-    const manager = createManager({
+    const cache = createCache({
       runtimeTranslation: {
         timeout: 4321,
         metadata: {
@@ -1190,7 +1190,7 @@ describe('I18nManager', () => {
       },
     });
 
-    const result = await manager.lookupTranslationWithFallback(
+    const result = await cache.lookupTranslationWithFallback(
       'fr',
       unknownMessage,
       unknownOptions
@@ -1216,7 +1216,7 @@ describe('I18nManager', () => {
       $context: 'homepage',
     };
     const sourceHash = hashMessage(source, sourceOptions);
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: [source, { $format: 'I18NEXT', context: 'homepage' }],
       },
@@ -1231,7 +1231,7 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryWithFallback('fr', 'greeting')
+      cache.lookupDictionaryWithFallback('fr', 'greeting')
     ).resolves.toEqual({
       entry: 'Bonjour {name}',
       options: {},
@@ -1245,7 +1245,7 @@ describe('I18nManager', () => {
       $context: 'homepage',
     };
     const sourceHash = hashMessage(source, sourceOptions);
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: [source, { context: 'homepage' }],
       },
@@ -1260,7 +1260,7 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryWithFallback('fr', 'greeting')
+      cache.lookupDictionaryWithFallback('fr', 'greeting')
     ).resolves.toEqual({
       entry: 'Bonjour {name}',
       options: {},
@@ -1271,7 +1271,7 @@ describe('I18nManager', () => {
     const source = 'Hello';
     const sourceOptions: LookupOptions = { $format: 'ICU' };
     const sourceHash = hashMessage(source, sourceOptions);
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: source,
       },
@@ -1287,14 +1287,14 @@ describe('I18nManager', () => {
     });
 
     await expect(
-      manager.lookupDictionaryWithFallback('fr', 'greeting')
+      cache.lookupDictionaryWithFallback('fr', 'greeting')
     ).rejects.toThrow(
       'Dictionary entry "greeting" could not be translated into a string. Check the source entry and translation loader output.'
     );
   });
 
   it('resolves custom aliases for locale metadata operations', () => {
-    const manager = createManager({
+    const cache = createCache({
       customMapping: {
         'brand-french': {
           code: 'fr',
@@ -1303,13 +1303,13 @@ describe('I18nManager', () => {
       },
     });
 
-    expect(manager.requiresTranslation('brand-french')).toBe(true);
-    expect(manager.requiresDialectTranslation('en-US')).toBe(false);
-    expect(() => manager.getGTClass('brand-french')).not.toThrow();
+    expect(cache.requiresTranslation('brand-french')).toBe(true);
+    expect(cache.requiresDialectTranslation('en-US')).toBe(false);
+    expect(() => cache.getGTClass('brand-french')).not.toThrow();
   });
 
   it('preserves alias target locale when creating a GT instance', () => {
-    const manager = createManager({
+    const cache = createCache({
       locales: ['en', 'brand-french'],
       customMapping: {
         'brand-french': {
@@ -1319,7 +1319,7 @@ describe('I18nManager', () => {
       },
     });
 
-    const gt = manager.getGTClass('fr');
+    const gt = cache.getGTClass('fr');
 
     expect(gt.targetLocale).toBe('brand-french');
     expect(gt.locales).toEqual(['en', 'fr']);
@@ -1329,7 +1329,7 @@ describe('I18nManager', () => {
     const loadTranslations = vi
       .fn()
       .mockResolvedValue({ [expectedHash]: translatedString });
-    const manager = createManager({
+    const cache = createCache({
       loadTranslations,
       customMapping: {
         'brand-french': {
@@ -1339,12 +1339,12 @@ describe('I18nManager', () => {
       },
     });
 
-    await manager.loadTranslations('brand-french');
+    await cache.loadTranslations('brand-french');
 
     expect(loadTranslations).toHaveBeenCalledTimes(1);
     expect(loadTranslations).toHaveBeenCalledWith('fr');
     expect(
-      manager.lookupTranslation('brand-french', message, lookupOptions)
+      cache.lookupTranslation('brand-french', message, lookupOptions)
     ).toBe(translatedString);
     expect(loadTranslations).toHaveBeenCalledTimes(1);
   });
@@ -1353,29 +1353,29 @@ describe('I18nManager', () => {
     const loadTranslations = vi
       .fn()
       .mockResolvedValue({ [expectedHash]: translatedString });
-    const manager = createManager({
+    const cache = createCache({
       loadTranslations,
     });
 
-    await manager.loadTranslations('fr');
+    await cache.loadTranslations('fr');
 
     expect(loadTranslations).toHaveBeenCalledWith('fr');
-    expect(manager.lookupTranslation('fr', message, lookupOptions)).toBe(
+    expect(cache.lookupTranslation('fr', message, lookupOptions)).toBe(
       translatedString
     );
     await expect(
-      manager.lookupTranslationWithFallback('fr', message, lookupOptions)
+      cache.lookupTranslationWithFallback('fr', message, lookupOptions)
     ).resolves.toBe(translatedString);
-    await expect(manager.getLookupTranslation('fr')).resolves.toEqual(
+    await expect(cache.getLookupTranslation('fr')).resolves.toEqual(
       expect.any(Function)
     );
-    expect(manager.requiresTranslation('fr')).toBe(true);
-    expect(manager.requiresDialectTranslation('fr')).toBe(false);
-    expect(() => manager.getGTClass('fr')).not.toThrow();
+    expect(cache.requiresTranslation('fr')).toBe(true);
+    expect(cache.requiresDialectTranslation('fr')).toBe(false);
+    expect(() => cache.getGTClass('fr')).not.toThrow();
   });
 
   it('does not clone loaded dictionaries for cache hit events without subscribers', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -1387,10 +1387,10 @@ describe('I18nManager', () => {
       }),
     });
 
-    await manager.loadDictionary('fr');
+    await cache.loadDictionary('fr');
     const structuredCloneSpy = vi.spyOn(globalThis, 'structuredClone');
     try {
-      expect(manager.lookupDictionaryObj('fr', 'greeting')).toBe('Bonjour');
+      expect(cache.lookupDictionaryObj('fr', 'greeting')).toBe('Bonjour');
       expect(structuredCloneSpy).not.toHaveBeenCalled();
     } finally {
       structuredCloneSpy.mockRestore();
@@ -1398,7 +1398,7 @@ describe('I18nManager', () => {
   });
 
   it('emits dictionary cache lifecycle events', async () => {
-    const manager = createManager({
+    const cache = createCache({
       dictionary: {
         greeting: 'Hello',
       },
@@ -1411,14 +1411,14 @@ describe('I18nManager', () => {
     const dictionaryCacheHit = vi.fn();
     const dictionaryCacheMiss = vi.fn();
 
-    manager.subscribe('locales-dictionary-cache-miss', localesDictionaryMiss);
-    manager.subscribe('locales-dictionary-cache-hit', localesDictionaryHit);
-    manager.subscribe('dictionary-cache-hit', dictionaryCacheHit);
-    manager.subscribe('dictionary-cache-miss', dictionaryCacheMiss);
+    cache.subscribe('locales-dictionary-cache-miss', localesDictionaryMiss);
+    cache.subscribe('locales-dictionary-cache-hit', localesDictionaryHit);
+    cache.subscribe('dictionary-cache-hit', dictionaryCacheHit);
+    cache.subscribe('dictionary-cache-miss', dictionaryCacheMiss);
 
-    await manager.loadDictionary('fr');
-    await manager.loadDictionary('fr');
-    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+    await cache.loadDictionary('fr');
+    await cache.loadDictionary('fr');
+    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
       entry: 'Bonjour',
       options: {},
     });

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { I18nManager } from '../../../i18n-cache/I18nCache';
-import { setI18nManager } from '../../../i18n-cache/singleton-operations';
+import { I18nCache } from '../../../i18n-cache/I18nCache';
+import { setI18nCache } from '../../../i18n-cache/singleton-operations';
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../types/options';
 import {
@@ -31,13 +31,13 @@ describe('translation helpers (deep integration)', () => {
   });
 
   function setupManager(preloadedTranslations: Record<string, string> = {}) {
-    const manager = new I18nManager({
+    const cache = new I18nCache({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
       loadTranslations: vi.fn().mockResolvedValue(preloadedTranslations),
     });
-    setI18nManager(manager);
-    return manager;
+    setI18nCache(cache);
+    return cache;
   }
 
   it('resolveStringContentWithRuntimeFallback triggers translateMany when translation not preloaded', async () => {

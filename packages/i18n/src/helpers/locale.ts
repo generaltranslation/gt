@@ -1,5 +1,5 @@
 import { getWritableConditionStore } from '../condition-store/singleton-operations';
-import { getI18nManager } from '../i18n-cache/singleton-operations';
+import { getI18nCache } from '../i18n-cache/singleton-operations';
 
 /**
  * Get the current locale
@@ -22,8 +22,8 @@ export function getLocale() {
  * console.log(locales); // ['en-US', 'es-ES']
  */
 export function getLocales() {
-  const i18nManager = getI18nManager();
-  return i18nManager.getLocales();
+  const i18nCache = getI18nCache();
+  return i18nCache.getLocales();
 }
 
 /**
@@ -35,8 +35,8 @@ export function getLocales() {
  * console.log(defaultLocale); // 'en-US'
  */
 export function getDefaultLocale() {
-  const i18nManager = getI18nManager();
-  return i18nManager.getDefaultLocale();
+  const i18nCache = getI18nCache();
+  return i18nCache.getDefaultLocale();
 }
 
 /**
@@ -51,7 +51,7 @@ export function getDefaultLocale() {
  * const localeProperties = getLocaleProperties('en-US');
  */
 export function getLocaleProperties(locale = getLocale()) {
-  const i18nManager = getI18nManager();
-  const gtInstance = i18nManager.getGTClass();
+  const i18nCache = getI18nCache();
+  const gtInstance = i18nCache.getGTClass();
   return gtInstance.getLocaleProperties(locale);
 }

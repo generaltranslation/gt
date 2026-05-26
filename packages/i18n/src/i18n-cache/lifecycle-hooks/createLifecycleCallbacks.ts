@@ -11,7 +11,7 @@ import {
   TRANSLATIONS_CACHE_MISS_EVENT_NAME,
 } from '../event-subscription/types';
 import type { Translation } from '../translations-manager/utils/types/translation-data';
-import type { I18nManagerCacheLifecycleCallbacks } from './types';
+import type { I18nCacheLifecycleCallbacks } from './types';
 import type { I18nEvents } from '../event-subscription/types';
 /**
  * Maps consumer-facing lifecycle callbacks to internal locales cache lifecycle callbacks.
@@ -25,7 +25,7 @@ export function createLifecycleCallbacks<TranslationValue extends Translation>(
   hasListeners: <EventName extends keyof I18nEvents<TranslationValue>>(
     eventName: EventName
   ) => boolean = () => true
-): I18nManagerCacheLifecycleCallbacks<TranslationValue> {
+): I18nCacheLifecycleCallbacks<TranslationValue> {
   return {
     onLocalesCacheHit: (params) => {
       if (!hasListeners(LOCALES_CACHE_HIT_EVENT_NAME)) {
