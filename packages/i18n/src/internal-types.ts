@@ -11,7 +11,7 @@ export type {
   Dictionary,
   DictionaryLoader,
   DictionaryConfig,
-} from './i18n-manager/types';
+} from './i18n-cache/types';
 export type { LocaleCandidates } from './condition-store/localeResolver';
 export type {
   DictionaryValue,
@@ -21,7 +21,7 @@ export type {
   DictionaryOptions,
   DictionaryPath,
   DictionaryKey,
-} from './i18n-manager/translations-manager/DictionaryCache';
+} from './i18n-cache/translations-manager/DictionaryCache';
 export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
 
@@ -33,5 +33,5 @@ export type { InlineTranslationOptionsFields } from './translation-functions/typ
 export type * from './config/types';
 
 // Internal types
-export type { Hash } from './i18n-manager/translations-manager/TranslationsCache';
-export type { Locale } from './i18n-manager/translations-manager/LocalesCache';
+export type { Hash } from './i18n-cache/translations-manager/TranslationsCache';
+export type { Locale } from './i18n-cache/translations-manager/LocalesCache';

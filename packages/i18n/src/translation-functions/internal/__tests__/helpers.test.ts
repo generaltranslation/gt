@@ -4,10 +4,10 @@ import {
   resolveStringContentWithFallback,
   resolveStringContentWithRuntimeFallback,
 } from '../helpers';
-import { getI18nManager } from '../../../i18n-manager/singleton-operations';
+import { getI18nManager } from '../../../i18n-cache/singleton-operations';
 import { interpolateMessage } from '../../utils/interpolation/interpolateMessage';
 
-vi.mock('../../../i18n-manager/singleton-operations');
+vi.mock('../../../i18n-cache/singleton-operations');
 vi.mock('../../utils/interpolation/interpolateMessage');
 
 describe('translation helpers', () => {

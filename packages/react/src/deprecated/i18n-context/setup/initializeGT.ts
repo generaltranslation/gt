@@ -1,8 +1,8 @@
 import { setI18nManager } from 'gt-i18n/internal';
 import type { InitializeGTParams } from './types';
-import { BrowserConditionStore } from '../browser-i18n-manager/BrowserConditionStore';
-import { BrowserI18nManager } from '../browser-i18n-manager/BrowserI18nManager';
-import { setBrowserConditionStore } from '../browser-i18n-manager/singleton-operations';
+import { BrowserConditionStore } from '../browser-i18n-cache/BrowserConditionStore';
+import { BrowserI18nManager } from '../browser-i18n-cache/BrowserI18nCache';
+import { setBrowserConditionStore } from '../browser-i18n-cache/singleton-operations';
 
 /**
  * Configure GT for browser runtime. This must be called to setup GT for browser runtime.

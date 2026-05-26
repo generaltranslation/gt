@@ -1,5 +1,5 @@
 import { getWritableConditionStore } from '../condition-store/singleton-operations';
-import { getI18nManager } from '../i18n-manager/singleton-operations';
+import { getI18nManager } from '../i18n-cache/singleton-operations';
 
 /**
  * Get the current locale

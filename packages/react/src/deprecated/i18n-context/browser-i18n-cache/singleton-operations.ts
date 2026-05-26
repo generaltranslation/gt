@@ -1,5 +1,5 @@
 import { BROWSER_I18N_MANAGER_NOT_INITIALIZED_ERROR } from '../../shared/messages';
-import { BrowserI18nManager } from './BrowserI18nManager';
+import { BrowserI18nManager } from './BrowserI18nCache';
 import type { BrowserConditionStore } from './BrowserConditionStore';
 import {
   createConditionStoreSingleton,

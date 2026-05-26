@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { BrowserI18nManager } from '../BrowserI18nManager';
+import { BrowserI18nManager } from '../BrowserI18nCache';
 
 describe('BrowserI18nManager', () => {
   afterEach(() => {

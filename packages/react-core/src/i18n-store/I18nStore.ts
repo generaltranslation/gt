@@ -16,7 +16,7 @@ import type {
 } from './storeTypes';
 import type { Translation } from 'gt-i18n/types';
 import { getReadonlyConditionStoreWithFallback } from '../condition-store/singleton-operations';
-import { getReactI18nManager } from '../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../i18n-cache/singleton-operations';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
 

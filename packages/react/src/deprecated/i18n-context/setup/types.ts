@@ -2,7 +2,7 @@ import type { GTConfig, TranslationsLoader } from 'gt-i18n/internal/types';
 import type {
   GetLocale,
   HtmlTagOptions,
-} from '../browser-i18n-manager/utils/types';
+} from '../browser-i18n-cache/utils/types';
 
 /**
  * Parameters for the initializing GT
@@ -21,4 +21,4 @@ export type InitializeGTParams = GTConfig & {
 
 // Other Reexports
 export type { GTConfig, TranslationsLoader } from 'gt-i18n/internal/types';
-export type { GetLocale } from '../browser-i18n-manager/utils/types';
+export type { GetLocale } from '../browser-i18n-cache/utils/types';

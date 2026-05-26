@@ -1,4 +1,4 @@
-import { getBrowserConditionStore } from '../browser-i18n-manager/singleton-operations';
+import { getBrowserConditionStore } from '../browser-i18n-cache/singleton-operations';
 import { createInvalidLocaleWarning } from '../../shared/messages';
 import { determineSupportedLocale, getI18nManager } from 'gt-i18n/internal';
 

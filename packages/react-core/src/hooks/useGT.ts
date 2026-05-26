@@ -8,7 +8,7 @@ import {
 } from './external-store-hooks';
 import { useLocale } from './condition-store';
 import { useShouldTranslate } from './utils';
-import { getReactI18nManager } from '../i18n-manager/singleton-operations';
+import { getReactI18nManager } from '../i18n-cache/singleton-operations';
 import type { TranslateLookup } from '../i18n-store/storeTypes';
 import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';

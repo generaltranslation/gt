@@ -1,4 +1,4 @@
-import { getBrowserI18nManager } from '../browser-i18n-manager/singleton-operations';
+import { getBrowserI18nManager } from '../browser-i18n-cache/singleton-operations';
 import { getLocale } from './locale-operations';
 
 /**

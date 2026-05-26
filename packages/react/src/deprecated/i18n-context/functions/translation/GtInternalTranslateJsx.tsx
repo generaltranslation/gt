@@ -14,7 +14,7 @@ import { requiresTranslation } from '@generaltranslation/format';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 import type { JsxChildren } from '@generaltranslation/format/types';
 import type { TaggedChildren } from '@generaltranslation/react-core/types';
-import { getBrowserI18nManager } from '../../browser-i18n-manager/singleton-operations';
+import { getBrowserI18nManager } from '../../browser-i18n-cache/singleton-operations';
 
 type TranslateJsxProps = {
   children: ReactNode;

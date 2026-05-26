@@ -1,5 +1,5 @@
 export * from './translation-functions/internal';
-export * from './i18n-manager';
+export * from './i18n-cache';
 export * from './translation-functions/utils/interpolation/interpolateIcuMessage';
 export * from './helpers';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';
@@ -19,11 +19,11 @@ export {
   isDictionaryValue,
   getDictionaryValue,
   resolveDictionaryLookupOptions,
-} from './i18n-manager/translations-manager/utils/dictionary-helpers';
+} from './i18n-cache/translations-manager/utils/dictionary-helpers';
 
 export {
   getI18nManager,
   setI18nManager,
-} from './i18n-manager/singleton-operations';
+} from './i18n-cache/singleton-operations';
 export { createConditionStoreSingleton } from './condition-store/createConditionStoreSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';

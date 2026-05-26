@@ -57,11 +57,11 @@ export type { WritableConditionStoreParams } from 'gt-i18n/internal';
 export {
   getReactI18nManager,
   setReactI18nManager,
-} from './i18n-manager/singleton-operations';
+} from './i18n-cache/singleton-operations';
 export { I18nStore } from './i18n-store/I18nStore';
 export type { I18nStoreParams } from './i18n-store/I18nStore';
 export type { InternalGTProviderProps } from './context/InternalGTProvider';
 export type {
   ReactI18nManager,
   ReactI18nManagerParams,
-} from './i18n-manager/ReactI18nManager';
+} from './i18n-cache/ReactI18nCache';
