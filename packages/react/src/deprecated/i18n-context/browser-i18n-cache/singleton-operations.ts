@@ -21,6 +21,3 @@ export function getBrowserI18nCache(): BrowserI18nCache {
   }
   return i18nCache;
 }
-
-/** @deprecated use getBrowserI18nCache instead */
-export { getBrowserI18nCache as getBrowserI18nManager };

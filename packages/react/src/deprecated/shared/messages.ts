@@ -24,10 +24,6 @@ export const BROWSER_I18N_CACHE_NOT_INITIALIZED_ERROR = createDiagnosticMessage(
     fix: 'Call initializeGT() before using browser translation APIs',
   }
 );
-/** @deprecated use BROWSER_I18N_CACHE_NOT_INITIALIZED_ERROR instead */
-export const BROWSER_I18N_MANAGER_NOT_INITIALIZED_ERROR =
-  BROWSER_I18N_CACHE_NOT_INITIALIZED_ERROR;
-
 // ---- Warnings ---- //
 export const createTranslationFailedDueToBrowserEnvironmentWarning = (
   message: string | TemplateStringsArray | undefined

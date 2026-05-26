@@ -145,9 +145,6 @@ export class BrowserI18nCache extends I18nCache<Translation> {
   }
 }
 
-/** @deprecated use BrowserI18nCache instead */
-export { BrowserI18nCache as BrowserI18nManager };
-
 // ===== Helper Functions ===== //
 
 /**

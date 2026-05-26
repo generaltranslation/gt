@@ -817,8 +817,6 @@ class I18nCache<
 }
 
 export { I18nCache };
-/** @deprecated use I18nCache instead */
-export { I18nCache as I18nManager };
 
 // ===== Helper Functions ===== //
 

@@ -128,11 +128,6 @@ export type I18nCacheLifecycleCallbacks<TranslationValue extends Translation> =
   LocalesTranslationsCacheLifecycleCallbacks<TranslationValue> &
     LocalesDictionaryCacheLifecycleCallbacks;
 
-/** @deprecated use I18nCacheLifecycleCallbacks instead */
-export type I18nManagerCacheLifecycleCallbacks<
-  TranslationValue extends Translation,
-> = I18nCacheLifecycleCallbacks<TranslationValue>;
-
 // ===== Consumer API ===== //
 
 /**

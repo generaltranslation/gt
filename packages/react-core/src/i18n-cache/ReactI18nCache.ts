@@ -7,8 +7,3 @@ export type ReactI18nCache = Pick<
   keyof I18nCache<Translation>
 >;
 export type ReactI18nCacheParams = I18nCacheConstructorParams<Translation>;
-
-/** @deprecated use ReactI18nCache instead */
-export type ReactI18nManager = ReactI18nCache;
-/** @deprecated use ReactI18nCacheParams instead */
-export type ReactI18nManagerParams = ReactI18nCacheParams;

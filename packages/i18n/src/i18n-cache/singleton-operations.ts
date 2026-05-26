@@ -43,8 +43,3 @@ export function setI18nCache<TranslationValue extends Translation>(
 ): void {
   i18nCache = i18nCacheInstance as unknown as I18nCache;
 }
-
-/** @deprecated use getI18nCache instead */
-export { getI18nCache as getI18nManager };
-/** @deprecated use setI18nCache instead */
-export { setI18nCache as setI18nManager };

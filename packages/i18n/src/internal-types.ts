@@ -12,10 +12,6 @@ export type {
   DictionaryLoader,
   DictionaryConfig,
 } from './i18n-cache/types';
-/** @deprecated use I18nCacheConstructorParams instead */
-export type { I18nCacheConstructorParams as I18nManagerConstructorParams } from './i18n-cache/types';
-/** @deprecated use I18nCacheConfig instead */
-export type { I18nCacheConfig as I18nManagerConfig } from './i18n-cache/types';
 export type { LocaleCandidates } from './condition-store/localeResolver';
 export type {
   DictionaryValue,

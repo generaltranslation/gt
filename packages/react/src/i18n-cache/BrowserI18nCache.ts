@@ -16,9 +16,6 @@ export type BrowserI18nCacheParams = I18nCacheConstructorParams<Translation> & {
   htmlTagOptions?: HtmlTagOptions;
 };
 
-/** @deprecated use BrowserI18nCacheParams instead */
-export type BrowserI18nManagerParams = BrowserI18nCacheParams;
-
 /**
  * I18nCache implementation for Browser.
  */
@@ -146,9 +143,6 @@ export class BrowserI18nCache extends I18nCache<Translation> {
     }
   }
 }
-
-/** @deprecated use BrowserI18nCache instead */
-export { BrowserI18nCache as BrowserI18nManager };
 
 // ===== Helper Functions ===== //
 

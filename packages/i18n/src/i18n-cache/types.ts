@@ -46,11 +46,6 @@ export type I18nCacheConstructorParams<
     lifecycle?: LifecycleCallbacks<TranslationValue>;
   };
 
-/** @deprecated use I18nCacheConstructorParams instead */
-export type I18nManagerConstructorParams<
-  TranslationValue extends Translation = Translation,
-> = I18nCacheConstructorParams<TranslationValue>;
-
 /**
  * I18nCache class configuration
  */
@@ -79,9 +74,6 @@ export type I18nCacheConfig = {
   runtimeTranslation?: RuntimeTranslationConfig;
   _versionId?: string;
 };
-
-/** @deprecated use I18nCacheConfig instead */
-export type I18nManagerConfig = I18nCacheConfig;
 
 /**
  * Shared configuration used by condition stores to resolve locales.
