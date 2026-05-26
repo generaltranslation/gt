@@ -12,7 +12,7 @@ import {
 } from './external-store-hooks';
 import { useLocale } from './condition-store';
 import { useShouldTranslate } from './utils';
-import { getReactI18nManager } from '../i18n-cache/singleton-operations';
+import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { useGT } from './useGT';
 import type {
   DictionaryObjectTranslation,
@@ -28,16 +28,16 @@ export function useTranslations(id?: string): UseTranslationsFunction {
   const scope = useRuntimeDictionaryScope();
   const gt = useGT();
   const rootId = id ?? '';
-  const devHotReloadEnabled = getReactI18nManager().isDevHotReloadEnabled();
+  const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
 
   useDictionaryObject({ locale: defaultLocale, id: rootId });
   useDictionaryObject({ locale, id: rootId });
 
   const translateEntry = useCallback(
     (suffix: string, options: DictionaryTranslationOptions = {}) => {
-      const i18nManager = getReactI18nManager();
+      const i18nCache = getReactI18nCache();
       const entryId = getEntryId(id, suffix);
-      const sourceEntry = i18nManager.lookupDictionary(defaultLocale, entryId);
+      const sourceEntry = i18nCache.lookupDictionary(defaultLocale, entryId);
       if (sourceEntry === undefined) {
         throw new Error(`Dictionary entry ${entryId} cannot be found`);
       }
@@ -49,7 +49,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
         });
       }
 
-      const targetEntry = i18nManager.lookupDictionary(locale, entryId);
+      const targetEntry = i18nCache.lookupDictionary(locale, entryId);
       if (targetEntry === undefined && devHotReloadEnabled) {
         scope.translateEntry({ locale, id: entryId });
       }
@@ -78,9 +78,9 @@ export function useTranslations(id?: string): UseTranslationsFunction {
 
   const translateObject = useCallback(
     (suffix: string) => {
-      const i18nManager = getReactI18nManager();
+      const i18nCache = getReactI18nCache();
       const entryId = getEntryId(id, suffix);
-      const sourceObject = i18nManager.lookupDictionaryObj(
+      const sourceObject = i18nCache.lookupDictionaryObj(
         defaultLocale,
         entryId
       );
@@ -90,7 +90,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
 
       let targetObject = undefined;
       if (shouldTranslate) {
-        targetObject = i18nManager.lookupDictionaryObj(locale, entryId);
+        targetObject = i18nCache.lookupDictionaryObj(locale, entryId);
         if (targetObject === undefined && devHotReloadEnabled) {
           scope.translateObject({ locale, id: entryId });
         }
@@ -100,7 +100,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
         sourceObject,
         targetObject,
         translate: (sourceEntry, dictionaryOptions) =>
-          i18nManager.lookupTranslation(
+          i18nCache.lookupTranslation(
             shouldTranslate ? locale : defaultLocale,
             sourceEntry.entry,
             dictionaryOptions
