@@ -1,8 +1,8 @@
-import { I18nManager, WritableConditionStore } from 'gt-i18n/internal';
+import { I18nCache, WritableConditionStore } from 'gt-i18n/internal';
 import type { WritableConditionStoreParams } from 'gt-i18n/internal';
 import type { Translation } from 'gt-i18n/types';
-import { setReactI18nManager } from '../i18n-cache/singleton-operations';
-import type { ReactI18nManagerParams } from '../i18n-cache/ReactI18nCache';
+import { setReactI18nCache } from '../i18n-cache/singleton-operations';
+import type { ReactI18nCacheParams } from '../i18n-cache/ReactI18nCache';
 import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
 import { setRenderStrategy } from './globals';
 import { setReadonlyConditionStore } from '../condition-store/singleton-operations';
@@ -10,21 +10,19 @@ import { setI18nStore } from '../i18n-store/singleton-operations';
 
 /**
  * Initialize GT for an SPA
- * - i18nManager
+ * - i18nCache
  * - conditionStore
  * - i18nStore
  *
  * @deprecated moved to /react and /react-native
  */
 export function internalInitializeGTSPA(
-  config: I18nStoreParams &
-    ReactI18nManagerParams &
-    WritableConditionStoreParams
+  config: I18nStoreParams & ReactI18nCacheParams & WritableConditionStoreParams
 ): void {
   setRenderStrategy('SPA');
 
-  const i18nManager = new I18nManager<Translation>(config);
-  setReactI18nManager(i18nManager);
+  const i18nCache = new I18nCache<Translation>(config);
+  setReactI18nCache(i18nCache);
 
   const conditionStore = new WritableConditionStore(config);
   setReadonlyConditionStore(conditionStore);
