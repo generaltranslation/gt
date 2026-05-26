@@ -15,7 +15,7 @@ import type {
   Unsubscribe,
 } from './storeTypes';
 import type { Translation } from 'gt-i18n/types';
-import { getReactI18nManager } from '../i18n-cache/singleton-operations';
+import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
 
@@ -30,9 +30,9 @@ type DictionaryStoreListener = (event: DictionaryStoreEvent) => void;
 export type I18nStoreParams = {};
 
 /**
- * A subscription wrapper around the I18nManager and the ConditionStore
+ * A subscription wrapper around the I18nCache and the ConditionStore
  *
- * It is assumed that the I18nManager and the ConditionStore are already initialized.
+ * It is assumed that the I18nCache and the ConditionStore are already initialized.
  * It is assumed that the locale and translations are already sync accessible.
  */
 export class I18nStore {
@@ -52,11 +52,11 @@ export class I18nStore {
   private localeListeners: ListenerSet = new Set();
 
   /**
-   * I18nManager must be already initialized
+   * I18nCache must be already initialized
    */
   constructor(_config: I18nStoreParams) {
     try {
-      getReactI18nManager();
+      getReactI18nCache();
     } catch (error) {
       throw new Error('Failed to initialize I18nStore. Reason: ' + error);
     }
@@ -76,7 +76,7 @@ export class I18nStore {
     return this.subscribeToStaticSet(this.customMappingListeners, listener);
   };
 
-  // ===== I18nManager Subscriptions ===== //
+  // ===== I18nCache Subscriptions ===== //
 
   subscribeToTranslate<T extends Translation>(
     lookup: TranslateLookup<T>,
@@ -138,25 +138,25 @@ export class I18nStore {
   // ===== Manager Config Snapshots ===== //
 
   getDefaultLocaleSnapshot = (): string => {
-    return getReactI18nManager().getDefaultLocale();
+    return getReactI18nCache().getDefaultLocale();
   };
 
   getLocalesSnapshot = (): readonly string[] => {
-    return getReactI18nManager().getLocales();
+    return getReactI18nCache().getLocales();
   };
 
   getCustomMappingSnapshot = (): CustomMapping => {
-    return getReactI18nManager().getCustomMapping();
+    return getReactI18nCache().getCustomMapping();
   };
 
-  // ===== I18nManager Snapshots ===== //
+  // ===== I18nCache Snapshots ===== //
 
   getTranslateSnapshot = <T extends Translation>({
     locale,
     message,
     options,
   }: TranslateLookup<T>): TranslateSnapshot<T> => {
-    return getReactI18nManager().lookupTranslation<T>(locale, message, options);
+    return getReactI18nCache().lookupTranslation<T>(locale, message, options);
   };
 
   getTranslateManySnapshot = <T extends Translation>(
@@ -184,20 +184,20 @@ export class I18nStore {
     locale,
     id,
   }: DictionaryLookup): DictionaryEntrySnapshot => {
-    return getReactI18nManager().lookupDictionary(locale, id);
+    return getReactI18nCache().lookupDictionary(locale, id);
   };
 
   getDictionaryObjectSnapshot = ({
     locale,
     id,
   }: DictionaryLookup): DictionaryObjectSnapshot => {
-    return getReactI18nManager().lookupDictionaryObj(locale, id);
+    return getReactI18nCache().lookupDictionaryObj(locale, id);
   };
 
   // ===== runtime translation ===== //
 
   translate = <T extends Translation>(lookup: TranslateLookup<T>): void => {
-    getReactI18nManager()
+    getReactI18nCache()
       .lookupTranslationWithFallback(
         lookup.locale,
         lookup.message,
@@ -212,7 +212,7 @@ export class I18nStore {
   };
 
   translateDictionaryEntry = (lookup: DictionaryLookup): void => {
-    getReactI18nManager()
+    getReactI18nCache()
       .lookupDictionaryWithFallback(lookup.locale, lookup.id)
       .then((dictionaryEntry) => {
         if (dictionaryEntry == null) {
@@ -223,7 +223,7 @@ export class I18nStore {
   };
 
   translateDictionaryObject = (lookup: DictionaryLookup): void => {
-    getReactI18nManager()
+    getReactI18nCache()
       .lookupDictionaryObjWithFallback(lookup.locale, lookup.id)
       .then((dictionaryObject) => {
         if (dictionaryObject == null) {

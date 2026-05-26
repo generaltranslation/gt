@@ -13,7 +13,7 @@ import {
   isReadonlyConditionStoreInitialized,
 } from '../../condition-store/singleton-operations';
 import { StringContent, StringFormat } from 'generaltranslation/types';
-import { getReactI18nManager } from '../../i18n-cache/singleton-operations';
+import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 
@@ -58,8 +58,8 @@ export function resolveStringContent(
   content: StringContent,
   options: ResolutionOptions<StringFormat> = {}
 ): StringContent {
-  const i18nManager = getReactI18nManager();
-  const defaultLocale = i18nManager.getDefaultLocale();
+  const i18nCache = getReactI18nCache();
+  const defaultLocale = i18nCache.getDefaultLocale();
   if (!getShouldTranslate()) {
     return interpolateMessage({
       options,
@@ -69,7 +69,7 @@ export function resolveStringContent(
   }
 
   const lookupOptions = createLookupOptions(locale, options, 'ICU');
-  const translation = i18nManager.lookupTranslation(
+  const translation = i18nCache.lookupTranslation(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -104,8 +104,8 @@ function handleTaggedTemplateLiteralTranslation(
     messageOrStrings,
     values
   );
-  const i18nManager = getReactI18nManager();
-  const translatedInterpolatedTemplate = i18nManager.lookupTranslation(
+  const i18nCache = getReactI18nCache();
+  const translatedInterpolatedTemplate = i18nCache.lookupTranslation(
     locale,
     interpolatedTemplate,
     { $format: 'STRING' }
