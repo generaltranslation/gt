@@ -40,16 +40,9 @@ export function initializeState(
     gtConfig?.files?.gt?.parsingFlags?.enableAutoJsxInjection ?? false;
   const rawDevHotReload =
     gtConfig?.files?.gt?.parsingFlags?.devHotReload ?? false;
-  const rawAutoderive =
-    gtConfig?.files?.gt?.parsingFlags?.autoderive ??
-    gtConfig?.files?.gt?.parsingFlags?.autoDerive ??
-    false;
+  const rawAutoderive = gtConfig?.files?.gt?.parsingFlags?.autoderive ?? false;
 
-  // Backwards compat: normalize deprecated autoDerive → autoderive from options
-  const rawOptionsAutoderive =
-    options.autoderive ?? options.autoDerive ?? undefined;
-
-  const autoderive = resolveAutoderive(rawOptionsAutoderive ?? rawAutoderive);
+  const autoderive = resolveAutoderive(options.autoderive ?? rawAutoderive);
 
   // Resolve devHotReload (options override gtConfig)
   const rawOptionsDevHotReload = options.devHotReload ?? undefined;
@@ -59,12 +52,7 @@ export function initializeState(
 
   // Spread options but exclude already-resolved fields
   // eslint-disable-next-line no-unused-vars
-  const {
-    autoderive: _a,
-    autoDerive: _b,
-    devHotReload: _c,
-    ...restOptions
-  } = options;
+  const { autoderive: _a, devHotReload: _b, ...restOptions } = options;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,

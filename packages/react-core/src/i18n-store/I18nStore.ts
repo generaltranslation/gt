@@ -15,7 +15,6 @@ import type {
   Unsubscribe,
 } from './storeTypes';
 import type { Translation } from 'gt-i18n/types';
-import { getReadonlyConditionStoreWithFallback } from '../condition-store/singleton-operations';
 import { getReactI18nManager } from '../i18n-manager/singleton-operations';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
@@ -53,11 +52,10 @@ export class I18nStore {
   private localeListeners: ListenerSet = new Set();
 
   /**
-   * ConditionStore and I18nManager must be already initialized
+   * I18nManager must be already initialized
    */
   constructor(_config: I18nStoreParams) {
     try {
-      getReadonlyConditionStoreWithFallback();
       getReactI18nManager();
     } catch (error) {
       throw new Error('Failed to initialize I18nStore. Reason: ' + error);
@@ -76,16 +74,6 @@ export class I18nStore {
 
   subscribeToCustomMapping = (listener: StoreListener): Unsubscribe => {
     return this.subscribeToStaticSet(this.customMappingListeners, listener);
-  };
-
-  // ===== ConditionStore Subscriptions ===== //
-
-  subscribeToLocale = (listener: StoreListener): Unsubscribe => {
-    return this.subscribeToStaticSet(this.localeListeners, listener);
-  };
-
-  subscribeToEnableI18n = (listener: StoreListener): Unsubscribe => {
-    return this.subscribeToStaticSet(this.enableI18nListeners, listener);
   };
 
   // ===== I18nManager Subscriptions ===== //
@@ -159,16 +147,6 @@ export class I18nStore {
 
   getCustomMappingSnapshot = (): CustomMapping => {
     return getReactI18nManager().getCustomMapping();
-  };
-
-  // ===== ConditionStore Snapshots ===== //
-
-  getLocaleSnapshot = (): string => {
-    return getReadonlyConditionStoreWithFallback().getLocale();
-  };
-
-  getEnableI18nSnapshot = (): boolean => {
-    return getReadonlyConditionStoreWithFallback().getEnableI18n();
   };
 
   // ===== I18nManager Snapshots ===== //

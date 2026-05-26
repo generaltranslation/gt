@@ -1,19 +1,21 @@
 import type { ReactNode } from 'react';
 
+type BranchProps = {
+  children?: ReactNode;
+  branch?: string | number | boolean;
+  [key: string]: ReactNode;
+};
+
 // ===== Component ===== //
 
 /**
  * External-store version of the `<Branch>` component.
  */
-function Branch({
+function GtInternalBranch({
   children,
   branch,
   ...branches
-}: {
-  children?: ReactNode;
-  branch?: string | number | boolean;
-  [key: string]: ReactNode;
-}): ReactNode {
+}: BranchProps): ReactNode {
   let branchKey = branch?.toString();
   if (typeof branchKey === 'string' && branchKey.startsWith('data-')) {
     branchKey = undefined;
@@ -23,12 +25,8 @@ function Branch({
     : children;
 }
 
-function GtInternalBranch(props: {
-  children?: ReactNode;
-  branch?: string | number | boolean;
-  [key: string]: ReactNode;
-}): ReactNode {
-  return Branch(props);
+function Branch(props: BranchProps): React.JSX.Element {
+  return <GtInternalBranch {...props} />;
 }
 
 /** @internal _gtt - The GT transformation for the component. */

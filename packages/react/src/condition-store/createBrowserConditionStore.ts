@@ -51,8 +51,8 @@ export function createOrUpdateBrowserConditionStore(
     ...config,
     localeCookieName: defaultLocaleCookieName,
     enableI18nCookieName: defaultEnableI18nCookieName,
-    locale: determineLocale(config),
-    enableI18n: determineEnableI18n(config),
+    locale,
+    enableI18n,
   });
   setBrowserConditionStore(conditionStore);
 }
