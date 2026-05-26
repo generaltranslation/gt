@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { I18nCache, setI18nCache } from 'gt-i18n/internal';
 import { AsyncConditionStore } from '../AsyncConditionStore';
 
 describe('AsyncConditionStore', () => {
@@ -7,7 +8,17 @@ describe('AsyncConditionStore', () => {
     vi.restoreAllMocks();
   });
 
+  function setTestCache() {
+    setI18nCache(
+      new I18nCache({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+      })
+    );
+  }
+
   it('throws when reading the locale outside a scoped context', () => {
+    setTestCache();
     const store = new AsyncConditionStore({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
@@ -19,6 +30,7 @@ describe('AsyncConditionStore', () => {
   });
 
   it('warns and falls back outside a scoped context in production', () => {
+    setTestCache();
     vi.stubEnv('NODE_ENV', 'production');
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = new AsyncConditionStore({
@@ -33,6 +45,7 @@ describe('AsyncConditionStore', () => {
   });
 
   it('returns the scoped locale inside run()', () => {
+    setTestCache();
     const store = new AsyncConditionStore({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
