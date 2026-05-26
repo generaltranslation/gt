@@ -16,8 +16,6 @@ import {
  * TODO: find some way to enforce this is only imported on the server
  */
 export function SSRGTProvider({
-  translations,
-  dictionary,
   defaultLocale = getReactI18nManager().getDefaultLocale(),
   locales = getReactI18nManager().getLocales(),
   customMapping = getReactI18nManager().getCustomMapping(),
@@ -33,7 +31,5 @@ export function SSRGTProvider({
     });
     setReadonlyConditionStore(conditionStore);
   }
-  getReactI18nManager().updateTranslations(translations);
-  getReactI18nManager().updateDictionaries(dictionary ?? {});
   return <InternalGTProvider {...props} />;
 }

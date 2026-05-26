@@ -5,7 +5,7 @@ import { setReactI18nManager } from '../i18n-manager/singleton-operations';
 import type { ReactI18nManagerParams } from '../i18n-manager/ReactI18nManager';
 import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
 import { setRenderStrategy, setStoresInitialized } from './globals';
-import { setWritableConditionStore } from '../condition-store/singleton-operations';
+import { setReadonlyConditionStore } from '../condition-store/singleton-operations';
 import { setI18nStore } from '../i18n-store/singleton-operations';
 
 /**
@@ -27,7 +27,7 @@ export function internalInitializeGTSPA(
   setReactI18nManager(i18nManager);
 
   const conditionStore = new WritableConditionStore(config);
-  setWritableConditionStore(conditionStore);
+  setReadonlyConditionStore(conditionStore);
 
   const i18nStore = new I18nStore(config);
   setI18nStore(i18nStore);

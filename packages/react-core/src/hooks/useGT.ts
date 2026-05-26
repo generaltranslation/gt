@@ -6,7 +6,7 @@ import {
   useRuntimeTranslationScope,
   useTranslateMany,
 } from './external-store-hooks';
-import { useLocale } from './context-hooks';
+import { useLocale } from './condition-store';
 import { useShouldTranslate } from './utils';
 import { getReactI18nManager } from '../i18n-manager/singleton-operations';
 import type { TranslateLookup } from '../i18n-store/storeTypes';

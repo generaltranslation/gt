@@ -20,6 +20,11 @@ globalThis.__generaltranslation = {
   i18nStoreInitialized: false,
 };
 
+/**
+ * TODO: better error message (createDiagnosticMessage)
+ * TODO: move to `I18nConfig`
+ * @deprecated - move to I18nConfig
+ */
 export function getRenderStrategy(): RenderStrategy {
   if (!globalThis.__generaltranslation.renderStrategy) {
     throw new Error(
@@ -29,6 +34,9 @@ export function getRenderStrategy(): RenderStrategy {
   return globalThis.__generaltranslation.renderStrategy;
 }
 
+/**
+ * @deprecated - switch to a better way to track initialization
+ */
 export function getI18nStoreInitialized(): boolean {
   return globalThis.__generaltranslation.i18nStoreInitialized;
 }
@@ -37,6 +45,9 @@ export function setRenderStrategy(renderStrategy: RenderStrategy): void {
   globalThis.__generaltranslation.renderStrategy = renderStrategy;
 }
 
+/**
+ * @deprecated - switch to a better way to track initialization
+ */
 export function setStoresInitialized(storesInitialized: boolean): void {
   globalThis.__generaltranslation.i18nStoreInitialized = storesInitialized;
 }

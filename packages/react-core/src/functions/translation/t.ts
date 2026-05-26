@@ -8,11 +8,14 @@ import type {
   ResolutionOptions,
 } from 'gt-i18n/types';
 import { getRenderStrategy } from '../../setup/globals';
-import { isWritableConditionStoreInitialized } from '../../condition-store/singleton-operations';
+import {
+  getReadonlyConditionStoreWithFallback,
+  isReadonlyConditionStoreInitialized,
+} from '../../condition-store/singleton-operations';
 import { StringContent, StringFormat } from 'generaltranslation/types';
 import { getReactI18nManager } from '../../i18n-manager/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils';
-import { getLocale } from '../../hooks/context-hooks';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 /**
  * Translate a message
@@ -173,31 +176,41 @@ function interpolateTemplateLiteral(
 }
 
 /**
- * If detect SSR + module level:
- * - Build: Error
- * - Dev: Error
- * - Prod: Warn
+ * Module-level t() only works for SPA.
+ * We have to error or fallback in SSR.
  */
 function enforceSSRRules(messageOrStrings: string | TemplateStringsArray) {
   const ssrEnabled = getRenderStrategy() === 'server-render';
-  const moduleLevel = !isWritableConditionStoreInitialized();
+  const moduleLevel = !isReadonlyConditionStoreInitialized();
   if (!ssrEnabled || !moduleLevel) return;
 
   const message =
     typeof messageOrStrings === 'string'
       ? messageOrStrings
       : messageOrStrings.join('');
-  const errorMessage = createSSRRulesError(message);
+  const runtimeEnvironment = getRuntimeEnvironment();
+  const errorMessage = createDiagnosticMessage({
+    source: '@generaltranslation/react-core',
+    severity: 'Error',
+    whatHappened:
+      'Using the t() function at the module level is forbidden in server-rendered applications.',
+    fix: 'Either move the t() invocation into a request-time scope or register the string with the msg() function and translate with an m() function. Ensure that you have added the <GTProvider> at the root of your component tree.',
+    wayOut:
+      runtimeEnvironment === 'development'
+        ? undefined
+        : 'Falling back to defaultLocale value.',
+    details: `Message: "${message}"`,
+  });
   if (getRuntimeEnvironment() === 'development') {
     throw new Error(errorMessage);
   } else {
-    console.warn(errorMessage);
+    console.error(errorMessage);
   }
 }
 
-// SSR Rules Error
-const createSSRRulesError = (message: string) =>
-  `@generaltranslation/react-core Failed to translate "${message}" because it is being used in an SSR environment at the module level. Please use an msg() function instead, and translate with an m() function. See: https://generaltranslation.com/en-US/docs/react/api/strings/msg`;
+function getLocale(): string {
+  return getReadonlyConditionStoreWithFallback().getLocale();
+}
 
 /**
  * Overloaded type for the `t` function.

@@ -5,7 +5,7 @@ import writeChildrenAsObjects from '../../utils/internal/writeChildrenAsObjects'
 import renderDefaultChildren from '../../utils/rendering/renderDefaultChildren';
 import renderTranslatedChildren from '../../utils/rendering/renderTranslatedChildren';
 import { renderVariable } from '../../utils/rendering/renderVariable';
-import { useLocale } from '../../hooks/context-hooks';
+import { useLocale } from '../../hooks/condition-store';
 import {
   useDefaultLocale,
   useTranslate,
