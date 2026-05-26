@@ -10,6 +10,9 @@ export const GTProvider: typeof CSRGTProvider = () => {
 };
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
+export { LocaleSelector } from './components/LocaleSelector';
+export { useLocaleSelector } from './components/useLocaleSelector';
+export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
 
 /**
  * TODO: throw error if any of these functions are called
@@ -19,7 +22,6 @@ export {
   Branch,
   Plural,
   Derive,
-  LocaleSelector,
   T,
   Currency,
   DateTime,
@@ -28,13 +30,10 @@ export {
   Num,
   // ===== Hooks ===== //
   useLocale,
-  useSetLocale,
   useCustomMapping,
   useDefaultLocale,
   useEnableI18n,
-  useSetEnableI18n,
   useLocales,
-  useLocaleSelector,
   useFormatLocales,
   useGT,
   useMessages,

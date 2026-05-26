@@ -7,7 +7,7 @@ type VarProps<T extends ReactNode> = {
 
 // ===== Shared Logic ===== //
 
-function computeVar<T extends ReactNode>({ children }: { children: T }): T {
+function computeVar<T extends ReactNode>({ children }: VarProps<T>): T {
   return children;
 }
 
@@ -16,9 +16,7 @@ function computeVar<T extends ReactNode>({ children }: { children: T }): T {
 /**
  * External-store version of the `<Var>` component.
  */
-function GtInternalVar<T extends ReactNode>({
-  children,
-}: VarProps<T>): T {
+function GtInternalVar<T extends ReactNode>({ children }: VarProps<T>): T {
   return computeVar({ children });
 }
 

@@ -2,13 +2,15 @@
 
 export { CSRGTProvider as GTProvider } from './provider/CSRGTProvider';
 export { initializeGTSPA } from './setup/initializeGTSPA';
+export { LocaleSelector } from './components/LocaleSelector';
+export { useLocaleSelector } from './components/useLocaleSelector';
+export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
 
 export {
   // ===== Components ===== //
   Branch,
   Plural,
   Derive,
-  LocaleSelector,
   T,
   Currency,
   DateTime,
@@ -17,13 +19,10 @@ export {
   Num,
   // ===== Hooks ===== //
   useLocale,
-  useSetLocale,
   useCustomMapping,
   useDefaultLocale,
   useEnableI18n,
-  useSetEnableI18n,
   useLocales,
-  useLocaleSelector,
   useFormatLocales,
   useGT,
   useMessages,

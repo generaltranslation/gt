@@ -2,7 +2,6 @@
 export { Branch } from './components/branches/Branch';
 export { Plural } from './components/branches/Plural';
 export { Derive } from './components/derivation/Derive';
-export { LocaleSelector } from './components/helpers/LocaleSelector';
 export { T } from './components/translation/T';
 export { Currency } from './components/variables/Currency';
 export { DateTime } from './components/variables/DateTime';
@@ -11,12 +10,7 @@ export { RelativeTime } from './components/variables/RelativeTime';
 export { Var } from './components/variables/Var';
 
 // ===== Hooks ===== //
-export {
-  useLocale,
-  useSetLocale,
-  useEnableI18n,
-  useSetEnableI18n,
-} from './hooks/context-hooks';
+export { useLocale, useEnableI18n } from './hooks/condition-store';
 export {
   useCustomMapping,
   useDefaultLocale,
@@ -25,7 +19,6 @@ export {
 export { useGT } from './hooks/useGT';
 export { useMessages } from './hooks/useMessages';
 export { useTranslations } from './hooks/useTranslations';
-export { useLocaleSelector } from './hooks/useLocaleSelector';
 export { useFormatLocales } from './hooks/utils';
 
 // ===== Functions ===== //
@@ -43,6 +36,8 @@ export {
 export { t } from './functions/translation/t';
 
 // ===== Internal ===== //
+export { useInternalLocaleSelector } from './hooks/useInternalLocaleSelector';
+export { InternalLocaleSelector } from './components/helpers/InternalLocaleSelector';
 export { InternalGTProvider } from './context/InternalGTProvider';
 export { internalInitializeGTSPA } from './setup/initializeGTSPA';
 export { internalInitializeGTSSR } from './setup/initializeGTSSR';
@@ -53,8 +48,8 @@ export {
   setStoresInitialized,
 } from './setup/globals';
 export {
-  getWritableConditionStore as getConditionStore,
-  setWritableConditionStore as setConditionStore,
+  getReadonlyConditionStoreWithFallback,
+  setReadonlyConditionStore,
 } from './condition-store/singleton-operations';
 export { WritableConditionStore } from 'gt-i18n/internal';
 export type { WritableConditionStoreParams } from 'gt-i18n/internal';
@@ -64,8 +59,7 @@ export {
 } from './i18n-manager/singleton-operations';
 export { I18nStore } from './i18n-store/I18nStore';
 export type { I18nStoreParams } from './i18n-store/I18nStore';
-export type { InternalGTProviderProps } from './deprecated/types-dir/config';
-export type { ReloadLocaleType } from './i18n-store/storeTypes';
+export type { InternalGTProviderProps } from './context/InternalGTProvider';
 export type {
   ReactI18nManager,
   ReactI18nManagerParams,

@@ -1,7 +1,7 @@
 import React from 'react';
-import { useLocaleSelector } from '../../hooks/useLocaleSelector';
+import { InternalLocaleSelector } from '@generaltranslation/react-core/context';
 import { CustomMapping } from 'generaltranslation/types';
-import { InternalLocaleSelector } from './InternalLocaleSelector';
+import { useLocaleSelector } from './useLocaleSelector';
 
 /**
  * A dropdown component that allows users to select a locale.
@@ -20,7 +20,7 @@ export function LocaleSelector({
   [key: string]: any;
 }): React.JSX.Element | null {
   // Get locale selector properties
-  const { locale, locales, setLocale, getLocaleProperties } =
+  const { locale, locales, getLocaleProperties, setLocale } =
     useLocaleSelector(_locales);
 
   return (

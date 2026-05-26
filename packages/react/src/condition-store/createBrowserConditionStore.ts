@@ -10,6 +10,11 @@ import {
   defaultLocaleCookieName,
 } from '@generaltranslation/react-core/internal';
 import { getCookieValue } from './cookies';
+import {
+  getBrowserConditionStore,
+  isBrowserConditionStoreInitialized,
+  setBrowserConditionStore,
+} from './singleton-operations';
 
 export type CreateBrowserConditionStoreParams = Omit<
   BrowserConditionStoreParams,
@@ -29,16 +34,27 @@ export type CreateBrowserConditionStoreParams = Omit<
  * We want the values that we read from the cookies to override as this
  * persists state across page reloads
  */
-export function createBrowserConditionStore(
+export function createOrUpdateBrowserConditionStore(
   config: CreateBrowserConditionStoreParams
-): BrowserConditionStore {
-  return new BrowserConditionStore({
+) {
+  const locale = determineLocale(config);
+  const enableI18n = determineEnableI18n(config);
+
+  if (isBrowserConditionStoreInitialized()) {
+    // This represents an update from server
+    const conditionStore = getBrowserConditionStore();
+    conditionStore.updateLocale(locale);
+    conditionStore.updateEnableI18n(enableI18n);
+    return;
+  }
+  const conditionStore = new BrowserConditionStore({
     ...config,
     localeCookieName: defaultLocaleCookieName,
     enableI18nCookieName: defaultEnableI18nCookieName,
-    locale: determineLocale(config),
-    enableI18n: determineEnableI18n(config),
+    locale,
+    enableI18n,
   });
+  setBrowserConditionStore(conditionStore);
 }
 
 function determineLocale({
