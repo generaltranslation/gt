@@ -46,7 +46,7 @@ import { RegisterableMessages } from '../types/message';
  * // "Hello, Alice!" id: "greetings.0"
  * // "Hello, Bob!" id: "greetings.1"
  *
- * @important Internal note: until other packages are updated to use i18n-context practices, msg cannot use any functions that use i18nManager at all!
+ * @important Internal note: until other packages are updated to use i18n-context practices, msg cannot use any functions that use i18nCache at all!
  */
 export function msg<T extends RegisterableMessages = string>(message: T): T;
 export function msg<T extends RegisterableMessages = string>(

@@ -7,15 +7,15 @@ import { createLocaleResolver, type LocaleCandidates } from './localeResolver';
 
 export type ReadonlyConditionStoreParams = {
   /**
-   * @deprecated - this will be moved to a locale config manager
+   * @deprecated - this will be moved to a locale config cache
    */
   defaultLocale?: string;
   /**
-   * @deprecated - this will be moved to a locale config manager
+   * @deprecated - this will be moved to a locale config cache
    */
   locales?: string[];
   /**
-   * @deprecated - this will be moved to a locale config manager
+   * @deprecated - this will be moved to a locale config cache
    */
   customMapping?: CustomMapping;
   locale: LocaleCandidates;
@@ -24,7 +24,7 @@ export type ReadonlyConditionStoreParams = {
 
 export class ReadonlyConditionStore implements ReadonlyConditionStoreContract {
   /**
-   * @deprecated use getI18nManager().determineLocale() instead
+   * @deprecated use getI18nCache().determineLocale() instead
    */
   protected readonly resolveLocale: (candidates?: LocaleCandidates) => string;
   protected locale: string;
@@ -36,7 +36,7 @@ export class ReadonlyConditionStore implements ReadonlyConditionStoreContract {
     ...localeConfig
   }: ReadonlyConditionStoreParams) {
     /**
-     * TODO: change this to getI18nManager().determineLocale() but this
+     * TODO: change this to getI18nCache().determineLocale() but this
      * currently creates a circular dependency
      */
     this.resolveLocale = createLocaleResolver(localeConfig);

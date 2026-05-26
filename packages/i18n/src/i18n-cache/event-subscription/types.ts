@@ -35,7 +35,7 @@ export const DICTIONARY_OBJECT_CACHE_HIT_EVENT_NAME =
   'dictionary-object-cache-hit';
 
 /**
- * A base event for the I18nManagers
+ * A base event for the I18nCaches
  * @prop {locales-cache-hit} - Emitted when a locale cache hit occurs
  * @prop {locales-cache-miss} - Emitted when a locale cache miss occurs
  * @prop {translations-cache-hit} - Emitted when a translations cache hit occurs

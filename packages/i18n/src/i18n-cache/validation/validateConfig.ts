@@ -1,5 +1,5 @@
 import { ValidationResult } from './types';
-import { I18nManagerConstructorParams } from '../types';
+import { I18nCacheConstructorParams } from '../types';
 import { validateLoadTranslations } from './config-validation/validateLoadTranslations';
 import { validateTranslationApi } from './config-validation/validateTranslationApi';
 import { validateLocales } from './config-validation/validateLocales';
@@ -12,7 +12,7 @@ import type { Translation } from '../translations-manager/utils/types/translatio
  * @returns The validation results
  */
 export function validateConfig<TranslationValue extends Translation>(
-  config: I18nManagerConstructorParams<TranslationValue>
+  config: I18nCacheConstructorParams<TranslationValue>
 ): ValidationResult[] {
   const results: ValidationResult[] = [];
 

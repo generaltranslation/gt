@@ -1,6 +1,6 @@
 import { publishValidationResults } from './validation/publishValidationResults';
 import logger from '../logs/logger';
-import { I18nManagerConfig, I18nManagerConstructorParams } from './types';
+import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
 import { validateConfig } from './validation/validateConfig';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
@@ -72,10 +72,10 @@ type PrefetchEntry<TranslationType extends Translation> = {
  * Class for managing translation functionality
  * @template TranslationValue - The type of the translation that will be cached
  */
-class I18nManager<
+class I18nCache<
   TranslationValue extends Translation = Translation,
 > extends EventEmitter<I18nEvents<TranslationValue>> {
-  protected config: I18nManagerConfig;
+  protected config: I18nCacheConfig;
 
   /**
    * Locale-scoped caches for translations and dictionaries
@@ -90,17 +90,17 @@ class I18nManager<
   public determineLocale: (candidates?: LocaleCandidates) => string;
 
   /**
-   * Creates an instance of I18nManager.
+   * Creates an instance of I18nCache.
    * TODO: resolve gtConfig from just file path
-   * @param params - The parameters for the I18nManager constructor
-   * @param params.config - The configuration for the I18nManager
+   * @param params - The parameters for the I18nCache constructor
+   * @param params.config - The configuration for the I18nCache
    */
-  constructor(params: I18nManagerConstructorParams<TranslationValue>) {
+  constructor(params: I18nCacheConstructorParams<TranslationValue>) {
     super();
 
     // Validation
     const validationResults = validateConfig(params);
-    publishValidationResults(validationResults, 'I18nManager: ');
+    publishValidationResults(validationResults, 'I18nCache: ');
 
     // Setup
     this.config = standardizeConfig(params);
@@ -573,7 +573,7 @@ class I18nManager<
       );
       if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
         logger.warn(
-          `I18nManager: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${translationLocale}`
+          `I18nCache: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${translationLocale}`
         );
       }
 
@@ -703,7 +703,7 @@ class I18nManager<
         throw error;
       case 'production':
       default:
-        logger.error('I18nManager: ' + error);
+        logger.error('I18nCache: ' + error);
         break;
     }
   }
@@ -816,7 +816,9 @@ class I18nManager<
   }
 }
 
-export { I18nManager };
+export { I18nCache };
+/** @deprecated use I18nCache instead */
+export { I18nCache as I18nManager };
 
 // ===== Helper Functions ===== //
 
@@ -826,7 +828,7 @@ export { I18nManager };
  * @returns The standardized config
  */
 function standardizeConfig<TranslationValue extends Translation>(
-  config: I18nManagerConstructorParams<TranslationValue>
+  config: I18nCacheConstructorParams<TranslationValue>
 ) {
   const gtServicesEnabled = getGTServicesEnabled(config);
 
