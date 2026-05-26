@@ -1,46 +1,18 @@
-import { CustomMapping } from 'generaltranslation/types';
-import type {
-  LocaleResolverConfig,
-  ReadonlyConditionStoreInterface as ReadonlyConditionStoreContract,
-} from '../i18n-cache/types';
-import { createLocaleResolver, type LocaleCandidates } from './localeResolver';
+import type { ReadonlyConditionStoreInterface as ReadonlyConditionStoreContract } from '../i18n-cache/types';
+import { getI18nConfig } from '../i18n-config/singleton-operations';
+import type { LocaleCandidates } from './localeResolver';
 
 export type ReadonlyConditionStoreParams = {
-  /**
-   * @deprecated - this will be moved to a locale config cache
-   */
-  defaultLocale?: string;
-  /**
-   * @deprecated - this will be moved to a locale config cache
-   */
-  locales?: string[];
-  /**
-   * @deprecated - this will be moved to a locale config cache
-   */
-  customMapping?: CustomMapping;
   locale: LocaleCandidates;
   enableI18n?: boolean;
 };
 
 export class ReadonlyConditionStore implements ReadonlyConditionStoreContract {
-  /**
-   * @deprecated use getI18nCache().determineLocale() instead
-   */
-  protected readonly resolveLocale: (candidates?: LocaleCandidates) => string;
   protected locale: string;
   protected enableI18n: boolean;
 
-  constructor({
-    locale,
-    enableI18n = true,
-    ...localeConfig
-  }: ReadonlyConditionStoreParams) {
-    /**
-     * TODO: change this to getI18nCache().determineLocale() but this
-     * currently creates a circular dependency
-     */
-    this.resolveLocale = createLocaleResolver(localeConfig);
-    this.locale = this.resolveLocale(locale);
+  constructor({ locale, enableI18n = true }: ReadonlyConditionStoreParams) {
+    this.locale = getI18nConfig().resolveSupportedLocale(locale);
     this.enableI18n = enableI18n;
   }
 

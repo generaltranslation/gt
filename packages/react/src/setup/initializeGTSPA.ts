@@ -6,7 +6,9 @@ import {
   setI18nStore,
   setReactI18nCache,
   getReadonlyConditionStoreWithFallback,
+  initializeI18nConfig,
 } from '@generaltranslation/react-core/context';
+import type { I18nConfigParams } from 'gt-i18n/internal/types';
 import { BrowserI18nCache } from '../i18n-cache/BrowserI18nCache';
 import type { BrowserI18nCacheParams } from '../i18n-cache/BrowserI18nCache';
 import {
@@ -24,10 +26,13 @@ import {
  */
 export async function initializeGTSPA(
   config: I18nStoreParams &
+    I18nConfigParams &
     BrowserI18nCacheParams &
     CreateBrowserConditionStoreParams
 ) {
   setRenderStrategy('SPA');
+
+  initializeI18nConfig(config);
 
   const i18nCache = new BrowserI18nCache(config);
   setReactI18nCache(i18nCache);

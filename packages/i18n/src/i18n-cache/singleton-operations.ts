@@ -1,9 +1,12 @@
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { I18nCache } from './I18nCache';
 import logger from '../logs/logger';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { createConditionStoreSingleton } from '../condition-store/createConditionStoreSingleton';
 import { WritableConditionStoreInterface } from './types';
+import {
+  initializeI18nConfig,
+  isI18nConfigInitialized,
+} from '../i18n-config/singleton-operations';
 
 // Singleton instance of I18nCache
 let i18nCache: I18nCache | undefined = undefined;
@@ -22,10 +25,10 @@ export function getI18nCache<U extends Translation = Translation>():
     logger.warn(
       'getI18nCache(): I18nCache was not initialized. Falling back to the default locale until initializeGT() configures translations.'
     );
-    i18nCache = new I18nCache({
-      defaultLocale: libraryDefaultLocale,
-      locales: [libraryDefaultLocale],
-    });
+    if (!isI18nConfigInitialized()) {
+      initializeI18nConfig();
+    }
+    i18nCache = new I18nCache({});
   }
   return i18nCache;
 }
