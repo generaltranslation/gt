@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { BrowserI18nManager } from '../BrowserI18nCache';
+import { BrowserI18nCache } from '../BrowserI18nCache';
 
-describe('BrowserI18nManager', () => {
+describe('BrowserI18nCache', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -14,13 +14,13 @@ describe('BrowserI18nManager', () => {
     };
     vi.stubGlobal('document', { documentElement });
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const manager = new BrowserI18nManager({
+    const cache = new BrowserI18nCache({
       defaultLocale: 'en-US',
       locales: ['en-US'],
       loadTranslations: vi.fn(),
     });
 
-    manager.updateHtmlTag('en-US', {
+    cache.updateHtmlTag('en-US', {
       lang: 'en-GB',
       updateHtmlLangTag: true,
       updateHtmlDirTag: false,

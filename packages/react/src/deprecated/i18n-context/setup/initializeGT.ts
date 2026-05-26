@@ -1,7 +1,7 @@
-import { setI18nManager } from 'gt-i18n/internal';
+import { setI18nCache } from 'gt-i18n/internal';
 import type { InitializeGTParams } from './types';
 import { BrowserConditionStore } from '../browser-i18n-cache/BrowserConditionStore';
-import { BrowserI18nManager } from '../browser-i18n-cache/BrowserI18nCache';
+import { BrowserI18nCache } from '../browser-i18n-cache/BrowserI18nCache';
 import { setBrowserConditionStore } from '../browser-i18n-cache/singleton-operations';
 
 /**
@@ -9,14 +9,14 @@ import { setBrowserConditionStore } from '../browser-i18n-cache/singleton-operat
  * @param {InitializeGTParams} config - The configuration for the GT instance
  */
 export function initializeGT(params: InitializeGTParams): void {
-  const i18nManager = new BrowserI18nManager(params);
+  const i18nCache = new BrowserI18nCache(params);
   const conditionStore = new BrowserConditionStore({
-    defaultLocale: i18nManager.getDefaultLocale(),
-    locales: i18nManager.getLocales(),
-    customMapping: i18nManager.getCustomMapping(),
+    defaultLocale: i18nCache.getDefaultLocale(),
+    locales: i18nCache.getLocales(),
+    customMapping: i18nCache.getCustomMapping(),
     getLocale: params.getLocale,
   });
 
-  setI18nManager(i18nManager);
+  setI18nCache(i18nCache);
   setBrowserConditionStore(conditionStore);
 }

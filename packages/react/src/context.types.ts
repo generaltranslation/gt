@@ -51,6 +51,8 @@ export {
   t,
   // ===== Setup ===== //
   internalInitializeGTSSR as initializeGT,
-  getReactI18nManager,
-  setReactI18nManager,
+  getReactI18nCache,
+  getReactI18nCache as getReactI18nManager,
+  setReactI18nCache,
+  setReactI18nCache as setReactI18nManager,
 } from '@generaltranslation/react-core/context';

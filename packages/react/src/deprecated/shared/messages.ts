@@ -16,13 +16,17 @@ export const GENERIC_BROWSER_ENVIRONMENT_ERROR = createDiagnosticMessage({
   whatHappened: 'A browser-only module was imported outside the browser',
   fix: 'Move this import to client-side code',
 });
-export const BROWSER_I18N_MANAGER_NOT_INITIALIZED_ERROR =
-  createDiagnosticMessage({
+export const BROWSER_I18N_CACHE_NOT_INITIALIZED_ERROR = createDiagnosticMessage(
+  {
     source: PACKAGE_NAME,
     severity: 'Error',
-    whatHappened: 'BrowserI18nManager is not initialized',
+    whatHappened: 'BrowserI18nCache is not initialized',
     fix: 'Call initializeGT() before using browser translation APIs',
-  });
+  }
+);
+/** @deprecated use BROWSER_I18N_CACHE_NOT_INITIALIZED_ERROR instead */
+export const BROWSER_I18N_MANAGER_NOT_INITIALIZED_ERROR =
+  BROWSER_I18N_CACHE_NOT_INITIALIZED_ERROR;
 
 // ---- Warnings ---- //
 export const createTranslationFailedDueToBrowserEnvironmentWarning = (

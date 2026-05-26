@@ -1,5 +1,5 @@
 import { initializeGT } from './initializeGT';
-import { getBrowserI18nManager } from '../browser-i18n-cache/singleton-operations';
+import { getBrowserI18nCache } from '../browser-i18n-cache/singleton-operations';
 import type { InitializeGTParams } from './types';
 import { getLocale } from '../functions/locale-operations';
 
@@ -24,12 +24,12 @@ import { getLocale } from '../functions/locale-operations';
  */
 export async function bootstrap(params: InitializeGTParams): Promise<void> {
   initializeGT(params);
-  const i18nManager = getBrowserI18nManager();
+  const i18nCache = getBrowserI18nCache();
   const locale = getLocale();
 
   // Update the html tag
-  i18nManager.updateHtmlTag(locale);
+  i18nCache.updateHtmlTag(locale);
 
   // Load translations
-  await i18nManager.loadTranslations(locale);
+  await i18nCache.loadTranslations(locale);
 }

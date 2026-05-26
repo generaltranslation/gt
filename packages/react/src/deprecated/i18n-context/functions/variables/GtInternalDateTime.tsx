@@ -1,4 +1,4 @@
-import { getI18nManager } from 'gt-i18n/internal';
+import { getI18nCache } from 'gt-i18n/internal';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 
 type DateTimeProps = {
@@ -21,8 +21,8 @@ function GtInternalDateTime({
   const locales = [...localesProp, getLocale(), getDefaultLocale()];
 
   // Apply formatting
-  const i18nManager = getI18nManager();
-  const gt = i18nManager.getGTClass();
+  const i18nCache = getI18nCache();
+  const gt = i18nCache.getGTClass();
   const result = gt
     .formatDateTime(children, { locales, ...options })
     .replace(/[\u200F\u202B\u202E]/g, '');

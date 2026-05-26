@@ -14,7 +14,7 @@ import { requiresTranslation } from '@generaltranslation/format';
 import { getDefaultLocale, getLocale } from '../locale-operations';
 import type { JsxChildren } from '@generaltranslation/format/types';
 import type { TaggedChildren } from '@generaltranslation/react-core/types';
-import { getBrowserI18nManager } from '../../browser-i18n-cache/singleton-operations';
+import { getBrowserI18nCache } from '../../browser-i18n-cache/singleton-operations';
 
 type TranslateJsxProps = {
   children: ReactNode;
@@ -111,7 +111,7 @@ function useComputeT({
   }
 
   // --- (3) Cache miss: dev hot reload suspends, prod falls back to source --- //
-  if (getBrowserI18nManager().isDevHotReloadJsx()) {
+  if (getBrowserI18nCache().isDevHotReloadJsx()) {
     return (
       <Suspense fallback={renderSourceChildren()}>
         <DevTranslationResolver

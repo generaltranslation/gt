@@ -1,6 +1,6 @@
-import { I18nManager } from 'gt-i18n/internal';
+import { I18nCache } from 'gt-i18n/internal';
 import type {
-  I18nManagerConstructorParams,
+  I18nCacheConstructorParams,
   TranslationsLoader,
 } from 'gt-i18n/internal/types';
 import type { HtmlTagOptions } from './utils/types';
@@ -10,17 +10,17 @@ import { LocalStorageTranslationCache } from './LocalStorageTranslationCache';
 import { createInvalidLocaleWarning } from '../../shared/messages';
 
 /**
- * The configuration for the BrowserI18nManager
+ * The configuration for the BrowserI18nCache
  */
-type BrowserI18nManagerConstructorParams =
-  I18nManagerConstructorParams<Translation> & {
+type BrowserI18nCacheConstructorParams =
+  I18nCacheConstructorParams<Translation> & {
     htmlTagOptions?: HtmlTagOptions;
   };
 
 /**
- * I18nManager implementation for Browser.
+ * I18nCache implementation for Browser.
  */
-export class BrowserI18nManager extends I18nManager<Translation> {
+export class BrowserI18nCache extends I18nCache<Translation> {
   /** Customize browser-related behavior */
   private htmlTagOptions?: HtmlTagOptions;
 
@@ -30,7 +30,7 @@ export class BrowserI18nManager extends I18nManager<Translation> {
   /** Whether dev hot reload JSX (Suspense-based <T>) is active */
   private _devHotReloadJsx = false;
 
-  constructor(config: BrowserI18nManagerConstructorParams) {
+  constructor(config: BrowserI18nCacheConstructorParams) {
     // Must be initialized before super()
     const { htmlTagOptions, ...managerConfig } = config;
     const localStorageCaches: Record<string, LocalStorageTranslationCache> = {};
@@ -46,7 +46,7 @@ export class BrowserI18nManager extends I18nManager<Translation> {
         )
       : config.loadTranslations;
 
-    // Initialize the I18nManager
+    // Initialize the I18nCache
     super({
       ...managerConfig,
       loadTranslations,
@@ -145,6 +145,9 @@ export class BrowserI18nManager extends I18nManager<Translation> {
   }
 }
 
+/** @deprecated use BrowserI18nCache instead */
+export { BrowserI18nCache as BrowserI18nManager };
+
 // ===== Helper Functions ===== //
 
 /**
@@ -186,7 +189,7 @@ function resolveDevHotReload(
  * @param config - The configuration
  * @returns True if dev hot reload is enabled, false otherwise
  */
-function isDevHotReloadEnabled(config: BrowserI18nManagerConstructorParams) {
+function isDevHotReloadEnabled(config: BrowserI18nCacheConstructorParams) {
   // TODO: this only works when you've defined a custom loadTranslations function
   // meaning CDN users will not have access to this feature
   const requirements: Record<string, boolean> = {

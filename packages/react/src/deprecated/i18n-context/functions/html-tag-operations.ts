@@ -1,4 +1,4 @@
-import { getBrowserI18nManager } from '../browser-i18n-cache/singleton-operations';
+import { getBrowserI18nCache } from '../browser-i18n-cache/singleton-operations';
 import { getLocale } from './locale-operations';
 
 /**
@@ -10,8 +10,8 @@ import { getLocale } from './locale-operations';
  * updateHtmlTagLang('en');
  */
 export function updateHtmlTagLang(locale: string): void {
-  const i18nManager = getBrowserI18nManager();
-  i18nManager.updateHtmlTag(locale, {
+  const i18nCache = getBrowserI18nCache();
+  i18nCache.updateHtmlTag(locale, {
     lang: locale,
     updateHtmlLangTag: true,
     updateHtmlDirTag: false,
@@ -27,8 +27,8 @@ export function updateHtmlTagLang(locale: string): void {
  * updateHtmlTagDir('ltr');
  */
 export function updateHtmlTagDir(dir: 'ltr' | 'rtl'): void {
-  const i18nManager = getBrowserI18nManager();
-  i18nManager.updateHtmlTag(getLocale(), {
+  const i18nCache = getBrowserI18nCache();
+  i18nCache.updateHtmlTag(getLocale(), {
     dir,
     updateHtmlLangTag: false,
     updateHtmlDirTag: true,

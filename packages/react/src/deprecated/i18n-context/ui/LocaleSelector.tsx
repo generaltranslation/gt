@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { JSX } from 'react';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { InternalLocaleSelector } from '../../shared/InternalLocaleSelector';
-import { getI18nManager } from 'gt-i18n/internal';
+import { getI18nCache } from 'gt-i18n/internal';
 import {
   getLocale as getBrowserLocale,
   setLocale as setBrowserLocale,
@@ -27,8 +27,8 @@ export function LocaleSelector({
   // Get the sorted locales, setLocale, and locale
   const { sortedLocales, setLocale, locale, getLocaleProperties } =
     useMemo(() => {
-      const i18nManager = getI18nManager();
-      const gt = i18nManager.getGTClass();
+      const i18nCache = getI18nCache();
+      const gt = i18nCache.getGTClass();
       const locale = getBrowserLocale();
       const getLocaleProperties = (locale: string) => {
         return gt.getLocaleProperties(locale);
@@ -40,7 +40,7 @@ export function LocaleSelector({
           sortedLocales: locales,
           getLocaleProperties,
         };
-      const sortedLocales = i18nManager
+      const sortedLocales = i18nCache
         .getLocales()
         .sort((a, b) =>
           new Intl.Collator().compare(
