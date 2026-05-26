@@ -41,12 +41,12 @@ export { InternalLocaleSelector } from './components/helpers/InternalLocaleSelec
 export { InternalGTProvider } from './context/InternalGTProvider';
 export { internalInitializeGTSPA } from './setup/initializeGTSPA';
 export { internalInitializeGTSSR } from './setup/initializeGTSSR';
-export { getI18nStore, setI18nStore } from './i18n-store/singleton-operations';
 export {
-  setRenderStrategy,
-  getRenderStrategy,
-  setStoresInitialized,
-} from './setup/globals';
+  getI18nStore,
+  setI18nStore,
+  isI18nStoreInitialized,
+} from './i18n-store/singleton-operations';
+export { setRenderStrategy, getRenderStrategy } from './setup/globals';
 export {
   getReadonlyConditionStoreWithFallback,
   setReadonlyConditionStore,

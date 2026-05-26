@@ -4,7 +4,6 @@ import {
   setRenderStrategy,
   I18nStore,
   setI18nStore,
-  setStoresInitialized,
   setReactI18nManager,
   getReadonlyConditionStoreWithFallback,
 } from '@generaltranslation/react-core/context';
@@ -37,8 +36,6 @@ export async function initializeGTSPA(
 
   const i18nStore = new I18nStore(config);
   setI18nStore(i18nStore);
-
-  setStoresInitialized(true);
 
   // Block until translations are loaded
   await getTranslationsSnapshot(
