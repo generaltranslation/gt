@@ -1,4 +1,4 @@
-import { defaultLocaleCookieName } from 'gt-react/internal';
+import { defaultLocaleCookieName } from 'gt-react/context';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeader, getCookie } from '@tanstack/react-start/server';
 import { resolveSupportedLocale } from 'gt-i18n/internal';

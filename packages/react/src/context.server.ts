@@ -5,6 +5,11 @@ export { initializeGTSPA } from './setup/initializeGTSPA';
 export { LocaleSelector } from './components/LocaleSelector';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
+export {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from './cookie-names';
 
 export {
   // ===== Components ===== //
