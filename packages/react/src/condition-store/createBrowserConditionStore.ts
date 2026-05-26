@@ -8,7 +8,7 @@ import { readBrowserLocale } from './readBrowserLocale';
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
-} from '@generaltranslation/react-core/internal';
+} from '../internal';
 import { getCookieValue } from './cookies';
 import {
   getBrowserConditionStore,
