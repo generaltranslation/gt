@@ -2,7 +2,6 @@
 export { Branch } from "./components/branches/Branch";
 export { Plural } from "./components/branches/Plural";
 export { Derive } from "./components/derivation/Derive";
-export { LocaleSelector } from "./components/helpers/LocaleSelector";
 export { T } from "./components/translation/T";
 export { Currency } from "./components/variables/Currency";
 export { DateTime } from "./components/variables/DateTime";
@@ -20,7 +19,7 @@ export {
 export { useGT } from "./hooks/useGT";
 export { useMessages } from "./hooks/useMessages";
 export { useTranslations } from "./hooks/useTranslations";
-export { useLocaleSelector } from "./hooks/useLocaleSelector";
+export { useInternalLocaleSelector as useLocaleSelector } from "./hooks/useInternalLocaleSelector";
 export { useFormatLocales } from "./hooks/utils";
 
 // ===== Functions ===== //
@@ -38,6 +37,8 @@ export {
 export { t } from "./functions/translation/t";
 
 // ===== Internal ===== //
+export { useInternalLocaleSelector } from "./hooks/useInternalLocaleSelector";
+export { InternalLocaleSelector } from "./components/helpers/InternalLocaleSelector";
 export { InternalGTProvider } from "./context/InternalGTProvider";
 export { internalInitializeGTSPA } from "./setup/initializeGTSPA";
 export { internalInitializeGTSSR } from "./setup/initializeGTSSR";

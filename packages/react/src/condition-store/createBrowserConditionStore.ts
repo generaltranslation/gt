@@ -1,19 +1,24 @@
-import { getReactI18nManager } from '@generaltranslation/react-core/context';
-import type { LocaleCandidates } from 'gt-i18n/internal';
+import { getReactI18nManager } from "@generaltranslation/react-core/context";
+import type { LocaleCandidates } from "gt-i18n/internal";
 import {
   BrowserConditionStore,
   BrowserConditionStoreParams,
-} from './BrowserConditionStore';
-import { readBrowserLocale } from './readBrowserLocale';
+} from "./BrowserConditionStore";
+import { readBrowserLocale } from "./readBrowserLocale";
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
-} from '@generaltranslation/react-core/internal';
-import { getCookieValue } from './cookies';
+} from "@generaltranslation/react-core/internal";
+import { getCookieValue } from "./cookies";
+import {
+  getBrowserConditionStore,
+  isBrowserConditionStoreInitialized,
+  setBrowserConditionStore,
+} from "./singleton-operations";
 
 export type CreateBrowserConditionStoreParams = Omit<
   BrowserConditionStoreParams,
-  'locale' | 'enableI18n' | 'localeCookieName' | 'enableI18nCookieName'
+  "locale" | "enableI18n" | "localeCookieName" | "enableI18nCookieName"
 > & {
   locale?: LocaleCandidates;
   enableI18n?: boolean;
@@ -29,16 +34,26 @@ export type CreateBrowserConditionStoreParams = Omit<
  * We want the values that we read from the cookies to override as this
  * persists state across page reloads
  */
-export function createBrowserConditionStore(
-  config: CreateBrowserConditionStoreParams
-): BrowserConditionStore {
-  return new BrowserConditionStore({
+export function createOrUpdateBrowserConditionStore(
+  config: CreateBrowserConditionStoreParams,
+) {
+  const locale = determineLocale(config);
+  const enableI18n = determineEnableI18n(config);
+
+  if (isBrowserConditionStoreInitialized()) {
+    const conditionStore = getBrowserConditionStore();
+    conditionStore.updateLocale(locale);
+    conditionStore.updateEnableI18n(enableI18n);
+    return;
+  }
+  const conditionStore = new BrowserConditionStore({
     ...config,
     localeCookieName: defaultLocaleCookieName,
     enableI18nCookieName: defaultEnableI18nCookieName,
     locale: determineLocale(config),
     enableI18n: determineEnableI18n(config),
   });
+  setBrowserConditionStore(conditionStore);
 }
 
 function determineLocale({
@@ -64,5 +79,5 @@ function determineEnableI18n({
   if (cookieEnableI18n === undefined) {
     return getEnableI18n?.() ?? enableI18n ?? true;
   }
-  return cookieEnableI18n === 'true';
+  return cookieEnableI18n === "true";
 }

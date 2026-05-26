@@ -5,10 +5,9 @@ import {
 import type { SharedGTProviderProps } from "./SharedGTProviderProps";
 import {
   getBrowserConditionStore,
-  isBrowserConditionStoreInitialized,
   setBrowserConditionStore,
 } from "../condition-store/singleton-operations";
-import { createBrowserConditionStore } from "../condition-store/createBrowserConditionStore";
+import { createOrUpdateBrowserConditionStore } from "../condition-store/createBrowserConditionStore";
 
 /**
  * Client side GTProvider, this is different from server side
@@ -25,15 +24,12 @@ export function CSRGTProvider({
   // TODO: if a specific translation entry changes, but not the locale, this does not trigger a re-render
   // TODO: optimize by skipping updateTranslations() if client is responsible for reloading translations
   // (eg reloadLocale === undefined), see getI18nStore().updateLocale() in InternalGTProvider
-  if (!isBrowserConditionStoreInitialized()) {
-    const conditionStore = createBrowserConditionStore({
-      defaultLocale,
-      locales,
-      customMapping,
-      ...props,
-    });
-    setBrowserConditionStore(conditionStore);
-  }
+  createOrUpdateBrowserConditionStore({
+    defaultLocale,
+    locales,
+    customMapping,
+    ...props,
+  });
 
   // This represents an update from server, so bypass I18nStore
   getBrowserConditionStore().setLocale(locale);
