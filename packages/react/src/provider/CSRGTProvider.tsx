@@ -3,10 +3,6 @@ import {
   InternalGTProvider,
 } from "@generaltranslation/react-core/context";
 import type { SharedGTProviderProps } from "./SharedGTProviderProps";
-import {
-  getBrowserConditionStore,
-  setBrowserConditionStore,
-} from "../condition-store/singleton-operations";
 import { createOrUpdateBrowserConditionStore } from "../condition-store/createBrowserConditionStore";
 
 /**
