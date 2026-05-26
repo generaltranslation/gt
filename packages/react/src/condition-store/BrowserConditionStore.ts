@@ -1,6 +1,5 @@
 import {
   getReactI18nManager,
-  WritableConditionStore,
   WritableConditionStoreParams,
 } from '@generaltranslation/react-core/context';
 import { getCookieValue, setCookieValue } from './cookies';
@@ -10,6 +9,12 @@ import {
   LocaleCandidates,
   WritableConditionStoreInterface,
 } from 'gt-i18n/internal/types';
+
+type SerializedBrowserConditionStoreState = {
+  locale: string;
+  enableI18n: boolean;
+};
+export type ReloadType = (state: SerializedBrowserConditionStoreState) => void;
 
 /**
  * The configuration for the BrowserConditionStore
@@ -23,6 +28,7 @@ export type BrowserConditionStoreParams = WritableConditionStoreParams & {
   enableI18nCookieName: string;
   getLocale?: GetLocale;
   getEnableI18n?: GetEnableI18n;
+  reload?: ReloadType;
 };
 
 /**
@@ -31,10 +37,12 @@ export type BrowserConditionStoreParams = WritableConditionStoreParams & {
 export class BrowserConditionStore implements WritableConditionStoreInterface {
   private localeCookieName: string;
   private enableI18nCookieName: string;
+  private customReload: ReloadType;
   private customGetLocale?: GetLocale;
   private customGetEnableI18n?: GetEnableI18n;
 
   constructor(config: BrowserConditionStoreParams) {
+    this.customReload = config.reload ?? (() => window.location.reload());
     this.customGetLocale = config.getLocale;
     this.customGetEnableI18n = config.getEnableI18n;
     this.localeCookieName = config.localeCookieName;
@@ -54,7 +62,6 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
       cookieName: this.localeCookieName,
       value: getReactI18nManager().determineLocale(locale),
     });
-    window.location.reload();
   };
 
   getEnableI18n = (): boolean => {
@@ -72,6 +79,19 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
       cookieName: this.enableI18nCookieName,
       value: enableI18n ? 'true' : 'false',
     });
+  };
+
+  /**
+   * Condition store updates come from either the server or the client.
+   * Trigger this reload when we update a value in the condition store from
+   * the client.
+   */
+  reload = (): void => {
+    const state = {
+      locale: this.getLocale(),
+      enableI18n: this.getEnableI18n(),
+    };
+    this.customReload(state);
   };
 }
 

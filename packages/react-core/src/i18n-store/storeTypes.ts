@@ -11,13 +11,6 @@ export type Unsubscribe = () => void;
 export type StoreListener = () => void;
 export type ListenerSet = Set<StoreListener>;
 
-/**
- * A function that is called when a locale changes.
- * Typically used to reload server-rendered props or
- * trigger a client-side reload of the app.
- */
-export type ReloadLocaleType = (locale: string) => void;
-
 // ----- Lookups ----- //
 
 export type TranslateLookup<T extends Translation = Translation> = {

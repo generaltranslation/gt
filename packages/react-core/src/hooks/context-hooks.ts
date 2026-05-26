@@ -1,30 +1,21 @@
-import { GTContext, GTContextType } from '../context/GTContext';
-import { getRenderStrategy } from '../setup/globals';
-import { getWritableConditionStore } from '../condition-store/singleton-operations';
-import { useContext } from 'react';
+import { getI18nManager, getRuntimeEnvironment } from "gt-i18n/internal";
+import { getReadonlyConditionStore } from "../condition-store/singleton-operations";
+import { ReadonlyConditionStoreInterface } from "gt-i18n/internal/types";
 
-/**
- * @internal
- * @deprecated use condition store directly instead
- */
-function useGTContext(property: keyof GTContextType): GTContextType {
-  const conditionStore = useContext(GTContext);
-  if (!conditionStore) {
-    if (getRenderStrategy() === 'SPA') {
-      // No need for useSyncExternalStore for SPA apps as reload will always trigger a re-render
-      const conditionStore = getWritableConditionStore();
-      return {
-        locale: conditionStore.getLocale(),
-        enableI18n: conditionStore.getEnableI18n(),
-        setLocale: conditionStore.setLocale,
-        setEnableI18n: conditionStore.setEnableI18n,
-      };
+function getConditionStoreSafe(
+  property: string,
+): ReadonlyConditionStoreInterface | undefined {
+  try {
+    return getReadonlyConditionStore();
+  } catch {
+    const message = `@generaltranslation/react-core: Cannot access ${property} before the condition store has been initialized. Make sure to add a <GTProvider> at the top of your component tree to initialize the condition store.`;
+    if (getRuntimeEnvironment() === "development") {
+      throw new Error(message);
+    } else {
+      console.warn(message);
     }
-    throw new Error(
-      `use${(property as string).charAt(0).toUpperCase() + (property as string).slice(1)}() is being accessed outside of a <GTProvider>. Make sure to add a <GTProvider> to the top of your component tree.`
-    );
+    return undefined;
   }
-  return conditionStore;
 }
 
 export function useLocale(): string {
@@ -32,17 +23,38 @@ export function useLocale(): string {
 }
 
 export function getLocale(): string {
-  return getWritableConditionStore().getLocale();
+  const conditionStore = getConditionStoreSafe("locale");
+  // TODO: centralize locale logic
+  if (!conditionStore) return getI18nManager().getDefaultLocale();
+  return conditionStore.getLocale();
 }
 
-export function useSetLocale(): (locale: string) => void {
-  return useGTContext('setLocale').setLocale;
+/**
+ * @deprecated only should be implemented in browser/RN environments
+ *
+ * This is because this function is not generalizable to all react environments
+ * Remember, server environments are read only
+ */
+export function useSetLocale(locale: string) {
+  throw new Error(
+    "useSetLocale is not implemented in @generaltranslation/react-core",
+  );
 }
 
 export function useEnableI18n(): boolean {
-  return useGTContext('enableI18n').enableI18n;
+  const conditionStore = getConditionStoreSafe("enableI18n");
+  if (!conditionStore) return true;
+  return conditionStore.getEnableI18n();
 }
 
-export function useSetEnableI18n(): (enableI18n: boolean) => void {
-  return useGTContext('setEnableI18n').setEnableI18n;
+/**
+ * @deprecated only should be implemented in browser/RN environments
+ *
+ * This is because this function is not generalizable to all react environments
+ * Remember, server environments are read only
+ */
+export function useSetEnableI18n(enableI18n: boolean) {
+  throw new Error(
+    "useSetEnableI18n is not implemented in @generaltranslation/react-core",
+  );
 }

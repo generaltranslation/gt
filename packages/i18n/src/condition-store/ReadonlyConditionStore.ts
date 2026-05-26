@@ -1,10 +1,23 @@
+import { CustomMapping } from "generaltranslation/types";
 import type {
   LocaleResolverConfig,
   ReadonlyConditionStoreInterface as ReadonlyConditionStoreContract,
 } from '../i18n-manager/types';
 import { createLocaleResolver, type LocaleCandidates } from './localeResolver';
 
-export type ReadonlyConditionStoreParams = LocaleResolverConfig & {
+export type ReadonlyConditionStoreParams = {
+  /**
+   * @deprecated - this will be moved to a locale config manager
+   */
+  defaultLocale?: string;
+  /**
+   * @deprecated - this will be moved to a locale config manager
+   */
+  locales?: string[];
+  /**
+   * @deprecated - this will be moved to a locale config manager
+   */
+  customMapping?: CustomMapping;
   locale: LocaleCandidates;
   enableI18n?: boolean;
 };

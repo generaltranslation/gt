@@ -1,14 +1,14 @@
 import {
   getReactI18nManager,
   InternalGTProvider,
-} from '@generaltranslation/react-core/context';
-import type { SharedGTProviderProps } from './SharedGTProviderProps';
+} from "@generaltranslation/react-core/context";
+import type { SharedGTProviderProps } from "./SharedGTProviderProps";
 import {
   getBrowserConditionStore,
   isBrowserConditionStoreInitialized,
   setBrowserConditionStore,
-} from '../condition-store/singleton-operations';
-import { createBrowserConditionStore } from '../condition-store/createBrowserConditionStore';
+} from "../condition-store/singleton-operations";
+import { createBrowserConditionStore } from "../condition-store/createBrowserConditionStore";
 
 /**
  * Client side GTProvider, this is different from server side
@@ -16,11 +16,10 @@ import { createBrowserConditionStore } from '../condition-store/createBrowserCon
  * server-side translations
  */
 export function CSRGTProvider({
-  translations,
-  dictionary,
   defaultLocale = getReactI18nManager().getDefaultLocale(),
   locales = getReactI18nManager().getLocales(),
   customMapping = getReactI18nManager().getCustomMapping(),
+  locale,
   ...props
 }: SharedGTProviderProps) {
   // TODO: if a specific translation entry changes, but not the locale, this does not trigger a re-render
@@ -34,12 +33,9 @@ export function CSRGTProvider({
       ...props,
     });
     setBrowserConditionStore(conditionStore);
-  } else if (props.reloadLocale) {
-    // This represents an update from server, so bypass I18nStore
-    // we only listen to it if we trigger server-side reloads on locale change
-    getBrowserConditionStore().setLocale(props.locale);
   }
-  getReactI18nManager().updateTranslations(translations);
-  getReactI18nManager().updateDictionaries(dictionary ?? {});
+
+  // This represents an update from server, so bypass I18nStore
+  getBrowserConditionStore().setLocale(locale);
   return <InternalGTProvider {...props} />;
 }

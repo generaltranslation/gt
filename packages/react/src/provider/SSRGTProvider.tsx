@@ -1,13 +1,13 @@
-import { ReadonlyConditionStore } from 'gt-i18n/internal';
+import { ReadonlyConditionStore } from "gt-i18n/internal";
 import {
   isReadonlyConditionStoreInitialized,
   setReadonlyConditionStore,
-} from '../condition-store/singleton-operations';
-import type { SharedGTProviderProps } from './SharedGTProviderProps';
+} from "../condition-store/singleton-operations";
+import type { SharedGTProviderProps } from "./SharedGTProviderProps";
 import {
   getReactI18nManager,
   InternalGTProvider,
-} from '@generaltranslation/react-core/context';
+} from "@generaltranslation/react-core/context";
 
 /**
  * For the server side GTProvider, we don't need to synchronize translations
@@ -16,8 +16,6 @@ import {
  * TODO: find some way to enforce this is only imported on the server
  */
 export function SSRGTProvider({
-  translations,
-  dictionary,
   defaultLocale = getReactI18nManager().getDefaultLocale(),
   locales = getReactI18nManager().getLocales(),
   customMapping = getReactI18nManager().getCustomMapping(),
@@ -33,7 +31,5 @@ export function SSRGTProvider({
     });
     setReadonlyConditionStore(conditionStore);
   }
-  getReactI18nManager().updateTranslations(translations);
-  getReactI18nManager().updateDictionaries(dictionary ?? {});
   return <InternalGTProvider {...props} />;
 }
