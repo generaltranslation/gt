@@ -1,13 +1,13 @@
 import {
   getReactI18nManager,
   InternalGTProvider,
-} from '@generaltranslation/react-core/context';
-import type { SharedGTProviderProps } from './SharedGTProviderProps';
+} from "@generaltranslation/react-core/context";
+import type { SharedGTProviderProps } from "./SharedGTProviderProps";
 import {
   getBrowserConditionStore,
   setBrowserConditionStore,
-} from '../condition-store/singleton-operations';
-import { createOrUpdateBrowserConditionStore } from '../condition-store/createBrowserConditionStore';
+} from "../condition-store/singleton-operations";
+import { createOrUpdateBrowserConditionStore } from "../condition-store/createBrowserConditionStore";
 
 /**
  * Client side GTProvider, this is different from server side
@@ -31,7 +31,5 @@ export function CSRGTProvider({
     ...props,
   });
 
-  // This represents an update from server, so bypass I18nStore
-  getBrowserConditionStore().setLocale(locale);
   return <InternalGTProvider {...props} />;
 }
