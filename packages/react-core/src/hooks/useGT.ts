@@ -8,7 +8,7 @@ import {
 } from './external-store-hooks';
 import { useLocale } from './condition-store';
 import { useShouldTranslate } from './utils';
-import { getReactI18nManager } from '../i18n-cache/singleton-operations';
+import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import type { TranslateLookup } from '../i18n-store/storeTypes';
 import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
@@ -27,7 +27,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
   const scope = useRuntimeTranslationScope();
-  const devHotReloadEnabled = getReactI18nManager().isDevHotReloadEnabled();
+  const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
 
   // Compiler optimization: pre-fetch translations
   useSubscribeToExtractedMessages(
@@ -55,7 +55,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         options,
         'ICU'
       );
-      const translation = getReactI18nManager().lookupTranslation(
+      const translation = getReactI18nCache().lookupTranslation(
         lookupOptions.$locale,
         message,
         lookupOptions

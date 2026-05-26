@@ -4,7 +4,7 @@ import {
   setI18nStore,
 } from '../i18n-store/singleton-operations';
 import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
-import { getI18nManager } from 'gt-i18n/internal';
+import { getI18nCache } from 'gt-i18n/internal';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import type { Locale, Hash } from 'gt-i18n/internal/types';
 
@@ -19,7 +19,7 @@ export type InternalGTProviderProps = I18nStoreParams & {
 
 /**
  * - Shared provider logic btwn client and server providers
- * - It is assumed that the I18nManager and ConditionStore are already initialized.
+ * - It is assumed that the I18nCache and ConditionStore are already initialized.
  * - This is not userfacing, it should be wrapped in a userfacing provider
  * - Locale and translations (and dictionaries if applicable) are required
  *
@@ -39,8 +39,8 @@ export function InternalGTProvider({
 
   // This represents an update from server, so bypass I18nStore
   useMemo(() => {
-    getI18nManager().updateTranslations(translations);
-    getI18nManager().updateDictionaries(dictionaries ?? {});
+    getI18nCache().updateTranslations(translations);
+    getI18nCache().updateDictionaries(dictionaries ?? {});
   }, [translations, dictionaries]);
 
   return children;
