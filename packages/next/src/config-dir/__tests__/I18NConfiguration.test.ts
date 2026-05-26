@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18NConfiguration } from '../I18NConfiguration';
 
-const mockI18nManagerParams = vi.hoisted(() => vi.fn());
+const mockI18nCacheParams = vi.hoisted(() => vi.fn());
 const mockLookupTranslationWithFallback = vi.hoisted(() => vi.fn());
 
 vi.mock('gt-i18n/internal', () => ({
-  I18nManager: class {
+  I18nCache: class {
     constructor(params: unknown) {
-      mockI18nManagerParams(params);
+      mockI18nCacheParams(params);
     }
 
     getGTClass() {
@@ -60,15 +60,15 @@ function createConfig(overrides: Partial<ConfigParams> = {}) {
   });
 }
 
-function expectManagerParams(expected: unknown) {
-  expect(mockI18nManagerParams).toHaveBeenLastCalledWith(
+function expectCacheParams(expected: unknown) {
+  expect(mockI18nCacheParams).toHaveBeenLastCalledWith(
     expect.objectContaining(expected)
   );
 }
 
 describe('I18NConfiguration', () => {
   beforeEach(() => {
-    mockI18nManagerParams.mockReset();
+    mockI18nCacheParams.mockReset();
     mockLookupTranslationWithFallback.mockReset();
     mockLookupTranslationWithFallback.mockResolvedValue('translated');
   });
@@ -87,10 +87,10 @@ describe('I18NConfiguration', () => {
     ],
   ])('sets %s cache expiry config', (_name, overrides, cacheExpiryTime) => {
     createConfig(overrides);
-    expectManagerParams({ cacheExpiryTime });
+    expectCacheParams({ cacheExpiryTime });
   });
 
-  it('passes batch, runtime metadata, and timeout config to I18nManager', () => {
+  it('passes batch, runtime metadata, and timeout config to I18nCache', () => {
     createConfig({
       maxConcurrentRequests: 7,
       maxBatchSize: 3,
@@ -104,7 +104,7 @@ describe('I18NConfiguration', () => {
       modelProvider: 'openai',
     });
 
-    expectManagerParams({
+    expectCacheParams({
       batchConfig: {
         maxConcurrentRequests: 7,
         maxBatchSize: 3,
@@ -125,7 +125,7 @@ describe('I18NConfiguration', () => {
     });
   });
 
-  it('passes runtime fallback options directly to I18nManager lookups', async () => {
+  it('passes runtime fallback options directly to I18nCache lookups', async () => {
     const config = createConfig();
 
     await config.translate({
