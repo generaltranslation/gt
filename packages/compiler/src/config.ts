@@ -13,8 +13,6 @@ type GTConfig = {
       parsingFlags?: {
         enableAutoJsxInjection?: boolean;
         autoderive?: boolean | { jsx?: boolean; strings?: boolean };
-        /** @deprecated Use `autoderive` instead */
-        autoDerive?: boolean;
         /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
         devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
       };
@@ -42,8 +40,6 @@ export interface PluginConfig {
   enableAutoJsxInjection?: boolean;
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive?: boolean | { jsx?: boolean; strings?: boolean };
-  /** @deprecated Use `autoderive` instead */
-  autoDerive?: boolean;
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest?: boolean;
   /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */

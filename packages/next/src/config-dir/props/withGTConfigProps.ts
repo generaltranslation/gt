@@ -1,4 +1,3 @@
-import type { CustomMapping } from '@generaltranslation/format/types';
 import { RenderMethod } from 'gt-react/internal';
 
 export type HeadersAndCookies = {
@@ -32,17 +31,10 @@ export type CompilerOptions = {
   disableBuildChecks?: boolean;
 };
 
-export const DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY = {
-  getStaticLocale: 'getStaticLocalePath',
-  getStaticRegion: 'getStaticRegionPath',
-  getStaticDomain: 'getStaticDomainPath',
-} as const;
-
 export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
   getLocale: 'getLocalePath',
   getRegion: 'getRegionPath',
   getDomain: 'getDomainPath',
-  ...DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY,
 } as const;
 
 export type withGTConfigProps = {
@@ -63,9 +55,6 @@ export type withGTConfigProps = {
   locales?: string[];
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
-  // Custom mapping
-  /**@deprecated Use customMapping in gt.config.json instead */
-  customMapping?: CustomMapping;
   // Rendering
   renderSettings?: {
     method: RenderMethod;
@@ -82,10 +71,6 @@ export type withGTConfigProps = {
   eslintSeverity?: 'error' | 'warn'; // Severity level for ESLint rules (default: 'warn')
   overwriteESLintConfig?: boolean; // Allow overwriting existing eslint.config.mjs (default: false)
   // Other
-  /**
-   * @deprecated use experimentalCompilerOptions instead
-   */
-  experimentalSwcPluginOptions?: Omit<CompilerOptions, 'type'>;
   experimentalCompilerOptions?: CompilerOptions;
   headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
@@ -94,16 +79,8 @@ export type withGTConfigProps = {
   // Using special server side locale resolution logic
   experimentalLocaleResolution?: boolean;
   experimentalLocaleResolutionParam?: string;
-  /** @deprecated */
-  disableSSGWarnings?: boolean;
   // Request function paths
   getLocalePath?: string;
   getRegionPath?: string;
   getDomainPath?: string;
-  /** @deprecated use getLocalePath instead */
-  getStaticLocalePath?: string;
-  /** @deprecated use getRegionPath instead */
-  getStaticRegionPath?: string;
-  /** @deprecated use getDomainPath instead */
-  getStaticDomainPath?: string;
 };
