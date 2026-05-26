@@ -1,5 +1,5 @@
 import {
-  getReactI18nManager,
+  getReactI18nCache,
   InternalGTProvider,
 } from '@generaltranslation/react-core/context';
 import type { SharedGTProviderProps } from './SharedGTProviderProps';
@@ -11,9 +11,9 @@ import { createOrUpdateBrowserConditionStore } from '../condition-store/createBr
  * server-side translations
  */
 export function CSRGTProvider({
-  defaultLocale = getReactI18nManager().getDefaultLocale(),
-  locales = getReactI18nManager().getLocales(),
-  customMapping = getReactI18nManager().getCustomMapping(),
+  defaultLocale = getReactI18nCache().getDefaultLocale(),
+  locales = getReactI18nCache().getLocales(),
+  customMapping = getReactI18nCache().getCustomMapping(),
   ...props
 }: SharedGTProviderProps) {
   // TODO: if a specific translation entry changes, but not the locale, this does not trigger a re-render

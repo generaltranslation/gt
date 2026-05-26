@@ -1,5 +1,5 @@
 import {
-  getReactI18nManager,
+  getReactI18nCache,
   WritableConditionStoreParams,
 } from '@generaltranslation/react-core/context';
 import { getCookieValue, setCookieValue } from './cookies';
@@ -49,7 +49,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     this.enableI18nCookieName = config.enableI18nCookieName;
     setCookieValue({
       cookieName: this.localeCookieName,
-      value: getReactI18nManager().determineLocale(config.locale),
+      value: getReactI18nCache().determineLocale(config.locale),
     });
   }
 
@@ -83,7 +83,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   updateLocale = (locale: LocaleCandidates): void => {
     setCookieValue({
       cookieName: this.localeCookieName,
-      value: getReactI18nManager().determineLocale(locale),
+      value: getReactI18nCache().determineLocale(locale),
     });
   };
 
@@ -114,5 +114,5 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
 function getBrowserLocale(cookieName: string, getLocale?: GetLocale): string {
   const candidates = readBrowserLocale(cookieName);
   if (getLocale) candidates.push(getLocale());
-  return getReactI18nManager().determineLocale(candidates);
+  return getReactI18nCache().determineLocale(candidates);
 }
