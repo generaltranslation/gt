@@ -19,7 +19,6 @@ export {
 export { useGT } from './hooks/useGT';
 export { useMessages } from './hooks/useMessages';
 export { useTranslations } from './hooks/useTranslations';
-export { useInternalLocaleSelector as useLocaleSelector } from './hooks/useInternalLocaleSelector';
 export { useFormatLocales } from './hooks/utils';
 
 // ===== Functions ===== //
