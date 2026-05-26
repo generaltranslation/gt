@@ -1,5 +1,5 @@
-import { useCallback } from "react";
-import { getBrowserConditionStore } from "../condition-store/singleton-operations";
+import { useCallback } from 'react';
+import { getBrowserConditionStore } from '../condition-store/singleton-operations';
 
 /**
  * Returns a function that sets the locale

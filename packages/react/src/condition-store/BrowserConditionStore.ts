@@ -1,14 +1,14 @@
 import {
   getReactI18nManager,
   WritableConditionStoreParams,
-} from "@generaltranslation/react-core/context";
-import { getCookieValue, setCookieValue } from "./cookies";
-import { readBrowserLocale } from "./readBrowserLocale";
-import { GetEnableI18n, GetLocale } from "../i18n-manager/types";
+} from '@generaltranslation/react-core/context';
+import { getCookieValue, setCookieValue } from './cookies';
+import { readBrowserLocale } from './readBrowserLocale';
+import { GetEnableI18n, GetLocale } from '../i18n-manager/types';
 import {
   LocaleCandidates,
   WritableConditionStoreInterface,
-} from "gt-i18n/internal/types";
+} from 'gt-i18n/internal/types';
 
 type SerializedBrowserConditionStoreState = {
   locale: string;
@@ -69,7 +69,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     if (cookieEnableI18n === undefined) {
       return this.customGetEnableI18n?.() ?? true;
     }
-    return cookieEnableI18n === "true";
+    return cookieEnableI18n === 'true';
   };
 
   setEnableI18n = (enableI18n: boolean): void => {
@@ -93,7 +93,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   updateEnableI18n = (enableI18n: boolean): void => {
     setCookieValue({
       cookieName: this.enableI18nCookieName,
-      value: enableI18n ? "true" : "false",
+      value: enableI18n ? 'true' : 'false',
     });
   };
 

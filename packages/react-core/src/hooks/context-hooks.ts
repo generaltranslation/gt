@@ -1,4 +1,4 @@
-import { getReadonlyConditionStoreWithFallback } from "../condition-store/singleton-operations";
+import { getReadonlyConditionStoreWithFallback } from '../condition-store/singleton-operations';
 
 /**
  * NOTE: useSetLocale() and useSetEnableI18n() are not implemented in @generaltranslation/react-core

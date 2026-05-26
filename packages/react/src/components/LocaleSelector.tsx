@@ -1,7 +1,7 @@
-import React from "react";
-import { InternalLocaleSelector } from "@generaltranslation/react-core/context";
-import { CustomMapping } from "generaltranslation/types";
-import { useLocaleSelector } from "./useLocaleSelector";
+import React from 'react';
+import { InternalLocaleSelector } from '@generaltranslation/react-core/context';
+import { CustomMapping } from 'generaltranslation/types';
+import { useLocaleSelector } from './useLocaleSelector';
 
 /**
  * A dropdown component that allows users to select a locale.

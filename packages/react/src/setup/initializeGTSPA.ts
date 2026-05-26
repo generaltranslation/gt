@@ -7,13 +7,13 @@ import {
   setStoresInitialized,
   setConditionStore,
   setReactI18nManager,
-} from "@generaltranslation/react-core/context";
-import { BrowserI18nManager } from "../i18n-manager/BrowserI18nManager";
-import type { BrowserI18nManagerParams } from "../i18n-manager/BrowserI18nManager";
+} from '@generaltranslation/react-core/context';
+import { BrowserI18nManager } from '../i18n-manager/BrowserI18nManager';
+import type { BrowserI18nManagerParams } from '../i18n-manager/BrowserI18nManager';
 import {
   createOrUpdateBrowserConditionStore,
   CreateBrowserConditionStoreParams,
-} from "../condition-store/createBrowserConditionStore";
+} from '../condition-store/createBrowserConditionStore';
 
 /**
  * Initialize GT for an SPA
@@ -26,9 +26,9 @@ import {
 export async function initializeGTSPA(
   config: I18nStoreParams &
     BrowserI18nManagerParams &
-    CreateBrowserConditionStoreParams,
+    CreateBrowserConditionStoreParams
 ) {
-  setRenderStrategy("SPA");
+  setRenderStrategy('SPA');
 
   const i18nManager = new BrowserI18nManager(config);
   setReactI18nManager(i18nManager);

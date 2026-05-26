@@ -2,20 +2,20 @@ import {
   createLookupOptions,
   getRuntimeEnvironment,
   interpolateMessage,
-} from "gt-i18n/internal";
+} from 'gt-i18n/internal';
 import type {
   InlineTranslationOptions,
   ResolutionOptions,
-} from "gt-i18n/types";
-import { getRenderStrategy } from "../../setup/globals";
+} from 'gt-i18n/types';
+import { getRenderStrategy } from '../../setup/globals';
 import {
   getReadonlyConditionStoreWithFallback,
   isReadonlyConditionStoreInitialized,
-} from "../../condition-store/singleton-operations";
-import { StringContent, StringFormat } from "generaltranslation/types";
-import { getReactI18nManager } from "../../i18n-manager/singleton-operations";
-import { getShouldTranslate } from "../../hooks/utils";
-import { createDiagnosticMessage } from "generaltranslation/internal";
+} from '../../condition-store/singleton-operations';
+import { StringContent, StringFormat } from 'generaltranslation/types';
+import { getReactI18nManager } from '../../i18n-manager/singleton-operations';
+import { getShouldTranslate } from '../../hooks/utils';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 /**
  * Translate a message
@@ -41,7 +41,7 @@ export const t: StringOrTemplateSyncResolutionFunction = (
   enforceSSRRules(messageOrStrings);
 
   //  t("Hello, {name}!", { name: "John" })
-  if (typeof messageOrStrings === "string") {
+  if (typeof messageOrStrings === 'string') {
     const options = values.at(0) as InlineTranslationOptions | undefined;
     const locale = options?.$locale ?? getLocale();
     return resolveStringContent(locale, messageOrStrings, options);
@@ -56,7 +56,7 @@ export const t: StringOrTemplateSyncResolutionFunction = (
 export function resolveStringContent(
   locale: string,
   content: StringContent,
-  options: ResolutionOptions<StringFormat> = {},
+  options: ResolutionOptions<StringFormat> = {}
 ): StringContent {
   const i18nManager = getReactI18nManager();
   const defaultLocale = i18nManager.getDefaultLocale();
@@ -68,11 +68,11 @@ export function resolveStringContent(
     });
   }
 
-  const lookupOptions = createLookupOptions(locale, options, "ICU");
+  const lookupOptions = createLookupOptions(locale, options, 'ICU');
   const translation = i18nManager.lookupTranslation(
     lookupOptions.$locale,
     content,
-    lookupOptions,
+    lookupOptions
   );
   return interpolateMessage({
     source: content,
@@ -95,27 +95,27 @@ export function resolveStringContent(
  */
 function handleTaggedTemplateLiteralTranslation(
   messageOrStrings: TemplateStringsArray,
-  values: unknown[],
+  values: unknown[]
 ): string {
   const locale = getLocale();
   // for tagged template literals, there has been no compiler transformation
   // (1) lookup interpolated template (aka derived message)
   const interpolatedTemplate = interpolateTemplateLiteral(
     messageOrStrings,
-    values,
+    values
   );
   const i18nManager = getReactI18nManager();
   const translatedInterpolatedTemplate = i18nManager.lookupTranslation(
     locale,
     interpolatedTemplate,
-    { $format: "STRING" },
+    { $format: 'STRING' }
   );
   if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
 
   // (2) resolve uninterpolated message
   const { message, variables } = extractInterpolatableValues(
     messageOrStrings,
-    values,
+    values
   );
   return resolveStringContent(locale, message, variables);
 }
@@ -128,7 +128,7 @@ function handleTaggedTemplateLiteralTranslation(
  */
 function extractInterpolatableValues(
   strings: TemplateStringsArray,
-  values: unknown[],
+  values: unknown[]
 ): {
   message: string;
   variables: Record<string, unknown>;
@@ -153,7 +153,7 @@ function extractInterpolatableValues(
   }
 
   return {
-    message: parts.join(""),
+    message: parts.join(''),
     variables,
   };
 }
@@ -166,13 +166,13 @@ function extractInterpolatableValues(
  */
 function interpolateTemplateLiteral(
   strings: TemplateStringsArray,
-  values: unknown[],
+  values: unknown[]
 ): string {
   return strings
     .map((string, index) => {
-      return string + (values[index] ?? "");
+      return string + (values[index] ?? '');
     })
-    .join("");
+    .join('');
 }
 
 /**
@@ -180,28 +180,28 @@ function interpolateTemplateLiteral(
  * We have to error or fallback in SSR.
  */
 function enforceSSRRules(messageOrStrings: string | TemplateStringsArray) {
-  const ssrEnabled = getRenderStrategy() === "server-render";
+  const ssrEnabled = getRenderStrategy() === 'server-render';
   const moduleLevel = !isReadonlyConditionStoreInitialized();
   if (!ssrEnabled || !moduleLevel) return;
 
   const message =
-    typeof messageOrStrings === "string"
+    typeof messageOrStrings === 'string'
       ? messageOrStrings
-      : messageOrStrings.join("");
+      : messageOrStrings.join('');
   const runtimeEnvironment = getRuntimeEnvironment();
   const errorMessage = createDiagnosticMessage({
-    source: "@generaltranslation/react-core",
-    severity: "Error",
+    source: '@generaltranslation/react-core',
+    severity: 'Error',
     whatHappened:
-      "Using the t() function at the module level is forbidden in server-rendered applications.",
-    fix: "Either move the t() invocation into a request-time scope or register the string with the msg() function and translate with an m() function. Ensure that you have added the <GTProvider> at the root of your component tree.",
+      'Using the t() function at the module level is forbidden in server-rendered applications.',
+    fix: 'Either move the t() invocation into a request-time scope or register the string with the msg() function and translate with an m() function. Ensure that you have added the <GTProvider> at the root of your component tree.',
     wayOut:
-      runtimeEnvironment === "development"
+      runtimeEnvironment === 'development'
         ? undefined
-        : "Falling back to defaultLocale value.",
+        : 'Falling back to defaultLocale value.',
     details: `Message: "${message}"`,
   });
-  if (getRuntimeEnvironment() === "development") {
+  if (getRuntimeEnvironment() === 'development') {
     throw new Error(errorMessage);
   } else {
     console.error(errorMessage);

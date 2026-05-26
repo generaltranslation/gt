@@ -1,5 +1,5 @@
-import React from "react";
-import { CustomMapping, LocaleProperties } from "generaltranslation/types";
+import React from 'react';
+import { CustomMapping, LocaleProperties } from 'generaltranslation/types';
 
 /**
  * Capitalizes the first letter of a string if applicable.
@@ -8,8 +8,8 @@ import { CustomMapping, LocaleProperties } from "generaltranslation/types";
  * @returns {string} The string with the first letter capitalized if applicable.
  */
 function capitalizeName(str: string): string {
-  if (!str) return "";
-  return str.charAt(0).toUpperCase() + (str.length > 1 ? str.slice(1) : "");
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + (str.length > 1 ? str.slice(1) : '');
 }
 
 /**
@@ -20,7 +20,7 @@ function capitalizeName(str: string): string {
  * @internal
  */
 function _convertCustomNamesToMapping(
-  customNames?: { [key: string]: string } | undefined,
+  customNames?: { [key: string]: string } | undefined
 ): CustomMapping | undefined {
   if (!customNames) return undefined;
   const result: CustomMapping = {};
@@ -62,7 +62,7 @@ export function InternalLocaleSelector({
   // Get display name
   const getDisplayName = (locale: string) => {
     if (customMapping && customMapping[locale]) {
-      if (typeof customMapping[locale] === "string")
+      if (typeof customMapping[locale] === 'string')
         return customMapping[locale];
       if (customMapping[locale].name) return customMapping[locale].name;
     }
@@ -78,11 +78,11 @@ export function InternalLocaleSelector({
     <select
       {...props}
       // Fallback to an empty string if currentLocale is undefined
-      value={locale || ""}
+      value={locale || ''}
       onChange={(e) => setLocale(e.target.value)}
     >
       {/* Optional fallback for when no locale is set */}
-      {!locale && <option value="" />}
+      {!locale && <option value='' />}
 
       {locales.map((locale) => (
         <option key={locale} value={locale} suppressHydrationWarning>

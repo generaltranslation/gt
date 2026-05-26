@@ -1,5 +1,5 @@
-import { useSetLocale } from "../hooks/conditions-store";
-import { useInternalLocaleSelector } from "@generaltranslation/react-core/context";
+import { useSetLocale } from '../hooks/conditions-store';
+import { useInternalLocaleSelector } from '@generaltranslation/react-core/context';
 
 /**
  * Gets the list of properties for using a locale selector.
