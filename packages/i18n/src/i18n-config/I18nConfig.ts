@@ -11,12 +11,14 @@ export type I18nConfigParams = {
 export class I18nConfig extends LocaleConfig {
   constructor({
     defaultLocale = libraryDefaultLocale,
-    locales = [libraryDefaultLocale],
+    locales,
     customMapping,
   }: I18nConfigParams = {}) {
+    const resolvedLocales = locales ?? [defaultLocale];
+
     super({
       defaultLocale,
-      locales: Array.from(new Set([defaultLocale, ...locales])),
+      locales: Array.from(new Set([defaultLocale, ...resolvedLocales])),
       customMapping: customMapping || {},
     });
   }
