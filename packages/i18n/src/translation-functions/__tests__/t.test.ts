@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nCache } from '../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
 import { setWritableConditionStore } from '../../condition-store/singleton-operations';
-import { getLocale, getLocaleProperties } from '../../helpers/locale';
+import {
+  getDefaultLocale,
+  getLocale,
+  getLocaleProperties,
+  getLocales,
+} from '../../helpers/locale';
 import { hashMessage } from '../../utils/hashMessage';
 import { t } from '../t';
 
@@ -108,5 +113,28 @@ describe('t', () => {
     );
 
     expect(getLocaleProperties('de-DE').code).toBe('de-DE');
+  });
+
+  it('exposes configured locale helper values', () => {
+    setI18nCache(
+      new I18nCache({
+        defaultLocale: 'en-US',
+        locales: ['en-US', 'fr', 'brand-french'],
+        customMapping: {
+          'brand-french': {
+            code: 'fr',
+            name: 'Brand French',
+          },
+        },
+        loadTranslations: vi.fn(),
+      })
+    );
+
+    expect(getDefaultLocale()).toBe('en-US');
+    expect(getLocales()).toEqual(['en-US', 'fr', 'brand-french']);
+    expect(getLocaleProperties('brand-french')).toMatchObject({
+      code: 'fr',
+      name: 'Brand French',
+    });
   });
 });

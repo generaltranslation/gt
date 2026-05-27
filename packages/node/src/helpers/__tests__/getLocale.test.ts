@@ -51,4 +51,21 @@ describe('getLocale', () => {
     const result = getRequestLocale(request);
     expect(['en-US', 'es', 'fr', 'ja']).toContain(result);
   });
+
+  it('resolves custom mapped request locales', () => {
+    initializeGT({
+      defaultLocale: 'en-US',
+      locales: ['en-US', 'fr', 'brand-french'],
+      customMapping: {
+        'brand-french': {
+          code: 'fr',
+          name: 'Brand French',
+        },
+      },
+    });
+
+    const request = { headers: { 'accept-language': 'brand-french' } };
+
+    expect(getRequestLocale(request)).toBe('fr');
+  });
 });
