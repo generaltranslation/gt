@@ -1,6 +1,6 @@
 'use client';
 
-export { CSRGTProvider as GTProvider } from './provider/CSRGTProvider';
+export { BrowserGTProvider as GTProvider } from './provider/BrowserGTProvider';
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { LocaleSelector } from './components/LocaleSelector';
 export { useLocaleSelector } from './components/useLocaleSelector';
