@@ -1,4 +1,5 @@
 import { getI18nCache } from '../../i18n-cache/singleton-operations';
+import { getI18nConfig } from '../../i18n-config/singleton-operations';
 import { DictionaryTranslationOptions } from '../types/options';
 import { TFunctionType } from '../types/functions';
 import { renderDictionaryEntry } from './renderDictionaryEntry';
@@ -23,7 +24,7 @@ export async function getTranslations(): Promise<TFunctionType> {
     i18nCache.loadDictionary(locale),
     i18nCache.loadTranslations(locale),
   ]);
-  const sourceLocale = i18nCache.getDefaultLocale();
+  const sourceLocale = getI18nConfig().getDefaultLocale();
 
   /**
    * Dictionary resolution
