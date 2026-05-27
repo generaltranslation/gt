@@ -29,6 +29,7 @@ import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
 import type { I18nEvents } from './event-subscription/types';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
+import type { CustomMapping } from '@generaltranslation/format/types';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -169,6 +170,30 @@ class I18nCache<
    */
   getVersionId(): string | undefined {
     return this.config._versionId;
+  }
+
+  /**
+   * Get the default locale.
+   * @deprecated use getI18nConfig().getDefaultLocale() instead
+   */
+  getDefaultLocale(): string {
+    return getI18nConfig().getDefaultLocale();
+  }
+
+  /**
+   * Get the supported locales.
+   * @deprecated use getI18nConfig().getLocales() instead
+   */
+  getLocales(): string[] {
+    return getI18nConfig().getLocales();
+  }
+
+  /**
+   * Get the custom locale mapping.
+   * @deprecated use getI18nConfig().getCustomMapping() instead
+   */
+  getCustomMapping(): CustomMapping {
+    return getI18nConfig().getCustomMapping();
   }
 
   /**
