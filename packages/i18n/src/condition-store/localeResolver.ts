@@ -1,52 +1,19 @@
-import { LocaleConfig } from '@generaltranslation/format';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { LocaleResolverConfig } from '../i18n-cache/types';
+import {
+  type I18nConfigParams,
+  type LocaleCandidates,
+} from '../i18n-config/I18nConfig';
+import { getI18nConfig } from '../i18n-config/singleton-operations';
 
-export type LocaleCandidates = string | string[] | undefined;
-
-function normalizeConditionStoreConfig({
-  defaultLocale,
-  locales,
-  customMapping,
-}: LocaleResolverConfig = {}) {
-  const fallbackLocale = defaultLocale || libraryDefaultLocale;
-  return {
-    defaultLocale: fallbackLocale,
-    locales: locales?.length ? locales : [fallbackLocale],
-    customMapping,
-  };
-}
-
-type NormalizedConditionStoreConfig = ReturnType<
-  typeof normalizeConditionStoreConfig
->;
+export type { LocaleCandidates } from '../i18n-config/I18nConfig';
 
 /**
  * Return the best supported locale for the candidates, or undefined when none match.
  */
 export function determineSupportedLocale(
   candidates: LocaleCandidates,
-  config: LocaleResolverConfig = {}
+  config: I18nConfigParams = {}
 ): string | undefined {
-  return determineSupportedLocaleWithConfig(
-    candidates,
-    normalizeConditionStoreConfig(config)
-  );
-}
-
-function determineSupportedLocaleWithConfig(
-  candidates: LocaleCandidates,
-  config: NormalizedConditionStoreConfig
-): string | undefined {
-  if (
-    candidates == null ||
-    (Array.isArray(candidates) && candidates.length === 0)
-  ) {
-    return undefined;
-  }
-
-  const localeConfig = new LocaleConfig(config);
-  return localeConfig.determineLocale(candidates) || undefined;
+  return getI18nConfig().determineSupportedLocale(candidates, config);
 }
 
 /**
@@ -54,18 +21,12 @@ function determineSupportedLocaleWithConfig(
  */
 export function resolveSupportedLocale(
   candidates: LocaleCandidates,
-  config: LocaleResolverConfig = {}
+  config: I18nConfigParams = {}
 ): string {
-  const normalizedConfig = normalizeConditionStoreConfig(config);
-  return (
-    determineSupportedLocaleWithConfig(candidates, normalizedConfig) ||
-    normalizedConfig.defaultLocale
-  );
+  return getI18nConfig().resolveSupportedLocale(candidates, config);
 }
 
-export function createLocaleResolver(config: LocaleResolverConfig = {}) {
-  const normalizedConfig = normalizeConditionStoreConfig(config);
+export function createLocaleResolver(config: I18nConfigParams = {}) {
   return (candidates?: LocaleCandidates): string =>
-    determineSupportedLocaleWithConfig(candidates, normalizedConfig) ||
-    normalizedConfig.defaultLocale;
+    getI18nConfig().resolveSupportedLocale(candidates, config);
 }

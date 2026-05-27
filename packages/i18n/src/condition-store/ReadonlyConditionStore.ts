@@ -1,6 +1,6 @@
 import type { ReadonlyConditionStoreInterface as ReadonlyConditionStoreContract } from '../i18n-cache/types';
+import type { LocaleCandidates } from '../i18n-config/I18nConfig';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
-import type { LocaleCandidates } from './localeResolver';
 
 export type ReadonlyConditionStoreParams = {
   locale: LocaleCandidates;
