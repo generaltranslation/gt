@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { I18nCache, initializeI18nConfig, setI18nCache } from 'gt-i18n/internal';
+import {
+  I18nCache,
+  initializeI18nConfig,
+  setI18nCache,
+} from 'gt-i18n/internal';
 import { AsyncConditionStore } from '../AsyncConditionStore';
 
 describe('AsyncConditionStore', () => {
