@@ -656,7 +656,7 @@ class I18nCache<
    */
   requiresDialectTranslation(locale: string): boolean {
     return (
-      this.requiresTranslation(locale) &&
+      this.isTranslationEnabled() &&
       getI18nConfig().requiresDialectTranslation(locale)
     );
   }
