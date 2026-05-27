@@ -20,6 +20,7 @@ vi.mock('@tanstack/react-start/server', () => ({
 }));
 
 import { determineLocale } from '../determineLocale';
+import { initializeI18nConfig } from 'gt-i18n/internal';
 
 const localeConfig = {
   defaultLocale: 'en',
@@ -55,6 +56,7 @@ function restoreGlobalProperty(
 
 describe('determineLocale', () => {
   beforeEach(() => {
+    initializeI18nConfig(localeConfig);
     mockCookie.mockReset();
     mockRequestHeader.mockReset();
     process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES = 'false';
