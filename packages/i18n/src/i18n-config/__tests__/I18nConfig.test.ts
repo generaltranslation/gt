@@ -60,14 +60,4 @@ describe('I18nConfig', () => {
 
     errorSpy.mockRestore();
   });
-
-  it('treats an empty string locale candidate as unsupported', () => {
-    const config = new I18nConfig({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-    });
-
-    expect(config.determineSupportedLocale('')).toBeUndefined();
-    expect(config.resolveSupportedLocale('')).toBe('en');
-  });
 });

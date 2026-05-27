@@ -24,7 +24,7 @@ export type ReadonlyConditionStoreParams = {
 
 export class ReadonlyConditionStore implements ReadonlyConditionStoreContract {
   /**
-   * @deprecated use getI18nCache().determineLocale() instead
+   * @deprecated use I18nConfig instead
    */
   protected readonly resolveLocale: (candidates?: LocaleCandidates) => string;
   protected locale: string;
@@ -36,8 +36,7 @@ export class ReadonlyConditionStore implements ReadonlyConditionStoreContract {
     ...localeConfig
   }: ReadonlyConditionStoreParams) {
     /**
-     * TODO: change this to getI18nCache().determineLocale() but this
-     * currently creates a circular dependency
+     * TODO: change this to I18nConfig once condition stores are migrated.
      */
     this.resolveLocale = createLocaleResolver(localeConfig);
     this.locale = this.resolveLocale(locale);

@@ -27,7 +27,6 @@ import { EventEmitter } from './event-subscription/EventEmitter';
 import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
 import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
 import type { I18nEvents } from './event-subscription/types';
-import { LocaleCandidates } from '../condition-store/localeResolver';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 
@@ -187,17 +186,6 @@ class I18nCache<
    */
   getCustomMapping() {
     return getI18nConfig().getCustomMapping();
-  }
-
-  /**
-   * Determine the best locale match, falling back to the default locale.
-   * @deprecated use I18nConfig instead
-   */
-  determineLocale(candidates?: LocaleCandidates): string {
-    const i18nConfig = getI18nConfig();
-    return (
-      i18nConfig.determineLocale(candidates) || i18nConfig.getDefaultLocale()
-    );
   }
 
   /**
