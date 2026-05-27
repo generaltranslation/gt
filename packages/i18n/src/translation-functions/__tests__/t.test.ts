@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nCache } from '../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
+import type { I18nCacheConstructorParams } from '../../i18n-cache/types';
 import { setWritableConditionStore } from '../../condition-store/singleton-operations';
+import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
+import type { I18nConfigParams } from '../../i18n-config/I18nConfig';
 import {
   getDefaultLocale,
   getLocale,
@@ -12,6 +15,14 @@ import { hashMessage } from '../../utils/hashMessage';
 import { t } from '../t';
 
 describe('t', () => {
+  function createCache(
+    i18nConfig: I18nConfigParams,
+    cacheConfig: I18nCacheConstructorParams = {}
+  ) {
+    initializeI18nConfig(i18nConfig);
+    return new I18nCache(cacheConfig);
+  }
+
   afterEach(() => {
     setWritableConditionStore({ getLocale: () => 'en' });
   });
@@ -19,11 +30,12 @@ describe('t', () => {
   it('works without an explicit locale', () => {
     setWritableConditionStore({ getLocale: () => 'en' });
     setI18nCache(
-      new I18nCache({
-        defaultLocale: 'en',
-        locales: ['en', 'fr'],
-        loadTranslations: vi.fn(),
-      })
+      createCache(
+        { defaultLocale: 'en', locales: ['en', 'fr'] },
+        {
+          loadTranslations: vi.fn(),
+        }
+      )
     );
 
     expect(t('Hello')).toBe('Hello');
@@ -32,13 +44,14 @@ describe('t', () => {
   it('uses the configured fallback locale store when no locale is provided', async () => {
     const message = 'Hello {name}!';
     const translatedMessage = 'Bonjour {name} !';
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      loadTranslations: vi.fn().mockResolvedValue({
-        [hashMessage(message, { $format: 'ICU' })]: translatedMessage,
-      }),
-    });
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        loadTranslations: vi.fn().mockResolvedValue({
+          [hashMessage(message, { $format: 'ICU' })]: translatedMessage,
+        }),
+      }
+    );
     const conditionStore = { getLocale: () => 'fr' };
 
     setI18nCache(cache);
@@ -50,14 +63,15 @@ describe('t', () => {
 
   it('allows an explicit $locale to override the current locale', async () => {
     const message = 'Hello {name}!';
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr', 'es'],
-      loadTranslations: vi.fn().mockImplementation((locale: string) => ({
-        [hashMessage(message, { $format: 'ICU' })]:
-          locale === 'es' ? 'Hola {name}!' : 'Bonjour {name} !',
-      })),
-    });
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr', 'es'] },
+      {
+        loadTranslations: vi.fn().mockImplementation((locale: string) => ({
+          [hashMessage(message, { $format: 'ICU' })]:
+            locale === 'es' ? 'Hola {name}!' : 'Bonjour {name} !',
+        })),
+      }
+    );
 
     setI18nCache(cache);
     setWritableConditionStore({ getLocale: () => 'fr' });
@@ -68,13 +82,14 @@ describe('t', () => {
 
   it('does not read the current locale when $locale is explicit', async () => {
     const message = 'Hello {name}!';
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      loadTranslations: vi.fn().mockResolvedValue({
-        [hashMessage(message, { $format: 'ICU' })]: 'Bonjour {name} !',
-      }),
-    });
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        loadTranslations: vi.fn().mockResolvedValue({
+          [hashMessage(message, { $format: 'ICU' })]: 'Bonjour {name} !',
+        }),
+      }
+    );
 
     setI18nCache(cache);
     setWritableConditionStore({
@@ -93,11 +108,10 @@ describe('t', () => {
     setWritableConditionStore({ getLocale: () => 'fr' });
 
     setI18nCache(
-      new I18nCache({
-        defaultLocale: 'es',
-        locales: ['es'],
-        loadTranslations: vi.fn(),
-      })
+      createCache(
+        { defaultLocale: 'es', locales: ['es'] },
+        { loadTranslations: vi.fn() }
+      )
     );
 
     expect(getLocale()).toBe('fr');
@@ -105,11 +119,10 @@ describe('t', () => {
 
   it('returns locale properties outside configured translation locales', () => {
     setI18nCache(
-      new I18nCache({
-        defaultLocale: 'en',
-        locales: ['fr'],
-        loadTranslations: vi.fn(),
-      })
+      createCache(
+        { defaultLocale: 'en', locales: ['fr'] },
+        { loadTranslations: vi.fn() }
+      )
     );
 
     expect(getLocaleProperties('de-DE').code).toBe('de-DE');
@@ -117,17 +130,19 @@ describe('t', () => {
 
   it('exposes configured locale helper values', () => {
     setI18nCache(
-      new I18nCache({
-        defaultLocale: 'en-US',
-        locales: ['en-US', 'fr', 'brand-french'],
-        customMapping: {
-          'brand-french': {
-            code: 'fr',
-            name: 'Brand French',
+      createCache(
+        {
+          defaultLocale: 'en-US',
+          locales: ['en-US', 'fr', 'brand-french'],
+          customMapping: {
+            'brand-french': {
+              code: 'fr',
+              name: 'Brand French',
+            },
           },
         },
-        loadTranslations: vi.fn(),
-      })
+        { loadTranslations: vi.fn() }
+      )
     );
 
     expect(getDefaultLocale()).toBe('en-US');

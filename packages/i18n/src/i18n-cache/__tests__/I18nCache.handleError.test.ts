@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { I18nCache } from '../I18nCache';
+import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 
 // Mock createTranslateManyFactory so constructor doesn't need real GT
 vi.mock('../translations-manager/utils/createTranslateMany', () => ({
@@ -8,13 +9,15 @@ vi.mock('../translations-manager/utils/createTranslateMany', () => ({
 
 describe('I18nCache.handleError', () => {
   beforeEach(() => {
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+    });
     vi.clearAllMocks();
   });
 
   it('throws in development mode when error occurs', async () => {
     const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
       environment: 'development',
       loadTranslations: vi.fn().mockRejectedValue(new Error('Load failed')),
     });
@@ -24,8 +27,6 @@ describe('I18nCache.handleError', () => {
 
   it('logs and returns fallback in production mode', async () => {
     const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
       environment: 'production',
       loadTranslations: vi.fn().mockRejectedValue(new Error('Load failed')),
     });

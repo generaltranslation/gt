@@ -6,6 +6,7 @@ import type { Hash } from '../TranslationsCache';
 import type { CreateTranslateMany } from '../utils/createTranslateMany';
 import type { I18nCacheLifecycleCallbacks } from '../../lifecycle-hooks/types';
 import type { SafeTranslationsLoader } from '../translations-loaders/types';
+import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 
 describe('LocalesCache', () => {
   let mockLoadTranslations: ReturnType<typeof vi.fn>;
@@ -30,6 +31,7 @@ describe('LocalesCache', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
     mockLoadTranslations = vi.fn().mockResolvedValue(frTranslations);
     mockLoadDictionary = vi.fn().mockResolvedValue(frDictionary);
     mockCreateTranslateMany = vi.fn().mockReturnValue(vi.fn());
@@ -45,7 +47,6 @@ describe('LocalesCache', () => {
     lifecycle?: I18nCacheLifecycleCallbacks<string>;
   }) {
     return new LocalesCache<string>({
-      defaultLocale: 'en',
       dictionary: enDictionary,
       loadTranslations: mockLoadTranslations as SafeTranslationsLoader<string>,
       loadDictionary: mockLoadDictionary as DictionaryLoader,

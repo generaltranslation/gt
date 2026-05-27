@@ -1,9 +1,9 @@
-import type { CustomMapping } from '@generaltranslation/format/types';
 import { TranslationsLoader } from './types';
 import { LoadTranslationsType } from '../../utils/getLoadTranslationsType';
 import logger from '../../../logs/logger';
 import { createRemoteTranslationLoader } from './createRemoteTranslationLoader';
 import { createFallbackTranslationLoader } from './createFallbackTranslationLoader';
+import { getI18nConfig } from '../../../i18n-config/singleton-operations';
 
 /**
  * Creates a translation loader function that loads translations from a remote store (CDN or other)
@@ -24,7 +24,6 @@ export function routeCreateTranslationLoader({
     projectId?: string;
     _versionId?: string;
     _branchId?: string;
-    customMapping?: CustomMapping;
   };
   loadTranslations?: TranslationsLoader;
 }): TranslationsLoader {
@@ -35,7 +34,7 @@ export function routeCreateTranslationLoader({
     );
   }
 
-  const { cacheUrl, projectId, _versionId, _branchId, customMapping } =
+  const { cacheUrl, projectId, _versionId, _branchId } =
     remoteTranslationLoaderParams;
 
   switch (type) {
@@ -46,7 +45,7 @@ export function routeCreateTranslationLoader({
         projectId: projectId || '',
         _versionId,
         _branchId,
-        customMapping,
+        customMapping: getI18nConfig().getCustomMapping(),
       });
     case LoadTranslationsType.CUSTOM:
       return loadTranslations!;

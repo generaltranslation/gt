@@ -31,7 +31,10 @@ type RuntimeTranslationConfig = {
 export type I18nCacheConstructorParams<
   TranslationValue extends Translation = Translation,
 > = DictionaryConfig &
-  Omit<GTConfig, 'cacheExpiryTime'> & {
+  Omit<
+    GTConfig,
+    'cacheExpiryTime' | 'defaultLocale' | 'locales' | 'customMapping'
+  > & {
     /**
      * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
      * disables expiry, and a number sets an explicit TTL.
@@ -51,9 +54,6 @@ export type I18nCacheConstructorParams<
  */
 export type I18nCacheConfig = {
   environment: 'development' | 'production';
-  defaultLocale: string;
-  locales: string[];
-  customMapping: CustomMapping;
   /**
    * @deprecated
    * Perhaps we can keep this around, but more for
