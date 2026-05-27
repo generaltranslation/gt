@@ -18,6 +18,7 @@ vi.mock('gt-i18n/internal', () => ({
     getLocales: () => mockLocaleConfig.locales,
     getCustomMapping: () => mockLocaleConfig.customMapping,
     requiresTranslation: () => mockLocaleConfig.translationRequired,
+    isSameLanguage: () => mockLocaleConfig.dialectTranslationRequired,
     requiresDialectTranslation: () =>
       mockLocaleConfig.translationRequired &&
       mockLocaleConfig.dialectTranslationRequired,
