@@ -13,6 +13,17 @@ const mockLocaleConfig = vi.hoisted(() => ({
 }));
 
 vi.mock('gt-i18n/internal', () => ({
+  initializeI18nConfig: (params: {
+    defaultLocale?: string;
+    locales?: string[];
+    customMapping?: Record<string, unknown>;
+  }) => {
+    mockLocaleConfig.defaultLocale =
+      params.defaultLocale ?? mockLocaleConfig.defaultLocale;
+    mockLocaleConfig.locales = params.locales ?? mockLocaleConfig.locales;
+    mockLocaleConfig.customMapping =
+      params.customMapping ?? mockLocaleConfig.customMapping;
+  },
   I18nCache: class {
     constructor(params: {
       defaultLocale?: string;
