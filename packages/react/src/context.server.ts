@@ -1,6 +1,6 @@
 'server-only';
 
-export { SSRGTProvider as GTProvider } from './provider/SSRGTProvider';
+export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { LocaleSelector } from './components/LocaleSelector';
 export { useLocaleSelector } from './components/useLocaleSelector';
