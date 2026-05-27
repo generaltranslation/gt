@@ -6,7 +6,6 @@ import {
 import {
   createConditionStoreSingleton,
   getRuntimeEnvironment,
-  ReadonlyConditionStore,
 } from 'gt-i18n/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import { getRenderStrategy } from '../setup/globals';
@@ -58,9 +57,12 @@ function getReadonlyConditionStoreWithFallback(): ReadonlyConditionStoreInterfac
     }
 
     // Fallback to default configuration (important: do not set globally)
-    return new ReadonlyConditionStore({
-      locale: libraryDefaultLocale,
-    });
+    return {
+      getLocale: () => libraryDefaultLocale,
+      getEnableI18n: () => true,
+      setLocale: () => {},
+      setEnableI18n: () => {},
+    };
   }
 }
 
