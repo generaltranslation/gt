@@ -54,16 +54,14 @@ function parseAcceptLanguage(header: string): string[] {
 export function getRequestLocale(request: RequestLike): string {
   // Setup
   const i18nConfig = getI18nConfig();
-  const defaultLocale = i18nConfig.getDefaultLocale();
 
   // Get the accept-language header
   const acceptLanguage = request.headers['accept-language'];
   const headerValue = Array.isArray(acceptLanguage)
     ? acceptLanguage[0]
     : acceptLanguage;
-  if (!headerValue) return defaultLocale;
 
   // Parse the accept-language header
-  const preferredLocales = parseAcceptLanguage(headerValue);
+  const preferredLocales = headerValue ? parseAcceptLanguage(headerValue) : [];
   return i18nConfig.resolveSupportedLocale(preferredLocales);
 }
