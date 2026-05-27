@@ -12,7 +12,7 @@ import { InternalGTProvider } from '@generaltranslation/react-core/context';
  *
  * TODO: find some way to enforce this is only imported on the server
  */
-export function SSRGTProvider(props: SharedGTProviderProps) {
+export function ServerGTProvider(props: SharedGTProviderProps) {
   // The condition store may already be created at the module level
   if (!isReadonlyConditionStoreInitialized()) {
     const conditionStore = new ReadonlyConditionStore(props);
