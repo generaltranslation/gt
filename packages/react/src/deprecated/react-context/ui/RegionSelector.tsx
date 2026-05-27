@@ -61,6 +61,8 @@ export function RegionSelector<Regions extends string[]>({
 
   return (
     <select
+      name='generaltranslation-region'
+      aria-label='General Translation region selector'
       {...props}
       value={region || ''}
       onChange={(e) => changeRegion(e.target.value)}
