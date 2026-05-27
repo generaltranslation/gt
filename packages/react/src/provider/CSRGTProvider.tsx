@@ -1,7 +1,4 @@
-import {
-  getReactI18nCache,
-  InternalGTProvider,
-} from '@generaltranslation/react-core/context';
+import { InternalGTProvider } from '@generaltranslation/react-core/context';
 import type { SharedGTProviderProps } from './SharedGTProviderProps';
 import { createOrUpdateBrowserConditionStore } from '../condition-store/createBrowserConditionStore';
 
@@ -10,21 +7,11 @@ import { createOrUpdateBrowserConditionStore } from '../condition-store/createBr
  * GTProvider because needs to syncrhonize any incoming
  * server-side translations
  */
-export function CSRGTProvider({
-  defaultLocale = getReactI18nCache().getDefaultLocale(),
-  locales = getReactI18nCache().getLocales(),
-  customMapping = getReactI18nCache().getCustomMapping(),
-  ...props
-}: SharedGTProviderProps) {
+export function CSRGTProvider(props: SharedGTProviderProps) {
   // TODO: if a specific translation entry changes, but not the locale, this does not trigger a re-render
   // TODO: optimize by skipping updateTranslations() if client is responsible for reloading translations
   // (eg reloadLocale === undefined), see getI18nStore().updateLocale() in InternalGTProvider
-  createOrUpdateBrowserConditionStore({
-    defaultLocale,
-    locales,
-    customMapping,
-    ...props,
-  });
+  createOrUpdateBrowserConditionStore(props);
 
   return <InternalGTProvider {...props} />;
 }
