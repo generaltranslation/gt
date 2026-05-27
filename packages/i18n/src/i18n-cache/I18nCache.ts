@@ -27,7 +27,6 @@ import { EventEmitter } from './event-subscription/EventEmitter';
 import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
 import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
 import type { I18nEvents } from './event-subscription/types';
-import { LocaleCandidates } from '../condition-store/localeResolver';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 
@@ -166,34 +165,6 @@ class I18nCache<
   }
 
   // ========== Getters and Setters ========== //
-
-  /**
-   * Get the default locale
-   */
-  getDefaultLocale(): string {
-    return getI18nConfig().getDefaultLocale();
-  }
-
-  /**
-   * Get the locales
-   */
-  getLocales(): string[] {
-    return getI18nConfig().getLocales();
-  }
-
-  /**
-   * Get the custom locale mapping
-   */
-  getCustomMapping() {
-    return getI18nConfig().getCustomMapping();
-  }
-
-  /**
-   * Determine the best locale match, falling back to the default locale.
-   */
-  determineLocale(candidates?: LocaleCandidates): string {
-    return getI18nConfig().resolveSupportedLocale(candidates);
-  }
 
   /**
    * Get the version ID
@@ -638,26 +609,9 @@ class I18nCache<
 
   // ========== Metadata ========== //
 
-  /**
-   * Returns true if translation is required
-   * @param {string} locale - The user's locale
-   * @returns {boolean} True if translation is required, otherwise false
-   */
-  requiresTranslation(locale: string): boolean {
+  private requiresTranslation(locale: string): boolean {
     return (
       this.isTranslationEnabled() && getI18nConfig().requiresTranslation(locale)
-    );
-  }
-
-  /**
-   * Returns true if dialect translation is required
-   * @param {string} locale - The user's locale
-   * @returns {boolean} True if dialect translation is required, otherwise false
-   */
-  requiresDialectTranslation(locale: string): boolean {
-    return (
-      this.isTranslationEnabled() &&
-      getI18nConfig().requiresDialectTranslation(locale)
     );
   }
 
