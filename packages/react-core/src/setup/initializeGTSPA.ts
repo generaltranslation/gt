@@ -1,5 +1,12 @@
-import { I18nCache, WritableConditionStore } from 'gt-i18n/internal';
-import type { WritableConditionStoreParams } from 'gt-i18n/internal';
+import {
+  I18nCache,
+  initializeI18nConfig,
+  WritableConditionStore,
+} from 'gt-i18n/internal';
+import type {
+  I18nConfigParams,
+  WritableConditionStoreParams,
+} from 'gt-i18n/internal';
 import type { Translation } from 'gt-i18n/types';
 import { setReactI18nCache } from '../i18n-cache/singleton-operations';
 import type { ReactI18nCacheParams } from '../i18n-cache/ReactI18nCache';
@@ -17,9 +24,14 @@ import { setI18nStore } from '../i18n-store/singleton-operations';
  * @deprecated moved to /react and /react-native
  */
 export function internalInitializeGTSPA(
-  config: I18nStoreParams & ReactI18nCacheParams & WritableConditionStoreParams
+  config: I18nStoreParams &
+    I18nConfigParams &
+    ReactI18nCacheParams &
+    WritableConditionStoreParams
 ): void {
   setRenderStrategy('SPA');
+
+  initializeI18nConfig(config);
 
   const i18nCache = new I18nCache<Translation>(config);
   setReactI18nCache(i18nCache);

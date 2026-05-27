@@ -1,6 +1,10 @@
 import { setAsyncConditionStore } from '../async-i18n-cache/singleton-operations';
 import type { InitializeGTParams } from './types';
-import { I18nCache, setI18nCache } from 'gt-i18n/internal';
+import {
+  I18nCache,
+  initializeI18nConfig,
+  setI18nCache,
+} from 'gt-i18n/internal';
 import { AsyncConditionStore } from '../async-i18n-cache/AsyncConditionStore';
 
 /**
@@ -9,6 +13,8 @@ import { AsyncConditionStore } from '../async-i18n-cache/AsyncConditionStore';
  * TODO: auto detect if can find gt.config.json files
  */
 export function initializeGT(params: InitializeGTParams): void {
+  initializeI18nConfig(params);
+
   const i18nCache = new I18nCache<string>(params);
   const conditionStore = new AsyncConditionStore({
     defaultLocale: i18nCache.getDefaultLocale(),
