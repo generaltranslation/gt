@@ -29,6 +29,7 @@ export type {
 } from './i18n-cache/translations-manager/DictionaryCache';
 export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
+export type { GTServicesEnabledParams } from './globals/getGTServicesEnabled';
 
 // Translation Options (Function types exported by /types)
 export type * from './translation-functions/types/options';

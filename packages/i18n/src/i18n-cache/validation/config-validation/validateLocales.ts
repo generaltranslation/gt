@@ -1,6 +1,6 @@
 import { isValidLocale } from '@generaltranslation/format';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
-import { getGTServicesEnabled } from '../../utils/getGTServicesEnabled';
+import { getGTServicesEnabled } from '../../../globals/getGTServicesEnabled';
 import { ValidationResult } from '../types';
 import type { CustomMapping } from '@generaltranslation/format/types';
 
