@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import {
   createLocaleResolver,
   determineSupportedLocale,
@@ -13,6 +14,10 @@ const customMapping = {
 };
 
 describe('localeResolver', () => {
+  beforeEach(() => {
+    initializeI18nConfig();
+  });
+
   it('resolves custom aliases to supported canonical locales', () => {
     expect(
       determineSupportedLocale('brand-french', {

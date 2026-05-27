@@ -11,4 +11,24 @@ describe('I18nConfig', () => {
     expect(config.determineSupportedLocale('')).toBeUndefined();
     expect(config.resolveSupportedLocale('')).toBe('en');
   });
+
+  it('supports one-off locale config overrides', () => {
+    const config = new I18nConfig({
+      defaultLocale: 'en',
+      locales: ['en'],
+    });
+
+    expect(
+      config.determineSupportedLocale('brand-french', {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        customMapping: {
+          'brand-french': {
+            code: 'fr',
+            name: 'Brand French',
+          },
+        },
+      })
+    ).toBe('fr');
+  });
 });

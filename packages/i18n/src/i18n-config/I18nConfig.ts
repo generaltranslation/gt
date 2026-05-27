@@ -1,4 +1,7 @@
-import { LocaleConfig } from '@generaltranslation/format';
+import {
+  LocaleConfig,
+  type LocaleConfigConstructorParams,
+} from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 
@@ -11,18 +14,8 @@ export type I18nConfigParams = {
 export type LocaleCandidates = string | string[] | undefined;
 
 export class I18nConfig extends LocaleConfig {
-  constructor({
-    defaultLocale = libraryDefaultLocale,
-    locales,
-    customMapping,
-  }: I18nConfigParams = {}) {
-    const resolvedLocales = locales ?? [defaultLocale];
-
-    super({
-      defaultLocale,
-      locales: Array.from(new Set([defaultLocale, ...resolvedLocales])),
-      customMapping: customMapping || {},
-    });
+  constructor(params: I18nConfigParams = {}) {
+    super(getLocaleConfigParams(params));
   }
 
   getDefaultLocale(): string {
@@ -37,18 +30,25 @@ export class I18nConfig extends LocaleConfig {
     return this.customMapping || {};
   }
 
-  determineSupportedLocale(candidates: LocaleCandidates): string | undefined {
-    if (
-      candidates == null ||
-      (Array.isArray(candidates) && candidates.length === 0)
-    ) {
-      return undefined;
-    }
-    return this.determineLocale(candidates);
+  determineSupportedLocale(
+    candidates: LocaleCandidates,
+    config?: I18nConfigParams
+  ): string | undefined {
+    return this.determineSupportedLocaleWithConfig(
+      candidates,
+      this.getLocaleConfig(config)
+    );
   }
 
-  resolveSupportedLocale(candidates?: LocaleCandidates): string {
-    return this.determineSupportedLocale(candidates) || this.getDefaultLocale();
+  resolveSupportedLocale(
+    candidates?: LocaleCandidates,
+    config?: I18nConfigParams
+  ): string {
+    const localeConfig = this.getLocaleConfig(config);
+    return (
+      this.determineSupportedLocaleWithConfig(candidates, localeConfig) ||
+      localeConfig.defaultLocale
+    );
   }
 
   resolveLocale(locale: string): string {
@@ -67,4 +67,45 @@ export class I18nConfig extends LocaleConfig {
       this.isSameLanguage(this.getDefaultLocale(), locale)
     );
   }
+
+  private getLocaleConfig(config?: I18nConfigParams): LocaleConfig {
+    if (!config || !hasI18nConfigParams(config)) {
+      return this;
+    }
+    return new LocaleConfig(getLocaleConfigParams(config));
+  }
+
+  private determineSupportedLocaleWithConfig(
+    candidates: LocaleCandidates,
+    localeConfig: LocaleConfig
+  ): string | undefined {
+    if (
+      candidates == null ||
+      (Array.isArray(candidates) && candidates.length === 0)
+    ) {
+      return undefined;
+    }
+    return localeConfig.determineLocale(candidates);
+  }
+}
+
+function getLocaleConfigParams({
+  defaultLocale = libraryDefaultLocale,
+  locales,
+  customMapping,
+}: I18nConfigParams = {}): LocaleConfigConstructorParams {
+  const resolvedLocales = locales ?? [defaultLocale];
+  return {
+    defaultLocale,
+    locales: Array.from(new Set([defaultLocale, ...resolvedLocales])),
+    customMapping: customMapping || {},
+  };
+}
+
+function hasI18nConfigParams(config: I18nConfigParams): boolean {
+  return (
+    'defaultLocale' in config ||
+    'locales' in config ||
+    'customMapping' in config
+  );
 }
