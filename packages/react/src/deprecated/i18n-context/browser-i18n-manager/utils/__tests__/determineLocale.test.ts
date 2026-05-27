@@ -1,9 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { initializeI18nConfig } from 'gt-i18n/internal';
 import { getLocale } from '../../../functions/locale-operations';
 import { initializeGT } from '../../../setup/initializeGT';
 import { determineLocale } from '../determineLocale';
 
 describe('determineLocale', () => {
+  beforeEach(() => {
+    initializeI18nConfig();
+  });
+
   it('resolves custom locale aliases returned by getLocale', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
