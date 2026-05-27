@@ -658,8 +658,7 @@ class I18nCache<
 
   private requiresTranslation(locale: string): boolean {
     return (
-      this.isTranslationEnabled() &&
-      getI18nConfig().requiresTranslation(locale)
+      this.isTranslationEnabled() && getI18nConfig().requiresTranslation(locale)
     );
   }
 
