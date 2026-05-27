@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nCache } from '../../../i18n-cache/I18nCache';
+import type { I18nCacheConstructorParams } from '../../../i18n-cache/types';
 import { setI18nCache } from '../../../i18n-cache/singleton-operations';
 import { setWritableConditionStore } from '../../../condition-store/singleton-operations';
+import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
+import type { I18nConfigParams } from '../../../i18n-config/I18nConfig';
 import { msg } from '../../msg';
 import { hashMessage } from '../../../utils/hashMessage';
 import { getGT } from '../getGT';
@@ -14,12 +17,21 @@ describe('translation function locale defaults', () => {
     setWritableConditionStore({ getLocale: () => 'en' });
   });
 
+  function createCache(
+    i18nConfig: I18nConfigParams,
+    cacheConfig: I18nCacheConstructorParams = {}
+  ) {
+    initializeI18nConfig(i18nConfig);
+    return new I18nCache(cacheConfig);
+  }
+
   function setupManager(translations: Record<string, string>) {
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      loadTranslations: vi.fn().mockResolvedValue(translations),
-    });
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        loadTranslations: vi.fn().mockResolvedValue(translations),
+      }
+    );
 
     setI18nCache(cache);
     setWritableConditionStore({ getLocale: () => 'fr' });
@@ -40,14 +52,15 @@ describe('translation function locale defaults', () => {
 
   it('getGT allows $locale to select another loaded locale', async () => {
     const message = 'Hello {name}!';
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr', 'es'],
-      loadTranslations: vi.fn().mockImplementation((locale: string) => ({
-        [hashMessage(message, { $format: 'ICU' })]:
-          locale === 'es' ? 'Hola {name}!' : 'Bonjour {name} !',
-      })),
-    });
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr', 'es'] },
+      {
+        loadTranslations: vi.fn().mockImplementation((locale: string) => ({
+          [hashMessage(message, { $format: 'ICU' })]:
+            locale === 'es' ? 'Hola {name}!' : 'Bonjour {name} !',
+        })),
+      }
+    );
     setI18nCache(cache);
     setWritableConditionStore({ getLocale: () => 'fr' });
 
@@ -58,16 +71,17 @@ describe('translation function locale defaults', () => {
   });
 
   it('getTranslations uses the current locale for dictionary entries', async () => {
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      dictionary: {
-        greeting: 'Hello {name}!',
-      },
-      loadDictionary: vi.fn().mockResolvedValue({
-        greeting: 'Bonjour {name} !',
-      }),
-    });
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        dictionary: {
+          greeting: 'Hello {name}!',
+        },
+        loadDictionary: vi.fn().mockResolvedValue({
+          greeting: 'Bonjour {name} !',
+        }),
+      }
+    );
     setI18nCache(cache);
     setWritableConditionStore({ getLocale: () => 'fr' });
 
@@ -77,14 +91,15 @@ describe('translation function locale defaults', () => {
   });
 
   it('getTranslations returns source dictionary entries when no target translation exists', async () => {
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      dictionary: {
-        greeting: 'Hello {name}!',
-      },
-      loadDictionary: vi.fn().mockResolvedValue({}),
-    });
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        dictionary: {
+          greeting: 'Hello {name}!',
+        },
+        loadDictionary: vi.fn().mockResolvedValue({}),
+      }
+    );
     setI18nCache(cache);
     setWritableConditionStore({ getLocale: () => 'fr' });
 
@@ -99,15 +114,16 @@ describe('translation function locale defaults', () => {
     const loadTranslations = vi.fn().mockResolvedValue({
       [hashMessage(message, lookupOptions)]: 'Bonjour {name} !',
     });
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      dictionary: {
-        greeting: [message, { context: 'homepage' }],
-      },
-      loadDictionary: vi.fn().mockResolvedValue({}),
-      loadTranslations,
-    });
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        dictionary: {
+          greeting: [message, { context: 'homepage' }],
+        },
+        loadDictionary: vi.fn().mockResolvedValue({}),
+        loadTranslations,
+      }
+    );
     setI18nCache(cache);
     setWritableConditionStore({ getLocale: () => 'fr' });
 
@@ -118,14 +134,15 @@ describe('translation function locale defaults', () => {
   });
 
   it('getTranslations throws when the source dictionary entry is missing', async () => {
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      dictionary: {
-        greeting: 'Hello',
-      },
-      loadDictionary: vi.fn().mockResolvedValue({}),
-    });
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        dictionary: {
+          greeting: 'Hello',
+        },
+        loadDictionary: vi.fn().mockResolvedValue({}),
+      }
+    );
     setI18nCache(cache);
     setWritableConditionStore({ getLocale: () => 'fr' });
 
@@ -137,18 +154,19 @@ describe('translation function locale defaults', () => {
   });
 
   it('getTranslations obj throws when the source dictionary object is missing', async () => {
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      dictionary: {
-        user: {
-          profile: {
-            name: 'Name',
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        dictionary: {
+          user: {
+            profile: {
+              name: 'Name',
+            },
           },
         },
-      },
-      loadDictionary: vi.fn().mockResolvedValue({}),
-    });
+        loadDictionary: vi.fn().mockResolvedValue({}),
+      }
+    );
     setI18nCache(cache);
     setWritableConditionStore({ getLocale: () => 'fr' });
 
@@ -160,27 +178,28 @@ describe('translation function locale defaults', () => {
   });
 
   it('getTranslations obj returns translated dictionary subtrees', async () => {
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      dictionary: {
-        user: {
-          profile: {
-            name: 'Name',
-            greeting: 'Hello {name}!',
-            title: ['Title', { $context: 'profile title' }],
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        dictionary: {
+          user: {
+            profile: {
+              name: 'Name',
+              greeting: 'Hello {name}!',
+              title: ['Title', { $context: 'profile title' }],
+            },
           },
         },
-      },
-      loadDictionary: vi.fn().mockResolvedValue({
-        user: {
-          profile: {
-            name: 'Nom',
-            greeting: 'Bonjour {name} !',
+        loadDictionary: vi.fn().mockResolvedValue({
+          user: {
+            profile: {
+              name: 'Nom',
+              greeting: 'Bonjour {name} !',
+            },
           },
-        },
-      }),
-    });
+        }),
+      }
+    );
     setI18nCache(cache);
     setWritableConditionStore({ getLocale: () => 'fr' });
 
@@ -202,26 +221,27 @@ describe('translation function locale defaults', () => {
     const loadTranslations = vi.fn().mockResolvedValue({
       [hashMessage(title, titleOptions)]: 'Titre',
     });
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      dictionary: {
-        user: {
-          profile: {
-            name: 'Name',
-            title: [title, { context: 'profile title' }],
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        dictionary: {
+          user: {
+            profile: {
+              name: 'Name',
+              title: [title, { context: 'profile title' }],
+            },
           },
         },
-      },
-      loadDictionary: vi.fn().mockResolvedValue({
-        user: {
-          profile: {
-            name: 'Nom',
+        loadDictionary: vi.fn().mockResolvedValue({
+          user: {
+            profile: {
+              name: 'Nom',
+            },
           },
-        },
-      }),
-      loadTranslations,
-    });
+        }),
+        loadTranslations,
+      }
+    );
     setI18nCache(cache);
     setWritableConditionStore({ getLocale: () => 'fr' });
 
@@ -256,13 +276,14 @@ describe('translation function locale defaults', () => {
 
   it('tx does not read the current locale when $locale is explicit', async () => {
     const message = 'Hello';
-    const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      loadTranslations: vi.fn().mockResolvedValue({
-        [hashMessage(message, { $format: 'STRING' })]: 'Bonjour',
-      }),
-    });
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        loadTranslations: vi.fn().mockResolvedValue({
+          [hashMessage(message, { $format: 'STRING' })]: 'Bonjour',
+        }),
+      }
+    );
 
     setI18nCache(cache);
     setWritableConditionStore({

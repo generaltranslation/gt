@@ -29,11 +29,7 @@ import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
 import type { I18nEvents } from './event-subscription/types';
 import { LocaleCandidates } from '../condition-store/localeResolver';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
-import {
-  getI18nConfig,
-  initializeI18nConfig,
-  isI18nConfigInitialized,
-} from '../i18n-config/singleton-operations';
+import { getI18nConfig } from '../i18n-config/singleton-operations';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -92,12 +88,6 @@ class I18nCache<
     // Validation
     publishValidationResults(validateConfig(params), 'I18nCache: ');
 
-    // Setup
-    if (hasI18nConfigParams(params) || !isI18nConfigInitialized()) {
-      initializeI18nConfig(
-        params as Parameters<typeof initializeI18nConfig>[0]
-      );
-    }
     this.config = standardizeConfig(params);
     const i18nConfig = getI18nConfig();
 
@@ -827,14 +817,6 @@ function standardizeConfig<TranslationValue extends Translation>(
     runtimeTranslation: config.runtimeTranslation,
     _versionId: config._versionId,
   };
-}
-
-function hasI18nConfigParams(params: object): boolean {
-  return (
-    'defaultLocale' in params ||
-    'locales' in params ||
-    'customMapping' in params
-  );
 }
 
 /**

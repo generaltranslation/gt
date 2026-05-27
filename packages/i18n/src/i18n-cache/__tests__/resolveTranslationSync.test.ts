@@ -1,16 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { I18nCache } from '../I18nCache';
 import { hashMessage } from '../../utils/hashMessage';
+import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 
 describe('I18nCache.resolveTranslationSync', () => {
   beforeEach(() => {
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+    });
     vi.clearAllMocks();
   });
 
   it('should return undefined when no translations loaded for locale', () => {
     const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
       loadTranslations: vi.fn(),
     });
 
@@ -23,8 +26,6 @@ describe('I18nCache.resolveTranslationSync', () => {
 
   it('does not throw without options in development', () => {
     const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
       loadTranslations: vi.fn(),
       environment: 'development',
     });
@@ -50,8 +51,6 @@ describe('I18nCache.resolveTranslationSync', () => {
     };
 
     const cache = new I18nCache({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
       loadTranslations: vi.fn().mockResolvedValue(mockTranslations),
     });
 
