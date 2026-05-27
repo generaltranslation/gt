@@ -9,7 +9,7 @@ export {
   determineSupportedLocale,
   resolveSupportedLocale,
 } from '../condition-store/localeResolver';
-export type { LocaleCandidates } from '../condition-store/localeResolver';
+export type { LocaleCandidates } from '../i18n-config/I18nConfig';
 
 // Events
 export {
