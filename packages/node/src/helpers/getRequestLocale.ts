@@ -63,5 +63,8 @@ export function getRequestLocale(request: RequestLike): string {
 
   // Parse the accept-language header
   const preferredLocales = headerValue ? parseAcceptLanguage(headerValue) : [];
-  return i18nConfig.resolveSupportedLocale(preferredLocales);
+  return (
+    i18nConfig.determineLocale(preferredLocales) ||
+    i18nConfig.getDefaultLocale()
+  );
 }
