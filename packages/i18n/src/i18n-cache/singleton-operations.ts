@@ -1,4 +1,3 @@
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { I18nCache } from './I18nCache';
 import logger from '../logs/logger';
 import { Translation } from './translations-manager/utils/types/translation-data';
@@ -22,10 +21,7 @@ export function getI18nCache<U extends Translation = Translation>():
     logger.warn(
       'getI18nCache(): I18nCache was not initialized. Falling back to the default locale until initializeGT() configures translations.'
     );
-    i18nCache = new I18nCache({
-      defaultLocale: libraryDefaultLocale,
-      locales: [libraryDefaultLocale],
-    });
+    i18nCache = new I18nCache({});
   }
   return i18nCache;
 }

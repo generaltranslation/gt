@@ -3,12 +3,8 @@ import logger from '../logs/logger';
 import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
 import { validateConfig } from './validation/validateConfig';
 import { Translation } from './translations-manager/utils/types/translation-data';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT } from 'generaltranslation';
-import { LocaleConfig, standardizeLocale } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
 import { LookupOptions } from '../translation-functions/types/options';
-import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import {
   SafeTranslationsLoader,
   TranslationsLoader,
@@ -31,11 +27,13 @@ import { EventEmitter } from './event-subscription/EventEmitter';
 import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
 import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
 import type { I18nEvents } from './event-subscription/types';
-import {
-  createLocaleResolver,
-  LocaleCandidates,
-} from '../condition-store/localeResolver';
+import { LocaleCandidates } from '../condition-store/localeResolver';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
+import {
+  getI18nConfig,
+  initializeI18nConfig,
+  isI18nConfigInitialized,
+} from '../i18n-config/singleton-operations';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -83,13 +81,6 @@ class I18nCache<
   private localesCache: LocalesCache<TranslationValue>;
 
   /**
-   * Runtime-safe locale and formatting helpers
-   */
-  private localeConfig: LocaleConfig;
-
-  public determineLocale: (candidates?: LocaleCandidates) => string;
-
-  /**
    * Creates an instance of I18nCache.
    * TODO: resolve gtConfig from just file path
    * @param params - The parameters for the I18nCache constructor
@@ -99,21 +90,16 @@ class I18nCache<
     super();
 
     // Validation
-    const validationResults = validateConfig(params);
-    publishValidationResults(validationResults, 'I18nCache: ');
+    publishValidationResults(validateConfig(params), 'I18nCache: ');
 
     // Setup
+    if (hasI18nConfigParams(params) || !isI18nConfigInitialized()) {
+      initializeI18nConfig(
+        params as Parameters<typeof initializeI18nConfig>[0]
+      );
+    }
     this.config = standardizeConfig(params);
-    this.localeConfig = new LocaleConfig({
-      defaultLocale: this.config.defaultLocale,
-      locales: this.config.locales,
-      customMapping: this.config.customMapping,
-    });
-    this.determineLocale = createLocaleResolver({
-      defaultLocale: this.config.defaultLocale,
-      locales: this.config.locales,
-      customMapping: this.config.customMapping,
-    });
+    const i18nConfig = getI18nConfig();
 
     // Create cache miss handlers
     const loadTranslations = routeCreateTranslationLoader({
@@ -124,7 +110,7 @@ class I18nCache<
         projectId: params.projectId,
         _versionId: params._versionId,
         _branchId: params._branchId,
-        customMapping: params.customMapping,
+        customMapping: i18nConfig.getCustomMapping(),
       },
     }) as SafeTranslationsLoader<TranslationValue>;
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
@@ -150,7 +136,7 @@ class I18nCache<
 
     // Setup locale-scoped caches
     this.localesCache = new LocalesCache<TranslationValue>({
-      defaultLocale: this.config.defaultLocale,
+      defaultLocale: i18nConfig.getDefaultLocale(),
       dictionary: params.dictionary,
       loadTranslations,
       loadDictionary,
@@ -195,21 +181,28 @@ class I18nCache<
    * Get the default locale
    */
   getDefaultLocale(): string {
-    return this.config.defaultLocale;
+    return getI18nConfig().getDefaultLocale();
   }
 
   /**
    * Get the locales
    */
   getLocales(): string[] {
-    return this.config.locales;
+    return getI18nConfig().getLocales();
   }
 
   /**
    * Get the custom locale mapping
    */
-  getCustomMapping(): CustomMapping {
-    return this.config.customMapping;
+  getCustomMapping() {
+    return getI18nConfig().getCustomMapping();
+  }
+
+  /**
+   * Determine the best locale match, falling back to the default locale.
+   */
+  determineLocale(candidates?: LocaleCandidates): string {
+    return getI18nConfig().resolveSupportedLocale(candidates);
   }
 
   /**
@@ -478,11 +471,13 @@ class I18nCache<
   }
 
   private getDefaultDictionaryCache() {
-    return this.localesCache.getDictionary(this.config.defaultLocale);
+    return this.localesCache.getDictionary(getI18nConfig().getDefaultLocale());
   }
 
   private resolveDictionaryCacheLocale(locale: string): Locale {
-    return this.resolveCacheLocale(locale) ?? this.config.defaultLocale;
+    return (
+      this.resolveCacheLocale(locale) ?? getI18nConfig().getDefaultLocale()
+    );
   }
 
   /**
@@ -659,11 +654,8 @@ class I18nCache<
    * @returns {boolean} True if translation is required, otherwise false
    */
   requiresTranslation(locale: string): boolean {
-    const defaultLocale = this.getDefaultLocale();
-    const locales = this.getLocales();
     return (
-      this.isTranslationEnabled() &&
-      this.localeConfig.requiresTranslation(locale, defaultLocale, locales)
+      this.isTranslationEnabled() && getI18nConfig().requiresTranslation(locale)
     );
   }
 
@@ -673,10 +665,9 @@ class I18nCache<
    * @returns {boolean} True if dialect translation is required, otherwise false
    */
   requiresDialectTranslation(locale: string): boolean {
-    const defaultLocale = this.getDefaultLocale();
     return (
       this.requiresTranslation(locale) &&
-      this.localeConfig.isSameLanguage(defaultLocale, locale)
+      getI18nConfig().requiresDialectTranslation(locale)
     );
   }
 
@@ -709,13 +700,7 @@ class I18nCache<
   }
 
   private _resolveLocale(locale: string) {
-    const resolvedLocale = this.localeConfig.determineLocale(locale);
-    if (!this.localeConfig.isValidLocale(locale) || !resolvedLocale) {
-      throw new Error(
-        `Locale "${locale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping.`
-      );
-    }
-    return resolvedLocale;
+    return getI18nConfig().resolveLocale(locale);
   }
 
   /**
@@ -729,8 +714,9 @@ class I18nCache<
       return resolvedLocale;
     }
 
-    const aliasLocale = this.localeConfig.resolveAliasLocale(
-      standardizeLocale(locale)
+    const i18nConfig = getI18nConfig();
+    const aliasLocale = i18nConfig.resolveAliasLocale(
+      i18nConfig.standardizeLocale(locale)
     );
     if (this.requiresTranslation(aliasLocale)) {
       return aliasLocale;
@@ -795,19 +781,20 @@ class I18nCache<
    * specific context
    */
   private getGTClassClean(locale?: string) {
+    const i18nConfig = getI18nConfig();
     return new GT({
-      sourceLocale: this.config.defaultLocale,
+      sourceLocale: i18nConfig.getDefaultLocale(),
       targetLocale: locale,
       // GT validates approved locales before constructing its LocaleConfig, so
       // pass canonical locales here while preserving alias target locales.
       locales: Array.from(
         new Set(
-          this.config.locales.map((locale) =>
-            this.localeConfig.resolveCanonicalLocale(locale)
-          )
+          i18nConfig
+            .getLocales()
+            .map((locale) => i18nConfig.resolveCanonicalLocale(locale))
         )
       ),
-      customMapping: this.config.customMapping,
+      customMapping: i18nConfig.getCustomMapping(),
       projectId: this.config.projectId,
       baseUrl: this.config.runtimeUrl || undefined,
       apiKey: this.config.apiKey,
@@ -828,14 +815,6 @@ export { I18nCache };
 function standardizeConfig<TranslationValue extends Translation>(
   config: I18nCacheConstructorParams<TranslationValue>
 ) {
-  const gtServicesEnabled = getGTServicesEnabled(config);
-
-  const dedupedLocales = dedupeLocales({
-    defaultLocale: config.defaultLocale || libraryDefaultLocale,
-    locales: config.locales || [libraryDefaultLocale],
-    customMapping: config.customMapping,
-  });
-
   return {
     environment: config.environment || getRuntimeEnvironment(),
     enableI18n: config.enableI18n !== undefined ? config.enableI18n : true,
@@ -847,72 +826,15 @@ function standardizeConfig<TranslationValue extends Translation>(
     batchConfig: config.batchConfig,
     runtimeTranslation: config.runtimeTranslation,
     _versionId: config._versionId,
-    ...(gtServicesEnabled
-      ? standardizeLocales(dedupedLocales)
-      : dedupedLocales),
   };
 }
 
-/**
- * Dedupe locales and add defaultLocale
- */
-function dedupeLocales({
-  defaultLocale,
-  locales,
-  customMapping,
-}: {
-  defaultLocale: string;
-  locales: string[];
-  customMapping?: CustomMapping;
-}) {
-  return {
-    defaultLocale,
-    locales: Array.from(new Set([defaultLocale, ...locales])),
-    customMapping: customMapping || {},
-  };
-}
-
-/**
- * Standardize all locales in config
- * Only apply if using GT services
- */
-function standardizeLocales(config: {
-  defaultLocale: string;
-  locales: string[];
-  customMapping: CustomMapping;
-}) {
-  // Sanitize defaultLocale and locales
-  const defaultLocale = standardizeLocale(config.defaultLocale);
-  const locales = config.locales.map((locale) => {
-    const mappedLocale =
-      typeof config.customMapping?.[locale] === 'string'
-        ? config.customMapping?.[locale]
-        : config.customMapping?.[locale]?.code;
-    if (mappedLocale) {
-      return locale;
-    } else {
-      return standardizeLocale(locale);
-    }
-  });
-
-  // Sanitize customMapping
-  const customMapping = Object.fromEntries(
-    Object.entries(config.customMapping || {}).map(([key, value]) => [
-      key,
-      typeof value === 'string'
-        ? standardizeLocale(value)
-        : {
-            ...value,
-            ...(value.code ? { code: standardizeLocale(value.code) } : {}),
-          },
-    ])
+function hasI18nConfigParams(params: object): boolean {
+  return (
+    'defaultLocale' in params ||
+    'locales' in params ||
+    'customMapping' in params
   );
-
-  return {
-    defaultLocale,
-    locales,
-    customMapping,
-  };
 }
 
 /**

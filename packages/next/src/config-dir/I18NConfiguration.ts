@@ -166,11 +166,6 @@ export class I18NConfiguration {
       devApiKey,
       projectId,
       runtimeUrl,
-      // Locale info
-      defaultLocale,
-      locales,
-      // Custom mapping
-      customMapping,
       enableI18n: this.translationEnabled,
       // Batching config
       batchConfig: {
