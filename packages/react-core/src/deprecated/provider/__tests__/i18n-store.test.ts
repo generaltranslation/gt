@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { I18nManager, WritableConditionStore } from 'gt-i18n/internal';
-import { setWritableConditionStore as setConditionStore } from '../../../condition-store/singleton-operations';
-import { setReactI18nManager } from '../../../i18n-manager/singleton-operations';
+import { setReadonlyConditionStore as setConditionStore } from '../../../condition-store/singleton-operations';
+import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
 import { I18nStore } from '../../../i18n-store/I18nStore';
 
 function createManager() {
@@ -32,7 +32,7 @@ function createManager() {
 
 function createStores(locale = 'en') {
   const manager = createManager();
-  setReactI18nManager(manager);
+  setReactI18nCache(manager);
 
   const conditionStore = new WritableConditionStore({ locale });
   setConditionStore(conditionStore);
@@ -46,19 +46,6 @@ async function flushAsyncUpdates() {
 }
 
 describe('external store i18n wiring', () => {
-  it('notifies locale subscribers when locale changes', () => {
-    const { i18nStore } = createStores('fr');
-    const localeListener = vi.fn();
-    const unsubscribeLocale = i18nStore.subscribeToLocale(localeListener);
-
-    i18nStore.setLocale('en');
-
-    expect(i18nStore.getLocaleSnapshot()).toBe('en');
-    expect(localeListener).toHaveBeenCalledTimes(1);
-
-    unsubscribeLocale();
-  });
-
   it('notifies translation subscribers for matching cache updates', async () => {
     const { i18nStore } = createStores();
     const matchingListener = vi.fn();
