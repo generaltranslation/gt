@@ -7,7 +7,6 @@ import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
   DictionaryObjectSnapshot,
-  ListenerSet,
   StoreListener,
   TranslateLookup,
   TranslateManySnapshot,
@@ -19,14 +18,14 @@ import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
 import { getI18nConfig } from 'gt-i18n/internal';
+import {
+  dictionaryEntryEventMatchesLookup,
+  dictionaryObjectEventMatchesLookup,
+} from './utils/dictionary-events';
+import { subscribeToSet } from './utils/subscriptions';
 
-type EntryCacheEvent = {
-  locale: string;
-  id: string;
-};
 type TranslateStoreListener = (lookup: TranslateLookup) => void;
-type DictionaryStoreEvent = EntryCacheEvent;
-type DictionaryStoreListener = (event: DictionaryStoreEvent) => void;
+type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
 export type I18nStoreParams = {};
 
@@ -39,10 +38,9 @@ export type I18nStoreParams = {};
 export class I18nStore {
   // ===== Listener Sets ===== //
 
-  private defaultLocaleListeners: ListenerSet = new Set();
-  private localesListeners: ListenerSet = new Set();
-  private customMappingListeners: ListenerSet = new Set();
-  private enableI18nListeners: ListenerSet = new Set();
+  private defaultLocaleListeners = new Set<StoreListener>();
+  private localesListeners = new Set<StoreListener>();
+  private customMappingListeners = new Set<StoreListener>();
   private translateListeners = new Set<TranslateStoreListener>();
   private translateManySnapshotCache = new WeakMap<
     readonly TranslateLookup[],
@@ -50,7 +48,6 @@ export class I18nStore {
   >();
   private dictionaryEntryListeners = new Set<DictionaryStoreListener>();
   private dictionaryObjectListeners = new Set<DictionaryStoreListener>();
-  private localeListeners: ListenerSet = new Set();
 
   /**
    * I18nCache must be already initialized
@@ -66,15 +63,15 @@ export class I18nStore {
   // ===== Manager Config Subscriptions ===== //
 
   subscribeToDefaultLocale = (listener: StoreListener): Unsubscribe => {
-    return this.subscribeToStaticSet(this.defaultLocaleListeners, listener);
+    return subscribeToSet(this.defaultLocaleListeners, listener);
   };
 
   subscribeToLocales = (listener: StoreListener): Unsubscribe => {
-    return this.subscribeToStaticSet(this.localesListeners, listener);
+    return subscribeToSet(this.localesListeners, listener);
   };
 
   subscribeToCustomMapping = (listener: StoreListener): Unsubscribe => {
-    return this.subscribeToStaticSet(this.customMappingListeners, listener);
+    return subscribeToSet(this.customMappingListeners, listener);
   };
 
   // ===== I18nCache Subscriptions ===== //
@@ -89,7 +86,7 @@ export class I18nStore {
         listener();
       }
     };
-    return this.subscribeToTranslateSet(wrappedListener);
+    return subscribeToSet(this.translateListeners, wrappedListener);
   }
 
   subscribeToTranslateMany<T extends Translation>(
@@ -114,10 +111,7 @@ export class I18nStore {
         listener();
       }
     };
-    return this.subscribeToDictionarySet(
-      this.dictionaryEntryListeners,
-      wrappedListener
-    );
+    return subscribeToSet(this.dictionaryEntryListeners, wrappedListener);
   }
 
   subscribeToDictionaryObject(
@@ -130,10 +124,7 @@ export class I18nStore {
         listener();
       }
     };
-    return this.subscribeToDictionarySet(
-      this.dictionaryObjectListeners,
-      wrappedListener
-    );
+    return subscribeToSet(this.dictionaryObjectListeners, wrappedListener);
   }
 
   // ===== Manager Config Snapshots ===== //
@@ -244,75 +235,16 @@ export class I18nStore {
     return new RuntimeDictionaryScope();
   };
 
-  private subscribeToStaticSet(
-    listenerSet: ListenerSet,
-    listener: StoreListener
-  ): Unsubscribe {
-    listenerSet.add(listener);
-    return () => {
-      listenerSet.delete(listener);
-    };
-  }
-
-  private subscribeToTranslateSet(
-    listener: TranslateStoreListener
-  ): Unsubscribe {
-    this.translateListeners.add(listener);
-    return () => {
-      this.translateListeners.delete(listener);
-    };
-  }
-
-  private subscribeToDictionarySet(
-    listenerSet: Set<DictionaryStoreListener>,
-    listener: DictionaryStoreListener
-  ): Unsubscribe {
-    listenerSet.add(listener);
-    return () => {
-      listenerSet.delete(listener);
-    };
-  }
-
   // ===== Listener Utilities ===== //
 
   private emitTranslateEvent(event: TranslateLookup): void {
     this.translateListeners.forEach((listener) => listener(event));
   }
 
-  private emitDictionaryEvent(event: DictionaryStoreEvent): void {
+  private emitDictionaryEvent(event: DictionaryLookup): void {
     this.dictionaryEntryListeners.forEach((listener) => listener(event));
     this.dictionaryObjectListeners.forEach((listener) => {
       listener(event);
     });
   }
-}
-
-// ===== Lookup Keys ===== //
-
-function getDictionaryLookupFromKey(lookupKey: string): DictionaryLookup {
-  const separatorIndex = lookupKey.indexOf(':');
-  return {
-    locale: lookupKey.slice(0, separatorIndex),
-    id: lookupKey.slice(separatorIndex + 1),
-  };
-}
-
-// ===== Event Matching ===== //
-
-function dictionaryEntryEventMatchesLookup(
-  event: DictionaryStoreEvent,
-  lookupKey: string
-): boolean {
-  return getDictionaryListenerKey(event) === lookupKey;
-}
-
-function dictionaryObjectEventMatchesLookup(
-  event: DictionaryStoreEvent,
-  lookupKey: string
-): boolean {
-  const { locale, id } = getDictionaryLookupFromKey(lookupKey);
-  if (locale !== event.locale) {
-    return false;
-  }
-  return id === '' || event.id === id || event.id.startsWith(`${id}.`);
 }
