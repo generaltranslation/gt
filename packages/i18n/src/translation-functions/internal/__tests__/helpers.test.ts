@@ -4,6 +4,7 @@ import {
   resolveStringContentWithFallback,
   resolveStringContentWithRuntimeFallback,
 } from '../helpers';
+import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 import { getI18nCache } from '../../../i18n-cache/singleton-operations';
 import { interpolateMessage } from '../../utils/interpolation/interpolateMessage';
 
@@ -13,6 +14,7 @@ vi.mock('../../utils/interpolation/interpolateMessage');
 describe('translation helpers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    initializeI18nConfig({ defaultLocale: 'en' });
     vi.mocked(interpolateMessage).mockReturnValue('interpolated-result');
   });
 
@@ -56,7 +58,6 @@ describe('translation helpers', () => {
       lookupTranslationWithFallback: vi
         .fn()
         .mockResolvedValue('Bonjour {name} !'),
-      getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
     vi.mocked(getI18nCache).mockReturnValue(
       mockCache as unknown as ReturnType<typeof getI18nCache>
@@ -77,7 +78,6 @@ describe('translation helpers', () => {
     const mockCache = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue(undefined),
-      getDefaultLocale: vi.fn().mockReturnValue('en'),
     };
     vi.mocked(getI18nCache).mockReturnValue(
       mockCache as unknown as ReturnType<typeof getI18nCache>
