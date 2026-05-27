@@ -20,6 +20,7 @@ import type {
   LifecycleCallback,
   LifecycleParam,
 } from '../lifecycle-hooks/types';
+import { getI18nConfig } from '../../i18n-config/singleton-operations';
 
 /**
  * Just being explicit about the purpose of this type
@@ -35,7 +36,6 @@ type TranslateLocaleDictionaryEntry = (
 type LocalesCacheParams<TranslationValue extends Translation> = {
   ttl?: number | null;
   batchConfig?: TranslationBatchConfig;
-  defaultLocale: Locale;
   dictionary?: Dictionary;
   createTranslateMany: CreateTranslateMany;
   loadTranslations: SafeTranslationsLoader<TranslationValue>;
@@ -62,7 +62,6 @@ export class LocalesCache<TranslationValue extends Translation> {
   constructor({
     ttl,
     batchConfig,
-    defaultLocale,
     dictionary = {},
     loadTranslations,
     loadDictionary,
@@ -102,6 +101,7 @@ export class LocalesCache<TranslationValue extends Translation> {
       },
     });
 
+    const defaultLocale = getI18nConfig().getDefaultLocale();
     this.dictionaries.set(
       defaultLocale,
       this.createDictionaryCache(defaultLocale, dictionary),

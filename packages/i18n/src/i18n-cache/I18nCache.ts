@@ -86,10 +86,10 @@ class I18nCache<
     super();
 
     // Validation
-    publishValidationResults(validateConfig(params), 'I18nCache: ');
+    const validationResults = validateConfig(params);
+    publishValidationResults(validationResults, 'I18nCache: ');
 
     this.config = standardizeConfig(params);
-    const i18nConfig = getI18nConfig();
 
     // Create cache miss handlers
     const loadTranslations = routeCreateTranslationLoader({
@@ -100,7 +100,6 @@ class I18nCache<
         projectId: params.projectId,
         _versionId: params._versionId,
         _branchId: params._branchId,
-        customMapping: i18nConfig.getCustomMapping(),
       },
     }) as SafeTranslationsLoader<TranslationValue>;
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
@@ -126,7 +125,6 @@ class I18nCache<
 
     // Setup locale-scoped caches
     this.localesCache = new LocalesCache<TranslationValue>({
-      defaultLocale: i18nConfig.getDefaultLocale(),
       dictionary: params.dictionary,
       loadTranslations,
       loadDictionary,
@@ -169,6 +167,7 @@ class I18nCache<
 
   /**
    * Get the default locale
+   * @deprecated use I18nConfig instead
    */
   getDefaultLocale(): string {
     return getI18nConfig().getDefaultLocale();
@@ -176,6 +175,7 @@ class I18nCache<
 
   /**
    * Get the locales
+   * @deprecated use I18nConfig instead
    */
   getLocales(): string[] {
     return getI18nConfig().getLocales();
@@ -183,6 +183,7 @@ class I18nCache<
 
   /**
    * Get the custom locale mapping
+   * @deprecated use I18nConfig instead
    */
   getCustomMapping() {
     return getI18nConfig().getCustomMapping();
@@ -190,9 +191,13 @@ class I18nCache<
 
   /**
    * Determine the best locale match, falling back to the default locale.
+   * @deprecated use I18nConfig instead
    */
   determineLocale(candidates?: LocaleCandidates): string {
-    return getI18nConfig().resolveSupportedLocale(candidates);
+    const i18nConfig = getI18nConfig();
+    return (
+      i18nConfig.determineLocale(candidates) || i18nConfig.getDefaultLocale()
+    );
   }
 
   /**
@@ -642,10 +647,14 @@ class I18nCache<
    * Returns true if translation is required
    * @param {string} locale - The user's locale
    * @returns {boolean} True if translation is required, otherwise false
+   * @deprecated use I18nConfig instead
    */
   requiresTranslation(locale: string): boolean {
+    const defaultLocale = this.getDefaultLocale();
+    const locales = this.getLocales();
     return (
-      this.isTranslationEnabled() && getI18nConfig().requiresTranslation(locale)
+      this.isTranslationEnabled() &&
+      getI18nConfig().requiresTranslation(locale, defaultLocale, locales)
     );
   }
 
@@ -653,14 +662,19 @@ class I18nCache<
    * Returns true if dialect translation is required
    * @param {string} locale - The user's locale
    * @returns {boolean} True if dialect translation is required, otherwise false
+   * @deprecated use I18nConfig instead
    */
   requiresDialectTranslation(locale: string): boolean {
+    const defaultLocale = this.getDefaultLocale();
     return (
-      this.isTranslationEnabled() &&
-      getI18nConfig().requiresDialectTranslation(locale)
+      this.requiresTranslation(locale) &&
+      getI18nConfig().isSameLanguage(defaultLocale, locale)
     );
   }
 
+  /**
+   * @deprecated use I18nConfig instead
+   */
   public sanitizeLocale(locale: string): string | undefined {
     try {
       return this._resolveLocale(locale);
@@ -690,7 +704,14 @@ class I18nCache<
   }
 
   private _resolveLocale(locale: string) {
-    return getI18nConfig().resolveLocale(locale);
+    const i18nConfig = getI18nConfig();
+    const resolvedLocale = i18nConfig.determineLocale(locale);
+    if (!i18nConfig.isValidLocale(locale) || !resolvedLocale) {
+      throw new Error(
+        `Locale "${locale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping.`
+      );
+    }
+    return resolvedLocale;
   }
 
   /**

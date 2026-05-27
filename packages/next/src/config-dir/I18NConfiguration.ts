@@ -358,14 +358,9 @@ export class I18NConfiguration {
    * @returns True if translation is required, otherwise false
    */
   requiresTranslation(locale: string): [boolean, boolean] {
-    if (!this.translationEnabled) {
-      return [false, false];
-    }
-
-    const i18nConfig = getI18nConfig();
     return [
-      i18nConfig.requiresTranslation(locale),
-      i18nConfig.requiresDialectTranslation(locale),
+      this._i18nCache.requiresTranslation(locale),
+      this._i18nCache.requiresDialectTranslation(locale),
     ];
   }
 
