@@ -164,7 +164,11 @@ export class I18NConfiguration {
     // Translation and dictionary managers
     const shouldLoadTranslations = loadTranslationsType !== 'disabled';
     const runtimeTranslationTimeout = this.renderSettings.timeout;
-    initializeI18nConfig({ defaultLocale, locales, customMapping });
+    initializeI18nConfig({
+      defaultLocale,
+      locales,
+      customMapping,
+    });
     this._i18nCache = new I18nCache<TranslatedChildren>({
       apiKey,
       devApiKey,
@@ -358,9 +362,12 @@ export class I18NConfiguration {
    * @returns True if translation is required, otherwise false
    */
   requiresTranslation(locale: string): [boolean, boolean] {
+    if (!this.translationEnabled) {
+      return [false, false];
+    }
+
     const i18nConfig = getI18nConfig();
-    const translationRequired =
-      this.isTranslationEnabled() && i18nConfig.requiresTranslation(locale);
+    const translationRequired = i18nConfig.requiresTranslation(locale);
     return [
       translationRequired,
       translationRequired &&

@@ -1,6 +1,7 @@
 import {
   createLookupOptions,
   getRuntimeEnvironment,
+  getI18nConfig,
   interpolateMessage,
 } from 'gt-i18n/internal';
 import type {
@@ -59,7 +60,7 @@ export function resolveStringContent(
   options: ResolutionOptions<StringFormat> = {}
 ): StringContent {
   const i18nCache = getReactI18nCache();
-  const defaultLocale = i18nCache.getDefaultLocale();
+  const defaultLocale = getI18nConfig().getDefaultLocale();
   if (!getShouldTranslate()) {
     return interpolateMessage({
       options,

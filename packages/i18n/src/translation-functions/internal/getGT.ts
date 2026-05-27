@@ -1,4 +1,5 @@
 import { getI18nCache } from '../../i18n-cache/singleton-operations';
+import { getI18nConfig } from '../../i18n-config/singleton-operations';
 import { InlineTranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
@@ -19,7 +20,7 @@ export async function getGT(): Promise<GTFunctionType> {
   const i18nCache = getI18nCache();
   const locale = getLocale();
   await i18nCache.loadTranslations(locale);
-  const sourceLocale = i18nCache.getDefaultLocale();
+  const sourceLocale = getI18nConfig().getDefaultLocale();
 
   /**
    * Registers a message at build time and resolves its translation at runtime.

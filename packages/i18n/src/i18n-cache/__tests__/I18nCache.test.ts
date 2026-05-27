@@ -1167,9 +1167,6 @@ describe('I18nCache', () => {
         }),
       });
 
-      expect(cache.requiresTranslation('en-GB')).toBe(true);
-      expect(cache.requiresDialectTranslation('en-GB')).toBe(true);
-
       const translations = await cache.loadTranslations(testCase.locale);
 
       expect(loadTranslations).toHaveBeenCalledTimes(1);
@@ -1309,7 +1306,7 @@ describe('I18nCache', () => {
     );
   });
 
-  it('resolves custom aliases for locale metadata operations', () => {
+  it('resolves custom aliases for GT instances', () => {
     const cache = createCache({
       customMapping: {
         'brand-french': {
@@ -1319,8 +1316,6 @@ describe('I18nCache', () => {
       },
     });
 
-    expect(cache.requiresTranslation('brand-french')).toBe(true);
-    expect(cache.requiresDialectTranslation('en-US')).toBe(false);
     expect(() => cache.getGTClass('brand-french')).not.toThrow();
   });
 
@@ -1385,8 +1380,6 @@ describe('I18nCache', () => {
     await expect(cache.getLookupTranslation('fr')).resolves.toEqual(
       expect.any(Function)
     );
-    expect(cache.requiresTranslation('fr')).toBe(true);
-    expect(cache.requiresDialectTranslation('fr')).toBe(false);
     expect(() => cache.getGTClass('fr')).not.toThrow();
   });
 
