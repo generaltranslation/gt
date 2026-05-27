@@ -32,9 +32,6 @@ export function GTProvider(props: GTProviderProps): React.ReactNode {
   return (
     <GTReactProvider
       ssr={isSSREnabled()}
-      defaultLocale={i18nCache.getDefaultLocale()}
-      locales={i18nCache.getLocales()}
-      customMapping={i18nCache.getCustomMapping()}
       enableI18n={i18nCache.isTranslationEnabled()}
       loadTranslations={(locale: string) => i18nCache.loadTranslations(locale)}
       _versionId={i18nCache.getVersionId()}

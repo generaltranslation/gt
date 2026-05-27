@@ -1,5 +1,6 @@
 import type { LocaleCandidates } from '../i18n-cache';
 import type { WritableConditionStoreInterface } from '../i18n-cache/types';
+import { getI18nConfig } from '../i18n-config/singleton-operations';
 import {
   ReadonlyConditionStore,
   type ReadonlyConditionStoreParams,
@@ -12,7 +13,7 @@ export class WritableConditionStore
   implements WritableConditionStoreInterface
 {
   setLocale = (locale: LocaleCandidates): void => {
-    this.locale = this.resolveLocale(locale);
+    this.locale = getI18nConfig().resolveSupportedLocale(locale);
   };
 
   setEnableI18n = (enableI18n: boolean): void => {
