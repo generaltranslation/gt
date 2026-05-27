@@ -32,13 +32,6 @@
     "ignore": ["react", "react-dom"]
   },
   {
-    "name": "gt-tanstack-start",
-    "path": "packages/tanstack-start/dist/index.client.mjs",
-    "limit": "56 kB",
-    "brotli": true,
-    "ignore": ["react", "react-dom", "@tanstack/react-start"]
-  },
-  {
     "name": "gt-next/client",
     "path": "packages/next/dist/client.js",
     "limit": "55 kB",
