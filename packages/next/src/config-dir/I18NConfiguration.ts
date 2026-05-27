@@ -19,7 +19,11 @@ import {
 } from '../utils/cookies';
 import { defaultLocaleHeaderName } from '../utils/headers';
 import type { CustomMapping } from '@generaltranslation/format/types';
-import { I18nCache, initializeI18nConfig } from 'gt-i18n/internal';
+import {
+  getI18nConfig,
+  I18nCache,
+  initializeI18nConfig,
+} from 'gt-i18n/internal';
 import type { LookupOptions } from 'gt-i18n/internal/types';
 import { loadTranslations } from './loadTranslation';
 
@@ -253,7 +257,7 @@ export class I18NConfiguration {
       localeCookieName,
       resetLocaleCookieName,
     } = this;
-    const customMapping = this._i18nCache.getCustomMapping();
+    const customMapping = getI18nConfig().getCustomMapping();
     const _versionId = this._i18nCache.getVersionId();
     return {
       projectId,
@@ -287,7 +291,7 @@ export class I18NConfiguration {
    * @returns {string} A BCP-47 locale tag
    */
   getDefaultLocale(): string {
-    return this._i18nCache.getDefaultLocale();
+    return getI18nConfig().getDefaultLocale();
   }
 
   /**
@@ -295,7 +299,7 @@ export class I18NConfiguration {
    * @returns {string[]} A list of BCP-47 locale tags, or undefined if none were provided
    */
   getLocales(): string[] {
-    return this._i18nCache.getLocales();
+    return getI18nConfig().getLocales();
   }
 
   /**
@@ -354,9 +358,10 @@ export class I18NConfiguration {
    * @returns True if translation is required, otherwise false
    */
   requiresTranslation(locale: string): [boolean, boolean] {
+    const i18nConfig = getI18nConfig();
     return [
-      this._i18nCache.requiresTranslation(locale),
-      this._i18nCache.requiresDialectTranslation(locale),
+      i18nConfig.requiresTranslation(locale),
+      i18nConfig.requiresDialectTranslation(locale),
     ];
   }
 
