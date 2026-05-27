@@ -3,11 +3,49 @@ import { I18NConfiguration } from '../I18NConfiguration';
 
 const mockI18nCacheParams = vi.hoisted(() => vi.fn());
 const mockLookupTranslationWithFallback = vi.hoisted(() => vi.fn());
+const mockLocaleConfig = vi.hoisted(() => ({
+  defaultLocale: 'en',
+  locales: ['en', 'fr'],
+  customMapping: {},
+  translationRequired: true,
+  dialectTranslationRequired: false,
+  enableI18n: true,
+}));
 
 vi.mock('gt-i18n/internal', () => ({
+  getI18nConfig: () => ({
+    getDefaultLocale: () => mockLocaleConfig.defaultLocale,
+    getLocales: () => mockLocaleConfig.locales,
+    getCustomMapping: () => mockLocaleConfig.customMapping,
+    requiresTranslation: () => mockLocaleConfig.translationRequired,
+    requiresDialectTranslation: () =>
+      mockLocaleConfig.dialectTranslationRequired,
+  }),
+  initializeI18nConfig: (params: {
+    defaultLocale?: string;
+    locales?: string[];
+    customMapping?: Record<string, unknown>;
+  }) => {
+    mockLocaleConfig.defaultLocale =
+      params.defaultLocale ?? mockLocaleConfig.defaultLocale;
+    mockLocaleConfig.locales = params.locales ?? mockLocaleConfig.locales;
+    mockLocaleConfig.customMapping =
+      params.customMapping ?? mockLocaleConfig.customMapping;
+  },
   I18nCache: class {
-    constructor(params: unknown) {
+    constructor(params: {
+      defaultLocale?: string;
+      locales?: string[];
+      customMapping?: Record<string, unknown>;
+      enableI18n?: boolean;
+    }) {
       mockI18nCacheParams(params);
+      mockLocaleConfig.defaultLocale =
+        params.defaultLocale ?? mockLocaleConfig.defaultLocale;
+      mockLocaleConfig.locales = params.locales ?? mockLocaleConfig.locales;
+      mockLocaleConfig.customMapping =
+        params.customMapping ?? mockLocaleConfig.customMapping;
+      mockLocaleConfig.enableI18n = params.enableI18n ?? true;
     }
 
     getGTClass() {
@@ -16,12 +54,34 @@ vi.mock('gt-i18n/internal', () => ({
       };
     }
 
+    getDefaultLocale() {
+      return mockLocaleConfig.defaultLocale;
+    }
+
+    getLocales() {
+      return mockLocaleConfig.locales;
+    }
+
+    getCustomMapping() {
+      return mockLocaleConfig.customMapping;
+    }
+
+    getVersionId() {
+      return undefined;
+    }
+
     requiresTranslation() {
-      return true;
+      return (
+        mockLocaleConfig.enableI18n && mockLocaleConfig.translationRequired
+      );
     }
 
     requiresDialectTranslation() {
-      return false;
+      return (
+        mockLocaleConfig.enableI18n &&
+        mockLocaleConfig.translationRequired &&
+        mockLocaleConfig.dialectTranslationRequired
+      );
     }
 
     async loadTranslations() {
@@ -71,6 +131,12 @@ describe('I18NConfiguration', () => {
     mockI18nCacheParams.mockReset();
     mockLookupTranslationWithFallback.mockReset();
     mockLookupTranslationWithFallback.mockResolvedValue('translated');
+    mockLocaleConfig.defaultLocale = 'en';
+    mockLocaleConfig.locales = ['en', 'fr'];
+    mockLocaleConfig.customMapping = {};
+    mockLocaleConfig.translationRequired = true;
+    mockLocaleConfig.dialectTranslationRequired = false;
+    mockLocaleConfig.enableI18n = true;
   });
 
   it.each<[string, Partial<ConfigParams>, number | null]>([
@@ -151,5 +217,48 @@ describe('I18NConfiguration', () => {
         $maxChars: 12,
       }
     );
+  });
+
+  it('exposes configured locale values and client custom mappings', () => {
+    const customMapping = {
+      'brand-french': {
+        code: 'fr',
+        name: 'Brand French',
+      },
+    };
+    const config = createConfig({
+      defaultLocale: 'en-US',
+      locales: ['en-US', 'fr', 'brand-french'],
+      customMapping,
+    });
+
+    expect(config.getDefaultLocale()).toBe('en-US');
+    expect(config.getLocales()).toEqual(['en-US', 'fr', 'brand-french']);
+    expect(config.getClientSideConfig()).toEqual(
+      expect.objectContaining({
+        customMapping,
+      })
+    );
+  });
+
+  it('checks translation and dialect requirements from locale config', () => {
+    mockLocaleConfig.translationRequired = true;
+    mockLocaleConfig.dialectTranslationRequired = true;
+
+    const config = createConfig();
+
+    expect(config.requiresTranslation('en-GB')).toEqual([true, true]);
+  });
+
+  it('does not require translation when translation loading is disabled', () => {
+    mockLocaleConfig.translationRequired = true;
+    mockLocaleConfig.dialectTranslationRequired = true;
+
+    const config = createConfig({
+      loadTranslationsType: 'disabled',
+      loadDictionaryEnabled: false,
+    });
+
+    expect(config.requiresTranslation('fr')).toEqual([false, false]);
   });
 });
