@@ -1,11 +1,12 @@
 import type { InternalGTProviderProps } from '@generaltranslation/react-core/context';
-import type { ReadonlyConditionStoreParams } from 'gt-i18n/internal/types';
+import type { LocaleCandidates } from 'gt-i18n/internal/types';
 
 /**
  * We force the user to pass translations so they can be synchronously accessed
  *
  * - {@link InternalGTProviderProps} - requires translations and dictionaries
- * - {@link ReadonlyConditionStoreParams} - requires locale
+ * - locale - request/browser locale candidates
  */
-export type SharedGTProviderProps = InternalGTProviderProps &
-  ReadonlyConditionStoreParams;
+export type SharedGTProviderProps = InternalGTProviderProps & {
+  locale: LocaleCandidates;
+};

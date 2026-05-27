@@ -16,8 +16,6 @@ export type ReloadType = (state: SerializedBrowserConditionStoreState) => void;
 
 /**
  * The configuration for the BrowserConditionStore
- * @param {string[]} locales - The accepted locales
- * @param {CustomMapping} [customMapping] - The custom mapping
  * @param {GetLocale} getLocale - The function to get the locale
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the locale cookie to check
  */
