@@ -76,6 +76,8 @@ export function InternalLocaleSelector({
 
   return (
     <select
+      name='generaltranslation-locale'
+      aria-label='General Translation locale selector'
       {...props}
       // Fallback to an empty string if currentLocale is undefined
       value={locale || ''}
