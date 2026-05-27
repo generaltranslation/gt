@@ -1,19 +1,18 @@
 import { isValidLocale } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  defaultCacheUrl,
+  defaultRuntimeApiUrl,
+} from 'generaltranslation/internal';
 import logger from '../logs/logger';
 import type { I18nConfigParams } from './I18nConfig';
 
-export function validateI18nConfigParams({
-  defaultLocale,
-  locales,
-  customMapping,
-}: I18nConfigParams): void {
-  const invalidLocales = getInvalidLocales({
-    defaultLocale,
-    locales,
-    customMapping,
-  });
+export function validateI18nConfigParams(params: I18nConfigParams): void {
+  if (!getGTServicesEnabled(params)) {
+    return;
+  }
+
+  const invalidLocales = getInvalidLocales(params);
 
   invalidLocales.forEach((locale) => {
     logger.error(`I18nConfig: ${getInvalidLocaleMessage(locale)}`);
@@ -30,6 +29,21 @@ export function validateI18nConfigParams({
       })
     );
   }
+}
+
+function getGTServicesEnabled({
+  projectId,
+  devApiKey,
+  apiKey,
+  cacheUrl,
+  runtimeUrl,
+}: I18nConfigParams): boolean {
+  return (
+    ((cacheUrl === undefined || cacheUrl === defaultCacheUrl) && !!projectId) ||
+    ((runtimeUrl === undefined || runtimeUrl === defaultRuntimeApiUrl) &&
+      !!projectId &&
+      !!(devApiKey || apiKey))
+  );
 }
 
 function getInvalidLocales({

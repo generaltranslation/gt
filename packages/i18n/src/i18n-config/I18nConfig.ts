@@ -7,15 +7,27 @@ export type I18nConfigParams = {
   defaultLocale?: string;
   locales?: string[];
   customMapping?: CustomMapping;
+  projectId?: string;
+  devApiKey?: string;
+  apiKey?: string;
+  cacheUrl?: string | null;
+  runtimeUrl?: string | null;
 };
 
 export class I18nConfig extends LocaleConfig {
-  constructor({
-    defaultLocale = libraryDefaultLocale,
-    locales = [defaultLocale],
-    customMapping,
-  }: I18nConfigParams = {}) {
-    validateI18nConfigParams({ defaultLocale, locales, customMapping });
+  constructor(params: I18nConfigParams = {}) {
+    const {
+      defaultLocale = libraryDefaultLocale,
+      locales = [defaultLocale],
+      customMapping,
+    } = params;
+
+    validateI18nConfigParams({
+      ...params,
+      defaultLocale,
+      locales,
+      customMapping,
+    });
 
     super({
       defaultLocale,
