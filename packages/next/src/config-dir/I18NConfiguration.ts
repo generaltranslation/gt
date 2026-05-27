@@ -370,8 +370,7 @@ export class I18NConfiguration {
     const translationRequired = i18nConfig.requiresTranslation(locale);
     return [
       translationRequired,
-      translationRequired &&
-        i18nConfig.isSameLanguage(i18nConfig.getDefaultLocale(), locale),
+      translationRequired && i18nConfig.requiresDialectTranslation(locale),
     ];
   }
 
