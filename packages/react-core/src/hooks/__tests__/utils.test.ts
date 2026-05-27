@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { initializeI18nConfig } from 'gt-i18n/internal';
 import { setReadonlyConditionStore } from '../../condition-store/singleton-operations';
-import type { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
-import { setReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../utils';
 
 function setup({
@@ -15,11 +14,11 @@ function setup({
   locales?: string[];
   customMapping?: Record<string, { code: string; name: string }>;
 }) {
-  setReactI18nCache({
-    getDefaultLocale: () => 'en',
-    getLocales: () => locales,
-    getCustomMapping: () => customMapping,
-  } as ReactI18nCache);
+  initializeI18nConfig({
+    defaultLocale: 'en',
+    locales,
+    customMapping,
+  });
   setReadonlyConditionStore({
     getLocale: () => locale,
     getEnableI18n: () => enableI18n,
