@@ -19,7 +19,7 @@ import {
 } from '../utils/cookies';
 import { defaultLocaleHeaderName } from '../utils/headers';
 import type { CustomMapping } from '@generaltranslation/format/types';
-import { I18nCache } from 'gt-i18n/internal';
+import { I18nCache, initializeI18nConfig } from 'gt-i18n/internal';
 import type { LookupOptions } from 'gt-i18n/internal/types';
 import { loadTranslations } from './loadTranslation';
 
@@ -160,16 +160,12 @@ export class I18NConfiguration {
     // Translation and dictionary managers
     const shouldLoadTranslations = loadTranslationsType !== 'disabled';
     const runtimeTranslationTimeout = this.renderSettings.timeout;
+    initializeI18nConfig({ defaultLocale, locales, customMapping });
     this._i18nCache = new I18nCache<TranslatedChildren>({
       apiKey,
       devApiKey,
       projectId,
       runtimeUrl,
-      // Locale info
-      defaultLocale,
-      locales,
-      // Custom mapping
-      customMapping,
       enableI18n: this.translationEnabled,
       // Batching config
       batchConfig: {
