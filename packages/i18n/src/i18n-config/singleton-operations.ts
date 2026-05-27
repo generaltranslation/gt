@@ -1,4 +1,8 @@
+import { setupGTServicesEnabled } from '../setup/globals';
+import type { GTServicesSetupParams } from '../setup/types';
 import { I18nConfig, type I18nConfigParams } from './I18nConfig';
+
+export type I18nConfigInitializeParams = I18nConfigParams & GTServicesSetupParams;
 
 let i18nConfig: I18nConfig | undefined = undefined;
 
@@ -16,8 +20,9 @@ export function setI18nConfig(nextI18nConfig: I18nConfig): void {
 }
 
 export function initializeI18nConfig(
-  params: I18nConfigParams = {}
+  params: I18nConfigInitializeParams = {}
 ): I18nConfig {
+  setupGTServicesEnabled(params);
   const nextI18nConfig = new I18nConfig(params);
   setI18nConfig(nextI18nConfig);
   return nextI18nConfig;

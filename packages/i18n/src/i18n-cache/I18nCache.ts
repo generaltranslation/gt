@@ -29,6 +29,7 @@ import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
 import type { I18nEvents } from './event-subscription/types';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
+import { setupGTServicesEnabled } from '../setup/globals';
 import type { CustomMapping } from '@generaltranslation/format/types';
 
 /**
@@ -84,6 +85,8 @@ class I18nCache<
    */
   constructor(params: I18nCacheConstructorParams<TranslationValue>) {
     super();
+
+    setupGTServicesEnabled(params);
 
     // Validation
     publishValidationResults(validateConfig(params), 'I18nCache: ');

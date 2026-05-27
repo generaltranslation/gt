@@ -30,6 +30,12 @@ export {
   isI18nConfigInitialized,
   setI18nConfig,
 } from './i18n-config/singleton-operations';
+export type { I18nConfigInitializeParams } from './i18n-config/singleton-operations';
+export {
+  getGTServicesEnabled,
+  setupGTServicesEnabled,
+} from './setup/globals';
+export type { GTServicesSetupParams } from './setup/types';
 export { I18nConfig } from './i18n-config/I18nConfig';
 export type { I18nConfigParams } from './i18n-config/I18nConfig';
 /** @deprecated use getI18nCache instead */
