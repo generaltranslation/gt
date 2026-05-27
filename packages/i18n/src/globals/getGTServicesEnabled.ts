@@ -42,16 +42,9 @@ function resolveGTServicesEnabled(config: GTServicesEnabledParams): boolean {
 }
 
 /**
- * Returns true if GT services are enabled
- * @param config - The configuration
- * @returns True if GT services are enabled
+ * Returns true if GT services are enabled.
  */
-export function getGTServicesEnabled(
-  config?: GTServicesEnabledParams
-): boolean {
-  if (config) {
-    return resolveGTServicesEnabled(config);
-  }
+export function getGTServicesEnabled(): boolean {
   return getI18nGlobals().gtServicesEnabled ?? false;
 }
 
