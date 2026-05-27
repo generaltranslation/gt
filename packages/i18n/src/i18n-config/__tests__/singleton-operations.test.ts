@@ -11,7 +11,7 @@ describe('i18n config singleton operations', () => {
 
     expect(isI18nConfigInitialized()).toBe(false);
     expect(() => getI18nConfig()).toThrow(
-      'getI18nConfig(): I18nConfig was not initialized.'
+      'Cannot read I18nConfig before it has been initialized'
     );
     expect(isI18nConfigInitialized()).toBe(false);
   });

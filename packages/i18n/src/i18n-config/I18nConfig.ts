@@ -1,6 +1,7 @@
 import { LocaleConfig } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { validateI18nConfigParams } from './validation';
 
 export type I18nConfigParams = {
   defaultLocale?: string;
@@ -11,14 +12,14 @@ export type I18nConfigParams = {
 export class I18nConfig extends LocaleConfig {
   constructor({
     defaultLocale = libraryDefaultLocale,
-    locales,
+    locales = [defaultLocale],
     customMapping,
   }: I18nConfigParams = {}) {
-    const resolvedLocales = locales ?? [defaultLocale];
+    validateI18nConfigParams({ defaultLocale, locales, customMapping });
 
     super({
       defaultLocale,
-      locales: Array.from(new Set([defaultLocale, ...resolvedLocales])),
+      locales: Array.from(new Set([defaultLocale, ...locales])),
       customMapping: customMapping || {},
     });
   }

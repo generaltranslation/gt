@@ -1,12 +1,11 @@
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { I18nConfig, type I18nConfigParams } from './I18nConfig';
 
 let i18nConfig: I18nConfig | undefined = undefined;
 
 export function getI18nConfig(): I18nConfig {
   if (!i18nConfig) {
-    throw new Error(
-      'getI18nConfig(): I18nConfig was not initialized. Call initializeGT() before reading locale config.'
-    );
+    throw new Error(getI18nConfigNotInitializedError());
   }
   return i18nConfig;
 }
@@ -25,4 +24,14 @@ export function initializeI18nConfig(
 
 export function isI18nConfigInitialized(): boolean {
   return i18nConfig !== undefined;
+}
+
+function getI18nConfigNotInitializedError(): string {
+  return createDiagnosticMessage({
+    source: 'gt-i18n',
+    severity: 'Error',
+    whatHappened: 'Cannot read I18nConfig before it has been initialized',
+    why: 'the internal I18nConfig singleton is unavailable',
+    fix: 'Call initializeGT() before reading locale config.',
+  });
 }
