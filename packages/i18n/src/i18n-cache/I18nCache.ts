@@ -165,6 +165,30 @@ class I18nCache<
   // ========== Getters and Setters ========== //
 
   /**
+   * Get the default locale
+   * @deprecated use I18nConfig instead
+   */
+  getDefaultLocale(): string {
+    return getI18nConfig().getDefaultLocale();
+  }
+
+  /**
+   * Get the locales
+   * @deprecated use I18nConfig instead
+   */
+  getLocales(): string[] {
+    return getI18nConfig().getLocales();
+  }
+
+  /**
+   * Get the custom locale mapping
+   * @deprecated use I18nConfig instead
+   */
+  getCustomMapping() {
+    return getI18nConfig().getCustomMapping();
+  }
+
+  /**
    * Get the version ID
    */
   getVersionId(): string | undefined {
