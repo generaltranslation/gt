@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.42
+
+### Patch Changes
+
+- [#1491](https://github.com/generaltranslation/gt/pull/1491) [`205c246`](https://github.com/generaltranslation/gt/commit/205c24647b9f50a68358ee6c3332d110a77ce1b3) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle derived children with whitespace
+
 ## 2.14.41
 
 ### Patch Changes
