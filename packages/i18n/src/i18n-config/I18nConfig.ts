@@ -14,6 +14,8 @@ export type I18nConfigParams = {
   runtimeUrl?: string | null;
 };
 
+export type LocaleCandidates = string | string[] | undefined;
+
 export class I18nConfig extends LocaleConfig {
   constructor(params: I18nConfigParams = {}) {
     const {
