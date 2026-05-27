@@ -47,6 +47,30 @@ describe('localeResolver', () => {
     ).toBe('en');
   });
 
+  it('does not treat undefined config fields as explicit overrides', () => {
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+    });
+
+    expect(
+      determineSupportedLocale('fr', {
+        defaultLocale: undefined,
+        locales: undefined,
+        customMapping: undefined,
+      })
+    ).toBe('fr');
+  });
+
+  it('does not add the default locale to explicit override locales', () => {
+    expect(
+      determineSupportedLocale('en', {
+        defaultLocale: 'en',
+        locales: ['fr', 'de'],
+      })
+    ).toBeUndefined();
+  });
+
   it('creates reusable locale resolvers', () => {
     const resolveLocale = createLocaleResolver({
       defaultLocale: 'en',

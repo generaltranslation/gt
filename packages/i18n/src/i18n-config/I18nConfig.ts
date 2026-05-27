@@ -72,7 +72,7 @@ export class I18nConfig extends LocaleConfig {
     if (!config || !hasI18nConfigParams(config)) {
       return this;
     }
-    return new LocaleConfig(getLocaleConfigParams(config));
+    return new LocaleConfig(getLocaleResolverConfigParams(config));
   }
 
   private determineSupportedLocaleWithConfig(
@@ -102,10 +102,22 @@ function getLocaleConfigParams({
   };
 }
 
+function getLocaleResolverConfigParams({
+  defaultLocale = libraryDefaultLocale,
+  locales,
+  customMapping,
+}: I18nConfigParams = {}): LocaleConfigConstructorParams {
+  return {
+    defaultLocale,
+    locales: locales?.length ? locales : [defaultLocale],
+    customMapping: customMapping || {},
+  };
+}
+
 function hasI18nConfigParams(config: I18nConfigParams): boolean {
   return (
-    'defaultLocale' in config ||
-    'locales' in config ||
-    'customMapping' in config
+    config.defaultLocale !== undefined ||
+    config.locales !== undefined ||
+    config.customMapping !== undefined
   );
 }
