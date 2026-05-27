@@ -631,38 +631,12 @@ class I18nCache<
 
   // ========== Metadata ========== //
 
-  /**
-   * Returns true if translation is required
-   * @param {string} locale - The user's locale
-   * @returns {boolean} True if translation is required, otherwise false
-   * @deprecated use I18nConfig instead
-   */
-  requiresTranslation(locale: string): boolean {
-    const defaultLocale = this.getDefaultLocale();
-    const locales = this.getLocales();
+  private requiresTranslation(locale: string): boolean {
     return (
-      this.isTranslationEnabled() &&
-      getI18nConfig().requiresTranslation(locale, defaultLocale, locales)
+      this.isTranslationEnabled() && getI18nConfig().requiresTranslation(locale)
     );
   }
 
-  /**
-   * Returns true if dialect translation is required
-   * @param {string} locale - The user's locale
-   * @returns {boolean} True if dialect translation is required, otherwise false
-   * @deprecated use I18nConfig instead
-   */
-  requiresDialectTranslation(locale: string): boolean {
-    const defaultLocale = this.getDefaultLocale();
-    return (
-      this.requiresTranslation(locale) &&
-      getI18nConfig().isSameLanguage(defaultLocale, locale)
-    );
-  }
-
-  /**
-   * @deprecated use I18nConfig instead
-   */
   public sanitizeLocale(locale: string): string | undefined {
     try {
       return this._resolveLocale(locale);
