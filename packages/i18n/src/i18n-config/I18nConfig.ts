@@ -1,13 +1,14 @@
 import { LocaleConfig } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import type { LocaleCandidates } from '../condition-store/localeResolver';
 
 export type I18nConfigParams = {
   defaultLocale?: string;
   locales?: string[];
   customMapping?: CustomMapping;
 };
+
+export type LocaleCandidates = string | string[] | undefined;
 
 export class I18nConfig extends LocaleConfig {
   constructor({
