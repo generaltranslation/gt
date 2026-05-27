@@ -1,5 +1,4 @@
 import { getWritableConditionStore } from '../condition-store/singleton-operations';
-import { getI18nCache } from '../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 
 /**
@@ -50,7 +49,5 @@ export function getDefaultLocale() {
  * const localeProperties = getLocaleProperties('en-US');
  */
 export function getLocaleProperties(locale = getLocale()) {
-  const i18nCache = getI18nCache();
-  const gtInstance = i18nCache.getGTClass();
-  return gtInstance.getLocaleProperties(locale);
+  return getI18nConfig().getLocaleProperties(locale);
 }

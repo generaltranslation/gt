@@ -1,5 +1,5 @@
-import type { LocaleCandidates } from '../i18n-cache';
 import type { WritableConditionStoreInterface } from '../i18n-cache/types';
+import type { LocaleCandidates } from '../i18n-config/I18nConfig';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import {
   ReadonlyConditionStore,
