@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { initializeI18nConfig } from 'gt-i18n/internal';
 import { BrowserI18nManager } from '../BrowserI18nManager';
 
 describe('BrowserI18nManager', () => {
@@ -14,6 +15,10 @@ describe('BrowserI18nManager', () => {
     };
     vi.stubGlobal('document', { documentElement });
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    initializeI18nConfig({
+      defaultLocale: 'en-US',
+      locales: ['en-US'],
+    });
     const manager = new BrowserI18nManager({
       defaultLocale: 'en-US',
       locales: ['en-US'],

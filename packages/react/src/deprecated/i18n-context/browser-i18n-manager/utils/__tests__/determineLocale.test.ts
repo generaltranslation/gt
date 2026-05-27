@@ -31,6 +31,10 @@ describe('determineLocale', () => {
   });
 
   it('preserves default locale dialects through browser setup', () => {
+    initializeI18nConfig({
+      defaultLocale: 'pt-BR',
+      locales: ['pt', 'fr'],
+    });
     initializeGT({
       defaultLocale: 'pt-BR',
       locales: ['pt', 'fr'],
