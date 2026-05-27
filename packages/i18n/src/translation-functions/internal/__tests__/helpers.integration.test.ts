@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { I18nCache } from '../../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../../i18n-cache/singleton-operations';
+import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../types/options';
 import {
@@ -31,9 +32,11 @@ describe('translation helpers (deep integration)', () => {
   });
 
   function setupManager(preloadedTranslations: Record<string, string> = {}) {
-    const cache = new I18nCache({
+    initializeI18nConfig({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
+    });
+    const cache = new I18nCache({
       loadTranslations: vi.fn().mockResolvedValue(preloadedTranslations),
     });
     setI18nCache(cache);
