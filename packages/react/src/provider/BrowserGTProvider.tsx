@@ -7,7 +7,7 @@ import { createOrUpdateBrowserConditionStore } from '../condition-store/createBr
  * GTProvider because needs to syncrhonize any incoming
  * server-side translations
  */
-export function CSRGTProvider(props: SharedGTProviderProps) {
+export function BrowserGTProvider(props: SharedGTProviderProps) {
   // TODO: if a specific translation entry changes, but not the locale, this does not trigger a re-render
   // TODO: optimize by skipping updateTranslations() if client is responsible for reloading translations
   // (eg reloadLocale === undefined), see getI18nStore().updateLocale() in InternalGTProvider
