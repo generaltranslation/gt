@@ -1,18 +1,12 @@
-import { libraryDefaultLocale } from 'generaltranslation/internal';
-import logger from '../logs/logger';
 import { I18nConfig, type I18nConfigParams } from './I18nConfig';
 
 let i18nConfig: I18nConfig | undefined = undefined;
 
 export function getI18nConfig(): I18nConfig {
   if (!i18nConfig) {
-    logger.warn(
-      'getI18nConfig(): I18nConfig was not initialized. Falling back to the default locale until initializeGT() configures locales.'
+    throw new Error(
+      'getI18nConfig(): I18nConfig was not initialized. Call initializeGT() before reading locale config.'
     );
-    i18nConfig = new I18nConfig({
-      defaultLocale: libraryDefaultLocale,
-      locales: [libraryDefaultLocale],
-    });
   }
   return i18nConfig;
 }
