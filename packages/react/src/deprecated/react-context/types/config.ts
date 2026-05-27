@@ -33,7 +33,6 @@ export type ClientProviderProps = {
   projectId?: string;
   devApiKey?: string;
   runtimeUrl?: string | null;
-  gtServicesEnabled?: boolean;
   localeCookieName?: string;
   resetLocaleCookieName: string;
   regionCookieName?: string;

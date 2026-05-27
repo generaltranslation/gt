@@ -1,5 +1,9 @@
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { I18nConfig, type I18nConfigParams } from './I18nConfig';
+import {
+  setupGTServicesEnabled,
+  type GTServicesEnabledParams,
+} from '../i18n-cache/utils/getGTServicesEnabled';
 
 let i18nConfig: I18nConfig | undefined = undefined;
 
@@ -17,6 +21,7 @@ export function setI18nConfig(nextI18nConfig: I18nConfig): void {
 export function initializeI18nConfig(
   params: I18nConfigParams = {}
 ): I18nConfig {
+  setupGTServicesEnabled(params as GTServicesEnabledParams);
   const nextI18nConfig = new I18nConfig(params);
   setI18nConfig(nextI18nConfig);
   return nextI18nConfig;

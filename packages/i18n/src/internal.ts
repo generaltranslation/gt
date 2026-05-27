@@ -20,6 +20,11 @@ export {
   getDictionaryValue,
   resolveDictionaryLookupOptions,
 } from './i18n-cache/translations-manager/utils/dictionary-helpers';
+export {
+  getGTServicesEnabled,
+  setGTServicesEnabled,
+  setupGTServicesEnabled,
+} from './i18n-cache/utils/getGTServicesEnabled';
 
 /** @deprecated use I18nCache instead */
 export { I18nCache as I18nManager } from './i18n-cache/I18nCache';

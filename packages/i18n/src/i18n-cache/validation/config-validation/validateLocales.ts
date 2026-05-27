@@ -12,17 +12,13 @@ import type { CustomMapping } from '@generaltranslation/format/types';
  * Only apply if using GT services
  */
 export function validateLocales(params: {
-  projectId?: string;
-  devApiKey?: string;
-  apiKey?: string;
   defaultLocale?: string;
   locales?: string[];
   customMapping?: CustomMapping;
-  cacheUrl?: string | null;
-  runtimeUrl?: string | null;
+  [key: string]: unknown;
 }): ValidationResult[] {
   const results: ValidationResult[] = [];
-  if (!getGTServicesEnabled(params)) {
+  if (!getGTServicesEnabled()) {
     return results;
   }
   const { defaultLocale, locales, customMapping } = params;

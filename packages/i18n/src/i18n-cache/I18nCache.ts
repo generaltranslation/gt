@@ -30,6 +30,7 @@ import type { I18nEvents } from './event-subscription/types';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import type { CustomMapping } from '@generaltranslation/format/types';
+import { setupGTServicesEnabled } from './utils/getGTServicesEnabled';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -84,6 +85,8 @@ class I18nCache<
    */
   constructor(params: I18nCacheConstructorParams<TranslationValue>) {
     super();
+
+    setupGTServicesEnabled(params);
 
     // Validation
     const validationResults = validateConfig(params);

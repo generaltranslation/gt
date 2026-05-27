@@ -6,6 +6,11 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { standardizeLocale } from '@generaltranslation/format';
 import { GT } from 'generaltranslation';
 import { useRouter } from 'next/navigation';
+import { getGTServicesEnabled, setGTServicesEnabled } from 'gt-i18n/internal';
+
+setGTServicesEnabled(
+  process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true'
+);
 
 function extractLocale(pathname: string, gt: GT): string | null {
   const matches = pathname.match(/^\/([^/]+)(?:\/|$)/);
@@ -23,7 +28,6 @@ export function ClientProviderWrapper(
     locale,
     locales,
     defaultLocale,
-    gtServicesEnabled,
     referrerLocaleCookieName,
     localeRoutingEnabledCookieName,
     devApiKey,
@@ -31,6 +35,7 @@ export function ClientProviderWrapper(
     runtimeUrl,
     customMapping,
   } = props;
+  const gtServicesEnabled = getGTServicesEnabled();
 
   /**
    * Reloads server components
