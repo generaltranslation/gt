@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.43
+
+### Patch Changes
+
+- [#1502](https://github.com/generaltranslation/gt/pull/1502) [`0c5cb81`](https://github.com/generaltranslation/gt/commit/0c5cb817468acf1b140ec5371aa003c739584579) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove default target locales from the setup prompt.
+
 ## 2.14.42
 
 ### Patch Changes
