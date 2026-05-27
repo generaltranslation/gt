@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { I18nCache, setI18nCache } from 'gt-i18n/internal';
+import { I18nCache, initializeI18nConfig, setI18nCache } from 'gt-i18n/internal';
 import { AsyncConditionStore } from '../AsyncConditionStore';
 
 describe('AsyncConditionStore', () => {
@@ -10,6 +10,10 @@ describe('AsyncConditionStore', () => {
   });
 
   function setTestCache() {
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+    });
     setI18nCache(
       new I18nCache({
         defaultLocale: 'en',
