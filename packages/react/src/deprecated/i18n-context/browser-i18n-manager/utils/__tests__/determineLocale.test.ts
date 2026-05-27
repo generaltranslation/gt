@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { initializeI18nConfig } from 'gt-i18n/internal';
 import { getLocale } from '../../../functions/locale-operations';
 import { initializeGT } from '../../../setup/initializeGT';
 import { determineLocale } from '../determineLocale';
@@ -6,6 +7,16 @@ import { determineLocale } from '../determineLocale';
 describe('determineLocale', () => {
   it('resolves custom locale aliases returned by getLocale', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      customMapping: {
+        'brand-french': {
+          code: 'fr',
+          name: 'Brand French',
+        },
+      },
+    });
 
     expect(
       determineLocale({
@@ -26,6 +37,10 @@ describe('determineLocale', () => {
   });
 
   it('preserves default locale dialects through browser setup', () => {
+    initializeI18nConfig({
+      defaultLocale: 'pt-BR',
+      locales: ['pt', 'fr'],
+    });
     initializeGT({
       defaultLocale: 'pt-BR',
       locales: ['pt', 'fr'],

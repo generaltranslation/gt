@@ -1,10 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
-import { I18nManager, WritableConditionStore } from 'gt-i18n/internal';
+import {
+  I18nManager,
+  initializeI18nConfig,
+  WritableConditionStore,
+} from 'gt-i18n/internal';
 import { setReadonlyConditionStore as setConditionStore } from '../../../condition-store/singleton-operations';
 import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
 import { I18nStore } from '../../../i18n-store/I18nStore';
 
 function createManager() {
+  initializeI18nConfig({
+    defaultLocale: 'en',
+    locales: ['en', 'fr', 'es'],
+  });
+
   return new I18nManager({
     defaultLocale: 'en',
     locales: ['en', 'fr', 'es'],

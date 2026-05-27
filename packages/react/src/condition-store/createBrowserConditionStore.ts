@@ -1,5 +1,5 @@
-import { getReactI18nCache } from '@generaltranslation/react-core/context';
 import type { LocaleCandidates } from 'gt-i18n/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
 import {
   BrowserConditionStore,
   BrowserConditionStoreParams,
@@ -66,7 +66,14 @@ function determineLocale({
   candidates.push(...readBrowserLocale(localeCookieName));
   if (locale) candidates.push(...locale);
   if (getLocale) candidates.push(getLocale());
-  return getReactI18nCache().determineLocale(candidates);
+  return resolveLocale(candidates);
+}
+
+function resolveLocale(candidates?: LocaleCandidates): string {
+  const i18nConfig = getI18nConfig();
+  return (
+    i18nConfig.determineLocale(candidates) || i18nConfig.getDefaultLocale()
+  );
 }
 
 function determineEnableI18n({

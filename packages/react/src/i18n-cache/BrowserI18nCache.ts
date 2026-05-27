@@ -2,7 +2,7 @@ import type {
   I18nCacheConstructorParams,
   TranslationsLoader,
 } from 'gt-i18n/internal/types';
-import { I18nCache } from 'gt-i18n/internal';
+import { getI18nConfig, I18nCache } from 'gt-i18n/internal';
 import type { HtmlTagOptions } from './types';
 import type { Translation } from 'gt-i18n/types';
 import { DEFAULT_HTML_TAG_OPTIONS } from './constants';
@@ -116,17 +116,17 @@ export class BrowserI18nCache extends I18nCache<Translation> {
   ): void {
     // Get parameters
     const htmlLocale = htmlTagOptions?.lang || locale;
-    const gtInstance = this.getGTClass();
-    const canonicalLocale = gtInstance.resolveCanonicalLocale(htmlLocale);
+    const i18nConfig = getI18nConfig();
+    const canonicalLocale = i18nConfig.resolveCanonicalLocale(htmlLocale);
 
     // Validate parameters
-    if (!gtInstance.isValidLocale(canonicalLocale)) {
+    if (!i18nConfig.isValidLocale(canonicalLocale)) {
       console.warn(createInvalidLocaleWarning(htmlLocale));
       return;
     }
 
     const localeDirection =
-      htmlTagOptions?.dir || gtInstance.getLocaleDirection(canonicalLocale);
+      htmlTagOptions?.dir || i18nConfig.getLocaleDirection(canonicalLocale);
 
     // Merge options
     const mergedHtmlTagOptions = {

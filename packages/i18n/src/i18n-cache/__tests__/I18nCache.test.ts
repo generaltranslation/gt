@@ -3,6 +3,8 @@ import { I18nCache } from '../I18nCache';
 import { createTranslateManyFactory } from '../translations-manager/utils/createTranslateMany';
 import { hashMessage } from '../../utils/hashMessage';
 import { LookupOptions } from '../../translation-functions/types/options';
+import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
+import type { CustomMapping } from '@generaltranslation/format/types';
 
 // Mock createTranslateManyFactory to inject a controlled translateMany
 const mockTranslateMany = vi.fn();
@@ -20,18 +22,32 @@ const expectedHash = hashMessage(message, lookupOptions);
 const translatedString = 'Bonjour {name} !';
 
 function createCache(overrides: Record<string, unknown> = {}) {
+  const {
+    defaultLocale = 'en',
+    locales = ['en', 'fr', 'es'],
+    customMapping,
+    ...cacheOverrides
+  } = overrides;
+  initializeI18nConfig({
+    defaultLocale: defaultLocale as string,
+    locales: locales as string[],
+    customMapping: customMapping as CustomMapping | undefined,
+  });
+
   return new I18nCache({
-    defaultLocale: 'en',
-    locales: ['en', 'fr', 'es'],
     loadTranslations: vi
       .fn()
       .mockResolvedValue({ [expectedHash]: translatedString }),
-    ...overrides,
+    ...cacheOverrides,
   });
 }
 
 describe('I18nCache', () => {
   beforeEach(() => {
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr', 'es'],
+    });
     vi.clearAllMocks();
     mockTranslateMany.mockReset();
   });
