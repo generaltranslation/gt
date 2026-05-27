@@ -34,4 +34,30 @@ describe('I18nConfig', () => {
 
     errorSpy.mockRestore();
   });
+
+  it('validates custom mapping locales when GT services are enabled', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(
+      () =>
+        new I18nConfig({
+          defaultLocale: 'en',
+          projectId: 'test-project',
+          customMapping: {
+            invalidStringMapping: 'invalid-locale',
+            invalidObjectMapping: {
+              code: 'invalid-object-locale',
+            },
+          },
+        })
+    ).toThrow('Invalid I18nConfig locale configuration');
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Locale "invalid-locale" is not valid')
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Locale "invalid-object-locale" is not valid')
+    );
+
+    errorSpy.mockRestore();
+  });
 });

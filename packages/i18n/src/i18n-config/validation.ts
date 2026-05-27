@@ -13,18 +13,25 @@ export function validateI18nConfigParams(params: I18nConfigParams): void {
   }
 
   const invalidLocales = getInvalidLocales(params);
+  const invalidCustomMappingLocales = getInvalidCustomMappingLocales(params);
+  const invalidLocaleConfig = [
+    ...invalidLocales,
+    ...invalidCustomMappingLocales,
+  ];
 
-  invalidLocales.forEach((locale) => {
+  invalidLocaleConfig.forEach((locale) => {
     logger.error(`I18nConfig: ${getInvalidLocaleMessage(locale)}`);
   });
 
-  if (invalidLocales.length > 0) {
+  if (invalidLocaleConfig.length > 0) {
     throw new Error(
       createDiagnosticMessage({
         source: 'gt-i18n',
         severity: 'Error',
         whatHappened: 'Invalid I18nConfig locale configuration',
-        details: invalidLocales.map((locale) => `Invalid locale: ${locale}`),
+        details: invalidLocaleConfig.map(
+          (locale) => `Invalid locale: ${locale}`
+        ),
         fix: 'Use valid BCP 47 locale codes or add custom mappings.',
       })
     );
@@ -59,6 +66,15 @@ function getInvalidLocales({
   return Array.from(localesToValidate).filter(
     (locale) => !isValidLocale(locale, customMapping)
   );
+}
+
+function getInvalidCustomMappingLocales({
+  customMapping,
+}: I18nConfigParams): string[] {
+  return Object.values(customMapping || {}).flatMap((value) => {
+    const locale = typeof value === 'string' ? value : value.code;
+    return locale && !isValidLocale(locale) ? [locale] : [];
+  });
 }
 
 function getInvalidLocaleMessage(locale: string): string {
