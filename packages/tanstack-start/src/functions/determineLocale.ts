@@ -1,7 +1,7 @@
 import { defaultLocaleCookieName } from 'gt-react/context';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeader, getCookie } from '@tanstack/react-start/server';
-import { I18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
 import type { I18nConfigParams } from 'gt-i18n/internal/types';
 
 /**
@@ -47,11 +47,11 @@ function determineLocaleServer({
     );
   }
 
-  return new I18nConfig({
+  return getI18nConfig().resolveSupportedLocale(candidates, {
     defaultLocale,
     locales,
     customMapping,
-  }).resolveSupportedLocale(candidates);
+  });
 }
 
 /**
@@ -81,9 +81,9 @@ function determineLocaleClient({
     );
   }
 
-  return new I18nConfig({
+  return getI18nConfig().resolveSupportedLocale(candidates, {
     defaultLocale,
     locales,
     customMapping,
-  }).resolveSupportedLocale(candidates);
+  });
 }

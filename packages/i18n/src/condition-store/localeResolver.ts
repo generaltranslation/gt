@@ -1,5 +1,4 @@
 import {
-  I18nConfig,
   type I18nConfigParams,
   type LocaleCandidates,
 } from '../i18n-config/I18nConfig';
@@ -14,7 +13,7 @@ export function determineSupportedLocale(
   candidates: LocaleCandidates,
   config: I18nConfigParams = {}
 ): string | undefined {
-  return getLocaleResolverConfig(config).determineSupportedLocale(candidates);
+  return getI18nConfig().determineSupportedLocale(candidates, config);
 }
 
 /**
@@ -24,26 +23,10 @@ export function resolveSupportedLocale(
   candidates: LocaleCandidates,
   config: I18nConfigParams = {}
 ): string {
-  return getLocaleResolverConfig(config).resolveSupportedLocale(candidates);
+  return getI18nConfig().resolveSupportedLocale(candidates, config);
 }
 
 export function createLocaleResolver(config: I18nConfigParams = {}) {
-  const i18nConfig = getLocaleResolverConfig(config);
   return (candidates?: LocaleCandidates): string =>
-    i18nConfig.resolveSupportedLocale(candidates);
-}
-
-function getLocaleResolverConfig(config: I18nConfigParams): I18nConfig {
-  if (hasLocaleResolverConfigParams(config)) {
-    return new I18nConfig(config);
-  }
-  return getI18nConfig();
-}
-
-function hasLocaleResolverConfigParams(config: I18nConfigParams): boolean {
-  return (
-    'defaultLocale' in config ||
-    'locales' in config ||
-    'customMapping' in config
-  );
+    getI18nConfig().resolveSupportedLocale(candidates, config);
 }
