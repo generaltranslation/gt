@@ -16,11 +16,7 @@ export function initializeGT(params: InitializeGTParams): void {
   initializeI18nConfig(params);
 
   const i18nCache = new I18nCache<string>(params);
-  const conditionStore = new AsyncConditionStore({
-    defaultLocale: i18nCache.getDefaultLocale(),
-    locales: i18nCache.getLocales(),
-    customMapping: i18nCache.getCustomMapping(),
-  });
+  const conditionStore = new AsyncConditionStore();
 
   setI18nCache(i18nCache);
   setAsyncConditionStore(conditionStore);

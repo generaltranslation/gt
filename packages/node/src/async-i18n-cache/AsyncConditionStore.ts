@@ -1,8 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type {
-  LocaleResolverConfig,
-  ScopedConditionStore,
-} from 'gt-i18n/internal/types';
+import type { ScopedConditionStore } from 'gt-i18n/internal/types';
 import { getI18nConfig } from 'gt-i18n/internal';
 
 type Store = {
@@ -16,7 +13,7 @@ const OUTSIDE_SCOPE_MESSAGE =
 const ENABLE_I18N_MESSAGE =
   'AsyncConditionStore: getEnableI18n() called outside of a withGT() scope.';
 
-type AsyncConditionStoreConstructorParams = LocaleResolverConfig & {
+type AsyncConditionStoreConstructorParams = {
   store?: AsyncLocalStorage<Store>;
 };
 
@@ -26,12 +23,7 @@ type AsyncConditionStoreConstructorParams = LocaleResolverConfig & {
 export class AsyncConditionStore implements ScopedConditionStore {
   private store: AsyncLocalStorage<Store>;
 
-  constructor({
-    defaultLocale,
-    locales,
-    customMapping,
-    store,
-  }: AsyncConditionStoreConstructorParams = {}) {
+  constructor({ store }: AsyncConditionStoreConstructorParams = {}) {
     this.store = store ?? new AsyncLocalStorage();
   }
 
