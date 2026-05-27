@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockRequestHeader = vi.hoisted(() => vi.fn());
 const mockCookie = vi.hoisted(() => vi.fn());
@@ -32,11 +32,37 @@ const localeConfig = {
   },
 };
 
+const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  'document'
+);
+const originalNavigatorDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  'navigator'
+);
+
+function restoreGlobalProperty(
+  property: 'document' | 'navigator',
+  descriptor: PropertyDescriptor | undefined
+) {
+  if (descriptor) {
+    Object.defineProperty(globalThis, property, descriptor);
+    return;
+  }
+
+  Reflect.deleteProperty(globalThis, property);
+}
+
 describe('determineLocale', () => {
   beforeEach(() => {
     mockCookie.mockReset();
     mockRequestHeader.mockReset();
     process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES = 'false';
+  });
+
+  afterEach(() => {
+    restoreGlobalProperty('document', originalDocumentDescriptor);
+    restoreGlobalProperty('navigator', originalNavigatorDescriptor);
   });
 
   it('uses the server cookie before Accept-Language', () => {
