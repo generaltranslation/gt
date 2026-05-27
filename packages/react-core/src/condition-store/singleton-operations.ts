@@ -60,7 +60,6 @@ function getReadonlyConditionStoreWithFallback(): ReadonlyConditionStoreInterfac
     // Fallback to default configuration (important: do not set globally)
     return new ReadonlyConditionStore({
       locale: libraryDefaultLocale,
-      locales: [libraryDefaultLocale],
     });
   }
 }

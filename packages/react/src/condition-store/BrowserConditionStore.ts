@@ -1,10 +1,8 @@
-import {
-  getReactI18nCache,
-  WritableConditionStoreParams,
-} from '@generaltranslation/react-core/context';
+import { WritableConditionStoreParams } from '@generaltranslation/react-core/context';
 import { getCookieValue, setCookieValue } from './cookies';
 import { readBrowserLocale } from './readBrowserLocale';
 import { GetEnableI18n, GetLocale } from '../i18n-cache/types';
+import { getI18nConfig } from 'gt-i18n/internal';
 import {
   LocaleCandidates,
   WritableConditionStoreInterface,
@@ -18,8 +16,6 @@ export type ReloadType = (state: SerializedBrowserConditionStoreState) => void;
 
 /**
  * The configuration for the BrowserConditionStore
- * @param {string[]} locales - The accepted locales
- * @param {CustomMapping} [customMapping] - The custom mapping
  * @param {GetLocale} getLocale - The function to get the locale
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the locale cookie to check
  */
@@ -49,7 +45,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     this.enableI18nCookieName = config.enableI18nCookieName;
     setCookieValue({
       cookieName: this.localeCookieName,
-      value: getReactI18nCache().determineLocale(config.locale),
+      value: getI18nConfig().resolveSupportedLocale(config.locale),
     });
   }
 
@@ -83,7 +79,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   updateLocale = (locale: LocaleCandidates): void => {
     setCookieValue({
       cookieName: this.localeCookieName,
-      value: getReactI18nCache().determineLocale(locale),
+      value: getI18nConfig().resolveSupportedLocale(locale),
     });
   };
 
@@ -114,5 +110,5 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
 function getBrowserLocale(cookieName: string, getLocale?: GetLocale): string {
   const candidates = readBrowserLocale(cookieName);
   if (getLocale) candidates.push(getLocale());
-  return getReactI18nCache().determineLocale(candidates);
+  return getI18nConfig().resolveSupportedLocale(candidates);
 }
