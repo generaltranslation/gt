@@ -12,7 +12,9 @@ export class ReadonlyConditionStore implements ReadonlyConditionStoreContract {
   protected enableI18n: boolean;
 
   constructor({ locale, enableI18n = true }: ReadonlyConditionStoreParams) {
-    this.locale = resolveLocale(locale);
+    const i18nConfig = getI18nConfig();
+    this.locale =
+      i18nConfig.determineLocale(locale) || i18nConfig.getDefaultLocale();
     this.enableI18n = enableI18n;
   }
 
@@ -29,11 +31,4 @@ export class ReadonlyConditionStore implements ReadonlyConditionStoreContract {
   setLocale = (locale: LocaleCandidates): void => {};
 
   setEnableI18n = (enableI18n: boolean): void => {};
-}
-
-function resolveLocale(candidates?: LocaleCandidates): string {
-  const i18nConfig = getI18nConfig();
-  return (
-    i18nConfig.determineLocale(candidates) || i18nConfig.getDefaultLocale()
-  );
 }

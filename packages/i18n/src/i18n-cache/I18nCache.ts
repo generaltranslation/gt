@@ -207,15 +207,6 @@ class I18nCache<
   }
 
   /**
-   * Is translation enabled?
-   * @deprecated use condition store instead
-   * TODO: move this to condition store
-   */
-  isTranslationEnabled(): boolean {
-    return this.config.enableI18n;
-  }
-
-  /**
    * Returns true when development hot reload runtime translation requests can run.
    */
   isDevHotReloadEnabled(): boolean {
@@ -256,7 +247,7 @@ class I18nCache<
    */
   hasTranslations(locale: string): boolean {
     try {
-      const translationLocale = this.resolveCacheLocale(locale);
+      const translationLocale = this._resolveCacheLocale(locale);
       if (!translationLocale) return false;
       return this.localesCache.getTranslations(translationLocale) !== undefined;
     } catch (error) {
@@ -274,7 +265,7 @@ class I18nCache<
   ): Promise<Record<Hash, TranslationValue>> {
     try {
       // Validate
-      const translationLocale = this.resolveCacheLocale(locale);
+      const translationLocale = this._resolveCacheLocale(locale);
       if (!translationLocale) {
         return {};
       }
@@ -298,7 +289,7 @@ class I18nCache<
   async loadDictionary(locale: string): Promise<Dictionary> {
     try {
       // Validate
-      const dictionaryLocale = this.resolveCacheLocale(locale);
+      const dictionaryLocale = this._resolveCacheLocale(locale);
       if (!dictionaryLocale) {
         return this.getDefaultDictionaryCache()?.getInternalCache() ?? {};
       }
@@ -355,7 +346,7 @@ class I18nCache<
     id: string
   ): Promise<DictionaryEntry | undefined> {
     try {
-      const dictionaryLocale = this.resolveCacheLocale(locale);
+      const dictionaryLocale = this._resolveCacheLocale(locale);
       if (!dictionaryLocale) {
         return this.getSourceDictionaryEntry(id);
       }
@@ -386,7 +377,7 @@ class I18nCache<
     id: string
   ): Promise<DictionaryObject | undefined> {
     try {
-      const dictionaryLocale = this.resolveCacheLocale(locale);
+      const dictionaryLocale = this._resolveCacheLocale(locale);
 
       if (!dictionaryLocale) {
         return this.getSourceDictionaryObject(id);
@@ -459,7 +450,7 @@ class I18nCache<
 
   private resolveDictionaryCacheLocale(locale: string): Locale {
     return (
-      this.resolveCacheLocale(locale) ?? getI18nConfig().getDefaultLocale()
+      this._resolveCacheLocale(locale) ?? getI18nConfig().getDefaultLocale()
     );
   }
 
@@ -534,7 +525,7 @@ class I18nCache<
   ): Promise<TranslationResolver<TranslationValue>> {
     try {
       // Validate
-      const translationLocale = this.resolveCacheLocale(locale);
+      const translationLocale = this._resolveCacheLocale(locale);
 
       // Early return if i18n is disabled or default locale
       if (!translationLocale) {
@@ -546,7 +537,7 @@ class I18nCache<
         prefetchEntries,
         translationLocale,
         (entryLocale) =>
-          this.resolveCacheLocale(entryLocale) ??
+          this._resolveCacheLocale(entryLocale) ??
           this._resolveLocale(entryLocale)
       );
       if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
@@ -631,21 +622,6 @@ class I18nCache<
 
   // ========== Metadata ========== //
 
-  private requiresTranslation(locale: string): boolean {
-    return (
-      this.isTranslationEnabled() && getI18nConfig().requiresTranslation(locale)
-    );
-  }
-
-  public sanitizeLocale(locale: string): string | undefined {
-    try {
-      return this._resolveLocale(locale);
-    } catch (error) {
-      this.handleError(error);
-      return undefined;
-    }
-  }
-
   /**
    * Handle errors
    * Soft error in production, throw in development
@@ -679,19 +655,18 @@ class I18nCache<
   /**
    * Resolve the locale key used to load/read locale caches.
    * Returns undefined when the requested locale can use source content.
-   * TODO: this maybe made redundant by resolveLocale()
    */
-  private resolveCacheLocale(locale: string) {
+  private _resolveCacheLocale(locale: string) {
     const resolvedLocale = this._resolveLocale(locale);
-    if (this.requiresTranslation(resolvedLocale)) {
+    const i18nConfig = getI18nConfig();
+    if (i18nConfig.requiresTranslation(resolvedLocale)) {
       return resolvedLocale;
     }
 
-    const i18nConfig = getI18nConfig();
     const aliasLocale = i18nConfig.resolveAliasLocale(
       i18nConfig.standardizeLocale(locale)
     );
-    if (this.requiresTranslation(aliasLocale)) {
+    if (i18nConfig.requiresTranslation(aliasLocale)) {
       return aliasLocale;
     }
 
@@ -699,7 +674,7 @@ class I18nCache<
   }
 
   private resolveLookupParams(locale: string, options: LookupOptions) {
-    const translationLocale = this.resolveCacheLocale(locale);
+    const translationLocale = this._resolveCacheLocale(locale);
     return {
       translationLocale,
       options: translationLocale
@@ -719,7 +694,7 @@ class I18nCache<
       ...options,
       $locale:
         translationLocale ??
-        this.resolveCacheLocale(options.$locale) ??
+        this._resolveCacheLocale(options.$locale) ??
         this._resolveLocale(options.$locale),
     };
   }
