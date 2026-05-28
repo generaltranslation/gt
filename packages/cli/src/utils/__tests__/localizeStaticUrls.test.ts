@@ -2784,4 +2784,72 @@ describe('transformUrlPath', () => {
       expect(result).toBeNull();
     });
   });
+
+  // The "Auth0 patch": URLs nested inside JSX expressions (component props,
+  // conditional expressions) that never surface as mdast nodes.
+  describe('urls inside JSX expressions', () => {
+    const runOnContent = async (fileContent: string): Promise<string> => {
+      let written = '';
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_path, content) => {
+        written = content as string;
+        return Promise.resolve();
+      });
+      vi.mocked(createFileMapping).mockReturnValue({
+        ja: { 'test.mdx': '/path/test.mdx' },
+      });
+      await localizeStaticUrls(
+        createSettings({
+          files: {
+            placeholderPaths: { docs: '/docs' },
+            resolvedPaths: {},
+            transformPaths: {},
+          },
+          defaultLocale: 'en',
+          locales: ['en', 'ja'],
+          options: { docsUrlPattern: '/docs/[locale]' },
+        })
+      );
+      return written;
+    };
+
+    it('localizes an href nested in arbitrary JSX inside a component prop', async () => {
+      const content = `<ParamField body="error" type={<span><a href="/docs/en/interfaces/Error">Error</a></span>}>An error</ParamField>`;
+      const written = await runOnContent(content);
+      expect(written).toContain('/docs/ja/interfaces/Error');
+      expect(written).not.toContain('/docs/en/interfaces/Error');
+    });
+
+    it('localizes an href inside a standalone JSX expression', async () => {
+      const content = `{showBeta && <a href="/docs/en/beta">Beta</a>}`;
+      const written = await runOnContent(content);
+      expect(written).toContain('/docs/ja/beta');
+      expect(written).not.toContain('/docs/en/beta');
+    });
+
+    it('localizes a bare string url expression on a url attribute: href={"/docs/en/x"}', async () => {
+      const content = `<Card href={"/docs/en/x"}>Card</Card>`;
+      const written = await runOnContent(content);
+      expect(written).toContain('/docs/ja/x');
+      expect(written).not.toContain('/docs/en/x');
+    });
+
+    it('leaves dynamically-computed urls untouched', async () => {
+      // A real link forces a write; the dynamic href in the same file must be
+      // preserved verbatim (static localization can't resolve computed URLs).
+      const content = `<a href="/docs/en/real">Real</a> <a href={"/docs/" + locale + "/x"}>Dyn</a>`;
+      const written = await runOnContent(content);
+      expect(written).toContain('/docs/ja/real');
+      expect(written).toContain('"/docs/" + locale + "/x"');
+    });
+
+    it('does not localize non-link asset attributes like src', async () => {
+      // href is localized; src (an asset attr, not in the allowlist) is left
+      // alone so shared, locale-agnostic assets don't get a broken locale prefix.
+      const content = `<a href="/docs/en/guide">G</a> <img src="/docs/en/images/x.png" />`;
+      const written = await runOnContent(content);
+      expect(written).toContain('/docs/ja/guide');
+      expect(written).toContain('/docs/en/images/x.png');
+    });
+  });
 });

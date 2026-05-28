@@ -11,8 +11,142 @@ import { visit } from 'unist-util-visit';
 import type { Root, Link, Literal } from 'mdast';
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
+import { parse as parseBabel } from '@babel/parser';
 
 const { isMatch } = micromatch;
+
+/**
+ * URL-bearing JSX attributes that we localize. Intentionally limited to link
+ * attributes (`href`) — NOT asset attributes like `src`, which usually point at
+ * shared, locale-agnostic assets (e.g. `/docs/images/...`) that would 404 if a
+ * locale prefix were added. Extend deliberately.
+ */
+const LOCALIZABLE_URL_ATTRIBUTES = new Set(['href']);
+
+/**
+ * Localize URL string literals that live inside an MDX expression's raw source.
+ *
+ * URLs can be nested arbitrarily deep inside `{...}` expressions — e.g. an
+ * `<a href>` buried inside a component prop:
+ *   <ParamField type={<span><a href="/docs/x">Error</a></span>} />
+ * Such hrefs never appear as mdast nodes (they live in the expression's embedded
+ * JS), so the mdast visitors can't reach them. We re-parse the expression source
+ * with Babel — positions are local to `source`, which avoids any document-offset
+ * mapping — find JSX url-attribute string literals at any depth, and surgically
+ * rewrite them in place.
+ *
+ * `rootStringIsUrl` covers `href={"/docs/x"}`, where the expression itself is a
+ * bare string literal that a url-named attribute should treat as a URL.
+ *
+ * Only static string literals are localized; dynamically-computed URLs
+ * (template literals, identifiers, concatenation) are left untouched — a
+ * fundamental limit of static localization, not a parser shortcoming.
+ */
+function localizeUrlsInExpressionSource(
+  source: string,
+  transformUrl: (url: string, linkType: 'markdown' | 'href') => string | null,
+  rootStringIsUrl: boolean = false
+): string {
+  if (!source.trim()) return source;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let ast: any;
+  try {
+    ast = parseBabel(source, {
+      sourceType: 'module',
+      errorRecovery: true,
+      plugins: ['jsx', 'typescript'],
+    });
+  } catch {
+    // Dynamic / unparseable expression — leave it untouched.
+    return source;
+  }
+
+  const replacements: Array<{ start: number; end: number; text: string }> = [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pushLiteralReplacement = (literal: any) => {
+    if (
+      !literal ||
+      literal.type !== 'StringLiteral' ||
+      typeof literal.value !== 'string' ||
+      typeof literal.start !== 'number' ||
+      typeof literal.end !== 'number'
+    ) {
+      return;
+    }
+    const newUrl = transformUrl(literal.value, 'href');
+    if (!newUrl) return;
+    // Preserve the original quote style; URLs never contain quote chars.
+    const quote = source[literal.start] === "'" ? "'" : '"';
+    replacements.push({
+      start: literal.start,
+      end: literal.end,
+      text: `${quote}${newUrl}${quote}`,
+    });
+  };
+
+  // `href={"/docs/x"}`: the entire expression is the URL string.
+  if (rootStringIsUrl) {
+    const body = (ast.program?.body ?? []) as Array<{
+      type: string;
+      expression?: unknown;
+    }>;
+    if (body.length === 1 && body[0]?.type === 'ExpressionStatement') {
+      pushLiteralReplacement(body[0].expression);
+    }
+  }
+
+  // Walk the AST for JSX url-attributes anywhere in the expression.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const seen = new Set<any>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const walk = (node: any) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item);
+      return;
+    }
+    if (seen.has(node)) return;
+    seen.add(node);
+
+    if (
+      node.type === 'JSXAttribute' &&
+      node.name?.type === 'JSXIdentifier' &&
+      LOCALIZABLE_URL_ATTRIBUTES.has(node.name.name) &&
+      node.value
+    ) {
+      if (node.value.type === 'StringLiteral') {
+        pushLiteralReplacement(node.value);
+      } else if (
+        node.value.type === 'JSXExpressionContainer' &&
+        node.value.expression?.type === 'StringLiteral'
+      ) {
+        pushLiteralReplacement(node.value.expression);
+      }
+    }
+
+    for (const key in node) {
+      if (key === 'loc' || key === 'start' || key === 'end' || key === 'range') {
+        continue;
+      }
+      const child = node[key];
+      if (child && typeof child === 'object') walk(child);
+    }
+  };
+  walk(ast.program ?? ast);
+
+  if (replacements.length === 0) return source;
+
+  // Apply end-to-start so earlier offsets remain valid.
+  let result = source;
+  replacements
+    .sort((a, b) => b.start - a.start)
+    .forEach(({ start, end, text }) => {
+      result = result.slice(0, start) + text + result.slice(end);
+    });
+  return result;
+}
 
 export type StaticUrlSettings = StaticLocalizationSettings;
 
@@ -467,27 +601,55 @@ function transformMdxUrls(
   // Visit JSX/HTML elements for href attributes: <a href="url"> or <Card href="url">
   visit(processedAst, ['mdxJsxFlowElement', 'mdxJsxTextElement'], (node) => {
     const jsxNode = node as MdxJsxFlowElement | MdxJsxTextElement;
-    if (jsxNode.attributes) {
-      for (const attr of jsxNode.attributes) {
-        if (
-          attr.type === 'mdxJsxAttribute' &&
-          attr.name === 'href' &&
-          attr.value
-        ) {
-          // Handle MdxJsxAttribute with string or MdxJsxAttributeValueExpression
-          const hrefValue =
-            typeof attr.value === 'string' ? attr.value : attr.value.value;
-          if (typeof hrefValue === 'string') {
-            const newUrl = transformUrl(hrefValue, 'href');
-            if (newUrl) {
-              if (typeof attr.value === 'string') {
-                attr.value = newUrl;
-              } else {
-                attr.value.value = newUrl;
-              }
-            }
+    if (!jsxNode.attributes) return;
+    for (const attr of jsxNode.attributes) {
+      if (attr.type !== 'mdxJsxAttribute' || !attr.value) continue;
+
+      // Plain string attribute value, e.g. <a href="/docs/x">
+      if (typeof attr.value === 'string') {
+        if (LOCALIZABLE_URL_ATTRIBUTES.has(attr.name)) {
+          const newUrl = transformUrl(attr.value, 'href');
+          if (newUrl) {
+            attr.value = newUrl;
           }
         }
+        continue;
+      }
+
+      // Expression attribute value. Two shapes are handled:
+      //   href={"/docs/x"}                              (url attr, bare string)
+      //   type={<span><a href="/docs/x">…</a></span>}  (url attr nested deep
+      //                                                  inside a non-url prop)
+      // The nested case never surfaces as an mdast node — it lives in the
+      // expression's embedded JS — so it's localized via the source-level walk.
+      if (
+        typeof attr.value === 'object' &&
+        attr.value.type === 'mdxJsxAttributeValueExpression' &&
+        typeof attr.value.value === 'string'
+      ) {
+        const newValue = localizeUrlsInExpressionSource(
+          attr.value.value,
+          transformUrl,
+          LOCALIZABLE_URL_ATTRIBUTES.has(attr.name)
+        );
+        if (newValue !== attr.value.value) {
+          attr.value.value = newValue;
+        }
+      }
+    }
+  });
+
+  // Visit standalone MDX expressions for URLs inside embedded JSX, e.g.
+  //   {isBeta && <a href="/docs/x">Beta</a>}
+  visit(processedAst, ['mdxFlowExpression', 'mdxTextExpression'], (node) => {
+    const exprNode = node as unknown as Literal;
+    if (typeof exprNode.value === 'string' && exprNode.value) {
+      const newValue = localizeUrlsInExpressionSource(
+        exprNode.value,
+        transformUrl
+      );
+      if (newValue !== exprNode.value) {
+        exprNode.value = newValue;
       }
     }
   });
