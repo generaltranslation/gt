@@ -127,7 +127,12 @@ function localizeUrlsInExpressionSource(
     }
 
     for (const key in node) {
-      if (key === 'loc' || key === 'start' || key === 'end' || key === 'range') {
+      if (
+        key === 'loc' ||
+        key === 'start' ||
+        key === 'end' ||
+        key === 'range'
+      ) {
         continue;
       }
       const child = node[key];
