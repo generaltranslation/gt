@@ -27,6 +27,7 @@ export {
   Branch,
   Plural,
   Derive,
+  ServerT,
   T,
   Currency,
   DateTime,
@@ -58,4 +59,8 @@ export {
   internalInitializeGTSSR as initializeGT,
   getReactI18nCache,
   setReactI18nCache,
+} from '@generaltranslation/react-core/context';
+export type {
+  ServerTProps,
+  TProps,
 } from '@generaltranslation/react-core/context';

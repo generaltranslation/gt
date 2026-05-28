@@ -16,6 +16,7 @@ export {
   Branch,
   Plural,
   Derive,
+  ServerT,
   T,
   Currency,
   DateTime,
@@ -48,4 +49,8 @@ export {
   // ===== Setup ===== //
   internalInitializeGTSSR as initializeGT,
   internalInitializeGTSPA,
+} from '@generaltranslation/react-core/context';
+export type {
+  ServerTProps,
+  TProps,
 } from '@generaltranslation/react-core/context';

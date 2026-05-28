@@ -23,6 +23,7 @@ import {
   getI18nConfig,
   I18nCache,
   initializeI18nConfig,
+  setI18nCache,
 } from 'gt-i18n/internal';
 import type { LookupOptions } from 'gt-i18n/internal/types';
 import { loadTranslations } from './loadTranslation';
@@ -213,6 +214,7 @@ export class I18NConfiguration {
           })) || {},
       }),
     });
+    setI18nCache(this._i18nCache);
     this._dictionaryManager = dictionaryManager;
     // Headers and cookies
     this.localeHeaderName =
