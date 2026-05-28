@@ -36,6 +36,13 @@ export class I18nConfig extends LocaleConfig {
     return this.customMapping || {};
   }
 
+  determineLocale(locales: LocaleCandidates, approvedLocales: string[] = this.locales): string | undefined {
+    if (locales == null || (Array.isArray(locales) && locales.length === 0)) {
+      return undefined;
+    }
+    return super.determineLocale(locales, approvedLocales);
+  }
+
   determineSupportedLocale(
     candidates: LocaleCandidates,
     config?: I18nConfigParams

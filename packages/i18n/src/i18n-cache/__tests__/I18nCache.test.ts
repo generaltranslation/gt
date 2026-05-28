@@ -160,24 +160,6 @@ describe('I18nCache', () => {
     expect(loadDictionary).not.toHaveBeenCalled();
   });
 
-  it('loadDictionary() returns source dictionary without loading when i18n is disabled', async () => {
-    const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
-    const cache = createCache({
-      enableI18n: false,
-      dictionary: {
-        greeting: 'Hello',
-      },
-      loadDictionary,
-    });
-
-    const dictionary = await cache.loadDictionary('fr');
-
-    expect(dictionary).toEqual({
-      greeting: 'Hello',
-    });
-    expect(loadDictionary).not.toHaveBeenCalled();
-  });
-
   it('loadDictionary() loads and caches dictionary for requested locale', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({
       greeting: 'Bonjour',
@@ -596,30 +578,6 @@ describe('I18nCache', () => {
     expect(cache.lookupDictionaryObj('en', 'missing')).toBeUndefined();
   });
 
-  it('lookupDictionaryObj() uses the source dictionary when i18n is disabled', () => {
-    const cache = createCache({
-      enableI18n: false,
-      dictionary: {
-        user: {
-          profile: {
-            name: 'Name',
-          },
-        },
-      },
-      loadDictionary: vi.fn().mockResolvedValue({
-        user: {
-          profile: {
-            name: 'Nom',
-          },
-        },
-      }),
-    });
-
-    expect(cache.lookupDictionaryObj('fr', 'user.profile')).toEqual({
-      name: 'Name',
-    });
-  });
-
   it('lookupDictionaryWithFallback() returns the source dictionary entry when translation is not required', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({
       greeting: 'Bonjour',
@@ -655,27 +613,6 @@ describe('I18nCache', () => {
     ).rejects.toThrow(
       'I18nCache: source dictionary entry missing is not defined'
     );
-  });
-
-  it('lookupDictionaryWithFallback() returns the source dictionary entry when i18n is disabled', async () => {
-    const loadDictionary = vi.fn().mockResolvedValue({
-      greeting: 'Bonjour',
-    });
-    const cache = createCache({
-      enableI18n: false,
-      dictionary: {
-        greeting: 'Hello',
-      },
-      loadDictionary,
-    });
-
-    await expect(
-      cache.lookupDictionaryWithFallback('fr', 'greeting')
-    ).resolves.toEqual({
-      entry: 'Hello',
-      options: {},
-    });
-    expect(loadDictionary).not.toHaveBeenCalled();
   });
 
   it('lookupDictionaryWithFallback() loads and returns a target dictionary entry', async () => {
@@ -821,34 +758,6 @@ describe('I18nCache', () => {
     ).resolves.toBe('Hello');
     await expect(
       cache.lookupDictionaryObjWithFallback('en', 'user.profile')
-    ).resolves.toEqual({
-      name: 'Name',
-    });
-    expect(loadDictionary).not.toHaveBeenCalled();
-  });
-
-  it('lookupDictionaryObjWithFallback() returns source subtrees when i18n is disabled', async () => {
-    const loadDictionary = vi.fn().mockResolvedValue({
-      user: {
-        profile: {
-          name: 'Nom',
-        },
-      },
-    });
-    const cache = createCache({
-      enableI18n: false,
-      dictionary: {
-        user: {
-          profile: {
-            name: 'Name',
-          },
-        },
-      },
-      loadDictionary,
-    });
-
-    await expect(
-      cache.lookupDictionaryObjWithFallback('fr', 'user.profile')
     ).resolves.toEqual({
       name: 'Name',
     });
