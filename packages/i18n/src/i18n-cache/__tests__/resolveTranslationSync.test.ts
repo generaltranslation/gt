@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { I18nCache } from '../I18nCache';
 import { hashMessage } from '../../utils/hashMessage';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
@@ -10,6 +10,10 @@ describe('I18nCache.resolveTranslationSync', () => {
       locales: ['en', 'fr'],
     });
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('should return undefined when no translations loaded for locale', () => {
@@ -25,9 +29,10 @@ describe('I18nCache.resolveTranslationSync', () => {
   });
 
   it('does not throw without options in development', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+
     const cache = new I18nCache({
       loadTranslations: vi.fn(),
-      environment: 'development',
     });
 
     const options = { $format: 'ICU' as const };
