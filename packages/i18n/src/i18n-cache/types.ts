@@ -33,7 +33,11 @@ export type I18nCacheConstructorParams<
 > = DictionaryConfig &
   Omit<
     GTConfig,
-    'cacheExpiryTime' | 'defaultLocale' | 'locales' | 'customMapping'
+    | 'cacheExpiryTime'
+    | 'defaultLocale'
+    | 'locales'
+    | 'customMapping'
+    | 'enableI18n'
   > & {
     /**
      * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
@@ -41,7 +45,6 @@ export type I18nCacheConstructorParams<
      */
     cacheExpiryTime?: number | null;
     loadTranslations?: TranslationsLoader;
-    environment?: 'development' | 'production';
     batchConfig?: TranslationBatchConfig;
     runtimeTranslation?: RuntimeTranslationConfig;
     // Cache lifecycle hooks
@@ -53,14 +56,6 @@ export type I18nCacheConstructorParams<
  * I18nCache class configuration
  */
 export type I18nCacheConfig = {
-  environment: 'development' | 'production';
-  /**
-   * @deprecated
-   * Perhaps we can keep this around, but more for
-   * doing an initial load, but it may get overwritten
-   * so like a "initialEnableI18n" flag?
-   */
-  enableI18n: boolean;
   projectId?: string;
   devApiKey?: string;
   apiKey?: string;

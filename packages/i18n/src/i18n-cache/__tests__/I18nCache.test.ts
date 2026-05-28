@@ -54,6 +54,7 @@ describe('I18nCache', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllEnvs();
   });
 
   // ===== REGRESSION TESTS ===== //
@@ -86,10 +87,11 @@ describe('I18nCache', () => {
   });
 
   it('enables dev hot reload with dev credentials, a project id, and development environment', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+
     const cache = createCache({
       devApiKey: 'dev-key',
       projectId: 'project-id',
-      environment: 'development',
     });
 
     expect(cache.isDevHotReloadEnabled()).toBe(true);
@@ -98,36 +100,38 @@ describe('I18nCache', () => {
   it.each([
     {
       name: 'missing dev API key',
+      environment: 'development',
       config: {
         projectId: 'project-id',
-        environment: 'development',
       },
     },
     {
       name: 'missing project id',
+      environment: 'development',
       config: {
         devApiKey: 'dev-key',
-        environment: 'development',
       },
     },
     {
       name: 'disabled runtime URL',
+      environment: 'development',
       config: {
         devApiKey: 'dev-key',
         projectId: 'project-id',
         runtimeUrl: null,
-        environment: 'development',
       },
     },
     {
       name: 'production environment',
+      environment: 'production',
       config: {
         devApiKey: 'dev-key',
         projectId: 'project-id',
-        environment: 'production',
       },
     },
-  ])('disables dev hot reload for $name', ({ config }) => {
+  ])('disables dev hot reload for $name', ({ config, environment }) => {
+    vi.stubEnv('NODE_ENV', environment);
+
     const cache = createCache(config);
 
     expect(cache.isDevHotReloadEnabled()).toBe(false);
@@ -410,9 +414,8 @@ describe('I18nCache', () => {
     expect(cache.lookupDictionary('en', 'missing')).toBeUndefined();
   });
 
-  it('lookupDictionary() returns undefined when source leaf is missing and i18n is disabled', () => {
+  it('lookupDictionary() returns undefined when source leaf is missing and translation is required', () => {
     const cache = createCache({
-      enableI18n: false,
       dictionary: {
         greeting: 'Hello',
       },
@@ -1190,6 +1193,8 @@ describe('I18nCache', () => {
   });
 
   it('lookupDictionaryWithFallback() rejects when runtime translation is not a string', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+
     const source = 'Hello';
     const sourceOptions: LookupOptions = { $format: 'ICU' };
     const sourceHash = hashMessage(source, sourceOptions);
@@ -1197,7 +1202,6 @@ describe('I18nCache', () => {
       dictionary: {
         greeting: source,
       },
-      environment: 'development',
       runtimeTranslation: {},
     });
 

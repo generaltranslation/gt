@@ -186,7 +186,6 @@ export class I18NConfiguration {
       devApiKey,
       projectId,
       runtimeUrl,
-      enableI18n: this.translationEnabled,
       // Batching config
       batchConfig: {
         maxConcurrentRequests,
@@ -213,8 +212,6 @@ export class I18NConfiguration {
       cacheExpiryTime:
         loadTranslationsType === 'remote' ? (cacheExpiryTime ?? null) : null,
       _versionId,
-      environment:
-        process.env.NODE_ENV === 'development' ? 'development' : 'production',
       ...(shouldLoadTranslations && {
         loadTranslations: async (locale: string) =>
           (await loadTranslations({
