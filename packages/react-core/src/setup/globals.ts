@@ -6,14 +6,20 @@
 export type RenderStrategy = 'SPA' | 'server-render';
 
 declare global {
-  var __generaltranslation: {
-    renderStrategy: RenderStrategy | undefined;
-  };
+  interface GeneralTranslationGlobal {
+    reactCore?: {
+      renderStrategy?: RenderStrategy;
+    };
+  }
+
+  var __generaltranslation: GeneralTranslationGlobal | undefined;
 }
 
-globalThis.__generaltranslation = {
-  renderStrategy: undefined,
-};
+function getReactCoreGlobals() {
+  globalThis.__generaltranslation ??= {};
+  globalThis.__generaltranslation.reactCore ??= {};
+  return globalThis.__generaltranslation.reactCore;
+}
 
 /**
  * TODO: better error message (createDiagnosticMessage)
@@ -21,14 +27,15 @@ globalThis.__generaltranslation = {
  * @deprecated - move to I18nConfig
  */
 export function getRenderStrategy(): RenderStrategy {
-  if (!globalThis.__generaltranslation.renderStrategy) {
+  const { renderStrategy } = getReactCoreGlobals();
+  if (!renderStrategy) {
     throw new Error(
       'Cannot access render strategy. GT has not been initialized.'
     );
   }
-  return globalThis.__generaltranslation.renderStrategy;
+  return renderStrategy;
 }
 
 export function setRenderStrategy(renderStrategy: RenderStrategy): void {
-  globalThis.__generaltranslation.renderStrategy = renderStrategy;
+  getReactCoreGlobals().renderStrategy = renderStrategy;
 }
