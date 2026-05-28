@@ -2,7 +2,7 @@
 export { Branch } from './components/branches/Branch';
 export { Plural } from './components/branches/Plural';
 export { Derive } from './components/derivation/Derive';
-export { T } from './components/translation/T';
+export { GtInternalTranslateJsx, RscT, T } from './components/translation/T';
 export { Currency } from './components/variables/Currency';
 export { DateTime } from './components/variables/DateTime';
 export { Num } from './components/variables/Num';

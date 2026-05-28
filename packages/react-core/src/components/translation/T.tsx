@@ -12,6 +12,7 @@ import type { JsxChildren } from 'generaltranslation/types';
 import type { TaggedChildren } from '../../utils/types';
 import type { ReactNode } from 'react';
 import { getShouldTranslate } from '../../hooks/utils';
+import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 
 // ===== Component ===== //
 
@@ -26,10 +27,62 @@ function T(
   return useComputeT(props);
 }
 
+function GtInternalTranslateJsx(
+  props: {
+    children: ReactNode;
+  } & JsxTranslationOptions
+): ReactNode {
+  return <T {...props} />;
+}
+
+async function RscT({
+  children: sourceChildren,
+  locale,
+  ...params
+}: {
+  children: ReactNode;
+  locale: string;
+} & JsxTranslationOptions): Promise<ReactNode> {
+  const defaultLocale = getI18nConfig().getDefaultLocale();
+  const shouldTranslate = getI18nConfig().requiresTranslation(locale);
+  const { taggedSourceChildren, sourceJsxChildren, targetOptions } =
+    prepSourceRender({
+      sourceChildren,
+      params,
+      locale,
+    });
+
+  const renderSourceChildren = () =>
+    renderSource({
+      taggedSourceChildren,
+      defaultLocale,
+    });
+
+  if (!shouldTranslate) {
+    return renderSourceChildren();
+  }
+
+  const lookupTranslation =
+    await getReactI18nCache().getLookupTranslation(locale);
+  const targetJsxChildren = lookupTranslation(sourceJsxChildren, targetOptions);
+
+  if (targetJsxChildren == null) {
+    return renderSourceChildren();
+  }
+
+  return renderTarget({
+    taggedSourceChildren,
+    targetJsxChildren,
+    locales: [locale, defaultLocale],
+  });
+}
+
 /** @internal _gtt - The GT transformation for the component. */
 T._gtt = 'translate-client';
+GtInternalTranslateJsx._gtt = 'translate-client-automatic';
+RscT._gtt = 'translate-server';
 
-export { T };
+export { GtInternalTranslateJsx, RscT, T };
 
 // ===== Render Logic ===== //
 
@@ -54,8 +107,8 @@ function useComputeT({
 
   // Create a function to render source children
   const renderSourceChildren = useCallback(() => {
-    return renderDefaultChildren({
-      children: taggedSourceChildren,
+    return renderSource({
+      taggedSourceChildren,
       defaultLocale,
     });
   }, [defaultLocale, taggedSourceChildren]);
@@ -73,10 +126,39 @@ function useComputeT({
   }
 
   // Render translated children if found in cache
+  return renderTarget({
+    taggedSourceChildren,
+    targetJsxChildren,
+    locales: [locale, defaultLocale],
+  });
+}
+
+function renderSource({
+  taggedSourceChildren,
+  defaultLocale,
+}: {
+  taggedSourceChildren: TaggedChildren;
+  defaultLocale: string;
+}): ReactNode {
+  return renderDefaultChildren({
+    children: taggedSourceChildren,
+    defaultLocale,
+  });
+}
+
+function renderTarget({
+  taggedSourceChildren,
+  targetJsxChildren,
+  locales,
+}: {
+  taggedSourceChildren: TaggedChildren;
+  targetJsxChildren: JsxChildren;
+  locales: string[];
+}): ReactNode {
   return renderTranslatedChildren({
     source: taggedSourceChildren,
     target: targetJsxChildren,
-    locales: [locale, defaultLocale],
+    locales,
   });
 }
 
@@ -103,16 +185,16 @@ function usePrepSourceRender({
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate = getShouldTranslate();
   const taggedSourceChildren = useMemo(
-    () => addGTIdentifier(removeInjectedT(sourceChildren)),
+    () => prepareTaggedSourceChildren(sourceChildren),
     [sourceChildren]
   );
   const sourceJsxChildren = useMemo(
-    () => writeChildrenAsObjects(taggedSourceChildren),
+    () => prepareSourceJsxChildren(taggedSourceChildren),
     [taggedSourceChildren]
   );
   const options = useMemo(() => normalizeParameters(params), [params]);
   const targetOptions = useMemo(
-    () => ({ ...options, $locale: locale }),
+    () => prepareTargetOptions({ options, locale }),
     [locale, options]
   );
 
@@ -123,6 +205,59 @@ function usePrepSourceRender({
     sourceJsxChildren,
     targetOptions,
     shouldTranslate,
+  };
+}
+
+function prepareTaggedSourceChildren(
+  sourceChildren: ReactNode
+): TaggedChildren {
+  return addGTIdentifier(removeInjectedT(sourceChildren));
+}
+
+function prepareSourceJsxChildren(
+  taggedSourceChildren: TaggedChildren
+): JsxChildren {
+  return writeChildrenAsObjects(taggedSourceChildren);
+}
+
+function prepareTargetOptions({
+  options,
+  locale,
+}: {
+  options: JsxTranslationOptionsWithSugar & { $format: 'JSX' };
+  locale: string;
+}): JsxTranslationOptionsWithSugar & {
+  $format: 'JSX';
+  $locale: string;
+} {
+  return { ...options, $locale: locale };
+}
+
+function prepSourceRender({
+  sourceChildren,
+  params,
+  locale,
+}: {
+  sourceChildren: ReactNode;
+  params: JsxTranslationOptions;
+  locale: string;
+}): {
+  taggedSourceChildren: TaggedChildren;
+  sourceJsxChildren: JsxChildren;
+  targetOptions: JsxTranslationOptionsWithSugar & {
+    $format: 'JSX';
+    $locale: string;
+  };
+} {
+  const taggedSourceChildren = prepareTaggedSourceChildren(sourceChildren);
+  const sourceJsxChildren = prepareSourceJsxChildren(taggedSourceChildren);
+  const options = normalizeParameters(params);
+  const targetOptions = prepareTargetOptions({ options, locale });
+
+  return {
+    taggedSourceChildren,
+    sourceJsxChildren,
+    targetOptions,
   };
 }
 
