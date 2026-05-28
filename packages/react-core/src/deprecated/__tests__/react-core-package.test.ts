@@ -158,14 +158,18 @@ describe('@generaltranslation/react-core package exports', () => {
     expect(getRuntimeArtifactNames()).toEqual(runtimeArtifactNames);
   });
 
-  it('bundles workspace subpath imports in runtime artifacts', { timeout: 15000 }, () => {
-    const externalizedSubpaths = getRuntimeArtifactNames().flatMap((file) => {
-      return getModuleSpecifiers(file)
-        .filter(isWorkspaceSubpath)
-        .filter((specifier) => !isAllowedExternalizedSubpath(file, specifier))
-        .map((specifier) => `${file}: ${specifier}`);
-    });
+  it(
+    'bundles workspace subpath imports in runtime artifacts',
+    { timeout: 15000 },
+    () => {
+      const externalizedSubpaths = getRuntimeArtifactNames().flatMap((file) => {
+        return getModuleSpecifiers(file)
+          .filter(isWorkspaceSubpath)
+          .filter((specifier) => !isAllowedExternalizedSubpath(file, specifier))
+          .map((specifier) => `${file}: ${specifier}`);
+      });
 
-    expect(externalizedSubpaths).toEqual([]);
-  });
+      expect(externalizedSubpaths).toEqual([]);
+    }
+  );
 });
