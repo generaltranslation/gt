@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { I18nCache } from '../I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 
@@ -16,9 +16,14 @@ describe('I18nCache.handleError', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('throws in development mode when error occurs', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+
     const cache = new I18nCache({
-      environment: 'development',
       loadTranslations: vi.fn().mockRejectedValue(new Error('Load failed')),
     });
 
@@ -26,8 +31,9 @@ describe('I18nCache.handleError', () => {
   });
 
   it('logs and returns fallback in production mode', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+
     const cache = new I18nCache({
-      environment: 'production',
       loadTranslations: vi.fn().mockRejectedValue(new Error('Load failed')),
     });
 

@@ -214,7 +214,7 @@ class I18nCache<
       !!this.config.devApiKey &&
       !!this.config.projectId &&
       this.isRuntimeUrlEnabled() &&
-      this.config.environment === 'development'
+      getRuntimeEnvironment() === 'development'
     );
   }
 
@@ -631,7 +631,7 @@ class I18nCache<
       throw error;
     }
 
-    switch (this.config.environment) {
+    switch (getRuntimeEnvironment()) {
       case 'development':
         throw error;
       case 'production':
@@ -764,8 +764,6 @@ function standardizeConfig<TranslationValue extends Translation>(
   config: I18nCacheConstructorParams<TranslationValue>
 ) {
   return {
-    environment: config.environment || getRuntimeEnvironment(),
-    enableI18n: config.enableI18n !== undefined ? config.enableI18n : true,
     projectId: config.projectId,
     devApiKey: config.devApiKey,
     apiKey: config.apiKey,
