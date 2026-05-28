@@ -23,6 +23,7 @@ import {
   getI18nConfig,
   I18nCache,
   initializeI18nConfig,
+  setupGTServicesEnabled,
 } from 'gt-i18n/internal';
 import type { LookupOptions } from 'gt-i18n/internal/types';
 import { loadTranslations } from './loadTranslation';
@@ -164,11 +165,19 @@ export class I18NConfiguration {
     // Translation and dictionary managers
     const shouldLoadTranslations = loadTranslationsType !== 'disabled';
     const runtimeTranslationTimeout = this.renderSettings.timeout;
+    setupGTServicesEnabled({
+      apiKey,
+      devApiKey,
+      projectId,
+      runtimeUrl,
+      cacheUrl: shouldLoadTranslations ? cacheUrl : null,
+    });
     initializeI18nConfig({
       defaultLocale,
       locales,
       customMapping,
     });
+
     this._i18nCache = new I18nCache<TranslatedChildren>({
       apiKey,
       devApiKey,

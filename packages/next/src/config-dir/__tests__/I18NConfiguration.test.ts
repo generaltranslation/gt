@@ -36,6 +36,7 @@ vi.mock('gt-i18n/internal', () => ({
     mockLocaleConfig.customMapping =
       params.customMapping ?? mockLocaleConfig.customMapping;
   },
+  setupGTServicesEnabled: vi.fn(),
   I18nCache: class {
     constructor(params: {
       defaultLocale?: string;

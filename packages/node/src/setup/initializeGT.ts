@@ -3,6 +3,7 @@ import type { InitializeGTParams } from './types';
 import {
   I18nCache,
   initializeI18nConfig,
+  setupGTServicesEnabled,
   setI18nCache,
 } from 'gt-i18n/internal';
 import { AsyncConditionStore } from '../async-i18n-cache/AsyncConditionStore';
@@ -13,6 +14,7 @@ import { AsyncConditionStore } from '../async-i18n-cache/AsyncConditionStore';
  * TODO: auto detect if can find gt.config.json files
  */
 export function initializeGT(params: InitializeGTParams): void {
+  setupGTServicesEnabled(params);
   initializeI18nConfig(params);
 
   const i18nCache = new I18nCache<string>(params);
