@@ -1,6 +1,7 @@
 import getPluralBranch from '../../utils/plurals/getPluralBranch';
 import type { ReactNode } from 'react';
-import { useFormatLocales } from '../../hooks/utils';
+import { useEnableI18n, useLocale } from '../../hooks/condition-store';
+import { getFormatLocales } from '../../hooks/utils';
 
 type PluralProps = {
   children?: ReactNode;
@@ -17,7 +18,9 @@ function GtInternalPlural({
   locales: localesProp = [],
   ...branches
 }: PluralProps): ReactNode {
-  const locales = useFormatLocales(localesProp);
+  const locale = useLocale();
+  const enableI18n = useEnableI18n();
+  const locales = getFormatLocales({ locale, enableI18n, localesProp });
   if (typeof n !== 'number') {
     return children;
   }
