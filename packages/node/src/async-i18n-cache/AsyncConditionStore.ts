@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { ScopedConditionStore } from 'gt-i18n/internal/types';
+import type { ScopedConditionStoreInterface } from 'gt-i18n/internal/types';
 import { getI18nConfig } from 'gt-i18n/internal';
 
 type Store = {
@@ -20,7 +20,7 @@ type AsyncConditionStoreConstructorParams = {
 /**
  * Condition store implementation that uses AsyncLocalStorage.
  */
-export class AsyncConditionStore implements ScopedConditionStore {
+export class AsyncConditionStore implements ScopedConditionStoreInterface {
   private store: AsyncLocalStorage<Store>;
 
   constructor({ store }: AsyncConditionStoreConstructorParams = {}) {
@@ -60,6 +60,10 @@ export class AsyncConditionStore implements ScopedConditionStore {
     }
     return store.enableI18n ?? true;
   }
+
+  setLocale = (_locale: string): void => {};
+
+  setEnableI18n = (_enableI18n: boolean): void => {};
 }
 
 function resolveLocale(locale?: string): string {
