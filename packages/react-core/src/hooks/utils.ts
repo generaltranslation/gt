@@ -1,15 +1,23 @@
-import { useDefaultLocale } from './external-store-hooks';
+import { useMemo } from 'react';
 import { useLocale } from './condition-store';
 import { getReadonlyConditionStoreWithFallback } from '../condition-store/singleton-operations';
 import { getI18nConfig } from 'gt-i18n/internal';
 
-export function useFormatLocales(localesProp: string[] = []): string[] {
+const EMPTY_LOCALES_PROP: string[] = [];
+
+export function useFormatLocales(
+  localesProp: string[] = EMPTY_LOCALES_PROP
+): string[] {
   const locale = useLocale();
-  const defaultLocale = useDefaultLocale();
-  const shouldTranslate = useShouldTranslate();
-  return shouldTranslate
-    ? [...localesProp, locale, defaultLocale]
-    : [defaultLocale];
+  const defaultLocale = getI18nConfig().getDefaultLocale();
+  const shouldTranslate = getShouldTranslate();
+  return useMemo(
+    () =>
+      shouldTranslate
+        ? [...localesProp, locale, defaultLocale]
+        : [defaultLocale],
+    [defaultLocale, locale, localesProp, shouldTranslate]
+  );
 }
 
 export function useShouldTranslate(): boolean {

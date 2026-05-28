@@ -6,15 +6,13 @@ import renderDefaultChildren from '../../utils/rendering/renderDefaultChildren';
 import renderTranslatedChildren from '../../utils/rendering/renderTranslatedChildren';
 import { renderVariable } from '../../utils/rendering/renderVariable';
 import { useLocale } from '../../hooks/condition-store';
-import {
-  useDefaultLocale,
-  useTranslate,
-} from '../../hooks/external-store-hooks';
+import { useTranslate } from '../../hooks/external-store';
+import { getI18nConfig } from 'gt-i18n/internal';
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { TaggedChildren } from '../../utils/types';
 import type { ReactNode } from 'react';
-import { useShouldTranslate } from '../../hooks/utils';
+import { getShouldTranslate } from '../../hooks/utils';
 
 // ===== Component ===== //
 
@@ -105,8 +103,8 @@ function usePrepSourceRender({
   shouldTranslate: boolean;
 } {
   const locale = useLocale();
-  const defaultLocale = useDefaultLocale();
-  const shouldTranslate = useShouldTranslate();
+  const defaultLocale = getI18nConfig().getDefaultLocale();
+  const shouldTranslate = getShouldTranslate();
   const taggedSourceChildren = useMemo(
     () => addGTIdentifier(removeInjectedT(sourceChildren)),
     [sourceChildren]

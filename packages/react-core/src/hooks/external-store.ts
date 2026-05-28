@@ -8,7 +8,6 @@ import type {
   DictionaryEntrySnapshot,
   DictionaryObjectSnapshot,
 } from '../i18n-store/storeTypes';
-import type { CustomMapping } from 'generaltranslation/types';
 import { getI18nStore } from '../i18n-store/singleton-operations';
 import type { RuntimeTranslationScope } from '../i18n-store/RuntimeTranslationScope';
 import type { RuntimeDictionaryScope } from '../i18n-store/RuntimeDictionaryScope';
@@ -87,33 +86,6 @@ export function useDictionaryObject(
     store.translateDictionaryObject(lookup);
   }
   return dictionaryObject;
-}
-
-export function useCustomMapping(): CustomMapping {
-  const store = getI18nStore();
-  return useSyncExternalStore(
-    store.subscribeToCustomMapping,
-    store.getCustomMappingSnapshot,
-    store.getCustomMappingSnapshot
-  );
-}
-
-export function useDefaultLocale(): string {
-  const store = getI18nStore();
-  return useSyncExternalStore(
-    store.subscribeToDefaultLocale,
-    store.getDefaultLocaleSnapshot,
-    store.getDefaultLocaleSnapshot
-  );
-}
-
-export function useLocales(): readonly string[] {
-  const store = getI18nStore();
-  return useSyncExternalStore(
-    store.subscribeToLocales,
-    store.getLocalesSnapshot,
-    store.getLocalesSnapshot
-  );
 }
 
 /**

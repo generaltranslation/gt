@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useCustomMapping, useLocales } from './external-store-hooks';
+import { useCustomMapping, useLocales } from './i18n-config';
 import { useLocale } from './condition-store';
 import { getLocaleProperties } from 'generaltranslation';
 
