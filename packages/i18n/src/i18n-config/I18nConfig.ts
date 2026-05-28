@@ -10,11 +10,6 @@ export type I18nConfigParams = {
   defaultLocale?: string;
   locales?: string[];
   customMapping?: CustomMapping;
-  projectId?: string;
-  devApiKey?: string;
-  apiKey?: string;
-  cacheUrl?: string | null;
-  runtimeUrl?: string | null;
 };
 
 export type LocaleCandidates = string | string[] | undefined;
