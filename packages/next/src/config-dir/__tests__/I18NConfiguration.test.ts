@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18NConfiguration } from '../I18NConfiguration';
+import { getI18NConfig } from '../getI18NConfig';
+import { defaultWithGTConfigProps } from '../props/defaultWithGTConfigProps';
+import { initializeI18nConfig } from 'gt-i18n/internal';
 
 const mockI18nCacheParams = vi.hoisted(() => vi.fn());
 const mockLookupTranslationWithFallback = vi.hoisted(() => vi.fn());
@@ -104,9 +107,12 @@ vi.mock('gt-i18n/internal', () => ({
 }));
 
 type ConfigParams = ConstructorParameters<typeof I18NConfiguration>[0];
+type GlobalWithI18NConfig = typeof globalThis & {
+  _GENERALTRANSLATION_I18N_CONFIG_INSTANCE?: I18NConfiguration;
+};
 
 function createConfig(overrides: Partial<ConfigParams> = {}) {
-  return new I18NConfiguration({
+  const configParams = {
     runtimeUrl: undefined,
     cacheUrl: null,
     loadTranslationsType: 'custom',
@@ -122,7 +128,9 @@ function createConfig(overrides: Partial<ConfigParams> = {}) {
     headersAndCookies: {},
     _usingPlugin: false,
     ...overrides,
-  });
+  } as ConfigParams;
+  initializeI18nConfig(configParams);
+  return new I18NConfiguration(configParams);
 }
 
 function expectCacheParams(expected: unknown) {
@@ -131,11 +139,18 @@ function expectCacheParams(expected: unknown) {
   );
 }
 
+function resetGlobalConfig() {
+  const globalObj = globalThis as GlobalWithI18NConfig;
+  delete globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
+}
+
 describe('I18NConfiguration', () => {
   beforeEach(() => {
+    resetGlobalConfig();
     mockI18nCacheParams.mockReset();
     mockLookupTranslationWithFallback.mockReset();
     mockLookupTranslationWithFallback.mockResolvedValue('translated');
+    vi.unstubAllEnvs();
     mockLocaleConfig.defaultLocale = 'en';
     mockLocaleConfig.locales = ['en', 'fr'];
     mockLocaleConfig.customMapping = {};
@@ -244,6 +259,78 @@ describe('I18NConfiguration', () => {
         customMapping,
       })
     );
+  });
+
+  it('reads locale values from gt-i18n config accessors', () => {
+    const config = createConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+    });
+
+    mockLocaleConfig.defaultLocale = 'es';
+    mockLocaleConfig.locales = ['es', 'es-MX'];
+
+    expect(config.getDefaultLocale()).toBe('es');
+    expect(config.getLocales()).toEqual(['es', 'es-MX']);
+  });
+
+  it('reads client custom mappings from gt-i18n config accessors', () => {
+    const config = createConfig();
+    const customMapping = {
+      'brand-french': {
+        code: 'fr',
+        name: 'Brand French',
+      },
+    };
+
+    mockLocaleConfig.customMapping = customMapping;
+
+    expect(config.getClientSideConfig()).toEqual(
+      expect.objectContaining({
+        customMapping,
+      })
+    );
+  });
+
+  it('initializes locale metadata from environment-backed config params', () => {
+    const customMapping = {
+      'brand-spanish': {
+        code: 'es',
+        name: 'Brand Spanish',
+      },
+    };
+    vi.stubEnv(
+      '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+      JSON.stringify({
+        defaultLocale: 'en-US',
+        locales: ['en-US', 'es', 'brand-spanish'],
+        customMapping,
+      })
+    );
+
+    const config = getI18NConfig();
+
+    expect(config.getDefaultLocale()).toBe('en-US');
+    expect(config.getLocales()).toEqual(['en-US', 'es', 'brand-spanish']);
+    expect(config.getClientSideConfig()).toEqual(
+      expect.objectContaining({
+        customMapping,
+      })
+    );
+  });
+
+  it('initializes locale metadata in the default config fallback', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const config = getI18NConfig();
+
+    expect(config.getDefaultLocale()).toBe(
+      defaultWithGTConfigProps.defaultLocale
+    );
+    expect(config.getLocales()).toEqual([
+      defaultWithGTConfigProps.defaultLocale,
+    ]);
+    warn.mockRestore();
   });
 
   it('checks translation and dialect requirements from locale config', () => {
