@@ -1,11 +1,10 @@
-import { useDefaultLocale } from './i18n-config';
 import { useLocale } from './condition-store';
 import { getReadonlyConditionStoreWithFallback } from '../condition-store/singleton-operations';
 import { getI18nConfig } from 'gt-i18n/internal';
 
 export function useFormatLocales(localesProp: string[] = []): string[] {
   const locale = useLocale();
-  const defaultLocale = useDefaultLocale();
+  const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate = useShouldTranslate();
   return shouldTranslate
     ? [...localesProp, locale, defaultLocale]
