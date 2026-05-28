@@ -5,7 +5,7 @@ import { getI18nConfig } from 'gt-i18n/internal';
 export function useFormatLocales(localesProp: string[] = []): string[] {
   const locale = useLocale();
   const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate = useShouldTranslate();
+  const shouldTranslate = getShouldTranslate();
   return shouldTranslate
     ? [...localesProp, locale, defaultLocale]
     : [defaultLocale];

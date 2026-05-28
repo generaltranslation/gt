@@ -7,7 +7,7 @@ import {
 import type { InlineTranslationOptionsFields } from 'gt-i18n/internal/types';
 import { useRuntimeTranslationScope, useTranslateMany } from './external-store';
 import { useLocale } from './condition-store';
-import { useShouldTranslate } from './utils';
+import { getShouldTranslate } from './utils';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import type { TranslateLookup } from '../i18n-store/storeTypes';
 import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
@@ -24,7 +24,7 @@ type Message = InlineTranslationOptionsFields & {
 export function useGT(_messages?: Message[]): GTFunctionType {
   const locale = useLocale();
   const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate = useShouldTranslate();
+  const shouldTranslate = getShouldTranslate();
   const scope = useRuntimeTranslationScope();
   const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
 
