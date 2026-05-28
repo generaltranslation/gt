@@ -7,9 +7,9 @@ export function useCustomMapping(): CustomMapping {
 }
 
 export function useDefaultLocale(): string {
-  return getI18nConfig().getDefaultLocale();
+  return useMemo(() => getI18nConfig().getDefaultLocale(), []);
 }
 
 export function useLocales(): readonly string[] {
-  return getI18nConfig().getLocales();
+  return useMemo(() => getI18nConfig().getLocales(), []);
 }
