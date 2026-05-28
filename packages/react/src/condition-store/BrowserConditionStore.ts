@@ -46,7 +46,9 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     const i18nConfig = getI18nConfig();
     setCookieValue({
       cookieName: this.localeCookieName,
-      value: i18nConfig.determineLocale(config.locale) || i18nConfig.getDefaultLocale(),
+      value:
+        i18nConfig.determineLocale(config.locale) ||
+        i18nConfig.getDefaultLocale(),
     });
   }
 
@@ -81,7 +83,8 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     const i18nConfig = getI18nConfig();
     setCookieValue({
       cookieName: this.localeCookieName,
-      value: i18nConfig.determineLocale(locale) || i18nConfig.getDefaultLocale(),
+      value:
+        i18nConfig.determineLocale(locale) || i18nConfig.getDefaultLocale(),
     });
   };
 
@@ -113,6 +116,7 @@ function getBrowserLocale(cookieName: string, getLocale?: GetLocale): string {
   const candidates = readBrowserLocale(cookieName);
   if (getLocale) candidates.push(getLocale());
   const i18nConfig = getI18nConfig();
-  return i18nConfig.determineLocale(candidates) || i18nConfig.getDefaultLocale();
+  return (
+    i18nConfig.determineLocale(candidates) || i18nConfig.getDefaultLocale()
+  );
 }
-
