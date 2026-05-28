@@ -1,11 +1,8 @@
 import { useCallback, useMemo } from 'react';
 import { createLookupOptions } from 'gt-i18n/internal';
 import type { InlineTranslationOptionsFields } from 'gt-i18n/internal/types';
-import {
-  useDefaultLocale,
-  useRuntimeTranslationScope,
-  useTranslateMany,
-} from './external-store-hooks';
+import { useRuntimeTranslationScope, useTranslateMany } from './external-store';
+import { useDefaultLocale } from './i18n-config';
 import { useLocale } from './condition-store';
 import { useShouldTranslate } from './utils';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';

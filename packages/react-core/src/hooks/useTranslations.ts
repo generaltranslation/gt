@@ -6,10 +6,10 @@ import {
   resolveDictionaryLookupOptions,
 } from 'gt-i18n/internal';
 import {
-  useDefaultLocale,
   useDictionaryObject,
   useRuntimeDictionaryScope,
-} from './external-store-hooks';
+} from './external-store';
+import { useDefaultLocale } from './i18n-config';
 import { useLocale } from './condition-store';
 import { useShouldTranslate } from './utils';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';

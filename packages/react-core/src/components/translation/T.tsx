@@ -6,10 +6,8 @@ import renderDefaultChildren from '../../utils/rendering/renderDefaultChildren';
 import renderTranslatedChildren from '../../utils/rendering/renderTranslatedChildren';
 import { renderVariable } from '../../utils/rendering/renderVariable';
 import { useLocale } from '../../hooks/condition-store';
-import {
-  useDefaultLocale,
-  useTranslate,
-} from '../../hooks/external-store-hooks';
+import { useDefaultLocale } from '../../hooks/i18n-config';
+import { useTranslate } from '../../hooks/external-store';
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { TaggedChildren } from '../../utils/types';

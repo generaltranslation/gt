@@ -1,4 +1,4 @@
-import { useDefaultLocale } from './external-store-hooks';
+import { useDefaultLocale } from './i18n-config';
 import { useLocale } from './condition-store';
 import { getReadonlyConditionStoreWithFallback } from '../condition-store/singleton-operations';
 import { getI18nConfig } from 'gt-i18n/internal';
