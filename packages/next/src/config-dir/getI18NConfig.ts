@@ -6,6 +6,7 @@ import {
   usingDefaultsWarning,
 } from '../errors/createErrors';
 import { getDefaultRenderSettings } from 'gt-react/internal';
+import { initializeI18nConfig } from 'gt-i18n/internal';
 
 type GlobalWithI18NConfig = typeof globalThis & {
   _GENERALTRANSLATION_I18N_CONFIG_INSTANCE?: I18NConfiguration;
@@ -21,10 +22,14 @@ export function getI18NConfig(): I18NConfiguration {
   // initGT: Get config from environment
   const I18NConfigParams = process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
   if (I18NConfigParams) {
-    globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration({
+    const configParams = {
       ...defaultWithGTConfigProps,
       ...JSON.parse(I18NConfigParams),
-    });
+    } as ConstructorParameters<typeof I18NConfiguration>[0];
+    initializeI18nConfig(configParams);
+    globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration(
+      configParams
+    );
   } else {
     console.warn(usingDefaultsWarning);
     // no initGT implies:
@@ -60,7 +65,7 @@ export function getI18NConfig(): I18NConfiguration {
     }
 
     // disable all translation
-    globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration({
+    const configParams = {
       ...defaultWithGTConfigProps,
       locales: [defaultLocale],
       renderSettings: getDefaultRenderSettings(process.env.NODE_ENV),
@@ -71,7 +76,11 @@ export function getI18NConfig(): I18NConfiguration {
       cacheUrl: null,
       loadTranslationsType: 'disabled',
       loadDictionaryEnabled: false,
-    });
+    } as ConstructorParameters<typeof I18NConfiguration>[0];
+    initializeI18nConfig(configParams);
+    globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration(
+      configParams
+    );
   }
 
   return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;

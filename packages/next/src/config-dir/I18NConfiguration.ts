@@ -18,11 +18,9 @@ import {
   defaultResetLocaleCookieName,
 } from '../utils/cookies';
 import { defaultLocaleHeaderName } from '../utils/headers';
-import type { CustomMapping } from '@generaltranslation/format/types';
 import {
   getI18nConfig,
   I18nCache,
-  initializeI18nConfig,
   setupGTServicesEnabled,
 } from 'gt-i18n/internal';
 import type {
@@ -52,7 +50,6 @@ type I18NConfigurationParams = Omit<
   headersAndCookies: HeadersAndCookies;
   _usingPlugin: boolean;
   _versionId?: string;
-  customMapping?: CustomMapping | undefined;
   [key: string]: unknown;
 };
 
@@ -113,11 +110,14 @@ export class I18NConfiguration {
     // Internal
     _usingPlugin,
     headersAndCookies,
-    customMapping,
+    // Locale config is initialized by getI18NConfig; keep stripping this from
+    // runtime translation metadata while this facade accepts legacy params.
+    customMapping: _customMapping,
     // Other metadata
     ...metadata
   }: I18NConfigurationParams) {
     void _dictionary;
+    void _customMapping;
 
     // ----- CLOUD INTEGRATION ----- //
 
@@ -174,11 +174,6 @@ export class I18NConfiguration {
       projectId,
       runtimeUrl,
       cacheUrl: shouldLoadTranslations ? cacheUrl : null,
-    });
-    initializeI18nConfig({
-      defaultLocale,
-      locales,
-      customMapping,
     });
 
     this._i18nCache = new I18nCache<TranslatedChildren>({
