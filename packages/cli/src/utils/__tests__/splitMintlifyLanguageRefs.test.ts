@@ -513,4 +513,103 @@ describe('splitMintlifyLanguageRefs', () => {
     const esNav = getWritten('/project/config/es/navigation.json');
     expect(esNav.tabs[0].tab).toBe('Guías');
   });
+
+  it('handles per-entry $ref language entries (ref on each language, not the container)', async () => {
+    // Auth0-style source: docs.json has an inline navigation/languages array
+    // where each *entry* is a $ref (the en entry is `{ $ref: config/nav.json }`),
+    // and nav.json itself has nested $refs to navigation/*.json. After merge the
+    // array is fully inlined; the splitter must restore en to its entry $ref and
+    // mirror each locale under config/{locale}/ — NOT write {locale}/docs.json.
+    const mergedDocsJson = {
+      navigation: {
+        languages: [
+          {
+            language: 'en',
+            tabs: [
+              { tab: 'Home', pages: ['docs/index'] },
+              {
+                tab: 'Guides',
+                groups: [{ group: 'Start', pages: ['docs/start'] }],
+              },
+            ],
+          },
+          {
+            language: 'es',
+            tabs: [
+              { tab: 'Inicio', pages: ['es/docs/index'] },
+              {
+                tab: 'Guías',
+                groups: [{ group: 'Inicio', pages: ['es/docs/start'] }],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    mockRead.mockImplementation((p) => {
+      const resolved = path.resolve(p as string);
+      if (resolved === path.resolve('/project/docs.json'))
+        return JSON.stringify(mergedDocsJson);
+      throw new Error('ENOENT');
+    });
+
+    // refMap from the read phase: the en entry was a $ref to config/nav.json,
+    // and nav.json's "Guides" tab was a nested $ref to navigation/guides.json.
+    mockRefMap = new Map([
+      [
+        '/navigation/languages/0',
+        {
+          sourceFile: path.resolve('/project/config/nav.json'),
+          refPath: 'config/nav.json',
+          containingDir: path.resolve('/project'),
+          originalContent: {},
+        },
+      ],
+      [
+        '/navigation/languages/0/tabs/1',
+        {
+          sourceFile: path.resolve('/project/config/navigation/guides.json'),
+          refPath: './navigation/guides.json',
+          containingDir: path.resolve('/project/config'),
+          originalContent: {},
+        },
+      ],
+    ]);
+
+    await splitMintlifyLanguageRefs(makeSettings());
+
+    // docs.json: en restored to its entry $ref (no language key — it lives in
+    // nav.json); es points to a mirrored nav file under config/es/.
+    const docsResult = getWritten('/project/docs.json') as any;
+    expect(docsResult.navigation.languages[0]).toEqual({
+      $ref: 'config/nav.json',
+    });
+    expect(docsResult.navigation.languages[1]).toEqual({
+      language: 'es',
+      $ref: './config/es/nav.json',
+    });
+
+    // The English source files must be left untouched (not rewritten).
+    expect(getWritten('/project/config/nav.json')).toBeUndefined();
+    expect(
+      getWritten('/project/config/navigation/guides.json')
+    ).toBeUndefined();
+
+    // Locale nav file mirrors nav.json's location and keeps the nested $ref.
+    const esNav = getWritten('/project/config/es/nav.json');
+    expect(esNav).toEqual({
+      tabs: [
+        { tab: 'Inicio', pages: ['es/docs/index'] },
+        { $ref: './navigation/guides.json' },
+      ],
+    });
+
+    // The nested ref is mirrored under the locale dir with translated content.
+    const esGuides = getWritten('/project/config/es/navigation/guides.json');
+    expect(esGuides).toEqual({
+      tab: 'Guías',
+      groups: [{ group: 'Inicio', pages: ['es/docs/start'] }],
+    });
+  });
 });
