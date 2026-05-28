@@ -27,7 +27,9 @@ export {
   Branch,
   Plural,
   Derive,
+  GtInternalTranslateJsx,
   T,
+  ServerT,
   Currency,
   DateTime,
   RelativeTime,
@@ -59,3 +61,4 @@ export {
   getReactI18nCache,
   setReactI18nCache,
 } from '@generaltranslation/react-core/context';
+export type { ServerTProps } from '@generaltranslation/react-core/context';

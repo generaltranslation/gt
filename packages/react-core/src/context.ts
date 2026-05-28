@@ -2,7 +2,8 @@
 export { Branch } from './components/branches/Branch';
 export { Plural } from './components/branches/Plural';
 export { Derive } from './components/derivation/Derive';
-export { T } from './components/translation/T';
+export { GtInternalTranslateJsx, T } from './components/translation/T';
+export { T as ServerT } from './components/translation/ServerT';
 export { Currency } from './components/variables/Currency';
 export { DateTime } from './components/variables/DateTime';
 export { Num } from './components/variables/Num';
@@ -66,3 +67,4 @@ export type {
   ReactI18nCache,
   ReactI18nCacheParams,
 } from './i18n-cache/ReactI18nCache';
+export type { ServerTProps } from './components/translation/ServerT';
