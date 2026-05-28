@@ -2,7 +2,6 @@ import {
   getDictionaryListenerKey,
   getTranslateListenerKey,
 } from 'gt-i18n/internal';
-import type { CustomMapping } from 'generaltranslation/types';
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
@@ -17,7 +16,6 @@ import type { Translation } from 'gt-i18n/types';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
-import { getI18nConfig } from 'gt-i18n/internal';
 import {
   dictionaryEntryEventMatchesLookup,
   dictionaryObjectEventMatchesLookup,
@@ -30,17 +28,14 @@ type DictionaryStoreListener = (event: DictionaryLookup) => void;
 export type I18nStoreParams = {};
 
 /**
- * A subscription wrapper around the I18nCache and the ConditionStore
+ * A subscription wrapper around the I18nCache.
  *
- * It is assumed that the I18nCache and the ConditionStore are already initialized.
- * It is assumed that the locale and translations are already sync accessible.
+ * It is assumed that the I18nCache is already initialized.
+ * It is assumed that translations are already sync accessible.
  */
 export class I18nStore {
   // ===== Listener Sets ===== //
 
-  private defaultLocaleListeners = new Set<StoreListener>();
-  private localesListeners = new Set<StoreListener>();
-  private customMappingListeners = new Set<StoreListener>();
   private translateListeners = new Set<TranslateStoreListener>();
   private translateManySnapshotCache = new WeakMap<
     readonly TranslateLookup[],
@@ -59,20 +54,6 @@ export class I18nStore {
       throw new Error('Failed to initialize I18nStore. Reason: ' + error);
     }
   }
-
-  // ===== Manager Config Subscriptions ===== //
-
-  subscribeToDefaultLocale = (listener: StoreListener): Unsubscribe => {
-    return subscribeToSet(this.defaultLocaleListeners, listener);
-  };
-
-  subscribeToLocales = (listener: StoreListener): Unsubscribe => {
-    return subscribeToSet(this.localesListeners, listener);
-  };
-
-  subscribeToCustomMapping = (listener: StoreListener): Unsubscribe => {
-    return subscribeToSet(this.customMappingListeners, listener);
-  };
 
   // ===== I18nCache Subscriptions ===== //
 
@@ -126,20 +107,6 @@ export class I18nStore {
     };
     return subscribeToSet(this.dictionaryObjectListeners, wrappedListener);
   }
-
-  // ===== Manager Config Snapshots ===== //
-
-  getDefaultLocaleSnapshot = (): string => {
-    return getI18nConfig().getDefaultLocale();
-  };
-
-  getLocalesSnapshot = (): readonly string[] => {
-    return getI18nConfig().getLocales();
-  };
-
-  getCustomMappingSnapshot = (): CustomMapping => {
-    return getI18nConfig().getCustomMapping();
-  };
 
   // ===== I18nCache Snapshots ===== //
 
