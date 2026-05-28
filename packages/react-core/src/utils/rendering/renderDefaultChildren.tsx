@@ -15,10 +15,12 @@ import getPluralBranch from '../plurals/getPluralBranch';
 export default function renderDefaultChildren({
   children,
   defaultLocale = libraryDefaultLocale,
+  enableI18n = false,
   renderVariable,
 }: {
   children: TaggedChildren;
   defaultLocale: string;
+  enableI18n?: boolean;
   renderVariable: RenderVariable;
 }): React.ReactNode {
   const handleSingleChildElement = (child: TaggedElement): ReactNode => {
@@ -33,6 +35,7 @@ export default function renderDefaultChildren({
         variableValue,
         variableOptions,
         locales: [defaultLocale],
+        enableI18n,
         injectionType,
       });
     }

@@ -23,11 +23,13 @@ function renderTranslatedElement({
   sourceElement,
   targetElement,
   locales = [libraryDefaultLocale],
+  enableI18n,
   renderVariable,
 }: {
   sourceElement: TaggedElement;
   targetElement: TranslatedElement;
   locales: string[];
+  enableI18n: boolean;
   renderVariable: RenderVariable;
 }): React.ReactNode {
   // Get props and generaltranslation
@@ -57,6 +59,7 @@ function renderTranslatedElement({
       return renderDefaultChildren({
         children: sourceElement,
         defaultLocale: locales[0],
+        enableI18n,
         renderVariable,
       });
     }
@@ -74,6 +77,7 @@ function renderTranslatedElement({
       source: sourceBranch as TaggedChildren,
       target: targetBranch as TranslatedChildren,
       locales,
+      enableI18n,
       renderVariable,
     });
   }
@@ -97,6 +101,7 @@ function renderTranslatedElement({
       source: sourceBranch as TaggedChildren,
       target: targetBranch as TranslatedChildren,
       locales,
+      enableI18n,
       renderVariable,
     });
   }
@@ -109,6 +114,7 @@ function renderTranslatedElement({
         source: sourceProps.children as TaggedChildren,
         target: targetElement.c,
         locales,
+        enableI18n,
         renderVariable,
       }) as TaggedChildren,
     });
@@ -124,6 +130,7 @@ function renderTranslatedElement({
         source: sourceProps.children as TaggedChildren,
         target: targetElement.c,
         locales,
+        enableI18n,
         renderVariable,
       }) as TaggedChildren,
     });
@@ -133,6 +140,7 @@ function renderTranslatedElement({
   return renderDefaultChildren({
     children: sourceElement,
     defaultLocale: locales[0],
+    enableI18n,
     renderVariable,
   });
 }
@@ -141,11 +149,13 @@ export default function renderTranslatedChildren({
   source,
   target,
   locales = [libraryDefaultLocale],
+  enableI18n = true,
   renderVariable,
 }: {
   source: TaggedChildren;
   target: TranslatedChildren;
   locales: string[];
+  enableI18n?: boolean;
   renderVariable: RenderVariable;
 }): ReactNode {
   // Most straightforward case, return a valid React node
@@ -153,6 +163,7 @@ export default function renderTranslatedChildren({
     return renderDefaultChildren({
       children: source,
       defaultLocale: locales[0],
+      enableI18n,
       renderVariable,
     });
   if (typeof target === 'string') return target;
@@ -229,6 +240,7 @@ export default function renderTranslatedChildren({
               variableValue: variables[targetChild.k],
               variableOptions: variablesOptions[targetChild.k],
               locales,
+              enableI18n,
               injectionType: variableInjectionTypes[targetChild.k] || 'manual',
             })}
           </React.Fragment>
@@ -246,6 +258,7 @@ export default function renderTranslatedChildren({
             sourceElement: matchingSourceElement,
             targetElement: targetChild,
             locales,
+            enableI18n,
             renderVariable,
           })}
         </React.Fragment>
@@ -265,6 +278,7 @@ export default function renderTranslatedChildren({
           sourceElement: source,
           targetElement: target as TranslatedElement,
           locales,
+          enableI18n,
           renderVariable,
         });
       }
@@ -278,6 +292,7 @@ export default function renderTranslatedChildren({
           variableValue,
           variableOptions,
           locales,
+          enableI18n,
           injectionType,
         });
       }
@@ -288,6 +303,7 @@ export default function renderTranslatedChildren({
   return renderDefaultChildren({
     children: source,
     defaultLocale: locales[0],
+    enableI18n,
     renderVariable,
   });
 }

@@ -69,9 +69,11 @@ export type RenderVariable = ({
   variableValue,
   variableOptions,
   locales,
+  enableI18n,
   injectionType,
 }: Omit<VariableProps, 'variableName'> & {
   locales: string[];
+  enableI18n: boolean;
 }) => React.ReactNode;
 
 export type _Message = {
