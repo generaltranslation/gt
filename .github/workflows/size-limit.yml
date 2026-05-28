@@ -6,7 +6,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 env:
   CI: true
@@ -28,7 +27,11 @@ jobs:
         with:
           targets: wasm32-wasip1
 
-      - uses: andresz1/size-limit-action@94bc357df29c36c8f8d50ea497c3e225c3c95d1d # v1.8.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          package_manager: pnpm
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build packages
+        run: pnpm exec turbo build --filter=generaltranslation --filter=gt-i18n --filter='@generaltranslation/react-core' --filter=gt-react --filter=gt-tanstack-start --filter=gt-next
+
+      - name: Check bundle sizes
+        run: pnpm size
