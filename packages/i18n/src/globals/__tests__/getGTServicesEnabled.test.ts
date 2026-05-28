@@ -33,8 +33,4 @@ describe('getGTServicesEnabled', () => {
 
     expect(getGTServicesEnabled()).toBe(false);
   });
-
-  it('preserves config-based reads before consumers migrate to global reads', () => {
-    expect(getGTServicesEnabled({ projectId: 'test-project' })).toBe(true);
-  });
 });

@@ -25,13 +25,16 @@ import {
   initializeI18nConfig,
   setupGTServicesEnabled,
 } from 'gt-i18n/internal';
-import type { LookupOptions } from 'gt-i18n/internal/types';
+import type {
+  GTServicesEnabledParams,
+  LookupOptions,
+} from 'gt-i18n/internal/types';
 import { loadTranslations } from './loadTranslation';
 
-type I18NConfigurationParams = {
-  apiKey?: string;
-  devApiKey?: string;
-  projectId?: string;
+type I18NConfigurationParams = Omit<
+  GTServicesEnabledParams,
+  'cacheUrl' | 'runtimeUrl'
+> & {
   runtimeUrl: string | undefined;
   cacheUrl: string | null;
   cacheExpiryTime?: number;

@@ -1,14 +1,11 @@
 import { isValidLocale } from '@generaltranslation/format';
-import {
-  createDiagnosticMessage,
-  defaultCacheUrl,
-  defaultRuntimeApiUrl,
-} from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { getGTServicesEnabled } from '../globals/getGTServicesEnabled';
 import logger from '../logs/logger';
 import type { I18nConfigParams } from './I18nConfig';
 
 export function validateI18nConfigParams(params: I18nConfigParams): void {
-  if (!getGTServicesEnabled(params)) {
+  if (!getGTServicesEnabled()) {
     return;
   }
 
@@ -36,21 +33,6 @@ export function validateI18nConfigParams(params: I18nConfigParams): void {
       })
     );
   }
-}
-
-function getGTServicesEnabled({
-  projectId,
-  devApiKey,
-  apiKey,
-  cacheUrl,
-  runtimeUrl,
-}: I18nConfigParams): boolean {
-  return (
-    ((cacheUrl === undefined || cacheUrl === defaultCacheUrl) && !!projectId) ||
-    ((runtimeUrl === undefined || runtimeUrl === defaultRuntimeApiUrl) &&
-      !!projectId &&
-      !!(devApiKey || apiKey))
-  );
 }
 
 function getInvalidLocales({
