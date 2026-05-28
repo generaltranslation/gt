@@ -1,12 +1,12 @@
 import { useCallback, useMemo } from 'react';
+import { useCustomMapping, useLocales } from './i18n-config';
 import { useLocale } from './condition-store';
 import { getLocaleProperties } from 'generaltranslation';
-import { getI18nConfig } from 'gt-i18n/internal';
 
 export function useInternalLocaleSelector(locales?: string[]) {
   // Retrieve the locale, locales, and setLocale function
-  const contextLocales = useMemo(() => getI18nConfig().getLocales(), []);
-  const customMapping = useMemo(() => getI18nConfig().getCustomMapping(), []);
+  const contextLocales = useLocales();
+  const customMapping = useCustomMapping();
   const locale = useLocale();
 
   // sort
