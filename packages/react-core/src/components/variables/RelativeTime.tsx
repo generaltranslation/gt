@@ -11,32 +11,33 @@ type RelativeTimeProps = {
   baseDate?: Date;
   locales?: string[];
   options?: Intl.RelativeTimeFormatOptions;
-};
-
-type GtInternalRelativeTimeProps = RelativeTimeProps & {
   _locale?: string;
   _enableI18n?: boolean;
 };
 
 type ResolvedRelativeTimeProps = RelativeTimeProps & {
-  locale: string;
-  enableI18n: boolean;
+  _locale: string;
+  _enableI18n: boolean;
 };
 
 // ===== Shared Logic ===== //
 
 function computeRelativeTime({
+  _enableI18n,
+  _locale,
   date,
   children,
-  enableI18n,
   value,
   unit,
   baseDate,
-  locale,
   locales: localesProp = [],
   options = {},
 }: ResolvedRelativeTimeProps): string | null {
-  const locales = getFormatLocales({ locale, enableI18n, localesProp });
+  const locales = getFormatLocales({
+    locale: _locale,
+    enableI18n: _enableI18n,
+    localesProp,
+  });
   const gt = getReactI18nCache().getGTClass();
   const resolvedDate = date ?? children;
 
@@ -75,11 +76,11 @@ function GtInternalRelativeTime({
   _enableI18n,
   _locale,
   ...props
-}: GtInternalRelativeTimeProps): string | null {
+}: RelativeTimeProps): string | null {
   return computeRelativeTime({
     ...props,
-    enableI18n: _enableI18n ?? useEnableI18n(),
-    locale: _locale ?? useLocale(),
+    _enableI18n: _enableI18n ?? useEnableI18n(),
+    _locale: _locale ?? useLocale(),
   });
 }
 
