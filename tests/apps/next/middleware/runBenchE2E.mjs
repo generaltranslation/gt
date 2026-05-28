@@ -121,9 +121,8 @@ try {
   });
 
   logSection('Running e2e benchmarks');
-  execFileSync(
-    'npx',
-    ['playwright', 'test', '--config=benchmarks/playwright.config.ts'],
+  runPnpm(
+    ['exec', 'playwright', 'test', '--config=benchmarks/playwright.config.ts'],
     {
       cwd: __dirname,
       stdio: 'inherit',
