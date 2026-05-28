@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18NConfiguration } from '../I18NConfiguration';
 import { getI18NConfig } from '../getI18NConfig';
 import { defaultWithGTConfigProps } from '../props/defaultWithGTConfigProps';
+import { initializeI18nConfig } from 'gt-i18n/internal';
 
 const mockI18nCacheParams = vi.hoisted(() => vi.fn());
 const mockLookupTranslationWithFallback = vi.hoisted(() => vi.fn());
@@ -111,7 +112,7 @@ type GlobalWithI18NConfig = typeof globalThis & {
 };
 
 function createConfig(overrides: Partial<ConfigParams> = {}) {
-  return new I18NConfiguration({
+  const configParams = {
     runtimeUrl: undefined,
     cacheUrl: null,
     loadTranslationsType: 'custom',
@@ -127,7 +128,9 @@ function createConfig(overrides: Partial<ConfigParams> = {}) {
     headersAndCookies: {},
     _usingPlugin: false,
     ...overrides,
-  });
+  } as ConfigParams;
+  initializeI18nConfig(configParams);
+  return new I18NConfiguration(configParams);
 }
 
 function expectCacheParams(expected: unknown) {
