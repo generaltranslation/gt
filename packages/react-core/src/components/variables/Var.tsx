@@ -5,6 +5,12 @@ type VarProps<T extends ReactNode> = {
   name?: string;
 };
 
+type GtInternalVarProps<T extends ReactNode> = VarProps<T> & {
+  /** Accepted for renderVariable parity; raw variables are locale-independent. */
+  _locale?: string;
+  _enableI18n?: boolean;
+};
+
 // ===== Shared Logic ===== //
 
 function computeVar<T extends ReactNode>({ children }: VarProps<T>): T {
@@ -20,7 +26,9 @@ function Var<T extends ReactNode>({ children }: VarProps<T>): T {
   return computeVar({ children });
 }
 
-function GtInternalVar<T extends ReactNode>({ children }: VarProps<T>): T {
+function GtInternalVar<T extends ReactNode>({
+  children,
+}: GtInternalVarProps<T>): T {
   return computeVar({ children });
 }
 

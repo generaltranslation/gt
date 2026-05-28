@@ -9,15 +9,25 @@ type DateTimeProps = {
   name?: string;
 };
 
-// ===== Component ===== //
+type GtInternalDateTimeProps = DateTimeProps & {
+  _locale?: string;
+  _enableI18n?: boolean;
+};
 
-function GtInternalDateTime({
+type ResolvedDateTimeProps = DateTimeProps & {
+  locale: string;
+  enableI18n: boolean;
+};
+
+// ===== Shared Logic ===== //
+
+function computeDateTime({
   children,
+  enableI18n,
+  locale,
   options = {},
   locales: localesProp = [],
-}: DateTimeProps): string | null {
-  const locale = useLocale();
-  const enableI18n = useEnableI18n();
+}: ResolvedDateTimeProps): string | null {
   const locales = getFormatLocales({ locale, enableI18n, localesProp });
   // TODO: theres a world in which we don't need the i18n cache, if user passes their own params
   const gt = getReactI18nCache().getGTClass();
@@ -25,6 +35,20 @@ function GtInternalDateTime({
   return gt
     .formatDateTime(children, { locales, ...options })
     .replace(/[\u200F\u202B\u202E]/g, '');
+}
+
+// ===== Component ===== //
+
+function GtInternalDateTime({
+  _enableI18n,
+  _locale,
+  ...props
+}: GtInternalDateTimeProps): string | null {
+  return computeDateTime({
+    ...props,
+    enableI18n: _enableI18n ?? useEnableI18n(),
+    locale: _locale ?? useLocale(),
+  });
 }
 
 function DateTime(props: DateTimeProps): React.JSX.Element {

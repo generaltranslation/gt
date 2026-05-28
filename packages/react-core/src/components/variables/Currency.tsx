@@ -10,16 +10,26 @@ type CurrencyProps = {
   name?: string;
 };
 
-// ===== Component ===== //
+type GtInternalCurrencyProps = CurrencyProps & {
+  _locale?: string;
+  _enableI18n?: boolean;
+};
 
-function GtInternalCurrency({
+type ResolvedCurrencyProps = CurrencyProps & {
+  locale: string;
+  enableI18n: boolean;
+};
+
+// ===== Shared Logic ===== //
+
+function computeCurrency({
   children,
   currency = 'USD',
+  enableI18n,
+  locale,
   options = {},
   locales: localesProp = [],
-}: CurrencyProps): string | null {
-  const locale = useLocale();
-  const enableI18n = useEnableI18n();
+}: ResolvedCurrencyProps): string | null {
   const locales = getFormatLocales({ locale, enableI18n, localesProp });
   const gt = getReactI18nCache().getGTClass();
   if (children == null) return null;
@@ -28,6 +38,20 @@ function GtInternalCurrency({
   return gt.formatCurrency(parsedNumber, currency, {
     locales,
     ...options,
+  });
+}
+
+// ===== Component ===== //
+
+function GtInternalCurrency({
+  _enableI18n,
+  _locale,
+  ...props
+}: GtInternalCurrencyProps): string | null {
+  return computeCurrency({
+    ...props,
+    enableI18n: _enableI18n ?? useEnableI18n(),
+    locale: _locale ?? useLocale(),
   });
 }
 
