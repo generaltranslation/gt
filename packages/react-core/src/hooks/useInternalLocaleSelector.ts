@@ -5,9 +5,8 @@ import { getI18nConfig } from 'gt-i18n/internal';
 
 export function useInternalLocaleSelector(locales?: string[]) {
   // Retrieve the locale, locales, and setLocale function
-  const i18nConfig = getI18nConfig();
-  const contextLocales = i18nConfig.getLocales();
-  const customMapping = i18nConfig.getCustomMapping();
+  const contextLocales = useMemo(() => getI18nConfig().getLocales(), []);
+  const customMapping = useMemo(() => getI18nConfig().getCustomMapping(), []);
   const locale = useLocale();
 
   // sort
