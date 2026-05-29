@@ -1,4 +1,5 @@
 import { getLocale } from '../../request/getLocale';
+import { getEnableI18n } from '../../request/getEnableI18n';
 import { RscT } from 'gt-react/context';
 import type { ReactNode } from 'react';
 
@@ -17,8 +18,11 @@ type TProps = {
  * Build-time translation component that renders its children in the user's given locale.
  */
 export async function T(props: TProps): Promise<ReactNode> {
-  const locale = await getLocale();
-  return RscT({ ...props, locale });
+  const [locale, enableI18n] = await Promise.all([
+    getLocale(),
+    getEnableI18n(),
+  ]);
+  return RscT({ ...props, locale, enableI18n });
 }
 
 /** @internal _gtt - The GT transformation for the component. */

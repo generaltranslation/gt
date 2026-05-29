@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const { mockGetLocale, mockRscT } = vi.hoisted(() => ({
+const { mockGetEnableI18n, mockGetLocale, mockRscT } = vi.hoisted(() => ({
+  mockGetEnableI18n: vi.fn(),
   mockGetLocale: vi.fn(),
   mockRscT: vi.fn(),
 }));
@@ -9,13 +10,18 @@ vi.mock('../../../request/getLocale', () => ({
   getLocale: mockGetLocale,
 }));
 
+vi.mock('../../../request/getEnableI18n', () => ({
+  getEnableI18n: mockGetEnableI18n,
+}));
+
 vi.mock('gt-react/context', () => ({
   RscT: mockRscT,
 }));
 
 describe('buildtime T', () => {
-  it('passes the request locale to RscT', async () => {
+  it('passes request conditions to RscT', async () => {
     mockGetLocale.mockResolvedValue('fr');
+    mockGetEnableI18n.mockResolvedValue(false);
     mockRscT.mockResolvedValue('Bonjour');
 
     const { T } = await import('../T');
@@ -24,10 +30,12 @@ describe('buildtime T', () => {
     );
 
     expect(mockGetLocale).toHaveBeenCalled();
+    expect(mockGetEnableI18n).toHaveBeenCalled();
     expect(mockRscT).toHaveBeenCalledWith({
       children: 'Hello',
       id: 'greeting',
       locale: 'fr',
+      enableI18n: false,
     });
     expect(T._gtt).toBe('translate-server');
   });

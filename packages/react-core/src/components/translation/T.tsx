@@ -33,13 +33,16 @@ function GtInternalTranslateJsx(
 async function RscT({
   children: sourceChildren,
   locale,
+  enableI18n,
   ...params
 }: {
   children: ReactNode;
   locale: string;
+  enableI18n: boolean;
 } & JsxTranslationOptions): Promise<ReactNode> {
   const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate = getI18nConfig().requiresTranslation(locale);
+  const shouldTranslate =
+    enableI18n && getI18nConfig().requiresTranslation(locale);
   const prepared = prepareT({
     sourceChildren,
     params,
@@ -52,7 +55,7 @@ async function RscT({
       targetJsxChildren: undefined,
       locale,
       defaultLocale,
-      enableI18n: true,
+      enableI18n,
       shouldTranslate,
     });
   }
@@ -69,7 +72,7 @@ async function RscT({
     targetJsxChildren,
     locale,
     defaultLocale,
-    enableI18n: true,
+    enableI18n,
     shouldTranslate,
   });
 }
