@@ -41,6 +41,40 @@ describe('renderVariable locale handling', () => {
     expect(element.props._enableI18n).toBe(true);
   });
 
+  it('uses injection type to preserve automatic variable components', () => {
+    const result = renderVariable({
+      variableType: 'n',
+      variableValue: 1000,
+      variableOptions: {},
+      locales: ['fr', 'en'],
+      enableI18n: true,
+      injectionType: 'automatic',
+    });
+
+    expect(React.isValidElement(result)).toBe(true);
+    if (!React.isValidElement(result)) return;
+    const element = result as React.ReactElement<{
+      _locale: string;
+      _enableI18n: boolean;
+    }>;
+    expect((element.type as { _gtt?: string })._gtt).toBe('variable-number');
+    expect(element.props._locale).toBe('fr');
+    expect(element.props._enableI18n).toBe(true);
+  });
+
+  it('renders automatic raw variables without a wrapper', () => {
+    const result = renderVariable({
+      variableType: 'v',
+      variableValue: 'Ada',
+      variableOptions: {},
+      locales: ['fr', 'en'],
+      enableI18n: true,
+      injectionType: 'automatic',
+    });
+
+    expect(result).toBe('Ada');
+  });
+
   it('passes the default locale when rendering source variables', () => {
     const result = renderDefaultChildren({
       children: createNumberVariable(5),

@@ -1,8 +1,17 @@
-import { GtInternalCurrency } from '../../components/variables/Currency';
-import { GtInternalDateTime } from '../../components/variables/DateTime';
-import { GtInternalNum } from '../../components/variables/Num';
-import { GtInternalRelativeTime } from '../../components/variables/RelativeTime';
-import { GtInternalVar } from '../../components/variables/Var';
+import {
+  Currency,
+  GtInternalCurrency,
+} from '../../components/variables/Currency';
+import {
+  DateTime,
+  GtInternalDateTime,
+} from '../../components/variables/DateTime';
+import { GtInternalNum, Num } from '../../components/variables/Num';
+import {
+  GtInternalRelativeTime,
+  RelativeTime,
+} from '../../components/variables/RelativeTime';
+import { Var } from '../../components/variables/Var';
 import type { RelativeTimeFormatOptions, RenderVariable } from '../types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { ReactNode } from 'react';
@@ -15,58 +24,57 @@ const renderVariable: RenderVariable = ({
   variableOptions,
   locales,
   enableI18n,
+  injectionType,
 }) => {
   const locale = locales[0] ?? libraryDefaultLocale;
+  const internalProps = {
+    _locale: locale,
+    _enableI18n: enableI18n,
+  };
 
   if (variableType === 'n') {
+    const Component = injectionType === 'automatic' ? Num : GtInternalNum;
     const numOptions = variableOptions as Intl.NumberFormatOptions | undefined;
     return (
-      <GtInternalNum
-        _locale={locale}
-        _enableI18n={enableI18n}
-        options={numOptions}
-      >
+      <Component {...internalProps} options={numOptions}>
         {variableValue as number | string | null | undefined}
-      </GtInternalNum>
+      </Component>
     );
   }
   if (variableType === 'd') {
+    const Component =
+      injectionType === 'automatic' ? DateTime : GtInternalDateTime;
     const dateTimeOptions = variableOptions as
       | Intl.DateTimeFormatOptions
       | undefined;
     return (
-      <GtInternalDateTime
-        _locale={locale}
-        _enableI18n={enableI18n}
-        options={dateTimeOptions}
-      >
+      <Component {...internalProps} options={dateTimeOptions}>
         {variableValue as Date | null | undefined}
-      </GtInternalDateTime>
+      </Component>
     );
   }
   if (variableType === 'c') {
+    const Component =
+      injectionType === 'automatic' ? Currency : GtInternalCurrency;
     const currencyOptions = variableOptions as
       | Intl.NumberFormatOptions
       | undefined;
     return (
-      <GtInternalCurrency
-        _locale={locale}
-        _enableI18n={enableI18n}
-        options={currencyOptions}
-      >
+      <Component {...internalProps} options={currencyOptions}>
         {variableValue as number | string | null | undefined}
-      </GtInternalCurrency>
+      </Component>
     );
   }
   if (variableType === 'rt') {
+    const Component =
+      injectionType === 'automatic' ? RelativeTime : GtInternalRelativeTime;
     const relativeTimeOptions = variableOptions as
       | RelativeTimeFormatOptions
       | undefined;
     if (typeof variableValue === 'number' && relativeTimeOptions?.unit) {
       return (
-        <GtInternalRelativeTime
-          _locale={locale}
-          _enableI18n={enableI18n}
+        <Component
+          {...internalProps}
           value={variableValue}
           unit={relativeTimeOptions.unit}
           baseDate={relativeTimeOptions?.baseDate}
@@ -81,19 +89,19 @@ const renderVariable: RenderVariable = ({
           ? new Date(variableValue)
           : undefined;
     return (
-      <GtInternalRelativeTime
-        _locale={locale}
-        _enableI18n={enableI18n}
+      <Component
+        {...internalProps}
         date={dateValue && !isNaN(dateValue.getTime()) ? dateValue : undefined}
         baseDate={relativeTimeOptions?.baseDate}
         options={relativeTimeOptions}
       />
     );
   }
-  return (
-    <GtInternalVar _locale={locale} _enableI18n={enableI18n}>
-      {variableValue as ReactNode}
-    </GtInternalVar>
+  const renderedValue = variableValue as ReactNode;
+  return injectionType === 'automatic' ? (
+    renderedValue
+  ) : (
+    <Var {...internalProps}>{renderedValue}</Var>
   );
 };
 
