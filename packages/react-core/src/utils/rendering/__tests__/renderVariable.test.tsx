@@ -81,6 +81,7 @@ describe('renderVariable locale handling', () => {
     renderDefaultChildren({
       children: createNumberVariable(5),
       defaultLocale: 'en',
+      enableI18n: false,
       renderVariable: stubRenderVariable,
     });
 
@@ -99,6 +100,7 @@ describe('renderVariable locale handling', () => {
       source: createNumberVariable(5),
       target: { k: 'count', v: 'n' },
       locales: ['fr', 'en'],
+      enableI18n: true,
       renderVariable: stubRenderVariable,
     });
 
