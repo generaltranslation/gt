@@ -1,7 +1,6 @@
 import {
   getDictionaryListenerKey,
   getTranslateListenerKey,
-  I18nCache,
 } from 'gt-i18n/internal';
 import type {
   DictionaryEntrySnapshot,
@@ -14,7 +13,6 @@ import type {
   Unsubscribe,
 } from './storeTypes';
 import type { Translation } from 'gt-i18n/types';
-import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
 import {
@@ -34,19 +32,19 @@ export type I18nStoreParams = {
 };
 
 /**
- * A subscription wrapper around the I18nCache.
- *
- * It is assumed that the I18nCache is already initialized.
- * It is assumed that translations are already sync accessible.
+ * I18nStore gives us the ability to perform client-side updates to translations.
+ * Primarily useful for dev hot reload.
+ * 
+ * Not relevant for initial hydration.
  */
 export class I18nStore {
-  // ===== State ===== //
+  // ----- State ----- //
 
   private i18nCache: ReactI18nCache;
   private conditionStore: WritableConditionStoreInterface;
 
 
-  // ===== Listener Sets ===== //
+  // ----- Listener Sets ----- //
 
   private translateListeners = new Set<TranslateStoreListener>();
   private translateManySnapshotCache = new WeakMap<
@@ -67,7 +65,7 @@ export class I18nStore {
   // ========== runtime translation ========== //
 
   translate = <T extends Translation>(lookup: TranslateLookup<T>): void => {
-    getReactI18nCache()
+    this.i18nCache
       .lookupTranslationWithFallback(
         lookup.locale,
         lookup.message,
@@ -82,7 +80,7 @@ export class I18nStore {
   };
 
   translateDictionaryEntry = (lookup: DictionaryLookup): void => {
-    getReactI18nCache()
+    this.i18nCache
       .lookupDictionaryWithFallback(lookup.locale, lookup.id)
       .then((dictionaryEntry) => {
         if (dictionaryEntry == null) {
@@ -93,7 +91,7 @@ export class I18nStore {
   };
 
   translateDictionaryObject = (lookup: DictionaryLookup): void => {
-    getReactI18nCache()
+    this.i18nCache
       .lookupDictionaryObjWithFallback(lookup.locale, lookup.id)
       .then((dictionaryObject) => {
         if (dictionaryObject == null) {
@@ -165,7 +163,7 @@ export class I18nStore {
     message,
     options,
   }: TranslateLookup<T>): TranslateSnapshot<T> => {
-    return getReactI18nCache().lookupTranslation<T>(locale, message, options);
+    return this.i18nCache.lookupTranslation<T>(locale, message, options);
   };
 
   getTranslateManySnapshot = <T extends Translation>(
@@ -193,14 +191,14 @@ export class I18nStore {
     locale,
     id,
   }: DictionaryLookup): DictionaryEntrySnapshot => {
-    return getReactI18nCache().lookupDictionary(locale, id);
+    return this.i18nCache.lookupDictionary(locale, id);
   };
 
   getDictionaryObjectSnapshot = ({
     locale,
     id,
   }: DictionaryLookup): DictionaryObjectSnapshot => {
-    return getReactI18nCache().lookupDictionaryObj(locale, id);
+    return this.i18nCache.lookupDictionaryObj(locale, id);
   };
 
   // ----- Listener Utilities ----- //
