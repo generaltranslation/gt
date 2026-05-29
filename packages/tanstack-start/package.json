@@ -1,6 +1,6 @@
 {
   "name": "gt-tanstack-start",
-  "version": "0.4.21",
+  "version": "0.4.23",
   "description": "TanStack Start integration for General Translation",
   "main": "./dist/index.client.cjs",
   "module": "./dist/index.client.mjs",

@@ -184,6 +184,59 @@ describe('escapeHtmlInTextNodes', () => {
     });
   });
 
+  describe('backtick (`) escaping', () => {
+    it('should escape a standalone literal backtick in text', () => {
+      const tree: Root = {
+        type: 'root',
+        children: [
+          createParagraph([
+            createTextNode('use backticks (`) and plus (+) characters'),
+          ]),
+        ],
+      };
+      const result = processAst(tree);
+      expect(result).toContain('use backticks (&#96;) and plus (+) characters');
+      expect(result).not.toContain('(`)');
+    });
+
+    it('should not escape backticks inside code spans', () => {
+      const tree: Root = {
+        type: 'root',
+        children: [
+          createParagraph([
+            createTextNode('inject the '),
+            createInlineCode('<script>'),
+            createTextNode(' tag'),
+          ]),
+        ],
+      };
+      const result = processAst(tree);
+      // The inlineCode delimiters (real backticks) must survive untouched.
+      expect(result).toContain('`<script>`');
+    });
+
+    it('should leave a text node with no bare backtick that could re-open a span', () => {
+      // Regression: a literal backtick in prose used to survive the roundtrip
+      // bare, re-pairing inline-code delimiters and shoving protected content
+      // (e.g. <script>) out of its code span -> "Expected a closing tag".
+      const tree: Root = {
+        type: 'root',
+        children: [
+          createParagraph([
+            createTextNode('use backticks (`) to inject the '),
+            createInlineCode('<script>'),
+            createTextNode(' tag'),
+          ]),
+        ],
+      };
+      const result = processAst(tree);
+      // Exactly two bare backticks remain: the inlineCode delimiters. The
+      // literal prose backtick is now the &#96; entity.
+      expect((result.match(/`/g) || []).length).toBe(2);
+      expect(result).toContain('(&#96;)');
+    });
+  });
+
   describe('combined character escaping', () => {
     it('should escape all HTML characters together', () => {
       const tree: Root = {

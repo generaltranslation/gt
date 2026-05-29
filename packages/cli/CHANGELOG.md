@@ -1,5 +1,60 @@
 # gtx-cli
 
+## 2.14.45
+
+### Patch Changes
+
+- Updated dependencies [[`1245397`](https://github.com/generaltranslation/gt/commit/12453971eac9dbdea5abac0d2ad67d56e5f1580a)]:
+  - gt-remark@1.0.8
+
+## 2.14.44
+
+### Patch Changes
+
+- [#1523](https://github.com/generaltranslation/gt/pull/1523) [`bda984e`](https://github.com/generaltranslation/gt/commit/bda984e3351520e49314d1b3601a362ea9eb7396) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Update Mintlify `$ref` handling
+
+## 2.14.43
+
+### Patch Changes
+
+- [#1502](https://github.com/generaltranslation/gt/pull/1502) [`0c5cb81`](https://github.com/generaltranslation/gt/commit/0c5cb817468acf1b140ec5371aa003c739584579) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove default target locales from the setup prompt.
+
+## 2.14.42
+
+### Patch Changes
+
+- [#1491](https://github.com/generaltranslation/gt/pull/1491) [`205c246`](https://github.com/generaltranslation/gt/commit/205c24647b9f50a68358ee6c3332d110a77ce1b3) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle derived children with whitespace
+
+## 2.14.41
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - @generaltranslation/python-extractor@0.2.22
+  - @generaltranslation/supported-locales@2.1.1
+
+## 2.14.40
+
+### Patch Changes
+
+- [#1456](https://github.com/generaltranslation/gt/pull/1456) [`8094012`](https://github.com/generaltranslation/gt/commit/8094012f9827f3a35e053776946bea67492da9db) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handling slash in Mint `url` fields
+
+## 2.14.39
+
+### Patch Changes
+
+- [#1455](https://github.com/generaltranslation/gt/pull/1455) [`cd8fa50`](https://github.com/generaltranslation/gt/commit/cd8fa505c90624160d6ef4d044946b3bf230f646) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle Mintlify `docs.json` `directory` field
+
+- [#1448](https://github.com/generaltranslation/gt/pull/1448) [`f19bade`](https://github.com/generaltranslation/gt/commit/f19bade4741e934505e75880218599d27873e864) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fix CLI binary release builds by resolving Ink's devtools peer dependency and failing binary build scripts on compile errors.
+
+## 2.14.38
+
+### Patch Changes
+
+- Updated dependencies [[`cc4edc1`](https://github.com/generaltranslation/gt/commit/cc4edc1e40d9977125bf6d053fb7f8cdbdd40b05)]:
+  - @generaltranslation/supported-locales@2.1.0
+
 ## 2.14.37
 
 ### Patch Changes

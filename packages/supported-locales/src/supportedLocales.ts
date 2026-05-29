@@ -39,6 +39,7 @@ const supportedLocales = {
     'en-NZ', // New Zealand
     'en-US', // United States
   ],
+  eo: ['eo'], // Esperanto
   es: [
     // Spanish
     'es',
