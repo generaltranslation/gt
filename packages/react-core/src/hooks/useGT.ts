@@ -3,12 +3,14 @@ import {
   createLookupOptions,
   getI18nConfig,
   interpolateMessage,
+  lookupTranslationRecord,
 } from 'gt-i18n/internal';
 import type { InlineTranslationOptionsFields } from 'gt-i18n/internal/types';
 import { useRuntimeTranslationScope, useTranslateMany } from './external-store';
 import { useLocale } from './condition-store';
 import { getShouldTranslate } from './utils';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import { useProviderI18nData } from '../context/provider-data';
 import type { TranslateLookup } from '../i18n-store/storeTypes';
 import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
@@ -27,6 +29,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
   const shouldTranslate = getShouldTranslate();
   const scope = useRuntimeTranslationScope();
   const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
+  const providerData = useProviderI18nData();
 
   // Compiler optimization: pre-fetch translations
   useSubscribeToExtractedMessages(
@@ -54,11 +57,18 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         options,
         'ICU'
       );
-      const translation = getReactI18nCache().lookupTranslation(
-        lookupOptions.$locale,
-        message,
-        lookupOptions
-      );
+      const translation =
+        lookupTranslationRecord(
+          providerData?.translations,
+          lookupOptions.$locale,
+          message,
+          lookupOptions
+        ) ??
+        getReactI18nCache().lookupTranslation(
+          lookupOptions.$locale,
+          message,
+          lookupOptions
+        );
 
       if (translation == null && devHotReloadEnabled) {
         scope.translate({
@@ -75,7 +85,14 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         sourceLocale: defaultLocale,
       });
     },
-    [defaultLocale, devHotReloadEnabled, locale, scope, shouldTranslate]
+    [
+      defaultLocale,
+      devHotReloadEnabled,
+      locale,
+      providerData?.translations,
+      scope,
+      shouldTranslate,
+    ]
   );
 }
 

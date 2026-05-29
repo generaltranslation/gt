@@ -29,6 +29,12 @@ import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
 import type { I18nEvents } from './event-subscription/types';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
+import {
+  resolveCacheLocale,
+  resolveDictionaryCacheLocale,
+  resolveLookupOptions,
+  resolveTranslationLookupParams,
+} from './lookup-resolvers';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -247,7 +253,7 @@ class I18nCache<
    */
   hasTranslations(locale: string): boolean {
     try {
-      const translationLocale = this._resolveCacheLocale(locale);
+      const translationLocale = resolveCacheLocale(locale);
       if (!translationLocale) return false;
       return this.localesCache.getTranslations(translationLocale) !== undefined;
     } catch (error) {
@@ -265,7 +271,7 @@ class I18nCache<
   ): Promise<Record<Hash, TranslationValue>> {
     try {
       // Validate
-      const translationLocale = this._resolveCacheLocale(locale);
+      const translationLocale = resolveCacheLocale(locale);
       if (!translationLocale) {
         return {};
       }
@@ -289,7 +295,7 @@ class I18nCache<
   async loadDictionary(locale: string): Promise<Dictionary> {
     try {
       // Validate
-      const dictionaryLocale = this._resolveCacheLocale(locale);
+      const dictionaryLocale = resolveCacheLocale(locale);
       if (!dictionaryLocale) {
         return this.getDefaultDictionaryCache()?.getInternalCache() ?? {};
       }
@@ -309,7 +315,7 @@ class I18nCache<
    */
   lookupDictionary(locale: string, id: string): DictionaryEntry | undefined {
     try {
-      const dictionaryLocale = this.resolveDictionaryCacheLocale(locale);
+      const dictionaryLocale = resolveDictionaryCacheLocale(locale);
       const dictionaryEntry = this.localesCache
         .getDictionary(dictionaryLocale)
         ?.getEntry(id);
@@ -329,7 +335,7 @@ class I18nCache<
     id: string
   ): DictionaryObject | undefined {
     try {
-      const dictionaryLocale = this.resolveDictionaryCacheLocale(locale);
+      const dictionaryLocale = resolveDictionaryCacheLocale(locale);
       return this.localesCache.getDictionary(dictionaryLocale)?.getValue(id);
     } catch (error) {
       this.handleError(error);
@@ -346,7 +352,7 @@ class I18nCache<
     id: string
   ): Promise<DictionaryEntry | undefined> {
     try {
-      const dictionaryLocale = this._resolveCacheLocale(locale);
+      const dictionaryLocale = resolveCacheLocale(locale);
       if (!dictionaryLocale) {
         return this.getSourceDictionaryEntry(id);
       }
@@ -377,7 +383,7 @@ class I18nCache<
     id: string
   ): Promise<DictionaryObject | undefined> {
     try {
-      const dictionaryLocale = this._resolveCacheLocale(locale);
+      const dictionaryLocale = resolveCacheLocale(locale);
 
       if (!dictionaryLocale) {
         return this.getSourceDictionaryObject(id);
@@ -448,12 +454,6 @@ class I18nCache<
     return this.localesCache.getDictionary(getI18nConfig().getDefaultLocale());
   }
 
-  private resolveDictionaryCacheLocale(locale: string): Locale {
-    return (
-      this._resolveCacheLocale(locale) ?? getI18nConfig().getDefaultLocale()
-    );
-  }
-
   /**
    * Just lookup a translation
    */
@@ -465,7 +465,7 @@ class I18nCache<
     try {
       // Validate
       const { translationLocale, options: lookupOptions } =
-        this.resolveLookupParams(locale, options);
+        resolveTranslationLookupParams(locale, options);
 
       // Early return if in default locale
       if (!translationLocale) {
@@ -525,7 +525,7 @@ class I18nCache<
   ): Promise<TranslationResolver<TranslationValue>> {
     try {
       // Validate
-      const translationLocale = this._resolveCacheLocale(locale);
+      const translationLocale = resolveCacheLocale(locale);
 
       // Early return if i18n is disabled or default locale
       if (!translationLocale) {
@@ -537,8 +537,7 @@ class I18nCache<
         prefetchEntries,
         translationLocale,
         (entryLocale) =>
-          this._resolveCacheLocale(entryLocale) ??
-          this._resolveLocale(entryLocale)
+          resolveCacheLocale(entryLocale) ?? this._resolveLocale(entryLocale)
       );
       if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
         logger.warn(
@@ -561,7 +560,7 @@ class I18nCache<
         // Calculate hash
         return txCache.get({
           message,
-          options: this.resolveLookupOptions(options),
+          options: resolveLookupOptions(options),
         });
       };
     } catch (error) {
@@ -652,53 +651,6 @@ class I18nCache<
     return resolvedLocale;
   }
 
-  /**
-   * Resolve the locale key used to load/read locale caches.
-   * Returns undefined when the requested locale can use source content.
-   */
-  private _resolveCacheLocale(locale: string) {
-    const resolvedLocale = this._resolveLocale(locale);
-    const i18nConfig = getI18nConfig();
-    if (i18nConfig.requiresTranslation(resolvedLocale)) {
-      return resolvedLocale;
-    }
-
-    const aliasLocale = i18nConfig.resolveAliasLocale(
-      i18nConfig.standardizeLocale(locale)
-    );
-    if (i18nConfig.requiresTranslation(aliasLocale)) {
-      return aliasLocale;
-    }
-
-    return undefined;
-  }
-
-  private resolveLookupParams(locale: string, options: LookupOptions) {
-    const translationLocale = this._resolveCacheLocale(locale);
-    return {
-      translationLocale,
-      options: translationLocale
-        ? this.resolveLookupOptions(options, translationLocale)
-        : options,
-    };
-  }
-
-  private resolveLookupOptions(
-    options: LookupOptions = {} as LookupOptions,
-    translationLocale?: string
-  ) {
-    if (!options.$locale) {
-      return options;
-    }
-    return {
-      ...options,
-      $locale:
-        translationLocale ??
-        this._resolveCacheLocale(options.$locale) ??
-        this._resolveLocale(options.$locale),
-    };
-  }
-
   private isRuntimeUrlEnabled(): boolean {
     return this.config.runtimeUrl !== null && this.config.runtimeUrl !== '';
   }
@@ -707,7 +659,7 @@ class I18nCache<
     T extends TranslationValue = TranslationValue,
   >(locale: string, message: T, options: LookupOptions): Promise<T> {
     const { translationLocale, options: lookupOptions } =
-      this.resolveLookupParams(locale, options);
+      resolveTranslationLookupParams(locale, options);
 
     if (!translationLocale) {
       return message;
