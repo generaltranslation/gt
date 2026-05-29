@@ -918,4 +918,61 @@ describe('processOpenApi', () => {
     );
     expect(updatedTranslated).not.toMatch(/keywords:\\s*\\n\\s*- /);
   });
+
+  it('resolves openapi-schema refs that use an extensionless spec name (e.g. "events-schema group.created")', async () => {
+    // Components-only spec (no paths) referenced by file stem, Mintlify-style.
+    const spec = {
+      openapi: '3.1.0',
+      info: { title: 'Events', version: '1' },
+      components: {
+        schemas: {
+          'group.created': {
+            type: 'object',
+            description: 'A group was created',
+          },
+        },
+      },
+    };
+
+    const specPath = path.join(tmpDir, 'events-schema.json');
+    fs.writeFileSync(specPath, JSON.stringify(spec));
+    const translatedSpecPath = path.join(tmpDir, 'es', 'events-schema.json');
+    fs.mkdirSync(path.dirname(translatedSpecPath), { recursive: true });
+    fs.writeFileSync(translatedSpecPath, JSON.stringify(spec));
+
+    const sourceMdxPath = path.join(tmpDir, 'group.created.mdx');
+    fs.writeFileSync(
+      sourceMdxPath,
+      '---\nopenapi-schema: events-schema group.created\n---\n'
+    );
+    const translatedMdxPath = path.join(tmpDir, 'es', 'group.created.mdx');
+    fs.mkdirSync(path.dirname(translatedMdxPath), { recursive: true });
+    fs.writeFileSync(
+      translatedMdxPath,
+      '---\nopenapi-schema: events-schema group.created\n---\n'
+    );
+
+    const settings = createSettings(tmpDir, ['./events-schema.json']);
+    settings.files = {
+      resolvedPaths: { mdx: [sourceMdxPath], json: [specPath] },
+      placeholderPaths: {
+        mdx: [path.join(tmpDir, '[locale]', 'group.created.mdx')],
+        json: [specPath],
+      },
+      transformPaths: {
+        json: {
+          match: 'events-schema.json$',
+          replace: '{locale}/events-schema.json',
+        },
+      },
+    } as Settings['files'];
+
+    await processOpenApi(settings);
+
+    const updatedSource = fs.readFileSync(sourceMdxPath, 'utf8');
+    const updatedTranslated = fs.readFileSync(translatedMdxPath, 'utf8');
+    // The bare name resolves to the spec and the ref is rewritten per-locale.
+    expect(updatedSource).toContain('/events-schema.json group.created');
+    expect(updatedTranslated).toContain('/es/events-schema.json group.created');
+  });
 });

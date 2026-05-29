@@ -184,23 +184,58 @@ function processSplitEntries(
   });
   if (defaultIndex < 0) return;
 
-  // Determine where the composite array actually lives on disk
-  const navDir = navRefEntry ? path.dirname(navRefEntry.sourceFile) : docsDir;
+  // Detect whether each language entry is itself a $ref (per-entry refs), as
+  // opposed to the case where the *container* of the languages array is a $ref
+  // (navRefEntry). With per-entry refs, the languages array still lives in the
+  // composite file, but each entry's content lives in a separate ref file.
+  const defaultEntryPointer = `${jsonPointer}/${defaultIndex}`;
+  const defaultEntryRef = refMap?.get(defaultEntryPointer);
+
+  // arrayHostDir: directory of the file that physically holds the languages
+  //   array — entry $refs in the array are written relative to this.
+  // entryBaseDir: directory under which per-entry ref files (and their nested
+  //   refs) are written — mirrors the source entry file's location.
+  // These coincide for the container-ref and fully-inline cases; they differ
+  // only for per-entry refs, where the array lives in the composite file but
+  // the entry files live next to the (default) entry's source ref.
+  const arrayHostDir = navRefEntry
+    ? path.dirname(navRefEntry.sourceFile)
+    : docsDir;
+  const entryBaseDir = navRefEntry
+    ? path.dirname(navRefEntry.sourceFile)
+    : defaultEntryRef
+      ? path.dirname(defaultEntryRef.sourceFile)
+      : docsDir;
+  const navFileName = navRefEntry
+    ? path.basename(navRefEntry.sourceFile)
+    : defaultEntryRef
+      ? path.basename(defaultEntryRef.sourceFile)
+      : path.basename(compositeFilePath);
 
   // Restore $ref structure if the source used $ref
   if (refMap && refMap.size > 0) {
-    const defaultPointerPrefix = `${jsonPointer}/${defaultIndex}`;
-    const internalRefs = collectInternalRefs(refMap, defaultPointerPrefix);
+    const internalRefs = collectInternalRefs(refMap, defaultEntryPointer);
 
     if (internalRefs.length > 0) {
-      const defaultEntry = entries[defaultIndex];
-      for (const ref of internalRefs) {
-        setAtPointer(defaultEntry, ref.relativePointer, {
-          $ref: ref.refPath,
-        });
+      // When the default entry is itself a $ref, it is restored to that single
+      // $ref below and its source file is left untouched, so we must not restore
+      // its nested refs in place. Otherwise (inlined default entry) we do.
+      if (!defaultEntryRef) {
+        const defaultEntry = entries[defaultIndex];
+        for (const ref of internalRefs) {
+          setAtPointer(defaultEntry, ref.relativePointer, {
+            $ref: ref.refPath,
+          });
+        }
       }
 
-      for (const entry of entries) {
+      // For each non-default entry, write localized copies of the nested ref
+      // files (mirroring the source topology under the locale dir) and replace
+      // the inlined subtrees with their $refs.
+      for (let i = 0; i < entries.length; i++) {
+        if (i === defaultIndex) continue;
+        const entry = entries[i];
+
         const entryKeyValues = JSONPath({
           json: entry,
           path: keyJsonPath,
@@ -209,19 +244,19 @@ function processSplitEntries(
           wrap: true,
         }) as unknown[];
         if (entryKeyValues?.[0] === defaultKeyValue) continue;
+        const keyValue =
+          typeof entryKeyValues?.[0] === 'string'
+            ? entryKeyValues[0]
+            : 'unknown';
 
         for (const ref of internalRefs) {
           const subtree = getAtPointer(entry, ref.relativePointer);
           if (subtree === undefined) continue;
 
           const originalAbsPath = path.resolve(ref.resolvedDir, ref.refPath);
-          const relToNavDir = path.relative(navDir, originalAbsPath);
-          const keyValue =
-            typeof entryKeyValues?.[0] === 'string'
-              ? entryKeyValues[0]
-              : 'unknown';
-          const localeRelPath = path.join(keyValue, relToNavDir);
-          const outputPath = path.resolve(navDir, localeRelPath);
+          const relToBaseDir = path.relative(entryBaseDir, originalAbsPath);
+          const localeRelPath = path.join(keyValue, relToBaseDir);
+          const outputPath = path.resolve(entryBaseDir, localeRelPath);
           writeJsonFile(outputPath, subtree);
 
           setAtPointer(entry, ref.relativePointer, { $ref: ref.refPath });
@@ -232,15 +267,12 @@ function processSplitEntries(
     }
   }
 
-  // Extract each non-default entry into its own ref file
-  const navFileName = navRefEntry
-    ? path.basename(navRefEntry.sourceFile)
-    : path.basename(compositeFilePath);
-
   // Get the actual property name from the key JSONPath (e.g., "$.language" → "language")
   const keyPropertyName = keyJsonPath.replace(/^\$\.?/, '');
 
+  // Extract each non-default entry into its own ref file
   for (let i = 0; i < entries.length; i++) {
+    if (i === defaultIndex) continue;
     const entry = entries[i];
     if (!entry || typeof entry !== 'object') continue;
 
@@ -256,11 +288,22 @@ function processSplitEntries(
 
     if (!isJsonContainer(entry) || Array.isArray(entry)) continue;
     const { [keyPropertyName]: _, ...contentWithoutKey } = entry;
-    const entryFileName = `${keyValue}/${navFileName}`;
-    const entryFilePath = path.resolve(navDir, entryFileName);
+    const entryFilePath = path.resolve(
+      entryBaseDir,
+      path.join(keyValue, navFileName)
+    );
     writeJsonFile(entryFilePath, contentWithoutKey);
 
-    entries[i] = { [keyPropertyName]: keyValue, $ref: `./${entryFileName}` };
+    entries[i] = {
+      [keyPropertyName]: keyValue,
+      $ref: toRelativeRefPath(arrayHostDir, entryFilePath),
+    };
+  }
+
+  // When the default entry was itself a $ref, restore it to that single $ref;
+  // its source file is the untouched English source already on disk.
+  if (defaultEntryRef) {
+    entries[defaultIndex] = { $ref: defaultEntryRef.refPath };
   }
 
   logger.info(`Split keyed entries into ref files`);
@@ -320,6 +363,19 @@ function restoreTopLevelRefs(
     const subtree = getAtPointer(fileJson, pointer);
     if (subtree === undefined) continue;
 
+    // If the value here is still an unresolved $ref placeholder, the referenced
+    // file was never inlined at this pointer (e.g. mergeJson leaves non-composite
+    // refs like `redirects` collapsed). Writing it back would overwrite the
+    // source file with a self-referential stub and destroy its real contents —
+    // the source already holds the correct data, so leave it untouched.
+    if (
+      isJsonContainer(subtree) &&
+      !Array.isArray(subtree) &&
+      typeof (subtree as Record<string, unknown>).$ref === 'string'
+    ) {
+      continue;
+    }
+
     writeJsonFile(entry.sourceFile, subtree);
     setAtPointer(fileJson, pointer, { $ref: entry.refPath });
   }
@@ -358,6 +414,16 @@ function writeJsonFile(filePath: string, data: unknown): void {
     fs.mkdirSync(dir, { recursive: true });
   }
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+/**
+ * Build a relative $ref path (POSIX separators, "./"-prefixed when it isn't
+ * already a relative or absolute path) from the directory that hosts the
+ * languages array to a written entry file.
+ */
+function toRelativeRefPath(fromDir: string, toPath: string): string {
+  const rel = path.relative(fromDir, toPath).split(path.sep).join('/');
+  return rel.startsWith('.') || rel.startsWith('/') ? rel : `./${rel}`;
 }
 
 function getAtPointer(obj: unknown, pointer: string): unknown {
