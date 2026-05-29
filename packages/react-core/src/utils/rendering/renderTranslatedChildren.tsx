@@ -141,12 +141,12 @@ export default function renderTranslatedChildren({
   source,
   target,
   locales = [libraryDefaultLocale],
-  enableI18n = true,
+  enableI18n,
 }: {
   source: TaggedChildren;
   target: TranslatedChildren;
   locales: string[];
-  enableI18n?: boolean;
+  enableI18n: boolean;
 }): ReactNode {
   // Most straightforward case, return a valid React node
   if ((target === null || typeof target === 'undefined') && source)
