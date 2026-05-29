@@ -3,25 +3,19 @@ import getVariableProps, {
   isVariableElementProps,
 } from '../variables/_getVariableProps';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import {
-  RenderVariable,
-  TaggedChild,
-  TaggedChildren,
-  TaggedElement,
-} from '../types';
+import { TaggedChild, TaggedChildren, TaggedElement } from '../types';
 import getGTTag from './getGTTag';
 import getPluralBranch from '../plurals/getPluralBranch';
+import { renderVariable } from './renderVariable';
 
 export default function renderDefaultChildren({
   children,
   defaultLocale = libraryDefaultLocale,
   enableI18n,
-  renderVariable,
 }: {
   children: TaggedChildren;
   defaultLocale: string;
   enableI18n: boolean;
-  renderVariable: RenderVariable;
 }): React.ReactNode {
   const handleSingleChildElement = (child: TaggedElement): ReactNode => {
     const generaltranslation = getGTTag(child);
