@@ -1,5 +1,11 @@
 # gt-remark
 
+## 1.0.8
+
+### Patch Changes
+
+- [#1526](https://github.com/generaltranslation/gt/pull/1526) [`1245397`](https://github.com/generaltranslation/gt/commit/12453971eac9dbdea5abac0d2ad67d56e5f1580a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add backtick escaping
+
 ## 1.0.7
 
 ### Patch Changes
