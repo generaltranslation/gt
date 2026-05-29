@@ -12,6 +12,12 @@ import { getI18nStore } from '../i18n-store/singleton-operations';
 import type { RuntimeTranslationScope } from '../i18n-store/RuntimeTranslationScope';
 import type { RuntimeDictionaryScope } from '../i18n-store/RuntimeDictionaryScope';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import {
+  lookupRenderDictionaryEntry,
+  lookupRenderDictionaryObject,
+  lookupRenderTranslation,
+  useRenderSnapshot,
+} from '../context/render-snapshot';
 
 /**
  * @internal
@@ -19,12 +25,15 @@ import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
+  const renderSnapshot = useRenderSnapshot();
   const store = getI18nStore();
-  const translation = useSyncExternalStore(
+  const storeTranslation = useSyncExternalStore(
     (listener) => store.subscribeToTranslate(lookup, listener),
     () => store.getTranslateSnapshot(lookup),
     () => store.getTranslateSnapshot(lookup)
   );
+  const translation =
+    lookupRenderTranslation(renderSnapshot, lookup) ?? storeTranslation;
   if (translation == null && getReactI18nCache().isDevHotReloadEnabled()) {
     store.translate(lookup);
   }
@@ -37,11 +46,17 @@ export function useTranslate<T extends Translation>(
 export function useTranslateMany<T extends Translation>(
   lookups: readonly TranslateLookup<T>[]
 ): TranslateManySnapshot<T> {
+  const renderSnapshot = useRenderSnapshot();
   const store = getI18nStore();
-  const translations = useSyncExternalStore(
+  const storeTranslations = useSyncExternalStore(
     (listener) => store.subscribeToTranslateMany(lookups, listener),
     () => store.getTranslateManySnapshot(lookups),
     () => store.getTranslateManySnapshot(lookups)
+  );
+  const translations = lookups.map(
+    (lookup, index) =>
+      lookupRenderTranslation(renderSnapshot, lookup) ??
+      storeTranslations[index]
   );
   const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
   translations.forEach((translation, index) => {
@@ -58,12 +73,15 @@ export function useTranslateMany<T extends Translation>(
 export function useDictionaryEntry(
   lookup: DictionaryLookup
 ): DictionaryEntrySnapshot {
+  const renderSnapshot = useRenderSnapshot();
   const store = getI18nStore();
-  const dictionaryEntry = useSyncExternalStore(
+  const storeDictionaryEntry = useSyncExternalStore(
     (listener) => store.subscribeToDictionaryEntry(lookup, listener),
     () => store.getDictionaryEntrySnapshot(lookup),
     () => store.getDictionaryEntrySnapshot(lookup)
   );
+  const dictionaryEntry =
+    lookupRenderDictionaryEntry(renderSnapshot, lookup) ?? storeDictionaryEntry;
   if (dictionaryEntry == null && getReactI18nCache().isDevHotReloadEnabled()) {
     store.translateDictionaryEntry(lookup);
   }
@@ -76,12 +94,16 @@ export function useDictionaryEntry(
 export function useDictionaryObject(
   lookup: DictionaryLookup
 ): DictionaryObjectSnapshot {
+  const renderSnapshot = useRenderSnapshot();
   const store = getI18nStore();
-  const dictionaryObject = useSyncExternalStore(
+  const storeDictionaryObject = useSyncExternalStore(
     (listener) => store.subscribeToDictionaryObject(lookup, listener),
     () => store.getDictionaryObjectSnapshot(lookup),
     () => store.getDictionaryObjectSnapshot(lookup)
   );
+  const dictionaryObject =
+    lookupRenderDictionaryObject(renderSnapshot, lookup) ??
+    storeDictionaryObject;
   if (dictionaryObject == null && getReactI18nCache().isDevHotReloadEnabled()) {
     store.translateDictionaryObject(lookup);
   }

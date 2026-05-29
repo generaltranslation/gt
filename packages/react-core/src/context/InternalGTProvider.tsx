@@ -4,9 +4,9 @@ import {
   setI18nStore,
 } from '../i18n-store/singleton-operations';
 import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
-import { getI18nCache } from 'gt-i18n/internal';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import type { Locale, Hash } from 'gt-i18n/internal/types';
+import { RenderSnapshotProvider } from './render-snapshot';
 
 export type InternalGTProviderProps = I18nStoreParams & {
   children?: ReactNode;
@@ -37,11 +37,17 @@ export function InternalGTProvider({
     setI18nStore(i18nStore);
   }
 
-  // This represents an update from server, so bypass I18nStore
-  useMemo(() => {
-    getI18nCache().updateTranslations(translations);
-    getI18nCache().updateDictionaries(dictionaries ?? {});
-  }, [translations, dictionaries]);
+  const renderSnapshot = useMemo(
+    () => ({
+      translations,
+      dictionaries: dictionaries ?? {},
+    }),
+    [translations, dictionaries]
+  );
 
-  return children;
+  return (
+    <RenderSnapshotProvider value={renderSnapshot}>
+      {children}
+    </RenderSnapshotProvider>
+  );
 }

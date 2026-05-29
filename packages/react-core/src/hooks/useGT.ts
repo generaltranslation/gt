@@ -12,6 +12,10 @@ import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import type { TranslateLookup } from '../i18n-store/storeTypes';
 import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
+import {
+  lookupRenderTranslation,
+  useRenderSnapshot,
+} from '../context/render-snapshot';
 
 const EMPTY_TRANSLATE_LOOKUPS: TranslateLookup<string>[] = [];
 
@@ -27,6 +31,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
   const shouldTranslate = getShouldTranslate();
   const scope = useRuntimeTranslationScope();
   const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
+  const renderSnapshot = useRenderSnapshot();
 
   // Compiler optimization: pre-fetch translations
   useSubscribeToExtractedMessages(
@@ -54,18 +59,21 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         options,
         'ICU'
       );
-      const translation = getReactI18nCache().lookupTranslation(
-        lookupOptions.$locale,
+      const lookup = {
+        locale: lookupOptions.$locale,
         message,
-        lookupOptions
-      );
+        options: lookupOptions,
+      };
+      const translation =
+        lookupRenderTranslation(renderSnapshot, lookup) ??
+        getReactI18nCache().lookupTranslation(
+          lookup.locale,
+          lookup.message,
+          lookup.options
+        );
 
       if (translation == null && devHotReloadEnabled) {
-        scope.translate({
-          locale: lookupOptions.$locale,
-          message,
-          options: lookupOptions,
-        });
+        scope.translate(lookup);
       }
 
       return interpolateMessage({
@@ -75,7 +83,14 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         sourceLocale: defaultLocale,
       });
     },
-    [defaultLocale, devHotReloadEnabled, locale, scope, shouldTranslate]
+    [
+      defaultLocale,
+      devHotReloadEnabled,
+      locale,
+      renderSnapshot,
+      scope,
+      shouldTranslate,
+    ]
   );
 }
 
