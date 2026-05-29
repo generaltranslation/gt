@@ -4,7 +4,7 @@ import {
   setI18nStore,
 } from '../i18n-store/singleton-operations';
 import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
-import { getI18nCache } from 'gt-i18n/internal';
+import { I18nStoreContext } from '../i18n-store/context';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import type { Locale, Hash } from 'gt-i18n/internal/types';
 
@@ -37,11 +37,14 @@ export function InternalGTProvider({
     setI18nStore(i18nStore);
   }
 
-  // This represents an update from server, so bypass I18nStore
-  useMemo(() => {
-    getI18nCache().updateTranslations(translations);
-    getI18nCache().updateDictionaries(dictionaries ?? {});
-  }, [translations, dictionaries]);
+  const scopedStore = useMemo(
+    () => new I18nStore({ translations, dictionaries }),
+    [translations, dictionaries]
+  );
 
-  return children;
+  return (
+    <I18nStoreContext.Provider value={scopedStore}>
+      {children}
+    </I18nStoreContext.Provider>
+  );
 }

@@ -8,10 +8,10 @@ import type {
   DictionaryEntrySnapshot,
   DictionaryObjectSnapshot,
 } from '../i18n-store/storeTypes';
-import { getI18nStore } from '../i18n-store/singleton-operations';
 import type { RuntimeTranslationScope } from '../i18n-store/RuntimeTranslationScope';
 import type { RuntimeDictionaryScope } from '../i18n-store/RuntimeDictionaryScope';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import { useI18nStoreWithFallback } from '../i18n-store/context';
 
 /**
  * @internal
@@ -19,7 +19,7 @@ import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
-  const store = getI18nStore();
+  const store = useI18nStoreWithFallback();
   const translation = useSyncExternalStore(
     (listener) => store.subscribeToTranslate(lookup, listener),
     () => store.getTranslateSnapshot(lookup),
@@ -37,7 +37,7 @@ export function useTranslate<T extends Translation>(
 export function useTranslateMany<T extends Translation>(
   lookups: readonly TranslateLookup<T>[]
 ): TranslateManySnapshot<T> {
-  const store = getI18nStore();
+  const store = useI18nStoreWithFallback();
   const translations = useSyncExternalStore(
     (listener) => store.subscribeToTranslateMany(lookups, listener),
     () => store.getTranslateManySnapshot(lookups),
@@ -58,7 +58,7 @@ export function useTranslateMany<T extends Translation>(
 export function useDictionaryEntry(
   lookup: DictionaryLookup
 ): DictionaryEntrySnapshot {
-  const store = getI18nStore();
+  const store = useI18nStoreWithFallback();
   const dictionaryEntry = useSyncExternalStore(
     (listener) => store.subscribeToDictionaryEntry(lookup, listener),
     () => store.getDictionaryEntrySnapshot(lookup),
@@ -76,7 +76,7 @@ export function useDictionaryEntry(
 export function useDictionaryObject(
   lookup: DictionaryLookup
 ): DictionaryObjectSnapshot {
-  const store = getI18nStore();
+  const store = useI18nStoreWithFallback();
   const dictionaryObject = useSyncExternalStore(
     (listener) => store.subscribeToDictionaryObject(lookup, listener),
     () => store.getDictionaryObjectSnapshot(lookup),
@@ -92,7 +92,7 @@ export function useDictionaryObject(
  * Used for dev translation tracking
  */
 export function useRuntimeTranslationScope(): RuntimeTranslationScope {
-  const store = getI18nStore();
+  const store = useI18nStoreWithFallback();
 
   const scope = useMemo(() => {
     return store.createRuntimeTranslationScope();
@@ -107,7 +107,7 @@ export function useRuntimeTranslationScope(): RuntimeTranslationScope {
  * Used for dev dictionary tracking
  */
 export function useRuntimeDictionaryScope(): RuntimeDictionaryScope {
-  const store = getI18nStore();
+  const store = useI18nStoreWithFallback();
 
   const scope = useMemo(() => {
     return store.createRuntimeDictionaryScope();
