@@ -1,6 +1,7 @@
 import {
   getDictionaryListenerKey,
   getTranslateListenerKey,
+  I18nCache,
 } from 'gt-i18n/internal';
 import type {
   DictionaryEntrySnapshot,
@@ -21,11 +22,16 @@ import {
   dictionaryObjectEventMatchesLookup,
 } from './utils/dictionary-events';
 import { subscribeToSet } from './utils/subscriptions';
+import { WritableConditionStoreInterface } from 'gt-i18n/internal/types';
+import { ReactI18nCache, ReactI18nCacheParams } from '../i18n-cache/ReactI18nCache';
 
 type TranslateStoreListener = (lookup: TranslateLookup) => void;
 type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
-export type I18nStoreParams = {};
+export type I18nStoreParams = {
+  i18nCacheParams: ReactI18nCacheParams;
+  conditionStore: WritableConditionStoreInterface;
+};
 
 /**
  * A subscription wrapper around the I18nCache.
@@ -34,6 +40,12 @@ export type I18nStoreParams = {};
  * It is assumed that translations are already sync accessible.
  */
 export class I18nStore {
+  // ===== State ===== //
+
+  private i18nCache: ReactI18nCache;
+  private conditionStore: WritableConditionStoreInterface;
+
+
   // ===== Listener Sets ===== //
 
   private translateListeners = new Set<TranslateStoreListener>();
@@ -47,20 +59,58 @@ export class I18nStore {
   /**
    * I18nCache must be already initialized
    */
-  constructor(_config: I18nStoreParams) {
-    try {
-      getReactI18nCache();
-    } catch (error) {
-      throw new Error('Failed to initialize I18nStore. Reason: ' + error);
-    }
+  constructor(config: I18nStoreParams) {
+    this.i18nCache = new ReactI18nCache(config.i18nCacheParams);
+    this.conditionStore = config.conditionStore;
   }
 
-  // ===== I18nCache Subscriptions ===== //
+  // ========== runtime translation ========== //
 
-  subscribeToTranslate<T extends Translation>(
+  translate = <T extends Translation>(lookup: TranslateLookup<T>): void => {
+    getReactI18nCache()
+      .lookupTranslationWithFallback(
+        lookup.locale,
+        lookup.message,
+        lookup.options
+      )
+      .then((translation) => {
+        if (translation == null) {
+          // TODO: warn about runtime translation failure
+        }
+        this.emitTranslateEvent(lookup);
+      });
+  };
+
+  translateDictionaryEntry = (lookup: DictionaryLookup): void => {
+    getReactI18nCache()
+      .lookupDictionaryWithFallback(lookup.locale, lookup.id)
+      .then((dictionaryEntry) => {
+        if (dictionaryEntry == null) {
+          // TODO: warn about runtime dictionary translation failure
+        }
+        this.emitDictionaryEvent(lookup);
+      });
+  };
+
+  translateDictionaryObject = (lookup: DictionaryLookup): void => {
+    getReactI18nCache()
+      .lookupDictionaryObjWithFallback(lookup.locale, lookup.id)
+      .then((dictionaryObject) => {
+        if (dictionaryObject == null) {
+          // TODO: warn about runtime dictionary translation failure
+        }
+        this.emitDictionaryEvent(lookup);
+      });
+  };
+
+  // ========== UseSyncExternalStore ========== //
+
+  // ----- Subscriptions ----- //
+
+  subscribeToTranslate = <T extends Translation>(
     lookup: TranslateLookup<T>,
     listener: StoreListener
-  ): Unsubscribe {
+  ): Unsubscribe => {
     const lookupKey = getTranslateListenerKey(lookup);
     const wrappedListener: TranslateStoreListener = (lookup) => {
       if (getTranslateListenerKey(lookup) === lookupKey) {
@@ -70,10 +120,10 @@ export class I18nStore {
     return subscribeToSet(this.translateListeners, wrappedListener);
   }
 
-  subscribeToTranslateMany<T extends Translation>(
+  subscribeToTranslateMany = <T extends Translation>(
     lookups: readonly TranslateLookup<T>[],
     listener: StoreListener
-  ): Unsubscribe {
+  ): Unsubscribe => {
     const unsubscribes = lookups.map((lookup) =>
       this.subscribeToTranslate(lookup, listener)
     );
@@ -82,10 +132,10 @@ export class I18nStore {
     };
   }
 
-  subscribeToDictionaryEntry(
+  subscribeToDictionaryEntry = (
     lookup: DictionaryLookup,
     listener: StoreListener
-  ): Unsubscribe {
+  ): Unsubscribe => {
     const lookupKey = getDictionaryListenerKey(lookup);
     const wrappedListener: DictionaryStoreListener = (event) => {
       if (dictionaryEntryEventMatchesLookup(event, lookupKey)) {
@@ -95,10 +145,10 @@ export class I18nStore {
     return subscribeToSet(this.dictionaryEntryListeners, wrappedListener);
   }
 
-  subscribeToDictionaryObject(
+  subscribeToDictionaryObject = (
     lookup: DictionaryLookup,
     listener: StoreListener
-  ): Unsubscribe {
+  ): Unsubscribe => {
     const lookupKey = getDictionaryListenerKey(lookup);
     const wrappedListener: DictionaryStoreListener = (event) => {
       if (dictionaryObjectEventMatchesLookup(event, lookupKey)) {
@@ -108,7 +158,7 @@ export class I18nStore {
     return subscribeToSet(this.dictionaryObjectListeners, wrappedListener);
   }
 
-  // ===== I18nCache Snapshots ===== //
+  // ----- Snapshots ----- //
 
   getTranslateSnapshot = <T extends Translation>({
     locale,
@@ -153,56 +203,7 @@ export class I18nStore {
     return getReactI18nCache().lookupDictionaryObj(locale, id);
   };
 
-  // ===== runtime translation ===== //
-
-  translate = <T extends Translation>(lookup: TranslateLookup<T>): void => {
-    getReactI18nCache()
-      .lookupTranslationWithFallback(
-        lookup.locale,
-        lookup.message,
-        lookup.options
-      )
-      .then((translation) => {
-        if (translation == null) {
-          // TODO: warn about runtime translation failure
-        }
-        this.emitTranslateEvent(lookup);
-      });
-  };
-
-  translateDictionaryEntry = (lookup: DictionaryLookup): void => {
-    getReactI18nCache()
-      .lookupDictionaryWithFallback(lookup.locale, lookup.id)
-      .then((dictionaryEntry) => {
-        if (dictionaryEntry == null) {
-          // TODO: warn about runtime dictionary translation failure
-        }
-        this.emitDictionaryEvent(lookup);
-      });
-  };
-
-  translateDictionaryObject = (lookup: DictionaryLookup): void => {
-    getReactI18nCache()
-      .lookupDictionaryObjWithFallback(lookup.locale, lookup.id)
-      .then((dictionaryObject) => {
-        if (dictionaryObject == null) {
-          // TODO: warn about runtime dictionary translation failure
-        }
-        this.emitDictionaryEvent(lookup);
-      });
-  };
-
-  // ----- scopes ----- //
-
-  createRuntimeTranslationScope = (): RuntimeTranslationScope => {
-    return new RuntimeTranslationScope();
-  };
-
-  createRuntimeDictionaryScope = (): RuntimeDictionaryScope => {
-    return new RuntimeDictionaryScope();
-  };
-
-  // ===== Listener Utilities ===== //
+  // ----- Listener Utilities ----- //
 
   private emitTranslateEvent(event: TranslateLookup): void {
     this.translateListeners.forEach((listener) => listener(event));
@@ -214,4 +215,14 @@ export class I18nStore {
       listener(event);
     });
   }
+
+  // ----- scopes ----- //
+
+  createRuntimeTranslationScope = (): RuntimeTranslationScope => {
+    return new RuntimeTranslationScope();
+  };
+
+  createRuntimeDictionaryScope = (): RuntimeDictionaryScope => {
+    return new RuntimeDictionaryScope();
+  };
 }
