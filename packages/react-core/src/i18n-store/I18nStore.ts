@@ -12,7 +12,7 @@ import type {
   TranslateSnapshot,
   Unsubscribe,
 } from './storeTypes';
-import type { Translation } from 'gt-i18n/types';
+import type { Dictionary, Translation } from 'gt-i18n/types';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
 import {
@@ -20,7 +20,7 @@ import {
   dictionaryObjectEventMatchesLookup,
 } from './utils/dictionary-events';
 import { subscribeToSet } from './utils/subscriptions';
-import { WritableConditionStoreInterface } from 'gt-i18n/internal/types';
+import { Hash, Locale, WritableConditionStoreInterface } from 'gt-i18n/internal/types';
 import { ReactI18nCache, ReactI18nCacheParams } from '../i18n-cache/ReactI18nCache';
 
 type TranslateStoreListener = (lookup: TranslateLookup) => void;
@@ -57,9 +57,21 @@ export class I18nStore {
   /**
    * I18nCache must be already initialized
    */
-  constructor(config: I18nStoreParams) {
-    this.i18nCache = new ReactI18nCache(config.i18nCacheParams);
-    this.conditionStore = config.conditionStore;
+  constructor({
+    i18nCacheParams,
+    conditionStore,
+  }: I18nStoreParams) {
+    this.conditionStore = conditionStore;
+    this.i18nCache = new ReactI18nCache(i18nCacheParams);
+  }
+
+  // ========== Translation Updates ========== //
+
+  updateTranslations = (translations: Record<Locale, Record<Hash, Translation>>): void => {
+    this.i18nCache.updateTranslations(translations);
+  }
+  updateDictionaries = (dictionaries: Record<Locale, Dictionary>): void => {
+    this.i18nCache.updateDictionaries(dictionaries);
   }
 
   // ========== runtime translation ========== //
