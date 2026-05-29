@@ -14,6 +14,12 @@ import { useLocale } from './condition-store';
 import { getShouldTranslate } from './utils';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { useGT } from './useGT';
+import {
+  lookupRenderDictionaryEntry,
+  lookupRenderDictionaryObject,
+  lookupRenderTranslation,
+  useRenderSnapshot,
+} from '../context/render-snapshot';
 import type {
   DictionaryObjectTranslation,
   DictionaryTranslationOptions,
@@ -29,6 +35,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
   const gt = useGT();
   const rootId = id ?? '';
   const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
+  const renderSnapshot = useRenderSnapshot();
 
   useDictionaryObject({ locale: defaultLocale, id: rootId });
   useDictionaryObject({ locale, id: rootId });
@@ -37,7 +44,11 @@ export function useTranslations(id?: string): UseTranslationsFunction {
     (suffix: string, options: DictionaryTranslationOptions = {}) => {
       const i18nCache = getReactI18nCache();
       const entryId = getEntryId(id, suffix);
-      const sourceEntry = i18nCache.lookupDictionary(defaultLocale, entryId);
+      const sourceEntry =
+        lookupRenderDictionaryEntry(renderSnapshot, {
+          locale: defaultLocale,
+          id: entryId,
+        }) ?? i18nCache.lookupDictionary(defaultLocale, entryId);
       if (sourceEntry === undefined) {
         throw new Error(`Dictionary entry ${entryId} cannot be found`);
       }
@@ -49,7 +60,11 @@ export function useTranslations(id?: string): UseTranslationsFunction {
         });
       }
 
-      const targetEntry = i18nCache.lookupDictionary(locale, entryId);
+      const targetEntry =
+        lookupRenderDictionaryEntry(renderSnapshot, {
+          locale,
+          id: entryId,
+        }) ?? i18nCache.lookupDictionary(locale, entryId);
       if (targetEntry === undefined && devHotReloadEnabled) {
         scope.translateEntry({ locale, id: entryId });
       }
@@ -73,24 +88,38 @@ export function useTranslations(id?: string): UseTranslationsFunction {
         $locale: locale,
       });
     },
-    [defaultLocale, devHotReloadEnabled, gt, id, locale, scope, shouldTranslate]
+    [
+      defaultLocale,
+      devHotReloadEnabled,
+      gt,
+      id,
+      locale,
+      renderSnapshot,
+      scope,
+      shouldTranslate,
+    ]
   );
 
   const translateObject = useCallback(
     (suffix: string) => {
       const i18nCache = getReactI18nCache();
       const entryId = getEntryId(id, suffix);
-      const sourceObject = i18nCache.lookupDictionaryObj(
-        defaultLocale,
-        entryId
-      );
+      const sourceObject =
+        lookupRenderDictionaryObject(renderSnapshot, {
+          locale: defaultLocale,
+          id: entryId,
+        }) ?? i18nCache.lookupDictionaryObj(defaultLocale, entryId);
       if (sourceObject === undefined) {
         throw new Error(`Dictionary entry ${entryId} cannot be found`);
       }
 
       let targetObject = undefined;
       if (shouldTranslate) {
-        targetObject = i18nCache.lookupDictionaryObj(locale, entryId);
+        targetObject =
+          lookupRenderDictionaryObject(renderSnapshot, {
+            locale,
+            id: entryId,
+          }) ?? i18nCache.lookupDictionaryObj(locale, entryId);
         if (targetObject === undefined && devHotReloadEnabled) {
           scope.translateObject({ locale, id: entryId });
         }
@@ -100,6 +129,11 @@ export function useTranslations(id?: string): UseTranslationsFunction {
         sourceObject,
         targetObject,
         translate: (sourceEntry, dictionaryOptions) =>
+          lookupRenderTranslation(renderSnapshot, {
+            locale: shouldTranslate ? locale : defaultLocale,
+            message: sourceEntry.entry,
+            options: dictionaryOptions,
+          }) ??
           i18nCache.lookupTranslation(
             shouldTranslate ? locale : defaultLocale,
             sourceEntry.entry,
@@ -107,7 +141,15 @@ export function useTranslations(id?: string): UseTranslationsFunction {
           ),
       });
     },
-    [defaultLocale, devHotReloadEnabled, id, locale, scope, shouldTranslate]
+    [
+      defaultLocale,
+      devHotReloadEnabled,
+      id,
+      locale,
+      renderSnapshot,
+      scope,
+      shouldTranslate,
+    ]
   );
 
   return useMemo(
