@@ -7,23 +7,48 @@ type NumProps = {
   options?: Intl.NumberFormatOptions;
   locales?: string[];
   name?: string;
+  _locale?: string;
+  _enableI18n?: boolean;
 };
 
-// ===== Component ===== //
+type ResolvedNumProps = NumProps & {
+  _locale: string;
+  _enableI18n: boolean;
+};
 
-function GtInternalNum({
+// ===== Shared Logic ===== //
+
+function computeNum({
+  _enableI18n,
+  _locale,
   children,
   options = {},
   locales: localesProp = [],
-}: NumProps): string | null {
-  const locale = useLocale();
-  const enableI18n = useEnableI18n();
-  const locales = getFormatLocales({ locale, enableI18n, localesProp });
+}: ResolvedNumProps): string | null {
+  const locales = getFormatLocales({
+    locale: _locale,
+    enableI18n: _enableI18n,
+    localesProp,
+  });
   const gt = getReactI18nCache().getGTClass();
   if (children == null) return null;
   const parsedNumber =
     typeof children === 'string' ? parseFloat(children) : children;
   return gt.formatNum(parsedNumber, { locales, ...options });
+}
+
+// ===== Component ===== //
+
+function GtInternalNum({
+  _enableI18n,
+  _locale,
+  ...props
+}: NumProps): string | null {
+  return computeNum({
+    ...props,
+    _enableI18n: _enableI18n ?? useEnableI18n(),
+    _locale: _locale ?? useLocale(),
+  });
 }
 
 function Num(props: NumProps): React.JSX.Element {

@@ -11,11 +11,20 @@ type RelativeTimeProps = {
   baseDate?: Date;
   locales?: string[];
   options?: Intl.RelativeTimeFormatOptions;
+  _locale?: string;
+  _enableI18n?: boolean;
 };
 
-// ===== Component ===== //
+type ResolvedRelativeTimeProps = RelativeTimeProps & {
+  _locale: string;
+  _enableI18n: boolean;
+};
 
-function GtInternalRelativeTime({
+// ===== Shared Logic ===== //
+
+function computeRelativeTime({
+  _enableI18n,
+  _locale,
   date,
   children,
   value,
@@ -23,10 +32,12 @@ function GtInternalRelativeTime({
   baseDate,
   locales: localesProp = [],
   options = {},
-}: RelativeTimeProps): string | null {
-  const locale = useLocale();
-  const enableI18n = useEnableI18n();
-  const locales = getFormatLocales({ locale, enableI18n, localesProp });
+}: ResolvedRelativeTimeProps): string | null {
+  const locales = getFormatLocales({
+    locale: _locale,
+    enableI18n: _enableI18n,
+    localesProp,
+  });
   const gt = getReactI18nCache().getGTClass();
   const resolvedDate = date ?? children;
 
@@ -57,6 +68,20 @@ function GtInternalRelativeTime({
   }
 
   return null;
+}
+
+// ===== Component ===== //
+
+function GtInternalRelativeTime({
+  _enableI18n,
+  _locale,
+  ...props
+}: RelativeTimeProps): string | null {
+  return computeRelativeTime({
+    ...props,
+    _enableI18n: _enableI18n ?? useEnableI18n(),
+    _locale: _locale ?? useLocale(),
+  });
 }
 
 function RelativeTime(props: RelativeTimeProps): React.JSX.Element {
