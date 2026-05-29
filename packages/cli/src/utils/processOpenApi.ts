@@ -758,7 +758,12 @@ function parseSchemaValue(value: string): ParsedSchemaValue | null {
   if (!tokens.length) return null;
   let cursor = 0;
   let specPath: string | undefined;
-  if (hasOpenApiSpecExtension(tokens[0])) {
+  // Canonical form is "<spec> <SchemaName>". Treat the first token as the spec
+  // when it has a spec file extension, or when more tokens follow — schema names
+  // are single identifiers, so any leading token must be the spec. This covers
+  // extensionless spec names (Mintlify auto-discovers specs by file stem, e.g.
+  // `events-schema group.created`), mirroring parseOpenApiValue's heuristic.
+  if (hasOpenApiSpecExtension(tokens[0]) || tokens.length > 1) {
     specPath = tokens[0];
     cursor = 1;
   }
