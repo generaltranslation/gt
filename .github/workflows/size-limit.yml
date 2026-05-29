@@ -9,6 +9,9 @@ permissions:
 
 env:
   CI: true
+  # size-limit-action checks out and builds the base branch for comparison.
+  RUSTFLAGS: '-C link-arg=--allow-undefined'
+  TURBO_ENV_MODE: loose
 
 jobs:
   size:

@@ -1,8 +1,9 @@
 import { NextConfig } from 'next';
 import { type withGTConfigProps } from '../../config-dir/props/withGTConfigProps';
 import {
-  cacheComponentsExperimentalFeatureWarning,
-  cacheComponentsMissingExperimentalLocaleResolutionWarning,
+  experimentalLocaleResolutionDeprecatedWarning,
+  createCacheComponentsMissingRequestFunctionsWarning,
+  type CacheComponentsRequestFunction,
   cacheComponentsLegacySsgConflictError,
   cacheComponentsExperimentalLocaleResolutionDisableCustomGetLocaleWarning,
   cacheComponentsNonLocalTranslationsWarning,
@@ -24,7 +25,7 @@ export function cacheComponentsChecks({
   localTranslationsEnabled: boolean;
   localDictionaryEnabled: boolean;
 }) {
-  // Check: if cacheComponents is enabled, but no local translations or dictionary are enabled, error
+  // Check: if cacheComponents is enabled, but no local translations or dictionary are enabled, warn
   // this is necessary because it prevents executing a fetch when no local translations or dictionary are enabled
   if (
     nextConfig.cacheComponents &&
@@ -34,17 +35,29 @@ export function cacheComponentsChecks({
     console.warn(cacheComponentsNonLocalTranslationsWarning);
   }
 
-  // checks for disabled experimentalLocaleResolution
-  if (!mergedConfig.experimentalLocaleResolution) {
-    if (nextConfig.cacheComponents) {
-      // Warn that i18n wont work inside of cached components
-      console.warn(cacheComponentsMissingExperimentalLocaleResolutionWarning);
+  if (nextConfig.cacheComponents) {
+    const missingRequestFunctions: CacheComponentsRequestFunction[] = [];
+    if (!requestFunctionPaths.getLocale) {
+      missingRequestFunctions.push('getLocale');
     }
+    if (!requestFunctionPaths.getRegion) {
+      missingRequestFunctions.push('getRegion');
+    }
+
+    if (missingRequestFunctions.length) {
+      console.warn(
+        createCacheComponentsMissingRequestFunctionsWarning(
+          missingRequestFunctions
+        )
+      );
+    }
+  }
+
+  if (!mergedConfig.experimentalLocaleResolution) {
     return;
   }
 
-  // Warn that this is an experimental feature
-  console.warn(cacheComponentsExperimentalFeatureWarning);
+  console.warn(experimentalLocaleResolutionDeprecatedWarning);
 
   // Warn that getRegion and getDomain are disabled
   console.warn(
