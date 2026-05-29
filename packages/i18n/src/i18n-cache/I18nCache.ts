@@ -27,8 +27,8 @@ import { EventEmitter } from './event-subscription/EventEmitter';
 import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
 import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
 import type { I18nEvents } from './event-subscription/types';
-import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
+import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
@@ -203,18 +203,6 @@ class I18nCache<
   getGTClass(locale?: string): GT {
     return this.getGTClassClean(
       locale ? this._resolveLocale(locale) : undefined
-    );
-  }
-
-  /**
-   * Returns true when development hot reload runtime translation requests can run.
-   */
-  isDevHotReloadEnabled(): boolean {
-    return (
-      !!this.config.devApiKey &&
-      !!this.config.projectId &&
-      this.isRuntimeUrlEnabled() &&
-      getRuntimeEnvironment() === 'development'
     );
   }
 
@@ -697,10 +685,6 @@ class I18nCache<
         this._resolveCacheLocale(options.$locale) ??
         this._resolveLocale(options.$locale),
     };
-  }
-
-  private isRuntimeUrlEnabled(): boolean {
-    return this.config.runtimeUrl !== null && this.config.runtimeUrl !== '';
   }
 
   private async lookupTranslationWithFallbackResolved<

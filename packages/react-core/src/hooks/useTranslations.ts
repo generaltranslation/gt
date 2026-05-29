@@ -23,12 +23,13 @@ import type {
 
 export function useTranslations(id?: string): UseTranslationsFunction {
   const locale = useLocale();
-  const defaultLocale = getI18nConfig().getDefaultLocale();
+  const i18nConfig = getI18nConfig();
+  const defaultLocale = i18nConfig.getDefaultLocale();
   const shouldTranslate = getShouldTranslate();
   const scope = useRuntimeDictionaryScope();
   const gt = useGT();
   const rootId = id ?? '';
-  const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
+  const devHotReloadEnabled = i18nConfig.isDevHotReloadEnabled();
 
   useDictionaryObject({ locale: defaultLocale, id: rootId });
   useDictionaryObject({ locale, id: rootId });
