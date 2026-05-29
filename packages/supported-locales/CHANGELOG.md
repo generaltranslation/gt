@@ -1,5 +1,18 @@
 # @generaltranslation/supported-locales
 
+## 2.1.1
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+
+## 2.1.0
+
+### Minor Changes
+
+- [#1429](https://github.com/generaltranslation/gt/pull/1429) [`cc4edc1`](https://github.com/generaltranslation/gt/commit/cc4edc1e40d9977125bf6d053fb7f8cdbdd40b05) Thanks [@bgub](https://github.com/bgub)! - Add Esperanto to the supported locales list.
+
 ## 2.0.73
 
 ### Patch Changes

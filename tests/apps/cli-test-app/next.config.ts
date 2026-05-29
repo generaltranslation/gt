@@ -1,7 +1,10 @@
 import type { NextConfig } from 'next';
+import { getTurbopackRoot } from '../next/turbopackRoot';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  turbopack: {
+    root: getTurbopackRoot(import.meta.url),
+  },
 };
 
 export default nextConfig;

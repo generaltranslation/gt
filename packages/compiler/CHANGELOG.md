@@ -1,5 +1,12 @@
 # @generaltranslation/compiler
 
+## 1.3.24
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+
 ## 1.3.23
 
 ### Patch Changes

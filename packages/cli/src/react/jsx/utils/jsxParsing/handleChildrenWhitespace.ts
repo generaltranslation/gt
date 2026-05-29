@@ -152,7 +152,7 @@ export function handleChildrenWhitespace(
           if (parentNodeType === 'multiplication') {
             // This should be treated like a new tree (no parent here b/c its a new tree)
             const result = handleChildrenWhitespace(textNode);
-            if (result) newChildren.push(result);
+            if (result !== null) newChildren.push(result);
           } else {
             const string = trimJsxStringChild(textNode);
             if (string) newChildren.push(string);
