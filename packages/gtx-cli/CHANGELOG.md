@@ -1,5 +1,63 @@
 # gtx-cli
 
+## 2.14.45
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.45
+
+## 2.14.44
+
+### Patch Changes
+
+- Updated dependencies [[`bda984e`](https://github.com/generaltranslation/gt/commit/bda984e3351520e49314d1b3601a362ea9eb7396)]:
+  - gt@2.14.44
+
+## 2.14.43
+
+### Patch Changes
+
+- Updated dependencies [[`0c5cb81`](https://github.com/generaltranslation/gt/commit/0c5cb817468acf1b140ec5371aa003c739584579)]:
+  - gt@2.14.43
+
+## 2.14.42
+
+### Patch Changes
+
+- Updated dependencies [[`205c246`](https://github.com/generaltranslation/gt/commit/205c24647b9f50a68358ee6c3332d110a77ce1b3)]:
+  - gt@2.14.42
+
+## 2.14.41
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.41
+
+## 2.14.40
+
+### Patch Changes
+
+- Updated dependencies [[`8094012`](https://github.com/generaltranslation/gt/commit/8094012f9827f3a35e053776946bea67492da9db)]:
+  - gt@2.14.40
+
+## 2.14.39
+
+### Patch Changes
+
+- [#1448](https://github.com/generaltranslation/gt/pull/1448) [`f19bade`](https://github.com/generaltranslation/gt/commit/f19bade4741e934505e75880218599d27873e864) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fix CLI binary release builds by resolving Ink's devtools peer dependency and failing binary build scripts on compile errors.
+
+- Updated dependencies [[`cd8fa50`](https://github.com/generaltranslation/gt/commit/cd8fa505c90624160d6ef4d044946b3bf230f646), [`f19bade`](https://github.com/generaltranslation/gt/commit/f19bade4741e934505e75880218599d27873e864)]:
+  - gt@2.14.39
+
+## 2.14.38
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.38
+
 ## 2.14.37
 
 ### Patch Changes
