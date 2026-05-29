@@ -2790,6 +2790,7 @@ describe('transformUrlPath', () => {
   describe('urls inside JSX expressions', () => {
     const runOnContent = async (fileContent: string): Promise<string> => {
       let written = '';
+      vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
       vi.mocked(fs.promises.writeFile).mockImplementation((_path, content) => {
         written = content as string;
