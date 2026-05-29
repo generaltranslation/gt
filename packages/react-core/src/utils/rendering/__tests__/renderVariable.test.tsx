@@ -79,6 +79,7 @@ describe('renderVariable locale handling', () => {
     const result = renderDefaultChildren({
       children: createNumberVariable(5),
       defaultLocale: 'en',
+      enableI18n: false,
     });
 
     expect(React.isValidElement(result)).toBe(true);
@@ -96,6 +97,7 @@ describe('renderVariable locale handling', () => {
       source: createNumberVariable(5),
       target: { k: 'count', v: 'n' },
       locales: ['fr', 'en'],
+      enableI18n: true,
     });
 
     expect(React.isValidElement(result)).toBe(true);
