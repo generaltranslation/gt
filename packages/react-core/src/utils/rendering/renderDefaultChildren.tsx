@@ -11,11 +11,11 @@ import { renderVariable } from './renderVariable';
 export default function renderDefaultChildren({
   children,
   defaultLocale = libraryDefaultLocale,
-  enableI18n = false,
+  enableI18n,
 }: {
   children: TaggedChildren;
   defaultLocale: string;
-  enableI18n?: boolean;
+  enableI18n: boolean;
 }): React.ReactNode {
   const handleSingleChildElement = (child: TaggedElement): ReactNode => {
     const generaltranslation = getGTTag(child);

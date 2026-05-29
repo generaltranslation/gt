@@ -4,7 +4,7 @@ import { removeInjectedT } from '../../utils/internal/removeInjectedT';
 import writeChildrenAsObjects from '../../utils/internal/writeChildrenAsObjects';
 import renderDefaultChildren from '../../utils/rendering/renderDefaultChildren';
 import renderTranslatedChildren from '../../utils/rendering/renderTranslatedChildren';
-import { useLocale } from '../../hooks/condition-store';
+import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
@@ -43,6 +43,7 @@ function useComputeT({
   const {
     defaultLocale,
     locale,
+    enableI18n,
     targetOptions,
     taggedSourceChildren,
     sourceJsxChildren,
@@ -57,8 +58,9 @@ function useComputeT({
     return renderDefaultChildren({
       children: taggedSourceChildren,
       defaultLocale,
+      enableI18n,
     });
-  }, [defaultLocale, taggedSourceChildren]);
+  }, [defaultLocale, enableI18n, taggedSourceChildren]);
 
   // Lookup translation in cache
   const targetJsxChildren = useTranslate({
@@ -77,6 +79,7 @@ function useComputeT({
     source: taggedSourceChildren,
     target: targetJsxChildren,
     locales: [locale, defaultLocale],
+    enableI18n,
   });
 }
 
@@ -91,6 +94,7 @@ function usePrepSourceRender({
 }): {
   defaultLocale: string;
   locale: string;
+  enableI18n: boolean;
   taggedSourceChildren: TaggedChildren;
   sourceJsxChildren: JsxChildren;
   targetOptions: JsxTranslationOptionsWithSugar & {
@@ -100,6 +104,7 @@ function usePrepSourceRender({
   shouldTranslate: boolean;
 } {
   const locale = useLocale();
+  const enableI18n = useEnableI18n();
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate = getShouldTranslate();
   const taggedSourceChildren = useMemo(
@@ -118,6 +123,7 @@ function usePrepSourceRender({
 
   return {
     defaultLocale,
+    enableI18n,
     locale,
     taggedSourceChildren,
     sourceJsxChildren,

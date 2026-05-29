@@ -1,17 +1,20 @@
 import {
-  Currency,
+  Currency as GtExternalCurrency,
   GtInternalCurrency,
 } from '../../components/variables/Currency';
 import {
-  DateTime,
+  DateTime as GtExternalDateTime,
   GtInternalDateTime,
 } from '../../components/variables/DateTime';
-import { GtInternalNum, Num } from '../../components/variables/Num';
+import {
+  GtInternalNum,
+  Num as GtExternalNum,
+} from '../../components/variables/Num';
 import {
   GtInternalRelativeTime,
-  RelativeTime,
+  RelativeTime as GtExternalRelativeTime,
 } from '../../components/variables/RelativeTime';
-import { Var } from '../../components/variables/Var';
+import { Var as GtExternalVar } from '../../components/variables/Var';
 import type { RelativeTimeFormatOptions, RenderVariable } from '../types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { ReactNode } from 'react';
@@ -33,47 +36,49 @@ const renderVariable: RenderVariable = ({
   };
 
   if (variableType === 'n') {
-    const Component = injectionType === 'automatic' ? Num : GtInternalNum;
+    const Num = injectionType === 'automatic' ? GtExternalNum : GtInternalNum;
     const numOptions = variableOptions as Intl.NumberFormatOptions | undefined;
     return (
-      <Component {...internalProps} options={numOptions}>
+      <Num {...internalProps} options={numOptions}>
         {variableValue as number | string | null | undefined}
-      </Component>
+      </Num>
     );
   }
   if (variableType === 'd') {
-    const Component =
-      injectionType === 'automatic' ? DateTime : GtInternalDateTime;
+    const DateTime =
+      injectionType === 'automatic' ? GtExternalDateTime : GtInternalDateTime;
     const dateTimeOptions = variableOptions as
       | Intl.DateTimeFormatOptions
       | undefined;
     return (
-      <Component {...internalProps} options={dateTimeOptions}>
+      <DateTime {...internalProps} options={dateTimeOptions}>
         {variableValue as Date | null | undefined}
-      </Component>
+      </DateTime>
     );
   }
   if (variableType === 'c') {
-    const Component =
-      injectionType === 'automatic' ? Currency : GtInternalCurrency;
+    const Currency =
+      injectionType === 'automatic' ? GtExternalCurrency : GtInternalCurrency;
     const currencyOptions = variableOptions as
       | Intl.NumberFormatOptions
       | undefined;
     return (
-      <Component {...internalProps} options={currencyOptions}>
+      <Currency {...internalProps} options={currencyOptions}>
         {variableValue as number | string | null | undefined}
-      </Component>
+      </Currency>
     );
   }
   if (variableType === 'rt') {
-    const Component =
-      injectionType === 'automatic' ? RelativeTime : GtInternalRelativeTime;
+    const RelativeTime =
+      injectionType === 'automatic'
+        ? GtExternalRelativeTime
+        : GtInternalRelativeTime;
     const relativeTimeOptions = variableOptions as
       | RelativeTimeFormatOptions
       | undefined;
     if (typeof variableValue === 'number' && relativeTimeOptions?.unit) {
       return (
-        <Component
+        <RelativeTime
           {...internalProps}
           value={variableValue}
           unit={relativeTimeOptions.unit}
@@ -89,7 +94,7 @@ const renderVariable: RenderVariable = ({
           ? new Date(variableValue)
           : undefined;
     return (
-      <Component
+      <RelativeTime
         {...internalProps}
         date={dateValue && !isNaN(dateValue.getTime()) ? dateValue : undefined}
         baseDate={relativeTimeOptions?.baseDate}
@@ -101,7 +106,7 @@ const renderVariable: RenderVariable = ({
   return injectionType === 'automatic' ? (
     renderedValue
   ) : (
-    <Var {...internalProps}>{renderedValue}</Var>
+    <GtExternalVar {...internalProps}>{renderedValue}</GtExternalVar>
   );
 };
 
