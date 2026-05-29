@@ -13,3 +13,6 @@ build-darwin-x64 = "build --target x86_64-apple-darwin --release"
 build-darwin-arm64 = "build --target aarch64-apple-darwin --release"
 build-win32-x64 = "build --target x86_64-pc-windows-msvc --release"
 build-win32-arm64 = "build --target aarch64-pc-windows-msvc --release"
+
+[target.wasm32-wasip1]
+rustflags = ["-C", "link-arg=--allow-undefined"]
