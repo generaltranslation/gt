@@ -1,5 +1,6 @@
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
-import { useFormatLocales } from '../../hooks/utils';
+import { useEnableI18n, useLocale } from '../../hooks/condition-store';
+import { getFormatLocales } from '../../hooks/utils';
 
 type NumProps = {
   children: number | string | null | undefined;
@@ -15,7 +16,9 @@ function GtInternalNum({
   options = {},
   locales: localesProp = [],
 }: NumProps): string | null {
-  const locales = useFormatLocales(localesProp);
+  const locale = useLocale();
+  const enableI18n = useEnableI18n();
+  const locales = getFormatLocales({ locale, enableI18n, localesProp });
   const gt = getReactI18nCache().getGTClass();
   if (children == null) return null;
   const parsedNumber =
