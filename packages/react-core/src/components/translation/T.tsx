@@ -4,7 +4,6 @@ import { removeInjectedT } from '../../utils/internal/removeInjectedT';
 import writeChildrenAsObjects from '../../utils/internal/writeChildrenAsObjects';
 import renderDefaultChildren from '../../utils/rendering/renderDefaultChildren';
 import renderTranslatedChildren from '../../utils/rendering/renderTranslatedChildren';
-import { renderVariable } from '../../utils/rendering/renderVariable';
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
@@ -60,7 +59,6 @@ function useComputeT({
       children: taggedSourceChildren,
       defaultLocale,
       enableI18n,
-      renderVariable,
     });
   }, [defaultLocale, enableI18n, taggedSourceChildren]);
 
@@ -82,7 +80,6 @@ function useComputeT({
     target: targetJsxChildren,
     locales: [locale, defaultLocale],
     enableI18n,
-    renderVariable,
   });
 }
 
