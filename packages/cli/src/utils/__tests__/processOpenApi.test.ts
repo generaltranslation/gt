@@ -926,7 +926,10 @@ describe('processOpenApi', () => {
       info: { title: 'Events', version: '1' },
       components: {
         schemas: {
-          'group.created': { type: 'object', description: 'A group was created' },
+          'group.created': {
+            type: 'object',
+            description: 'A group was created',
+          },
         },
       },
     };
