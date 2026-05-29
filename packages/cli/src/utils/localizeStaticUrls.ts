@@ -68,7 +68,10 @@ function localizeUrlsInExpressionSource(
   const pushLiteralReplacement = (literal: any) => {
     if (
       !literal ||
-      literal.type !== 'StringLiteral' ||
+      // A bare string at statement position is parsed by Babel as a
+      // DirectiveLiteral (cf. "use strict") rather than a StringLiteral.
+      (literal.type !== 'StringLiteral' &&
+        literal.type !== 'DirectiveLiteral') ||
       typeof literal.value !== 'string' ||
       typeof literal.start !== 'number' ||
       typeof literal.end !== 'number'
@@ -88,12 +91,16 @@ function localizeUrlsInExpressionSource(
 
   // `href={"/docs/x"}`: the entire expression is the URL string.
   if (rootStringIsUrl) {
-    const body = (ast.program?.body ?? []) as Array<{
+    const program = ast.program;
+    const body = (program?.body ?? []) as Array<{
       type: string;
       expression?: unknown;
     }>;
     if (body.length === 1 && body[0]?.type === 'ExpressionStatement') {
       pushLiteralReplacement(body[0].expression);
+    } else if (body.length === 0 && program?.directives?.length === 1) {
+      // Babel parses a lone string literal as a directive, not a statement.
+      pushLiteralReplacement(program.directives[0]?.value);
     }
   }
 
