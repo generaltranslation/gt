@@ -363,6 +363,19 @@ function restoreTopLevelRefs(
     const subtree = getAtPointer(fileJson, pointer);
     if (subtree === undefined) continue;
 
+    // If the value here is still an unresolved $ref placeholder, the referenced
+    // file was never inlined at this pointer (e.g. mergeJson leaves non-composite
+    // refs like `redirects` collapsed). Writing it back would overwrite the
+    // source file with a self-referential stub and destroy its real contents —
+    // the source already holds the correct data, so leave it untouched.
+    if (
+      isJsonContainer(subtree) &&
+      !Array.isArray(subtree) &&
+      typeof (subtree as Record<string, unknown>).$ref === 'string'
+    ) {
+      continue;
+    }
+
     writeJsonFile(entry.sourceFile, subtree);
     setAtPointer(fileJson, pointer, { $ref: entry.refPath });
   }

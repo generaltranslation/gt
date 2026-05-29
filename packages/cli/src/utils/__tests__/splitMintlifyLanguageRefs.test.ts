@@ -612,4 +612,52 @@ describe('splitMintlifyLanguageRefs', () => {
       groups: [{ group: 'Inicio', pages: ['es/docs/start'] }],
     });
   });
+
+  it('does not clobber a top-level $ref file that was left un-inlined (e.g. redirects)', async () => {
+    // mergeJson only re-inlines the composite path (navigation.languages); other
+    // refs like `redirects` stay collapsed as { $ref } in the written docs.json.
+    // restoreTopLevelRefs must NOT write that placeholder back to the source
+    // file — doing so overwrites config/redirects.json with a self-ref and
+    // destroys the real redirect array.
+    const mergedDocsJson = {
+      navigation: {
+        languages: [
+          { language: 'en', tabs: [{ tab: 'Home', pages: ['docs/index'] }] },
+          {
+            language: 'es',
+            tabs: [{ tab: 'Inicio', pages: ['es/docs/index'] }],
+          },
+        ],
+      },
+      redirects: { $ref: './config/redirects.json' },
+    };
+
+    mockRead.mockImplementation((p) => {
+      const resolved = path.resolve(p as string);
+      if (resolved === path.resolve('/project/docs.json'))
+        return JSON.stringify(mergedDocsJson);
+      throw new Error('ENOENT');
+    });
+
+    mockRefMap = new Map([
+      [
+        '/redirects',
+        {
+          sourceFile: path.resolve('/project/config/redirects.json'),
+          refPath: './config/redirects.json',
+          containingDir: path.resolve('/project'),
+          originalContent: [],
+        },
+      ],
+    ]);
+
+    await splitMintlifyLanguageRefs(makeSettings());
+
+    // The redirects source file must be left untouched (not written at all).
+    expect(getWritten('/project/config/redirects.json')).toBeUndefined();
+
+    // docs.json keeps the redirects $ref intact.
+    const docsResult = getWritten('/project/docs.json') as any;
+    expect(docsResult.redirects).toEqual({ $ref: './config/redirects.json' });
+  });
 });

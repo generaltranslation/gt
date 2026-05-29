@@ -1,0 +1,13 @@
+# Pin the Rust toolchain for the gt-next SWC plugin (packages/next/swc-plugin).
+#
+# SWC plugins compile to wasm32-wasip1 and link against host-provided imports
+# (__set_transform_result, __emit_diagnostics, etc.). That plugin<->host wasm ABI
+# is sensitive to the Rust/rust-lld version, so building with a floating "stable"
+# toolchain breaks intermittently when a new stable changes wasm linking behavior.
+#
+# Keep this pinned to a version known to link the plugin successfully. rustup reads
+# this file for every cargo invocation in the repo (overriding whatever CI's
+# dtolnay/rust-toolchain@stable installed) and auto-installs the channel + target.
+[toolchain]
+channel = "1.89.0"
+targets = ["wasm32-wasip1"]
