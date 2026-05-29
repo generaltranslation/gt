@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import addGTIdentifier from '../../utils/internal/addGTIdentifier';
 import { removeInjectedT } from '../../utils/internal/removeInjectedT';
 import writeChildrenAsObjects from '../../utils/internal/writeChildrenAsObjects';
@@ -45,37 +45,37 @@ async function RscT({
 } & JsxTranslationOptions): Promise<ReactNode> {
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate = getI18nConfig().requiresTranslation(locale);
-  const { taggedSourceChildren, sourceJsxChildren, targetOptions } =
-    prepSourceRender({
-      sourceChildren,
-      params,
-      locale,
-    });
-
-  const renderSourceChildren = () =>
-    renderSource({
-      taggedSourceChildren,
-      defaultLocale,
-      enableI18n: true,
-    });
+  const prepared = prepareT({
+    sourceChildren,
+    params,
+    locale,
+  });
 
   if (!shouldTranslate) {
-    return renderSourceChildren();
+    return renderPreparedT({
+      ...prepared,
+      targetJsxChildren: undefined,
+      locale,
+      defaultLocale,
+      enableI18n: true,
+      shouldTranslate,
+    });
   }
 
   const lookupTranslation =
     await getReactI18nCache().getLookupTranslation(locale);
-  const targetJsxChildren = lookupTranslation(sourceJsxChildren, targetOptions);
+  const targetJsxChildren = lookupTranslation(
+    prepared.sourceJsxChildren,
+    prepared.targetOptions
+  );
 
-  if (targetJsxChildren == null) {
-    return renderSourceChildren();
-  }
-
-  return renderTarget({
-    taggedSourceChildren,
+  return renderPreparedT({
+    ...prepared,
     targetJsxChildren,
-    locales: [locale, defaultLocale],
+    locale,
+    defaultLocale,
     enableI18n: true,
+    shouldTranslate,
   });
 }
 
@@ -108,15 +108,6 @@ function useComputeT({
     params,
   });
 
-  // Create a function to render source children
-  const renderSourceChildren = useCallback(() => {
-    return renderSource({
-      taggedSourceChildren,
-      defaultLocale,
-      enableI18n,
-    });
-  }, [defaultLocale, enableI18n, taggedSourceChildren]);
-
   // Lookup translation in cache
   const targetJsxChildren = useTranslate({
     locale,
@@ -124,12 +115,39 @@ function useComputeT({
     options: targetOptions,
   });
 
-  // Render source children
+  return renderPreparedT({
+    taggedSourceChildren,
+    targetJsxChildren,
+    locale,
+    defaultLocale,
+    enableI18n,
+    shouldTranslate,
+  });
+}
+
+function renderPreparedT({
+  taggedSourceChildren,
+  targetJsxChildren,
+  locale,
+  defaultLocale,
+  enableI18n,
+  shouldTranslate,
+}: {
+  taggedSourceChildren: TaggedChildren;
+  targetJsxChildren: JsxChildren | null | undefined;
+  locale: string;
+  defaultLocale: string;
+  enableI18n: boolean;
+  shouldTranslate: boolean;
+}): ReactNode {
   if (!shouldTranslate || targetJsxChildren == null) {
-    return renderSourceChildren();
+    return renderSource({
+      taggedSourceChildren,
+      defaultLocale,
+      enableI18n,
+    });
   }
 
-  // Render translated children if found in cache
   return renderTarget({
     taggedSourceChildren,
     targetJsxChildren,
@@ -197,18 +215,14 @@ function usePrepSourceRender({
   const enableI18n = useEnableI18n();
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate = getShouldTranslate();
-  const taggedSourceChildren = useMemo(
-    () => prepareTaggedSourceChildren(sourceChildren),
-    [sourceChildren]
-  );
-  const sourceJsxChildren = useMemo(
-    () => prepareSourceJsxChildren(taggedSourceChildren),
-    [taggedSourceChildren]
-  );
-  const options = useMemo(() => normalizeParameters(params), [params]);
-  const targetOptions = useMemo(
-    () => prepareTargetOptions({ options, locale }),
-    [locale, options]
+  const { taggedSourceChildren, sourceJsxChildren, targetOptions } = useMemo(
+    () =>
+      prepareT({
+        sourceChildren,
+        params,
+        locale,
+      }),
+    [locale, params, sourceChildren]
   );
 
   return {
@@ -247,7 +261,7 @@ function prepareTargetOptions({
   return { ...options, $locale: locale };
 }
 
-function prepSourceRender({
+function prepareT({
   sourceChildren,
   params,
   locale,
