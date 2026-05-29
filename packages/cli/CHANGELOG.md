@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.44
+
+### Patch Changes
+
+- [#1523](https://github.com/generaltranslation/gt/pull/1523) [`bda984e`](https://github.com/generaltranslation/gt/commit/bda984e3351520e49314d1b3601a362ea9eb7396) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Update Mintlify `$ref` handling
+
 ## 2.14.43
 
 ### Patch Changes
