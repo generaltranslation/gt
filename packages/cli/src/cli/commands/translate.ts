@@ -11,8 +11,8 @@ import flattenJsonFiles from '../../utils/flattenJsonFiles.js';
 import localizeStaticUrls from '../../utils/localizeStaticUrls.js';
 import localizeRelativeAssets from '../../utils/localizeRelativeAssets.js';
 import processAnchorIds from '../../utils/processAnchorIds.js';
-import processOpenApi from '../../utils/processOpenApi.js';
 import localizeStaticImports from '../../utils/localizeStaticImports.js';
+import { postprocessMintlify } from '../../formats/files/postprocess/mintlify.js';
 import { BranchData } from '../../types/branch.js';
 import { getDownloadedMeta } from '../../state/recentDownloads.js';
 import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.js';
@@ -87,8 +87,7 @@ export async function postProcessTranslations(
   );
   if (includeFiles && postProcessIncludes?.size === 0) return;
 
-  // Mintlify OpenAPI localization (spec routing + validation)
-  await processOpenApi(settings, postProcessIncludes);
+  await postprocessMintlify(settings, postProcessIncludes);
 
   // Localize static urls (/docs -> /[locale]/docs) and preserve anchor IDs for non-default locales
   // Default locale is processed earlier in the flow in base.ts

@@ -48,7 +48,7 @@ export function getRequestFunction(
 
 /* ========== HELPERS ========== */
 /**
- * Special handler for when experimentalLocaleResolution is enabled
+ * Deprecated handler for when experimentalLocaleResolution is enabled.
  */
 function handleExperimentalLocaleResolution(
   functionName: RequestFunctions

@@ -14,7 +14,6 @@ export async function getDesiredLocales(): Promise<{
   // Ask for the locales
   const locales = await promptLocaleList({
     message: 'Which languages would you like to translate your project into?',
-    defaultValue: ['es', 'fr', 'de', 'ja', 'zh'],
   });
   return { defaultLocale, locales };
 }
