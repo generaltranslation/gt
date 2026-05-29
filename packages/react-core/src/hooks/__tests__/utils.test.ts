@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { setReadonlyConditionStore } from '../../condition-store/singleton-operations';
-import { getShouldTranslate } from '../utils';
+import { getFormatLocales, getShouldTranslate } from '../utils';
 
 function setup({
   locale,
@@ -57,5 +57,43 @@ describe('getShouldTranslate', () => {
     setup({ locale: 'fr', enableI18n: false });
 
     expect(getShouldTranslate()).toBe(false);
+  });
+});
+
+describe('getFormatLocales', () => {
+  it('uses an explicit locale when translation is required', () => {
+    setup({ locale: 'en' });
+
+    expect(
+      getFormatLocales({
+        locale: 'fr',
+        enableI18n: true,
+        localesProp: ['fr-CA'],
+      })
+    ).toEqual(['fr-CA', 'fr', 'en']);
+  });
+
+  it('returns only the default locale when explicit locale does not require translation', () => {
+    setup({ locale: 'de', locales: ['en', 'fr', 'de'] });
+
+    expect(
+      getFormatLocales({
+        locale: 'en',
+        enableI18n: true,
+        localesProp: ['fr-CA'],
+      })
+    ).toEqual(['en']);
+  });
+
+  it('returns only the default locale when translation is disabled', () => {
+    setup({ locale: 'fr', enableI18n: false });
+
+    expect(
+      getFormatLocales({
+        locale: 'fr',
+        enableI18n: false,
+        localesProp: ['fr-CA'],
+      })
+    ).toEqual(['en']);
   });
 });

@@ -28,6 +28,7 @@ export {
   useDefaultLocale,
   useEnableI18n,
   useLocales,
+  getFormatLocales,
   useFormatLocales,
   useGT,
   useMessages,

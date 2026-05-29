@@ -19,7 +19,7 @@ export {
 export { useGT } from './hooks/useGT';
 export { useMessages } from './hooks/useMessages';
 export { useTranslations } from './hooks/useTranslations';
-export { useFormatLocales } from './hooks/utils';
+export { getFormatLocales, useFormatLocales } from './hooks/utils';
 
 // ===== Functions ===== //
 export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
