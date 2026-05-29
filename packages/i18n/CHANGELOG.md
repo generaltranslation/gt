@@ -1,5 +1,20 @@
 # gt-i18n
 
+## 0.9.5
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - @generaltranslation/supported-locales@2.1.1
+
+## 0.9.4
+
+### Patch Changes
+
+- Updated dependencies [[`cc4edc1`](https://github.com/generaltranslation/gt/commit/cc4edc1e40d9977125bf6d053fb7f8cdbdd40b05)]:
+  - @generaltranslation/supported-locales@2.1.0
+
 ## 0.9.3
 
 ### Patch Changes
