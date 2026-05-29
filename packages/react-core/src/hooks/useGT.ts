@@ -9,6 +9,7 @@ import { useRuntimeTranslationScope, useTranslateMany } from './external-store';
 import { useLocale } from './condition-store';
 import { getShouldTranslate } from './utils';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import { useI18nStoreWithFallback } from '../i18n-store/context';
 import type { TranslateLookup } from '../i18n-store/storeTypes';
 import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
@@ -26,6 +27,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate = getShouldTranslate();
   const scope = useRuntimeTranslationScope();
+  const store = useI18nStoreWithFallback();
   const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
 
   // Compiler optimization: pre-fetch translations
@@ -54,11 +56,11 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         options,
         'ICU'
       );
-      const translation = getReactI18nCache().lookupTranslation(
-        lookupOptions.$locale,
+      const translation = store.getTranslateSnapshot({
+        locale: lookupOptions.$locale,
         message,
-        lookupOptions
-      );
+        options: lookupOptions,
+      });
 
       if (translation == null && devHotReloadEnabled) {
         scope.translate({
@@ -75,7 +77,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         sourceLocale: defaultLocale,
       });
     },
-    [defaultLocale, devHotReloadEnabled, locale, scope, shouldTranslate]
+    [defaultLocale, devHotReloadEnabled, locale, scope, shouldTranslate, store]
   );
 }
 

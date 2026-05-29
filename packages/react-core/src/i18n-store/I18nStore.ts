@@ -1,4 +1,6 @@
 import {
+  getDictionaryEntry,
+  getDictionaryValue,
   getDictionaryListenerKey,
   getTranslateListenerKey,
 } from 'gt-i18n/internal';
@@ -12,7 +14,12 @@ import type {
   TranslateSnapshot,
   Unsubscribe,
 } from './storeTypes';
-import type { Translation } from 'gt-i18n/types';
+import type {
+  Dictionary,
+  DictionaryEntry,
+  DictionaryObject,
+  Translation,
+} from 'gt-i18n/types';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
@@ -25,7 +32,10 @@ import { subscribeToSet } from './utils/subscriptions';
 type TranslateStoreListener = (lookup: TranslateLookup) => void;
 type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
-export type I18nStoreParams = {};
+export type I18nStoreParams = {
+  translations?: Record<string, Record<string, Translation>>;
+  dictionaries?: Record<string, Dictionary>;
+};
 
 /**
  * A subscription wrapper around the I18nCache.
@@ -43,16 +53,20 @@ export class I18nStore {
   >();
   private dictionaryEntryListeners = new Set<DictionaryStoreListener>();
   private dictionaryObjectListeners = new Set<DictionaryStoreListener>();
+  private readonly translations?: Record<string, Record<string, Translation>>;
+  private readonly dictionaries?: Record<string, Dictionary>;
 
   /**
    * I18nCache must be already initialized
    */
-  constructor(_config: I18nStoreParams) {
+  constructor({ translations, dictionaries }: I18nStoreParams) {
     try {
       getReactI18nCache();
     } catch (error) {
       throw new Error('Failed to initialize I18nStore. Reason: ' + error);
     }
+    this.translations = translations;
+    this.dictionaries = dictionaries;
   }
 
   // ===== I18nCache Subscriptions ===== //
@@ -115,6 +129,14 @@ export class I18nStore {
     message,
     options,
   }: TranslateLookup<T>): TranslateSnapshot<T> => {
+    const scopedTranslation = this.lookupScopedTranslation<T>({
+      locale,
+      message,
+      options,
+    });
+    if (scopedTranslation !== undefined) {
+      return scopedTranslation;
+    }
     return getReactI18nCache().lookupTranslation<T>(locale, message, options);
   };
 
@@ -143,6 +165,10 @@ export class I18nStore {
     locale,
     id,
   }: DictionaryLookup): DictionaryEntrySnapshot => {
+    const scopedEntry = this.lookupScopedDictionaryEntry(locale, id);
+    if (scopedEntry !== undefined) {
+      return scopedEntry;
+    }
     return getReactI18nCache().lookupDictionary(locale, id);
   };
 
@@ -150,6 +176,10 @@ export class I18nStore {
     locale,
     id,
   }: DictionaryLookup): DictionaryObjectSnapshot => {
+    const scopedObject = this.lookupScopedDictionaryObject(locale, id);
+    if (scopedObject !== undefined) {
+      return scopedObject;
+    }
     return getReactI18nCache().lookupDictionaryObj(locale, id);
   };
 
@@ -202,6 +232,38 @@ export class I18nStore {
     return new RuntimeDictionaryScope();
   };
 
+  // ===== Provider-scoped snapshots ===== //
+
+  private lookupScopedTranslation = <T extends Translation>(
+    lookup: TranslateLookup<T>
+  ): T | undefined => {
+    const listenerKey = getTranslateListenerKey(lookup);
+    const separatorIndex = listenerKey.indexOf(':');
+    const hash = listenerKey.slice(separatorIndex + 1);
+    return this.translations?.[lookup.locale]?.[hash] as T | undefined;
+  };
+
+  private lookupScopedDictionaryEntry(
+    locale: string,
+    id: string
+  ): DictionaryEntry | undefined {
+    const value = lookupScopedDictionaryValue(this.dictionaries?.[locale], id);
+    return getDictionaryEntry(value);
+  }
+
+  private lookupScopedDictionaryObject(
+    locale: string,
+    id: string
+  ): DictionaryObject | undefined {
+    const entry = this.lookupScopedDictionaryEntry(locale, id);
+    if (entry) {
+      return getDictionaryValue(entry);
+    }
+    return cloneDictionaryObject(
+      lookupScopedDictionaryValue(this.dictionaries?.[locale], id)
+    );
+  }
+
   // ===== Listener Utilities ===== //
 
   private emitTranslateEvent(event: TranslateLookup): void {
@@ -214,4 +276,34 @@ export class I18nStore {
       listener(event);
     });
   }
+}
+
+function lookupScopedDictionaryValue(
+  dictionary: Dictionary | undefined,
+  id: string
+): DictionaryObject | undefined {
+  if (!dictionary) return undefined;
+  if (!id) return cloneDictionaryObject(dictionary);
+
+  let current: DictionaryObject | undefined = dictionary;
+  for (const segment of id.split('.')) {
+    if (
+      typeof current !== 'object' ||
+      current == null ||
+      Array.isArray(current)
+    ) {
+      return undefined;
+    }
+    current = current[segment];
+  }
+  return cloneDictionaryObject(current);
+}
+
+function cloneDictionaryObject<Value extends DictionaryObject | undefined>(
+  value: Value
+): Value {
+  if (value === undefined || typeof value === 'string') {
+    return value;
+  }
+  return structuredClone(value) as Value;
 }
