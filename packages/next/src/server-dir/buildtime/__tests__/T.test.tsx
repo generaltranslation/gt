@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const { mockGetLocale, mockRscT } = vi.hoisted(() => ({
-  mockGetLocale: vi.fn(),
+const { mockGetRequestConditions, mockRscT } = vi.hoisted(() => ({
+  mockGetRequestConditions: vi.fn(),
   mockRscT: vi.fn(),
 }));
 
-vi.mock('../../../request/getLocale', () => ({
-  getLocale: mockGetLocale,
+vi.mock('../../../request/getRequestConditions', () => ({
+  getRequestConditions: mockGetRequestConditions,
 }));
 
 vi.mock('gt-react/context', () => ({
@@ -14,8 +14,11 @@ vi.mock('gt-react/context', () => ({
 }));
 
 describe('buildtime T', () => {
-  it('passes the request locale to RscT', async () => {
-    mockGetLocale.mockResolvedValue('fr');
+  it('passes request conditions to RscT', async () => {
+    mockGetRequestConditions.mockResolvedValue({
+      _locale: 'fr',
+      _enableI18n: false,
+    });
     mockRscT.mockResolvedValue('Bonjour');
 
     const { T } = await import('../T');
@@ -23,11 +26,12 @@ describe('buildtime T', () => {
       'Bonjour'
     );
 
-    expect(mockGetLocale).toHaveBeenCalled();
+    expect(mockGetRequestConditions).toHaveBeenCalled();
     expect(mockRscT).toHaveBeenCalledWith({
       children: 'Hello',
       id: 'greeting',
       locale: 'fr',
+      enableI18n: false,
     });
     expect(T._gtt).toBe('translate-server');
   });

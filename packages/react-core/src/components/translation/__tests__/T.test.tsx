@@ -26,9 +26,9 @@ describe('RscT', () => {
     const lookupTranslation = vi.fn(() => 'Bonjour');
     getLookupTranslation.mockResolvedValue(lookupTranslation);
 
-    await expect(RscT({ children: 'Hello', locale: 'fr' })).resolves.toBe(
-      'Bonjour'
-    );
+    await expect(
+      RscT({ children: 'Hello', locale: 'fr', enableI18n: true })
+    ).resolves.toBe('Bonjour');
 
     expect(getLookupTranslation).toHaveBeenCalledWith('fr');
     expect(lookupTranslation).toHaveBeenCalledWith(
@@ -41,9 +41,17 @@ describe('RscT', () => {
   });
 
   it('renders source without loading translations for the default locale', async () => {
-    await expect(RscT({ children: 'Hello', locale: 'en' })).resolves.toBe(
-      'Hello'
-    );
+    await expect(
+      RscT({ children: 'Hello', locale: 'en', enableI18n: true })
+    ).resolves.toBe('Hello');
+
+    expect(getLookupTranslation).not.toHaveBeenCalled();
+  });
+
+  it('renders source without loading translations when i18n is disabled', async () => {
+    await expect(
+      RscT({ children: 'Hello', locale: 'fr', enableI18n: false })
+    ).resolves.toBe('Hello');
 
     expect(getLookupTranslation).not.toHaveBeenCalled();
   });

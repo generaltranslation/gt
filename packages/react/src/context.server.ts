@@ -46,6 +46,7 @@ export {
   gtFallback,
   getTranslationsSnapshot,
   getReactI18nCache,
+  getReadonlyConditionStoreWithFallback,
   setReactI18nCache,
   t,
   // ===== Setup ===== //
