@@ -103,8 +103,12 @@ type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
  * @param {boolean} [experimentalEnableSSG=false] - Whether to enable SSG.
- * @param {boolean} [experimentalLocaleResolution=defaultWithGTConfigProps.experimentalLocaleResolution] - Whether to use special server side locale resolution logic (required for Cached Components).
- * @param {string|undefined} [experimentalLocaleResolutionParam=defaultWithGTConfigProps.experimentalLocaleResolutionParam] - The parameter to use for experimental locale resolution.
+ * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings. (deprecated)
+ * @param {string|undefined} [getStaticLocalePath="getStaticLocale"] - The path to the static getLocale function. (deprecated)
+ * @param {string|undefined} [getStaticRegionPath="getStaticRegion"] - The path to the static getRegion function. (deprecated)
+ * @param {string|undefined} [getStaticDomainPath="getStaticDomain"] - The path to the static getDomain function. (deprecated)
+ * @param {boolean} [experimentalLocaleResolution=defaultWithGTConfigProps.experimentalLocaleResolution] - Deprecated. Uses unsupported Next.js internals to infer locale from root params.
+ * @param {string|undefined} [experimentalLocaleResolutionParam=defaultWithGTConfigProps.experimentalLocaleResolutionParam] - Deprecated. Only used by experimentalLocaleResolution.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {object} nextConfig - The Next.js configuration object to extend
