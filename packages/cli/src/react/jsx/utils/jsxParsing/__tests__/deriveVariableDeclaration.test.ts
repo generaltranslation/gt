@@ -90,6 +90,64 @@ describe('Derive with variable declarations in JSX', () => {
 
   // ─── Happy path: basic derivable initializers ───────────────────
 
+  describe('direct conditional expression with empty branch', () => {
+    it('should preserve an empty string branch as a separate derive variant', () => {
+      const source = `
+        import { Branch, Derive, T, Var } from "gt-next";
+
+        export default function Page() {
+          const includeOptionalPrefix = false;
+          const showReviewerName = false;
+          const releaseName = "spring launch";
+          return (
+            <T>
+              <Derive>{includeOptionalPrefix ? "Optional prefix: " : ""}</Derive>
+              <Branch
+                branch={showReviewerName}
+                true={"Jordan"}
+                false={""}
+              />
+              {" approved the build for "}
+              <Var name="release-name">{releaseName}</Var>
+            </T>
+          );
+        }
+      `;
+
+      const { updates, errors } = parseDerive(source);
+
+      expect(errors).toHaveLength(0);
+      expect(updates).toHaveLength(2);
+
+      const branch = {
+        t: 'Branch',
+        i: 2,
+        d: {
+          t: 'b',
+          b: {
+            true: 'Jordan',
+            false: '',
+          },
+        },
+      };
+      const releaseNameVar = { i: 3, k: 'release-name', v: 'v' };
+
+      const sources = updates.map((u) => u.source);
+      expect(sources).toContainEqual([
+        { t: 'Derive', i: 1, c: 'Optional prefix: ' },
+        branch,
+        ' approved the build for ',
+        releaseNameVar,
+      ]);
+      expect(sources).toContainEqual([
+        { t: 'Derive', i: 1, c: '' },
+        branch,
+        ' approved the build for ',
+        releaseNameVar,
+      ]);
+    });
+  });
+
   describe('identifier referencing a const with conditional initializer', () => {
     it('should resolve a const ternary variable inside <Derive> and produce 2 branches', () => {
       const source = `

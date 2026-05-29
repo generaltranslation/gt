@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.2.16
+
+### Patch Changes
+
+- [#1460](https://github.com/generaltranslation/gt/pull/1460) [`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: escape characters in declareVar() for source locale consumed by condenseVars()
+
 ## 8.2.15
 
 ### Patch Changes
