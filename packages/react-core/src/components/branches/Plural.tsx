@@ -7,19 +7,23 @@ type PluralProps = {
   children?: ReactNode;
   n: number;
   locales?: string[];
+  _locale?: string;
+  _enableI18n?: boolean;
   [key: string]: ReactNode;
 };
 
 // ===== Component ===== //
 
 function GtInternalPlural({
+  _enableI18n,
+  _locale,
   children,
   n,
   locales: localesProp = [],
   ...branches
 }: PluralProps): ReactNode {
-  const locale = useLocale();
-  const enableI18n = useEnableI18n();
+  const locale = _locale ?? useLocale();
+  const enableI18n = _enableI18n ?? useEnableI18n();
   const locales = getFormatLocales({ locale, enableI18n, localesProp });
   if (typeof n !== 'number') {
     return children;
