@@ -3,9 +3,6 @@ import type { ReactNode } from 'react';
 type VarProps<T extends ReactNode> = {
   children: T;
   name?: string;
-};
-
-type GtInternalVarProps<T extends ReactNode> = VarProps<T> & {
   /** Accepted for renderVariable parity; raw variables are locale-independent. */
   _locale?: string;
   _enableI18n?: boolean;
@@ -26,9 +23,7 @@ function Var<T extends ReactNode>({ children }: VarProps<T>): T {
   return computeVar({ children });
 }
 
-function GtInternalVar<T extends ReactNode>({
-  children,
-}: GtInternalVarProps<T>): T {
+function GtInternalVar<T extends ReactNode>({ children }: VarProps<T>): T {
   return computeVar({ children });
 }
 

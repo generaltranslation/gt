@@ -8,29 +8,30 @@ type CurrencyProps = {
   options?: Intl.NumberFormatOptions;
   locales?: string[];
   name?: string;
-};
-
-type GtInternalCurrencyProps = CurrencyProps & {
   _locale?: string;
   _enableI18n?: boolean;
 };
 
 type ResolvedCurrencyProps = CurrencyProps & {
-  locale: string;
-  enableI18n: boolean;
+  _locale: string;
+  _enableI18n: boolean;
 };
 
 // ===== Shared Logic ===== //
 
 function computeCurrency({
+  _enableI18n,
+  _locale,
   children,
   currency = 'USD',
-  enableI18n,
-  locale,
   options = {},
   locales: localesProp = [],
 }: ResolvedCurrencyProps): string | null {
-  const locales = getFormatLocales({ locale, enableI18n, localesProp });
+  const locales = getFormatLocales({
+    locale: _locale,
+    enableI18n: _enableI18n,
+    localesProp,
+  });
   const gt = getReactI18nCache().getGTClass();
   if (children == null) return null;
   const parsedNumber =
@@ -47,11 +48,11 @@ function GtInternalCurrency({
   _enableI18n,
   _locale,
   ...props
-}: GtInternalCurrencyProps): string | null {
+}: CurrencyProps): string | null {
   return computeCurrency({
     ...props,
-    enableI18n: _enableI18n ?? useEnableI18n(),
-    locale: _locale ?? useLocale(),
+    _enableI18n: _enableI18n ?? useEnableI18n(),
+    _locale: _locale ?? useLocale(),
   });
 }
 
