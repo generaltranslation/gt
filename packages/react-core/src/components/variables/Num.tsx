@@ -7,28 +7,29 @@ type NumProps = {
   options?: Intl.NumberFormatOptions;
   locales?: string[];
   name?: string;
-};
-
-type GtInternalNumProps = NumProps & {
   _locale?: string;
   _enableI18n?: boolean;
 };
 
 type ResolvedNumProps = NumProps & {
-  locale: string;
-  enableI18n: boolean;
+  _locale: string;
+  _enableI18n: boolean;
 };
 
 // ===== Shared Logic ===== //
 
 function computeNum({
+  _enableI18n,
+  _locale,
   children,
-  enableI18n,
-  locale,
   options = {},
   locales: localesProp = [],
 }: ResolvedNumProps): string | null {
-  const locales = getFormatLocales({ locale, enableI18n, localesProp });
+  const locales = getFormatLocales({
+    locale: _locale,
+    enableI18n: _enableI18n,
+    localesProp,
+  });
   const gt = getReactI18nCache().getGTClass();
   if (children == null) return null;
   const parsedNumber =
@@ -42,11 +43,11 @@ function GtInternalNum({
   _enableI18n,
   _locale,
   ...props
-}: GtInternalNumProps): string | null {
+}: NumProps): string | null {
   return computeNum({
     ...props,
-    enableI18n: _enableI18n ?? useEnableI18n(),
-    locale: _locale ?? useLocale(),
+    _enableI18n: _enableI18n ?? useEnableI18n(),
+    _locale: _locale ?? useLocale(),
   });
 }
 

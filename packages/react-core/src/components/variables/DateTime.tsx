@@ -7,28 +7,29 @@ type DateTimeProps = {
   locales?: string[];
   options?: Intl.DateTimeFormatOptions;
   name?: string;
-};
-
-type GtInternalDateTimeProps = DateTimeProps & {
   _locale?: string;
   _enableI18n?: boolean;
 };
 
 type ResolvedDateTimeProps = DateTimeProps & {
-  locale: string;
-  enableI18n: boolean;
+  _locale: string;
+  _enableI18n: boolean;
 };
 
 // ===== Shared Logic ===== //
 
 function computeDateTime({
+  _enableI18n,
+  _locale,
   children,
-  enableI18n,
-  locale,
   options = {},
   locales: localesProp = [],
 }: ResolvedDateTimeProps): string | null {
-  const locales = getFormatLocales({ locale, enableI18n, localesProp });
+  const locales = getFormatLocales({
+    locale: _locale,
+    enableI18n: _enableI18n,
+    localesProp,
+  });
   // TODO: theres a world in which we don't need the i18n cache, if user passes their own params
   const gt = getReactI18nCache().getGTClass();
   if (children == null) return null;
@@ -43,11 +44,11 @@ function GtInternalDateTime({
   _enableI18n,
   _locale,
   ...props
-}: GtInternalDateTimeProps): string | null {
+}: DateTimeProps): string | null {
   return computeDateTime({
     ...props,
-    enableI18n: _enableI18n ?? useEnableI18n(),
-    locale: _locale ?? useLocale(),
+    _enableI18n: _enableI18n ?? useEnableI18n(),
+    _locale: _locale ?? useLocale(),
   });
 }
 
