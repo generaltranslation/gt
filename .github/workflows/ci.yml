@@ -10,6 +10,8 @@ on:
 
 env:
   CI: true
+  CARGO_HTTP_MULTIPLEXING: false
+  CARGO_NET_RETRY: 10
 permissions:
   contents: read
 
