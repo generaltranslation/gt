@@ -62,7 +62,7 @@ describe('renderVariable locale handling', () => {
     expect(element.props._enableI18n).toBe(true);
   });
 
-  it('renders automatic raw variables without a wrapper', () => {
+  it('uses the internal raw variable component for automatic variables', () => {
     const result = renderVariable({
       variableType: 'v',
       variableValue: 'Ada',
@@ -72,7 +72,26 @@ describe('renderVariable locale handling', () => {
       injectionType: 'automatic',
     });
 
-    expect(result).toBe('Ada');
+    expect(React.isValidElement(result)).toBe(true);
+    if (!React.isValidElement(result)) return;
+    expect((result.type as { _gtt?: string })._gtt).toBe(
+      'variable-variable-automatic'
+    );
+  });
+
+  it('uses the external raw variable component for manual variables', () => {
+    const result = renderVariable({
+      variableType: 'v',
+      variableValue: 'Ada',
+      variableOptions: {},
+      locales: ['fr', 'en'],
+      enableI18n: true,
+      injectionType: 'manual',
+    });
+
+    expect(React.isValidElement(result)).toBe(true);
+    if (!React.isValidElement(result)) return;
+    expect((result.type as { _gtt?: string })._gtt).toBe('variable-variable');
   });
 
   it('passes the default locale when rendering source variables', () => {

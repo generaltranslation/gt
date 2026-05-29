@@ -14,7 +14,10 @@ import {
   GtInternalRelativeTime,
   RelativeTime as GtExternalRelativeTime,
 } from '../../components/variables/RelativeTime';
-import { GtInternalVar } from '../../components/variables/Var';
+import {
+  GtInternalVar,
+  Var as GtExternalVar,
+} from '../../components/variables/Var';
 import type { RelativeTimeFormatOptions, RenderVariable } from '../types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { ReactNode } from 'react';
@@ -103,11 +106,8 @@ const renderVariable: RenderVariable = ({
     );
   }
   const renderedValue = variableValue as ReactNode;
-  return injectionType === 'automatic' ? (
-    renderedValue
-  ) : (
-    <GtInternalVar {...internalProps}>{renderedValue}</GtInternalVar>
-  );
+  const Var = injectionType === 'automatic' ? GtInternalVar : GtExternalVar;
+  return <Var {...internalProps}>{renderedValue}</Var>;
 };
 
 // ===== Exports ===== //
