@@ -3,14 +3,14 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { postProcessTranslations } from '../translate.js';
 import type { Settings } from '../../../types/index.js';
 import flattenJsonFiles from '../../../utils/flattenJsonFiles.js';
-import processOpenApi from '../../../utils/processOpenApi.js';
+import { postprocessMintlify } from '../../../formats/files/postprocess/mintlify.js';
 import { persistPostProcessHashes } from '../../../utils/persistPostprocessHashes.js';
 
 vi.mock('../../../utils/flattenJsonFiles.js', () => ({
   default: vi.fn(),
 }));
-vi.mock('../../../utils/processOpenApi.js', () => ({
-  default: vi.fn(),
+vi.mock('../../../formats/files/postprocess/mintlify.js', () => ({
+  postprocessMintlify: vi.fn(),
 }));
 vi.mock('../../../utils/localizeStaticUrls.js', () => ({
   default: vi.fn(),
@@ -76,7 +76,7 @@ describe('postProcessTranslations', () => {
       new Set(['locales/fr/messages.po', 'locales/fr/messages.json'])
     );
 
-    expect(processOpenApi).toHaveBeenCalledWith(
+    expect(postprocessMintlify).toHaveBeenCalledWith(
       expect.anything(),
       new Set(['locales/fr/messages.json'])
     );
