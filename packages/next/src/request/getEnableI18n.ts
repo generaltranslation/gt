@@ -1,8 +1,8 @@
-import { getReadonlyConditionStoreWithFallback } from 'gt-react/context';
 import { use } from '../utils/use';
 
 export async function getEnableI18n(): Promise<boolean> {
-  return getReadonlyConditionStoreWithFallback().getEnableI18n();
+  // TODO: read this from a request condition store once gt-next sets one up.
+  return true;
 }
 
 export function useEnableI18n(): boolean {

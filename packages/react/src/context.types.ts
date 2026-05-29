@@ -56,7 +56,6 @@ export {
   mFallback,
   gtFallback,
   getTranslationsSnapshot,
-  getReadonlyConditionStoreWithFallback,
   t,
   // ===== Setup ===== //
   internalInitializeGTSSR as initializeGT,
