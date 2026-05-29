@@ -81,7 +81,7 @@ describe('localizeStaticUrls', () => {
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: { mdx: ['file1', 'file2'] },
           transformPaths: {},
           transformFormats: {},
@@ -127,7 +127,7 @@ describe('localizeStaticUrls', () => {
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -158,7 +158,7 @@ describe('localizeStaticUrls', () => {
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -191,7 +191,7 @@ describe('localizeStaticUrls', () => {
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -223,7 +223,7 @@ describe('localizeStaticUrls', () => {
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -257,7 +257,7 @@ describe('localizeStaticUrls', () => {
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -290,7 +290,7 @@ describe('localizeStaticUrls', () => {
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -323,7 +323,7 @@ describe('localizeStaticUrls', () => {
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -359,7 +359,7 @@ describe('localizeStaticUrls', () => {
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -390,7 +390,7 @@ describe('localizeStaticUrls', () => {
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -422,7 +422,7 @@ describe('localizeStaticUrls', () => {
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -455,7 +455,7 @@ describe('localizeStaticUrls', () => {
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -487,7 +487,7 @@ describe('localizeStaticUrls', () => {
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -519,7 +519,7 @@ describe('localizeStaticUrls', () => {
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -566,7 +566,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -600,7 +600,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -633,7 +633,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -666,7 +666,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -699,7 +699,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -733,7 +733,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -766,7 +766,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -799,7 +799,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -832,7 +832,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -877,7 +877,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -911,7 +911,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -943,7 +943,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -985,7 +985,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1021,7 +1021,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1052,7 +1052,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1085,7 +1085,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1117,7 +1117,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1151,7 +1151,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1183,7 +1183,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1223,7 +1223,7 @@ Some content without any matching links.
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -1285,7 +1285,7 @@ Some content without any matching links.
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -1316,7 +1316,7 @@ Some content without any matching links.
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -1353,7 +1353,7 @@ Some content without any matching links.
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1392,7 +1392,7 @@ Some content without any matching links.
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1447,7 +1447,7 @@ Some content without any matching links.
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1482,7 +1482,7 @@ Some content without any matching links.
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1549,7 +1549,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1586,7 +1586,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1622,7 +1622,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1658,7 +1658,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1707,7 +1707,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1743,7 +1743,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1784,7 +1784,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {
               mdx: ['/path/en/test.mdx'], // Source file exists for default locale
             },
@@ -1820,7 +1820,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {
               mdx: ['/path/en/test.mdx'],
             },
@@ -1858,7 +1858,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {
               mdx: ['/path/en/test.mdx'],
             },
@@ -1895,7 +1895,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {
               mdx: ['/path/en/test.mdx'],
             },
@@ -1933,7 +1933,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1965,7 +1965,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -1997,7 +1997,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -2031,7 +2031,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -2062,7 +2062,7 @@ import TestSnippet from "/snippets/en/test-snippet.mdx";
 
         const settings = {
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
@@ -2119,7 +2119,7 @@ description: "Bienvenido al nuevo hogar de tu documentación"
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -2153,7 +2153,7 @@ description: "Bienvenido al nuevo hogar de tu documentación"
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -2185,7 +2185,7 @@ description: "Bienvenido al nuevo hogar de tu documentación"
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -2221,7 +2221,7 @@ description: "Bienvenido al nuevo hogar de tu documentación"
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -2255,7 +2255,7 @@ description: "Bienvenido al nuevo hogar de tu documentación"
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -2289,7 +2289,7 @@ description: "Bienvenido al nuevo hogar de tu documentación"
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -2321,7 +2321,7 @@ description: "Bienvenido al nuevo hogar de tu documentación"
 
     const settings = {
       files: {
-        placeholderPaths: {},
+        placeholderPaths: { docs: '/docs' },
         resolvedPaths: {
           mdx: ['default.mdx'],
         },
@@ -2369,7 +2369,7 @@ describe('baseDomain', () => {
 
     const settings = {
       files: {
-        placeholderPaths: {},
+        placeholderPaths: { docs: '/docs' },
         resolvedPaths: {
           mdx: ['default.mdx'],
         },
@@ -2411,7 +2411,7 @@ describe('baseDomain', () => {
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -2443,7 +2443,7 @@ describe('baseDomain', () => {
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -2477,7 +2477,7 @@ describe('baseDomain', () => {
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -2520,7 +2520,7 @@ describe('baseDomain', () => {
 
       const settings = {
         files: {
-          placeholderPaths: {},
+          placeholderPaths: { docs: '/docs' },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -2802,7 +2802,7 @@ describe('transformUrlPath', () => {
       await localizeStaticUrls(
         createSettings({
           files: {
-            placeholderPaths: {},
+            placeholderPaths: { docs: '/docs' },
             resolvedPaths: {},
             transformPaths: {},
           },
