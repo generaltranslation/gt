@@ -174,6 +174,8 @@ function wrapLoaderWithLocalStorage(
  * Determines if dev hot reload is enabled (any flag)
  * @param config - The configuration
  * @returns True if dev hot reload is enabled, false otherwise
+ *
+ * @deprecated move this to i18nConfig
  */
 function isDevHotReloadEnabled(config: BrowserI18nCacheParams) {
   // TODO: this only works when you've defined a custom loadTranslations function

@@ -1,5 +1,5 @@
 import { useMemo, useSyncExternalStore } from 'react';
-import type { Translation } from 'gt-i18n/types';
+import type { Dictionary, Translation } from 'gt-i18n/types';
 import type {
   TranslateLookup,
   TranslateManySnapshot,
@@ -8,10 +8,12 @@ import type {
   DictionaryEntrySnapshot,
   DictionaryObjectSnapshot,
 } from '../i18n-store/storeTypes';
-import { getI18nStore } from '../i18n-store/singleton-operations';
 import type { RuntimeTranslationScope } from '../i18n-store/RuntimeTranslationScope';
 import type { RuntimeDictionaryScope } from '../i18n-store/RuntimeDictionaryScope';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import { useGTContext } from '../context/context';
+import { hashMessage } from 'gt-i18n/internal';
+import { Hash, Locale } from 'gt-i18n/internal/types';
 
 /**
  * @internal
@@ -19,16 +21,16 @@ import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
-  const store = getI18nStore();
+  const { i18nStore, translationsSnapshot } = useGTContext();
   const translation = useSyncExternalStore(
-    (listener) => store.subscribeToTranslate(lookup, listener),
-    () => store.getTranslateSnapshot(lookup),
-    () => store.getTranslateSnapshot(lookup)
+    (listener) => i18nStore.subscribeToTranslate(lookup, listener),
+    () => i18nStore.getTranslateSnapshot(lookup),
+    () => i18nStore.getTranslateSnapshot(lookup)
   );
   if (translation == null && getReactI18nCache().isDevHotReloadEnabled()) {
-    store.translate(lookup);
+    i18nStore.translate(lookup);
   }
-  return translation;
+  return lookupTranslation(translationsSnapshot, lookup) ?? translation;
 }
 
 /**
@@ -37,19 +39,25 @@ export function useTranslate<T extends Translation>(
 export function useTranslateMany<T extends Translation>(
   lookups: readonly TranslateLookup<T>[]
 ): TranslateManySnapshot<T> {
-  const store = getI18nStore();
-  const translations = useSyncExternalStore(
-    (listener) => store.subscribeToTranslateMany(lookups, listener),
-    () => store.getTranslateManySnapshot(lookups),
-    () => store.getTranslateManySnapshot(lookups)
+  const { i18nStore, translationsSnapshot } = useGTContext();
+  const translation = useSyncExternalStore(
+    (listener) => i18nStore.subscribeToTranslateMany(lookups, listener),
+    () => i18nStore.getTranslateManySnapshot(lookups),
+    () => i18nStore.getTranslateManySnapshot(lookups)
   );
+
   const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
-  translations.forEach((translation, index) => {
-    if (translation == null && devHotReloadEnabled) {
-      store.translate(lookups[index]);
-    }
-  });
-  return translations;
+  if (devHotReloadEnabled) {
+    translation.forEach((translation, index) => {
+      if (translation == null) {
+        i18nStore.translate(lookups[index]);
+      }
+    });
+  }
+  return lookups.map(
+    (lookup, index) =>
+      lookupTranslation(translationsSnapshot, lookup) ?? translation[index]
+  );
 }
 
 /**
@@ -58,16 +66,16 @@ export function useTranslateMany<T extends Translation>(
 export function useDictionaryEntry(
   lookup: DictionaryLookup
 ): DictionaryEntrySnapshot {
-  const store = getI18nStore();
+  const { i18nStore, dictionariesSnapshot } = useGTContext();
   const dictionaryEntry = useSyncExternalStore(
-    (listener) => store.subscribeToDictionaryEntry(lookup, listener),
-    () => store.getDictionaryEntrySnapshot(lookup),
-    () => store.getDictionaryEntrySnapshot(lookup)
+    (listener) => i18nStore.subscribeToDictionaryEntry(lookup, listener),
+    () => i18nStore.getDictionaryEntrySnapshot(lookup),
+    () => i18nStore.getDictionaryEntrySnapshot(lookup)
   );
   if (dictionaryEntry == null && getReactI18nCache().isDevHotReloadEnabled()) {
-    store.translateDictionaryEntry(lookup);
+    i18nStore.translateDictionaryEntry(lookup);
   }
-  return dictionaryEntry;
+  return lookupDictionaryEntry(dictionariesSnapshot, lookup) ?? dictionaryEntry;
 }
 
 /**
@@ -76,27 +84,32 @@ export function useDictionaryEntry(
 export function useDictionaryObject(
   lookup: DictionaryLookup
 ): DictionaryObjectSnapshot {
-  const store = getI18nStore();
+  const { i18nStore, dictionariesSnapshot } = useGTContext();
   const dictionaryObject = useSyncExternalStore(
-    (listener) => store.subscribeToDictionaryObject(lookup, listener),
-    () => store.getDictionaryObjectSnapshot(lookup),
-    () => store.getDictionaryObjectSnapshot(lookup)
+    (listener) => i18nStore.subscribeToDictionaryObject(lookup, listener),
+    () => i18nStore.getDictionaryObjectSnapshot(lookup),
+    () => i18nStore.getDictionaryObjectSnapshot(lookup)
   );
   if (dictionaryObject == null && getReactI18nCache().isDevHotReloadEnabled()) {
-    store.translateDictionaryObject(lookup);
+    i18nStore.translateDictionaryObject(lookup);
   }
-  return dictionaryObject;
+  return (
+    lookupDictionaryObject(dictionariesSnapshot, lookup) ?? dictionaryObject
+  );
 }
 
 /**
  * Used for dev translation tracking
+ *
+ * This is used for hot reload and thus does not need
+ * to access the snapshots
  */
 export function useRuntimeTranslationScope(): RuntimeTranslationScope {
-  const store = getI18nStore();
+  const { i18nStore } = useGTContext();
 
   const scope = useMemo(() => {
-    return store.createRuntimeTranslationScope();
-  }, [store]);
+    return i18nStore.createRuntimeTranslationScope();
+  }, [i18nStore]);
 
   useSyncExternalStore(scope.subscribe, scope.getSnapshot, scope.getSnapshot);
 
@@ -105,15 +118,43 @@ export function useRuntimeTranslationScope(): RuntimeTranslationScope {
 
 /**
  * Used for dev dictionary tracking
+ *
+ * This is used for hot reload and thus does not need
+ * to access the snapshots
  */
 export function useRuntimeDictionaryScope(): RuntimeDictionaryScope {
-  const store = getI18nStore();
+  const { i18nStore } = useGTContext();
 
   const scope = useMemo(() => {
-    return store.createRuntimeDictionaryScope();
-  }, [store]);
+    return i18nStore.createRuntimeDictionaryScope();
+  }, [i18nStore]);
 
   useSyncExternalStore(scope.subscribe, scope.getSnapshot, scope.getSnapshot);
 
   return scope;
+}
+
+// ===== Utilities ===== //
+
+function lookupTranslation<T extends Translation>(
+  translationsSnapshot: Record<Locale, Record<Hash, Translation>>,
+  lookup: TranslateLookup<T>
+): TranslateSnapshot<T> {
+  const hash =
+    lookup.options.$_hash ?? hashMessage(lookup.message, lookup.options);
+  return translationsSnapshot?.[lookup.locale]?.[hash] as TranslateSnapshot<T>;
+}
+
+function lookupDictionaryEntry(
+  dictionariesSnapshot: Record<Locale, Dictionary>,
+  lookup: DictionaryLookup
+): DictionaryEntrySnapshot {
+  throw new Error('Not implemented');
+}
+
+function lookupDictionaryObject(
+  dictionariesSnapshot: Record<Locale, Dictionary>,
+  lookup: DictionaryLookup
+): DictionaryObjectSnapshot {
+  throw new Error('Not implemented');
 }
