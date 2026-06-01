@@ -1,10 +1,7 @@
 import { ReadonlyConditionStore } from 'gt-i18n/internal';
-import {
-  isReadonlyConditionStoreInitialized,
-  setReadonlyConditionStore,
-} from '../condition-store/singleton-operations';
 import type { SharedGTProviderProps } from './SharedGTProviderProps';
 import { InternalGTProvider } from '@generaltranslation/react-core/context';
+import { useMemo } from 'react';
 
 /**
  * For the server side GTProvider, we don't need to synchronize translations
@@ -14,9 +11,8 @@ import { InternalGTProvider } from '@generaltranslation/react-core/context';
  */
 export function ServerGTProvider(props: SharedGTProviderProps) {
   // The condition store may already be created at the module level
-  if (!isReadonlyConditionStoreInitialized()) {
-    const conditionStore = new ReadonlyConditionStore(props);
-    setReadonlyConditionStore(conditionStore);
-  }
-  return <InternalGTProvider {...props} />;
+  const conditionStore = useMemo(() => {
+    return new ReadonlyConditionStore(props);
+  }, [props]);
+  return <InternalGTProvider {...props} conditionStore={conditionStore} />;
 }

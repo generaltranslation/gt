@@ -20,29 +20,29 @@ import {
   dictionaryObjectEventMatchesLookup,
 } from './utils/dictionary-events';
 import { subscribeToSet } from './utils/subscriptions';
-import { Hash, Locale, WritableConditionStoreInterface } from 'gt-i18n/internal/types';
-import { ReactI18nCache, ReactI18nCacheParams } from '../i18n-cache/ReactI18nCache';
+import { Hash, Locale } from 'gt-i18n/internal/types';
+import {
+  ReactI18nCache,
+  ReactI18nCacheParams,
+} from '../i18n-cache/ReactI18nCache';
 
 type TranslateStoreListener = (lookup: TranslateLookup) => void;
 type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
 export type I18nStoreParams = {
   i18nCacheParams: ReactI18nCacheParams;
-  conditionStore: WritableConditionStoreInterface;
 };
 
 /**
  * I18nStore gives us the ability to perform client-side updates to translations.
  * Primarily useful for dev hot reload.
- * 
+ *
  * Not relevant for initial hydration.
  */
 export class I18nStore {
   // ----- State ----- //
 
   private i18nCache: ReactI18nCache;
-  private conditionStore: WritableConditionStoreInterface;
-
 
   // ----- Listener Sets ----- //
 
@@ -57,22 +57,21 @@ export class I18nStore {
   /**
    * I18nCache must be already initialized
    */
-  constructor({
-    i18nCacheParams,
-    conditionStore,
-  }: I18nStoreParams) {
-    this.conditionStore = conditionStore;
+  constructor({ i18nCacheParams }: I18nStoreParams) {
     this.i18nCache = new ReactI18nCache(i18nCacheParams);
   }
 
   // ========== Translation Updates ========== //
 
-  updateTranslations = (translations: Record<Locale, Record<Hash, Translation>>): void => {
+  updateTranslations = (
+    translations: Record<Locale, Record<Hash, Translation>>
+  ): void => {
     this.i18nCache.updateTranslations(translations);
-  }
+  };
+
   updateDictionaries = (dictionaries: Record<Locale, Dictionary>): void => {
     this.i18nCache.updateDictionaries(dictionaries);
-  }
+  };
 
   // ========== runtime translation ========== //
 
@@ -128,7 +127,7 @@ export class I18nStore {
       }
     };
     return subscribeToSet(this.translateListeners, wrappedListener);
-  }
+  };
 
   subscribeToTranslateMany = <T extends Translation>(
     lookups: readonly TranslateLookup<T>[],
@@ -140,7 +139,7 @@ export class I18nStore {
     return () => {
       unsubscribes.forEach((unsubscribe) => unsubscribe());
     };
-  }
+  };
 
   subscribeToDictionaryEntry = (
     lookup: DictionaryLookup,
@@ -153,7 +152,7 @@ export class I18nStore {
       }
     };
     return subscribeToSet(this.dictionaryEntryListeners, wrappedListener);
-  }
+  };
 
   subscribeToDictionaryObject = (
     lookup: DictionaryLookup,
@@ -166,7 +165,7 @@ export class I18nStore {
       }
     };
     return subscribeToSet(this.dictionaryObjectListeners, wrappedListener);
-  }
+  };
 
   // ----- Snapshots ----- //
 

@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import {
   extractVariables,
-  getI18nConfig,
   renderDictionaryEntry,
   renderDictionaryObject,
   resolveDictionaryLookupOptions,
@@ -11,20 +10,21 @@ import {
   useRuntimeDictionaryScope,
 } from './external-store';
 import { useLocale } from './condition-store';
-import { getShouldTranslate } from './utils';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { useGT } from './useGT';
 import type {
   DictionaryObjectTranslation,
   DictionaryTranslationOptions,
 } from 'gt-i18n/types';
+import { useDefaultLocale } from './i18n-config';
+import { useShouldTranslate } from './utils';
 
 // ===== Hook ===== //
 
 export function useTranslations(id?: string): UseTranslationsFunction {
   const locale = useLocale();
-  const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate = getShouldTranslate();
+  const defaultLocale = useDefaultLocale();
+  const shouldTranslate = useShouldTranslate();
   const scope = useRuntimeDictionaryScope();
   const gt = useGT();
   const rootId = id ?? '';

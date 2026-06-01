@@ -1,17 +1,14 @@
 import { useCallback, useMemo } from 'react';
-import {
-  createLookupOptions,
-  getI18nConfig,
-  interpolateMessage,
-} from 'gt-i18n/internal';
+import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
 import type { InlineTranslationOptionsFields } from 'gt-i18n/internal/types';
 import { useRuntimeTranslationScope, useTranslateMany } from './external-store';
 import { useLocale } from './condition-store';
-import { getShouldTranslate } from './utils';
+import { useShouldTranslate } from './utils';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import type { TranslateLookup } from '../i18n-store/storeTypes';
 import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
+import { useDefaultLocale } from './i18n-config';
 
 const EMPTY_TRANSLATE_LOOKUPS: TranslateLookup<string>[] = [];
 
@@ -23,8 +20,8 @@ type Message = InlineTranslationOptionsFields & {
 
 export function useGT(_messages?: Message[]): GTFunctionType {
   const locale = useLocale();
-  const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate = getShouldTranslate();
+  const defaultLocale = useDefaultLocale();
+  const shouldTranslate = useShouldTranslate();
   const scope = useRuntimeTranslationScope();
   const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
 

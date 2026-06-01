@@ -12,7 +12,7 @@ import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt
 import type { JsxChildren } from 'generaltranslation/types';
 import type { TaggedChildren } from '../../utils/types';
 import type { ReactNode } from 'react';
-import { getShouldTranslate } from '../../hooks/utils';
+import { useShouldTranslate } from '../../hooks/utils';
 
 // ===== Component ===== //
 
@@ -109,7 +109,7 @@ function usePrepSourceRender({
   const locale = useLocale();
   const enableI18n = useEnableI18n();
   const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate = getShouldTranslate();
+  const shouldTranslate = useShouldTranslate();
   const taggedSourceChildren = useMemo(
     () => addGTIdentifier(removeInjectedT(sourceChildren)),
     [sourceChildren]

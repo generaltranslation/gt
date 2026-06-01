@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { I18nStore, type I18nStoreParams } from '../i18n-store/I18nStore';
 import type { Dictionary, Translation } from 'gt-i18n/types';
-import type { Locale, Hash, WritableConditionStoreInterface } from 'gt-i18n/internal/types';
+import type {
+  Locale,
+  Hash,
+  WritableConditionStoreInterface,
+} from 'gt-i18n/internal/types';
 import { GTContext } from './context';
 
 export type InternalGTProviderProps = I18nStoreParams & {
   children?: ReactNode;
   // For streaming translations to server
   translations: Record<Locale, Record<Hash, Translation>>;
-  dictionaries: Record<Locale, Dictionary>;
+  dictionaries?: Record<Locale, Dictionary>;
   // Declared upstream dependent on environment
   conditionStore: WritableConditionStoreInterface;
 };
@@ -27,29 +31,30 @@ export function InternalGTProvider({
   children,
   translations,
   dictionaries,
+  conditionStore,
   ...config
 }: InternalGTProviderProps) {
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {
     i18nStoreRef.current = new I18nStore(config);
   }
-  
+
   // Update cache with data from server, do not emit events
   useEffect(() => {
     if (i18nStoreRef.current == null) return;
     i18nStoreRef.current.updateTranslations(translations);
-    i18nStoreRef.current.updateDictionaries(dictionaries);
+    i18nStoreRef.current.updateDictionaries(dictionaries ?? {});
   }, [translations, dictionaries]);
 
-  const value = useMemo(() => ({
-    translationsSnapshot: translations,
-    dictionariesSnapshot: dictionaries,
-    i18nStore: i18nStoreRef.current!,
-  }), [translations, dictionaries, i18nStoreRef.current]);
-
-  return (
-    <GTContext.Provider value={value}>
-      {children}
-    </GTContext.Provider>
+  const value = useMemo(
+    () => ({
+      translationsSnapshot: translations,
+      dictionariesSnapshot: dictionaries ?? {},
+      i18nStore: i18nStoreRef.current!,
+      conditionStore,
+    }),
+    [translations, dictionaries, i18nStoreRef.current, conditionStore]
   );
+
+  return <GTContext.Provider value={value}>{children}</GTContext.Provider>;
 }

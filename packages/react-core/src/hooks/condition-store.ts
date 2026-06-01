@@ -1,4 +1,4 @@
-import { getReadonlyConditionStoreWithFallback } from '../condition-store/singleton-operations';
+import { useGTContext } from '../context/context';
 
 /**
  * NOTE: useSetLocale() and useSetEnableI18n() are not implemented in @generaltranslation/react-core
@@ -9,12 +9,14 @@ import { getReadonlyConditionStoreWithFallback } from '../condition-store/single
  * Returns the current locale.
  */
 export function useLocale(): string {
-  return getReadonlyConditionStoreWithFallback().getLocale();
+  const { conditionStore } = useGTContext();
+  return conditionStore.getLocale();
 }
 
 /**
  * Returns the current enableI18n flag.
  */
 export function useEnableI18n(): boolean {
-  return getReadonlyConditionStoreWithFallback().getEnableI18n();
+  const { conditionStore } = useGTContext();
+  return conditionStore.getEnableI18n();
 }

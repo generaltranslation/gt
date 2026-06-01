@@ -1,6 +1,15 @@
 import { InternalGTProvider } from '@generaltranslation/react-core/context';
 import type { SharedGTProviderProps } from './SharedGTProviderProps';
-import { createOrUpdateBrowserConditionStore } from '../condition-store/createBrowserConditionStore';
+import {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+} from '../cookie-names';
+import { BrowserConditionStore } from '../condition-store/BrowserConditionStore';
+import { useMemo } from 'react';
+import {
+  determineEnableI18n,
+  determineLocale,
+} from '../condition-store/createBrowserConditionStore';
 
 /**
  * Client side GTProvider, this is different from server side
@@ -8,10 +17,17 @@ import { createOrUpdateBrowserConditionStore } from '../condition-store/createBr
  * server-side translations
  */
 export function BrowserGTProvider(props: SharedGTProviderProps) {
-  // TODO: if a specific translation entry changes, but not the locale, this does not trigger a re-render
-  // TODO: optimize by skipping updateTranslations() if client is responsible for reloading translations
-  // (eg reloadLocale === undefined), see getI18nStore().updateLocale() in InternalGTProvider
-  createOrUpdateBrowserConditionStore(props);
+  const conditionStore = useMemo(() => {
+    const locale = determineLocale(props);
+    const enableI18n = determineEnableI18n(props);
+    return new BrowserConditionStore({
+      ...props,
+      localeCookieName: defaultLocaleCookieName,
+      enableI18nCookieName: defaultEnableI18nCookieName,
+      locale,
+      enableI18n,
+    });
+  }, [props]);
 
-  return <InternalGTProvider {...props} />;
+  return <InternalGTProvider {...props} conditionStore={conditionStore} />;
 }
