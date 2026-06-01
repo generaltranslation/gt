@@ -21,3 +21,13 @@ export {
 
 // Functions
 export { getI18nCache, setI18nCache } from './singleton-operations';
+export {
+  lookupDictionaryObjectRecord,
+  lookupDictionaryRecord,
+  lookupTranslationRecord,
+  resolveCacheLocale,
+  resolveDictionaryCacheLocale,
+  resolveLookupOptions,
+  resolveTranslationLookupParams,
+} from './lookup-resolvers';
+export type { TranslationLookupParams } from './lookup-resolvers';
