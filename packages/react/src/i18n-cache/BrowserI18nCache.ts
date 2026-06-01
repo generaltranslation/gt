@@ -33,7 +33,7 @@ export class BrowserI18nCache extends I18nCache<Translation> {
     // Must be initialized before super()
     const { htmlTagOptions, ...managerConfig } = config;
     const localStorageCaches: Record<string, LocalStorageTranslationCache> = {};
-    const devHotReloadEnabled = isDevHotReloadEnabled(config);
+    const devHotReloadEnabled = shouldUseBrowserDevHotReload(config);
     const loadTranslations = devHotReloadEnabled
       ? wrapLoaderWithLocalStorage(
           config.loadTranslations!,
@@ -175,14 +175,13 @@ function wrapLoaderWithLocalStorage(
  * @param config - The configuration
  * @returns True if dev hot reload is enabled, false otherwise
  */
-function isDevHotReloadEnabled(config: BrowserI18nCacheParams) {
+function shouldUseBrowserDevHotReload(config: BrowserI18nCacheParams) {
   // TODO: this only works when you've defined a custom loadTranslations function
   // meaning CDN users will not have access to this feature
   return !!(
     import.meta.env?.DEV &&
     config.loadTranslations &&
-    config.projectId &&
-    config.devApiKey
+    getI18nConfig().isDevHotReloadEnabled()
   );
 }
 
