@@ -7,9 +7,7 @@ import {
 import { Translation } from 'gt-i18n/types';
 import { createContext, useContext } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
-import { getI18nStore } from '../i18n-store/singleton-operations';
 import { getRenderStrategy } from '../setup/globals';
-import { getReadonlyConditionStore } from '../condition-store/singleton-operations';
 
 export type GTContextType = {
   /**
@@ -33,22 +31,10 @@ export type GTContextType = {
 
 export const GTContext = createContext<GTContextType | undefined>(undefined);
 
-export function useGTContext(): GTContextType {
+export function useGTContext(): GTContextType | undefined {
   const context = useContext(GTContext);
-  if (!context) {
-    if (getRenderStrategy() === 'SPA') {
-      return {
-        translationsSnapshot: {},
-        dictionariesSnapshot: {},
-        i18nStore: getI18nStore(),
-        conditionStore: getReadonlyConditionStore(),
-      };
-    } else {
-      // TODO: softer error behavior
-      // This can also happen in monorepo if you have two different versions of @generaltranslation/react-core
-      // make sure to use the same version of @generaltranslation/react-core in all packages
-      throw new Error('useGTContext must be used within a GTProvider');
-    }
+  if (context || getRenderStrategy() === 'SPA') {
+    return context;
   }
-  return context;
+  throw new Error('GTContext must be read within a GTProvider');
 }

@@ -1,11 +1,10 @@
-import { useContext, useMemo } from 'react';
-import { GTContext, type GTContextType } from '../../context/context';
-import { getRenderStrategy } from '../../setup/globals';
+import { useMemo } from 'react';
+import { useGTContext } from '../../context/context';
 import type { LookupAdapter } from './LookupAdapter';
 import { createSPALookupAdapter, createSRALookupAdapter } from './factories';
 
 export function useLookupAdapter(): LookupAdapter {
-  const context = useOptionalGTContext();
+  const context = useGTContext();
 
   return useMemo(() => {
     if (context) {
@@ -13,12 +12,4 @@ export function useLookupAdapter(): LookupAdapter {
     }
     return createSPALookupAdapter();
   }, [context]);
-}
-
-function useOptionalGTContext(): GTContextType | undefined {
-  const context = useContext(GTContext);
-  if (context || getRenderStrategy() === 'SPA') {
-    return context;
-  }
-  throw new Error('useTranslate must be used within a GTProvider for SRA');
 }
