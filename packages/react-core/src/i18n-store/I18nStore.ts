@@ -228,10 +228,10 @@ export class I18nStore {
   // ----- scopes ----- //
 
   createRuntimeTranslationScope = (): RuntimeTranslationScope => {
-    return new RuntimeTranslationScope();
+    return new RuntimeTranslationScope(this);
   };
 
   createRuntimeDictionaryScope = (): RuntimeDictionaryScope => {
-    return new RuntimeDictionaryScope();
+    return new RuntimeDictionaryScope(this);
   };
 }

@@ -1,9 +1,13 @@
-import { hashMessage } from 'gt-i18n/internal';
-import type { Hash, Locale } from 'gt-i18n/internal/types';
 import type { Translation } from 'gt-i18n/types';
+import type { RuntimeDictionaryScope } from '../RuntimeDictionaryScope';
+import type { RuntimeTranslationScope } from '../RuntimeTranslationScope';
 import type {
+  DictionaryEntrySnapshot,
+  DictionaryLookup,
+  DictionaryObjectSnapshot,
   StoreListener,
   TranslateLookup,
+  TranslateManySnapshot,
   TranslateSnapshot,
   Unsubscribe,
 } from '../storeTypes';
@@ -22,31 +26,86 @@ export type LookupAdapter = {
     listener: StoreListener
   ) => Unsubscribe;
 
-  getExternalTranslateSnapshot: <T extends Translation>(
+  getStoreTranslation: <T extends Translation>(
     lookup: TranslateLookup<T>
   ) => TranslateSnapshot<T>;
 
-  getServerTranslateSnapshot: <T extends Translation>(
+  getServerTranslation: <T extends Translation>(
     lookup: TranslateLookup<T>
   ) => TranslateSnapshot<T>;
 
-  resolveTranslateSnapshot: <T extends Translation>(
+  resolveTranslation: <T extends Translation>(
     lookup: TranslateLookup<T>,
-    externalSnapshot: TranslateSnapshot<T>
+    storeTranslation: TranslateSnapshot<T>
   ) => TranslateSnapshot<T>;
 
-  handleMissingTranslateSnapshot?: <T extends Translation>(
+  handleMissingTranslation?: <T extends Translation>(
     lookup: TranslateLookup<T>
   ) => void;
-};
 
-export function lookupTranslationSnapshot<T extends Translation>(
-  translationsSnapshot:
-    | Record<Locale, Record<Hash, Translation>>
-    | undefined,
-  lookup: TranslateLookup<T>
-): TranslateSnapshot<T> {
-  const hash =
-    lookup.options.$_hash ?? hashMessage(lookup.message, lookup.options);
-  return translationsSnapshot?.[lookup.locale]?.[hash] as TranslateSnapshot<T>;
-}
+  subscribeToTranslateMany: <T extends Translation>(
+    lookups: readonly TranslateLookup<T>[],
+    listener: StoreListener
+  ) => Unsubscribe;
+
+  getStoreTranslations: <T extends Translation>(
+    lookups: readonly TranslateLookup<T>[]
+  ) => TranslateManySnapshot<T>;
+
+  getServerTranslations: <T extends Translation>(
+    lookups: readonly TranslateLookup<T>[]
+  ) => TranslateManySnapshot<T>;
+
+  resolveTranslations: <T extends Translation>(
+    lookups: readonly TranslateLookup<T>[],
+    storeTranslations: TranslateManySnapshot<T>
+  ) => TranslateManySnapshot<T>;
+
+  handleMissingTranslations?: <T extends Translation>(
+    lookups: readonly TranslateLookup<T>[],
+    translations: TranslateManySnapshot<T>
+  ) => void;
+
+  subscribeToDictionaryEntry: (
+    lookup: DictionaryLookup,
+    listener: StoreListener
+  ) => Unsubscribe;
+
+  getStoreDictionaryEntry: (
+    lookup: DictionaryLookup
+  ) => DictionaryEntrySnapshot;
+
+  getServerDictionaryEntry: (
+    lookup: DictionaryLookup
+  ) => DictionaryEntrySnapshot;
+
+  resolveDictionaryEntry: (
+    lookup: DictionaryLookup,
+    storeDictionaryEntry: DictionaryEntrySnapshot
+  ) => DictionaryEntrySnapshot;
+
+  handleMissingDictionaryEntry?: (lookup: DictionaryLookup) => void;
+
+  subscribeToDictionaryObject: (
+    lookup: DictionaryLookup,
+    listener: StoreListener
+  ) => Unsubscribe;
+
+  getStoreDictionaryObject: (
+    lookup: DictionaryLookup
+  ) => DictionaryObjectSnapshot;
+
+  getServerDictionaryObject: (
+    lookup: DictionaryLookup
+  ) => DictionaryObjectSnapshot;
+
+  resolveDictionaryObject: (
+    lookup: DictionaryLookup,
+    storeDictionaryObject: DictionaryObjectSnapshot
+  ) => DictionaryObjectSnapshot;
+
+  handleMissingDictionaryObject?: (lookup: DictionaryLookup) => void;
+
+  createRuntimeTranslationScope: () => RuntimeTranslationScope;
+  createRuntimeDictionaryScope: () => RuntimeDictionaryScope;
+};
