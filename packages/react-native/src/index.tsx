@@ -1,4 +1,5 @@
 import { GTProvider } from './provider/GTProvider';
+import { getLocaleFromNativeStore } from './utils/nativeStore';
 
 import {
   T,
@@ -61,6 +62,7 @@ export {
   useLocaleProperties,
   useLocaleDirection,
   useVersionId,
+  getLocaleFromNativeStore,
   type DictionaryTranslationOptions,
   type InlineTranslationOptions,
   type RuntimeTranslationOptions,
