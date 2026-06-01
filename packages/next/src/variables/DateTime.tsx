@@ -1,48 +1,13 @@
-import { getI18NConfig } from '../config-dir/getI18NConfig';
-import { useLocale } from '../request/getLocale';
-import React from 'react';
+import { DateTime as CoreDateTime } from 'gt-react/context';
+import { getRequestConditions } from '../request/getRequestConditions';
+import type { ReactNode } from 'react';
 
-/**
- * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.
- * It utilizes the current locale and optional format settings to display the date.
- *
- * @example
- * ```jsx
- * <DateTime>
- *    {new Date()}
- * </DateTime>
- * ```
- *
- * @param {Date | null | undefined} children - Optional content to render inside the component.
- * @param {string[]} [locales] - Optional locales to use for date formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
- * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
- * @returns {JSX.Element} The formatted date or time component.
- */
-export function DateTime({
-  children,
-  locales,
-  options = {},
-}: {
-  children: Date | null | undefined;
-  name?: string;
-  options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
-  locales?: string[];
-}): React.JSX.Element | null {
-  if (children == null) return null;
-  if (!locales) {
-    locales = [useLocale(), getI18NConfig().getDefaultLocale()];
-  }
+type DateTimeProps = Parameters<typeof CoreDateTime>[0];
 
-  const gt = getI18NConfig().getGTClass();
-
-  const result = gt
-    .formatDateTime(children, { locales, ...options })
-    .replace(/[\u200F\u202B\u202E]/g, '');
-  // Note: This component may cause hydration errors when the output differs
-  // between server and client (e.g., different timezones or locales).
-  // We cannot use suppressHydrationWarning because this is a purely logical
-  // component that returns a text fragment, not a DOM element.
-  return <>{result}</>;
+export async function DateTime(props: DateTimeProps): Promise<ReactNode> {
+  const conditions = await getRequestConditions();
+  return <CoreDateTime {...props} {...conditions} />;
 }
+
 /** @internal _gtt - The GT transformation for the component. */
 DateTime._gtt = 'variable-datetime';
