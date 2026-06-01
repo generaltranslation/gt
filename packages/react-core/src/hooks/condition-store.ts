@@ -1,4 +1,4 @@
-import { useGTContext } from '../context/context';
+import { useConditionAdapter } from '../condition-store/condition-adapter/useConditionAdapter';
 
 /**
  * NOTE: useSetLocale() and useSetEnableI18n() are not implemented in @generaltranslation/react-core
@@ -9,14 +9,12 @@ import { useGTContext } from '../context/context';
  * Returns the current locale.
  */
 export function useLocale(): string {
-  const { conditionStore } = useGTContext();
-  return conditionStore.getLocale();
+  return useConditionAdapter().getLocale();
 }
 
 /**
  * Returns the current enableI18n flag.
  */
 export function useEnableI18n(): boolean {
-  const { conditionStore } = useGTContext();
-  return conditionStore.getEnableI18n();
+  return useConditionAdapter().getEnableI18n();
 }

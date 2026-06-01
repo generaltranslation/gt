@@ -20,7 +20,7 @@ const EMPTY_TRANSLATIONS = Object.freeze([]);
 
 export function createSPALookupAdapter(): LookupAdapter {
   return {
-    mode: 'spa',
+    mode: 'SPA',
     subscribeToTranslate,
     getStoreTranslation: (lookup) => {
       return getI18nStore().getTranslateSnapshot(lookup);
@@ -90,7 +90,7 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
   const { dictionariesSnapshot, i18nStore, translationsSnapshot } = context;
 
   return {
-    mode: 'sra',
+    mode: 'server-render',
     subscribeToTranslate: (lookup, listener) => {
       if (!getReactI18nCache().isDevHotReloadEnabled()) {
         return noopSubscribe();

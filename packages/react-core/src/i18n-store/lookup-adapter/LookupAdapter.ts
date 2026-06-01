@@ -1,4 +1,5 @@
 import type { Translation } from 'gt-i18n/types';
+import type { RenderStrategy } from '../../setup/globals';
 import type { RuntimeDictionaryScope } from '../RuntimeDictionaryScope';
 import type { RuntimeTranslationScope } from '../RuntimeTranslationScope';
 import type {
@@ -20,7 +21,7 @@ import type {
  * provider snapshots and only falls back to the store for dev hot reload.
  */
 export type LookupAdapter = {
-  mode: 'spa' | 'sra';
+  mode: RenderStrategy;
 
   subscribeToTranslate: <T extends Translation>(
     lookup: TranslateLookup<T>,
