@@ -181,7 +181,7 @@ function interpolateTemplateLiteral(
  * We have to error or fallback in SSR.
  */
 function enforceSSRRules(messageOrStrings: string | TemplateStringsArray) {
-  const ssrEnabled = getRenderStrategy() === 'server-render';
+  const ssrEnabled = getRenderStrategy() === 'server-rendered';
   const moduleLevel = !isReadonlyConditionStoreInitialized();
   if (!ssrEnabled || !moduleLevel) return;
 
