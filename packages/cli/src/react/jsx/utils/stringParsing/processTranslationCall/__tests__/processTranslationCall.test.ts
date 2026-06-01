@@ -94,19 +94,6 @@ describe('processTranslationCall - array support', () => {
     expect(output.errors).toHaveLength(0);
   });
 
-  it('should extract cooked template literals without expressions', () => {
-    const output = runProcessTranslationCall(
-      't(`Line one.\\n\\nLine two\\tTabbed`, { $format: "STRING" })'
-    );
-
-    expect(output.updates).toHaveLength(1);
-    expect(output.updates[0]).toMatchObject({
-      dataFormat: 'STRING',
-      source: 'Line one.\n\nLine two\tTabbed',
-    });
-    expect(output.errors).toHaveLength(0);
-  });
-
   it('should handle mixed string literals and template literals', () => {
     const output = runProcessTranslationCall('t(["hello", `world`])');
 
@@ -220,6 +207,21 @@ describe('processTranslationCall - array support', () => {
     expect(output.updates).toHaveLength(1);
     expect(output.updates[0]).toMatchObject({ source: 'hello' });
     expect(output.errors.length).toBeGreaterThan(0);
+  });
+});
+
+describe('processTranslationCall - template literal support', () => {
+  it('should extract cooked template literals without expressions', () => {
+    const output = runProcessTranslationCall(
+      't(`Line one.\\n\\nLine two\\tTabbed`, { $format: "STRING" })'
+    );
+
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'STRING',
+      source: 'Line one.\n\nLine two\tTabbed',
+    });
+    expect(output.errors).toHaveLength(0);
   });
 });
 
