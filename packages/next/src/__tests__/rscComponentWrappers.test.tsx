@@ -31,8 +31,16 @@ describe('rsc component wrappers', () => {
 
   it.each([
     ['Branch', () => import('../branches/Branch'), mockComponents.Branch],
-    ['Currency', () => import('../variables/Currency'), mockComponents.Currency],
-    ['DateTime', () => import('../variables/DateTime'), mockComponents.DateTime],
+    [
+      'Currency',
+      () => import('../variables/Currency'),
+      mockComponents.Currency,
+    ],
+    [
+      'DateTime',
+      () => import('../variables/DateTime'),
+      mockComponents.DateTime,
+    ],
     ['Num', () => import('../variables/Num'), mockComponents.Num],
     ['Plural', () => import('../branches/Plural'), mockComponents.Plural],
     [
@@ -41,25 +49,24 @@ describe('rsc component wrappers', () => {
       mockComponents.RelativeTime,
     ],
     ['Var', () => import('../variables/Var'), mockComponents.Var],
-  ])('%s passes request conditions to gt-react/context', async (
-    componentName,
-    loadComponent,
-    coreComponent
-  ) => {
-    const module = await loadComponent();
-    const component = module[componentName];
+  ])(
+    '%s passes request conditions to gt-react/context',
+    async (componentName, loadComponent, coreComponent) => {
+      const module = await loadComponent();
+      const component = module[componentName];
 
-    const element = await component({ children: 'value' });
+      const element = await component({ children: 'value' });
 
-    expect(mockGetRequestConditions).toHaveBeenCalled();
-    expect(React.isValidElement(element)).toBe(true);
-    expect(element).toMatchObject({
-      type: coreComponent,
-      props: {
-        children: 'value',
-        _locale: 'fr',
-        _enableI18n: false,
-      },
-    });
-  });
+      expect(mockGetRequestConditions).toHaveBeenCalled();
+      expect(React.isValidElement(element)).toBe(true);
+      expect(element).toMatchObject({
+        type: coreComponent,
+        props: {
+          children: 'value',
+          _locale: 'fr',
+          _enableI18n: false,
+        },
+      });
+    }
+  );
 });
