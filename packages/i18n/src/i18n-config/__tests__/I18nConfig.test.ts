@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setupGTServicesEnabled } from '../../globals/getGTServicesEnabled';
 import { I18nConfig } from '../I18nConfig';
 
@@ -8,6 +8,10 @@ describe('I18nConfig', () => {
       cacheUrl: null,
       runtimeUrl: null,
     });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('defaults locales to the resolved default locale', () => {
@@ -95,5 +99,54 @@ describe('I18nConfig', () => {
         },
       })
     ).toBe('fr');
+  });
+
+  it('enables dev hot reload with dev credentials, a project id, and development environment', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+
+    const config = new I18nConfig({
+      devApiKey: 'dev-key',
+      projectId: 'project-id',
+    });
+
+    expect(config.isDevHotReloadEnabled()).toBe(true);
+  });
+
+  it.each([
+    {
+      name: 'missing dev API key',
+      environment: 'development',
+      config: {
+        projectId: 'project-id',
+      },
+    },
+    {
+      name: 'missing project id',
+      environment: 'development',
+      config: {
+        devApiKey: 'dev-key',
+      },
+    },
+    {
+      name: 'disabled runtime URL',
+      environment: 'development',
+      config: {
+        devApiKey: 'dev-key',
+        projectId: 'project-id',
+        runtimeUrl: null,
+      },
+    },
+    {
+      name: 'production environment',
+      environment: 'production',
+      config: {
+        devApiKey: 'dev-key',
+        projectId: 'project-id',
+      },
+    },
+  ])('disables dev hot reload for $name', ({ config, environment }) => {
+    vi.stubEnv('NODE_ENV', environment);
+
+    expect(new I18nConfig(config).isDevHotReloadEnabled()).toBe(false);
   });
 });

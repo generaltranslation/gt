@@ -28,7 +28,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
   const scope = useRuntimeDictionaryScope();
   const gt = useGT();
   const rootId = id ?? '';
-  const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
+  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
 
   useDictionaryObject({ locale: defaultLocale, id: rootId });
   useDictionaryObject({ locale, id: rootId });

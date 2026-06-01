@@ -4,19 +4,37 @@ import {
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import type { GTConfig } from '../config/types';
+import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { validateI18nConfigParams } from './validation';
 
-export type I18nConfigParams = {
-  defaultLocale?: string;
-  locales?: string[];
-  customMapping?: CustomMapping;
-};
+export type I18nConfigParams = Pick<
+  GTConfig,
+  | 'defaultLocale'
+  | 'locales'
+  | 'customMapping'
+  | 'projectId'
+  | 'devApiKey'
+  | 'runtimeUrl'
+>;
+
+type DevHotReloadConfig = Pick<
+  I18nConfigParams,
+  'projectId' | 'devApiKey' | 'runtimeUrl'
+>;
 
 export type LocaleCandidates = string | string[] | undefined;
 
 export class I18nConfig extends LocaleConfig {
+  private devHotReloadConfig: DevHotReloadConfig;
+
   constructor(params: I18nConfigParams = {}) {
     super(getLocaleConfigParams(params));
+    this.devHotReloadConfig = {
+      projectId: params.projectId,
+      devApiKey: params.devApiKey,
+      runtimeUrl: params.runtimeUrl,
+    };
   }
 
   getDefaultLocale(): string {
@@ -29,6 +47,10 @@ export class I18nConfig extends LocaleConfig {
 
   getCustomMapping(): CustomMapping {
     return this.customMapping || {};
+  }
+
+  getProjectId(): string | undefined {
+    return this.devHotReloadConfig.projectId;
   }
 
   determineLocale(
@@ -76,6 +98,19 @@ export class I18nConfig extends LocaleConfig {
     return (
       this.requiresTranslation(locale) &&
       this.isSameLanguage(this.getDefaultLocale(), locale)
+    );
+  }
+
+  /**
+   * Returns true when development hot reload runtime translation requests can run.
+   */
+  isDevHotReloadEnabled(): boolean {
+    return (
+      !!this.devHotReloadConfig.devApiKey &&
+      !!this.devHotReloadConfig.projectId &&
+      this.devHotReloadConfig.runtimeUrl !== null &&
+      this.devHotReloadConfig.runtimeUrl !== '' &&
+      getRuntimeEnvironment() === 'development'
     );
   }
 

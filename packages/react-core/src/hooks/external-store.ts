@@ -11,7 +11,7 @@ import type {
 import { getI18nStore } from '../i18n-store/singleton-operations';
 import type { RuntimeTranslationScope } from '../i18n-store/RuntimeTranslationScope';
 import type { RuntimeDictionaryScope } from '../i18n-store/RuntimeDictionaryScope';
-import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 /**
  * @internal
@@ -25,7 +25,7 @@ export function useTranslate<T extends Translation>(
     () => store.getTranslateSnapshot(lookup),
     () => store.getTranslateSnapshot(lookup)
   );
-  if (translation == null && getReactI18nCache().isDevHotReloadEnabled()) {
+  if (translation == null && getI18nConfig().isDevHotReloadEnabled()) {
     store.translate(lookup);
   }
   return translation;
@@ -43,7 +43,7 @@ export function useTranslateMany<T extends Translation>(
     () => store.getTranslateManySnapshot(lookups),
     () => store.getTranslateManySnapshot(lookups)
   );
-  const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
+  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
   translations.forEach((translation, index) => {
     if (translation == null && devHotReloadEnabled) {
       store.translate(lookups[index]);
@@ -64,7 +64,7 @@ export function useDictionaryEntry(
     () => store.getDictionaryEntrySnapshot(lookup),
     () => store.getDictionaryEntrySnapshot(lookup)
   );
-  if (dictionaryEntry == null && getReactI18nCache().isDevHotReloadEnabled()) {
+  if (dictionaryEntry == null && getI18nConfig().isDevHotReloadEnabled()) {
     store.translateDictionaryEntry(lookup);
   }
   return dictionaryEntry;
@@ -82,7 +82,7 @@ export function useDictionaryObject(
     () => store.getDictionaryObjectSnapshot(lookup),
     () => store.getDictionaryObjectSnapshot(lookup)
   );
-  if (dictionaryObject == null && getReactI18nCache().isDevHotReloadEnabled()) {
+  if (dictionaryObject == null && getI18nConfig().isDevHotReloadEnabled()) {
     store.translateDictionaryObject(lookup);
   }
   return dictionaryObject;
