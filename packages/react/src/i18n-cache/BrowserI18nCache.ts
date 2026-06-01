@@ -181,6 +181,7 @@ function shouldUseBrowserDevHotReload(config: BrowserI18nCacheParams) {
   return !!(
     import.meta.env?.DEV &&
     config.loadTranslations &&
+    config.projectId &&
     getI18nConfig().isDevHotReloadEnabled()
   );
 }
