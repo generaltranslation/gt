@@ -49,6 +49,10 @@ export class I18nConfig extends LocaleConfig {
     return this.customMapping || {};
   }
 
+  getProjectId(): string | undefined {
+    return this.devHotReloadConfig.projectId;
+  }
+
   determineLocale(
     locales: LocaleCandidates,
     approvedLocales: string[] = this.locales
@@ -104,7 +108,8 @@ export class I18nConfig extends LocaleConfig {
     return (
       !!this.devHotReloadConfig.devApiKey &&
       !!this.devHotReloadConfig.projectId &&
-      this.isRuntimeUrlEnabled() &&
+      this.devHotReloadConfig.runtimeUrl !== null &&
+      this.devHotReloadConfig.runtimeUrl !== '' &&
       getRuntimeEnvironment() === 'development'
     );
   }
@@ -114,13 +119,6 @@ export class I18nConfig extends LocaleConfig {
       return this;
     }
     return new LocaleConfig(getLocaleResolverConfigParams(config));
-  }
-
-  private isRuntimeUrlEnabled(): boolean {
-    return (
-      this.devHotReloadConfig.runtimeUrl !== null &&
-      this.devHotReloadConfig.runtimeUrl !== ''
-    );
   }
 
   private determineSupportedLocaleWithConfig(
