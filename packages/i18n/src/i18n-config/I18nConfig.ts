@@ -99,9 +99,6 @@ export class I18nConfig extends LocaleConfig {
 
   /**
    * Returns true when development hot reload runtime translation requests can run.
-   *
-   * In React runtimes, this reads the initialized config singleton and can
-   * technically become out of sync with React state when a user changes locale.
    */
   isDevHotReloadEnabled(): boolean {
     return (
