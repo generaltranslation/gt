@@ -1,7 +1,6 @@
 import { getI18nStore } from './singleton-operations';
 import type { DictionaryLookup, Unsubscribe } from './storeTypes';
-import { getDictionaryListenerKey } from 'gt-i18n/internal';
-import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
 
 /**
  * Tracks dictionary lookups discovered by useTranslations callbacks.
@@ -13,7 +12,7 @@ export class RuntimeDictionaryScope {
   private pendingObjects = new Map<string, Unsubscribe>();
 
   translateEntry(lookup: DictionaryLookup) {
-    if (!getReactI18nCache().isDevHotReloadEnabled()) return;
+    if (!getI18nConfig().isDevHotReloadEnabled()) return;
 
     const key = getDictionaryListenerKey(lookup);
     if (this.pendingEntries.has(key)) return;
@@ -27,7 +26,7 @@ export class RuntimeDictionaryScope {
   }
 
   translateObject(lookup: DictionaryLookup) {
-    if (!getReactI18nCache().isDevHotReloadEnabled()) return;
+    if (!getI18nConfig().isDevHotReloadEnabled()) return;
 
     const key = getDictionaryListenerKey(lookup);
     if (this.pendingObjects.has(key)) return;

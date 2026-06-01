@@ -86,57 +86,6 @@ describe('I18nCache', () => {
     expect(result).toBe(translatedString);
   });
 
-  it('enables dev hot reload with dev credentials, a project id, and development environment', () => {
-    vi.stubEnv('NODE_ENV', 'development');
-
-    const cache = createCache({
-      devApiKey: 'dev-key',
-      projectId: 'project-id',
-    });
-
-    expect(cache.isDevHotReloadEnabled()).toBe(true);
-  });
-
-  it.each([
-    {
-      name: 'missing dev API key',
-      environment: 'development',
-      config: {
-        projectId: 'project-id',
-      },
-    },
-    {
-      name: 'missing project id',
-      environment: 'development',
-      config: {
-        devApiKey: 'dev-key',
-      },
-    },
-    {
-      name: 'disabled runtime URL',
-      environment: 'development',
-      config: {
-        devApiKey: 'dev-key',
-        projectId: 'project-id',
-        runtimeUrl: null,
-      },
-    },
-    {
-      name: 'production environment',
-      environment: 'production',
-      config: {
-        devApiKey: 'dev-key',
-        projectId: 'project-id',
-      },
-    },
-  ])('disables dev hot reload for $name', ({ config, environment }) => {
-    vi.stubEnv('NODE_ENV', environment);
-
-    const cache = createCache(config);
-
-    expect(cache.isDevHotReloadEnabled()).toBe(false);
-  });
-
   // ===== NEW BEHAVIOR TESTS ===== //
 
   it('loadTranslations() returns Record<Hash, Translation>', async () => {

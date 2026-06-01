@@ -26,7 +26,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate = getShouldTranslate();
   const scope = useRuntimeTranslationScope();
-  const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
+  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
 
   // Compiler optimization: pre-fetch translations
   useSubscribeToExtractedMessages(
