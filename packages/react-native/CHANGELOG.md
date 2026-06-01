@@ -1,5 +1,11 @@
 # gt-react-native
 
+## 10.20.0
+
+### Minor Changes
+
+- [#1537](https://github.com/generaltranslation/gt/pull/1537) [`d547737`](https://github.com/generaltranslation/gt/commit/d5477375011924ac3770c9da07db7a07bdb177b1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add getLocaleFromNativeStore for reading the persisted locale imperatively.
+
 ## 10.19.19
 
 ### Patch Changes
