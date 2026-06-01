@@ -37,7 +37,10 @@ export type I18nStoreParams = {
  * I18nStore gives us the ability to perform client-side updates to translations.
  * Primarily useful for dev hot reload.
  *
- * Not relevant for initial hydration.
+ * This is the stateful primitive behind lookup subscriptions and runtime
+ * translation requests. It intentionally does not know whether lookups are
+ * being served from SPA singletons or SRA provider snapshots; that policy lives
+ * in LookupAdapter, not in this store.
  */
 export class I18nStore {
   // ----- State ----- //
