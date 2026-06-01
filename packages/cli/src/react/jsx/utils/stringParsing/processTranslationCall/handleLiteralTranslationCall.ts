@@ -33,7 +33,9 @@ export function handleLiteralTranslationCall({
 }): void {
   // ignore dynamic content flag is triggered, check strings are valid ICU
   const source =
-    arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
+    arg.type === 'StringLiteral'
+      ? arg.value
+      : (arg.quasis[0].value.cooked ?? arg.quasis[0].value.raw);
 
   // Validate is ICU — skip for non-ICU formats
   if (
