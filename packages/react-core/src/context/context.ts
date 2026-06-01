@@ -36,5 +36,8 @@ export function useGTContext(): GTContextType | undefined {
   if (context || getRenderStrategy() === 'SPA') {
     return context;
   }
+  /**
+   * TODO: in a separate PR, we should figure out how to make this more of a forgiving system
+   */
   throw new Error('GTContext must be read within a GTProvider');
 }
