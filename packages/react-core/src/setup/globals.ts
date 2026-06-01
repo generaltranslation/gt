@@ -3,7 +3,7 @@
  * - server-rendered apps must use context
  * - SPA apps can synchronously access the locale
  */
-export type RenderStrategy = 'SPA' | 'server-rendered';
+export type RenderStrategy = 'SPA' | 'server-render';
 
 declare global {
   interface GeneralTranslationGlobal {

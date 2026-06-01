@@ -22,7 +22,7 @@ import { setReactI18nCache } from '../i18n-cache/singleton-operations';
 export function internalInitializeGTSSR(
   config: I18nConfigParams & GTServicesEnabledParams & ReactI18nCacheParams
 ): void {
-  setRenderStrategy('server-rendered');
+  setRenderStrategy('server-render');
 
   setupGTServicesEnabled(config);
   initializeI18nConfig(config);
