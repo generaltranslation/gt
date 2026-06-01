@@ -1,5 +1,5 @@
 import type { LocaleProperties } from '@generaltranslation/format/types';
-import useGTContext from '../provider/GTContext';
+import { useGTContext } from '../provider/GTContext';
 
 /**
  * Returns the configured GT class instance.

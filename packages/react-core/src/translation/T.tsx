@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import renderDefaultChildren from '../rendering/renderDefaultChildren';
 import { addGTIdentifier, writeChildrenAsObjects } from '../internal';
-import useGTContext from '../provider/GTContext';
+import { useGTContext } from '../provider/GTContext';
 import renderTranslatedChildren from '../rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
 import renderVariable from '../rendering/renderVariable';

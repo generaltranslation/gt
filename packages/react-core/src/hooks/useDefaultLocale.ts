@@ -1,4 +1,4 @@
-import useGTContext from '../provider/GTContext';
+import { useGTContext } from '../provider/GTContext';
 
 /**
  * Retrieves the application's default locale from the `<GTProvider>` context.

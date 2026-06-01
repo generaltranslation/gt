@@ -3,7 +3,7 @@ import { GTContextType } from '../types-dir/context';
 
 export const GTContext = createContext<GTContextType | undefined>(undefined);
 
-export default function useGTContext(
+export function useGTContext(
   errorString = 'useGTContext() must be used within a <GTProvider>!'
 ): GTContextType {
   const context = useContext(GTContext);

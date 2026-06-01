@@ -1,4 +1,4 @@
-import useGTContext from '../provider/GTContext';
+import { useGTContext } from '../provider/GTContext';
 
 /**
  * Retrieves the text direction ('ltr' or 'rtl') for the current or specified locale from the `<GTProvider>` context.

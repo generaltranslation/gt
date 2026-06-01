@@ -1,4 +1,4 @@
-import useGTContext from '../provider/GTContext';
+import { useGTContext } from '../provider/GTContext';
 
 /**
  * Retrieves the version ID from the `<GTProvider>` context.

@@ -1,4 +1,4 @@
-import useGTContext from '../../provider/GTContext';
+import { useGTContext } from '../../provider/GTContext';
 
 /**
  * Gets the dictionary access function `t` provided by `<GTProvider>`.

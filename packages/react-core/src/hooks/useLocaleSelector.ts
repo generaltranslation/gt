@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import useGTContext from '../provider/GTContext';
+import { useGTContext } from '../provider/GTContext';
 
 /**
  *

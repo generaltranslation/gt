@@ -1,4 +1,4 @@
-import useGTContext from '../provider/GTContext';
+import { useGTContext } from '../provider/GTContext';
 
 /**
  * Retrieves the user's list of supported locales from the `<GTProvider>` context.

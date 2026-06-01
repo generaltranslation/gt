@@ -1,4 +1,4 @@
-import useGTContext from '../provider/GTContext';
+import { useGTContext } from '../provider/GTContext';
 
 /**
  * A React hook that retrieves the user's currently selected region from the `<GTProvider>` context.
