@@ -29,6 +29,10 @@ export function useTranslate<T extends Translation>(
   const translation = adapter.resolveTranslation(lookup, storeTranslation);
 
   if (translation == null) {
+    /**
+     * TODO: if we don't want to fallback to source, we can add a
+     * use() call + <Suspense> fallback around <T> component
+     */
     adapter.handleMissingTranslation?.(lookup);
   }
 
