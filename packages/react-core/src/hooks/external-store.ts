@@ -8,10 +8,9 @@ import type {
   DictionaryEntrySnapshot,
   DictionaryObjectSnapshot,
 } from '../i18n-store/storeTypes';
-import { getI18nStore } from '../i18n-store/singleton-operations';
 import type { RuntimeTranslationScope } from '../i18n-store/RuntimeTranslationScope';
 import type { RuntimeDictionaryScope } from '../i18n-store/RuntimeDictionaryScope';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { useLookupAdapter } from '../i18n-store/lookup-adapter/useLookupAdapter';
 
 /**
  * @internal
@@ -19,15 +18,20 @@ import { getI18nConfig } from 'gt-i18n/internal';
 export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
-  const store = getI18nStore();
-  const translation = useSyncExternalStore(
-    (listener) => store.subscribeToTranslate(lookup, listener),
-    () => store.getTranslateSnapshot(lookup),
-    () => store.getTranslateSnapshot(lookup)
+  const adapter = useLookupAdapter();
+
+  const storeTranslation = useSyncExternalStore(
+    (listener) => adapter.subscribeToTranslate(lookup, listener),
+    () => adapter.getStoreTranslation(lookup),
+    () => adapter.getServerTranslation(lookup)
   );
-  if (translation == null && getI18nConfig().isDevHotReloadEnabled()) {
-    store.translate(lookup);
+
+  const translation = adapter.resolveTranslation(lookup, storeTranslation);
+
+  if (translation == null) {
+    adapter.handleMissingTranslation?.(lookup);
   }
+
   return translation;
 }
 
@@ -37,18 +41,18 @@ export function useTranslate<T extends Translation>(
 export function useTranslateMany<T extends Translation>(
   lookups: readonly TranslateLookup<T>[]
 ): TranslateManySnapshot<T> {
-  const store = getI18nStore();
-  const translations = useSyncExternalStore(
-    (listener) => store.subscribeToTranslateMany(lookups, listener),
-    () => store.getTranslateManySnapshot(lookups),
-    () => store.getTranslateManySnapshot(lookups)
+  const adapter = useLookupAdapter();
+
+  const storeTranslations = useSyncExternalStore(
+    (listener) => adapter.subscribeToTranslateMany(lookups, listener),
+    () => adapter.getStoreTranslations(lookups),
+    () => adapter.getServerTranslations(lookups)
   );
-  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
-  translations.forEach((translation, index) => {
-    if (translation == null && devHotReloadEnabled) {
-      store.translate(lookups[index]);
-    }
-  });
+
+  const translations = adapter.resolveTranslations(lookups, storeTranslations);
+
+  adapter.handleMissingTranslations?.(lookups, translations);
+
   return translations;
 }
 
@@ -58,15 +62,23 @@ export function useTranslateMany<T extends Translation>(
 export function useDictionaryEntry(
   lookup: DictionaryLookup
 ): DictionaryEntrySnapshot {
-  const store = getI18nStore();
-  const dictionaryEntry = useSyncExternalStore(
-    (listener) => store.subscribeToDictionaryEntry(lookup, listener),
-    () => store.getDictionaryEntrySnapshot(lookup),
-    () => store.getDictionaryEntrySnapshot(lookup)
+  const adapter = useLookupAdapter();
+
+  const storeDictionaryEntry = useSyncExternalStore(
+    (listener) => adapter.subscribeToDictionaryEntry(lookup, listener),
+    () => adapter.getStoreDictionaryEntry(lookup),
+    () => adapter.getServerDictionaryEntry(lookup)
   );
-  if (dictionaryEntry == null && getI18nConfig().isDevHotReloadEnabled()) {
-    store.translateDictionaryEntry(lookup);
+
+  const dictionaryEntry = adapter.resolveDictionaryEntry(
+    lookup,
+    storeDictionaryEntry
+  );
+
+  if (dictionaryEntry == null) {
+    adapter.handleMissingDictionaryEntry?.(lookup);
   }
+
   return dictionaryEntry;
 }
 
@@ -76,27 +88,38 @@ export function useDictionaryEntry(
 export function useDictionaryObject(
   lookup: DictionaryLookup
 ): DictionaryObjectSnapshot {
-  const store = getI18nStore();
-  const dictionaryObject = useSyncExternalStore(
-    (listener) => store.subscribeToDictionaryObject(lookup, listener),
-    () => store.getDictionaryObjectSnapshot(lookup),
-    () => store.getDictionaryObjectSnapshot(lookup)
+  const adapter = useLookupAdapter();
+
+  const storeDictionaryObject = useSyncExternalStore(
+    (listener) => adapter.subscribeToDictionaryObject(lookup, listener),
+    () => adapter.getStoreDictionaryObject(lookup),
+    () => adapter.getServerDictionaryObject(lookup)
   );
-  if (dictionaryObject == null && getI18nConfig().isDevHotReloadEnabled()) {
-    store.translateDictionaryObject(lookup);
+
+  const dictionaryObject = adapter.resolveDictionaryObject(
+    lookup,
+    storeDictionaryObject
+  );
+
+  if (dictionaryObject == null) {
+    adapter.handleMissingDictionaryObject?.(lookup);
   }
+
   return dictionaryObject;
 }
 
 /**
  * Used for dev translation tracking
+ *
+ * This is used for hot reload and thus does not need
+ * to access the snapshots
  */
 export function useRuntimeTranslationScope(): RuntimeTranslationScope {
-  const store = getI18nStore();
+  const adapter = useLookupAdapter();
 
   const scope = useMemo(() => {
-    return store.createRuntimeTranslationScope();
-  }, [store]);
+    return adapter.createRuntimeTranslationScope();
+  }, [adapter]);
 
   useSyncExternalStore(scope.subscribe, scope.getSnapshot, scope.getSnapshot);
 
@@ -105,13 +128,16 @@ export function useRuntimeTranslationScope(): RuntimeTranslationScope {
 
 /**
  * Used for dev dictionary tracking
+ *
+ * This is used for hot reload and thus does not need
+ * to access the snapshots
  */
 export function useRuntimeDictionaryScope(): RuntimeDictionaryScope {
-  const store = getI18nStore();
+  const adapter = useLookupAdapter();
 
   const scope = useMemo(() => {
-    return store.createRuntimeDictionaryScope();
-  }, [store]);
+    return adapter.createRuntimeDictionaryScope();
+  }, [adapter]);
 
   useSyncExternalStore(scope.subscribe, scope.getSnapshot, scope.getSnapshot);
 
