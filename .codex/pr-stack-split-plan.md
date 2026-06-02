@@ -139,6 +139,20 @@ git diff --name-status backup/e-odysseus-move-cache-to-provider-unsplit HEAD
 
 No output from the direct comparison. The split branches preserve the source tree exactly when applied together.
 
+Gold-standard comparison requested after PR creation:
+
+```sh
+git diff --name-status origin/e/odysseus/move-cache-to-provider origin/e/odysseus/tracked-gt-lookups
+git diff --stat origin/e/odysseus/move-cache-to-provider origin/e/odysseus/tracked-gt-lookups
+```
+
+Result: the final stacked PR branch `origin/e/odysseus/tracked-gt-lookups` differs from original PR #1541 only by the standalone PR files:
+
+- `.vscode/settings.json` -> #1542
+- `packages/i18n/src/i18n-cache/I18nCache.ts` -> #1543
+- `packages/i18n/src/i18n-cache/types.ts` -> #1543
+- `packages/react/src/condition-store/createBrowserConditionStore.ts` -> #1544
+
 ## Dropped Files
 
 None.
