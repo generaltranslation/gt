@@ -8,6 +8,7 @@
 - Base branch: `origin/odysseus`
 - Coordination branch: `e/odysseus/pr-stack-split-plan`
 - Existing PR: https://github.com/generaltranslation/gt/pull/1541
+- Replacement comment on existing PR: https://github.com/generaltranslation/gt/pull/1541#issuecomment-4598279631
 
 ## Branch Plan
 
