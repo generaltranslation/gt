@@ -66,3 +66,4 @@ export type {
   ReactI18nCache,
   ReactI18nCacheParams,
 } from './i18n-cache/ReactI18nCache';
+export { ReadonlyConditionStore } from 'gt-i18n/internal';

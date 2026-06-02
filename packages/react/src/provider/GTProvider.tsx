@@ -1,5 +1,7 @@
-import { InternalGTProvider } from '@generaltranslation/react-core/context';
-import { ReadonlyConditionStore } from 'gt-i18n/internal';
+import {
+  InternalGTProvider,
+  ReadonlyConditionStore,
+} from '@generaltranslation/react-core/context';
 import { useMemo } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 

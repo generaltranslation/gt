@@ -58,7 +58,7 @@ export {
   getTranslationsSnapshot,
   t,
   // ===== Setup ===== //
-  internalInitializeGTSSR as initializeGT,
+  internalInitializeGTSRA as initializeGT,
   getReactI18nCache,
   setReactI18nCache,
 } from '@generaltranslation/react-core/context';

@@ -1,7 +1,5 @@
 import { I18nCache } from './I18nCache';
 import { Translation } from './translations-manager/utils/types/translation-data';
-import { createConditionStoreSingleton } from '../condition-store/createConditionStoreSingleton';
-import { WritableConditionStoreInterface } from './types';
 
 // Singleton instance of I18nCache
 let i18nCache: I18nCache | undefined = undefined;

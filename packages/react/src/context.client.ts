@@ -57,5 +57,5 @@ export {
   setReactI18nCache,
   t,
   // ===== Setup ===== //
-  internalInitializeGTSSR as initializeGT,
+  internalInitializeGTSRA as initializeGT,
 } from '@generaltranslation/react-core/context';

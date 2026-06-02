@@ -29,11 +29,10 @@ export function InternalGTProvider({
   translations,
   dictionaries,
   conditionStore,
-  ...config
 }: InternalGTProviderProps) {
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {
-    i18nStoreRef.current = new I18nStore(config);
+    i18nStoreRef.current = new I18nStore({});
   }
 
   const value = useMemo(
