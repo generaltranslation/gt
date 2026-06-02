@@ -137,9 +137,15 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       return i18nStore.getTranslateManySnapshot(lookups);
     },
     getServerTranslations: (lookups) => {
+      if (lookups.length === 0) {
+        return EMPTY_TRANSLATIONS;
+      }
       return lookupTranslations(translationsSnapshot, lookups);
     },
     resolveTranslations: (lookups, storeTranslations) => {
+      if (lookups.length === 0) {
+        return EMPTY_TRANSLATIONS;
+      }
       /**
        * TODO:
        * For SRA, do we want the server to always win out?
