@@ -20,23 +20,33 @@ export function useTranslate<T extends Translation>(
 ): TranslateSnapshot<T> {
   const adapter = useLookupAdapter();
 
+  /**
+   * TODO: for snapshot lookup, we can use the translation snapshot
+   * to avoid the adapter.resolveTranslation call.
+   */
   const storeTranslation = useSyncExternalStore(
     (listener) => adapter.subscribeToTranslate(lookup, listener),
-    () => adapter.getStoreTranslation(lookup),
-    () => adapter.getServerTranslation(lookup)
+    () => adapter.getTranslationSnapshot(lookup),
+    () => adapter.getTranslationSnapshot(lookup)
   );
 
-  const translation = adapter.resolveTranslation(lookup, storeTranslation);
-
-  if (translation == null) {
+  if (storeTranslation == null) {
     /**
      * TODO: if we don't want to fallback to source, we can add a
      * use() call + <Suspense> fallback around <T> component
+     *
+     * https://react.dev/reference/react/useSyncExternalStore#caveats
+     * Though this is not recommended, loading state would only be triggered by
+     * an ext. store update that invalidates an entire locale. This would ONLY
+     * occur by (1) initialization of a new i18nCache (2) a cache expiry for a locale
+     *
+     * (1) init of a new i18nCache only happens if GTProvider is re-mounted
+     * (2) cache expiry can (and should) be disabled for client-side
      */
     adapter.handleMissingTranslation?.(lookup);
   }
 
-  return translation;
+  return storeTranslation;
 }
 
 /**

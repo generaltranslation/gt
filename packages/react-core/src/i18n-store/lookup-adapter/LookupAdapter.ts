@@ -33,19 +33,7 @@ export type LookupAdapter = {
     listener: TranslateEventListener
   ) => Unsubscribe;
 
-  /**
-   * Store lookups read I18nStore. This is authoritative in SPA and a dev-only
-   * hot reload fallback in SRA.
-   */
-  getStoreTranslation: <T extends Translation>(
-    lookup: TranslateLookup<T>
-  ) => TranslateSnapshot<T>;
-
-  /**
-   * Server lookups read provider-distributed snapshots in SRA. SPA mirrors the
-   * store here so hooks can keep a single useSyncExternalStore shape.
-   */
-  getServerTranslation: <T extends Translation>(
+  getTranslationSnapshot: <T extends Translation>(
     lookup: TranslateLookup<T>
   ) => TranslateSnapshot<T>;
 

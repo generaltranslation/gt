@@ -47,7 +47,7 @@ export function useTrackedTranslationResolver(): TrackedTranslationResolver {
         trackedKeysRef.current.add(getTranslateListenerKey(lookup));
       },
       resolve: (lookup) => {
-        const storeTranslation = adapter.getStoreTranslation(lookup);
+        const storeTranslation = adapter.getTranslationSnapshot(lookup);
         return adapter.resolveTranslation(lookup, storeTranslation);
       },
       handleMissing: (lookup) => {

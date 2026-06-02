@@ -24,10 +24,7 @@ export function createSPALookupAdapter(): LookupAdapter {
     mode: 'SPA',
     subscribeToTranslate,
     subscribeToTranslationEvents,
-    getStoreTranslation: (lookup) => {
-      return getI18nStore().getTranslateSnapshot(lookup);
-    },
-    getServerTranslation: (lookup) => {
+    getTranslationSnapshot: (lookup) => {
       return getI18nStore().getTranslateSnapshot(lookup);
     },
     resolveTranslation: (_lookup, storeTranslation) => {
@@ -105,14 +102,12 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       }
       return i18nStore.subscribeToTranslationEvents(listener);
     },
-    getStoreTranslation: (lookup) => {
-      if (!getI18nConfig().isDevHotReloadEnabled()) {
-        return undefined;
-      }
-      return i18nStore.getTranslateSnapshot(lookup);
-    },
-    getServerTranslation: (lookup) => {
-      return lookupTranslation(translationsSnapshot, lookup);
+    getTranslationSnapshot: (lookup) => {
+      // SRA rule: only in dev hot reload, fallback to i18nStore
+      return (lookupTranslation(translationsSnapshot, lookup) ??
+        getI18nConfig().isDevHotReloadEnabled())
+        ? i18nStore.getTranslateSnapshot(lookup)
+        : undefined;
     },
     resolveTranslation: (lookup, storeTranslation) => {
       return (

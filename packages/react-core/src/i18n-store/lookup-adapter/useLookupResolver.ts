@@ -35,7 +35,7 @@ export function useLookupResolver(): LookupResolver {
   return useMemo(
     () => ({
       resolveTranslation: (lookup) => {
-        const storeTranslation = adapter.getStoreTranslation(lookup);
+        const storeTranslation = adapter.getTranslationSnapshot(lookup);
         return adapter.resolveTranslation(lookup, storeTranslation);
       },
       handleMissingTranslation: (lookup) => {
