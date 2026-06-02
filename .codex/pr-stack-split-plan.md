@@ -14,12 +14,12 @@
 
 | Branch | Base | Title | Status | PR |
 | --- | --- | --- | --- | --- |
-| `e/odysseus/vscode-format-settings` | `odysseus` | `chore: update vscode formatter settings` | Local commit `fd9b7b2a3`; verified; opened | https://github.com/generaltranslation/gt/pull/1542 |
-| `e/odysseus/relax-dictionary-cache-config` | `odysseus` | `refactor: relax dictionary cache config` | Local commit `1858b9852`; verified standalone; opened | https://github.com/generaltranslation/gt/pull/1543 |
-| `e/odysseus/export-browser-condition-helpers` | `odysseus` | `refactor: export browser condition helpers` | Local commit `f081100f5`; verified; opened | https://github.com/generaltranslation/gt/pull/1544 |
-| `e/odysseus/lookup-condition-adapter-scaffold` | `odysseus` | `refactor: add lookup and condition adapters` | Local commit `3ad98a6df`; verified; opened | https://github.com/generaltranslation/gt/pull/1545 |
-| `e/odysseus/provider-runtime-adapter-routing` | `e/odysseus/lookup-condition-adapter-scaffold` | `refactor: route provider runtime through adapters` | Local commit `3c2aa5337`; verified; opened | https://github.com/generaltranslation/gt/pull/1546 |
-| `e/odysseus/tracked-gt-lookups` | `e/odysseus/provider-runtime-adapter-routing` | `refactor: track runtime gt lookups` | Local commit `d409744ee`; verified except inherited test failure; opened | https://github.com/generaltranslation/gt/pull/1547 |
+| `e/odysseus/vscode-format-settings` | `odysseus` | `chore: update vscode formatter settings` | Merged; original commit `fd9b7b2a3` | https://github.com/generaltranslation/gt/pull/1542 |
+| `e/odysseus/relax-dictionary-cache-config` | `odysseus` | `refactor: relax dictionary cache config` | Merged; original commit `1858b9852` | https://github.com/generaltranslation/gt/pull/1543 |
+| `e/odysseus/export-browser-condition-helpers` | `odysseus` | `refactor: export browser condition helpers` | Merged; original commit `f081100f5` | https://github.com/generaltranslation/gt/pull/1544 |
+| `e/odysseus/lookup-condition-adapter-scaffold` | `odysseus` | `refactor: add lookup and condition adapters` | Rebased onto `origin/odysseus@63e77056c`; commit `ef82d0c6d`; verified | https://github.com/generaltranslation/gt/pull/1545 |
+| `e/odysseus/provider-runtime-adapter-routing` | `e/odysseus/lookup-condition-adapter-scaffold` | `refactor: route provider runtime through adapters` | Rebased onto updated PR 1; commit `4dd300d48`; verified | https://github.com/generaltranslation/gt/pull/1546 |
+| `e/odysseus/tracked-gt-lookups` | `e/odysseus/provider-runtime-adapter-routing` | `refactor: track runtime gt lookups` | Rebased onto updated PR 2; commit `464e147f2`; verified except inherited test failure | https://github.com/generaltranslation/gt/pull/1547 |
 
 ## Source File Inventory
 
@@ -101,6 +101,9 @@ corepack pnpm --filter @generaltranslation/react-core test
 | `e/odysseus/tracked-gt-lookups` | `corepack pnpm --filter gt-react typecheck` | Pass |
 | `e/odysseus/tracked-gt-lookups` | `corepack pnpm exec oxlint <6 touched files>` | Pass |
 | `e/odysseus/tracked-gt-lookups` | `corepack pnpm --filter @generaltranslation/react-core test` | Fail: inherited from unsplit source tree. `src/deprecated/provider/__tests__/i18n-store.test.ts` has 4 failing tests because `I18nStore({})` no longer uses the test's singleton manager/loaders; same failure reproduced on `e/odysseus/pr-stack-split-plan` source snapshot. |
+| `e/odysseus/lookup-condition-adapter-scaffold` after rebase to `origin/odysseus@63e77056c` | `corepack pnpm --filter @generaltranslation/react-core typecheck`; `corepack pnpm --filter gt-react typecheck`; `corepack pnpm exec oxlint <10 touched files>` | Pass |
+| `e/odysseus/provider-runtime-adapter-routing` after rebase to updated PR 1 | `corepack pnpm --filter @generaltranslation/react-core typecheck`; `corepack pnpm --filter gt-react typecheck`; `corepack pnpm exec oxlint <18 touched files>` | Pass |
+| `e/odysseus/tracked-gt-lookups` after rebase to updated PR 2 | `corepack pnpm --filter @generaltranslation/react-core typecheck`; `corepack pnpm --filter gt-react typecheck`; `corepack pnpm exec oxlint <6 touched files>` | Pass |
 
 ## Audit Log
 
@@ -152,6 +155,16 @@ Result: the final stacked PR branch `origin/e/odysseus/tracked-gt-lookups` diffe
 - `packages/i18n/src/i18n-cache/I18nCache.ts` -> #1543
 - `packages/i18n/src/i18n-cache/types.ts` -> #1543
 - `packages/react/src/condition-store/createBrowserConditionStore.ts` -> #1544
+
+Post-merge/rebase comparison:
+
+```sh
+git fetch origin --prune
+git diff --name-status origin/e/odysseus/move-cache-to-provider origin/e/odysseus/tracked-gt-lookups
+git diff --stat origin/e/odysseus/move-cache-to-provider origin/e/odysseus/tracked-gt-lookups
+```
+
+Result after #1542, #1543, and #1544 merged into `odysseus`, and #1545-#1547 were rebased onto `origin/odysseus@63e77056c`: no output. The final stacked PR branch now matches original PR #1541 exactly.
 
 ## Dropped Files
 
