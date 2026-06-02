@@ -29,9 +29,7 @@ import {
 type TranslateStoreListener = (lookup: TranslateLookup) => void;
 type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
-export type I18nStoreParams = {
-  i18nCacheParams: ReactI18nCacheParams;
-};
+export type I18nStoreParams = ReactI18nCacheParams;
 
 /**
  * I18nStore gives us the ability to perform client-side updates to translations.
@@ -60,8 +58,8 @@ export class I18nStore {
   /**
    * I18nCache must be already initialized
    */
-  constructor({ i18nCacheParams }: I18nStoreParams) {
-    this.i18nCache = new ReactI18nCache(i18nCacheParams);
+  constructor(params: I18nStoreParams) {
+    this.i18nCache = new ReactI18nCache(params);
   }
 
   // ========== Translation Updates ========== //
