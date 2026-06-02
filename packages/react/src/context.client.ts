@@ -2,7 +2,7 @@
 
 import type { RscT as CoreRscT } from '@generaltranslation/react-core/context';
 
-export { BrowserGTProvider as GTProvider } from './provider/BrowserGTProvider';
+export { GTProvider } from './provider/GTProvider';
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { LocaleSelector } from './components/LocaleSelector';
 export { useLocaleSelector } from './components/useLocaleSelector';

@@ -12,8 +12,7 @@ import type {
   TranslateSnapshot,
   Unsubscribe,
 } from './storeTypes';
-import type { Translation } from 'gt-i18n/types';
-import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import type { Dictionary, Translation } from 'gt-i18n/types';
 import { RuntimeTranslationScope } from './RuntimeTranslationScope';
 import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
 import {
@@ -21,20 +20,32 @@ import {
   dictionaryObjectEventMatchesLookup,
 } from './utils/dictionary-events';
 import { subscribeToSet } from './utils/subscriptions';
+import { Hash, Locale } from 'gt-i18n/internal/types';
+import {
+  ReactI18nCache,
+  ReactI18nCacheParams,
+} from '../i18n-cache/ReactI18nCache';
 
 type TranslateStoreListener = (lookup: TranslateLookup) => void;
 type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
-export type I18nStoreParams = {};
+export type I18nStoreParams = ReactI18nCacheParams;
 
 /**
- * A subscription wrapper around the I18nCache.
+ * I18nStore gives us the ability to perform client-side updates to translations.
+ * Primarily useful for dev hot reload.
  *
- * It is assumed that the I18nCache is already initialized.
- * It is assumed that translations are already sync accessible.
+ * This is the stateful primitive behind lookup subscriptions and runtime
+ * translation requests. It intentionally does not know whether lookups are
+ * being served from SPA singletons or SRA provider snapshots; that policy lives
+ * in LookupAdapter, not in this store.
  */
 export class I18nStore {
-  // ===== Listener Sets ===== //
+  // ----- State ----- //
+
+  private i18nCache: ReactI18nCache;
+
+  // ----- Listener Sets ----- //
 
   private translateListeners = new Set<TranslateStoreListener>();
   private translateManySnapshotCache = new WeakMap<
@@ -47,20 +58,69 @@ export class I18nStore {
   /**
    * I18nCache must be already initialized
    */
-  constructor(_config: I18nStoreParams) {
-    try {
-      getReactI18nCache();
-    } catch (error) {
-      throw new Error('Failed to initialize I18nStore. Reason: ' + error);
-    }
+  constructor(params: I18nStoreParams) {
+    this.i18nCache = new ReactI18nCache(params);
   }
 
-  // ===== I18nCache Subscriptions ===== //
+  // ========== Translation Updates ========== //
 
-  subscribeToTranslate<T extends Translation>(
+  updateTranslations = (
+    translations: Record<Locale, Record<Hash, Translation>>
+  ): void => {
+    this.i18nCache.updateTranslations(translations);
+  };
+
+  updateDictionaries = (dictionaries: Record<Locale, Dictionary>): void => {
+    this.i18nCache.updateDictionaries(dictionaries);
+  };
+
+  // ========== runtime translation ========== //
+
+  translate = <T extends Translation>(lookup: TranslateLookup<T>): void => {
+    this.i18nCache
+      .lookupTranslationWithFallback(
+        lookup.locale,
+        lookup.message,
+        lookup.options
+      )
+      .then((translation) => {
+        if (translation == null) {
+          // TODO: warn about runtime translation failure
+        }
+        this.emitTranslateEvent(lookup);
+      });
+  };
+
+  translateDictionaryEntry = (lookup: DictionaryLookup): void => {
+    this.i18nCache
+      .lookupDictionaryWithFallback(lookup.locale, lookup.id)
+      .then((dictionaryEntry) => {
+        if (dictionaryEntry == null) {
+          // TODO: warn about runtime dictionary translation failure
+        }
+        this.emitDictionaryEvent(lookup);
+      });
+  };
+
+  translateDictionaryObject = (lookup: DictionaryLookup): void => {
+    this.i18nCache
+      .lookupDictionaryObjWithFallback(lookup.locale, lookup.id)
+      .then((dictionaryObject) => {
+        if (dictionaryObject == null) {
+          // TODO: warn about runtime dictionary translation failure
+        }
+        this.emitDictionaryEvent(lookup);
+      });
+  };
+
+  // ========== UseSyncExternalStore ========== //
+
+  // ----- Subscriptions ----- //
+
+  subscribeToTranslate = <T extends Translation>(
     lookup: TranslateLookup<T>,
     listener: StoreListener
-  ): Unsubscribe {
+  ): Unsubscribe => {
     const lookupKey = getTranslateListenerKey(lookup);
     const wrappedListener: TranslateStoreListener = (lookup) => {
       if (getTranslateListenerKey(lookup) === lookupKey) {
@@ -68,24 +128,24 @@ export class I18nStore {
       }
     };
     return subscribeToSet(this.translateListeners, wrappedListener);
-  }
+  };
 
-  subscribeToTranslateMany<T extends Translation>(
+  subscribeToTranslateMany = <T extends Translation>(
     lookups: readonly TranslateLookup<T>[],
     listener: StoreListener
-  ): Unsubscribe {
+  ): Unsubscribe => {
     const unsubscribes = lookups.map((lookup) =>
       this.subscribeToTranslate(lookup, listener)
     );
     return () => {
       unsubscribes.forEach((unsubscribe) => unsubscribe());
     };
-  }
+  };
 
-  subscribeToDictionaryEntry(
+  subscribeToDictionaryEntry = (
     lookup: DictionaryLookup,
     listener: StoreListener
-  ): Unsubscribe {
+  ): Unsubscribe => {
     const lookupKey = getDictionaryListenerKey(lookup);
     const wrappedListener: DictionaryStoreListener = (event) => {
       if (dictionaryEntryEventMatchesLookup(event, lookupKey)) {
@@ -93,12 +153,12 @@ export class I18nStore {
       }
     };
     return subscribeToSet(this.dictionaryEntryListeners, wrappedListener);
-  }
+  };
 
-  subscribeToDictionaryObject(
+  subscribeToDictionaryObject = (
     lookup: DictionaryLookup,
     listener: StoreListener
-  ): Unsubscribe {
+  ): Unsubscribe => {
     const lookupKey = getDictionaryListenerKey(lookup);
     const wrappedListener: DictionaryStoreListener = (event) => {
       if (dictionaryObjectEventMatchesLookup(event, lookupKey)) {
@@ -106,16 +166,16 @@ export class I18nStore {
       }
     };
     return subscribeToSet(this.dictionaryObjectListeners, wrappedListener);
-  }
+  };
 
-  // ===== I18nCache Snapshots ===== //
+  // ----- Snapshots ----- //
 
   getTranslateSnapshot = <T extends Translation>({
     locale,
     message,
     options,
   }: TranslateLookup<T>): TranslateSnapshot<T> => {
-    return getReactI18nCache().lookupTranslation<T>(locale, message, options);
+    return this.i18nCache.lookupTranslation<T>(locale, message, options);
   };
 
   getTranslateManySnapshot = <T extends Translation>(
@@ -143,66 +203,17 @@ export class I18nStore {
     locale,
     id,
   }: DictionaryLookup): DictionaryEntrySnapshot => {
-    return getReactI18nCache().lookupDictionary(locale, id);
+    return this.i18nCache.lookupDictionary(locale, id);
   };
 
   getDictionaryObjectSnapshot = ({
     locale,
     id,
   }: DictionaryLookup): DictionaryObjectSnapshot => {
-    return getReactI18nCache().lookupDictionaryObj(locale, id);
+    return this.i18nCache.lookupDictionaryObj(locale, id);
   };
 
-  // ===== runtime translation ===== //
-
-  translate = <T extends Translation>(lookup: TranslateLookup<T>): void => {
-    getReactI18nCache()
-      .lookupTranslationWithFallback(
-        lookup.locale,
-        lookup.message,
-        lookup.options
-      )
-      .then((translation) => {
-        if (translation == null) {
-          // TODO: warn about runtime translation failure
-        }
-        this.emitTranslateEvent(lookup);
-      });
-  };
-
-  translateDictionaryEntry = (lookup: DictionaryLookup): void => {
-    getReactI18nCache()
-      .lookupDictionaryWithFallback(lookup.locale, lookup.id)
-      .then((dictionaryEntry) => {
-        if (dictionaryEntry == null) {
-          // TODO: warn about runtime dictionary translation failure
-        }
-        this.emitDictionaryEvent(lookup);
-      });
-  };
-
-  translateDictionaryObject = (lookup: DictionaryLookup): void => {
-    getReactI18nCache()
-      .lookupDictionaryObjWithFallback(lookup.locale, lookup.id)
-      .then((dictionaryObject) => {
-        if (dictionaryObject == null) {
-          // TODO: warn about runtime dictionary translation failure
-        }
-        this.emitDictionaryEvent(lookup);
-      });
-  };
-
-  // ----- scopes ----- //
-
-  createRuntimeTranslationScope = (): RuntimeTranslationScope => {
-    return new RuntimeTranslationScope();
-  };
-
-  createRuntimeDictionaryScope = (): RuntimeDictionaryScope => {
-    return new RuntimeDictionaryScope();
-  };
-
-  // ===== Listener Utilities ===== //
+  // ----- Listener Utilities ----- //
 
   private emitTranslateEvent(event: TranslateLookup): void {
     this.translateListeners.forEach((listener) => listener(event));
@@ -214,4 +225,14 @@ export class I18nStore {
       listener(event);
     });
   }
+
+  // ----- scopes ----- //
+
+  createRuntimeTranslationScope = (): RuntimeTranslationScope => {
+    return new RuntimeTranslationScope(this);
+  };
+
+  createRuntimeDictionaryScope = (): RuntimeDictionaryScope => {
+    return new RuntimeDictionaryScope(this);
+  };
 }
