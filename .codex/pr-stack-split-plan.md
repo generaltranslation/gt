@@ -13,12 +13,12 @@
 
 | Branch | Base | Title | Status | PR |
 | --- | --- | --- | --- | --- |
-| `e/odysseus/vscode-format-settings` | `odysseus` | `chore: update vscode formatter settings` | Local commit `fd9b7b2a3`; verified | Pending |
-| `e/odysseus/relax-dictionary-cache-config` | `odysseus` | `refactor: relax dictionary cache config` | Local commit `1858b9852`; verified standalone | Pending |
-| `e/odysseus/export-browser-condition-helpers` | `odysseus` | `refactor: export browser condition helpers` | Local commit `f081100f5`; verified | Pending |
-| `e/odysseus/lookup-condition-adapter-scaffold` | `odysseus` | `refactor: add lookup and condition adapters` | Local commit `3ad98a6df`; verified | Pending |
-| `e/odysseus/provider-runtime-adapter-routing` | `e/odysseus/lookup-condition-adapter-scaffold` | `refactor: route provider runtime through adapters` | Local commit `3c2aa5337`; verified | Pending |
-| `e/odysseus/tracked-gt-lookups` | `e/odysseus/provider-runtime-adapter-routing` | `refactor: track runtime gt lookups` | Local commit `d409744ee`; verified except inherited test failure | Pending |
+| `e/odysseus/vscode-format-settings` | `odysseus` | `chore: update vscode formatter settings` | Local commit `fd9b7b2a3`; verified; opened | https://github.com/generaltranslation/gt/pull/1542 |
+| `e/odysseus/relax-dictionary-cache-config` | `odysseus` | `refactor: relax dictionary cache config` | Local commit `1858b9852`; verified standalone; opened | https://github.com/generaltranslation/gt/pull/1543 |
+| `e/odysseus/export-browser-condition-helpers` | `odysseus` | `refactor: export browser condition helpers` | Local commit `f081100f5`; verified; opened | https://github.com/generaltranslation/gt/pull/1544 |
+| `e/odysseus/lookup-condition-adapter-scaffold` | `odysseus` | `refactor: add lookup and condition adapters` | Local commit `3ad98a6df`; verified; opened | https://github.com/generaltranslation/gt/pull/1545 |
+| `e/odysseus/provider-runtime-adapter-routing` | `e/odysseus/lookup-condition-adapter-scaffold` | `refactor: route provider runtime through adapters` | Local commit `3c2aa5337`; verified; opened | https://github.com/generaltranslation/gt/pull/1546 |
+| `e/odysseus/tracked-gt-lookups` | `e/odysseus/provider-runtime-adapter-routing` | `refactor: track runtime gt lookups` | Local commit `d409744ee`; verified except inherited test failure; opened | https://github.com/generaltranslation/gt/pull/1547 |
 
 ## Source File Inventory
 
