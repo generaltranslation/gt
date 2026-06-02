@@ -57,7 +57,7 @@ export function createOrUpdateBrowserConditionStore(
   setBrowserConditionStore(conditionStore);
 }
 
-function determineLocale({
+export function determineLocale({
   localeCookieName = defaultLocaleCookieName,
   getLocale,
   locale,
@@ -76,7 +76,7 @@ function resolveLocale(candidates?: LocaleCandidates): string {
   );
 }
 
-function determineEnableI18n({
+export function determineEnableI18n({
   enableI18n,
   enableI18nCookieName = defaultEnableI18nCookieName,
   getEnableI18n,
