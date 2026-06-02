@@ -1,26 +1,13 @@
-import React, { type ReactNode } from 'react';
+import { Var as CoreVar } from 'gt-react/context';
+import { getRequestConditions } from '../request/getRequestConditions';
+import type { ReactNode } from 'react';
 
-/**
- * The `<Var>` component renders a variable value, which can either be passed as `children` or a `value`.
- * If `children` is provided, it will be used; otherwise, the `value` is rendered.
- *
- * @example
- * ```jsx
- * <Var>
- *    John
- * </Var>
- * ```
- *
- * @param {any} [children] - The content to render inside the component. If provided, it will take precedence over `value`.
- * @returns {React.JSX.Element} The rendered variable component with either `children` or `value`.
- */
-export function Var({
-  children,
-}: {
-  children?: ReactNode;
-  name?: string;
-}): React.JSX.Element | null {
-  return <>{children}</>;
+type VarProps = Parameters<typeof CoreVar>[0];
+
+export async function Var(props: VarProps): Promise<ReactNode> {
+  const conditions = await getRequestConditions();
+  return <CoreVar {...props} {...conditions} />;
 }
+
 /** @internal _gtt - The GT transformation for the component. */
-Var._gtt = 'variable-variable'; // keep this because Var is imported in other functions
+Var._gtt = 'variable-variable';

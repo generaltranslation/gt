@@ -1,7 +1,6 @@
 import type { StoreListener, TranslateLookup, Unsubscribe } from './storeTypes';
-import { getTranslateListenerKey } from 'gt-i18n/internal';
-import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import type { Translation } from 'gt-i18n/types';
+import { getI18nConfig, getTranslateListenerKey } from 'gt-i18n/internal';
 
 type RuntimeTranslationStore = {
   subscribeToTranslate: <T extends Translation>(
@@ -22,7 +21,7 @@ export class RuntimeTranslationScope {
   constructor(private store: RuntimeTranslationStore) {}
 
   translate(lookup: TranslateLookup) {
-    if (!getReactI18nCache().isDevHotReloadEnabled()) return;
+    if (!getI18nConfig().isDevHotReloadEnabled()) return;
 
     const key = getTranslateListenerKey(lookup);
     if (this.pendingKeys.has(key)) return;

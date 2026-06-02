@@ -1,4 +1,3 @@
-import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import type { GTContextType } from '../../context/context';
 import { getI18nStore } from '../singleton-operations';
 import type {
@@ -15,6 +14,7 @@ import {
 import { lookupTranslation, lookupTranslations } from './utils/translations';
 import { type LookupAdapter } from './LookupAdapter';
 import type { Translation } from 'gt-i18n/types';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 const EMPTY_TRANSLATIONS = Object.freeze([]);
 
@@ -32,7 +32,7 @@ export function createSPALookupAdapter(): LookupAdapter {
       return storeTranslation;
     },
     handleMissingTranslation: (lookup) => {
-      if (getReactI18nCache().isDevHotReloadEnabled()) {
+      if (getI18nConfig().isDevHotReloadEnabled()) {
         getI18nStore().translate(lookup);
       }
     },
@@ -58,7 +58,7 @@ export function createSPALookupAdapter(): LookupAdapter {
       return storeDictionaryEntry;
     },
     handleMissingDictionaryEntry: (lookup) => {
-      if (getReactI18nCache().isDevHotReloadEnabled()) {
+      if (getI18nConfig().isDevHotReloadEnabled()) {
         getI18nStore().translateDictionaryEntry(lookup);
       }
     },
@@ -73,7 +73,7 @@ export function createSPALookupAdapter(): LookupAdapter {
       return storeDictionaryObject;
     },
     handleMissingDictionaryObject: (lookup) => {
-      if (getReactI18nCache().isDevHotReloadEnabled()) {
+      if (getI18nConfig().isDevHotReloadEnabled()) {
         getI18nStore().translateDictionaryObject(lookup);
       }
     },
@@ -92,13 +92,13 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
   return {
     mode: 'server-render',
     subscribeToTranslate: (lookup, listener) => {
-      if (!getReactI18nCache().isDevHotReloadEnabled()) {
+      if (!getI18nConfig().isDevHotReloadEnabled()) {
         return noopSubscribe();
       }
       return i18nStore.subscribeToTranslate(lookup, listener);
     },
     getStoreTranslation: (lookup) => {
-      if (!getReactI18nCache().isDevHotReloadEnabled()) {
+      if (!getI18nConfig().isDevHotReloadEnabled()) {
         return undefined;
       }
       return i18nStore.getTranslateSnapshot(lookup);
@@ -112,18 +112,18 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       );
     },
     handleMissingTranslation: (lookup) => {
-      if (getReactI18nCache().isDevHotReloadEnabled()) {
+      if (getI18nConfig().isDevHotReloadEnabled()) {
         i18nStore.translate(lookup);
       }
     },
     subscribeToTranslateMany: (lookups, listener) => {
-      if (!getReactI18nCache().isDevHotReloadEnabled()) {
+      if (!getI18nConfig().isDevHotReloadEnabled()) {
         return noopSubscribe();
       }
       return i18nStore.subscribeToTranslateMany(lookups, listener);
     },
     getStoreTranslations: (lookups) => {
-      if (!getReactI18nCache().isDevHotReloadEnabled()) {
+      if (!getI18nConfig().isDevHotReloadEnabled()) {
         return EMPTY_TRANSLATIONS;
       }
       return i18nStore.getTranslateManySnapshot(lookups);
@@ -145,7 +145,7 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       );
     },
     handleMissingTranslations: (lookups, translations) => {
-      if (!getReactI18nCache().isDevHotReloadEnabled()) return;
+      if (!getI18nConfig().isDevHotReloadEnabled()) return;
       lookups.forEach((lookup, index) => {
         if (translations[index] == null) {
           i18nStore.translate(lookup);
@@ -153,13 +153,13 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       });
     },
     subscribeToDictionaryEntry: (lookup, listener) => {
-      if (!getReactI18nCache().isDevHotReloadEnabled()) {
+      if (!getI18nConfig().isDevHotReloadEnabled()) {
         return noopSubscribe();
       }
       return i18nStore.subscribeToDictionaryEntry(lookup, listener);
     },
     getStoreDictionaryEntry: (lookup) => {
-      if (!getReactI18nCache().isDevHotReloadEnabled()) {
+      if (!getI18nConfig().isDevHotReloadEnabled()) {
         return undefined;
       }
       return i18nStore.getDictionaryEntrySnapshot(lookup);
@@ -174,18 +174,18 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       );
     },
     handleMissingDictionaryEntry: (lookup) => {
-      if (getReactI18nCache().isDevHotReloadEnabled()) {
+      if (getI18nConfig().isDevHotReloadEnabled()) {
         i18nStore.translateDictionaryEntry(lookup);
       }
     },
     subscribeToDictionaryObject: (lookup, listener) => {
-      if (!getReactI18nCache().isDevHotReloadEnabled()) {
+      if (!getI18nConfig().isDevHotReloadEnabled()) {
         return noopSubscribe();
       }
       return i18nStore.subscribeToDictionaryObject(lookup, listener);
     },
     getStoreDictionaryObject: (lookup) => {
-      if (!getReactI18nCache().isDevHotReloadEnabled()) {
+      if (!getI18nConfig().isDevHotReloadEnabled()) {
         return undefined;
       }
       return i18nStore.getDictionaryObjectSnapshot(lookup);
@@ -200,7 +200,7 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       );
     },
     handleMissingDictionaryObject: (lookup) => {
-      if (getReactI18nCache().isDevHotReloadEnabled()) {
+      if (getI18nConfig().isDevHotReloadEnabled()) {
         i18nStore.translateDictionaryObject(lookup);
       }
     },
@@ -231,7 +231,7 @@ function handleMissingTranslations<T extends Translation>(
   lookups: readonly TranslateLookup<T>[],
   translations: TranslateManySnapshot<T>
 ): void {
-  if (!getReactI18nCache().isDevHotReloadEnabled()) return;
+  if (!getI18nConfig().isDevHotReloadEnabled()) return;
   lookups.forEach((lookup, index) => {
     if (translations[index] == null) {
       getI18nStore().translate(lookup);

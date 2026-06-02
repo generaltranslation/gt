@@ -27,6 +27,8 @@ export {
   Branch,
   Plural,
   Derive,
+  GtInternalTranslateJsx,
+  RscT,
   T,
   Currency,
   DateTime,

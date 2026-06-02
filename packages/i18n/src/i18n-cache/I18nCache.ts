@@ -207,18 +207,6 @@ class I18nCache<
     );
   }
 
-  /**
-   * Returns true when development hot reload runtime translation requests can run.
-   */
-  isDevHotReloadEnabled(): boolean {
-    return (
-      !!this.config.devApiKey &&
-      !!this.config.projectId &&
-      this.isRuntimeUrlEnabled() &&
-      getRuntimeEnvironment() === 'development'
-    );
-  }
-
   // ========== Translation Updates ========== //
 
   updateTranslations(
@@ -698,10 +686,6 @@ class I18nCache<
         this._resolveCacheLocale(options.$locale) ??
         this._resolveLocale(options.$locale),
     };
-  }
-
-  private isRuntimeUrlEnabled(): boolean {
-    return this.config.runtimeUrl !== null && this.config.runtimeUrl !== '';
   }
 
   private async lookupTranslationWithFallbackResolved<

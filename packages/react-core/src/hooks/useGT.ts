@@ -9,6 +9,7 @@ import type { TranslateLookup } from '../i18n-store/storeTypes';
 import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { useDefaultLocale } from './i18n-config';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 const EMPTY_TRANSLATE_LOOKUPS: TranslateLookup<string>[] = [];
 
@@ -23,7 +24,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
   const scope = useRuntimeTranslationScope();
-  const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
+  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
 
   // Compiler optimization: pre-fetch translations
   useSubscribeToExtractedMessages(

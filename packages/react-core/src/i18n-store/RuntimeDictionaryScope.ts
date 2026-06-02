@@ -3,8 +3,7 @@ import type {
   StoreListener,
   Unsubscribe,
 } from './storeTypes';
-import { getDictionaryListenerKey } from 'gt-i18n/internal';
-import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
 
 type RuntimeDictionaryStore = {
   subscribeToDictionaryEntry: (
@@ -31,7 +30,7 @@ export class RuntimeDictionaryScope {
   constructor(private store: RuntimeDictionaryStore) {}
 
   translateEntry(lookup: DictionaryLookup) {
-    if (!getReactI18nCache().isDevHotReloadEnabled()) return;
+    if (!getI18nConfig().isDevHotReloadEnabled()) return;
 
     const key = getDictionaryListenerKey(lookup);
     if (this.pendingEntries.has(key)) return;
@@ -44,7 +43,7 @@ export class RuntimeDictionaryScope {
   }
 
   translateObject(lookup: DictionaryLookup) {
-    if (!getReactI18nCache().isDevHotReloadEnabled()) return;
+    if (!getI18nConfig().isDevHotReloadEnabled()) return;
 
     const key = getDictionaryListenerKey(lookup);
     if (this.pendingObjects.has(key)) return;

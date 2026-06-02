@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 type BranchProps = {
   children?: ReactNode;
   branch?: string | number | boolean;
+  _locale?: string;
+  _enableI18n?: boolean;
   [key: string]: ReactNode;
 };
 
@@ -14,8 +16,13 @@ type BranchProps = {
 function GtInternalBranch({
   children,
   branch,
+  _locale,
+  _enableI18n,
   ...branches
 }: BranchProps): ReactNode {
+  void _locale;
+  void _enableI18n;
+
   let branchKey = branch?.toString();
   if (typeof branchKey === 'string' && branchKey.startsWith('data-')) {
     branchKey = undefined;

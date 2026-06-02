@@ -1,18 +1,13 @@
-import { useCallback, useMemo } from 'react';
-import addGTIdentifier from '../../utils/internal/addGTIdentifier';
-import { removeInjectedT } from '../../utils/internal/removeInjectedT';
-import writeChildrenAsObjects from '../../utils/internal/writeChildrenAsObjects';
-import renderDefaultChildren from '../../utils/rendering/renderDefaultChildren';
-import renderTranslatedChildren from '../../utils/rendering/renderTranslatedChildren';
-import { renderVariable } from '../../utils/rendering/renderVariable';
-import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
-import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
-import type { JsxChildren } from 'generaltranslation/types';
-import type { TaggedChildren } from '../../utils/types';
 import type { ReactNode } from 'react';
-import { useShouldTranslate } from '../../hooks/utils';
+import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
+import { renderPreparedT } from '../../utils/rendering/renderPreparedT';
+import {
+  prepareT,
+  usePrepareT,
+  type JsxTranslationOptions,
+} from '../../utils/translation/prepareT';
 
 // ===== Component ===== //
 
@@ -27,10 +22,67 @@ function T(
   return useComputeT(props);
 }
 
+function GtInternalTranslateJsx(
+  props: {
+    children: ReactNode;
+  } & JsxTranslationOptions
+): ReactNode {
+  return <T {...props} />;
+}
+
+async function RscT({
+  children: sourceChildren,
+  locale,
+  enableI18n,
+  ...params
+}: {
+  children: ReactNode;
+  locale: string;
+  enableI18n: boolean;
+} & JsxTranslationOptions): Promise<ReactNode> {
+  const defaultLocale = getI18nConfig().getDefaultLocale();
+  const shouldTranslate =
+    enableI18n && getI18nConfig().requiresTranslation(locale);
+  const prepared = prepareT({
+    sourceChildren,
+    params,
+    locale,
+  });
+
+  if (!shouldTranslate) {
+    return renderPreparedT({
+      ...prepared,
+      targetJsxChildren: undefined,
+      locale,
+      defaultLocale,
+      enableI18n,
+      shouldTranslate,
+    });
+  }
+
+  const lookupTranslation =
+    await getReactI18nCache().getLookupTranslation(locale);
+  const targetJsxChildren = lookupTranslation(
+    prepared.sourceJsxChildren,
+    prepared.targetOptions
+  );
+
+  return renderPreparedT({
+    ...prepared,
+    targetJsxChildren,
+    locale,
+    defaultLocale,
+    enableI18n,
+    shouldTranslate,
+  });
+}
+
 /** @internal _gtt - The GT transformation for the component. */
 T._gtt = 'translate-client';
+GtInternalTranslateJsx._gtt = 'translate-client-automatic';
+RscT._gtt = 'translate-server';
 
-export { T };
+export { GtInternalTranslateJsx, RscT, T };
 
 // ===== Render Logic ===== //
 
@@ -49,20 +101,10 @@ function useComputeT({
     taggedSourceChildren,
     sourceJsxChildren,
     shouldTranslate,
-  } = usePrepSourceRender({
+  } = usePrepareT({
     sourceChildren,
     params,
   });
-
-  // Create a function to render source children
-  const renderSourceChildren = useCallback(() => {
-    return renderDefaultChildren({
-      children: taggedSourceChildren,
-      defaultLocale,
-      enableI18n,
-      renderVariable,
-    });
-  }, [defaultLocale, enableI18n, taggedSourceChildren]);
 
   // Lookup translation in cache
   const targetJsxChildren = useTranslate({
@@ -71,93 +113,12 @@ function useComputeT({
     options: targetOptions,
   });
 
-  // Render source children
-  if (!shouldTranslate || targetJsxChildren == null) {
-    return renderSourceChildren();
-  }
-
-  // Render translated children if found in cache
-  return renderTranslatedChildren({
-    source: taggedSourceChildren,
-    target: targetJsxChildren,
-    locales: [locale, defaultLocale],
-    enableI18n,
-    renderVariable,
-  });
-}
-
-// ===== Source Preparation ===== //
-
-function usePrepSourceRender({
-  sourceChildren,
-  params,
-}: {
-  sourceChildren: ReactNode;
-  params: JsxTranslationOptions;
-}): {
-  defaultLocale: string;
-  locale: string;
-  enableI18n: boolean;
-  taggedSourceChildren: TaggedChildren;
-  sourceJsxChildren: JsxChildren;
-  targetOptions: JsxTranslationOptionsWithSugar & {
-    $format: 'JSX';
-    $locale: string;
-  };
-  shouldTranslate: boolean;
-} {
-  const locale = useLocale();
-  const enableI18n = useEnableI18n();
-  const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate = useShouldTranslate();
-  const taggedSourceChildren = useMemo(
-    () => addGTIdentifier(removeInjectedT(sourceChildren)),
-    [sourceChildren]
-  );
-  const sourceJsxChildren = useMemo(
-    () => writeChildrenAsObjects(taggedSourceChildren),
-    [taggedSourceChildren]
-  );
-  const options = useMemo(() => normalizeParameters(params), [params]);
-  const targetOptions = useMemo(
-    () => ({ ...options, $locale: locale }),
-    [locale, options]
-  );
-
-  return {
+  return renderPreparedT({
+    taggedSourceChildren,
+    targetJsxChildren,
+    locale,
     defaultLocale,
     enableI18n,
-    locale,
-    taggedSourceChildren,
-    sourceJsxChildren,
-    targetOptions,
     shouldTranslate,
-  };
+  });
 }
-
-// ===== Options ===== //
-
-function normalizeParameters(
-  parameters: {
-    context?: string;
-    id?: string;
-    _hash?: string;
-  } & JsxTranslationOptions
-): JsxTranslationOptionsWithSugar & { $format: 'JSX' } {
-  return {
-    ...parameters,
-    $format: 'JSX',
-    $context: parameters.$context ?? parameters.context,
-    $id: parameters.$id ?? parameters.id,
-    $_hash: parameters.$_hash ?? parameters._hash,
-  };
-}
-
-// ===== Types ===== //
-
-type StripDollarPrefix<T> = {
-  [K in keyof T as K extends `$${infer Rest}` ? Rest : K]: T[K];
-};
-
-type JsxTranslationOptions = StripDollarPrefix<JsxTranslationOptionsWithSugar> &
-  JsxTranslationOptionsWithSugar;

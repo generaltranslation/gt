@@ -18,6 +18,7 @@ import type {
 } from 'gt-i18n/types';
 import { useDefaultLocale } from './i18n-config';
 import { useShouldTranslate } from './utils';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 // ===== Hook ===== //
 
@@ -28,7 +29,7 @@ export function useTranslations(id?: string): UseTranslationsFunction {
   const scope = useRuntimeDictionaryScope();
   const gt = useGT();
   const rootId = id ?? '';
-  const devHotReloadEnabled = getReactI18nCache().isDevHotReloadEnabled();
+  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
 
   useDictionaryObject({ locale: defaultLocale, id: rootId });
   useDictionaryObject({ locale, id: rootId });
