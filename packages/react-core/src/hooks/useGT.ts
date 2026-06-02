@@ -9,7 +9,7 @@ import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { useDefaultLocale } from './i18n-config';
 import { getI18nConfig } from 'gt-i18n/internal';
-import { useLookupResolver } from '../i18n-store/lookup-adapter/useLookupResolver';
+import { useTrackedTranslationResolver } from '../i18n-store/lookup-adapter/useTrackedTranslationResolver';
 
 const EMPTY_TRANSLATE_LOOKUPS: TranslateLookup<string>[] = [];
 
@@ -23,7 +23,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const lookupResolver = useLookupResolver();
+  const translationResolver = useTrackedTranslationResolver();
   const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
 
   // Compiler optimization: pre-fetch translations
@@ -57,10 +57,11 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         message,
         options: lookupOptions,
       };
-      const translation = lookupResolver.resolveTranslation(lookup);
+      translationResolver.track(lookup);
+      const translation = translationResolver.resolve(lookup);
 
       if (translation == null && devHotReloadEnabled) {
-        lookupResolver.handleMissingTranslation(lookup);
+        translationResolver.handleMissing(lookup);
       }
 
       return interpolateMessage({
@@ -74,8 +75,8 @@ export function useGT(_messages?: Message[]): GTFunctionType {
       defaultLocale,
       devHotReloadEnabled,
       locale,
-      lookupResolver,
       shouldTranslate,
+      translationResolver,
     ]
   );
 }
