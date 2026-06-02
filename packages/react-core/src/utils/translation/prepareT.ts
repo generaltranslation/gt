@@ -3,12 +3,12 @@ import addGTIdentifier from '../internal/addGTIdentifier';
 import { removeInjectedT } from '../internal/removeInjectedT';
 import writeChildrenAsObjects from '../internal/writeChildrenAsObjects';
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
-import { getShouldTranslate } from '../../hooks/utils';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { useShouldTranslate } from '../../hooks/utils';
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { ReactNode } from 'react';
 import type { TaggedChildren } from '../types';
+import { useDefaultLocale } from '../../hooks/i18n-config';
 
 type StripDollarPrefix<T> = {
   [K in keyof T as K extends `$${infer Rest}` ? Rest : K]: T[K];
@@ -40,8 +40,8 @@ function usePrepareT({
 } {
   const locale = useLocale();
   const enableI18n = useEnableI18n();
-  const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate = getShouldTranslate();
+  const defaultLocale = useDefaultLocale();
+  const shouldTranslate = useShouldTranslate();
   const prepared = useMemo(
     () =>
       prepareT({

@@ -1,4 +1,4 @@
-import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { getFormatLocales } from '../../hooks/utils';
 
@@ -38,7 +38,7 @@ function computeRelativeTime({
     enableI18n: _enableI18n,
     localesProp,
   });
-  const gt = getReactI18nCache().getGTClass();
+  const gt = getI18nConfig().getGTClass();
   const resolvedDate = date ?? children;
 
   if (process.env.NODE_ENV === 'development' && value !== undefined && !unit) {

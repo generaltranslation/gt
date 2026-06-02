@@ -3,7 +3,7 @@ import logger from '../logs/logger';
 import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
 import { validateConfig } from './validation/validateConfig';
 import { Translation } from './translations-manager/utils/types/translation-data';
-import { GT } from 'generaltranslation';
+import type { GT } from 'generaltranslation';
 import { LookupOptions } from '../translation-functions/types/options';
 import {
   SafeTranslationsLoader,
@@ -108,7 +108,7 @@ class I18nCache<
     const runtimeTranslationMetadata =
       this.config.runtimeTranslation?.metadata ?? {};
     const createTranslateMany = createTranslateManyFactory(
-      this.getGTClassClean(),
+      getI18nConfig().getGTClass(),
       runtimeTranslationTimeout,
       runtimeTranslationMetadata
     );
@@ -200,11 +200,10 @@ class I18nCache<
    * Get a gt class instance
    * @param locale - The locale to bind to the GT instance. When omitted, the GT instance is locale agnostic.
    * TODO: keep a cache to avoid creating new instances unnecessarily
+   * @deprecated use getI18nConfig().getGTClass() instead
    */
   getGTClass(locale?: string): GT {
-    return this.getGTClassClean(
-      locale ? this._resolveLocale(locale) : undefined
-    );
+    return getI18nConfig().getGTClass(locale);
   }
 
   // ========== Translation Updates ========== //
@@ -706,33 +705,6 @@ class I18nCache<
       translation = await txCache.miss({ message, options: lookupOptions });
     }
     return translation;
-  }
-
-  /**
-   * A helper function to create a gt class that is locale agnostic
-   * This is helpful for when our getLocale function is bound to a
-   * specific context
-   */
-  private getGTClassClean(locale?: string) {
-    const i18nConfig = getI18nConfig();
-    return new GT({
-      sourceLocale: i18nConfig.getDefaultLocale(),
-      targetLocale: locale,
-      // GT validates approved locales before constructing its LocaleConfig, so
-      // pass canonical locales here while preserving alias target locales.
-      locales: Array.from(
-        new Set(
-          i18nConfig
-            .getLocales()
-            .map((locale) => i18nConfig.resolveCanonicalLocale(locale))
-        )
-      ),
-      customMapping: i18nConfig.getCustomMapping(),
-      projectId: this.config.projectId,
-      baseUrl: this.config.runtimeUrl || undefined,
-      apiKey: this.config.apiKey,
-      devApiKey: this.config.devApiKey,
-    });
   }
 }
 

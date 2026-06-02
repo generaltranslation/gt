@@ -1,7 +1,4 @@
-import {
-  initializeI18nConfig,
-  setupGTServicesEnabled,
-} from 'gt-i18n/internal';
+import { initializeI18nConfig, setupGTServicesEnabled } from 'gt-i18n/internal';
 import type {
   GTServicesEnabledParams,
   I18nConfigParams,
