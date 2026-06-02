@@ -1,6 +1,14 @@
-import { getI18nStore } from './singleton-operations';
-import type { TranslateLookup, Unsubscribe } from './storeTypes';
+import type { StoreListener, TranslateLookup, Unsubscribe } from './storeTypes';
+import type { Translation } from 'gt-i18n/types';
 import { getI18nConfig, getTranslateListenerKey } from 'gt-i18n/internal';
+
+type RuntimeTranslationStore = {
+  subscribeToTranslate: <T extends Translation>(
+    lookup: TranslateLookup<T>,
+    listener: StoreListener
+  ) => Unsubscribe;
+  translate: (lookup: TranslateLookup) => void;
+};
 
 /**
  * Owned by I18nStore, this should not be imported to any other files
@@ -10,17 +18,18 @@ export class RuntimeTranslationScope {
   private listeners = new Set<() => void>();
   private pendingKeys = new Map<string, Unsubscribe>();
 
+  constructor(private store: RuntimeTranslationStore) {}
+
   translate(lookup: TranslateLookup) {
     if (!getI18nConfig().isDevHotReloadEnabled()) return;
 
     const key = getTranslateListenerKey(lookup);
     if (this.pendingKeys.has(key)) return;
-    const store = getI18nStore();
-    const unsubscribe = store.subscribeToTranslate(lookup, () =>
+    const unsubscribe = this.store.subscribeToTranslate(lookup, () =>
       this.notifyResolved(lookup)
     );
     this.pendingKeys.set(key, unsubscribe);
-    store.translate(lookup);
+    this.store.translate(lookup);
   }
 
   /**

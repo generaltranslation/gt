@@ -1,6 +1,22 @@
-import { getI18nStore } from './singleton-operations';
-import type { DictionaryLookup, Unsubscribe } from './storeTypes';
+import type {
+  DictionaryLookup,
+  StoreListener,
+  Unsubscribe,
+} from './storeTypes';
 import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
+
+type RuntimeDictionaryStore = {
+  subscribeToDictionaryEntry: (
+    lookup: DictionaryLookup,
+    listener: StoreListener
+  ) => Unsubscribe;
+  subscribeToDictionaryObject: (
+    lookup: DictionaryLookup,
+    listener: StoreListener
+  ) => Unsubscribe;
+  translateDictionaryEntry: (lookup: DictionaryLookup) => void;
+  translateDictionaryObject: (lookup: DictionaryLookup) => void;
+};
 
 /**
  * Tracks dictionary lookups discovered by useTranslations callbacks.
@@ -11,18 +27,19 @@ export class RuntimeDictionaryScope {
   private pendingEntries = new Map<string, Unsubscribe>();
   private pendingObjects = new Map<string, Unsubscribe>();
 
+  constructor(private store: RuntimeDictionaryStore) {}
+
   translateEntry(lookup: DictionaryLookup) {
     if (!getI18nConfig().isDevHotReloadEnabled()) return;
 
     const key = getDictionaryListenerKey(lookup);
     if (this.pendingEntries.has(key)) return;
 
-    const store = getI18nStore();
-    const unsubscribe = store.subscribeToDictionaryEntry(lookup, () =>
+    const unsubscribe = this.store.subscribeToDictionaryEntry(lookup, () =>
       this.notifyResolved(key, this.pendingEntries)
     );
     this.pendingEntries.set(key, unsubscribe);
-    store.translateDictionaryEntry(lookup);
+    this.store.translateDictionaryEntry(lookup);
   }
 
   translateObject(lookup: DictionaryLookup) {
@@ -31,12 +48,11 @@ export class RuntimeDictionaryScope {
     const key = getDictionaryListenerKey(lookup);
     if (this.pendingObjects.has(key)) return;
 
-    const store = getI18nStore();
-    const unsubscribe = store.subscribeToDictionaryObject(lookup, () =>
+    const unsubscribe = this.store.subscribeToDictionaryObject(lookup, () =>
       this.notifyResolved(key, this.pendingObjects)
     );
     this.pendingObjects.set(key, unsubscribe);
-    store.translateDictionaryObject(lookup);
+    this.store.translateDictionaryObject(lookup);
   }
 
   getSnapshot = () => this.version;

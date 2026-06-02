@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useEnableI18n, useLocale } from './condition-store';
 import { getReadonlyConditionStoreWithFallback } from '../condition-store/singleton-operations';
 import { getI18nConfig } from 'gt-i18n/internal';
+import { useConditionAdapter } from '../condition-store/condition-adapter/useConditionAdapter';
 
 const EMPTY_LOCALES_PROP: string[] = [];
 
@@ -39,7 +40,10 @@ export function getFormatLocales({
 }
 
 export function useShouldTranslate(): boolean {
-  return getShouldTranslate();
+  const conditionAdapter = useConditionAdapter();
+  const enableI18n = conditionAdapter.getEnableI18n();
+  const locale = conditionAdapter.getLocale();
+  return enableI18n && getI18nConfig().requiresTranslation(locale);
 }
 
 /**
