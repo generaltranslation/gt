@@ -7,6 +7,7 @@ import type {
   DictionaryLookup,
   DictionaryObjectSnapshot,
   StoreListener,
+  TranslateEventListener,
   TranslateLookup,
   TranslateManySnapshot,
   TranslateSnapshot,
@@ -26,6 +27,10 @@ export type LookupAdapter = {
   subscribeToTranslate: <T extends Translation>(
     lookup: TranslateLookup<T>,
     listener: StoreListener
+  ) => Unsubscribe;
+
+  subscribeToTranslationEvents: (
+    listener: TranslateEventListener
   ) => Unsubscribe;
 
   /**

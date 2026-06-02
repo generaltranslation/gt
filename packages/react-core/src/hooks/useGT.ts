@@ -1,15 +1,15 @@
 import { useCallback, useMemo } from 'react';
 import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
 import type { InlineTranslationOptionsFields } from 'gt-i18n/internal/types';
-import { useRuntimeTranslationScope, useTranslateMany } from './external-store';
+import { useTranslateMany } from './external-store';
 import { useLocale } from './condition-store';
 import { useShouldTranslate } from './utils';
-import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import type { TranslateLookup } from '../i18n-store/storeTypes';
 import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { useDefaultLocale } from './i18n-config';
 import { getI18nConfig } from 'gt-i18n/internal';
+import { useTrackedTranslationResolver } from '../i18n-store/lookup-adapter/useTrackedTranslationResolver';
 
 const EMPTY_TRANSLATE_LOOKUPS: TranslateLookup<string>[] = [];
 
@@ -23,7 +23,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const scope = useRuntimeTranslationScope();
+  const translationResolver = useTrackedTranslationResolver();
   const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
 
   // Compiler optimization: pre-fetch translations
@@ -52,18 +52,16 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         options,
         'ICU'
       );
-      const translation = getReactI18nCache().lookupTranslation(
-        lookupOptions.$locale,
+      const lookup = {
+        locale: lookupOptions.$locale,
         message,
-        lookupOptions
-      );
+        options: lookupOptions,
+      };
+      translationResolver.track(lookup);
+      const translation = translationResolver.resolve(lookup);
 
       if (translation == null && devHotReloadEnabled) {
-        scope.translate({
-          locale: lookupOptions.$locale,
-          message,
-          options: lookupOptions,
-        });
+        translationResolver.handleMissing(lookup);
       }
 
       return interpolateMessage({
@@ -73,7 +71,13 @@ export function useGT(_messages?: Message[]): GTFunctionType {
         sourceLocale: defaultLocale,
       });
     },
-    [defaultLocale, devHotReloadEnabled, locale, scope, shouldTranslate]
+    [
+      defaultLocale,
+      devHotReloadEnabled,
+      locale,
+      shouldTranslate,
+      translationResolver,
+    ]
   );
 }
 
