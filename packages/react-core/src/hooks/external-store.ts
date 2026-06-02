@@ -59,7 +59,7 @@ export function useTranslateMany<T extends Translation>(
 
   const storeTranslations = useSyncExternalStore(
     (listener) => adapter.subscribeToTranslateMany(lookups, listener),
-    () => adapter.getStoreTranslations(lookups),
+    () => adapter.getTranslationsSnapshot(lookups),
     () => adapter.getServerTranslations(lookups)
   );
 
@@ -80,7 +80,7 @@ export function useDictionaryEntry(
 
   const storeDictionaryEntry = useSyncExternalStore(
     (listener) => adapter.subscribeToDictionaryEntry(lookup, listener),
-    () => adapter.getStoreDictionaryEntry(lookup),
+    () => adapter.getDictionaryEntrySnapshot(lookup),
     () => adapter.getServerDictionaryEntry(lookup)
   );
 
@@ -106,7 +106,7 @@ export function useDictionaryObject(
 
   const storeDictionaryObject = useSyncExternalStore(
     (listener) => adapter.subscribeToDictionaryObject(lookup, listener),
-    () => adapter.getStoreDictionaryObject(lookup),
+    () => adapter.getDictionaryObjectSnapshot(lookup),
     () => adapter.getServerDictionaryObject(lookup)
   );
 

@@ -42,14 +42,15 @@ export function useLookupResolver(): LookupResolver {
         adapter.handleMissingTranslation?.(lookup);
       },
       resolveDictionaryEntry: (lookup) => {
-        const storeDictionaryEntry = adapter.getStoreDictionaryEntry(lookup);
+        const storeDictionaryEntry = adapter.getDictionaryEntrySnapshot(lookup);
         return adapter.resolveDictionaryEntry(lookup, storeDictionaryEntry);
       },
       handleMissingDictionaryEntry: (lookup) => {
         adapter.handleMissingDictionaryEntry?.(lookup);
       },
       resolveDictionaryObject: (lookup) => {
-        const storeDictionaryObject = adapter.getStoreDictionaryObject(lookup);
+        const storeDictionaryObject =
+          adapter.getDictionaryObjectSnapshot(lookup);
         return adapter.resolveDictionaryObject(lookup, storeDictionaryObject);
       },
       handleMissingDictionaryObject: (lookup) => {

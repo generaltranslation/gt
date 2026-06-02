@@ -29,6 +29,9 @@ export type LookupAdapter = {
     listener: StoreListener
   ) => Unsubscribe;
 
+  /**
+   * Used for scope subscriptions
+   */
   subscribeToTranslationEvents: (
     listener: TranslateEventListener
   ) => Unsubscribe;
@@ -54,10 +57,13 @@ export type LookupAdapter = {
     listener: StoreListener
   ) => Unsubscribe;
 
-  getStoreTranslations: <T extends Translation>(
+  getTranslationsSnapshot: <T extends Translation>(
     lookups: readonly TranslateLookup<T>[]
   ) => TranslateManySnapshot<T>;
 
+  /**
+   * @deprecated
+   */
   getServerTranslations: <T extends Translation>(
     lookups: readonly TranslateLookup<T>[]
   ) => TranslateManySnapshot<T>;
@@ -77,10 +83,13 @@ export type LookupAdapter = {
     listener: StoreListener
   ) => Unsubscribe;
 
-  getStoreDictionaryEntry: (
+  getDictionaryEntrySnapshot: (
     lookup: DictionaryLookup
   ) => DictionaryEntrySnapshot;
 
+  /**
+   * @deprecated
+   */
   getServerDictionaryEntry: (
     lookup: DictionaryLookup
   ) => DictionaryEntrySnapshot;
@@ -97,10 +106,13 @@ export type LookupAdapter = {
     listener: StoreListener
   ) => Unsubscribe;
 
-  getStoreDictionaryObject: (
+  getDictionaryObjectSnapshot: (
     lookup: DictionaryLookup
   ) => DictionaryObjectSnapshot;
 
+  /**
+   * @deprecated
+   */
   getServerDictionaryObject: (
     lookup: DictionaryLookup
   ) => DictionaryObjectSnapshot;

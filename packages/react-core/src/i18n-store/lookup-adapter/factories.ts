@@ -36,7 +36,7 @@ export function createSPALookupAdapter(): LookupAdapter {
       }
     },
     subscribeToTranslateMany,
-    getStoreTranslations: (lookups) => {
+    getTranslationsSnapshot: (lookups) => {
       return getI18nStore().getTranslateManySnapshot(lookups);
     },
     getServerTranslations: (lookups) => {
@@ -47,7 +47,7 @@ export function createSPALookupAdapter(): LookupAdapter {
     },
     handleMissingTranslations,
     subscribeToDictionaryEntry,
-    getStoreDictionaryEntry: (lookup) => {
+    getDictionaryEntrySnapshot: (lookup) => {
       return getI18nStore().getDictionaryEntrySnapshot(lookup);
     },
     getServerDictionaryEntry: (lookup) => {
@@ -62,7 +62,7 @@ export function createSPALookupAdapter(): LookupAdapter {
       }
     },
     subscribeToDictionaryObject,
-    getStoreDictionaryObject: (lookup) => {
+    getDictionaryObjectSnapshot: (lookup) => {
       return getI18nStore().getDictionaryObjectSnapshot(lookup);
     },
     getServerDictionaryObject: (lookup) => {
@@ -125,7 +125,7 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       }
       return i18nStore.subscribeToTranslateMany(lookups, listener);
     },
-    getStoreTranslations: (lookups) => {
+    getTranslationsSnapshot: (lookups) => {
       if (!getI18nConfig().isDevHotReloadEnabled()) {
         return EMPTY_TRANSLATIONS;
       }
@@ -167,7 +167,7 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       }
       return i18nStore.subscribeToDictionaryEntry(lookup, listener);
     },
-    getStoreDictionaryEntry: (lookup) => {
+    getDictionaryEntrySnapshot: (lookup) => {
       if (!getI18nConfig().isDevHotReloadEnabled()) {
         return undefined;
       }
@@ -193,7 +193,7 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       }
       return i18nStore.subscribeToDictionaryObject(lookup, listener);
     },
-    getStoreDictionaryObject: (lookup) => {
+    getDictionaryObjectSnapshot: (lookup) => {
       if (!getI18nConfig().isDevHotReloadEnabled()) {
         return undefined;
       }
