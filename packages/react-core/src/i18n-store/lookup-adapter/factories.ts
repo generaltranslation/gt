@@ -3,6 +3,7 @@ import { getI18nStore } from '../singleton-operations';
 import type {
   DictionaryLookup,
   StoreListener,
+  TranslateEventListener,
   TranslateLookup,
   TranslateManySnapshot,
   Unsubscribe,
@@ -22,6 +23,7 @@ export function createSPALookupAdapter(): LookupAdapter {
   return {
     mode: 'SPA',
     subscribeToTranslate,
+    subscribeToTranslationEvents,
     getStoreTranslation: (lookup) => {
       return getI18nStore().getTranslateSnapshot(lookup);
     },
@@ -96,6 +98,12 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
         return noopSubscribe();
       }
       return i18nStore.subscribeToTranslate(lookup, listener);
+    },
+    subscribeToTranslationEvents: (listener) => {
+      if (!getI18nConfig().isDevHotReloadEnabled()) {
+        return noopSubscribe();
+      }
+      return i18nStore.subscribeToTranslationEvents(listener);
     },
     getStoreTranslation: (lookup) => {
       if (!getI18nConfig().isDevHotReloadEnabled()) {
@@ -218,6 +226,12 @@ function subscribeToTranslate<T extends Translation>(
   listener: StoreListener
 ): Unsubscribe {
   return getI18nStore().subscribeToTranslate(lookup, listener);
+}
+
+function subscribeToTranslationEvents(
+  listener: TranslateEventListener
+): Unsubscribe {
+  return getI18nStore().subscribeToTranslationEvents(listener);
 }
 
 function subscribeToTranslateMany<T extends Translation>(

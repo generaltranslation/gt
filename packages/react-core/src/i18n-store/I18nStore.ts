@@ -7,6 +7,7 @@ import type {
   DictionaryLookup,
   DictionaryObjectSnapshot,
   StoreListener,
+  TranslateEventListener,
   TranslateLookup,
   TranslateManySnapshot,
   TranslateSnapshot,
@@ -26,7 +27,6 @@ import {
   ReactI18nCacheParams,
 } from '../i18n-cache/ReactI18nCache';
 
-type TranslateStoreListener = (lookup: TranslateLookup) => void;
 type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
 export type I18nStoreParams = ReactI18nCacheParams;
@@ -47,7 +47,7 @@ export class I18nStore {
 
   // ----- Listener Sets ----- //
 
-  private translateListeners = new Set<TranslateStoreListener>();
+  private translateListeners = new Set<TranslateEventListener>();
   private translateManySnapshotCache = new WeakMap<
     readonly TranslateLookup[],
     TranslateManySnapshot
@@ -122,12 +122,18 @@ export class I18nStore {
     listener: StoreListener
   ): Unsubscribe => {
     const lookupKey = getTranslateListenerKey(lookup);
-    const wrappedListener: TranslateStoreListener = (lookup) => {
+    const wrappedListener: TranslateEventListener = (lookup) => {
       if (getTranslateListenerKey(lookup) === lookupKey) {
         listener();
       }
     };
     return subscribeToSet(this.translateListeners, wrappedListener);
+  };
+
+  subscribeToTranslationEvents = (
+    listener: TranslateEventListener
+  ): Unsubscribe => {
+    return subscribeToSet(this.translateListeners, listener);
   };
 
   subscribeToTranslateMany = <T extends Translation>(
