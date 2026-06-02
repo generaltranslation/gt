@@ -40,7 +40,7 @@ export { useInternalLocaleSelector } from './hooks/useInternalLocaleSelector';
 export { InternalLocaleSelector } from './components/helpers/InternalLocaleSelector';
 export { InternalGTProvider } from './context/InternalGTProvider';
 export { internalInitializeGTSPA } from './setup/initializeGTSPA';
-export { internalInitializeGTSSR } from './setup/initializeGTSSR';
+export { internalInitializeGTSRA } from './setup/initializeGTSRA';
 export {
   getI18nStore,
   setI18nStore,

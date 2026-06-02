@@ -8,7 +8,7 @@ import { setRenderStrategy } from './globals';
 /**
  * Validation and setup for read only properties
  */
-export function internalInitializeGTSSR(
+export function internalInitializeGTSRA(
   config: I18nConfigParams & GTServicesEnabledParams
 ): void {
   setRenderStrategy('server-render');
