@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { I18nStore, type I18nStoreParams } from '../i18n-store/I18nStore';
 import type { Dictionary, Translation } from 'gt-i18n/types';
-import type {
-  Locale,
-  Hash,
-  WritableConditionStoreInterface,
-} from 'gt-i18n/internal/types';
+import type { Locale, Hash } from 'gt-i18n/internal/types';
 import { GTContext } from './context';
+import type { ReadonlyConditionStore } from 'gt-i18n/internal';
 
 export type InternalGTProviderProps = I18nStoreParams & {
   children?: ReactNode;
@@ -14,7 +11,7 @@ export type InternalGTProviderProps = I18nStoreParams & {
   translations: Record<Locale, Record<Hash, Translation>>;
   dictionaries?: Record<Locale, Dictionary>;
   // Declared upstream dependent on environment
-  conditionStore: WritableConditionStoreInterface;
+  conditionStore: ReadonlyConditionStore;
 };
 
 // ===== Component ===== //
@@ -39,13 +36,6 @@ export function InternalGTProvider({
     i18nStoreRef.current = new I18nStore(config);
   }
 
-  // Update cache with data from server, do not emit events
-  useEffect(() => {
-    if (i18nStoreRef.current == null) return;
-    i18nStoreRef.current.updateTranslations(translations);
-    i18nStoreRef.current.updateDictionaries(dictionaries ?? {});
-  }, [translations, dictionaries]);
-
   const value = useMemo(
     () => ({
       translationsSnapshot: translations,
@@ -55,6 +45,13 @@ export function InternalGTProvider({
     }),
     [translations, dictionaries, i18nStoreRef.current, conditionStore]
   );
+
+  // Update cache with data from server, do not emit events
+  useEffect(() => {
+    if (i18nStoreRef.current == null) return;
+    i18nStoreRef.current.updateTranslations(translations);
+    i18nStoreRef.current.updateDictionaries(dictionaries ?? {});
+  }, [translations, dictionaries]);
 
   return <GTContext.Provider value={value}>{children}</GTContext.Provider>;
 }

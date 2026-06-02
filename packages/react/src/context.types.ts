@@ -1,9 +1,9 @@
-import { BrowserGTProvider } from './provider/BrowserGTProvider';
+import type { GTProvider as RuntimeGTProvider } from './provider/GTProvider';
 
 /**
  * Wrap GTProvider around the content that you want to translate
  */
-export const GTProvider: typeof BrowserGTProvider = () => {
+export const GTProvider: typeof RuntimeGTProvider = () => {
   throw new Error(
     'gt-react: You have imported a function from the dedicated types entrypoint. If you are seeing this error, it means something has gone wrong.'
   );

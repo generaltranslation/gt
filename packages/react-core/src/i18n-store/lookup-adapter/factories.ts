@@ -132,6 +132,12 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       return lookupTranslations(translationsSnapshot, lookups);
     },
     resolveTranslations: (lookups, storeTranslations) => {
+      /**
+       * TODO:
+       * For SRA, do we want the server to always win out?
+       * If client somehow changes a value, wouldn't we want that to win
+       * in the next render cycle?
+       */
       return lookupTranslations(
         translationsSnapshot,
         lookups,
