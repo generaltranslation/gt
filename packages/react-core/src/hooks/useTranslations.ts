@@ -5,12 +5,8 @@ import {
   renderDictionaryObject,
   resolveDictionaryLookupOptions,
 } from 'gt-i18n/internal';
-import {
-  useDictionaryObject,
-  useRuntimeDictionaryScope,
-} from './external-store';
+import { useDictionaryObject } from './external-store';
 import { useLocale } from './condition-store';
-import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { useGT } from './useGT';
 import type {
   DictionaryObjectTranslation,
@@ -18,7 +14,7 @@ import type {
 } from 'gt-i18n/types';
 import { useDefaultLocale } from './i18n-config';
 import { useShouldTranslate } from './utils';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { useLookupResolver } from '../i18n-store/lookup-adapter/useLookupResolver';
 
 // ===== Hook ===== //
 
@@ -26,19 +22,20 @@ export function useTranslations(id?: string): UseTranslationsFunction {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const scope = useRuntimeDictionaryScope();
+  const lookupResolver = useLookupResolver();
   const gt = useGT();
   const rootId = id ?? '';
-  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
 
   useDictionaryObject({ locale: defaultLocale, id: rootId });
   useDictionaryObject({ locale, id: rootId });
 
   const translateEntry = useCallback(
     (suffix: string, options: DictionaryTranslationOptions = {}) => {
-      const i18nCache = getReactI18nCache();
       const entryId = getEntryId(id, suffix);
-      const sourceEntry = i18nCache.lookupDictionary(defaultLocale, entryId);
+      const sourceEntry = lookupResolver.resolveDictionaryEntry({
+        locale: defaultLocale,
+        id: entryId,
+      });
       if (sourceEntry === undefined) {
         throw new Error(`Dictionary entry ${entryId} cannot be found`);
       }
@@ -50,9 +47,10 @@ export function useTranslations(id?: string): UseTranslationsFunction {
         });
       }
 
-      const targetEntry = i18nCache.lookupDictionary(locale, entryId);
-      if (targetEntry === undefined && devHotReloadEnabled) {
-        scope.translateEntry({ locale, id: entryId });
+      const targetLookup = { locale, id: entryId };
+      const targetEntry = lookupResolver.resolveDictionaryEntry(targetLookup);
+      if (targetEntry === undefined) {
+        lookupResolver.handleMissingDictionaryEntry(targetLookup);
       }
 
       if (targetEntry?.entry != null) {
@@ -74,26 +72,26 @@ export function useTranslations(id?: string): UseTranslationsFunction {
         $locale: locale,
       });
     },
-    [defaultLocale, devHotReloadEnabled, gt, id, locale, scope, shouldTranslate]
+    [defaultLocale, gt, id, locale, lookupResolver, shouldTranslate]
   );
 
   const translateObject = useCallback(
     (suffix: string) => {
-      const i18nCache = getReactI18nCache();
       const entryId = getEntryId(id, suffix);
-      const sourceObject = i18nCache.lookupDictionaryObj(
-        defaultLocale,
-        entryId
-      );
+      const sourceObject = lookupResolver.resolveDictionaryObject({
+        locale: defaultLocale,
+        id: entryId,
+      });
       if (sourceObject === undefined) {
         throw new Error(`Dictionary entry ${entryId} cannot be found`);
       }
 
       let targetObject = undefined;
       if (shouldTranslate) {
-        targetObject = i18nCache.lookupDictionaryObj(locale, entryId);
-        if (targetObject === undefined && devHotReloadEnabled) {
-          scope.translateObject({ locale, id: entryId });
+        const targetLookup = { locale, id: entryId };
+        targetObject = lookupResolver.resolveDictionaryObject(targetLookup);
+        if (targetObject === undefined) {
+          lookupResolver.handleMissingDictionaryObject(targetLookup);
         }
       }
 
@@ -101,14 +99,14 @@ export function useTranslations(id?: string): UseTranslationsFunction {
         sourceObject,
         targetObject,
         translate: (sourceEntry, dictionaryOptions) =>
-          i18nCache.lookupTranslation(
-            shouldTranslate ? locale : defaultLocale,
-            sourceEntry.entry,
-            dictionaryOptions
-          ),
+          lookupResolver.resolveTranslation({
+            locale: shouldTranslate ? locale : defaultLocale,
+            message: sourceEntry.entry,
+            options: dictionaryOptions,
+          }),
       });
     },
-    [defaultLocale, devHotReloadEnabled, id, locale, scope, shouldTranslate]
+    [defaultLocale, id, locale, lookupResolver, shouldTranslate]
   );
 
   return useMemo(
