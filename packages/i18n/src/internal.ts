@@ -42,3 +42,4 @@ export { getI18nCache as getI18nManager } from './i18n-cache/singleton-operation
 export { setI18nCache as setI18nManager } from './i18n-cache/singleton-operations';
 export { createConditionStoreSingleton } from './condition-store/createConditionStoreSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';
+export { hashMessage } from './utils/hashMessage';
