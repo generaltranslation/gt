@@ -36,6 +36,9 @@ export type LookupAdapter = {
     listener: TranslateEventListener
   ) => Unsubscribe;
 
+  /**
+   * @deprecated
+   */
   getTranslationSnapshot: <T extends Translation>(
     lookup: TranslateLookup<T>
   ) => TranslateSnapshot<T>;
@@ -61,13 +64,6 @@ export type LookupAdapter = {
     lookups: readonly TranslateLookup<T>[]
   ) => TranslateManySnapshot<T>;
 
-  /**
-   * @deprecated
-   */
-  getServerTranslations: <T extends Translation>(
-    lookups: readonly TranslateLookup<T>[]
-  ) => TranslateManySnapshot<T>;
-
   resolveTranslations: <T extends Translation>(
     lookups: readonly TranslateLookup<T>[],
     storeTranslations: TranslateManySnapshot<T>
@@ -87,13 +83,6 @@ export type LookupAdapter = {
     lookup: DictionaryLookup
   ) => DictionaryEntrySnapshot;
 
-  /**
-   * @deprecated
-   */
-  getServerDictionaryEntry: (
-    lookup: DictionaryLookup
-  ) => DictionaryEntrySnapshot;
-
   resolveDictionaryEntry: (
     lookup: DictionaryLookup,
     storeDictionaryEntry: DictionaryEntrySnapshot
@@ -107,13 +96,6 @@ export type LookupAdapter = {
   ) => Unsubscribe;
 
   getDictionaryObjectSnapshot: (
-    lookup: DictionaryLookup
-  ) => DictionaryObjectSnapshot;
-
-  /**
-   * @deprecated
-   */
-  getServerDictionaryObject: (
     lookup: DictionaryLookup
   ) => DictionaryObjectSnapshot;
 

@@ -23,6 +23,7 @@ import {
 import { subscribeToSet } from './utils/subscriptions';
 import { Hash, Locale } from 'gt-i18n/internal/types';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import { lookupTranslation } from './lookup-adapter/utils/translations';
 
 type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
@@ -167,14 +168,23 @@ export class I18nStore {
 
   // ----- Snapshots ----- //
 
-  getTranslateSnapshot = <T extends Translation>({
-    locale,
-    message,
-    options,
-  }: TranslateLookup<T>): TranslateSnapshot<T> => {
-    return getReactI18nCache().lookupTranslation<T>(locale, message, options);
+  getTranslateSnapshot = <T extends Translation>(
+    lookup: TranslateLookup<T>,
+    translationsSnapshot: Record<Locale, Record<Hash, Translation>> = {}
+  ): TranslateSnapshot<T> => {
+    return (
+      lookupTranslation(translationsSnapshot, lookup) ??
+      getReactI18nCache().lookupTranslation<T>(
+        lookup.locale,
+        lookup.message,
+        lookup.options
+      )
+    );
   };
 
+  /**
+   * TODO: rework this to behave more like getTranslateSnapshot
+   */
   getTranslateManySnapshot = <T extends Translation>(
     lookups: readonly TranslateLookup<T>[]
   ): TranslateManySnapshot<T> => {

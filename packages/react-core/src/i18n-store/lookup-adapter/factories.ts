@@ -24,6 +24,9 @@ export function createSPALookupAdapter(): LookupAdapter {
     mode: 'SPA',
     subscribeToTranslate,
     subscribeToTranslationEvents,
+    /**
+     * @deprecated
+     */
     getTranslationSnapshot: (lookup) => {
       return getI18nStore().getTranslateSnapshot(lookup);
     },
@@ -39,18 +42,12 @@ export function createSPALookupAdapter(): LookupAdapter {
     getTranslationsSnapshot: (lookups) => {
       return getI18nStore().getTranslateManySnapshot(lookups);
     },
-    getServerTranslations: (lookups) => {
-      return getI18nStore().getTranslateManySnapshot(lookups);
-    },
     resolveTranslations: (_lookups, storeTranslations) => {
       return storeTranslations;
     },
     handleMissingTranslations,
     subscribeToDictionaryEntry,
     getDictionaryEntrySnapshot: (lookup) => {
-      return getI18nStore().getDictionaryEntrySnapshot(lookup);
-    },
-    getServerDictionaryEntry: (lookup) => {
       return getI18nStore().getDictionaryEntrySnapshot(lookup);
     },
     resolveDictionaryEntry: (_lookup, storeDictionaryEntry) => {
@@ -63,9 +60,6 @@ export function createSPALookupAdapter(): LookupAdapter {
     },
     subscribeToDictionaryObject,
     getDictionaryObjectSnapshot: (lookup) => {
-      return getI18nStore().getDictionaryObjectSnapshot(lookup);
-    },
-    getServerDictionaryObject: (lookup) => {
       return getI18nStore().getDictionaryObjectSnapshot(lookup);
     },
     resolveDictionaryObject: (_lookup, storeDictionaryObject) => {
@@ -91,23 +85,22 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
   return {
     mode: 'server-render',
     subscribeToTranslate: (lookup, listener) => {
-      if (!getI18nConfig().isDevHotReloadEnabled()) {
-        return noopSubscribe();
-      }
       return i18nStore.subscribeToTranslate(lookup, listener);
     },
     subscribeToTranslationEvents: (listener) => {
-      if (!getI18nConfig().isDevHotReloadEnabled()) {
-        return noopSubscribe();
-      }
       return i18nStore.subscribeToTranslationEvents(listener);
     },
+    /**
+     * @deprecated
+     */
     getTranslationSnapshot: (lookup) => {
       // SRA rule: only in dev hot reload, fallback to i18nStore
-      return (lookupTranslation(translationsSnapshot, lookup) ??
-        getI18nConfig().isDevHotReloadEnabled())
-        ? i18nStore.getTranslateSnapshot(lookup)
-        : undefined;
+      return (
+        lookupTranslation(translationsSnapshot, lookup) ??
+        (getI18nConfig().isDevHotReloadEnabled()
+          ? i18nStore.getTranslateSnapshot(lookup)
+          : undefined)
+      );
     },
     resolveTranslation: (lookup, storeTranslation) => {
       return (
@@ -120,22 +113,16 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       }
     },
     subscribeToTranslateMany: (lookups, listener) => {
-      if (!getI18nConfig().isDevHotReloadEnabled()) {
-        return noopSubscribe();
-      }
       return i18nStore.subscribeToTranslateMany(lookups, listener);
     },
     getTranslationsSnapshot: (lookups) => {
-      if (!getI18nConfig().isDevHotReloadEnabled()) {
+      if (!getI18nConfig().isDevHotReloadEnabled() || lookups.length === 0) {
         return EMPTY_TRANSLATIONS;
       }
-      return i18nStore.getTranslateManySnapshot(lookups);
-    },
-    getServerTranslations: (lookups) => {
-      if (lookups.length === 0) {
-        return EMPTY_TRANSLATIONS;
-      }
-      return lookupTranslations(translationsSnapshot, lookups);
+      return (
+        lookupTranslations(translationsSnapshot, lookups) ??
+        i18nStore.getTranslateManySnapshot(lookups)
+      );
     },
     resolveTranslations: (lookups, storeTranslations) => {
       if (lookups.length === 0) {
@@ -162,19 +149,16 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       });
     },
     subscribeToDictionaryEntry: (lookup, listener) => {
-      if (!getI18nConfig().isDevHotReloadEnabled()) {
-        return noopSubscribe();
-      }
       return i18nStore.subscribeToDictionaryEntry(lookup, listener);
     },
     getDictionaryEntrySnapshot: (lookup) => {
       if (!getI18nConfig().isDevHotReloadEnabled()) {
         return undefined;
       }
-      return i18nStore.getDictionaryEntrySnapshot(lookup);
-    },
-    getServerDictionaryEntry: (lookup) => {
-      return lookupDictionaryEntry(dictionariesSnapshot, lookup);
+      return (
+        lookupDictionaryEntry(dictionariesSnapshot, lookup) ??
+        i18nStore.getDictionaryEntrySnapshot(lookup)
+      );
     },
     resolveDictionaryEntry: (lookup, storeDictionaryEntry) => {
       return (
@@ -188,19 +172,16 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       }
     },
     subscribeToDictionaryObject: (lookup, listener) => {
-      if (!getI18nConfig().isDevHotReloadEnabled()) {
-        return noopSubscribe();
-      }
       return i18nStore.subscribeToDictionaryObject(lookup, listener);
     },
     getDictionaryObjectSnapshot: (lookup) => {
       if (!getI18nConfig().isDevHotReloadEnabled()) {
         return undefined;
       }
-      return i18nStore.getDictionaryObjectSnapshot(lookup);
-    },
-    getServerDictionaryObject: (lookup) => {
-      return lookupDictionaryObject(dictionariesSnapshot, lookup);
+      return (
+        lookupDictionaryObject(dictionariesSnapshot, lookup) ??
+        i18nStore.getDictionaryObjectSnapshot(lookup)
+      );
     },
     resolveDictionaryObject: (lookup, storeDictionaryObject) => {
       return (
@@ -266,8 +247,4 @@ function subscribeToDictionaryObject(
   listener: StoreListener
 ): Unsubscribe {
   return getI18nStore().subscribeToDictionaryObject(lookup, listener);
-}
-
-function noopSubscribe(): Unsubscribe {
-  return () => {};
 }

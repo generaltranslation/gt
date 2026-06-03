@@ -11,6 +11,10 @@ import type {
 import type { RuntimeTranslationScope } from '../i18n-store/RuntimeTranslationScope';
 import type { RuntimeDictionaryScope } from '../i18n-store/RuntimeDictionaryScope';
 import { useLookupAdapter } from '../i18n-store/lookup-adapter/useLookupAdapter';
+import {
+  useI18nStore,
+  useTranslationsSnapshot,
+} from '../i18n-store/useI18nStore';
 
 /**
  * @internal
@@ -19,6 +23,8 @@ export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
   const adapter = useLookupAdapter();
+  const i18nStore = useI18nStore();
+  const translationsSnapshot = useTranslationsSnapshot();
 
   /**
    * TODO: for snapshot lookup, we can use the translation snapshot
@@ -26,8 +32,8 @@ export function useTranslate<T extends Translation>(
    */
   const storeTranslation = useSyncExternalStore(
     (listener) => adapter.subscribeToTranslate(lookup, listener),
-    () => adapter.getTranslationSnapshot(lookup),
-    () => adapter.getTranslationSnapshot(lookup)
+    () => i18nStore.getTranslateSnapshot(lookup, translationsSnapshot),
+    () => i18nStore.getTranslateSnapshot(lookup, translationsSnapshot)
   );
 
   if (storeTranslation == null) {
@@ -60,7 +66,7 @@ export function useTranslateMany<T extends Translation>(
   const storeTranslations = useSyncExternalStore(
     (listener) => adapter.subscribeToTranslateMany(lookups, listener),
     () => adapter.getTranslationsSnapshot(lookups),
-    () => adapter.getServerTranslations(lookups)
+    () => adapter.getTranslationsSnapshot(lookups)
   );
 
   const translations = adapter.resolveTranslations(lookups, storeTranslations);
@@ -81,7 +87,7 @@ export function useDictionaryEntry(
   const storeDictionaryEntry = useSyncExternalStore(
     (listener) => adapter.subscribeToDictionaryEntry(lookup, listener),
     () => adapter.getDictionaryEntrySnapshot(lookup),
-    () => adapter.getServerDictionaryEntry(lookup)
+    () => adapter.getDictionaryEntrySnapshot(lookup)
   );
 
   const dictionaryEntry = adapter.resolveDictionaryEntry(
@@ -107,7 +113,7 @@ export function useDictionaryObject(
   const storeDictionaryObject = useSyncExternalStore(
     (listener) => adapter.subscribeToDictionaryObject(lookup, listener),
     () => adapter.getDictionaryObjectSnapshot(lookup),
-    () => adapter.getServerDictionaryObject(lookup)
+    () => adapter.getDictionaryObjectSnapshot(lookup)
   );
 
   const dictionaryObject = adapter.resolveDictionaryObject(
