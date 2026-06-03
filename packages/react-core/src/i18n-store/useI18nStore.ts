@@ -1,4 +1,4 @@
-import { Hash, Locale } from 'gt-i18n/internal/types';
+import { Dictionary, Hash, Locale } from 'gt-i18n/internal/types';
 import { useGTContext } from '../context/context';
 import { I18nStore } from './I18nStore';
 import { getI18nStore } from './singleton-operations';
@@ -15,4 +15,9 @@ export function useTranslationsSnapshot(): Record<
 > {
   const context = useGTContext();
   return context?.translationsSnapshot || {};
+}
+
+export function useDictionariesSnapshot(): Record<Locale, Dictionary> {
+  const context = useGTContext();
+  return context?.dictionariesSnapshot || {};
 }

@@ -24,6 +24,10 @@ import { subscribeToSet } from './utils/subscriptions';
 import { Hash, Locale } from 'gt-i18n/internal/types';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
 import { lookupTranslation } from './lookup-adapter/utils/translations';
+import {
+  lookupDictionaryEntry,
+  lookupDictionaryObject,
+} from './lookup-adapter/utils/dictionaries';
 
 type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
@@ -68,8 +72,10 @@ export class I18nStore {
 
   // ========== runtime translation ========== //
 
-  translate = <T extends Translation>(lookup: TranslateLookup<T>): void => {
-    getReactI18nCache()
+  translate = async <T extends Translation>(
+    lookup: TranslateLookup<T>
+  ): Promise<void> => {
+    return getReactI18nCache()
       .lookupTranslationWithFallback(
         lookup.locale,
         lookup.message,
@@ -183,13 +189,14 @@ export class I18nStore {
   };
 
   /**
-   * TODO: rework this to behave more like getTranslateSnapshot
+   * We need to preserve identity of snapshot
    */
   getTranslateManySnapshot = <T extends Translation>(
-    lookups: readonly TranslateLookup<T>[]
+    lookups: readonly TranslateLookup<T>[],
+    translationsSnapshot: Record<Locale, Record<Hash, Translation>> = {}
   ): TranslateManySnapshot<T> => {
     const nextSnapshot = lookups.map((lookup) =>
-      this.getTranslateSnapshot(lookup)
+      this.getTranslateSnapshot(lookup, translationsSnapshot)
     );
     const previousSnapshot = this.translateManySnapshotCache.get(lookups);
     if (
@@ -206,18 +213,24 @@ export class I18nStore {
     return nextSnapshot;
   };
 
-  getDictionaryEntrySnapshot = ({
-    locale,
-    id,
-  }: DictionaryLookup): DictionaryEntrySnapshot => {
-    return getReactI18nCache().lookupDictionary(locale, id);
+  getDictionaryEntrySnapshot = (
+    lookup: DictionaryLookup,
+    dictionariesSnapshot: Record<Locale, Dictionary> = {}
+  ): DictionaryEntrySnapshot => {
+    return (
+      lookupDictionaryEntry(dictionariesSnapshot, lookup) ??
+      getReactI18nCache().lookupDictionary(lookup.locale, lookup.id)
+    );
   };
 
-  getDictionaryObjectSnapshot = ({
-    locale,
-    id,
-  }: DictionaryLookup): DictionaryObjectSnapshot => {
-    return getReactI18nCache().lookupDictionaryObj(locale, id);
+  getDictionaryObjectSnapshot = (
+    lookup: DictionaryLookup,
+    dictionariesSnapshot: Record<Locale, Dictionary> = {}
+  ): DictionaryObjectSnapshot => {
+    return (
+      lookupDictionaryObject(dictionariesSnapshot, lookup) ??
+      getReactI18nCache().lookupDictionaryObj(lookup.locale, lookup.id)
+    );
   };
 
   // ----- Listener Utilities ----- //

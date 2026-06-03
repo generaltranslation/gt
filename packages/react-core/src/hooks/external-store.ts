@@ -1,4 +1,4 @@
-import { useMemo, useSyncExternalStore } from 'react';
+import { use, useMemo, useSyncExternalStore } from 'react';
 import type { Translation } from 'gt-i18n/types';
 import type {
   TranslateLookup,
@@ -12,9 +12,11 @@ import type { RuntimeTranslationScope } from '../i18n-store/RuntimeTranslationSc
 import type { RuntimeDictionaryScope } from '../i18n-store/RuntimeDictionaryScope';
 import { useLookupAdapter } from '../i18n-store/lookup-adapter/useLookupAdapter';
 import {
+  useDictionariesSnapshot,
   useI18nStore,
   useTranslationsSnapshot,
 } from '../i18n-store/useI18nStore';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 /**
  * @internal
@@ -22,7 +24,6 @@ import {
 export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
-  const adapter = useLookupAdapter();
   const i18nStore = useI18nStore();
   const translationsSnapshot = useTranslationsSnapshot();
 
@@ -31,25 +32,14 @@ export function useTranslate<T extends Translation>(
    * to avoid the adapter.resolveTranslation call.
    */
   const storeTranslation = useSyncExternalStore(
-    (listener) => adapter.subscribeToTranslate(lookup, listener),
+    (listener) => i18nStore.subscribeToTranslate(lookup, listener),
     () => i18nStore.getTranslateSnapshot(lookup, translationsSnapshot),
     () => i18nStore.getTranslateSnapshot(lookup, translationsSnapshot)
   );
 
-  if (storeTranslation == null) {
-    /**
-     * TODO: if we don't want to fallback to source, we can add a
-     * use() call + <Suspense> fallback around <T> component
-     *
-     * https://react.dev/reference/react/useSyncExternalStore#caveats
-     * Though this is not recommended, loading state would only be triggered by
-     * an ext. store update that invalidates an entire locale. This would ONLY
-     * occur by (1) initialization of a new i18nCache (2) a cache expiry for a locale
-     *
-     * (1) init of a new i18nCache only happens if GTProvider is re-mounted
-     * (2) cache expiry can (and should) be disabled for client-side
-     */
-    adapter.handleMissingTranslation?.(lookup);
+  if (storeTranslation == null && getI18nConfig().isDevHotReloadEnabled()) {
+    // TODO: (separate PR): add configuration for a use() + suspense strategy
+    i18nStore.translate(lookup);
   }
 
   return storeTranslation;
@@ -62,16 +52,20 @@ export function useTranslateMany<T extends Translation>(
   lookups: readonly TranslateLookup<T>[]
 ): TranslateManySnapshot<T> {
   const adapter = useLookupAdapter();
+  const i18nStore = useI18nStore();
+  const translationsSnapshot = useTranslationsSnapshot();
 
-  const storeTranslations = useSyncExternalStore(
-    (listener) => adapter.subscribeToTranslateMany(lookups, listener),
-    () => adapter.getTranslationsSnapshot(lookups),
-    () => adapter.getTranslationsSnapshot(lookups)
+  const translations = useSyncExternalStore(
+    (listener) => i18nStore.subscribeToTranslateMany(lookups, listener),
+    () => i18nStore.getTranslateManySnapshot(lookups, translationsSnapshot),
+    () => i18nStore.getTranslateManySnapshot(lookups, translationsSnapshot)
   );
 
-  const translations = adapter.resolveTranslations(lookups, storeTranslations);
-
-  adapter.handleMissingTranslations?.(lookups, translations);
+  translations.forEach((translation, index) => {
+    if (translation == null) {
+      adapter.handleMissingTranslation?.(lookups[index]);
+    }
+  });
 
   return translations;
 }
@@ -83,16 +77,13 @@ export function useDictionaryEntry(
   lookup: DictionaryLookup
 ): DictionaryEntrySnapshot {
   const adapter = useLookupAdapter();
+  const i18nStore = useI18nStore();
+  const dictionariesSnapshot = useDictionariesSnapshot();
 
-  const storeDictionaryEntry = useSyncExternalStore(
-    (listener) => adapter.subscribeToDictionaryEntry(lookup, listener),
-    () => adapter.getDictionaryEntrySnapshot(lookup),
-    () => adapter.getDictionaryEntrySnapshot(lookup)
-  );
-
-  const dictionaryEntry = adapter.resolveDictionaryEntry(
-    lookup,
-    storeDictionaryEntry
+  const dictionaryEntry = useSyncExternalStore(
+    (listener) => i18nStore.subscribeToDictionaryEntry(lookup, listener),
+    () => i18nStore.getDictionaryEntrySnapshot(lookup, dictionariesSnapshot),
+    () => i18nStore.getDictionaryEntrySnapshot(lookup, dictionariesSnapshot)
   );
 
   if (dictionaryEntry == null) {
@@ -109,16 +100,13 @@ export function useDictionaryObject(
   lookup: DictionaryLookup
 ): DictionaryObjectSnapshot {
   const adapter = useLookupAdapter();
+  const i18nStore = useI18nStore();
+  const dictionariesSnapshot = useDictionariesSnapshot();
 
-  const storeDictionaryObject = useSyncExternalStore(
-    (listener) => adapter.subscribeToDictionaryObject(lookup, listener),
-    () => adapter.getDictionaryObjectSnapshot(lookup),
-    () => adapter.getDictionaryObjectSnapshot(lookup)
-  );
-
-  const dictionaryObject = adapter.resolveDictionaryObject(
-    lookup,
-    storeDictionaryObject
+  const dictionaryObject = useSyncExternalStore(
+    (listener) => i18nStore.subscribeToDictionaryObject(lookup, listener),
+    () => i18nStore.getDictionaryObjectSnapshot(lookup, dictionariesSnapshot),
+    () => i18nStore.getDictionaryObjectSnapshot(lookup, dictionariesSnapshot)
   );
 
   if (dictionaryObject == null) {

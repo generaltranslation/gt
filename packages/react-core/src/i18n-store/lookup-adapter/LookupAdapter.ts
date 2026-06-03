@@ -69,6 +69,9 @@ export type LookupAdapter = {
     storeTranslations: TranslateManySnapshot<T>
   ) => TranslateManySnapshot<T>;
 
+  /**
+   * @deprecated
+   */
   handleMissingTranslations?: <T extends Translation>(
     lookups: readonly TranslateLookup<T>[],
     translations: TranslateManySnapshot<T>

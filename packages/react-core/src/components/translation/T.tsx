@@ -27,7 +27,7 @@ function GtInternalTranslateJsx(
     children: ReactNode;
   } & JsxTranslationOptions
 ): ReactNode {
-  return <T {...props} />;
+  return useComputeT(props);
 }
 
 async function RscT({
@@ -84,8 +84,9 @@ RscT._gtt = 'translate-server';
 
 export { GtInternalTranslateJsx, RscT, T };
 
-// ===== Render Logic ===== //
-
+/**
+ * Render logic
+ */
 function useComputeT({
   children: sourceChildren,
   ...params

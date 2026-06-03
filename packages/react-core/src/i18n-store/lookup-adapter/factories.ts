@@ -107,6 +107,9 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
         lookupTranslation(translationsSnapshot, lookup) ?? storeTranslation
       );
     },
+    /**
+     * TODO: move to I18nStore
+     */
     handleMissingTranslation: (lookup) => {
       if (getI18nConfig().isDevHotReloadEnabled()) {
         i18nStore.translate(lookup);
@@ -140,6 +143,10 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
         storeTranslations
       );
     },
+
+    /**
+     * TODO: move to I18nStore
+     */
     handleMissingTranslations: (lookups, translations) => {
       if (!getI18nConfig().isDevHotReloadEnabled()) return;
       lookups.forEach((lookup, index) => {
@@ -152,9 +159,6 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       return i18nStore.subscribeToDictionaryEntry(lookup, listener);
     },
     getDictionaryEntrySnapshot: (lookup) => {
-      if (!getI18nConfig().isDevHotReloadEnabled()) {
-        return undefined;
-      }
       return (
         lookupDictionaryEntry(dictionariesSnapshot, lookup) ??
         i18nStore.getDictionaryEntrySnapshot(lookup)
@@ -166,6 +170,9 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
         storeDictionaryEntry
       );
     },
+    /**
+     * TODO: move to I18nStore
+     */
     handleMissingDictionaryEntry: (lookup) => {
       if (getI18nConfig().isDevHotReloadEnabled()) {
         i18nStore.translateDictionaryEntry(lookup);
@@ -175,9 +182,6 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
       return i18nStore.subscribeToDictionaryObject(lookup, listener);
     },
     getDictionaryObjectSnapshot: (lookup) => {
-      if (!getI18nConfig().isDevHotReloadEnabled()) {
-        return undefined;
-      }
       return (
         lookupDictionaryObject(dictionariesSnapshot, lookup) ??
         i18nStore.getDictionaryObjectSnapshot(lookup)
@@ -189,6 +193,9 @@ export function createSRALookupAdapter(context: GTContextType): LookupAdapter {
         storeDictionaryObject
       );
     },
+    /**
+     * TODO: move to I18nStore
+     */
     handleMissingDictionaryObject: (lookup) => {
       if (getI18nConfig().isDevHotReloadEnabled()) {
         i18nStore.translateDictionaryObject(lookup);

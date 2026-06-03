@@ -17,6 +17,18 @@ type Message = InlineTranslationOptionsFields & {
   message: string;
 };
 
+/**
+ * NOTE:
+ * gt() may be called during render, so tracking intentionally only mutates
+ * hook-local refs. This widens the event filter used by our existing
+ * useSyncExternalStore subscription, but does not update React state or mutate
+ * the translation cache during render.
+ *
+ * A render that is later aborted may leave behind an extra tracked key. That is
+ * acceptable for dev hot reload because the worst case is an unnecessary
+ * invalidation for this hook instance, not incorrect rendered output.
+ */
+
 // ===== Hook ===== //
 
 export function useGT(_messages?: Message[]): GTFunctionType {
@@ -89,6 +101,7 @@ function useSubscribeToExtractedMessages(
   devHotReloadEnabled: boolean,
   messages: Message[]
 ) {
+  // Important to memoize. Cache uses identity for lookups
   const lookups = useMemo(() => {
     if (!messages?.length || !shouldTranslate || !devHotReloadEnabled) {
       return EMPTY_TRANSLATE_LOOKUPS;
