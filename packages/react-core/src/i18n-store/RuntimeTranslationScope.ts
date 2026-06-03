@@ -12,6 +12,7 @@ type RuntimeTranslationStore = {
 
 /**
  * Owned by I18nStore, this should not be imported to any other files
+ * @deprecated - dead code
  */
 export class RuntimeTranslationScope {
   private version = 0;

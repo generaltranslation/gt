@@ -20,6 +20,8 @@ type RuntimeDictionaryStore = {
 
 /**
  * Tracks dictionary lookups discovered by useTranslations callbacks.
+ * @deprecated - dead code
+ * 
  */
 export class RuntimeDictionaryScope {
   private version = 0;
