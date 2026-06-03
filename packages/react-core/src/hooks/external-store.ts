@@ -1,4 +1,4 @@
-import { use, useMemo, useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import type { Translation } from 'gt-i18n/types';
 import type {
   TranslateLookup,
@@ -39,6 +39,7 @@ export function useTranslate<T extends Translation>(
 
   if (storeTranslation == null && getI18nConfig().isDevHotReloadEnabled()) {
     // TODO: (separate PR): add configuration for a use() + suspense strategy
+    // TODO: consider moving this to a useEffect
     i18nStore.translate(lookup);
   }
 
@@ -47,6 +48,7 @@ export function useTranslate<T extends Translation>(
 
 /**
  * @internal
+ * @deprecated - dead code
  */
 export function useTranslateMany<T extends Translation>(
   lookups: readonly TranslateLookup<T>[]

@@ -11,6 +11,9 @@ export {
   defaultRegionCookieName,
 } from './cookie-names';
 
+// ===== Server hooks ===== //
+export { useGT, useMessages } from './hooks/server-hooks';
+
 export {
   // ===== Components ===== //
   Branch,
@@ -32,8 +35,6 @@ export {
   useLocales,
   getFormatLocales,
   useFormatLocales,
-  useGT,
-  useMessages,
   useTranslations,
   // ===== Functions ===== //
   msg,
