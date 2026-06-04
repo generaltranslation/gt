@@ -189,6 +189,7 @@ function usePreloadCompilerLookups(
    * for compiler-injected lookups
    *
    * TODO: for use() + suspense strategy, use a Promise.all()
+   * TODO: server side translation invocation
    */
   useEffect(() => {
     if (!txHotReloadEnabled) return;
