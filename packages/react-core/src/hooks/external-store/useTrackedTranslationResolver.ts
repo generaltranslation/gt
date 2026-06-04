@@ -173,6 +173,9 @@ function useSubscribeToLookups(trackedKeysRef: RefObject<Set<string> | null>) {
 /**
  * Pre-subscribe to compiler-injected lookups
  * trigger translations for them
+ *
+ * This ref mutation is safe because this is translation hot reload only
+ * and effects are deterministic
  */
 function usePreloadCompilerLookups(
   messages: Message[],
