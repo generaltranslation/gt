@@ -6,9 +6,10 @@ import { useMemo } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 
 /**
- * Provides the server-rendered runtime snapshot to React consumers.
+ * Consumes snapshot from server
+ * Implementation for client-side only
  */
-export function GTProvider({
+export function BrowserGTProvider({
   locale,
   enableI18n,
   ...props

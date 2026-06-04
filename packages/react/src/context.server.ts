@@ -1,8 +1,6 @@
 'server-only';
 
-export { GTProvider } from './provider/GTProvider';
 export { initializeGTSPA } from './setup/initializeGTSPA';
-export { LocaleSelector } from './components/LocaleSelector';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
 export {
@@ -13,6 +11,10 @@ export {
 
 // ===== Server hooks ===== //
 export { useGT, useMessages, useTranslations } from './hooks/server-hooks';
+
+// ===== Components ===== //
+export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
+export { LocaleSelector } from './components/LocaleSelector';
 
 export {
   // ===== Components ===== //

@@ -2,9 +2,7 @@
 
 import type { RscT as CoreRscT } from '@generaltranslation/react-core/context';
 
-export { GTProvider } from './provider/GTProvider';
 export { initializeGTSPA } from './setup/initializeGTSPA';
-export { LocaleSelector } from './components/LocaleSelector';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
 export {
@@ -19,6 +17,10 @@ export const RscT: typeof CoreRscT = Object.assign(
   },
   { _gtt: 'translate-server' as const }
 );
+
+// ===== Components ===== //
+export { LocaleSelector } from './components/LocaleSelector';
+export { BrowserGTProvider as GTProvider } from './provider/BrowserGTProvider';
 
 export {
   // ===== Components ===== //
