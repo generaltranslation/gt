@@ -29,7 +29,7 @@ import {
   lookupDictionaryObject,
 } from './lookup-adapter/utils/dictionaries';
 
-type DictionaryStoreListener = (event: DictionaryLookup) => void;
+export type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
 export type I18nStoreParams = {};
 
@@ -159,6 +159,12 @@ export class I18nStore {
     return subscribeToSet(this.dictionaryEntryListeners, wrappedListener);
   };
 
+  subscribeToDictionaryEntryEvents = (
+    listener: DictionaryStoreListener
+  ): Unsubscribe => {
+    return subscribeToSet(this.dictionaryEntryListeners, listener);
+  };
+
   subscribeToDictionaryObject = (
     lookup: DictionaryLookup,
     listener: StoreListener
@@ -170,6 +176,12 @@ export class I18nStore {
       }
     };
     return subscribeToSet(this.dictionaryObjectListeners, wrappedListener);
+  };
+
+  subscribeToDictionaryObjectEvents = (
+    listener: DictionaryStoreListener
+  ): Unsubscribe => {
+    return subscribeToSet(this.dictionaryObjectListeners, listener);
   };
 
   // ----- Snapshots ----- //

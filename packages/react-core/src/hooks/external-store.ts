@@ -74,6 +74,7 @@ export function useTranslateMany<T extends Translation>(
 
 /**
  * @internal
+ * @deprecated - dead code
  */
 export function useDictionaryEntry(
   lookup: DictionaryLookup

@@ -5,7 +5,6 @@ import {
   renderDictionaryObject,
   resolveDictionaryLookupOptions,
 } from 'gt-i18n/internal';
-import { useDictionaryObject } from './external-store';
 import { useLocale } from './condition-store';
 import { useGT } from './useGT';
 import type {
@@ -14,71 +13,111 @@ import type {
 } from 'gt-i18n/types';
 import { useDefaultLocale } from './i18n-config';
 import { useShouldTranslate } from './utils';
-import { useLookupResolver } from '../i18n-store/lookup-adapter/useLookupResolver';
+import { useTrackedDictionaryResolver } from '../i18n-store/lookup-adapter/useTrackedDictionaryResolver';
+import { useTrackedDictionaryObjResolver } from '../i18n-store/lookup-adapter/useTrackedDictionaryObjResolver';
 
 // ===== Hook ===== //
 
-export function useTranslations(id?: string): UseTranslationsFunction {
+export function useTranslations(rootId?: string): UseTranslationsFunction {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const lookupResolver = useLookupResolver();
+  const resolveDictionaryEntry = useTrackedDictionaryResolver();
   const gt = useGT();
-  const rootId = id ?? '';
-
-  useDictionaryObject({ locale: defaultLocale, id: rootId });
-  useDictionaryObject({ locale, id: rootId });
+  const translateObject = useTranslationsObj(rootId);
 
   const translateEntry = useCallback(
     (suffix: string, options: DictionaryTranslationOptions = {}) => {
-      const entryId = getEntryId(id, suffix);
-      const sourceEntry = lookupResolver.resolveDictionaryEntry({
+      const id = getId(rootId, suffix);
+
+      const sourceEntry = resolveDictionaryEntry({
         locale: defaultLocale,
-        id: entryId,
+        id,
       });
       if (sourceEntry === undefined) {
-        throw new Error(`Dictionary entry ${entryId} cannot be found`);
+        throw new Error(`Dictionary entry ${id} cannot be found`);
       }
+      const sourceOptions = resolveDictionaryLookupOptions(sourceEntry.options);
       if (!shouldTranslate) {
         return gt(sourceEntry.entry, {
-          ...resolveDictionaryLookupOptions(sourceEntry.options),
+          ...sourceOptions,
           ...extractVariables(options),
           $locale: defaultLocale,
         });
       }
 
-      const targetLookup = { locale, id: entryId };
-      const targetEntry = lookupResolver.resolveDictionaryEntry(targetLookup);
-      if (targetEntry === undefined) {
-        lookupResolver.handleMissingDictionaryEntry(targetLookup);
-      }
-
+      const targetEntry = resolveDictionaryEntry({ locale, id });
       if (targetEntry?.entry != null) {
         return renderDictionaryEntry({
           sourceLocale: defaultLocale,
           targetLocale: locale,
           sourceEntry,
           target: targetEntry.entry,
-          dictionaryOptions: resolveDictionaryLookupOptions(
-            sourceEntry.options
-          ),
+          dictionaryOptions: sourceOptions,
           options,
         });
       }
 
       return gt(sourceEntry.entry, {
-        ...resolveDictionaryLookupOptions(sourceEntry.options),
+        ...sourceOptions,
         ...extractVariables(options),
         $locale: locale,
       });
     },
-    [defaultLocale, gt, id, locale, lookupResolver, shouldTranslate]
+    [defaultLocale, gt, rootId, locale, resolveDictionaryEntry, shouldTranslate]
   );
 
-  const translateObject = useCallback(
+  // const translateObject = useCallback(
+  //   (suffix: string) => {
+  //     const entryId = getId(rootId, suffix);
+  //     const sourceObject = lookupResolver.resolveDictionaryObject({
+  //       locale: defaultLocale,
+  //       id: entryId,
+  //     });
+  //     if (sourceObject === undefined) {
+  //       throw new Error(`Dictionary entry ${entryId} cannot be found`);
+  //     }
+
+  //     let targetObject = undefined;
+  //     if (shouldTranslate) {
+  //       const targetLookup = { locale, id: entryId };
+  //       targetObject = lookupResolver.resolveDictionaryObject(targetLookup);
+  //       if (targetObject === undefined) {
+  //         lookupResolver.handleMissingDictionaryObject(targetLookup);
+  //       }
+  //     }
+
+  //     return renderDictionaryObject({
+  //       sourceObject,
+  //       targetObject,
+  //       translate: (sourceEntry, dictionaryOptions) =>
+  //         lookupResolver.resolveTranslation({
+  //           locale: shouldTranslate ? locale : defaultLocale,
+  //           message: sourceEntry.entry,
+  //           options: dictionaryOptions,
+  //         }),
+  //     });
+  //   },
+  //   [defaultLocale, rootId, locale, lookupResolver, shouldTranslate]
+  // );
+
+  return useMemo(
+    () => Object.assign(translateEntry, { obj: translateObject }),
+    [translateEntry, translateObject]
+  );
+}
+
+function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
+  const locale = useLocale();
+  const defaultLocale = useDefaultLocale();
+  const shouldTranslate = useShouldTranslate();
+  const resolveDictionaryObject = useTrackedDictionaryObjResolver();
+  const gt = useGT();
+
+  return useCallback(
     (suffix: string) => {
-      const entryId = getEntryId(id, suffix);
-      const sourceObject = lookupResolver.resolveDictionaryObject({
+      const entryId = getId(rootId, suffix);
+      const sourceObject = resolveDictionaryObject({
         locale: defaultLocale,
         id: entryId,
       });
@@ -89,35 +128,26 @@ export function useTranslations(id?: string): UseTranslationsFunction {
       let targetObject = undefined;
       if (shouldTranslate) {
         const targetLookup = { locale, id: entryId };
-        targetObject = lookupResolver.resolveDictionaryObject(targetLookup);
-        if (targetObject === undefined) {
-          lookupResolver.handleMissingDictionaryObject(targetLookup);
-        }
+        targetObject = resolveDictionaryObject(targetLookup);
       }
 
       return renderDictionaryObject({
         sourceObject,
         targetObject,
         translate: (sourceEntry, dictionaryOptions) =>
-          lookupResolver.resolveTranslation({
-            locale: shouldTranslate ? locale : defaultLocale,
-            message: sourceEntry.entry,
-            options: dictionaryOptions,
+          gt(sourceEntry.entry, {
+            ...dictionaryOptions,
+            $locale: locale,
           }),
       });
     },
-    [defaultLocale, id, locale, lookupResolver, shouldTranslate]
-  );
-
-  return useMemo(
-    () => Object.assign(translateEntry, { obj: translateObject }),
-    [translateEntry, translateObject]
+    [defaultLocale, rootId, locale, resolveDictionaryObject, shouldTranslate]
   );
 }
 
 // ===== Lookup Helpers ===== //
 
-function getEntryId(prefix: string | undefined, suffix: string): string {
+function getId(prefix: string | undefined, suffix: string): string {
   return prefix ? `${prefix}.${suffix}` : suffix;
 }
 
@@ -129,3 +159,5 @@ export type UseTranslationsFunction = ((
 ) => string) & {
   obj: (id: string) => DictionaryObjectTranslation;
 };
+
+type UseTranslationsObjFunction = (id: string) => DictionaryObjectTranslation;

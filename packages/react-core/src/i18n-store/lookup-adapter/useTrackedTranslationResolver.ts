@@ -53,6 +53,8 @@ export type OnMissingTranslation = <T extends Translation>(
 
 /**
  * @param onMissingTranslation - Invoked only for dev hot reload when a translation is not found.
+ *
+ * TODO: this hook needs a better name
  */
 export function useTrackedTranslationResolver(
   messages: Message[] = [],
@@ -90,6 +92,9 @@ export function useTrackedTranslationResolver(
       return;
     }
     pendingLookups.forEach((lookup) => {
+      // TODO: we should be strict with making sure this lookup is not in snapshot
+      // Perhaps the best way to do that would be by moving this into the Provider
+      // after the snapshot is applied to the cache
       i18nStore.translate(lookup);
     });
   }, [i18nStore, pendingLookups, shouldTranslate, devHotReloadEnabled]);
@@ -103,8 +108,8 @@ export function useTrackedTranslationResolver(
     <T extends Translation>(
       lookup: TranslateLookup<T>
     ): TranslateSnapshot<T> => {
-      const lookupKey = getTranslateListenerKey(lookup);
       // Track the lookup for dev hot reload
+      const lookupKey = getTranslateListenerKey(lookup);
       if (devHotReloadEnabled) {
         trackedKeysRef.current!.add(lookupKey);
       }
