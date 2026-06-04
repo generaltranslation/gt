@@ -5,7 +5,7 @@ import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
   DictionaryObjectSnapshot,
-} from '../../storeTypes';
+} from '../storeTypes';
 
 export function lookupDictionaryEntry(
   dictionariesSnapshot: Record<Locale, Dictionary> | undefined,

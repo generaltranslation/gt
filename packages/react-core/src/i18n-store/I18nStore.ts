@@ -1,7 +1,4 @@
-import {
-  getDictionaryListenerKey,
-  getTranslateListenerKey,
-} from 'gt-i18n/internal';
+import { getTranslateListenerKey } from 'gt-i18n/internal';
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
@@ -9,25 +6,18 @@ import type {
   StoreListener,
   TranslateEventListener,
   TranslateLookup,
-  TranslateManySnapshot,
   TranslateSnapshot,
   Unsubscribe,
 } from './storeTypes';
 import type { Dictionary, Translation } from 'gt-i18n/types';
-import { RuntimeTranslationScope } from './RuntimeTranslationScope';
-import { RuntimeDictionaryScope } from './RuntimeDictionaryScope';
-import {
-  dictionaryEntryEventMatchesLookup,
-  dictionaryObjectEventMatchesLookup,
-} from './utils/dictionary-events';
 import { subscribeToSet } from './utils/subscriptions';
 import { Hash, Locale } from 'gt-i18n/internal/types';
 import { getReactI18nCache } from '../i18n-cache/singleton-operations';
-import { lookupTranslation } from './lookup-adapter/utils/translations';
+import { lookupTranslation } from './utils/translations';
 import {
   lookupDictionaryEntry,
   lookupDictionaryObject,
-} from './lookup-adapter/utils/dictionaries';
+} from './utils/dictionaries';
 
 export type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
@@ -46,10 +36,6 @@ export class I18nStore {
   // ----- Listener Sets ----- //
 
   private translateListeners = new Set<TranslateEventListener>();
-  private translateManySnapshotCache = new WeakMap<
-    readonly TranslateLookup[],
-    TranslateManySnapshot
-  >();
   private dictionaryEntryListeners = new Set<DictionaryStoreListener>();
   private dictionaryObjectListeners = new Set<DictionaryStoreListener>();
 
@@ -134,48 +120,10 @@ export class I18nStore {
     return subscribeToSet(this.translateListeners, listener);
   };
 
-  subscribeToTranslateMany = <T extends Translation>(
-    lookups: readonly TranslateLookup<T>[],
-    listener: StoreListener
-  ): Unsubscribe => {
-    const unsubscribes = lookups.map((lookup) =>
-      this.subscribeToTranslate(lookup, listener)
-    );
-    return () => {
-      unsubscribes.forEach((unsubscribe) => unsubscribe());
-    };
-  };
-
-  subscribeToDictionaryEntry = (
-    lookup: DictionaryLookup,
-    listener: StoreListener
-  ): Unsubscribe => {
-    const lookupKey = getDictionaryListenerKey(lookup);
-    const wrappedListener: DictionaryStoreListener = (event) => {
-      if (dictionaryEntryEventMatchesLookup(event, lookupKey)) {
-        listener();
-      }
-    };
-    return subscribeToSet(this.dictionaryEntryListeners, wrappedListener);
-  };
-
   subscribeToDictionaryEntryEvents = (
     listener: DictionaryStoreListener
   ): Unsubscribe => {
     return subscribeToSet(this.dictionaryEntryListeners, listener);
-  };
-
-  subscribeToDictionaryObject = (
-    lookup: DictionaryLookup,
-    listener: StoreListener
-  ): Unsubscribe => {
-    const lookupKey = getDictionaryListenerKey(lookup);
-    const wrappedListener: DictionaryStoreListener = (event) => {
-      if (dictionaryObjectEventMatchesLookup(event, lookupKey)) {
-        listener();
-      }
-    };
-    return subscribeToSet(this.dictionaryObjectListeners, wrappedListener);
   };
 
   subscribeToDictionaryObjectEvents = (
@@ -198,31 +146,6 @@ export class I18nStore {
         lookup.options
       )
     );
-  };
-
-  /**
-   * We need to preserve identity of snapshot
-   */
-  getTranslateManySnapshot = <T extends Translation>(
-    lookups: readonly TranslateLookup<T>[],
-    translationsSnapshot: Record<Locale, Record<Hash, Translation>> = {}
-  ): TranslateManySnapshot<T> => {
-    const nextSnapshot = lookups.map((lookup) =>
-      this.getTranslateSnapshot(lookup, translationsSnapshot)
-    );
-    const previousSnapshot = this.translateManySnapshotCache.get(lookups);
-    if (
-      previousSnapshot &&
-      previousSnapshot.length === nextSnapshot.length &&
-      previousSnapshot.every((value, index) =>
-        Object.is(value, nextSnapshot[index])
-      )
-    ) {
-      return previousSnapshot as TranslateManySnapshot<T>;
-    }
-
-    this.translateManySnapshotCache.set(lookups, nextSnapshot);
-    return nextSnapshot;
   };
 
   getDictionaryEntrySnapshot = (
@@ -257,14 +180,4 @@ export class I18nStore {
       listener(event);
     });
   }
-
-  // ----- scopes ----- //
-
-  createRuntimeTranslationScope = (): RuntimeTranslationScope => {
-    return new RuntimeTranslationScope(this);
-  };
-
-  createRuntimeDictionaryScope = (): RuntimeDictionaryScope => {
-    return new RuntimeDictionaryScope(this);
-  };
 }

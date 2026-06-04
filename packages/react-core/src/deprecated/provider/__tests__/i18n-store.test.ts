@@ -116,91 +116,35 @@ describe('external store i18n wiring', () => {
     unsubscribeOtherLocale();
   });
 
-  it('notifies translate many subscribers for matching cache updates', async () => {
+  it('notifies dictionary entry event subscribers for cache misses', async () => {
     const { i18nStore } = createStores();
     const listener = vi.fn();
-    const lookups = [
-      {
-        locale: 'fr',
-        message: 'Hello',
-        options: { $format: 'ICU' as const, $_hash: 'hash' },
-      },
-      {
-        locale: 'fr',
-        message: 'Other',
-        options: { $format: 'ICU' as const, $_hash: 'other' },
-      },
-    ];
+    const lookup = { locale: 'fr', id: 'greeting' };
 
-    const initialSnapshot = i18nStore.getTranslateManySnapshot(lookups);
-    expect(i18nStore.getTranslateManySnapshot(lookups)).toBe(initialSnapshot);
+    const unsubscribe = i18nStore.subscribeToDictionaryEntryEvents(listener);
 
-    const unsubscribe = i18nStore.subscribeToTranslateMany(lookups, listener);
-
-    i18nStore.translate({
-      locale: 'fr',
-      message: 'Hello',
-      options: {
-        $format: 'ICU',
-        $_hash: 'hash',
-      },
-    });
+    i18nStore.translateDictionaryEntry(lookup);
     await flushAsyncUpdates();
 
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(i18nStore.getTranslateManySnapshot(lookups)).toEqual([
-      'Bonjour',
-      undefined,
-    ]);
+    expect(listener).toHaveBeenCalledWith(lookup);
 
     unsubscribe();
   });
 
-  it('notifies dictionary entry subscribers for matching cache misses', async () => {
+  it('notifies dictionary object event subscribers for cache misses', async () => {
     const { i18nStore } = createStores();
-    const matchingListener = vi.fn();
-    const otherListener = vi.fn();
+    const listener = vi.fn();
+    const lookup = { locale: 'fr', id: 'user.profile' };
 
-    const unsubscribeMatching = i18nStore.subscribeToDictionaryEntry(
-      { locale: 'fr', id: 'greeting' },
-      matchingListener
-    );
-    const unsubscribeOther = i18nStore.subscribeToDictionaryEntry(
-      { locale: 'fr', id: 'other' },
-      otherListener
-    );
+    const unsubscribe = i18nStore.subscribeToDictionaryObjectEvents(listener);
 
-    i18nStore.translateDictionaryEntry({ locale: 'fr', id: 'greeting' });
+    i18nStore.translateDictionaryObject(lookup);
     await flushAsyncUpdates();
 
-    expect(matchingListener).toHaveBeenCalledTimes(1);
-    expect(otherListener).not.toHaveBeenCalled();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith(lookup);
 
-    unsubscribeMatching();
-    unsubscribeOther();
-  });
-
-  it('notifies dictionary object subscribers for matching cache misses', async () => {
-    const { i18nStore } = createStores();
-    const matchingListener = vi.fn();
-    const otherListener = vi.fn();
-
-    const unsubscribeMatching = i18nStore.subscribeToDictionaryObject(
-      { locale: 'fr', id: 'user.profile' },
-      matchingListener
-    );
-    const unsubscribeOther = i18nStore.subscribeToDictionaryObject(
-      { locale: 'fr', id: 'other' },
-      otherListener
-    );
-
-    i18nStore.translateDictionaryObject({ locale: 'fr', id: 'user.profile' });
-    await flushAsyncUpdates();
-
-    expect(matchingListener).toHaveBeenCalledTimes(1);
-    expect(otherListener).not.toHaveBeenCalled();
-
-    unsubscribeMatching();
-    unsubscribeOther();
+    unsubscribe();
   });
 });
