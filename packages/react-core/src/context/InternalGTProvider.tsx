@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { I18nStore, type I18nStoreParams } from '../i18n-store/I18nStore';
+import { useEffect, useMemo, type ReactNode } from 'react';
+import { I18nStore } from '../i18n-store/I18nStore';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import type { Locale, Hash } from 'gt-i18n/internal/types';
 import { GTContext } from './context';
@@ -10,13 +10,14 @@ import type {
   OnMissingTranslation,
 } from '../hooks/utils/missing-translation';
 
-export type InternalGTProviderProps = I18nStoreParams & {
+export type InternalGTProviderProps = {
   children?: ReactNode;
   // For streaming translations to server
   translations: Record<Locale, Record<Hash, Translation>>;
   dictionaries?: Record<Locale, Dictionary>;
   // Declared upstream dependent on environment
   conditionStore: ReadonlyConditionStore;
+  i18nStore: I18nStore;
   // Custom override missing translation behavior for dev hot reload
   onMissingTranslation?: OnMissingTranslation;
   onMissingDictionaryEntry?: OnMissingDictionaryEntry;
@@ -38,20 +39,16 @@ export function InternalGTProvider({
   translations,
   dictionaries,
   conditionStore,
+  i18nStore,
   onMissingTranslation,
   onMissingDictionaryEntry,
   onMissingDictionaryObj,
 }: InternalGTProviderProps) {
-  const i18nStoreRef = useRef<I18nStore | null>(null);
-  if (i18nStoreRef.current == null) {
-    i18nStoreRef.current = new I18nStore({});
-  }
-
   const value = useMemo(
     () => ({
       translationsSnapshot: translations,
       dictionariesSnapshot: dictionaries ?? {},
-      i18nStore: i18nStoreRef.current!,
+      i18nStore,
       conditionStore,
       onMissingTranslation,
       onMissingDictionaryEntry,
@@ -60,7 +57,7 @@ export function InternalGTProvider({
     [
       translations,
       dictionaries,
-      i18nStoreRef.current,
+      i18nStore,
       conditionStore,
       onMissingTranslation,
       onMissingDictionaryEntry,
@@ -70,10 +67,9 @@ export function InternalGTProvider({
 
   // Update cache with data from server, do not emit events
   useEffect(() => {
-    if (i18nStoreRef.current == null) return;
-    i18nStoreRef.current.updateTranslations(translations);
-    i18nStoreRef.current.updateDictionaries(dictionaries ?? {});
-  }, [translations, dictionaries]);
+    i18nStore.updateTranslations(translations);
+    i18nStore.updateDictionaries(dictionaries ?? {});
+  }, [translations, dictionaries, i18nStore]);
 
   //
 

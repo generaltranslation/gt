@@ -7,23 +7,16 @@ import type { StringFormat } from '@generaltranslation/format/types';
 import { useDefaultLocale } from './i18n-config';
 import {
   type Message,
-  type OnMissingTranslation,
   useTrackedTranslationResolver,
 } from './external-store/useTrackedTranslationResolver';
 
 // ===== Hook ===== //
 
-export function useGT(
-  _messages?: Message[],
-  _onMissingTranslation?: OnMissingTranslation
-): GTFunctionType {
+export function useGT(_messages?: Message[]): GTFunctionType {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const resolveTranslation = useTrackedTranslationResolver(
-    _messages,
-    _onMissingTranslation
-  );
+  const resolveTranslation = useTrackedTranslationResolver(_messages);
 
   /**
    * gt() string translation callback

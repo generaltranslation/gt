@@ -21,8 +21,6 @@ import {
 
 export type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
-export type I18nStoreParams = {};
-
 /**
  * I18nStore gives us the ability to perform client-side updates to translations.
  * Primarily useful for dev hot reload.
@@ -42,7 +40,7 @@ export class I18nStore {
   /**
    * I18nCache must be already initialized
    */
-  constructor(_params: I18nStoreParams) {}
+  constructor() {}
 
   // ========== Translation Updates ========== //
 

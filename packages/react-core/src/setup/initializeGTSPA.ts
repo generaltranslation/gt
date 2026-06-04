@@ -12,7 +12,7 @@ import type {
 import type { Translation } from 'gt-i18n/types';
 import { setReactI18nCache } from '../i18n-cache/singleton-operations';
 import type { ReactI18nCacheParams } from '../i18n-cache/ReactI18nCache';
-import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
+import { I18nStore } from '../i18n-store/I18nStore';
 import { setRenderStrategy } from './globals';
 import { setReadonlyConditionStore } from '../condition-store/singleton-operations';
 import { setI18nStore } from '../i18n-store/singleton-operations';
@@ -26,8 +26,7 @@ import { setI18nStore } from '../i18n-store/singleton-operations';
  * @deprecated moved to /react and /react-native
  */
 export function internalInitializeGTSPA(
-  config: I18nStoreParams &
-    I18nConfigParams &
+  config: I18nConfigParams &
     GTServicesEnabledParams &
     ReactI18nCacheParams &
     WritableConditionStoreParams

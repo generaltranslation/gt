@@ -9,9 +9,6 @@ export {
   defaultRegionCookieName,
 } from './cookie-names';
 
-// ===== Server hooks ===== //
-export { useGT, useMessages, useTranslations } from './hooks/server-hooks';
-
 // ===== Components ===== //
 export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
 export { LocaleSelector } from './components/LocaleSelector';
@@ -37,6 +34,9 @@ export {
   useLocales,
   getFormatLocales,
   useFormatLocales,
+  useGT,
+  useMessages,
+  useTranslations,
   // ===== Functions ===== //
   msg,
   decodeMsg,

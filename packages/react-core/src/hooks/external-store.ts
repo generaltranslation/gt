@@ -9,6 +9,7 @@ import {
   useTranslationsSnapshot,
 } from '../i18n-store/useI18nStore';
 import { getI18nConfig } from 'gt-i18n/internal';
+import { useHandleMissingTranslation } from './utils/missing-translation';
 
 /**
  * @internal
@@ -18,6 +19,7 @@ export function useTranslate<T extends Translation>(
 ): TranslateSnapshot<T> {
   const i18nStore = useI18nStore();
   const translationsSnapshot = useTranslationsSnapshot();
+  const onMissingTranslation = useHandleMissingTranslation();
 
   /**
    * TODO: for snapshot lookup, we can use the translation snapshot
@@ -32,7 +34,7 @@ export function useTranslate<T extends Translation>(
   if (storeTranslation == null && getI18nConfig().isDevHotReloadEnabled()) {
     // TODO: (separate PR): add configuration for a use() + suspense strategy
     // TODO: consider moving this to a useEffect
-    i18nStore.translate(lookup);
+    onMissingTranslation(lookup);
   }
 
   return storeTranslation;
