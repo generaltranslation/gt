@@ -12,7 +12,7 @@ export {
 } from './cookie-names';
 
 // ===== Server hooks ===== //
-export { useGT, useMessages } from './hooks/server-hooks';
+export { useGT, useMessages, useTranslations } from './hooks/server-hooks';
 
 export {
   // ===== Components ===== //
@@ -35,7 +35,6 @@ export {
   useLocales,
   getFormatLocales,
   useFormatLocales,
-  useTranslations,
   // ===== Functions ===== //
   msg,
   decodeMsg,

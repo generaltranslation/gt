@@ -68,9 +68,19 @@ export type {
 } from './i18n-cache/ReactI18nCache';
 export { ReadonlyConditionStore } from 'gt-i18n/internal';
 
-export type {
-  OnMissingTranslation,
-  Message,
-} from './hooks/external-store/useTrackedTranslationResolver';
 export { useI18nStore } from './i18n-store/useI18nStore';
+export {
+  useTrackedTranslationResolver,
+  type OnMissingTranslation,
+  type Message,
+} from './hooks/external-store/useTrackedTranslationResolver';
+export {
+  useTrackedDictionaryResolver,
+  type OnMissingDictionaryEntry,
+} from './hooks/external-store/useTrackedDictionaryResolver';
+export {
+  useTrackedDictionaryObjResolver,
+  type OnMissingDictionaryObj,
+} from './hooks/external-store/useTrackedDictionaryObjResolver';
 export type { TranslateLookup } from './i18n-store/storeTypes';
+export type { DictionaryLookup } from './i18n-store/storeTypes';

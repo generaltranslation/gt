@@ -13,18 +13,39 @@ import type {
 } from 'gt-i18n/types';
 import { useDefaultLocale } from './i18n-config';
 import { useShouldTranslate } from './utils';
-import { useTrackedDictionaryResolver } from './external-store/useTrackedDictionaryResolver';
+import {
+  OnMissingDictionaryEntry,
+  useTrackedDictionaryResolver,
+} from './external-store/useTrackedDictionaryResolver';
 import { useTrackedDictionaryObjResolver } from './external-store/useTrackedDictionaryObjResolver';
+import { OnMissingTranslation } from './external-store/useTrackedTranslationResolver';
+import { OnMissingDictionaryObj } from './external-store/useTrackedDictionaryObjResolver';
 
 // ===== Hook ===== //
 
-export function useTranslations(rootId?: string): UseTranslationsFunction {
+export function useTranslations(
+  rootId?: string,
+  {
+    onMissingTranslation,
+    onMissingDictionaryEntry,
+    onMissingDictionaryObject,
+  }: {
+    onMissingTranslation?: OnMissingTranslation;
+    onMissingDictionaryEntry?: OnMissingDictionaryEntry;
+    onMissingDictionaryObject?: OnMissingDictionaryObj;
+  } = {}
+): UseTranslationsFunction {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const resolveDictionaryEntry = useTrackedDictionaryResolver();
-  const gt = useGT();
-  const translateObject = useTranslationsObj(rootId);
+  const gt = useGT([], onMissingTranslation);
+  const resolveDictionaryEntry = useTrackedDictionaryResolver(
+    onMissingDictionaryEntry
+  );
+  const translateObject = useTranslationsObj(rootId, {
+    onMissingTranslation,
+    onMissingDictionaryObject,
+  });
 
   const translateEntry = useCallback(
     (suffix: string, options: DictionaryTranslationOptions = {}) => {
@@ -73,12 +94,23 @@ export function useTranslations(rootId?: string): UseTranslationsFunction {
   );
 }
 
-function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
+function useTranslationsObj(
+  rootId?: string,
+  {
+    onMissingTranslation,
+    onMissingDictionaryObject,
+  }: {
+    onMissingTranslation?: OnMissingTranslation;
+    onMissingDictionaryObject?: OnMissingDictionaryObj;
+  } = {}
+): UseTranslationsObjFunction {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const resolveDictionaryObject = useTrackedDictionaryObjResolver();
-  const gt = useGT();
+  const gt = useGT([], onMissingTranslation);
+  const resolveDictionaryObject = useTrackedDictionaryObjResolver(
+    onMissingDictionaryObject
+  );
 
   return useCallback(
     (suffix: string) => {
