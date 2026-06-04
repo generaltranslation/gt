@@ -25,6 +25,7 @@ import {
   useI18nStore,
   useTranslationsSnapshot,
 } from '../../i18n-store/useI18nStore';
+import { useHandleMissingTranslation } from '../utils/missing-translation';
 
 /**
  * Returns the translation, but also triggers a translation if it is not found
@@ -38,10 +39,6 @@ export type Message = InlineTranslationOptionsFields & {
   message: string;
 };
 
-export type OnMissingTranslation = <T extends Translation>(
-  lookup: TranslateLookup<T>
-) => void;
-
 /**
  * NOTE:
  * gt() may be called during render, so tracking intentionally only mutates
@@ -54,19 +51,13 @@ export type OnMissingTranslation = <T extends Translation>(
  * invalidation for this hook instance, not incorrect rendered output.
  */
 
-/**
- * @param onMissingTranslation - Invoked only for dev hot reload when a translation is not found.
- *
- * TODO: this hook needs a better name
- */
 export function useTrackedTranslationResolver(
-  messages: Message[] = [],
-  onMissingTranslation: OnMissingTranslation = () => {}
+  messages: Message[] = []
 ): TrackedTranslationResolver {
   const translationsSnapshot = useTranslationsSnapshot();
   const i18nStore = useI18nStore();
   const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
-  const shouldTranslate = useShouldTranslate();
+  const onMissingTranslation = useHandleMissingTranslation();
 
   /**
    * Track lookups per hook instance without updating React state during render.
@@ -81,26 +72,6 @@ export function useTrackedTranslationResolver(
 
   // (tx hot reload) Subscribe to translation updates
   useSubscribeToLookups(trackedKeysRef);
-
-  /**
-   * Delegate all translate() invocation to post commit to
-   * keep render logic pure
-   *
-   * TODO: (separate PR) can probably combine the two useEffects into one helper
-   */
-  // Render-local identity to flush each render
-  const pendingLookups = new Map<string, TranslateLookup>();
-  useEffect(() => {
-    if (pendingLookups.size === 0 || !shouldTranslate || !devHotReloadEnabled) {
-      return;
-    }
-    pendingLookups.forEach((lookup) => {
-      // TODO: we should be strict with making sure this lookup is not in snapshot
-      // Perhaps the best way to do that would be by moving this into the Provider
-      // after the snapshot is applied to the cache
-      i18nStore.translate(lookup);
-    });
-  }, [i18nStore, pendingLookups, shouldTranslate, devHotReloadEnabled]);
 
   /**
    * Remember that we can make no assumptions about when this cb gets invoked
@@ -125,17 +96,11 @@ export function useTrackedTranslationResolver(
 
       // Trigger a hot reload if the translation is not found
       if (translation == null && devHotReloadEnabled) {
-        pendingLookups.set(lookupKey, lookup);
-        /**
-         * Some runtimes (like server) cannot make useEffect calls, so
-         * we need to give them access to a callback where they can embed
-         * their own translation calls
-         */
         onMissingTranslation(lookup);
       }
       return translation;
     },
-    [i18nStore, translationsSnapshot, pendingLookups, devHotReloadEnabled]
+    [i18nStore, translationsSnapshot, onMissingTranslation, devHotReloadEnabled]
   );
 }
 
@@ -147,6 +112,7 @@ export function useTrackedTranslationResolver(
  * really just for translation hot reload.
  *
  * TODO: (separate PR) we can probably do better filtering for adding to the set since this is primarily dev only
+ * TODO: reduce code duplication with the other two useSubscribeToLookups functions
  */
 function useSubscribeToLookups(trackedKeysRef: RefObject<Set<string> | null>) {
   // invalidation counter for triggering updates

@@ -4,6 +4,11 @@ import type { Dictionary, Translation } from 'gt-i18n/types';
 import type { Locale, Hash } from 'gt-i18n/internal/types';
 import { GTContext } from './context';
 import type { ReadonlyConditionStore } from 'gt-i18n/internal';
+import type {
+  OnMissingDictionaryEntry,
+  OnMissingDictionaryObj,
+  OnMissingTranslation,
+} from '../hooks/utils/missing-translation';
 
 export type InternalGTProviderProps = I18nStoreParams & {
   children?: ReactNode;
@@ -12,6 +17,10 @@ export type InternalGTProviderProps = I18nStoreParams & {
   dictionaries?: Record<Locale, Dictionary>;
   // Declared upstream dependent on environment
   conditionStore: ReadonlyConditionStore;
+  // Custom override missing translation behavior for dev hot reload
+  onMissingTranslation?: OnMissingTranslation;
+  onMissingDictionaryEntry?: OnMissingDictionaryEntry;
+  onMissingDictionaryObj?: OnMissingDictionaryObj;
 };
 
 // ===== Component ===== //
@@ -29,6 +38,9 @@ export function InternalGTProvider({
   translations,
   dictionaries,
   conditionStore,
+  onMissingTranslation,
+  onMissingDictionaryEntry,
+  onMissingDictionaryObj,
 }: InternalGTProviderProps) {
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {
@@ -41,8 +53,19 @@ export function InternalGTProvider({
       dictionariesSnapshot: dictionaries ?? {},
       i18nStore: i18nStoreRef.current!,
       conditionStore,
+      onMissingTranslation,
+      onMissingDictionaryEntry,
+      onMissingDictionaryObj,
     }),
-    [translations, dictionaries, i18nStoreRef.current, conditionStore]
+    [
+      translations,
+      dictionaries,
+      i18nStoreRef.current,
+      conditionStore,
+      onMissingTranslation,
+      onMissingDictionaryEntry,
+      onMissingDictionaryObj,
+    ]
   );
 
   // Update cache with data from server, do not emit events
@@ -51,6 +74,8 @@ export function InternalGTProvider({
     i18nStoreRef.current.updateTranslations(translations);
     i18nStoreRef.current.updateDictionaries(dictionaries ?? {});
   }, [translations, dictionaries]);
+
+  //
 
   return <GTContext.Provider value={value}>{children}</GTContext.Provider>;
 }

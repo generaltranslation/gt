@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import {
   useDictionariesSnapshot,
   useI18nStore,
@@ -11,21 +11,18 @@ import type {
 import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
 import { useSyncExternalStore } from 'react';
 import type { RefObject } from 'react';
-import { useShouldTranslate } from '../utils';
+import { useHandleMissingDictionaryEntry } from '../utils/missing-translation';
 
 export type TrackedDictionaryEntryResolver = (
   lookup: DictionaryLookup
 ) => DictionaryEntrySnapshot;
 
-export type OnMissingDictionaryEntry = (lookup: DictionaryLookup) => void;
-
-export function useTrackedDictionaryResolver(
-  onMissingDictionaryEntry: OnMissingDictionaryEntry = () => {}
-): TrackedDictionaryEntryResolver {
+// TODO: rename to useTrackedDictionaryEntryResolver
+export function useTrackedDictionaryResolver(): TrackedDictionaryEntryResolver {
   const dictionariesSnapshot = useDictionariesSnapshot();
   const i18nStore = useI18nStore();
   const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
-  const shouldTranslate = useShouldTranslate();
+  const onMissingDictionaryEntry = useHandleMissingDictionaryEntry();
 
   const trackedKeysRef = useRef<Set<string> | null>(null);
   if (trackedKeysRef.current == null) {
@@ -34,18 +31,6 @@ export function useTrackedDictionaryResolver(
 
   // subscribe to dictionary entry updates
   useSubscribeToLookups(trackedKeysRef);
-
-  // hot reload queue (reset on every render)
-  // TODO: combine with other useEffects for dev hot reload
-  const pendingLookups = new Map<string, DictionaryLookup>();
-  useEffect(() => {
-    if (pendingLookups.size === 0 || !shouldTranslate || !devHotReloadEnabled) {
-      return;
-    }
-    pendingLookups.forEach((lookup) => {
-      i18nStore.translateDictionaryEntry(lookup);
-    });
-  }, [i18nStore, pendingLookups, shouldTranslate, devHotReloadEnabled]);
 
   // Resolution callback
   return useCallback(
@@ -64,7 +49,6 @@ export function useTrackedDictionaryResolver(
 
       // Hot reload
       if (dictionaryEntry == null && devHotReloadEnabled) {
-        pendingLookups.set(lookupKey, lookup);
         onMissingDictionaryEntry(lookup);
       }
 
@@ -74,7 +58,6 @@ export function useTrackedDictionaryResolver(
       i18nStore,
       dictionariesSnapshot,
       devHotReloadEnabled,
-      pendingLookups, // TODO: maybe should use a wrapper or smth so we can cache cb
       onMissingDictionaryEntry,
     ]
   );

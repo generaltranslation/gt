@@ -1,5 +1,4 @@
 import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
-import { useShouldTranslate } from '../utils';
 import type {
   DictionaryLookup,
   DictionaryObjectSnapshot,
@@ -12,24 +11,21 @@ import {
 import {
   type RefObject,
   useCallback,
-  useEffect,
   useRef,
   useSyncExternalStore,
 } from 'react';
+import { useHandleMissingDictionaryObject } from '../utils/missing-translation';
 
 export type TrackedDictionaryObjResolver = (
   lookup: DictionaryLookup
 ) => DictionaryObjectSnapshot;
 
-export type OnMissingDictionaryObj = (lookup: DictionaryLookup) => void;
-
-export function useTrackedDictionaryObjResolver(
-  onMissingDictionaryObj: OnMissingDictionaryObj = () => {}
-): TrackedDictionaryObjResolver {
+// TODO: rename to useTrackedDictionaryObjectResolver
+export function useTrackedDictionaryObjResolver(): TrackedDictionaryObjResolver {
   const dictionariesSnapshot = useDictionariesSnapshot();
   const i18nStore = useI18nStore();
   const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
-  const shouldTranslate = useShouldTranslate();
+  const onMissingDictionaryObj = useHandleMissingDictionaryObject();
 
   const trackedKeysRef = useRef<Set<string> | null>(null);
   if (trackedKeysRef.current == null) {
@@ -38,18 +34,6 @@ export function useTrackedDictionaryObjResolver(
 
   // subscribe to dictionary entry updates
   useSubscribeToLookups(trackedKeysRef);
-
-  // hot reload queue (reset on every render)
-  // TODO: combine with other useEffects for dev hot reload
-  const pendingLookups = new Map<string, DictionaryLookup>();
-  useEffect(() => {
-    if (pendingLookups.size === 0 || !shouldTranslate || !devHotReloadEnabled) {
-      return;
-    }
-    pendingLookups.forEach((lookup) => {
-      i18nStore.translateDictionaryObject(lookup);
-    });
-  }, [i18nStore, pendingLookups, shouldTranslate, devHotReloadEnabled]);
 
   // Resolution callback
   return useCallback(
@@ -68,7 +52,6 @@ export function useTrackedDictionaryObjResolver(
 
       // Hot reload
       if (dictionaryObject == null && devHotReloadEnabled) {
-        pendingLookups.set(lookupKey, lookup);
         onMissingDictionaryObj(lookup);
       }
 
@@ -78,7 +61,6 @@ export function useTrackedDictionaryObjResolver(
       i18nStore,
       dictionariesSnapshot,
       devHotReloadEnabled,
-      pendingLookups,
       onMissingDictionaryObj,
     ]
   );

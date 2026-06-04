@@ -3,18 +3,12 @@ import { decodeOptions } from 'gt-i18n';
 import { useGT } from './useGT';
 import type { InlineResolveOptions, MFunctionType } from 'gt-i18n/types';
 import { isEncodedTranslationOptions } from 'gt-i18n/internal';
-import {
-  Message,
-  OnMissingTranslation,
-} from './external-store/useTrackedTranslationResolver';
+import { Message } from './external-store/useTrackedTranslationResolver';
 
 // ===== Hook ===== //
 
-export function useMessages(
-  _messages?: Message[],
-  _onMissingTranslation?: OnMissingTranslation
-): MFunctionType {
-  const gt = useGT(_messages, _onMissingTranslation);
+export function useMessages(_messages?: Message[]): MFunctionType {
+  const gt = useGT(_messages);
 
   return useCallback(
     <T extends string | null | undefined>(

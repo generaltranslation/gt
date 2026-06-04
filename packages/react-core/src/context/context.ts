@@ -8,6 +8,11 @@ import { Translation } from 'gt-i18n/types';
 import { createContext, useContext } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
 import { getRenderStrategy } from '../setup/globals';
+import type {
+  OnMissingTranslation,
+  OnMissingDictionaryEntry,
+  OnMissingDictionaryObj,
+} from '../hooks/utils/missing-translation';
 
 export type GTContextType = {
   /**
@@ -27,6 +32,13 @@ export type GTContextType = {
    * it manages how we perform lookups
    */
   conditionStore: ReadonlyConditionStoreInterface;
+  /**
+   * Custom override behavior on missing translations
+   * Used for server triggering tx hmr b/c no access to useEffect
+   */
+  onMissingTranslation?: OnMissingTranslation;
+  onMissingDictionaryEntry?: OnMissingDictionaryEntry;
+  onMissingDictionaryObj?: OnMissingDictionaryObj;
 };
 
 export const GTContext = createContext<GTContextType | undefined>(undefined);
