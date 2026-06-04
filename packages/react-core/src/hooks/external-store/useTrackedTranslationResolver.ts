@@ -16,12 +16,15 @@ import type {
   StoreListener,
   TranslateLookup,
   TranslateSnapshot,
-} from '../storeTypes';
+} from '../../i18n-store/storeTypes';
 import type { InlineTranslationOptionsFields } from 'gt-i18n/internal/types';
 import type { StringFormat } from '@generaltranslation/format';
-import { useLocale } from '../../hooks/condition-store';
-import { useShouldTranslate } from '../../hooks/utils';
-import { useI18nStore, useTranslationsSnapshot } from '../useI18nStore';
+import { useLocale } from '../condition-store';
+import { useShouldTranslate } from '../utils';
+import {
+  useI18nStore,
+  useTranslationsSnapshot,
+} from '../../i18n-store/useI18nStore';
 
 /**
  * Returns the translation, but also triggers a translation if it is not found

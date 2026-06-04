@@ -13,8 +13,8 @@ import type {
 } from 'gt-i18n/types';
 import { useDefaultLocale } from './i18n-config';
 import { useShouldTranslate } from './utils';
-import { useTrackedDictionaryResolver } from '../i18n-store/lookup-adapter/useTrackedDictionaryResolver';
-import { useTrackedDictionaryObjResolver } from '../i18n-store/lookup-adapter/useTrackedDictionaryObjResolver';
+import { useTrackedDictionaryResolver } from './external-store/useTrackedDictionaryResolver';
+import { useTrackedDictionaryObjResolver } from './external-store/useTrackedDictionaryObjResolver';
 
 // ===== Hook ===== //
 

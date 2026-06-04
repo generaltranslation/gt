@@ -6,7 +6,7 @@ import { isEncodedTranslationOptions } from 'gt-i18n/internal';
 import {
   Message,
   OnMissingTranslation,
-} from '../i18n-store/lookup-adapter/useTrackedTranslationResolver';
+} from './external-store/useTrackedTranslationResolver';
 
 // ===== Hook ===== //
 

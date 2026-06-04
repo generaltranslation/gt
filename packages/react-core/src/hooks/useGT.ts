@@ -9,7 +9,7 @@ import {
   type Message,
   type OnMissingTranslation,
   useTrackedTranslationResolver,
-} from '../i18n-store/lookup-adapter/useTrackedTranslationResolver';
+} from './external-store/useTrackedTranslationResolver';
 
 // ===== Hook ===== //
 

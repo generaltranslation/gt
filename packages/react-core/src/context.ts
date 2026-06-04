@@ -71,6 +71,6 @@ export { ReadonlyConditionStore } from 'gt-i18n/internal';
 export type {
   OnMissingTranslation,
   Message,
-} from './i18n-store/lookup-adapter/useTrackedTranslationResolver';
+} from './hooks/external-store/useTrackedTranslationResolver';
 export { useI18nStore } from './i18n-store/useI18nStore';
 export type { TranslateLookup } from './i18n-store/storeTypes';

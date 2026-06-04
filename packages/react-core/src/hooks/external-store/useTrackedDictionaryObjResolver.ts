@@ -1,24 +1,31 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { useDictionariesSnapshot, useI18nStore } from '../useI18nStore';
-import type {
-  DictionaryEntrySnapshot,
-  DictionaryLookup,
-  StoreListener,
-} from '../storeTypes';
 import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
-import { useSyncExternalStore } from 'react';
-import type { RefObject } from 'react';
-import { useShouldTranslate } from '../../hooks/utils';
+import { useShouldTranslate } from '../utils';
+import type {
+  DictionaryLookup,
+  DictionaryObjectSnapshot,
+  StoreListener,
+} from '../../i18n-store/storeTypes';
+import {
+  useDictionariesSnapshot,
+  useI18nStore,
+} from '../../i18n-store/useI18nStore';
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useSyncExternalStore,
+} from 'react';
 
-export type TrackedDictionaryEntryResolver = (
+export type TrackedDictionaryObjResolver = (
   lookup: DictionaryLookup
-) => DictionaryEntrySnapshot;
+) => DictionaryObjectSnapshot;
 
-export type OnMissingDictionaryEntry = (lookup: DictionaryLookup) => void;
+export type OnMissingDictionaryObj = (lookup: DictionaryLookup) => void;
 
-export function useTrackedDictionaryResolver(
-  onMissingDictionaryEntry: OnMissingDictionaryEntry = () => {}
-): TrackedDictionaryEntryResolver {
+export function useTrackedDictionaryObjResolver(
+  onMissingDictionaryObj: OnMissingDictionaryObj = () => {}
+): TrackedDictionaryObjResolver {
   const dictionariesSnapshot = useDictionariesSnapshot();
   const i18nStore = useI18nStore();
   const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
@@ -40,7 +47,7 @@ export function useTrackedDictionaryResolver(
       return;
     }
     pendingLookups.forEach((lookup) => {
-      i18nStore.translateDictionaryEntry(lookup);
+      i18nStore.translateDictionaryObject(lookup);
     });
   }, [i18nStore, pendingLookups, shouldTranslate, devHotReloadEnabled]);
 
@@ -54,25 +61,25 @@ export function useTrackedDictionaryResolver(
       }
 
       // Resolve the dictionary entry from the store
-      const dictionaryEntry = i18nStore.getDictionaryEntrySnapshot(
+      const dictionaryObject = i18nStore.getDictionaryObjectSnapshot(
         lookup,
         dictionariesSnapshot
       );
 
       // Hot reload
-      if (dictionaryEntry == null && devHotReloadEnabled) {
+      if (dictionaryObject == null && devHotReloadEnabled) {
         pendingLookups.set(lookupKey, lookup);
-        onMissingDictionaryEntry(lookup);
+        onMissingDictionaryObj(lookup);
       }
 
-      return dictionaryEntry;
+      return dictionaryObject;
     },
     [
       i18nStore,
       dictionariesSnapshot,
       devHotReloadEnabled,
-      pendingLookups, // TODO: maybe should use a wrapper or smth so we can cache cb
-      onMissingDictionaryEntry,
+      pendingLookups,
+      onMissingDictionaryObj,
     ]
   );
 }
@@ -83,7 +90,7 @@ function useSubscribeToLookups(trackedKeysRef: RefObject<Set<string> | null>) {
   const i18nStore = useI18nStore();
   const subscribe = useCallback(
     (listener: StoreListener) => {
-      return i18nStore.subscribeToDictionaryEntryEvents((lookup) => {
+      return i18nStore.subscribeToDictionaryObjectEvents((lookup) => {
         const key = getDictionaryListenerKey(lookup);
         if (!trackedKeysRef.current!.has(key)) return;
         versionRef.current++;
