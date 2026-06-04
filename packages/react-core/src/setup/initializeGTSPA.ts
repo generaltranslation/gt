@@ -42,6 +42,6 @@ export function internalInitializeGTSPA(
   const conditionStore = new WritableConditionStore(config);
   setReadonlyConditionStore(conditionStore);
 
-  const i18nStore = new I18nStore(config);
+  const i18nStore = new I18nStore();
   setI18nStore(i18nStore);
 }

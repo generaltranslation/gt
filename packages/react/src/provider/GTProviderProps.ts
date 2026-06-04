@@ -9,6 +9,6 @@ import type { ReadonlyConditionStoreParams } from 'gt-i18n/internal/types';
  */
 export type SharedGTProviderProps = Omit<
   InternalGTProviderProps,
-  'conditionStore'
+  'conditionStore' | 'i18nStore'
 > &
   ReadonlyConditionStoreParams;
