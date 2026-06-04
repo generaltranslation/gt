@@ -1,13 +1,13 @@
 import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
 import { useShouldTranslate } from '../../hooks/utils';
-import {
+import type {
   DictionaryLookup,
   DictionaryObjectSnapshot,
   StoreListener,
 } from '../storeTypes';
 import { useDictionariesSnapshot, useI18nStore } from '../useI18nStore';
 import {
-  RefObject,
+  type RefObject,
   useCallback,
   useEffect,
   useRef,
@@ -44,7 +44,7 @@ export function useTrackedDictionaryObjResolver(
       return;
     }
     pendingLookups.forEach((lookup) => {
-      i18nStore.translateDictionaryEntry(lookup);
+      i18nStore.translateDictionaryObject(lookup);
     });
   }, [i18nStore, pendingLookups, shouldTranslate, devHotReloadEnabled]);
 
@@ -71,7 +71,13 @@ export function useTrackedDictionaryObjResolver(
 
       return dictionaryObject;
     },
-    [i18nStore, dictionariesSnapshot]
+    [
+      i18nStore,
+      dictionariesSnapshot,
+      devHotReloadEnabled,
+      pendingLookups,
+      onMissingDictionaryObj,
+    ]
   );
 }
 

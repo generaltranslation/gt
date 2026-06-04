@@ -67,40 +67,6 @@ export function useTranslations(rootId?: string): UseTranslationsFunction {
     [defaultLocale, gt, rootId, locale, resolveDictionaryEntry, shouldTranslate]
   );
 
-  // const translateObject = useCallback(
-  //   (suffix: string) => {
-  //     const entryId = getId(rootId, suffix);
-  //     const sourceObject = lookupResolver.resolveDictionaryObject({
-  //       locale: defaultLocale,
-  //       id: entryId,
-  //     });
-  //     if (sourceObject === undefined) {
-  //       throw new Error(`Dictionary entry ${entryId} cannot be found`);
-  //     }
-
-  //     let targetObject = undefined;
-  //     if (shouldTranslate) {
-  //       const targetLookup = { locale, id: entryId };
-  //       targetObject = lookupResolver.resolveDictionaryObject(targetLookup);
-  //       if (targetObject === undefined) {
-  //         lookupResolver.handleMissingDictionaryObject(targetLookup);
-  //       }
-  //     }
-
-  //     return renderDictionaryObject({
-  //       sourceObject,
-  //       targetObject,
-  //       translate: (sourceEntry, dictionaryOptions) =>
-  //         lookupResolver.resolveTranslation({
-  //           locale: shouldTranslate ? locale : defaultLocale,
-  //           message: sourceEntry.entry,
-  //           options: dictionaryOptions,
-  //         }),
-  //     });
-  //   },
-  //   [defaultLocale, rootId, locale, lookupResolver, shouldTranslate]
-  // );
-
   return useMemo(
     () => Object.assign(translateEntry, { obj: translateObject }),
     [translateEntry, translateObject]
@@ -137,11 +103,18 @@ function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
         translate: (sourceEntry, dictionaryOptions) =>
           gt(sourceEntry.entry, {
             ...dictionaryOptions,
-            $locale: locale,
+            $locale: shouldTranslate ? locale : defaultLocale,
           }),
       });
     },
-    [defaultLocale, rootId, locale, resolveDictionaryObject, shouldTranslate]
+    [
+      defaultLocale,
+      rootId,
+      locale,
+      resolveDictionaryObject,
+      shouldTranslate,
+      gt,
+    ]
   );
 }
 

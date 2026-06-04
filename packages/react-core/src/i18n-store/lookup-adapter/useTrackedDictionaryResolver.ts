@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useDictionariesSnapshot, useI18nStore } from '../useI18nStore';
-import {
+import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
   StoreListener,
 } from '../storeTypes';
 import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
 import { useSyncExternalStore } from 'react';
-import { RefObject } from 'react';
+import type { RefObject } from 'react';
 import { useShouldTranslate } from '../../hooks/utils';
 
 export type TrackedDictionaryEntryResolver = (
@@ -67,7 +67,13 @@ export function useTrackedDictionaryResolver(
 
       return dictionaryEntry;
     },
-    [i18nStore, dictionariesSnapshot]
+    [
+      i18nStore,
+      dictionariesSnapshot,
+      devHotReloadEnabled,
+      pendingLookups, // TODO: maybe should use a wrapper or smth so we can cache cb
+      onMissingDictionaryEntry,
+    ]
   );
 }
 

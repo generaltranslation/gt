@@ -24,6 +24,9 @@ export type LookupResolver = {
   handleMissingDictionaryObject: (lookup: DictionaryLookup) => void;
 };
 
+/**
+ * @deprecated - dead code
+ */
 export function useLookupResolver(): LookupResolver {
   const adapter = useLookupAdapter();
 
