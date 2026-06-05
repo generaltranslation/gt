@@ -1,4 +1,4 @@
-import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { getFormatLocales } from '../../hooks/utils';
 
@@ -32,7 +32,7 @@ function computeCurrency({
     enableI18n: _enableI18n,
     localesProp,
   });
-  const gt = getReactI18nCache().getGTClass();
+  const gt = getI18nConfig().getGTClass();
   if (children == null) return null;
   const parsedNumber =
     typeof children === 'string' ? parseFloat(children) : children;

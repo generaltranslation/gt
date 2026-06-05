@@ -1,13 +1,13 @@
 import { useCallback } from 'react';
 import { decodeOptions } from 'gt-i18n';
 import { useGT } from './useGT';
-import type { _Messages } from '../utils/types';
 import type { InlineResolveOptions, MFunctionType } from 'gt-i18n/types';
 import { isEncodedTranslationOptions } from 'gt-i18n/internal';
+import { Message } from './external-store/useTrackedTranslationResolver';
 
 // ===== Hook ===== //
 
-export function useMessages(_messages?: _Messages): MFunctionType {
+export function useMessages(_messages?: Message[]): MFunctionType {
   const gt = useGT(_messages);
 
   return useCallback(

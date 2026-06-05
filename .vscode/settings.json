@@ -3,7 +3,7 @@
   "oxc.fmt.configPath": ".oxfmtrc.json",
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.oxc": "always"
+    "source.fixAll.oxc": "never"
   },
   "editor.defaultFormatter": "oxc.oxc-vscode",
   "[javascript]": {

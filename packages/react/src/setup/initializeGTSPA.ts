@@ -1,6 +1,5 @@
 import {
   getTranslationsSnapshot,
-  I18nStoreParams,
   setRenderStrategy,
   I18nStore,
   setI18nStore,
@@ -27,8 +26,7 @@ import {
  * This is SPA for browser runtime
  */
 export async function initializeGTSPA(
-  config: I18nStoreParams &
-    I18nConfigParams &
+  config: I18nConfigParams &
     GTServicesEnabledParams &
     BrowserI18nCacheParams &
     CreateBrowserConditionStoreParams
@@ -43,7 +41,7 @@ export async function initializeGTSPA(
 
   createOrUpdateBrowserConditionStore(config);
 
-  const i18nStore = new I18nStore(config);
+  const i18nStore = new I18nStore();
   setI18nStore(i18nStore);
 
   // Block until translations are loaded

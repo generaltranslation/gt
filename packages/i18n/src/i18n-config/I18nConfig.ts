@@ -3,6 +3,7 @@ import {
   type LocaleConfigConstructorParams,
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
+import { GT } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
@@ -15,24 +16,26 @@ export type I18nConfigParams = Pick<
   | 'customMapping'
   | 'projectId'
   | 'devApiKey'
+  | 'apiKey'
   | 'runtimeUrl'
 >;
 
-type DevHotReloadConfig = Pick<
+type RuntimeConfig = Pick<
   I18nConfigParams,
-  'projectId' | 'devApiKey' | 'runtimeUrl'
+  'projectId' | 'devApiKey' | 'apiKey' | 'runtimeUrl'
 >;
 
 export type LocaleCandidates = string | string[] | undefined;
 
 export class I18nConfig extends LocaleConfig {
-  private devHotReloadConfig: DevHotReloadConfig;
+  private runtimeConfig: RuntimeConfig;
 
   constructor(params: I18nConfigParams = {}) {
     super(getLocaleConfigParams(params));
-    this.devHotReloadConfig = {
+    this.runtimeConfig = {
       projectId: params.projectId,
       devApiKey: params.devApiKey,
+      apiKey: params.apiKey,
       runtimeUrl: params.runtimeUrl,
     };
   }
@@ -50,7 +53,19 @@ export class I18nConfig extends LocaleConfig {
   }
 
   getProjectId(): string | undefined {
-    return this.devHotReloadConfig.projectId;
+    return this.runtimeConfig.projectId;
+  }
+
+  /**
+   * Get a GT instance bound to the resolved target locale. When omitted, the
+   * instance is locale agnostic.
+   *
+   * TODO: keep a cache to avoid creating new instances unnecessarily.
+   */
+  getGTClass(locale?: string): GT {
+    return this.getGTClassClean(
+      locale ? this.resolveLocale(locale) : undefined
+    );
   }
 
   determineLocale(
@@ -106,12 +121,34 @@ export class I18nConfig extends LocaleConfig {
    */
   isDevHotReloadEnabled(): boolean {
     return (
-      !!this.devHotReloadConfig.devApiKey &&
-      !!this.devHotReloadConfig.projectId &&
-      this.devHotReloadConfig.runtimeUrl !== null &&
-      this.devHotReloadConfig.runtimeUrl !== '' &&
+      !!this.runtimeConfig.devApiKey &&
+      !!this.runtimeConfig.projectId &&
+      this.runtimeConfig.runtimeUrl !== null &&
+      this.runtimeConfig.runtimeUrl !== '' &&
       getRuntimeEnvironment() === 'development'
     );
+  }
+
+  /**
+   * Create a GT instance without resolving the target locale first.
+   */
+  private getGTClassClean(locale?: string) {
+    return new GT({
+      sourceLocale: this.getDefaultLocale(),
+      targetLocale: locale,
+      // GT validates approved locales before constructing its LocaleConfig, so
+      // pass canonical locales here while preserving alias target locales.
+      locales: Array.from(
+        new Set(
+          this.getLocales().map((locale) => this.resolveCanonicalLocale(locale))
+        )
+      ),
+      customMapping: this.getCustomMapping(),
+      projectId: this.runtimeConfig.projectId,
+      baseUrl: this.runtimeConfig.runtimeUrl || undefined,
+      apiKey: this.runtimeConfig.apiKey,
+      devApiKey: this.runtimeConfig.devApiKey,
+    });
   }
 
   private getLocaleConfig(config?: I18nConfigParams): LocaleConfig {

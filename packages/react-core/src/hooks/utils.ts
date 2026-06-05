@@ -39,7 +39,9 @@ export function getFormatLocales({
 }
 
 export function useShouldTranslate(): boolean {
-  return getShouldTranslate();
+  const enableI18n = useEnableI18n();
+  const locale = useLocale();
+  return enableI18n && getI18nConfig().requiresTranslation(locale);
 }
 
 /**

@@ -40,7 +40,7 @@ export { useInternalLocaleSelector } from './hooks/useInternalLocaleSelector';
 export { InternalLocaleSelector } from './components/helpers/InternalLocaleSelector';
 export { InternalGTProvider } from './context/InternalGTProvider';
 export { internalInitializeGTSPA } from './setup/initializeGTSPA';
-export { internalInitializeGTSSR } from './setup/initializeGTSSR';
+export { internalInitializeGTSRA } from './setup/initializeGTSRA';
 export {
   getI18nStore,
   setI18nStore,
@@ -60,9 +60,24 @@ export {
   setReactI18nCache,
 } from './i18n-cache/singleton-operations';
 export { I18nStore } from './i18n-store/I18nStore';
-export type { I18nStoreParams } from './i18n-store/I18nStore';
 export type { InternalGTProviderProps } from './context/InternalGTProvider';
 export type {
   ReactI18nCache,
   ReactI18nCacheParams,
 } from './i18n-cache/ReactI18nCache';
+export { ReadonlyConditionStore } from 'gt-i18n/internal';
+
+export { useI18nStore } from './i18n-store/useI18nStore';
+export {
+  useTrackedTranslationResolver,
+  type Message,
+} from './hooks/external-store/useTrackedTranslationResolver';
+export { useTrackedDictionaryResolver } from './hooks/external-store/useTrackedDictionaryResolver';
+export { useTrackedDictionaryObjResolver } from './hooks/external-store/useTrackedDictionaryObjResolver';
+export type {
+  OnMissingDictionaryObj,
+  OnMissingDictionaryEntry,
+  OnMissingTranslation,
+} from './hooks/utils/missing-translation';
+export type { TranslateLookup } from './i18n-store/storeTypes';
+export type { DictionaryLookup } from './i18n-store/storeTypes';

@@ -75,12 +75,3 @@ export type RenderVariable = ({
   locales: string[];
   enableI18n: boolean;
 }) => React.ReactNode;
-
-export type _Message = {
-  message: string;
-  $id?: string;
-  $context?: string;
-  $maxChars?: number;
-  $_hash?: string;
-};
-export type _Messages = _Message[];
