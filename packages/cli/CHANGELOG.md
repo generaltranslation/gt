@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.46
+
+### Patch Changes
+
+- [#1534](https://github.com/generaltranslation/gt/pull/1534) [`e64b96d`](https://github.com/generaltranslation/gt/commit/e64b96db770c0049551277b2d4ed1034ad977ce5) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Hash cooked static template literal values during CLI extraction.
+
 ## 2.14.45
 
 ### Patch Changes

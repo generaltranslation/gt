@@ -210,6 +210,21 @@ describe('processTranslationCall - array support', () => {
   });
 });
 
+describe('processTranslationCall - template literal support', () => {
+  it('should extract cooked template literals without expressions', () => {
+    const output = runProcessTranslationCall(
+      't(`Line one.\\n\\nLine two\\tTabbed`, { $format: "STRING" })'
+    );
+
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0]).toMatchObject({
+      dataFormat: 'STRING',
+      source: 'Line one.\n\nLine two\tTabbed',
+    });
+    expect(output.errors).toHaveLength(0);
+  });
+});
+
 describe('$format option support', () => {
   it('should extract $format from options and set dataFormat', () => {
     const output = runProcessTranslationCall(
