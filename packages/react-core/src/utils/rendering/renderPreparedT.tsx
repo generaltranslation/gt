@@ -1,9 +1,12 @@
 import renderDefaultChildren from './renderDefaultChildren';
 import renderTranslatedChildren from './renderTranslatedChildren';
-import { renderVariable as defaultRenderVariable } from './renderVariable';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { ReactNode } from 'react';
 import type { RenderVariable, TaggedChildren } from '../types';
+
+const missingRenderVariable: RenderVariable = () => {
+  throw new Error('renderPreparedT requires a renderVariable implementation.');
+};
 
 function renderPreparedT({
   taggedSourceChildren,
@@ -12,7 +15,7 @@ function renderPreparedT({
   defaultLocale,
   enableI18n,
   shouldTranslate,
-  renderVariable = defaultRenderVariable,
+  renderVariable,
 }: {
   taggedSourceChildren: TaggedChildren;
   targetJsxChildren: JsxChildren | null | undefined;
@@ -22,12 +25,13 @@ function renderPreparedT({
   shouldTranslate: boolean;
   renderVariable?: RenderVariable;
 }): ReactNode {
+  const resolvedRenderVariable = renderVariable ?? missingRenderVariable;
   if (!shouldTranslate || targetJsxChildren == null) {
     return renderSource({
       taggedSourceChildren,
       defaultLocale,
       enableI18n,
-      renderVariable,
+      renderVariable: resolvedRenderVariable,
     });
   }
 
@@ -36,7 +40,7 @@ function renderPreparedT({
     targetJsxChildren,
     locales: [locale, defaultLocale],
     enableI18n,
-    renderVariable,
+    renderVariable: resolvedRenderVariable,
   });
 }
 

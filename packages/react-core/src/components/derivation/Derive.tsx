@@ -1,15 +1,13 @@
 import type { ReactNode } from 'react';
-
-type DeriveProps<T extends ReactNode> = {
-  children: T;
-};
+import { computeDerive } from './computeDerive';
+import type { DeriveProps } from './computeDerive';
 
 // ===== Component ===== //
 
 function GtInternalDerive<T extends ReactNode>({
   children,
 }: DeriveProps<T>): T {
-  return children;
+  return computeDerive({ children });
 }
 
 function Derive<T extends ReactNode>(props: DeriveProps<T>): React.JSX.Element {

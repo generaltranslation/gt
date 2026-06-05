@@ -29,7 +29,7 @@ export default defineConfig([
     deps,
   }),
   ...createTsdownMinifiedDualFormatConfig({
-    entries: ['src/context.ts'],
+    entries: ['src/context.ts', 'src/rsc.ts'],
     deps: contextDeps,
     clean: false,
     typeEntry: false,

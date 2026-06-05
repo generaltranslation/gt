@@ -1,26 +1,56 @@
 'server-only';
 
-export { initializeGTSPA } from './setup/initializeGTSPA';
-export { useLocaleSelector } from './components/useLocaleSelector';
-export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
 export {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from './cookie-names';
-export { RscBranch } from './components/branches/Branch';
-export { RscPlural } from './components/branches/Plural';
-export { RscDerive } from './components/derivation/Derive';
-export { RscT } from './components/translation/T';
-export { RscCurrency } from './components/variables/Currency';
-export { RscDateTime } from './components/variables/DateTime';
-export { RscNum } from './components/variables/Num';
-export { RscRelativeTime } from './components/variables/RelativeTime';
-export { RscVar } from './components/variables/Var';
 
-// ===== Components ===== //
-export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
-export { LocaleSelector } from './components/LocaleSelector';
+function throwServerOnlyBoundaryError(name: string): never {
+  throw new Error(
+    `gt-react: ${name} is not available from the react-server context entry.`
+  );
+}
+
+export function GTProvider(): never {
+  return throwServerOnlyBoundaryError('GTProvider');
+}
+
+export function LocaleSelector(): never {
+  return throwServerOnlyBoundaryError('LocaleSelector');
+}
+
+export function initializeGTSPA(): never {
+  return throwServerOnlyBoundaryError('initializeGTSPA');
+}
+
+export function internalInitializeGTSPA(): never {
+  return throwServerOnlyBoundaryError('internalInitializeGTSPA');
+}
+
+export function useLocaleSelector(): never {
+  return throwServerOnlyBoundaryError('useLocaleSelector');
+}
+
+export function useSetLocale(): never {
+  return throwServerOnlyBoundaryError('useSetLocale');
+}
+
+export function useSetEnableI18n(): never {
+  return throwServerOnlyBoundaryError('useSetEnableI18n');
+}
+
+export function useGT(): never {
+  return throwServerOnlyBoundaryError('useGT');
+}
+
+export function useMessages(): never {
+  return throwServerOnlyBoundaryError('useMessages');
+}
+
+export function useTranslations(): never {
+  return throwServerOnlyBoundaryError('useTranslations');
+}
 
 export {
   // ===== Components ===== //
@@ -42,9 +72,6 @@ export {
   useLocales,
   getFormatLocales,
   useFormatLocales,
-  useGT,
-  useMessages,
-  useTranslations,
   // ===== Functions ===== //
   msg,
   decodeMsg,
@@ -60,5 +87,13 @@ export {
   t,
   // ===== Setup ===== //
   internalInitializeGTSRA as initializeGT,
-  internalInitializeGTSPA,
-} from '@generaltranslation/react-core/context';
+  RscBranch,
+  RscPlural,
+  RscDerive,
+  RscT,
+  RscCurrency,
+  RscDateTime,
+  RscNum,
+  RscRelativeTime,
+  RscVar,
+} from '@generaltranslation/react-core/rsc';
