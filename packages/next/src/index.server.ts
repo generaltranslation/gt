@@ -36,7 +36,18 @@ import {
   useGT,
 } from './server-dir/buildtime/getTranslationFunction';
 import type { LocaleProperties } from '@generaltranslation/format/types';
-export { LocaleSelector, RegionSelector } from './index.client';
+
+function throwClientSelectorError(name: string): never {
+  throw new Error(`gt-next: ${name} is only available from 'gt-next/client'.`);
+}
+
+export function LocaleSelector(): never {
+  return throwClientSelectorError('LocaleSelector');
+}
+
+export function RegionSelector(): never {
+  return throwClientSelectorError('RegionSelector');
+}
 
 export function useGTClass() {
   return getI18NConfig().getGTClass();

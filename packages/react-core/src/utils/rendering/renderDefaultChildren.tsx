@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import getVariableProps, {
   isVariableElementProps,
 } from '../variables/_getVariableProps';
@@ -11,18 +11,17 @@ import {
 } from '../types';
 import getGTTag from './getGTTag';
 import getPluralBranch from '../plurals/getPluralBranch';
-import { renderVariable as defaultRenderVariable } from './renderVariable';
 
 export default function renderDefaultChildren({
   children,
   defaultLocale = libraryDefaultLocale,
   enableI18n,
-  renderVariable = defaultRenderVariable,
+  renderVariable,
 }: {
   children: TaggedChildren;
   defaultLocale: string;
   enableI18n: boolean;
-  renderVariable?: RenderVariable;
+  renderVariable: RenderVariable;
 }): React.ReactNode {
   const handleSingleChildElement = (child: TaggedElement): ReactNode => {
     const generaltranslation = getGTTag(child);
