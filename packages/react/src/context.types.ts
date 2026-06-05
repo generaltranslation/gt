@@ -19,6 +19,16 @@ export {
   defaultRegionCookieName,
 } from './cookie-names';
 
+export declare const RscBranch: typeof import('./components/branches/Branch').RscBranch;
+export declare const RscPlural: typeof import('./components/branches/Plural').RscPlural;
+export declare const RscDerive: typeof import('./components/derivation/Derive').RscDerive;
+export declare const RscT: typeof import('./components/translation/T').RscT;
+export declare const RscCurrency: typeof import('./components/variables/Currency').RscCurrency;
+export declare const RscDateTime: typeof import('./components/variables/DateTime').RscDateTime;
+export declare const RscNum: typeof import('./components/variables/Num').RscNum;
+export declare const RscRelativeTime: typeof import('./components/variables/RelativeTime').RscRelativeTime;
+export declare const RscVar: typeof import('./components/variables/Var').RscVar;
+
 /**
  * TODO: throw error if any of these functions are called
  */
@@ -28,7 +38,6 @@ export {
   Plural,
   Derive,
   GtInternalTranslateJsx,
-  RscT,
   T,
   Currency,
   DateTime,

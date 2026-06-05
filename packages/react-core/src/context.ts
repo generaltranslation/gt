@@ -2,7 +2,7 @@
 export { Branch } from './components/branches/Branch';
 export { Plural } from './components/branches/Plural';
 export { Derive } from './components/derivation/Derive';
-export { GtInternalTranslateJsx, RscT, T } from './components/translation/T';
+export { GtInternalTranslateJsx, T } from './components/translation/T';
 export { Currency } from './components/variables/Currency';
 export { DateTime } from './components/variables/DateTime';
 export { Num } from './components/variables/Num';
@@ -81,3 +81,22 @@ export type {
 } from './hooks/utils/missing-translation';
 export type { TranslateLookup } from './i18n-store/storeTypes';
 export type { DictionaryLookup } from './i18n-store/storeTypes';
+export { GtInternalBranch } from './components/branches/Branch';
+export { GtInternalPlural } from './components/branches/Plural';
+export { GtInternalDerive } from './components/derivation/Derive';
+export { GtInternalCurrency } from './components/variables/Currency';
+export { GtInternalDateTime } from './components/variables/DateTime';
+export { GtInternalNum } from './components/variables/Num';
+export { GtInternalRelativeTime } from './components/variables/RelativeTime';
+export { GtInternalVar } from './components/variables/Var';
+export { renderPreparedT } from './utils/rendering/renderPreparedT';
+export { prepareT, usePrepareT } from './utils/translation/prepareT';
+export type {
+  JsxTranslationOptions,
+  PreparedT,
+} from './utils/translation/prepareT';
+export type {
+  TaggedChildren,
+  RelativeTimeFormatOptions,
+  RenderVariable,
+} from './utils/types';

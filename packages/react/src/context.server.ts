@@ -8,6 +8,15 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from './cookie-names';
+export { RscBranch } from './components/branches/Branch';
+export { RscPlural } from './components/branches/Plural';
+export { RscDerive } from './components/derivation/Derive';
+export { RscT } from './components/translation/T';
+export { RscCurrency } from './components/variables/Currency';
+export { RscDateTime } from './components/variables/DateTime';
+export { RscNum } from './components/variables/Num';
+export { RscRelativeTime } from './components/variables/RelativeTime';
+export { RscVar } from './components/variables/Var';
 
 // ===== Components ===== //
 export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
@@ -19,7 +28,6 @@ export {
   Plural,
   Derive,
   GtInternalTranslateJsx,
-  RscT,
   T,
   Currency,
   DateTime,
