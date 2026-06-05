@@ -1,6 +1,6 @@
 import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { renderPreparedT } from '../../utils/rendering/renderPreparedT';
 import {
@@ -114,7 +114,18 @@ function useComputeT({
     options: targetOptions,
   });
 
-  return renderPreparedT({
+  // Tx hot reload: render previous translation while loading new one
+  const prev = useRef<ReactNode | null>(null);
+  if (
+    getI18nConfig().isDevHotReloadEnabled() &&
+    targetJsxChildren == null &&
+    prev.current != null &&
+    shouldTranslate
+  ) {
+    return prev.current;
+  }
+
+  const result = renderPreparedT({
     taggedSourceChildren,
     targetJsxChildren,
     locale,
@@ -122,4 +133,9 @@ function useComputeT({
     enableI18n,
     shouldTranslate,
   });
+
+  // record previous result
+  prev.current = result;
+
+  return result;
 }
