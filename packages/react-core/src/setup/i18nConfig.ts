@@ -14,24 +14,15 @@ import type { I18nConfigParams } from 'gt-i18n/internal/types';
 export type RenderStrategy = 'SPA' | 'server-render';
 
 export class ReactI18nConfig extends I18nConfig {
-  private renderStrategy: RenderStrategy | undefined;
+  private renderStrategy: RenderStrategy;
 
-  constructor(params: I18nConfigParams = {}, renderStrategy?: RenderStrategy) {
+  constructor(params: I18nConfigParams = {}, renderStrategy: RenderStrategy) {
     super(params);
     this.renderStrategy = renderStrategy;
   }
 
   getRenderStrategy(): RenderStrategy {
-    if (!this.renderStrategy) {
-      throw new Error(
-        'Cannot access render strategy. GT has not been initialized.'
-      );
-    }
     return this.renderStrategy;
-  }
-
-  setRenderStrategy(renderStrategy: RenderStrategy): void {
-    this.renderStrategy = renderStrategy;
   }
 }
 
@@ -57,25 +48,15 @@ export function setI18nConfig(nextI18nConfig: ReactI18nConfig): void {
 
 export function initializeI18nConfig(
   params: I18nConfigParams = {},
-  renderStrategy?: RenderStrategy
+  renderStrategy: RenderStrategy
 ): ReactI18nConfig {
   const nextI18nConfig = new ReactI18nConfig(params, renderStrategy);
   setI18nConfig(nextI18nConfig);
   return nextI18nConfig;
 }
 
-export function getRenderStrategy(): RenderStrategy {
-  return getI18nConfig().getRenderStrategy();
-}
-
-export function setRenderStrategy(renderStrategy: RenderStrategy): void {
-  getI18nConfig().setRenderStrategy(renderStrategy);
-}
-
 function isReactI18nConfig(
   i18nConfig: I18nConfig
 ): i18nConfig is ReactI18nConfig {
-  return (
-    typeof (i18nConfig as ReactI18nConfig).getRenderStrategy === 'function'
-  );
+  return i18nConfig instanceof ReactI18nConfig;
 }

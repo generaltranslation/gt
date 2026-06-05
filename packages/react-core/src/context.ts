@@ -46,7 +46,6 @@ export {
   setI18nStore,
   isI18nStoreInitialized,
 } from './i18n-store/singleton-operations';
-export { setRenderStrategy, getRenderStrategy } from './setup/globals';
 export {
   getI18nConfig,
   initializeI18nConfig,
