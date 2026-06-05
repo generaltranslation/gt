@@ -1,14 +1,13 @@
 import {
   createLookupOptions,
   getRuntimeEnvironment,
-  getI18nConfig,
   interpolateMessage,
 } from 'gt-i18n/internal';
 import type {
   InlineTranslationOptions,
   ResolutionOptions,
 } from 'gt-i18n/types';
-import { getRenderStrategy } from '../../setup/globals';
+import { getI18nConfig } from '../../setup/i18nConfig';
 import {
   getReadonlyConditionStoreWithFallback,
   isReadonlyConditionStoreInitialized,
@@ -181,7 +180,7 @@ function interpolateTemplateLiteral(
  * We have to error or fallback in SSR.
  */
 function enforceSSRRules(messageOrStrings: string | TemplateStringsArray) {
-  const ssrEnabled = getRenderStrategy() === 'server-render';
+  const ssrEnabled = getI18nConfig().getRenderStrategy() === 'server-render';
   const moduleLevel = !isReadonlyConditionStoreInitialized();
   if (!ssrEnabled || !moduleLevel) return;
 

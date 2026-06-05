@@ -7,7 +7,7 @@ import {
 import { Translation } from 'gt-i18n/types';
 import { createContext, useContext } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
-import { getRenderStrategy } from '../setup/globals';
+import { getI18nConfig } from '../setup/i18nConfig';
 import type {
   OnMissingTranslation,
   OnMissingDictionaryEntry,
@@ -45,7 +45,7 @@ export const GTContext = createContext<GTContextType | undefined>(undefined);
 
 export function useGTContext(): GTContextType | undefined {
   const context = useContext(GTContext);
-  if (context || getRenderStrategy() === 'SPA') {
+  if (context || getI18nConfig().getRenderStrategy() === 'SPA') {
     return context;
   }
   /**

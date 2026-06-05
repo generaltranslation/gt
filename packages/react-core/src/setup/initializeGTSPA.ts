@@ -1,6 +1,5 @@
 import {
   I18nCache,
-  initializeI18nConfig,
   setupGTServicesEnabled,
   WritableConditionStore,
 } from 'gt-i18n/internal';
@@ -13,9 +12,9 @@ import type { Translation } from 'gt-i18n/types';
 import { setReactI18nCache } from '../i18n-cache/singleton-operations';
 import type { ReactI18nCacheParams } from '../i18n-cache/ReactI18nCache';
 import { I18nStore } from '../i18n-store/I18nStore';
-import { setRenderStrategy } from './globals';
 import { setReadonlyConditionStore } from '../condition-store/singleton-operations';
 import { setI18nStore } from '../i18n-store/singleton-operations';
+import { initializeI18nConfig } from './i18nConfig';
 
 /**
  * Initialize GT for an SPA
@@ -31,10 +30,8 @@ export function internalInitializeGTSPA(
     ReactI18nCacheParams &
     WritableConditionStoreParams
 ): void {
-  setRenderStrategy('SPA');
-
   setupGTServicesEnabled(config);
-  initializeI18nConfig(config);
+  initializeI18nConfig(config, 'SPA');
 
   const i18nCache = new I18nCache<Translation>(config);
   setReactI18nCache(i18nCache);
