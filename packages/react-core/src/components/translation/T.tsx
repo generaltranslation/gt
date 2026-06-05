@@ -115,6 +115,7 @@ function useComputeT({
   });
 
   // Tx hot reload: render previous translation while loading new one
+  // TODO: account for success vs loading vs failed request states
   const prev = useRef<ReactNode | null>(null);
   if (
     getI18nConfig().isDevHotReloadEnabled() &&
