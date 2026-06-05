@@ -1,6 +1,5 @@
 import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { use } from '../utils/use';
-import { legacyGetLocaleFunction } from './utils/legacyGetLocaleFunction';
 import { getRequestFunction } from './utils/getRequestFunction';
 import { localeStore } from './localeStore';
 
@@ -25,19 +24,13 @@ export async function getLocale(): Promise<string> {
   const I18NConfig = getI18NConfig();
   const gt = I18NConfig.getGTClass();
 
-  if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {
-    const requestFunction = getRequestFunction('getLocale');
-    // Support new behavior
-    getLocaleFunction = async () => {
-      const requestLocale = await requestFunction();
-      return gt.resolveAliasLocale(
-        requestLocale || I18NConfig.getDefaultLocale()
-      );
-    };
-  } else {
-    // Support legacy behavior
-    getLocaleFunction = legacyGetLocaleFunction(I18NConfig, gt);
-  }
+  const requestFunction = getRequestFunction('getLocale');
+  getLocaleFunction = async () => {
+    const requestLocale = await requestFunction();
+    return gt.resolveAliasLocale(
+      requestLocale || I18NConfig.getDefaultLocale()
+    );
+  };
 
   return getLocaleFunction();
 }

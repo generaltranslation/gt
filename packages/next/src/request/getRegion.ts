@@ -1,5 +1,4 @@
 import { getRequestFunction } from './utils/getRequestFunction';
-import { legacyGetRegionFunction } from './utils/legacyGetRegionFunction';
 
 let getRegionFunction: () => Promise<string | undefined>;
 /**
@@ -16,13 +15,7 @@ let getRegionFunction: () => Promise<string | undefined>;
 export async function getRegion(): Promise<string | undefined> {
   if (getRegionFunction) return await getRegionFunction();
 
-  if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {
-    // Support new behavior
-    getRegionFunction = getRequestFunction('getRegion');
-  } else {
-    // Support legacy behavior
-    getRegionFunction = legacyGetRegionFunction();
-  }
+  getRegionFunction = getRequestFunction('getRegion');
 
   return await getRegionFunction();
 }
