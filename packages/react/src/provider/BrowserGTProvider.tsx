@@ -1,17 +1,34 @@
-import { InternalGTProvider } from '@generaltranslation/react-core/context';
-import type { SharedGTProviderProps } from './SharedGTProviderProps';
-import { createOrUpdateBrowserConditionStore } from '../condition-store/createBrowserConditionStore';
+import {
+  I18nStore,
+  InternalGTProvider,
+  ReadonlyConditionStore,
+} from '@generaltranslation/react-core/context';
+import { useMemo, useRef } from 'react';
+import type { SharedGTProviderProps } from './GTProviderProps';
 
 /**
- * Client side GTProvider, this is different from server side
- * GTProvider because needs to syncrhonize any incoming
- * server-side translations
+ * Consumes snapshot from server
+ * Implementation for client-side only
  */
-export function BrowserGTProvider(props: SharedGTProviderProps) {
-  // TODO: if a specific translation entry changes, but not the locale, this does not trigger a re-render
-  // TODO: optimize by skipping updateTranslations() if client is responsible for reloading translations
-  // (eg reloadLocale === undefined), see getI18nStore().updateLocale() in InternalGTProvider
-  createOrUpdateBrowserConditionStore(props);
+export function BrowserGTProvider({
+  locale,
+  enableI18n,
+  ...props
+}: SharedGTProviderProps) {
+  const conditionStore = useMemo(() => {
+    return new ReadonlyConditionStore({ locale, enableI18n });
+  }, [locale, enableI18n]);
 
-  return <InternalGTProvider {...props} />;
+  const i18nStoreRef = useRef<I18nStore | null>(null);
+  if (i18nStoreRef.current == null) {
+    i18nStoreRef.current = new I18nStore();
+  }
+
+  return (
+    <InternalGTProvider
+      {...props}
+      conditionStore={conditionStore}
+      i18nStore={i18nStoreRef.current}
+    />
+  );
 }

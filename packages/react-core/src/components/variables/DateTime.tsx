@@ -1,4 +1,4 @@
-import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { getFormatLocales } from '../../hooks/utils';
 
@@ -31,7 +31,7 @@ function computeDateTime({
     localesProp,
   });
   // TODO: theres a world in which we don't need the i18n cache, if user passes their own params
-  const gt = getReactI18nCache().getGTClass();
+  const gt = getI18nConfig().getGTClass();
   if (children == null) return null;
   return gt
     .formatDateTime(children, { locales, ...options })

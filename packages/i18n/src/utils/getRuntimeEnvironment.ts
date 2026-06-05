@@ -5,8 +5,9 @@ export type RuntimeEnvironment = {
 };
 
 export function getRuntimeEnvironment(): 'development' | 'production' {
-  const processEnv = typeof process === 'undefined' ? undefined : process.env;
-  if (processEnv?.NODE_ENV === 'development') {
+  // We have to explicitly check `process.env.NODE_ENV` because it often gets string-replaced by bundler.
+  // Destructuring or checking via other means may not work as expected.
+  if (typeof process === 'object' && process.env?.NODE_ENV === 'development') {
     return 'development';
   }
 

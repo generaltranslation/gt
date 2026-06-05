@@ -7,5 +7,8 @@ import type { ReadonlyConditionStoreParams } from 'gt-i18n/internal/types';
  * - {@link InternalGTProviderProps} - requires translations and dictionaries
  * - {@link ReadonlyConditionStoreParams} - requires locale
  */
-export type SharedGTProviderProps = InternalGTProviderProps &
+export type SharedGTProviderProps = Omit<
+  InternalGTProviderProps,
+  'conditionStore' | 'i18nStore'
+> &
   ReadonlyConditionStoreParams;

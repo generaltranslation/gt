@@ -1,26 +1,34 @@
-import { useMemo, type ReactNode } from 'react';
-import {
-  isI18nStoreInitialized,
-  setI18nStore,
-} from '../i18n-store/singleton-operations';
-import { I18nStore, I18nStoreParams } from '../i18n-store/I18nStore';
-import { getI18nCache } from 'gt-i18n/internal';
+import { useEffect, useMemo, type ReactNode } from 'react';
+import { I18nStore } from '../i18n-store/I18nStore';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import type { Locale, Hash } from 'gt-i18n/internal/types';
+import { GTContext } from './context';
+import type { ReadonlyConditionStore } from 'gt-i18n/internal';
+import type {
+  OnMissingDictionaryEntry,
+  OnMissingDictionaryObj,
+  OnMissingTranslation,
+} from '../hooks/utils/missing-translation';
 
-export type InternalGTProviderProps = I18nStoreParams & {
+export type InternalGTProviderProps = {
   children?: ReactNode;
   // For streaming translations to server
   translations: Record<Locale, Record<Hash, Translation>>;
   dictionaries?: Record<Locale, Dictionary>;
+  // Declared upstream dependent on environment
+  conditionStore: ReadonlyConditionStore;
+  i18nStore: I18nStore;
+  // Custom override missing translation behavior for dev hot reload
+  onMissingTranslation?: OnMissingTranslation;
+  onMissingDictionaryEntry?: OnMissingDictionaryEntry;
+  onMissingDictionaryObj?: OnMissingDictionaryObj;
 };
 
 // ===== Component ===== //
 
 /**
  * - Shared provider logic btwn client and server providers
- * - It is assumed that the I18nCache and ConditionStore are already initialized.
- * - This is not userfacing, it should be wrapped in a userfacing provider
+ * - This is not userfacing, it should be wrapped in a userfacing provider with runtime-specific logic
  * - Locale and translations (and dictionaries if applicable) are required
  *
  * TODO: selectively filter to only pass new translations to client for dev hot reload
@@ -30,18 +38,40 @@ export function InternalGTProvider({
   children,
   translations,
   dictionaries,
-  ...config
+  conditionStore,
+  i18nStore,
+  onMissingTranslation,
+  onMissingDictionaryEntry,
+  onMissingDictionaryObj,
 }: InternalGTProviderProps) {
-  if (!isI18nStoreInitialized()) {
-    const i18nStore = new I18nStore(config);
-    setI18nStore(i18nStore);
-  }
+  const value = useMemo(
+    () => ({
+      translationsSnapshot: translations,
+      dictionariesSnapshot: dictionaries ?? {},
+      i18nStore,
+      conditionStore,
+      onMissingTranslation,
+      onMissingDictionaryEntry,
+      onMissingDictionaryObj,
+    }),
+    [
+      translations,
+      dictionaries,
+      i18nStore,
+      conditionStore,
+      onMissingTranslation,
+      onMissingDictionaryEntry,
+      onMissingDictionaryObj,
+    ]
+  );
 
-  // This represents an update from server, so bypass I18nStore
-  useMemo(() => {
-    getI18nCache().updateTranslations(translations);
-    getI18nCache().updateDictionaries(dictionaries ?? {});
-  }, [translations, dictionaries]);
+  // Update cache with data from server, do not emit events
+  useEffect(() => {
+    i18nStore.updateTranslations(translations);
+    i18nStore.updateDictionaries(dictionaries ?? {});
+  }, [translations, dictionaries, i18nStore]);
 
-  return children;
+  //
+
+  return <GTContext.Provider value={value}>{children}</GTContext.Provider>;
 }

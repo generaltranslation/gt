@@ -1,8 +1,6 @@
 'server-only';
 
-export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
 export { initializeGTSPA } from './setup/initializeGTSPA';
-export { LocaleSelector } from './components/LocaleSelector';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
 export {
@@ -10,6 +8,10 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from './cookie-names';
+
+// ===== Components ===== //
+export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
+export { LocaleSelector } from './components/LocaleSelector';
 
 export {
   // ===== Components ===== //
@@ -49,6 +51,6 @@ export {
   setReactI18nCache,
   t,
   // ===== Setup ===== //
-  internalInitializeGTSSR as initializeGT,
+  internalInitializeGTSRA as initializeGT,
   internalInitializeGTSPA,
 } from '@generaltranslation/react-core/context';

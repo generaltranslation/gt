@@ -1,22 +1,44 @@
-import { ReadonlyConditionStore } from 'gt-i18n/internal';
 import {
-  isReadonlyConditionStoreInitialized,
-  setReadonlyConditionStore,
-} from '../condition-store/singleton-operations';
-import type { SharedGTProviderProps } from './SharedGTProviderProps';
-import { InternalGTProvider } from '@generaltranslation/react-core/context';
+  I18nStore,
+  InternalGTProvider,
+  ReadonlyConditionStore,
+} from '@generaltranslation/react-core/context';
+import { useMemo, useRef } from 'react';
+import type { SharedGTProviderProps } from './GTProviderProps';
+import { useHandleMissingTranslations } from '../hooks/useHandleMissingTranslations';
 
 /**
- * For the server side GTProvider, we don't need to synchronize translations
- * as this will happen during the loader
- *
- * TODO: find some way to enforce this is only imported on the server
+ * Consumes snapshot from server
+ * Implementation for server-side only
  */
-export function ServerGTProvider(props: SharedGTProviderProps) {
-  // The condition store may already be created at the module level
-  if (!isReadonlyConditionStoreInitialized()) {
-    const conditionStore = new ReadonlyConditionStore(props);
-    setReadonlyConditionStore(conditionStore);
+export function ServerGTProvider({
+  locale,
+  enableI18n,
+  ...props
+}: SharedGTProviderProps) {
+  const conditionStore = useMemo(() => {
+    return new ReadonlyConditionStore({ locale, enableI18n });
+  }, [locale, enableI18n]);
+
+  const i18nStoreRef = useRef<I18nStore | null>(null);
+  if (i18nStoreRef.current == null) {
+    i18nStoreRef.current = new I18nStore();
   }
-  return <InternalGTProvider {...props} />;
+
+  const {
+    onMissingTranslation,
+    onMissingDictionaryEntry,
+    onMissingDictionaryObj,
+  } = useHandleMissingTranslations(i18nStoreRef.current);
+
+  return (
+    <InternalGTProvider
+      {...props}
+      conditionStore={conditionStore}
+      i18nStore={i18nStoreRef.current}
+      onMissingTranslation={onMissingTranslation}
+      onMissingDictionaryEntry={onMissingDictionaryEntry}
+      onMissingDictionaryObj={onMissingDictionaryObj}
+    />
+  );
 }

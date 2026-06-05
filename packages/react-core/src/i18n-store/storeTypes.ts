@@ -9,6 +9,7 @@ import type {
 
 export type Unsubscribe = () => void;
 export type StoreListener = () => void;
+export type TranslateEventListener = (lookup: TranslateLookup) => void;
 
 // ----- Lookups ----- //
 
