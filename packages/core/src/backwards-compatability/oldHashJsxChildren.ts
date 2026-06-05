@@ -3,7 +3,8 @@
 import { OldJsxChild, OldJsxChildren, OldVariableObject } from './oldTypes';
 import { stableStringify as stringify } from '../utils/stableStringify';
 import { sha256 } from '@noble/hashes/sha2.js';
-import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
+import { encodeUtf8 } from '../utils/encodeUtf8';
 
 // ----- FUNCTIONS ----- //
 /**
@@ -13,7 +14,7 @@ import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
  * @returns {string} The resulting hash as a hexadecimal string.
  */
 export function oldHashString(string: string): string {
-  return bytesToHex(sha256(utf8ToBytes(string)));
+  return bytesToHex(sha256(encodeUtf8(string)));
 }
 
 /**

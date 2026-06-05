@@ -3,9 +3,10 @@
 import { JsxChild, JsxChildren, Variable } from '../types';
 import { stableStringify as stringify } from '../utils/stableStringify';
 import { sha256 } from '@noble/hashes/sha2.js';
-import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
 import isVariable from '../utils/isVariable';
 import { HashMetadata } from './types';
+import { encodeUtf8 } from '../utils/encodeUtf8';
 
 // ----- FUNCTIONS ----- //
 /**
@@ -17,7 +18,7 @@ import { HashMetadata } from './types';
  * @returns {string} The resulting hash as a hexadecimal string.
  */
 export function hashString(string: string): string {
-  return bytesToHex(sha256(utf8ToBytes(string))).slice(0, 16);
+  return bytesToHex(sha256(encodeUtf8(string))).slice(0, 16);
 }
 
 /**
