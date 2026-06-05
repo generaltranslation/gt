@@ -4,6 +4,7 @@ import {
   determineLocale,
   resolveAliasLocale,
 } from '@generaltranslation/format';
+import { defaultLocaleCookieName } from '@generaltranslation/react-core/internal';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type {
@@ -19,7 +20,7 @@ export function useDetermineLocale({
   locale: _locale = '',
   defaultLocale = libraryDefaultLocale,
   locales = [],
-  localeCookieName = 'generaltranslation.locale',
+  localeCookieName = defaultLocaleCookieName,
   ssr = false, // not relevant
   customMapping,
   enableI18n,
