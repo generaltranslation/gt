@@ -55,6 +55,9 @@ export type withGTConfigProps = {
   locales?: string[];
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
+  // Master i18n switch. When false, locale detection and translation are
+  // bypassed and content renders in the default locale. Default: true.
+  enableI18n?: boolean;
   // Rendering
   renderSettings?: {
     method: RenderMethod;

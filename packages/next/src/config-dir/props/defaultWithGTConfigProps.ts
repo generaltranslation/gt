@@ -22,6 +22,7 @@ type DefaultGTConfigProps = {
   runtimeUrl: string;
   cacheUrl: string;
   defaultLocale: string;
+  enableI18n: boolean;
   getLocale: () => Promise<string>;
   locales: string[];
   maxConcurrentRequests: number;
@@ -51,6 +52,7 @@ export const defaultWithGTConfigProps: DefaultGTConfigProps = {
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
   defaultLocale: libraryDefaultLocale,
+  enableI18n: true,
   getLocale: async () => libraryDefaultLocale,
   locales: [] as string[],
   maxConcurrentRequests: 100,

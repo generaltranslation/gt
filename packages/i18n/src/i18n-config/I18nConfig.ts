@@ -14,6 +14,7 @@ export type I18nConfigParams = Pick<
   | 'defaultLocale'
   | 'locales'
   | 'customMapping'
+  | 'enableI18n'
   | 'projectId'
   | 'devApiKey'
   | 'apiKey'
@@ -29,6 +30,7 @@ export type LocaleCandidates = string | string[] | undefined;
 
 export class I18nConfig extends LocaleConfig {
   private runtimeConfig: RuntimeConfig;
+  private enableI18n: boolean;
 
   constructor(params: I18nConfigParams = {}) {
     super(getLocaleConfigParams(params));
@@ -38,10 +40,19 @@ export class I18nConfig extends LocaleConfig {
       apiKey: params.apiKey,
       runtimeUrl: params.runtimeUrl,
     };
+    this.enableI18n = params.enableI18n ?? true;
   }
 
   getDefaultLocale(): string {
     return this.defaultLocale;
+  }
+
+  /**
+   * Whether the i18n runtime is enabled. When false, locale detection and
+   * translation are bypassed and content renders in the default locale.
+   */
+  getEnableI18n(): boolean {
+    return this.enableI18n;
   }
 
   getLocales(): string[] {

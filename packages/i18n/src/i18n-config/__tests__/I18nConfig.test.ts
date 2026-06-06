@@ -20,6 +20,19 @@ describe('I18nConfig', () => {
     expect(config.getLocales()).toEqual(['fr']);
   });
 
+  it('enables i18n by default', () => {
+    expect(new I18nConfig({ defaultLocale: 'en' }).getEnableI18n()).toBe(true);
+  });
+
+  it('honors an explicit enableI18n flag', () => {
+    expect(
+      new I18nConfig({ defaultLocale: 'en', enableI18n: false }).getEnableI18n()
+    ).toBe(false);
+    expect(
+      new I18nConfig({ defaultLocale: 'en', enableI18n: true }).getEnableI18n()
+    ).toBe(true);
+  });
+
   it('skips locale validation when GT services are disabled', () => {
     const config = new I18nConfig({
       defaultLocale: 'invalid-locale',
