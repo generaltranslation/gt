@@ -2,7 +2,7 @@ import { useEffect, useMemo, type ReactNode } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import type { Locale, Hash } from 'gt-i18n/internal/types';
-import { GTContext } from './context';
+import { getGTContext } from './context';
 import type { ReadonlyConditionStore } from 'gt-i18n/internal';
 import type {
   OnMissingDictionaryEntry,
@@ -71,7 +71,6 @@ export function InternalGTProvider({
     i18nStore.updateDictionaries(dictionaries ?? {});
   }, [translations, dictionaries, i18nStore]);
 
-  //
-
+  const GTContext = getGTContext();
   return <GTContext.Provider value={value}>{children}</GTContext.Provider>;
 }

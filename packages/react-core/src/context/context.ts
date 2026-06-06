@@ -5,7 +5,7 @@ import {
   ReadonlyConditionStoreInterface,
 } from 'gt-i18n/internal/types';
 import { Translation } from 'gt-i18n/types';
-import { createContext, useContext } from 'react';
+import { createContext, useContext, type Context } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
 import { getRenderStrategy } from '../setup/globals';
 import type {
@@ -41,10 +41,22 @@ export type GTContextType = {
   onMissingDictionaryObj?: OnMissingDictionaryObj;
 };
 
-export const GTContext = createContext<GTContextType | undefined>(undefined);
+let gtContext: Context<GTContextType | undefined> | undefined;
+
+/**
+ * Lazily create the GT context.
+ *
+ * `createContext` is unavailable in the React Server Components runtime, and
+ * gt-next pulls this module into the RSC graph (via RscT), so it must not be
+ * called at module load. Server components never read the context (they
+ * consume snapshots), so it is only ever created on the client/SSR path.
+ */
+export function getGTContext(): Context<GTContextType | undefined> {
+  return (gtContext ??= createContext<GTContextType | undefined>(undefined));
+}
 
 export function useGTContext(): GTContextType | undefined {
-  const context = useContext(GTContext);
+  const context = useContext(getGTContext());
   if (context || getRenderStrategy() === 'SPA') {
     return context;
   }
