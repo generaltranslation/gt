@@ -237,6 +237,38 @@ describe('escapeHtmlInTextNodes', () => {
     });
   });
 
+  describe('backslash (\\) escaping', () => {
+    it('should escape terminal backslashes in text nodes', () => {
+      const tree: Root = {
+        type: 'root',
+        children: [createParagraph([createTextNode('Ctrl+\\')])],
+      };
+      const result = processAst(tree);
+      expect(result).toContain('Ctrl+&#92;');
+      expect(result).not.toContain('Ctrl+\\');
+    });
+
+    it('should escape line-ending backslashes in text nodes', () => {
+      const tree: Root = {
+        type: 'root',
+        children: [createParagraph([createTextNode('Ctrl+\\\nShift+\\')])],
+      };
+      const result = processAst(tree);
+      expect(result).toContain('Ctrl+&#92;');
+      expect(result).toContain('Shift+&#92;');
+    });
+
+    it('should not escape non-terminal backslashes in text nodes', () => {
+      const tree: Root = {
+        type: 'root',
+        children: [createParagraph([createTextNode('C:\\Users\\name')])],
+      };
+      const result = processAst(tree);
+      expect(result).toContain('C:\\Users\\name');
+      expect(result).not.toContain('C:&#92;Users&#92;name');
+    });
+  });
+
   describe('combined character escaping', () => {
     it('should escape all HTML characters together', () => {
       const tree: Root = {
