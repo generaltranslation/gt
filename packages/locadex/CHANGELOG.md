@@ -1,5 +1,12 @@
 # locadex
 
+## 1.0.182
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.47
+
 ## 1.0.181
 
 ### Patch Changes
