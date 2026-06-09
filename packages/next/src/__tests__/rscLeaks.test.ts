@@ -193,8 +193,8 @@ function walk(): { violations: Violation[]; reported: string[] } {
       if (!resolved) continue; // external module (react, gt-i18n, next/headers, ...)
 
       // Modules marked 'use client' are intentional server-to-client
-      // boundaries (e.g. the locale selector facade rendering through
-      // context.client): allowed even when otherwise forbidden, never walked.
+      // boundaries (e.g. the client-capable context.server/context.client
+      // entrypoints): allowed even when otherwise forbidden, never walked.
       if (isClientBoundary(readFileSync(join(repoRoot, resolved), 'utf8'))) {
         continue;
       }
