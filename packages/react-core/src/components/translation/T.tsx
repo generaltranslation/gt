@@ -1,7 +1,7 @@
 import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
-import { renderPreparedT } from '../../utils/rendering/renderPreparedT';
+import { renderPreparedT } from '../../utils/rendering/renderPipeline';
 import type { JsxTranslationOptions } from '../../utils/translation/prepareT.shared';
 import { usePrepareT } from '../../utils/translation/usePrepareT';
 
