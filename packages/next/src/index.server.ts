@@ -31,10 +31,8 @@ import type {
   RuntimeTranslationOptions,
 } from 'gt-react';
 import { GT } from 'generaltranslation';
-import {
-  useMessages,
-  useGT,
-} from './server-dir/buildtime/getTranslationFunction';
+import { useGT } from './server-dir/buildtime/getGT';
+import { useMessages } from './server-dir/buildtime/getMessages';
 import type { LocaleProperties } from '@generaltranslation/format/types';
 export { LocaleSelector, RegionSelector } from './index.client';
 

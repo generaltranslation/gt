@@ -21,12 +21,14 @@ import { defaultLocaleHeaderName } from '../utils/headers';
 import {
   getI18nConfig,
   I18nCache,
+  setI18nCache,
   setupGTServicesEnabled,
 } from 'gt-i18n/internal';
 import type {
   GTServicesEnabledParams,
   LookupOptions,
 } from 'gt-i18n/internal/types';
+import type { Dictionary as I18nDictionary } from 'gt-i18n/types';
 import { loadTranslations } from './loadTranslation';
 
 type I18NConfigurationParams = Omit<
@@ -77,6 +79,7 @@ export class I18NConfiguration {
   // Dictionaries
   private _i18nCache: I18nCache<TranslatedChildren>;
   private _dictionaryManager: DictionaryManager | undefined;
+  private _sourceDictionary: Dictionary | undefined;
   // Headers and cookies
   private localeHeaderName: string;
   private localeCookieName: string;
@@ -216,7 +219,14 @@ export class I18NConfiguration {
             ...(_versionId && { _versionId }),
           })) || {},
       }),
+      // The source dictionary is resolved lazily at request time and seeded
+      // through setSourceDictionary.
+      dictionary: {},
+      loadDictionary: async (locale: string) =>
+        ((await dictionaryManager.getDictionary(locale)) ??
+          {}) as I18nDictionary,
     });
+    setI18nCache(this._i18nCache);
     this._dictionaryManager = dictionaryManager;
     // Headers and cookies
     this.localeHeaderName =
@@ -380,6 +390,19 @@ export class I18NConfiguration {
 
   // ----- DICTIONARY ----- //
   // User defined translations are called dictionary
+
+  /**
+   * Seeds the source dictionary into the i18n cache so dictionary lookups
+   * can resolve source entries for the default locale.
+   * @param {Dictionary} dictionary - The source dictionary data.
+   */
+  setSourceDictionary(dictionary: Dictionary) {
+    if (dictionary === this._sourceDictionary) return;
+    this._sourceDictionary = dictionary;
+    this._i18nCache.updateDictionaries({
+      [this.getDefaultLocale()]: dictionary as I18nDictionary,
+    });
+  }
 
   /**
    * Load the user's translations for a given locale

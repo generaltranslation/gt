@@ -1,12 +1,16 @@
 import { InlineResolveOptions } from '../types/options';
 import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
-import { getGT } from './getGT';
+import { getGTInternal } from './getGT';
+import type { I18nRequestConditions } from './getGT';
 import { MFunctionType } from '../types/functions';
+import { getLocale } from '../../helpers/locale';
+import { getEnableI18n } from '../../helpers/conditions';
 
 /**
  * Returns the m function that resolves a registered message to its translation.
  * @returns A promise of the m function
+ * @important Must be used inside of a request context
  *
  * @example
  * // Registration
@@ -17,8 +21,23 @@ import { MFunctionType } from '../types/functions';
  * const greeting = m(registeredMessage);
  */
 export async function getMessages(): Promise<MFunctionType> {
+  return getMessagesInternal({
+    locale: getLocale(),
+    enableI18n: getEnableI18n(),
+  });
+}
+
+/**
+ * Condition-store-free version of {@link getMessages}: request conditions are
+ * passed as parameters instead of being read from the condition store.
+ * @param {I18nRequestConditions} conditions - The request conditions
+ * @returns A promise of the m function
+ */
+export async function getMessagesInternal(
+  conditions: I18nRequestConditions
+): Promise<MFunctionType> {
   // Get the gt function
-  const gt = await getGT();
+  const gt = await getGTInternal(conditions);
 
   /**
    * Resolves a registered message to its translation.

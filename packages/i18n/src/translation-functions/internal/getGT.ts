@@ -6,20 +6,49 @@ import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { getLocale } from '../../helpers/locale';
+import { getEnableI18n } from '../../helpers/conditions';
+
+/**
+ * Request conditions consumed by the internal translation functions.
+ * Runtimes that resolve conditions asynchronously (e.g. gt-next) collect
+ * these in request scope and pass them in as parameters.
+ */
+export type I18nRequestConditions = {
+  locale: string;
+  enableI18n?: boolean;
+};
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
  * @returns A promise of the gt function
+ * @important Must be used inside of a request context
  *
  * @example
  * const gt = await getGT();
  * const greeting = gt('Hello, world!');
  */
 export async function getGT(): Promise<GTFunctionType> {
+  return getGTInternal({
+    locale: getLocale(),
+    enableI18n: getEnableI18n(),
+  });
+}
+
+/**
+ * Condition-store-free version of {@link getGT}: request conditions are
+ * passed as parameters instead of being read from the condition store.
+ * @param {I18nRequestConditions} conditions - The request conditions
+ * @returns A promise of the gt function
+ */
+export async function getGTInternal({
+  locale,
+  enableI18n = true,
+}: I18nRequestConditions): Promise<GTFunctionType> {
   // Get the translation resolver
   const i18nCache = getI18nCache();
-  const locale = getLocale();
-  await i18nCache.loadTranslations(locale);
+  if (enableI18n) {
+    await i18nCache.loadTranslations(locale);
+  }
   const sourceLocale = getI18nConfig().getDefaultLocale();
 
   /**
@@ -50,11 +79,13 @@ export async function getGT(): Promise<GTFunctionType> {
     );
 
     // Lookup translation
-    const translation = i18nCache.lookupTranslation(
-      lookupOptions.$locale,
-      message,
-      lookupOptions
-    );
+    const translation = enableI18n
+      ? i18nCache.lookupTranslation(
+          lookupOptions.$locale,
+          message,
+          lookupOptions
+        )
+      : undefined;
 
     // Format result
     return interpolateMessage({
