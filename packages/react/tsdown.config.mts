@@ -27,18 +27,19 @@ const contextDeps = {
   alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };
 
-// The locale selector client boundary must stay a separate build artifact:
-// bundling a 'use client' module into another entry drops the directive. The
-// context entries resolve the relative import to the built
-// locale-selector.client artifact for each format and keep it external.
-const localeSelectorClientImport = /[\\/]locale-selector\.client$/;
+// The context-rsc entry reaches client components (e.g. the locale selector)
+// through the context.client entrypoint, an intentional server-to-client
+// boundary. Bundling that import would drop the 'use client' directive and
+// silently break the boundary, so it is kept external and rewritten to the
+// built context.client artifact for each format.
+const contextClientImport = /[\\/]context\.client$/;
 
-function externalizeLocaleSelectorClient(extension: '.cjs' | '.mjs') {
+function externalizeContextClient(extension: '.cjs' | '.mjs') {
   return {
-    name: 'externalize-locale-selector-client',
+    name: 'externalize-context-client',
     resolveId(id: string) {
-      if (localeSelectorClientImport.test(id)) {
-        return { id: `./locale-selector.client${extension}`, external: true };
+      if (contextClientImport.test(id)) {
+        return { id: `./context.client${extension}`, external: true };
       }
       return null;
     },
@@ -53,7 +54,6 @@ const entries = [
   'src/context.server.ts',
   'src/context.types.ts',
   'src/context-rsc.ts',
-  'src/locale-selector.client.ts',
   'src/browser.ts',
   'src/macros.ts',
 ];
@@ -61,15 +61,14 @@ const entries = [
 export default defineConfig(
   entries.flatMap((entry, index) => {
     const isContextEntry = entry.startsWith('src/context');
+    const isRscEntry = entry === 'src/context-rsc.ts';
     const entryDeps = isContextEntry ? contextDeps : deps;
     const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
     return [
       {
         ...cjsConfig,
-        ...(isContextEntry
-          ? { plugins: [externalizeLocaleSelectorClient('.cjs')] }
-          : {}),
+        ...(isRscEntry ? { plugins: [externalizeContextClient('.cjs')] } : {}),
         clean: index === 0,
         define: {
           'import.meta.env': '{}',
@@ -77,9 +76,7 @@ export default defineConfig(
       },
       {
         ...esmConfig,
-        ...(isContextEntry
-          ? { plugins: [externalizeLocaleSelectorClient('.mjs')] }
-          : {}),
+        ...(isRscEntry ? { plugins: [externalizeContextClient('.mjs')] } : {}),
         deps: {
           onlyBundle: false,
           ...entryDeps,
