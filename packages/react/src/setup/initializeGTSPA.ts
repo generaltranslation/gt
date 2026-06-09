@@ -1,6 +1,5 @@
 import {
   getTranslationsSnapshot,
-  setRenderStrategy,
   I18nStore,
   setI18nStore,
   setReactI18nCache,
@@ -31,10 +30,8 @@ export async function initializeGTSPA(
     BrowserI18nCacheParams &
     CreateBrowserConditionStoreParams
 ) {
-  setRenderStrategy('SPA');
-
   setupGTServicesEnabled(config);
-  initializeI18nConfig(config);
+  initializeI18nConfig(config, 'SPA');
 
   const i18nCache = new BrowserI18nCache(config);
   setReactI18nCache(i18nCache);

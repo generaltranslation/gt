@@ -8,7 +8,7 @@ import {
   getRuntimeEnvironment,
 } from 'gt-i18n/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
-import { getRenderStrategy } from '../setup/globals';
+import { getI18nConfig } from '../setup/i18nConfig';
 
 const conditionStoreNotInitializedError = createDiagnosticMessage({
   source: '@generaltranslation/react-core',
@@ -32,7 +32,7 @@ function getReadonlyConditionStoreWithFallback(): ReadonlyConditionStoreInterfac
   } catch (error) {
     // Error handling
     const runtimeEnvironment = getRuntimeEnvironment();
-    const renderStrategy = getRenderStrategy();
+    const renderStrategy = getI18nConfig().getRenderStrategy();
     const errorMessage = createDiagnosticMessage({
       source: '@generaltranslation/react-core',
       severity: 'Error',
