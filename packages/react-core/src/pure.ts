@@ -14,5 +14,6 @@ export {
 } from 'gt-i18n';
 
 export { default as getPluralBranch } from './utils/plurals/getPluralBranch';
+export { getFormatLocales } from './hooks/utils/getFormatLocales';
 
 export type { RelativeTimeFormatOptions, RenderVariable } from './utils/types';
