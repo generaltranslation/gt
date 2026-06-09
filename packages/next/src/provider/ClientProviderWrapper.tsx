@@ -1,6 +1,6 @@
 'use client';
-import { ClientProvider } from 'gt-react/client';
-import { ClientProviderProps } from 'gt-react/internal';
+import type { ClientProvider as ClientProviderType } from 'gt-react/client';
+import type { ClientProviderProps } from 'gt-react/internal';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useMemo } from 'react';
 import { standardizeLocale } from '@generaltranslation/format';
@@ -18,6 +18,9 @@ export function ClientProviderWrapper(
     referrerLocaleCookieName: string;
   }
 ) {
+  const { ClientProvider } = require('gt-react/client') as {
+    ClientProvider: typeof ClientProviderType;
+  };
   const router = useRouter();
   const {
     locale,
