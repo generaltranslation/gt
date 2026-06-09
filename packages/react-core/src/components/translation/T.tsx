@@ -2,7 +2,7 @@ import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
-import { renderPreparedT } from '../../utils/rendering/renderPreparedT';
+import { renderPreparedT } from '../../utils/rendering/renderPipeline';
 import {
   prepareT,
   type JsxTranslationOptions,
