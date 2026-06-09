@@ -1,5 +1,5 @@
-import renderDefaultChildren from './renderDefaultChildren';
-import renderTranslatedChildren from './renderTranslatedChildren';
+import renderDefaultChildren from './renderDefaultChildren.shared';
+import renderTranslatedChildren from './renderTranslatedChildren.shared';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { ReactNode } from 'react';
 import type { RenderVariable, TaggedChildren } from '../types';
