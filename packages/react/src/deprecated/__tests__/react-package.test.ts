@@ -25,8 +25,6 @@ const runtimeArtifactNames = [
   'index.mjs',
   'internal.cjs',
   'internal.mjs',
-  'locale-selector.client.cjs',
-  'locale-selector.client.mjs',
   'macros.cjs',
   'macros.mjs',
 ].sort();
@@ -131,8 +129,8 @@ describe('gt-react package exports', () => {
     for (const file of [
       'dist/client.cjs',
       'dist/client.mjs',
-      'dist/locale-selector.client.cjs',
-      'dist/locale-selector.client.mjs',
+      'dist/context.client.cjs',
+      'dist/context.client.mjs',
     ]) {
       expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
         /^['"]use client['"];?/
