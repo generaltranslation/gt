@@ -3,6 +3,7 @@ import { getI18nConfig } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { renderPreparedT } from '../../utils/rendering/renderPreparedT';
+import { renderVariable } from '../../utils/rendering/renderVariable';
 import {
   prepareT,
   usePrepareT,
@@ -57,6 +58,7 @@ async function RscT({
       defaultLocale,
       enableI18n,
       shouldTranslate,
+      renderVariable,
     });
   }
 
@@ -74,6 +76,7 @@ async function RscT({
     defaultLocale,
     enableI18n,
     shouldTranslate,
+    renderVariable,
   });
 }
 
@@ -133,6 +136,7 @@ function useComputeT({
     defaultLocale,
     enableI18n,
     shouldTranslate,
+    renderVariable,
   });
 
   // record previous result
