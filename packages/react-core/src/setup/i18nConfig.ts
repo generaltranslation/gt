@@ -13,11 +13,17 @@ import type { I18nConfigParams } from 'gt-i18n/internal/types';
  */
 export type RenderStrategy = 'SPA' | 'server-render';
 
+const defaultRenderStrategy: RenderStrategy = 'server-render';
+
 export class ReactI18nConfig extends I18nConfig {
   private renderStrategy: RenderStrategy;
 
-  constructor(params: I18nConfigParams = {}, renderStrategy: RenderStrategy) {
+  constructor(
+    params: I18nConfigParams = {},
+    renderStrategy: RenderStrategy = defaultRenderStrategy
+  ) {
     super(params);
+    validateRenderStrategy(renderStrategy);
     this.renderStrategy = renderStrategy;
   }
 
@@ -48,11 +54,26 @@ export function setI18nConfig(nextI18nConfig: ReactI18nConfig): void {
 
 export function initializeI18nConfig(
   params: I18nConfigParams = {},
-  renderStrategy: RenderStrategy
+  renderStrategy: RenderStrategy = defaultRenderStrategy
 ): ReactI18nConfig {
   const nextI18nConfig = new ReactI18nConfig(params, renderStrategy);
   setI18nConfig(nextI18nConfig);
   return nextI18nConfig;
+}
+
+function validateRenderStrategy(
+  renderStrategy: RenderStrategy
+): asserts renderStrategy is RenderStrategy {
+  if (renderStrategy === 'SPA' || renderStrategy === 'server-render') return;
+  throw new Error(
+    createDiagnosticMessage({
+      source: '@generaltranslation/react-core',
+      severity: 'Error',
+      whatHappened: 'Invalid React render strategy.',
+      why: `the render strategy must be "SPA" or "server-render", but received "${String(renderStrategy)}"`,
+      fix: 'Initialize GT through gt-react or pass a valid render strategy.',
+    })
+  );
 }
 
 function isReactI18nConfig(
