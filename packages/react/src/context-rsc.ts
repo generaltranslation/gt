@@ -38,8 +38,18 @@ export {
 export { RscLocaleSelector as LocaleSelector } from './components/LocaleSelector.rsc';
 
 export type {
+  CurrencyProps,
+  DateTimeProps,
   JsxTranslationOptions,
+  NumProps,
+  PluralProps,
   PreparedT,
   RelativeTimeFormatOptions,
+  RelativeTimeProps,
   RenderVariable,
+  ResolvedCurrencyProps,
+  ResolvedDateTimeProps,
+  ResolvedNumProps,
+  ResolvedPluralProps,
+  ResolvedRelativeTimeProps,
 } from '@generaltranslation/react-core/context-rsc';

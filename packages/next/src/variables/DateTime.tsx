@@ -1,8 +1,9 @@
-import { DateTime as CoreDateTime } from 'gt-react/context';
+import {
+  DateTime as CoreDateTime,
+  type DateTimeProps,
+} from 'gt-react/context-rsc';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
-
-type DateTimeProps = Parameters<typeof CoreDateTime>[0];
 
 export async function DateTime(props: DateTimeProps): Promise<ReactNode> {
   const conditions = await getRequestConditions();

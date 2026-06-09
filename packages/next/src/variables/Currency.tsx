@@ -1,8 +1,9 @@
-import { Currency as CoreCurrency } from 'gt-react/context';
+import {
+  Currency as CoreCurrency,
+  type CurrencyProps,
+} from 'gt-react/context-rsc';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
-
-type CurrencyProps = Parameters<typeof CoreCurrency>[0];
 
 export async function Currency(props: CurrencyProps): Promise<ReactNode> {
   const conditions = await getRequestConditions();

@@ -1,8 +1,6 @@
-import { Plural as CorePlural } from 'gt-react/context';
+import { Plural as CorePlural, type PluralProps } from 'gt-react/context-rsc';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
-
-type PluralProps = Parameters<typeof CorePlural>[0];
 
 export async function Plural(props: PluralProps): Promise<ReactNode> {
   const conditions = await getRequestConditions();

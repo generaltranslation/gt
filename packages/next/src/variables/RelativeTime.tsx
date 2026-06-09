@@ -1,8 +1,9 @@
-import { RelativeTime as CoreRelativeTime } from 'gt-react/context';
+import {
+  RelativeTime as CoreRelativeTime,
+  type RelativeTimeProps,
+} from 'gt-react/context-rsc';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
-
-type RelativeTimeProps = Parameters<typeof CoreRelativeTime>[0];
 
 export async function RelativeTime(
   props: RelativeTimeProps

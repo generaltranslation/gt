@@ -45,4 +45,24 @@ export type {
   JsxTranslationOptions,
   PreparedT,
 } from './utils/translation/prepareT.shared';
+export type {
+  PluralProps,
+  ResolvedPluralProps,
+} from './components/branches/Plural.shared';
+export type {
+  CurrencyProps,
+  ResolvedCurrencyProps,
+} from './components/variables/Currency.shared';
+export type {
+  DateTimeProps,
+  ResolvedDateTimeProps,
+} from './components/variables/DateTime.shared';
+export type {
+  NumProps,
+  ResolvedNumProps,
+} from './components/variables/Num.shared';
+export type {
+  RelativeTimeProps,
+  ResolvedRelativeTimeProps,
+} from './components/variables/RelativeTime.shared';
 export type { RelativeTimeFormatOptions, RenderVariable } from './utils/types';
