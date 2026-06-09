@@ -125,12 +125,14 @@ describe('gt-react package exports', () => {
     ]);
   });
 
-  it('preserves use client in emitted ClientProvider entrypoints', () => {
+  it('preserves use client in emitted client-capable entrypoints', () => {
     for (const file of [
       'dist/client.cjs',
       'dist/client.mjs',
       'dist/context.client.cjs',
       'dist/context.client.mjs',
+      'dist/context.server.cjs',
+      'dist/context.server.mjs',
     ]) {
       expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
         /^['"]use client['"];?/
