@@ -5,9 +5,9 @@ import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { renderPreparedT } from '../../utils/rendering/renderPreparedT';
 import {
   prepareT,
-  usePrepareT,
   type JsxTranslationOptions,
-} from '../../utils/translation/prepareT';
+} from '../../utils/translation/prepareT.shared';
+import { usePrepareT } from '../../utils/translation/usePrepareT';
 
 // ===== Component ===== //
 

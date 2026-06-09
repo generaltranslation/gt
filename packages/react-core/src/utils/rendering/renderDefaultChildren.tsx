@@ -6,16 +6,21 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { TaggedChild, TaggedChildren, TaggedElement } from '../types';
 import getGTTag from './getGTTag';
 import getPluralBranch from '../plurals/getPluralBranch';
-import { renderVariable } from './renderVariable';
+import type { RenderVariable } from '../types';
+
+// The variable renderer is passed in by the caller so the RSC code path never
+// statically imports the hook-based variable components.
 
 export default function renderDefaultChildren({
   children,
   defaultLocale = libraryDefaultLocale,
   enableI18n,
+  renderVariable,
 }: {
   children: TaggedChildren;
   defaultLocale: string;
   enableI18n: boolean;
+  renderVariable: RenderVariable;
 }): React.ReactNode {
   const handleSingleChildElement = (child: TaggedElement): ReactNode => {
     const generaltranslation = getGTTag(child);
