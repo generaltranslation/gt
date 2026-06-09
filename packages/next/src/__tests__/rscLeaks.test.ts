@@ -18,6 +18,7 @@ const repoRoot = resolve(packageRoot, '../..');
 const entrypoints = [
   'packages/react-core/src/context-rsc.ts',
   'packages/react/src/context-rsc.ts',
+  'packages/react/src/context.rsc.tsx',
   'packages/next/src/index.server.ts',
   'packages/next/src/server.ts',
   ...listSourceFiles('packages/next/src/server-dir'),
@@ -46,8 +47,8 @@ const forbiddenSpecifiers = [
 ];
 
 // Resolved source modules that must never be reached from the RSC/server
-// graph. The pure getFormatLocales helper is the only hooks/ module that is
-// explicitly RSC-safe.
+// graph. The pure getFormatLocales/getShouldTranslate helpers are the only
+// hooks/ modules that are explicitly RSC-safe.
 const forbiddenFiles = [
   'packages/react-core/src/context.ts',
   'packages/react-core/src/context/context.ts',
@@ -59,6 +60,7 @@ const forbiddenFiles = [
 const forbiddenDirs = ['packages/react-core/src/hooks/'];
 const allowedFilesInForbiddenDirs = [
   'packages/react-core/src/hooks/utils/getFormatLocales.ts',
+  'packages/react-core/src/hooks/utils/getShouldTranslate.ts',
 ];
 
 // React APIs that must not appear in the RSC/server graph.
