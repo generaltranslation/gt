@@ -9,13 +9,11 @@
 // - Components resolve request conditions from the read-only condition store
 //   singleton when not passed explicitly — the same fallback the hook-based
 //   implementations use when no provider is mounted.
-// - <T> translates server-side via RscT; client components (GTProvider,
-//   LocaleSelector, GtInternalTranslateJsx) are
-//   wrapped behind a dynamic import of the 'use client' context.server
-//   entrypoint: an intentional server-to-client boundary. The build keeps
-//   that import external so the directive survives (see tsdown.config.mts),
-//   and the laziness means merely importing gt-react/context in a
-//   react-server environment never evaluates client-only code.
+// - Client components (GTProvider, LocaleSelector) are
+//   wrapped through a dedicated 'use client' boundary entry. The build keeps
+//   that entry external so the directive survives (see tsdown.config.mts).
+// - <T> and GtInternalTranslateJsx render through the hook-free RscT
+//   implementation from react-core/context-rsc.
 // - APIs that cannot work in a React Server Component (store-backed hooks,
 //   client setup) throw with an actionable message.
 
@@ -38,51 +36,32 @@ import {
   Var,
   type CurrencyProps,
   type DateTimeProps,
-  type JsxTranslationOptions,
   type NumProps,
   type PluralProps,
   type RelativeTimeProps,
+  type JsxTranslationOptions,
 } from '@generaltranslation/react-core/context-rsc';
 import { getI18nConfig } from 'gt-i18n/internal';
 import type { CustomMapping } from 'generaltranslation/types';
 import type { ReactNode } from 'react';
+import {
+  GTProvider as ClientGTProvider,
+  LocaleSelector as ClientLocaleSelector,
+} from './context.client-boundary';
 
 // ===== Client boundary ===== //
 
-type ClientBoundary = typeof import('./context.server');
-
-function loadClientBoundary(): Promise<ClientBoundary> {
-  return import('./context.server');
-}
-
-export async function GTProvider(
-  props: Parameters<ClientBoundary['GTProvider']>[0]
-): Promise<React.JSX.Element> {
-  const { GTProvider: ClientGTProvider } = await loadClientBoundary();
+export function GTProvider(
+  props: Parameters<typeof ClientGTProvider>[0]
+): React.JSX.Element {
   return <ClientGTProvider {...props} />;
 }
 
-export async function LocaleSelector(
-  props: Parameters<ClientBoundary['LocaleSelector']>[0]
-): Promise<React.JSX.Element> {
-  const { LocaleSelector: ClientLocaleSelector } = await loadClientBoundary();
+export function LocaleSelector(
+  props: Parameters<typeof ClientLocaleSelector>[0]
+): React.JSX.Element {
   return <ClientLocaleSelector {...props} />;
 }
-
-export async function GtInternalTranslateJsx(
-  props: Parameters<ClientBoundary['GtInternalTranslateJsx']>[0]
-): Promise<React.JSX.Element> {
-  const { GtInternalTranslateJsx: ClientGtInternalTranslateJsx } =
-    await loadClientBoundary();
-  return <ClientGtInternalTranslateJsx {...props} />;
-}
-
-/** @internal _gtt - The GT transformation for the component. */
-GtInternalTranslateJsx._gtt = 'translate-client-automatic';
-
-// ===== Server-side translation ===== //
-
-export { RscT };
 
 export async function T({
   children,
@@ -99,8 +78,24 @@ export async function T({
   });
 }
 
+export async function GtInternalTranslateJsx({
+  children,
+  ...params
+}: {
+  children?: ReactNode;
+} & JsxTranslationOptions): Promise<ReactNode> {
+  const conditionStore = getReadonlyConditionStoreWithFallback();
+  return RscT({
+    children,
+    locale: conditionStore.getLocale(),
+    enableI18n: conditionStore.getEnableI18n(),
+    ...params,
+  });
+}
+
 /** @internal _gtt - The GT transformation for the component. */
 T._gtt = 'translate-server';
+GtInternalTranslateJsx._gtt = 'translate-server-automatic';
 
 // ===== Components ===== //
 
