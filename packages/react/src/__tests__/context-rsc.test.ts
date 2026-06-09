@@ -39,9 +39,12 @@ describe('gt-react/context-rsc', () => {
     expect(mod.Num).toBeTypeOf('function');
     expect(mod.Plural).toBeTypeOf('function');
     expect(mod.RelativeTime).toBeTypeOf('function');
+    expect(mod.T).toBeTypeOf('function');
+    expect(mod.RscT).toBeTypeOf('function');
     expect(mod.Var).toBeTypeOf('function');
     expect(mod.LocaleSelector).toBeTypeOf('function');
     expect(mod.getFormatLocales).toBeTypeOf('function');
     expect(mod.getPluralBranch).toBeTypeOf('function');
+    expect(mod.renderVariable).toBeTypeOf('function');
   });
 });

@@ -6,6 +6,7 @@
 
 export {
   Branch,
+  createRenderVariable,
   Currency,
   DateTime,
   Derive,
@@ -21,7 +22,14 @@ export {
   GtInternalVar,
   Num,
   Plural,
+  prepareT,
   RelativeTime,
+  renderDefaultChildren,
+  renderPreparedT,
+  renderTranslatedChildren,
+  renderVariable,
+  RscT,
+  T,
   Var,
 } from '@generaltranslation/react-core/context-rsc';
 
@@ -30,6 +38,8 @@ export {
 export { RscLocaleSelector as LocaleSelector } from './components/LocaleSelector.rsc';
 
 export type {
+  JsxTranslationOptions,
+  PreparedT,
   RelativeTimeFormatOptions,
   RenderVariable,
 } from '@generaltranslation/react-core/context-rsc';

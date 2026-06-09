@@ -34,8 +34,14 @@ describe('@generaltranslation/react-core/context-rsc', () => {
     expect(mod.Num).toBeTypeOf('function');
     expect(mod.Plural).toBeTypeOf('function');
     expect(mod.RelativeTime).toBeTypeOf('function');
+    expect(mod.T).toBeTypeOf('function');
+    expect(mod.RscT).toBeTypeOf('function');
     expect(mod.Var).toBeTypeOf('function');
     expect(mod.getFormatLocales).toBeTypeOf('function');
     expect(mod.getPluralBranch).toBeTypeOf('function');
+    expect(mod.prepareT).toBeTypeOf('function');
+    expect(mod.createRenderVariable).toBeTypeOf('function');
+    expect(mod.renderVariable).toBeTypeOf('function');
+    expect(mod.renderPreparedT).toBeTypeOf('function');
   });
 });
