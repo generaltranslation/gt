@@ -30,8 +30,13 @@ export {
 } from './components/variables/RelativeTime.rsc';
 export { RscT, RscT as T } from './components/translation/T.rsc';
 
+// ===== Functions ===== //
+export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
+export { t } from './functions/translation/t';
+
 // ===== Helpers ===== //
 export { getFormatLocales } from './hooks/utils/getFormatLocales';
+export { getShouldTranslate } from './hooks/utils/getShouldTranslate';
 export { default as getPluralBranch } from './utils/plurals/getPluralBranch';
 export { prepareT } from './utils/translation/prepareT.shared';
 export { createRenderVariable } from './utils/rendering/createRenderVariable';
@@ -40,9 +45,37 @@ export { renderPreparedT } from './utils/rendering/renderPreparedT.rsc';
 export { default as renderDefaultChildren } from './utils/rendering/renderDefaultChildren';
 export { default as renderTranslatedChildren } from './utils/rendering/renderTranslatedChildren';
 
+// ===== Internal ===== //
+export { internalInitializeGTSRA } from './setup/initializeGTSRA';
+export { getReadonlyConditionStoreWithFallback } from './condition-store/singleton-operations';
+export {
+  getReactI18nCache,
+  setReactI18nCache,
+} from './i18n-cache/singleton-operations';
+
 // ===== Types ===== //
 export type {
   JsxTranslationOptions,
   PreparedT,
 } from './utils/translation/prepareT.shared';
+export type {
+  PluralProps,
+  ResolvedPluralProps,
+} from './components/branches/Plural.shared';
+export type {
+  CurrencyProps,
+  ResolvedCurrencyProps,
+} from './components/variables/Currency.shared';
+export type {
+  DateTimeProps,
+  ResolvedDateTimeProps,
+} from './components/variables/DateTime.shared';
+export type {
+  NumProps,
+  ResolvedNumProps,
+} from './components/variables/Num.shared';
+export type {
+  RelativeTimeProps,
+  ResolvedRelativeTimeProps,
+} from './components/variables/RelativeTime.shared';
 export type { RelativeTimeFormatOptions, RenderVariable } from './utils/types';

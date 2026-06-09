@@ -14,7 +14,7 @@ import {
 } from '../../condition-store/singleton-operations';
 import { StringContent, StringFormat } from 'generaltranslation/types';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
-import { getShouldTranslate } from '../../hooks/utils';
+import { getShouldTranslate } from '../../hooks/utils/getShouldTranslate';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 /**
