@@ -8,16 +8,11 @@ const forbid = vi.hoisted(() => (name: string) => () => {
 });
 
 vi.mock('../context.server', forbid('the broad context.server barrel'));
+vi.mock('../context.client', forbid('context.client'));
 vi.mock(
   '@generaltranslation/react-core/context',
   forbid('@generaltranslation/react-core/context')
 );
-// The context.client entrypoint is referenced only as an intentional
-// server-to-client boundary (the locale selector facade); stub it so this
-// test only exercises the server-safe graph.
-vi.mock('../context.client', () => ({
-  LocaleSelector: () => null,
-}));
 vi.mock('react', async (importOriginal) => {
   const react = await importOriginal<typeof import('react')>();
   return {
@@ -42,7 +37,6 @@ describe('gt-react/context-rsc', () => {
     expect(mod.RelativeTime).toBeTypeOf('function');
     expect(mod.Var).toBeTypeOf('function');
     expect(mod.GtInternalVar).toBeTypeOf('function');
-    expect(mod.LocaleSelector).toBeTypeOf('function');
     expect(mod.getFormatLocales).toBeTypeOf('function');
     expect(mod.getPluralBranch).toBeTypeOf('function');
   });
