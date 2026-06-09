@@ -29,7 +29,9 @@ describe('@generaltranslation/react-core/context-rsc', () => {
     expect(mod.Branch).toBeTypeOf('function');
     expect(mod.GtInternalBranch).toBeTypeOf('function');
     expect(mod.Derive).toBeTypeOf('function');
+    expect(mod.GtInternalDerive).toBeTypeOf('function');
     expect(mod.Var).toBeTypeOf('function');
+    expect(mod.GtInternalVar).toBeTypeOf('function');
     expect(mod.getPluralBranch).toBeTypeOf('function');
   });
 });
