@@ -61,14 +61,9 @@ type RuntimeTranslationParams = {
 
 export class I18NConfiguration extends I18nCache<TranslatedChildren> {
   // Feature flags
-  translationEnabled: boolean;
   developmentApiEnabled: boolean;
   productionApiEnabled: boolean;
   dictionaryEnabled: boolean;
-  // Cloud integration
-  projectId?: string;
-  devApiKey?: string;
-  runtimeUrl: string | undefined;
   // Rendering
   renderSettings: {
     method: RenderMethod;
@@ -92,7 +87,7 @@ export class I18NConfiguration extends I18nCache<TranslatedChildren> {
     cacheUrl,
     cacheExpiryTime,
     loadTranslationsType,
-    loadDictionaryEnabled,
+    loadDictionaryEnabled: _loadDictionaryEnabled,
     // Locale info
     defaultLocale,
     locales: _locales,
@@ -117,31 +112,8 @@ export class I18NConfiguration extends I18nCache<TranslatedChildren> {
   }: I18NConfigurationParams) {
     void _dictionary;
     void _customMapping;
+    void _loadDictionaryEnabled;
     void _locales;
-
-    // Enables locale-based translation lookups through I18nCache. Runtime API
-    // availability is tracked separately by developmentApiEnabled/productionApiEnabled.
-    const translationEnabled = !!(
-      (
-        loadTranslationsType === 'custom' || // load local translation
-        (loadTranslationsType === 'remote' &&
-          projectId && // projectId required because it's part of the GET request
-          cacheUrl) ||
-        loadDictionaryEnabled
-      ) // load local dictionary
-    );
-
-    // runtime translation enabled
-    const runtimeApiEnabled = !!(runtimeUrl ===
-    defaultWithGTConfigProps.runtimeUrl
-      ? projectId
-      : runtimeUrl);
-    const developmentApiEnabled = !!(
-      runtimeApiEnabled &&
-      devApiKey &&
-      process.env.NODE_ENV === 'development'
-    );
-    const productionApiEnabled = !!(runtimeApiEnabled && apiKey);
 
     // ----- SETUP ----- //
 
@@ -211,12 +183,18 @@ export class I18NConfiguration extends I18nCache<TranslatedChildren> {
 
     // ----- CLOUD INTEGRATION ----- //
 
-    this.devApiKey = devApiKey;
-    this.projectId = projectId;
-    this.runtimeUrl = runtimeUrl;
-    this.translationEnabled = translationEnabled;
-    this.developmentApiEnabled = developmentApiEnabled;
-    this.productionApiEnabled = productionApiEnabled;
+    const i18nConfig = getI18nConfig();
+    const i18nConfigRuntimeUrl = i18nConfig.getRuntimeUrl();
+    const runtimeApiEnabled = !!(i18nConfigRuntimeUrl ===
+    defaultWithGTConfigProps.runtimeUrl
+      ? i18nConfig.getProjectId()
+      : i18nConfigRuntimeUrl);
+    this.developmentApiEnabled = !!(
+      runtimeApiEnabled &&
+      i18nConfig.getDevApiKey() &&
+      process.env.NODE_ENV === 'development'
+    );
+    this.productionApiEnabled = !!(runtimeApiEnabled && apiKey);
     this.dictionaryEnabled = _usingPlugin;
     this.renderSettings = renderSettingsWithDefaults;
     this._dictionaryManager = dictionaryManager;
@@ -248,6 +226,22 @@ export class I18NConfiguration extends I18nCache<TranslatedChildren> {
     timeout?: number;
   } {
     return this.renderSettings;
+  }
+
+  get projectId(): string | undefined {
+    return getI18nConfig().getProjectId();
+  }
+
+  get devApiKey(): string | undefined {
+    return getI18nConfig().getDevApiKey();
+  }
+
+  get runtimeUrl(): string | undefined {
+    return getI18nConfig().getRuntimeUrl() ?? undefined;
+  }
+
+  get translationEnabled(): boolean {
+    return getI18nConfig().getTranslationEnabled();
   }
 
   /**

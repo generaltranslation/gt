@@ -96,4 +96,19 @@ describe('I18nConfig', () => {
       })
     ).toBe('fr');
   });
+
+  it('stores runtime config values', () => {
+    const config = new I18nConfig({
+      projectId: 'project-id',
+      devApiKey: 'gt-dev-key',
+      runtimeUrl: 'https://runtime.example.com',
+      cacheUrl: 'https://cache.example.com',
+      loadTranslationsType: 'remote',
+    });
+
+    expect(config.getProjectId()).toBe('project-id');
+    expect(config.getDevApiKey()).toBe('gt-dev-key');
+    expect(config.getRuntimeUrl()).toBe('https://runtime.example.com');
+    expect(config.getTranslationEnabled()).toBe(true);
+  });
 });

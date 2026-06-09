@@ -10,13 +10,28 @@ export type I18nConfigParams = {
   defaultLocale?: string;
   locales?: string[];
   customMapping?: CustomMapping;
+  projectId?: string;
+  devApiKey?: string;
+  runtimeUrl?: string | null;
+  cacheUrl?: string | null;
+  loadTranslationsType?: 'remote' | 'custom' | 'disabled';
+  loadDictionaryEnabled?: boolean;
 };
 
 export type LocaleCandidates = string | string[] | undefined;
 
 export class I18nConfig extends LocaleConfig {
+  private projectId?: string;
+  private devApiKey?: string;
+  private runtimeUrl?: string | null;
+  private translationEnabled: boolean;
+
   constructor(params: I18nConfigParams = {}) {
     super(getLocaleConfigParams(params));
+    this.projectId = params.projectId;
+    this.devApiKey = params.devApiKey;
+    this.runtimeUrl = params.runtimeUrl;
+    this.translationEnabled = getTranslationEnabled(params);
   }
 
   getDefaultLocale(): string {
@@ -29,6 +44,22 @@ export class I18nConfig extends LocaleConfig {
 
   getCustomMapping(): CustomMapping {
     return this.customMapping || {};
+  }
+
+  getProjectId(): string | undefined {
+    return this.projectId;
+  }
+
+  getDevApiKey(): string | undefined {
+    return this.devApiKey;
+  }
+
+  getRuntimeUrl(): string | null | undefined {
+    return this.runtimeUrl;
+  }
+
+  getTranslationEnabled(): boolean {
+    return this.translationEnabled;
   }
 
   determineLocale(
@@ -140,5 +171,18 @@ function hasI18nConfigParams(config: I18nConfigParams): boolean {
     config.defaultLocale !== undefined ||
     config.locales !== undefined ||
     config.customMapping !== undefined
+  );
+}
+
+function getTranslationEnabled({
+  loadTranslationsType,
+  projectId,
+  cacheUrl,
+  loadDictionaryEnabled,
+}: I18nConfigParams): boolean {
+  return !!(
+    loadTranslationsType === 'custom' ||
+    (loadTranslationsType === 'remote' && projectId && cacheUrl) ||
+    loadDictionaryEnabled
   );
 }

@@ -7,12 +7,13 @@ import { customLoadDictionaryWarning } from '../errors/createErrors';
 import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
 import { defaultWithGTConfigProps } from '../config-dir/props/defaultWithGTConfigProps';
 import { getLocaleProperties } from '@generaltranslation/format';
+import { getI18NConfig } from '../config-dir/getI18NConfig';
 
 export let internalDictionary: Dictionary | undefined = undefined;
 
 export async function getDictionary(): Promise<Dictionary | undefined> {
   // Singleton pattern
-  if (internalDictionary !== undefined) return internalDictionary;
+  if (internalDictionary !== undefined) return getCachedDictionary();
 
   // Get dictionary file type
   const dictionaryFileType =
@@ -28,7 +29,10 @@ export async function getDictionary(): Promise<Dictionary | undefined> {
   } catch {
     // No bundled dictionary module was generated.
   }
-  if (internalDictionary) return internalDictionary;
+  if (internalDictionary) {
+    syncDictionaryCache(internalDictionary);
+    return getCachedDictionary();
+  }
 
   // Second, check for custom dictionary loader
   const customLoadDictionary = resolveDictionaryLoader(); // must be user defined bc compiler reasons
@@ -65,16 +69,45 @@ export async function getDictionary(): Promise<Dictionary | undefined> {
     internalDictionary = {};
   }
 
-  return internalDictionary;
+  syncDictionaryCache(internalDictionary);
+  return getCachedDictionary();
 }
 
 export function getDictionaryEntry(
   id: string
 ): Dictionary | DictionaryEntry | undefined {
+  const cachedEntry = getCachedDictionaryEntry(id);
+  if (cachedEntry !== undefined) return cachedEntry;
   if (!internalDictionary) return undefined;
   return getEntry(internalDictionary, id);
 }
 
 export function _setDictionary(dictionary: Dictionary) {
   internalDictionary = dictionary;
+  syncDictionaryCache(dictionary);
+}
+
+function getDefaultLocale() {
+  return getI18NConfig().getDefaultLocale();
+}
+
+function syncDictionaryCache(dictionary: Dictionary) {
+  getI18NConfig().updateDictionaries({
+    [getDefaultLocale()]: dictionary,
+  });
+}
+
+async function getCachedDictionary(): Promise<Dictionary> {
+  return (await getI18NConfig().loadDictionary(
+    getDefaultLocale()
+  )) as Dictionary;
+}
+
+function getCachedDictionaryEntry(
+  id: string
+): Dictionary | DictionaryEntry | undefined {
+  return getI18NConfig().lookupDictionaryObj(getDefaultLocale(), id) as
+    | Dictionary
+    | DictionaryEntry
+    | undefined;
 }

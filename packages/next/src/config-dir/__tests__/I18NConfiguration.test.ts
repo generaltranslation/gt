@@ -10,6 +10,10 @@ const mockLocaleConfig = vi.hoisted(() => ({
   defaultLocale: 'en',
   locales: ['en', 'fr'],
   customMapping: {},
+  projectId: undefined as string | undefined,
+  devApiKey: undefined as string | undefined,
+  runtimeUrl: undefined as string | undefined,
+  translationEnabled: true,
   translationRequired: true,
   dialectTranslationRequired: false,
   enableI18n: true,
@@ -20,6 +24,10 @@ vi.mock('gt-i18n/internal', () => ({
     getDefaultLocale: () => mockLocaleConfig.defaultLocale,
     getLocales: () => mockLocaleConfig.locales,
     getCustomMapping: () => mockLocaleConfig.customMapping,
+    getProjectId: () => mockLocaleConfig.projectId,
+    getDevApiKey: () => mockLocaleConfig.devApiKey,
+    getRuntimeUrl: () => mockLocaleConfig.runtimeUrl,
+    getTranslationEnabled: () => mockLocaleConfig.translationEnabled,
     requiresTranslation: () =>
       mockLocaleConfig.enableI18n && mockLocaleConfig.translationRequired,
     isSameLanguage: () => mockLocaleConfig.dialectTranslationRequired,
@@ -32,12 +40,28 @@ vi.mock('gt-i18n/internal', () => ({
     defaultLocale?: string;
     locales?: string[];
     customMapping?: Record<string, unknown>;
+    projectId?: string;
+    devApiKey?: string;
+    runtimeUrl?: string;
+    loadTranslationsType?: 'remote' | 'custom' | 'disabled';
+    cacheUrl?: string | null;
+    loadDictionaryEnabled?: boolean;
   }) => {
     mockLocaleConfig.defaultLocale =
       params.defaultLocale ?? mockLocaleConfig.defaultLocale;
     mockLocaleConfig.locales = params.locales ?? mockLocaleConfig.locales;
     mockLocaleConfig.customMapping =
       params.customMapping ?? mockLocaleConfig.customMapping;
+    mockLocaleConfig.projectId = params.projectId;
+    mockLocaleConfig.devApiKey = params.devApiKey;
+    mockLocaleConfig.runtimeUrl = params.runtimeUrl;
+    mockLocaleConfig.translationEnabled = !!(
+      params.loadTranslationsType === 'custom' ||
+      (params.loadTranslationsType === 'remote' &&
+        params.projectId &&
+        params.cacheUrl) ||
+      params.loadDictionaryEnabled
+    );
   },
   setupGTServicesEnabled: vi.fn(),
   I18nCache: class {
@@ -154,6 +178,10 @@ describe('I18NConfiguration', () => {
     mockLocaleConfig.defaultLocale = 'en';
     mockLocaleConfig.locales = ['en', 'fr'];
     mockLocaleConfig.customMapping = {};
+    mockLocaleConfig.projectId = undefined;
+    mockLocaleConfig.devApiKey = undefined;
+    mockLocaleConfig.runtimeUrl = undefined;
+    mockLocaleConfig.translationEnabled = true;
     mockLocaleConfig.translationRequired = true;
     mockLocaleConfig.dialectTranslationRequired = false;
     mockLocaleConfig.enableI18n = true;
@@ -290,6 +318,25 @@ describe('I18NConfiguration', () => {
         customMapping,
       })
     );
+  });
+
+  it('reads client runtime config from gt-i18n config accessors', () => {
+    const config = createConfig();
+
+    mockLocaleConfig.projectId = 'config-project-id';
+    mockLocaleConfig.devApiKey = 'gt-dev-config';
+    mockLocaleConfig.runtimeUrl = 'https://runtime.example.com';
+    mockLocaleConfig.translationEnabled = false;
+
+    expect(config.getClientSideConfig()).toEqual(
+      expect.objectContaining({
+        projectId: 'config-project-id',
+        devApiKey: 'gt-dev-config',
+        runtimeUrl: 'https://runtime.example.com',
+        translationEnabled: false,
+      })
+    );
+    expect(config.isTranslationEnabled()).toBe(false);
   });
 
   it('initializes locale metadata from environment-backed config params', () => {
