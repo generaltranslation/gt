@@ -46,13 +46,17 @@ export {
   setI18nStore,
   isI18nStoreInitialized,
 } from './i18n-store/singleton-operations';
-export { setRenderStrategy, getRenderStrategy } from './setup/globals';
+export {
+  getI18nConfig,
+  initializeI18nConfig,
+  ReactI18nConfig,
+  setI18nConfig,
+} from './setup/i18nConfig';
 export {
   getReadonlyConditionStoreWithFallback,
   setReadonlyConditionStore,
 } from './condition-store/singleton-operations';
 export { WritableConditionStore } from 'gt-i18n/internal';
-export { initializeI18nConfig } from 'gt-i18n/internal';
 export type { WritableConditionStoreParams } from 'gt-i18n/internal';
 export type { I18nConfigParams } from 'gt-i18n/internal';
 export {

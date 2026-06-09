@@ -1,6 +1,6 @@
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { I18nStore } from './I18nStore';
-import { getRenderStrategy } from '../setup/globals';
+import { getI18nConfig } from '../setup/i18nConfig';
 
 // ===== I18n Store ===== //
 
@@ -22,7 +22,7 @@ export function isI18nStoreInitialized(): boolean {
 }
 
 function createI18nStoreNotInitializedError(): Error {
-  const renderStrategy = getRenderStrategy();
+  const renderStrategy = getI18nConfig().getRenderStrategy();
   const errorMessage = createDiagnosticMessage({
     source: '@generaltranslation/react-core',
     severity: 'Error',
