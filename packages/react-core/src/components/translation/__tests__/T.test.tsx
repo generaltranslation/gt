@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
-import {
-  setReactI18nCache,
-  type ReactI18nCache,
-} from '@generaltranslation/react-core/context';
-import { RscT } from '../T';
+import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
+import { RscT } from '../T.rsc';
+import type { ReactI18nCache } from '../../../i18n-cache/ReactI18nCache';
 
 const getLookupTranslation = vi.fn();
 

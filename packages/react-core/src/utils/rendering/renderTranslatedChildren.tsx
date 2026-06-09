@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import {
   RenderVariable,
   TaggedChildren,
@@ -18,7 +18,6 @@ import {
   HtmlContentPropValuesRecord,
 } from '@generaltranslation/format/types';
 import getGTTag from './getGTTag';
-import { renderVariable as defaultRenderVariable } from './renderVariable';
 
 function renderTranslatedElement({
   sourceElement,
@@ -151,13 +150,13 @@ export default function renderTranslatedChildren({
   target,
   locales = [libraryDefaultLocale],
   enableI18n,
-  renderVariable = defaultRenderVariable,
+  renderVariable,
 }: {
   source: TaggedChildren;
   target: TranslatedChildren;
   locales: string[];
   enableI18n: boolean;
-  renderVariable?: RenderVariable;
+  renderVariable: RenderVariable;
 }): ReactNode {
   // Most straightforward case, return a valid React node
   if ((target === null || typeof target === 'undefined') && source)

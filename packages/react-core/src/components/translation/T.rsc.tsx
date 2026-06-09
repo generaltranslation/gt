@@ -1,15 +1,18 @@
-import {
-  getReactI18nCache,
-  prepareT,
-  renderPreparedT,
-  type JsxTranslationOptions,
-} from '@generaltranslation/react-core/context';
 import { getI18nConfig } from 'gt-i18n/internal';
 import type { ReactNode } from 'react';
-import { renderVariable } from '../../utils/rendering/renderVariable';
+import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
+import { renderPreparedT } from '../../utils/rendering/renderPreparedT';
+import { renderVariable } from '../../utils/rendering/renderVariable.rsc';
+import { prepareT } from '../../utils/translation/prepareTPure';
+import type { JsxTranslationOptions } from '../../utils/translation/prepareTPure';
 
 // ===== Component ===== //
 
+/**
+ * RSC version of the `<T>` component. Resolves translations from the i18n cache
+ * and renders without React context, so it is safe to evaluate in the
+ * Next.js server (RSC) module graph.
+ */
 async function RscT({
   children: sourceChildren,
   locale,
@@ -61,5 +64,7 @@ async function RscT({
 
 /** @internal _gtt - The GT transformation for the component. */
 RscT._gtt = 'translate-server';
+
+// ===== Exports ===== //
 
 export { RscT };

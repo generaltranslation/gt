@@ -2,6 +2,7 @@ import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPreparedT';
+import { renderVariable } from '../../utils/rendering/renderVariable';
 import {
   usePrepareT,
   type JsxTranslationOptions,
@@ -83,6 +84,7 @@ function useComputeT({
     defaultLocale,
     enableI18n,
     shouldTranslate,
+    renderVariable,
   });
 
   // record previous result

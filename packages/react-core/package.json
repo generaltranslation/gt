@@ -65,6 +65,11 @@
       "require": "./dist/context.cjs.min.cjs",
       "import": "./dist/context.esm.min.mjs"
     },
+    "./context-server": {
+      "types": "./dist/context-server.d.ts",
+      "require": "./dist/context-server.cjs.min.cjs",
+      "import": "./dist/context-server.esm.min.mjs"
+    },
     "./errors": {
       "types": "./dist/errors.d.ts",
       "require": "./dist/errors.cjs.min.cjs",
@@ -85,6 +90,9 @@
       "context": [
         "./dist/context.d.ts"
       ],
+      "context-server": [
+        "./dist/context-server.d.ts"
+      ],
       "errors": [
         "./dist/errors.d.ts"
       ]
@@ -98,6 +106,9 @@
       ],
       "@generaltranslation/react-core/context": [
         "./dist/context"
+      ],
+      "@generaltranslation/react-core/context-server": [
+        "./dist/context-server"
       ],
       "@generaltranslation/react-core/types": [
         "./dist/types.d.ts"

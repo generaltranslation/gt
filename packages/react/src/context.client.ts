@@ -1,5 +1,17 @@
 'use client';
 
+import type {
+  RscBranch as CoreRscBranch,
+  RscCurrency as CoreRscCurrency,
+  RscDateTime as CoreRscDateTime,
+  RscDerive as CoreRscDerive,
+  RscNum as CoreRscNum,
+  RscPlural as CoreRscPlural,
+  RscRelativeTime as CoreRscRelativeTime,
+  RscT as CoreRscT,
+  RscVar as CoreRscVar,
+} from '@generaltranslation/react-core/context-server';
+
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
@@ -20,24 +32,39 @@ function createRscStub<T>(name: string, _gtt: string): T {
   ) as unknown as T;
 }
 
-export const RscBranch: typeof import('./components/branches/Branch').RscBranch =
-  createRscStub('RscBranch', 'branch');
-export const RscPlural: typeof import('./components/branches/Plural').RscPlural =
-  createRscStub('RscPlural', 'plural');
-export const RscDerive: typeof import('./components/derivation/Derive').RscDerive =
-  createRscStub('RscDerive', 'derive');
-export const RscT: typeof import('./components/translation/T').RscT =
-  createRscStub('RscT', 'translate-server');
-export const RscCurrency: typeof import('./components/variables/Currency').RscCurrency =
-  createRscStub('RscCurrency', 'variable-currency');
-export const RscDateTime: typeof import('./components/variables/DateTime').RscDateTime =
-  createRscStub('RscDateTime', 'variable-datetime');
-export const RscNum: typeof import('./components/variables/Num').RscNum =
-  createRscStub('RscNum', 'variable-number');
-export const RscRelativeTime: typeof import('./components/variables/RelativeTime').RscRelativeTime =
-  createRscStub('RscRelativeTime', 'variable-relative-time');
-export const RscVar: typeof import('./components/variables/Var').RscVar =
-  createRscStub('RscVar', 'variable-variable');
+export const RscBranch: typeof CoreRscBranch = createRscStub(
+  'RscBranch',
+  'branch'
+);
+export const RscPlural: typeof CoreRscPlural = createRscStub(
+  'RscPlural',
+  'plural'
+);
+export const RscDerive: typeof CoreRscDerive = createRscStub(
+  'RscDerive',
+  'derive'
+);
+export const RscT: typeof CoreRscT = createRscStub('RscT', 'translate-server');
+export const RscCurrency: typeof CoreRscCurrency = createRscStub(
+  'RscCurrency',
+  'variable-currency'
+);
+export const RscDateTime: typeof CoreRscDateTime = createRscStub(
+  'RscDateTime',
+  'variable-datetime'
+);
+export const RscNum: typeof CoreRscNum = createRscStub(
+  'RscNum',
+  'variable-number'
+);
+export const RscRelativeTime: typeof CoreRscRelativeTime = createRscStub(
+  'RscRelativeTime',
+  'variable-relative-time'
+);
+export const RscVar: typeof CoreRscVar = createRscStub(
+  'RscVar',
+  'variable-variable'
+);
 
 // ===== Components ===== //
 export { LocaleSelector } from './components/LocaleSelector';
