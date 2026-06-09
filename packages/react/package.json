@@ -141,6 +141,16 @@
       },
       "default": "./dist/context-rsc.mjs"
     },
+    "./internal/locale-selector-client": {
+      "require": {
+        "types": "./dist/locale-selector.client.d.cts",
+        "default": "./dist/locale-selector.client.cjs"
+      },
+      "import": {
+        "types": "./dist/locale-selector.client.d.mts",
+        "default": "./dist/locale-selector.client.mjs"
+      }
+    },
     "./browser": {
       "require": {
         "types": "./dist/browser.d.cts",
@@ -179,6 +189,9 @@
       "internal": [
         "./dist/internal.d.cts"
       ],
+      "internal/locale-selector-client": [
+        "./dist/locale-selector.client.d.cts"
+      ],
       "setup": [
         "./dist/setup.d.cts"
       ],
@@ -207,6 +220,9 @@
       ],
       "gt-react/internal": [
         "./dist/internal"
+      ],
+      "gt-react/internal/locale-selector-client": [
+        "./dist/locale-selector.client"
       ],
       "gt-react/setup": [
         "./dist/setup.d.cts"

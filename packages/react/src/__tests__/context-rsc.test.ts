@@ -13,6 +13,11 @@ vi.mock(
   '@generaltranslation/react-core/context',
   forbid('@generaltranslation/react-core/context')
 );
+// The locale selector client boundary is an intentional server-to-client
+// edge; stub it so this test only exercises the server-safe graph.
+vi.mock('gt-react/internal/locale-selector-client', () => ({
+  LocaleSelectorClient: () => null,
+}));
 vi.mock('react', async (importOriginal) => {
   const react = await importOriginal<typeof import('react')>();
   return {
@@ -35,6 +40,7 @@ describe('gt-react/context-rsc', () => {
     expect(mod.Plural).toBeTypeOf('function');
     expect(mod.RelativeTime).toBeTypeOf('function');
     expect(mod.Var).toBeTypeOf('function');
+    expect(mod.LocaleSelector).toBeTypeOf('function');
     expect(mod.getFormatLocales).toBeTypeOf('function');
     expect(mod.getPluralBranch).toBeTypeOf('function');
   });

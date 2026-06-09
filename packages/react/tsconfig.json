@@ -9,7 +9,13 @@
     "jsx": "react-jsx",
     "outDir": "./dist",
     "rootDir": "./src",
-    "composite": true
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "gt-react/internal/locale-selector-client": [
+        "./src/locale-selector.client.ts"
+      ]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["**/*.test.ts"],

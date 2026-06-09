@@ -23,6 +23,9 @@ const contextDeps = {
     /^@generaltranslation\/react-core\//,
     /^gt-i18n$/,
     /^gt-i18n\//,
+    // Self-referencing subpaths (e.g. the locale selector client boundary)
+    // must stay external so their 'use client' directive survives.
+    /^gt-react\//,
   ],
   alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };
@@ -35,6 +38,7 @@ const entries = [
   'src/context.server.ts',
   'src/context.types.ts',
   'src/context-rsc.ts',
+  'src/locale-selector.client.ts',
   'src/browser.ts',
   'src/macros.ts',
 ];

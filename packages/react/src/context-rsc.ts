@@ -25,6 +25,10 @@ export {
   Var,
 } from '@generaltranslation/react-core/context-rsc';
 
+// RSC facade over the interactive client implementation (an intentional
+// server-to-client boundary; see components/LocaleSelector.rsc.tsx).
+export { RscLocaleSelector as LocaleSelector } from './components/LocaleSelector.rsc';
+
 export type {
   RelativeTimeFormatOptions,
   RenderVariable,
