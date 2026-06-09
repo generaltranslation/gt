@@ -22,13 +22,14 @@ export {
 /**
  * TODO: throw error if any of these functions are called
  */
+export { RscT } from '@generaltranslation/react-core/context-server';
+
 export {
   // ===== Components ===== //
   Branch,
   Plural,
   Derive,
   GtInternalTranslateJsx,
-  RscT,
   T,
   Currency,
   DateTime,
