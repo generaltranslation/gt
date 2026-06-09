@@ -1,5 +1,5 @@
 import { getRequestConditions } from '../../request/getRequestConditions';
-import { RscT } from 'gt-react/context';
+import { T as RscT } from 'gt-react/context';
 import type { ReactNode } from 'react';
 
 type TProps = {

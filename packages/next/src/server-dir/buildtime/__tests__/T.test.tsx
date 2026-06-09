@@ -10,7 +10,7 @@ vi.mock('../../../request/getRequestConditions', () => ({
 }));
 
 vi.mock('gt-react/context', () => ({
-  RscT: mockRscT,
+  T: mockRscT,
 }));
 
 describe('buildtime T', () => {
