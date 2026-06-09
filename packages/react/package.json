@@ -119,6 +119,28 @@
       },
       "default": "./dist/context.server.mjs"
     },
+    "./context-rsc": {
+      "react-server": {
+        "require": {
+          "types": "./dist/context-rsc.d.cts",
+          "default": "./dist/context-rsc.cjs"
+        },
+        "import": {
+          "types": "./dist/context-rsc.d.mts",
+          "default": "./dist/context-rsc.mjs"
+        },
+        "default": "./dist/context-rsc.mjs"
+      },
+      "require": {
+        "types": "./dist/context-rsc.d.cts",
+        "default": "./dist/context-rsc.cjs"
+      },
+      "import": {
+        "types": "./dist/context-rsc.d.mts",
+        "default": "./dist/context-rsc.mjs"
+      },
+      "default": "./dist/context-rsc.mjs"
+    },
     "./browser": {
       "require": {
         "types": "./dist/browser.d.cts",
@@ -151,6 +173,9 @@
       "context": [
         "./dist/context.types.d.cts"
       ],
+      "context-rsc": [
+        "./dist/context-rsc.d.cts"
+      ],
       "internal": [
         "./dist/internal.d.cts"
       ],
@@ -176,6 +201,9 @@
       ],
       "gt-react/context": [
         "./dist/context.types.d.cts"
+      ],
+      "gt-react/context-rsc": [
+        "./dist/context-rsc.d.cts"
       ],
       "gt-react/internal": [
         "./dist/internal"

@@ -13,6 +13,8 @@ const runtimeArtifactNames = [
   'browser.mjs',
   'client.cjs',
   'client.mjs',
+  'context-rsc.cjs',
+  'context-rsc.mjs',
   'context.client.cjs',
   'context.client.mjs',
   'context.server.cjs',
@@ -57,7 +59,7 @@ function isAllowedExternalizedSubpath(
   specifier: string
 ): boolean {
   return (
-    file.startsWith('context.') &&
+    file.startsWith('context') &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
       specifier.startsWith('gt-i18n/'))
   );
