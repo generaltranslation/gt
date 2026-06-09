@@ -1,14 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 
-// If the react-server implementation of gt-react/context (or anything it
-// transitively imports) reaches one of these modules, the mock factory throws
-// and the dynamic import below fails with that message. The 'use client'
-// context.server entrypoint is only reachable through a lazy client boundary,
-// so importing this module must never evaluate it.
+// If the react-server implementation of gt-react/context (or anything other
+// than the explicit client boundary) reaches one of these modules, the mock
+// factory throws and the dynamic import below fails with that message.
 const forbid = vi.hoisted(() => (name: string) => () => {
   throw new Error(`gt-react/context (react-server) must not import ${name}`);
 });
 
+vi.mock('../context.client-boundary', () => ({
+  GTProvider: () => null,
+  LocaleSelector: () => null,
+}));
 vi.mock('../context.server', forbid('context.server at module load'));
 vi.mock('../context.client', forbid('context.client'));
 vi.mock(

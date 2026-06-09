@@ -9,7 +9,7 @@ vi.mock('../../../request/getRequestConditions', () => ({
   getRequestConditions: mockGetRequestConditions,
 }));
 
-vi.mock('gt-react/context', () => ({
+vi.mock('gt-react/context-rsc', () => ({
   RscT: mockRscT,
 }));
 
