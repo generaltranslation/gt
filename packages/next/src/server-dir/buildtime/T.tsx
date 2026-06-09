@@ -1,6 +1,6 @@
-import { getRequestConditions } from '../../request/getRequestConditions';
 import { RscT } from 'gt-react/context';
 import type { ReactNode } from 'react';
+import { withRequestConditions } from '../../request/asyncConditionStore';
 
 type TProps = {
   children: ReactNode;
@@ -17,9 +17,9 @@ type TProps = {
  * Build-time translation component that renders its children in the user's given locale.
  */
 export async function T(props: TProps): Promise<ReactNode> {
-  const { _locale: locale, _enableI18n: enableI18n } =
-    await getRequestConditions();
-  return RscT({ ...props, locale, enableI18n });
+  return withRequestConditions(({ locale, enableI18n }) =>
+    RscT({ ...props, locale, enableI18n })
+  );
 }
 
 /** @internal _gtt - The GT transformation for the component. */

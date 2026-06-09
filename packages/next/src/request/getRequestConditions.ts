@@ -1,11 +1,7 @@
-import { getEnableI18n } from './getEnableI18n';
-import { getLocale } from './getLocale';
+import { getRequestConditionValues } from './asyncConditionStore';
 
 export async function getRequestConditions() {
-  const [locale, enableI18n] = await Promise.all([
-    getLocale(),
-    getEnableI18n(),
-  ]);
+  const { locale, enableI18n } = await getRequestConditionValues();
   return {
     _locale: locale,
     _enableI18n: enableI18n,
