@@ -90,13 +90,13 @@
       "react-server": {
         "require": {
           "types": "./dist/context.types.d.cts",
-          "default": "./dist/context.server.cjs"
+          "default": "./dist/context.rsc.cjs"
         },
         "import": {
           "types": "./dist/context.types.d.mts",
-          "default": "./dist/context.server.mjs"
+          "default": "./dist/context.rsc.mjs"
         },
-        "default": "./dist/context.server.mjs"
+        "default": "./dist/context.rsc.mjs"
       },
       "browser": {
         "require": {
