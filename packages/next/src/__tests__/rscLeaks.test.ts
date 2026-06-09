@@ -30,8 +30,6 @@ const workspaceSourceMap: Record<string, string> = {
   'gt-react': 'packages/react/src/index.ts',
   'gt-react/internal': 'packages/react/src/internal.ts',
   'gt-react/context-rsc': 'packages/react/src/context-rsc.ts',
-  'gt-react/internal/locale-selector-client':
-    'packages/react/src/locale-selector.client.ts',
   '@generaltranslation/react-core': 'packages/react-core/src/index.ts',
   '@generaltranslation/react-core/internal':
     'packages/react-core/src/internal.ts',
