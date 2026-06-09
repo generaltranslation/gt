@@ -40,10 +40,15 @@ export { getShouldTranslate } from './hooks/utils/getShouldTranslate';
 export { default as getPluralBranch } from './utils/plurals/getPluralBranch';
 export { prepareT } from './utils/translation/prepareT.shared';
 export { createRenderVariable } from './utils/rendering/createRenderVariable';
+export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
 export { renderVariable } from './utils/rendering/renderVariable.rsc';
-export { renderPreparedT } from './utils/rendering/renderPreparedT.rsc';
-export { default as renderDefaultChildren } from './utils/rendering/renderDefaultChildren';
-export { default as renderTranslatedChildren } from './utils/rendering/renderTranslatedChildren';
+// Pre-instantiated RSC render pipeline: bound to the RSC renderVariable, so
+// consumers never thread a variable renderer through rendering calls.
+export {
+  renderDefaultChildren,
+  renderPreparedT,
+  renderTranslatedChildren,
+} from './utils/rendering/renderPipeline.rsc';
 
 // ===== Internal ===== //
 export { internalInitializeGTSRA } from './setup/initializeGTSRA';

@@ -9,7 +9,7 @@ import {
 import getVariableProps, {
   isVariableElementProps,
 } from '../variables/_getVariableProps';
-import renderDefaultChildren from './renderDefaultChildren';
+import renderDefaultChildren from './renderDefaultChildren.shared';
 import { isVariable, libraryDefaultLocale } from 'generaltranslation/internal';
 import getPluralBranch from '../plurals/getPluralBranch';
 import {
@@ -19,8 +19,19 @@ import {
 import getGTTag from './getGTTag';
 import type { RenderVariable } from '../types';
 
-// The variable renderer is passed in by the caller so the RSC code path never
-// statically imports the hook-based variable components.
+// Shared implementation: the variable renderer is dependency-injected by
+// createRenderPipeline so neither code path statically imports the other's
+// variable components. Callsites use the pre-instantiated renderPipeline /
+// renderPipeline.rsc modules instead of importing this directly.
+
+type RenderTranslatedChildrenArgs = {
+  source: TaggedChildren;
+  target: TranslatedChildren;
+  locales: string[];
+  enableI18n: boolean;
+};
+
+export type { RenderTranslatedChildrenArgs };
 
 function renderTranslatedElement({
   sourceElement,
@@ -154,11 +165,7 @@ export default function renderTranslatedChildren({
   locales = [libraryDefaultLocale],
   enableI18n,
   renderVariable,
-}: {
-  source: TaggedChildren;
-  target: TranslatedChildren;
-  locales: string[];
-  enableI18n: boolean;
+}: RenderTranslatedChildrenArgs & {
   renderVariable: RenderVariable;
 }): ReactNode {
   // Most straightforward case, return a valid React node

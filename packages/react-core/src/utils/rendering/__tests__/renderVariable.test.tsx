@@ -1,7 +1,9 @@
 import React from 'react';
 import { describe, expect, it } from 'vitest';
-import renderDefaultChildren from '../renderDefaultChildren';
-import renderTranslatedChildren from '../renderTranslatedChildren';
+import {
+  renderDefaultChildren,
+  renderTranslatedChildren,
+} from '../renderPipeline';
 import { renderVariable } from '../renderVariable';
 import type { TaggedElement } from '../../types';
 
@@ -99,7 +101,6 @@ describe('renderVariable locale handling', () => {
       children: createNumberVariable(5),
       defaultLocale: 'en',
       enableI18n: false,
-      renderVariable,
     });
 
     expect(React.isValidElement(result)).toBe(true);
@@ -118,7 +119,6 @@ describe('renderVariable locale handling', () => {
       target: { k: 'count', v: 'n' },
       locales: ['fr', 'en'],
       enableI18n: true,
-      renderVariable,
     });
 
     expect(React.isValidElement(result)).toBe(true);

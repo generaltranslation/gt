@@ -1,7 +1,7 @@
 import { getI18nConfig } from 'gt-i18n/internal';
 import type { ReactNode } from 'react';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
-import { renderPreparedT } from '../../utils/rendering/renderPreparedT.rsc';
+import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
 import {
   prepareT,
   type JsxTranslationOptions,

@@ -6,6 +6,7 @@
 
 export {
   Branch,
+  createRenderPipeline,
   createRenderVariable,
   Currency,
   DateTime,
