@@ -1,14 +1,14 @@
-import { useMemo } from 'react';
 import addGTIdentifier from '../internal/addGTIdentifier';
 import { removeInjectedT } from '../internal/removeInjectedT';
 import writeChildrenAsObjects from '../internal/writeChildrenAsObjects';
-import { useEnableI18n, useLocale } from '../../hooks/condition-store';
-import { useShouldTranslate } from '../../hooks/utils';
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { ReactNode } from 'react';
 import type { TaggedChildren } from '../types';
-import { useDefaultLocale } from '../../hooks/i18n-config';
+
+// Pure preparation logic shared by the hook wrapper (usePrepareT) and the RSC
+// code path. This module must stay free of hook/context imports so it can be
+// reached from the context-rsc entrypoint.
 
 type StripDollarPrefix<T> = {
   [K in keyof T as K extends `$${infer Rest}` ? Rest : K]: T[K];
@@ -25,41 +25,6 @@ type PreparedT = {
     $locale: string;
   };
 };
-
-function usePrepareT({
-  sourceChildren,
-  params,
-}: {
-  sourceChildren: ReactNode;
-  params: JsxTranslationOptions;
-}): PreparedT & {
-  defaultLocale: string;
-  locale: string;
-  enableI18n: boolean;
-  shouldTranslate: boolean;
-} {
-  const locale = useLocale();
-  const enableI18n = useEnableI18n();
-  const defaultLocale = useDefaultLocale();
-  const shouldTranslate = useShouldTranslate();
-  const prepared = useMemo(
-    () =>
-      prepareT({
-        sourceChildren,
-        params,
-        locale,
-      }),
-    [locale, params, sourceChildren]
-  );
-
-  return {
-    defaultLocale,
-    enableI18n,
-    locale,
-    shouldTranslate,
-    ...prepared,
-  };
-}
 
 function prepareT({
   sourceChildren,
@@ -123,5 +88,5 @@ function normalizeParameters(
   };
 }
 
-export { prepareT, usePrepareT };
+export { prepareT };
 export type { JsxTranslationOptions, PreparedT };

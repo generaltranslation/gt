@@ -1,7 +1,9 @@
 import React from 'react';
 import { describe, expect, it } from 'vitest';
-import renderDefaultChildren from '../renderDefaultChildren';
-import renderTranslatedChildren from '../renderTranslatedChildren';
+import {
+  renderDefaultChildren,
+  renderTranslatedChildren,
+} from '../renderPipeline';
 import { renderVariable } from '../renderVariable';
 import type { TaggedElement } from '../../types';
 

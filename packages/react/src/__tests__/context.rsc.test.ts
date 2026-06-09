@@ -9,9 +9,7 @@ const forbid = vi.hoisted(() => (name: string) => () => {
 
 vi.mock('../context.client-boundary', () => ({
   GTProvider: () => null,
-  GtInternalTranslateJsx: () => null,
   LocaleSelector: () => null,
-  T: () => null,
 }));
 vi.mock('../context.server', forbid('context.server at module load'));
 vi.mock('../context.client', forbid('context.client'));

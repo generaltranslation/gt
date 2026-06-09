@@ -6,16 +6,28 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { TaggedChild, TaggedChildren, TaggedElement } from '../types';
 import getGTTag from './getGTTag';
 import getPluralBranch from '../plurals/getPluralBranch';
-import { renderVariable } from './renderVariable';
+import type { RenderVariable } from '../types';
+
+// Shared implementation: the variable renderer is dependency-injected by
+// createRenderPipeline so neither code path statically imports the other's
+// variable components. Callsites use the pre-instantiated renderPipeline /
+// renderPipeline.rsc modules instead of importing this directly.
+
+type RenderDefaultChildrenArgs = {
+  children: TaggedChildren;
+  defaultLocale: string;
+  enableI18n: boolean;
+};
+
+export type { RenderDefaultChildrenArgs };
 
 export default function renderDefaultChildren({
   children,
   defaultLocale = libraryDefaultLocale,
   enableI18n,
-}: {
-  children: TaggedChildren;
-  defaultLocale: string;
-  enableI18n: boolean;
+  renderVariable,
+}: RenderDefaultChildrenArgs & {
+  renderVariable: RenderVariable;
 }): React.ReactNode {
   const handleSingleChildElement = (child: TaggedElement): ReactNode => {
     const generaltranslation = getGTTag(child);

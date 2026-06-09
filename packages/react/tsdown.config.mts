@@ -27,8 +27,8 @@ const contextDeps = {
   alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };
 
-// The context.rsc entry reaches client components (GTProvider, LocaleSelector,
-// T) through a dedicated client boundary. Bundling that import would drop the
+// The context.rsc entry reaches client components (GTProvider, LocaleSelector)
+// through a dedicated client boundary. Bundling that import would drop the
 // 'use client' directive and silently break the boundary, so it is kept
 // external and rewritten to the built artifact for each format.
 const contextClientBoundaryImport = /[\\/]context\.client-boundary$/;

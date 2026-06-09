@@ -7,7 +7,3 @@
 
 export { LocaleSelector } from './components/LocaleSelector';
 export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
-export {
-  GtInternalTranslateJsx,
-  T,
-} from '@generaltranslation/react-core/context';

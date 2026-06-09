@@ -28,6 +28,7 @@ export {
   RscGtInternalRelativeTime as GtInternalRelativeTime,
   RscRelativeTime as RelativeTime,
 } from './components/variables/RelativeTime.rsc';
+export { RscT, RscT as T } from './components/translation/T.rsc';
 
 // ===== Functions ===== //
 export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
@@ -37,6 +38,17 @@ export { t } from './functions/translation/t';
 export { getFormatLocales } from './hooks/utils/getFormatLocales';
 export { getShouldTranslate } from './hooks/utils/getShouldTranslate';
 export { default as getPluralBranch } from './utils/plurals/getPluralBranch';
+export { prepareT } from './utils/translation/prepareT.shared';
+export { createRenderVariable } from './utils/rendering/createRenderVariable';
+export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
+export { renderVariable } from './utils/rendering/renderVariable.rsc';
+// Pre-instantiated RSC render pipeline: bound to the RSC renderVariable, so
+// consumers never thread a variable renderer through rendering calls.
+export {
+  renderDefaultChildren,
+  renderPreparedT,
+  renderTranslatedChildren,
+} from './utils/rendering/renderPipeline.rsc';
 
 // ===== Internal ===== //
 export { internalInitializeGTSRA } from './setup/initializeGTSRA';
@@ -47,6 +59,10 @@ export {
 } from './i18n-cache/singleton-operations';
 
 // ===== Types ===== //
+export type {
+  JsxTranslationOptions,
+  PreparedT,
+} from './utils/translation/prepareT.shared';
 export type {
   PluralProps,
   ResolvedPluralProps,
