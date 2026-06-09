@@ -1,6 +1,6 @@
 'use client';
 
-import type { RscT as CoreRscT } from '@generaltranslation/react-core/context';
+import type { RscT as CoreRscT } from '@generaltranslation/react-core/context-server';
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { useLocaleSelector } from './components/useLocaleSelector';

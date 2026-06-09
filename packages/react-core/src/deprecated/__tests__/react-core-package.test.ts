@@ -20,7 +20,13 @@ import { beforeAll, describe, expect, it } from 'vitest';
 const packageRoot = dirname(
   dirname(dirname(dirname(fileURLToPath(import.meta.url))))
 );
-const runtimeEntryNames = ['context', 'errors', 'index', 'internal'];
+const runtimeEntryNames = [
+  'context',
+  'context-server',
+  'errors',
+  'index',
+  'internal',
+];
 const runtimeArtifactNames = runtimeEntryNames
   .flatMap((entryName) => [
     `${entryName}.cjs.min.cjs`,
@@ -73,7 +79,10 @@ function isAllowedExternalizedSubpath(
   file: string,
   specifier: string
 ): boolean {
-  return file.startsWith('context.') && specifier.startsWith('gt-i18n/');
+  return (
+    (file.startsWith('context.') || file.startsWith('context-server.')) &&
+    specifier.startsWith('gt-i18n/')
+  );
 }
 
 function getModuleSpecifiers(file: string): string[] {
