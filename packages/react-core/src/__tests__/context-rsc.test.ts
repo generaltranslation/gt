@@ -31,12 +31,14 @@ describe('@generaltranslation/react-core/context-rsc', () => {
     expect(mod.Currency).toBeTypeOf('function');
     expect(mod.DateTime).toBeTypeOf('function');
     expect(mod.Derive).toBeTypeOf('function');
+    expect(mod.GtInternalDerive).toBeTypeOf('function');
     expect(mod.Num).toBeTypeOf('function');
     expect(mod.Plural).toBeTypeOf('function');
     expect(mod.RelativeTime).toBeTypeOf('function');
     expect(mod.T).toBeTypeOf('function');
     expect(mod.RscT).toBeTypeOf('function');
     expect(mod.Var).toBeTypeOf('function');
+    expect(mod.GtInternalVar).toBeTypeOf('function');
     expect(mod.getFormatLocales).toBeTypeOf('function');
     expect(mod.getPluralBranch).toBeTypeOf('function');
     expect(mod.prepareT).toBeTypeOf('function');
