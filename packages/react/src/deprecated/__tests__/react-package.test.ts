@@ -17,6 +17,8 @@ const runtimeArtifactNames = [
   'context-rsc.mjs',
   'context.client.cjs',
   'context.client.mjs',
+  'context.rsc.cjs',
+  'context.rsc.mjs',
   'context.server.cjs',
   'context.server.mjs',
   'context.types.cjs',
@@ -121,6 +123,25 @@ describe('gt-react package exports', () => {
           assert.equal(globalThis.t, undefined);
           require('gt-react/macros');
           assert.equal(typeof globalThis.t, 'function');
+        `,
+    ]);
+  });
+
+  it('resolves the RSC-safe context implementation under react-server', () => {
+    node([
+      '--conditions=react-server',
+      '-e',
+      `
+          const assert = require('node:assert/strict');
+          const context = require('gt-react/context');
+
+          assert.equal(typeof context.msg('Hello, world'), 'string');
+          assert.equal(typeof context.T, 'function');
+          assert.equal(typeof context.LocaleSelector, 'function');
+          assert.throws(
+            () => context.useGT(),
+            /cannot be used in a React Server Component/
+          );
         `,
     ]);
   });
