@@ -10,11 +10,8 @@
 //   singleton when not passed explicitly — the same fallback the hook-based
 //   implementations use when no provider is mounted.
 // - Client components (GTProvider, LocaleSelector, the client <T>) are
-//   wrapped behind a dynamic import of the 'use client' context.server
-//   entrypoint: an intentional server-to-client boundary. The build keeps
-//   that import external so the directive survives (see tsdown.config.mts),
-//   and the laziness means merely importing gt-react/context in a
-//   react-server environment never evaluates client-only code.
+//   wrapped through a dedicated 'use client' boundary entry. The build keeps
+//   that entry external so the directive survives (see tsdown.config.mts).
 // - APIs that cannot work in a React Server Component (store-backed hooks,
 //   client setup) throw with an actionable message.
 
@@ -42,44 +39,37 @@ import {
 } from '@generaltranslation/react-core/context-rsc';
 import { getI18nConfig } from 'gt-i18n/internal';
 import type { CustomMapping } from 'generaltranslation/types';
+import {
+  GTProvider as ClientGTProvider,
+  GtInternalTranslateJsx as ClientGtInternalTranslateJsx,
+  LocaleSelector as ClientLocaleSelector,
+  T as ClientT,
+} from './context.client-boundary';
 
 // ===== Client boundary ===== //
 
-type ClientBoundary = typeof import('./context.server');
-
-function loadClientBoundary(): Promise<ClientBoundary> {
-  return import('./context.server');
-}
-
-export async function GTProvider(
-  props: Parameters<ClientBoundary['GTProvider']>[0]
-): Promise<React.JSX.Element> {
-  const { GTProvider: ClientGTProvider } = await loadClientBoundary();
+export function GTProvider(
+  props: Parameters<typeof ClientGTProvider>[0]
+): React.JSX.Element {
   return <ClientGTProvider {...props} />;
 }
 
-export async function LocaleSelector(
-  props: Parameters<ClientBoundary['LocaleSelector']>[0]
-): Promise<React.JSX.Element> {
-  const { LocaleSelector: ClientLocaleSelector } = await loadClientBoundary();
+export function LocaleSelector(
+  props: Parameters<typeof ClientLocaleSelector>[0]
+): React.JSX.Element {
   return <ClientLocaleSelector {...props} />;
 }
 
 // TODO: serve the server-side translation implementation here once its
 // import graph is RSC-safe; until then <T> renders through the client
 // boundary, like any other client component.
-export async function T(
-  props: Parameters<ClientBoundary['T']>[0]
-): Promise<React.JSX.Element> {
-  const { T: ClientT } = await loadClientBoundary();
+export function T(props: Parameters<typeof ClientT>[0]): React.JSX.Element {
   return <ClientT {...props} />;
 }
 
-export async function GtInternalTranslateJsx(
-  props: Parameters<ClientBoundary['GtInternalTranslateJsx']>[0]
-): Promise<React.JSX.Element> {
-  const { GtInternalTranslateJsx: ClientGtInternalTranslateJsx } =
-    await loadClientBoundary();
+export function GtInternalTranslateJsx(
+  props: Parameters<typeof ClientGtInternalTranslateJsx>[0]
+): React.JSX.Element {
   return <ClientGtInternalTranslateJsx {...props} />;
 }
 

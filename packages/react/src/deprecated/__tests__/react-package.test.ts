@@ -15,6 +15,8 @@ const runtimeArtifactNames = [
   'client.mjs',
   'context-rsc.cjs',
   'context-rsc.mjs',
+  'context.client-boundary.cjs',
+  'context.client-boundary.mjs',
   'context.client.cjs',
   'context.client.mjs',
   'context.rsc.cjs',
@@ -133,23 +135,34 @@ describe('gt-react package exports', () => {
       '-e',
       `
           const assert = require('node:assert/strict');
-          const context = require('gt-react/context');
-
-          assert.equal(typeof context.msg('Hello, world'), 'string');
-          assert.equal(typeof context.T, 'function');
-          assert.equal(typeof context.LocaleSelector, 'function');
-          assert.throws(
-            () => context.useGT(),
-            /cannot be used in a React Server Component/
+          assert.equal(
+            require.resolve('gt-react/context').endsWith('/dist/context.rsc.cjs'),
+            true
           );
         `,
     ]);
+
+    const rscCjs = readFileSync(
+      join(packageRoot, 'dist/context.rsc.cjs'),
+      'utf8'
+    );
+    const rscMjs = readFileSync(
+      join(packageRoot, 'dist/context.rsc.mjs'),
+      'utf8'
+    );
+
+    expect(rscCjs).toContain('require("./context.client-boundary.cjs")');
+    expect(rscMjs).toContain('from "./context.client-boundary.mjs"');
+    expect(rscCjs).not.toContain('context.server');
+    expect(rscMjs).not.toContain('context.server');
   });
 
   it('preserves use client in emitted client-capable entrypoints', () => {
     for (const file of [
       'dist/client.cjs',
       'dist/client.mjs',
+      'dist/context.client-boundary.cjs',
+      'dist/context.client-boundary.mjs',
       'dist/context.client.cjs',
       'dist/context.client.mjs',
       'dist/context.server.cjs',

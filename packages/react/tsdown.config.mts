@@ -28,18 +28,17 @@ const contextDeps = {
 };
 
 // The context.rsc entry reaches client components (GTProvider, LocaleSelector,
-// T) through the context.server entrypoint, an intentional server-to-client
-// boundary. Bundling that import would drop the 'use client' directive and
-// silently break the boundary, so it is kept external and rewritten to the
-// built context.server artifact for each format.
-const contextServerImport = /[\\/]context\.server$/;
+// T) through a dedicated client boundary. Bundling that import would drop the
+// 'use client' directive and silently break the boundary, so it is kept
+// external and rewritten to the built artifact for each format.
+const contextClientBoundaryImport = /[\\/]context\.client-boundary$/;
 
-function externalizeContextServer(extension: '.cjs' | '.mjs') {
+function externalizeContextClientBoundary(extension: '.cjs' | '.mjs') {
   return {
-    name: 'externalize-context-server',
+    name: 'externalize-context-client-boundary',
     resolveId(id: string) {
-      if (contextServerImport.test(id)) {
-        return { id: `./context.server${extension}`, external: true };
+      if (contextClientBoundaryImport.test(id)) {
+        return { id: `./context.client-boundary${extension}`, external: true };
       }
       return null;
     },
@@ -50,6 +49,7 @@ const entries = [
   'src/index.ts',
   'src/internal.ts',
   'src/client.ts',
+  'src/context.client-boundary.ts',
   'src/context.client.ts',
   'src/context.server.ts',
   'src/context.rsc.tsx',
@@ -68,7 +68,9 @@ export default defineConfig(
     return [
       {
         ...cjsConfig,
-        ...(isRscEntry ? { plugins: [externalizeContextServer('.cjs')] } : {}),
+        ...(isRscEntry
+          ? { plugins: [externalizeContextClientBoundary('.cjs')] }
+          : {}),
         clean: index === 0,
         define: {
           'import.meta.env': '{}',
@@ -76,7 +78,9 @@ export default defineConfig(
       },
       {
         ...esmConfig,
-        ...(isRscEntry ? { plugins: [externalizeContextServer('.mjs')] } : {}),
+        ...(isRscEntry
+          ? { plugins: [externalizeContextClientBoundary('.mjs')] }
+          : {}),
         deps: {
           onlyBundle: false,
           ...entryDeps,
