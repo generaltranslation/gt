@@ -78,6 +78,7 @@ export {
   getTranslationsSnapshot,
   getReactI18nCache,
   setReactI18nCache,
+  setReadonlyConditionStore,
   t,
   // ===== Setup ===== //
   internalInitializeGTSRA as initializeGT,

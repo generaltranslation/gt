@@ -21,6 +21,7 @@ import { defaultLocaleHeaderName } from '../utils/headers';
 import {
   getI18nConfig,
   I18nCache,
+  setI18nCache,
   setupGTServicesEnabled,
 } from 'gt-i18n/internal';
 import type {
@@ -217,6 +218,7 @@ export class I18NConfiguration {
           })) || {},
       }),
     });
+    setI18nCache(this._i18nCache);
     this._dictionaryManager = dictionaryManager;
     // Headers and cookies
     this.localeHeaderName =

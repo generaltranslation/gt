@@ -1,12 +1,11 @@
-import { Var as CoreVar } from 'gt-react/context';
-import { getRequestConditions } from '../request/getRequestConditions';
+import { RscVar } from 'gt-react/context';
+import { withRequestConditions } from '../request/asyncConditionStore';
 import type { ReactNode } from 'react';
 
-type VarProps = Parameters<typeof CoreVar>[0];
+type VarProps = Parameters<typeof RscVar>[0];
 
 export async function Var(props: VarProps): Promise<ReactNode> {
-  const conditions = await getRequestConditions();
-  return <CoreVar {...props} {...conditions} />;
+  return withRequestConditions(() => RscVar(props));
 }
 
 /** @internal _gtt - The GT transformation for the component. */

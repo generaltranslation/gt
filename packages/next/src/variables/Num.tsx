@@ -1,12 +1,11 @@
-import { Num as CoreNum } from 'gt-react/context';
-import { getRequestConditions } from '../request/getRequestConditions';
+import { RscNum } from 'gt-react/context';
+import { withRequestConditions } from '../request/asyncConditionStore';
 import type { ReactNode } from 'react';
 
-type NumProps = Parameters<typeof CoreNum>[0];
+type NumProps = Parameters<typeof RscNum>[0];
 
 export async function Num(props: NumProps): Promise<ReactNode> {
-  const conditions = await getRequestConditions();
-  return <CoreNum {...props} {...conditions} />;
+  return withRequestConditions(() => RscNum(props));
 }
 
 /** @internal _gtt - The GT transformation for the component. */

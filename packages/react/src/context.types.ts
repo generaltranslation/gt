@@ -70,4 +70,5 @@ export {
   internalInitializeGTSRA as initializeGT,
   getReactI18nCache,
   setReactI18nCache,
+  setReadonlyConditionStore,
 } from '@generaltranslation/react-core/context';
