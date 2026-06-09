@@ -9,7 +9,8 @@
 // - Components resolve request conditions from the read-only condition store
 //   singleton when not passed explicitly — the same fallback the hook-based
 //   implementations use when no provider is mounted.
-// - Client components (GTProvider, LocaleSelector, the client <T>) are
+// - <T> translates server-side via RscT; client components (GTProvider,
+//   LocaleSelector, GtInternalTranslateJsx) are
 //   wrapped behind a dynamic import of the 'use client' context.server
 //   entrypoint: an intentional server-to-client boundary. The build keeps
 //   that import external so the directive survives (see tsdown.config.mts),
@@ -31,17 +32,20 @@ import {
   Num as RscNum,
   Plural as RscPlural,
   RelativeTime as RscRelativeTime,
+  RscT,
   setReactI18nCache,
   t,
   Var,
   type CurrencyProps,
   type DateTimeProps,
+  type JsxTranslationOptions,
   type NumProps,
   type PluralProps,
   type RelativeTimeProps,
 } from '@generaltranslation/react-core/context-rsc';
 import { getI18nConfig } from 'gt-i18n/internal';
 import type { CustomMapping } from 'generaltranslation/types';
+import type { ReactNode } from 'react';
 
 // ===== Client boundary ===== //
 
@@ -65,16 +69,6 @@ export async function LocaleSelector(
   return <ClientLocaleSelector {...props} />;
 }
 
-// TODO: serve the server-side translation implementation here once its
-// import graph is RSC-safe; until then <T> renders through the client
-// boundary, like any other client component.
-export async function T(
-  props: Parameters<ClientBoundary['T']>[0]
-): Promise<React.JSX.Element> {
-  const { T: ClientT } = await loadClientBoundary();
-  return <ClientT {...props} />;
-}
-
 export async function GtInternalTranslateJsx(
   props: Parameters<ClientBoundary['GtInternalTranslateJsx']>[0]
 ): Promise<React.JSX.Element> {
@@ -84,8 +78,29 @@ export async function GtInternalTranslateJsx(
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-T._gtt = 'translate-client';
 GtInternalTranslateJsx._gtt = 'translate-client-automatic';
+
+// ===== Server-side translation ===== //
+
+export { RscT };
+
+export async function T({
+  children,
+  ...params
+}: {
+  children?: ReactNode;
+} & JsxTranslationOptions): Promise<ReactNode> {
+  const conditionStore = getReadonlyConditionStoreWithFallback();
+  return RscT({
+    children,
+    locale: conditionStore.getLocale(),
+    enableI18n: conditionStore.getEnableI18n(),
+    ...params,
+  });
+}
+
+/** @internal _gtt - The GT transformation for the component. */
+T._gtt = 'translate-server';
 
 // ===== Components ===== //
 
@@ -126,17 +141,6 @@ Currency._gtt = 'variable-currency';
 DateTime._gtt = 'variable-datetime';
 Num._gtt = 'variable-number';
 RelativeTime._gtt = 'variable-relative-time';
-
-// TODO: serve the server-side RscT implementation here once its import graph
-// is RSC-safe; until then it is unavailable from this entrypoint.
-export const RscT = Object.assign(
-  () => {
-    throw new Error(
-      'gt-react: RscT cannot be used from gt-react/context in a React Server Component runtime yet.'
-    );
-  },
-  { _gtt: 'translate-server' as const }
-);
 
 // ===== Hooks ===== //
 // Read-only hooks work in React Server Components: they are plain functions
