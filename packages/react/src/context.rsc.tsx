@@ -51,8 +51,6 @@ import {
 
 // ===== Client boundary ===== //
 
-export { RscT };
-
 export function GTProvider(
   props: Parameters<typeof ClientGTProvider>[0]
 ): React.JSX.Element {

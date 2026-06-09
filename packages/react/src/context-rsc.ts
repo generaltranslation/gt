@@ -22,6 +22,7 @@ export {
   Num,
   Plural,
   RelativeTime,
+  RscT,
   Var,
 } from '@generaltranslation/react-core/context-rsc';
 
