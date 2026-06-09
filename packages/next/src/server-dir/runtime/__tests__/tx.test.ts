@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { initializeI18nConfig } from 'gt-i18n/internal';
 import { tx } from '../tx';
 
 const { mockLookupTranslation, mockTranslate } = vi.hoisted(() => ({
@@ -6,9 +7,10 @@ const { mockLookupTranslation, mockTranslate } = vi.hoisted(() => ({
   mockTranslate: vi.fn(),
 }));
 
+initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+
 vi.mock('../../../config-dir/getI18NConfig', () => ({
   getI18NConfig: () => ({
-    getDefaultLocale: () => 'en',
     requiresTranslation: () => [true, false],
     getGTClass: () => ({
       formatMessage: (message: string) => message,

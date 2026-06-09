@@ -1,4 +1,5 @@
 import { getI18NConfig } from '../../config-dir/getI18NConfig';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
 import { hashSource } from 'generaltranslation/id';
@@ -76,7 +77,7 @@ export async function tx(
 
   const I18NConfig = getI18NConfig();
   const locale = typeof $locale === 'string' ? $locale : await getLocale();
-  const defaultLocale = I18NConfig.getDefaultLocale();
+  const defaultLocale = getI18nConfig().getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
   const gt = I18NConfig.getGTClass();
 

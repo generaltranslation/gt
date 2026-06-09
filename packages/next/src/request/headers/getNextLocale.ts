@@ -1,5 +1,6 @@
 import { cookies, headers } from 'next/headers';
 import { getI18NConfig } from '../../config-dir/getI18NConfig';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { noLocalesCouldBeDeterminedWarning } from '../../errors/ssg';
 import { RequestFunctionReturnType } from '../types';
 
@@ -16,8 +17,9 @@ export async function getNextLocale(): Promise<RequestFunctionReturnType> {
   const [headersList, cookieStore] = await Promise.all([headers(), cookies()]);
 
   const I18NConfig = getI18NConfig();
-  const defaultLocale = I18NConfig.getDefaultLocale();
-  const locales = I18NConfig.getLocales();
+  const i18nConfig = getI18nConfig();
+  const defaultLocale = i18nConfig.getDefaultLocale();
+  const locales = i18nConfig.getLocales();
 
   const preferredLocales: string[] = [];
 

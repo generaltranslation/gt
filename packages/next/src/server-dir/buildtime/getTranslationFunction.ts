@@ -1,6 +1,7 @@
 // getTranslationFunction.ts (refactored)
 
 import { getI18NConfig } from '../../config-dir/getI18NConfig';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { getLocale } from '../../server';
 import { hashSource } from 'generaltranslation/id';
 import {
@@ -68,7 +69,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   // ---------- SET UP ---------- //
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
-  const defaultLocale = I18NConfig.getDefaultLocale();
+  const defaultLocale = getI18nConfig().getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
   const gtClass = I18NConfig.getGTClass();
 

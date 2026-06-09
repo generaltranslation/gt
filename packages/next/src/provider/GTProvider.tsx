@@ -1,6 +1,7 @@
 import { DictionaryEntry, mergeDictionaries } from 'gt-react/internal';
 import { isValidElement } from 'react';
 import { getI18NConfig } from '../config-dir/getI18NConfig';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { getLocale } from '../request/getLocale';
 import { getDictionary, getDictionaryEntry } from '../dictionary/getDictionary';
 import { Dictionary, Translations } from 'gt-react/internal';
@@ -26,7 +27,7 @@ export async function GTProvider({
   // ---------- SETUP ---------- //
   const I18NConfig = getI18NConfig();
   const locale = _locale || (await getLocale());
-  const defaultLocale = I18NConfig.getDefaultLocale();
+  const defaultLocale = getI18nConfig().getDefaultLocale();
   const [translationRequired, dialectTranslationRequired] =
     I18NConfig.requiresTranslation(locale);
 
@@ -79,7 +80,7 @@ export async function GTProvider({
       dictionaryTranslations={dictionaryTranslations}
       translations={translations}
       locale={locale}
-      locales={I18NConfig.getLocales()}
+      locales={getI18nConfig().getLocales()}
       defaultLocale={defaultLocale}
       translationRequired={translationRequired}
       dialectTranslationRequired={dialectTranslationRequired}

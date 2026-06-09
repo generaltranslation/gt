@@ -292,24 +292,6 @@ export class I18NConfiguration {
     return this._i18nCache.getGTClass();
   }
 
-  // ----- LOCALES ----- //
-
-  /**
-   * Gets the application's default locale
-   * @returns {string} A BCP-47 locale tag
-   */
-  getDefaultLocale(): string {
-    return getI18nConfig().getDefaultLocale();
-  }
-
-  /**
-   * Gets the list of approved locales for this app
-   * @returns {string[]} A list of BCP-47 locale tags, or undefined if none were provided
-   */
-  getLocales(): string[] {
-    return getI18nConfig().getLocales();
-  }
-
   /**
    * Gets the version ID for the current source
    * @returns {string | undefined} The version ID, if set

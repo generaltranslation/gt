@@ -239,7 +239,7 @@ describe('I18NConfiguration', () => {
     );
   });
 
-  it('exposes configured locale values and client custom mappings', () => {
+  it('exposes client custom mappings', () => {
     const customMapping = {
       'brand-french': {
         code: 'fr',
@@ -252,26 +252,11 @@ describe('I18NConfiguration', () => {
       customMapping,
     });
 
-    expect(config.getDefaultLocale()).toBe('en-US');
-    expect(config.getLocales()).toEqual(['en-US', 'fr', 'brand-french']);
     expect(config.getClientSideConfig()).toEqual(
       expect.objectContaining({
         customMapping,
       })
     );
-  });
-
-  it('reads locale values from gt-i18n config accessors', () => {
-    const config = createConfig({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-    });
-
-    mockLocaleConfig.defaultLocale = 'es';
-    mockLocaleConfig.locales = ['es', 'es-MX'];
-
-    expect(config.getDefaultLocale()).toBe('es');
-    expect(config.getLocales()).toEqual(['es', 'es-MX']);
   });
 
   it('reads client custom mappings from gt-i18n config accessors', () => {
@@ -310,8 +295,8 @@ describe('I18NConfiguration', () => {
 
     const config = getI18NConfig();
 
-    expect(config.getDefaultLocale()).toBe('en-US');
-    expect(config.getLocales()).toEqual(['en-US', 'es', 'brand-spanish']);
+    expect(mockLocaleConfig.defaultLocale).toBe('en-US');
+    expect(mockLocaleConfig.locales).toEqual(['en-US', 'es', 'brand-spanish']);
     expect(config.getClientSideConfig()).toEqual(
       expect.objectContaining({
         customMapping,
@@ -322,12 +307,12 @@ describe('I18NConfiguration', () => {
   it('initializes locale metadata in the default config fallback', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const config = getI18NConfig();
+    getI18NConfig();
 
-    expect(config.getDefaultLocale()).toBe(
+    expect(mockLocaleConfig.defaultLocale).toBe(
       defaultWithGTConfigProps.defaultLocale
     );
-    expect(config.getLocales()).toEqual([
+    expect(mockLocaleConfig.locales).toEqual([
       defaultWithGTConfigProps.defaultLocale,
     ]);
     warn.mockRestore();

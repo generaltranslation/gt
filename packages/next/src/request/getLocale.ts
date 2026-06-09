@@ -1,4 +1,5 @@
 import { getI18NConfig } from '../config-dir/getI18NConfig';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { use } from '../utils/use';
 import { legacyGetLocaleFunction } from './utils/legacyGetLocaleFunction';
 import { getRequestFunction } from './utils/getRequestFunction';
@@ -31,12 +32,12 @@ export async function getLocale(): Promise<string> {
     getLocaleFunction = async () => {
       const requestLocale = await requestFunction();
       return gt.resolveAliasLocale(
-        requestLocale || I18NConfig.getDefaultLocale()
+        requestLocale || getI18nConfig().getDefaultLocale()
       );
     };
   } else {
     // Support legacy behavior
-    getLocaleFunction = legacyGetLocaleFunction(I18NConfig, gt);
+    getLocaleFunction = legacyGetLocaleFunction(gt);
   }
 
   return getLocaleFunction();

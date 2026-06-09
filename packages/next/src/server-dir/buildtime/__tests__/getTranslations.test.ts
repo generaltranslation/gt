@@ -47,7 +47,6 @@ type GetTranslations = (typeof import('../getTranslations'))['getTranslations'];
 type UseTranslations = (typeof import('../getTranslations'))['useTranslations'];
 type MockFunction = ReturnType<typeof vi.fn>;
 type MockI18NConfig = {
-  getDefaultLocale: MockFunction;
   requiresTranslation: MockFunction;
   getDictionaryTranslations: MockFunction;
   getCachedTranslations: MockFunction;
@@ -149,13 +148,16 @@ describe('getTranslations', () => {
     const module = await import('../getTranslations');
     getTranslations = module.getTranslations;
 
+    // Initialize the gt-i18n config singleton in the fresh module registry
+    const { initializeI18nConfig } = await import('gt-i18n/internal');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en'] });
+
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     // Set environment variables for locale detection
     process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES = 'false';
 
     mockI18NConfig = {
-      getDefaultLocale: vi.fn(() => 'en'),
       requiresTranslation: vi.fn(() => [false]),
       getDictionaryTranslations: vi.fn(),
       getCachedTranslations: vi.fn(),

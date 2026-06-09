@@ -31,6 +31,7 @@ import type {
   RuntimeTranslationOptions,
 } from 'gt-react';
 import { GT } from 'generaltranslation';
+import { getI18nConfig } from 'gt-i18n/internal';
 import {
   useMessages,
   useGT,
@@ -47,11 +48,13 @@ export function useLocaleProperties(locale: string): LocaleProperties {
 }
 
 export function useLocales() {
-  return getI18NConfig().getLocales();
+  getI18NConfig(); // ensure the i18n config singleton is initialized
+  return getI18nConfig().getLocales();
 }
 
 export function useDefaultLocale() {
-  return getI18NConfig().getDefaultLocale();
+  getI18NConfig(); // ensure the i18n config singleton is initialized
+  return getI18nConfig().getDefaultLocale();
 }
 
 export function useVersionId() {

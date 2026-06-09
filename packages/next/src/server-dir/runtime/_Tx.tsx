@@ -1,4 +1,5 @@
 import { getI18NConfig } from '../../config-dir/getI18NConfig';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { getLocale } from '../../request/getLocale';
 import { Suspense } from 'react';
 import {
@@ -56,7 +57,7 @@ export async function Tx({
   const maxChars = $maxChars;
   const I18NConfig = getI18NConfig();
   locale ||= await getLocale();
-  const defaultLocale = I18NConfig.getDefaultLocale();
+  const defaultLocale = getI18nConfig().getDefaultLocale();
   const [translationRequired, dialectTranslationRequired] =
     I18NConfig.requiresTranslation(locale);
 

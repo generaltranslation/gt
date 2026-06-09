@@ -15,9 +15,11 @@ import {
   getMessages,
   getGT,
 } from './server-dir/buildtime/getTranslationFunction';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 export function getDefaultLocale(): string {
-  return getI18NConfig().getDefaultLocale();
+  getI18NConfig(); // ensure the i18n config singleton is initialized
+  return getI18nConfig().getDefaultLocale();
 }
 
 export function getGTClass() {
@@ -29,7 +31,8 @@ export function getLocaleProperties(locale: string): LocaleProperties {
 }
 
 export function getLocales(): string[] {
-  return getI18NConfig().getLocales();
+  getI18NConfig(); // ensure the i18n config singleton is initialized
+  return getI18nConfig().getLocales();
 }
 
 export function getVersionId(): string | undefined {
