@@ -19,6 +19,8 @@ export function escapeMarkdownInMdxJsxText(value: string): string {
     .replace(AMP_NOT_ENTITY, '&amp;')
     .replace(/\*/g, '&#42;')
     .replace(/_/g, '&#95;')
+    .replace(/\[/g, '&#91;')
+    .replace(/\]/g, '&#93;')
     .replace(/\{/g, '&#123;')
     .replace(/\}/g, '&#125;')
     .replace(/`/g, '&#96;');
@@ -28,10 +30,10 @@ export function escapeMarkdownInMdxJsxText(value: string): string {
  * Escape markdown-control characters in text nodes inside MDX JSX elements.
  *
  * Markdown syntax inside JSX text is parsed differently from normal markdown;
- * a translated literal `*`, `_`, `{`, `}`, or backtick can create invalid MDX
- * or change rendered text. Normal markdown outside JSX is intentionally left
- * alone so emphasis, strong text, and inline code continue to serialize as
- * markdown syntax.
+ * a translated literal `*`, `_`, `[`, `]`, `{`, `}`, or backtick can create
+ * invalid MDX or change rendered text. Normal markdown outside JSX is
+ * intentionally left alone so emphasis, strong text, and inline code continue
+ * to serialize as markdown syntax.
  */
 const escapeMarkdownInMdxJsxTextNodes: Plugin<[], Root> = function () {
   return function (tree: Root) {

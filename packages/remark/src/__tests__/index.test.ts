@@ -535,7 +535,7 @@ describe('escapeMarkdownInMdxJsxTextNodes', () => {
           children: [
             {
               type: 'text',
-              value: '*literal* _value_ {name} `tick` & raw',
+              value: '*literal* _value_ [label] {name} `tick` & raw',
             },
           ],
         },
@@ -545,7 +545,7 @@ describe('escapeMarkdownInMdxJsxTextNodes', () => {
     const result = processAst(tree);
 
     expect(result.children?.[0]?.children?.[0]?.value).toBe(
-      '&#42;literal&#42; &#95;value&#95; &#123;name&#125; &#96;tick&#96; &amp; raw'
+      '&#42;literal&#42; &#95;value&#95; &#91;label&#93; &#123;name&#125; &#96;tick&#96; &amp; raw'
     );
   });
 
@@ -573,8 +573,8 @@ describe('escapeMarkdownInMdxJsxTextNodes', () => {
   });
 
   it('does not double escape existing entities', () => {
-    expect(escapeMarkdownInMdxJsxText('Already &#42; &amp; *')).toBe(
-      'Already &#42; &amp; &#42;'
+    expect(escapeMarkdownInMdxJsxText('Already &#42; &#91; &amp; * [')).toBe(
+      'Already &#42; &#91; &amp; &#42; &#91;'
     );
   });
 });

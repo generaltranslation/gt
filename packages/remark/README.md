@@ -41,9 +41,11 @@ JSX text nodes, use the named MDX JSX text plugin before stringifying:
 
 ```ts
 import { escapeMarkdownInMdxJsxTextNodes } from 'gt-remark';
+import remarkMdx from 'remark-mdx';
 
 const file = await unified()
   .use(remarkParse)
+  .use(remarkMdx)
   .use(escapeMarkdownInMdxJsxTextNodes)
   .use(remarkStringify)
   .process('<p>*literal translated text*</p>');
