@@ -31,7 +31,6 @@ export {
   renderPreparedT,
   renderTranslatedChildren,
   renderVariable,
-  RscT,
   setReactI18nCache,
   T,
   t,

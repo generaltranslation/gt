@@ -1,5 +1,5 @@
 import { getRequestConditions } from '../../request/getRequestConditions';
-import { RscT } from 'gt-react/context-rsc';
+import { T as ContextT } from 'gt-react/context-rsc';
 import type { ReactNode } from 'react';
 
 type TProps = {
@@ -19,7 +19,7 @@ type TProps = {
 export async function T(props: TProps): Promise<ReactNode> {
   const { _locale: locale, _enableI18n: enableI18n } =
     await getRequestConditions();
-  return RscT({ ...props, locale, enableI18n });
+  return ContextT({ ...props, locale, enableI18n });
 }
 
 /** @internal _gtt - The GT transformation for the component. */

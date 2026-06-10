@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const { mockGetRequestConditions, mockRscT } = vi.hoisted(() => ({
+const { mockGetRequestConditions, mockContextT } = vi.hoisted(() => ({
   mockGetRequestConditions: vi.fn(),
-  mockRscT: vi.fn(),
+  mockContextT: vi.fn(),
 }));
 
 vi.mock('../../../request/getRequestConditions', () => ({
@@ -10,16 +10,16 @@ vi.mock('../../../request/getRequestConditions', () => ({
 }));
 
 vi.mock('gt-react/context-rsc', () => ({
-  RscT: mockRscT,
+  T: mockContextT,
 }));
 
 describe('buildtime T', () => {
-  it('passes request conditions to RscT', async () => {
+  it('passes request conditions to context T', async () => {
     mockGetRequestConditions.mockResolvedValue({
       _locale: 'fr',
       _enableI18n: false,
     });
-    mockRscT.mockResolvedValue('Bonjour');
+    mockContextT.mockResolvedValue('Bonjour');
 
     const { T } = await import('../T');
     await expect(T({ children: 'Hello', id: 'greeting' })).resolves.toBe(
@@ -27,7 +27,7 @@ describe('buildtime T', () => {
     );
 
     expect(mockGetRequestConditions).toHaveBeenCalled();
-    expect(mockRscT).toHaveBeenCalledWith({
+    expect(mockContextT).toHaveBeenCalledWith({
       children: 'Hello',
       id: 'greeting',
       locale: 'fr',
