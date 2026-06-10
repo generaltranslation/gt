@@ -8,5 +8,8 @@ export default defineConfig(
     deps: {
       neverBundle: [/^server-only$/],
     },
+    useClientBoundary: {
+      emittedSourceFiles: 'all',
+    },
   })
 );
