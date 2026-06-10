@@ -402,7 +402,11 @@ function restoreTopLevelRefs(
  */
 function extractRefSiblings(
   subtree: unknown,
-  ref: { siblings?: Record<string, unknown>; originalContent?: unknown }
+  ref: {
+    siblings?: Record<string, unknown>;
+    originalContent?: unknown;
+    refPath?: string;
+  }
 ): { siblings: Record<string, unknown>; content: unknown } {
   const originalSiblings = ref.siblings ?? {};
   const siblingKeys = Object.keys(originalSiblings);
@@ -425,6 +429,13 @@ function extractRefSiblings(
         delete content[key];
       }
     } else {
+      // Object resolutions always merge siblings into the subtree, so this
+      // only fires if that invariant breaks upstream. Restoring the source
+      // value keeps the output schema-valid, but it skips translation — warn
+      // so the regression is visible.
+      logger.warn(
+        `Sibling key "${key}" missing from translated content for $ref ${ref.refPath ?? '(unknown)'}; restoring source value`
+      );
       siblings[key] = originalSiblings[key];
     }
   }
