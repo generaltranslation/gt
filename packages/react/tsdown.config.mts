@@ -23,6 +23,7 @@ const contextDeps = {
     /^@generaltranslation\/react-core\//,
     /^gt-i18n$/,
     /^gt-i18n\//,
+    /^#context-server$/,
   ],
   alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };

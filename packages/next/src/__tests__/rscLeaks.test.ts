@@ -16,9 +16,8 @@ const repoRoot = resolve(packageRoot, '../..');
 // ===== Scope ===== //
 
 const entrypoints = [
-  'packages/react-core/src/context-rsc.ts',
-  'packages/react/src/context-rsc.ts',
-  'packages/react/src/context-client-boundary.ts',
+  'packages/react-core/src/components-rsc.ts',
+  'packages/react/src/context.rsc.ts',
   'packages/next/src/index.server.ts',
   'packages/next/src/server.ts',
   ...listSourceFiles('packages/next/src/server-dir'),
@@ -28,22 +27,20 @@ const entrypoints = [
 
 // Workspace subpath imports resolved back to their source entrypoints.
 const workspaceSourceMap: Record<string, string> = {
+  '#context-server': 'packages/react/src/context.server.ts',
   'gt-react': 'packages/react/src/index.ts',
   'gt-react/internal': 'packages/react/src/internal.ts',
-  'gt-react/context-client-boundary':
-    'packages/react/src/context-client-boundary.ts',
-  'gt-react/context-rsc': 'packages/react/src/context-rsc.ts',
+  'gt-react/context': 'packages/react/src/context.rsc.ts',
   '@generaltranslation/react-core': 'packages/react-core/src/index.ts',
   '@generaltranslation/react-core/internal':
     'packages/react-core/src/internal.ts',
-  '@generaltranslation/react-core/context-rsc':
-    'packages/react-core/src/context-rsc.ts',
+  '@generaltranslation/react-core/components-rsc':
+    'packages/react-core/src/components-rsc.ts',
 };
 
 // Specifiers that must never be imported from the RSC/server graph.
 const forbiddenSpecifiers = [
   'gt-react/client',
-  'gt-react/context',
   '@generaltranslation/react-core/context',
   'next/navigation',
 ];

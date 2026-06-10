@@ -168,6 +168,13 @@
       ]
     }
   },
+  "imports": {
+    "#context-server": {
+      "require": "./dist/context.server.cjs",
+      "import": "./dist/context.server.mjs",
+      "default": "./dist/context.server.mjs"
+    }
+  },
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

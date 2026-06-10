@@ -10,7 +10,10 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": ".",
-    "composite": true
+    "composite": true,
+    "paths": {
+      "#context-server": ["./src/context.server.ts"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["**/*.test.ts"],

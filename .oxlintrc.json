@@ -56,10 +56,6 @@
           {
             "paths": [
               {
-                "name": "gt-react/context",
-                "message": "Next server/RSC code must import from gt-react/context-rsc."
-              },
-              {
                 "name": "gt-react/client",
                 "message": "Next server/RSC code must not import the gt-react client entrypoint. Use a 'use client' boundary module instead."
               }
@@ -83,10 +79,10 @@
     },
     {
       "files": [
-        "packages/react-core/src/context-rsc.ts",
+        "packages/react-core/src/components-rsc.ts",
         "packages/react-core/src/**/*.rsc.{ts,tsx}",
         "packages/react-core/src/**/*.shared.{ts,tsx}",
-        "packages/react/src/context-rsc.ts"
+        "packages/react/src/context.rsc.ts"
       ],
       "rules": {
         "no-restricted-imports": [
@@ -95,7 +91,7 @@
             "paths": [
               {
                 "name": "@generaltranslation/react-core/context",
-                "message": "RSC-safe modules must not import the broad context barrel; import from @generaltranslation/react-core/context-rsc instead."
+                "message": "RSC-safe modules must not import the broad context barrel; import from @generaltranslation/react-core/components-rsc or pure helpers instead."
               },
               {
                 "name": "react",

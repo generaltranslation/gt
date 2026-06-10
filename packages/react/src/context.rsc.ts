@@ -1,6 +1,6 @@
 // React Server Component context surface.
 
-export { GTProvider, LocaleSelector } from './context.server';
+export { GTProvider, LocaleSelector } from '#context-server';
 
 export {
   Branch,
