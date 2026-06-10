@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { InternalLocaleSelector } from '@generaltranslation/react-core/context';
 import { CustomMapping } from 'generaltranslation/types';
 import { useLocaleSelector } from './useLocaleSelector';
@@ -13,12 +13,7 @@ import { useLocaleSelector } from './useLocaleSelector';
 export function LocaleSelector({
   locales: _locales,
   ...props
-}: {
-  locales?: string[];
-  customNames?: { [key: string]: string };
-  customMapping?: CustomMapping;
-  [key: string]: any;
-}): React.JSX.Element | null {
+}: LocaleSelectorProps): React.JSX.Element | null {
   // Get locale selector properties
   const { locale, locales, getLocaleProperties, setLocale } =
     useLocaleSelector(_locales);
@@ -33,3 +28,10 @@ export function LocaleSelector({
     />
   );
 }
+
+export type LocaleSelectorProps = {
+  locales?: string[];
+  customNames?: { [key: string]: string };
+  customMapping?: CustomMapping;
+  [key: string]: any;
+};
