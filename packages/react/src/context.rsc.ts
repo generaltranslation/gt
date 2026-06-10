@@ -1,18 +1,20 @@
-// React Server Component-safe context surface.
-//
-// This entrypoint may import client components only through explicit
-// 'use client' boundaries. Do not re-export from context.client, context.server,
-// or @generaltranslation/react-core/context here.
+// React Server Component context surface.
 
-export { GTProvider, LocaleSelector } from 'gt-react/client-boundary';
+export { GTProvider, LocaleSelector } from './context.server';
 
 export {
   Branch,
   Currency,
+  createRenderPipeline,
+  createRenderVariable,
   DateTime,
   Derive,
   getFormatLocales,
   getPluralBranch,
+  getReactI18nCache,
+  getReadonlyConditionStoreWithFallback,
+  getShouldTranslate,
+  getTranslationsSnapshot,
   GtInternalBranch,
   GtInternalCurrency,
   GtInternalDateTime,
@@ -23,15 +25,18 @@ export {
   GtInternalVar,
   Num,
   Plural,
+  prepareT,
   RelativeTime,
   renderDefaultChildren,
   renderPreparedT,
   renderTranslatedChildren,
   renderVariable,
   RscT,
+  setReactI18nCache,
   T,
+  t,
   Var,
-} from '@generaltranslation/react-core/context-rsc';
+} from '@generaltranslation/react-core/components-rsc';
 
 export {
   decodeMsg,
@@ -45,6 +50,18 @@ export {
 } from '@generaltranslation/react-core/pure';
 
 export type {
+  CurrencyProps,
+  DateTimeProps,
+  JsxTranslationOptions,
+  NumProps,
+  PluralProps,
+  PreparedT,
+  RelativeTimeProps,
   RelativeTimeFormatOptions,
   RenderVariable,
-} from '@generaltranslation/react-core/context-rsc';
+  ResolvedCurrencyProps,
+  ResolvedDateTimeProps,
+  ResolvedNumProps,
+  ResolvedPluralProps,
+  ResolvedRelativeTimeProps,
+} from '@generaltranslation/react-core/components-rsc';

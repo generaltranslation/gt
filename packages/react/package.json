@@ -119,50 +119,6 @@
       },
       "default": "./dist/context.server.mjs"
     },
-    "./client-boundary": {
-      "require": {
-        "types": "./dist/client-boundary.d.cts",
-        "default": "./dist/client-boundary.cjs"
-      },
-      "import": {
-        "types": "./dist/client-boundary.d.mts",
-        "default": "./dist/client-boundary.mjs"
-      },
-      "default": "./dist/client-boundary.mjs"
-    },
-    "./context-client-boundary": {
-      "require": {
-        "types": "./dist/context-client-boundary.d.cts",
-        "default": "./dist/context-client-boundary.cjs"
-      },
-      "import": {
-        "types": "./dist/context-client-boundary.d.mts",
-        "default": "./dist/context-client-boundary.mjs"
-      },
-      "default": "./dist/context-client-boundary.mjs"
-    },
-    "./context-rsc": {
-      "react-server": {
-        "require": {
-          "types": "./dist/context-rsc.d.cts",
-          "default": "./dist/context-rsc.cjs"
-        },
-        "import": {
-          "types": "./dist/context-rsc.d.mts",
-          "default": "./dist/context-rsc.mjs"
-        },
-        "default": "./dist/context-rsc.mjs"
-      },
-      "require": {
-        "types": "./dist/context-rsc.d.cts",
-        "default": "./dist/context-rsc.cjs"
-      },
-      "import": {
-        "types": "./dist/context-rsc.d.mts",
-        "default": "./dist/context-rsc.mjs"
-      },
-      "default": "./dist/context-rsc.mjs"
-    },
     "./browser": {
       "require": {
         "types": "./dist/browser.d.cts",
@@ -192,17 +148,8 @@
       "client": [
         "./dist/client.d.cts"
       ],
-      "client-boundary": [
-        "./dist/client-boundary.d.cts"
-      ],
       "context": [
         "./dist/context.types.d.cts"
-      ],
-      "context-client-boundary": [
-        "./dist/context-client-boundary.d.cts"
-      ],
-      "context-rsc": [
-        "./dist/context-rsc.d.cts"
       ],
       "internal": [
         "./dist/internal.d.cts"
@@ -227,17 +174,8 @@
       "gt-react/client": [
         "./dist/client"
       ],
-      "gt-react/client-boundary": [
-        "./dist/client-boundary.d.cts"
-      ],
       "gt-react/context": [
         "./dist/context.types.d.cts"
-      ],
-      "gt-react/context-client-boundary": [
-        "./dist/context-client-boundary.d.cts"
-      ],
-      "gt-react/context-rsc": [
-        "./dist/context-rsc.d.cts"
       ],
       "gt-react/internal": [
         "./dist/internal"

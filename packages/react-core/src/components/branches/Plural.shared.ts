@@ -4,7 +4,7 @@ import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 
 // Pure render logic shared by the hook-based and RSC implementations. This
 // module must stay free of hook/context imports so it can be reached from the
-// context-rsc entrypoint.
+// components-rsc entrypoint.
 
 type PluralProps = {
   children?: ReactNode;
