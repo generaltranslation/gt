@@ -45,11 +45,7 @@ const entries = [
 export default defineConfig(
   entries.flatMap((entry, index) => {
     const entryDeps = entry.startsWith('src/context') ? contextDeps : deps;
-    const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps, {
-      useClientBoundary: {
-        emittedSourceFiles: entries,
-      },
-    });
+    const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
     return [
       {
