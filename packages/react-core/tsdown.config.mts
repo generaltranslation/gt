@@ -31,7 +31,6 @@ export default defineConfig([
   ...createTsdownMinifiedDualFormatConfig({
     entries: [
       'src/context.ts',
-      'src/context-rsc.ts',
       'src/pure.ts',
       'src/hooks.ts',
       'src/components.ts',

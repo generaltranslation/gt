@@ -2,7 +2,7 @@ import { computeNum, type ResolvedNumProps } from './Num.shared';
 
 // RSC implementation: request conditions are passed explicitly instead of
 // being read from hooks. This module must stay free of hook/context imports
-// so it can be exported from the context-rsc entrypoint.
+// so it can be exported from the components-rsc entrypoint.
 
 function RscGtInternalNum(props: ResolvedNumProps): string | null {
   return computeNum(props);
