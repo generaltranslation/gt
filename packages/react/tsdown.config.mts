@@ -24,7 +24,6 @@ const contextDeps = {
     /^gt-i18n$/,
     /^gt-i18n\//,
     /^gt-react\/client-boundary$/,
-    /^\.\/client-boundary$/,
   ],
   alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };
