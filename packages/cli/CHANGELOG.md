@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.48
+
+### Patch Changes
+
+- [#1582](https://github.com/generaltranslation/gt/pull/1582) [`1e5e748`](https://github.com/generaltranslation/gt/commit/1e5e748b1aef33eb58f536496592a6258fc441e5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle Mintlify `$ref` siblings, add omit to composite JSONs
+
 ## 2.14.47
 
 ### Patch Changes

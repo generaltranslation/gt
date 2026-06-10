@@ -1,5 +1,12 @@
 # gt-tanstack-start
 
+## 0.4.25
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-react@10.20.1
+
 ## 0.4.24
 
 ### Patch Changes
