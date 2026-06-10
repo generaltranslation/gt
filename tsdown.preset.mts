@@ -4,22 +4,15 @@ import { rm } from 'node:fs/promises';
 
 import type { UserConfig } from 'tsdown';
 
-type UseClientBoundaryOptions = {
+type UseClientBoundaryPluginOptions = {
   emittedSourceFiles?: string[] | 'all';
+  name?: string;
   outDir?: string;
   outputExtension: string;
   root?: string;
 };
 
-type TsdownConfigOptions = {
-  useClientBoundary?: Omit<UseClientBoundaryOptions, 'outputExtension'>;
-};
-
-export function createTsdownConfig(
-  entry: string[],
-  deps?: UserConfig['deps'],
-  options: TsdownConfigOptions = {}
-) {
+export function createTsdownConfig(entry: string[], deps?: UserConfig['deps']) {
   return [
     {
       entry,
@@ -28,28 +21,8 @@ export function createTsdownConfig(
       sourcemap: true,
       clean: true,
       deps: { onlyBundle: false, ...deps },
-      plugins: options.useClientBoundary
-        ? [
-            createUseClientBoundaryPlugin({
-              ...options.useClientBoundary,
-              outputExtension: '.cjs',
-            }),
-          ]
-        : undefined,
     },
-    {
-      entry,
-      format: ['esm'] as const,
-      sourcemap: true,
-      plugins: options.useClientBoundary
-        ? [
-            createUseClientBoundaryPlugin({
-              ...options.useClientBoundary,
-              outputExtension: '.mjs',
-            }),
-          ]
-        : undefined,
-    },
+    { entry, format: ['esm'] as const, sourcemap: true },
   ];
 }
 
@@ -71,9 +44,6 @@ type TsdownUnbundleConfigOptions = Pick<
 > & {
   entry?: UserConfig['entry'];
   format: 'cjs' | 'esm';
-  useClientBoundary?: Omit<UseClientBoundaryOptions, 'outputExtension'> & {
-    outputExtension?: string;
-  };
 };
 
 export function createTsdownUnbundleConfig({
@@ -98,14 +68,7 @@ export function createTsdownUnbundleConfig({
   outExtensions = () => ({ js: '.js', dts: '.d.ts' }),
   outputOptions,
   plugins,
-  useClientBoundary,
 }: TsdownUnbundleConfigOptions) {
-  const outputExtension =
-    useClientBoundary?.outputExtension ??
-    outExtensions({ format } as Parameters<
-      NonNullable<UserConfig['outExtensions']>
-    >[0]).js;
-
   return {
     entry,
     format: [format],
@@ -125,54 +88,43 @@ export function createTsdownUnbundleConfig({
     deps: { skipNodeModulesBundle: true, onlyBundle: false, ...deps },
     outExtensions,
     outputOptions,
-    plugins: [
-      ...(plugins ?? []),
-      ...(useClientBoundary
-        ? [
-            createUseClientBoundaryPlugin({
-              ...useClientBoundary,
-              outputExtension,
-              root,
-            }),
-          ]
-        : []),
-    ],
+    plugins,
   } satisfies UserConfig;
 }
 
-function createUseClientBoundaryPlugin({
+export function createUseClientBoundaryPlugin({
   emittedSourceFiles = 'all',
+  name = 'gt:use-client-boundaries',
   outDir = 'dist',
   outputExtension,
   root = 'src',
-}: UseClientBoundaryOptions) {
+}: UseClientBoundaryPluginOptions) {
   const cwd = process.cwd();
-  const rootAbsolute = resolve(cwd, root);
+  const rootPath = resolve(cwd, root);
   const emitted =
     emittedSourceFiles === 'all'
       ? 'all'
       : new Set(emittedSourceFiles.map((file) => resolve(cwd, file)));
 
   return {
-    name: 'gt:externalize-use-client-boundaries',
+    name,
     resolveId(source: string, importer?: string) {
       if (!importer || !source.startsWith('.')) return null;
 
-      const importerFile = stripQuery(importer);
-      const importerAbsolute = resolve(importerFile);
-      if (hasUseClientDirective(importerAbsolute)) return null;
+      const importerFile = importer.split('?')[0];
+      if (hasUseClientDirective(importerFile)) return null;
 
-      const resolved = resolveSourceFile(source, importerAbsolute);
-      if (!resolved || !hasUseClientDirective(resolved)) return null;
-      if (emitted !== 'all' && !emitted.has(resolved)) return null;
+      const targetFile = resolveSourceFile(source, importerFile);
+      if (!targetFile || !hasUseClientDirective(targetFile)) return null;
+      if (emitted !== 'all' && !emitted.has(targetFile)) return null;
 
       return {
-        id: getOutputSpecifier({
-          fromSourceFile: importerAbsolute,
-          outputExtension,
-          rootAbsolute,
-          targetSourceFile: resolved,
+        id: outputSpecifier({
+          importerFile,
           outDir,
+          outputExtension,
+          rootPath,
+          targetFile,
         }),
         external: true,
       };
@@ -197,56 +149,51 @@ function hasUseClientDirective(file: string): boolean {
   );
 }
 
-function stripQuery(file: string): string {
-  return file.split('?')[0];
-}
-
-function getOutputSpecifier({
-  fromSourceFile,
-  outputExtension,
-  rootAbsolute,
-  targetSourceFile,
+function outputSpecifier({
+  importerFile,
   outDir,
+  outputExtension,
+  rootPath,
+  targetFile,
 }: {
-  fromSourceFile: string;
-  outputExtension: string;
-  rootAbsolute: string;
-  targetSourceFile: string;
+  importerFile: string;
   outDir: string;
-}) {
-  const fromOutputFile = toOutputFile({
-    file: fromSourceFile,
-    outputExtension,
-    rootAbsolute,
+  outputExtension: string;
+  rootPath: string;
+  targetFile: string;
+}): string {
+  const importerOutput = toOutputFile({
     outDir,
-  });
-  const targetOutputFile = toOutputFile({
-    file: targetSourceFile,
     outputExtension,
-    rootAbsolute,
-    outDir,
+    rootPath,
+    sourceFile: importerFile,
   });
-  const specifier = relative(dirname(fromOutputFile), targetOutputFile);
+  const targetOutput = toOutputFile({
+    outDir,
+    outputExtension,
+    rootPath,
+    sourceFile: targetFile,
+  });
+  const specifier = relative(dirname(importerOutput), targetOutput);
   return specifier.startsWith('.') ? specifier : `./${specifier}`;
 }
 
 function toOutputFile({
-  file,
-  outputExtension,
-  rootAbsolute,
   outDir,
+  outputExtension,
+  rootPath,
+  sourceFile,
 }: {
-  file: string;
-  outputExtension: string;
-  rootAbsolute: string;
   outDir: string;
-}) {
-  const relativeSourceFile = relative(rootAbsolute, file);
-  const parsedExtension = extname(relativeSourceFile);
+  outputExtension: string;
+  rootPath: string;
+  sourceFile: string;
+}): string {
+  const sourceRelative = relative(rootPath, sourceFile);
   return resolve(
     process.cwd(),
     outDir,
-    `${relativeSourceFile.slice(0, -parsedExtension.length)}${outputExtension}`
+    `${sourceRelative.slice(0, -extname(sourceRelative).length)}${outputExtension}`
   );
 }
 
