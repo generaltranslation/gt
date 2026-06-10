@@ -9,6 +9,10 @@ const forbid = vi.hoisted(() => (name: string) => () => {
 
 vi.mock('../context.server', forbid('the broad context.server barrel'));
 vi.mock('../context.client', forbid('context.client'));
+vi.mock('gt-react/client-boundary', () => ({
+  GTProvider: () => null,
+  LocaleSelector: () => null,
+}));
 vi.mock(
   '@generaltranslation/react-core/context',
   forbid('@generaltranslation/react-core/context')
@@ -26,6 +30,7 @@ vi.mock('react', async (importOriginal) => {
 describe('gt-react/context-rsc', () => {
   it('imports without reaching broad context barrels', async () => {
     const mod = await import('../context-rsc');
+    const canonical = await import('../context.rsc');
     expect(mod.Branch).toBeTypeOf('function');
     expect(mod.GtInternalBranch).toBeTypeOf('function');
     expect(mod.Derive).toBeTypeOf('function');
@@ -33,5 +38,8 @@ describe('gt-react/context-rsc', () => {
     expect(mod.Var).toBeTypeOf('function');
     expect(mod.GtInternalVar).toBeTypeOf('function');
     expect(mod.getPluralBranch).toBeTypeOf('function');
+    expect(mod.GTProvider).toBeTypeOf('function');
+    expect(mod.LocaleSelector).toBeTypeOf('function');
+    expect(canonical.Branch).toBe(mod.Branch);
   });
 });

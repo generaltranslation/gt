@@ -9,6 +9,10 @@
     "jsx": "react-jsx",
     "outDir": "./dist",
     "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "gt-react/client-boundary": ["./src/client-boundary.ts"]
+    },
     "composite": true
   },
   "include": ["src/**/*"],

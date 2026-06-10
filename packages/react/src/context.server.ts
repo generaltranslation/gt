@@ -1,7 +1,8 @@
-// This entrypoint is the SSR/context-capable runtime: hooks, providers, and
-// interactive components. It is not RSC-safe. RSC framework integrations should
-// prefer gt-react/context-rsc for hook-free rendering primitives and
-// gt-react/context-client-boundary for client components.
+'use client';
+
+// SSR/context-capable React runtime surface. This entrypoint may import hooks,
+// providers, and context modules, so it must be consumed as a client boundary by
+// React Server Component frameworks.
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { useLocaleSelector } from './components/useLocaleSelector';
