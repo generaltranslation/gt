@@ -6,7 +6,6 @@ import {
   LocaleSelector,
   Num,
   Plural,
-  RegionSelector,
   RelativeTime,
   T,
   Var,
@@ -31,7 +30,6 @@ export default function ServerExportsPage() {
       <DateTime>{new Date(0)}</DateTime>
       <RelativeTime date={new Date(0)} />
       <LocaleSelector />
-      <RegionSelector />
     </main>
   );
 }
