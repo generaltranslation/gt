@@ -87,6 +87,17 @@
       }
     },
     "./context": {
+      "react-server": {
+        "require": {
+          "types": "./dist/context.rsc.d.cts",
+          "default": "./dist/context.rsc.cjs"
+        },
+        "import": {
+          "types": "./dist/context.rsc.d.mts",
+          "default": "./dist/context.rsc.mjs"
+        },
+        "default": "./dist/context.rsc.mjs"
+      },
       "browser": {
         "require": {
           "types": "./dist/context.types.d.cts",
@@ -107,6 +118,17 @@
         "default": "./dist/context.server.mjs"
       },
       "default": "./dist/context.server.mjs"
+    },
+    "./client-boundary": {
+      "require": {
+        "types": "./dist/client-boundary.d.cts",
+        "default": "./dist/client-boundary.cjs"
+      },
+      "import": {
+        "types": "./dist/client-boundary.d.mts",
+        "default": "./dist/client-boundary.mjs"
+      },
+      "default": "./dist/client-boundary.mjs"
     },
     "./context-client-boundary": {
       "require": {
@@ -170,6 +192,9 @@
       "client": [
         "./dist/client.d.cts"
       ],
+      "client-boundary": [
+        "./dist/client-boundary.d.cts"
+      ],
       "context": [
         "./dist/context.types.d.cts"
       ],
@@ -201,6 +226,9 @@
     "paths": {
       "gt-react/client": [
         "./dist/client"
+      ],
+      "gt-react/client-boundary": [
+        "./dist/client-boundary.d.cts"
       ],
       "gt-react/context": [
         "./dist/context.types.d.cts"
