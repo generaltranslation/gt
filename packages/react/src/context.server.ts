@@ -7,8 +7,6 @@
 // gt-react/context-rsc for hook-free rendering primitives and
 // gt-react/context-client-boundary for client components.
 // In non-RSC environments the directive is inert.
-// (Replaces the previous bare 'server-only' string, which was a no-op: only
-// `import 'server-only'` enforces anything.)
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { useLocaleSelector } from './components/useLocaleSelector';
