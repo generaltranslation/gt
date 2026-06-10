@@ -13,12 +13,14 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     Derive: vi.fn(),
     derive: vi.fn(),
     gtFallback: vi.fn(),
+    LocaleSelector: vi.fn(),
     mFallback: vi.fn(),
     msg: vi.fn(),
     Num: vi.fn(),
     Plural: vi.fn(),
     RelativeTime: vi.fn(),
     RscT: vi.fn(),
+    RegionSelector: vi.fn(),
     Var: vi.fn(),
   },
   mockGetRequestConditions: vi.fn(),
@@ -29,6 +31,9 @@ vi.mock('../request/getRequestConditions', () => ({
 }));
 
 vi.mock('gt-react/context', () => mockComponents);
+vi.mock('gt-react/client', () => ({
+  RegionSelector: mockComponents.RegionSelector,
+}));
 
 describe('rsc component wrappers', () => {
   beforeEach(() => {
@@ -92,6 +97,8 @@ describe('rsc component wrappers', () => {
     expect(module.RelativeTime).toBeTypeOf('function');
     expect(module.Branch).toBeTypeOf('function');
     expect(module.Plural).toBeTypeOf('function');
+    expect(module.LocaleSelector).toBe(mockComponents.LocaleSelector);
+    expect(module.RegionSelector).toBe(mockComponents.RegionSelector);
     expect(module.Derive).toBe(mockComponents.Derive);
     expect(module.msg).toBe(mockComponents.msg);
     expect(module.decodeMsg).toBe(mockComponents.decodeMsg);
