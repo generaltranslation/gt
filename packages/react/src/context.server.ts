@@ -1,12 +1,7 @@
-'use client';
-
 // This entrypoint is the SSR/context-capable runtime: hooks, providers, and
-// interactive components. In React Server Component vocabulary that is a
-// client module, so the directive marks the whole entrypoint as a
-// server-to-client boundary. RSC framework integrations should prefer
-// gt-react/context-rsc for hook-free rendering primitives and
+// interactive components. It is not RSC-safe. RSC framework integrations should
+// prefer gt-react/context-rsc for hook-free rendering primitives and
 // gt-react/context-client-boundary for client components.
-// In non-RSC environments the directive is inert.
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { useLocaleSelector } from './components/useLocaleSelector';
