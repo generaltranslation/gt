@@ -17,9 +17,8 @@ type TProps = {
  * Build-time translation component that renders its children in the user's given locale.
  */
 export async function T(props: TProps): Promise<ReactNode> {
-  const { _locale: locale, _enableI18n: enableI18n } =
-    await getRequestConditions();
-  return RscT({ ...props, locale, enableI18n });
+  const conditions = await getRequestConditions();
+  return RscT({ ...props, ...conditions });
 }
 
 /** @internal _gtt - The GT transformation for the component. */
