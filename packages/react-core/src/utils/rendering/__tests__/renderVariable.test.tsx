@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   renderDefaultChildren,
   renderTranslatedChildren,
+  renderVariable,
 } from '../renderPipeline';
-import { renderVariable } from '../renderVariable';
 import type { TaggedElement } from '../../types';
 
 function createNumberVariable(value: number): TaggedElement {

@@ -41,13 +41,13 @@ export { default as getPluralBranch } from './utils/plurals/getPluralBranch';
 export { prepareT } from './utils/translation/prepareT.shared';
 export { createRenderVariable } from './utils/rendering/createRenderVariable';
 export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
-export { renderVariable } from './utils/rendering/renderVariable.rsc';
 // Pre-instantiated RSC render pipeline: bound to the RSC renderVariable, so
 // consumers never thread a variable renderer through rendering calls.
 export {
   renderDefaultChildren,
   renderPreparedT,
   renderTranslatedChildren,
+  renderVariable,
 } from './utils/rendering/renderPipeline.rsc';
 
 // ===== Internal ===== //
