@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const { mockContextT, mockGetRequestConditions } = vi.hoisted(() => ({
-  mockContextT: vi.fn(),
+const { mockGetRequestConditions, mockRscT } = vi.hoisted(() => ({
   mockGetRequestConditions: vi.fn(),
+  mockRscT: vi.fn(),
 }));
 
 vi.mock('../../../request/getRequestConditions', () => ({
@@ -10,7 +10,7 @@ vi.mock('../../../request/getRequestConditions', () => ({
 }));
 
 vi.mock('gt-react/context', () => ({
-  T: mockContextT,
+  T: mockRscT,
 }));
 
 describe('buildtime T', () => {
@@ -19,7 +19,7 @@ describe('buildtime T', () => {
       _locale: 'fr',
       _enableI18n: false,
     });
-    mockContextT.mockResolvedValue('Bonjour');
+    mockRscT.mockResolvedValue('Bonjour');
 
     const { T } = await import('../T');
     await expect(T({ children: 'Hello', id: 'greeting' })).resolves.toBe(
@@ -27,7 +27,7 @@ describe('buildtime T', () => {
     );
 
     expect(mockGetRequestConditions).toHaveBeenCalled();
-    expect(mockContextT).toHaveBeenCalledWith({
+    expect(mockRscT).toHaveBeenCalledWith({
       children: 'Hello',
       id: 'greeting',
       locale: 'fr',
