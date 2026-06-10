@@ -6,9 +6,21 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     Branch: vi.fn(),
     Currency: vi.fn(),
     DateTime: vi.fn(),
+    decodeMsg: vi.fn(),
+    decodeOptions: vi.fn(),
+    decodeVars: vi.fn(),
+    declareVar: vi.fn(),
+    Derive: vi.fn(),
+    derive: vi.fn(),
+    gtFallback: vi.fn(),
+    LocaleSelector: vi.fn(),
+    mFallback: vi.fn(),
+    msg: vi.fn(),
     Num: vi.fn(),
     Plural: vi.fn(),
     RelativeTime: vi.fn(),
+    RscT: vi.fn(),
+    RegionSelector: vi.fn(),
     Var: vi.fn(),
   },
   mockGetRequestConditions: vi.fn(),
@@ -19,6 +31,9 @@ vi.mock('../request/getRequestConditions', () => ({
 }));
 
 vi.mock('gt-react/context', () => mockComponents);
+vi.mock('gt-react/client', () => ({
+  RegionSelector: mockComponents.RegionSelector,
+}));
 
 describe('rsc component wrappers', () => {
   beforeEach(() => {
@@ -69,4 +84,39 @@ describe('rsc component wrappers', () => {
       });
     }
   );
+
+  it('exports the package root RSC surface', async () => {
+    const module = await import('../index.rsc');
+
+    expect(module.GTProvider).toBeTypeOf('function');
+    expect(module.T).toBeTypeOf('function');
+    expect(module.Var).toBeTypeOf('function');
+    expect(module.Num).toBeTypeOf('function');
+    expect(module.Currency).toBeTypeOf('function');
+    expect(module.DateTime).toBeTypeOf('function');
+    expect(module.RelativeTime).toBeTypeOf('function');
+    expect(module.Branch).toBeTypeOf('function');
+    expect(module.Plural).toBeTypeOf('function');
+    expect(module.LocaleSelector).toBe(mockComponents.LocaleSelector);
+    expect(module.RegionSelector).toBe(mockComponents.RegionSelector);
+    expect(module.Derive).toBe(mockComponents.Derive);
+    expect(module.msg).toBe(mockComponents.msg);
+    expect(module.decodeMsg).toBe(mockComponents.decodeMsg);
+    expect(module.decodeOptions).toBe(mockComponents.decodeOptions);
+    expect(module.declareVar).toBe(mockComponents.declareVar);
+    expect(module.decodeVars).toBe(mockComponents.decodeVars);
+    expect(module.derive).toBe(mockComponents.derive);
+    expect(module.mFallback).toBe(mockComponents.mFallback);
+    expect(module.gtFallback).toBe(mockComponents.gtFallback);
+    expect(module.useGT).toBeTypeOf('function');
+    expect(module.useTranslations).toBeTypeOf('function');
+    expect(module.useMessages).toBeTypeOf('function');
+    expect(module.useLocale).toBeTypeOf('function');
+    expect(module.useLocaleDirection).toBeTypeOf('function');
+    expect(module.useGTClass).toBeTypeOf('function');
+    expect(module.useLocaleProperties).toBeTypeOf('function');
+    expect(module.useLocales).toBeTypeOf('function');
+    expect(module.useDefaultLocale).toBeTypeOf('function');
+    expect(module.useVersionId).toBeTypeOf('function');
+  });
 });
