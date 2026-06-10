@@ -15,7 +15,7 @@ export {
 
 // ===== Components ===== //
 export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
-export { LocaleSelector } from './components/LocaleSelector.client';
+export { LocaleSelector } from './components/LocaleSelector';
 
 export {
   // ===== Components ===== //
