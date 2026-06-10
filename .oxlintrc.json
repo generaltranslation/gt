@@ -86,8 +86,7 @@
         "packages/react-core/src/context-rsc.ts",
         "packages/react-core/src/**/*.rsc.{ts,tsx}",
         "packages/react-core/src/**/*.shared.{ts,tsx}",
-        "packages/react/src/context-rsc.ts",
-        "packages/react/src/context.rsc.tsx"
+        "packages/react/src/context-rsc.ts"
       ],
       "rules": {
         "no-restricted-imports": [

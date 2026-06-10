@@ -18,7 +18,7 @@ const repoRoot = resolve(packageRoot, '../..');
 const entrypoints = [
   'packages/react-core/src/context-rsc.ts',
   'packages/react/src/context-rsc.ts',
-  'packages/react/src/context.rsc.tsx',
+  'packages/react/src/context-client-boundary.ts',
   'packages/next/src/index.server.ts',
   'packages/next/src/server.ts',
   ...listSourceFiles('packages/next/src/server-dir'),
@@ -30,6 +30,8 @@ const entrypoints = [
 const workspaceSourceMap: Record<string, string> = {
   'gt-react': 'packages/react/src/index.ts',
   'gt-react/internal': 'packages/react/src/internal.ts',
+  'gt-react/context-client-boundary':
+    'packages/react/src/context-client-boundary.ts',
   'gt-react/context-rsc': 'packages/react/src/context-rsc.ts',
   '@generaltranslation/react-core': 'packages/react-core/src/index.ts',
   '@generaltranslation/react-core/internal':
