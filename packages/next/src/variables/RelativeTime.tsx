@@ -1,5 +1,5 @@
 import {
-  RelativeTime as CoreRelativeTime,
+  RelativeTime as RscRelativeTime,
   type RelativeTimeProps,
 } from 'gt-react/context';
 import { getRequestConditions } from '../request/getRequestConditions';
@@ -9,7 +9,7 @@ export async function RelativeTime(
   props: RelativeTimeProps
 ): Promise<ReactNode> {
   const conditions = await getRequestConditions();
-  return <CoreRelativeTime {...props} {...conditions} />;
+  return <RscRelativeTime {...props} {...conditions} />;
 }
 
 /** @internal _gtt - The GT transformation for the component. */
