@@ -27,7 +27,7 @@ describe('RscT', () => {
     getLookupTranslation.mockResolvedValue(lookupTranslation);
 
     await expect(
-      RscT({ children: 'Hello', locale: 'fr', enableI18n: true })
+      RscT({ children: 'Hello', _locale: 'fr', _enableI18n: true })
     ).resolves.toBe('Bonjour');
 
     expect(getLookupTranslation).toHaveBeenCalledWith('fr');
@@ -42,7 +42,7 @@ describe('RscT', () => {
 
   it('renders source without loading translations for the default locale', async () => {
     await expect(
-      RscT({ children: 'Hello', locale: 'en', enableI18n: true })
+      RscT({ children: 'Hello', _locale: 'en', _enableI18n: true })
     ).resolves.toBe('Hello');
 
     expect(getLookupTranslation).not.toHaveBeenCalled();
@@ -50,7 +50,7 @@ describe('RscT', () => {
 
   it('renders source without loading translations when i18n is disabled', async () => {
     await expect(
-      RscT({ children: 'Hello', locale: 'fr', enableI18n: false })
+      RscT({ children: 'Hello', _locale: 'fr', _enableI18n: false })
     ).resolves.toBe('Hello');
 
     expect(getLookupTranslation).not.toHaveBeenCalled();

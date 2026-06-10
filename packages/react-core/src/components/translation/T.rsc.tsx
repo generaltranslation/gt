@@ -4,7 +4,7 @@ import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
 import {
   prepareT,
-  type JsxTranslationOptions,
+  type ResolvedTProps,
 } from '../../utils/translation/prepareT.shared';
 
 // RSC implementation: request conditions are passed explicitly instead of
@@ -13,14 +13,12 @@ import {
 
 async function RscT({
   children: sourceChildren,
-  locale,
-  enableI18n,
+  _locale,
+  _enableI18n,
   ...params
-}: {
-  children: ReactNode;
-  locale: string;
-  enableI18n: boolean;
-} & JsxTranslationOptions): Promise<ReactNode> {
+}: ResolvedTProps): Promise<ReactNode> {
+  const locale = _locale;
+  const enableI18n = _enableI18n;
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate =
     enableI18n && getI18nConfig().requiresTranslation(locale);

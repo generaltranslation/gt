@@ -2,7 +2,7 @@ import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline';
-import type { JsxTranslationOptions } from '../../utils/translation/prepareT.shared';
+import type { TProps } from '../../utils/translation/prepareT.shared';
 import { usePrepareT } from '../../utils/translation/usePrepareT';
 
 // ===== Component ===== //
@@ -10,19 +10,11 @@ import { usePrepareT } from '../../utils/translation/usePrepareT';
 /**
  * External-store version of the `<T>` component.
  */
-function T(
-  props: {
-    children: ReactNode;
-  } & JsxTranslationOptions
-): ReactNode {
+function T(props: TProps): ReactNode {
   return useComputeT(props);
 }
 
-function GtInternalTranslateJsx(
-  props: {
-    children: ReactNode;
-  } & JsxTranslationOptions
-): ReactNode {
+function GtInternalTranslateJsx(props: TProps): ReactNode {
   return useComputeT(props);
 }
 
@@ -37,10 +29,10 @@ export { GtInternalTranslateJsx, T };
  */
 function useComputeT({
   children: sourceChildren,
+  _locale,
+  _enableI18n,
   ...params
-}: {
-  children: ReactNode;
-} & JsxTranslationOptions): ReactNode {
+}: TProps): ReactNode {
   // Prepare our source children for rendering
   const {
     defaultLocale,
@@ -53,6 +45,8 @@ function useComputeT({
   } = usePrepareT({
     sourceChildren,
     params,
+    _locale,
+    _enableI18n,
   });
 
   // Lookup translation in cache
