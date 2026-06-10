@@ -385,6 +385,11 @@ export type SourceObjectOptions = {
   // for example, helpful for handling urls with locale-specific paths
   transform?: TransformOptions;
 
+  // optional list of top-level properties to remove from generated
+  // non-default-locale entries (e.g. Mintlify's `default: true` flag on the
+  // default language entry, which must not be cloned into other locales)
+  omitProperties?: string[];
+
   // optional sorting behavior for array sourceObjects. When set to 'locale',
   // the array will be ordered to match the locales array provided to mergeJson
   // When set to 'localesAlphabetical', the default locale will be placed first

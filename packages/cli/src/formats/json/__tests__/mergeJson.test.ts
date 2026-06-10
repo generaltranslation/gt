@@ -286,6 +286,64 @@ describe('mergeJson', () => {
       expect(frenchItem.desc).toBe('Nouvelle Description');
     });
 
+    it('should omit configured properties from generated locale entries', () => {
+      // Mintlify language entries support `default: true` on the default
+      // language; cloning it into every locale would declare multiple defaults
+      const originalContent = JSON.stringify({
+        navigation: {
+          languages: [
+            {
+              language: 'en',
+              default: true,
+              hidden: false,
+              tabs: [{ tab: 'Guides' }],
+            },
+          ],
+        },
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/navigation/languages': {
+              '/0': { '/tabs/0/tab': 'Guías' },
+            },
+          }),
+          targetLocale: 'es',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'docs.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.navigation.languages': {
+                  type: 'array',
+                  include: ['$..tab'],
+                  key: '$.language',
+                  omitProperties: ['default'],
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en'
+      );
+
+      const parsed = JSON.parse(result[0]);
+      const en = parsed.navigation.languages.find(hasLanguage('en'));
+      expect(en.default).toBe(true);
+
+      const es = parsed.navigation.languages.find(hasLanguage('es'));
+      expect(es.default).toBeUndefined();
+      expect(es.hidden).toBe(false); // only listed properties are omitted
+      expect(es.tabs[0].tab).toBe('Guías');
+    });
+
     it('should overwrite existing target locale item when available', () => {
       const originalContent = JSON.stringify({
         items: [

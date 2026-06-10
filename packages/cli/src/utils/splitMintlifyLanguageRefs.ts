@@ -224,6 +224,7 @@ function processSplitEntries(
         const defaultEntry = entries[defaultIndex];
         for (const ref of internalRefs) {
           setAtPointer(defaultEntry, ref.relativePointer, {
+            ...ref.siblings,
             $ref: ref.refPath,
           });
         }
@@ -257,9 +258,14 @@ function processSplitEntries(
           const relToBaseDir = path.relative(entryBaseDir, originalAbsPath);
           const localeRelPath = path.join(keyValue, relToBaseDir);
           const outputPath = path.resolve(entryBaseDir, localeRelPath);
-          writeJsonFile(outputPath, subtree);
 
-          setAtPointer(entry, ref.relativePointer, { $ref: ref.refPath });
+          const { siblings, content } = extractRefSiblings(subtree, ref);
+          writeJsonFile(outputPath, content);
+
+          setAtPointer(entry, ref.relativePointer, {
+            ...siblings,
+            $ref: ref.refPath,
+          });
         }
       }
 
@@ -303,7 +309,10 @@ function processSplitEntries(
   // When the default entry was itself a $ref, restore it to that single $ref;
   // its source file is the untouched English source already on disk.
   if (defaultEntryRef) {
-    entries[defaultIndex] = { $ref: defaultEntryRef.refPath };
+    entries[defaultIndex] = {
+      ...defaultEntryRef.siblings,
+      $ref: defaultEntryRef.refPath,
+    };
   }
 
   logger.info(`Split keyed entries into ref files`);
@@ -376,9 +385,61 @@ function restoreTopLevelRefs(
       continue;
     }
 
-    writeJsonFile(entry.sourceFile, subtree);
-    setAtPointer(fileJson, pointer, { $ref: entry.refPath });
+    const { siblings, content } = extractRefSiblings(subtree, entry);
+    writeJsonFile(entry.sourceFile, content);
+    setAtPointer(fileJson, pointer, { ...siblings, $ref: entry.refPath });
   }
+}
+
+/**
+ * Mintlify merges keys placed next to a `$ref` on top of the referenced file's
+ * content, so ref resolution folds them into the inlined subtree. When
+ * restoring the `$ref`, lift those keys back out: they stay next to the `$ref`
+ * (with their possibly translated values) and are dropped from the content
+ * written to the ref file — unless the referenced file also defined the key,
+ * in which case it stays in both, preserving the source topology and
+ * Mintlify's sibling-precedence semantics.
+ */
+function extractRefSiblings(
+  subtree: unknown,
+  ref: {
+    siblings?: Record<string, unknown>;
+    originalContent?: unknown;
+    refPath?: string;
+  }
+): { siblings: Record<string, unknown>; content: unknown } {
+  const originalSiblings = ref.siblings ?? {};
+  const siblingKeys = Object.keys(originalSiblings);
+  if (siblingKeys.length === 0) {
+    return { siblings: {}, content: subtree };
+  }
+  if (!isJsonContainer(subtree) || Array.isArray(subtree)) {
+    // Non-object content cannot carry merged siblings; restore the originals
+    return { siblings: { ...originalSiblings }, content: subtree };
+  }
+  const content = { ...subtree };
+  const siblings: Record<string, unknown> = {};
+  const original = ref.originalContent;
+  const originalContentHasKey = (key: string) =>
+    isJsonContainer(original) && !Array.isArray(original) && key in original;
+  for (const key of siblingKeys) {
+    if (key in content) {
+      siblings[key] = content[key];
+      if (!originalContentHasKey(key)) {
+        delete content[key];
+      }
+    } else {
+      // Object resolutions always merge siblings into the subtree, so this
+      // only fires if that invariant breaks upstream. Restoring the source
+      // value keeps the output schema-valid, but it skips translation — warn
+      // so the regression is visible.
+      logger.warn(
+        `Sibling key "${key}" missing from translated content for $ref ${ref.refPath ?? '(unknown)'}; restoring source value`
+      );
+      siblings[key] = originalSiblings[key];
+    }
+  }
+  return { siblings, content };
 }
 
 /**
@@ -388,11 +449,19 @@ function restoreTopLevelRefs(
 function collectInternalRefs(
   refMap: RefMap,
   entryPointerPrefix: string
-): { relativePointer: string; refPath: string; resolvedDir: string }[] {
+): {
+  relativePointer: string;
+  refPath: string;
+  resolvedDir: string;
+  siblings?: Record<string, unknown>;
+  originalContent?: unknown;
+}[] {
   const refs: {
     relativePointer: string;
     refPath: string;
     resolvedDir: string;
+    siblings?: Record<string, unknown>;
+    originalContent?: unknown;
   }[] = [];
 
   for (const [pointer, entry] of refMap.entries()) {
@@ -401,6 +470,8 @@ function collectInternalRefs(
       relativePointer: pointer.slice(entryPointerPrefix.length),
       refPath: entry.refPath,
       resolvedDir: entry.containingDir,
+      siblings: entry.siblings,
+      originalContent: entry.originalContent,
     });
   }
 
