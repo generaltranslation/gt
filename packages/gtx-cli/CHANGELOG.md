@@ -1,5 +1,12 @@
 # gtx-cli
 
+## 2.14.49
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.49
+
 ## 2.14.48
 
 ### Patch Changes
