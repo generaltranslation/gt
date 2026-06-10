@@ -1,12 +1,11 @@
 import { useMemo } from 'react';
 import { useEnableI18n, useLocale } from './condition-store';
 import { getFormatLocales } from './utils/getFormatLocales';
-import { getShouldTranslate } from './utils/getShouldTranslate';
 import { getI18nConfig } from 'gt-i18n/internal';
 
 const EMPTY_LOCALES_PROP: string[] = [];
 
-export { getFormatLocales, getShouldTranslate };
+export { getFormatLocales };
 
 export function useFormatLocales(
   localesProp: string[] = EMPTY_LOCALES_PROP
