@@ -1,5 +1,8 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownUnbundleConfig } from '../../tsdown.preset.mts';
+import {
+  createTsdownUnbundleConfig,
+  createUseClientBoundaryPlugin,
+} from '../../tsdown.preset.mts';
 
 export default defineConfig(
   createTsdownUnbundleConfig({
@@ -8,5 +11,11 @@ export default defineConfig(
     deps: {
       neverBundle: [/^server-only$/],
     },
+    plugins: [
+      createUseClientBoundaryPlugin({
+        name: 'gt-next:use-client-boundaries',
+        outputExtension: '.js',
+      }),
+    ],
   })
 );
