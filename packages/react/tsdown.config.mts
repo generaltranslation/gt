@@ -31,6 +31,7 @@ const entries = [
   'src/index.ts',
   'src/internal.ts',
   'src/client.ts',
+  'src/context-client-boundary.ts',
   'src/context.client.ts',
   'src/context.server.ts',
   'src/context.types.ts',
