@@ -1,33 +1,9 @@
-// This entrypoint is intentionally separate from context.
-// React Server Component consumers must not transitively import context or hook
-// modules that call createContext/useContext. Keep exports explicit and narrow:
-// only modules whose import graphs are free of context and hooks may be
-// re-exported here. Never re-export the broad context barrel.
+// Compatibility alias for the RSC-safe context surface.
+// Prefer the narrower pure/components-rsc entrypoints for new internal imports
+// when the full context-rsc facade is not needed.
 
 // ===== Components ===== //
-export { Branch, GtInternalBranch } from './components/branches/Branch';
-export { Derive, GtInternalDerive } from './components/derivation/Derive';
-export { GtInternalVar, Var } from './components/variables/Var';
-export {
-  RscGtInternalPlural as GtInternalPlural,
-  RscPlural as Plural,
-} from './components/branches/Plural.rsc';
-export {
-  RscCurrency as Currency,
-  RscGtInternalCurrency as GtInternalCurrency,
-} from './components/variables/Currency.rsc';
-export {
-  RscDateTime as DateTime,
-  RscGtInternalDateTime as GtInternalDateTime,
-} from './components/variables/DateTime.rsc';
-export {
-  RscGtInternalNum as GtInternalNum,
-  RscNum as Num,
-} from './components/variables/Num.rsc';
-export {
-  RscGtInternalRelativeTime as GtInternalRelativeTime,
-  RscRelativeTime as RelativeTime,
-} from './components/variables/RelativeTime.rsc';
+export * from './components-rsc';
 export { RscT, RscT as T } from './components/translation/T.rsc';
 
 // ===== Functions ===== //
@@ -35,9 +11,8 @@ export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnap
 export { t } from './functions/translation/t';
 
 // ===== Helpers ===== //
-export { getFormatLocales } from './hooks/utils/getFormatLocales';
+export { getFormatLocales, getPluralBranch } from './pure';
 export { getShouldTranslate } from './hooks/utils/getShouldTranslate';
-export { default as getPluralBranch } from './utils/plurals/getPluralBranch';
 export { prepareT } from './utils/translation/prepareT.shared';
 export { createRenderVariable } from './utils/rendering/createRenderVariable';
 export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
@@ -83,4 +58,4 @@ export type {
   RelativeTimeProps,
   ResolvedRelativeTimeProps,
 } from './components/variables/RelativeTime.shared';
-export type { RelativeTimeFormatOptions, RenderVariable } from './utils/types';
+export type { RelativeTimeFormatOptions, RenderVariable } from './pure';
