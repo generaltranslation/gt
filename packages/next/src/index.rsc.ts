@@ -34,7 +34,7 @@ import {
   useGT,
 } from './server-dir/buildtime/getTranslationFunction';
 import type { LocaleProperties } from '@generaltranslation/format/types';
-export { LocaleSelector, RegionSelector } from './index.client';
+export { LocaleSelector, RegionSelector } from './components/ClientSelectors';
 
 export function useGTClass() {
   return getI18NConfig().getGTClass();
