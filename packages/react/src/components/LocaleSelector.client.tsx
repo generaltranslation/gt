@@ -1,6 +1,4 @@
-'use client';
-
-import React from 'react';
+import type React from 'react';
 import { InternalLocaleSelector } from '@generaltranslation/react-core/context';
 import { CustomMapping } from 'generaltranslation/types';
 import { useLocaleSelector } from './useLocaleSelector';

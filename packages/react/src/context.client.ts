@@ -10,7 +10,7 @@ export {
 } from './cookie-names';
 
 // ===== Components ===== //
-export { LocaleSelector } from './components/LocaleSelector';
+export { LocaleSelector } from './components/LocaleSelector.client';
 export { BrowserGTProvider as GTProvider } from './provider/BrowserGTProvider';
 
 export {
