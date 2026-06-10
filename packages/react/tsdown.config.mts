@@ -1,5 +1,8 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownConfig } from '../../tsdown.preset.mts';
+import {
+  createTsdownConfig,
+  createUseClientBoundaryPlugin,
+} from '../../tsdown.preset.mts';
 
 const deps = {
   neverBundle: [
@@ -51,6 +54,13 @@ export default defineConfig(
         define: {
           'import.meta.env': '{}',
         },
+        plugins: [
+          createUseClientBoundaryPlugin({
+            emittedSourceFiles: entries,
+            name: 'gt-react:use-client-boundaries',
+            outputExtension: '.cjs',
+          }),
+        ],
       },
       {
         ...esmConfig,
@@ -58,6 +68,13 @@ export default defineConfig(
           onlyBundle: false,
           ...entryDeps,
         },
+        plugins: [
+          createUseClientBoundaryPlugin({
+            emittedSourceFiles: entries,
+            name: 'gt-react:use-client-boundaries',
+            outputExtension: '.mjs',
+          }),
+        ],
       },
     ];
   })
