@@ -24,7 +24,6 @@ const runtimeEntryNames = [
   'components',
   'components-rsc',
   'context',
-  'context-rsc',
   'errors',
   'hooks',
   'index',
@@ -84,15 +83,9 @@ function isAllowedExternalizedSubpath(
   specifier: string
 ): boolean {
   return (
-    [
-      'components.',
-      'components-rsc.',
-      'context.',
-      'context-rsc.',
-      'hooks.',
-      'pure.',
-    ].some((prefix) => file.startsWith(prefix)) &&
-    specifier.startsWith('gt-i18n/')
+    ['components.', 'components-rsc.', 'context.', 'hooks.', 'pure.'].some(
+      (prefix) => file.startsWith(prefix)
+    ) && specifier.startsWith('gt-i18n/')
   );
 }
 

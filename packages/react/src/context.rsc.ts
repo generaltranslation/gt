@@ -1,10 +1,6 @@
-// React Server Component-safe context surface.
-//
-// This entrypoint may import client components only through explicit
-// 'use client' boundaries. Do not re-export from context.client, context.server,
-// or @generaltranslation/react-core/context here.
+// React Server Component context surface.
 
-export { GTProvider, LocaleSelector } from 'gt-react/client-boundary';
+export { GTProvider, LocaleSelector } from './context.server';
 
 export {
   Branch,
@@ -12,6 +8,8 @@ export {
   GtInternalBranch,
   GtInternalDerive,
   GtInternalVar,
+  RscT,
+  T,
   Var,
 } from '@generaltranslation/react-core/components-rsc';
 

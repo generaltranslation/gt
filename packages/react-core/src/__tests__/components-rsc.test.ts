@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-describe('gt-react/context react-server surface', () => {
-  it('exports the RSC context surface', async () => {
-    const mod = await import('../context.rsc');
+describe('@generaltranslation/react-core/components-rsc', () => {
+  it('exports the placeholder RSC component surface', async () => {
+    const mod = await import('../components-rsc');
     expect(mod.Branch).toBeTypeOf('function');
     expect(mod.GtInternalBranch).toBeTypeOf('function');
     expect(mod.Derive).toBeTypeOf('function');
@@ -12,7 +12,5 @@ describe('gt-react/context react-server surface', () => {
     expect(mod.Var).toBeTypeOf('function');
     expect(mod.GtInternalVar).toBeTypeOf('function');
     expect(mod.getPluralBranch).toBeTypeOf('function');
-    expect(mod.GTProvider).toBeTypeOf('function');
-    expect(mod.LocaleSelector).toBeTypeOf('function');
   });
 });

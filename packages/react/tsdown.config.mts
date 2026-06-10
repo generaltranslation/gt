@@ -23,7 +23,6 @@ const contextDeps = {
     /^@generaltranslation\/react-core\//,
     /^gt-i18n$/,
     /^gt-i18n\//,
-    /^gt-react\/client-boundary$/,
   ],
   alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };
@@ -32,23 +31,17 @@ const entries = [
   'src/index.ts',
   'src/internal.ts',
   'src/client.ts',
-  'src/client-boundary.ts',
-  'src/context-client-boundary.ts',
   'src/context.rsc.ts',
   'src/context.client.ts',
   'src/context.server.ts',
   'src/context.types.ts',
-  'src/context-rsc.ts',
   'src/browser.ts',
   'src/macros.ts',
 ];
 
 export default defineConfig(
   entries.flatMap((entry, index) => {
-    const entryDeps =
-      entry.startsWith('src/context') || entry === 'src/client-boundary.ts'
-        ? contextDeps
-        : deps;
+    const entryDeps = entry.startsWith('src/context') ? contextDeps : deps;
     const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
     return [
