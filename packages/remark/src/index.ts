@@ -1,4 +1,8 @@
 export { default as escapeHtmlInTextNodes } from './plugins/escapeHtmlInTextNodes.js';
+export {
+  default as escapeMarkdownInMdxJsxTextNodes,
+  escapeMarkdownInMdxJsxText,
+} from './plugins/escapeMarkdownInMdxJsxTextNodes.js';
 export { default as remarkGfmCustom } from './plugins/remarkGfmCustom.js';
 export { default as normalizeCJKCharacters } from './plugins/normalizeCJKCharacters.js';
 

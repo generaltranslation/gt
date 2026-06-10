@@ -36,4 +36,19 @@ const file = await unified()
   .process('Hello & <world>');
 ```
 
+For translated MDX that may contain literal markdown-control characters inside
+JSX text nodes, use the named MDX JSX text plugin before stringifying:
+
+```ts
+import { escapeMarkdownInMdxJsxTextNodes } from 'gt-remark';
+import remarkMdx from 'remark-mdx';
+
+const file = await unified()
+  .use(remarkParse)
+  .use(remarkMdx)
+  .use(escapeMarkdownInMdxJsxTextNodes)
+  .use(remarkStringify)
+  .process('<p>*literal translated text*</p>');
+```
+
 See the [full documentation](https://generaltranslation.com/docs) for guides and API reference.
