@@ -7,7 +7,7 @@ import type { RenderVariable, TaggedChildren } from '../types';
 // Shared rendering logic. The variable renderer is injected through a factory
 // so the RSC code path never statically imports the hook-based variable
 // components. This module must stay free of hook/context imports so it can be
-// reached from the context-rsc entrypoint.
+// reached from the components-rsc entrypoint.
 
 type RenderPreparedTParams = {
   taggedSourceChildren: TaggedChildren;
