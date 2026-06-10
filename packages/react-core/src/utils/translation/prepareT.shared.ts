@@ -26,6 +26,17 @@ type PreparedT = {
   };
 };
 
+type TProps = {
+  children: ReactNode;
+  _locale?: string;
+  _enableI18n?: boolean;
+} & JsxTranslationOptions;
+
+type ResolvedTProps = TProps & {
+  _locale: string;
+  _enableI18n: boolean;
+};
+
 function prepareT({
   sourceChildren,
   params,
@@ -89,4 +100,4 @@ function normalizeParameters(
 }
 
 export { prepareT };
-export type { JsxTranslationOptions, PreparedT };
+export type { JsxTranslationOptions, PreparedT, ResolvedTProps, TProps };
