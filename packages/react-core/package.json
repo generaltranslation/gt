@@ -65,11 +65,6 @@
       "require": "./dist/context.cjs.min.cjs",
       "import": "./dist/context.esm.min.mjs"
     },
-    "./context-rsc": {
-      "types": "./dist/context-rsc.d.ts",
-      "require": "./dist/context-rsc.cjs.min.cjs",
-      "import": "./dist/context-rsc.esm.min.mjs"
-    },
     "./pure": {
       "types": "./dist/pure.d.ts",
       "require": "./dist/pure.cjs.min.cjs",
@@ -110,9 +105,6 @@
       "context": [
         "./dist/context.d.ts"
       ],
-      "context-rsc": [
-        "./dist/context-rsc.d.ts"
-      ],
       "pure": [
         "./dist/pure.d.ts"
       ],
@@ -138,9 +130,6 @@
       ],
       "@generaltranslation/react-core/context": [
         "./dist/context"
-      ],
-      "@generaltranslation/react-core/context-rsc": [
-        "./dist/context-rsc"
       ],
       "@generaltranslation/react-core/pure": [
         "./dist/pure"

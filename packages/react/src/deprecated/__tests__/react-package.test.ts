@@ -13,14 +13,8 @@ const runtimeArtifactNames = [
   'browser.mjs',
   'client.cjs',
   'client.mjs',
-  'client-boundary.cjs',
-  'client-boundary.mjs',
-  'context-client-boundary.cjs',
-  'context-client-boundary.mjs',
   'context.rsc.cjs',
   'context.rsc.mjs',
-  'context-rsc.cjs',
-  'context-rsc.mjs',
   'context.client.cjs',
   'context.client.mjs',
   'context.server.cjs',
@@ -65,7 +59,7 @@ function isAllowedExternalizedSubpath(
   specifier: string
 ): boolean {
   return (
-    (file.startsWith('client-boundary') || file.startsWith('context')) &&
+    file.startsWith('context') &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
       specifier.startsWith('gt-i18n/'))
   );
@@ -84,19 +78,14 @@ describe('gt-react package exports', () => {
           const assert = require('node:assert/strict');
           const react = require('gt-react');
           const client = require('gt-react/client');
-          const clientBoundary = require('gt-react/client-boundary');
           const context = require('gt-react/context');
-          const contextClientBoundary = require('gt-react/context-client-boundary');
           const internal = require('gt-react/internal');
 
           assert.equal(typeof react.GTProvider, 'function');
           assert.equal(typeof react.T, 'function');
           assert.equal(typeof client.ClientProvider, 'function');
-          assert.equal(typeof clientBoundary.GTProvider, 'function');
           assert.equal(typeof context.GTProvider, 'function');
           assert.equal(typeof context.T, 'function');
-          assert.equal(typeof contextClientBoundary.GTProvider, 'function');
-          assert.equal(typeof contextClientBoundary.LocaleSelector, 'function');
           assert.equal(typeof internal.renderDefaultChildren, 'function');
         `,
     ]);
@@ -110,19 +99,14 @@ describe('gt-react package exports', () => {
           import assert from 'node:assert/strict';
           import { GTProvider, T } from 'gt-react';
           import { ClientProvider } from 'gt-react/client';
-          import { GTProvider as ClientBoundaryProvider } from 'gt-react/client-boundary';
           import { GTProvider as ContextProvider, T as ContextT } from 'gt-react/context';
-          import { GTProvider as BoundaryProvider, LocaleSelector } from 'gt-react/context-client-boundary';
           import { renderDefaultChildren } from 'gt-react/internal';
 
           assert.equal(typeof GTProvider, 'function');
           assert.equal(typeof T, 'function');
           assert.equal(typeof ClientProvider, 'function');
-          assert.equal(typeof ClientBoundaryProvider, 'function');
           assert.equal(typeof ContextProvider, 'function');
           assert.equal(typeof ContextT, 'function');
-          assert.equal(typeof BoundaryProvider, 'function');
-          assert.equal(typeof LocaleSelector, 'function');
           assert.equal(typeof renderDefaultChildren, 'function');
         `,
     ]);
@@ -151,14 +135,6 @@ describe('gt-react package exports', () => {
             require.resolve('gt-react/context').endsWith('/dist/context.rsc.cjs'),
             true
           );
-          assert.equal(
-            require.resolve('gt-react/client-boundary').endsWith('/dist/client-boundary.cjs'),
-            true
-          );
-          assert.equal(
-            require.resolve('gt-react/context-client-boundary').endsWith('/dist/context-client-boundary.cjs'),
-            true
-          );
         `,
     ]);
   });
@@ -167,10 +143,6 @@ describe('gt-react package exports', () => {
     for (const file of [
       'dist/client.cjs',
       'dist/client.mjs',
-      'dist/client-boundary.cjs',
-      'dist/client-boundary.mjs',
-      'dist/context-client-boundary.cjs',
-      'dist/context-client-boundary.mjs',
       'dist/context.client.cjs',
       'dist/context.client.mjs',
       'dist/context.server.cjs',
