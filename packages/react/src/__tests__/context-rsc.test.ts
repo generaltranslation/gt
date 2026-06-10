@@ -12,8 +12,8 @@ describe('gt-react/context react-server surface', () => {
     expect(mod.Num).toBeTypeOf('function');
     expect(mod.Plural).toBeTypeOf('function');
     expect(mod.RelativeTime).toBeTypeOf('function');
-    expect(mod.RscT).toBeTypeOf('function');
-    expect(mod.T).toBe(mod.RscT);
+    expect('RscT' in mod).toBe(false);
+    expect(mod.T).toBeTypeOf('function');
     expect(mod.Var).toBeTypeOf('function');
     expect(mod.GtInternalVar).toBeTypeOf('function');
     expect(mod.getFormatLocales).toBeTypeOf('function');

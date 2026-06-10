@@ -18,7 +18,7 @@ vi.mock('../request/getRequestConditions', () => ({
   getRequestConditions: mockGetRequestConditions,
 }));
 
-vi.mock('gt-react/context-rsc', () => mockComponents);
+vi.mock('gt-react/context', () => mockComponents);
 
 describe('rsc component wrappers', () => {
   beforeEach(() => {
@@ -50,7 +50,7 @@ describe('rsc component wrappers', () => {
     ],
     ['Var', () => import('../variables/Var'), mockComponents.Var],
   ])(
-    '%s passes request conditions to gt-react/context-rsc',
+    '%s passes request conditions to gt-react/context',
     async (componentName, loadComponent, coreComponent) => {
       const module = await loadComponent();
       const component = module[componentName];
