@@ -3,7 +3,7 @@ import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 
 // Pure compute logic shared by the hook-based and RSC implementations. This
 // module must stay free of hook/context imports so it can be reached from the
-// context-rsc entrypoint.
+// components-rsc entrypoint.
 
 type NumProps = {
   children: number | string | null | undefined;
