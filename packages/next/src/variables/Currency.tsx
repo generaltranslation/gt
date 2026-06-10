@@ -1,7 +1,4 @@
-import {
-  Currency as CoreCurrency,
-  type CurrencyProps,
-} from 'gt-react/context-rsc';
+import { Currency as CoreCurrency, type CurrencyProps } from 'gt-react/context';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
 

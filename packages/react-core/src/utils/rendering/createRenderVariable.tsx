@@ -10,7 +10,7 @@ import { ReactNode } from 'react';
 // logic is written once and the concrete components are injected, so the RSC
 // renderer never statically imports the hook-based variable components. This
 // module must stay free of hook/context imports so it can be reached from the
-// context-rsc entrypoint.
+// components-rsc entrypoint.
 
 type VariableComponents = {
   Currency: (props: ResolvedCurrencyProps) => ReactNode;

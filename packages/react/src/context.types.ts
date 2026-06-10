@@ -61,3 +61,20 @@ export {
   getReactI18nCache,
   setReactI18nCache,
 } from '@generaltranslation/react-core/context';
+
+export type {
+  CurrencyProps,
+  DateTimeProps,
+  JsxTranslationOptions,
+  NumProps,
+  PluralProps,
+  PreparedT,
+  RelativeTimeFormatOptions,
+  RelativeTimeProps,
+  RenderVariable,
+  ResolvedCurrencyProps,
+  ResolvedDateTimeProps,
+  ResolvedNumProps,
+  ResolvedPluralProps,
+  ResolvedRelativeTimeProps,
+} from '@generaltranslation/react-core/components-rsc';

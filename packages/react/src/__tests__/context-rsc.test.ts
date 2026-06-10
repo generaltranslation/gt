@@ -1,36 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-// If the context-rsc entrypoint (or anything it transitively imports) reaches
-// one of these modules, the mock factory throws and the dynamic import below
-// fails with that message.
-const forbid = vi.hoisted(() => (name: string) => () => {
-  throw new Error(`gt-react/context-rsc must not import ${name}`);
-});
-
-vi.mock('../context.server', forbid('the broad context.server barrel'));
-vi.mock('../context.client', forbid('context.client'));
-vi.mock('gt-react/client-boundary', () => ({
-  GTProvider: () => null,
-  LocaleSelector: () => null,
-}));
-vi.mock(
-  '@generaltranslation/react-core/context',
-  forbid('@generaltranslation/react-core/context')
-);
-vi.mock('react', async (importOriginal) => {
-  const react = await importOriginal<typeof import('react')>();
-  return {
-    ...react,
-    createContext: () => {
-      throw new Error('gt-react/context-rsc must not call createContext');
-    },
-  };
-});
-
-describe('gt-react/context-rsc', () => {
-  it('imports without reaching broad context barrels', async () => {
-    const mod = await import('../context-rsc');
-    const canonical = await import('../context.rsc');
+describe('gt-react/context react-server surface', () => {
+  it('exports the RSC context surface', async () => {
+    const mod = await import('../context.rsc');
     expect(mod.Branch).toBeTypeOf('function');
     expect(mod.GtInternalBranch).toBeTypeOf('function');
     expect(mod.Currency).toBeTypeOf('function');
@@ -40,8 +12,8 @@ describe('gt-react/context-rsc', () => {
     expect(mod.Num).toBeTypeOf('function');
     expect(mod.Plural).toBeTypeOf('function');
     expect(mod.RelativeTime).toBeTypeOf('function');
+    expect('RscT' in mod).toBe(false);
     expect(mod.T).toBeTypeOf('function');
-    expect(mod.RscT).toBeTypeOf('function');
     expect(mod.Var).toBeTypeOf('function');
     expect(mod.GtInternalVar).toBeTypeOf('function');
     expect(mod.getFormatLocales).toBeTypeOf('function');
@@ -49,6 +21,5 @@ describe('gt-react/context-rsc', () => {
     expect(mod.renderVariable).toBeTypeOf('function');
     expect(mod.GTProvider).toBeTypeOf('function');
     expect(mod.LocaleSelector).toBeTypeOf('function');
-    expect(canonical.Branch).toBe(mod.Branch);
   });
 });

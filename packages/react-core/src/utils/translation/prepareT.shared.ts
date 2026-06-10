@@ -8,7 +8,7 @@ import type { TaggedChildren } from '../types';
 
 // Pure preparation logic shared by the hook wrapper (usePrepareT) and the RSC
 // code path. This module must stay free of hook/context imports so it can be
-// reached from the context-rsc entrypoint.
+// reached from the components-rsc entrypoint.
 
 type StripDollarPrefix<T> = {
   [K in keyof T as K extends `$${infer Rest}` ? Rest : K]: T[K];
