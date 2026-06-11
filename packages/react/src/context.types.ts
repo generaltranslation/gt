@@ -55,9 +55,15 @@ export {
   mFallback,
   gtFallback,
   getTranslationsSnapshot,
+  createRenderPipeline,
   t,
   // ===== Setup ===== //
   internalInitializeGTSRA as initializeGT,
   getReactI18nCache,
   setReactI18nCache,
+} from '@generaltranslation/react-core/context';
+
+export type {
+  RenderPipeline,
+  RenderPreparedT,
 } from '@generaltranslation/react-core/context';

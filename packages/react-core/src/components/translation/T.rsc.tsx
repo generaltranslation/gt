@@ -15,6 +15,7 @@ async function RscT({
   children: sourceChildren,
   _locale,
   _enableI18n,
+  _renderPreparedT = renderPreparedT,
   ...params
 }: ResolvedTProps): Promise<ReactNode> {
   const locale = _locale;
@@ -29,7 +30,7 @@ async function RscT({
   });
 
   if (!shouldTranslate) {
-    return renderPreparedT({
+    return _renderPreparedT({
       ...prepared,
       targetJsxChildren: undefined,
       locale,
@@ -46,7 +47,7 @@ async function RscT({
     prepared.targetOptions
   );
 
-  return renderPreparedT({
+  return _renderPreparedT({
     ...prepared,
     targetJsxChildren,
     locale,

@@ -4,6 +4,7 @@ import writeChildrenAsObjects from '../internal/writeChildrenAsObjects';
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { ReactNode } from 'react';
+import type { RenderPreparedTParams } from '../rendering/renderPreparedT.shared';
 import type { TaggedChildren } from '../types';
 
 // Pure preparation logic shared by the hook wrapper (usePrepareT) and the RSC
@@ -26,10 +27,13 @@ type PreparedT = {
   };
 };
 
+type RenderPreparedT = (params: RenderPreparedTParams) => ReactNode;
+
 type TProps = {
   children: ReactNode;
   _locale?: string;
   _enableI18n?: boolean;
+  _renderPreparedT?: RenderPreparedT;
 } & JsxTranslationOptions;
 
 type ResolvedTProps = TProps & {
@@ -100,4 +104,10 @@ function normalizeParameters(
 }
 
 export { prepareT };
-export type { JsxTranslationOptions, PreparedT, ResolvedTProps, TProps };
+export type {
+  JsxTranslationOptions,
+  PreparedT,
+  RenderPreparedT,
+  ResolvedTProps,
+  TProps,
+};

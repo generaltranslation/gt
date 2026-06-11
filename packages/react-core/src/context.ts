@@ -21,6 +21,9 @@ export { useGT } from './hooks/useGT';
 export { useMessages } from './hooks/useMessages';
 export { useTranslations } from './hooks/useTranslations';
 export { getFormatLocales, useFormatLocales } from './hooks/utils';
+export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
+export type { RenderPipeline } from './utils/rendering/createRenderPipeline';
+export type { RenderPreparedT } from './utils/translation/prepareT.shared';
 
 // ===== Functions ===== //
 export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
