@@ -55,6 +55,7 @@ export {
   mFallback,
   gtFallback,
   getTranslationsSnapshot,
+  createRenderPipeline,
   t,
   // ===== Setup ===== //
   internalInitializeGTSRA as initializeGT,
@@ -78,3 +79,8 @@ export type {
   ResolvedPluralProps,
   ResolvedRelativeTimeProps,
 } from '@generaltranslation/react-core/components-rsc';
+
+export type {
+  RenderPipeline,
+  RenderPreparedT,
+} from '@generaltranslation/react-core/context';

@@ -12,27 +12,29 @@ import { ReactNode } from 'react';
 // module must stay free of hook/context imports so it can be reached from the
 // components-rsc entrypoint.
 
+type RenderableNode = ReactNode | Promise<ReactNode>;
+
 type VariableComponents = {
-  Currency: (props: ResolvedCurrencyProps) => ReactNode;
-  GtInternalCurrency: (props: ResolvedCurrencyProps) => ReactNode;
-  DateTime: (props: ResolvedDateTimeProps) => ReactNode;
-  GtInternalDateTime: (props: ResolvedDateTimeProps) => ReactNode;
-  Num: (props: ResolvedNumProps) => ReactNode;
-  GtInternalNum: (props: ResolvedNumProps) => ReactNode;
-  RelativeTime: (props: ResolvedRelativeTimeProps) => ReactNode;
-  GtInternalRelativeTime: (props: ResolvedRelativeTimeProps) => ReactNode;
+  Currency: (props: ResolvedCurrencyProps) => RenderableNode;
+  GtInternalCurrency: (props: ResolvedCurrencyProps) => RenderableNode;
+  DateTime: (props: ResolvedDateTimeProps) => RenderableNode;
+  GtInternalDateTime: (props: ResolvedDateTimeProps) => RenderableNode;
+  Num: (props: ResolvedNumProps) => RenderableNode;
+  GtInternalNum: (props: ResolvedNumProps) => RenderableNode;
+  RelativeTime: (props: ResolvedRelativeTimeProps) => RenderableNode;
+  GtInternalRelativeTime: (props: ResolvedRelativeTimeProps) => RenderableNode;
   Var: (props: {
     children: ReactNode;
     name?: string;
     _locale: string;
     _enableI18n: boolean;
-  }) => ReactNode;
+  }) => RenderableNode;
   GtInternalVar: (props: {
     children: ReactNode;
     name?: string;
     _locale: string;
     _enableI18n: boolean;
-  }) => ReactNode;
+  }) => RenderableNode;
 };
 
 function createRenderVariable({

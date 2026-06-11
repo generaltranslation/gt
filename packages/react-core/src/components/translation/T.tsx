@@ -31,6 +31,7 @@ function useComputeT({
   children: sourceChildren,
   _locale,
   _enableI18n,
+  _renderPreparedT = renderPreparedT,
   ...params
 }: TProps): ReactNode {
   // Prepare our source children for rendering
@@ -68,7 +69,7 @@ function useComputeT({
     return prev.current;
   }
 
-  const result = renderPreparedT({
+  const result = _renderPreparedT({
     taggedSourceChildren,
     targetJsxChildren,
     locale,
