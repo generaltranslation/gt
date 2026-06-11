@@ -294,6 +294,15 @@ function processSplitEntries(
 
     if (!isJsonContainer(entry) || Array.isArray(entry)) continue;
     const { [keyPropertyName]: _, ...contentWithoutKey } = entry;
+
+    // If the entry still carries a top-level $ref, it was never inlined this
+    // run (e.g. the merge step didn't process this file). There is no content
+    // to extract — writing would produce a self-referential stub that
+    // overwrites or shadows the real ref file. Leave the entry untouched.
+    if (typeof contentWithoutKey.$ref === 'string') {
+      continue;
+    }
+
     const entryFilePath = path.resolve(
       entryBaseDir,
       path.join(keyValue, navFileName)
