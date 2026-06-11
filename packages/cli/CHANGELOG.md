@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.50
+
+### Patch Changes
+
+- [#1586](https://github.com/generaltranslation/gt/pull/1586) [`81d0d09`](https://github.com/generaltranslation/gt/commit/81d0d09db3f0d9d8a2ce7fc45f76bf5dd34fa34a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Refetch composite content
+
 ## 2.14.49
 
 ### Patch Changes
