@@ -7,6 +7,9 @@ import { useMemo, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { useHandleMissingTranslations } from '../hooks/useHandleMissingTranslations';
 
+console.log('server GT id', (globalThis as any).__gt_id)
+
+
 /**
  * Consumes snapshot from server
  * Implementation for server-side only

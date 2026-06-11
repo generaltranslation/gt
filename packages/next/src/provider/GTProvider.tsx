@@ -4,7 +4,6 @@ import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { getLocale } from '../request/getLocale';
 import { getDictionary, getDictionaryEntry } from '../dictionary/getDictionary';
 import { createDictionarySubsetError } from '../errors/createErrors';
-import { GTProvider as ReactGTProvider } from 'gt-react/context';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import type { Hash, Locale } from 'gt-i18n/internal/types';
 import type {
@@ -13,6 +12,9 @@ import type {
   Translations as LegacyTranslations,
 } from 'gt-react/internal';
 import type { GTProviderProps } from '../utils/types';
+// Consume from next-pages entrypoint to hit the initializer
+import { GTProvider as ClientGTProvider } from '../index.server';
+
 
 function toTranslationSnapshot(
   translations: LegacyTranslations
@@ -85,13 +87,13 @@ export async function GTProvider({
   };
 
   return (
-    <ReactGTProvider
-      dictionaries={dictionariesSnapshot}
+    <ClientGTProvider
       enableI18n={translationRequired}
       locale={locale}
       translations={translationsSnapshot}
+      dictionaries={dictionariesSnapshot}
     >
       {children}
-    </ReactGTProvider>
+    </ClientGTProvider>
   );
 }

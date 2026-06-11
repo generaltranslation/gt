@@ -17,8 +17,8 @@ export {
 export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
 export { LocaleSelector } from './components/LocaleSelector';
 
+// ===== Components ===== //
 export {
-  // ===== Components ===== //
   Branch,
   Plural,
   Derive,
@@ -29,18 +29,27 @@ export {
   RelativeTime,
   Var,
   Num,
-  // ===== Hooks ===== //
+} from '@generaltranslation/react-core/components';
+
+// ===== Hooks ===== //
+export {
   useLocale,
   useCustomMapping,
   useDefaultLocale,
   useEnableI18n,
   useLocales,
-  getFormatLocales,
   useFormatLocales,
   useGT,
   useMessages,
   useTranslations,
-  // ===== Functions ===== //
+  useLocaleDirection,
+  useVersionId,
+  useGTClass,
+  useLocaleProperties,
+} from '@generaltranslation/react-core/hooks';
+
+// ===== Functions ===== //
+export {
   msg,
   decodeMsg,
   decodeOptions,
@@ -49,6 +58,10 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+  getFormatLocales,
+} from '@generaltranslation/react-core/pure';
+
+export {
   getTranslationsSnapshot,
   getReactI18nCache,
   setReactI18nCache,

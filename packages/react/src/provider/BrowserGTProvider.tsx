@@ -6,6 +6,9 @@ import {
 import { useMemo, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 
+console.log('browser GT id', (globalThis as any).__gt_id)
+
+
 /**
  * Consumes snapshot from server
  * Implementation for client-side only

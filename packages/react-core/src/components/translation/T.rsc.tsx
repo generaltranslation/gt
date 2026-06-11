@@ -18,6 +18,7 @@ async function RscT({
   _renderPreparedT = renderPreparedT,
   ...params
 }: ResolvedTProps): Promise<ReactNode> {
+  console.log('RscT', typeof window === 'undefined' ? 'SERVER' : 'CLIENT');
   const locale = _locale;
   const enableI18n = _enableI18n;
   const defaultLocale = getI18nConfig().getDefaultLocale();
@@ -46,6 +47,7 @@ async function RscT({
     prepared.sourceJsxChildren,
     prepared.targetOptions
   );
+  console.log('targetJsxChildren', targetJsxChildren);
 
   return _renderPreparedT({
     ...prepared,

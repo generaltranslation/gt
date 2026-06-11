@@ -15,10 +15,6 @@ import {
   useLocale,
   useLocales,
   useDefaultLocale,
-  useGTClass,
-  useLocaleProperties,
-  useLocaleDirection,
-  useVersionId,
   useMessages,
   msg,
   decodeMsg,
@@ -28,7 +24,8 @@ import {
   decodeVars,
   mFallback,
   gtFallback,
-} from 'gt-react/client';
+  initializeGT,
+} from 'gt-react/context';
 import {
   gtProviderUseClientError,
   txUseClientError,
@@ -40,6 +37,17 @@ import type {
 } from 'gt-react';
 export { LocaleSelector } from 'gt-react/context';
 
+const publicI18nConfigParams =
+  process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+
+console.log('CSR')
+console.log('CSR: publicI18nConfigParams', publicI18nConfigParams);
+
+if (publicI18nConfigParams) {
+  console.log('CSR: initializing GT');
+  initializeGT(JSON.parse(publicI18nConfigParams));
+}
+
 // Mock <GTProvider> which throws an error
 export function GTProvider() {
   throw new Error(gtProviderUseClientError);
@@ -48,6 +56,19 @@ export function GTProvider() {
 // Mock <Tx> which throws an error
 export function Tx() {
   throw new Error(txUseClientError);
+}
+
+function useGTClass() {
+  throw new Error('useGTClass() is not yet implemented in the client');
+}
+function useLocaleProperties() {
+  throw new Error('useLocaleProperties() is not yet implemented in the client');
+}
+function useLocaleDirection() {
+  throw new Error('useLocaleDirection() is not yet implemented in the client');
+}
+function useVersionId() {
+  throw new Error('useVersionId() is not yet implemented in the client');
 }
 
 export {

@@ -3,6 +3,7 @@
 // TODO: replace these placeholder exports with dedicated RSC implementations
 // as each component is split into shared logic plus runtime-specific wrappers.
 
+// ===== Components ===== //
 export { Branch, GtInternalBranch } from './components/branches/Branch';
 export { Derive, GtInternalDerive } from './components/derivation/Derive';
 export { GtInternalVar, Var } from './components/variables/Var';

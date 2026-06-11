@@ -1,3 +1,7 @@
+import 'server-only';
+
+// ===== Overrides ===== //
+import { GTProvider } from './provider/GTProvider';
 import { Var } from './variables/Var';
 import { Num } from './variables/Num';
 import { Currency } from './variables/Currency';
@@ -6,12 +10,13 @@ import { RelativeTime } from './variables/RelativeTime';
 import { T } from './server-dir/buildtime/T';
 import { Branch } from './branches/Branch';
 import { Plural } from './branches/Plural';
-import { GTProvider } from './provider/GTProvider';
 import { Tx } from './server-dir/runtime/_Tx';
 import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
 import { useLocaleDirection } from './request/getLocaleDirection';
 import { getI18NConfig } from './config-dir/getI18NConfig';
+
+// ===== gt-react ===== //
 import {
   msg,
   decodeMsg,
@@ -22,18 +27,33 @@ import {
   Derive,
   mFallback,
   gtFallback,
+  initializeGT,
 } from 'gt-react/context';
 import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
+
+// ===== other ===== //
 import { GT } from 'generaltranslation';
 import {
   useMessages,
   useGT,
 } from './server-dir/buildtime/getTranslationFunction';
 import type { LocaleProperties } from '@generaltranslation/format/types';
+
+const publicI18nConfigParams =
+  process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+
+console.log('RSC')
+console.log('RSC: publicI18nConfigParams', publicI18nConfigParams);
+
+if (publicI18nConfigParams) {
+  console.log('RSC: initializing GT');
+  initializeGT(JSON.parse(publicI18nConfigParams));
+}
+
 export { LocaleSelector } from 'gt-react/context';
 
 export function useGTClass() {

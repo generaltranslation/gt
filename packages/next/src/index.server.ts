@@ -1,70 +1,17 @@
 import 'server-only';
 
-import { Var } from './variables/Var';
-import { Num } from './variables/Num';
-import { Currency } from './variables/Currency';
-import { DateTime } from './variables/DateTime';
-import { RelativeTime } from './variables/RelativeTime';
-import { T } from './server-dir/buildtime/T';
-import { Branch } from './branches/Branch';
-import { Plural } from './branches/Plural';
-import { GTProvider } from './provider/GTProvider';
-import { Tx } from './server';
-import { useTranslations } from './server-dir/buildtime/getTranslations';
-import { useLocale } from './request/getLocale';
-import { useLocaleDirection } from './request/getLocaleDirection';
-import { getI18NConfig } from './config-dir/getI18NConfig';
-import {
-  msg,
-  decodeMsg,
-  decodeOptions,
-  declareVar,
-  decodeVars,
-  derive,
-  Derive,
-  mFallback,
-  gtFallback,
-} from 'gt-react/internal';
-import type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
-} from 'gt-react';
-import { GT } from 'generaltranslation';
-import {
-  useMessages,
-  useGT,
-} from './server-dir/buildtime/getTranslationFunction';
-import type { LocaleProperties } from '@generaltranslation/format/types';
-export { LocaleSelector } from 'gt-react/context';
-
-export function useGTClass() {
-  return getI18NConfig().getGTClass();
-}
-
-export function useLocaleProperties(locale: string): LocaleProperties {
-  return (useGTClass() as GT).getLocaleProperties(locale);
-}
-
-export function useLocales() {
-  return getI18NConfig().getLocales();
-}
-
-export function useDefaultLocale() {
-  return getI18NConfig().getDefaultLocale();
-}
-
-export function useVersionId() {
-  return getI18NConfig().getVersionId();
-}
-
+// ===== Overrides ===== //
 export {
-  GTProvider,
-  T,
   /**
    * @deprecated import from 'gt-next/server' instead
    */
-  Tx,
+  Tx
+} from './server';
+
+// ===== gt-react ===== //
+export {
+// ----- components ----- //
+  GTProvider,
   Var,
   Num,
   Currency,
@@ -73,20 +20,50 @@ export {
   Derive,
   Branch,
   Plural,
+  T,
+  LocaleSelector,
+  // ----- hooks ----- //
   useGT,
   useTranslations,
   useMessages,
   useLocale,
   useLocaleDirection,
+  useVersionId,
+  useLocales,
+  useDefaultLocale,
+  useGTClass,
+  useLocaleProperties,
+  // ----- functions ----- //
   msg,
   decodeMsg,
   decodeOptions,
-  derive,
   declareVar,
   decodeVars,
+  derive,
   mFallback,
   gtFallback,
-};
+} from 'gt-react/context';
+import type {
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
+} from 'gt-react';
+
+// ===== other ===== //
+import { initializeGT } from 'gt-react/context';
+
+const publicI18nConfigParams =
+  process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+
+console.log('SSR')
+console.log('SSR: publicI18nConfigParams', publicI18nConfigParams);
+
+if (publicI18nConfigParams) {
+  console.log('SSR: initializing GT');
+  initializeGT(JSON.parse(publicI18nConfigParams));
+}
+
+
 export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,

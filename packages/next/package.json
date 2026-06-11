@@ -70,7 +70,7 @@
       "react-server": "./dist/index.rsc.js",
       "browser": "./dist/index.client.js",
       "types": "./dist/index.types.d.ts",
-      "default": "./dist/index.client.js"
+      "default": "./dist/index.server.js"
     },
     "./config": {
       "types": "./dist/config.d.ts",

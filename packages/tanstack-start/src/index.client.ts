@@ -1,12 +1,5 @@
 'use client';
 
-import { I18nCache } from 'gt-i18n/internal';
-import type { Translation } from 'gt-i18n/types';
-import {
-  setReactI18nCache,
-  type ReactI18nCacheParams,
-} from '@generaltranslation/react-core/context';
-
 export {
   // ===== Components ===== //
   Branch,

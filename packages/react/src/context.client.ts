@@ -13,8 +13,8 @@ export {
 export { LocaleSelector } from './components/LocaleSelector';
 export { BrowserGTProvider as GTProvider } from './provider/BrowserGTProvider';
 
+// ===== Components ===== //
 export {
-  // ===== Components ===== //
   Branch,
   Plural,
   Derive,
@@ -25,18 +25,27 @@ export {
   RelativeTime,
   Var,
   Num,
-  // ===== Hooks ===== //
+} from '@generaltranslation/react-core/components';
+
+// ===== Hooks ===== //
+export {
   useLocale,
   useCustomMapping,
   useDefaultLocale,
   useEnableI18n,
   useLocales,
-  getFormatLocales,
   useFormatLocales,
   useGT,
   useMessages,
   useTranslations,
-  // ===== Functions ===== //
+  useLocaleDirection,
+  useVersionId,
+  useGTClass,
+  useLocaleProperties,
+} from '@generaltranslation/react-core/hooks';
+
+// ===== Functions ===== //
+export {
   msg,
   decodeMsg,
   decodeOptions,
@@ -45,13 +54,18 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+  getFormatLocales,
+  initializeGT,
+} from '@generaltranslation/react-core/pure';
+
+
+// TODO: move these over to pure
+export {
   getTranslationsSnapshot,
   getReactI18nCache,
   setReactI18nCache,
   createRenderPipeline,
   t,
-  // ===== Setup ===== //
-  internalInitializeGTSRA as initializeGT,
 } from '@generaltranslation/react-core/context';
 
 export type {
