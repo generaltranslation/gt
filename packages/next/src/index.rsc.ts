@@ -1,4 +1,19 @@
 import 'server-only';
+console.log('RSC - index.rsc.ts');
+
+import { initializeGT } from './setup/initializeGTNext';
+const publicI18nConfigParams =
+  process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+if (publicI18nConfigParams) {
+  console.log('RSC: initializing GT');
+  initializeGT({
+    ...JSON.parse(publicI18nConfigParams),
+    projectId: process.env.NEXT_PUBLIC_GT_PROJECT_ID,
+    devApiKey: process.env.NEXT_PUBLIC_GT_DEV_API_KEY,
+  });
+} else {
+  console.warn('RSC: no initialize GT');
+}
 
 // ===== Overrides ===== //
 import { GTProvider } from './provider/GTProvider';
@@ -8,6 +23,7 @@ import { Currency } from './variables/Currency';
 import { DateTime } from './variables/DateTime';
 import { RelativeTime } from './variables/RelativeTime';
 import { T } from './server-dir/buildtime/T';
+(T as any)._gtt_marker = 'index.rsc.ts';
 import { Branch } from './branches/Branch';
 import { Plural } from './branches/Plural';
 import { Tx } from './server-dir/runtime/_Tx';
@@ -27,7 +43,6 @@ import {
   Derive,
   mFallback,
   gtFallback,
-  initializeGT,
 } from 'gt-react/context';
 import type {
   DictionaryTranslationOptions,
@@ -43,16 +58,6 @@ import {
 } from './server-dir/buildtime/getTranslationFunction';
 import type { LocaleProperties } from '@generaltranslation/format/types';
 
-const publicI18nConfigParams =
-  process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
-
-console.log('RSC')
-console.log('RSC: publicI18nConfigParams', publicI18nConfigParams);
-
-if (publicI18nConfigParams) {
-  console.log('RSC: initializing GT');
-  initializeGT(JSON.parse(publicI18nConfigParams));
-}
 
 export { LocaleSelector } from 'gt-react/context';
 

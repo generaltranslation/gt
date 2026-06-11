@@ -1,6 +1,5 @@
 import { mergeDictionaries } from 'gt-react/internal';
 import { isValidElement } from 'react';
-import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { getLocale } from '../request/getLocale';
 import { getDictionary, getDictionaryEntry } from '../dictionary/getDictionary';
 import { createDictionarySubsetError } from '../errors/createErrors';
@@ -12,8 +11,10 @@ import type {
   Translations as LegacyTranslations,
 } from 'gt-react/internal';
 import type { GTProviderProps } from '../utils/types';
-// Consume from next-pages entrypoint to hit the initializer
-import { GTProvider as ClientGTProvider } from '../index.server';
+import { GTClientProvider } from './GTProvider.client-boundary';
+import { getNextI18nCache } from '../i18n-cache/NextI18nCache';
+import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18NConfig as getI18NConfiguration } from '../config-dir/getI18NConfig';
 
 
 function toTranslationSnapshot(
@@ -29,11 +30,11 @@ function toTranslationSnapshot(
 export async function GTProvider({
   children,
   id: prefixId,
-  locale: _locale,
 }: GTProviderProps) {
   // ---------- SETUP ---------- //
-  const I18NConfig = getI18NConfig();
-  const locale = _locale || (await getLocale());
+  const i18nCache = getNextI18nCache();
+  const I18NConfig = getI18NConfiguration();
+  const locale = await getLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
   // load dictionary
@@ -42,10 +43,8 @@ export async function GTProvider({
 
   // ----- FETCH TRANSLATIONS FROM CACHE ----- //
 
-  const cachedTranslationsPromise: Promise<LegacyTranslations> =
-    translationRequired
-      ? I18NConfig.getCachedTranslations(locale)
-      : Promise.resolve({});
+  const translationsSnapshotPromise =
+    translationRequired ? i18nCache.loadTranslations(locale) : Promise.resolve({});
 
   // ---------- PROCESS DICTIONARY ---------- //
   // (While waiting for cache...)
@@ -78,22 +77,19 @@ export async function GTProvider({
   dictionary = mergeDictionaries(dictionary, dictionaryTranslations);
 
   // Block until cache check resolves
-  const translations = await cachedTranslationsPromise;
+  const translationsSnapshot = { [locale]: await translationsSnapshotPromise };
   const dictionariesSnapshot: Record<Locale, Dictionary> = {
     [locale]: dictionary as unknown as Dictionary,
   };
-  const translationsSnapshot: Record<Locale, Record<Hash, Translation>> = {
-    [locale]: toTranslationSnapshot(translations),
-  };
 
   return (
-    <ClientGTProvider
+    <GTClientProvider
       enableI18n={translationRequired}
       locale={locale}
       translations={translationsSnapshot}
       dictionaries={dictionariesSnapshot}
     >
       {children}
-    </ClientGTProvider>
+    </GTClientProvider>
   );
 }

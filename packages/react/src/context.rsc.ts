@@ -122,3 +122,9 @@ export type {
   ResolvedPluralProps,
   ResolvedRelativeTimeProps,
 } from '@generaltranslation/react-core/components-rsc';
+
+// ===== Singletons ===== //
+export {
+  ReactI18nCache,
+  type ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';

@@ -6,9 +6,6 @@ import {
 import { useMemo, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 
-console.log('browser GT id', (globalThis as any).__gt_id)
-
-
 /**
  * Consumes snapshot from server
  * Implementation for client-side only
@@ -18,6 +15,7 @@ export function BrowserGTProvider({
   enableI18n,
   ...props
 }: SharedGTProviderProps) {
+  console.log('<BrowserGTProvider> tx from server', JSON.stringify(props.translations));
   const conditionStore = useMemo(() => {
     return new ReadonlyConditionStore({ locale, enableI18n });
   }, [locale, enableI18n]);

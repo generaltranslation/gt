@@ -43,7 +43,6 @@ export function setI18nConfig(nextI18nConfig: I18nConfig): void {
 export function initializeI18nConfig(
   params: I18nConfigParams = {}
 ): I18nConfig {
-  console.log('initializeI18nConfig', params);
   const nextI18nConfig = new I18nConfig(params);
   setI18nConfig(nextI18nConfig);
   return nextI18nConfig;

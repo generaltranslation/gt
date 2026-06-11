@@ -1,14 +1,32 @@
-import 'server-only';
+"use client"
+console.log('SSR - index.server.ts');
+
+import { initializeGT } from './setup/initializeGTNext';
+const publicI18nConfigParams =
+  process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+if (publicI18nConfigParams) {
+  console.log('SSR: initializing GT');
+  initializeGT({
+    ...JSON.parse(publicI18nConfigParams),
+    projectId: process.env.NEXT_PUBLIC_GT_PROJECT_ID,
+    devApiKey: process.env.NEXT_PUBLIC_GT_DEV_API_KEY,
+  });
+} else {
+  console.warn('SSR: no initialize GT');
+}
 
 // ===== Overrides ===== //
-export {
-  /**
-   * @deprecated import from 'gt-next/server' instead
-   */
-  Tx
-} from './server';
+/**
+ * @deprecated import from 'gt-next/server' instead
+ */
+export function Tx() {
+  throw new Error('Tx is not available on the client');
+}
 
 // ===== gt-react ===== //
+import { T } from 'gt-react/context';
+(T as any)._gtt_marker = 'index.server.ts';
+export { T };
 export {
 // ----- components ----- //
   GTProvider,
@@ -20,7 +38,7 @@ export {
   Derive,
   Branch,
   Plural,
-  T,
+  // T,
   LocaleSelector,
   // ----- hooks ----- //
   useGT,
@@ -48,21 +66,6 @@ import type {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-
-// ===== other ===== //
-import { initializeGT } from 'gt-react/context';
-
-const publicI18nConfigParams =
-  process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
-
-console.log('SSR')
-console.log('SSR: publicI18nConfigParams', publicI18nConfigParams);
-
-if (publicI18nConfigParams) {
-  console.log('SSR: initializing GT');
-  initializeGT(JSON.parse(publicI18nConfigParams));
-}
-
 
 export type {
   DictionaryTranslationOptions,

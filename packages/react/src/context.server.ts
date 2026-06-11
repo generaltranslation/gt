@@ -76,3 +76,10 @@ export type {
   RenderPipeline,
   RenderPreparedT,
 } from '@generaltranslation/react-core/context';
+
+
+// ===== Singletons ===== //
+export {
+  ReactI18nCache,
+  type ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';

@@ -1,5 +1,23 @@
 'use client';
+console.log('CSR - index.client.ts');
 
+import { initializeGT } from './setup/initializeGTNext';
+const publicI18nConfigParams =
+  process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+if (publicI18nConfigParams) {
+  console.log('CSR: initializing GT');
+  initializeGT({
+    ...JSON.parse(publicI18nConfigParams),
+    projectId: process.env.NEXT_PUBLIC_GT_PROJECT_ID,
+    devApiKey: process.env.NEXT_PUBLIC_GT_DEV_API_KEY,
+  });
+} else {
+  console.warn('CSR: no initialize GT');
+}
+
+import { T } from 'gt-react/context';
+(T as any)._gtt_marker = 'index.client.ts';
+export { T };
 import {
   Var,
   Num,
@@ -7,7 +25,7 @@ import {
   DateTime,
   RelativeTime,
   Derive,
-  T,
+  // T,
   Branch,
   Plural,
   useGT,
@@ -24,7 +42,6 @@ import {
   decodeVars,
   mFallback,
   gtFallback,
-  initializeGT,
 } from 'gt-react/context';
 import {
   gtProviderUseClientError,
@@ -36,17 +53,6 @@ import type {
   RuntimeTranslationOptions,
 } from 'gt-react';
 export { LocaleSelector } from 'gt-react/context';
-
-const publicI18nConfigParams =
-  process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
-
-console.log('CSR')
-console.log('CSR: publicI18nConfigParams', publicI18nConfigParams);
-
-if (publicI18nConfigParams) {
-  console.log('CSR: initializing GT');
-  initializeGT(JSON.parse(publicI18nConfigParams));
-}
 
 // Mock <GTProvider> which throws an error
 export function GTProvider() {
@@ -72,7 +78,7 @@ function useVersionId() {
 }
 
 export {
-  T,
+  // T,
   Var,
   Num,
   Currency,

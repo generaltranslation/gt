@@ -21,3 +21,8 @@ export type { RelativeTimeFormatOptions, RenderVariable } from './utils/types';
 export {
   internalInitializeGTSRA as initializeGT,
 } from './setup/initializeGTSRA';
+
+export {
+  ReactI18nCache,
+  type ReactI18nCacheParams,
+} from './i18n-cache/ReactI18nCache';

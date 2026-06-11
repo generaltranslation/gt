@@ -37,11 +37,5 @@ export function useTranslate<T extends Translation>(
     onMissingTranslation(lookup);
   }
 
-  console.log('-----')
-  console.log('useTranslate', typeof window === 'undefined' ? 'SERVER' : 'CLIENT');
-  console.log('lookup', lookup);
-  console.log('storeTranslation', storeTranslation);
-  console.log('-----')
-
   return storeTranslation;
 }
