@@ -1,6 +1,7 @@
 import 'server-only';
 console.log('RSC - index.rsc.ts');
 
+
 import { initializeGT } from './setup/initializeGTNext';
 const publicI18nConfigParams =
   process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
@@ -14,6 +15,12 @@ if (publicI18nConfigParams) {
 } else {
   console.warn('RSC: no initialize GT');
 }
+// Debugging statement, change to warn before publish
+if (typeof window !== 'undefined') {
+  console.warn('RSC: being imported in browser environment!');
+  throw new Error('RSC: being imported in browser environment!');
+}
+
 
 // ===== Overrides ===== //
 import { GTProvider } from './provider/GTProvider';

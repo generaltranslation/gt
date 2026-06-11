@@ -15,6 +15,12 @@ if (publicI18nConfigParams) {
   console.warn('CSR: no initialize GT');
 }
 
+// Debugging statement, change to warn before publish
+if (typeof window === 'undefined') {
+  console.warn('CSR: being imported in server environment!');
+  throw new Error('CSR: being imported in server environment!');
+}
+
 import { T } from 'gt-react/context';
 (T as any)._gtt_marker = 'index.client.ts';
 export { T };

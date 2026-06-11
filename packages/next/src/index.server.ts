@@ -15,6 +15,13 @@ if (publicI18nConfigParams) {
   console.warn('SSR: no initialize GT');
 }
 
+// Debugging statement, change to warn before publish
+if (typeof window !== 'undefined') {
+  console.warn('SSR: being imported in browser environment!');
+  throw new Error('SSR: being imported in browser environment!');
+}
+
+
 // ===== Overrides ===== //
 /**
  * @deprecated import from 'gt-next/server' instead
