@@ -9,6 +9,7 @@ import {
   FileFormat,
 } from 'generaltranslation/types';
 import { createMockSettings } from '../__mocks__/settings.js';
+import { readLockfile } from '../../fs/config/downloadedVersions.js';
 import type { FileStatusTracker } from '../../workflow/PollJobsStep.js';
 
 // Mock dependencies
@@ -16,22 +17,38 @@ vi.mock('../../utils/gt.js', () => ({
   gt: {
     downloadFileBatch: vi.fn(),
     resolveAliasLocale: vi.fn((locale) => locale), // Return locale as-is for testing
+    resolveCanonicalLocale: vi.fn((locale) => locale),
   },
 }));
 
 vi.mock('fs', () => ({
   existsSync: vi.fn(),
   mkdirSync: vi.fn(),
+  readFileSync: vi.fn(),
   promises: {
     writeFile: vi.fn(),
   },
 }));
 
-vi.mock('path', () => ({
-  default: {
-    dirname: vi.fn(),
-  },
-  dirname: vi.fn(),
+vi.mock('path', () => {
+  // Shared instances so default and named imports resolve to the same mocks
+  const dirname = vi.fn();
+  const relative = vi.fn();
+  return {
+    default: { dirname, relative },
+    dirname,
+    relative,
+  };
+});
+
+vi.mock('../../fs/config/downloadedVersions.js', () => ({
+  readLockfile: vi.fn(() => ({
+    data: { entries: [] },
+    entryMap: new Map(),
+    originalV1: false,
+  })),
+  writeLockfile: vi.fn(),
+  findOrCreateEntry: vi.fn(() => ({ translations: {} })),
 }));
 
 vi.mock('../../console/logger.js', () => ({
@@ -483,6 +500,7 @@ describe('downloadFileBatch', () => {
           branchId: 'branch-1',
           fileId: 'file-1',
           versionId: 'version-1',
+          locale: 'en',
           fileFormat: 'JSON' as FileFormat,
           data: 'content1',
           fileName: 'file1.json',
@@ -512,5 +530,110 @@ describe('downloadFileBatch', () => {
     expect(logger.error).toHaveBeenCalled();
     expect(result.successful).toHaveLength(0);
     expect(result.failed).toHaveLength(1);
+  });
+
+  it('always merges composite schema files from fresh data, even when the lockfile is up to date', async () => {
+    // Composite files (e.g. Mintlify docs.json) merge translations into the
+    // source file itself, so outputPath always exists and the lockfile check
+    // cannot tell whether derived split outputs ({locale}/docs.json) are still
+    // on disk. The up-to-date skip must be bypassed for them — otherwise a run
+    // that cleared the locale dirs never regenerates the locale nav files.
+    const sourceDocsJson = JSON.stringify({
+      navigation: {
+        languages: [{ language: 'en', tabs: [{ tab: 'Guides' }] }],
+      },
+    });
+    const translatedPayload = JSON.stringify({
+      '/navigation/languages': { '/0': { '/tabs/0/tab': 'Guías' } },
+    });
+
+    const files: BatchedFiles = [
+      {
+        branchId: 'branch-1',
+        fileId: 'file-1',
+        versionId: 'version-1',
+        outputPath: 'docs.json',
+        inputPath: 'docs.json',
+        locale: 'es',
+      },
+    ];
+    const fileTracker = createMockFileTracker(files);
+
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          id: 'translation-1',
+          branchId: 'branch-1',
+          fileId: 'file-1',
+          versionId: 'version-1',
+          locale: 'es',
+          fileFormat: 'JSON' as FileFormat,
+          data: translatedPayload,
+          fileName: 'docs.json',
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
+
+    // Lockfile says this exact version+locale was already downloaded, and the
+    // output file exists — the conditions that previously triggered the skip
+    vi.mocked(readLockfile).mockReturnValue({
+      data: { entries: [] },
+      entryMap: new Map([
+        [
+          'file-1',
+          {
+            versionId: 'version-1',
+            fileName: 'docs.json',
+            translations: {
+              es: {
+                updatedAt: '2026-01-01T00:00:00.000Z',
+                fileName: 'docs.json',
+              },
+            },
+          },
+        ],
+      ]),
+      originalV1: false,
+    } as any);
+
+    setupFileSystemMocks({ dirExists: true });
+    vi.mocked(fs.readFileSync).mockReturnValue(sourceDocsJson);
+    vi.mocked(path.relative).mockReturnValue('docs.json');
+
+    const result = await downloadFileBatch(
+      fileTracker,
+      files,
+      createMockSettings({
+        locales: ['en', 'es'],
+        options: {
+          jsonSchema: {
+            'docs.json': {
+              composite: {
+                '$.navigation.languages': {
+                  type: 'array',
+                  key: '$.language',
+                  include: ['$..tab'],
+                },
+              },
+            },
+          },
+        },
+      } as any)
+    );
+
+    // Fresh data must be merged and written — not skipped
+    expect(result.skipped).toHaveLength(0);
+    expect(result.successful).toHaveLength(1);
+    const writeCall = vi
+      .mocked(fs.promises.writeFile)
+      .mock.calls.find((c) => c[0] === 'docs.json');
+    expect(writeCall).toBeDefined();
+    const written = JSON.parse(writeCall![1] as string);
+    const esEntry = written.navigation.languages.find(
+      (l: any) => l.language === 'es'
+    );
+    expect(esEntry.tabs[0].tab).toBe('Guías');
   });
 });
