@@ -752,6 +752,41 @@ describe('splitMintlifyLanguageRefs', () => {
     });
   });
 
+  it('never writes self-referential stubs for entries left in $ref form', async () => {
+    // If the merge step did not run (e.g. translations were cached), docs.json
+    // on disk still has its source-form locale entries: { language, $ref }.
+    // Splitting those would write { "$ref": "./es/docs.json" } INTO
+    // es/docs.json — a circular ref that overwrites the real nav file.
+    const sourceFormDocsJson = {
+      navigation: {
+        languages: [
+          { language: 'en', tabs: [{ tab: 'Guides', groups: [] }] },
+          { language: 'es', $ref: './es/docs.json' },
+        ],
+      },
+    };
+
+    mockRead.mockImplementation((p) => {
+      if (path.resolve(p as string) === path.resolve('/project/docs.json'))
+        return JSON.stringify(sourceFormDocsJson);
+      throw new Error('ENOENT');
+    });
+
+    mockRefMap = new Map();
+
+    await splitMintlifyLanguageRefs(makeSettings());
+
+    // No locale file written — the es entry was never inlined this run
+    expect(getWritten('/project/es/docs.json')).toBeUndefined();
+
+    // The es entry is left untouched in docs.json
+    const docsResult = getWritten('/project/docs.json') as any;
+    expect(docsResult.navigation.languages[1]).toEqual({
+      language: 'es',
+      $ref: './es/docs.json',
+    });
+  });
+
   it('does not clobber a top-level $ref file that was left un-inlined (e.g. redirects)', async () => {
     // mergeJson only re-inlines the composite path (navigation.languages); other
     // refs like `redirects` stay collapsed as { $ref } in the written docs.json.
