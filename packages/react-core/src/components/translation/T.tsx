@@ -9,37 +9,38 @@ import {
   type JsxTranslationOptions,
 } from '../../utils/translation/prepareT';
 
+type TProps = {
+  children: ReactNode;
+  _locale?: string;
+  _enableI18n?: boolean;
+} & JsxTranslationOptions;
+
+type ResolvedTProps = TProps & {
+  _locale: string;
+  _enableI18n: boolean;
+};
+
 // ===== Component ===== //
 
 /**
  * External-store version of the `<T>` component.
  */
-function T(
-  props: {
-    children: ReactNode;
-  } & JsxTranslationOptions
-): ReactNode {
+function T(props: TProps): ReactNode {
   return useComputeT(props);
 }
 
-function GtInternalTranslateJsx(
-  props: {
-    children: ReactNode;
-  } & JsxTranslationOptions
-): ReactNode {
+function GtInternalTranslateJsx(props: TProps): ReactNode {
   return useComputeT(props);
 }
 
 async function RscT({
   children: sourceChildren,
-  locale,
-  enableI18n,
+  _locale,
+  _enableI18n,
   ...params
-}: {
-  children: ReactNode;
-  locale: string;
-  enableI18n: boolean;
-} & JsxTranslationOptions): Promise<ReactNode> {
+}: ResolvedTProps): Promise<ReactNode> {
+  const locale = _locale;
+  const enableI18n = _enableI18n;
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate =
     enableI18n && getI18nConfig().requiresTranslation(locale);
@@ -83,16 +84,17 @@ GtInternalTranslateJsx._gtt = 'translate-client-automatic';
 RscT._gtt = 'translate-server';
 
 export { GtInternalTranslateJsx, RscT, T };
+export type { ResolvedTProps, TProps };
 
 /**
  * Render logic
  */
 function useComputeT({
   children: sourceChildren,
+  _locale,
+  _enableI18n,
   ...params
-}: {
-  children: ReactNode;
-} & JsxTranslationOptions): ReactNode {
+}: TProps): ReactNode {
   // Prepare our source children for rendering
   const {
     defaultLocale,
@@ -105,6 +107,8 @@ function useComputeT({
   } = usePrepareT({
     sourceChildren,
     params,
+    _locale,
+    _enableI18n,
   });
 
   // Lookup translation in cache

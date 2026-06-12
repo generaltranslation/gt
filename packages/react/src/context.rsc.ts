@@ -18,7 +18,6 @@ export {
   Num,
   Plural,
   RelativeTime,
-  RscT,
   T,
   Var,
 } from '@generaltranslation/react-core/components-rsc';
