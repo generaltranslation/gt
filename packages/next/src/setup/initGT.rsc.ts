@@ -51,20 +51,22 @@ function getAsyncConditionStoreParams(): AsyncConditionStoreParams {
   };
 }
 
-function resolveGetLocale(
-  module: unknown = require('gt-next/internal/_getLocale')
-): (() => Promise<string>) | undefined {
+function resolveGetLocale(): (() => Promise<string>) | undefined {
   const isCustomGetLocaleEnabled =
     process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true';
   if (!isCustomGetLocaleEnabled) return undefined;
+  const module: unknown = require('gt-next/internal/_getLocale');
 
   if (typeof module === 'function') {
     return module as () => Promise<string>;
   } else if (typeof module === 'object' && module !== null) {
-    if ('default' in module) {
-      return resolveGetLocale(module.default);
-    } else if ('getLocale' in module) {
-      return resolveGetLocale(module.getLocale);
+    if ('default' in module && typeof module.default === 'function') {
+      return module.default as () => Promise<string>;
+    } else if (
+      'getLocale' in module &&
+      typeof module.getLocale === 'function'
+    ) {
+      return module.getLocale as () => Promise<string>;
     }
   }
   console.warn('Failed to resolve custom getLocale() function');

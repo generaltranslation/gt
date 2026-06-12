@@ -1,5 +1,3 @@
-import 'server-only';
-
 import { AsyncReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import { cookies, headers } from 'next/headers';
 import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
