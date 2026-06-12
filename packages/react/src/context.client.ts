@@ -1,7 +1,5 @@
 'use client';
 
-import type { RscT as CoreRscT } from '@generaltranslation/react-core/context';
-
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
@@ -10,13 +8,6 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from './cookie-names';
-
-export const RscT: typeof CoreRscT = Object.assign(
-  () => {
-    throw new Error('gt-react: RscT cannot be used in a client environment.');
-  },
-  { _gtt: 'translate-server' as const }
-);
 
 // ===== Components ===== //
 export { LocaleSelector } from './components/LocaleSelector';
