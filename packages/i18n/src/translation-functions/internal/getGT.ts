@@ -5,7 +5,7 @@ import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
 import type { StringFormat } from '@generaltranslation/format/types';
-import { getLocale } from '../../helpers/locale';
+import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
@@ -16,11 +16,29 @@ import { getLocale } from '../../helpers/locale';
  * const greeting = gt('Hello, world!');
  */
 export async function getGT(): Promise<GTFunctionType> {
+  const conditionStore = getWritableConditionStore();
+  const locale = conditionStore.getLocale();
+  const enableI18n = conditionStore.getEnableI18n();
+  return getGTInternal({ locale, enableI18n });
+}
+
+
+/**
+ * Condition store agnostic getGT function
+ */
+export async function getGTInternal({
+  locale,
+  enableI18n,
+}: {
+  locale: string;
+  enableI18n: boolean;
+}): Promise<GTFunctionType> {
   // Get the translation resolver
   const i18nCache = getI18nCache();
-  const locale = getLocale();
   await i18nCache.loadTranslations(locale);
   const sourceLocale = getI18nConfig().getDefaultLocale();
+
+  // TODO: dev hot reload translate compiler injected lookups
 
   /**
    * Registers a message at build time and resolves its translation at runtime.
@@ -42,7 +60,9 @@ export async function getGT(): Promise<GTFunctionType> {
     message: string,
     options: InlineTranslationOptions = {}
   ) => {
-    const targetLocale = options.$locale ?? locale;
+    const targetLocale = enableI18n
+      ? options.$locale ?? locale
+      : getI18nConfig().getDefaultLocale();
     const lookupOptions = createLookupOptions<StringFormat>(
       targetLocale,
       options,

@@ -1,4 +1,4 @@
-import { getI18NConfig } from '../config-dir/getI18NConfig';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { getLocale, useLocale } from './getLocale';
 
 /**
@@ -18,7 +18,7 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl';
 export function getLocaleDirection(): Promise<'ltr' | 'rtl'>;
 // Implementation
 export function getLocaleDirection(locale?: string) {
-  const gt = getI18NConfig().getGTClass();
+  const gt = getI18nConfig().getGTClass();
   if (typeof locale === 'string') {
     // Synchronous result when locale is given
     return gt.getLocaleDirection(locale) as 'ltr' | 'rtl';
@@ -43,6 +43,6 @@ export function getLocaleDirection(locale?: string) {
  */
 export function useLocaleDirection(locale?: string): 'ltr' | 'rtl' {
   locale = locale || useLocale();
-  const gt = getI18NConfig().getGTClass();
+  const gt = getI18nConfig().getGTClass();
   return gt.getLocaleDirection(locale);
 }

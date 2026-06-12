@@ -1,8 +1,9 @@
 import { InlineResolveOptions } from '../types/options';
 import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
-import { getGT } from './getGT';
+import { getGTInternal } from './getGT';
 import { MFunctionType } from '../types/functions';
+import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 
 /**
  * Returns the m function that resolves a registered message to its translation.
@@ -17,8 +18,25 @@ import { MFunctionType } from '../types/functions';
  * const greeting = m(registeredMessage);
  */
 export async function getMessages(): Promise<MFunctionType> {
+  const conditionStore = getWritableConditionStore();
+  const locale = conditionStore.getLocale();
+  const enableI18n = conditionStore.getEnableI18n();
+  return getMessagesInternal({ locale, enableI18n });
+}
+
+
+/**
+ * Condition store agnostic getMessages function
+ */
+export async function getMessagesInternal({
+  locale,
+  enableI18n,
+}: {
+  locale: string;
+  enableI18n: boolean;
+}): Promise<MFunctionType> {
   // Get the gt function
-  const gt = await getGT();
+  const gt = await getGTInternal({ locale, enableI18n });
 
   /**
    * Resolves a registered message to its translation.

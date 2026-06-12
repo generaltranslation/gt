@@ -2,28 +2,13 @@
 console.log('SSR - index.server.ts');
 
 import { initializeGT } from './setup/initGT';
-const publicI18nConfigParams =
-  process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
-if (publicI18nConfigParams) {
-  console.log('SSR: initializing GT');
-  initializeGT();
-} else {
-  console.warn('SSR: no initialize GT');
-}
+console.log('SSR: initializing GT');
+initializeGT();
 
 // Debugging statement, change to warn before publish
 if (typeof window !== 'undefined') {
   console.warn('SSR: being imported in browser environment!');
   throw new Error('SSR: being imported in browser environment!');
-}
-
-
-// ===== Overrides ===== //
-/**
- * @deprecated import from 'gt-next/server' instead
- */
-export function Tx() {
-  throw new Error('Tx is not available on the client');
 }
 
 // ===== gt-react ===== //

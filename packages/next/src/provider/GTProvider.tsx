@@ -11,9 +11,8 @@ import type {
   Translations as LegacyTranslations,
 } from 'gt-react/internal';
 import type { GTProviderProps } from '../utils/types';
-import { GTClientProvider } from './GTProvider.client-boundary';
+import { Client_GTProvider } from '../utils/client-boundary';
 import { getNextI18nCache } from '../i18n-cache/NextI18nCache';
-import { getI18nConfig } from 'gt-i18n/internal';
 import { getI18NConfig as getI18NConfiguration } from '../config-dir/getI18NConfig';
 
 
@@ -83,13 +82,13 @@ export async function GTProvider({
   };
 
   return (
-    <GTClientProvider
+    <Client_GTProvider
       enableI18n={translationRequired}
       locale={locale}
       translations={translationsSnapshot}
       dictionaries={dictionariesSnapshot}
     >
       {children}
-    </GTClientProvider>
+    </Client_GTProvider>
   );
 }

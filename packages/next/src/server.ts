@@ -13,8 +13,8 @@ export { registerLocale } from './request/registerLocale';
 // Translation
 export { tx } from './server-dir/runtime/tx';
 export { Tx } from './server-dir/runtime/_Tx';
-export { getTranslations } from './server-dir/buildtime/getTranslations';
 export {
+  getTranslations,
   getMessages,
   getGT,
-} from './server-dir/buildtime/getTranslationFunction';
+} from './server-dir/buildtime/strings';

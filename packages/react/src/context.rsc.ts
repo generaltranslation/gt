@@ -1,7 +1,19 @@
 // React Server Component context surface.
 
-// ===== Client Boundary Components ===== //
-export { GTProvider, LocaleSelector } from './context.server';
+import { getGT, getI18nConfig, getLocale, getMessages, getTranslations } from 'gt-i18n/internal';
+import { use } from 'react';
+
+// ===== Error for client components ===== //
+function failClientComponent(componentName: string) {
+  throw new Error(`${componentName} cannot be consumed via RSC entrypoint`);
+}
+
+export function GTProvider() {
+  return failClientComponent('GTProvider');
+}
+export function LocaleSelector() {
+  return failClientComponent('LocaleSelector');
+}
 
 // ===== Components ===== //
 export {
@@ -16,37 +28,34 @@ export {
   Var,
 } from '@generaltranslation/react-core/components-rsc';
 
-// ===== Hooks (no-ops) ===== //
-function failHook(hookName: string) {
-    throw new Error(`${hookName} is not available in RSC context`);
-}
+// ===== Hooks (cannot reference context) ===== //
 
 export function useGT() {
-  return failHook('useGT');
+  return use(getGT());
 }
 export function useTranslations() {
-  return failHook('useTranslations');
+  return use(getTranslations());
 }
 export function useMessages() {
-  return failHook('useMessages');
+  return use(getMessages());
 }
 export function useLocale() {
-  return failHook('useLocale');
-}
-export function useLocaleDirection() {
-  return failHook('useLocaleDirection');
+  return getLocale();
 }
 export function useVersionId() {
-  return failHook('useVersionId');
+  throw new Error('useVersionId unimplemented')
 }
 export function useLocales() {
-  return failHook('useLocales');
+  return getI18nConfig().getLocales();
 }
 export function useGTClass() {
-  return failHook('useGTClass');
+  return getI18nConfig().getGTClass();
+}
+export function useLocaleDirection(locale: string) {
+  return getI18nConfig().getGTClass().getLocaleDirection(locale);
 }
 export function useLocaleProperties(locale: string) {
-  return failHook('useLocaleProperties');
+  return getI18nConfig().getGTClass().getLocaleProperties(locale);
 }
 
 // ===== Internal Components ===== //
