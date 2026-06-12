@@ -13,6 +13,8 @@ const runtimeArtifactNames = [
   'browser.mjs',
   'client.cjs',
   'client.mjs',
+  'context.rsc.cjs',
+  'context.rsc.mjs',
   'context.client.cjs',
   'context.client.mjs',
   'context.server.cjs',
@@ -57,7 +59,7 @@ function isAllowedExternalizedSubpath(
   specifier: string
 ): boolean {
   return (
-    file.startsWith('context.') &&
+    file.startsWith('context') &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
       specifier.startsWith('gt-i18n/'))
   );
@@ -123,8 +125,29 @@ describe('gt-react package exports', () => {
     ]);
   });
 
-  it('preserves use client in emitted ClientProvider entrypoints', () => {
-    for (const file of ['dist/client.cjs', 'dist/client.mjs']) {
+  it('resolves gt-react/context to the RSC implementation under react-server', () => {
+    node([
+      '--conditions=react-server',
+      '-e',
+      `
+          const assert = require('node:assert/strict');
+          assert.equal(
+            require.resolve('gt-react/context').endsWith('/dist/context.rsc.cjs'),
+            true
+          );
+        `,
+    ]);
+  });
+
+  it('preserves use client in emitted client entrypoints', () => {
+    for (const file of [
+      'dist/client.cjs',
+      'dist/client.mjs',
+      'dist/context.client.cjs',
+      'dist/context.client.mjs',
+      'dist/context.server.cjs',
+      'dist/context.server.mjs',
+    ]) {
       expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
         /^['"]use client['"];?/
       );
