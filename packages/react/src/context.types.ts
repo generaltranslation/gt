@@ -63,7 +63,6 @@ export {
   getVersionId,
 } from '@generaltranslation/react-core/pure';
 
-
 // TODO: move these over to pure
 export {
   getTranslationsSnapshot,
@@ -83,7 +82,6 @@ export {
   ReactI18nCache,
   type ReactI18nCacheParams,
 } from '@generaltranslation/react-core/pure';
-
 
 // ===== Types ===== //
 export type {

@@ -118,7 +118,6 @@ export interface AsyncReadonlyConditionStoreInterface {
   getEnableI18n(): Promise<boolean>;
 }
 
-
 export type {
   TranslationsLoader,
   LifecycleCallbacks,

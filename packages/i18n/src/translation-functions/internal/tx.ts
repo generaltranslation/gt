@@ -35,7 +35,6 @@ export async function tx(
   return txInternal({ locale, enableI18n, content, options });
 }
 
-
 /**
  * Condition store agnostic tx function
  */

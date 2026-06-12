@@ -1,4 +1,4 @@
-"use client";
+'use client';
 /**
  * This is a small boundary for RSC consumption of client components
  * Cannot be consumed through gt-react/index.rsc as deciding btwn
@@ -9,5 +9,5 @@
  */
 export {
   GTProvider as Client_GTProvider,
-  LocaleSelector as Client_LocaleSelector
+  LocaleSelector as Client_LocaleSelector,
 } from 'gt-react/context';

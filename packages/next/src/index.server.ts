@@ -1,4 +1,4 @@
-"use client"
+'use client';
 console.log('SSR - index.server.ts');
 
 import { initializeGT } from './setup/initGT';
@@ -16,7 +16,7 @@ import { T } from 'gt-react/context';
 (T as any)._gtt_marker = 'index.server.ts';
 export { T };
 export {
-// ----- components ----- //
+  // ----- components ----- //
   GTProvider,
   Var,
   Num,
@@ -55,7 +55,6 @@ export {
   getLocales,
   getVersionId,
 } from 'gt-react/context';
-
 
 export type {
   DictionaryTranslationOptions,

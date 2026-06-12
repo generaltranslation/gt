@@ -63,7 +63,6 @@ export {
   getVersionId,
 } from '@generaltranslation/react-core/pure';
 
-
 // TODO: move these over to pure
 export {
   getTranslationsSnapshot,
