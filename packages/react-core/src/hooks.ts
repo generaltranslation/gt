@@ -15,6 +15,7 @@ export {
   useShouldTranslate,
   useGTClass,
   useLocaleProperties,
+  useLocaleDirection,
   useVersionId,
 } from './hooks/utils';
 export { useInternalLocaleSelector } from './hooks/useInternalLocaleSelector';

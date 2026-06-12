@@ -2,6 +2,8 @@ import { getRequestFunction } from './utils/getRequestFunction';
 import { legacyGetRegionFunction } from './utils/legacyGetRegionFunction';
 
 let getRegionFunction: () => Promise<string | undefined>;
+
+// TODO: move this over to ConditionStore
 /**
  * @internal
  *

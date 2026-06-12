@@ -18,14 +18,14 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl';
 export function getLocaleDirection(): Promise<'ltr' | 'rtl'>;
 // Implementation
 export function getLocaleDirection(locale?: string) {
-  const gt = getI18nConfig().getGTClass();
+  const gtInstance = getI18nConfig().getGTClass();
   if (typeof locale === 'string') {
     // Synchronous result when locale is given
-    return gt.getLocaleDirection(locale) as 'ltr' | 'rtl';
+    return gtInstance.getLocaleDirection(locale) as 'ltr' | 'rtl';
   }
   // Asynchronous result when locale is not given
   return getLocale().then((resolvedLocale) =>
-    gt.getLocaleDirection(resolvedLocale)
+    gtInstance.getLocaleDirection(resolvedLocale)
   ) as Promise<'ltr' | 'rtl'>;
 }
 
@@ -43,6 +43,5 @@ export function getLocaleDirection(locale?: string) {
  */
 export function useLocaleDirection(locale?: string): 'ltr' | 'rtl' {
   locale = locale || useLocale();
-  const gt = getI18nConfig().getGTClass();
-  return gt.getLocaleDirection(locale);
+  return getI18nConfig().getGTClass().getLocaleDirection(locale);
 }
