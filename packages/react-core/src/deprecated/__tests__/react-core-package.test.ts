@@ -20,7 +20,16 @@ import { beforeAll, describe, expect, it } from 'vitest';
 const packageRoot = dirname(
   dirname(dirname(dirname(fileURLToPath(import.meta.url))))
 );
-const runtimeEntryNames = ['context', 'errors', 'index', 'internal'];
+const runtimeEntryNames = [
+  'components',
+  'components-rsc',
+  'context',
+  'errors',
+  'hooks',
+  'index',
+  'internal',
+  'pure',
+];
 const runtimeArtifactNames = runtimeEntryNames
   .flatMap((entryName) => [
     `${entryName}.cjs.min.cjs`,
@@ -73,7 +82,11 @@ function isAllowedExternalizedSubpath(
   file: string,
   specifier: string
 ): boolean {
-  return file.startsWith('context.') && specifier.startsWith('gt-i18n/');
+  return (
+    ['components.', 'components-rsc.', 'context.', 'hooks.', 'pure.'].some(
+      (prefix) => file.startsWith(prefix)
+    ) && specifier.startsWith('gt-i18n/')
+  );
 }
 
 function getModuleSpecifiers(file: string): string[] {
@@ -127,11 +140,19 @@ describe('@generaltranslation/react-core package exports', () => {
           const reactCore = require('@generaltranslation/react-core');
           const internal = require('@generaltranslation/react-core/internal');
           const errors = require('@generaltranslation/react-core/errors');
+          const pure = require('@generaltranslation/react-core/pure');
+          const components = require('@generaltranslation/react-core/components');
+          const hooks = require('@generaltranslation/react-core/hooks');
+          const componentsRsc = require('@generaltranslation/react-core/components-rsc');
 
           assert.equal(typeof reactCore.GTProvider, 'function');
           assert.equal(typeof reactCore.T, 'function');
           assert.equal(typeof internal.renderDefaultChildren, 'function');
           assert.equal(typeof errors.createUnsupportedLocaleWarning, 'function');
+          assert.equal(typeof pure.msg, 'function');
+          assert.equal(typeof components.T, 'function');
+          assert.equal(typeof hooks.useGT, 'function');
+          assert.equal(typeof componentsRsc.Branch, 'function');
         `,
     ]);
   });
@@ -145,11 +166,19 @@ describe('@generaltranslation/react-core package exports', () => {
           import { GTProvider, T } from '@generaltranslation/react-core';
           import { renderDefaultChildren } from '@generaltranslation/react-core/internal';
           import { createUnsupportedLocaleWarning } from '@generaltranslation/react-core/errors';
+          import { msg } from '@generaltranslation/react-core/pure';
+          import { T as ComponentsT } from '@generaltranslation/react-core/components';
+          import { useGT } from '@generaltranslation/react-core/hooks';
+          import { Branch } from '@generaltranslation/react-core/components-rsc';
 
           assert.equal(typeof GTProvider, 'function');
           assert.equal(typeof T, 'function');
           assert.equal(typeof renderDefaultChildren, 'function');
           assert.equal(typeof createUnsupportedLocaleWarning, 'function');
+          assert.equal(typeof msg, 'function');
+          assert.equal(typeof ComponentsT, 'function');
+          assert.equal(typeof useGT, 'function');
+          assert.equal(typeof Branch, 'function');
         `,
     ]);
   });

@@ -1,5 +1,8 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownConfig } from '../../tsdown.preset.mts';
+import {
+  createTsdownConfig,
+  createUseClientBoundaryPlugin,
+} from '../../tsdown.preset.mts';
 
 const deps = {
   neverBundle: [
@@ -31,6 +34,7 @@ const entries = [
   'src/index.ts',
   'src/internal.ts',
   'src/client.ts',
+  'src/context.rsc.ts',
   'src/context.client.ts',
   'src/context.server.ts',
   'src/context.types.ts',
@@ -40,7 +44,7 @@ const entries = [
 
 export default defineConfig(
   entries.flatMap((entry, index) => {
-    const entryDeps = entry.startsWith('src/context.') ? contextDeps : deps;
+    const entryDeps = entry.startsWith('src/context') ? contextDeps : deps;
     const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
     return [
@@ -50,6 +54,13 @@ export default defineConfig(
         define: {
           'import.meta.env': '{}',
         },
+        plugins: [
+          createUseClientBoundaryPlugin({
+            emittedSourceFiles: entries,
+            name: 'gt-react:use-client-boundaries',
+            outputExtension: '.cjs',
+          }),
+        ],
       },
       {
         ...esmConfig,
@@ -57,6 +68,13 @@ export default defineConfig(
           onlyBundle: false,
           ...entryDeps,
         },
+        plugins: [
+          createUseClientBoundaryPlugin({
+            emittedSourceFiles: entries,
+            name: 'gt-react:use-client-boundaries',
+            outputExtension: '.mjs',
+          }),
+        ],
       },
     ];
   })

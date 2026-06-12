@@ -1,4 +1,8 @@
-'server-only';
+'use client';
+
+// SSR/context-capable React runtime surface. This entrypoint may import hooks,
+// providers, and context modules, so it must be consumed as a client boundary by
+// React Server Component frameworks.
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { useLocaleSelector } from './components/useLocaleSelector';

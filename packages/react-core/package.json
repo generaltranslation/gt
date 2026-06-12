@@ -65,6 +65,26 @@
       "require": "./dist/context.cjs.min.cjs",
       "import": "./dist/context.esm.min.mjs"
     },
+    "./pure": {
+      "types": "./dist/pure.d.ts",
+      "require": "./dist/pure.cjs.min.cjs",
+      "import": "./dist/pure.esm.min.mjs"
+    },
+    "./hooks": {
+      "types": "./dist/hooks.d.ts",
+      "require": "./dist/hooks.cjs.min.cjs",
+      "import": "./dist/hooks.esm.min.mjs"
+    },
+    "./components": {
+      "types": "./dist/components.d.ts",
+      "require": "./dist/components.cjs.min.cjs",
+      "import": "./dist/components.esm.min.mjs"
+    },
+    "./components-rsc": {
+      "types": "./dist/components-rsc.d.ts",
+      "require": "./dist/components-rsc.cjs.min.cjs",
+      "import": "./dist/components-rsc.esm.min.mjs"
+    },
     "./errors": {
       "types": "./dist/errors.d.ts",
       "require": "./dist/errors.cjs.min.cjs",
@@ -85,6 +105,18 @@
       "context": [
         "./dist/context.d.ts"
       ],
+      "pure": [
+        "./dist/pure.d.ts"
+      ],
+      "hooks": [
+        "./dist/hooks.d.ts"
+      ],
+      "components": [
+        "./dist/components.d.ts"
+      ],
+      "components-rsc": [
+        "./dist/components-rsc.d.ts"
+      ],
       "errors": [
         "./dist/errors.d.ts"
       ]
@@ -98,6 +130,18 @@
       ],
       "@generaltranslation/react-core/context": [
         "./dist/context"
+      ],
+      "@generaltranslation/react-core/pure": [
+        "./dist/pure"
+      ],
+      "@generaltranslation/react-core/hooks": [
+        "./dist/hooks"
+      ],
+      "@generaltranslation/react-core/components": [
+        "./dist/components"
+      ],
+      "@generaltranslation/react-core/components-rsc": [
+        "./dist/components-rsc"
       ],
       "@generaltranslation/react-core/types": [
         "./dist/types.d.ts"

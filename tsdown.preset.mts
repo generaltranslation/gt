@@ -1,8 +1,16 @@
-import { existsSync } from 'node:fs';
-import { basename, extname, resolve } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { basename, dirname, extname, relative, resolve } from 'node:path';
 import { rm } from 'node:fs/promises';
 
 import type { UserConfig } from 'tsdown';
+
+type UseClientBoundaryPluginOptions = {
+  emittedSourceFiles?: string[] | 'all';
+  name?: string;
+  outDir?: string;
+  outputExtension: string;
+  root?: string;
+};
 
 export function createTsdownConfig(entry: string[], deps?: UserConfig['deps']) {
   return [
@@ -29,6 +37,7 @@ type TsdownUnbundleConfigOptions = Pick<
   | 'outExtensions'
   | 'outputOptions'
   | 'platform'
+  | 'plugins'
   | 'root'
   | 'target'
   | 'tsconfig'
@@ -58,6 +67,7 @@ export function createTsdownUnbundleConfig({
   cjsDefault,
   outExtensions = () => ({ js: '.js', dts: '.d.ts' }),
   outputOptions,
+  plugins,
 }: TsdownUnbundleConfigOptions) {
   return {
     entry,
@@ -78,7 +88,113 @@ export function createTsdownUnbundleConfig({
     deps: { skipNodeModulesBundle: true, onlyBundle: false, ...deps },
     outExtensions,
     outputOptions,
+    plugins,
   } satisfies UserConfig;
+}
+
+export function createUseClientBoundaryPlugin({
+  emittedSourceFiles = 'all',
+  name = 'gt:use-client-boundaries',
+  outDir = 'dist',
+  outputExtension,
+  root = 'src',
+}: UseClientBoundaryPluginOptions) {
+  const cwd = process.cwd();
+  const rootPath = resolve(cwd, root);
+  const emitted =
+    emittedSourceFiles === 'all'
+      ? 'all'
+      : new Set(emittedSourceFiles.map((file) => resolve(cwd, file)));
+
+  return {
+    name,
+    resolveId(source: string, importer?: string) {
+      if (!importer || !source.startsWith('.')) return null;
+
+      const importerFile = importer.split('?')[0];
+      if (hasUseClientDirective(importerFile)) return null;
+
+      const targetFile = resolveSourceFile(source, importerFile);
+      if (!targetFile || !hasUseClientDirective(targetFile)) return null;
+      if (emitted !== 'all' && !emitted.has(targetFile)) return null;
+
+      return {
+        id: outputSpecifier({
+          importerFile,
+          outDir,
+          outputExtension,
+          rootPath,
+          targetFile,
+        }),
+        external: true,
+      };
+    },
+  };
+}
+
+function resolveSourceFile(source: string, importer: string): string | null {
+  const base = resolve(dirname(importer), source);
+  for (const suffix of ['', '.ts', '.tsx', '/index.ts', '/index.tsx']) {
+    const candidate = base + suffix;
+    if (existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+function hasUseClientDirective(file: string): boolean {
+  if (!existsSync(file)) return false;
+  const code = readFileSync(file, 'utf8');
+  return /^\s*(?:(?:\/\/[^\n]*|\/\*[\s\S]*?\*\/)\s*)*['"]use client['"];?/.test(
+    code
+  );
+}
+
+function outputSpecifier({
+  importerFile,
+  outDir,
+  outputExtension,
+  rootPath,
+  targetFile,
+}: {
+  importerFile: string;
+  outDir: string;
+  outputExtension: string;
+  rootPath: string;
+  targetFile: string;
+}): string {
+  const importerOutput = toOutputFile({
+    outDir,
+    outputExtension,
+    rootPath,
+    sourceFile: importerFile,
+  });
+  const targetOutput = toOutputFile({
+    outDir,
+    outputExtension,
+    rootPath,
+    sourceFile: targetFile,
+  });
+  const specifier = relative(dirname(importerOutput), targetOutput);
+  return specifier.startsWith('.') ? specifier : `./${specifier}`;
+}
+
+function toOutputFile({
+  outDir,
+  outputExtension,
+  rootPath,
+  sourceFile,
+}: {
+  outDir: string;
+  outputExtension: string;
+  rootPath: string;
+  sourceFile: string;
+}): string {
+  const sourceRelative = relative(rootPath, sourceFile);
+  return resolve(
+    process.cwd(),
+    outDir,
+    `${sourceRelative.slice(0, -extname(sourceRelative).length)}${outputExtension}`
+  );
 }
 
 type TsdownMinifiedDualFormatConfigOptions = Pick<

@@ -1,7 +1,7 @@
 // getTranslationFunction.ts (refactored)
 
 import { getI18NConfig } from '../../config-dir/getI18NConfig';
-import { getLocale } from '../../server';
+import { getLocale } from '../../request/getLocale';
 import { hashSource } from 'generaltranslation/id';
 import {
   createStringRenderError,
