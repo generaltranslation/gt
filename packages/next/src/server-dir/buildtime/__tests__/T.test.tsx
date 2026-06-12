@@ -20,7 +20,7 @@ vi.mock('gt-react/context', () => ({
 }));
 
 describe('buildtime T', () => {
-  it('passes request conditions to context T', async () => {
+  it('passes request conditions to gt-react/context T', async () => {
     mockGetRequestConditions.mockResolvedValue({
       _locale: 'fr',
       _enableI18n: false,
