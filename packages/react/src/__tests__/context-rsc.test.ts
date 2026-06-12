@@ -18,6 +18,7 @@ describe('gt-react/context react-server surface', () => {
     expect(mod.GtInternalVar).toBeTypeOf('function');
     expect(mod.getFormatLocales).toBeTypeOf('function');
     expect(mod.getPluralBranch).toBeTypeOf('function');
+    expect(mod.renderVariable).toBeTypeOf('function');
     expect(mod.GTProvider).toBeTypeOf('function');
     expect(mod.LocaleSelector).toBeTypeOf('function');
   });
