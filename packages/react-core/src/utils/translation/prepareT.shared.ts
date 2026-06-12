@@ -1,14 +1,15 @@
-import { useMemo } from 'react';
 import addGTIdentifier from '../internal/addGTIdentifier';
 import { removeInjectedT } from '../internal/removeInjectedT';
 import writeChildrenAsObjects from '../internal/writeChildrenAsObjects';
-import { useEnableI18n, useLocale } from '../../hooks/condition-store';
-import { getI18nConfig } from 'gt-i18n/internal';
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { ReactNode } from 'react';
+import type { RenderPreparedTParams } from '../rendering/renderPreparedT.shared';
 import type { TaggedChildren } from '../types';
-import { useDefaultLocale } from '../../hooks/i18n-config';
+
+// Pure preparation logic shared by the hook wrapper (usePrepareT) and the RSC
+// code path. This module must stay free of hook/context imports so it can be
+// reached from the components-rsc entrypoint.
 
 type StripDollarPrefix<T> = {
   [K in keyof T as K extends `$${infer Rest}` ? Rest : K]: T[K];
@@ -26,47 +27,19 @@ type PreparedT = {
   };
 };
 
-function usePrepareT({
-  sourceChildren,
-  params,
-  _locale,
-  _enableI18n,
-}: {
-  sourceChildren: ReactNode;
-  params: JsxTranslationOptions;
+type RenderPreparedT = (params: RenderPreparedTParams) => ReactNode;
+
+type TProps = {
+  children: ReactNode;
   _locale?: string;
   _enableI18n?: boolean;
-}): PreparedT & {
-  defaultLocale: string;
-  locale: string;
-  enableI18n: boolean;
-  shouldTranslate: boolean;
-} {
-  const contextLocale = useLocale();
-  const contextEnableI18n = useEnableI18n();
-  const defaultLocale = useDefaultLocale();
-  const locale = _locale ?? contextLocale;
-  const enableI18n = _enableI18n ?? contextEnableI18n;
-  const shouldTranslate =
-    enableI18n && getI18nConfig().requiresTranslation(locale);
-  const prepared = useMemo(
-    () =>
-      prepareT({
-        sourceChildren,
-        params,
-        locale,
-      }),
-    [locale, params, sourceChildren]
-  );
+  _renderPreparedT?: RenderPreparedT;
+} & JsxTranslationOptions;
 
-  return {
-    defaultLocale,
-    enableI18n,
-    locale,
-    shouldTranslate,
-    ...prepared,
-  };
-}
+type ResolvedTProps = TProps & {
+  _locale: string;
+  _enableI18n: boolean;
+};
 
 function prepareT({
   sourceChildren,
@@ -130,5 +103,11 @@ function normalizeParameters(
   };
 }
 
-export { prepareT, usePrepareT };
-export type { JsxTranslationOptions, PreparedT };
+export { prepareT };
+export type {
+  JsxTranslationOptions,
+  PreparedT,
+  RenderPreparedT,
+  ResolvedTProps,
+  TProps,
+};

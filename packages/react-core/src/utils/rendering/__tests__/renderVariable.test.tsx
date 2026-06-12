@@ -1,8 +1,10 @@
 import React from 'react';
 import { describe, expect, it } from 'vitest';
-import renderDefaultChildren from '../renderDefaultChildren';
-import renderTranslatedChildren from '../renderTranslatedChildren';
-import { renderVariable } from '../renderVariable';
+import {
+  renderDefaultChildren,
+  renderTranslatedChildren,
+  renderVariable,
+} from '../renderPipeline';
 import type { TaggedElement } from '../../types';
 
 function createNumberVariable(value: number): TaggedElement {

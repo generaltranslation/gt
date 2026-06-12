@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { setReadonlyConditionStore } from '../../condition-store/singleton-operations';
-import { getFormatLocales, getShouldTranslate } from '../utils';
+import { getFormatLocales } from '../utils';
+import { getShouldTranslate } from '../utils/getShouldTranslate';
 
 function setup({
   locale,

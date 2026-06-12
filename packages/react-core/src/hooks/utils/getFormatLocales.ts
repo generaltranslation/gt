@@ -1,7 +1,7 @@
 import { getI18nConfig } from 'gt-i18n/internal';
 
 // Pure helper shared by hook-based and RSC code paths. This module must stay
-// free of hook/context imports so it can be reached from the context-rsc
+// free of hook/context imports so it can be reached from the components-rsc
 // entrypoint.
 
 const EMPTY_LOCALES_PROP: string[] = [];
