@@ -24,7 +24,6 @@ export async function getMessages(): Promise<MFunctionType> {
   return getMessagesInternal({ locale, enableI18n });
 }
 
-
 /**
  * Condition store agnostic getMessages function
  */

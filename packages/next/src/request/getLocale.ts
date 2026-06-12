@@ -33,9 +33,7 @@ export async function getLocale(): Promise<string> {
     // Support new behavior
     getLocaleFunction = async () => {
       const requestLocale = await requestFunction();
-      return gtInstance.resolveAliasLocale(
-        requestLocale || defaultLocale
-      );
+      return gtInstance.resolveAliasLocale(requestLocale || defaultLocale);
     };
   } else {
     // Support legacy behavior

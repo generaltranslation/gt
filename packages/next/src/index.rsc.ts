@@ -1,7 +1,6 @@
 import 'server-only';
 console.log('RSC - index.rsc.ts');
 
-
 import { initializeGT } from './setup/initGT';
 console.log('RSC: initializing GT');
 initializeGT();
@@ -11,7 +10,6 @@ if (typeof window !== 'undefined') {
   console.warn('RSC: being imported in browser environment!');
   throw new Error('RSC: being imported in browser environment!');
 }
-
 
 // ===== Overrides ===== //
 import { GTProvider } from './provider/GTProvider';
@@ -30,15 +28,12 @@ import { useLocaleDirection } from './request/getLocaleDirection';
 export {
   useTranslations,
   useMessages,
-  useGT
+  useGT,
 } from './server-dir/buildtime/strings';
-
 
 // ===== Client Boundary ===== //
 
-export {
-  Client_LocaleSelector as LocaleSelector
-} from './utils/client-boundary';
+export { Client_LocaleSelector as LocaleSelector } from './utils/client-boundary';
 
 // ===== gt-react ===== //
 import {
@@ -69,7 +64,6 @@ import type {
   RuntimeTranslationOptions,
 } from 'gt-react';
 
-
 // ===== other ===== //
 
 /**
@@ -77,7 +71,9 @@ import type {
  * This function is for next-pages use, not next-app use
  */
 export function getTranslationsSnapshot(_: string) {
-  throw new Error('getTranslationsSnapshot() is not available for react-server components');
+  throw new Error(
+    'getTranslationsSnapshot() is not available for react-server components'
+  );
 }
 
 export {

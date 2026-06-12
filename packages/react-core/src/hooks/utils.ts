@@ -35,13 +35,19 @@ export function useGTClass() {
 }
 
 export function useLocaleProperties(locale: string): LocaleProperties {
-  return useMemo(() => getI18nConfig().getGTClass().getLocaleProperties(locale), [locale]);
+  return useMemo(
+    () => getI18nConfig().getGTClass().getLocaleProperties(locale),
+    [locale]
+  );
 }
 
 export function useLocaleDirection(locale: string) {
-  return useMemo(() => getI18nConfig().getGTClass().getLocaleDirection(locale), [locale]);
+  return useMemo(
+    () => getI18nConfig().getGTClass().getLocaleDirection(locale),
+    [locale]
+  );
 }
 
 export function useVersionId() {
-  throw new Error('useVersionId unimplemented')
+  throw new Error('useVersionId unimplemented');
 }

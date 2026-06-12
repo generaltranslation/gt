@@ -71,6 +71,5 @@ export function InternalGTProvider({
     i18nStore.updateDictionaries(dictionaries ?? {});
   }, [translations, dictionaries, i18nStore]);
 
-  
   return <GTContext.Provider value={value}>{children}</GTContext.Provider>;
-  }
+}

@@ -15,7 +15,6 @@ import { Client_GTProvider } from '../utils/client-boundary';
 import { getNextI18nCache } from '../i18n-cache/NextI18nCache';
 import { getI18NConfig as getI18NConfiguration } from '../config-dir/getI18NConfig';
 
-
 function toTranslationSnapshot(
   translations: LegacyTranslations
 ): Record<Hash, Translation> {
@@ -29,11 +28,12 @@ function toTranslationSnapshot(
 export async function GTProvider({
   children,
   id: prefixId,
+  locale: localeProp,
 }: GTProviderProps) {
   // ---------- SETUP ---------- //
   const i18nCache = getNextI18nCache();
   const I18NConfig = getI18NConfiguration();
-  const locale = await getLocale();
+  const locale = localeProp ?? (await getLocale());
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
   // load dictionary
@@ -42,8 +42,9 @@ export async function GTProvider({
 
   // ----- FETCH TRANSLATIONS FROM CACHE ----- //
 
-  const translationsSnapshotPromise =
-    translationRequired ? i18nCache.loadTranslations(locale) : Promise.resolve({});
+  const translationsSnapshotPromise = translationRequired
+    ? i18nCache.loadTranslations(locale)
+    : Promise.resolve({});
 
   // ---------- PROCESS DICTIONARY ---------- //
   // (While waiting for cache...)

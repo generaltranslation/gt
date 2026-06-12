@@ -21,6 +21,7 @@ describe('determineLocale', () => {
         },
       },
     });
+    warnSpy.mockClear();
 
     expect(
       determineLocale({

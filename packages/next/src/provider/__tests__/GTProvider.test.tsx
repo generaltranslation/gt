@@ -6,6 +6,8 @@ const {
   mockGetDictionaryEntry,
   mockGetI18NConfig,
   mockGetLocale,
+  mockGetNextI18nCache,
+  mockLoadTranslations,
   mockMergeDictionaries,
   mockReactGTProvider,
 } = vi.hoisted(() => ({
@@ -13,6 +15,8 @@ const {
   mockGetDictionaryEntry: vi.fn(),
   mockGetI18NConfig: vi.fn(),
   mockGetLocale: vi.fn(),
+  mockGetNextI18nCache: vi.fn(),
+  mockLoadTranslations: vi.fn(),
   mockMergeDictionaries: vi.fn(),
   mockReactGTProvider: vi.fn(),
 }));
@@ -30,8 +34,13 @@ vi.mock('../../request/getLocale', () => ({
   getLocale: mockGetLocale,
 }));
 
+vi.mock('../../i18n-cache/NextI18nCache', () => ({
+  getNextI18nCache: mockGetNextI18nCache,
+}));
+
 vi.mock('gt-react/context', () => ({
   GTProvider: mockReactGTProvider,
+  ReactI18nCache: class ReactI18nCache {},
 }));
 
 vi.mock('gt-react/internal', () => ({
@@ -47,6 +56,12 @@ describe('GTProvider', () => {
     });
     mockGetDictionaryEntry.mockReturnValue({
       title: 'Title',
+    });
+    mockGetNextI18nCache.mockReturnValue({
+      loadTranslations: mockLoadTranslations,
+    });
+    mockLoadTranslations.mockResolvedValue({
+      hash: 'Salut',
     });
     mockMergeDictionaries.mockReturnValue({
       greeting: 'Bonjour',
@@ -109,6 +124,7 @@ describe('GTProvider', () => {
 
     expect(mockGetLocale).not.toHaveBeenCalled();
     expect(mockGetDictionaryEntry).toHaveBeenCalledWith('marketing.hero');
+    expect(mockLoadTranslations).not.toHaveBeenCalled();
     expect(config.getCachedTranslations).not.toHaveBeenCalled();
     expect(React.isValidElement(element)).toBe(true);
     expect(element).toMatchObject({
