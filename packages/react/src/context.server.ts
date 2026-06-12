@@ -23,7 +23,6 @@ export {
   Plural,
   Derive,
   GtInternalTranslateJsx,
-  RscT,
   T,
   Currency,
   DateTime,

@@ -3,7 +3,7 @@ import addGTIdentifier from '../internal/addGTIdentifier';
 import { removeInjectedT } from '../internal/removeInjectedT';
 import writeChildrenAsObjects from '../internal/writeChildrenAsObjects';
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
-import { useShouldTranslate } from '../../hooks/utils';
+import { getI18nConfig } from 'gt-i18n/internal';
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { ReactNode } from 'react';
@@ -29,19 +29,26 @@ type PreparedT = {
 function usePrepareT({
   sourceChildren,
   params,
+  _locale,
+  _enableI18n,
 }: {
   sourceChildren: ReactNode;
   params: JsxTranslationOptions;
+  _locale?: string;
+  _enableI18n?: boolean;
 }): PreparedT & {
   defaultLocale: string;
   locale: string;
   enableI18n: boolean;
   shouldTranslate: boolean;
 } {
-  const locale = useLocale();
-  const enableI18n = useEnableI18n();
+  const contextLocale = useLocale();
+  const contextEnableI18n = useEnableI18n();
   const defaultLocale = useDefaultLocale();
-  const shouldTranslate = useShouldTranslate();
+  const locale = _locale ?? contextLocale;
+  const enableI18n = _enableI18n ?? contextEnableI18n;
+  const shouldTranslate =
+    enableI18n && getI18nConfig().requiresTranslation(locale);
   const prepared = useMemo(
     () =>
       prepareT({

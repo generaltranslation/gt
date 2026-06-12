@@ -10,7 +10,7 @@ vi.mock('../../../request/getRequestConditions', () => ({
 }));
 
 vi.mock('gt-react/context', () => ({
-  RscT: mockRscT,
+  T: mockRscT,
 }));
 
 describe('buildtime T', () => {
@@ -30,8 +30,8 @@ describe('buildtime T', () => {
     expect(mockRscT).toHaveBeenCalledWith({
       children: 'Hello',
       id: 'greeting',
-      locale: 'fr',
-      enableI18n: false,
+      _locale: 'fr',
+      _enableI18n: false,
     });
     expect(T._gtt).toBe('translate-server');
   });
