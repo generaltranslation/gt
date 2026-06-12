@@ -6,7 +6,7 @@ import { renderDictionaryEntry } from './renderDictionaryEntry';
 import { renderDictionaryObject } from './renderDictionaryObject';
 import { resolveDictionaryLookupOptions } from '../../i18n-cache/translations-manager/utils/dictionary-helpers';
 import type { DictionaryObjectTranslation } from '../types/functions';
-import { getLocale } from '../../helpers/locale';
+import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 
 /**
  * Returns the t function that translates a dictionary entry based on its id and options.
@@ -18,13 +18,31 @@ import { getLocale } from '../../helpers/locale';
  * const title = await t('page.title');
  */
 export async function getTranslations(): Promise<TFunctionType> {
+  const conditionStore = getWritableConditionStore();
+  const locale = conditionStore.getLocale();
+  const enableI18n = conditionStore.getEnableI18n();
+  return getTranslationsInternal({ locale, enableI18n });
+}
+
+/**
+ * Condition store agnostic getTranslations function
+ */
+export async function getTranslationsInternal({
+  locale,
+  enableI18n,
+}: {
+  locale: string;
+  enableI18n: boolean;
+}): Promise<TFunctionType> {
   const i18nCache = getI18nCache();
-  const locale = getLocale();
-  await Promise.all([
-    i18nCache.loadDictionary(locale),
-    i18nCache.loadTranslations(locale),
-  ]);
   const sourceLocale = getI18nConfig().getDefaultLocale();
+  const targetLocale = enableI18n
+    ? locale
+    : sourceLocale;
+  await Promise.all([
+    i18nCache.loadDictionary(targetLocale),
+    i18nCache.loadTranslations(targetLocale),
+  ]);
 
   /**
    * Dictionary resolution
@@ -50,16 +68,16 @@ export async function getTranslations(): Promise<TFunctionType> {
     if (sourceEntry === undefined) {
       throw new Error(`Dictionary entry ${id} cannot be found`);
     }
-    const targetEntry = i18nCache.lookupDictionary(locale, id);
+    const targetEntry = i18nCache.lookupDictionary(targetLocale, id);
     const dictionaryOptions = resolveDictionaryLookupOptions(
       sourceEntry.options
     );
     const target =
       targetEntry?.entry ??
-      i18nCache.lookupTranslation(locale, sourceEntry.entry, dictionaryOptions);
+      i18nCache.lookupTranslation(targetLocale, sourceEntry.entry, dictionaryOptions);
     return renderDictionaryEntry({
       sourceLocale,
-      targetLocale: locale,
+      targetLocale: targetLocale,
       sourceEntry,
       target,
       dictionaryOptions,
@@ -83,13 +101,13 @@ export async function getTranslations(): Promise<TFunctionType> {
     if (sourceObject === undefined) {
       throw new Error(`Dictionary entry ${id} cannot be found`);
     }
-    const targetObject = i18nCache.lookupDictionaryObj(locale, id);
+    const targetObject = i18nCache.lookupDictionaryObj(targetLocale, id);
     return renderDictionaryObject({
       sourceObject,
       targetObject,
       translate: (sourceEntry, dictionaryOptions) =>
         i18nCache.lookupTranslation(
-          locale,
+          targetLocale,
           sourceEntry.entry,
           dictionaryOptions
         ),

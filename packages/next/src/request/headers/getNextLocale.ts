@@ -2,6 +2,7 @@ import { cookies, headers } from 'next/headers';
 import { getI18NConfig } from '../../config-dir/getI18NConfig';
 import { noLocalesCouldBeDeterminedWarning } from '../../errors/ssg';
 import { RequestFunctionReturnType } from '../types';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 /**
  * Retrieves the 'accept-language' header from the headers list.
@@ -15,9 +16,11 @@ import { RequestFunctionReturnType } from '../types';
 export async function getNextLocale(): Promise<RequestFunctionReturnType> {
   const [headersList, cookieStore] = await Promise.all([headers(), cookies()]);
 
+  // TODO: move cookies to i18nConfig
+  const i18nConfig = getI18nConfig();
   const I18NConfig = getI18NConfig();
-  const defaultLocale = I18NConfig.getDefaultLocale();
-  const locales = I18NConfig.getLocales();
+  const defaultLocale = i18nConfig.getDefaultLocale();
+  const locales = i18nConfig.getLocales();
 
   const preferredLocales: string[] = [];
 

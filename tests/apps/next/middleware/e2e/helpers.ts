@@ -43,14 +43,12 @@ export async function switchLocale(page: Page, locale: string) {
   // Wait for any redirects and RSC refreshes to complete
   await page.waitForLoadState('networkidle');
   // Give the client-server sync loop time to settle
-  // (ClientProviderWrapper may detect mismatch and trigger additional refreshes)
   await page.waitForTimeout(1000);
   await page.waitForLoadState('networkidle');
 }
 
 /**
- * Wait for client-side effects (useEffect in ClientProviderWrapper)
- * to run and set cookies like referrer-locale.
+ * Wait for client-side effects to run and set cookies like referrer-locale.
  */
 export async function waitForClientEffects(page: Page) {
   await page.waitForLoadState('networkidle');

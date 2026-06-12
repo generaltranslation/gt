@@ -1,7 +1,19 @@
 // React Server Component context surface.
 
-// ===== Client Boundary Components ===== //
-export { GTProvider, LocaleSelector } from './context.server';
+import { getGT, getI18nConfig, getLocale, getMessages, getTranslations } from 'gt-i18n/internal';
+import { use } from 'react';
+
+// ===== Error for client components ===== //
+function failClientComponent(componentName: string) {
+  throw new Error(`${componentName} cannot be consumed via RSC entrypoint`);
+}
+
+export function GTProvider() {
+  return failClientComponent('GTProvider');
+}
+export function LocaleSelector() {
+  return failClientComponent('LocaleSelector');
+}
 
 // ===== Components ===== //
 export {
@@ -15,6 +27,36 @@ export {
   T,
   Var,
 } from '@generaltranslation/react-core/components-rsc';
+
+// ===== Hooks (cannot reference context) ===== //
+
+export function useGT() {
+  return use(getGT());
+}
+export function useTranslations() {
+  return use(getTranslations());
+}
+export function useMessages() {
+  return use(getMessages());
+}
+export function useLocale() {
+  return getLocale();
+}
+export function useVersionId() {
+  throw new Error('useVersionId unimplemented')
+}
+export function useLocales() {
+  return getI18nConfig().getLocales();
+}
+export function useGTClass() {
+  return getI18nConfig().getGTClass();
+}
+export function useLocaleDirection(locale: string) {
+  return getI18nConfig().getGTClass().getLocaleDirection(locale);
+}
+export function useLocaleProperties(locale: string) {
+  return getI18nConfig().getGTClass().getLocaleProperties(locale);
+}
 
 // ===== Internal Components ===== //
 export {
@@ -48,14 +90,14 @@ export {
   t,
 } from '@generaltranslation/react-core/components-rsc';
 
-// ===== Runtime Helpers ===== //
+// ===== Internal ===== //
 export {
   getReactI18nCache,
   getReadonlyConditionStoreWithFallback,
   setReactI18nCache,
 } from '@generaltranslation/react-core/components-rsc';
 
-// ===== Message Helpers ===== //
+// ===== Functions ===== //
 export {
   decodeMsg,
   decodeOptions,
@@ -65,6 +107,16 @@ export {
   gtFallback,
   mFallback,
   msg,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
+} from '@generaltranslation/react-core/pure';
+
+// ===== Setup ===== //
+export {
+  initializeGT,
 } from '@generaltranslation/react-core/pure';
 
 // ===== Types ===== //
@@ -84,3 +136,9 @@ export type {
   ResolvedPluralProps,
   ResolvedRelativeTimeProps,
 } from '@generaltranslation/react-core/components-rsc';
+
+// ===== Singletons ===== //
+export {
+  ReactI18nCache,
+  type ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';

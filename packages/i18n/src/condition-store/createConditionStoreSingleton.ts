@@ -1,6 +1,27 @@
 import type { ReadonlyConditionStoreInterface } from '../i18n-cache/types';
 
-let conditionStore: ReadonlyConditionStoreInterface | undefined;
+type I18nGlobals = {
+  conditionStore?: ReadonlyConditionStoreInterface;
+  gtServicesEnabled?: boolean | undefined;
+  [key: string]: unknown;
+};
+
+type GeneralTranslationGlobal = {
+  i18n?: I18nGlobals;
+  [key: string]: unknown;
+};
+
+type GlobalWithGeneralTranslation = {
+  __generaltranslation?: GeneralTranslationGlobal;
+};
+
+function getI18nGlobals(): I18nGlobals {
+  const globalObj = globalThis as unknown as GlobalWithGeneralTranslation;
+  globalObj.__generaltranslation ??= {};
+  // TODO: Consider checking package versions and using a compatibility matrix before sharing global singletons.
+  globalObj.__generaltranslation.i18n ??= {};
+  return globalObj.__generaltranslation.i18n;
+}
 
 export function createConditionStoreSingleton<
   T extends ReadonlyConditionStoreInterface,
@@ -9,6 +30,7 @@ export function createConditionStoreSingleton<
     /**
      * TODO: each package throws a different error message
      */
+    const conditionStore = getI18nGlobals().conditionStore;
     if (!conditionStore) {
       throw new Error(notInitializedMessage);
     }
@@ -16,11 +38,20 @@ export function createConditionStoreSingleton<
   }
 
   function setConditionStore(nextConditionStore: T): void {
-    conditionStore = nextConditionStore;
+    const i18nGlobals = getI18nGlobals();
+    if (
+      i18nGlobals.conditionStore &&
+      i18nGlobals.conditionStore !== nextConditionStore
+    ) {
+      console.warn(
+        'gt-i18n: Overwriting global conditionStore singleton instance.'
+      );
+    }
+    i18nGlobals.conditionStore = nextConditionStore;
   }
 
   function isConditionStoreInitialized(): boolean {
-    return conditionStore !== undefined;
+    return getI18nGlobals().conditionStore !== undefined;
   }
 
   return {

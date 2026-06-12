@@ -70,15 +70,11 @@
       "react-server": "./dist/index.rsc.js",
       "browser": "./dist/index.client.js",
       "types": "./dist/index.types.d.ts",
-      "default": "./dist/index.client.js"
+      "default": "./dist/index.server.js"
     },
     "./config": {
       "types": "./dist/config.d.ts",
       "default": "./dist/config.js"
-    },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "default": "./dist/client.js"
     },
     "./server": {
       "types": "./dist/server.d.ts",
@@ -136,9 +132,6 @@
       "config": [
         "./dist/config.d.ts"
       ],
-      "client": [
-        "./dist/client.d.ts"
-      ],
       "server": [
         "./dist/server.d.ts"
       ],
@@ -191,9 +184,6 @@
     "paths": {
       "gt-next/config": [
         "/dist/config"
-      ],
-      "gt-next/client": [
-        "/dist/client"
       ],
       "gt-next/server": [
         "/dist/server"

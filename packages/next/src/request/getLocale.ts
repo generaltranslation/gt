@@ -1,10 +1,12 @@
-import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { use } from '../utils/use';
 import { legacyGetLocaleFunction } from './utils/legacyGetLocaleFunction';
 import { getRequestFunction } from './utils/getRequestFunction';
 import { localeStore } from './localeStore';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 let getLocaleFunction: () => Promise<string>;
+
+// TODO: move this over to ConditionStore
 
 /**
  * Gets the user's current locale.
@@ -22,21 +24,22 @@ export async function getLocale(): Promise<string> {
 
   // Use the request function to get the locale
   if (getLocaleFunction) return await getLocaleFunction();
-  const I18NConfig = getI18NConfig();
-  const gt = I18NConfig.getGTClass();
+  const i18nConfig = getI18nConfig();
+  const gtInstance = i18nConfig.getGTClass();
+  const defaultLocale = i18nConfig.getDefaultLocale();
 
   if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {
     const requestFunction = getRequestFunction('getLocale');
     // Support new behavior
     getLocaleFunction = async () => {
       const requestLocale = await requestFunction();
-      return gt.resolveAliasLocale(
-        requestLocale || I18NConfig.getDefaultLocale()
+      return gtInstance.resolveAliasLocale(
+        requestLocale || defaultLocale
       );
     };
   } else {
     // Support legacy behavior
-    getLocaleFunction = legacyGetLocaleFunction(I18NConfig, gt);
+    getLocaleFunction = legacyGetLocaleFunction();
   }
 
   return getLocaleFunction();

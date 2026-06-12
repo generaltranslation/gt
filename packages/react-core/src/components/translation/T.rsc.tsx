@@ -6,6 +6,7 @@ import {
   prepareT,
   type ResolvedTProps,
 } from '../../utils/translation/prepareT.shared';
+import { JsxChildren } from '@generaltranslation/format/types';
 
 // RSC implementation: request conditions are passed explicitly instead of
 // being read from hooks. This module must stay free of hook/context imports
@@ -15,9 +16,11 @@ async function RscT({
   children: sourceChildren,
   _locale,
   _enableI18n,
+  // TODO: don't expose to consumer, this should be thru an internal path
   _renderPreparedT = renderPreparedT,
   ...params
 }: ResolvedTProps): Promise<ReactNode> {
+  console.log('<RscT> Component', typeof window === 'undefined' ? 'SERVER' : 'CLIENT');
   const locale = _locale;
   const enableI18n = _enableI18n;
   const defaultLocale = getI18nConfig().getDefaultLocale();
@@ -40,12 +43,19 @@ async function RscT({
     });
   }
 
-  const lookupTranslation =
-    await getReactI18nCache().getLookupTranslation(locale);
-  const targetJsxChildren = lookupTranslation(
-    prepared.sourceJsxChildren,
-    prepared.targetOptions
-  );
+  let targetJsxChildren: JsxChildren | undefined;
+  const i18nCache = getReactI18nCache();
+  if (getI18nConfig().isDevHotReloadEnabled()) {
+    targetJsxChildren = await i18nCache.lookupTranslationWithFallback(locale, prepared.sourceJsxChildren, prepared.targetOptions);
+  } else {
+    const lookupTranslation =
+      await i18nCache.getLookupTranslation(locale);
+    targetJsxChildren = lookupTranslation(
+      prepared.sourceJsxChildren,
+      prepared.targetOptions
+    );
+  }
+
 
   return _renderPreparedT({
     ...prepared,

@@ -136,6 +136,7 @@ export class I18nStore {
     lookup: TranslateLookup<T>,
     translationsSnapshot: Record<Locale, Record<Hash, Translation>> = {}
   ): TranslateSnapshot<T> => {
+    console.log('getTranslateSnapshot', getTranslateListenerKey(lookup));
     return (
       lookupTranslation(translationsSnapshot, lookup) ??
       getReactI18nCache().lookupTranslation<T>(

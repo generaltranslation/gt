@@ -1,5 +1,4 @@
 import { typesFileError } from './errors/createErrors';
-import { GTProvider as _GTProvider } from './provider/GTProvider';
 import { T as _T } from './server-dir/buildtime/T';
 import {
   useTranslations as _useTranslations,
@@ -18,7 +17,16 @@ import {
   useLocaleDirection as _useLocaleDirection,
   useVersionId as _useVersionId,
 } from 'gt-react/client';
-import { LocaleSelector as _LocaleSelector } from 'gt-react/context';
+import {
+  LocaleSelector as _LocaleSelector,
+  getTranslationsSnapshot,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
+} from 'gt-react/context';
+import { GTProvider as _GTProvider } from 'gt-react/context';
 import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
@@ -47,7 +55,9 @@ import {
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export const GTProvider: typeof _GTProvider = () => {
+export function GTProvider(_: {
+  id?: string,
+} & Partial<Parameters<typeof _GTProvider>[0]>): React.ReactNode {
   throw new Error(typesFileError);
 };
 
@@ -507,4 +517,10 @@ export {
   derive,
   declareVar,
   decodeVars,
+  getTranslationsSnapshot,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
 };

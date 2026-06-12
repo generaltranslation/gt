@@ -11,6 +11,7 @@ import { usePrepareT } from '../../utils/translation/usePrepareT';
  * External-store version of the `<T>` component.
  */
 function T(props: TProps): ReactNode {
+  console.log('<T> Component', typeof window === 'undefined' ? 'SERVER' : 'CLIENT');
   return useComputeT(props);
 }
 

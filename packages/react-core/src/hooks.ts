@@ -1,7 +1,7 @@
 // React hook entrypoint. This is context-capable and intentionally not
 // RSC-safe.
 
-export { useLocale, useEnableI18n } from './hooks/condition-store';
+export { useConditionStore, useLocale, useEnableI18n } from './hooks/condition-store';
 export {
   useCustomMapping,
   useDefaultLocale,
@@ -10,5 +10,13 @@ export {
 export { useGT } from './hooks/useGT';
 export { useMessages } from './hooks/useMessages';
 export { useTranslations } from './hooks/useTranslations';
-export { getFormatLocales, useFormatLocales } from './hooks/utils';
+export {
+  useFormatLocales,
+  useShouldTranslate,
+  useGTClass,
+  useLocaleProperties,
+  useLocaleDirection,
+  useVersionId,
+} from './hooks/utils';
 export { useInternalLocaleSelector } from './hooks/useInternalLocaleSelector';
+

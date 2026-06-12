@@ -2,6 +2,7 @@ import { RuntimeTranslationOptions } from '../types/options';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { resolveStringContentWithRuntimeFallback } from './helpers';
 import { getLocale } from '../../helpers/locale';
+import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 
 type RuntimeTranslationOptionsWithFormat = Omit<
   RuntimeTranslationOptions,
@@ -28,9 +29,30 @@ export async function tx(
   content: string,
   options: RuntimeTranslationOptionsWithFormat = {}
 ): Promise<string> {
-  const locale =
-    typeof options.$locale === 'string' ? options.$locale : getLocale();
-  return resolveStringContentWithRuntimeFallback(locale, content, {
+  const conditionStore = getWritableConditionStore();
+  const locale = conditionStore.getLocale();
+  const enableI18n = conditionStore.getEnableI18n();
+  return txInternal({ locale, enableI18n, content, options });
+}
+
+
+/**
+ * Condition store agnostic tx function
+ */
+export async function txInternal({
+  locale,
+  enableI18n,
+  content,
+  options,
+}: {
+  locale: string;
+  enableI18n: boolean;
+  content: string;
+  options: RuntimeTranslationOptionsWithFormat;
+}): Promise<string> {
+  const targetLocale =
+    typeof options.$locale === 'string' ? options.$locale : locale;
+  return resolveStringContentWithRuntimeFallback(targetLocale, content, {
     $format: 'STRING',
     ...options,
   });
