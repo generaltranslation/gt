@@ -110,6 +110,15 @@ export interface ScopedConditionStoreInterface extends ReadonlyConditionStoreInt
   run<T>(locale: string, callback: () => T): T;
 }
 
+/**
+ * Async condition store contract for runtimes with scoped locale context.
+ */
+export interface AsyncReadonlyConditionStoreInterface {
+  getLocale(): Promise<string>;
+  getEnableI18n(): Promise<boolean>;
+}
+
+
 export type {
   TranslationsLoader,
   LifecycleCallbacks,

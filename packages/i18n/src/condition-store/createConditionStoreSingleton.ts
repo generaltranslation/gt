@@ -1,4 +1,7 @@
-import type { ReadonlyConditionStoreInterface } from '../i18n-cache/types';
+import type {
+  AsyncReadonlyConditionStoreInterface,
+  ReadonlyConditionStoreInterface,
+} from '../i18n-cache/types';
 
 type I18nGlobals = {
   conditionStore?: ReadonlyConditionStoreInterface;
@@ -24,7 +27,9 @@ function getI18nGlobals(): I18nGlobals {
 }
 
 export function createConditionStoreSingleton<
-  T extends ReadonlyConditionStoreInterface,
+  T extends
+    | ReadonlyConditionStoreInterface
+    | AsyncReadonlyConditionStoreInterface,
 >(notInitializedMessage: string) {
   function getConditionStore(): T {
     /**
@@ -47,7 +52,8 @@ export function createConditionStoreSingleton<
         'gt-i18n: Overwriting global conditionStore singleton instance.'
       );
     }
-    i18nGlobals.conditionStore = nextConditionStore;
+    i18nGlobals.conditionStore =
+      nextConditionStore as ReadonlyConditionStoreInterface;
   }
 
   function isConditionStoreInitialized(): boolean {
