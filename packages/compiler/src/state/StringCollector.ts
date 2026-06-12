@@ -21,6 +21,8 @@ export interface TranslationContent {
   maxChars?: number;
   /** Optional format from options: t("text", {$format: "STRING"}) → "STRING" */
   format?: string;
+  /** Runtime-only source function, when registered outside a callback */
+  runtimeSource?: 'msg' | 't';
 }
 
 /**
@@ -214,8 +216,15 @@ export class StringCollector {
   /**
    * Get all runtime-only translation entries
    */
-  getRuntimeOnlyContent(): TranslationContent[] {
-    return this.runtimeOnlyEntries;
+  getRuntimeOnlyContent(
+    runtimeSource?: TranslationContent['runtimeSource']
+  ): TranslationContent[] {
+    if (!runtimeSource) {
+      return this.runtimeOnlyEntries;
+    }
+    return this.runtimeOnlyEntries.filter(
+      (entry) => entry.runtimeSource === runtimeSource
+    );
   }
 
   /**

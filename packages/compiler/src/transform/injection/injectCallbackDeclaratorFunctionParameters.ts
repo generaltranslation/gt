@@ -7,6 +7,7 @@ import { GT_FUNCTIONS_WITH_CALLBACKS } from '../../utils/constants/gt/constants'
 import { extractIdentifiersFromLVal } from '../../utils/parsing/extractIdentifiersFromLVal';
 import { trackOverridingVariable } from '../tracking/trackOverridingVariable';
 import { createErrorLocation } from '../../utils/errors';
+import type { TranslationContent } from '../../state/StringCollector';
 
 /**
  * inject parameters into invocation of translation function
@@ -93,6 +94,10 @@ export function injectCallbackDeclaratorFunctionParameters(
     case GT_FUNCTIONS_WITH_CALLBACKS.getGT:
       injectUseGTParameters(expression, state, id);
       break;
+    case GT_FUNCTIONS_WITH_CALLBACKS.useMessages:
+    case GT_FUNCTIONS_WITH_CALLBACKS.getMessages:
+      injectUseMessagesParameters(expression, state);
+      break;
     default:
       return;
   }
@@ -117,43 +122,56 @@ function injectUseGTParameters(
   }
 
   // Inject the parameters into the call expression
-  expression.arguments = [
-    t.arrayExpression(
-      translationContent.map((content) =>
-        t.objectExpression([
-          t.objectProperty(t.identifier('hash'), t.stringLiteral(content.hash)),
-          t.objectProperty(
-            t.identifier('message'),
-            t.stringLiteral(content.message)
-          ),
-          ...(content.id
-            ? [
-                t.objectProperty(
-                  t.identifier('id'),
-                  t.stringLiteral(content.id)
-                ),
-              ]
-            : []),
-          ...(content.context
-            ? [
-                t.objectProperty(
-                  t.identifier('context'),
-                  t.stringLiteral(content.context)
-                ),
-              ]
-            : []),
-          ...(content.maxChars != null
-            ? [
-                t.objectProperty(
-                  t.identifier('maxChars'),
-                  t.numericLiteral(content.maxChars)
-                ),
-              ]
-            : []),
-        ])
-      )
-    ),
-  ];
+  expression.arguments = [buildMessagesArrayExpression(translationContent)];
+}
+
+/**
+ * Inject the registered msg() calls into useMessages/getMessages so server
+ * async boundaries can preload translations before m() renders them.
+ */
+function injectUseMessagesParameters(
+  expression: t.CallExpression,
+  state: TransformState
+) {
+  const translationContent = state.stringCollector.getRuntimeOnlyContent('msg');
+  if (!translationContent.length) {
+    return;
+  }
+
+  expression.arguments = [buildMessagesArrayExpression(translationContent)];
+}
+
+function buildMessagesArrayExpression(content: TranslationContent[]) {
+  return t.arrayExpression(
+    content.map((entry) =>
+      t.objectExpression([
+        t.objectProperty(
+          t.identifier('message'),
+          t.stringLiteral(entry.message)
+        ),
+        t.objectProperty(t.identifier('$_hash'), t.stringLiteral(entry.hash)),
+        ...(entry.id
+          ? [t.objectProperty(t.identifier('$id'), t.stringLiteral(entry.id))]
+          : []),
+        ...(entry.context
+          ? [
+              t.objectProperty(
+                t.identifier('$context'),
+                t.stringLiteral(entry.context)
+              ),
+            ]
+          : []),
+        ...(entry.maxChars != null
+          ? [
+              t.objectProperty(
+                t.identifier('$maxChars'),
+                t.numericLiteral(entry.maxChars)
+              ),
+            ]
+          : []),
+      ])
+    )
+  );
 }
 
 /**

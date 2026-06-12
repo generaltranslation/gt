@@ -14,6 +14,7 @@ export function registerStandaloneTranslation({
   hash,
   format,
   injectHash,
+  runtimeSource,
 }: {
   state: TransformState;
   content: string;
@@ -23,6 +24,7 @@ export function registerStandaloneTranslation({
   hash?: string;
   format?: string;
   injectHash?: boolean;
+  runtimeSource?: 'msg' | 't';
 }): void {
   hash ??= hashSource({
     source: content,
@@ -39,6 +41,7 @@ export function registerStandaloneTranslation({
     context,
     maxChars,
     format,
+    runtimeSource,
   });
 
   // Runtime-only entries, including msg() and t`...`, stop here. Only

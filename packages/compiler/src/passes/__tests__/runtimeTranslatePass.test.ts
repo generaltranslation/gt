@@ -150,6 +150,25 @@ function getOptionValue(
   return undefined;
 }
 
+function getObjectValue(
+  object: t.ObjectExpression,
+  key: string
+): string | number | undefined {
+  for (const prop of object.properties) {
+    if (!t.isObjectProperty(prop)) continue;
+    const propKey = t.isStringLiteral(prop.key)
+      ? prop.key.value
+      : t.isIdentifier(prop.key)
+        ? prop.key.name
+        : undefined;
+    if (propKey === key) {
+      if (t.isStringLiteral(prop.value)) return prop.value.value;
+      if (t.isNumericLiteral(prop.value)) return prop.value.value;
+    }
+  }
+  return undefined;
+}
+
 /** Check if code contains a Promise.all call */
 function hasPromiseAll(code: string): boolean {
   return code.includes('Promise.all');
@@ -780,6 +799,51 @@ describe('runtimeTranslatePass', () => {
 
       expect(calls).toHaveLength(1);
       expect(getOptionValue(calls[0], '$_hash')).toBeUndefined();
+    });
+
+    it('injects registered msg() calls into getMessages()', () => {
+      const state = initializeState({}, 'test.tsx');
+      const ast = parser.parse(
+        `
+        import { getMessages, msg } from 'gt-next/server';
+        const greeting = msg("Hello", { $context: "nav" });
+        export async function Page() {
+          const m = await getMessages();
+          return m(greeting);
+        }
+      `,
+        {
+          sourceType: 'module',
+          plugins: ['jsx', 'typescript'],
+        }
+      );
+
+      traverse(ast, collectionPass(state));
+      traverse(ast, injectionPass(state));
+
+      let getMessagesCall: t.CallExpression | undefined;
+      traverse(ast, {
+        CallExpression(path) {
+          if (t.isIdentifier(path.node.callee, { name: 'getMessages' })) {
+            getMessagesCall = path.node;
+          }
+        },
+      });
+
+      expect(getMessagesCall).toBeDefined();
+      const messagesArg = getMessagesCall!.arguments[0];
+      expect(t.isArrayExpression(messagesArg)).toBe(true);
+      const firstMessage = (messagesArg as t.ArrayExpression).elements[0];
+      expect(t.isObjectExpression(firstMessage)).toBe(true);
+      expect(
+        getObjectValue(firstMessage as t.ObjectExpression, 'message')
+      ).toBe('Hello');
+      expect(
+        getObjectValue(firstMessage as t.ObjectExpression, '$context')
+      ).toBe('nav');
+      expect(
+        getObjectValue(firstMessage as t.ObjectExpression, '$_hash')
+      ).toBeDefined();
     });
 
     it('keeps useGT callback hash alignment when standalone t() appears first', () => {
