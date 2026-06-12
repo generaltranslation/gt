@@ -12,7 +12,6 @@ import { JsxChildren } from '@generaltranslation/format/types';
 // being read from hooks. This module must stay free of hook/context imports
 // so it can be exported from the components-rsc entrypoint.
 
-
 async function RscT({
   children: sourceChildren,
   _locale,
