@@ -1,24 +1,9 @@
 import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
-import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
-import { renderPreparedT } from '../../utils/rendering/renderPreparedT';
-import {
-  prepareT,
-  usePrepareT,
-  type JsxTranslationOptions,
-} from '../../utils/translation/prepareT';
-
-type TProps = {
-  children: ReactNode;
-  _locale?: string;
-  _enableI18n?: boolean;
-} & JsxTranslationOptions;
-
-type ResolvedTProps = TProps & {
-  _locale: string;
-  _enableI18n: boolean;
-};
+import { renderPreparedT } from '../../utils/rendering/renderPipeline';
+import type { TProps } from '../../utils/translation/prepareT.shared';
+import { usePrepareT } from '../../utils/translation/usePrepareT';
 
 // ===== Component ===== //
 
@@ -33,58 +18,11 @@ function GtInternalTranslateJsx(props: TProps): ReactNode {
   return useComputeT(props);
 }
 
-async function RscT({
-  children: sourceChildren,
-  _locale,
-  _enableI18n,
-  ...params
-}: ResolvedTProps): Promise<ReactNode> {
-  const locale = _locale;
-  const enableI18n = _enableI18n;
-  const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate =
-    enableI18n && getI18nConfig().requiresTranslation(locale);
-  const prepared = prepareT({
-    sourceChildren,
-    params,
-    locale,
-  });
-
-  if (!shouldTranslate) {
-    return renderPreparedT({
-      ...prepared,
-      targetJsxChildren: undefined,
-      locale,
-      defaultLocale,
-      enableI18n,
-      shouldTranslate,
-    });
-  }
-
-  const lookupTranslation =
-    await getReactI18nCache().getLookupTranslation(locale);
-  const targetJsxChildren = lookupTranslation(
-    prepared.sourceJsxChildren,
-    prepared.targetOptions
-  );
-
-  return renderPreparedT({
-    ...prepared,
-    targetJsxChildren,
-    locale,
-    defaultLocale,
-    enableI18n,
-    shouldTranslate,
-  });
-}
-
 /** @internal _gtt - The GT transformation for the component. */
 T._gtt = 'translate-client';
 GtInternalTranslateJsx._gtt = 'translate-client-automatic';
-RscT._gtt = 'translate-server';
 
-export { GtInternalTranslateJsx, RscT, T };
-export type { ResolvedTProps, TProps };
+export { GtInternalTranslateJsx, T };
 
 /**
  * Render logic
@@ -93,6 +31,7 @@ function useComputeT({
   children: sourceChildren,
   _locale,
   _enableI18n,
+  _renderPreparedT = renderPreparedT,
   ...params
 }: TProps): ReactNode {
   // Prepare our source children for rendering
@@ -130,7 +69,7 @@ function useComputeT({
     return prev.current;
   }
 
-  const result = renderPreparedT({
+  const result = _renderPreparedT({
     taggedSourceChildren,
     targetJsxChildren,
     locale,

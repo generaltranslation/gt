@@ -1,5 +1,6 @@
 import { getRequestConditions } from '../../request/getRequestConditions';
 import { T as RscT } from 'gt-react/context';
+import { renderPreparedT } from './renderPipeline';
 import type { ReactNode } from 'react';
 
 type TProps = {
@@ -18,7 +19,11 @@ type TProps = {
  */
 export async function T(props: TProps): Promise<ReactNode> {
   const conditions = await getRequestConditions();
-  return RscT({ ...props, ...conditions });
+  return RscT({
+    ...props,
+    ...conditions,
+    _renderPreparedT: renderPreparedT,
+  });
 }
 
 /** @internal _gtt - The GT transformation for the component. */

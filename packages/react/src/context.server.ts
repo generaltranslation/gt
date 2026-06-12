@@ -52,8 +52,14 @@ export {
   getTranslationsSnapshot,
   getReactI18nCache,
   setReactI18nCache,
+  createRenderPipeline,
   t,
   // ===== Setup ===== //
   internalInitializeGTSRA as initializeGT,
   internalInitializeGTSPA,
+} from '@generaltranslation/react-core/context';
+
+export type {
+  RenderPipeline,
+  RenderPreparedT,
 } from '@generaltranslation/react-core/context';

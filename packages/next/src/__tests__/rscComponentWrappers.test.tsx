@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
   mockComponents: {
     Branch: vi.fn(),
+    createRenderPipeline: vi.fn(() => ({
+      renderPreparedT: vi.fn(),
+    })),
     Currency: vi.fn(),
     DateTime: vi.fn(),
     decodeMsg: vi.fn(),
