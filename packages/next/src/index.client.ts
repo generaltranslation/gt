@@ -1,7 +1,7 @@
 'use client';
 console.log('CSR - index.client.ts');
 
-import { initializeGT } from './setup/initializeGTNext';
+import { initializeGT } from './setup/initGT';
 const publicI18nConfigParams =
   process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
 if (publicI18nConfigParams) {
@@ -38,6 +38,10 @@ import {
   useLocales,
   useDefaultLocale,
   useMessages,
+  useGTClass,
+  useLocaleProperties,
+  useLocaleDirection,
+  useVersionId,
   msg,
   decodeMsg,
   decodeOptions,
@@ -47,6 +51,11 @@ import {
   mFallback,
   gtFallback,
   getTranslationsSnapshot,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
 } from 'gt-react/context';
 import {
   txUseClientError,
@@ -60,19 +69,6 @@ import type {
 // Mock <Tx> which throws an error
 export function Tx() {
   throw new Error(txUseClientError);
-}
-
-function useGTClass() {
-  throw new Error('useGTClass() is not yet implemented in the client');
-}
-function useLocaleProperties() {
-  throw new Error('useLocaleProperties() is not yet implemented in the client');
-}
-function useLocaleDirection() {
-  throw new Error('useLocaleDirection() is not yet implemented in the client');
-}
-function useVersionId() {
-  throw new Error('useVersionId() is not yet implemented in the client');
 }
 
 export {
@@ -106,6 +102,11 @@ export {
   mFallback,
   gtFallback,
   getTranslationsSnapshot,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
 };
 export type {
   DictionaryTranslationOptions,

@@ -2,7 +2,7 @@ import 'server-only';
 console.log('RSC - index.rsc.ts');
 
 
-import { initializeGT } from './setup/initializeGTNext';
+import { initializeGT } from './setup/initGT';
 const publicI18nConfigParams =
   process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
 if (publicI18nConfigParams) {
@@ -46,6 +46,11 @@ import {
   Derive,
   mFallback,
   gtFallback,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
 } from 'gt-react/context';
 import type {
   DictionaryTranslationOptions,
@@ -60,7 +65,6 @@ import {
   useGT,
 } from './server-dir/buildtime/getTranslationFunction';
 import type { LocaleProperties } from '@generaltranslation/format/types';
-import { Locale } from 'gt-i18n/src/i18n-cache/translations-manager/LocalesCache';
 
 
 export { LocaleSelector } from 'gt-react/context';
@@ -85,7 +89,7 @@ export function useVersionId() {
   return getI18NConfig().getVersionId();
 }
 
-export function getTranslationsSnapshot(_: Locale) {
+export function getTranslationsSnapshot(_: string) {
   throw new Error('getTranslationsSnapshot is not available in RSC');
 }
 
@@ -117,6 +121,11 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
 };
 export type {
   DictionaryTranslationOptions,

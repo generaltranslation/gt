@@ -1,7 +1,7 @@
 "use client"
 console.log('SSR - index.server.ts');
 
-import { initializeGT } from './setup/initializeGTNext';
+import { initializeGT } from './setup/initGT';
 const publicI18nConfigParams =
   process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
 if (publicI18nConfigParams) {
@@ -64,15 +64,16 @@ export {
   mFallback,
   gtFallback,
   getTranslationsSnapshot,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
 } from 'gt-react/context';
-import type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
-} from 'gt-react';
+
 
 export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-};
+} from 'gt-react';

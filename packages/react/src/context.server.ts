@@ -59,15 +59,20 @@ export {
   mFallback,
   gtFallback,
   getFormatLocales,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
 } from '@generaltranslation/react-core/pure';
 
 export {
   getTranslationsSnapshot,
-  getReactI18nCache,
-  setReactI18nCache,
   createRenderPipeline,
   t,
   // ===== Setup ===== //
+  getReactI18nCache,
+  setReactI18nCache,
   internalInitializeGTSRA as initializeGT,
   internalInitializeGTSPA,
 } from '@generaltranslation/react-core/context';

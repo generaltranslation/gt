@@ -56,6 +56,11 @@ export {
   gtFallback,
   getFormatLocales,
   initializeGT,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
 } from '@generaltranslation/react-core/pure';
 
 

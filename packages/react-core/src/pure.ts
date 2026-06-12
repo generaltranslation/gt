@@ -26,3 +26,11 @@ export {
   ReactI18nCache,
   type ReactI18nCacheParams,
 } from './i18n-cache/ReactI18nCache';
+
+export {
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
+} from 'gt-i18n';

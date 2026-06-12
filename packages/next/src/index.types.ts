@@ -17,7 +17,15 @@ import {
   useLocaleDirection as _useLocaleDirection,
   useVersionId as _useVersionId,
 } from 'gt-react/client';
-import { LocaleSelector as _LocaleSelector, getTranslationsSnapshot } from 'gt-react/context';
+import {
+  LocaleSelector as _LocaleSelector,
+  getTranslationsSnapshot,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
+} from 'gt-react/context';
 import { GTProvider as _GTProvider } from 'gt-react/context';
 import type {
   DictionaryTranslationOptions,
@@ -510,4 +518,9 @@ export {
   declareVar,
   decodeVars,
   getTranslationsSnapshot,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
 };

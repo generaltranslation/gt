@@ -81,14 +81,14 @@ export {
   t,
 } from '@generaltranslation/react-core/components-rsc';
 
-// ===== Runtime Helpers ===== //
+// ===== Internal ===== //
 export {
   getReactI18nCache,
   getReadonlyConditionStoreWithFallback,
   setReactI18nCache,
 } from '@generaltranslation/react-core/components-rsc';
 
-// ===== Message Helpers ===== //
+// ===== Functions ===== //
 export {
   decodeMsg,
   decodeOptions,
@@ -98,6 +98,11 @@ export {
   gtFallback,
   mFallback,
   msg,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
 } from '@generaltranslation/react-core/pure';
 
 // ===== Setup ===== //
