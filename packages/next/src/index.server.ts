@@ -36,7 +36,7 @@ import {
   useGT,
 } from './server-dir/buildtime/getTranslationFunction';
 import type { LocaleProperties } from '@generaltranslation/format/types';
-export { LocaleSelector, RegionSelector } from './index.client';
+export { LocaleSelector } from 'gt-react/context';
 
 export function useGTClass() {
   return getI18NConfig().getGTClass();

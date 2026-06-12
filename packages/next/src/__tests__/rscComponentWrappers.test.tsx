@@ -16,6 +16,7 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     Derive: vi.fn(),
     derive: vi.fn(),
     gtFallback: vi.fn(),
+    LocaleSelector: vi.fn(),
     mFallback: vi.fn(),
     msg: vi.fn(),
     Num: vi.fn(),
@@ -95,6 +96,7 @@ describe('rsc component wrappers', () => {
     expect(module.RelativeTime).toBeTypeOf('function');
     expect(module.Branch).toBeTypeOf('function');
     expect(module.Plural).toBeTypeOf('function');
+    expect(module.LocaleSelector).toBe(mockComponents.LocaleSelector);
     expect(module.Derive).toBe(mockComponents.Derive);
     expect(module.msg).toBe(mockComponents.msg);
     expect(module.decodeMsg).toBe(mockComponents.decodeMsg);

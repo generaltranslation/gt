@@ -10,8 +10,6 @@ import {
   T,
   Branch,
   Plural,
-  LocaleSelector,
-  RegionSelector,
   useGT,
   useTranslations,
   useLocale,
@@ -40,6 +38,7 @@ import type {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
+export { LocaleSelector } from 'gt-react/context';
 
 // Mock <GTProvider> which throws an error
 export function GTProvider() {
@@ -61,8 +60,6 @@ export {
   Derive,
   Branch,
   Plural,
-  LocaleSelector,
-  RegionSelector,
   useGT,
   useTranslations,
   useLocale,

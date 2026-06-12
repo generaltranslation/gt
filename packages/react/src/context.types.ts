@@ -64,6 +64,23 @@ export {
 } from '@generaltranslation/react-core/context';
 
 export type {
+  CurrencyProps,
+  DateTimeProps,
+  JsxTranslationOptions,
+  NumProps,
+  PluralProps,
+  PreparedT,
+  RelativeTimeFormatOptions,
+  RelativeTimeProps,
+  RenderVariable,
+  ResolvedCurrencyProps,
+  ResolvedDateTimeProps,
+  ResolvedNumProps,
+  ResolvedPluralProps,
+  ResolvedRelativeTimeProps,
+} from '@generaltranslation/react-core/components-rsc';
+
+export type {
   RenderPipeline,
   RenderPreparedT,
 } from '@generaltranslation/react-core/context';
