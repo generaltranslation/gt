@@ -7,11 +7,7 @@ const publicI18nConfigParams =
   process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
 if (publicI18nConfigParams) {
   console.log('RSC: initializing GT');
-  initializeGT({
-    ...JSON.parse(publicI18nConfigParams),
-    projectId: process.env.NEXT_PUBLIC_GT_PROJECT_ID,
-    devApiKey: process.env.NEXT_PUBLIC_GT_DEV_API_KEY,
-  });
+  initializeGT();
 } else {
   console.warn('RSC: no initialize GT');
 }
@@ -64,6 +60,7 @@ import {
   useGT,
 } from './server-dir/buildtime/getTranslationFunction';
 import type { LocaleProperties } from '@generaltranslation/format/types';
+import { Locale } from 'gt-i18n/src/i18n-cache/translations-manager/LocalesCache';
 
 
 export { LocaleSelector } from 'gt-react/context';
@@ -86,6 +83,10 @@ export function useDefaultLocale() {
 
 export function useVersionId() {
   return getI18NConfig().getVersionId();
+}
+
+export function getTranslationsSnapshot(_: Locale) {
+  throw new Error('getTranslationsSnapshot is not available in RSC');
 }
 
 export {

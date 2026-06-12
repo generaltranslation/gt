@@ -1,6 +1,5 @@
 "use client";
 // Small boundary for provider, no side effects
-import { initializeGT } from '../setup/initializeGTNext';
 const publicI18nConfigParams =
   process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
 if (publicI18nConfigParams) {

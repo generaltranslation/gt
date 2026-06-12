@@ -6,11 +6,7 @@ const publicI18nConfigParams =
   process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
 if (publicI18nConfigParams) {
   console.log('CSR: initializing GT');
-  initializeGT({
-    ...JSON.parse(publicI18nConfigParams),
-    projectId: process.env.NEXT_PUBLIC_GT_PROJECT_ID,
-    devApiKey: process.env.NEXT_PUBLIC_GT_DEV_API_KEY,
-  });
+  initializeGT();
 } else {
   console.warn('CSR: no initialize GT');
 }
@@ -34,6 +30,8 @@ import {
   // T,
   Branch,
   Plural,
+  LocaleSelector,
+  GTProvider,
   useGT,
   useTranslations,
   useLocale,
@@ -48,9 +46,9 @@ import {
   decodeVars,
   mFallback,
   gtFallback,
+  getTranslationsSnapshot,
 } from 'gt-react/context';
 import {
-  gtProviderUseClientError,
   txUseClientError,
 } from './errors/createErrors';
 import type {
@@ -58,12 +56,6 @@ import type {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-export { LocaleSelector } from 'gt-react/context';
-
-// Mock <GTProvider> which throws an error
-export function GTProvider() {
-  throw new Error(gtProviderUseClientError);
-}
 
 // Mock <Tx> which throws an error
 export function Tx() {
@@ -93,6 +85,8 @@ export {
   Derive,
   Branch,
   Plural,
+  GTProvider,
+  LocaleSelector,
   useGT,
   useTranslations,
   useLocale,
@@ -111,6 +105,7 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+  getTranslationsSnapshot,
 };
 export type {
   DictionaryTranslationOptions,
