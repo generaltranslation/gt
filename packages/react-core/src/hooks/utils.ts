@@ -1,9 +1,12 @@
 import { useMemo } from 'react';
 import { useEnableI18n, useLocale } from './condition-store';
 import { getReadonlyConditionStoreWithFallback } from '../condition-store/singleton-operations';
+import { getFormatLocales } from './utils/getFormatLocales';
 import { getI18nConfig } from 'gt-i18n/internal';
 
 const EMPTY_LOCALES_PROP: string[] = [];
+
+export { getFormatLocales };
 
 export function useFormatLocales(
   localesProp: string[] = EMPTY_LOCALES_PROP
@@ -19,23 +22,6 @@ export function useFormatLocales(
       }),
     [locale, enableI18n, localesProp]
   );
-}
-
-export function getFormatLocales({
-  locale,
-  enableI18n,
-  localesProp = EMPTY_LOCALES_PROP,
-}: {
-  locale: string;
-  enableI18n: boolean;
-  localesProp?: string[];
-}): string[] {
-  const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate =
-    enableI18n && getI18nConfig().requiresTranslation(locale);
-  return shouldTranslate
-    ? [...localesProp, locale, defaultLocale]
-    : [defaultLocale];
 }
 
 export function useShouldTranslate(): boolean {
