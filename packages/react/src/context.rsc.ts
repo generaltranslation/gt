@@ -1,12 +1,6 @@
 // React Server Component context surface.
 
-import {
-  getGT,
-  getI18nConfig,
-  getLocale,
-  getMessages,
-  getTranslations,
-} from 'gt-i18n/internal';
+import { getGT, getI18nConfig, getLocale, getMessages, getTranslations } from 'gt-i18n/internal';
 import { use } from 'react';
 
 // ===== Error for client components ===== //
@@ -49,7 +43,7 @@ export function useLocale() {
   return getLocale();
 }
 export function useVersionId() {
-  throw new Error('useVersionId unimplemented');
+  throw new Error('useVersionId unimplemented')
 }
 export function useLocales() {
   return getI18nConfig().getLocales();
@@ -121,7 +115,9 @@ export {
 } from '@generaltranslation/react-core/pure';
 
 // ===== Setup ===== //
-export { initializeGT } from '@generaltranslation/react-core/pure';
+export {
+  initializeGT,
+} from '@generaltranslation/react-core/pure';
 
 // ===== Types ===== //
 export type {

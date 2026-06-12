@@ -22,6 +22,7 @@ export async function getGT(): Promise<GTFunctionType> {
   return getGTInternal({ locale, enableI18n });
 }
 
+
 /**
  * Condition store agnostic getGT function
  */
@@ -60,7 +61,7 @@ export async function getGTInternal({
     options: InlineTranslationOptions = {}
   ) => {
     const targetLocale = enableI18n
-      ? (options.$locale ?? locale)
+      ? options.$locale ?? locale
       : getI18nConfig().getDefaultLocale();
     const lookupOptions = createLookupOptions<StringFormat>(
       targetLocale,

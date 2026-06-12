@@ -52,6 +52,7 @@ export function getLocaleProperties(locale = getLocale()) {
   return getI18nConfig().getLocaleProperties(locale);
 }
 
+
 /**
  * Get the GT class
  * @returns The GT class

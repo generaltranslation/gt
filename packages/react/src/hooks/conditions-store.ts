@@ -7,22 +7,19 @@ import { setCookieValue } from '../condition-store/cookies';
  */
 export function useSetLocale() {
   const conditionStore = useConditionStore();
-  return useCallback(
-    (locale: string) => {
-      console.log('useSetLocale', locale);
-      if (typeof window !== 'undefined') {
-        // set cookie
-        const cookieName = 'generaltranslation.locale';
-        setCookieValue({
-          cookieName,
-          value: locale,
-        });
-      }
-      conditionStore.setLocale(locale);
-      window.location.reload();
-    },
-    [conditionStore]
-  );
+  return useCallback((locale: string) => {
+    console.log('useSetLocale', locale);
+    if (typeof window !== 'undefined') {
+      // set cookie
+      const cookieName = 'generaltranslation.locale';
+      setCookieValue({
+        cookieName,
+        value: locale,
+      });
+    }
+    conditionStore.setLocale(locale);
+    window.location.reload();
+  }, [conditionStore]);
 }
 
 /**
@@ -30,19 +27,16 @@ export function useSetLocale() {
  */
 export function useSetEnableI18n() {
   const conditionStore = useConditionStore();
-  return useCallback(
-    (enableI18n: boolean) => {
-      if (typeof window !== 'undefined') {
-        // set cookie
-        const cookieName = 'generaltranslation.enableI18n';
-        setCookieValue({
-          cookieName,
-          value: enableI18n ? 'true' : 'false',
-        });
-      }
-      conditionStore.setEnableI18n(enableI18n);
-      window.location.reload();
-    },
-    [conditionStore]
-  );
+  return useCallback((enableI18n: boolean) => {
+    if (typeof window !== 'undefined') {
+      // set cookie
+      const cookieName = 'generaltranslation.enableI18n';
+      setCookieValue({
+        cookieName,
+        value: enableI18n ? 'true' : 'false',
+      });
+    }
+    conditionStore.setEnableI18n(enableI18n);
+    window.location.reload();
+  }, [conditionStore]);
 }

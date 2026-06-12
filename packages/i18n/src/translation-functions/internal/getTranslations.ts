@@ -36,7 +36,9 @@ export async function getTranslationsInternal({
 }): Promise<TFunctionType> {
   const i18nCache = getI18nCache();
   const sourceLocale = getI18nConfig().getDefaultLocale();
-  const targetLocale = enableI18n ? locale : sourceLocale;
+  const targetLocale = enableI18n
+    ? locale
+    : sourceLocale;
   await Promise.all([
     i18nCache.loadDictionary(targetLocale),
     i18nCache.loadTranslations(targetLocale),
@@ -72,11 +74,7 @@ export async function getTranslationsInternal({
     );
     const target =
       targetEntry?.entry ??
-      i18nCache.lookupTranslation(
-        targetLocale,
-        sourceEntry.entry,
-        dictionaryOptions
-      );
+      i18nCache.lookupTranslation(targetLocale, sourceEntry.entry, dictionaryOptions);
     return renderDictionaryEntry({
       sourceLocale,
       targetLocale: targetLocale,

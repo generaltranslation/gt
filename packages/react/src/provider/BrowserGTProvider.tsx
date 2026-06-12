@@ -15,10 +15,7 @@ export function BrowserGTProvider({
   enableI18n,
   ...props
 }: SharedGTProviderProps) {
-  console.log(
-    '<BrowserGTProvider> tx from server',
-    JSON.stringify(props.translations)
-  );
+  console.log('<BrowserGTProvider> tx from server', JSON.stringify(props.translations));
   const conditionStore = useMemo(() => {
     return new ReadonlyConditionStore({ locale, enableI18n });
   }, [locale, enableI18n]);

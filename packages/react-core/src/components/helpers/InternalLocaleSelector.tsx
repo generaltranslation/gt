@@ -74,6 +74,7 @@ export function InternalLocaleSelector({
     return null;
   }
 
+
   return (
     <select
       name='generaltranslation-locale'

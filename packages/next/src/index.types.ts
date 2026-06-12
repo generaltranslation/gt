@@ -55,13 +55,11 @@ import {
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export function GTProvider(
-  _: {
-    id?: string;
-  } & Partial<Parameters<typeof _GTProvider>[0]>
-): React.ReactNode {
+export function GTProvider(_: {
+  id?: string,
+} & Partial<Parameters<typeof _GTProvider>[0]>): React.ReactNode {
   throw new Error(typesFileError);
-}
+};
 
 /**
  * Build-time translation component that renders its children in the user's given locale.

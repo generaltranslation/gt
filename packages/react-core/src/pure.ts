@@ -18,7 +18,9 @@ export { getFormatLocales } from './hooks/utils/getFormatLocales';
 
 export type { RelativeTimeFormatOptions, RenderVariable } from './utils/types';
 
-export { internalInitializeGTSRA as initializeGT } from './setup/initializeGTSRA';
+export {
+  internalInitializeGTSRA as initializeGT,
+} from './setup/initializeGTSRA';
 
 export {
   ReactI18nCache,
