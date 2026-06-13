@@ -20,7 +20,6 @@ import { Currency } from './variables/Currency';
 import { DateTime } from './variables/DateTime';
 import { RelativeTime } from './variables/RelativeTime';
 import { T } from './server-dir/buildtime/T';
-(T as any)._gtt_marker = 'index.rsc.ts';
 import { Branch } from './branches/Branch';
 import { Plural } from './branches/Plural';
 import { useLocale } from './request/getLocale';

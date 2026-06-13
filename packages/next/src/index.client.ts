@@ -9,9 +9,6 @@ if (typeof window === 'undefined') {
   throw new Error(clientEntrypointImportedOnServerError);
 }
 
-import { T } from 'gt-react/context';
-(T as any)._gtt_marker = 'index.client.ts';
-export { T };
 import {
   Var,
   Num,
@@ -19,7 +16,7 @@ import {
   DateTime,
   RelativeTime,
   Derive,
-  // T,
+  T,
   Branch,
   Plural,
   LocaleSelector,
@@ -56,7 +53,7 @@ import type {
 } from 'gt-react';
 
 export {
-  // T,
+  T,
   Var,
   Num,
   Currency,

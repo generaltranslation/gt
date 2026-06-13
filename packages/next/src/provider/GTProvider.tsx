@@ -3,27 +3,16 @@ import { isValidElement } from 'react';
 import { getLocale } from '../request/getLocale';
 import { getDictionary, getDictionaryEntry } from '../dictionary/getDictionary';
 import { createDictionarySubsetError } from '../errors/createErrors';
-import type { Dictionary, Translation } from 'gt-i18n/types';
-import type { Hash, Locale } from 'gt-i18n/internal/types';
+import type { Dictionary } from 'gt-i18n/types';
+import type { Locale } from 'gt-i18n/internal/types';
 import type {
   Dictionary as LegacyDictionary,
   DictionaryEntry,
-  Translations as LegacyTranslations,
 } from 'gt-react/internal';
 import type { GTProviderProps } from '../utils/types';
 import { Client_GTProvider } from '../utils/client-boundary';
 import { getNextI18nCache } from '../i18n-cache/NextI18nCache';
 import { getI18NConfig as getI18NConfiguration } from '../config-dir/getI18NConfig';
-
-function toTranslationSnapshot(
-  translations: LegacyTranslations
-): Record<Hash, Translation> {
-  return Object.fromEntries(
-    Object.entries(translations).filter(
-      (entry): entry is [Hash, Translation] => entry[1] != null
-    )
-  );
-}
 
 export async function GTProvider({ children, id: prefixId }: GTProviderProps) {
   // ---------- SETUP ---------- //

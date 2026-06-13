@@ -10,9 +10,6 @@ if (typeof window !== 'undefined') {
 }
 
 // ===== gt-react ===== //
-import { T } from 'gt-react/context';
-(T as any)._gtt_marker = 'index.server.ts';
-export { T };
 export {
   // ----- components ----- //
   GTProvider,
@@ -24,7 +21,7 @@ export {
   Derive,
   Branch,
   Plural,
-  // T,
+  T,
   LocaleSelector,
   // ----- hooks ----- //
   useGT,
