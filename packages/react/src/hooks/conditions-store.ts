@@ -9,7 +9,6 @@ export function useSetLocale() {
   const conditionStore = useConditionStore();
   return useCallback(
     (locale: string) => {
-      console.log('useSetLocale', locale);
       if (typeof window !== 'undefined') {
         // set cookie
         const cookieName = 'generaltranslation.locale';

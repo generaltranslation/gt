@@ -1,14 +1,12 @@
 'use client';
-console.log('CSR - index.client.ts');
 
 import { initializeGT } from './setup/initGT';
-console.log('CSR: initializing GT');
+import { clientEntrypointImportedOnServerError } from './errors/createErrors';
 initializeGT();
 
 // Debugging statement, change to warn before publish
 if (typeof window === 'undefined') {
-  console.warn('CSR: being imported in server environment!');
-  throw new Error('CSR: being imported in server environment!');
+  throw new Error(clientEntrypointImportedOnServerError);
 }
 
 import { T } from 'gt-react/context';

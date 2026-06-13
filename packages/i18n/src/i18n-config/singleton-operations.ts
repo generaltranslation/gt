@@ -35,7 +35,7 @@ export function getI18nConfig(): I18nConfig {
 export function setI18nConfig(nextI18nConfig: I18nConfig): void {
   const i18nGlobals = getI18nGlobals();
   if (i18nGlobals.i18nConfig && i18nGlobals.i18nConfig !== nextI18nConfig) {
-    console.warn('gt-i18n: Overwriting global i18nConfig singleton instance.');
+    console.warn(createSingletonOverwriteWarning('i18nConfig'));
   }
   i18nGlobals.i18nConfig = nextI18nConfig;
 }
@@ -59,5 +59,13 @@ function getI18nConfigNotInitializedError(): string {
     whatHappened: 'Cannot read I18nConfig before it has been initialized',
     why: 'the internal I18nConfig singleton is unavailable',
     fix: 'Call initializeGT() before reading locale config.',
+  });
+}
+
+function createSingletonOverwriteWarning(name: string): string {
+  return createDiagnosticMessage({
+    source: 'gt-i18n',
+    severity: 'Warning',
+    whatHappened: `Overwriting global ${name} singleton instance`,
   });
 }

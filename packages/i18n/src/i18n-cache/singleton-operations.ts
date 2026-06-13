@@ -1,3 +1,4 @@
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { I18nCache } from './I18nCache';
 import { Translation } from './translations-manager/utils/types/translation-data';
 
@@ -36,9 +37,7 @@ export function getI18nCache<U extends Translation = Translation>():
   | I18nCache<Translation> {
   const i18nCache = getI18nGlobals().i18nCache;
   if (!i18nCache) {
-    throw new Error(
-      'getI18nCache(): I18nCache was not initialized. Call initializeGT() before accessing I18nCache.'
-    );
+    throw new Error(getI18nCacheNotInitializedError());
   }
   return i18nCache;
 }
@@ -57,7 +56,25 @@ export function setI18nCache<TranslationValue extends Translation>(
   const i18nGlobals = getI18nGlobals();
   const nextI18nCache = i18nCacheInstance as unknown as I18nCache;
   if (i18nGlobals.i18nCache && i18nGlobals.i18nCache !== nextI18nCache) {
-    console.warn('gt-i18n: Overwriting global i18nCache singleton instance.');
+    console.warn(createSingletonOverwriteWarning('i18nCache'));
   }
   i18nGlobals.i18nCache = nextI18nCache;
+}
+
+function getI18nCacheNotInitializedError(): string {
+  return createDiagnosticMessage({
+    source: 'gt-i18n',
+    severity: 'Error',
+    whatHappened: 'Cannot read I18nCache before it has been initialized',
+    why: 'the internal I18nCache singleton is unavailable',
+    fix: 'Call initializeGT() before accessing I18nCache.',
+  });
+}
+
+function createSingletonOverwriteWarning(name: string): string {
+  return createDiagnosticMessage({
+    source: 'gt-i18n',
+    severity: 'Warning',
+    whatHappened: `Overwriting global ${name} singleton instance`,
+  });
 }

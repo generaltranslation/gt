@@ -37,9 +37,7 @@ export function getI18nStore(): I18nStore {
 export function setI18nStore(nextStore: I18nStore): void {
   const reactCoreGlobals = getReactCoreGlobals();
   if (reactCoreGlobals.i18nStore && reactCoreGlobals.i18nStore !== nextStore) {
-    console.warn(
-      '@generaltranslation/react-core: Overwriting global i18nStore singleton instance.'
-    );
+    console.warn(createI18nStoreOverwriteWarning());
   }
   reactCoreGlobals.i18nStore = nextStore;
 }
@@ -61,4 +59,12 @@ function createI18nStoreNotInitializedError(): Error {
   });
 
   return new Error(errorMessage);
+}
+
+function createI18nStoreOverwriteWarning(): string {
+  return createDiagnosticMessage({
+    source: '@generaltranslation/react-core',
+    severity: 'Warning',
+    whatHappened: 'Overwriting global i18nStore singleton instance',
+  });
 }

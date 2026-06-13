@@ -34,7 +34,7 @@ describe('i18n cache singleton operations', () => {
     const { getI18nCache } = await import('../singleton-operations');
 
     expect(() => getI18nCache()).toThrow(
-      'getI18nCache(): I18nCache was not initialized. Call initializeGT() before accessing I18nCache.'
+      'Cannot read I18nCache before it has been initialized'
     );
   });
 
@@ -58,7 +58,7 @@ describe('i18n cache singleton operations', () => {
     setI18nCache(createCacheStub());
 
     expect(warn).toHaveBeenCalledWith(
-      'gt-i18n: Overwriting global i18nCache singleton instance.'
+      expect.stringContaining('Overwriting global i18nCache singleton instance')
     );
   });
 });

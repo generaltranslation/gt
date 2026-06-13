@@ -1,14 +1,12 @@
 'use client';
-console.log('SSR - index.server.ts');
 
 import { initializeGT } from './setup/initGT';
-console.log('SSR: initializing GT');
+import { serverEntrypointImportedInBrowserError } from './errors/createErrors';
 initializeGT();
 
 // Debugging statement, change to warn before publish
 if (typeof window !== 'undefined') {
-  console.warn('SSR: being imported in browser environment!');
-  throw new Error('SSR: being imported in browser environment!');
+  throw new Error(serverEntrypointImportedInBrowserError);
 }
 
 // ===== gt-react ===== //

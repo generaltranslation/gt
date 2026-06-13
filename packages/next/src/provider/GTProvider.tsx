@@ -26,10 +26,6 @@ function toTranslationSnapshot(
 }
 
 export async function GTProvider({ children, id: prefixId }: GTProviderProps) {
-  console.log(
-    'GTProvider',
-    typeof window !== 'undefined' ? 'browser' : 'server'
-  );
   // ---------- SETUP ---------- //
   const i18nCache = getNextI18nCache();
   const I18NConfig = getI18NConfiguration();

@@ -76,7 +76,9 @@ describe('i18n config singleton operations', () => {
     });
 
     expect(warn).toHaveBeenCalledWith(
-      'gt-i18n: Overwriting global i18nConfig singleton instance.'
+      expect.stringContaining(
+        'Overwriting global i18nConfig singleton instance'
+      )
     );
   });
 

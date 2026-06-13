@@ -58,7 +58,7 @@ describe('react-core i18n store singleton operations', () => {
     setI18nStore(createI18nStoreStub());
 
     expect(warn).toHaveBeenCalledWith(
-      '@generaltranslation/react-core: Overwriting global i18nStore singleton instance.'
+      expect.stringContaining('Overwriting global i18nStore singleton instance')
     );
   });
 

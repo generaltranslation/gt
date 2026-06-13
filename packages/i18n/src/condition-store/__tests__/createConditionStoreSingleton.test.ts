@@ -65,7 +65,9 @@ describe('condition store singleton factory', () => {
     singleton.setConditionStore(createConditionStoreStub());
 
     expect(warn).toHaveBeenCalledWith(
-      'gt-i18n: Overwriting global conditionStore singleton instance.'
+      expect.stringContaining(
+        'Overwriting global conditionStore singleton instance'
+      )
     );
   });
 });

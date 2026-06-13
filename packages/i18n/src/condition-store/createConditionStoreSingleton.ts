@@ -1,3 +1,4 @@
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import type {
   AsyncReadonlyConditionStoreInterface,
   ReadonlyConditionStoreInterface,
@@ -48,9 +49,7 @@ export function createConditionStoreSingleton<
       i18nGlobals.conditionStore &&
       i18nGlobals.conditionStore !== nextConditionStore
     ) {
-      console.warn(
-        'gt-i18n: Overwriting global conditionStore singleton instance.'
-      );
+      console.warn(createSingletonOverwriteWarning('conditionStore'));
     }
     i18nGlobals.conditionStore =
       nextConditionStore as ReadonlyConditionStoreInterface;
@@ -65,4 +64,12 @@ export function createConditionStoreSingleton<
     setConditionStore,
     isConditionStoreInitialized,
   };
+}
+
+function createSingletonOverwriteWarning(name: string): string {
+  return createDiagnosticMessage({
+    source: 'gt-i18n',
+    severity: 'Warning',
+    whatHappened: `Overwriting global ${name} singleton instance`,
+  });
 }

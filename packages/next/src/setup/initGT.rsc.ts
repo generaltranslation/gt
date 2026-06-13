@@ -10,6 +10,7 @@ import {
   type AsyncConditionStoreParams,
 } from '../condition-store/AsyncCondtionStore';
 import { setAsyncConditionStore } from '../condition-store/AsyncCondtionStore';
+import { customGetLocaleUnresolvedWarning } from '../errors/createErrors';
 
 /**
  * Initialize GT for Next.js
@@ -69,5 +70,5 @@ function resolveGetLocale(): (() => Promise<string>) | undefined {
       return module.getLocale as () => Promise<string>;
     }
   }
-  console.warn('Failed to resolve custom getLocale() function');
+  console.warn(customGetLocaleUnresolvedWarning);
 }

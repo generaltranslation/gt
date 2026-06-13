@@ -5,6 +5,7 @@ import {
   ReadonlyConditionStoreInterface,
 } from 'gt-i18n/internal/types';
 import { Translation } from 'gt-i18n/types';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { createContext, useContext, type Context } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
 import { getI18nConfig } from '../setup/i18nConfig';
@@ -79,5 +80,15 @@ export function useGTContext(): GTContextType | undefined {
   /**
    * TODO: in a separate PR, we should figure out how to make this more of a forgiving system
    */
-  throw new Error('GTContext must be read within a GTProvider');
+  throw new Error(createMissingGTProviderError());
+}
+
+function createMissingGTProviderError(): string {
+  return createDiagnosticMessage({
+    source: '@generaltranslation/react-core',
+    severity: 'Error',
+    whatHappened: 'GT runtime context could not be read',
+    why: 'GTContext was accessed outside of a <GTProvider>',
+    fix: 'Add a <GTProvider> at the root of your component tree.',
+  });
 }

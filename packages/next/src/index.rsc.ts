@@ -1,14 +1,15 @@
 import 'server-only';
-console.log('RSC - index.rsc.ts');
 
 import { initializeGT } from './setup/initGT.rsc';
-console.log('RSC: initializing GT');
+import {
+  getTranslationsSnapshotRscError,
+  rscEntrypointImportedInBrowserError,
+} from './errors/createErrors';
 initializeGT();
 
 // Debugging statement, change to warn before publish
 if (typeof window !== 'undefined') {
-  console.warn('RSC: being imported in browser environment!');
-  throw new Error('RSC: being imported in browser environment!');
+  throw new Error(rscEntrypointImportedInBrowserError);
 }
 
 // ===== Overrides ===== //
@@ -71,9 +72,7 @@ import type {
  * This function is for next-pages use, not next-app use
  */
 export function getTranslationsSnapshot(_: string) {
-  throw new Error(
-    'getTranslationsSnapshot() is not available for react-server components'
-  );
+  throw new Error(getTranslationsSnapshotRscError);
 }
 
 export {

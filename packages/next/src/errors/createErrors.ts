@@ -139,6 +139,31 @@ export const typesFileError = createGtNextDiagnostic({
   fix: 'Import from the appropriate gt-next runtime entry point instead',
 });
 
+export const clientEntrypointImportedOnServerError = createGtNextDiagnostic({
+  severity: 'Error',
+  whatHappened: 'The gt-next client entry point was imported on the server',
+  fix: "Import from 'gt-next/server' or 'gt-next' from server components",
+});
+
+export const serverEntrypointImportedInBrowserError = createGtNextDiagnostic({
+  severity: 'Error',
+  whatHappened: 'The gt-next server entry point was imported in the browser',
+  fix: "Import from 'gt-next/client' from client components",
+});
+
+export const rscEntrypointImportedInBrowserError = createGtNextDiagnostic({
+  severity: 'Error',
+  whatHappened: 'The gt-next RSC entry point was imported in the browser',
+  fix: "Import from 'gt-next/client' from client components",
+});
+
+export const getTranslationsSnapshotRscError = createGtNextDiagnostic({
+  severity: 'Error',
+  whatHappened:
+    'getTranslationsSnapshot() is not available for React Server Components',
+  fix: 'Use gt-next build-time translation helpers in the App Router, or call getTranslationsSnapshot() from a Pages Router entry point',
+});
+
 export const gtProviderUseClientError =
   `The Next.js <GTProvider> was imported in a client component. This prevents gt-next from fetching translations on the server. ` +
   `Move <GTProvider> to a file without 'use client'. ` +
@@ -296,6 +321,12 @@ export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
 
 export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
   `gt-next (plugin): The GT ${type} compiler could not be resolved. Skipping compiler optimizations.`;
+
+export const customGetLocaleUnresolvedWarning = createGtNextDiagnostic({
+  whatHappened: 'Custom getLocale() could not be resolved',
+  wayOut: 'gt-next will fall back to default locale detection',
+  fix: 'Export a getLocale() function from the configured request file',
+});
 
 export const createGTCompilerUnavailableWarning = (type: 'babel' | 'swc') =>
   type === 'swc'

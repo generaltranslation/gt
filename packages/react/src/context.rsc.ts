@@ -1,5 +1,6 @@
 // React Server Component context surface.
 
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import {
   getGT,
   getI18nConfig,
@@ -11,7 +12,14 @@ import { use } from 'react';
 
 // ===== Error for client components ===== //
 function failClientComponent(componentName: string) {
-  throw new Error(`${componentName} cannot be consumed via RSC entrypoint`);
+  throw new Error(
+    createDiagnosticMessage({
+      source: 'gt-react',
+      severity: 'Error',
+      whatHappened: `${componentName} cannot be consumed via the RSC entry point`,
+      fix: 'Import this component from a client or server runtime entry point instead.',
+    })
+  );
 }
 
 export function GTProvider() {
@@ -49,7 +57,14 @@ export function useLocale() {
   return getLocale();
 }
 export function useVersionId() {
-  throw new Error('useVersionId unimplemented');
+  throw new Error(
+    createDiagnosticMessage({
+      source: 'gt-react',
+      severity: 'Error',
+      whatHappened: 'useVersionId() is not implemented in the RSC entry point',
+      fix: 'Use getVersionId() or import useVersionId() from a supported runtime entry point.',
+    })
+  );
 }
 export function useLocales() {
   return getI18nConfig().getLocales();
