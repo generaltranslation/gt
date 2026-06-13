@@ -1,4 +1,4 @@
-import { WritableConditionStoreParams } from '@generaltranslation/react-core/context';
+import { WritableConditionStoreParams } from 'gt-i18n/internal';
 import { getCookieValue, setCookieValue } from './cookies';
 import { readBrowserLocale } from './readBrowserLocale';
 import { GetEnableI18n, GetLocale } from '../i18n-cache/types';
