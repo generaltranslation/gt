@@ -58,23 +58,6 @@ export function createOrUpdateBrowserConditionStore(
   setBrowserConditionStore(conditionStore);
 }
 
-/**
- * Factory for creating a BrowserConditionStore for Provider
- */
-export function createBrowserConditionStore(
-  config: CreateBrowserConditionStoreParams
-) {
-  const locale = determineLocale(config);
-  const enableI18n = determineEnableI18n(config);
-  return new BrowserConditionStore({
-    ...config,
-    localeCookieName: defaultLocaleCookieName,
-    enableI18nCookieName: defaultEnableI18nCookieName,
-    locale,
-    enableI18n,
-  });
-}
-
 function determineLocale({
   localeCookieName = defaultLocaleCookieName,
   _getLocale: getLocale,

@@ -4,7 +4,7 @@ import {
 } from '@generaltranslation/react-core/context';
 import { useMemo, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
-import { createBrowserConditionStore } from '../condition-store/createBrowserConditionStore';
+import { BrowserConditionStore } from '../condition-store/BrowserConditionStore';
 
 /**
  * Consumes snapshot from server
@@ -16,7 +16,7 @@ export function BrowserGTProvider({
   ...props
 }: SharedGTProviderProps) {
   const conditionStore = useMemo(() => {
-    return createBrowserConditionStore({ locale, enableI18n, ...props });
+    return new BrowserConditionStore({ ...props, locale, enableI18n });
   }, [locale, enableI18n]);
 
   const i18nStoreRef = useRef<I18nStore | null>(null);
