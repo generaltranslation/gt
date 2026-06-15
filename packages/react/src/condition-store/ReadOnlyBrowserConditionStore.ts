@@ -90,6 +90,7 @@ export class BrowserConditionStore implements ReadonlyConditionStoreInterface {
       cookieName: this.localeCookieName,
       value: newLocale,
     });
+    // This is used for signaling to middleware locale has changed
     setCookieValue({
       cookieName: defaultResetLocaleCookieName,
       value: 'true',
