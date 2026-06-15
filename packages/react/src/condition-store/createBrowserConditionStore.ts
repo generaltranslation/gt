@@ -27,7 +27,7 @@ export type CreateBrowserConditionStoreParams = Omit<
 };
 
 /**
- * Factory to create a BrowserConditionStore
+ * Factory to create a BrowserConditionStore for Singleton
  *
  * This exists so we can keep the locale param as required in the constructor
  *
@@ -47,6 +47,7 @@ export function createOrUpdateBrowserConditionStore(
     conditionStore.updateEnableI18n(enableI18n);
     return;
   }
+
   const conditionStore = new BrowserConditionStore({
     ...config,
     localeCookieName: defaultLocaleCookieName,
@@ -57,9 +58,26 @@ export function createOrUpdateBrowserConditionStore(
   setBrowserConditionStore(conditionStore);
 }
 
-export function determineLocale({
+/**
+ * Factory for creating a BrowserConditionStore for Provider
+ */
+export function createBrowserConditionStore(
+  config: CreateBrowserConditionStoreParams
+) {
+  const locale = determineLocale(config);
+  const enableI18n = determineEnableI18n(config);
+  return new BrowserConditionStore({
+    ...config,
+    localeCookieName: defaultLocaleCookieName,
+    enableI18nCookieName: defaultEnableI18nCookieName,
+    locale,
+    enableI18n,
+  });
+}
+
+function determineLocale({
   localeCookieName = defaultLocaleCookieName,
-  getLocale,
+  _getLocale: getLocale,
   locale,
 }: CreateBrowserConditionStoreParams): string {
   const candidates = [];
@@ -76,10 +94,10 @@ function resolveLocale(candidates?: LocaleCandidates): string {
   );
 }
 
-export function determineEnableI18n({
+function determineEnableI18n({
   enableI18n,
   enableI18nCookieName = defaultEnableI18nCookieName,
-  getEnableI18n,
+  _getEnableI18n: getEnableI18n,
 }: CreateBrowserConditionStoreParams): boolean {
   const cookieEnableI18n = getCookieValue({
     cookieName: enableI18nCookieName,

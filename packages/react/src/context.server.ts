@@ -86,6 +86,8 @@ export type {
   RenderPreparedT,
 } from '@generaltranslation/react-core/context';
 
+export type { SharedGTProviderProps } from './provider/GTProviderProps';
+
 // ===== Singletons ===== //
 export {
   ReactI18nCache,

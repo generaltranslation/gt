@@ -102,3 +102,5 @@ export type {
   ResolvedPluralProps,
   ResolvedRelativeTimeProps,
 } from '@generaltranslation/react-core/components-rsc';
+
+export type { SharedGTProviderProps } from './provider/GTProviderProps';

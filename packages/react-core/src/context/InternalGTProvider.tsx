@@ -1,9 +1,12 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
 import type { Dictionary, Translation } from 'gt-i18n/types';
-import type { Locale, Hash } from 'gt-i18n/internal/types';
+import type {
+  Locale,
+  Hash,
+  WritableConditionStoreInterface,
+} from 'gt-i18n/internal/types';
 import { getGTContext } from './context';
-import type { ReadonlyConditionStore } from 'gt-i18n/internal';
 import type {
   OnMissingDictionaryEntry,
   OnMissingDictionaryObj,
@@ -16,7 +19,7 @@ export type InternalGTProviderProps = {
   translations: Record<Locale, Record<Hash, Translation>>;
   dictionaries?: Record<Locale, Dictionary>;
   // Declared upstream dependent on environment
-  conditionStore: ReadonlyConditionStore;
+  conditionStore: WritableConditionStoreInterface;
   i18nStore: I18nStore;
   // Custom override missing translation behavior for dev hot reload
   onMissingTranslation?: OnMissingTranslation;
