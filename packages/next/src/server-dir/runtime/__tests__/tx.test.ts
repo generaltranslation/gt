@@ -1,41 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { tx } from '../tx';
 
-const { mockLookupTranslation, mockTranslate } = vi.hoisted(() => ({
-  mockLookupTranslation: vi.fn(),
-  mockTranslate: vi.fn(),
-}));
-
-vi.mock('../../../config-dir/getI18NConfig', () => ({
-  getI18NConfig: () => ({
-    requiresTranslation: () => [true, false],
-    lookupTranslation: mockLookupTranslation,
-    translate: mockTranslate,
-  }),
+const { mockTxInternal } = vi.hoisted(() => ({
+  mockTxInternal: vi.fn(),
 }));
 
 vi.mock('gt-i18n/internal', () => ({
-  getI18nConfig: () => ({
-    getDefaultLocale: () => 'en',
-    getGTClass: () => ({
-      formatMessage: (message: string) => message,
-      formatCutoff: (message: string) => message,
-    }),
-  }),
+  txInternal: mockTxInternal,
 }));
 
-vi.mock('../../../request/getLocale', () => ({
-  getLocale: vi.fn().mockResolvedValue('fr'),
+vi.mock('../../../request/getRequestConditions', () => ({
+  getRequestConditions: vi.fn().mockResolvedValue({
+    _locale: 'fr',
+    _enableI18n: true,
+  }),
 }));
 
 describe('tx', () => {
   beforeEach(() => {
-    mockLookupTranslation.mockReset();
-    mockTranslate.mockReset();
+    mockTxInternal.mockReset();
   });
 
-  it('normalizes negative maxChars before forwarding lookup options', async () => {
-    mockLookupTranslation.mockReturnValue('Bonjour');
+  it('forwards request conditions and options to txInternal', async () => {
+    mockTxInternal.mockResolvedValue('Bonjour');
 
     await expect(
       tx('Hello', {
@@ -44,13 +31,14 @@ describe('tx', () => {
       })
     ).resolves.toBe('Bonjour');
 
-    expect(mockLookupTranslation).toHaveBeenCalledWith(
-      expect.objectContaining({
-        options: expect.objectContaining({
-          $maxChars: 12,
-        }),
-      })
-    );
-    expect(mockTranslate).not.toHaveBeenCalled();
+    expect(mockTxInternal).toHaveBeenCalledWith({
+      locale: 'fr',
+      enableI18n: true,
+      content: 'Hello',
+      options: {
+        $locale: 'fr',
+        $maxChars: -12,
+      },
+    });
   });
 });

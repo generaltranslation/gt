@@ -74,7 +74,3 @@ export function getDictionaryEntry(
   if (!internalDictionary) return undefined;
   return getEntry(internalDictionary, id);
 }
-
-export function _setDictionary(dictionary: Dictionary) {
-  internalDictionary = dictionary;
-}
