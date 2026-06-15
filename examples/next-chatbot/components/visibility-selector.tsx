@@ -17,7 +17,7 @@ import {
   LockIcon,
 } from './icons';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 export type VisibilityType = 'private' | 'public';
 
 export function VisibilitySelector({

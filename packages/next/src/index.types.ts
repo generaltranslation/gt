@@ -19,6 +19,8 @@ import {
 } from 'gt-react/client';
 import {
   LocaleSelector as _LocaleSelector,
+  useSetLocale as _useSetLocale,
+  useLocaleSelector as _useLocaleSelector,
   getTranslationsSnapshot,
   getDefaultLocale,
   getGTClass,
@@ -374,6 +376,14 @@ export const useTranslations: typeof _useTranslations = () => {
  * console.log(locale); // 'en-US'
  */
 export const useLocale: typeof _useLocale = () => {
+  throw new Error(typesFileError);
+};
+
+export const useSetLocale: typeof _useSetLocale = () => {
+  throw new Error(typesFileError);
+};
+
+export const useLocaleSelector: typeof _useLocaleSelector = () => {
   throw new Error(typesFileError);
 };
 

@@ -13,7 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 
 import { CheckCircleFillIcon, ChevronDownIcon } from './icons';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 interface ChatModel {
   id: string;

@@ -14,8 +14,17 @@ import { tx } from '../tx';
 
 describe('translation function locale defaults', () => {
   afterEach(() => {
-    setWritableConditionStore({ getLocale: () => 'en' });
+    setWritableConditionStore(createConditionStore('en'));
   });
+
+  function createConditionStore(locale: string) {
+    return {
+      getLocale: () => locale,
+      getEnableI18n: () => true,
+      setLocale: () => {},
+      setEnableI18n: () => {},
+    };
+  }
 
   function createCache(
     i18nConfig: I18nConfigParams,
@@ -34,7 +43,7 @@ describe('translation function locale defaults', () => {
     );
 
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore(createConditionStore('fr'));
 
     return cache;
   }
@@ -62,7 +71,7 @@ describe('translation function locale defaults', () => {
       }
     );
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore(createConditionStore('fr'));
 
     const gt = await getGT();
     await cache.loadTranslations('es');
@@ -83,7 +92,7 @@ describe('translation function locale defaults', () => {
       }
     );
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore(createConditionStore('fr'));
 
     const t = await getTranslations();
 
@@ -101,7 +110,7 @@ describe('translation function locale defaults', () => {
       }
     );
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore(createConditionStore('fr'));
 
     const t = await getTranslations();
 
@@ -125,7 +134,7 @@ describe('translation function locale defaults', () => {
       }
     );
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore(createConditionStore('fr'));
 
     const t = await getTranslations();
 
@@ -144,7 +153,7 @@ describe('translation function locale defaults', () => {
       }
     );
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore(createConditionStore('fr'));
 
     const t = await getTranslations();
 
@@ -168,7 +177,7 @@ describe('translation function locale defaults', () => {
       }
     );
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore(createConditionStore('fr'));
 
     const t = await getTranslations();
 
@@ -201,7 +210,7 @@ describe('translation function locale defaults', () => {
       }
     );
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore(createConditionStore('fr'));
 
     const t = await getTranslations();
 
@@ -243,7 +252,7 @@ describe('translation function locale defaults', () => {
       }
     );
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore(createConditionStore('fr'));
 
     const t = await getTranslations();
 
@@ -290,6 +299,9 @@ describe('translation function locale defaults', () => {
       getLocale: () => {
         throw new Error('current locale should not be read');
       },
+      getEnableI18n: () => true,
+      setLocale: () => {},
+      setEnableI18n: () => {},
     });
 
     await expect(tx(message, { $locale: 'fr' })).resolves.toBe('Bonjour');

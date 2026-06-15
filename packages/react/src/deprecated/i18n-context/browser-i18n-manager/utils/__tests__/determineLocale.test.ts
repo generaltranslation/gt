@@ -10,7 +10,6 @@ describe('determineLocale', () => {
   });
 
   it('resolves custom locale aliases returned by getLocale', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     initializeI18nConfig({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
@@ -22,6 +21,7 @@ describe('determineLocale', () => {
       },
     });
 
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(
       determineLocale({
         defaultLocale: 'en',

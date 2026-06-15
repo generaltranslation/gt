@@ -90,7 +90,7 @@ ruleTester.run('no-dynamic-string', noDynamicString, {
     // Mixed imports from different modules
     {
       code: `
-        import { useGT } from 'gt-next/client';
+        import { useGT } from 'gt-next';
         import { getGT } from 'gt-next/server';
         async function test() {
           const t1 = useGT();
@@ -301,7 +301,7 @@ ruleTester.run('no-dynamic-string', noDynamicString, {
     // Client module with template literal
     {
       code: `
-        import { useGT } from 'gt-next/client';
+        import { useGT } from 'gt-next';
         const t = useGT();
         const greeting = 'Hello';
         t(\`\${greeting}, world!\`);
@@ -316,7 +316,7 @@ ruleTester.run('no-dynamic-string', noDynamicString, {
     // Inside Jsx
     {
       code: `
-        import { useGT } from 'gt-next/client';
+        import { useGT } from 'gt-next';
         const t = useGT();
         const greeting = 'Hello';
         <div>{ t(\`\${greeting}, world!\`) }</div>

@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
@@ -8,6 +10,16 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from './cookie-names';
+
+type TxProps = Record<string, ReactNode> & {
+  children: ReactNode;
+  context?: string;
+  locale?: string;
+  maxChars?: number;
+  $context?: string;
+  $locale?: string;
+  $maxChars?: number;
+};
 
 // ===== Components ===== //
 export { LocaleSelector } from './components/LocaleSelector';
@@ -27,7 +39,9 @@ export {
   Num,
 } from '@generaltranslation/react-core/components';
 
-export { Tx } from '@generaltranslation/react-core/components-rsc';
+export async function Tx(_props: TxProps): Promise<ReactNode> {
+  throw new Error('Tx is only supported via RSC');
+}
 
 // ===== Hooks ===== //
 export {

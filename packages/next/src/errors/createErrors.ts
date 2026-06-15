@@ -148,13 +148,13 @@ export const clientEntrypointImportedOnServerError = createGtNextDiagnostic({
 export const serverEntrypointImportedInBrowserError = createGtNextDiagnostic({
   severity: 'Error',
   whatHappened: 'The gt-next server entry point was imported in the browser',
-  fix: "Import from 'gt-next/client' from client components",
+  fix: "Import from 'gt-next' from client components",
 });
 
 export const rscEntrypointImportedInBrowserError = createGtNextDiagnostic({
   severity: 'Error',
   whatHappened: 'The gt-next RSC entry point was imported in the browser',
-  fix: "Import from 'gt-next/client' from client components",
+  fix: "Import from 'gt-next' from client components",
 });
 
 export const getTranslationsSnapshotRscError = createGtNextDiagnostic({
@@ -166,8 +166,7 @@ export const getTranslationsSnapshotRscError = createGtNextDiagnostic({
 
 export const gtProviderUseClientError =
   `The Next.js <GTProvider> was imported in a client component. This prevents gt-next from fetching translations on the server. ` +
-  `Move <GTProvider> to a file without 'use client'. ` +
-  `If you really need to put <GTProvider> on the client, import <GTClientProvider> from 'gt-next/client' instead (discouraged when using the Next.js App Router).`;
+  `Move <GTProvider> to a file without 'use client'.`;
 
 export const txUseClientError =
   `The <Tx> runtime translation component was rendered in a client component, which is not supported. ` +

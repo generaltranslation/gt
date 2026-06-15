@@ -29,7 +29,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { SuggestedActions } from './suggested-actions';
 import equal from 'fast-deep-equal';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 type UploadResponse = {
   url: string;
