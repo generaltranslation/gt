@@ -1,5 +1,5 @@
 import type { InternalGTProviderProps } from '@generaltranslation/react-core/context';
-import { BrowserConditionStoreParams } from 'src/condition-store/BrowserConditionStore';
+import { BrowserConditionStoreParams } from '../condition-store/BrowserConditionStore';
 
 /**
  * We force the user to pass translations so they can be synchronously accessed
