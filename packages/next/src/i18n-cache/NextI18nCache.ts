@@ -1,12 +1,13 @@
-import { getI18nCache, setI18nCache } from 'gt-i18n/internal';
-import { ReactI18nCache, type ReactI18nCacheParams } from 'gt-react/context';
+import { getI18nCache, setI18nCache, I18nCache } from 'gt-i18n/internal';
+import type { Translation } from 'gt-i18n/types';
+import { ReactI18nCache, ReactI18nCacheParams } from 'gt-react/context';
 
-export function getNextI18nCache(): NextI18nCache {
-  return getI18nCache() as NextI18nCache;
+export function getNextI18nCache(): I18nCache<Translation> {
+  return getI18nCache() as I18nCache<Translation>;
 }
 
 export function setNextI18nCache(i18nCache: NextI18nCache): void {
-  setI18nCache(i18nCache);
+  setI18nCache(i18nCache as I18nCache<Translation>);
 }
 
 export type NextI18nCacheParams = ReactI18nCacheParams;
