@@ -13,12 +13,14 @@ import type { GTProviderProps } from '../utils/types';
 import { Client_GTProvider } from '../utils/client-boundary';
 import { getNextI18nCache } from '../i18n-cache/NextI18nCache';
 import { getI18NConfig as getI18NConfiguration } from '../config-dir/getI18NConfig';
+import { getEnableI18n } from '../request/getEnableI18n';
 
 export async function GTProvider({ children, id: prefixId }: GTProviderProps) {
   // ---------- SETUP ---------- //
   const i18nCache = getNextI18nCache();
   const I18NConfig = getI18NConfiguration();
   const locale = await getLocale();
+  const enableI18n = await getEnableI18n();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
   // load dictionary
@@ -69,7 +71,7 @@ export async function GTProvider({ children, id: prefixId }: GTProviderProps) {
 
   return (
     <Client_GTProvider
-      enableI18n={true}
+      enableI18n={enableI18n}
       locale={locale}
       translations={translationsSnapshot}
       dictionaries={dictionariesSnapshot}

@@ -10,18 +10,10 @@ import { ReadonlyBrowserConditionStore } from '../condition-store/ReadOnlyBrowse
  * Consumes snapshot from server
  * Implementation for client-side only
  */
-export function BrowserGTProvider({
-  locale,
-  enableI18n,
-  ...props
-}: SharedGTProviderProps) {
+export function BrowserGTProvider(props: SharedGTProviderProps) {
   const conditionStore = useMemo(() => {
-    return new ReadonlyBrowserConditionStore({
-      ...props,
-      locale,
-      enableI18n,
-    });
-  }, [locale, enableI18n]);
+    return new ReadonlyBrowserConditionStore(props);
+  }, [props.locale, props.enableI18n, props._reload]);
 
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {

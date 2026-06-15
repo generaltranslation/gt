@@ -11,4 +11,6 @@ export type SharedGTProviderProps = Omit<
   InternalGTProviderProps,
   'conditionStore' | 'i18nStore'
 > &
-  BrowserConditionStoreParams;
+  Omit<BrowserConditionStoreParams, 'locale'> & {
+    locale: string;
+  };

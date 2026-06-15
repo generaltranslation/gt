@@ -11,7 +11,7 @@
 
 export { LocaleSelector as Client_LocaleSelector } from 'gt-react/context';
 
-import { getI18nConfig, I18nConfig, LocaleCandidates } from 'gt-i18n/internal';
+import { getI18nConfig, I18nConfig } from 'gt-i18n/internal';
 import { GTProvider, type SharedGTProviderProps } from 'gt-react/context';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
@@ -45,7 +45,7 @@ function usePathCheck({
   localeRoutingEnabledCookieName = defaultLocaleRoutingEnabledCookieName,
 }: {
   reloadServer: () => void;
-  locale: LocaleCandidates;
+  locale: string;
   referrerLocaleCookieName?: string;
   localeRoutingEnabledCookieName?: string;
 }) {
@@ -54,9 +54,7 @@ function usePathCheck({
   useEffect(() => {
     // Track the referrer locale for middleware
     const i18nConfig = getI18nConfig();
-    if (locale && (typeof locale === 'string' || locale.length > 0)) {
-      document.cookie = `${referrerLocaleCookieName}=${i18nConfig.resolveAliasLocale(typeof locale === 'string' ? locale : locale[0])};path=/`;
-    }
+    document.cookie = `${referrerLocaleCookieName}=${i18nConfig.resolveAliasLocale(locale)};path=/`;
 
     // Reload the server components if the pathname changes
     const locales = i18nConfig.getLocales();

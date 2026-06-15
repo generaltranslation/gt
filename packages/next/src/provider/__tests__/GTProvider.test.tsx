@@ -5,6 +5,7 @@ const {
   mockGetDictionary,
   mockGetDictionaryEntry,
   mockGetI18NConfig,
+  mockGetEnableI18n,
   mockGetLocale,
   mockLoadTranslations,
   mockMergeDictionaries,
@@ -13,6 +14,7 @@ const {
   mockGetDictionary: vi.fn(),
   mockGetDictionaryEntry: vi.fn(),
   mockGetI18NConfig: vi.fn(),
+  mockGetEnableI18n: vi.fn(),
   mockGetLocale: vi.fn(),
   mockLoadTranslations: vi.fn(),
   mockMergeDictionaries: vi.fn(),
@@ -30,6 +32,10 @@ vi.mock('../../dictionary/getDictionary', () => ({
 
 vi.mock('../../request/getLocale', () => ({
   getLocale: mockGetLocale,
+}));
+
+vi.mock('../../request/getEnableI18n', () => ({
+  getEnableI18n: mockGetEnableI18n,
 }));
 
 vi.mock('../../i18n-cache/NextI18nCache', () => ({
@@ -50,6 +56,7 @@ describe('GTProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetLocale.mockResolvedValue('fr');
+    mockGetEnableI18n.mockResolvedValue(true);
     mockGetDictionary.mockResolvedValue({
       greeting: 'Hello',
     });
@@ -104,6 +111,7 @@ describe('GTProvider', () => {
     };
     mockGetI18NConfig.mockReturnValue(config);
     mockGetLocale.mockResolvedValue('en');
+    mockGetEnableI18n.mockResolvedValue(false);
 
     const { GTProvider } = await import('../GTProvider');
 
