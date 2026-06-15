@@ -6,7 +6,6 @@ import {
   prepareT,
   type ResolvedTProps,
 } from '../../utils/translation/prepareT.shared';
-import { JsxChildren } from '@generaltranslation/format/types';
 
 // RSC implementation: request conditions are passed explicitly instead of
 // being read from hooks. This module must stay free of hook/context imports
