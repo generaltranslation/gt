@@ -18,6 +18,10 @@ export class WritableConditionStore
       i18nConfig.determineLocale(locale) || i18nConfig.getDefaultLocale();
   };
 
+  setRegion = (region: string | undefined): void => {
+    this.region = region;
+  };
+
   setEnableI18n = (enableI18n: boolean): void => {
     this.enableI18n = enableI18n;
   };

@@ -13,12 +13,13 @@ import { useHandleMissingTranslations } from '../hooks/useHandleMissingTranslati
  */
 export function ServerGTProvider({
   locale,
+  region,
   enableI18n,
   ...props
 }: SharedGTProviderProps) {
   const conditionStore = useMemo(() => {
-    return new ReadonlyConditionStore({ locale, enableI18n });
-  }, [locale, enableI18n]);
+    return new ReadonlyConditionStore({ locale, region, enableI18n });
+  }, [locale, region, enableI18n]);
 
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {

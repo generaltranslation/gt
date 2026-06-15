@@ -7,6 +7,7 @@ const {
   mockGetI18NConfig,
   mockGetEnableI18n,
   mockGetLocale,
+  mockGetRegion,
   mockLoadTranslations,
   mockMergeDictionaries,
   mockClientGTProvider,
@@ -16,6 +17,7 @@ const {
   mockGetI18NConfig: vi.fn(),
   mockGetEnableI18n: vi.fn(),
   mockGetLocale: vi.fn(),
+  mockGetRegion: vi.fn(),
   mockLoadTranslations: vi.fn(),
   mockMergeDictionaries: vi.fn(),
   mockClientGTProvider: vi.fn(),
@@ -38,6 +40,10 @@ vi.mock('../../request/getEnableI18n', () => ({
   getEnableI18n: mockGetEnableI18n,
 }));
 
+vi.mock('../../request/getRegion', () => ({
+  getRegion: mockGetRegion,
+}));
+
 vi.mock('../../i18n-cache/NextI18nCache', () => ({
   getNextI18nCache: () => ({
     loadTranslations: mockLoadTranslations,
@@ -57,6 +63,7 @@ describe('GTProvider', () => {
     vi.clearAllMocks();
     mockGetLocale.mockResolvedValue('fr');
     mockGetEnableI18n.mockResolvedValue(true);
+    mockGetRegion.mockResolvedValue(undefined);
     mockGetDictionary.mockResolvedValue({
       greeting: 'Hello',
     });

@@ -8,6 +8,7 @@ import { readBrowserLocale } from './readBrowserLocale';
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
+  defaultRegionCookieName,
 } from '../internal';
 import { getCookieValue } from './cookies';
 import {
@@ -18,11 +19,16 @@ import {
 
 export type CreateBrowserConditionStoreParams = Omit<
   BrowserConditionStoreParams,
-  'locale' | 'enableI18n' | 'localeCookieName' | 'enableI18nCookieName'
+  | 'locale'
+  | 'enableI18n'
+  | 'localeCookieName'
+  | 'regionCookieName'
+  | 'enableI18nCookieName'
 > & {
   locale?: LocaleCandidates;
   enableI18n?: boolean;
   localeCookieName?: string;
+  regionCookieName?: string;
   enableI18nCookieName?: string;
 };
 
@@ -38,12 +44,14 @@ export function createOrUpdateBrowserConditionStore(
   config: CreateBrowserConditionStoreParams
 ) {
   const locale = determineLocale(config);
+  const region = determineRegion(config);
   const enableI18n = determineEnableI18n(config);
 
   if (isBrowserConditionStoreInitialized()) {
     // This represents an update from server
     const conditionStore = getBrowserConditionStore();
     conditionStore.updateLocale(locale);
+    if (region !== undefined) conditionStore.updateRegion(region);
     conditionStore.updateEnableI18n(enableI18n);
     return;
   }
@@ -51,8 +59,10 @@ export function createOrUpdateBrowserConditionStore(
   const conditionStore = new BrowserConditionStore({
     ...config,
     localeCookieName: defaultLocaleCookieName,
+    regionCookieName: defaultRegionCookieName,
     enableI18nCookieName: defaultEnableI18nCookieName,
     locale,
+    region,
     enableI18n,
   });
   setBrowserConditionStore(conditionStore);
@@ -75,6 +85,17 @@ function resolveLocale(candidates?: LocaleCandidates): string {
   return (
     i18nConfig.determineLocale(candidates) || i18nConfig.getDefaultLocale()
   );
+}
+
+function determineRegion({
+  regionCookieName = defaultRegionCookieName,
+  _getRegion: getRegion,
+  region,
+}: CreateBrowserConditionStoreParams): string | undefined {
+  const cookieRegion = getCookieValue({
+    cookieName: regionCookieName,
+  });
+  return cookieRegion || getRegion?.() || region;
 }
 
 function determineEnableI18n({

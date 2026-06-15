@@ -4,6 +4,7 @@
 export {
   useConditionStore,
   useLocale,
+  useRegion,
   useEnableI18n,
 } from './hooks/condition-store';
 export {
@@ -23,3 +24,8 @@ export {
   useVersionId,
 } from './hooks/utils';
 export { useInternalLocaleSelector } from './hooks/useInternalLocaleSelector';
+export { useInternalRegionSelector } from './hooks/useInternalRegionSelector';
+export type {
+  InternalRegionSelectorOptions,
+  RegionData,
+} from './hooks/useInternalRegionSelector';

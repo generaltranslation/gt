@@ -8,7 +8,12 @@ import type { ReactNode } from 'react';
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { useLocaleSelector } from './components/useLocaleSelector';
-export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
+export { useRegionSelector } from './components/useRegionSelector';
+export {
+  useSetLocale,
+  useSetRegion,
+  useSetEnableI18n,
+} from './hooks/conditions-store';
 export {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
@@ -28,6 +33,7 @@ type TxProps = Record<string, ReactNode> & {
 // ===== Components ===== //
 export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
 export { LocaleSelector } from './components/LocaleSelector';
+export { RegionSelector } from './components/RegionSelector';
 
 // ===== Components ===== //
 export {
@@ -50,6 +56,7 @@ export async function Tx(_props: TxProps): Promise<ReactNode> {
 // ===== Hooks ===== //
 export {
   useLocale,
+  useRegion,
   useCustomMapping,
   useDefaultLocale,
   useEnableI18n,

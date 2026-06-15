@@ -15,6 +15,19 @@ export function useSetLocale() {
 }
 
 /**
+ * Returns a function that sets the region
+ */
+export function useSetRegion() {
+  const conditionStore = useConditionStore();
+  return useCallback(
+    (region: string | undefined) => {
+      conditionStore.setRegion(region);
+    },
+    [conditionStore]
+  );
+}
+
+/**
  * Returns a function that sets the enableI18n flag in the condition store.
  */
 export function useSetEnableI18n() {

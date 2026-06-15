@@ -24,8 +24,10 @@ function resetConditionStoreGlobal() {
 function createConditionStoreStub(): ReadonlyConditionStoreInterface {
   return {
     getLocale: () => 'en',
+    getRegion: () => undefined,
     getEnableI18n: () => true,
     setLocale: () => {},
+    setRegion: () => {},
     setEnableI18n: () => {},
   };
 }

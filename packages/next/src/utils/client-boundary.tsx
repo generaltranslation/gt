@@ -10,6 +10,7 @@
  */
 
 export { LocaleSelector as Client_LocaleSelector } from 'gt-react/context';
+export { RegionSelector as Client_RegionSelector } from 'gt-react/context';
 
 import { getI18nConfig, I18nConfig } from 'gt-i18n/internal';
 import { GTProvider, type SharedGTProviderProps } from 'gt-react/context';

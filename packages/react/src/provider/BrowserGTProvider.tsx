@@ -13,7 +13,7 @@ import { ReadonlyBrowserConditionStore } from '../condition-store/ReadOnlyBrowse
 export function BrowserGTProvider(props: SharedGTProviderProps) {
   const conditionStore = useMemo(() => {
     return new ReadonlyBrowserConditionStore(props);
-  }, [props.locale, props.enableI18n, props._reload]);
+  }, [props.locale, props.region, props.enableI18n, props._reload]);
 
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {

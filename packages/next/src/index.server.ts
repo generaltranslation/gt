@@ -17,6 +17,7 @@ export {
   Plural,
   T,
   LocaleSelector,
+  RegionSelector,
   // ----- hooks ----- //
   useGT,
   useTranslations,
@@ -24,6 +25,7 @@ export {
   useSetLocale,
   useLocaleSelector,
   useLocale,
+  useRegion,
   useLocaleDirection,
   useVersionId,
   useLocales,

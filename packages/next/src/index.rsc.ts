@@ -14,6 +14,7 @@ import { T } from './server-dir/buildtime/T';
 import { Branch } from './branches/Branch';
 import { Plural } from './branches/Plural';
 import { useLocale } from './request/getLocale';
+import { useRegion } from './request/getRegion';
 import { useLocaleDirection } from './request/getLocaleDirection';
 
 export {
@@ -25,6 +26,7 @@ export {
 // ===== Client Boundary ===== //
 
 export { Client_LocaleSelector as LocaleSelector } from './utils/client-boundary';
+export { Client_RegionSelector as RegionSelector } from './utils/client-boundary';
 
 // ===== gt-react ===== //
 import {
@@ -78,6 +80,7 @@ export {
   Branch,
   Plural,
   useLocale,
+  useRegion,
   useLocaleDirection,
   msg,
   decodeMsg,
