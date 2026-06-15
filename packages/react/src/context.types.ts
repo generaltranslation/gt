@@ -27,6 +27,8 @@ export {
   Num,
 } from '@generaltranslation/react-core/components';
 
+export { Tx } from '@generaltranslation/react-core/components-rsc';
+
 // ===== Hooks ===== //
 export {
   useLocale,

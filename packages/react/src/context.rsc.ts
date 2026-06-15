@@ -40,6 +40,7 @@ export {
   RelativeTime,
   T,
   Var,
+  Tx,
 } from '@generaltranslation/react-core/components-rsc';
 
 // ===== Hooks (cannot reference context) ===== //

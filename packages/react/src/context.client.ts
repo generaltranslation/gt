@@ -27,6 +27,10 @@ export {
   Num,
 } from '@generaltranslation/react-core/components';
 
+export async function Tx() {
+  throw new Error('Tx is only supported via RSC');
+}
+
 // ===== Hooks ===== //
 export {
   useLocale,

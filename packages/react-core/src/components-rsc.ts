@@ -28,6 +28,7 @@ export {
   RscRelativeTime as RelativeTime,
 } from './components/variables/RelativeTime.rsc';
 export { RscT as T } from './components/translation/T.rsc';
+export { RscTx as Tx } from './components/translation/Tx.rsc';
 
 // ===== Functions ===== //
 export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
