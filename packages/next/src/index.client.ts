@@ -47,6 +47,17 @@ import type {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
+import type { GetServerSidePropsContext, PreviewData } from 'next';
+import type { ParsedUrlQuery } from 'querystring';
+
+export function parseLocale<
+  Params extends ParsedUrlQuery = ParsedUrlQuery,
+  Preview extends PreviewData = PreviewData,
+>(_: GetServerSidePropsContext<Params, Preview>): string {
+  throw new Error(
+    'parseLocale() is only available from gt-next on the server.'
+  );
+}
 
 export {
   T,

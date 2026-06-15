@@ -1,9 +1,12 @@
 'use client';
 
 import { initializeGT } from './setup/initGT';
+import { parseLocale } from './parseLocale';
 initializeGT();
 
 // ===== gt-react ===== //
+export { parseLocale };
+
 export {
   // ----- components ----- //
   GTProvider,
