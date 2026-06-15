@@ -47,7 +47,10 @@ export class BrowserConditionStore implements ReadonlyConditionStoreInterface {
   private customGetEnableI18n?: GetEnableI18n;
 
   constructor(config: BrowserConditionStoreParams) {
-    this.customReload = config._reload ?? (() => window.location.reload());
+    this.customReload =
+      config._reload ??
+      (() =>
+        typeof window !== 'undefined' ? window.location.reload() : undefined);
     this.customGetLocale = config._getLocale;
     this.customGetEnableI18n = config._getEnableI18n;
 
