@@ -6,7 +6,7 @@ initializeGT();
 
 // Debugging statement, change to warn before publish
 if (typeof window === 'undefined') {
-  throw new Error(clientEntrypointImportedOnServerError);
+  console.warn(clientEntrypointImportedOnServerError);
 }
 
 import {

@@ -9,7 +9,7 @@ initializeGT();
 
 // Debugging statement, change to warn before publish
 if (typeof window !== 'undefined') {
-  throw new Error(rscEntrypointImportedInBrowserError);
+  console.warn(rscEntrypointImportedInBrowserError);
 }
 
 // ===== Overrides ===== //
