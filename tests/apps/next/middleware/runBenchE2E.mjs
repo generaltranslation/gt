@@ -120,6 +120,12 @@ try {
     stdio: 'inherit',
   });
 
+  logSection('Installing Playwright browser');
+  runPnpm(['exec', 'playwright', 'install', 'chromium-headless-shell'], {
+    cwd: __dirname,
+    stdio: 'inherit',
+  });
+
   logSection('Running e2e benchmarks');
   runPnpm(
     ['exec', 'playwright', 'test', '--config=benchmarks/playwright.config.ts'],

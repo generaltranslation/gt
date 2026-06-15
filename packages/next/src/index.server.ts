@@ -27,6 +27,8 @@ export {
   useGT,
   useTranslations,
   useMessages,
+  useSetLocale,
+  useLocaleSelector,
   useLocale,
   useLocaleDirection,
   useVersionId,
