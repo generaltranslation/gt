@@ -11,22 +11,23 @@ export function parseLocale(): string {
   const cookie = getCookie(defaultLocaleCookieName);
   if (cookie) candidates.push(cookie);
 
-  const ignorePreferredLanguages =
-    process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'true';
+  const headers =
+    getRequestHeader('accept-language')
+      ?.split(',')
+      .map((item) => item.split(';')?.[0].trim()) || [];
+  candidates.push(...headers);
 
-  if (!ignorePreferredLanguages) {
-    const headers =
-      getRequestHeader('accept-language')
-        ?.split(',')
-        .map((item) => item.split(';')?.[0].trim()) || [];
-    candidates.push(...headers);
-  }
-
-  if (candidates.length === 0 && !ignorePreferredLanguages) {
+  if (candidates.length === 0) {
     console.warn(
       'gt-tanstack-start(server): no locales could be determined for this request'
     );
   }
 
-  return getI18nConfig().resolveSupportedLocale(candidates);
+  const i18nConfig = getI18nConfig();
+  return (
+    i18nConfig
+      .getGTClass()
+      .determineLocale(candidates, i18nConfig.getLocales()) ||
+    i18nConfig.getDefaultLocale()
+  );
 }
