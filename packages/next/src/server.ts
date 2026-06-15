@@ -6,7 +6,6 @@ import 'server-only';
 
 // Locale management
 export { getLocale } from './request/getLocale';
-export { getRegion } from './request/getRegion';
 export { getLocaleDirection } from './request/getLocaleDirection';
 export { registerLocale } from './request/registerLocale';
 

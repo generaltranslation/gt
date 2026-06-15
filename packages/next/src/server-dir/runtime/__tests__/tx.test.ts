@@ -8,14 +8,19 @@ const { mockLookupTranslation, mockTranslate } = vi.hoisted(() => ({
 
 vi.mock('../../../config-dir/getI18NConfig', () => ({
   getI18NConfig: () => ({
-    getDefaultLocale: () => 'en',
     requiresTranslation: () => [true, false],
+    lookupTranslation: mockLookupTranslation,
+    translate: mockTranslate,
+  }),
+}));
+
+vi.mock('gt-i18n/internal', () => ({
+  getI18nConfig: () => ({
+    getDefaultLocale: () => 'en',
     getGTClass: () => ({
       formatMessage: (message: string) => message,
       formatCutoff: (message: string) => message,
     }),
-    lookupTranslation: mockLookupTranslation,
-    translate: mockTranslate,
   }),
 }));
 

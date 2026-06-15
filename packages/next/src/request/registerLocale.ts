@@ -1,4 +1,4 @@
-import { getI18NConfig } from '../config-dir/getI18NConfig';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { localeStore } from './localeStore';
 
 /**
@@ -9,6 +9,6 @@ import { localeStore } from './localeStore';
  * @param locale - A BCP-47 locale tag (e.g., 'en-US', 'de', 'fr')
  */
 export function registerLocale(locale: string): void {
-  const gt = getI18NConfig().getGTClass();
+  const gt = getI18nConfig().getGTClass();
   localeStore.enterWith(gt.resolveAliasLocale(locale));
 }

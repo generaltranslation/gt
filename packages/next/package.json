@@ -116,15 +116,6 @@
     },
     "./internal/_getDomain": {
       "default": "./dist/internal/_getDomain.js"
-    },
-    "./internal/static/_getLocale": {
-      "default": "./dist/internal/static/_getLocale.js"
-    },
-    "./internal/static/_getRegion": {
-      "default": "./dist/internal/static/_getRegion.js"
-    },
-    "./internal/static/_getDomain": {
-      "default": "./dist/internal/static/_getDomain.js"
     }
   },
   "typesVersions": {
@@ -167,15 +158,6 @@
       ],
       "internal/_getDomain": [
         "./dist/internal/_getDomain.d.ts"
-      ],
-      "internal/static/_getLocale": [
-        "./dist/internal/static/_getLocale.d.ts"
-      ],
-      "internal/static/_getRegion": [
-        "./dist/internal/static/_getRegion.d.ts"
-      ],
-      "internal/static/_getDomain": [
-        "./dist/internal/static/_getDomain.d.ts"
       ]
     }
   },
@@ -217,15 +199,6 @@
       ],
       "gt-next/internal/_getDomain": [
         "/dist/internal/_getDomain"
-      ],
-      "gt-next/internal/static/_getLocale": [
-        "/dist/internal/static/_getLocale"
-      ],
-      "gt-next/internal/static/_getRegion": [
-        "/dist/internal/static/_getRegion"
-      ],
-      "gt-next/internal/static/_getDomain": [
-        "/dist/internal/static/_getDomain"
       ]
     }
   },

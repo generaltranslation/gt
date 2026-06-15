@@ -1,10 +1,8 @@
+import { getAsyncConditionStore } from '../condition-store/AsyncCondtionStore';
 import { use } from '../utils/use';
 
-// TODO: move this over to ConditionStore
-
-export async function getEnableI18n(): Promise<boolean> {
-  // TODO: read this from a request condition store once gt-next sets one up.
-  return true;
+export function getEnableI18n(): Promise<boolean> {
+  return getAsyncConditionStore().getEnableI18n();
 }
 
 export function useEnableI18n(): boolean {

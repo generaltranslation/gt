@@ -6,15 +6,17 @@ const {
   mockGetDictionaryEntry,
   mockGetI18NConfig,
   mockGetLocale,
+  mockLoadTranslations,
   mockMergeDictionaries,
-  mockReactGTProvider,
+  mockClientGTProvider,
 } = vi.hoisted(() => ({
   mockGetDictionary: vi.fn(),
   mockGetDictionaryEntry: vi.fn(),
   mockGetI18NConfig: vi.fn(),
   mockGetLocale: vi.fn(),
+  mockLoadTranslations: vi.fn(),
   mockMergeDictionaries: vi.fn(),
-  mockReactGTProvider: vi.fn(),
+  mockClientGTProvider: vi.fn(),
 }));
 
 vi.mock('../../config-dir/getI18NConfig', () => ({
@@ -30,8 +32,14 @@ vi.mock('../../request/getLocale', () => ({
   getLocale: mockGetLocale,
 }));
 
-vi.mock('gt-react/context', () => ({
-  GTProvider: mockReactGTProvider,
+vi.mock('../../i18n-cache/NextI18nCache', () => ({
+  getNextI18nCache: () => ({
+    loadTranslations: mockLoadTranslations,
+  }),
+}));
+
+vi.mock('../../utils/client-boundary', () => ({
+  Client_GTProvider: mockClientGTProvider,
 }));
 
 vi.mock('gt-react/internal', () => ({
@@ -51,10 +59,10 @@ describe('GTProvider', () => {
     mockMergeDictionaries.mockReturnValue({
       greeting: 'Bonjour',
     });
+    mockLoadTranslations.mockResolvedValue({
+      hash: 'Salut',
+    });
     mockGetI18NConfig.mockReturnValue({
-      getCachedTranslations: vi.fn().mockResolvedValue({
-        hash: 'Salut',
-      }),
       getDictionaryTranslations: vi.fn().mockResolvedValue({
         greeting: 'Bonjour',
       }),
@@ -70,7 +78,7 @@ describe('GTProvider', () => {
     expect(mockGetLocale).toHaveBeenCalled();
     expect(React.isValidElement(element)).toBe(true);
     expect(element).toMatchObject({
-      type: mockReactGTProvider,
+      type: mockClientGTProvider,
       props: {
         children: 'content',
         dictionaries: {
@@ -89,30 +97,27 @@ describe('GTProvider', () => {
     });
   });
 
-  it('uses explicit locale and skips cached translations when translation is not required', async () => {
+  it('uses the request locale and skips cached translations when translation is not required', async () => {
     const config = {
-      getCachedTranslations: vi.fn().mockResolvedValue({
-        hash: 'Hola',
-      }),
       getDictionaryTranslations: vi.fn().mockResolvedValue({}),
       requiresTranslation: vi.fn().mockReturnValue([false, false]),
     };
     mockGetI18NConfig.mockReturnValue(config);
+    mockGetLocale.mockResolvedValue('en');
 
     const { GTProvider } = await import('../GTProvider');
 
     const element = await GTProvider({
       children: 'content',
       id: 'marketing.hero',
-      locale: 'en',
     });
 
-    expect(mockGetLocale).not.toHaveBeenCalled();
+    expect(mockGetLocale).toHaveBeenCalled();
     expect(mockGetDictionaryEntry).toHaveBeenCalledWith('marketing.hero');
-    expect(config.getCachedTranslations).not.toHaveBeenCalled();
+    expect(mockLoadTranslations).not.toHaveBeenCalled();
     expect(React.isValidElement(element)).toBe(true);
     expect(element).toMatchObject({
-      type: mockReactGTProvider,
+      type: mockClientGTProvider,
       props: {
         dictionaries: {
           en: {

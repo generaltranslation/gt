@@ -1,6 +1,7 @@
 import { getI18NConfig } from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { Suspense } from 'react';
+import { getI18nConfig } from 'gt-i18n/internal';
 import {
   addGTIdentifier,
   renderDefaultChildren,
@@ -55,8 +56,9 @@ export async function Tx({
   locale = locale ?? $locale;
   const maxChars = $maxChars;
   const I18NConfig = getI18NConfig();
+  const i18nConfig = getI18nConfig();
   locale ||= await getLocale();
-  const defaultLocale = I18NConfig.getDefaultLocale();
+  const defaultLocale = i18nConfig.getDefaultLocale();
   const [translationRequired, dialectTranslationRequired] =
     I18NConfig.requiresTranslation(locale);
 

@@ -10,8 +10,8 @@ import { getAsyncConditionStore } from '../condition-store/AsyncCondtionStore';
  * const locale = await getLocale();
  * console.log(locale); // 'en-US'
  */
-export async function getLocale(): Promise<string> {
-  return await getAsyncConditionStore().getLocale();
+export function getLocale(): Promise<string> {
+  return getAsyncConditionStore().getLocale();
 }
 
 export function useLocale() {
