@@ -9,6 +9,7 @@ import {
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
+  defaultResetLocaleCookieName,
 } from '../cookie-names';
 
 type SerializedBrowserConditionStoreState = {
@@ -85,6 +86,10 @@ export class BrowserConditionStore implements ReadonlyConditionStoreInterface {
     setCookieValue({
       cookieName: this.localeCookieName,
       value: newLocale,
+    });
+    setCookieValue({
+      cookieName: defaultResetLocaleCookieName,
+      value: 'true',
     });
     this.reload();
   };
