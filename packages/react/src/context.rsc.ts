@@ -1,6 +1,7 @@
 // React Server Component context surface.
 
 import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { CustomMapping } from 'generaltranslation/types';
 import {
   getGT,
   getI18nConfig,
@@ -79,7 +80,12 @@ export function useLocaleDirection(locale: string) {
 export function useLocaleProperties(locale: string) {
   return getI18nConfig().getGTClass().getLocaleProperties(locale);
 }
-
+export function useDefaultLocale(): string {
+  return getI18nConfig().getDefaultLocale();
+}
+export function useCustomMapping(): CustomMapping {
+  return getI18nConfig().getCustomMapping();
+}
 // ===== Internal Components ===== //
 export {
   GtInternalBranch,
