@@ -1,13 +1,7 @@
 'use client';
 
 import { initializeGT } from './setup/initGT';
-import { serverEntrypointImportedInBrowserError } from './errors/createErrors';
 initializeGT();
-
-// Debugging statement, change to warn before publish
-if (typeof window !== 'undefined') {
-  console.warn(serverEntrypointImportedInBrowserError);
-}
 
 // ===== gt-react ===== //
 export {

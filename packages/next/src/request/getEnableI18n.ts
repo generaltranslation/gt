@@ -1,4 +1,4 @@
-import { getAsyncConditionStore } from '../condition-store/AsyncCondtionStore';
+import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
 import { use } from '../utils/use';
 
 export function getEnableI18n(): Promise<boolean> {

@@ -8,8 +8,8 @@ import { initializeGT as coreInitializeGT } from './initGT';
 import {
   AsyncConditionStore,
   type AsyncConditionStoreParams,
-} from '../condition-store/AsyncCondtionStore';
-import { setAsyncConditionStore } from '../condition-store/AsyncCondtionStore';
+} from '../condition-store/AsyncConditionStore';
+import { setAsyncConditionStore } from '../condition-store/AsyncConditionStore';
 import { customGetLocaleUnresolvedWarning } from '../errors/createErrors';
 
 /**
@@ -41,6 +41,7 @@ export function initializeGT(
 }
 
 function getAsyncConditionStoreParams(): AsyncConditionStoreParams {
+  // TODO: we are parsing this twice, address in separate PR
   const privateConfig = JSON.parse(
     process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
   );

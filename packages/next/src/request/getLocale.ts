@@ -1,5 +1,5 @@
 import { use } from '../utils/use';
-import { getAsyncConditionStore } from '../condition-store/AsyncCondtionStore';
+import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
 
 /**
  * Gets the user's current locale.

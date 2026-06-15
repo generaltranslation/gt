@@ -139,24 +139,6 @@ export const typesFileError = createGtNextDiagnostic({
   fix: 'Import from the appropriate gt-next runtime entry point instead',
 });
 
-export const clientEntrypointImportedOnServerError = createGtNextDiagnostic({
-  severity: 'Error',
-  whatHappened: 'The gt-next client entry point was imported on the server',
-  fix: "Import from 'gt-next/server' or 'gt-next' from server components",
-});
-
-export const serverEntrypointImportedInBrowserError = createGtNextDiagnostic({
-  severity: 'Error',
-  whatHappened: 'The gt-next server entry point was imported in the browser',
-  fix: "Import from 'gt-next' from client components",
-});
-
-export const rscEntrypointImportedInBrowserError = createGtNextDiagnostic({
-  severity: 'Error',
-  whatHappened: 'The gt-next RSC entry point was imported in the browser',
-  fix: "Import from 'gt-next' from client components",
-});
-
 export const getTranslationsSnapshotRscError = createGtNextDiagnostic({
   severity: 'Error',
   whatHappened:

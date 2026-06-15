@@ -1,16 +1,7 @@
 import 'server-only';
 
 import { initializeGT } from './setup/initGT.rsc';
-import {
-  getTranslationsSnapshotRscError,
-  rscEntrypointImportedInBrowserError,
-} from './errors/createErrors';
 initializeGT();
-
-// Debugging statement, change to warn before publish
-if (typeof window !== 'undefined') {
-  console.warn(rscEntrypointImportedInBrowserError);
-}
 
 // ===== Overrides ===== //
 import { GTProvider } from './provider/GTProvider';
@@ -63,6 +54,7 @@ import type {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
+import { getTranslationsSnapshotRscError } from './errors/createErrors';
 
 // ===== other ===== //
 

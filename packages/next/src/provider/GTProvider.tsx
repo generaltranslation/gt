@@ -69,7 +69,7 @@ export async function GTProvider({ children, id: prefixId }: GTProviderProps) {
 
   return (
     <Client_GTProvider
-      enableI18n={translationRequired}
+      enableI18n={true}
       locale={locale}
       translations={translationsSnapshot}
       dictionaries={dictionariesSnapshot}

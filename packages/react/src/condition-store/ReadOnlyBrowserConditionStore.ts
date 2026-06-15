@@ -1,4 +1,4 @@
-import { WritableConditionStoreParams } from 'gt-i18n/internal';
+import { ReadonlyConditionStoreParams } from 'gt-i18n/internal';
 import { setCookieValue } from './cookies';
 import { GetEnableI18n, GetLocale } from '../i18n-cache/types';
 import { getI18nConfig } from 'gt-i18n/internal';
@@ -23,13 +23,14 @@ export type ReloadType = (state: SerializedBrowserConditionStoreState) => void;
  * @param {GetLocale} getLocale - The function to get the locale
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the locale cookie to check
  */
-export type BrowserConditionStoreParams = WritableConditionStoreParams & {
-  localeCookieName?: string;
-  enableI18nCookieName?: string;
-  _getLocale?: GetLocale;
-  _getEnableI18n?: GetEnableI18n;
-  _reload?: ReloadType;
-};
+export type ReadonlyBrowserConditionStoreParams =
+  ReadonlyConditionStoreParams & {
+    localeCookieName?: string;
+    enableI18nCookieName?: string;
+    _getLocale?: GetLocale;
+    _getEnableI18n?: GetEnableI18n;
+    _reload?: ReloadType;
+  };
 
 /**
  * Separate from BrowserConditionStore. This is for SSR.
@@ -37,7 +38,7 @@ export type BrowserConditionStoreParams = WritableConditionStoreParams & {
  * that allows faster getLocale() lookups b/c it reads from
  * memory instead of cookie
  */
-export class BrowserConditionStore implements ReadonlyConditionStoreInterface {
+export class ReadonlyBrowserConditionStore implements ReadonlyConditionStoreInterface {
   private locale: string;
   private enableI18n: boolean;
   private localeCookieName: string;
@@ -46,7 +47,7 @@ export class BrowserConditionStore implements ReadonlyConditionStoreInterface {
   private customGetLocale?: GetLocale;
   private customGetEnableI18n?: GetEnableI18n;
 
-  constructor(config: BrowserConditionStoreParams) {
+  constructor(config: ReadonlyBrowserConditionStoreParams) {
     this.customReload =
       config._reload ??
       (() =>

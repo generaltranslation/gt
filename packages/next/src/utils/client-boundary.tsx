@@ -54,7 +54,7 @@ function usePathCheck({
   useEffect(() => {
     // Track the referrer locale for middleware
     const i18nConfig = getI18nConfig();
-    if (locale) {
+    if (locale && (typeof locale === 'string' || locale.length > 0)) {
       document.cookie = `${referrerLocaleCookieName}=${i18nConfig.resolveAliasLocale(typeof locale === 'string' ? locale : locale[0])};path=/`;
     }
 
