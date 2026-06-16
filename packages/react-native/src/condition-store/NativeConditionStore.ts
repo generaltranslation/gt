@@ -11,8 +11,6 @@ import {
 import { getLocale, resolveLocale } from '../utils/getLocale';
 import { nativeStoreGet, nativeStoreSet } from '../utils/nativeStore';
 
-type StoreListener = () => void;
-
 export type NativeConditionStoreParams = WritableConditionStoreParams & {
   localeStoreKey?: string;
   regionStoreKey?: string;
@@ -26,7 +24,6 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
   private localeStoreKey: string;
   private regionStoreKey: string;
   private enableI18nStoreKey: string;
-  private listeners = new Set<StoreListener>();
 
   constructor(config: NativeConditionStoreParams) {
     this.localeStoreKey = config.localeStoreKey ?? defaultLocaleStoreKey;
@@ -65,7 +62,6 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setLocale = (locale: LocaleCandidates): void => {
     this.updateLocale(locale);
-    this.emitChange();
   };
 
   getRegion = (): string | undefined => {
@@ -74,7 +70,6 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setRegion = (region: string | undefined): void => {
     this.updateRegion(region);
-    this.emitChange();
   };
 
   getEnableI18n = (): boolean => {
@@ -83,7 +78,6 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setEnableI18n = (enableI18n: boolean): void => {
     this.updateEnableI18n(enableI18n);
-    this.emitChange();
   };
 
   updateLocale = (locale: LocaleCandidates): void => {
@@ -96,19 +90,6 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   updateEnableI18n = (enableI18n: boolean): void => {
     nativeStoreSet(this.enableI18nStoreKey, enableI18n ? 'true' : 'false');
-  };
-
-  subscribe = (listener: StoreListener): (() => void) => {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
-  };
-
-  private emitChange = (): void => {
-    this.listeners.forEach((listener) => {
-      listener();
-    });
   };
 }
 

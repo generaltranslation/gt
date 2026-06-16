@@ -70,24 +70,4 @@ describe('NativeConditionStore', () => {
     expect(nativeStore.get(defaultRegionStoreKey)).toBe('US');
     expect(nativeStore.get(defaultEnableI18nStoreKey)).toBe('true');
   });
-
-  it('notifies subscribers when persisted conditions change', () => {
-    const conditionStore = new NativeConditionStore({
-      locale: 'en',
-    });
-    const listener = vi.fn();
-
-    const unsubscribe = conditionStore.subscribe(listener);
-
-    conditionStore.setLocale('es');
-    conditionStore.setRegion('US');
-    conditionStore.setEnableI18n(false);
-
-    expect(listener).toHaveBeenCalledTimes(3);
-
-    unsubscribe();
-    conditionStore.setLocale('fr');
-
-    expect(listener).toHaveBeenCalledTimes(3);
-  });
 });

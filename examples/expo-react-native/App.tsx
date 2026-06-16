@@ -2,7 +2,6 @@ import { StatusBar } from 'expo-status-bar';
 import {
   type GTProviderProps,
   useLocale,
-  useSetLocale,
   useGT,
   GTProvider,
   T,
@@ -14,23 +13,32 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import gtConfig from './gt.config.json';
 
 type AppProps = {
+  locale: string;
   translations: GTProviderProps['translations'];
+  onLocaleChange: (locale: string) => void;
 };
 
-export default function App({ translations }: AppProps) {
+export default function App({
+  locale,
+  translations,
+  onLocaleChange,
+}: AppProps) {
   return (
     <>
-      <GTProvider translations={translations}>
-        <LocaleDemo />
+      <GTProvider locale={locale} translations={translations}>
+        <LocaleDemo onLocaleChange={onLocaleChange} />
       </GTProvider>
       <StatusBar style='auto' />
     </>
   );
 }
 
-function LocaleDemo() {
+type LocaleDemoProps = {
+  onLocaleChange: (locale: string) => void;
+};
+
+function LocaleDemo({ onLocaleChange }: LocaleDemoProps) {
   const locale = useLocale();
-  const setLocale = useSetLocale();
   const gt = useGT();
   const locales = [gtConfig.defaultLocale, ...gtConfig.locales];
   const gtMessage = gt('This line is translated with gt().', {
@@ -52,7 +60,7 @@ function LocaleDemo() {
           <Pressable
             accessibilityRole='button'
             key={nextLocale}
-            onPress={() => setLocale(nextLocale)}
+            onPress={() => onLocaleChange(nextLocale)}
             style={[
               styles.button,
               nextLocale === locale ? styles.activeButton : null,

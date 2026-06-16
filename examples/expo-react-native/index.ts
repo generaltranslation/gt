@@ -1,5 +1,6 @@
 import { registerRootComponent } from 'expo';
-import { createElement, useSyncExternalStore, type ComponentType } from 'react';
+import { createElement, useSyncExternalStore } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import {
   getLocale,
   getTranslationsSnapshot,
@@ -7,6 +8,7 @@ import {
 } from 'gt-react-native';
 import type { GTProviderProps } from 'gt-react-native';
 
+import App from './App';
 import gtConfig from './gt.config.json';
 import esTranslations from './src/_gt/es.json';
 import frTranslations from './src/_gt/fr.json';
@@ -16,16 +18,16 @@ const localTranslations = {
   fr: frTranslations,
 } as GTProviderProps['translations'];
 
-type AppComponent = ComponentType<{
-  translations: GTProviderProps['translations'];
-}>;
-
 type AppSnapshot = {
-  App: AppComponent;
+  locale: string;
   translations: GTProviderProps['translations'];
 };
 
-let appSnapshot: AppSnapshot | null = null;
+type RootState = {
+  locale: string;
+  snapshot: AppSnapshot | null;
+};
+
 const listeners = new Set<() => void>();
 
 initializeGT({
@@ -34,14 +36,10 @@ initializeGT({
   loadTranslations: async (locale: string) => localTranslations[locale] ?? {},
 });
 
-async function loadApp() {
-  const translations = await getTranslationsSnapshot(getLocale());
-  const { default: App } = await import('./App');
-  appSnapshot = { App, translations };
-  listeners.forEach((listener) => {
-    listener();
-  });
-}
+let rootState: RootState = {
+  locale: getLocale(),
+  snapshot: null,
+};
 
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
@@ -50,15 +48,72 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-function getSnapshot(): AppSnapshot | null {
-  return appSnapshot;
+function getSnapshot(): RootState {
+  return rootState;
+}
+
+function updateRootState(nextState: RootState): void {
+  rootState = nextState;
+  listeners.forEach((listener) => {
+    listener();
+  });
+}
+
+async function loadSnapshot(locale: string): Promise<void> {
+  updateRootState({ locale, snapshot: null });
+  const translations = await getTranslationsSnapshot(locale);
+  if (rootState.locale !== locale) return;
+  updateRootState({ locale, snapshot: { locale, translations } });
+}
+
+function setLocale(locale: string): void {
+  if (locale === rootState.locale && rootState.snapshot) return;
+  void loadSnapshot(locale);
 }
 
 function Root() {
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-  if (!snapshot) return null;
-  return createElement(snapshot.App, { translations: snapshot.translations });
+  const { locale, snapshot } = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getSnapshot
+  );
+
+  if (!snapshot) {
+    return createElement(LoadingState);
+  }
+
+  return createElement(App, {
+    locale,
+    translations: snapshot.translations,
+    onLocaleChange: setLocale,
+  });
 }
 
-void loadApp();
+void loadSnapshot(rootState.locale);
 registerRootComponent(Root);
+
+function LoadingState() {
+  return createElement(
+    View,
+    { style: styles.loadingContainer },
+    createElement(
+      Text,
+      { style: styles.loadingText },
+      'Loading translations...'
+    )
+  );
+}
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#f7f7f2',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#374151',
+  },
+});
