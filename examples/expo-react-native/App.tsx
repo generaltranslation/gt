@@ -12,22 +12,15 @@ import {
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import gtConfig from './gt.config.json';
-import esTranslations from './src/_gt/es.json';
-import frTranslations from './src/_gt/fr.json';
 
-const translations = {
-  es: esTranslations,
-  fr: frTranslations,
-} as GTProviderProps['translations'];
+type AppProps = {
+  translations: GTProviderProps['translations'];
+};
 
-export default function App() {
+export default function App({ translations }: AppProps) {
   return (
     <>
-      <GTProvider
-        defaultLocale={gtConfig.defaultLocale}
-        locales={gtConfig.locales}
-        translations={translations}
-      >
+      <GTProvider translations={translations}>
         <LocaleDemo />
       </GTProvider>
       <StatusBar style='auto' />

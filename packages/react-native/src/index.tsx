@@ -7,7 +7,11 @@ import {
 import { useLocaleSelector, useRegionSelector } from './hooks/selectors';
 import { useLocaleDirection, useVersionId } from './hooks/utils';
 import { getLocaleFromNativeStore } from './utils/nativeStore';
+import { getLocale } from './utils/getLocale';
+import { initializeGT } from './setup/initializeGT';
 import type { GTProviderProps } from './provider/GTProvider';
+import type { GetLocaleParams } from './utils/getLocale';
+import type { InitializeGTParams } from './setup/initializeGT';
 
 import type {
   DictionaryTranslationOptions,
@@ -72,6 +76,8 @@ export {
   useLocaleDirection,
   useVersionId,
   getLocaleFromNativeStore,
+  getLocale,
+  initializeGT,
 };
 
 export type {
@@ -81,4 +87,6 @@ export type {
   RenderPipeline,
   RenderPreparedT,
   GTProviderProps,
+  GetLocaleParams,
+  InitializeGTParams,
 };

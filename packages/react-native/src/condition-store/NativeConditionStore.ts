@@ -1,4 +1,3 @@
-import { getI18nConfig } from 'gt-i18n/internal';
 import type {
   LocaleCandidates,
   WritableConditionStoreInterface,
@@ -9,7 +8,7 @@ import {
   defaultLocaleCookieName as defaultLocaleStoreKey,
   defaultRegionCookieName as defaultRegionStoreKey,
 } from '@generaltranslation/react-core/internal';
-import { getNativeLocales } from '../utils/getNativeLocales';
+import { getLocale, resolveLocale } from '../utils/getLocale';
 import { nativeStoreGet, nativeStoreSet } from '../utils/nativeStore';
 
 type StoreListener = () => void;
@@ -35,7 +34,9 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
     this.enableI18nStoreKey =
       config.enableI18nStoreKey ?? defaultEnableI18nStoreKey;
 
-    this.updateLocale(getInitialLocale(config, this.localeStoreKey));
+    this.updateLocale(
+      getLocale({ locale: config.locale, localeStoreKey: this.localeStoreKey })
+    );
     const region = getInitialRegion(config, this.regionStoreKey);
     if (region !== undefined) {
       this.updateRegion(region);
@@ -59,7 +60,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
   };
 
   getLocale = (): string => {
-    return resolveLocale(nativeStoreGet(this.localeStoreKey));
+    return getLocale({ localeStoreKey: this.localeStoreKey });
   };
 
   setLocale = (locale: LocaleCandidates): void => {
@@ -111,17 +112,6 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
   };
 }
 
-function getInitialLocale(
-  config: NativeConditionStoreParams,
-  localeStoreKey: string
-): string[] {
-  const candidates: string[] = [];
-  pushLocaleCandidates(candidates, nativeStoreGet(localeStoreKey));
-  pushLocaleCandidates(candidates, config.locale);
-  candidates.push(...getNativeLocales());
-  return candidates;
-}
-
 function getInitialRegion(
   config: NativeConditionStoreParams,
   regionStoreKey: string
@@ -136,24 +126,4 @@ function getInitialEnableI18n(
   const storedEnableI18n = nativeStoreGet(enableI18nStoreKey);
   if (storedEnableI18n === null) return config.enableI18n ?? true;
   return storedEnableI18n === 'true';
-}
-
-function pushLocaleCandidates(
-  target: string[],
-  locale: LocaleCandidates | null
-) {
-  if (!locale) return;
-  if (Array.isArray(locale)) {
-    target.push(...locale);
-    return;
-  }
-  target.push(locale);
-}
-
-function resolveLocale(candidates?: LocaleCandidates | null): string {
-  const i18nConfig = getI18nConfig();
-  return (
-    i18nConfig.determineLocale(candidates ?? undefined) ||
-    i18nConfig.getDefaultLocale()
-  );
 }
