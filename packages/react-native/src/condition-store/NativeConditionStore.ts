@@ -6,9 +6,9 @@ import type {
 } from 'gt-i18n/internal/types';
 import { getTranslationsSnapshot } from '@generaltranslation/react-core/context';
 import {
-  defaultEnableI18nCookieName,
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
+  defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
+  defaultLocaleCookieName as defaultLocaleStoreKey,
+  defaultRegionCookieName as defaultRegionStoreKey,
 } from '@generaltranslation/react-core/internal';
 import { nativeStoreGet, nativeStoreSet } from '../utils/nativeStore';
 
@@ -23,9 +23,9 @@ export type ReloadRuntime = (
 ) => void | Promise<void>;
 
 export type NativeConditionStoreParams = WritableConditionStoreParams & {
-  localeCookieName?: string;
-  regionCookieName?: string;
-  enableI18nCookieName?: string;
+  localeStoreKey?: string;
+  regionStoreKey?: string;
+  enableI18nStoreKey?: string;
   reload?: ReloadRuntime;
 };
 
@@ -33,16 +33,16 @@ export type NativeConditionStoreParams = WritableConditionStoreParams & {
  * Condition store implementation for React Native.
  */
 export class NativeConditionStore implements WritableConditionStoreInterface {
-  private localeStoreName: string;
-  private regionStoreName: string;
-  private enableI18nStoreName: string;
+  private localeStoreKey: string;
+  private regionStoreKey: string;
+  private enableI18nStoreKey: string;
   private reloadRuntime: ReloadRuntime;
 
   constructor(config: NativeConditionStoreParams) {
-    this.localeStoreName = config.localeCookieName ?? defaultLocaleCookieName;
-    this.regionStoreName = config.regionCookieName ?? defaultRegionCookieName;
-    this.enableI18nStoreName =
-      config.enableI18nCookieName ?? defaultEnableI18nCookieName;
+    this.localeStoreKey = config.localeStoreKey ?? defaultLocaleStoreKey;
+    this.regionStoreKey = config.regionStoreKey ?? defaultRegionStoreKey;
+    this.enableI18nStoreKey =
+      config.enableI18nStoreKey ?? defaultEnableI18nStoreKey;
     this.reloadRuntime = config.reload ?? (() => {});
 
     this.updateLocale(config.locale);
@@ -53,23 +53,22 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
   }
 
   updateConfig = ({
-    localeCookieName,
-    regionCookieName,
-    enableI18nCookieName,
+    localeStoreKey,
+    regionStoreKey,
+    enableI18nStoreKey,
     reload,
   }: Pick<
     NativeConditionStoreParams,
-    'localeCookieName' | 'regionCookieName' | 'enableI18nCookieName' | 'reload'
+    'localeStoreKey' | 'regionStoreKey' | 'enableI18nStoreKey' | 'reload'
   >): void => {
-    this.localeStoreName = localeCookieName ?? defaultLocaleCookieName;
-    this.regionStoreName = regionCookieName ?? defaultRegionCookieName;
-    this.enableI18nStoreName =
-      enableI18nCookieName ?? defaultEnableI18nCookieName;
+    this.localeStoreKey = localeStoreKey ?? defaultLocaleStoreKey;
+    this.regionStoreKey = regionStoreKey ?? defaultRegionStoreKey;
+    this.enableI18nStoreKey = enableI18nStoreKey ?? defaultEnableI18nStoreKey;
     this.reloadRuntime = reload ?? (() => {});
   };
 
   getLocale = (): string => {
-    return resolveLocale(nativeStoreGet(this.localeStoreName));
+    return resolveLocale(nativeStoreGet(this.localeStoreKey));
   };
 
   setLocale = (locale: LocaleCandidates): void => {
@@ -78,7 +77,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
   };
 
   getRegion = (): string | undefined => {
-    return nativeStoreGet(this.regionStoreName) || undefined;
+    return nativeStoreGet(this.regionStoreKey) || undefined;
   };
 
   setRegion = (region: string | undefined): void => {
@@ -87,7 +86,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
   };
 
   getEnableI18n = (): boolean => {
-    return nativeStoreGet(this.enableI18nStoreName) !== 'false';
+    return nativeStoreGet(this.enableI18nStoreKey) !== 'false';
   };
 
   setEnableI18n = (enableI18n: boolean): void => {
@@ -96,15 +95,15 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
   };
 
   updateLocale = (locale: LocaleCandidates): void => {
-    nativeStoreSet(this.localeStoreName, resolveLocale(locale));
+    nativeStoreSet(this.localeStoreKey, resolveLocale(locale));
   };
 
   updateRegion = (region: string | undefined): void => {
-    nativeStoreSet(this.regionStoreName, region ?? '');
+    nativeStoreSet(this.regionStoreKey, region ?? '');
   };
 
   updateEnableI18n = (enableI18n: boolean): void => {
-    nativeStoreSet(this.enableI18nStoreName, enableI18n ? 'true' : 'false');
+    nativeStoreSet(this.enableI18nStoreKey, enableI18n ? 'true' : 'false');
   };
 
   reload = async (): Promise<void> => {

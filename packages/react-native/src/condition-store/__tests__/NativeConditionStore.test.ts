@@ -4,9 +4,9 @@ import {
   initializeI18nConfig,
 } from '@generaltranslation/react-core/context';
 import {
-  defaultEnableI18nCookieName,
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
+  defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
+  defaultLocaleCookieName as defaultLocaleStoreKey,
+  defaultRegionCookieName as defaultRegionStoreKey,
 } from '@generaltranslation/react-core/internal';
 import { createOrUpdateNativeConditionStore } from '../createNativeConditionStore';
 
@@ -52,7 +52,7 @@ describe('NativeConditionStore', () => {
   });
 
   it('reads and writes locale through the native store', () => {
-    nativeStore.set(defaultLocaleCookieName, 'fr');
+    nativeStore.set(defaultLocaleStoreKey, 'fr');
 
     const conditionStore = createOrUpdateNativeConditionStore({
       locale: 'es',
@@ -63,13 +63,13 @@ describe('NativeConditionStore', () => {
 
     conditionStore.setLocale('es');
 
-    expect(nativeStore.get(defaultLocaleCookieName)).toBe('es');
+    expect(nativeStore.get(defaultLocaleStoreKey)).toBe('es');
     expect(conditionStore.getLocale()).toBe('es');
   });
 
   it('persists region and enableI18n through the native store', () => {
-    nativeStore.set(defaultRegionCookieName, 'CA');
-    nativeStore.set(defaultEnableI18nCookieName, 'false');
+    nativeStore.set(defaultRegionStoreKey, 'CA');
+    nativeStore.set(defaultEnableI18nStoreKey, 'false');
 
     const conditionStore = createOrUpdateNativeConditionStore({
       region: 'US',
@@ -82,7 +82,7 @@ describe('NativeConditionStore', () => {
     conditionStore.setRegion('US');
     conditionStore.setEnableI18n(true);
 
-    expect(nativeStore.get(defaultRegionCookieName)).toBe('US');
-    expect(nativeStore.get(defaultEnableI18nCookieName)).toBe('true');
+    expect(nativeStore.get(defaultRegionStoreKey)).toBe('US');
+    expect(nativeStore.get(defaultEnableI18nStoreKey)).toBe('true');
   });
 });

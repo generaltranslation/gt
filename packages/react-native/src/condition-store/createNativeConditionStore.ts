@@ -1,8 +1,8 @@
 import type { LocaleCandidates } from 'gt-i18n/internal/types';
 import {
-  defaultEnableI18nCookieName,
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
+  defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
+  defaultLocaleCookieName as defaultLocaleStoreKey,
+  defaultRegionCookieName as defaultRegionStoreKey,
 } from '@generaltranslation/react-core/internal';
 import { getNativeLocales } from '../utils/getNativeLocales';
 import { nativeStoreGet } from '../utils/nativeStore';
@@ -53,10 +53,10 @@ export function createOrUpdateNativeConditionStore(
 
 function determineLocale({
   locale,
-  localeCookieName = defaultLocaleCookieName,
+  localeStoreKey = defaultLocaleStoreKey,
 }: CreateNativeConditionStoreParams): string[] {
   const candidates: string[] = [];
-  pushLocaleCandidates(candidates, nativeStoreGet(localeCookieName));
+  pushLocaleCandidates(candidates, nativeStoreGet(localeStoreKey));
   pushLocaleCandidates(candidates, locale);
   candidates.push(...getNativeLocales());
   return candidates;
@@ -76,16 +76,16 @@ function pushLocaleCandidates(
 
 function determineRegion({
   region,
-  regionCookieName = defaultRegionCookieName,
+  regionStoreKey = defaultRegionStoreKey,
 }: CreateNativeConditionStoreParams): string | undefined {
-  return nativeStoreGet(regionCookieName) || region;
+  return nativeStoreGet(regionStoreKey) || region;
 }
 
 function determineEnableI18n({
   enableI18n,
-  enableI18nCookieName = defaultEnableI18nCookieName,
+  enableI18nStoreKey = defaultEnableI18nStoreKey,
 }: CreateNativeConditionStoreParams): boolean {
-  const storedEnableI18n = nativeStoreGet(enableI18nCookieName);
+  const storedEnableI18n = nativeStoreGet(enableI18nStoreKey);
   if (storedEnableI18n === null) return enableI18n ?? true;
   return storedEnableI18n === 'true';
 }
