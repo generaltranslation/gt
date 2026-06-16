@@ -1,9 +1,5 @@
 import { registerRootComponent } from 'expo';
-import {
-  createElement,
-  useSyncExternalStore,
-  type ComponentType,
-} from 'react';
+import { createElement, useSyncExternalStore, type ComponentType } from 'react';
 
 import { reloadRuntime } from './runtimeReload';
 import { setupGT } from './setupGT';
