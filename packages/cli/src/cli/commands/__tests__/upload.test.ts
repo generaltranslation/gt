@@ -35,9 +35,18 @@ vi.mock('./utils/validation.js', () => ({
 }));
 
 // Mock node:fs for existsSync/readFileSync (translation file reads)
-vi.mock('node:fs', () => ({
+const mockFs = vi.hoisted(() => ({
   existsSync: vi.fn(() => false),
   readFileSync: vi.fn(() => ''),
+}));
+
+vi.mock('node:fs', () => ({
+  default: mockFs,
+  existsSync: mockFs.existsSync,
+  readFileSync: mockFs.readFileSync,
+}));
+vi.mock('../../../fs/determineFramework/index.js', () => ({
+  determineLibrary: vi.fn(() => ({ library: 'base', additionalModules: [] })),
 }));
 
 import { readFile } from '../../../fs/findFilepath.js';
@@ -60,13 +69,44 @@ function makeSettings(
     locales: ['es', 'fr'],
     projectId: 'test-project',
     apiKey: 'test-key',
+    files: {
+      resolvedPaths: {},
+      placeholderPaths: {},
+      transformPaths: {},
+      transformFormats: {},
+      publishPaths: new Set<string>(),
+      unpublishPaths: new Set<string>(),
+      parsingFlags: {},
+      gtJson: {
+        parsingFlags: {},
+      },
+    },
     ...overrides,
   } as Settings & UploadOptions;
+}
+
+async function uploadWithFiles(
+  filePaths: ResolvedFiles,
+  settings: Settings & UploadOptions,
+  placeholderPaths: ResolvedFiles = {},
+  transformPaths: TransformFiles = {}
+) {
+  await upload({
+    ...settings,
+    files: {
+      ...settings.files,
+      resolvedPaths: filePaths,
+      placeholderPaths,
+      transformPaths,
+    },
+  } as Settings & UploadOptions);
 }
 
 describe('upload - Twilio Content JSON', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.mocked(readFileSync).mockReturnValue('');
     vi.mocked(createFileMapping).mockReturnValue({});
   });
 
@@ -83,7 +123,7 @@ describe('upload - Twilio Content JSON', () => {
     };
     const settings = makeSettings({ options: {} });
 
-    await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
+    await uploadWithFiles(filePaths, settings);
 
     expect(runUploadFilesWorkflow).toHaveBeenCalledTimes(1);
     const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
@@ -107,7 +147,7 @@ describe('upload - Twilio Content JSON', () => {
     vi.mocked(existsSync).mockReturnValue(true);
     vi.mocked(readFileSync).mockReturnValue(translatedContent);
 
-    await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
+    await uploadWithFiles(filePaths, settings);
 
     const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
     const fileData = call.files[0];
@@ -131,7 +171,7 @@ describe('upload - Twilio Content JSON', () => {
     };
     const settings = makeSettings({ locales: ['es'], options: {} });
 
-    await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
+    await uploadWithFiles(filePaths, settings);
 
     const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
     expect(call.files).toHaveLength(2);
@@ -148,9 +188,68 @@ describe('upload - Twilio Content JSON', () => {
   });
 });
 
+describe('upload - companion metadata', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.mocked(readFileSync).mockReturnValue('');
+    vi.mocked(createFileMapping).mockReturnValue({});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('attaches companion metadata to the source file instead of uploading it separately', async () => {
+    const sourceContent = JSON.stringify({
+      title: 'Hello',
+      body: 'World',
+    });
+    const metadataContent = JSON.stringify({
+      title: { context: 'Hero title' },
+      body: { maxChars: 120 },
+    });
+    setMockFiles({
+      'source.json': sourceContent,
+      'source.metadata.json': metadataContent,
+    });
+
+    const filePaths: ResolvedFiles = {
+      json: ['source.json', 'source.metadata.json'],
+    };
+    const settings = makeSettings({ locales: [], options: {} });
+
+    vi.mocked(existsSync).mockImplementation(
+      (filePath) => filePath === 'source.metadata.json'
+    );
+    vi.mocked(readFileSync).mockImplementation((filePath) => {
+      if (filePath === 'source.metadata.json') {
+        return metadataContent;
+      }
+      return '';
+    });
+
+    await uploadWithFiles(filePaths, settings);
+
+    expect(runUploadFilesWorkflow).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+
+    expect(call.files).toHaveLength(1);
+    expect(call.files[0].source.fileName).toBe('source.json');
+    expect(call.files[0].source.formatMetadata).toEqual({
+      keyedMetadata: {
+        title: { context: 'Hero title' },
+        body: { maxChars: 120 },
+      },
+    });
+  });
+});
+
 describe('upload - composite JSON', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.mocked(readFileSync).mockReturnValue('');
     vi.mocked(createFileMapping).mockReturnValue({});
   });
 
@@ -187,7 +286,7 @@ describe('upload - composite JSON', () => {
       },
     });
 
-    await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
+    await uploadWithFiles(filePaths, settings);
 
     expect(runUploadFilesWorkflow).toHaveBeenCalledTimes(1);
     const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
@@ -238,7 +337,7 @@ describe('upload - composite JSON', () => {
       },
     });
 
-    await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
+    await uploadWithFiles(filePaths, settings);
 
     expect(runUploadFilesWorkflow).toHaveBeenCalledTimes(1);
     const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
@@ -280,7 +379,7 @@ describe('upload - composite JSON', () => {
       },
     });
 
-    await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
+    await uploadWithFiles(filePaths, settings);
 
     const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
     const fileData = call.files[0];
@@ -315,10 +414,10 @@ describe('upload - composite JSON', () => {
     vi.mocked(createFileMapping).mockReturnValue({
       es: { 'source.json': 'es/source.json' },
     });
-    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(existsSync).mockImplementation((p) => p === 'es/source.json');
     vi.mocked(readFileSync).mockReturnValue(translatedContent);
 
-    await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
+    await uploadWithFiles(filePaths, settings);
 
     const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
     const fileData = call.files[0];
@@ -370,7 +469,7 @@ describe('upload - composite JSON', () => {
     vi.mocked(existsSync).mockImplementation((p) => p === 'es/plain.json');
     vi.mocked(readFileSync).mockReturnValue(translatedPlain);
 
-    await upload(filePaths, {}, {} as TransformFiles, 'JSX', settings);
+    await uploadWithFiles(filePaths, settings);
 
     const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
 
