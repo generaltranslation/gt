@@ -1,63 +1,32 @@
 import { StatusBar } from 'expo-status-bar';
 import {
-  type GTProviderProps,
-  getLocale,
-  getTranslationsSnapshot,
   useLocale,
   useGT,
+  useSetLocale,
   GTProvider,
   T,
   Var,
   Num,
 } from 'gt-react-native';
-import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import gtConfig from './gt.config.json';
 
-type AppSnapshot = {
-  locale: string;
-  translations: GTProviderProps['translations'];
-};
-
 export default function App() {
-  const [locale, setLocale] = useState(() => getLocale());
-  const [snapshot, setSnapshot] = useState<AppSnapshot | null>(null);
-
-  useEffect(() => {
-    let isActive = true;
-
-    void getTranslationsSnapshot(locale).then((translations) => {
-      if (!isActive) return;
-      setSnapshot({ locale, translations });
-    });
-
-    return () => {
-      isActive = false;
-    };
-  }, [locale]);
-
-  if (snapshot?.locale !== locale) {
-    return <LoadingState />;
-  }
-
   return (
     <>
-      <GTProvider locale={locale} translations={snapshot.translations}>
-        <LocaleDemo onLocaleChange={setLocale} />
+      <GTProvider>
+        <LocaleDemo />
       </GTProvider>
       <StatusBar style='auto' />
     </>
   );
 }
 
-type LocaleDemoProps = {
-  onLocaleChange: (locale: string) => void;
-};
-
-function LocaleDemo({ onLocaleChange }: LocaleDemoProps) {
+function LocaleDemo() {
   const locale = useLocale();
   const gt = useGT();
+  const setLocale = useSetLocale();
   const locales = [gtConfig.defaultLocale, ...gtConfig.locales];
   const gtMessage = gt('This line is translated with gt().', {
     $_hash: 'tMessage',
@@ -78,7 +47,7 @@ function LocaleDemo({ onLocaleChange }: LocaleDemoProps) {
           <Pressable
             accessibilityRole='button'
             key={nextLocale}
-            onPress={() => onLocaleChange(nextLocale)}
+            onPress={() => setLocale(nextLocale)}
             style={[
               styles.button,
               nextLocale === locale ? styles.activeButton : null,
@@ -111,26 +80,7 @@ function LocaleDemo({ onLocaleChange }: LocaleDemoProps) {
   );
 }
 
-function LoadingState() {
-  return (
-    <View style={styles.loadingContainer}>
-      <Text style={styles.loadingText}>Loading translations...</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#f7f7f2',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#374151',
-  },
   container: {
     flex: 1,
     alignItems: 'center',
