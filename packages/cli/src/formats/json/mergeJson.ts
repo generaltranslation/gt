@@ -240,6 +240,7 @@ export function mergeJson(
             defaultLocaleKeyPointer,
             targetLocaleKeyProperty
           );
+          omitProperties(mutatedSourceItem, sourceObjectOptions.omitProperties);
           for (const [
             translatedKeyJsonPointer,
             translatedValue,
@@ -367,6 +368,7 @@ export function mergeJson(
         // If the target locale has a matching source item, use it to mutate the source item
         // Otherwise, fallback to the default locale source item
         const mutateSourceItem = structuredClone(defaultLocaleSourceItem);
+        omitProperties(mutateSourceItem, sourceObjectOptions.omitProperties);
 
         // 3. Merge the target items with the source item (if there are transformations to perform)
         const mergedItems: Record<string, JSONValue> = {
@@ -528,6 +530,21 @@ function sortByLocaleOrder(
   }
 
   return items;
+}
+
+/**
+ * Remove top-level properties from a generated non-default-locale entry
+ * (e.g. Mintlify's `default: true` flag, which is only valid on one entry)
+ */
+function omitProperties(
+  item: JSONValue,
+  properties: string[] | undefined
+): void {
+  if (!properties?.length) return;
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return;
+  for (const property of properties) {
+    delete (item as JSONObject)[property];
+  }
 }
 
 /**

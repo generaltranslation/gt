@@ -5,9 +5,11 @@ import { IGNORE_ALWAYS, IGNORE_HEADINGS } from './shared.js';
 
 // & that is NOT already an entity: &word;  &#123;  &#x1A2B;
 const AMP_NOT_ENTITY = /&(?![a-zA-Z][a-zA-Z0-9]*;|#\d+;|#x[0-9A-Fa-f]+;)/g;
+const LINE_ENDING_BACKSLASHES = /\\+(?=\n|$)/g;
 
 /**
- * Escape HTML-sensitive characters ('{', '}', `&`, `<`, `>`, `"`, `'`, '`') in text nodes,
+ * Escape HTML-sensitive characters ('{', '}', `&`, `<`, `>`, `"`, `'`, '`') and
+ * line-ending backslashes in text nodes,
  * leaving code, math, MDX expressions, and front-matter untouched.
  * Ensures literals render safely without altering already-escaped entities.
  */
@@ -23,6 +25,10 @@ const escapeHtmlInTextNodes: Plugin<[], Root> = function () {
         [/"/g, '&quot;'],
         [/'/g, '&#39;'],
         [/`/g, '&#96;'],
+        [
+          LINE_ENDING_BACKSLASHES,
+          (match: string) => match.replace(/\\/g, '&#92;'),
+        ],
       ],
       { ignore: IGNORE_ALWAYS }
     );

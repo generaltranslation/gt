@@ -9,6 +9,7 @@ export type RefMapEntry = {
   refPath: string;
   containingDir: string;
   originalContent: unknown;
+  siblings?: Record<string, unknown>;
 };
 
 export type RefMap = Map<string, RefMapEntry>;
@@ -133,12 +134,15 @@ function resolveRef(
     return rest;
   }
 
+  const { $ref: _, ...siblings } = obj;
+
   // Record provenance before recursive resolution
   refMap.set(pointer, {
     sourceFile: resolvedFilePath,
     refPath,
     containingDir: baseDir,
     originalContent: parsed,
+    siblings,
   });
 
   // Recursively resolve nested $ref in the referenced file
@@ -155,8 +159,6 @@ function resolveRef(
   );
 
   // Apply Mintlify merge rules
-  const { $ref: _, ...siblings } = obj;
-
   if (
     resolvedContent !== null &&
     typeof resolvedContent === 'object' &&
