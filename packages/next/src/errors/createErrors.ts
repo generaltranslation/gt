@@ -309,6 +309,12 @@ export const customGetLocaleUnresolvedWarning = createGtNextDiagnostic({
   fix: 'Export a getLocale() function from the configured request file',
 });
 
+export const customGetRegionUnresolvedWarning = createGtNextDiagnostic({
+  whatHappened: 'Custom getRegion() could not be resolved',
+  wayOut: 'gt-next will fall back to default region detection',
+  fix: 'Export a getRegion() function from the configured request file',
+});
+
 export const createGTCompilerUnavailableWarning = (type: 'babel' | 'swc') =>
   type === 'swc'
     ? `gt-next (plugin): The GT swc compiler is compatible with < next@${SWC_PLUGIN_SUPPORT}. Skipping compiler optimizations.`

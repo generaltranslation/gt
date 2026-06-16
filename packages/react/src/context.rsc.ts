@@ -7,6 +7,7 @@ import {
   getI18nConfig,
   getLocale,
   getMessages,
+  getRegion,
   getTranslations,
 } from 'gt-i18n/internal';
 import { use } from 'react';
@@ -28,6 +29,9 @@ export function GTProvider() {
 }
 export function LocaleSelector() {
   return failClientComponent('LocaleSelector');
+}
+export function RegionSelector() {
+  return failClientComponent('RegionSelector');
 }
 
 // ===== Components ===== //
@@ -57,6 +61,9 @@ export function useMessages() {
 }
 export function useLocale() {
   return getLocale();
+}
+export function useRegion() {
+  return getRegion();
 }
 export function useVersionId() {
   throw new Error(

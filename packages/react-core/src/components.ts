@@ -14,3 +14,4 @@ export {
 } from './components/variables/RelativeTime';
 export { GtInternalVar, Var } from './components/variables/Var';
 export { InternalLocaleSelector } from './components/helpers/InternalLocaleSelector';
+export { InternalRegionSelector } from './components/helpers/InternalRegionSelector';

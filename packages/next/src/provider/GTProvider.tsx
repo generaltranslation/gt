@@ -1,6 +1,7 @@
 import { mergeDictionaries } from 'gt-react/internal';
 import { isValidElement } from 'react';
 import { getLocale } from '../request/getLocale';
+import { getRegion } from '../request/getRegion';
 import { getDictionary, getDictionaryEntry } from '../dictionary/getDictionary';
 import { createDictionarySubsetError } from '../errors/createErrors';
 import type { Dictionary } from 'gt-i18n/types';
@@ -20,6 +21,7 @@ export async function GTProvider({ children, id: prefixId }: GTProviderProps) {
   const i18nCache = getNextI18nCache();
   const I18NConfig = getI18NConfiguration();
   const locale = await getLocale();
+  const region = await getRegion();
   const enableI18n = await getEnableI18n();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
@@ -73,6 +75,7 @@ export async function GTProvider({ children, id: prefixId }: GTProviderProps) {
     <Client_GTProvider
       enableI18n={enableI18n}
       locale={locale}
+      region={region}
       translations={translationsSnapshot}
       dictionaries={dictionariesSnapshot}
     >
