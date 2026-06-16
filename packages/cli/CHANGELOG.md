@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.51
+
+### Patch Changes
+
+- [#1605](https://github.com/generaltranslation/gt/pull/1605) [`69172dc`](https://github.com/generaltranslation/gt/commit/69172dc72e3fe22b6072b4c60e26c3de2cd68494) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Aggregate files on `upload` command. Ensures consistency with `stage` and `translate`
+
 ## 2.14.50
 
 ### Patch Changes
