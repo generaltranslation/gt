@@ -57,6 +57,7 @@ describe('translation helpers', () => {
         .fn()
         .mockResolvedValue('Bonjour {name} !'),
       getDefaultLocale: vi.fn().mockReturnValue('en'),
+      getDefaultStringFormat: vi.fn().mockReturnValue('STRING'),
     };
     vi.mocked(getI18nManager).mockReturnValue(
       mockManager as unknown as ReturnType<typeof getI18nManager>
@@ -78,6 +79,7 @@ describe('translation helpers', () => {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue(undefined),
       getDefaultLocale: vi.fn().mockReturnValue('en'),
+      getDefaultStringFormat: vi.fn().mockReturnValue('STRING'),
     };
     vi.mocked(getI18nManager).mockReturnValue(
       mockManager as unknown as ReturnType<typeof getI18nManager>

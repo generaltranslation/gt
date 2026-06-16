@@ -19,6 +19,7 @@ import {
 } from '../utils/cookies';
 import { defaultLocaleHeaderName } from '../utils/headers';
 import type { CustomMapping } from '@generaltranslation/format/types';
+import type { StringFormat } from '@generaltranslation/format/types';
 import { I18nManager } from 'gt-i18n/internal';
 import type { LookupOptions } from 'gt-i18n/internal/types';
 import { loadTranslations } from './loadTranslation';
@@ -45,6 +46,7 @@ type I18NConfigurationParams = {
   _usingPlugin: boolean;
   _versionId?: string;
   customMapping?: CustomMapping | undefined;
+  defaultStringFormat?: StringFormat;
   [key: string]: unknown;
 };
 
@@ -106,6 +108,7 @@ export class I18NConfiguration {
     _usingPlugin,
     headersAndCookies,
     customMapping,
+    defaultStringFormat,
     // Other metadata
     ...metadata
   }: I18NConfigurationParams) {
@@ -170,6 +173,7 @@ export class I18NConfiguration {
       locales,
       // Custom mapping
       customMapping,
+      defaultStringFormat,
       enableI18n: this.translationEnabled,
       // Batching config
       batchConfig: {
@@ -292,6 +296,13 @@ export class I18NConfiguration {
    */
   getDefaultLocale(): string {
     return this._i18nManager.getDefaultLocale();
+  }
+
+  /**
+   * Gets the default string format for string calls that omit $format
+   */
+  getDefaultStringFormat(): StringFormat {
+    return this._i18nManager.getDefaultStringFormat();
   }
 
   /**

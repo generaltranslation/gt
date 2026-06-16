@@ -6,7 +6,10 @@ import { Translation } from './translations-manager/utils/types/translation-data
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GT } from 'generaltranslation';
 import { LocaleConfig, standardizeLocale } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type {
+  CustomMapping,
+  StringFormat,
+} from '@generaltranslation/format/types';
 import { LookupOptions } from '../translation-functions/types/options';
 import { getGTServicesEnabled } from './utils/getGTServicesEnabled';
 import {
@@ -207,6 +210,13 @@ class I18nManager<
   }
 
   /**
+   * Get the default string format for calls that omit $format.
+   */
+  getDefaultStringFormat() {
+    return this.config.defaultStringFormat;
+  }
+
+  /**
    * Get a gt class instance
    * @param locale - The locale to bind to the GT instance. When omitted, the GT instance is locale agnostic.
    * TODO: keep a cache to avoid creating new instances unnecessarily
@@ -397,7 +407,10 @@ class I18nManager<
     const translation = await this.lookupTranslationWithFallbackResolved(
       locale,
       sourceEntry.entry as TranslationValue,
-      resolveDictionaryLookupOptions(sourceEntry.options)
+      resolveDictionaryLookupOptions(
+        sourceEntry.options,
+        this.config.defaultStringFormat
+      )
     );
     if (typeof translation !== 'string') {
       throw new Error(
@@ -782,6 +795,9 @@ function standardizeConfig<TranslationValue extends Translation>(
     batchConfig: config.batchConfig,
     runtimeTranslation: config.runtimeTranslation,
     _versionId: config._versionId,
+    defaultStringFormat: isStringFormat(config.defaultStringFormat)
+      ? config.defaultStringFormat
+      : 'ICU',
     ...(gtServicesEnabled
       ? standardizeLocales(dedupedLocales)
       : dedupedLocales),
@@ -848,6 +864,10 @@ function standardizeLocales(config: {
     locales,
     customMapping,
   };
+}
+
+function isStringFormat(value: unknown): value is StringFormat {
+  return value === 'ICU' || value === 'I18NEXT' || value === 'STRING';
 }
 
 /**

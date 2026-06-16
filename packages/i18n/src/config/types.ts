@@ -1,4 +1,7 @@
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type {
+  CustomMapping,
+  StringFormat,
+} from '@generaltranslation/format/types';
 
 /**
  * TODO: this is a react-only type, we need to move this
@@ -29,6 +32,10 @@ export type GTConfig = {
   locales?: string[];
   customMapping?: CustomMapping;
   enableI18n?: boolean;
+  /**
+   * Default string interpolation format when a string call omits `$format`.
+   */
+  defaultStringFormat?: StringFormat;
 
   // remote config
   projectId?: string;

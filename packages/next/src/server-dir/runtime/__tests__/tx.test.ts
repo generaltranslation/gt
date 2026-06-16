@@ -9,6 +9,7 @@ const { mockLookupTranslation, mockTranslate } = vi.hoisted(() => ({
 vi.mock('../../../config-dir/getI18NConfig', () => ({
   getI18NConfig: () => ({
     getDefaultLocale: () => 'en',
+    getDefaultStringFormat: () => 'ICU',
     requiresTranslation: () => [true, false],
     getGTClass: () => ({
       formatMessage: (message: string) => message,

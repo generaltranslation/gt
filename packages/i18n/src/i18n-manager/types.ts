@@ -1,5 +1,8 @@
 import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
-import type { CustomMapping } from '@generaltranslation/format/types';
+import type {
+  CustomMapping,
+  StringFormat,
+} from '@generaltranslation/format/types';
 import type { GTConfig } from '../config/types';
 import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
 import type { Translation } from './translations-manager/utils/types/translation-data';
@@ -55,6 +58,7 @@ export type I18nManagerConfig = {
   locales: string[];
   customMapping: CustomMapping;
   enableI18n: boolean;
+  defaultStringFormat: StringFormat;
   projectId?: string;
   devApiKey?: string;
   apiKey?: string;

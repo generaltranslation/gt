@@ -47,7 +47,7 @@ export async function getGT(): Promise<GTFunctionType> {
     const lookupOptions = createLookupOptions<StringFormat>(
       targetLocale,
       options,
-      'ICU'
+      i18nManager.getDefaultStringFormat()
     );
 
     // Lookup translation

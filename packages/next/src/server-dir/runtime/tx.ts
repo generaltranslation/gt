@@ -79,6 +79,7 @@ export async function tx(
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
   const gt = I18NConfig.getGTClass();
+  const dataFormat = format ?? I18NConfig.getDefaultStringFormat();
 
   // ----- DEFINE RENDER FUNCTION ----- //
 
@@ -93,7 +94,7 @@ export async function tx(
           ...declaredVars,
           [VAR_IDENTIFIER]: 'other',
         },
-        dataFormat: format,
+        dataFormat,
       }
     );
     const cutoffMessage = gt.formatCutoff(formattedMessage, {
@@ -110,12 +111,11 @@ export async function tx(
   // ----- CALCULATE HASH ----- //
 
   const hash = hashSource({
-    source: format === 'ICU' ? indexVars(message) : message,
+    source: dataFormat === 'ICU' ? indexVars(message) : message,
     ...(context && { context }),
     ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
-    dataFormat: format || 'ICU',
+    dataFormat,
   });
-  const dataFormat = format || 'ICU';
   const source = dataFormat === 'ICU' ? indexVars(message) : message;
   const lookupOptions = {
     ...formatVariables,

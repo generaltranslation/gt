@@ -72,7 +72,11 @@ export function resolveStringContent(
   options: ResolutionOptions<StringFormat> = {}
 ): StringContent | undefined {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(locale, options, 'STRING');
+  const lookupOptions = createLookupOptions(
+    locale,
+    options,
+    i18nManager.getDefaultStringFormat()
+  );
   const translation = i18nManager.lookupTranslation(
     lookupOptions.$locale,
     content,
@@ -96,7 +100,11 @@ export function resolveStringContentWithFallback(
   options: ResolutionOptions<StringFormat> = {}
 ): StringContent {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(locale, options, 'STRING');
+  const lookupOptions = createLookupOptions(
+    locale,
+    options,
+    i18nManager.getDefaultStringFormat()
+  );
   const translation = i18nManager.lookupTranslation(
     lookupOptions.$locale,
     content,
@@ -121,7 +129,11 @@ export async function resolveStringContentWithRuntimeFallback(
   options: ResolutionOptions<StringFormat> = {}
 ): Promise<StringContent> {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(locale, options, 'STRING');
+  const lookupOptions = createLookupOptions(
+    locale,
+    options,
+    i18nManager.getDefaultStringFormat()
+  );
   const translation = await i18nManager.lookupTranslationWithFallback(
     lookupOptions.$locale,
     content,
