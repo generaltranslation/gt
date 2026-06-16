@@ -226,7 +226,21 @@ export async function downloadFileBatch(
             : undefined;
         const fileExists = fs.existsSync(outputPath);
 
-        if (!forceDownload && fileExists && downloadedTranslation) {
+        // Composite schema files merge translations into the source file itself,
+        // so outputPath always exists and the lock can't tell whether derived
+        // split outputs (e.g. {locale}/docs.json) are still on disk. Always
+        // merge fresh API data so derived files are regenerated every run;
+        // local edits to translated output are preserved via `gt save-local`.
+        const isInPlaceComposite = options.options?.jsonSchema
+          ? !!validateJsonSchema(options.options, inputPath)?.composite
+          : false;
+
+        if (
+          !forceDownload &&
+          fileExists &&
+          downloadedTranslation &&
+          !isInPlaceComposite
+        ) {
           // For schema-based files, re-merge with current source in case
           // non-translatable fields changed (skip the API download, not the merge)
           try {
@@ -277,8 +291,12 @@ export async function downloadFileBatch(
               // even when the API download was skipped
               recordRemerged(outputPath);
             }
-          } catch {
-            // If re-merge fails, still count as skipped — not worth failing the download
+          } catch (error) {
+            // If re-merge fails, still count as skipped — not worth failing
+            // the download, but surface it so missing output is diagnosable
+            logger.warn(
+              `Failed to re-merge existing translation for ${outputPath} (${locale}): ${error}`
+            );
           }
           result.skipped.push(requestedFile);
           continue;
