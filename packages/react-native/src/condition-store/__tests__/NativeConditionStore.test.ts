@@ -1,14 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  getReadonlyConditionStoreWithFallback,
-  initializeI18nConfig,
-} from '@generaltranslation/react-core/context';
+import { initializeI18nConfig } from '@generaltranslation/react-core/context';
 import {
   defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
   defaultLocaleCookieName as defaultLocaleStoreKey,
   defaultRegionCookieName as defaultRegionStoreKey,
 } from '@generaltranslation/react-core/internal';
-import { createOrUpdateNativeConditionStore } from '../createNativeConditionStore';
+import { NativeConditionStore } from '../NativeConditionStore';
 
 const nativeStore = vi.hoisted(() => new Map<string, string>());
 
@@ -22,17 +19,6 @@ vi.mock('../../utils/nativeStore', () => ({
     nativeStore.set(key, value);
   },
 }));
-
-vi.mock('@generaltranslation/react-core/context', async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import('@generaltranslation/react-core/context')
-    >();
-  return {
-    ...actual,
-    getTranslationsSnapshot: vi.fn(async () => ({})),
-  };
-});
 
 describe('NativeConditionStore', () => {
   beforeEach(() => {
@@ -54,12 +40,11 @@ describe('NativeConditionStore', () => {
   it('reads and writes locale through the native store', () => {
     nativeStore.set(defaultLocaleStoreKey, 'fr');
 
-    const conditionStore = createOrUpdateNativeConditionStore({
+    const conditionStore = new NativeConditionStore({
       locale: 'es',
     });
 
     expect(conditionStore.getLocale()).toBe('fr');
-    expect(getReadonlyConditionStoreWithFallback()).toBe(conditionStore);
 
     conditionStore.setLocale('es');
 
@@ -71,7 +56,7 @@ describe('NativeConditionStore', () => {
     nativeStore.set(defaultRegionStoreKey, 'CA');
     nativeStore.set(defaultEnableI18nStoreKey, 'false');
 
-    const conditionStore = createOrUpdateNativeConditionStore({
+    const conditionStore = new NativeConditionStore({
       region: 'US',
       enableI18n: true,
     });
@@ -84,5 +69,25 @@ describe('NativeConditionStore', () => {
 
     expect(nativeStore.get(defaultRegionStoreKey)).toBe('US');
     expect(nativeStore.get(defaultEnableI18nStoreKey)).toBe('true');
+  });
+
+  it('notifies subscribers when persisted conditions change', () => {
+    const conditionStore = new NativeConditionStore({
+      locale: 'en',
+    });
+    const listener = vi.fn();
+
+    const unsubscribe = conditionStore.subscribe(listener);
+
+    conditionStore.setLocale('es');
+    conditionStore.setRegion('US');
+    conditionStore.setEnableI18n(false);
+
+    expect(listener).toHaveBeenCalledTimes(3);
+
+    unsubscribe();
+    conditionStore.setLocale('fr');
+
+    expect(listener).toHaveBeenCalledTimes(3);
   });
 });

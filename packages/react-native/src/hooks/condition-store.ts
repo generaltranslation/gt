@@ -1,29 +1,41 @@
 import { useCallback } from 'react';
-import { getReadonlyConditionStoreWithFallback } from '@generaltranslation/react-core/context';
+import { useConditionStore } from '@generaltranslation/react-core/hooks';
 
 /**
- * Returns a function that sets the locale and reloads the configured runtime.
+ * Returns a function that sets the locale.
  */
 export function useSetLocale() {
-  return useCallback((locale: string) => {
-    getReadonlyConditionStoreWithFallback().setLocale(locale);
-  }, []);
+  const conditionStore = useConditionStore();
+  return useCallback(
+    (locale: string) => {
+      conditionStore.setLocale(locale);
+    },
+    [conditionStore]
+  );
 }
 
 /**
- * Returns a function that sets the region and reloads the configured runtime.
+ * Returns a function that sets the region.
  */
 export function useSetRegion() {
-  return useCallback((region: string | undefined) => {
-    getReadonlyConditionStoreWithFallback().setRegion(region);
-  }, []);
+  const conditionStore = useConditionStore();
+  return useCallback(
+    (region: string | undefined) => {
+      conditionStore.setRegion(region);
+    },
+    [conditionStore]
+  );
 }
 
 /**
- * Returns a function that sets the enableI18n flag and reloads the configured runtime.
+ * Returns a function that sets the enableI18n flag.
  */
 export function useSetEnableI18n() {
-  return useCallback((enableI18n: boolean) => {
-    getReadonlyConditionStoreWithFallback().setEnableI18n(enableI18n);
-  }, []);
+  const conditionStore = useConditionStore();
+  return useCallback(
+    (enableI18n: boolean) => {
+      conditionStore.setEnableI18n(enableI18n);
+    },
+    [conditionStore]
+  );
 }

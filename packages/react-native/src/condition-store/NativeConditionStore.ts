@@ -4,29 +4,20 @@ import type {
   WritableConditionStoreInterface,
   WritableConditionStoreParams,
 } from 'gt-i18n/internal/types';
-import { getTranslationsSnapshot } from '@generaltranslation/react-core/context';
 import {
   defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
   defaultLocaleCookieName as defaultLocaleStoreKey,
   defaultRegionCookieName as defaultRegionStoreKey,
 } from '@generaltranslation/react-core/internal';
+import { getNativeLocales } from '../utils/getNativeLocales';
 import { nativeStoreGet, nativeStoreSet } from '../utils/nativeStore';
 
-type SerializedNativeConditionStoreState = {
-  locale: string;
-  region: string | undefined;
-  enableI18n: boolean;
-};
-
-export type ReloadRuntime = (
-  state: SerializedNativeConditionStoreState
-) => void | Promise<void>;
+type StoreListener = () => void;
 
 export type NativeConditionStoreParams = WritableConditionStoreParams & {
   localeStoreKey?: string;
   regionStoreKey?: string;
   enableI18nStoreKey?: string;
-  reload?: ReloadRuntime;
 };
 
 /**
@@ -36,35 +27,35 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
   private localeStoreKey: string;
   private regionStoreKey: string;
   private enableI18nStoreKey: string;
-  private reloadRuntime: ReloadRuntime;
+  private listeners = new Set<StoreListener>();
 
   constructor(config: NativeConditionStoreParams) {
     this.localeStoreKey = config.localeStoreKey ?? defaultLocaleStoreKey;
     this.regionStoreKey = config.regionStoreKey ?? defaultRegionStoreKey;
     this.enableI18nStoreKey =
       config.enableI18nStoreKey ?? defaultEnableI18nStoreKey;
-    this.reloadRuntime = config.reload ?? (() => {});
 
-    this.updateLocale(config.locale);
-    if (config.region !== undefined) {
-      this.updateRegion(config.region);
+    this.updateLocale(getInitialLocale(config, this.localeStoreKey));
+    const region = getInitialRegion(config, this.regionStoreKey);
+    if (region !== undefined) {
+      this.updateRegion(region);
     }
-    this.updateEnableI18n(config.enableI18n ?? true);
+    this.updateEnableI18n(
+      getInitialEnableI18n(config, this.enableI18nStoreKey)
+    );
   }
 
   updateConfig = ({
     localeStoreKey,
     regionStoreKey,
     enableI18nStoreKey,
-    reload,
   }: Pick<
     NativeConditionStoreParams,
-    'localeStoreKey' | 'regionStoreKey' | 'enableI18nStoreKey' | 'reload'
+    'localeStoreKey' | 'regionStoreKey' | 'enableI18nStoreKey'
   >): void => {
     this.localeStoreKey = localeStoreKey ?? defaultLocaleStoreKey;
     this.regionStoreKey = regionStoreKey ?? defaultRegionStoreKey;
     this.enableI18nStoreKey = enableI18nStoreKey ?? defaultEnableI18nStoreKey;
-    this.reloadRuntime = reload ?? (() => {});
   };
 
   getLocale = (): string => {
@@ -73,7 +64,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setLocale = (locale: LocaleCandidates): void => {
     this.updateLocale(locale);
-    void this.reload();
+    this.emitChange();
   };
 
   getRegion = (): string | undefined => {
@@ -82,7 +73,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setRegion = (region: string | undefined): void => {
     this.updateRegion(region);
-    void this.reload();
+    this.emitChange();
   };
 
   getEnableI18n = (): boolean => {
@@ -91,7 +82,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setEnableI18n = (enableI18n: boolean): void => {
     this.updateEnableI18n(enableI18n);
-    void this.reload();
+    this.emitChange();
   };
 
   updateLocale = (locale: LocaleCandidates): void => {
@@ -106,16 +97,57 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
     nativeStoreSet(this.enableI18nStoreKey, enableI18n ? 'true' : 'false');
   };
 
-  reload = async (): Promise<void> => {
-    const state = {
-      locale: this.getLocale(),
-      region: this.getRegion(),
-      enableI18n: this.getEnableI18n(),
+  subscribe = (listener: StoreListener): (() => void) => {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
     };
-
-    await getTranslationsSnapshot(state.locale);
-    await this.reloadRuntime(state);
   };
+
+  private emitChange = (): void => {
+    this.listeners.forEach((listener) => {
+      listener();
+    });
+  };
+}
+
+function getInitialLocale(
+  config: NativeConditionStoreParams,
+  localeStoreKey: string
+): string[] {
+  const candidates: string[] = [];
+  pushLocaleCandidates(candidates, nativeStoreGet(localeStoreKey));
+  pushLocaleCandidates(candidates, config.locale);
+  candidates.push(...getNativeLocales());
+  return candidates;
+}
+
+function getInitialRegion(
+  config: NativeConditionStoreParams,
+  regionStoreKey: string
+): string | undefined {
+  return nativeStoreGet(regionStoreKey) || config.region;
+}
+
+function getInitialEnableI18n(
+  config: NativeConditionStoreParams,
+  enableI18nStoreKey: string
+): boolean {
+  const storedEnableI18n = nativeStoreGet(enableI18nStoreKey);
+  if (storedEnableI18n === null) return config.enableI18n ?? true;
+  return storedEnableI18n === 'true';
+}
+
+function pushLocaleCandidates(
+  target: string[],
+  locale: LocaleCandidates | null
+) {
+  if (!locale) return;
+  if (Array.isArray(locale)) {
+    target.push(...locale);
+    return;
+  }
+  target.push(locale);
 }
 
 function resolveLocale(candidates?: LocaleCandidates | null): string {
