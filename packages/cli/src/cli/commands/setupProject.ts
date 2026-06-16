@@ -36,6 +36,12 @@ export async function handleSetupProject(
     return null;
   }
 
+  if (allFiles.length === 0) {
+    logger.error(
+      'No files to upload were found. Check your configuration and try again.'
+    );
+  }
+
   // Upload files and run setup step
   let fileVersionData: FileTranslationData | undefined;
   let branchData: BranchData | undefined;
