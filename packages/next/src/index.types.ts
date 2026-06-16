@@ -5,6 +5,7 @@ import type { ParsedUrlQuery } from 'querystring';
 import {
   useTranslations as _useTranslations,
   useLocale as _useLocale,
+  useRegion as _useRegion,
   useLocales as _useLocales,
   useDefaultLocale as _useDefaultLocale,
   useGTClass as _useGTClass,
@@ -21,6 +22,7 @@ import {
 } from 'gt-react/client';
 import {
   LocaleSelector as _LocaleSelector,
+  RegionSelector as _RegionSelector,
   useSetLocale as _useSetLocale,
   useLocaleSelector as _useLocaleSelector,
   getTranslationsSnapshot,
@@ -321,6 +323,15 @@ export const LocaleSelector: typeof _LocaleSelector = () => {
 };
 
 /**
+ * A dropdown component that allows users to select a region.
+ * @param {string[]} regions - An optional list of ISO 3166 region codes to use for the dropdown. If not provided, regions are inferred from the supported locales in the `<GTProvider>` context.
+ * @returns {React.ReactElement | null} The rendered region dropdown component or null to prevent rendering.
+ */
+export const RegionSelector: typeof _RegionSelector = () => {
+  throw new Error(typesFileError);
+};
+
+/**
  * Resolve the user's locale from a Next Pages Router server-side request.
  *
  * @param context - The GetServerSideProps context for the request.
@@ -399,6 +410,19 @@ export const useSetLocale: typeof _useSetLocale = () => {
 };
 
 export const useLocaleSelector: typeof _useLocaleSelector = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * Returns the user's current region.
+ *
+ * @returns {string | undefined} ISO 3166 region code, e.g., 'US', or undefined if not set.
+ *
+ * @example
+ * const region = useRegion();
+ * console.log(region); // 'US'
+ */
+export const useRegion: typeof _useRegion = () => {
   throw new Error(typesFileError);
 };
 

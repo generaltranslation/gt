@@ -2,6 +2,7 @@
  * Type for custom getLocale function
  */
 export type GetLocale = () => string;
+export type GetRegion = () => string | undefined;
 export type GetEnableI18n = () => boolean;
 
 /**

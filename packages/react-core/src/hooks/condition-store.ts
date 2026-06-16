@@ -20,6 +20,13 @@ export function useLocale(): string {
 }
 
 /**
+ * Returns the current region, or undefined if no region is set.
+ */
+export function useRegion(): string | undefined {
+  return useConditionStore().getRegion();
+}
+
+/**
  * Returns the current enableI18n flag.
  */
 export function useEnableI18n(): boolean {

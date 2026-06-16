@@ -2,8 +2,19 @@ import { describe, it, expect } from 'vitest';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
-import { escapeHtmlInTextNodes, remarkGfmCustom } from '../index';
+import {
+  escapeHtmlInTextNodes,
+  escapeMarkdownInMdxJsxText,
+  escapeMarkdownInMdxJsxTextNodes,
+  remarkGfmCustom,
+} from '../index';
 import type { Root, Text, Paragraph, Code, InlineCode } from 'mdast';
+
+type TestTreeNode = {
+  type?: string;
+  value?: unknown;
+  children?: TestTreeNode[];
+};
 
 describe('escapeHtmlInTextNodes', () => {
   const createTextNode = (value: string): Text => ({
@@ -234,6 +245,38 @@ describe('escapeHtmlInTextNodes', () => {
       // literal prose backtick is now the &#96; entity.
       expect((result.match(/`/g) || []).length).toBe(2);
       expect(result).toContain('(&#96;)');
+    });
+  });
+
+  describe('backslash (\\) escaping', () => {
+    it('should escape terminal backslashes in text nodes', () => {
+      const tree: Root = {
+        type: 'root',
+        children: [createParagraph([createTextNode('Ctrl+\\')])],
+      };
+      const result = processAst(tree);
+      expect(result).toContain('Ctrl+&#92;');
+      expect(result).not.toContain('Ctrl+\\');
+    });
+
+    it('should escape line-ending backslashes in text nodes', () => {
+      const tree: Root = {
+        type: 'root',
+        children: [createParagraph([createTextNode('Ctrl+\\\nShift+\\')])],
+      };
+      const result = processAst(tree);
+      expect(result).toContain('Ctrl+&#92;');
+      expect(result).toContain('Shift+&#92;');
+    });
+
+    it('should not escape non-terminal backslashes in text nodes', () => {
+      const tree: Root = {
+        type: 'root',
+        children: [createParagraph([createTextNode('C:\\Users\\name')])],
+      };
+      const result = processAst(tree);
+      expect(result).toContain('C:\\Users\\name');
+      expect(result).not.toContain('C:&#92;Users&#92;name');
     });
   });
 
@@ -472,6 +515,67 @@ describe('escapeHtmlInTextNodes', () => {
       const result = processAst(tree);
       expect(result).toContain('&lt;placeholder&gt; &amp; &quot;special&quot;');
     });
+  });
+});
+
+describe('escapeMarkdownInMdxJsxTextNodes', () => {
+  const processAst = (tree: Root) => {
+    const pluginProcessor = unified().use(escapeMarkdownInMdxJsxTextNodes);
+    return pluginProcessor.runSync(tree) as unknown as TestTreeNode;
+  };
+
+  it('escapes markdown-control characters inside MDX JSX text nodes', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        {
+          type: 'mdxJsxFlowElement',
+          name: 'p',
+          attributes: [],
+          children: [
+            {
+              type: 'text',
+              value: '*literal* _value_ [label] {name} `tick` & raw',
+            },
+          ],
+        },
+      ],
+    } as unknown as Root;
+
+    const result = processAst(tree);
+
+    expect(result.children?.[0]?.children?.[0]?.value).toBe(
+      '&#42;literal&#42; &#95;value&#95; &#91;label&#93; &#123;name&#125; &#96;tick&#96; &amp; raw'
+    );
+  });
+
+  it('does not escape markdown syntax outside MDX JSX nodes', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'text',
+              value: '*literal* _value_ {name} `tick` & raw',
+            },
+          ],
+        },
+      ],
+    } as unknown as Root;
+
+    const result = processAst(tree);
+
+    expect(result.children?.[0]?.children?.[0]?.value).toBe(
+      '*literal* _value_ {name} `tick` & raw'
+    );
+  });
+
+  it('does not double escape existing entities', () => {
+    expect(escapeMarkdownInMdxJsxText('Already &#42; &#91; &amp; * [')).toBe(
+      'Already &#42; &#91; &amp; &#42; &#91;'
+    );
   });
 });
 

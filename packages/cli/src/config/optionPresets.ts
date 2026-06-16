@@ -30,7 +30,10 @@ export function generatePreset(
                 '$..item',
                 '$..anchor',
                 '$..dropdown',
+                '$..product',
+                '$..description',
               ],
+              omitProperties: ['default'],
               transform: {
                 '$..pages[*]': {
                   match: '^{locale}/(.*)$',
@@ -71,7 +74,10 @@ export function generatePreset(
                 '$..item',
                 '$..anchor',
                 '$..dropdown',
+                '$..product',
+                '$..description',
               ],
+              omitProperties: ['default'],
               transform: {
                 '$..pages[*]': {
                   match: '^/?(.*)$',

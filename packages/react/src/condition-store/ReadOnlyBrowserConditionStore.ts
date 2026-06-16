@@ -1,6 +1,6 @@
 import { ReadonlyConditionStoreParams } from 'gt-i18n/internal';
 import { setCookieValue } from './cookies';
-import { GetEnableI18n, GetLocale } from '../i18n-cache/types';
+import { GetEnableI18n, GetLocale, GetRegion } from '../i18n-cache/types';
 import { getI18nConfig } from 'gt-i18n/internal';
 import {
   LocaleCandidates,
@@ -9,11 +9,13 @@ import {
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
+  defaultRegionCookieName,
   defaultResetLocaleCookieName,
 } from '../cookie-names';
 
 type SerializedBrowserConditionStoreState = {
   locale: string;
+  region: string | undefined;
   enableI18n: boolean;
 };
 export type ReloadType = (state: SerializedBrowserConditionStoreState) => void;
@@ -26,8 +28,10 @@ export type ReloadType = (state: SerializedBrowserConditionStoreState) => void;
 export type ReadonlyBrowserConditionStoreParams =
   ReadonlyConditionStoreParams & {
     localeCookieName?: string;
+    regionCookieName?: string;
     enableI18nCookieName?: string;
     _getLocale?: GetLocale;
+    _getRegion?: GetRegion;
     _getEnableI18n?: GetEnableI18n;
     _reload?: ReloadType;
   };
@@ -40,11 +44,14 @@ export type ReadonlyBrowserConditionStoreParams =
  */
 export class ReadonlyBrowserConditionStore implements ReadonlyConditionStoreInterface {
   private locale: string;
+  private region?: string;
   private enableI18n: boolean;
   private localeCookieName: string;
+  private regionCookieName: string;
   private enableI18nCookieName: string;
   private customReload: ReloadType;
   private customGetLocale?: GetLocale;
+  private customGetRegion?: GetRegion;
   private customGetEnableI18n?: GetEnableI18n;
 
   constructor(config: ReadonlyBrowserConditionStoreParams) {
@@ -53,10 +60,12 @@ export class ReadonlyBrowserConditionStore implements ReadonlyConditionStoreInte
       (() =>
         typeof window !== 'undefined' ? window.location.reload() : undefined);
     this.customGetLocale = config._getLocale;
+    this.customGetRegion = config._getRegion;
     this.customGetEnableI18n = config._getEnableI18n;
 
     // Initialize cookie names
     this.localeCookieName = config.localeCookieName ?? defaultLocaleCookieName;
+    this.regionCookieName = config.regionCookieName ?? defaultRegionCookieName;
     this.enableI18nCookieName =
       config.enableI18nCookieName ?? defaultEnableI18nCookieName;
 
@@ -65,11 +74,18 @@ export class ReadonlyBrowserConditionStore implements ReadonlyConditionStoreInte
     this.locale =
       i18nConfig.determineLocale(config.locale) ||
       i18nConfig.getDefaultLocale();
+    this.region = config.region;
     this.enableI18n = config.enableI18n ?? true;
     setCookieValue({
       cookieName: this.localeCookieName,
       value: this.locale,
     });
+    if (this.region !== undefined) {
+      setCookieValue({
+        cookieName: this.regionCookieName,
+        value: this.region,
+      });
+    }
     setCookieValue({
       cookieName: this.enableI18nCookieName,
       value: this.enableI18n ? 'true' : 'false',
@@ -99,6 +115,22 @@ export class ReadonlyBrowserConditionStore implements ReadonlyConditionStoreInte
     this.reload();
   };
 
+  getRegion = (): string | undefined => {
+    if (this.customGetRegion) {
+      return this.customGetRegion();
+    }
+    return this.region;
+  };
+
+  setRegion = (region: string | undefined): void => {
+    this.region = region;
+    setCookieValue({
+      cookieName: this.regionCookieName,
+      value: region ?? '',
+    });
+    this.reload();
+  };
+
   getEnableI18n = (): boolean => {
     if (this.customGetEnableI18n) {
       return this.customGetEnableI18n();
@@ -123,6 +155,7 @@ export class ReadonlyBrowserConditionStore implements ReadonlyConditionStoreInte
   reload = (): void => {
     const state = {
       locale: this.getLocale(),
+      region: this.getRegion(),
       enableI18n: this.getEnableI18n(),
     };
     this.customReload(state);

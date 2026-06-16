@@ -1,7 +1,7 @@
 import { WritableConditionStoreParams } from 'gt-i18n/internal';
 import { getCookieValue, setCookieValue } from './cookies';
 import { readBrowserLocale } from './readBrowserLocale';
-import { GetEnableI18n, GetLocale } from '../i18n-cache/types';
+import { GetEnableI18n, GetLocale, GetRegion } from '../i18n-cache/types';
 import { getI18nConfig } from 'gt-i18n/internal';
 import {
   LocaleCandidates,
@@ -10,10 +10,12 @@ import {
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
+  defaultRegionCookieName,
 } from '../cookie-names';
 
 type SerializedBrowserConditionStoreState = {
   locale: string;
+  region: string | undefined;
   enableI18n: boolean;
 };
 export type ReloadType = (state: SerializedBrowserConditionStoreState) => void;
@@ -25,8 +27,10 @@ export type ReloadType = (state: SerializedBrowserConditionStoreState) => void;
  */
 export type BrowserConditionStoreParams = WritableConditionStoreParams & {
   localeCookieName?: string;
+  regionCookieName?: string;
   enableI18nCookieName?: string;
   _getLocale?: GetLocale;
+  _getRegion?: GetRegion;
   _getEnableI18n?: GetEnableI18n;
   _reload?: ReloadType;
 };
@@ -36,9 +40,11 @@ export type BrowserConditionStoreParams = WritableConditionStoreParams & {
  */
 export class BrowserConditionStore implements WritableConditionStoreInterface {
   private localeCookieName: string;
+  private regionCookieName: string;
   private enableI18nCookieName: string;
   private customReload: ReloadType;
   private customGetLocale?: GetLocale;
+  private customGetRegion?: GetRegion;
   private customGetEnableI18n?: GetEnableI18n;
 
   constructor(config: BrowserConditionStoreParams) {
@@ -47,8 +53,10 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
       (() =>
         typeof window !== 'undefined' ? window.location.reload() : undefined);
     this.customGetLocale = config._getLocale;
+    this.customGetRegion = config._getRegion;
     this.customGetEnableI18n = config._getEnableI18n;
     this.localeCookieName = config.localeCookieName ?? defaultLocaleCookieName;
+    this.regionCookieName = config.regionCookieName ?? defaultRegionCookieName;
     this.enableI18nCookieName =
       config.enableI18nCookieName ?? defaultEnableI18nCookieName;
     const i18nConfig = getI18nConfig();
@@ -58,6 +66,12 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
         i18nConfig.determineLocale(config.locale) ||
         i18nConfig.getDefaultLocale(),
     });
+    if (config.region !== undefined) {
+      setCookieValue({
+        cookieName: this.regionCookieName,
+        value: config.region,
+      });
+    }
   }
 
   getLocale = (): string => {
@@ -66,6 +80,19 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
 
   setLocale = (locale: LocaleCandidates): void => {
     this.updateLocale(locale);
+    this.reload();
+  };
+
+  getRegion = (): string | undefined => {
+    const cookieRegion = getCookieValue({
+      cookieName: this.regionCookieName,
+    });
+    if (cookieRegion) return cookieRegion;
+    return this.customGetRegion?.();
+  };
+
+  setRegion = (region: string | undefined): void => {
+    this.updateRegion(region);
     this.reload();
   };
 
@@ -97,6 +124,16 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   };
 
   /**
+   * Soft region update
+   */
+  updateRegion = (region: string | undefined): void => {
+    setCookieValue({
+      cookieName: this.regionCookieName,
+      value: region ?? '',
+    });
+  };
+
+  /**
    * Soft enableI18n update
    */
   updateEnableI18n = (enableI18n: boolean): void => {
@@ -114,6 +151,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   reload = (): void => {
     const state = {
       locale: this.getLocale(),
+      region: this.getRegion(),
       enableI18n: this.getEnableI18n(),
     };
     this.customReload(state);

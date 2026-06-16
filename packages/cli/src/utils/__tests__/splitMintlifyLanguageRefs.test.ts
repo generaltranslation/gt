@@ -613,6 +613,180 @@ describe('splitMintlifyLanguageRefs', () => {
     });
   });
 
+  it('preserves sibling keys next to restored $refs (Mintlify products nav)', async () => {
+    // Source docs.json had entries where the label lives ONLY next to the $ref:
+    //   { "product": "Home", "$ref": "./products/home.json" }
+    // Resolution folds the label into the inlined subtree (Mintlify sibling
+    // merge); the splitter must lift it back next to the $ref instead of
+    // dropping it (en) or burying it in the written locale ref file (es).
+    const mergedDocsJson = {
+      navigation: {
+        languages: [
+          {
+            language: 'en',
+            products: [
+              {
+                description: 'Home docs',
+                tabs: [{ tab: 'Start', groups: [] }],
+                product: 'Home',
+              },
+            ],
+          },
+          {
+            language: 'es',
+            products: [
+              {
+                description: 'Home docs (es)',
+                tabs: [{ tab: 'Inicio', groups: [] }],
+                product: 'Inicio',
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    mockRead.mockImplementation((p) => {
+      if (path.resolve(p as string) === path.resolve('/project/docs.json'))
+        return JSON.stringify(mergedDocsJson);
+      throw new Error('ENOENT');
+    });
+
+    mockRefMap = new Map([
+      [
+        '/navigation/languages/0/products/0',
+        {
+          sourceFile: path.resolve('/project/products/home.json'),
+          refPath: './products/home.json',
+          containingDir: path.resolve('/project'),
+          originalContent: {
+            description: 'Home docs',
+            tabs: [{ tab: 'Start', groups: [] }],
+          },
+          siblings: { product: 'Home' },
+        },
+      ],
+    ]);
+
+    await splitMintlifyLanguageRefs(makeSettings());
+
+    const docsResult = getWritten('/project/docs.json') as any;
+
+    // en: label restored next to the $ref; the English source file untouched
+    expect(docsResult.navigation.languages[0].products[0]).toEqual({
+      product: 'Home',
+      $ref: './products/home.json',
+    });
+    expect(getWritten('/project/products/home.json')).toBeUndefined();
+
+    // es: translated label lifted next to the $ref in the extracted entry,
+    // and excluded from the written locale ref file (mirrors source topology)
+    expect(docsResult.navigation.languages[1]).toEqual({
+      language: 'es',
+      $ref: './es/docs.json',
+    });
+    const esDocs = getWritten('/project/es/docs.json') as any;
+    expect(esDocs.products[0]).toEqual({
+      product: 'Inicio',
+      $ref: './products/home.json',
+    });
+    const esHome = getWritten('/project/es/products/home.json') as any;
+    expect(esHome).toEqual({
+      description: 'Home docs (es)',
+      tabs: [{ tab: 'Inicio', groups: [] }],
+    });
+  });
+
+  it('keeps a sibling key in the locale ref file when the referenced file also defines it', async () => {
+    // Sibling precedence case: the key exists in BOTH the ref file and as a
+    // $ref sibling. It must stay in both places to preserve the source
+    // topology and Mintlify's sibling-overrides-file semantics.
+    const mergedDocsJson = {
+      navigation: {
+        languages: [
+          {
+            language: 'en',
+            products: [{ description: 'Home docs', product: 'Home' }],
+          },
+          {
+            language: 'es',
+            products: [{ description: 'Home docs (es)', product: 'Inicio' }],
+          },
+        ],
+      },
+    };
+
+    mockRead.mockImplementation((p) => {
+      if (path.resolve(p as string) === path.resolve('/project/docs.json'))
+        return JSON.stringify(mergedDocsJson);
+      throw new Error('ENOENT');
+    });
+
+    mockRefMap = new Map([
+      [
+        '/navigation/languages/0/products/0',
+        {
+          sourceFile: path.resolve('/project/products/home.json'),
+          refPath: './products/home.json',
+          containingDir: path.resolve('/project'),
+          originalContent: { description: 'Home docs', product: 'Home (file)' },
+          siblings: { product: 'Home' },
+        },
+      ],
+    ]);
+
+    await splitMintlifyLanguageRefs(makeSettings());
+
+    const docsResult = getWritten('/project/docs.json') as any;
+    expect(docsResult.navigation.languages[0].products[0]).toEqual({
+      product: 'Home',
+      $ref: './products/home.json',
+    });
+
+    const esHome = getWritten('/project/es/products/home.json') as any;
+    expect(esHome.product).toBe('Inicio');
+    const esDocs = getWritten('/project/es/docs.json') as any;
+    expect(esDocs.products[0]).toEqual({
+      product: 'Inicio',
+      $ref: './products/home.json',
+    });
+  });
+
+  it('never writes self-referential stubs for entries left in $ref form', async () => {
+    // If the merge step did not run (e.g. translations were cached), docs.json
+    // on disk still has its source-form locale entries: { language, $ref }.
+    // Splitting those would write { "$ref": "./es/docs.json" } INTO
+    // es/docs.json — a circular ref that overwrites the real nav file.
+    const sourceFormDocsJson = {
+      navigation: {
+        languages: [
+          { language: 'en', tabs: [{ tab: 'Guides', groups: [] }] },
+          { language: 'es', $ref: './es/docs.json' },
+        ],
+      },
+    };
+
+    mockRead.mockImplementation((p) => {
+      if (path.resolve(p as string) === path.resolve('/project/docs.json'))
+        return JSON.stringify(sourceFormDocsJson);
+      throw new Error('ENOENT');
+    });
+
+    mockRefMap = new Map();
+
+    await splitMintlifyLanguageRefs(makeSettings());
+
+    // No locale file written — the es entry was never inlined this run
+    expect(getWritten('/project/es/docs.json')).toBeUndefined();
+
+    // The es entry is left untouched in docs.json
+    const docsResult = getWritten('/project/docs.json') as any;
+    expect(docsResult.navigation.languages[1]).toEqual({
+      language: 'es',
+      $ref: './es/docs.json',
+    });
+  });
+
   it('does not clobber a top-level $ref file that was left un-inlined (e.g. redirects)', async () => {
     // mergeJson only re-inlines the composite path (navigation.languages); other
     // refs like `redirects` stay collapsed as { $ref } in the written docs.json.
