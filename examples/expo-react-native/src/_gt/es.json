@@ -1,0 +1,7 @@
+{
+  "welcomeMessage": {
+    "t": "Text",
+    "i": 1,
+    "c": "Esta frase se carga desde archivos locales de traduccion de GT."
+  }
+}

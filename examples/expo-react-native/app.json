@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "GT React Native Expo",
+    "slug": "gt-react-native-expo",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "scheme": "gtexpo",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.generaltranslation.gtexpo"
+    },
+    "android": {
+      "package": "com.generaltranslation.gtexpo"
+    }
+  }
+}
