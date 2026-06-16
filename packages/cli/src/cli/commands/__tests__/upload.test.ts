@@ -22,7 +22,12 @@ vi.mock('../../../fs/findFilepath.js', () => ({
   getRelative: vi.fn((filePath: string) => filePath),
 }));
 vi.mock('../../../workflows/upload.js', () => ({
-  runUploadFilesWorkflow: vi.fn(),
+  runUploadFilesWorkflow: vi.fn(async () => ({
+    branchData: { currentBranch: { id: 'branch-id' } },
+  })),
+}));
+vi.mock('../../../workflows/publish.js', () => ({
+  runPublishWorkflow: vi.fn(),
 }));
 vi.mock('../../../formats/files/fileMapping.js', () => ({
   createFileMapping: vi.fn(() => ({})),
@@ -51,7 +56,9 @@ vi.mock('../../../fs/determineFramework/index.js', () => ({
 
 import { readFile } from '../../../fs/findFilepath.js';
 import { runUploadFilesWorkflow } from '../../../workflows/upload.js';
+import { runPublishWorkflow } from '../../../workflows/publish.js';
 import { createFileMapping } from '../../../formats/files/fileMapping.js';
+import { logger } from '../../../console/logger.js';
 import { existsSync, readFileSync } from 'node:fs';
 
 function setMockFiles(files: Record<string, string>) {
@@ -129,6 +136,8 @@ describe('upload - Twilio Content JSON', () => {
     const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
     expect(call.files).toHaveLength(1);
     expect(call.files[0].source.fileFormat).toBe('TWILIO_CONTENT_JSON');
+    expect(runPublishWorkflow).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(runPublishWorkflow).mock.calls[0][2]).toBe('branch-id');
   });
 
   it('should use fileMapping for Twilio Content JSON files (no composite)', async () => {
@@ -185,6 +194,32 @@ describe('upload - Twilio Content JSON', () => {
 
     expect(jsonFile?.source.fileFormat).toBe('JSON');
     expect(twilioFile?.source.fileFormat).toBe('TWILIO_CONTENT_JSON');
+  });
+});
+
+describe('upload - empty file list', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.mocked(readFileSync).mockReturnValue('');
+    vi.mocked(createFileMapping).mockReturnValue({});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('emits only the upload-specific empty files message', async () => {
+    setMockFiles({});
+
+    await uploadWithFiles({}, makeSettings({ options: {} }));
+
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect(logger.error).toHaveBeenCalledWith(
+      'No files to upload were found. Check your configuration and try again.'
+    );
+    expect(runUploadFilesWorkflow).not.toHaveBeenCalled();
+    expect(runPublishWorkflow).not.toHaveBeenCalled();
   });
 });
 

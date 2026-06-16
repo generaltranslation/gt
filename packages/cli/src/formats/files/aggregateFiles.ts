@@ -393,12 +393,6 @@ export async function aggregateFiles(
     }
   }
 
-  if (files.length === 0 && !settings.publish) {
-    logger.error(
-      'No files to translate were found. Check your configuration and try again.'
-    );
-  }
-
   // Remove stale entries for files that were skipped during validation
   const validFileIds = new Set(files.map((f) => f.fileId));
   for (const fileId of publishMap.keys()) {
