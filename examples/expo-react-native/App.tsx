@@ -1,54 +1,42 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { useLocale, T, GTProvider } from 'gt-react-native';
+import { useLocale, useSetLocale, T, Var, Num, t } from 'gt-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import gtConfig from './gt.config.json';
 
 export default function App() {
-  const [selectedLocale, setSelectedLocale] = useState('es');
-
   return (
-    <GTProvider
-      {...gtConfig}
-      locale={selectedLocale}
-      loadTranslations={loadTranslations}
-    >
-      <LocaleDemo setSelectedLocale={setSelectedLocale} />
+    <>
+      <LocaleDemo />
       <StatusBar style='auto' />
-    </GTProvider>
+    </>
   );
 }
 
-async function loadTranslations(locale: string) {
-  switch (locale) {
-    case 'es':
-      return import('./src/_gt/es.json');
-    case 'fr':
-      return import('./src/_gt/fr.json');
-    default:
-      return null;
-  }
-}
-
-function LocaleDemo({
-  setSelectedLocale,
-}: {
-  setSelectedLocale: (locale: string) => void;
-}) {
+function LocaleDemo() {
   const locale = useLocale();
+  const setLocale = useSetLocale();
   const locales = [gtConfig.defaultLocale, ...gtConfig.locales];
+  const tMessage = t('This line is translated with t().', {
+    $_hash: 'tMessage',
+  });
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>gt-react-native Expo</Text>
-      <Text style={styles.locale}>Locale: {locale}</Text>
+      <T _hash='title'>
+        <Text style={styles.title}>gt-react-native Expo</Text>
+      </T>
+      <T _hash='localeLabel'>
+        <Text style={styles.locale}>
+          Locale: <Var name='locale'>{locale}</Var>
+        </Text>
+      </T>
       <View style={styles.buttons}>
         {locales.map((nextLocale) => (
           <Pressable
             accessibilityRole='button'
             key={nextLocale}
-            onPress={() => setSelectedLocale(nextLocale)}
+            onPress={() => setLocale(nextLocale)}
             style={[
               styles.button,
               nextLocale === locale ? styles.activeButton : null,
@@ -65,9 +53,16 @@ function LocaleDemo({
           </Pressable>
         ))}
       </View>
-      <T id='welcomeMessage'>
+      <T _hash='welcomeMessage'>
         <Text style={styles.message}>
-          This sentence is loaded from local GT translation files.
+          This sentence is loaded from local GT translation files with{' '}
+          <Var name='library'>gt-react-native</Var>.
+        </Text>
+      </T>
+      <Text style={styles.smallMessage}>{tMessage}</Text>
+      <T _hash='countMessage'>
+        <Text style={styles.smallMessage}>
+          The app has <Num name='count'>{3}</Num> translated examples.
         </Text>
       </T>
     </View>
@@ -124,5 +119,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 24,
     color: '#1f2933',
+  },
+  smallMessage: {
+    maxWidth: 320,
+    textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#374151',
   },
 });

@@ -9,7 +9,7 @@ import { ssrUnsupportedWarning } from '../errors-dir/warnings';
  * This reads persisted native storage directly, so it can temporarily be out of
  * sync with React state while a locale change is in progress.
  *
- * If GTProvider uses a custom localeCookieName, pass that same value as the key.
+ * If initializeGTSPA uses a custom localeCookieName, pass that same value as the key.
  *
  * @param key - The key to get the locale from
  * @returns The locale from the native store
