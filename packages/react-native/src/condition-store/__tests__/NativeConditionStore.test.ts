@@ -8,15 +8,15 @@ import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from '@generaltranslation/react-core/internal';
-import { createOrUpdateNativeConditionStore } from './createNativeConditionStore';
+import { createOrUpdateNativeConditionStore } from '../createNativeConditionStore';
 
 const nativeStore = vi.hoisted(() => new Map<string, string>());
 
-vi.mock('../utils/getNativeLocales', () => ({
+vi.mock('../../utils/getNativeLocales', () => ({
   getNativeLocales: () => ['es'],
 }));
 
-vi.mock('../utils/nativeStore', () => ({
+vi.mock('../../utils/nativeStore', () => ({
   nativeStoreGet: (key: string) => nativeStore.get(key) ?? null,
   nativeStoreSet: (key: string, value: string) => {
     nativeStore.set(key, value);
