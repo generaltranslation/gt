@@ -1,4 +1,4 @@
-import { WritableConditionStoreParams } from '@generaltranslation/react-core/context';
+import { WritableConditionStoreParams } from 'gt-i18n/internal';
 import { getCookieValue, setCookieValue } from './cookies';
 import { readBrowserLocale } from './readBrowserLocale';
 import { GetEnableI18n, GetLocale } from '../i18n-cache/types';
@@ -7,6 +7,10 @@ import {
   LocaleCandidates,
   WritableConditionStoreInterface,
 } from 'gt-i18n/internal/types';
+import {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+} from '../cookie-names';
 
 type SerializedBrowserConditionStoreState = {
   locale: string;
@@ -20,11 +24,11 @@ export type ReloadType = (state: SerializedBrowserConditionStoreState) => void;
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the locale cookie to check
  */
 export type BrowserConditionStoreParams = WritableConditionStoreParams & {
-  localeCookieName: string;
-  enableI18nCookieName: string;
-  getLocale?: GetLocale;
-  getEnableI18n?: GetEnableI18n;
-  reload?: ReloadType;
+  localeCookieName?: string;
+  enableI18nCookieName?: string;
+  _getLocale?: GetLocale;
+  _getEnableI18n?: GetEnableI18n;
+  _reload?: ReloadType;
 };
 
 /**
@@ -38,11 +42,15 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   private customGetEnableI18n?: GetEnableI18n;
 
   constructor(config: BrowserConditionStoreParams) {
-    this.customReload = config.reload ?? (() => window.location.reload());
-    this.customGetLocale = config.getLocale;
-    this.customGetEnableI18n = config.getEnableI18n;
-    this.localeCookieName = config.localeCookieName;
-    this.enableI18nCookieName = config.enableI18nCookieName;
+    this.customReload =
+      config._reload ??
+      (() =>
+        typeof window !== 'undefined' ? window.location.reload() : undefined);
+    this.customGetLocale = config._getLocale;
+    this.customGetEnableI18n = config._getEnableI18n;
+    this.localeCookieName = config.localeCookieName ?? defaultLocaleCookieName;
+    this.enableI18nCookieName =
+      config.enableI18nCookieName ?? defaultEnableI18nCookieName;
     const i18nConfig = getI18nConfig();
     setCookieValue({
       cookieName: this.localeCookieName,

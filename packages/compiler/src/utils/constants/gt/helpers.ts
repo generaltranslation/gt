@@ -159,7 +159,6 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
   return (
     [
       GT_IMPORT_SOURCES.GT_NEXT,
-      GT_IMPORT_SOURCES.GT_NEXT_CLIENT,
       GT_IMPORT_SOURCES.GT_NEXT_SERVER,
       GT_IMPORT_SOURCES.GT_REACT,
       GT_IMPORT_SOURCES.GT_REACT_CLIENT,

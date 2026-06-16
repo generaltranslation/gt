@@ -38,6 +38,7 @@ import {
 import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath';
 import { ssgChecks } from './plugin/checks/ssgChecks';
 import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
+import { I18nConfigParams } from 'gt-i18n/internal/types';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 
@@ -551,6 +552,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // ---------- STORE CONFIGURATIONS ---------- //
   const I18NConfigParams = JSON.stringify(mergedConfig);
+  const publicI18NConfigParams: Omit<
+    I18nConfigParams,
+    'projectId' | 'devApiKey' | 'apiKey'
+  > = {
+    defaultLocale: mergedConfig.defaultLocale,
+    locales: mergedConfig.locales,
+    customMapping: mergedConfig.customMapping,
+    runtimeUrl: mergedConfig.runtimeUrl,
+  };
 
   const { type: _type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
@@ -608,6 +618,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     env: {
       ...internalNextConfig.env,
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
+      NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS: JSON.stringify(
+        publicI18NConfigParams
+      ),
       ...(resolvedDictionaryFilePathType && {
         _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:
           resolvedDictionaryFilePathType,

@@ -70,15 +70,11 @@
       "react-server": "./dist/index.rsc.js",
       "browser": "./dist/index.client.js",
       "types": "./dist/index.types.d.ts",
-      "default": "./dist/index.client.js"
+      "default": "./dist/index.server.js"
     },
     "./config": {
       "types": "./dist/config.d.ts",
       "default": "./dist/config.js"
-    },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "default": "./dist/client.js"
     },
     "./server": {
       "types": "./dist/server.d.ts",
@@ -91,9 +87,6 @@
     "./types": {
       "types": "./dist/types.d.ts",
       "default": "./dist/types.js"
-    },
-    "./_request": {
-      "default": "./dist/_request.js"
     },
     "./_dictionary": {
       "default": "./dist/_dictionary.js"
@@ -120,24 +113,12 @@
     },
     "./internal/_getDomain": {
       "default": "./dist/internal/_getDomain.js"
-    },
-    "./internal/static/_getLocale": {
-      "default": "./dist/internal/static/_getLocale.js"
-    },
-    "./internal/static/_getRegion": {
-      "default": "./dist/internal/static/_getRegion.js"
-    },
-    "./internal/static/_getDomain": {
-      "default": "./dist/internal/static/_getDomain.js"
     }
   },
   "typesVersions": {
     "*": {
       "config": [
         "./dist/config.d.ts"
-      ],
-      "client": [
-        "./dist/client.d.ts"
       ],
       "server": [
         "./dist/server.d.ts"
@@ -147,9 +128,6 @@
       ],
       "types": [
         "./dist/types.d.ts"
-      ],
-      "_request": [
-        "./dist/_request.d.ts"
       ],
       "_dictionary": [
         "./dist/_dictionary.d.ts"
@@ -174,15 +152,6 @@
       ],
       "internal/_getDomain": [
         "./dist/internal/_getDomain.d.ts"
-      ],
-      "internal/static/_getLocale": [
-        "./dist/internal/static/_getLocale.d.ts"
-      ],
-      "internal/static/_getRegion": [
-        "./dist/internal/static/_getRegion.d.ts"
-      ],
-      "internal/static/_getDomain": [
-        "./dist/internal/static/_getDomain.d.ts"
       ]
     }
   },
@@ -191,9 +160,6 @@
     "paths": {
       "gt-next/config": [
         "/dist/config"
-      ],
-      "gt-next/client": [
-        "/dist/client"
       ],
       "gt-next/server": [
         "/dist/server"
@@ -227,15 +193,6 @@
       ],
       "gt-next/internal/_getDomain": [
         "/dist/internal/_getDomain"
-      ],
-      "gt-next/internal/static/_getLocale": [
-        "/dist/internal/static/_getLocale"
-      ],
-      "gt-next/internal/static/_getRegion": [
-        "/dist/internal/static/_getRegion"
-      ],
-      "gt-next/internal/static/_getDomain": [
-        "/dist/internal/static/_getDomain"
       ]
     }
   },

@@ -17,3 +17,18 @@ export { default as getPluralBranch } from './utils/plurals/getPluralBranch';
 export { getFormatLocales } from './hooks/utils/getFormatLocales';
 
 export type { RelativeTimeFormatOptions, RenderVariable } from './utils/types';
+
+export { internalInitializeGTSRA as initializeGT } from './setup/initializeGTSRA';
+
+export {
+  ReactI18nCache,
+  type ReactI18nCacheParams,
+} from './i18n-cache/ReactI18nCache';
+
+export {
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
+} from 'gt-i18n';

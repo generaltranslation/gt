@@ -1,2 +1,1 @@
-import { createNextMiddleware } from './middleware-dir/createNextMiddleware';
-export { createNextMiddleware };
+export { createNextMiddleware } from './middleware-dir/createNextMiddleware';

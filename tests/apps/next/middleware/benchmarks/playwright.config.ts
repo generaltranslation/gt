@@ -2,16 +2,13 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = process.env.CI ? 3456 : 3000;
 process.env.PORT = PORT.toString();
-const chromium = process.env.CI
-  ? { ...devices['Desktop Chrome'], channel: 'chrome' as const }
-  : devices['Desktop Chrome'];
 
 export default defineConfig({
   testDir: '.',
   testMatch: 'e2e-performance.spec.ts',
   fullyParallel: false,
   timeout: 30_000,
-  projects: [{ name: 'chromium', use: chromium }],
+  projects: [{ name: 'chromium', use: devices['Desktop Chrome'] }],
   webServer: {
     command: `PORT=${PORT} pnpm start`,
     port: PORT,

@@ -268,7 +268,7 @@ impl TransformVisitor {
   pub fn process_gt_import_declaration(&mut self, import_decl: &ImportDecl) {
     let src_value = import_decl.src.value.to_string_lossy().into_owned();
     match src_value.as_str() {
-      "gt-next" | "gt-next/client" | "gt-next/server" | "gt-i18n" => {
+      "gt-next" | "gt-next/server" | "gt-i18n" => {
         // Process named imports: import { T, Var, useGT } from 'gt-next'
         for specifier in &import_decl.specifiers {
           match specifier {
@@ -1139,10 +1139,10 @@ mod tests {
     }
 
     #[test]
-    fn processes_gt_next_client_imports() {
+    fn processes_gt_next_imports() {
       let mut visitor =
         TransformVisitor::new(LogLevel::Silent, false, None, false, false, false, StringCollector::new());
-      let import_decl = create_import_decl("gt-next/client", vec![create_named_import("T", None)]);
+      let import_decl = create_import_decl("gt-next", vec![create_named_import("T", None)]);
 
       visitor.process_gt_import_declaration(&import_decl);
 

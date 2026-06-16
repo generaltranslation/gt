@@ -39,7 +39,7 @@ describe.sequential('withGT', () => {
     expect(locale).toBe('pt-BR');
   });
 
-  it('allows explicit runtime locale outside a callback context', async () => {
+  it('allows explicit runtime locale to override the callback context', async () => {
     initializeGT({
       defaultLocale: 'en-US',
       locales: ['en-US', 'fr'],
@@ -48,6 +48,8 @@ describe.sequential('withGT', () => {
       }),
     });
 
-    await expect(tx('Hello', { $locale: 'fr' })).resolves.toBe('Bonjour');
+    await expect(
+      withGT('en-US', () => tx('Hello', { $locale: 'fr' }))
+    ).resolves.toBe('Bonjour');
   });
 });

@@ -5,7 +5,8 @@ import {
   ReadonlyConditionStoreInterface,
 } from 'gt-i18n/internal/types';
 import { Translation } from 'gt-i18n/types';
-import { createContext, useContext } from 'react';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createContext, useContext, type Context } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
 import { getI18nConfig } from '../setup/i18nConfig';
 import type {
@@ -41,15 +42,53 @@ export type GTContextType = {
   onMissingDictionaryObj?: OnMissingDictionaryObj;
 };
 
-export const GTContext = createContext<GTContextType | undefined>(undefined);
+type ReactCoreGlobals = {
+  gtContext?: Context<GTContextType | undefined>;
+  [key: string]: unknown;
+};
+
+type GeneralTranslationGlobal = {
+  reactCore?: ReactCoreGlobals;
+  [key: string]: unknown;
+};
+
+type GlobalWithGeneralTranslation = {
+  __generaltranslation?: GeneralTranslationGlobal;
+};
+
+function getReactCoreGlobals(): ReactCoreGlobals {
+  const globalObj = globalThis as unknown as GlobalWithGeneralTranslation;
+  globalObj.__generaltranslation ??= {};
+  // TODO: Consider checking package versions and using a compatibility matrix before sharing global singletons.
+  globalObj.__generaltranslation.reactCore ??= {};
+  return globalObj.__generaltranslation.reactCore;
+}
+
+export function getGTContext(): Context<GTContextType | undefined> {
+  const reactCoreGlobals = getReactCoreGlobals();
+  reactCoreGlobals.gtContext ??= createContext<GTContextType | undefined>(
+    undefined
+  );
+  return reactCoreGlobals.gtContext;
+}
 
 export function useGTContext(): GTContextType | undefined {
-  const context = useContext(GTContext);
+  const context = useContext(getGTContext());
   if (context || getI18nConfig().getRenderStrategy() === 'SPA') {
     return context;
   }
   /**
    * TODO: in a separate PR, we should figure out how to make this more of a forgiving system
    */
-  throw new Error('GTContext must be read within a GTProvider');
+  throw new Error(createMissingGTProviderError());
+}
+
+function createMissingGTProviderError(): string {
+  return createDiagnosticMessage({
+    source: '@generaltranslation/react-core',
+    severity: 'Error',
+    whatHappened: 'GT runtime context could not be read',
+    why: 'GTContext was accessed outside of a <GTProvider>',
+    fix: 'Add a <GTProvider> at the root of your component tree.',
+  });
 }

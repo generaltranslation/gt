@@ -1,17 +1,9 @@
-import { getI18NConfig } from '../../config-dir/getI18NConfig';
-import { getLocale } from '../../request/getLocale';
-import { createStringTranslationError } from '../../errors/createErrors';
-import { hashSource } from 'generaltranslation/id';
-import {
-  extractVars,
-  condenseVars,
-  indexVars,
-  VAR_IDENTIFIER,
-} from 'generaltranslation/internal';
 import type {
   FormatVariables,
   StringFormat,
 } from '@generaltranslation/format/types';
+import { txInternal } from 'gt-i18n/internal';
+import { getRequestConditions } from '../../request/getRequestConditions';
 
 type TxOptions = FormatVariables & {
   $locale?: string;
@@ -57,98 +49,11 @@ export async function tx(
   message: string,
   options: TxOptions = {}
 ): Promise<string> {
-  if (!message || typeof message !== 'string') return '';
-
-  // Compatibility with different options
-  const {
-    $locale,
-    $context: rawContext,
-    $maxChars: rawMaxChars,
-    $format: rawFormat,
-    ...variables
-  } = options;
-  const context = typeof rawContext === 'string' ? rawContext : undefined;
-  const maxChars = typeof rawMaxChars === 'number' ? rawMaxChars : undefined;
-  const format = typeof rawFormat === 'string' ? rawFormat : undefined;
-  const formatVariables = variables as FormatVariables;
-
-  // ----- SET UP ----- //
-
-  const I18NConfig = getI18NConfig();
-  const locale = typeof $locale === 'string' ? $locale : await getLocale();
-  const defaultLocale = I18NConfig.getDefaultLocale();
-  const [translationRequired] = I18NConfig.requiresTranslation(locale);
-  const gt = I18NConfig.getGTClass();
-
-  // ----- DEFINE RENDER FUNCTION ----- //
-
-  const renderContent = (content: string, locales: string[]) => {
-    const declaredVars = extractVars(message);
-    const formattedMessage = gt.formatMessage(
-      content !== message ? condenseVars(content) : content,
-      {
-        locales,
-        variables: {
-          ...formatVariables,
-          ...declaredVars,
-          [VAR_IDENTIFIER]: 'other',
-        },
-        dataFormat: format,
-      }
-    );
-    const cutoffMessage = gt.formatCutoff(formattedMessage, {
-      locales,
-      maxChars,
-    });
-    return cutoffMessage;
-  };
-
-  // ----- CHECK IF TRANSLATION REQUIRED ----- //
-
-  if (!translationRequired) return renderContent(message, [defaultLocale]);
-
-  // ----- CALCULATE HASH ----- //
-
-  const hash = hashSource({
-    source: format === 'ICU' ? indexVars(message) : message,
-    ...(context && { context }),
-    ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
-    dataFormat: format || 'ICU',
+  const { _locale, _enableI18n } = await getRequestConditions();
+  return txInternal({
+    locale: _locale,
+    enableI18n: _enableI18n,
+    content: message,
+    options,
   });
-  const dataFormat = format || 'ICU';
-  const source = dataFormat === 'ICU' ? indexVars(message) : message;
-  const lookupOptions = {
-    ...formatVariables,
-    $_hash: hash,
-    $format: dataFormat,
-    ...(context && { $context: context }),
-    ...(maxChars != null && { $maxChars: Math.abs(maxChars) }),
-  };
-
-  // ----- CHECK LOCAL CACHE ----- //
-
-  const translationEntry = I18NConfig.lookupTranslation({
-    source,
-    targetLocale: locale,
-    options: lookupOptions,
-  });
-
-  if (translationEntry) {
-    return renderContent(translationEntry as string, [locale, defaultLocale]);
-  }
-
-  // ------ CREATE NEW TRANSLATION ---- //
-
-  // New translation required
-  try {
-    const target = (await I18NConfig.translate({
-      source,
-      targetLocale: locale,
-      options: lookupOptions,
-    })) as string;
-    return renderContent(target, [locale, defaultLocale]);
-  } catch (error) {
-    console.error(createStringTranslationError(message), error);
-    return renderContent(message, [defaultLocale]);
-  }
 }

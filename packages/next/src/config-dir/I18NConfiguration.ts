@@ -1,4 +1,3 @@
-import type { GT } from 'generaltranslation';
 import {
   RenderMethod,
   getDefaultRenderSettings,
@@ -96,7 +95,7 @@ export class I18NConfiguration {
     loadDictionaryEnabled,
     // Locale info
     defaultLocale,
-    locales,
+    locales: _locales,
     // Render method
     renderSettings,
     // Dictionaries
@@ -118,6 +117,7 @@ export class I18NConfiguration {
   }: I18NConfigurationParams) {
     void _dictionary;
     void _customMapping;
+    void _locales;
 
     // ----- CLOUD INTEGRATION ----- //
 
@@ -282,14 +282,6 @@ export class I18NConfiguration {
       customMapping,
       _versionId,
     };
-  }
-
-  /**
-   * Gets the GT class instance
-   * @returns {GT} The GT class instance
-   */
-  getGTClass(): GT {
-    return this._i18nCache.getGTClass();
   }
 
   // ----- LOCALES ----- //

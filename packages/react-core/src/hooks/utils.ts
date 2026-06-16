@@ -1,3 +1,5 @@
+import type { LocaleProperties } from '@generaltranslation/format/types';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { useMemo } from 'react';
 import { useEnableI18n, useLocale } from './condition-store';
 import { getFormatLocales } from './utils/getFormatLocales';
@@ -27,4 +29,33 @@ export function useShouldTranslate(): boolean {
   const enableI18n = useEnableI18n();
   const locale = useLocale();
   return enableI18n && getI18nConfig().requiresTranslation(locale);
+}
+
+export function useGTClass() {
+  return useMemo(() => getI18nConfig().getGTClass(), []);
+}
+
+export function useLocaleProperties(locale: string): LocaleProperties {
+  return useMemo(
+    () => getI18nConfig().getGTClass().getLocaleProperties(locale),
+    [locale]
+  );
+}
+
+export function useLocaleDirection(locale: string) {
+  return useMemo(
+    () => getI18nConfig().getGTClass().getLocaleDirection(locale),
+    [locale]
+  );
+}
+
+export function useVersionId() {
+  throw new Error(
+    createDiagnosticMessage({
+      source: '@generaltranslation/react-core',
+      severity: 'Error',
+      whatHappened: 'useVersionId() is not implemented in this entry point',
+      fix: 'Use getVersionId() or import useVersionId() from a supported runtime entry point.',
+    })
+  );
 }

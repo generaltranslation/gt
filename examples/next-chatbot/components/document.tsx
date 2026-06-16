@@ -4,7 +4,7 @@ import type { ArtifactKind } from './artifact';
 import { FileIcon, LoaderIcon, MessageIcon, PencilEditIcon } from './icons';
 import { toast } from 'sonner';
 import { useArtifact } from '@/hooks/use-artifact';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 const getActionText = (
   type: 'create' | 'update' | 'request-suggestions',
   tense: 'present' | 'past'

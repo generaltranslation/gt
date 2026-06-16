@@ -139,10 +139,16 @@ export const typesFileError = createGtNextDiagnostic({
   fix: 'Import from the appropriate gt-next runtime entry point instead',
 });
 
+export const getTranslationsSnapshotRscError = createGtNextDiagnostic({
+  severity: 'Error',
+  whatHappened:
+    'getTranslationsSnapshot() is not available for React Server Components',
+  fix: 'Use gt-next build-time translation helpers in the App Router, or call getTranslationsSnapshot() from a Pages Router entry point',
+});
+
 export const gtProviderUseClientError =
   `The Next.js <GTProvider> was imported in a client component. This prevents gt-next from fetching translations on the server. ` +
-  `Move <GTProvider> to a file without 'use client'. ` +
-  `If you really need to put <GTProvider> on the client, import <GTClientProvider> from 'gt-next/client' instead (discouraged when using the Next.js App Router).`;
+  `Move <GTProvider> to a file without 'use client'.`;
 
 export const txUseClientError =
   `The <Tx> runtime translation component was rendered in a client component, which is not supported. ` +
@@ -296,6 +302,12 @@ export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
 
 export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
   `gt-next (plugin): The GT ${type} compiler could not be resolved. Skipping compiler optimizations.`;
+
+export const customGetLocaleUnresolvedWarning = createGtNextDiagnostic({
+  whatHappened: 'Custom getLocale() could not be resolved',
+  wayOut: 'gt-next will fall back to default locale detection',
+  fix: 'Export a getLocale() function from the configured request file',
+});
 
 export const createGTCompilerUnavailableWarning = (type: 'babel' | 'swc') =>
   type === 'swc'

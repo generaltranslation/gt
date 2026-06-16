@@ -13,7 +13,7 @@ import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { VisibilityType, VisibilitySelector } from './visibility-selector';
 import { T, Var } from 'gt-next';
-import { LocaleSelector } from 'gt-next/client';
+import { LocaleSelector } from 'gt-next';
 
 function PureChatHeader({
   chatId,

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import { ChatRequestOptions, CreateMessage, Message } from 'ai';
 import { memo } from 'react';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 interface SuggestedActionsProps {
   chatId: string;
