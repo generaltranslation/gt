@@ -2,12 +2,26 @@ import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
 import { IntlMessageFormat } from 'intl-messageformat';
+import { createInstance } from 'i18next';
 
 type FormatParams<Value, Options> = {
   value: Value;
   locales?: string | string[];
   options?: Options;
 };
+
+const i18nextFormatter = createInstance();
+const i18nextMessageKey = '__gt_message__';
+
+i18nextFormatter.init({
+  lng: libraryDefaultLocale,
+  fallbackLng: false,
+  initImmediate: false,
+  showSupportNotice: false,
+  interpolation: {
+    escapeValue: false,
+  },
+});
 
 /**
  * Formats a message according to the specified locales and options.
@@ -28,6 +42,29 @@ export function _formatMessageICU(
 ): string {
   const messageFormat = new IntlMessageFormat(message, locales);
   return messageFormat.format(variables)?.toString() ?? '';
+}
+
+/**
+ * Formats a message using i18next-style interpolation.
+ *
+ * Supports the default `{{value}}` syntax and i18next's built-in Intl-backed
+ * formatters, e.g. `{{value, number}}` and `{{value, currency(USD)}}`.
+ *
+ * @internal
+ */
+export function _formatMessageI18next(
+  message: string,
+  locales: string | string[] = libraryDefaultLocale,
+  variables: Record<string, unknown> = {}
+): string {
+  const formattedMessage = i18nextFormatter.t(i18nextMessageKey, {
+    ...variables,
+    lng: Array.isArray(locales) ? locales[0] : locales,
+    defaultValue: message,
+  });
+  return typeof formattedMessage === 'string'
+    ? formattedMessage
+    : String(formattedMessage ?? '');
 }
 
 /**

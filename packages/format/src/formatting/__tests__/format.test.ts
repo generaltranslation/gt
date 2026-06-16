@@ -1,5 +1,66 @@
 import { describe, it, expect } from 'vitest';
+import { formatMessage } from '../../core';
 import { _formatListToParts } from '../format';
+
+describe('formatMessage i18next', () => {
+  it('interpolates i18next variables', () => {
+    expect(
+      formatMessage('Hello {{ name }}', {
+        dataFormat: 'I18NEXT',
+        variables: { name: 'Ada' },
+      })
+    ).toBe('Hello Ada');
+  });
+
+  it('formats i18next numbers with inline options', () => {
+    expect(
+      formatMessage('Value {{ count, number(minimumFractionDigits: 2) }}', {
+        dataFormat: 'I18NEXT',
+        locales: 'en',
+        variables: { count: 12 },
+      })
+    ).toBe('Value 12.00');
+  });
+
+  it('formats i18next currency shorthand', () => {
+    expect(
+      formatMessage('Total {{ amount, currency(USD) }}', {
+        dataFormat: 'I18NEXT',
+        locales: 'en-US',
+        variables: { amount: 1234.5 },
+      })
+    ).toBe('Total $1,234.50');
+  });
+
+  it('formats i18next dates with per-value format params', () => {
+    expect(
+      formatMessage('On {{ date, datetime }}', {
+        dataFormat: 'I18NEXT',
+        locales: 'en-US',
+        variables: {
+          date: new Date(Date.UTC(2012, 11, 20, 3, 0, 0)),
+          formatParams: {
+            date: {
+              timeZone: 'UTC',
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            },
+          },
+        } as Record<string, unknown>,
+      })
+    ).toBe('On Thursday, December 20, 2012');
+  });
+
+  it('leaves missing i18next variables unchanged', () => {
+    expect(
+      formatMessage('Hello {{name}}', {
+        dataFormat: 'I18NEXT',
+      })
+    ).toBe('Hello {{name}}');
+  });
+});
 
 describe('_formatListToParts', () => {
   it('should format empty array', () => {

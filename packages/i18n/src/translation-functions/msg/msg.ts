@@ -85,6 +85,7 @@ export function msg(
         ...variables,
         [VAR_IDENTIFIER]: 'other',
       },
+      dataFormat: options.$format ?? 'ICU',
     });
   } catch {
     logger.warn(createInterpolationFailureMessage(message));

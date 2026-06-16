@@ -4,6 +4,7 @@ import {
   _formatList,
   _formatListToParts,
   _formatMessageICU,
+  _formatMessageI18next,
   _formatNum,
   _formatRelativeTime,
   _selectRelativeTimeUnit,
@@ -126,6 +127,13 @@ export function formatCutoff(
  */
 export function formatMessage(message: string, options?: MessageFormatOptions) {
   if (options?.dataFormat === 'STRING') return message;
+  if (options?.dataFormat === 'I18NEXT') {
+    return _formatMessageI18next(
+      message,
+      options?.locales,
+      options?.variables as Record<string, unknown> | undefined
+    );
+  }
   return _formatMessageICU(message, options?.locales, options?.variables);
 }
 
