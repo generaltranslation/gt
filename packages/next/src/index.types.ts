@@ -1,5 +1,7 @@
 import { typesFileError } from './errors/createErrors';
 import { T as _T } from './server-dir/buildtime/T';
+import type { GetServerSidePropsContext, PreviewData } from 'next';
+import type { ParsedUrlQuery } from 'querystring';
 import {
   useTranslations as _useTranslations,
   useLocale as _useLocale,
@@ -328,6 +330,19 @@ export const LocaleSelector: typeof _LocaleSelector = () => {
 export const RegionSelector: typeof _RegionSelector = () => {
   throw new Error(typesFileError);
 };
+
+/**
+ * Resolve the user's locale from a Next Pages Router server-side request.
+ *
+ * @param context - The GetServerSideProps context for the request.
+ * @returns The resolved locale.
+ */
+export function parseLocale<
+  Params extends ParsedUrlQuery = ParsedUrlQuery,
+  Preview extends PreviewData = PreviewData,
+>(_: GetServerSidePropsContext<Params, Preview>): string {
+  throw new Error(typesFileError);
+}
 
 /**
  * Returns the string translation function `t`.
