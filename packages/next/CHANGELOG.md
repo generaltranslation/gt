@@ -1,5 +1,12 @@
 # gt-next
 
+## 6.16.32
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-react@10.20.1
+
 ## 6.16.31
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # gt-react-native
 
+## 10.20.1
+
+### Patch Changes
+
+- [#1562](https://github.com/generaltranslation/gt/pull/1562) [`b8ce13d`](https://github.com/generaltranslation/gt/commit/b8ce13d77540b3a680ba21b110d2340501377287) Thanks [@bgub](https://github.com/bgub)! - Export the `RelativeTime` component from `gt-react-native`, restoring parity with `gt-react`. It was already available in `@generaltranslation/react-core` and is platform-agnostic, but was the only variable component missing from the React Native entry point.
+
 ## 10.20.0
 
 ### Minor Changes

@@ -1,5 +1,31 @@
 # gtx-cli
 
+## 2.14.50
+
+### Patch Changes
+
+- [#1586](https://github.com/generaltranslation/gt/pull/1586) [`81d0d09`](https://github.com/generaltranslation/gt/commit/81d0d09db3f0d9d8a2ce7fc45f76bf5dd34fa34a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Refetch composite content
+
+## 2.14.49
+
+### Patch Changes
+
+- Updated dependencies [[`a41729b`](https://github.com/generaltranslation/gt/commit/a41729b0f6f42ec3bccd6d99299b35eebfb0cc6e)]:
+  - gt-remark@1.0.10
+
+## 2.14.48
+
+### Patch Changes
+
+- [#1582](https://github.com/generaltranslation/gt/pull/1582) [`1e5e748`](https://github.com/generaltranslation/gt/commit/1e5e748b1aef33eb58f536496592a6258fc441e5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle Mintlify `$ref` siblings, add omit to composite JSONs
+
+## 2.14.47
+
+### Patch Changes
+
+- Updated dependencies [[`34aae81`](https://github.com/generaltranslation/gt/commit/34aae8107d69e6cc1a54cde5d7645ebcd8e14d21)]:
+  - gt-remark@1.0.9
+
 ## 2.14.46
 
 ### Patch Changes

@@ -130,7 +130,10 @@ describe('resolveMintlifyRefs', () => {
       },
     };
 
-    const { resolved } = resolveMintlifyRefs(json, '/project/docs.json');
+    const { resolved, refMap } = resolveMintlifyRefs(
+      json,
+      '/project/docs.json'
+    );
 
     expect(resolved).toEqual({
       appearance: {
@@ -138,6 +141,8 @@ describe('resolveMintlifyRefs', () => {
         strict: true, // sibling overrides ref content
       },
     });
+    // Siblings are recorded so the split step can restore them next to the $ref
+    expect(refMap.get('/appearance')!.siblings).toEqual({ strict: true });
   });
 
   it('drops sibling keys when $ref resolves to a non-object', () => {
