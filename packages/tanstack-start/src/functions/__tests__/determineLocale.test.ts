@@ -59,7 +59,6 @@ describe('determineLocale', () => {
     initializeI18nConfig(localeConfig);
     mockCookie.mockReset();
     mockRequestHeader.mockReset();
-    process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES = 'false';
   });
 
   afterEach(() => {

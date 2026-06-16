@@ -29,19 +29,14 @@ function determineLocaleServer({
   if (cookie) candidates.push(cookie);
 
   // (2) Check headers
-  if (process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false') {
-    const headers =
-      getRequestHeader('accept-language')
-        ?.split(',')
-        .map((item) => item.split(';')?.[0].trim()) || [];
-    if (headers) candidates.push(...headers);
-  }
+  const headers =
+    getRequestHeader('accept-language')
+      ?.split(',')
+      .map((item) => item.split(';')?.[0].trim()) || [];
+  candidates.push(...headers);
 
   // Warn if no locales could be determined
-  if (
-    candidates.length === 0 &&
-    process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false'
-  ) {
+  if (candidates.length === 0) {
     console.warn(
       'gt-tanstack-start(server): no locales could be determined for this request'
     );

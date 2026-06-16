@@ -27,7 +27,6 @@ describe('parseLocale', () => {
     initializeI18nConfig(localeConfig);
     mockCookie.mockReset();
     mockRequestHeader.mockReset();
-    delete process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES;
   });
 
   it('uses the server cookie before Accept-Language', () => {
@@ -38,14 +37,6 @@ describe('parseLocale', () => {
   });
 
   it('falls back to the server Accept-Language header', () => {
-    mockCookie.mockReturnValue(undefined);
-    mockRequestHeader.mockReturnValue('es,en;q=0.8');
-
-    expect(parseLocale()).toBe('es');
-  });
-
-  it('always checks Accept-Language', () => {
-    process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES = 'true';
     mockCookie.mockReturnValue(undefined);
     mockRequestHeader.mockReturnValue('es,en;q=0.8');
 
