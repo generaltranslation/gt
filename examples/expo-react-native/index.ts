@@ -1,35 +1,29 @@
 import { registerRootComponent } from 'expo';
-import { createElement, useSyncExternalStore, type ComponentType } from 'react';
+import { getLocaleFromNativeStore, initializeGTSPA } from 'gt-react-native';
 
+import gtConfig from './gt.config.json';
 import { reloadRuntime } from './runtimeReload';
-import { setupGT } from './setupGT';
-
-let Main: ComponentType | null = null;
-const listeners = new Set<() => void>();
-
-function Root() {
-  const Component = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-  if (!Component) return null;
-  return createElement(Component);
-}
-
-registerRootComponent(Root);
 
 void bootstrap();
 
 async function bootstrap() {
-  await setupGT(reloadRuntime);
-  Main = (await import('./main')).default;
-  listeners.forEach((listener) => listener());
+  await initializeGTSPA({
+    ...gtConfig,
+    locale: getLocaleFromNativeStore() ?? undefined,
+    loadTranslations,
+    reload: reloadRuntime,
+  });
+
+  registerRootComponent((await import('./main')).default);
 }
 
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-function getSnapshot() {
-  return Main;
+async function loadTranslations(locale: string) {
+  switch (locale) {
+    case 'es':
+      return (await import('./src/_gt/es.json')).default;
+    case 'fr':
+      return (await import('./src/_gt/fr.json')).default;
+    default:
+      return null;
+  }
 }
