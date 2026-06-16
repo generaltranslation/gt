@@ -44,6 +44,25 @@ describe('t', () => {
     expect(t(message, { name: 'Alice' })).toBe('Bonjour Alice !');
   });
 
+  it('uses the configured default string format when $format is omitted', async () => {
+    const message = 'Hello {{name}}!';
+    const translatedMessage = 'Bonjour {{name}} !';
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      defaultStringFormat: 'I18NEXT',
+      locales: ['en', 'fr'],
+      loadTranslations: vi.fn().mockResolvedValue({
+        [hashMessage(message, { $format: 'I18NEXT' })]: translatedMessage,
+      }),
+    });
+
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
+    await manager.loadTranslations('fr');
+
+    expect(t(message, { name: 'Alice' })).toBe('Bonjour Alice !');
+  });
+
   it('allows an explicit $locale to override the current locale', async () => {
     const message = 'Hello {name}!';
     const manager = new I18nManager({

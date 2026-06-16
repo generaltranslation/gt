@@ -36,6 +36,10 @@ type GTStringOptions = InlineTranslationOptions & {
   $_hash?: string;
 };
 
+function isStringFormat(value: unknown): value is StringFormat {
+  return value === 'ICU' || value === 'I18NEXT' || value === 'STRING';
+}
+
 type RenderMessageParams = {
   message: string;
   variables: FormatVariables | undefined;
@@ -160,6 +164,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       ...variables
     } = options;
     const formatVariables = variables as FormatVariables;
+    const resolvedFormat = format ?? I18NConfig.getDefaultStringFormat();
 
     const renderMessage: RenderFn = (msg, locales, fallback) => {
       return renderMessageHelper({
@@ -169,17 +174,17 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         id,
         fallback,
         maxChars,
-        format,
+        format: resolvedFormat,
       });
     };
 
     const calculateHash = () =>
       hashSource({
-        source: indexVars(message),
+        source: resolvedFormat === 'ICU' ? indexVars(message) : message,
         ...(context && { context }),
         ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         ...(id && { id }),
-        dataFormat: format || 'ICU',
+        dataFormat: resolvedFormat,
       });
 
     return {
@@ -375,7 +380,8 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     const context = typeof $context === 'string' ? $context : undefined;
     const id = typeof $id === 'string' ? $id : undefined;
     const maxChars = typeof $maxChars === 'number' ? $maxChars : undefined;
-    const format = typeof $format === 'string' ? $format : undefined;
+    const format = isStringFormat($format) ? $format : undefined;
+    const resolvedFormat = format ?? I18NConfig.getDefaultStringFormat();
     const formatVariables = decodedVariables as FormatVariables;
 
     const renderMessage: RenderFn = (msg, locales, fallback) => {
@@ -385,7 +391,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         variables: formatVariables,
         fallback,
         maxChars,
-        format,
+        format: resolvedFormat,
       });
     };
 

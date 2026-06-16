@@ -10,8 +10,5 @@ import { getCurrentLocale } from '../i18n-manager/singleton-operations';
  */
 export function t(message: string, options: InlineTranslationOptions = {}) {
   const locale = options.$locale ?? getCurrentLocale();
-  return resolveStringContentWithFallback(locale, message, {
-    $format: 'ICU',
-    ...options,
-  });
+  return resolveStringContentWithFallback(locale, message, options);
 }

@@ -16,7 +16,7 @@ export function resolveTranslationSync(
   message: string,
   options: InlineTranslationOptions = {}
 ) {
-  return resolveStringContent(locale, message, { $format: 'ICU', ...options });
+  return resolveStringContent(locale, message, options);
 }
 
 /**
@@ -31,8 +31,5 @@ export function resolveTranslationSyncWithFallback(
   message: string,
   options: InlineTranslationOptions = {}
 ) {
-  return resolveStringContentWithFallback(locale, message, {
-    $format: 'ICU',
-    ...options,
-  });
+  return resolveStringContentWithFallback(locale, message, options);
 }
