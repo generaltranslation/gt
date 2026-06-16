@@ -1,5 +1,4 @@
 import type { LocaleCandidates } from 'gt-i18n/internal/types';
-import { setReadonlyConditionStore } from '@generaltranslation/react-core/context';
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
@@ -11,8 +10,11 @@ import {
   NativeConditionStore,
   type NativeConditionStoreParams,
 } from './NativeConditionStore';
-
-let nativeConditionStore: NativeConditionStore | undefined;
+import {
+  getNativeConditionStore,
+  isNativeConditionStoreInitialized,
+  setNativeConditionStore,
+} from './singleton-operations';
 
 export type CreateNativeConditionStoreParams = Omit<
   NativeConditionStoreParams,
@@ -30,12 +32,13 @@ export function createOrUpdateNativeConditionStore(
   const region = determineRegion(config);
   const enableI18n = determineEnableI18n(config);
 
-  if (nativeConditionStore) {
-    nativeConditionStore.updateConfig(config);
-    nativeConditionStore.updateLocale(locale);
-    if (region !== undefined) nativeConditionStore.updateRegion(region);
-    nativeConditionStore.updateEnableI18n(enableI18n);
-    return nativeConditionStore;
+  if (isNativeConditionStoreInitialized()) {
+    const conditionStore = getNativeConditionStore();
+    conditionStore.updateConfig(config);
+    conditionStore.updateLocale(locale);
+    if (region !== undefined) conditionStore.updateRegion(region);
+    conditionStore.updateEnableI18n(enableI18n);
+    return conditionStore;
   }
 
   const conditionStore = new NativeConditionStore({
@@ -44,8 +47,7 @@ export function createOrUpdateNativeConditionStore(
     region,
     enableI18n,
   });
-  setReadonlyConditionStore(conditionStore);
-  nativeConditionStore = conditionStore;
+  setNativeConditionStore(conditionStore);
   return conditionStore;
 }
 
