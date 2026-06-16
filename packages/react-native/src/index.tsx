@@ -1,4 +1,4 @@
-import { initializeGTSPA } from './setup/initializeGTSPA';
+import { GTProvider } from './provider/GTProvider';
 import {
   useSetLocale,
   useSetRegion,
@@ -7,7 +7,7 @@ import {
 import { useLocaleSelector, useRegionSelector } from './hooks/selectors';
 import { useLocaleDirection, useVersionId } from './hooks/utils';
 import { getLocaleFromNativeStore } from './utils/nativeStore';
-import type { InitializeGTSPAParams } from './setup/initializeGTSPA';
+import type { GTProviderProps } from './provider/GTProvider';
 
 import type {
   DictionaryTranslationOptions,
@@ -54,7 +54,6 @@ export {
   getReactI18nCache,
   setReactI18nCache,
   createRenderPipeline,
-  t,
 } from '@generaltranslation/react-core/context';
 
 export {
@@ -64,7 +63,7 @@ export {
 } from '@generaltranslation/react-core/hooks';
 
 export {
-  initializeGTSPA,
+  GTProvider,
   useSetLocale,
   useSetRegion,
   useSetEnableI18n,
@@ -81,5 +80,5 @@ export type {
   RuntimeTranslationOptions,
   RenderPipeline,
   RenderPreparedT,
-  InitializeGTSPAParams,
+  GTProviderProps,
 };

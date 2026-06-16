@@ -1,13 +1,35 @@
 import { StatusBar } from 'expo-status-bar';
-import { useLocale, useSetLocale, T, Var, Num, t } from 'gt-react-native';
+import {
+  type GTProviderProps,
+  useLocale,
+  useSetLocale,
+  useGT,
+  GTProvider,
+  T,
+  Var,
+  Num,
+} from 'gt-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import gtConfig from './gt.config.json';
+import esTranslations from './src/_gt/es.json';
+import frTranslations from './src/_gt/fr.json';
+
+const translations = {
+  es: esTranslations,
+  fr: frTranslations,
+} as GTProviderProps['translations'];
 
 export default function App() {
   return (
     <>
-      <LocaleDemo />
+      <GTProvider
+        defaultLocale={gtConfig.defaultLocale}
+        locales={gtConfig.locales}
+        translations={translations}
+      >
+        <LocaleDemo />
+      </GTProvider>
       <StatusBar style='auto' />
     </>
   );
@@ -16,8 +38,9 @@ export default function App() {
 function LocaleDemo() {
   const locale = useLocale();
   const setLocale = useSetLocale();
+  const gt = useGT();
   const locales = [gtConfig.defaultLocale, ...gtConfig.locales];
-  const tMessage = t('This line is translated with t().', {
+  const gtMessage = gt('This line is translated with gt().', {
     $_hash: 'tMessage',
   });
 
@@ -59,7 +82,7 @@ function LocaleDemo() {
           <Var name='library'>gt-react-native</Var>.
         </Text>
       </T>
-      <Text style={styles.smallMessage}>{tMessage}</Text>
+      <Text style={styles.smallMessage}>{gtMessage}</Text>
       <T _hash='countMessage'>
         <Text style={styles.smallMessage}>
           The app has <Num name='count'>{3}</Num> translated examples.

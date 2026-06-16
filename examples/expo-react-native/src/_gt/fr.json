@@ -18,7 +18,7 @@
       "."
     ]
   },
-  "tMessage": "Cette ligne est traduite avec t().",
+  "tMessage": "Cette ligne est traduite avec gt().",
   "countMessage": {
     "t": "Text",
     "i": 1,
