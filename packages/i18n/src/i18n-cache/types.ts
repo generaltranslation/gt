@@ -82,6 +82,7 @@ export type LocaleResolverConfig = {
  */
 export interface ReadonlyConditionStoreInterface {
   getLocale(): string;
+  getRegion(): string | undefined;
   getEnableI18n(): boolean;
 
   // --- no-op methods --- //
@@ -92,6 +93,7 @@ export interface ReadonlyConditionStoreInterface {
    * setLocale('es-ES'); // -> cannot invoke undefined function
    */
   setLocale(locale: string): void;
+  setRegion(region: string | undefined): void;
   setEnableI18n(enabled: boolean): void;
 }
 
@@ -100,6 +102,7 @@ export interface ReadonlyConditionStoreInterface {
  */
 export interface WritableConditionStoreInterface extends ReadonlyConditionStoreInterface {
   setLocale(locale: string): void;
+  setRegion(region: string | undefined): void;
   setEnableI18n(enabled: boolean): void;
 }
 
@@ -115,6 +118,7 @@ export interface ScopedConditionStoreInterface extends ReadonlyConditionStoreInt
  */
 export interface AsyncReadonlyConditionStoreInterface {
   getLocale(): Promise<string>;
+  getRegion(): Promise<string | undefined>;
   getEnableI18n(): Promise<boolean>;
 }
 

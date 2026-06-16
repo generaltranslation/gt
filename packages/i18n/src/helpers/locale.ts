@@ -14,6 +14,18 @@ export function getLocale() {
 }
 
 /**
+ * Get the current region
+ * @returns The current region, or undefined if no region is set
+ *
+ * @example
+ * const region = getRegion();
+ * console.log(region); // 'US' or undefined
+ */
+export function getRegion() {
+  return getWritableConditionStore().getRegion();
+}
+
+/**
  * Get the configured locales
  * @returns The configured locales
  *

@@ -10,7 +10,10 @@ import {
   type AsyncConditionStoreParams,
 } from '../condition-store/AsyncConditionStore';
 import { setAsyncConditionStore } from '../condition-store/AsyncConditionStore';
-import { customGetLocaleUnresolvedWarning } from '../errors/createErrors';
+import {
+  customGetLocaleUnresolvedWarning,
+  customGetRegionUnresolvedWarning,
+} from '../errors/createErrors';
 
 /**
  * Initialize GT for Next.js
@@ -50,6 +53,7 @@ function getAsyncConditionStoreParams(): AsyncConditionStoreParams {
     cookieName: privateConfig.headersAndCookies?.localeCookieName,
     ignorePreferredLanguages: privateConfig.ignoreBrowserLocales,
     getLocale: resolveGetLocale(),
+    getRegion: resolveGetRegion(),
   };
 }
 
@@ -72,4 +76,25 @@ function resolveGetLocale(): (() => Promise<string>) | undefined {
     }
   }
   console.warn(customGetLocaleUnresolvedWarning);
+}
+
+function resolveGetRegion(): (() => Promise<string | undefined>) | undefined {
+  const isCustomGetRegionEnabled =
+    process.env._GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED === 'true';
+  if (!isCustomGetRegionEnabled) return undefined;
+  const module: unknown = require('gt-next/internal/_getRegion');
+
+  if (typeof module === 'function') {
+    return module as () => Promise<string | undefined>;
+  } else if (typeof module === 'object' && module !== null) {
+    if ('default' in module && typeof module.default === 'function') {
+      return module.default as () => Promise<string | undefined>;
+    } else if (
+      'getRegion' in module &&
+      typeof module.getRegion === 'function'
+    ) {
+      return module.getRegion as () => Promise<string | undefined>;
+    }
+  }
+  console.warn(customGetRegionUnresolvedWarning);
 }
