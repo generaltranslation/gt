@@ -8,6 +8,7 @@ export type {
   ReadonlyConditionStoreInterface,
   WritableConditionStoreInterface,
   ScopedConditionStoreInterface,
+  AsyncReadonlyConditionStoreInterface,
   Dictionary,
   DictionaryLoader,
   DictionaryConfig,

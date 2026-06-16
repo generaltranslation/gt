@@ -1,5 +1,8 @@
 'use client';
 
+import { initializeGT } from './setup/initGT';
+initializeGT();
+
 import {
   Var,
   Num,
@@ -10,16 +13,20 @@ import {
   T,
   Branch,
   Plural,
+  LocaleSelector,
+  GTProvider,
+  useSetLocale,
+  useLocaleSelector,
   useGT,
   useTranslations,
   useLocale,
   useLocales,
   useDefaultLocale,
+  useMessages,
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
   useVersionId,
-  useMessages,
   msg,
   decodeMsg,
   decodeOptions,
@@ -28,27 +35,18 @@ import {
   decodeVars,
   mFallback,
   gtFallback,
-} from 'gt-react/client';
-import {
-  gtProviderUseClientError,
-  txUseClientError,
-} from './errors/createErrors';
+  getTranslationsSnapshot,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
+} from 'gt-react/context';
 import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-export { LocaleSelector } from 'gt-react/context';
-
-// Mock <GTProvider> which throws an error
-export function GTProvider() {
-  throw new Error(gtProviderUseClientError);
-}
-
-// Mock <Tx> which throws an error
-export function Tx() {
-  throw new Error(txUseClientError);
-}
 
 export {
   T,
@@ -60,6 +58,10 @@ export {
   Derive,
   Branch,
   Plural,
+  GTProvider,
+  LocaleSelector,
+  useSetLocale,
+  useLocaleSelector,
   useGT,
   useTranslations,
   useLocale,
@@ -78,6 +80,12 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+  getTranslationsSnapshot,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
 };
 export type {
   DictionaryTranslationOptions,

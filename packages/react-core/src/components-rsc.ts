@@ -3,6 +3,7 @@
 // TODO: replace these placeholder exports with dedicated RSC implementations
 // as each component is split into shared logic plus runtime-specific wrappers.
 
+// ===== Components ===== //
 export { Branch, GtInternalBranch } from './components/branches/Branch';
 export { Derive, GtInternalDerive } from './components/derivation/Derive';
 export { GtInternalVar, Var } from './components/variables/Var';
@@ -27,6 +28,7 @@ export {
   RscRelativeTime as RelativeTime,
 } from './components/variables/RelativeTime.rsc';
 export { RscT as T } from './components/translation/T.rsc';
+export { RscTx as Tx } from './components/translation/Tx.rsc';
 
 // ===== Functions ===== //
 export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';

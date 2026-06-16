@@ -1,5 +1,5 @@
 'use client';
-import { useSetLocale, useLocale, useLocales } from 'gt-next/client';
+import { useSetLocale, useLocale, useLocales } from 'gt-next';
 
 export default function LocaleSwitcher() {
   const setLocale = useSetLocale();

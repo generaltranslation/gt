@@ -1,4 +1,4 @@
-const GT_MODULES = ['gt-next', 'gt-next/client', 'gt-next/server'];
+const GT_MODULES = ['gt-next', 'gt-next/server'];
 
 export type AstNode = {
   type: string;

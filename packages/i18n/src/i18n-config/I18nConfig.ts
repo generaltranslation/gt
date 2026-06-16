@@ -4,7 +4,10 @@ import {
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { GT } from 'generaltranslation';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  defaultRuntimeApiUrl,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { validateI18nConfigParams } from './validation';
@@ -126,6 +129,17 @@ export class I18nConfig extends LocaleConfig {
       this.runtimeConfig.runtimeUrl !== null &&
       this.runtimeConfig.runtimeUrl !== '' &&
       getRuntimeEnvironment() === 'development'
+    );
+  }
+
+  /**
+   * TODO: also check the cache url too, really this can be more specific
+   */
+  isGTServicesEnabled(): boolean {
+    return (
+      !!this.runtimeConfig.projectId &&
+      (this.runtimeConfig.runtimeUrl === undefined ||
+        this.runtimeConfig.runtimeUrl === defaultRuntimeApiUrl)
     );
   }
 

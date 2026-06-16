@@ -174,7 +174,10 @@ function outputSpecifier({
     rootPath,
     sourceFile: targetFile,
   });
-  const specifier = relative(dirname(importerOutput), targetOutput);
+  const specifier = relative(dirname(importerOutput), targetOutput).replace(
+    /\\/g,
+    '/'
+  );
   return specifier.startsWith('.') ? specifier : `./${specifier}`;
 }
 

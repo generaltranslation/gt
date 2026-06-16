@@ -1,16 +1,8 @@
-import type { ServerGTProvider } from './provider/ServerGTProvider';
+'use client';
 
-/**
- * Wrap GTProvider around the content that you want to translate
- */
-export const GTProvider: typeof ServerGTProvider = () => {
-  throw new Error(
-    'gt-react: You have imported a function from the dedicated types entrypoint. If you are seeing this error, it means something has gone wrong.'
-  );
-};
+import type { ReactNode } from 'react';
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
-export { LocaleSelector } from './components/LocaleSelector';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
 export {
@@ -19,11 +11,22 @@ export {
   defaultRegionCookieName,
 } from './cookie-names';
 
-/**
- * TODO: throw error if any of these functions are called
- */
+type TxProps = Record<string, ReactNode> & {
+  children: ReactNode;
+  context?: string;
+  locale?: string;
+  maxChars?: number;
+  $context?: string;
+  $locale?: string;
+  $maxChars?: number;
+};
+
+// ===== Components ===== //
+export { LocaleSelector } from './components/LocaleSelector';
+export { BrowserGTProvider as GTProvider } from './provider/BrowserGTProvider';
+
+// ===== Components ===== //
 export {
-  // ===== Components ===== //
   Branch,
   Plural,
   Derive,
@@ -34,18 +37,31 @@ export {
   RelativeTime,
   Var,
   Num,
-  // ===== Hooks ===== //
+} from '@generaltranslation/react-core/components';
+
+export async function Tx(_props: TxProps): Promise<ReactNode> {
+  throw new Error('Tx is only supported via RSC');
+}
+
+// ===== Hooks ===== //
+export {
   useLocale,
   useCustomMapping,
   useDefaultLocale,
   useEnableI18n,
   useLocales,
-  getFormatLocales,
   useFormatLocales,
   useGT,
   useMessages,
   useTranslations,
-  // ===== Functions ===== //
+  useLocaleDirection,
+  useVersionId,
+  useGTClass,
+  useLocaleProperties,
+} from '@generaltranslation/react-core/hooks';
+
+// ===== Functions ===== //
+export {
   msg,
   decodeMsg,
   decodeOptions,
@@ -54,15 +70,36 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+  getFormatLocales,
+  initializeGT,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
+} from '@generaltranslation/react-core/pure';
+
+// TODO: move these over to pure
+export {
   getTranslationsSnapshot,
-  createRenderPipeline,
-  t,
-  // ===== Setup ===== //
-  internalInitializeGTSRA as initializeGT,
   getReactI18nCache,
   setReactI18nCache,
+  createRenderPipeline,
+  t,
 } from '@generaltranslation/react-core/context';
 
+export type {
+  RenderPipeline,
+  RenderPreparedT,
+} from '@generaltranslation/react-core/context';
+
+// ===== Singletons ===== //
+export {
+  ReactI18nCache,
+  type ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';
+
+// ===== Types ===== //
 export type {
   CurrencyProps,
   DateTimeProps,
@@ -80,7 +117,4 @@ export type {
   ResolvedRelativeTimeProps,
 } from '@generaltranslation/react-core/components-rsc';
 
-export type {
-  RenderPipeline,
-  RenderPreparedT,
-} from '@generaltranslation/react-core/context';
+export type { SharedGTProviderProps } from './provider/GTProviderProps';

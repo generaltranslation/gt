@@ -294,19 +294,6 @@ ruleTester.run('no-dynamic-jsx', noDynamicJsx, {
     // Imports from different GT modules
     {
       code: `
-        import { T } from 'gt-next/client';
-        <T>Hello {userName}!</T>
-      `,
-      errors: [
-        {
-          messageId: 'dynamicJsx',
-          type: 'JSXExpressionContainer',
-        },
-      ],
-    },
-
-    {
-      code: `
         import { T } from 'gt-next/server';
         <T>Hello {userName}!</T>
       `,

@@ -30,12 +30,5 @@
     "limit": "50 kB",
     "brotli": true,
     "ignore": ["react", "react-dom"]
-  },
-  {
-    "name": "gt-next/client",
-    "path": "packages/next/dist/client.js",
-    "limit": "55 kB",
-    "brotli": true,
-    "ignore": ["next", "react", "react-dom", "server-only"]
   }
 ]

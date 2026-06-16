@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 // SSR/context-capable React runtime surface. This entrypoint may import hooks,
 // providers, and context modules, so it must be consumed as a client boundary by
 // React Server Component frameworks.
@@ -13,12 +15,22 @@ export {
   defaultRegionCookieName,
 } from './cookie-names';
 
+type TxProps = Record<string, ReactNode> & {
+  children: ReactNode;
+  context?: string;
+  locale?: string;
+  maxChars?: number;
+  $context?: string;
+  $locale?: string;
+  $maxChars?: number;
+};
+
 // ===== Components ===== //
 export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
 export { LocaleSelector } from './components/LocaleSelector';
 
+// ===== Components ===== //
 export {
-  // ===== Components ===== //
   Branch,
   Plural,
   Derive,
@@ -29,18 +41,31 @@ export {
   RelativeTime,
   Var,
   Num,
-  // ===== Hooks ===== //
+} from '@generaltranslation/react-core/components';
+
+export async function Tx(_props: TxProps): Promise<ReactNode> {
+  throw new Error('Tx is only supported via RSC');
+}
+
+// ===== Hooks ===== //
+export {
   useLocale,
   useCustomMapping,
   useDefaultLocale,
   useEnableI18n,
   useLocales,
-  getFormatLocales,
   useFormatLocales,
   useGT,
   useMessages,
   useTranslations,
-  // ===== Functions ===== //
+  useLocaleDirection,
+  useVersionId,
+  useGTClass,
+  useLocaleProperties,
+} from '@generaltranslation/react-core/hooks';
+
+// ===== Functions ===== //
+export {
   msg,
   decodeMsg,
   decodeOptions,
@@ -49,12 +74,21 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+  getFormatLocales,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
+} from '@generaltranslation/react-core/pure';
+
+export {
   getTranslationsSnapshot,
-  getReactI18nCache,
-  setReactI18nCache,
   createRenderPipeline,
   t,
   // ===== Setup ===== //
+  getReactI18nCache,
+  setReactI18nCache,
   internalInitializeGTSRA as initializeGT,
   internalInitializeGTSPA,
 } from '@generaltranslation/react-core/context';
@@ -63,3 +97,11 @@ export type {
   RenderPipeline,
   RenderPreparedT,
 } from '@generaltranslation/react-core/context';
+
+export type { SharedGTProviderProps } from './provider/GTProviderProps';
+
+// ===== Singletons ===== //
+export {
+  ReactI18nCache,
+  type ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';

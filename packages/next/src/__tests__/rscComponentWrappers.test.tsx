@@ -16,6 +16,11 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     Derive: vi.fn(),
     derive: vi.fn(),
     gtFallback: vi.fn(),
+    getDefaultLocale: vi.fn(),
+    getGTClass: vi.fn(),
+    getLocaleProperties: vi.fn(),
+    getLocales: vi.fn(),
+    getVersionId: vi.fn(),
     LocaleSelector: vi.fn(),
     mFallback: vi.fn(),
     msg: vi.fn(),
@@ -23,6 +28,11 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     Plural: vi.fn(),
     RelativeTime: vi.fn(),
     RscT: vi.fn(),
+    useDefaultLocale: vi.fn(),
+    useGTClass: vi.fn(),
+    useLocaleProperties: vi.fn(),
+    useLocales: vi.fn(),
+    useVersionId: vi.fn(),
     Var: vi.fn(),
   },
   mockGetRequestConditions: vi.fn(),
@@ -30,6 +40,16 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
 
 vi.mock('../request/getRequestConditions', () => ({
   getRequestConditions: mockGetRequestConditions,
+}));
+
+vi.mock('server-only', () => ({}));
+
+vi.mock('../setup/initGT.rsc', () => ({
+  initializeGT: vi.fn(),
+}));
+
+vi.mock('../provider/GTProvider', () => ({
+  GTProvider: vi.fn(),
 }));
 
 vi.mock('gt-react/context', () => mockComponents);

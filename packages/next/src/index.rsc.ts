@@ -1,3 +1,10 @@
+import 'server-only';
+
+import { initializeGT } from './setup/initGT.rsc';
+initializeGT();
+
+// ===== Overrides ===== //
+import { GTProvider } from './provider/GTProvider';
 import { Var } from './variables/Var';
 import { Num } from './variables/Num';
 import { Currency } from './variables/Currency';
@@ -6,12 +13,20 @@ import { RelativeTime } from './variables/RelativeTime';
 import { T } from './server-dir/buildtime/T';
 import { Branch } from './branches/Branch';
 import { Plural } from './branches/Plural';
-import { GTProvider } from './provider/GTProvider';
-import { Tx } from './server-dir/runtime/_Tx';
-import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
 import { useLocaleDirection } from './request/getLocaleDirection';
-import { getI18NConfig } from './config-dir/getI18NConfig';
+
+export {
+  useTranslations,
+  useMessages,
+  useGT,
+} from './server-dir/buildtime/strings';
+
+// ===== Client Boundary ===== //
+
+export { Client_LocaleSelector as LocaleSelector } from './utils/client-boundary';
+
+// ===== gt-react ===== //
 import {
   msg,
   decodeMsg,
@@ -22,47 +37,38 @@ import {
   Derive,
   mFallback,
   gtFallback,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
+  // ----- hooks ----- //
+  useGTClass,
+  useLocaleProperties,
+  useLocales,
+  useDefaultLocale,
+  useVersionId,
 } from 'gt-react/context';
 import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-import { GT } from 'generaltranslation';
-import {
-  useMessages,
-  useGT,
-} from './server-dir/buildtime/getTranslationFunction';
-import type { LocaleProperties } from '@generaltranslation/format/types';
-export { LocaleSelector } from 'gt-react/context';
+import { getTranslationsSnapshotRscError } from './errors/createErrors';
 
-export function useGTClass() {
-  return getI18NConfig().getGTClass();
-}
+// ===== other ===== //
 
-export function useLocaleProperties(locale: string): LocaleProperties {
-  return (useGTClass() as GT).getLocaleProperties(locale);
-}
-
-export function useLocales() {
-  return getI18NConfig().getLocales();
-}
-
-export function useDefaultLocale() {
-  return getI18NConfig().getDefaultLocale();
-}
-
-export function useVersionId() {
-  return getI18NConfig().getVersionId();
+/**
+ * Placeholder for getTranslationsSnapshot()
+ * This function is for next-pages use, not next-app use
+ */
+export function getTranslationsSnapshot(_: string) {
+  throw new Error(getTranslationsSnapshotRscError);
 }
 
 export {
   GTProvider,
   T,
-  /**
-   * @deprecated import from 'gt-next/server' instead
-   */
-  Tx,
   Var,
   Num,
   Currency,
@@ -71,9 +77,6 @@ export {
   Derive,
   Branch,
   Plural,
-  useGT,
-  useTranslations,
-  useMessages,
   useLocale,
   useLocaleDirection,
   msg,
@@ -84,6 +87,16 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+  getDefaultLocale,
+  getGTClass,
+  getLocaleProperties,
+  getLocales,
+  getVersionId,
+  useGTClass,
+  useLocaleProperties,
+  useLocales,
+  useDefaultLocale,
+  useVersionId,
 };
 export type {
   DictionaryTranslationOptions,
