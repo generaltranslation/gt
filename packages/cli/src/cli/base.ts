@@ -26,7 +26,6 @@ import {
   TranslateFlags,
   SharedFlags,
 } from '../types/index.js';
-import { DataFormat } from '../types/data.js';
 import { generateSettings } from '../config/generateSettings.js';
 import chalk from 'chalk';
 import { FILE_EXT_TO_EXT_LABEL } from '../formats/files/supportedFiles.js';
@@ -519,37 +518,12 @@ export class BaseCLI {
   protected async handleUploadCommand(
     settings: Settings & UploadOptions
   ): Promise<void> {
-    // dataFormat for JSONs
-    let dataFormat: DataFormat;
-    if (this.library === 'next-intl') {
-      dataFormat = 'ICU';
-    } else if (this.library === 'i18next') {
-      if (this.additionalModules.includes('i18next-icu')) {
-        dataFormat = 'ICU';
-      } else {
-        dataFormat = 'I18NEXT';
-      }
-    } else {
-      dataFormat = 'JSX';
-    }
-
     if (!settings.files) {
       return;
     }
-    const {
-      resolvedPaths: sourceFiles,
-      placeholderPaths,
-      transformPaths,
-    } = settings.files;
 
     // Process all file types at once with a single call
-    await upload(
-      sourceFiles,
-      placeholderPaths,
-      transformPaths,
-      dataFormat,
-      settings
-    );
+    await upload(settings);
   }
 
   // Wizard for configuring gt.config.json

@@ -44,6 +44,12 @@ export async function handleStage(
     return null;
   }
 
+  if (allFiles.length === 0 && !settings.publish) {
+    logger.error(
+      'No files to translate were found. Check your configuration and try again.'
+    );
+  }
+
   // Send translations to General Translation
   let fileVersionData: FileTranslationData | undefined;
   let jobData: EnqueueFilesResult | undefined;
