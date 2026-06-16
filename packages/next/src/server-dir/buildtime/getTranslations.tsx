@@ -45,6 +45,7 @@ import type {
   FormatVariables,
   StringFormat,
 } from '@generaltranslation/format/types';
+import { getDefaultStringFormat } from '@generaltranslation/format/internal';
 
 /**
  * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
@@ -143,6 +144,7 @@ export async function getTranslations(id?: string): Promise<
     // Extract format from options
     const { $format: format, ...variableOptions } =
       options as DictionaryTranslationOptions & { $format?: StringFormat };
+    const dataFormat = format ?? getDefaultStringFormat();
     const maxChars =
       metadata?.$maxChars ??
       (typeof options.$maxChars === 'number' ? options.$maxChars : undefined);
@@ -166,7 +168,7 @@ export async function getTranslations(id?: string): Promise<
               ...declaredVars,
               [VAR_IDENTIFIER]: 'other',
             },
-            dataFormat: format,
+            dataFormat,
           }
         );
         const cutoffMessage = gt.formatCutoff(formattedMessage, {
@@ -245,13 +247,13 @@ export async function getTranslations(id?: string): Promise<
     const getHash = () => {
       if (metadata?.$_hash) return metadata.$_hash;
       const hash = hashSource({
-        source: indexVars(entry),
+        source: dataFormat === 'ICU' ? indexVars(entry) : entry,
         ...(metadata?.$context && { context: metadata.$context }),
         ...(metadata?.$maxChars != null && {
           maxChars: Math.abs(metadata.$maxChars),
         }),
         id,
-        dataFormat: 'ICU',
+        dataFormat,
       });
       // Inject hash if not there yet
       metadata = { ...metadata, $_hash: hash };

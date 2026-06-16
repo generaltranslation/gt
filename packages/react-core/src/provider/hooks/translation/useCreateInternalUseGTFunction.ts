@@ -6,6 +6,7 @@ import {
   _Message,
 } from '../../../types-dir/types';
 import type { StringFormat } from '@generaltranslation/format/types';
+import { getDefaultStringFormat } from '@generaltranslation/format/internal';
 import { TranslateIcuCallback } from '../../../types-dir/runtime';
 import { GT } from 'generaltranslation';
 import {
@@ -152,6 +153,7 @@ export default function useCreateInternalUseGTFunction({
     } = options;
     const format =
       typeof rawFormat === 'string' ? (rawFormat as StringFormat) : undefined;
+    const resolvedFormat = format ?? getDefaultStringFormat();
 
     // Update renderContent to use actual variables
     const renderMessage = (
@@ -173,11 +175,11 @@ export default function useCreateInternalUseGTFunction({
     // Calculate hash
     const calculateHash = () =>
       hashSource({
-        source: indexVars(message),
+        source: resolvedFormat === 'ICU' ? indexVars(message) : message,
         ...(context && { context }),
         ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         ...(id && { id }),
-        dataFormat: format || 'ICU',
+        dataFormat: resolvedFormat,
       });
 
     return {

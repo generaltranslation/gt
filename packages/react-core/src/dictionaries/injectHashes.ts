@@ -4,6 +4,7 @@ import { Dictionary } from '../types-dir/types';
 import getEntryAndMetadata from './getEntryAndMetadata';
 import { set } from './indexDict';
 import { indexVars } from 'generaltranslation/internal';
+import { getDefaultStringFormat } from '@generaltranslation/format/internal';
 
 /**
  * @description Given a dictionary, adds hashes to all dictionary entries
@@ -22,14 +23,15 @@ export function injectHashes(
       let { entry, metadata } = getEntryAndMetadata(value);
       if (!metadata?.$_hash) {
         metadata ||= {};
+        const dataFormat = metadata.$format ?? getDefaultStringFormat();
         metadata.$_hash = hashSource({
-          source: indexVars(entry),
+          source: dataFormat === 'ICU' ? indexVars(entry) : entry,
           ...(metadata?.$context && { context: metadata.$context }),
           ...(metadata?.$maxChars != null && {
             maxChars: Math.abs(metadata.$maxChars),
           }),
           id: wholeId,
-          dataFormat: 'ICU',
+          dataFormat,
         });
         set(dictionary, key, [entry, metadata]);
         updateDictionary = true;

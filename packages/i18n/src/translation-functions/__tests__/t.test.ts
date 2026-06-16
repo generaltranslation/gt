@@ -11,6 +11,11 @@ import { t } from '../t';
 describe('t', () => {
   afterEach(() => {
     setConditionStore({ getLocale: () => 'en' });
+    delete (
+      globalThis as typeof globalThis & {
+        __GT_DEFAULT_STRING_FORMAT__?: unknown;
+      }
+    ).__GT_DEFAULT_STRING_FORMAT__;
   });
 
   it('works without an explicit locale', () => {
@@ -39,6 +44,29 @@ describe('t', () => {
 
     setI18nManager(manager);
     setConditionStore(conditionStore);
+    await manager.loadTranslations('fr');
+
+    expect(t(message, { name: 'Alice' })).toBe('Bonjour Alice !');
+  });
+
+  it('uses the global default string format when $format is omitted', async () => {
+    const message = 'Hello {{name}}!';
+    const translatedMessage = 'Bonjour {{name}} !';
+    (
+      globalThis as typeof globalThis & {
+        __GT_DEFAULT_STRING_FORMAT__?: unknown;
+      }
+    ).__GT_DEFAULT_STRING_FORMAT__ = 'I18NEXT';
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      loadTranslations: vi.fn().mockResolvedValue({
+        [hashMessage(message, { $format: 'I18NEXT' })]: translatedMessage,
+      }),
+    });
+
+    setI18nManager(manager);
+    setConditionStore({ getLocale: () => 'fr' });
     await manager.loadTranslations('fr');
 
     expect(t(message, { name: 'Alice' })).toBe('Bonjour Alice !');

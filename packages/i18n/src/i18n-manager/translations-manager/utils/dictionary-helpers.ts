@@ -9,6 +9,8 @@ import type {
   DictionaryLookupOptions,
   DictionaryOptions,
 } from '../../../translation-functions/types/options';
+import type { StringFormat } from '@generaltranslation/format/types';
+import { getDefaultStringFormat } from '@generaltranslation/format/internal';
 
 function getDictionaryPath(id: DictionaryPath): string[] {
   const path = id ? id.split('.') : [];
@@ -110,12 +112,13 @@ export function getDictionaryValue(value: DictionaryEntry): DictionaryValue {
 }
 
 export function resolveDictionaryLookupOptions(
-  options: DictionaryEntry['options']
+  options: DictionaryEntry['options'],
+  defaultFormat: StringFormat = getDefaultStringFormat()
 ): DictionaryLookupOptions {
   const { $format, context, ...rest } = options;
   return {
     ...rest,
-    $format: isStringFormat($format) ? $format : 'ICU',
+    $format: isStringFormat($format) ? $format : defaultFormat,
     ...(rest.$context === undefined &&
       typeof context === 'string' && { $context: context }),
   };

@@ -12,6 +12,7 @@ import type {
   FormatVariables,
   StringFormat,
 } from '@generaltranslation/format/types';
+import { getDefaultStringFormat } from '@generaltranslation/format/internal';
 
 type TxOptions = FormatVariables & {
   $locale?: string;
@@ -109,13 +110,13 @@ export async function tx(
 
   // ----- CALCULATE HASH ----- //
 
+  const dataFormat = format ?? getDefaultStringFormat();
   const hash = hashSource({
-    source: format === 'ICU' ? indexVars(message) : message,
+    source: dataFormat === 'ICU' ? indexVars(message) : message,
     ...(context && { context }),
     ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
-    dataFormat: format || 'ICU',
+    dataFormat,
   });
-  const dataFormat = format || 'ICU';
   const source = dataFormat === 'ICU' ? indexVars(message) : message;
   const lookupOptions = {
     ...formatVariables,

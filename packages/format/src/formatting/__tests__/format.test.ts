@@ -1,8 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 import { formatMessage } from '../../core';
 import { _formatListToParts } from '../format';
 
 describe('formatMessage i18next', () => {
+  afterEach(() => {
+    delete (
+      globalThis as typeof globalThis & {
+        __GT_DEFAULT_STRING_FORMAT__?: unknown;
+      }
+    ).__GT_DEFAULT_STRING_FORMAT__;
+  });
+
   it('interpolates i18next variables', () => {
     expect(
       formatMessage('Hello {{ name }}', {
@@ -59,6 +67,18 @@ describe('formatMessage i18next', () => {
         dataFormat: 'I18NEXT',
       })
     ).toBe('Hello {{name}}');
+  });
+
+  it('uses the global default string format when dataFormat is omitted', () => {
+    (
+      globalThis as typeof globalThis & {
+        __GT_DEFAULT_STRING_FORMAT__?: unknown;
+      }
+    ).__GT_DEFAULT_STRING_FORMAT__ = 'I18NEXT';
+
+    expect(
+      formatMessage('Hello {{name}}', { variables: { name: 'Ada' } })
+    ).toBe('Hello Ada');
   });
 });
 

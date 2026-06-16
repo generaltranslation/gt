@@ -3,6 +3,7 @@ import type {
   InlineTranslationOptions,
 } from '../types/options';
 import { formatMessage } from '@generaltranslation/format';
+import { getDefaultStringFormat } from '@generaltranslation/format/internal';
 import {
   encode,
   libraryDefaultLocale,
@@ -75,6 +76,7 @@ export function msg(
 
   // Extract variables
   const variables = extractVariables(options);
+  const dataFormat = options.$format ?? getDefaultStringFormat();
 
   // Interpolate string
   let interpolatedString: string = message;
@@ -85,7 +87,7 @@ export function msg(
         ...variables,
         [VAR_IDENTIFIER]: 'other',
       },
-      dataFormat: options.$format ?? 'ICU',
+      dataFormat,
     });
   } catch {
     logger.warn(createInterpolationFailureMessage(message));
@@ -97,7 +99,7 @@ export function msg(
   const $_hash =
     options.$_hash ||
     hashMessage(message, {
-      $format: 'ICU',
+      $format: dataFormat,
       ...options,
     });
 

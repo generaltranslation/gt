@@ -7,6 +7,7 @@ import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
 import type { StringFormat } from '@generaltranslation/format/types';
+import { getDefaultStringFormat } from '@generaltranslation/format/internal';
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
@@ -44,10 +45,11 @@ export async function getGT(): Promise<GTFunctionType> {
     options: InlineTranslationOptions = {}
   ) => {
     const targetLocale = options.$locale ?? locale;
+    const defaultStringFormat = getDefaultStringFormat();
     const lookupOptions = createLookupOptions<StringFormat>(
       targetLocale,
       options,
-      'ICU'
+      defaultStringFormat
     );
 
     // Lookup translation

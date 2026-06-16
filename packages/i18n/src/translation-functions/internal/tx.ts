@@ -1,7 +1,10 @@
 import { RuntimeTranslationOptions } from '../types/options';
 import type { StringFormat } from '@generaltranslation/format/types';
+import { getDefaultStringFormat } from '@generaltranslation/format/internal';
 import { resolveStringContentWithRuntimeFallback } from './helpers';
-import { getCurrentLocale } from '../../i18n-manager/singleton-operations';
+import {
+  getCurrentLocale,
+} from '../../i18n-manager/singleton-operations';
 
 type RuntimeTranslationOptionsWithFormat = Omit<
   RuntimeTranslationOptions,
@@ -30,8 +33,11 @@ export async function tx(
 ): Promise<string> {
   const locale =
     typeof options.$locale === 'string' ? options.$locale : getCurrentLocale();
+  const defaultStringFormat = getDefaultStringFormat();
   return resolveStringContentWithRuntimeFallback(locale, content, {
-    $format: 'STRING',
     ...options,
+    $format:
+      options.$format ??
+      (defaultStringFormat === 'ICU' ? 'STRING' : defaultStringFormat),
   });
 }
