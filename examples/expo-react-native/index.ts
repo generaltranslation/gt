@@ -1,21 +1,35 @@
 import { registerRootComponent } from 'expo';
+import { createElement, Suspense, use } from 'react';
 import { getLocaleFromNativeStore, initializeGTSPA } from 'gt-react-native';
+import type { ComponentType } from 'react';
 
 import gtConfig from './gt.config.json';
 import { reloadRuntime } from './runtimeReload';
 
-void bootstrap();
+const main = bootstrap();
 
 async function bootstrap() {
   await initializeGTSPA({
-    ...gtConfig,
+    defaultLocale: gtConfig.defaultLocale,
+    locales: gtConfig.locales,
     locale: getLocaleFromNativeStore() ?? undefined,
     loadTranslations,
     reload: reloadRuntime,
   });
 
-  registerRootComponent((await import('./main')).default);
+  return (await import('./main')).default;
 }
+
+function Bootstrap() {
+  return createElement(Suspense, { fallback: null }, createElement(LoadedApp));
+}
+
+function LoadedApp() {
+  const Main = use(main) as ComponentType;
+  return createElement(Main);
+}
+
+registerRootComponent(Bootstrap);
 
 async function loadTranslations(locale: string) {
   switch (locale) {
