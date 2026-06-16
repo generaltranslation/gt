@@ -56,6 +56,7 @@ type InitResult = {
   maxChars?: number;
   _hash?: string;
   variables: FormatVariables;
+  dataFormat: StringFormat;
   calculateHash: () => string;
   renderMessage: RenderFn;
 };
@@ -138,6 +139,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
           variables,
           id,
           maxChars,
+          format,
         });
       }
 
@@ -193,6 +195,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       maxChars,
       _hash,
       variables: formatVariables,
+      dataFormat: resolvedFormat,
       calculateHash,
       renderMessage,
     };
@@ -223,19 +226,21 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     maxChars?: number;
     id?: string;
     hash: string;
+    dataFormat: StringFormat;
     renderMessage: RenderFn;
   }) {
-    const { source, context, maxChars, id, hash, renderMessage } = args;
+    const { source, context, maxChars, id, hash, dataFormat, renderMessage } =
+      args;
     try {
       I18NConfig.translate({
-        source: indexVars(source),
+        source: dataFormat === 'ICU' ? indexVars(source) : source,
         targetLocale: locale,
         options: {
           ...(context && { $context: context }),
           ...(maxChars != null && { $maxChars: maxChars }),
           ...(id && { $id: id }),
           $_hash: hash,
-          $format: 'ICU',
+          $format: dataFormat,
         },
       }).then((result) => {
         // eslint-disable-next-line no-console
@@ -273,7 +278,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       const init = initializeGT(message, options);
       if (!init) return;
 
-      const { id, context, maxChars, _hash, calculateHash } = init;
+      const { id, context, maxChars, _hash, dataFormat, calculateHash } = init;
       const { translationEntry, hash } = getTranslationData(
         calculateHash,
         id,
@@ -283,14 +288,14 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
 
       try {
         preloadedTranslations![hash] = (await I18NConfig.translate({
-          source: indexVars(message),
+          source: dataFormat === 'ICU' ? indexVars(message) : message,
           targetLocale: locale,
           options: {
             ...(context && { $context: context }),
             ...(maxChars != null && { $maxChars: maxChars }),
             ...(id && { $id: id }),
             $_hash: hash,
-            $format: 'ICU',
+            $format: dataFormat,
           },
         })) as string;
       } catch (error) {
@@ -305,7 +310,15 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   const gt = (message: string, options: GTStringOptions = {}): string => {
     const init = initializeGT(message, options);
     if (!init) return '';
-    const { id, context, maxChars, _hash, calculateHash, renderMessage } = init;
+    const {
+      id,
+      context,
+      maxChars,
+      _hash,
+      dataFormat,
+      calculateHash,
+      renderMessage,
+    } = init;
 
     // Early: no translation needed
     if (!translationRequired) return renderMessage(message, [defaultLocale]);
@@ -344,6 +357,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       maxChars,
       id,
       hash,
+      dataFormat,
       renderMessage,
     });
     return renderMessage(message, [defaultLocale]);
@@ -448,6 +462,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       maxChars,
       id,
       hash: $_hash,
+      dataFormat: resolvedFormat,
       renderMessage,
     });
 
