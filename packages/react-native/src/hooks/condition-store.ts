@@ -11,6 +11,15 @@ export function useSetLocale() {
 }
 
 /**
+ * Returns a function that sets the region and reloads the configured runtime.
+ */
+export function useSetRegion() {
+  return useCallback((region: string | undefined) => {
+    getReadonlyConditionStoreWithFallback().setRegion(region);
+  }, []);
+}
+
+/**
  * Returns a function that sets the enableI18n flag and reloads the configured runtime.
  */
 export function useSetEnableI18n() {

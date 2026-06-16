@@ -1,5 +1,11 @@
 import { initializeGTSPA } from './setup/initializeGTSPA';
-import { useSetLocale, useSetEnableI18n } from './hooks/condition-store';
+import {
+  useSetLocale,
+  useSetRegion,
+  useSetEnableI18n,
+} from './hooks/condition-store';
+import { useLocaleSelector, useRegionSelector } from './hooks/selectors';
+import { useLocaleDirection, useVersionId } from './hooks/utils';
 import { getLocaleFromNativeStore } from './utils/nativeStore';
 import type { InitializeGTSPAParams } from './setup/initializeGTSPA';
 
@@ -52,9 +58,20 @@ export {
 } from '@generaltranslation/react-core/context';
 
 export {
+  useRegion,
+  useGTClass,
+  useLocaleProperties,
+} from '@generaltranslation/react-core/hooks';
+
+export {
   initializeGTSPA,
   useSetLocale,
+  useSetRegion,
   useSetEnableI18n,
+  useLocaleSelector,
+  useRegionSelector,
+  useLocaleDirection,
+  useVersionId,
   getLocaleFromNativeStore,
 };
 
