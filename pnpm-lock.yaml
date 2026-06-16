@@ -1370,6 +1370,9 @@ importers:
       generaltranslation:
         specifier: workspace:*
         version: link:../core
+      gt-i18n:
+        specifier: workspace:*
+        version: link:../i18n
     devDependencies:
       '@babel/core':
         specifier: ^7.28.4
