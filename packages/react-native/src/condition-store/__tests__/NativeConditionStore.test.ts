@@ -37,19 +37,28 @@ describe('NativeConditionStore', () => {
     vi.restoreAllMocks();
   });
 
-  it('reads and writes locale through the native store', () => {
+  it('reads persisted locale through the native store', () => {
+    nativeStore.set(defaultLocaleStoreKey, 'fr');
+
+    const conditionStore = new NativeConditionStore({});
+
+    expect(conditionStore.getLocale()).toBe('fr');
+  });
+
+  it('persists explicit locale through the native store', () => {
     nativeStore.set(defaultLocaleStoreKey, 'fr');
 
     const conditionStore = new NativeConditionStore({
       locale: 'es',
     });
 
-    expect(conditionStore.getLocale()).toBe('fr');
-
-    conditionStore.setLocale('es');
-
     expect(nativeStore.get(defaultLocaleStoreKey)).toBe('es');
     expect(conditionStore.getLocale()).toBe('es');
+
+    conditionStore.setLocale('fr');
+
+    expect(nativeStore.get(defaultLocaleStoreKey)).toBe('fr');
+    expect(conditionStore.getLocale()).toBe('fr');
   });
 
   it('persists region and enableI18n through the native store', () => {

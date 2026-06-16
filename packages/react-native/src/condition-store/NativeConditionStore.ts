@@ -32,7 +32,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
       config.enableI18nStoreKey ?? defaultEnableI18nStoreKey;
 
     this.updateLocale(
-      getLocale({ locale: config.locale, localeStoreKey: this.localeStoreKey })
+      config.locale ?? getLocale({ localeStoreKey: this.localeStoreKey })
     );
     const region = getInitialRegion(config, this.regionStoreKey);
     if (region !== undefined) {

@@ -1,6 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
 import {
   type GTProviderProps,
+  getLocale,
+  getTranslationsSnapshot,
   useLocale,
   useGT,
   GTProvider,
@@ -8,25 +10,41 @@ import {
   Var,
   Num,
 } from 'gt-react-native';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import gtConfig from './gt.config.json';
 
-type AppProps = {
+type AppSnapshot = {
   locale: string;
   translations: GTProviderProps['translations'];
-  onLocaleChange: (locale: string) => void;
 };
 
-export default function App({
-  locale,
-  translations,
-  onLocaleChange,
-}: AppProps) {
+export default function App() {
+  const [locale, setLocale] = useState(() => getLocale());
+  const [snapshot, setSnapshot] = useState<AppSnapshot | null>(null);
+
+  useEffect(() => {
+    let isActive = true;
+
+    void getTranslationsSnapshot(locale).then((translations) => {
+      if (!isActive) return;
+      setSnapshot({ locale, translations });
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [locale]);
+
+  if (snapshot?.locale !== locale) {
+    return <LoadingState />;
+  }
+
   return (
     <>
-      <GTProvider locale={locale} translations={translations}>
-        <LocaleDemo onLocaleChange={onLocaleChange} />
+      <GTProvider locale={locale} translations={snapshot.translations}>
+        <LocaleDemo onLocaleChange={setLocale} />
       </GTProvider>
       <StatusBar style='auto' />
     </>
@@ -93,7 +111,26 @@ function LocaleDemo({ onLocaleChange }: LocaleDemoProps) {
   );
 }
 
+function LoadingState() {
+  return (
+    <View style={styles.loadingContainer}>
+      <Text style={styles.loadingText}>Loading translations...</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#f7f7f2',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#374151',
+  },
   container: {
     flex: 1,
     alignItems: 'center',
