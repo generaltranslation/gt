@@ -25,6 +25,7 @@ import {
   condenseVars,
 } from 'generaltranslation/internal';
 import type { StringFormat } from '@generaltranslation/format/types';
+import { getDefaultStringFormat } from '@generaltranslation/format/internal';
 
 export default function useCreateInternalUseTranslationsFunction(
   gt: GT,
@@ -72,6 +73,7 @@ export default function useCreateInternalUseTranslationsFunction(
       // Extract format from options
       const { $format: format, ...variableOptions } =
         options as DictionaryTranslationOptions & { $format?: StringFormat };
+      const dataFormat = format ?? getDefaultStringFormat();
       const maxChars =
         metadata?.$maxChars ??
         (typeof options.$maxChars === 'number' ? options.$maxChars : undefined);
@@ -157,13 +159,13 @@ export default function useCreateInternalUseTranslationsFunction(
       let hash = '';
       const getHash = () =>
         hashSource({
-          source: indexVars(entry),
+          source: dataFormat === 'ICU' ? indexVars(entry) : entry,
           ...(metadata?.$context && { context: metadata.$context }),
           ...(metadata?.$maxChars != null && {
             maxChars: Math.abs(metadata.$maxChars),
           }),
           id,
-          dataFormat: 'ICU',
+          dataFormat,
         });
       if (!translationEntry) {
         hash = getHash();

@@ -3,6 +3,7 @@ import {
   resolveStringContent,
   resolveStringContentWithFallback,
 } from './helpers';
+import { getDefaultStringFormat } from '@generaltranslation/format/internal';
 
 /**
  * Synchronously resolve a translation for a given message and options
@@ -16,7 +17,10 @@ export function resolveTranslationSync(
   message: string,
   options: InlineTranslationOptions = {}
 ) {
-  return resolveStringContent(locale, message, { $format: 'ICU', ...options });
+  return resolveStringContent(locale, message, {
+    ...options,
+    $format: options.$format ?? getDefaultStringFormat(),
+  });
 }
 
 /**
@@ -32,7 +36,7 @@ export function resolveTranslationSyncWithFallback(
   options: InlineTranslationOptions = {}
 ) {
   return resolveStringContentWithFallback(locale, message, {
-    $format: 'ICU',
     ...options,
+    $format: options.$format ?? getDefaultStringFormat(),
   });
 }

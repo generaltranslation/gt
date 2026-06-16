@@ -17,6 +17,7 @@ describe('resolveTranslationSync', () => {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue('Bonjour {name} !'),
       getDefaultLocale: vi.fn().mockReturnValue('en'),
+      getDefaultStringFormat: vi.fn().mockReturnValue('ICU'),
     };
     vi.mocked(getI18nManager).mockReturnValue(
       mockManager as unknown as ReturnType<typeof getI18nManager>
@@ -43,6 +44,7 @@ describe('resolveTranslationSync', () => {
     const mockManager = {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue(undefined),
+      getDefaultStringFormat: vi.fn().mockReturnValue('ICU'),
     };
     vi.mocked(getI18nManager).mockReturnValue(
       mockManager as unknown as ReturnType<typeof getI18nManager>
@@ -62,6 +64,7 @@ describe('resolveTranslationSync', () => {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue('Translated'),
       getDefaultLocale: vi.fn().mockReturnValue('en'),
+      getDefaultStringFormat: vi.fn().mockReturnValue('ICU'),
     };
     vi.mocked(getI18nManager).mockReturnValue(
       mockManager as unknown as ReturnType<typeof getI18nManager>
@@ -96,6 +99,7 @@ describe('resolveTranslationSync', () => {
       getLocale: vi.fn().mockReturnValue('fr'),
       lookupTranslation: vi.fn().mockReturnValue('Translated'),
       getDefaultLocale: vi.fn().mockReturnValue('en'),
+      getDefaultStringFormat: vi.fn().mockReturnValue('ICU'),
     };
     vi.mocked(getI18nManager).mockReturnValue(
       mockManager as unknown as ReturnType<typeof getI18nManager>

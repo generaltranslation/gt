@@ -1,6 +1,7 @@
 import { getI18nManager } from '../../i18n-manager/singleton-operations';
 import { NormalizedLookupOptions, ResolutionOptions } from '../types/options';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
+import { getDefaultStringFormat } from '@generaltranslation/format/internal';
 import type {
   DataFormat,
   JsxChildren,
@@ -72,7 +73,11 @@ export function resolveStringContent(
   options: ResolutionOptions<StringFormat> = {}
 ): StringContent | undefined {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(locale, options, 'STRING');
+  const lookupOptions = createLookupOptions(
+    locale,
+    options,
+    getDefaultStringLookupFormat()
+  );
   const translation = i18nManager.lookupTranslation(
     lookupOptions.$locale,
     content,
@@ -96,7 +101,11 @@ export function resolveStringContentWithFallback(
   options: ResolutionOptions<StringFormat> = {}
 ): StringContent {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(locale, options, 'STRING');
+  const lookupOptions = createLookupOptions(
+    locale,
+    options,
+    getDefaultStringLookupFormat()
+  );
   const translation = i18nManager.lookupTranslation(
     lookupOptions.$locale,
     content,
@@ -121,7 +130,11 @@ export async function resolveStringContentWithRuntimeFallback(
   options: ResolutionOptions<StringFormat> = {}
 ): Promise<StringContent> {
   const i18nManager = getI18nManager();
-  const lookupOptions = createLookupOptions(locale, options, 'STRING');
+  const lookupOptions = createLookupOptions(
+    locale,
+    options,
+    getDefaultStringLookupFormat()
+  );
   const translation = await i18nManager.lookupTranslationWithFallback(
     lookupOptions.$locale,
     content,
@@ -147,4 +160,9 @@ export function createLookupOptions<T extends DataFormat>(
     $format: (options.$format ?? defaultFormat) as T,
     $locale: locale,
   };
+}
+
+function getDefaultStringLookupFormat(): StringFormat {
+  const defaultStringFormat = getDefaultStringFormat();
+  return defaultStringFormat === 'ICU' ? 'STRING' : defaultStringFormat;
 }

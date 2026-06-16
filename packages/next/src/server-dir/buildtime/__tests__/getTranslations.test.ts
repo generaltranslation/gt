@@ -232,6 +232,7 @@ describe('getTranslations', () => {
       expect(mockFormatMessage).toHaveBeenCalledWith(mockEntry, {
         locales: ['en'],
         variables: { [VAR_IDENTIFIER]: 'other' },
+        dataFormat: 'ICU',
       });
     });
 
@@ -252,6 +253,7 @@ describe('getTranslations', () => {
       expect(mockFormatMessage).toHaveBeenCalledWith(mockEntry, {
         locales: ['en'],
         variables: { name: 'John', [VAR_IDENTIFIER]: 'other' },
+        dataFormat: 'ICU',
       });
     });
   });
@@ -376,6 +378,7 @@ describe('getTranslations', () => {
         variables: {
           [VAR_IDENTIFIER]: 'other',
         },
+        dataFormat: 'ICU',
       });
     });
 

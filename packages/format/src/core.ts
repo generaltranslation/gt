@@ -11,6 +11,7 @@ import {
 } from './formatting/format';
 import { intlCache } from './cache/IntlCache';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
+import { getDefaultStringFormat } from './formatting/defaultStringFormat';
 import { _determineLocale } from './locales/determineLocale';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { _getLocaleEmoji } from './locales/getLocaleEmoji';
@@ -126,8 +127,9 @@ export function formatCutoff(
  * });
  */
 export function formatMessage(message: string, options?: MessageFormatOptions) {
-  if (options?.dataFormat === 'STRING') return message;
-  if (options?.dataFormat === 'I18NEXT') {
+  const dataFormat = options?.dataFormat ?? getDefaultStringFormat();
+  if (dataFormat === 'STRING') return message;
+  if (dataFormat === 'I18NEXT') {
     return _formatMessageI18next(
       message,
       options?.locales,
