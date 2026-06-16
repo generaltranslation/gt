@@ -5,17 +5,14 @@ import { getNativeLocales } from './getNativeLocales';
 import { nativeStoreGet } from './nativeStore';
 
 export type GetLocaleParams = {
-  locale?: LocaleCandidates;
   localeStoreKey?: string;
 };
 
 export function getLocale({
-  locale,
   localeStoreKey = defaultLocaleStoreKey,
 }: GetLocaleParams = {}): string {
   const candidates: string[] = [];
   pushLocaleCandidates(candidates, nativeStoreGet(localeStoreKey));
-  pushLocaleCandidates(candidates, locale);
   candidates.push(...getNativeLocales());
 
   return resolveLocale(candidates);
