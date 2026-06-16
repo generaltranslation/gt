@@ -4,27 +4,35 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   mockGetDictionary,
   mockGetDictionaryEntry,
-  mockGetI18NConfig,
+  mockGetI18nConfig,
   mockGetEnableI18n,
   mockGetLocale,
   mockGetRegion,
   mockLoadTranslations,
+  mockGetLocaleDictionary,
   mockMergeDictionaries,
   mockClientGTProvider,
 } = vi.hoisted(() => ({
   mockGetDictionary: vi.fn(),
   mockGetDictionaryEntry: vi.fn(),
-  mockGetI18NConfig: vi.fn(),
+  mockGetI18nConfig: vi.fn(),
   mockGetEnableI18n: vi.fn(),
   mockGetLocale: vi.fn(),
   mockGetRegion: vi.fn(),
   mockLoadTranslations: vi.fn(),
+  mockGetLocaleDictionary: vi.fn(),
   mockMergeDictionaries: vi.fn(),
   mockClientGTProvider: vi.fn(),
 }));
 
-vi.mock('../../config-dir/getI18NConfig', () => ({
-  getI18NConfig: mockGetI18NConfig,
+vi.mock('gt-i18n/internal', () => ({
+  getI18nConfig: mockGetI18nConfig,
+}));
+
+vi.mock('../../config-dir/DictionaryManager', () => ({
+  dictionaryManager: {
+    getDictionary: mockGetLocaleDictionary,
+  },
 }));
 
 vi.mock('../../dictionary/getDictionary', () => ({
@@ -76,11 +84,11 @@ describe('GTProvider', () => {
     mockLoadTranslations.mockResolvedValue({
       hash: 'Salut',
     });
-    mockGetI18NConfig.mockReturnValue({
-      getDictionaryTranslations: vi.fn().mockResolvedValue({
-        greeting: 'Bonjour',
-      }),
-      requiresTranslation: vi.fn().mockReturnValue([true, false]),
+    mockGetLocaleDictionary.mockResolvedValue({
+      greeting: 'Bonjour',
+    });
+    mockGetI18nConfig.mockReturnValue({
+      requiresTranslation: vi.fn().mockReturnValue(true),
     });
   });
 
@@ -113,10 +121,10 @@ describe('GTProvider', () => {
 
   it('uses the request locale and skips cached translations when translation is not required', async () => {
     const config = {
-      getDictionaryTranslations: vi.fn().mockResolvedValue({}),
-      requiresTranslation: vi.fn().mockReturnValue([false, false]),
+      requiresTranslation: vi.fn().mockReturnValue(false),
     };
-    mockGetI18NConfig.mockReturnValue(config);
+    mockGetLocaleDictionary.mockResolvedValue({});
+    mockGetI18nConfig.mockReturnValue(config);
     mockGetLocale.mockResolvedValue('en');
     mockGetEnableI18n.mockResolvedValue(false);
 
