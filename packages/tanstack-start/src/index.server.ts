@@ -1,3 +1,5 @@
+export { parseLocale } from './functions/parseLocale';
+
 export {
   // ===== Components ===== //
   Branch,

@@ -1,6 +1,8 @@
 import 'server-only';
 
 import { initializeGT } from './setup/initGT.rsc';
+import type { GetServerSidePropsContext, PreviewData } from 'next';
+import type { ParsedUrlQuery } from 'querystring';
 initializeGT();
 
 // ===== Overrides ===== //
@@ -66,6 +68,17 @@ import { getTranslationsSnapshotRscError } from './errors/createErrors';
  */
 export function getTranslationsSnapshot(_: string) {
   throw new Error(getTranslationsSnapshotRscError);
+}
+
+/**
+ * Placeholder for parseLocale()
+ * This function is for next-pages use, not next-app use
+ */
+export function parseLocale<
+  Params extends ParsedUrlQuery = ParsedUrlQuery,
+  Preview extends PreviewData = PreviewData,
+>(_: GetServerSidePropsContext<Params, Preview>): string {
+  throw new Error('parseLocale() is only available for the Pages Router.');
 }
 
 export {
