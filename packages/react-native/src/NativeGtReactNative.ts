@@ -4,7 +4,7 @@ export interface Spec extends TurboModule {
   multiply(a: number, b: number): number;
   getNativeLocales(): string[];
   nativeStoreGet(key: string): string | null;
-  nativeStoreSet(key: string, value: string): void;
+  nativeStoreSet(key: string, value: string): boolean;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('GtReactNative');

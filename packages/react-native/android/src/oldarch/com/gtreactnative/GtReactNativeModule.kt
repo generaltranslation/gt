@@ -29,8 +29,8 @@ class GtReactNativeModule(reactContext: ReactApplicationContext) :
     return GtReactNativeModuleImpl.nativeStoreGet(reactApplicationContext, key)
   }
 
-  @ReactMethod
-  fun nativeStoreSet(key: String, value: String) {
-    GtReactNativeModuleImpl.nativeStoreSet(reactApplicationContext, key, value)
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun nativeStoreSet(key: String, value: String): Boolean {
+    return GtReactNativeModuleImpl.nativeStoreSet(reactApplicationContext, key, value)
   }
 }

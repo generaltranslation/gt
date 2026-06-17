@@ -49,8 +49,8 @@ object GtReactNativeModuleImpl {
     return prefs.getString(key, null)
   }
 
-  fun nativeStoreSet(reactContext: ReactApplicationContext, key: String, value: String) {
+  fun nativeStoreSet(reactContext: ReactApplicationContext, key: String, value: String): Boolean {
     val prefs = reactContext.getSharedPreferences("gt_store", Context.MODE_PRIVATE)
-    prefs.edit().putString(key, value).apply()
+    return prefs.edit().putString(key, value).commit()
   }
 }

@@ -46,10 +46,11 @@ RCT_EXPORT_MODULE();
   return [_defaults stringForKey:key];
 }
 
-- (void)nativeStoreSetImpl:(NSString *)key value:(NSString *)value
+- (NSNumber *)nativeStoreSetImpl:(NSString *)key value:(NSString *)value
 {
-  if (key == nil || value == nil) { return; }
+  if (key == nil || value == nil) { return @NO; }
   [_defaults setObject:value forKey:key];
+  return @YES;
 }
 
 #ifdef RCT_NEW_ARCH_ENABLED
@@ -71,8 +72,8 @@ RCT_EXPORT_MODULE();
     return [self nativeStoreGetImpl:key];
 }
 
-- (void)nativeStoreSet:(NSString *)key value:(NSString *)value {
-    [self nativeStoreSetImpl:key value:value];
+- (NSNumber *)nativeStoreSet:(NSString *)key value:(NSString *)value {
+    return [self nativeStoreSetImpl:key value:value];
 }
 
 #else
@@ -90,8 +91,8 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(nativeStoreGet:(NSString *)key) {
     return [self nativeStoreGetImpl:key];
 }
 
-RCT_EXPORT_METHOD(nativeStoreSet:(NSString *)key value:(NSString *)value) {
-    [self nativeStoreSetImpl:key value:value];
+RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(nativeStoreSet:(NSString *)key value:(NSString *)value) {
+    return [self nativeStoreSetImpl:key value:value];
 }
 
 #endif
