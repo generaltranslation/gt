@@ -37,6 +37,44 @@ export {
   ReactI18nCache,
   type ReactI18nCacheParams,
 } from './i18n-cache/ReactI18nCache';
+export {
+  getI18nStore,
+  setI18nStore,
+  isI18nStoreInitialized,
+} from './i18n-store/singleton-operations';
+export { I18nStore } from './i18n-store/I18nStore';
+export {
+  getI18nConfig,
+  initializeI18nConfig,
+  ReactI18nConfig,
+  setI18nConfig,
+} from './setup/i18nConfig';
+export {
+  getReadonlyConditionStoreWithFallback,
+  setReadonlyConditionStore,
+} from './condition-store/singleton-operations';
+export {
+  ReadonlyConditionStore,
+  WritableConditionStore,
+} from 'gt-i18n/internal';
+export type {
+  I18nConfigParams,
+  WritableConditionStoreParams,
+} from 'gt-i18n/internal/types';
+export type {
+  OnMissingDictionaryObj,
+  OnMissingDictionaryEntry,
+  OnMissingTranslation,
+} from './hooks/utils/missing-translation';
+export type {
+  DictionaryLookup,
+  TranslateLookup,
+} from './i18n-store/storeTypes';
+export type {
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
+} from 'gt-i18n/types';
 
 export {
   getDefaultLocale,

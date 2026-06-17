@@ -3,11 +3,6 @@ import type {
   WritableConditionStoreInterface,
   WritableConditionStoreParams,
 } from 'gt-i18n/internal/types';
-import {
-  defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
-  defaultLocaleCookieName as defaultLocaleStoreKey,
-  defaultRegionCookieName as defaultRegionStoreKey,
-} from '@generaltranslation/react-core/internal';
 import { getLocale } from '../utils/getLocale';
 import {
   getInitialEnableI18n,
@@ -15,6 +10,11 @@ import {
 } from '../utils/getInitialNativeConditions';
 import { nativeStoreGet, nativeStoreSet } from '../utils/nativeStore';
 import { resolveLocale } from '../utils/resolveLocale';
+import {
+  defaultEnableI18nStoreKey,
+  defaultLocaleStoreKey,
+  defaultRegionStoreKey,
+} from '../utils/storeKeys';
 
 export type NativeConditionStoreParams = WritableConditionStoreParams & {
   localeStoreKey?: string;

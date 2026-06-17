@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { initializeI18nConfig } from '@generaltranslation/react-core/context';
+import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import {
-  defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
-  defaultLocaleCookieName as defaultLocaleStoreKey,
-  defaultRegionCookieName as defaultRegionStoreKey,
-} from '@generaltranslation/react-core/internal';
+  defaultEnableI18nStoreKey,
+  defaultLocaleStoreKey,
+  defaultRegionStoreKey,
+} from '../../utils/storeKeys';
 import { NativeConditionStore } from '../NativeConditionStore';
 
 const nativeStore = vi.hoisted(() => new Map<string, string>());

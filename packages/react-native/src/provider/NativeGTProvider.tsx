@@ -1,8 +1,8 @@
 import {
-  I18nStore,
   InternalGTProvider,
   type InternalGTProviderProps,
-} from '@generaltranslation/react-core/context';
+} from '@generaltranslation/react-core/components';
+import { I18nStore } from '@generaltranslation/react-core/pure';
 import { useMemo, useRef } from 'react';
 import type { LocaleCandidates } from 'gt-i18n/internal/types';
 import type { NativeConditionStoreParams } from '../condition-store/NativeConditionStore';
@@ -29,9 +29,12 @@ export function NativeGTProvider(props: NativeGTProviderProps) {
     props._reload,
   ]);
 
-  const i18nStoreRef = useRef<I18nStore | null>(null);
+  const i18nStoreRef = useRef<InternalGTProviderProps['i18nStore'] | null>(
+    null
+  );
   if (i18nStoreRef.current == null) {
-    i18nStoreRef.current = new I18nStore();
+    i18nStoreRef.current =
+      new I18nStore() as unknown as InternalGTProviderProps['i18nStore'];
   }
 
   return (

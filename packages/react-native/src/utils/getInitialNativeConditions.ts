@@ -1,8 +1,5 @@
 import type { WritableConditionStoreParams } from 'gt-i18n/internal/types';
-import {
-  defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
-  defaultRegionCookieName as defaultRegionStoreKey,
-} from '@generaltranslation/react-core/internal';
+import { defaultEnableI18nStoreKey, defaultRegionStoreKey } from './storeKeys';
 import { nativeStoreGet } from './nativeStore';
 
 type InitialRegionParams = Pick<WritableConditionStoreParams, 'region'> & {

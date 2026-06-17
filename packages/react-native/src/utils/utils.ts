@@ -1,7 +1,12 @@
-import type {
-  AuthFromEnvParams,
-  AuthFromEnvReturn,
-} from '@generaltranslation/react-core/types';
+export type AuthFromEnvParams = {
+  projectId?: string;
+  devApiKey?: string;
+};
+
+export type AuthFromEnvReturn = {
+  projectId: string;
+  devApiKey?: string;
+};
 
 export function readAuthFromEnv(params: AuthFromEnvParams): AuthFromEnvReturn {
   const { projectId, devApiKey } = params;

@@ -1,8 +1,11 @@
-import { getReactI18nCache } from '@generaltranslation/react-core/context';
+import { getReactI18nCache } from '@generaltranslation/react-core/pure';
 import type { Hash } from 'gt-i18n/internal/types';
 import type { Translation } from 'gt-i18n/types';
 
 export type LocaleTranslations = Record<Hash, Translation>;
+type TranslationCache = {
+  loadTranslations(locale: string): Promise<LocaleTranslations>;
+};
 
 const translationPromises = new WeakMap<
   object,
@@ -10,7 +13,7 @@ const translationPromises = new WeakMap<
 >();
 
 export function loadTranslations(locale: string): Promise<LocaleTranslations> {
-  const i18nCache = getReactI18nCache();
+  const i18nCache = getReactI18nCache() as TranslationCache;
   let i18nCacheTranslationPromises = translationPromises.get(i18nCache);
   if (i18nCacheTranslationPromises == null) {
     i18nCacheTranslationPromises = new Map();
@@ -29,6 +32,9 @@ export function loadTranslations(locale: string): Promise<LocaleTranslations> {
       return {};
     });
     i18nCacheTranslationPromises.set(locale, promise);
+  }
+  if (promise == null) {
+    throw new Error('Translation promise was not initialized.');
   }
   return promise;
 }

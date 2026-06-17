@@ -1,7 +1,8 @@
 import {
-  I18nStore,
   InternalGTProvider,
-} from '@generaltranslation/react-core/context';
+  type InternalGTProviderProps,
+} from '@generaltranslation/react-core/components';
+import { I18nStore } from '@generaltranslation/react-core/pure';
 import { useMemo, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { ReadonlyBrowserConditionStore } from '../condition-store/ReadOnlyBrowserConditionStore';
@@ -15,9 +16,12 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
     return new ReadonlyBrowserConditionStore(props);
   }, [props.locale, props.region, props.enableI18n, props._reload]);
 
-  const i18nStoreRef = useRef<I18nStore | null>(null);
+  const i18nStoreRef = useRef<InternalGTProviderProps['i18nStore'] | null>(
+    null
+  );
   if (i18nStoreRef.current == null) {
-    i18nStoreRef.current = new I18nStore();
+    i18nStoreRef.current =
+      new I18nStore() as unknown as InternalGTProviderProps['i18nStore'];
   }
 
   return (

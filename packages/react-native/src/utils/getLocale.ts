@@ -1,8 +1,8 @@
 import type { LocaleCandidates } from 'gt-i18n/internal/types';
-import { defaultLocaleCookieName as defaultLocaleStoreKey } from '@generaltranslation/react-core/internal';
 import { getNativeLocales } from './getNativeLocales';
 import { nativeStoreGet } from './nativeStore';
 import { resolveLocale } from './resolveLocale';
+import { defaultLocaleStoreKey } from './storeKeys';
 
 export type GetLocaleParams = {
   localeStoreKey?: string;

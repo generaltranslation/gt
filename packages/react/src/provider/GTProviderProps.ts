@@ -1,4 +1,4 @@
-import type { InternalGTProviderProps } from '@generaltranslation/react-core/context';
+import type { InternalGTProviderProps } from '@generaltranslation/react-core/components';
 import { BrowserConditionStoreParams } from '../condition-store/BrowserConditionStore';
 
 /**

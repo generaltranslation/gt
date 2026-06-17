@@ -1,8 +1,11 @@
 import {
-  I18nStore,
   InternalGTProvider,
+  type InternalGTProviderProps,
+} from '@generaltranslation/react-core/components';
+import {
+  I18nStore,
   ReadonlyConditionStore,
-} from '@generaltranslation/react-core/context';
+} from '@generaltranslation/react-core/pure';
 import { useMemo, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { useHandleMissingTranslations } from '../hooks/useHandleMissingTranslations';
@@ -21,9 +24,12 @@ export function ServerGTProvider({
     return new ReadonlyConditionStore({ locale, region, enableI18n });
   }, [locale, region, enableI18n]);
 
-  const i18nStoreRef = useRef<I18nStore | null>(null);
+  const i18nStoreRef = useRef<InternalGTProviderProps['i18nStore'] | null>(
+    null
+  );
   if (i18nStoreRef.current == null) {
-    i18nStoreRef.current = new I18nStore();
+    i18nStoreRef.current =
+      new I18nStore() as unknown as InternalGTProviderProps['i18nStore'];
   }
 
   const {

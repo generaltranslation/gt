@@ -17,11 +17,11 @@ import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-} from '@generaltranslation/react-core/types';
+} from '@generaltranslation/react-core/pure';
 import type {
   RenderPipeline,
   RenderPreparedT,
-} from '@generaltranslation/react-core/context';
+} from '@generaltranslation/react-core/pure';
 
 export {
   // ===== Components ===== //
@@ -34,18 +34,24 @@ export {
   RelativeTime,
   Var,
   Num,
+} from '@generaltranslation/react-core/components';
+
+export {
   // ===== Hooks ===== //
   useLocale,
   useCustomMapping,
   useDefaultLocale,
   useEnableI18n,
   useLocales,
-  getFormatLocales,
   useFormatLocales,
   useGT,
   useMessages,
   useTranslations,
+} from '@generaltranslation/react-core/hooks';
+
+export {
   // ===== Functions ===== //
+  getFormatLocales,
   msg,
   decodeMsg,
   decodeOptions,
@@ -58,7 +64,7 @@ export {
   getReactI18nCache,
   setReactI18nCache,
   createRenderPipeline,
-} from '@generaltranslation/react-core/context';
+} from '@generaltranslation/react-core/pure';
 
 export {
   useRegion,

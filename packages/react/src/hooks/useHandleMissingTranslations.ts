@@ -1,11 +1,11 @@
 'server-only';
 
 import {
-  I18nStore,
   OnMissingDictionaryEntry,
   OnMissingDictionaryObj,
   OnMissingTranslation,
-} from '@generaltranslation/react-core/context';
+} from '@generaltranslation/react-core/pure';
+import type { InternalGTProviderProps } from '@generaltranslation/react-core/components';
 import { useMemo } from 'react';
 
 /**
@@ -14,7 +14,9 @@ import { useMemo } from 'react';
  * is acceptable for dev hot reload because we MUST trigger a translate
  * call on the server to persist translations
  */
-export function useHandleMissingTranslations(i18nStore: I18nStore): {
+export function useHandleMissingTranslations(
+  i18nStore: InternalGTProviderProps['i18nStore']
+): {
   onMissingTranslation: OnMissingTranslation;
   onMissingDictionaryEntry: OnMissingDictionaryEntry;
   onMissingDictionaryObj: OnMissingDictionaryObj;
