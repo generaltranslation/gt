@@ -20,7 +20,10 @@ export function loadTranslations(locale: string): Promise<LocaleTranslations> {
   let promise = i18nCacheTranslationPromises.get(locale);
   if (promise == null) {
     // TODO: Support promise caching in i18nCache in a separate PR.
-    promise = i18nCache.loadTranslations(locale);
+    promise = i18nCache.loadTranslations(locale).catch((error: unknown) => {
+      i18nCacheTranslationPromises.delete(locale);
+      throw error;
+    });
     i18nCacheTranslationPromises.set(locale, promise);
   }
   return promise;
