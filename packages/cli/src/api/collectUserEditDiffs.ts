@@ -67,6 +67,7 @@ export async function collectAndSendUserEditDiffs(
   type DiffCandidate = {
     branchId: string;
     fileName: string;
+    transformFormat?: FileReference['transformFormat'];
     fileId: string;
     versionId: string;
     locale: string; // resolved
@@ -105,6 +106,7 @@ export async function collectAndSendUserEditDiffs(
       candidates.push({
         branchId: uploadedFile.branchId,
         fileName: uploadedFile.fileName,
+        transformFormat: uploadedFile.transformFormat,
         fileId: uploadedFile.fileId,
         versionId: latestDownloaded.versionId,
         locale: locale,
@@ -213,6 +215,12 @@ export async function collectAndSendUserEditDiffs(
 
           collectedDiffs.push({
             fileName: c.fileName,
+            ...(c.transformFormat
+              ? {
+                  fileFormat: c.transformFormat,
+                  transformFormat: c.transformFormat,
+                }
+              : {}),
             locale: c.locale,
             diff,
             branchId: c.branchId,

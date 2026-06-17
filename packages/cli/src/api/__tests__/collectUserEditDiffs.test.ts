@@ -191,6 +191,113 @@ describe('collectAndSendUserEditDiffs', () => {
     expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
   });
 
+  it('submits transformed POT local edits with the translated PO format', async () => {
+    const settings = createMockSettings({
+      configDirectory: tempDir,
+      config: path.join(tempDir, 'gt.config.json'),
+      defaultLocale: 'en',
+      locales: ['de'],
+      _branchId: 'branch1',
+      files: {
+        resolvedPaths: {
+          pot: [path.join(tempDir, 'messages.pot')],
+        },
+        placeholderPaths: {
+          pot: [path.join(tempDir, 'messages.pot')],
+        },
+        transformPaths: {
+          pot: {
+            match: '^(.*)$',
+            replace: '{locale}.$1',
+          },
+        },
+        transformFormats: {
+          pot: 'PO',
+        },
+      },
+    });
+
+    const sourceContent = 'msgid "Save settings"\nmsgstr ""\n';
+    const serverContent =
+      'msgid "Save settings"\nmsgstr "Einstellungen speichern"\n';
+    const localContent =
+      'msgid "Save settings"\nmsgstr "Einstellungen sichern"\n';
+    fs.writeFileSync(path.join(tempDir, 'messages.pot'), sourceContent);
+    fs.writeFileSync(path.join(tempDir, 'de.messages.po'), localContent);
+
+    writeLockFile({
+      version: 1,
+      entries: {
+        branch1: {
+          file1: {
+            version1: {
+              de: {
+                updatedAt: new Date().toISOString(),
+                postProcessHash: hashStringSync(serverContent),
+              },
+            },
+          },
+        },
+      },
+    });
+
+    vi.mocked(gt.queryFileData).mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'branch1',
+          fileId: 'file1',
+          versionId: 'version1',
+          locale: 'de',
+          completedAt: new Date().toISOString(),
+        },
+      ],
+    });
+
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          branchId: 'branch1',
+          fileId: 'file1',
+          versionId: 'version1',
+          locale: 'de',
+          data: serverContent,
+        },
+      ],
+    });
+
+    vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
+
+    const files: FileReference[] = [
+      {
+        fileName: 'messages.pot',
+        fileFormat: 'POT',
+        transformFormat: 'PO',
+        branchId: 'branch1',
+        fileId: 'file1',
+        versionId: 'version1',
+      },
+    ];
+
+    await collectAndSendUserEditDiffs(files, settings);
+
+    expect(getGitUnifiedDiff).toHaveBeenCalledWith(
+      expect.any(String),
+      'de.messages.po'
+    );
+    expect(gt.submitUserEditDiffs).toHaveBeenCalledWith({
+      diffs: [
+        expect.objectContaining({
+          fileName: 'messages.pot',
+          fileFormat: 'PO',
+          transformFormat: 'PO',
+          locale: 'de',
+          diff: 'mock-diff',
+          localContent,
+        }),
+      ],
+    });
+  });
+
   it('uses the latest downloaded version when the uploaded version has changed', async () => {
     const settings = buildSettings();
     const translatedPath = path.join(tempDir, 'docs', 'ja', 'doc.md');

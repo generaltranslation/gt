@@ -36,6 +36,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
     branchId: branchResult.currentBranch.id,
     fileId: file.fileId,
     versionId: file.versionId,
+    transformFormat: file.transformFormat,
   })) satisfies FileReference[];
 
   const spinner = logger.createSpinner('dots');

@@ -1,9 +1,12 @@
 import { TranslationRequestConfig } from '../types';
 import apiRequest from './utils/apiRequest';
 import { processBatches } from './utils/batch';
+import type { FileFormat } from '../types-dir/api/file';
 
 export type SubmitUserEditDiff = {
   fileName: string;
+  fileFormat?: FileFormat;
+  transformFormat?: FileFormat;
   locale: string;
   diff: string;
   branchId: string;
