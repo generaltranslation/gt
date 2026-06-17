@@ -1,0 +1,38 @@
+{
+  "name": "gt-react-native-expo-example",
+  "version": "0.0.1",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "lint": "oxlint --config ../.oxlintrc.react.json ."
+  },
+  "dependencies": {
+    "@formatjs/intl-datetimeformat": "^6.18.2",
+    "@formatjs/intl-displaynames": "^6.8.13",
+    "@formatjs/intl-getcanonicallocales": "^2.5.6",
+    "@formatjs/intl-listformat": "^7.7.13",
+    "@formatjs/intl-locale": "^4.2.13",
+    "@formatjs/intl-numberformat": "^8.15.6",
+    "@formatjs/intl-pluralrules": "^5.4.6",
+    "@formatjs/intl-relativetimeformat": "^11.4.13",
+    "expo": "~54.0.35",
+    "expo-dev-client": "~6.0.21",
+    "expo-status-bar": "~3.0.9",
+    "gt-react-native": "workspace:*",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.4",
+    "@types/react": "^19.1.0",
+    "babel-preset-expo": "~54.0.11",
+    "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
