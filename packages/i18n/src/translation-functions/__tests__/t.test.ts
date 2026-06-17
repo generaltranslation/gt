@@ -80,6 +80,44 @@ describe('t', () => {
     expect(t(message, { $locale: 'es', name: 'Alice' })).toBe('Hola Alice!');
   });
 
+  it('supports tagged template translations for interpolated strings', async () => {
+    const name = 'Alice';
+    const message = 'Hello Alice!';
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        loadTranslations: vi.fn().mockResolvedValue({
+          [hashMessage(message, { $format: 'ICU' })]: 'Bonjour Alice !',
+        }),
+      }
+    );
+
+    setI18nCache(cache);
+    setWritableConditionStore({ getLocale: () => 'fr' });
+    await cache.loadTranslations('fr');
+
+    expect(t`Hello ${name}!`).toBe('Bonjour Alice !');
+  });
+
+  it('falls back to tagged template variable interpolation', async () => {
+    const name = 'Alice';
+    const message = 'Hello {0}!';
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        loadTranslations: vi.fn().mockResolvedValue({
+          [hashMessage(message, { $format: 'ICU' })]: 'Bonjour {0} !',
+        }),
+      }
+    );
+
+    setI18nCache(cache);
+    setWritableConditionStore({ getLocale: () => 'fr' });
+    await cache.loadTranslations('fr');
+
+    expect(t`Hello ${name}!`).toBe('Bonjour Alice !');
+  });
+
   it('does not read the current locale when $locale is explicit', async () => {
     const message = 'Hello {name}!';
     const cache = createCache(
