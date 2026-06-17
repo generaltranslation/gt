@@ -1,17 +1,14 @@
-import {
-  getReactI18nCache,
-  type InternalGTProviderProps,
-} from '@generaltranslation/react-core/context';
+import type { InternalGTProviderProps } from '@generaltranslation/react-core/context';
 import { Suspense, use, useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import type { Hash, LocaleCandidates, Locale } from 'gt-i18n/internal/types';
-import type { Translation } from 'gt-i18n/types';
+import type { LocaleCandidates, Locale } from 'gt-i18n/internal/types';
 import type {
   NativeConditionStoreParams,
   NativeConditionStoreState,
 } from '../condition-store/NativeConditionStore';
 import { getLocale, resolveLocale } from '../utils/getLocale';
+import { loadTranslations, type LocaleTranslations } from './loadTranslations';
 import { NativeGTProvider } from './NativeGTProvider';
 
 export type GTProviderProps = Omit<
@@ -25,7 +22,6 @@ export type GTProviderProps = Omit<
   };
 
 type LoadableGTProviderProps = Omit<GTProviderProps, 'loadingFallback'>;
-type LocaleTranslations = Record<Hash, Translation>;
 type TranslationSnapshot = Record<Locale, LocaleTranslations>;
 
 export function GTProvider(props: GTProviderProps) {
@@ -45,9 +41,7 @@ function LoadableGTProvider(props: LoadableGTProviderProps) {
     getLocale({ localeStoreKey })
   );
   const activeLocale = resolveLocale(locale ?? nativeLocale);
-  const localeTranslations = use(
-    getReactI18nCache().loadTranslations(activeLocale)
-  );
+  const localeTranslations = use(loadTranslations(activeLocale));
   const translations = useMemo<TranslationSnapshot>(
     () => ({ [activeLocale]: localeTranslations }),
     [activeLocale, localeTranslations]
