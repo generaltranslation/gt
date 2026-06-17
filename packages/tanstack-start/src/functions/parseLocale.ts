@@ -1,6 +1,6 @@
 import { getCookie, getRequestHeader } from '@tanstack/react-start/server';
 import { getI18nConfig } from 'gt-i18n/internal';
-import { defaultLocaleCookieName } from 'gt-react/context';
+import { defaultLocaleCookieName } from 'gt-react';
 
 /**
  * Resolve the user's locale from the current TanStack Start server request.

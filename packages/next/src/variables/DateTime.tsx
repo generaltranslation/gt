@@ -1,4 +1,4 @@
-import { DateTime as RscDateTime, type DateTimeProps } from 'gt-react/context';
+import { DateTime as RscDateTime, type DateTimeProps } from 'gt-react';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
 

@@ -19,7 +19,7 @@ import {
   Plural as _Plural,
   useLocaleDirection as _useLocaleDirection,
   useVersionId as _useVersionId,
-} from 'gt-react/client';
+} from 'gt-react';
 import {
   LocaleSelector as _LocaleSelector,
   RegionSelector as _RegionSelector,
@@ -31,8 +31,8 @@ import {
   getLocaleProperties,
   getLocales,
   getVersionId,
-} from 'gt-react/context';
-import { GTProvider as _GTProvider } from 'gt-react/context';
+} from 'gt-react';
+import { GTProvider as _GTProvider } from 'gt-react';
 import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,

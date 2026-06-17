@@ -12,7 +12,7 @@ vi.mock('../../../request/getRequestConditions', () => ({
   getRequestConditions: mockGetRequestConditions,
 }));
 
-vi.mock('gt-react/context', () => ({
+vi.mock('gt-react', () => ({
   createRenderPipeline: vi.fn(() => ({
     renderPreparedT: mockRenderPreparedT,
   })),
@@ -20,7 +20,7 @@ vi.mock('gt-react/context', () => ({
 }));
 
 describe('buildtime T', () => {
-  it('passes request conditions to gt-react/context T', async () => {
+  it('passes request conditions to gt-react T', async () => {
     mockGetRequestConditions.mockResolvedValue({
       _locale: 'fr',
       _enableI18n: false,

@@ -50,7 +50,7 @@ export {
   getLocaleProperties,
   getLocales,
   getVersionId,
-} from 'gt-react/context';
+} from 'gt-react';
 
 export type {
   DictionaryTranslationOptions,

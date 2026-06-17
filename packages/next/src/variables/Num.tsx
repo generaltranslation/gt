@@ -1,4 +1,4 @@
-import { Num as RscNum, type NumProps } from 'gt-react/context';
+import { Num as RscNum, type NumProps } from 'gt-react';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
 

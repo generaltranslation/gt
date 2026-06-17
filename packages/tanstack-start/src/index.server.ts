@@ -39,4 +39,4 @@ export {
   t,
   // ===== Setup ===== //
   initializeGT,
-} from 'gt-react/context';
+} from 'gt-react';

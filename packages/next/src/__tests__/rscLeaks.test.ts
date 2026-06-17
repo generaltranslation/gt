@@ -17,7 +17,7 @@ const repoRoot = resolve(packageRoot, '../..');
 
 const entrypoints = [
   'packages/react-core/src/components-rsc.ts',
-  'packages/react/src/context.rsc.ts',
+  'packages/react/src/index.rsc.ts',
   'packages/next/src/index.server.ts',
   'packages/next/src/server.ts',
   ...listSourceFiles('packages/next/src/server-dir'),
@@ -27,10 +27,9 @@ const entrypoints = [
 
 // Workspace subpath imports resolved back to their source entrypoints.
 const workspaceSourceMap: Record<string, string> = {
-  '#context-server': 'packages/react/src/context.server.ts',
-  'gt-react': 'packages/react/src/index.ts',
+  '#context-server': 'packages/react/src/index.server.ts',
+  'gt-react': 'packages/react/src/index.rsc.ts',
   'gt-react/internal': 'packages/react/src/internal.ts',
-  'gt-react/context': 'packages/react/src/context.rsc.ts',
   '@generaltranslation/react-core': 'packages/react-core/src/index.ts',
   '@generaltranslation/react-core/internal':
     'packages/react-core/src/internal.ts',
@@ -40,7 +39,6 @@ const workspaceSourceMap: Record<string, string> = {
 
 // Specifiers that must never be imported from the RSC/server graph.
 const forbiddenSpecifiers = [
-  'gt-react/client',
   '@generaltranslation/react-core/context',
   'next/navigation',
 ];
@@ -52,9 +50,8 @@ const forbiddenFiles = [
   'packages/react-core/src/context.ts',
   'packages/react-core/src/context/context.ts',
   'packages/react-core/src/context/InternalGTProvider.tsx',
-  'packages/react/src/client.ts',
-  'packages/react/src/context.client.ts',
-  'packages/react/src/context.server.ts',
+  'packages/react/src/index.client.ts',
+  'packages/react/src/index.server.ts',
 ];
 const forbiddenDirs = ['packages/react-core/src/hooks/'];
 const allowedFilesInForbiddenDirs = [
@@ -194,7 +191,7 @@ function walk(): { violations: Violation[]; reported: string[] } {
       if (!resolved) continue; // external module (react, gt-i18n, next/headers, ...)
 
       // Modules marked 'use client' are intentional server-to-client
-      // boundaries (e.g. the client-capable context.server/context.client
+      // boundaries (e.g. the client-capable index.server/index.client
       // entrypoints): allowed even when otherwise forbidden, never walked.
       if (isClientBoundary(readFileSync(join(repoRoot, resolved), 'utf8'))) {
         continue;
