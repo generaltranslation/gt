@@ -2,15 +2,18 @@ import {
   I18nStore,
   type InternalGTProviderProps,
   InternalGTProvider,
-  getTranslationsSnapshot,
+  getReactI18nCache,
 } from '@generaltranslation/react-core/context';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, use, useCallback, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type {
+  Hash,
   LocaleCandidates,
+  Locale,
   WritableConditionStoreInterface,
 } from 'gt-i18n/internal/types';
+import type { Translation } from 'gt-i18n/types';
 import type { NativeConditionStoreParams } from '../condition-store/NativeConditionStore';
 import { NativeConditionStore } from '../condition-store/NativeConditionStore';
 import { getLocale, resolveLocale } from '../utils/getLocale';
@@ -25,15 +28,26 @@ export type GTProviderProps = Omit<
     loadingFallback?: ReactNode;
   };
 
-type TranslationSnapshot = Awaited<ReturnType<typeof getTranslationsSnapshot>>;
+type NativeGTProviderProps = Omit<GTProviderProps, 'loadingFallback'>;
+type LocaleTranslations = Record<Hash, Translation>;
+type TranslationSnapshot = Record<Locale, LocaleTranslations>;
 
-type LoadedTranslations = {
-  locale: string;
-  translations?: TranslationSnapshot;
-  error?: unknown;
-};
+const translationPromises = new WeakMap<
+  object,
+  Map<string, Promise<LocaleTranslations>>
+>();
 
 export function GTProvider(props: GTProviderProps) {
+  const { loadingFallback, ...providerProps } = props;
+
+  return (
+    <Suspense fallback={loadingFallback ?? <DefaultLoadingFallback />}>
+      <NativeGTProvider {...providerProps} />
+    </Suspense>
+  );
+}
+
+function NativeGTProvider(props: NativeGTProviderProps) {
   const {
     locale,
     region,
@@ -41,7 +55,6 @@ export function GTProvider(props: GTProviderProps) {
     localeStoreKey,
     regionStoreKey,
     enableI18nStoreKey,
-    loadingFallback,
     ...providerProps
   } = props;
   const [nativeLocale, setNativeLocale] = useState(() =>
@@ -49,36 +62,16 @@ export function GTProvider(props: GTProviderProps) {
   );
   const [conditionVersion, setConditionVersion] = useState(0);
   const activeLocale = resolveLocale(locale ?? nativeLocale);
-  const [loadedTranslations, setLoadedTranslations] =
-    useState<LoadedTranslations | null>(null);
+  const localeTranslations = use(loadTranslations(activeLocale));
+  const translations = useMemo<TranslationSnapshot>(
+    () => ({ [activeLocale]: localeTranslations }),
+    [activeLocale, localeTranslations]
+  );
 
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {
     i18nStoreRef.current = new I18nStore();
   }
-
-  useEffect(() => {
-    if (locale !== undefined) return;
-    setNativeLocale(getLocale({ localeStoreKey }));
-  }, [locale, localeStoreKey]);
-
-  useEffect(() => {
-    let isActive = true;
-
-    void getTranslationsSnapshot(activeLocale)
-      .then((translations) => {
-        if (!isActive) return;
-        setLoadedTranslations({ locale: activeLocale, translations });
-      })
-      .catch((error: unknown) => {
-        if (!isActive) return;
-        setLoadedTranslations({ locale: activeLocale, error });
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [activeLocale]);
 
   const handleNativeConditionChange = useCallback(
     (nativeConditionStore: NativeConditionStore) => {
@@ -131,25 +124,33 @@ export function GTProvider(props: GTProviderProps) {
     [conditionVersion, handleNativeConditionChange, nativeConditionStore]
   );
 
-  if (loadedTranslations?.locale === activeLocale && loadedTranslations.error) {
-    throw loadedTranslations.error;
-  }
-
-  if (
-    loadedTranslations?.locale !== activeLocale ||
-    loadedTranslations.translations == null
-  ) {
-    return loadingFallback ?? <DefaultLoadingFallback />;
-  }
-
   return (
     <InternalGTProvider
       {...providerProps}
-      translations={loadedTranslations.translations}
+      translations={translations}
       conditionStore={conditionStore}
       i18nStore={i18nStoreRef.current}
     />
   );
+}
+
+function loadTranslations(locale: string): Promise<LocaleTranslations> {
+  const i18nCache = getReactI18nCache();
+  let i18nCacheTranslationPromises = translationPromises.get(i18nCache);
+  if (i18nCacheTranslationPromises == null) {
+    i18nCacheTranslationPromises = new Map();
+    translationPromises.set(i18nCache, i18nCacheTranslationPromises);
+  }
+
+  let promise = i18nCacheTranslationPromises.get(locale);
+  if (promise == null) {
+    promise = i18nCache.loadTranslations(locale).catch((error: unknown) => {
+      i18nCacheTranslationPromises.delete(locale);
+      throw error;
+    });
+    i18nCacheTranslationPromises.set(locale, promise);
+  }
+  return promise;
 }
 
 function DefaultLoadingFallback() {
