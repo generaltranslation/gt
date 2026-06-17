@@ -8,8 +8,9 @@ import {
   defaultLocaleCookieName as defaultLocaleStoreKey,
   defaultRegionCookieName as defaultRegionStoreKey,
 } from '@generaltranslation/react-core/internal';
-import { getLocale, resolveLocale } from '../utils/getLocale';
+import { getLocale } from '../utils/getLocale';
 import { nativeStoreGet, nativeStoreSet } from '../utils/nativeStore';
+import { resolveLocale } from '../utils/resolveLocale';
 
 export type NativeConditionStoreParams = WritableConditionStoreParams & {
   localeStoreKey?: string;

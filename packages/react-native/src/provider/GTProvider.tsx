@@ -11,8 +11,9 @@ import type {
   NativeConditionStoreParams,
   NativeConditionStoreState,
 } from '../condition-store/NativeConditionStore';
-import { getLocale, resolveLocale } from '../utils/getLocale';
+import { getLocale } from '../utils/getLocale';
 import { nativeStoreGet } from '../utils/nativeStore';
+import { resolveLocale } from '../utils/resolveLocale';
 import { loadTranslations, type LocaleTranslations } from './loadTranslations';
 import { NativeGTProvider } from './NativeGTProvider';
 
