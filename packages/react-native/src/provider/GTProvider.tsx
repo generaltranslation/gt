@@ -28,11 +28,6 @@ type LoadableGTProviderProps = Omit<GTProviderProps, 'loadingFallback'>;
 type LocaleTranslations = Record<Hash, Translation>;
 type TranslationSnapshot = Record<Locale, LocaleTranslations>;
 
-const translationPromises = new WeakMap<
-  object,
-  Map<string, Promise<LocaleTranslations>>
->();
-
 export function GTProvider(props: GTProviderProps) {
   const { loadingFallback, ...providerProps } = props;
 
@@ -49,7 +44,9 @@ function LoadableGTProvider(props: LoadableGTProviderProps) {
     getLocale({ localeStoreKey })
   );
   const activeLocale = resolveLocale(locale ?? nativeLocale);
-  const localeTranslations = use(loadTranslations(activeLocale));
+  const localeTranslations = use(
+    getReactI18nCache().loadTranslations(activeLocale)
+  );
   const translations = useMemo<TranslationSnapshot>(
     () => ({ [activeLocale]: localeTranslations }),
     [activeLocale, localeTranslations]
@@ -71,25 +68,6 @@ function LoadableGTProvider(props: LoadableGTProviderProps) {
       _reload={reload}
     />
   );
-}
-
-function loadTranslations(locale: string): Promise<LocaleTranslations> {
-  const i18nCache = getReactI18nCache();
-  let i18nCacheTranslationPromises = translationPromises.get(i18nCache);
-  if (i18nCacheTranslationPromises == null) {
-    i18nCacheTranslationPromises = new Map();
-    translationPromises.set(i18nCache, i18nCacheTranslationPromises);
-  }
-
-  let promise = i18nCacheTranslationPromises.get(locale);
-  if (promise == null) {
-    promise = i18nCache.loadTranslations(locale).catch((error: unknown) => {
-      i18nCacheTranslationPromises.delete(locale);
-      throw error;
-    });
-    i18nCacheTranslationPromises.set(locale, promise);
-  }
-  return promise;
 }
 
 function DefaultLoadingFallback() {
