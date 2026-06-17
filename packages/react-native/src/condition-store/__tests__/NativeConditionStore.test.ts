@@ -99,7 +99,7 @@ describe('NativeConditionStore', () => {
     });
   });
 
-  it('persists region and enableI18n through the native store', () => {
+  it('persists explicit region and enableI18n through the native store', () => {
     nativeStore.set(defaultRegionStoreKey, 'CA');
     nativeStore.set(defaultEnableI18nStoreKey, 'false');
 
@@ -108,13 +108,15 @@ describe('NativeConditionStore', () => {
       enableI18n: true,
     });
 
-    expect(conditionStore.getRegion()).toBe('CA');
-    expect(conditionStore.getEnableI18n()).toBe(false);
-
-    conditionStore.setRegion('US');
-    conditionStore.setEnableI18n(true);
-
     expect(nativeStore.get(defaultRegionStoreKey)).toBe('US');
     expect(nativeStore.get(defaultEnableI18nStoreKey)).toBe('true');
+    expect(conditionStore.getRegion()).toBe('US');
+    expect(conditionStore.getEnableI18n()).toBe(true);
+
+    conditionStore.setRegion('CA');
+    conditionStore.setEnableI18n(false);
+
+    expect(nativeStore.get(defaultRegionStoreKey)).toBe('CA');
+    expect(nativeStore.get(defaultEnableI18nStoreKey)).toBe('false');
   });
 });

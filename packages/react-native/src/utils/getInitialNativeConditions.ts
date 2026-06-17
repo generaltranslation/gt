@@ -20,14 +20,16 @@ export function getInitialRegion({
   region,
   regionStoreKey = defaultRegionStoreKey,
 }: InitialRegionParams): string | undefined {
-  return nativeStoreGet(regionStoreKey) || region;
+  if (region !== undefined) return region;
+  return nativeStoreGet(regionStoreKey) || undefined;
 }
 
 export function getInitialEnableI18n({
   enableI18n,
   enableI18nStoreKey = defaultEnableI18nStoreKey,
 }: InitialEnableI18nParams): boolean {
+  if (enableI18n !== undefined) return enableI18n;
   const storedEnableI18n = nativeStoreGet(enableI18nStoreKey);
-  if (storedEnableI18n === null) return enableI18n ?? true;
+  if (storedEnableI18n === null) return true;
   return storedEnableI18n === 'true';
 }
