@@ -24,7 +24,7 @@ class GtReactNativeModule(reactContext: ReactApplicationContext) :
     return GtReactNativeModuleImpl.nativeStoreGet(reactApplicationContext, key)
   }
 
-  override fun nativeStoreSet(key: String, value: String): Boolean {
-    return GtReactNativeModuleImpl.nativeStoreSet(reactApplicationContext, key, value)
+  override fun nativeStoreSet(key: String, value: String) {
+    GtReactNativeModuleImpl.nativeStoreSet(reactApplicationContext, key, value)
   }
 }

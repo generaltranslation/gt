@@ -8,6 +8,9 @@ import {
 import { NativeConditionStore } from '../NativeConditionStore';
 
 const nativeStore = vi.hoisted(() => new Map<string, string>());
+const nativeStoreMock = vi.hoisted(() => ({
+  skipWrites: false,
+}));
 
 vi.mock('../../utils/getNativeLocales', () => ({
   getNativeLocales: () => ['es'],
@@ -16,6 +19,7 @@ vi.mock('../../utils/getNativeLocales', () => ({
 vi.mock('../../utils/nativeStore', () => ({
   nativeStoreGet: (key: string) => nativeStore.get(key) ?? null,
   nativeStoreSet: (key: string, value: string) => {
+    if (nativeStoreMock.skipWrites) return;
     nativeStore.set(key, value);
   },
 }));
@@ -24,6 +28,7 @@ describe('NativeConditionStore', () => {
   beforeEach(() => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     nativeStore.clear();
+    nativeStoreMock.skipWrites = false;
     initializeI18nConfig(
       {
         defaultLocale: 'en',
@@ -69,6 +74,24 @@ describe('NativeConditionStore', () => {
 
     conditionStore.setLocale('fr');
 
+    expect(reload).toHaveBeenCalledWith({
+      locale: 'fr',
+      region: undefined,
+      enableI18n: true,
+    });
+  });
+
+  it('reloads with the selected locale even when native storage reads stale', () => {
+    nativeStore.set(defaultLocaleStoreKey, 'es');
+    nativeStoreMock.skipWrites = true;
+    const reload = vi.fn();
+    const conditionStore = new NativeConditionStore({
+      _reload: reload,
+    });
+
+    conditionStore.setLocale('fr');
+
+    expect(conditionStore.getLocale()).toBe('es');
     expect(reload).toHaveBeenCalledWith({
       locale: 'fr',
       region: undefined,

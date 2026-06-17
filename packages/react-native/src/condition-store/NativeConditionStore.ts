@@ -72,8 +72,9 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
   };
 
   setLocale = (locale: LocaleCandidates): void => {
-    this.updateLocale(locale);
-    this.reload();
+    const nextLocale = resolveLocale(locale);
+    this.updateLocale(nextLocale);
+    this.reload({ locale: nextLocale });
   };
 
   getRegion = (): string | undefined => {
@@ -82,7 +83,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setRegion = (region: string | undefined): void => {
     this.updateRegion(region);
-    this.reload();
+    this.reload({ region });
   };
 
   getEnableI18n = (): boolean => {
@@ -91,7 +92,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setEnableI18n = (enableI18n: boolean): void => {
     this.updateEnableI18n(enableI18n);
-    this.reload();
+    this.reload({ enableI18n });
   };
 
   updateLocale = (locale: LocaleCandidates): void => {
@@ -106,11 +107,11 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
     nativeStoreSet(this.enableI18nStoreKey, enableI18n ? 'true' : 'false');
   };
 
-  reload = (): void => {
+  reload = (state: Partial<NativeConditionStoreState> = {}): void => {
     this.customReload({
-      locale: this.getLocale(),
-      region: this.getRegion(),
-      enableI18n: this.getEnableI18n(),
+      locale: state.locale ?? this.getLocale(),
+      region: 'region' in state ? state.region : this.getRegion(),
+      enableI18n: state.enableI18n ?? this.getEnableI18n(),
     });
   };
 }
