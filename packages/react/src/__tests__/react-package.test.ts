@@ -5,9 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
-const packageRoot = dirname(
-  dirname(dirname(dirname(fileURLToPath(import.meta.url))))
-);
+const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const runtimeArtifactNames = [
   'browser.cjs',
   'browser.mjs',
@@ -21,8 +19,14 @@ const runtimeArtifactNames = [
   'context.server.mjs',
   'context.types.cjs',
   'context.types.mjs',
-  'index.cjs',
-  'index.mjs',
+  'index.rsc.cjs',
+  'index.rsc.mjs',
+  'index.client.cjs',
+  'index.client.mjs',
+  'index.server.cjs',
+  'index.server.mjs',
+  'index.types.cjs',
+  'index.types.mjs',
   'internal.cjs',
   'internal.mjs',
   'macros.cjs',
@@ -59,7 +63,7 @@ function isAllowedExternalizedSubpath(
   specifier: string
 ): boolean {
   return (
-    file.startsWith('context') &&
+    (file.startsWith('index.') || file.startsWith('context')) &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
       specifier.startsWith('gt-i18n/'))
   );
@@ -83,6 +87,8 @@ describe('gt-react package exports', () => {
 
           assert.equal(typeof react.GTProvider, 'function');
           assert.equal(typeof react.T, 'function');
+          assert.equal(typeof react.GtInternalVar, 'function');
+          assert.equal(typeof react.GtInternalRuntimeTranslateString, 'function');
           assert.equal(typeof client.ClientProvider, 'function');
           assert.equal(typeof context.GTProvider, 'function');
           assert.equal(typeof context.T, 'function');
@@ -97,13 +103,18 @@ describe('gt-react package exports', () => {
       '-e',
       `
           import assert from 'node:assert/strict';
-          import { GTProvider, T } from 'gt-react';
+          import { GTProvider, GtInternalRuntimeTranslateString, GtInternalVar, T } from 'gt-react';
           import { ClientProvider } from 'gt-react/client';
-          import { GTProvider as ContextProvider, T as ContextT } from 'gt-react/context';
+          import {
+            GTProvider as ContextProvider,
+            T as ContextT
+          } from 'gt-react/context';
           import { renderDefaultChildren } from 'gt-react/internal';
 
           assert.equal(typeof GTProvider, 'function');
           assert.equal(typeof T, 'function');
+          assert.equal(typeof GtInternalVar, 'function');
+          assert.equal(typeof GtInternalRuntimeTranslateString, 'function');
           assert.equal(typeof ClientProvider, 'function');
           assert.equal(typeof ContextProvider, 'function');
           assert.equal(typeof ContextT, 'function');
@@ -121,6 +132,20 @@ describe('gt-react package exports', () => {
           assert.equal(globalThis.t, undefined);
           require('gt-react/macros');
           assert.equal(typeof globalThis.t, 'function');
+        `,
+    ]);
+  });
+
+  it('resolves gt-react to the RSC implementation under react-server', () => {
+    node([
+      '--conditions=react-server',
+      '-e',
+      `
+          const assert = require('node:assert/strict');
+          assert.equal(
+            require.resolve('gt-react').endsWith('/dist/index.rsc.cjs'),
+            true
+          );
         `,
     ]);
   });
@@ -147,6 +172,12 @@ describe('gt-react package exports', () => {
       'dist/context.client.mjs',
       'dist/context.server.cjs',
       'dist/context.server.mjs',
+      'dist/index.client.cjs',
+      'dist/index.client.mjs',
+      'dist/index.server.cjs',
+      'dist/index.server.mjs',
+      'dist/index.types.cjs',
+      'dist/index.types.mjs',
     ]) {
       expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
         /^['"]use client['"];?/

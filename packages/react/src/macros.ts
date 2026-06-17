@@ -1,5 +1,9 @@
-import { t as _t } from './deprecated/i18n-context/functions/translation/t';
-import type { TemplateSyncResolutionFunction } from './deprecated/i18n-context/functions/translation/types';
+import { t as _t } from './index.client';
+
+type TemplateSyncResolutionFunction = (
+  strings: TemplateStringsArray,
+  ...values: unknown[]
+) => string;
 
 declare global {
   /**
