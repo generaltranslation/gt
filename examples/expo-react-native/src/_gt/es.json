@@ -1,0 +1,27 @@
+{
+  "title": {
+    "t": "Text",
+    "i": 1,
+    "c": "gt-react-native Expo"
+  },
+  "localeLabel": {
+    "t": "Text",
+    "i": 1,
+    "c": ["Idioma: ", { "k": "locale" }]
+  },
+  "welcomeMessage": {
+    "t": "Text",
+    "i": 1,
+    "c": [
+      "Esta frase se carga desde archivos locales de traduccion de GT con ",
+      { "k": "library" },
+      "."
+    ]
+  },
+  "tMessage": "Esta linea se traduce con gt().",
+  "countMessage": {
+    "t": "Text",
+    "i": 1,
+    "c": ["La app tiene ", { "k": "count", "v": "n" }, " ejemplos traducidos."]
+  }
+}

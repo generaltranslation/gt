@@ -38,3 +38,6 @@ packageExtensions:
   eslint-config-next@*:
     peerDependencies:
       next: '*'
+  '@expo/cli@*':
+    dependencies:
+      metro-runtime: '*'

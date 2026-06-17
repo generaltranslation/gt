@@ -29,13 +29,36 @@ npx gt init
 ```
 
 ```jsx
+// index.ts
+import { registerRootComponent } from 'expo';
+import { initializeGT } from 'gt-react-native';
+import App from './App';
+import gtConfig from './gt.config.json';
+import esTranslations from './src/_gt/es.json';
+import frTranslations from './src/_gt/fr.json';
+
+const localTranslations = {
+  es: esTranslations,
+  fr: frTranslations,
+};
+
+initializeGT({
+  defaultLocale: gtConfig.defaultLocale,
+  locales: gtConfig.locales,
+  loadTranslations: async (locale) => localTranslations[locale] ?? {},
+});
+
+registerRootComponent(App);
+```
+
+```jsx
+// App.tsx
+import { Text } from 'react-native';
 import { T, GTProvider } from 'gt-react-native';
-import gtConfig from '../gt.config.json';
-import { loadTranslations } from './loadTranslations';
 
 export default function App() {
   return (
-    <GTProvider config={gtConfig} loadTranslations={loadTranslations}>
+    <GTProvider>
       <T>
         <Text>This gets translated automatically.</Text>
       </T>

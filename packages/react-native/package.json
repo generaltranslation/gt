@@ -96,8 +96,8 @@
     "registry": "https://registry.npmjs.org/"
   },
   "peerDependencies": {
-    "react": "*",
-    "react-native": "*"
+    "react": ">=19.0.0",
+    "react-native": ">=0.78.0"
   },
   "dependencies": {
     "@formatjs/intl-datetimeformat": "^6.18.2",
@@ -111,7 +111,8 @@
     "@generaltranslation/format": "workspace:*",
     "@generaltranslation/react-core": "workspace:*",
     "@generaltranslation/supported-locales": "workspace:*",
-    "generaltranslation": "workspace:*"
+    "generaltranslation": "workspace:*",
+    "gt-i18n": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",
