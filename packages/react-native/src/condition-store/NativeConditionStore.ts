@@ -73,7 +73,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setLocale = (locale: LocaleCandidates): void => {
     const nextLocale = resolveLocale(locale);
-    this.updateLocale(nextLocale);
+    nativeStoreSet(this.localeStoreKey, nextLocale);
     this.reload({ locale: nextLocale });
   };
 

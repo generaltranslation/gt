@@ -2,12 +2,17 @@ import type { InternalGTProviderProps } from '@generaltranslation/react-core/con
 import { Suspense, use, useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import {
+  defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
+  defaultRegionCookieName as defaultRegionStoreKey,
+} from '@generaltranslation/react-core/internal';
 import type { LocaleCandidates, Locale } from 'gt-i18n/internal/types';
 import type {
   NativeConditionStoreParams,
   NativeConditionStoreState,
 } from '../condition-store/NativeConditionStore';
 import { getLocale, resolveLocale } from '../utils/getLocale';
+import { nativeStoreGet } from '../utils/nativeStore';
 import { loadTranslations, type LocaleTranslations } from './loadTranslations';
 import { NativeGTProvider } from './NativeGTProvider';
 
@@ -35,12 +40,24 @@ export function GTProvider(props: GTProviderProps) {
 }
 
 function LoadableGTProvider(props: LoadableGTProviderProps) {
-  const { locale, localeStoreKey } = props;
-  // Keep the native locale in React state so condition-store writes trigger rerenders.
-  const [nativeLocale, setNativeLocale] = useState(() =>
-    getLocale({ localeStoreKey })
-  );
-  const activeLocale = resolveLocale(locale ?? nativeLocale);
+  const {
+    locale,
+    localeStoreKey,
+    region,
+    regionStoreKey,
+    enableI18n,
+    enableI18nStoreKey,
+  } = props;
+  // Keep native conditions in React state so condition-store writes trigger rerenders.
+  const [nativeConditions, setNativeConditions] =
+    useState<NativeConditionStoreState>(() => ({
+      locale: getLocale({ localeStoreKey }),
+      region: getInitialRegion({ region, regionStoreKey }),
+      enableI18n: getInitialEnableI18n({ enableI18n, enableI18nStoreKey }),
+    }));
+  const activeLocale = resolveLocale(locale ?? nativeConditions.locale);
+  const activeRegion = region ?? nativeConditions.region;
+  const activeEnableI18n = enableI18n ?? nativeConditions.enableI18n;
   const localeTranslations = use(loadTranslations(activeLocale));
   const translations = useMemo<TranslationSnapshot>(
     () => ({ [activeLocale]: localeTranslations }),
@@ -48,21 +65,49 @@ function LoadableGTProvider(props: LoadableGTProviderProps) {
   );
   const reload = useCallback(
     (state: NativeConditionStoreState) => {
-      if (locale === undefined) {
-        setNativeLocale(state.locale);
-      }
+      setNativeConditions((previousState) => ({
+        locale: locale === undefined ? state.locale : previousState.locale,
+        region: region === undefined ? state.region : previousState.region,
+        enableI18n:
+          enableI18n === undefined
+            ? state.enableI18n
+            : previousState.enableI18n,
+      }));
     },
-    [locale]
+    [enableI18n, locale, region]
   );
 
   return (
     <NativeGTProvider
       {...props}
       locale={activeLocale}
+      region={activeRegion}
+      enableI18n={activeEnableI18n}
       translations={translations}
       _reload={reload}
     />
   );
+}
+
+function getInitialRegion({
+  region,
+  regionStoreKey = defaultRegionStoreKey,
+}: Pick<LoadableGTProviderProps, 'region' | 'regionStoreKey'>):
+  | string
+  | undefined {
+  return nativeStoreGet(regionStoreKey) || region;
+}
+
+function getInitialEnableI18n({
+  enableI18n,
+  enableI18nStoreKey = defaultEnableI18nStoreKey,
+}: Pick<
+  LoadableGTProviderProps,
+  'enableI18n' | 'enableI18nStoreKey'
+>): boolean {
+  const storedEnableI18n = nativeStoreGet(enableI18nStoreKey);
+  if (storedEnableI18n === null) return enableI18n ?? true;
+  return storedEnableI18n === 'true';
 }
 
 function DefaultLoadingFallback() {

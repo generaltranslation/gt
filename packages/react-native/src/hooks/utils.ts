@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { getVersionId } from '@generaltranslation/react-core/pure';
 import {
   useLocale,
@@ -11,5 +10,5 @@ export function useLocaleDirection(locale?: string): 'ltr' | 'rtl' {
 }
 
 export function useVersionId(): string | undefined {
-  return useMemo(() => getVersionId(), []);
+  return getVersionId();
 }
