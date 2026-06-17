@@ -22,7 +22,11 @@ export function loadTranslations(locale: string): Promise<LocaleTranslations> {
     // TODO: Support promise caching in i18nCache in a separate PR.
     promise = i18nCache.loadTranslations(locale).catch((error: unknown) => {
       i18nCacheTranslationPromises.delete(locale);
-      throw error;
+      console.warn(
+        `Failed to load translations for locale "${locale}". Falling back to an empty translation snapshot.`,
+        error
+      );
+      return {};
     });
     i18nCacheTranslationPromises.set(locale, promise);
   }

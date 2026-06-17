@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadTranslations } from '../loadTranslations';
 
 const loadTranslationsMock = vi.hoisted(() => vi.fn());
@@ -13,6 +13,11 @@ vi.mock('@generaltranslation/react-core/context', () => ({
 describe('loadTranslations', () => {
   beforeEach(() => {
     loadTranslationsMock.mockReset();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('caches pending translation promises', () => {
@@ -23,12 +28,16 @@ describe('loadTranslations', () => {
     expect(loadTranslationsMock).toHaveBeenCalledTimes(1);
   });
 
-  it('evicts rejected translation promises so callers can retry', async () => {
+  it('warns and returns an empty snapshot when translation loading fails', async () => {
     loadTranslationsMock
       .mockRejectedValueOnce(new Error('failed'))
       .mockResolvedValueOnce({});
 
-    await expect(loadTranslations('es')).rejects.toThrow('failed');
+    await expect(loadTranslations('es')).resolves.toEqual({});
+    expect(console.warn).toHaveBeenCalledWith(
+      'Failed to load translations for locale "es". Falling back to an empty translation snapshot.',
+      expect.any(Error)
+    );
     await expect(loadTranslations('es')).resolves.toEqual({});
     expect(loadTranslationsMock).toHaveBeenCalledTimes(2);
   });
