@@ -10,7 +10,6 @@
     "CHANGELOG.md"
   ],
   "sideEffects": [
-    "./dist/browser.*",
     "./dist/macros.*"
   ],
   "peerDependencies": {
@@ -99,62 +98,6 @@
         "default": "./dist/internal.mjs"
       }
     },
-    "./client": {
-      "require": {
-        "types": "./dist/client.d.cts",
-        "default": "./dist/client.cjs"
-      },
-      "import": {
-        "types": "./dist/client.d.mts",
-        "default": "./dist/client.mjs"
-      }
-    },
-    "./context": {
-      "react-server": {
-        "require": {
-          "types": "./dist/context.rsc.d.cts",
-          "default": "./dist/context.rsc.cjs"
-        },
-        "import": {
-          "types": "./dist/context.rsc.d.mts",
-          "default": "./dist/context.rsc.mjs"
-        },
-        "default": "./dist/context.rsc.mjs"
-      },
-      "browser": {
-        "require": {
-          "types": "./dist/context.types.d.cts",
-          "default": "./dist/context.client.cjs"
-        },
-        "import": {
-          "types": "./dist/context.types.d.mts",
-          "default": "./dist/context.client.mjs"
-        },
-        "default": "./dist/context.client.mjs"
-      },
-      "require": {
-        "types": "./dist/context.types.d.cts",
-        "default": "./dist/context.server.cjs"
-      },
-      "import": {
-        "types": "./dist/context.types.d.mts",
-        "default": "./dist/context.server.mjs"
-      },
-      "default": "./dist/context.server.mjs"
-    },
-    "./browser": {
-      "require": {
-        "types": "./dist/browser.d.cts",
-        "default": "./dist/browser.cjs"
-      },
-      "import": {
-        "types": "./dist/browser.d.mts",
-        "default": "./dist/browser.mjs"
-      }
-    },
-    "./browser/types": {
-      "types": "./dist/browser.d.cts"
-    },
     "./macros": {
       "require": {
         "types": "./dist/macros.d.cts",
@@ -168,23 +111,11 @@
   },
   "typesVersions": {
     "*": {
-      "client": [
-        "./dist/client.d.cts"
-      ],
-      "context": [
-        "./dist/context.types.d.cts"
-      ],
       "internal": [
         "./dist/internal.d.cts"
       ],
       "setup": [
         "./dist/setup.d.cts"
-      ],
-      "browser": [
-        "./dist/browser.d.cts"
-      ],
-      "browser/types": [
-        "./dist/browser.d.cts"
       ],
       "macros": [
         "./dist/macros.d.cts"
@@ -194,23 +125,11 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "gt-react/client": [
-        "./dist/client"
-      ],
-      "gt-react/context": [
-        "./dist/context.types.d.cts"
-      ],
       "gt-react/internal": [
         "./dist/internal"
       ],
       "gt-react/setup": [
         "./dist/setup.d.cts"
-      ],
-      "gt-react/browser": [
-        "./dist/browser.d.cts"
-      ],
-      "gt-react/browser/types": [
-        "./dist/browser.d.cts"
       ],
       "gt-react/macros": [
         "./dist/macros.d.cts"
