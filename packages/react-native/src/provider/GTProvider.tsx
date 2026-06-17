@@ -2,17 +2,16 @@ import type { InternalGTProviderProps } from '@generaltranslation/react-core/con
 import { Suspense, use, useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import {
-  defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
-  defaultRegionCookieName as defaultRegionStoreKey,
-} from '@generaltranslation/react-core/internal';
 import type { LocaleCandidates, Locale } from 'gt-i18n/internal/types';
 import type {
   NativeConditionStoreParams,
   NativeConditionStoreState,
 } from '../condition-store/NativeConditionStore';
 import { getLocale } from '../utils/getLocale';
-import { nativeStoreGet } from '../utils/nativeStore';
+import {
+  getInitialEnableI18n,
+  getInitialRegion,
+} from '../utils/getInitialNativeConditions';
 import { resolveLocale } from '../utils/resolveLocale';
 import { loadTranslations, type LocaleTranslations } from './loadTranslations';
 import { NativeGTProvider } from './NativeGTProvider';
@@ -92,27 +91,6 @@ function LoadableGTProvider(props: LoadableGTProviderProps) {
       _reload={reload}
     />
   );
-}
-
-function getInitialRegion({
-  region,
-  regionStoreKey = defaultRegionStoreKey,
-}: Pick<LoadableGTProviderProps, 'region' | 'regionStoreKey'>):
-  | string
-  | undefined {
-  return nativeStoreGet(regionStoreKey) || region;
-}
-
-function getInitialEnableI18n({
-  enableI18n,
-  enableI18nStoreKey = defaultEnableI18nStoreKey,
-}: Pick<
-  LoadableGTProviderProps,
-  'enableI18n' | 'enableI18nStoreKey'
->): boolean {
-  const storedEnableI18n = nativeStoreGet(enableI18nStoreKey);
-  if (storedEnableI18n === null) return enableI18n ?? true;
-  return storedEnableI18n === 'true';
 }
 
 function DefaultLoadingFallback() {

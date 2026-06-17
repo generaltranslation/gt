@@ -9,6 +9,10 @@ import {
   defaultRegionCookieName as defaultRegionStoreKey,
 } from '@generaltranslation/react-core/internal';
 import { getLocale } from '../utils/getLocale';
+import {
+  getInitialEnableI18n,
+  getInitialRegion,
+} from '../utils/getInitialNativeConditions';
 import { nativeStoreGet, nativeStoreSet } from '../utils/nativeStore';
 import { resolveLocale } from '../utils/resolveLocale';
 
@@ -46,12 +50,18 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
     this.updateLocale(
       config.locale ?? getLocale({ localeStoreKey: this.localeStoreKey })
     );
-    const region = getInitialRegion(config, this.regionStoreKey);
+    const region = getInitialRegion({
+      region: config.region,
+      regionStoreKey: this.regionStoreKey,
+    });
     if (region !== undefined) {
       this.updateRegion(region);
     }
     this.updateEnableI18n(
-      getInitialEnableI18n(config, this.enableI18nStoreKey)
+      getInitialEnableI18n({
+        enableI18n: config.enableI18n,
+        enableI18nStoreKey: this.enableI18nStoreKey,
+      })
     );
   }
 
@@ -115,20 +125,4 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
       enableI18n: state.enableI18n ?? this.getEnableI18n(),
     });
   };
-}
-
-function getInitialRegion(
-  config: NativeConditionStoreParams,
-  regionStoreKey: string
-): string | undefined {
-  return nativeStoreGet(regionStoreKey) || config.region;
-}
-
-function getInitialEnableI18n(
-  config: NativeConditionStoreParams,
-  enableI18nStoreKey: string
-): boolean {
-  const storedEnableI18n = nativeStoreGet(enableI18nStoreKey);
-  if (storedEnableI18n === null) return config.enableI18n ?? true;
-  return storedEnableI18n === 'true';
 }
