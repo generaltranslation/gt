@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 import type { Translation } from 'gt-i18n/types';
 import type {
   TranslateLookup,
@@ -20,15 +20,23 @@ export function useTranslate<T extends Translation>(
   const i18nStore = useI18nStore();
   const translationsSnapshot = useTranslationsSnapshot();
   const onMissingTranslation = useHandleMissingTranslation();
+  const versionRef = useRef(0);
 
-  /**
-   * TODO: for snapshot lookup, we can use the translation snapshot
-   * to avoid the adapter.resolveTranslation call.
-   */
-  const storeTranslation = useSyncExternalStore(
-    (listener) => i18nStore.subscribeToTranslate(lookup, listener),
-    () => i18nStore.getTranslateSnapshot(lookup, translationsSnapshot),
-    () => i18nStore.getTranslateSnapshot(lookup, translationsSnapshot)
+  const subscribe = useCallback(
+    (listener: () => void) =>
+      i18nStore.subscribeToTranslate(lookup, () => {
+        versionRef.current++;
+        listener();
+      }),
+    [i18nStore, lookup]
+  );
+  const getSnapshot = useCallback(() => versionRef.current, []);
+
+  useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+  const storeTranslation = i18nStore.getTranslateSnapshot(
+    lookup,
+    translationsSnapshot
   );
 
   if (storeTranslation == null && getI18nConfig().isDevHotReloadEnabled()) {
