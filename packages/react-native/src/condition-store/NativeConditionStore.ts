@@ -15,7 +15,16 @@ export type NativeConditionStoreParams = WritableConditionStoreParams & {
   localeStoreKey?: string;
   regionStoreKey?: string;
   enableI18nStoreKey?: string;
+  _reload?: ReloadType;
 };
+
+export type NativeConditionStoreState = {
+  locale: string;
+  region: string | undefined;
+  enableI18n: boolean;
+};
+
+export type ReloadType = (state: NativeConditionStoreState) => void;
 
 /**
  * Condition store implementation for React Native.
@@ -24,8 +33,10 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
   private localeStoreKey: string;
   private regionStoreKey: string;
   private enableI18nStoreKey: string;
+  private customReload: ReloadType;
 
   constructor(config: NativeConditionStoreParams) {
+    this.customReload = config._reload ?? (() => undefined);
     this.localeStoreKey = config.localeStoreKey ?? defaultLocaleStoreKey;
     this.regionStoreKey = config.regionStoreKey ?? defaultRegionStoreKey;
     this.enableI18nStoreKey =
@@ -62,6 +73,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setLocale = (locale: LocaleCandidates): void => {
     this.updateLocale(locale);
+    this.reload();
   };
 
   getRegion = (): string | undefined => {
@@ -70,6 +82,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setRegion = (region: string | undefined): void => {
     this.updateRegion(region);
+    this.reload();
   };
 
   getEnableI18n = (): boolean => {
@@ -78,6 +91,7 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   setEnableI18n = (enableI18n: boolean): void => {
     this.updateEnableI18n(enableI18n);
+    this.reload();
   };
 
   updateLocale = (locale: LocaleCandidates): void => {
@@ -90,6 +104,14 @@ export class NativeConditionStore implements WritableConditionStoreInterface {
 
   updateEnableI18n = (enableI18n: boolean): void => {
     nativeStoreSet(this.enableI18nStoreKey, enableI18n ? 'true' : 'false');
+  };
+
+  reload = (): void => {
+    this.customReload({
+      locale: this.getLocale(),
+      region: this.getRegion(),
+      enableI18n: this.getEnableI18n(),
+    });
   };
 }
 

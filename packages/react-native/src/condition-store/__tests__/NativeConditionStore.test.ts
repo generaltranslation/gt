@@ -61,6 +61,21 @@ describe('NativeConditionStore', () => {
     expect(conditionStore.getLocale()).toBe('fr');
   });
 
+  it('calls reload after condition updates', () => {
+    const reload = vi.fn();
+    const conditionStore = new NativeConditionStore({
+      _reload: reload,
+    });
+
+    conditionStore.setLocale('fr');
+
+    expect(reload).toHaveBeenCalledWith({
+      locale: 'fr',
+      region: undefined,
+      enableI18n: true,
+    });
+  });
+
   it('persists region and enableI18n through the native store', () => {
     nativeStore.set(defaultRegionStoreKey, 'CA');
     nativeStore.set(defaultEnableI18nStoreKey, 'false');
