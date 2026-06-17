@@ -40,6 +40,7 @@ export function GTProvider(props: GTProviderProps) {
 
 function LoadableGTProvider(props: LoadableGTProviderProps) {
   const { locale, localeStoreKey } = props;
+  // Keep the native locale in React state so condition-store writes trigger rerenders.
   const [nativeLocale, setNativeLocale] = useState(() =>
     getLocale({ localeStoreKey })
   );
