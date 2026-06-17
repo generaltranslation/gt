@@ -40,6 +40,10 @@ export function GTProvider(props: GTProviderProps) {
   );
 }
 
+/**
+ * This wrapper takes the place of a loader that would be present in
+ * SSR style applications.
+ */
 function LoadableGTProvider(props: LoadableGTProviderProps) {
   const {
     locale,
