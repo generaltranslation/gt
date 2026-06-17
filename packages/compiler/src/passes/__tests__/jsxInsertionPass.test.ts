@@ -479,7 +479,7 @@ describe('jsxInsertionPass', () => {
       jsx("div", { children: "Hello" });
     `;
     const { imports } = transform(code);
-    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
+    const gtImport = imports.find((i) => i.source.value === 'gt-react');
     expect(gtImport).toBeDefined();
     const names = gtImport!.specifiers
       .filter((s): s is t.ImportSpecifier => t.isImportSpecifier(s))
@@ -494,7 +494,7 @@ describe('jsxInsertionPass', () => {
       jsx("div", {});
     `;
     const { imports } = transform(code);
-    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
+    const gtImport = imports.find((i) => i.source.value === 'gt-react');
     expect(gtImport).toBeUndefined();
   });
 

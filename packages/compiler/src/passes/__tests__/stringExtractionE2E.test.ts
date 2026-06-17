@@ -381,7 +381,7 @@ describe('t() string extraction E2E', () => {
 // Unlike gt()/msg()/t(), tagged templates convert dynamic
 // expressions into ICU {0} placeholders rather than rejecting them.
 // The collection pass extracts via processTaggedTemplateExpression
-// for unbound t or t imported from gt-react/browser.
+// for unbound t or t imported from gt-react.
 // ─────────────────────────────────────────────────────
 
 describe('t`` tagged template extraction E2E', () => {
@@ -453,8 +453,8 @@ describe('t`` tagged template extraction E2E', () => {
     expect(content[0].message).toBe('Hello World, {0}!');
   });
 
-  it('extracts tagged template imported from gt-react/browser', () => {
-    const state = collect(`import { t } from 'gt-react/browser';\nt\`Hello\`;`);
+  it('extracts tagged template imported from gt-react', () => {
+    const state = collect(`import { t } from 'gt-react';\nt\`Hello\`;`);
     const content = getRuntimeContent(state);
     expect(content).toHaveLength(1);
     expect(content[0].message).toBe('Hello');
@@ -468,7 +468,7 @@ describe('t`` tagged template extraction E2E', () => {
 
   it('skips tagged template containing derive() (returns TemplateLiteral)', () => {
     const state = collect(
-      `import { derive } from 'gt-react/browser';\nt\`Hello \${derive(getName())}\`;`
+      `import { derive } from 'gt-react';\nt\`Hello \${derive(getName())}\`;`
     );
     const content = getRuntimeContent(state);
     expect(content).toHaveLength(0);

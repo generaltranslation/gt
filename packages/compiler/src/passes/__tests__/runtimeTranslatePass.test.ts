@@ -351,13 +351,13 @@ describe('runtimeTranslatePass', () => {
   // ===== Import handling =====
 
   describe('import handling', () => {
-    it('injects import from gt-react/browser', () => {
+    it('injects import from gt-react', () => {
       const { imports } = transform(`
         ${USEGT_SETUP}
         const msg = t("Hello");
       `);
 
-      const specifiers = getImportSpecifiers(imports, 'gt-react/browser');
+      const specifiers = getImportSpecifiers(imports, 'gt-react');
       expect(specifiers).toContain(
         GT_OTHER_FUNCTIONS.GtInternalRuntimeTranslateString
       );
@@ -366,14 +366,14 @@ describe('runtimeTranslatePass', () => {
     it('does not duplicate import if GtInternalRuntimeTranslateString already imported', () => {
       const { imports } = transform(`
         import { useGT } from 'gt-react';
-        import { GtInternalRuntimeTranslateString } from 'gt-react/browser';
+        import { GtInternalRuntimeTranslateString } from 'gt-react';
         const t = useGT();
         const msg = t("Hello");
       `);
 
-      // Count how many imports from gt-react/browser have GtInternalRuntimeTranslateString
+      // Count how many imports from gt-react have GtInternalRuntimeTranslateString
       const allSpecifiers = imports
-        .filter((i) => i.source.value === 'gt-react/browser')
+        .filter((i) => i.source.value === 'gt-react')
         .flatMap((i) =>
           i.specifiers
             .filter((s): s is t.ImportSpecifier => t.isImportSpecifier(s))
@@ -396,7 +396,7 @@ describe('runtimeTranslatePass', () => {
       `);
 
       expect(runtimeCalls).toHaveLength(0);
-      const specifiers = getImportSpecifiers(imports, 'gt-react/browser');
+      const specifiers = getImportSpecifiers(imports, 'gt-react');
       expect(specifiers).not.toContain(
         GT_OTHER_FUNCTIONS.GtInternalRuntimeTranslateString
       );
@@ -567,7 +567,7 @@ describe('runtimeTranslatePass', () => {
     // → GtInternalRuntimeTranslateString("Hello", { $_hash: "..." })
     it('extracts tagged template with interpolation via macro expansion', () => {
       const { runtimeCalls } = transformWithMacro(`
-        import { t } from 'gt-react/browser';
+        import { t } from 'gt-react';
         const x = t\`Hello \${name}\`;
       `);
 
@@ -582,7 +582,7 @@ describe('runtimeTranslatePass', () => {
     // → GtInternalRuntimeTranslateString("Hello", { $_hash: "..." })
     it('extracts simple tagged template via macro expansion', () => {
       const { runtimeCalls } = transformWithMacro(`
-        import { t } from 'gt-react/browser';
+        import { t } from 'gt-react';
         const x = t\`Hello\`;
       `);
 

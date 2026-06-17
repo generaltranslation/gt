@@ -159,7 +159,7 @@ describe('transformTemplateLiteral', () => {
 
   it('`Hello ${derive(getName())}` → template with derive preserved', () => {
     const { message, generatedMessage, variables } = transformWithImports(
-      `import { derive } from 'gt-react/browser';\n\`Hello \${derive(getName())}\``
+      `import { derive } from 'gt-react';\n\`Hello \${derive(getName())}\``
     );
     expect(t.isTemplateLiteral(message)).toBe(true);
     const tl = message as t.TemplateLiteral;
@@ -172,7 +172,7 @@ describe('transformTemplateLiteral', () => {
 
   it('`${derive(a)}${derive(b)}` → two derive expressions, no vars', () => {
     const { message, generatedMessage, variables } = transformWithImports(
-      `import { derive } from 'gt-react/browser';\n\`\${derive(a)}\${derive(b)}\``
+      `import { derive } from 'gt-react';\n\`\${derive(a)}\${derive(b)}\``
     );
     expect(t.isTemplateLiteral(message)).toBe(true);
     const tl = message as t.TemplateLiteral;
@@ -188,7 +188,7 @@ describe('transformTemplateLiteral', () => {
 
   it('`A${derive(x)}B${derive(y)}C` → quasis A, B, C with two derives', () => {
     const { message, variables } = transformWithImports(
-      `import { derive } from 'gt-react/browser';\n\`A\${derive(x)}B\${derive(y)}C\``
+      `import { derive } from 'gt-react';\n\`A\${derive(x)}B\${derive(y)}C\``
     );
     expect(t.isTemplateLiteral(message)).toBe(true);
     const tl = message as t.TemplateLiteral;
@@ -201,7 +201,7 @@ describe('transformTemplateLiteral', () => {
 
   it('`${derive(x)}${name}` → derive expr + {0} placeholder', () => {
     const { message, generatedVariables } = transformWithImports(
-      `import { derive } from 'gt-react/browser';\n\`\${derive(x)}\${name}\``
+      `import { derive } from 'gt-react';\n\`\${derive(x)}\${name}\``
     );
     expect(t.isTemplateLiteral(message)).toBe(true);
     const tl = message as t.TemplateLiteral;
@@ -213,7 +213,7 @@ describe('transformTemplateLiteral', () => {
 
   it('`${name}${derive(x)}${greeting}` → dynamic, derive, dynamic', () => {
     const { message, generatedVariables } = transformWithImports(
-      `import { derive } from 'gt-react/browser';\n\`\${name}\${derive(x)}\${greeting}\``
+      `import { derive } from 'gt-react';\n\`\${name}\${derive(x)}\${greeting}\``
     );
     expect(t.isTemplateLiteral(message)).toBe(true);
     const tl = message as t.TemplateLiteral;
@@ -226,7 +226,7 @@ describe('transformTemplateLiteral', () => {
 
   it('`A${"B"}${derive(x)}${"C"}D` → static collapsed around derive', () => {
     const { message, variables } = transformWithImports(
-      `import { derive } from 'gt-react/browser';\n\`A\${"B"}\${derive(x)}\${"C"}D\``
+      `import { derive } from 'gt-react';\n\`A\${"B"}\${derive(x)}\${"C"}D\``
     );
     expect(t.isTemplateLiteral(message)).toBe(true);
     const tl = message as t.TemplateLiteral;
@@ -238,7 +238,7 @@ describe('transformTemplateLiteral', () => {
 
   it('`${derive(x)}` → just the derive, no static text', () => {
     const { message, generatedMessage, variables } = transformWithImports(
-      `import { derive } from 'gt-react/browser';\n\`\${derive(x)}\``
+      `import { derive } from 'gt-react';\n\`\${derive(x)}\``
     );
     expect(t.isTemplateLiteral(message)).toBe(true);
     const tl = message as t.TemplateLiteral;
@@ -251,7 +251,7 @@ describe('transformTemplateLiteral', () => {
 
   it('three derives with text between each', () => {
     const { message, variables } = transformWithImports(
-      `import { derive } from 'gt-react/browser';\n\`X\${derive(a)}Y\${derive(b)}Z\${derive(c)}W\``
+      `import { derive } from 'gt-react';\n\`X\${derive(a)}Y\${derive(b)}Z\${derive(c)}W\``
     );
     expect(t.isTemplateLiteral(message)).toBe(true);
     const tl = message as t.TemplateLiteral;

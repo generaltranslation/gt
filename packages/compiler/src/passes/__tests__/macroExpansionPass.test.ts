@@ -201,13 +201,13 @@ describe('macroExpansionPass', () => {
 
   it('adds auto-import when macros are expanded', () => {
     const { imports } = transform('const x = t`hello`;');
-    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
+    const gtImport = imports.find((i) => i.source.value === 'gt-react');
     expect(gtImport).toBeDefined();
   });
 
   it('does NOT add auto-import when no macros are found', () => {
     const { imports } = transform('const x = t("hello");');
-    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
+    const gtImport = imports.find((i) => i.source.value === 'gt-react');
     expect(gtImport).toBeUndefined();
   });
 
@@ -215,22 +215,18 @@ describe('macroExpansionPass', () => {
     const { tCalls, imports } = transform(
       'const a = t`hello ${name}`;\nconst b = t`goodbye ${name}`;'
     );
-    const gtImports = imports.filter(
-      (i) => i.source.value === 'gt-react/browser'
-    );
+    const gtImports = imports.filter((i) => i.source.value === 'gt-react');
     expect(gtImports).toHaveLength(1);
     expect(tCalls).toHaveLength(2);
     expect(getMessageString(tCalls[0])).toBe('hello {0}');
     expect(getMessageString(tCalls[1])).toBe('goodbye {0}');
   });
 
-  it('does NOT add import when t is already imported from gt-react/browser', () => {
+  it('does NOT add import when t is already imported from gt-react', () => {
     const { tCalls, imports } = transform(
-      "import { t } from 'gt-react/browser';\nconst x = t`hello ${name}`;"
+      "import { t } from 'gt-react';\nconst x = t`hello ${name}`;"
     );
-    const gtImports = imports.filter(
-      (i) => i.source.value === 'gt-react/browser'
-    );
+    const gtImports = imports.filter((i) => i.source.value === 'gt-react');
     expect(gtImports).toHaveLength(1);
     expect(tCalls).toHaveLength(1);
     expect(getMessageString(tCalls[0])).toBe('hello {0}');
@@ -293,7 +289,7 @@ describe('macroExpansionPass', () => {
     });
     expect(tCalls).toHaveLength(1);
     expect(getMessageString(tCalls[0])).toBe('hello');
-    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
+    const gtImport = imports.find((i) => i.source.value === 'gt-react');
     expect(gtImport).toBeUndefined();
   });
 
@@ -330,7 +326,7 @@ describe('macroExpansionPass', () => {
 
   it('preserves derive in template literal', () => {
     const code =
-      "import { derive } from 'gt-react/browser';\nconst x = t(`Hello ${derive(getName())}`);";
+      "import { derive } from 'gt-react';\nconst x = t(`Hello ${derive(getName())}`);";
     const { tCalls } = transform(code);
     expect(tCalls).toHaveLength(1);
     const tl = getMessageTemplate(tCalls[0]);
@@ -348,7 +344,7 @@ describe('macroExpansionPass', () => {
 
   it.skip('preserves derive in concatenation with static collapse and dynamic extraction', () => {
     const code =
-      'import { derive } from \'gt-react/browser\';\nconst x = t(`A${derive(getName())}B` + "C" + name);';
+      'import { derive } from \'gt-react\';\nconst x = t(`A${derive(getName())}B` + "C" + name);';
     const { tCalls } = transform(code);
     expect(tCalls).toHaveLength(1);
     const tl = getMessageTemplate(tCalls[0]);
@@ -362,7 +358,7 @@ describe('macroExpansionPass', () => {
 
   it('multiple derives in tagged template', () => {
     const code =
-      "import { derive } from 'gt-react/browser';\nconst x = t`${derive(a)} and ${derive(b)}`;";
+      "import { derive } from 'gt-react';\nconst x = t`${derive(a)} and ${derive(b)}`;";
     const { tCalls } = transform(code);
     expect(tCalls).toHaveLength(1);
     const tl = getMessageTemplate(tCalls[0]);
@@ -376,7 +372,7 @@ describe('macroExpansionPass', () => {
 
   it('derive mixed with dynamic in tagged template', () => {
     const code =
-      "import { derive } from 'gt-react/browser';\nconst x = t`${name} says ${derive(greeting)}`;";
+      "import { derive } from 'gt-react';\nconst x = t`${name} says ${derive(greeting)}`;";
     const { tCalls } = transform(code);
     expect(tCalls).toHaveLength(1);
     const tl = getMessageTemplate(tCalls[0]);
@@ -390,7 +386,7 @@ describe('macroExpansionPass', () => {
 
   it.skip('derive adjacent to static string collapses around it', () => {
     const code =
-      'import { derive } from \'gt-react/browser\';\nconst x = t(`A${"B"}${derive(x)}${"C"}D`);';
+      'import { derive } from \'gt-react\';\nconst x = t(`A${"B"}${derive(x)}${"C"}D`);';
     const { tCalls } = transform(code);
     expect(tCalls).toHaveLength(1);
     const tl = getMessageTemplate(tCalls[0]);
@@ -403,7 +399,7 @@ describe('macroExpansionPass', () => {
 
   it('three derives with text between each', () => {
     const code =
-      "import { derive } from 'gt-react/browser';\nconst x = t`X${derive(a)}Y${derive(b)}Z${derive(c)}W`;";
+      "import { derive } from 'gt-react';\nconst x = t`X${derive(a)}Y${derive(b)}Z${derive(c)}W`;";
     const { tCalls } = transform(code);
     expect(tCalls).toHaveLength(1);
     const tl = getMessageTemplate(tCalls[0]);
@@ -415,7 +411,7 @@ describe('macroExpansionPass', () => {
 
   it('derive only in tagged template', () => {
     const code =
-      "import { derive } from 'gt-react/browser';\nconst x = t`${derive(x)}`;";
+      "import { derive } from 'gt-react';\nconst x = t`${derive(x)}`;";
     const { tCalls } = transform(code);
     expect(tCalls).toHaveLength(1);
     const tl = getMessageTemplate(tCalls[0]);

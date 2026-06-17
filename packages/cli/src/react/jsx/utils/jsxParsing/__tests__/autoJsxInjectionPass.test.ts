@@ -994,7 +994,7 @@ describe('autoInsertJsxComponents — injection pass', () => {
       `;
       const r = injectAndAnalyze(code);
       expect(r.tCount).toBe(1);
-      expect(r.imports).toContain('gt-react/browser');
+      expect(r.imports).toContain('gt-react');
     });
 
     it('does NOT inject import when no insertions', () => {
@@ -1007,16 +1007,16 @@ describe('autoInsertJsxComponents — injection pass', () => {
       expect(r.tCount).toBe(0);
     });
 
-    it('does not duplicate import when already imported from gt-react/browser', () => {
+    it('does not duplicate import when already imported from gt-react', () => {
       // GtInternalTranslateJsx and GtInternalVar already imported —
       // ensureTAndVarImported should detect this and not add a second import.
       const code = `
-        import { GtInternalTranslateJsx, GtInternalVar } from "gt-react/browser";
+        import { GtInternalTranslateJsx, GtInternalVar } from "gt-react";
         export default function Page() { return <div>Hello</div>; }
       `;
       const r = injectAndAnalyze(code);
-      // Should only have one gt-react/browser import
-      const gtImports = r.imports.filter((i) => i === 'gt-react/browser');
+      // Should only have one gt-react import
+      const gtImports = r.imports.filter((i) => i === 'gt-react');
       expect(gtImports).toHaveLength(1);
     });
   });

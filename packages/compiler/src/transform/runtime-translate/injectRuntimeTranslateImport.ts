@@ -7,7 +7,7 @@ import {
 
 /**
  * Inject runtime translate import with only the specifiers needed.
- * `import { GtInternalRuntimeTranslateString, GtInternalRuntimeTranslateJsx } from 'gt-react/browser'`
+ * `import { GtInternalRuntimeTranslateString, GtInternalRuntimeTranslateJsx } from 'gt-react'`
  */
 export function injectRuntimeTranslateImport(
   path: NodePath<t.Program>,
@@ -29,7 +29,7 @@ export function injectRuntimeTranslateImport(
 
   const importDecl = t.importDeclaration(
     specifiers,
-    t.stringLiteral(GT_IMPORT_SOURCES.GT_REACT_BROWSER)
+    t.stringLiteral(GT_IMPORT_SOURCES.GT_REACT)
   );
 
   const [inserted] = path.unshiftContainer('body', importDecl);

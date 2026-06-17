@@ -6,7 +6,7 @@ import {
 } from '../../utils/constants/gt/constants';
 
 /**
- * Inject `import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser'`
+ * Inject `import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react'`
  * as the first statement in the program.
  */
 export function injectJsxInsertionImport(path: NodePath<t.Program>): void {
@@ -18,7 +18,7 @@ export function injectJsxInsertionImport(path: NodePath<t.Program>): void {
       t.importSpecifier(t.identifier(tName), t.identifier(tName)),
       t.importSpecifier(t.identifier(varName), t.identifier(varName)),
     ],
-    t.stringLiteral(GT_IMPORT_SOURCES.GT_REACT_BROWSER)
+    t.stringLiteral(GT_IMPORT_SOURCES.GT_REACT)
   );
 
   path.unshiftContainer('body', importDecl);

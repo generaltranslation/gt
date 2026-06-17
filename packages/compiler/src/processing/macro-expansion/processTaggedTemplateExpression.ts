@@ -11,7 +11,7 @@ import { isStringTranslationTaggedTemplate } from '../../utils/parsing/isStringT
  *
  * Only transforms when:
  * - t is unbound (global macro via gt-react/macros)
- * - t is imported from gt-react/browser
+ * - t is imported from gt-react
  * Skips when t is bound to a non-GT import (e.g., i18next)
  */
 export function processTaggedTemplateExpression(

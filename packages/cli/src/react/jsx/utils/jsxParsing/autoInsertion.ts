@@ -38,7 +38,7 @@ export function isAutoInserted(node: t.Node): boolean {
 
 /**
  * Ensure GtInternalTranslateJsx and GtInternalVar are imported in the AST.
- * Always adds: import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
+ * Always adds: import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react';
  * These are distinct from user T/Var so there's no ambiguity.
  *
  * Updates importAliases in-place.

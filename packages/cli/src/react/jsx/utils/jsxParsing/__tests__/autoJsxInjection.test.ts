@@ -75,7 +75,7 @@ describe('auto JSX injection simulation', () => {
     traverse(ast, {
       ImportDeclaration(path) {
         const source = path.node.source.value;
-        if (['gt-next', 'gt-react', 'gt-react/browser'].includes(source)) {
+        if (['gt-next', 'gt-react', 'gt-react'].includes(source)) {
           path.node.specifiers.forEach((spec) => {
             if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
               importAliases[spec.local.name] = spec.imported.name;
@@ -552,7 +552,7 @@ describe('auto JSX injection simulation', () => {
       //     return <h1>Welcome</h1>;
       //   }
       //
-      // ensureTAndVarImported() should add: import { T, Var } from "gt-react/browser"
+      // ensureTAndVarImported() should add: import { T, Var } from "gt-react"
       // Then auto-insertion wraps: <h1><T>Welcome</T></h1>
       // scope.crawl() picks up the new binding
       //
@@ -821,7 +821,7 @@ describe('auto JSX injection simulation', () => {
       // element-by-element. The {userName} inside children gets Var-wrapped.
       // EXPECTED: no errors, Branch children in jsxChildren contains text + variable
       const code = `
-        import { Branch } from "gt-react/browser";
+        import { Branch } from "gt-react";
         export default function Page() {
           const userName = "Ernest";
           return (
@@ -859,7 +859,7 @@ describe('auto JSX injection simulation', () => {
       // INJECTED: <div><_T><Plural n={count}>You have <_Var>{count}</_Var> items</Plural></_T></div>
       // EXPECTED: no errors, Plural children contains text + variable
       const code = `
-        import { Plural } from "gt-react/browser";
+        import { Plural } from "gt-react";
         export default function Page() {
           const count = 5;
           return (
@@ -893,7 +893,7 @@ describe('auto JSX injection simulation', () => {
       // {userName} inside Ernest's fragment should get Var-wrapped.
       // EXPECTED: no errors
       const code = `
-        import { Branch } from "gt-react/browser";
+        import { Branch } from "gt-react";
         export default function Page() {
           const userName = "Ernest";
           return (
@@ -915,7 +915,7 @@ describe('auto JSX injection simulation', () => {
       // INJECTED: <div><_T>Hello <Derive>{getName()}</Derive></_T></div>
       // Derive children are fully opaque — no Var wrapping, no errors
       const code = `
-        import { Derive } from "gt-react/browser";
+        import { Derive } from "gt-react";
         export default function Page() {
           return <div>Hello <Derive>{getName()}</Derive></div>;
         }
@@ -937,7 +937,7 @@ describe('auto JSX injection simulation', () => {
       // Auto-injection should wrap Plural itself in _T.
       // EXPECTED: no errors, at least 1 update extracted
       const code = `
-        import { Plural } from "gt-react/browser";
+        import { Plural } from "gt-react";
         export default function Page() {
           const n = 1;
           return <Plural n={n} one={<><strong>one</strong></>}><>other</></Plural>;
@@ -959,7 +959,7 @@ describe('auto JSX injection simulation', () => {
       // EXPECTED jsxChildren:
       //   { "t": "Derive", "i": 1, "c": { "t": "C2", "i": 2, "c": "other some other examples" } }
       const code = `
-        import { Derive } from "gt-react/browser";
+        import { Derive } from "gt-react";
         export default function Page() {
           return <Derive><>other some other examples</></Derive>;
         }
@@ -991,7 +991,7 @@ describe('auto JSX injection simulation', () => {
       // The CLI extraction should unwrap that _T (transparent in Derive context).
       // EXPECTED: no errors, Derive resolves to the function's return value
       const code = `
-        import { Derive } from "gt-react/browser";
+        import { Derive } from "gt-react";
         function getName() { return <span>John</span>; }
         export default function Page() {
           return <div>Hello <Derive>{getName()}</Derive></div>;
@@ -1010,7 +1010,7 @@ describe('auto JSX injection simulation', () => {
       //
       // EXPECTED: no errors, multiple updates (multiplicative from Derive resolution)
       const code = `
-        import { Derive } from "gt-react/browser";
+        import { Derive } from "gt-react";
         function getSubject() { return gender === 'male' ? 'boy' : 'girl'; }
         function getObject() { return toy === 'ball' ? 'ball' : 'crayon'; }
         export default function Page() {
@@ -1033,7 +1033,7 @@ describe('auto JSX injection simulation', () => {
       //
       // EXPECTED: no errors, multiple updates from conditional branches
       const code = `
-        import { Derive } from "gt-react/browser";
+        import { Derive } from "gt-react";
         function getStatus(ok) { if (ok) return 'Success'; return 'Error'; }
         export default function Page() {
           return <div>Status: <Derive>{getStatus(ok)}</Derive></div>;
@@ -1056,7 +1056,7 @@ describe('auto JSX injection simulation', () => {
       // "A" and "B" must NOT get auto-inserted _T inside Var
       // EXPECTED: no errors, extraction succeeds
       const code = `
-        import { Var } from "gt-react/browser";
+        import { Var } from "gt-react";
         export default function Page() {
           const flag = true;
           return <div>Hello <Var>{flag ? <p>A</p> : <p>B</p>}</Var></div>;
@@ -1073,7 +1073,7 @@ describe('auto JSX injection simulation', () => {
       // <li> elements inside Var must NOT get _T
       // EXPECTED: no errors
       const code = `
-        import { Var } from "gt-react/browser";
+        import { Var } from "gt-react";
         export default function Page() {
           const items = ['a', 'b'];
           return <div>Items: <Var>{items.map(i => <li>{i}</li>)}</Var></div>;
@@ -1089,7 +1089,7 @@ describe('auto JSX injection simulation', () => {
       // INJECTED: Var opaque, span gets _T + _Var
       // EXPECTED: no errors, extraction includes the span content
       const code = `
-        import { Var } from "gt-react/browser";
+        import { Var } from "gt-react";
         export default function Page() {
           const x = 'dynamic';
           return (
@@ -1122,7 +1122,7 @@ describe('auto JSX injection simulation', () => {
       //
       // EXPECTED: exactly 1 update, not 2
       const code = `
-        import { T } from "gt-react/browser";
+        import { T } from "gt-react";
         export default function Page() {
           return <T><>Hello There</></T>;
         }
@@ -1151,7 +1151,7 @@ describe('auto JSX injection simulation', () => {
       // EXPECTED: no errors, the Derive entry should contain resolved children
       // (the fragment with "User name is " + <b>Ernest</b>)
       const code = `
-        import { Derive } from "gt-react/browser";
+        import { Derive } from "gt-react";
         function getUserName() {
           return <>User name is <b>Ernest</b></>;
         }
@@ -1217,7 +1217,7 @@ describe('auto JSX injection simulation', () => {
       //     }
       //   ]
       const code = `
-        import { Derive } from "gt-react/browser";
+        import { Derive } from "gt-react";
         function getUserName() {
           return <>User name is <b>Brian</b></>;
         }
@@ -1264,7 +1264,7 @@ describe('auto JSX injection simulation', () => {
       // User T does NOT go through the transparency unwrap.
       // EXPECTED: { "t": "C1", "i": 1, "c": ["Hello ", { "t": "b", "i": 2, "c": "World" }] }
       const code = `
-        import { T } from "gt-react/browser";
+        import { T } from "gt-react";
         export default function Page() {
           return <T><>Hello <b>World</b></></T>;
         }
@@ -1285,7 +1285,7 @@ describe('auto JSX injection simulation', () => {
       // Auto-inserted _T wraps the content. Not inside Derive, so no transparency unwrap.
       // EXPECTED: ["Hello ", { "t": "b", "i": 1, "c": "World" }]
       const code = `
-        import { T } from "gt-react/browser";
+        import { T } from "gt-react";
         export default function Page() {
           return <>Hello <b>World</b></>;
         }
@@ -1306,7 +1306,7 @@ describe('auto JSX injection simulation', () => {
       // where getUserName() returns <>User name is <b>Brian</b></>
       // User T path — no auto-inserted _T inside the function.
       const code = `
-        import { T, Derive } from "gt-react/browser";
+        import { T, Derive } from "gt-react";
         function getUserName() {
           return <>User name is <b>Brian</b></>;
         }

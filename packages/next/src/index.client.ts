@@ -43,7 +43,7 @@ import {
   getLocaleProperties,
   getLocales,
   getVersionId,
-} from 'gt-react/context';
+} from 'gt-react';
 import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,

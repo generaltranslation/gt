@@ -75,7 +75,7 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
     traverse(ast, {
       ImportDeclaration(path) {
         const source = path.node.source.value;
-        if (['gt-next', 'gt-react', 'gt-react/browser'].includes(source)) {
+        if (['gt-next', 'gt-react', 'gt-react'].includes(source)) {
           path.node.specifiers.forEach((spec) => {
             if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
               importAliases[spec.local.name] = spec.imported.name;

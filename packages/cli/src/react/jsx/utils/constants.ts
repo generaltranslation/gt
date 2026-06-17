@@ -10,7 +10,7 @@ export const INLINE_MESSAGE_HOOK_ASYNC = 'getMessages';
 export const TRANSLATION_COMPONENT = 'T';
 export const DERIVE_COMPONENT = 'Derive';
 export const BRANCH_COMPONENT = 'Branch';
-export const DEFAULT_GT_IMPORT_SOURCE = 'gt-react/browser';
+export const DEFAULT_GT_IMPORT_SOURCE = 'gt-react';
 export const INTERNAL_TRANSLATION_COMPONENT = 'GtInternalTranslateJsx';
 export const INTERNAL_VAR_COMPONENT = 'GtInternalVar';
 

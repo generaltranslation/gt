@@ -21,13 +21,13 @@ function parseAndGetProgramPath(code: string) {
 }
 
 describe('injectMacroImport', () => {
-  it('adds import { t } from gt-react/browser', () => {
+  it('adds import { t } from gt-react', () => {
     const { programPath } = parseAndGetProgramPath('const x = 1;');
     injectMacroImport(programPath);
     const firstStmt = programPath.node.body[0];
     expect(t.isImportDeclaration(firstStmt)).toBe(true);
     expect((firstStmt as t.ImportDeclaration).source.value).toBe(
-      GT_IMPORT_SOURCES.GT_REACT_BROWSER
+      GT_IMPORT_SOURCES.GT_REACT
     );
     const specifier = (firstStmt as t.ImportDeclaration).specifiers[0];
     expect(t.isImportSpecifier(specifier)).toBe(true);
@@ -42,7 +42,7 @@ describe('injectMacroImport', () => {
     const firstStmt = programPath.node.body[0];
     expect(t.isImportDeclaration(firstStmt)).toBe(true);
     expect((firstStmt as t.ImportDeclaration).source.value).toBe(
-      GT_IMPORT_SOURCES.GT_REACT_BROWSER
+      GT_IMPORT_SOURCES.GT_REACT
     );
   });
 });

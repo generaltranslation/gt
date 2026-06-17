@@ -69,7 +69,7 @@ describe('auto JSX injection — integration (inject + extract)', () => {
     traverse(ast, {
       ImportDeclaration(path) {
         const source = path.node.source.value;
-        if (['gt-next', 'gt-react', 'gt-react/browser'].includes(source)) {
+        if (['gt-next', 'gt-react', 'gt-react'].includes(source)) {
           path.node.specifiers.forEach((spec) => {
             if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
               importAliases[spec.local.name] = spec.imported.name;
@@ -520,7 +520,7 @@ describe('auto JSX injection — integration (inject + extract)', () => {
 
     it('Branch with dynamic fallback children extracts without errors', () => {
       const code = `
-        import { Branch } from "gt-react/browser";
+        import { Branch } from "gt-react";
         export default function Page() {
           const userName = "Ernest";
           return (
@@ -540,7 +540,7 @@ describe('auto JSX injection — integration (inject + extract)', () => {
 
     it('Plural with dynamic fallback children extracts without errors', () => {
       const code = `
-        import { Plural } from "gt-react/browser";
+        import { Plural } from "gt-react";
         export default function Page() {
           const count = 5;
           return <div><Plural n={count}>You have {count} items</Plural></div>;
@@ -553,7 +553,7 @@ describe('auto JSX injection — integration (inject + extract)', () => {
 
     it('Derive does not Var-wrap children', () => {
       const code = `
-        import { Derive } from "gt-react/browser";
+        import { Derive } from "gt-react";
         export default function Page() {
           return <div>Hello <Derive>{getName()}</Derive></div>;
         }

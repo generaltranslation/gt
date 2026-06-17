@@ -34,7 +34,7 @@ describe('getPathsAndAliases - global t macro detection', () => {
 
   it('does NOT detect imported t as global', () => {
     const entries = getGlobalEntries(
-      "import { t } from 'gt-react/browser';\nconst x = t`hello`;"
+      "import { t } from 'gt-react';\nconst x = t`hello`;"
     );
     expect(entries).toHaveLength(0);
   });
