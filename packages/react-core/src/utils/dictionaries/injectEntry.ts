@@ -1,8 +1,4 @@
-import type {
-  Dictionary,
-  DictionaryEntry,
-  TranslatedChildren,
-} from '../types';
+import type { Dictionary, DictionaryEntry, TranslatedChildren } from '../types';
 import { get, set } from './indexDict';
 import { isDictionaryEntry } from './isDictionaryEntry';
 
