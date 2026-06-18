@@ -30,7 +30,7 @@ const workspaceSourceMap: Record<string, string> = {
   '#context-server': 'packages/react/src/index.server.ts',
   'gt-react': 'packages/react/src/index.rsc.ts',
   'gt-react/internal': 'packages/react/src/internal.ts',
-  '@generaltranslation/react-core': 'packages/react-core/src/index.ts',
+  '@generaltranslation/react-core/pure': 'packages/react-core/src/pure.ts',
   '@generaltranslation/react-core/components-rsc':
     'packages/react-core/src/components-rsc.ts',
 };
@@ -38,6 +38,9 @@ const workspaceSourceMap: Record<string, string> = {
 // Specifiers that must never be imported from the RSC/server graph.
 const forbiddenSpecifiers = [
   '@generaltranslation/react-core/context',
+  '@generaltranslation/react-core/internal',
+  '@generaltranslation/react-core/types',
+  '@generaltranslation/react-core/errors',
   'next/navigation',
 ];
 
