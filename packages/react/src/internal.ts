@@ -34,8 +34,8 @@ import {
   mFallback as _mFallback,
   gtFallback as _gtFallback,
 } from '@generaltranslation/react-core/pure';
-import { Derive as _Derive } from '@generaltranslation/react-core/components';
 import {
+  Derive as _Derive,
   renderDefaultChildren as _renderDefaultChildren,
   renderTranslatedChildren as _renderTranslatedChildren,
 } from '@generaltranslation/react-core/components-rsc';
