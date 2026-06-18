@@ -6,7 +6,7 @@ const i18nCacheMock = vi.hoisted(() => ({
   loadTranslations: loadTranslationsMock,
 }));
 
-vi.mock('@generaltranslation/react-core/context', () => ({
+vi.mock('@generaltranslation/react-core/pure', () => ({
   getReactI18nCache: () => i18nCacheMock,
 }));
 

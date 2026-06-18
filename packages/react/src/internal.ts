@@ -11,8 +11,6 @@ import {
   getPluralBranch as _getPluralBranch,
   getEntryAndMetadata as _getEntryAndMetadata,
   getVariableName as _getVariableName,
-  renderDefaultChildren as _renderDefaultChildren,
-  renderTranslatedChildren as _renderTranslatedChildren,
   renderSkeleton as _renderSkeleton,
   getDefaultRenderSettings as _getDefaultRenderSettings,
   mergeDictionaries as _mergeDictionaries,
@@ -33,10 +31,14 @@ import {
   derive as _derive,
   declareVar as _declareVar,
   decodeVars as _decodeVars,
-  Derive as _Derive,
   mFallback as _mFallback,
   gtFallback as _gtFallback,
-} from '@generaltranslation/react-core/internal';
+} from '@generaltranslation/react-core/pure';
+import { Derive as _Derive } from '@generaltranslation/react-core/components';
+import {
+  renderDefaultChildren as _renderDefaultChildren,
+  renderTranslatedChildren as _renderTranslatedChildren,
+} from '@generaltranslation/react-core/components-rsc';
 import {
   defaultEnableI18nCookieName as _defaultEnableI18nCookieName,
   defaultLocaleCookieName as _defaultLocaleCookieName,
@@ -66,7 +68,7 @@ import type {
   _Message as __Message,
   _Messages as __Messages,
   GTProp as _GTProp,
-} from '@generaltranslation/react-core/types';
+} from '@generaltranslation/react-core/pure';
 
 import type { SharedGTProviderProps } from './provider/GTProviderProps';
 

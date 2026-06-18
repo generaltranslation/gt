@@ -276,24 +276,24 @@ describe('edge-imports: Branch import added from gt-next', () => {
 });
 
 // ===================================================================
-// 10. Import from @generaltranslation/react-core
+// 10. Import from @generaltranslation/react-core/components
 // ===================================================================
 
-describe('edge-imports: Branch import added from @generaltranslation/react-core', () => {
+describe('edge-imports: Branch import added from @generaltranslation/react-core/components', () => {
   ruleTester.run('branch-from-react-core', staticJsx, {
     valid: [],
     invalid: [
       {
         code: `
-          import { T } from '@generaltranslation/react-core';
+          import { T } from '@generaltranslation/react-core/components';
           function Component({ cond }) {
             return <T>{cond ? "a" : "b"}</T>;
           }
         `,
-        options: [{ libs: ['@generaltranslation/react-core'] }],
+        options: [{ libs: ['@generaltranslation/react-core/components'] }],
         errors: [{ messageId: 'dynamicContent' }],
         output: `
-          import { T, Branch } from '@generaltranslation/react-core';
+          import { T, Branch } from '@generaltranslation/react-core/components';
           function Component({ cond }) {
             return <T><Branch branch={cond} true="a">b</Branch></T>;
           }
@@ -859,22 +859,22 @@ describe('edge-imports: Var import added from gt-react-native', () => {
   });
 });
 
-// Var from @generaltranslation/react-core
-describe('edge-imports: Var import added from @generaltranslation/react-core', () => {
+// Var from @generaltranslation/react-core/components
+describe('edge-imports: Var import added from @generaltranslation/react-core/components', () => {
   ruleTester.run('var-from-react-core', staticJsx, {
     valid: [],
     invalid: [
       {
         code: `
-          import { T } from '@generaltranslation/react-core';
+          import { T } from '@generaltranslation/react-core/components';
           function Component({ name }) {
             return <T>{name}</T>;
           }
         `,
-        options: [{ libs: ['@generaltranslation/react-core'] }],
+        options: [{ libs: ['@generaltranslation/react-core/components'] }],
         errors: [{ messageId: 'dynamicContent' }],
         output: `
-          import { T, Var } from '@generaltranslation/react-core';
+          import { T, Var } from '@generaltranslation/react-core/components';
           function Component({ name }) {
             return <T><Var>{name}</Var></T>;
           }

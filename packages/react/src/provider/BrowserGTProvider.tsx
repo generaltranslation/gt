@@ -1,7 +1,7 @@
 import {
   I18nStore,
   InternalGTProvider,
-} from '@generaltranslation/react-core/context';
+} from '@generaltranslation/react-core/components';
 import { useMemo, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { ReadonlyBrowserConditionStore } from '../condition-store/ReadOnlyBrowserConditionStore';

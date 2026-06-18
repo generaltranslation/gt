@@ -5,7 +5,10 @@ export const GT_LIBRARIES = [
   'gt-next',
   'gt-react-native',
   'gt-i18n',
-  '@generaltranslation/react-core',
+  '@generaltranslation/react-core/components',
+  '@generaltranslation/react-core/components-rsc',
+  '@generaltranslation/react-core/hooks',
+  '@generaltranslation/react-core/pure',
 ];
 
 export type GTLibrary = (typeof GT_LIBRARIES)[number];

@@ -1,7 +1,7 @@
 import {
   initializeI18nConfig,
   setReactI18nCache,
-} from '@generaltranslation/react-core/context';
+} from '@generaltranslation/react-core/pure';
 import { ReactI18nCache } from '@generaltranslation/react-core/pure';
 import type { ReactI18nCacheParams } from '@generaltranslation/react-core/pure';
 import { setupGTServicesEnabled } from 'gt-i18n/internal';
