@@ -766,10 +766,12 @@ function standardizeConfig<TranslationValue extends Translation>(
   // Read GT credentials from the environment as a fallback, matching the
   // behavior of the core `GT` class so server runtimes (e.g. gt-node) pick up
   // GT_API_KEY / GT_DEV_API_KEY / GT_PROJECT_ID without passing them explicitly.
+  // Use `||` (not `??`) so an empty string — common from `process.env.X || ''`
+  // patterns — falls back to the environment, matching the core `GT` class.
   const env = typeof process !== 'undefined' ? process.env : undefined;
-  const projectId = config.projectId ?? env?.GT_PROJECT_ID;
-  const apiKey = config.apiKey ?? env?.GT_API_KEY;
-  const devApiKey = config.devApiKey ?? env?.GT_DEV_API_KEY;
+  const projectId = config.projectId || env?.GT_PROJECT_ID;
+  const apiKey = config.apiKey || env?.GT_API_KEY;
+  const devApiKey = config.devApiKey || env?.GT_DEV_API_KEY;
 
   const gtServicesEnabled = getGTServicesEnabled({
     ...config,

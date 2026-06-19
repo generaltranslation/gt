@@ -1404,4 +1404,19 @@ describe('I18nManager environment credentials', () => {
     expect(gt.projectId).toBe('explicit-project');
     expect(gt.apiKey).toBe('explicit-api-key');
   });
+
+  it('falls back to the environment when config values are empty strings', () => {
+    process.env.GT_PROJECT_ID = 'env-project';
+    process.env.GT_API_KEY = 'env-api-key';
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr-fr'],
+      // Common when consumers do `projectId: process.env.X || ''`
+      projectId: '',
+      apiKey: '',
+    });
+    const gt = manager.getGTClass();
+    expect(gt.projectId).toBe('env-project');
+    expect(gt.apiKey).toBe('env-api-key');
+  });
 });
