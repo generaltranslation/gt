@@ -14,6 +14,11 @@ export {
 } from 'gt-i18n';
 
 export { default as getPluralBranch } from './utils/plurals/getPluralBranch';
+export { default as addGTIdentifier } from './utils/internal/addGTIdentifier';
+export { default as writeChildrenAsObjects } from './utils/internal/writeChildrenAsObjects';
+export { default as flattenDictionary } from './utils/dictionaries/flattenDictionary';
+export { default as getVariableProps } from './utils/variables/_getVariableProps';
+export { default as getVariableName } from './utils/variables/getVariableName';
 export { getFormatLocales } from './hooks/utils/getFormatLocales';
 export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
 export { t } from './functions/translation/t';
@@ -24,8 +29,61 @@ export {
   getReactI18nCache,
   setReactI18nCache,
 } from './i18n-cache/singleton-operations';
+export {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from './utils/cookies';
+export {
+  getDictionaryEntry,
+  isValidDictionaryEntry,
+} from './utils/dictionaries/getDictionaryEntry';
+export { default as getEntryAndMetadata } from './utils/dictionaries/getEntryAndMetadata';
+export { default as isVariableObject } from './utils/rendering/isVariableObject';
+export { default as renderSkeleton } from './utils/rendering/renderSkeleton';
+export { default as mergeDictionaries } from './utils/dictionaries/mergeDictionaries';
+export { getDefaultRenderSettings } from './utils/rendering/getDefaultRenderSettings';
+export { reactHasUse } from './utils/promises/reactHasUse';
+export {
+  getSubtree,
+  getSubtreeWithCreation,
+} from './utils/dictionaries/getSubtree';
+export { injectEntry } from './utils/dictionaries/injectEntry';
+export { isDictionaryEntry } from './utils/dictionaries/isDictionaryEntry';
+export { stripMetadataFromEntries } from './utils/dictionaries/stripMetadataFromEntries';
+export { injectHashes } from './utils/dictionaries/injectHashes';
+export { injectTranslations } from './utils/dictionaries/injectTranslations';
+export { injectFallbacks } from './utils/dictionaries/injectFallbacks';
+export { injectAndMerge } from './utils/dictionaries/injectAndMerge';
+export { collectUntranslatedEntries } from './utils/dictionaries/collectUntranslatedEntries';
 
-export type { RelativeTimeFormatOptions, RenderVariable } from './utils/types';
+export type {
+  AuthFromEnvParams,
+  AuthFromEnvReturn,
+  CustomLoader,
+  Dictionary,
+  DictionaryContent,
+  DictionaryEntry,
+  DictionaryObject,
+  DictionaryTranslationOptions,
+  Entry,
+  FlattenedDictionary,
+  GTFunctionType,
+  GTProp,
+  InlineTranslationOptions,
+  LocalesDictionary,
+  MFunctionType,
+  Metadata,
+  RenderMethod,
+  RuntimeTranslationOptions,
+  TranslatedChildren,
+  Translations,
+  VariableProps,
+  _Message,
+  _Messages,
+  RelativeTimeFormatOptions,
+  RenderVariable,
+} from './utils/types';
 
 export {
   internalInitializeGTSRA,
@@ -37,7 +95,39 @@ export {
   ReactI18nCache,
   type ReactI18nCacheParams,
 } from './i18n-cache/ReactI18nCache';
-
+export {
+  getI18nStore,
+  setI18nStore,
+  isI18nStoreInitialized,
+} from './i18n-store/singleton-operations';
+export { I18nStore } from './i18n-store/I18nStore';
+export {
+  getI18nConfig,
+  initializeI18nConfig,
+  ReactI18nConfig,
+  setI18nConfig,
+} from './setup/i18nConfig';
+export {
+  getReadonlyConditionStoreWithFallback,
+  setReadonlyConditionStore,
+} from './condition-store/singleton-operations';
+export {
+  ReadonlyConditionStore,
+  WritableConditionStore,
+} from 'gt-i18n/internal';
+export type {
+  I18nConfigParams,
+  WritableConditionStoreParams,
+} from 'gt-i18n/internal/types';
+export type {
+  OnMissingDictionaryObj,
+  OnMissingDictionaryEntry,
+  OnMissingTranslation,
+} from './hooks/utils/missing-translation';
+export type {
+  DictionaryLookup,
+  TranslateLookup,
+} from './i18n-store/storeTypes';
 export {
   getDefaultLocale,
   getGTClass,
