@@ -1,4 +1,4 @@
-import type { Dictionary, DictionaryEntry, TranslatedChildren } from '../types';
+import type { Dictionary, DictionaryEntry } from '../types';
 import { get, set } from './indexDict';
 import { isDictionaryEntry } from './isDictionaryEntry';
 
@@ -54,22 +54,4 @@ export function injectEntry(
   // Inject the entry into the last key
   const lastKey = keys[keys.length - 1];
   set(dictionary, lastKey, dictionaryEntry);
-}
-
-/**
- * @description Merge results into a dictionary
- * @param dictionary - The dictionary to merge the results into
- * @param results - The results to merge into the dictionary
- * @param sourceDictionary - The source dictionary to model the new dictionary after
- * @returns The merged dictionary
- */
-export function mergeResultsIntoDictionary(
-  dictionary: Dictionary,
-  results: [string, TranslatedChildren][],
-  sourceDictionary: Dictionary
-): Dictionary {
-  results.forEach(([id, result]) => {
-    injectEntry(result as string, dictionary, id, sourceDictionary);
-  });
-  return dictionary;
 }

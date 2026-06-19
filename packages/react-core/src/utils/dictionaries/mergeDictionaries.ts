@@ -1,53 +1,12 @@
 import type { Dictionary, DictionaryEntry } from '../types';
+import { get } from './indexDict';
+import { isDictionaryEntry } from './isDictionaryEntry';
 
 const isPrimitiveOrArray = (value: unknown): boolean =>
   typeof value === 'string' || Array.isArray(value);
 
 const isObjectDictionary = (value: unknown): boolean =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const isDictionaryEntry = (
-  value: Dictionary | DictionaryEntry | undefined
-): value is DictionaryEntry => {
-  if (value === undefined) {
-    return false;
-  }
-
-  if (typeof value === 'string') {
-    return true;
-  }
-
-  if (Array.isArray(value)) {
-    if (value.length !== 1 && value.length !== 2) {
-      return false;
-    }
-
-    if (typeof value[0] !== 'string') {
-      return false;
-    }
-
-    return (
-      value.length === 1 ||
-      (typeof value[1] === 'object' &&
-        value[1] !== null &&
-        ('$context' in value[1] ||
-          '$maxChars' in value[1] ||
-          '$_hash' in value[1]))
-    );
-  }
-
-  return false;
-};
-
-const get = (dictionary: Dictionary, id: string | number) => {
-  if (dictionary == null) {
-    throw new Error('Cannot index into an undefined dictionary');
-  }
-  if (Array.isArray(dictionary)) {
-    return dictionary[id as unknown as number];
-  }
-  return dictionary[id as string];
-};
 
 export default function mergeDictionaries(
   defaultLocaleDictionary: Dictionary,
