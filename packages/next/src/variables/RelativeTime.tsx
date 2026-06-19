@@ -1,7 +1,7 @@
 import {
   RelativeTime as RscRelativeTime,
   type RelativeTimeProps,
-} from 'gt-react/context';
+} from 'gt-react';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
 

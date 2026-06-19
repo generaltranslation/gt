@@ -52,7 +52,7 @@ import {
   useLocales,
   useDefaultLocale,
   useVersionId,
-} from 'gt-react/context';
+} from 'gt-react';
 import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
