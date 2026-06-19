@@ -33,6 +33,12 @@ describe('indexDict', () => {
         expect(result).toBeUndefined();
       });
 
+      it('should return undefined for inherited keys', () => {
+        const dictionary: Dictionary = {};
+        const result = get(dictionary, 'constructor');
+        expect(result).toBeUndefined();
+      });
+
       it('should handle numeric string keys', () => {
         const dictionary: Dictionary = { '123': 'numeric key' };
         const result = get(dictionary, '123');
@@ -137,6 +143,15 @@ describe('indexDict', () => {
         const dictionary: Dictionary = {};
         set(dictionary, '123', 'numeric key');
         expect(dictionary).toEqual({ '123': 'numeric key' });
+      });
+
+      it('should set __proto__ as an own property', () => {
+        const dictionary: Dictionary = {};
+        const value = { polluted: true };
+        set(dictionary, '__proto__', value);
+        expect(Object.getPrototypeOf(dictionary)).toBe(Object.prototype);
+        expect(get(dictionary, '__proto__')).toBe(value);
+        expect(({} as { polluted?: boolean }).polluted).toBeUndefined();
       });
 
       it('should set dictionary entry array format', () => {
