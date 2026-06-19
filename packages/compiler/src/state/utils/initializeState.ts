@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   enableMacroImportInjection: true,
   enableAutoJsxInjection: false,
   autoderive: { jsx: false, strings: false },
+  legacyGtReactImportSource: false,
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
 };
@@ -41,6 +42,8 @@ export function initializeState(
   const rawDevHotReload =
     gtConfig?.files?.gt?.parsingFlags?.devHotReload ?? false;
   const rawAutoderive = gtConfig?.files?.gt?.parsingFlags?.autoderive ?? false;
+  const legacyGtReactImportSource =
+    gtConfig?.files?.gt?.parsingFlags?.legacyGtReactImportSource ?? false;
 
   const autoderive = resolveAutoderive(options.autoderive ?? rawAutoderive);
 
@@ -58,6 +61,7 @@ export function initializeState(
     ...DEFAULT_SETTINGS,
     enableAutoJsxInjection, // can be overridden by options.enableAutoJsxInjection
     autoderive,
+    legacyGtReactImportSource,
     devHotReload,
     ...restOptions,
     filename,

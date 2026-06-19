@@ -1,13 +1,13 @@
 import type { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { GT_IMPORT_SOURCES } from '../constants/gt/constants';
+import { isGTReactImportSource } from '../constants/gt/helpers';
 
 /**
  * Checks whether a tagged template expression should be treated as the GT
  * string translation macro.
  *
  * The macro is valid when it is an unbound bare identifier, or when it is
- * imported from gt-react/browser. This covers global `t`, but not explicit
+ * imported from gt-react. This covers global `t`, but not explicit
  * member access such as `globalThis.t` or `window.t`. Other bindings are left
  * alone so local/i18next t tags do not get transformed or extracted.
  */
@@ -31,6 +31,6 @@ export function isStringTranslationTaggedTemplate(
   const importDecl = binding.path.parentPath;
   return (
     importDecl?.isImportDeclaration() === true &&
-    importDecl.node.source.value === GT_IMPORT_SOURCES.GT_REACT_BROWSER
+    isGTReactImportSource(importDecl.node.source.value)
   );
 }

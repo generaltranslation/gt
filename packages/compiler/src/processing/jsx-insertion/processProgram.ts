@@ -30,7 +30,10 @@ export function processProgram({
       if (!didInsert) return;
 
       if (!isAlreadyImported()) {
-        injectJsxInsertionImport(path);
+        injectJsxInsertionImport(
+          path,
+          state.settings.legacyGtReactImportSource
+        );
       }
 
       // If only jsxs was imported (no jsx), inject jsx import.

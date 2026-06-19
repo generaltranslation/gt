@@ -20,7 +20,7 @@ import {
   VARIABLE_COMPONENTS,
   BRANCH_COMPONENT,
   PLURAL_COMPONENT,
-  DEFAULT_GT_IMPORT_SOURCE,
+  getGtReactImportSource,
   DERIVE_COMPONENT,
   BRANCH_CONTROL_PROPS,
   PLURAL_CONTROL_PROPS,
@@ -38,14 +38,15 @@ export function isAutoInserted(node: t.Node): boolean {
 
 /**
  * Ensure GtInternalTranslateJsx and GtInternalVar are imported in the AST.
- * Always adds: import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
+ * Adds: import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react';
  * These are distinct from user T/Var so there's no ambiguity.
  *
  * Updates importAliases in-place.
  */
 export function ensureTAndVarImported(
   ast: t.File,
-  importAliases: Record<string, string>
+  importAliases: Record<string, string>,
+  legacyGtReactImportSource = false
 ): void {
   // Check if internal components are already imported
   const hasInternalT = Object.values(importAliases).includes(
@@ -80,7 +81,7 @@ export function ensureTAndVarImported(
 
   const importDecl = t.importDeclaration(
     specifiers,
-    t.stringLiteral(DEFAULT_GT_IMPORT_SOURCE)
+    t.stringLiteral(getGtReactImportSource(legacyGtReactImportSource))
   );
 
   traverse(ast, {

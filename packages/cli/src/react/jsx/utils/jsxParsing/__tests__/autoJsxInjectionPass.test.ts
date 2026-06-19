@@ -31,7 +31,10 @@ const generate = (generateModule as unknown).default || generateModule;
 //  Helper
 // ================================================================ //
 
-function injectAndAnalyze(sourceCode: string) {
+function injectAndAnalyze(
+  sourceCode: string,
+  legacyGtReactImportSource = false
+) {
   const ast = parse(sourceCode, {
     sourceType: 'module',
     plugins: ['jsx', 'typescript'],
@@ -47,7 +50,7 @@ function injectAndAnalyze(sourceCode: string) {
     aliases[localName] = originalName;
   }
 
-  ensureTAndVarImported(ast, aliases);
+  ensureTAndVarImported(ast, aliases, legacyGtReactImportSource);
   autoInsertJsxComponents(ast, aliases);
 
   const code = generate(ast).code;
@@ -993,6 +996,15 @@ describe('autoInsertJsxComponents — injection pass', () => {
         export default function Page() { return <div>Hello</div>; }
       `;
       const r = injectAndAnalyze(code);
+      expect(r.tCount).toBe(1);
+      expect(r.imports).toContain('gt-react');
+    });
+
+    it('injects legacy import when configured', () => {
+      const code = `
+        export default function Page() { return <div>Hello</div>; }
+      `;
+      const r = injectAndAnalyze(code, true);
       expect(r.tCount).toBe(1);
       expect(r.imports).toContain('gt-react/browser');
     });

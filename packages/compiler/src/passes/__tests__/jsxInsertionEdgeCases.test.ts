@@ -8,13 +8,19 @@ import { initializeState } from '../../state/utils/initializeState';
 
 // --- Helpers ---
 
-function transform(code: string): {
+function transform(
+  code: string,
+  overrides: Record<string, unknown> = {}
+): {
   code: string;
   gtTranslateCalls: t.CallExpression[];
   gtVarCalls: t.CallExpression[];
   imports: t.ImportDeclaration[];
 } {
-  const state = initializeState({ enableAutoJsxInjection: true }, 'test.tsx');
+  const state = initializeState(
+    { enableAutoJsxInjection: true, ...overrides },
+    'test.tsx'
+  );
   const ast = parser.parse(code, {
     sourceType: 'module',
     plugins: ['typescript'],
@@ -476,6 +482,30 @@ describe('jsxInsertionPass edge cases', () => {
   // ===== 12. Already imported GtInternalTranslateJsx =====
 
   describe('existing GT import', () => {
+    it('injects import from gt-react by default', () => {
+      const code = `
+        import { jsx } from 'react/jsx-runtime';
+        jsx("div", { children: "Hello" });
+      `;
+      const { imports } = transform(code);
+      const gtImports = imports.filter((i) => i.source.value === 'gt-react');
+      expect(gtImports).toHaveLength(1);
+    });
+
+    it('injects import from gt-react/browser with legacy flag', () => {
+      const code = `
+        import { jsx } from 'react/jsx-runtime';
+        jsx("div", { children: "Hello" });
+      `;
+      const { imports } = transform(code, {
+        legacyGtReactImportSource: true,
+      });
+      const gtImports = imports.filter(
+        (i) => i.source.value === 'gt-react/browser'
+      );
+      expect(gtImports).toHaveLength(1);
+    });
+
     it('does not inject duplicate import when already imported', () => {
       const code = `
         import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';

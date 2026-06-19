@@ -128,7 +128,11 @@ export async function createInlineUpdates(
         }
 
         // Ensure GtInternalTranslateJsx and GtInternalVar are imported in the AST
-        ensureTAndVarImported(ast, importAliases);
+        ensureTAndVarImported(
+          ast,
+          importAliases,
+          parsingFlags.legacyGtReactImportSource
+        );
 
         // Insert T/Var into the AST
         autoInsertJsxComponents(ast, importAliases);

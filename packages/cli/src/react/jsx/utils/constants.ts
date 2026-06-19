@@ -10,9 +10,18 @@ export const INLINE_MESSAGE_HOOK_ASYNC = 'getMessages';
 export const TRANSLATION_COMPONENT = 'T';
 export const DERIVE_COMPONENT = 'Derive';
 export const BRANCH_COMPONENT = 'Branch';
-export const DEFAULT_GT_IMPORT_SOURCE = 'gt-react/browser';
+export const DEFAULT_GT_IMPORT_SOURCE = 'gt-react';
+export const LEGACY_GT_IMPORT_SOURCE = 'gt-react/browser';
 export const INTERNAL_TRANSLATION_COMPONENT = 'GtInternalTranslateJsx';
 export const INTERNAL_VAR_COMPONENT = 'GtInternalVar';
+
+export function getGtReactImportSource(
+  legacyGtReactImportSource: boolean
+): typeof DEFAULT_GT_IMPORT_SOURCE | typeof LEGACY_GT_IMPORT_SOURCE {
+  return legacyGtReactImportSource
+    ? LEGACY_GT_IMPORT_SOURCE
+    : DEFAULT_GT_IMPORT_SOURCE;
+}
 
 // Variable components
 export const VAR_COMPONENT = 'Var';
