@@ -333,8 +333,15 @@ export function checkMonorepoVersionConsistency(
 ): void {
   const cwd = process.cwd();
 
-  // Check if skipped via config
-  const resolved = resolveConfig(cwd);
+  // Check if skipped via config. This runs in a preAction hook before every
+  // command, so a malformed gt.config.json must not crash here — the command
+  // itself surfaces the parse error cleanly via generateSettings.
+  let resolved: ReturnType<typeof resolveConfig> = null;
+  try {
+    resolved = resolveConfig(cwd);
+  } catch {
+    return;
+  }
   if (resolved?.config?.skipVersionCheck) return;
 
   const rootDir = findMonorepoRoot(cwd);

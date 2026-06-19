@@ -21,8 +21,15 @@ export function parseConfigFile(filepath: string): Record<string, unknown> {
   let raw: string;
   try {
     raw = fs.readFileSync(filepath, 'utf-8');
-  } catch {
-    return {};
+  } catch (error) {
+    // Only a missing file is benign; other read errors (permissions, EISDIR,
+    // transient IO) must surface rather than masquerade as empty config.
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return {};
+    }
+    throw new Error(
+      `Failed to read config file "${filepath}": ${(error as Error).message}`
+    );
   }
   try {
     return JSON.parse(raw) as Record<string, unknown>;
