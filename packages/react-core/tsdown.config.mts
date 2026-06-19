@@ -21,23 +21,15 @@ const contextDeps = {
   alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };
 
-const bundledEntries = ['src/index.ts', 'src/internal.ts', 'src/errors.ts'];
-
-export default defineConfig([
-  ...createTsdownMinifiedDualFormatConfig({
-    entries: bundledEntries,
-    deps,
-  }),
-  ...createTsdownMinifiedDualFormatConfig({
+export default defineConfig(
+  createTsdownMinifiedDualFormatConfig({
     entries: [
-      'src/context.ts',
       'src/pure.ts',
       'src/hooks.ts',
       'src/components.ts',
       'src/components-rsc.ts',
     ],
     deps: contextDeps,
-    clean: false,
     typeEntry: false,
-  }),
-]);
+  })
+);
