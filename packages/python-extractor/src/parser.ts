@@ -16,6 +16,21 @@ export function getParser(): Promise<Parser> {
   return parserPromise;
 }
 
+export async function disposeParser(): Promise<void> {
+  const parser = parserPromise;
+  parserPromise = null;
+
+  if (!parser) {
+    return;
+  }
+
+  try {
+    (await parser).delete();
+  } catch {
+    // Failed initialization leaves no parser instance to free.
+  }
+}
+
 async function initParser(): Promise<Parser> {
   const parserWasmPath = await resolveWasmPath(
     'web-tree-sitter/web-tree-sitter.wasm'
