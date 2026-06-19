@@ -76,17 +76,10 @@ jobs:
         run: pnpm rebuild --filter='...[origin/${{ github.base_ref }}]'
 
       - name: Build packages
-        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!base' --filter='!general-cases' --filter='!cli-test-app' --filter='!./examples/*'
+        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
       - name: Run tests
-        shell: bash
-        run: |
-          next_internal_filter=""
-          if ! git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^packages/next-internal/"; then
-            next_internal_filter="--filter=!@generaltranslation/next-internal"
-          fi
-
-          pnpm exec turbo test --only --ui=stream --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!base' --filter='!general-cases' --filter='!cli-test-app' --filter='!./examples/*' $next_internal_filter
+        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
   test-builds:
     strategy:
