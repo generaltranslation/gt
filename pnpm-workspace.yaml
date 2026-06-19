@@ -41,3 +41,6 @@ packageExtensions:
   '@expo/cli@*':
     dependencies:
       metro-runtime: '*'
+  size-limit@*:
+    dependencies:
+      '@size-limit/preset-small-lib': '*'

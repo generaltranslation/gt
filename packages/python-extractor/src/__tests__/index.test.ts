@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { afterAll, describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { disposeParser } from '../parser.js';
 import {
   extractFromPythonSource,
   PYTHON_GT_PACKAGES,
@@ -16,6 +17,10 @@ import type { ExtractionResult, ExtractionMetadata } from '../types.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixture = (name: string) =>
   fs.readFileSync(path.join(__dirname, 'fixtures', name), 'utf8');
+
+afterAll(async () => {
+  await disposeParser();
+});
 
 describe('python-extractor', () => {
   describe('extractFromPythonSource', () => {
