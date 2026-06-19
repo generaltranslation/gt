@@ -1351,3 +1351,57 @@ describe('I18nManager', () => {
     expect(dictionaryCacheMiss).not.toHaveBeenCalled();
   });
 });
+
+describe('I18nManager environment credentials', () => {
+  const ORIGINAL_ENV = process.env;
+
+  beforeEach(() => {
+    process.env = { ...ORIGINAL_ENV };
+    delete process.env.GT_PROJECT_ID;
+    delete process.env.GT_API_KEY;
+    delete process.env.GT_DEV_API_KEY;
+  });
+
+  afterEach(() => {
+    process.env = ORIGINAL_ENV;
+  });
+
+  it('does not enable GT services when no credentials are provided', () => {
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr-fr'],
+    });
+    // Without GT services, locales are left untouched (no standardization)
+    expect(manager.getLocales()).toContain('fr-fr');
+  });
+
+  it('reads GT_PROJECT_ID and GT_API_KEY from the environment', () => {
+    process.env.GT_PROJECT_ID = 'env-project';
+    process.env.GT_API_KEY = 'env-api-key';
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr-fr'],
+    });
+    // GT services enabled via env creds, so locales get standardized
+    expect(manager.getLocales()).toContain('fr-FR');
+    expect(manager.getLocales()).not.toContain('fr-fr');
+
+    const gt = manager.getGTClass();
+    expect(gt.projectId).toBe('env-project');
+    expect(gt.apiKey).toBe('env-api-key');
+  });
+
+  it('prefers explicit config over environment variables', () => {
+    process.env.GT_PROJECT_ID = 'env-project';
+    process.env.GT_API_KEY = 'env-api-key';
+    const manager = new I18nManager({
+      defaultLocale: 'en',
+      locales: ['en', 'fr-fr'],
+      projectId: 'explicit-project',
+      apiKey: 'explicit-api-key',
+    });
+    const gt = manager.getGTClass();
+    expect(gt.projectId).toBe('explicit-project');
+    expect(gt.apiKey).toBe('explicit-api-key');
+  });
+});
