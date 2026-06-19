@@ -7,18 +7,6 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const runtimeArtifactNames = [
-  'browser.cjs',
-  'browser.mjs',
-  'client.cjs',
-  'client.mjs',
-  'context.rsc.cjs',
-  'context.rsc.mjs',
-  'context.client.cjs',
-  'context.client.mjs',
-  'context.server.cjs',
-  'context.server.mjs',
-  'context.types.cjs',
-  'context.types.mjs',
   'index.rsc.cjs',
   'index.rsc.mjs',
   'index.client.cjs',
@@ -63,7 +51,7 @@ function isAllowedExternalizedSubpath(
   specifier: string
 ): boolean {
   return (
-    (file.startsWith('index.') || file.startsWith('context')) &&
+    file.startsWith('index.') &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
       specifier.startsWith('gt-i18n/'))
   );
@@ -81,17 +69,12 @@ describe('gt-react package exports', () => {
       `
           const assert = require('node:assert/strict');
           const react = require('gt-react');
-          const client = require('gt-react/client');
-          const context = require('gt-react/context');
           const internal = require('gt-react/internal');
 
           assert.equal(typeof react.GTProvider, 'function');
           assert.equal(typeof react.T, 'function');
           assert.equal(typeof react.GtInternalVar, 'function');
           assert.equal(typeof react.GtInternalRuntimeTranslateString, 'function');
-          assert.equal(typeof client.ClientProvider, 'function');
-          assert.equal(typeof context.GTProvider, 'function');
-          assert.equal(typeof context.T, 'function');
           assert.equal(typeof internal.renderDefaultChildren, 'function');
         `,
     ]);
@@ -104,20 +87,12 @@ describe('gt-react package exports', () => {
       `
           import assert from 'node:assert/strict';
           import { GTProvider, GtInternalRuntimeTranslateString, GtInternalVar, T } from 'gt-react';
-          import { ClientProvider } from 'gt-react/client';
-          import {
-            GTProvider as ContextProvider,
-            T as ContextT
-          } from 'gt-react/context';
           import { renderDefaultChildren } from 'gt-react/internal';
 
           assert.equal(typeof GTProvider, 'function');
           assert.equal(typeof T, 'function');
           assert.equal(typeof GtInternalVar, 'function');
           assert.equal(typeof GtInternalRuntimeTranslateString, 'function');
-          assert.equal(typeof ClientProvider, 'function');
-          assert.equal(typeof ContextProvider, 'function');
-          assert.equal(typeof ContextT, 'function');
           assert.equal(typeof renderDefaultChildren, 'function');
         `,
     ]);
@@ -160,28 +135,8 @@ describe('gt-react package exports', () => {
     ]);
   });
 
-  it('resolves gt-react/context to the RSC implementation under react-server', () => {
-    node([
-      '--conditions=react-server',
-      '-e',
-      `
-          const assert = require('node:assert/strict');
-          assert.equal(
-            require.resolve('gt-react/context').endsWith('/dist/context.rsc.cjs'),
-            true
-          );
-        `,
-    ]);
-  });
-
   it('preserves use client in emitted client entrypoints', () => {
     for (const file of [
-      'dist/client.cjs',
-      'dist/client.mjs',
-      'dist/context.client.cjs',
-      'dist/context.client.mjs',
-      'dist/context.server.cjs',
-      'dist/context.server.mjs',
       'dist/index.client.cjs',
       'dist/index.client.mjs',
       'dist/index.server.cjs',
