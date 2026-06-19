@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-describe('gt-react/context react-server surface', () => {
+describe('gt-react react-server surface', () => {
   it('exports the RSC context surface', async () => {
-    const mod = await import('../context.rsc');
+    const mod = await import('../index.rsc');
     expect(mod.Branch).toBeTypeOf('function');
     expect(mod.GtInternalBranch).toBeTypeOf('function');
     expect(mod.Currency).toBeTypeOf('function');
