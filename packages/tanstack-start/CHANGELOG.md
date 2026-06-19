@@ -1,5 +1,21 @@
 # gt-tanstack-start
 
+## 1.0.0-odysseus.0
+
+### Major Changes
+
+- [#1627](https://github.com/generaltranslation/gt/pull/1627) [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Prepare Odysseus major releases for core runtime packages.
+
+### Patch Changes
+
+- [#1508](https://github.com/generaltranslation/gt/pull/1508) [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- Updated dependencies [[`33203b1`](https://github.com/generaltranslation/gt/commit/33203b1953727647f61a21136b4c9570efbc8620), [`af441bd`](https://github.com/generaltranslation/gt/commit/af441bdfb3a4cabe28985c59104ab7d60ee83d83), [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0)]:
+  - @generaltranslation/react-core@2.0.0-odysseus.0
+  - gt-react@11.0.0-odysseus.0
+  - generaltranslation@9.0.0-odysseus.0
+  - gt-i18n@1.0.0-odysseus.0
+
 ## 0.4.25
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/mcp",
-  "version": "1.0.7",
+  "version": "1.0.8-odysseus.0",
   "description": "General Translation MCP Server",
   "main": "dist/index.js",
   "type": "module",
