@@ -48,6 +48,10 @@ vi.mock('../setup/initGT.rsc', () => ({
   initializeGT: vi.fn(),
 }));
 
+vi.mock('../setup/initGT', () => ({
+  initializeGT: vi.fn(),
+}));
+
 vi.mock('../provider/GTProvider', () => ({
   GTProvider: vi.fn(),
 }));
