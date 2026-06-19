@@ -1,191 +1,60 @@
-import {
-  noSupportedFormatError,
-  noDefaultLocaleError,
-} from '../../console/index.js';
+import { noDefaultLocaleError } from '../../console/index.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
-import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
-import { FileFormat, DataFormat } from '../../types/data.js';
-import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
+import { Settings } from '../../types/index.js';
 import { UploadOptions } from '../base.js';
-import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
-import { parseJson } from '../../formats/json/parseJson.js';
 import { extractJson } from '../../formats/json/extractJson.js';
 import { validateJsonSchema } from '../../formats/json/utils.js';
-import {
-  resolveMintlifyRefs,
-  shouldResolveRefs,
-} from '../../utils/resolveMintlifyRefs.js';
 import { runUploadFilesWorkflow } from '../../workflows/upload.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
-import parseYaml from '../../formats/yaml/parseYaml.js';
 import type { FileToUpload } from 'generaltranslation/types';
-import { hashStringSync } from '../../utils/hash.js';
 import { hasValidCredentials } from './utils/validation.js';
-import { buildPublishMap } from '../../utils/resolvePublish.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
-import { getTransformFormatProperty } from '../../formats/files/transformFormat.js';
-
-const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
+import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
 
 /**
  * Sends multiple files to the API for translation
- * @param filePaths - Resolved file paths for different file types
- * @param placeholderPaths - Placeholder paths for translated files
- * @param transformPaths - Transform paths for file naming
- * @param dataFormat - Format of the data within the files
  * @param settings - Translation options including API settings
  * @returns Promise that resolves when translation is complete
  */
 export async function upload(
-  filePaths: ResolvedFiles,
-  placeholderPaths: ResolvedFiles,
-  transformPaths: TransformFiles,
-  dataFormat: DataFormat = 'JSX',
   settings: Settings & UploadOptions
 ): Promise<void> {
-  // Collect all files to translate
-  const allFiles: FileToUpload[] = [];
+  if (!settings.files) {
+    return;
+  }
+
   const additionalOptions = settings.options || {};
+  const {
+    resolvedPaths: filePaths,
+    placeholderPaths,
+    transformPaths,
+    transformFormats,
+  } = settings.files;
+
+  // Reuse the same source aggregation path as translate/stage so source
+  // parsing behavior stays consistent across commands.
+  const { files: allFiles, publishMap } = await aggregateFiles(settings);
   const compositeJsonFiles = new Map<
     string,
     { filePath: string; content: string }
   >();
 
-  // Process JSON files
   if (filePaths.json) {
-    if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
-      logErrorAndExit(noSupportedFormatError);
-    }
-
-    const jsonFiles = filePaths.json.map((filePath) => {
-      const content = readFile(filePath);
-
-      // Resolve $ref before parsing if configured
-      let contentForParsing = content;
-      if (shouldResolveRefs(filePath, additionalOptions)) {
-        try {
-          const json = JSON.parse(content);
-          const { resolved } = resolveMintlifyRefs(json, filePath);
-          contentForParsing = JSON.stringify(resolved, null, 2);
-        } catch {
-          // JSON parse errors are handled below by parseJson
-        }
-      }
-
-      const parsedJson = parseJson(
-        contentForParsing,
-        filePath,
-        additionalOptions,
-        settings.defaultLocale
-      );
-
+    const sourceFileNames = new Set(allFiles.map((file) => file.fileName));
+    for (const filePath of filePaths.json) {
       const relativePath = getRelative(filePath);
+      if (!sourceFileNames.has(relativePath)) continue;
 
       const jsonSchema = validateJsonSchema(additionalOptions, filePath);
       if (jsonSchema?.composite) {
-        compositeJsonFiles.set(relativePath, { filePath, content });
-      }
-
-      return {
-        content: parsedJson,
-        fileName: relativePath,
-        fileFormat: 'JSON' as FileFormat,
-        ...getTransformFormatProperty(settings, 'json'),
-        dataFormat,
-        locale: settings.defaultLocale,
-        fileId: hashStringSync(relativePath),
-        versionId: hashStringSync(parsedJson),
-      } satisfies FileToUpload;
-    });
-    allFiles.push(...jsonFiles);
-  }
-
-  // Process YAML files
-  if (filePaths.yaml) {
-    if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
-      logErrorAndExit(noSupportedFormatError);
-    }
-
-    const yamlFiles = filePaths.yaml.map((filePath) => {
-      const content = readFile(filePath);
-      const { content: parsedYaml, fileFormat } = parseYaml(
-        content,
-        filePath,
-        additionalOptions
-      );
-
-      const relativePath = getRelative(filePath);
-      return {
-        content: parsedYaml,
-        fileName: relativePath,
-        fileFormat,
-        ...getTransformFormatProperty(settings, 'yaml'),
-        dataFormat,
-        locale: settings.defaultLocale,
-        fileId: hashStringSync(relativePath),
-        versionId: hashStringSync(parsedYaml),
-      } satisfies FileToUpload;
-    });
-    allFiles.push(...yamlFiles);
-  }
-
-  // Process Twilio Content JSON files
-  if (filePaths.twilioContentJson) {
-    const twilioContentJsonFiles = filePaths.twilioContentJson.map(
-      (filePath) => {
-        const content = readFile(filePath);
-
-        const parsedJson = parseJson(
-          content,
+        compositeJsonFiles.set(relativePath, {
           filePath,
-          additionalOptions,
-          settings.defaultLocale
-        );
-
-        const relativePath = getRelative(filePath);
-
-        return {
-          content: parsedJson,
-          fileName: relativePath,
-          fileFormat: 'TWILIO_CONTENT_JSON' as const,
-          ...getTransformFormatProperty(settings, 'twilioContentJson'),
-          dataFormat: 'STRING' as const,
-          locale: settings.defaultLocale,
-          fileId: hashStringSync(relativePath),
-          versionId: hashStringSync(parsedJson),
-        } satisfies FileToUpload;
+          content: readFile(filePath),
+        });
       }
-    );
-    allFiles.push(...twilioContentJsonFiles);
-  }
-
-  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (
-      fileType === 'json' ||
-      fileType === 'yaml' ||
-      fileType === 'twilioContentJson'
-    )
-      continue;
-    if (filePaths[fileType]) {
-      const files = filePaths[fileType].map((filePath) => {
-        const content = readFile(filePath);
-        const sanitizedContent = sanitizeFileContent(content);
-        const relativePath = getRelative(filePath);
-        return {
-          content: sanitizedContent,
-          fileName: relativePath,
-          fileFormat: fileType.toUpperCase() as FileFormat,
-          ...getTransformFormatProperty(settings, fileType),
-          dataFormat,
-          locale: settings.defaultLocale,
-          fileId: hashStringSync(relativePath),
-          versionId: hashStringSync(sanitizedContent),
-        } satisfies FileToUpload;
-      });
-      allFiles.push(...files);
     }
   }
 
@@ -207,23 +76,14 @@ export async function upload(
     filePaths,
     placeholderPaths,
     transformPaths,
-    settings.files?.transformFormats || {},
+    transformFormats,
     locales,
     settings.defaultLocale
   );
 
   // construct object
   const uploadData = allFiles.map((file) => {
-    const sourceFile: FileToUpload = {
-      content: file.content,
-      fileName: file.fileName,
-      fileFormat: file.fileFormat,
-      transformFormat: file.transformFormat,
-      dataFormat: file.dataFormat,
-      locale: file.locale,
-      fileId: file.fileId,
-      versionId: file.versionId,
-    };
+    const sourceFile: FileToUpload = { ...file };
 
     const translations: FileToUpload[] = [];
     const compositeInfo = compositeJsonFiles.get(file.fileName);
@@ -280,7 +140,6 @@ export async function upload(
     });
 
     // Publish files to CDN if publish config exists
-    const publishMap = buildPublishMap(filePaths, settings);
     await runPublishWorkflow(
       allFiles,
       publishMap,
