@@ -1,5 +1,18 @@
 # gtx-cli
 
+## 2.14.51-odysseus.0
+
+### Patch Changes
+
+- [#1508](https://github.com/generaltranslation/gt/pull/1508) [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- Updated dependencies [[`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`620621a`](https://github.com/generaltranslation/gt/commit/620621aceeafedbb958884cacc5495736191b065), [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0)]:
+  - @generaltranslation/format@0.1.2-odysseus.0
+  - @generaltranslation/python-extractor@0.2.23-odysseus.0
+  - @generaltranslation/supported-locales@2.1.2-odysseus.0
+  - generaltranslation@9.0.0-odysseus.0
+  - gt-remark@1.0.11-odysseus.0
+
 ## 2.14.50
 
 ### Patch Changes
