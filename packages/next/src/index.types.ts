@@ -17,6 +17,7 @@ import {
   Var as _Var,
   Branch as _Branch,
   Plural as _Plural,
+  Derive as _Derive,
   useLocaleDirection as _useLocaleDirection,
   useVersionId as _useVersionId,
 } from 'gt-react';
@@ -47,7 +48,6 @@ import {
   declareVar,
   decodeVars,
   _Messages,
-  Derive as _Derive,
   mFallback,
   gtFallback,
 } from 'gt-react/internal';

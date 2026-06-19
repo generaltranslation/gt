@@ -518,21 +518,21 @@ describe('edge: dynamic content in T from gt-next', () => {
   });
 });
 
-describe('edge: dynamic content in T from @generaltranslation/react-core', () => {
+describe('edge: dynamic content in T from @generaltranslation/react-core/components', () => {
   ruleTester.run('dynamic-in-T-react-core', staticJsx, {
     valid: [],
     invalid: [
       {
         code: `
-          import { T } from '@generaltranslation/react-core';
+          import { T } from '@generaltranslation/react-core/components';
           function Component({ cond }) {
             return <T>{cond ? "a" : "b"}</T>;
           }
         `,
-        options: [{ libs: ['@generaltranslation/react-core'] }],
+        options: [{ libs: ['@generaltranslation/react-core/components'] }],
         errors: [{ messageId: 'dynamicContent' }],
         output: `
-          import { T, Branch } from '@generaltranslation/react-core';
+          import { T, Branch } from '@generaltranslation/react-core/components';
           function Component({ cond }) {
             return <T><Branch branch={cond} true="a">b</Branch></T>;
           }

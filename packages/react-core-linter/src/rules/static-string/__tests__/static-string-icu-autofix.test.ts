@@ -866,27 +866,27 @@ describe('static-string: chained ternary with different variables + dynamic var 
 });
 
 // ===================================================================
-// 16. @generaltranslation/react-core library support
+// 16. @generaltranslation/react-core/hooks library support
 // ===================================================================
 
-// gt("Hello " + name)  [via @generaltranslation/react-core]
+// gt("Hello " + name)  [via @generaltranslation/react-core/hooks]
 // → gt("Hello {var0}", { var0: name })
-describe('static-string: works with @generaltranslation/react-core imports', () => {
+describe('static-string: works with @generaltranslation/react-core/hooks imports', () => {
   ruleTester.run('react-core-lib', staticString, {
     valid: [],
     invalid: [
       {
         code: `
-          import { useGT } from '@generaltranslation/react-core';
+          import { useGT } from '@generaltranslation/react-core/hooks';
           function Component() {
             const gt = useGT();
             return gt("Hello " + name);
           }
         `,
-        options: [{ libs: ['@generaltranslation/react-core'] }],
+        options: [{ libs: ['@generaltranslation/react-core/hooks'] }],
         errors: [{ messageId: 'variableInterpolationRequired' }],
         output: `
-          import { useGT } from '@generaltranslation/react-core';
+          import { useGT } from '@generaltranslation/react-core/hooks';
           function Component() {
             const gt = useGT();
             return gt("Hello {var0}", { var0: name });

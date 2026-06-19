@@ -1,4 +1,4 @@
-import { defaultLocaleCookieName as defaultLocaleStoreKey } from '@generaltranslation/react-core/internal';
+import { defaultLocaleCookieName as defaultLocaleStoreKey } from '@generaltranslation/react-core/pure';
 import { Platform } from 'react-native';
 import GtReactNative from '../NativeGtReactNative';
 import { ssrUnsupportedWarning } from '../errors-dir/warnings';
