@@ -65,7 +65,7 @@ describe('GTProvider', () => {
     });
   });
 
-  it('passes locale-scoped snapshots to gt-react/context GTProvider', async () => {
+  it('passes locale-scoped snapshots to gt-react GTProvider', async () => {
     const { GTProvider } = await import('../GTProvider');
 
     const element = await GTProvider({ children: 'content' });

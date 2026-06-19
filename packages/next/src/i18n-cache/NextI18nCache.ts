@@ -2,7 +2,7 @@ import { getI18nCache, setI18nCache, type I18nCache } from 'gt-i18n/internal';
 import type { Locale } from 'gt-i18n/internal/types';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import { isValidElement } from 'react';
-import { ReactI18nCache, type ReactI18nCacheParams } from 'gt-react/context';
+import { ReactI18nCache, type ReactI18nCacheParams } from 'gt-react';
 import {
   mergeDictionaries,
   type Dictionary as LegacyDictionary,

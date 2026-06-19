@@ -1,4 +1,4 @@
-import { Branch as CoreBranch } from 'gt-react/context';
+import { Branch as CoreBranch } from 'gt-react';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
 
