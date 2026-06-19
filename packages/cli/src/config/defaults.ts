@@ -9,6 +9,7 @@ export const GT_PARSING_FLAGS_DEFAULT: GTParsingFlags = {
   autoderive: false,
   includeSourceCodeContext: false,
   enableAutoJsxInjection: false,
+  legacyGtReactImportSource: false,
 };
 
 /**

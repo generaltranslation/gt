@@ -351,11 +351,26 @@ describe('runtimeTranslatePass', () => {
   // ===== Import handling =====
 
   describe('import handling', () => {
-    it('injects import from gt-react/browser', () => {
+    it('injects import from gt-react', () => {
       const { imports } = transform(`
         ${USEGT_SETUP}
         const msg = t("Hello");
       `);
+
+      const specifiers = getImportSpecifiers(imports, 'gt-react');
+      expect(specifiers).toContain(
+        GT_OTHER_FUNCTIONS.GtInternalRuntimeTranslateString
+      );
+    });
+
+    it('injects import from gt-react/browser with legacy flag', () => {
+      const { imports } = transform(
+        `
+        ${USEGT_SETUP}
+        const msg = t("Hello");
+      `,
+        { legacyGtReactImportSource: true }
+      );
 
       const specifiers = getImportSpecifiers(imports, 'gt-react/browser');
       expect(specifiers).toContain(
@@ -396,7 +411,7 @@ describe('runtimeTranslatePass', () => {
       `);
 
       expect(runtimeCalls).toHaveLength(0);
-      const specifiers = getImportSpecifiers(imports, 'gt-react/browser');
+      const specifiers = getImportSpecifiers(imports, 'gt-react');
       expect(specifiers).not.toContain(
         GT_OTHER_FUNCTIONS.GtInternalRuntimeTranslateString
       );
@@ -421,6 +436,43 @@ describe('runtimeTranslatePass', () => {
         strings: true,
         jsx: false,
       });
+    });
+
+    it('respects legacyGtReactImportSource from gtConfig', () => {
+      const state = initializeState(
+        {
+          gtConfig: {
+            files: {
+              gt: {
+                parsingFlags: {
+                  legacyGtReactImportSource: true,
+                },
+              },
+            },
+          },
+        },
+        'test.tsx'
+      );
+      expect(state.settings.legacyGtReactImportSource).toBe(true);
+    });
+
+    it('direct legacyGtReactImportSource option overrides gtConfig', () => {
+      const state = initializeState(
+        {
+          legacyGtReactImportSource: false,
+          gtConfig: {
+            files: {
+              gt: {
+                parsingFlags: {
+                  legacyGtReactImportSource: true,
+                },
+              },
+            },
+          },
+        },
+        'test.tsx'
+      );
+      expect(state.settings.legacyGtReactImportSource).toBe(false);
     });
 
     it('direct option overrides gtConfig', () => {

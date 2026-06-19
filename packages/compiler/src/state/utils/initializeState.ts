@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   enableMacroImportInjection: true,
   enableAutoJsxInjection: false,
   autoderive: { jsx: false, strings: false },
+  legacyGtReactImportSource: false,
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
 };
@@ -41,6 +42,10 @@ export function initializeState(
   const rawDevHotReload =
     gtConfig?.files?.gt?.parsingFlags?.devHotReload ?? false;
   const rawAutoderive = gtConfig?.files?.gt?.parsingFlags?.autoderive ?? false;
+  const legacyGtReactImportSource =
+    options.legacyGtReactImportSource ??
+    gtConfig?.files?.gt?.parsingFlags?.legacyGtReactImportSource ??
+    false;
 
   const autoderive = resolveAutoderive(options.autoderive ?? rawAutoderive);
 
@@ -52,12 +57,18 @@ export function initializeState(
 
   // Spread options but exclude already-resolved fields
   // eslint-disable-next-line no-unused-vars
-  const { autoderive: _a, devHotReload: _b, ...restOptions } = options;
+  const {
+    autoderive: _a,
+    devHotReload: _b,
+    legacyGtReactImportSource: _c,
+    ...restOptions
+  } = options;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,
     enableAutoJsxInjection, // can be overridden by options.enableAutoJsxInjection
     autoderive,
+    legacyGtReactImportSource,
     devHotReload,
     ...restOptions,
     filename,
