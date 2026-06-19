@@ -1,8 +1,8 @@
 import {
   I18nStore,
   InternalGTProvider,
-  ReadonlyConditionStore,
-} from '@generaltranslation/react-core/context';
+} from '@generaltranslation/react-core/components';
+import { ReadonlyConditionStore } from '@generaltranslation/react-core/pure';
 import { useMemo, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { useHandleMissingTranslations } from '../hooks/useHandleMissingTranslations';

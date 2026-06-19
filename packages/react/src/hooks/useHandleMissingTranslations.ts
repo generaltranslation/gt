@@ -1,11 +1,11 @@
 'server-only';
 
 import {
-  I18nStore,
   OnMissingDictionaryEntry,
   OnMissingDictionaryObj,
   OnMissingTranslation,
-} from '@generaltranslation/react-core/context';
+} from '@generaltranslation/react-core/pure';
+import { I18nStore } from '@generaltranslation/react-core/components';
 import { useMemo } from 'react';
 
 /**

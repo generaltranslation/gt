@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getTranslationsSnapshot } from '@generaltranslation/react-core/context';
+import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import { initializeGT } from '../initializeGT';
 
 describe('initializeGT', () => {

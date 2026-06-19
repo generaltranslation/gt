@@ -5,13 +5,7 @@ import {
 } from '../../tsdown.preset.mts';
 
 const deps = {
-  neverBundle: [
-    /^react$/,
-    /^react\//,
-    /^react-dom$/,
-    /^react-dom\//,
-    /^@generaltranslation\/react-core$/,
-  ],
+  neverBundle: [/^react$/, /^react\//, /^react-dom$/, /^react-dom\//],
   alwaysBundle: [
     /^@generaltranslation\/format\//,
     /^@generaltranslation\/react-core\//,

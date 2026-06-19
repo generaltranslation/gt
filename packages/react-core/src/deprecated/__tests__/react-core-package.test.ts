@@ -138,7 +138,6 @@ describe('@generaltranslation/react-core package exports', () => {
       `
           const assert = require('node:assert/strict');
           const reactCore = require('@generaltranslation/react-core');
-          const internal = require('@generaltranslation/react-core/internal');
           const errors = require('@generaltranslation/react-core/errors');
           const pure = require('@generaltranslation/react-core/pure');
           const components = require('@generaltranslation/react-core/components');
@@ -147,7 +146,6 @@ describe('@generaltranslation/react-core package exports', () => {
 
           assert.equal(typeof reactCore.GTProvider, 'function');
           assert.equal(typeof reactCore.T, 'function');
-          assert.equal(typeof internal.renderDefaultChildren, 'function');
           assert.equal(typeof errors.createUnsupportedLocaleWarning, 'function');
           assert.equal(typeof pure.msg, 'function');
           assert.equal(typeof components.T, 'function');
@@ -164,7 +162,6 @@ describe('@generaltranslation/react-core package exports', () => {
       `
           import assert from 'node:assert/strict';
           import { GTProvider, T } from '@generaltranslation/react-core';
-          import { renderDefaultChildren } from '@generaltranslation/react-core/internal';
           import { createUnsupportedLocaleWarning } from '@generaltranslation/react-core/errors';
           import { msg } from '@generaltranslation/react-core/pure';
           import { T as ComponentsT } from '@generaltranslation/react-core/components';
@@ -173,7 +170,6 @@ describe('@generaltranslation/react-core package exports', () => {
 
           assert.equal(typeof GTProvider, 'function');
           assert.equal(typeof T, 'function');
-          assert.equal(typeof renderDefaultChildren, 'function');
           assert.equal(typeof createUnsupportedLocaleWarning, 'function');
           assert.equal(typeof msg, 'function');
           assert.equal(typeof ComponentsT, 'function');

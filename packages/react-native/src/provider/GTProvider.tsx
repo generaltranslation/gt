@@ -1,4 +1,4 @@
-import type { InternalGTProviderProps } from '@generaltranslation/react-core/context';
+import type { InternalGTProviderProps } from '@generaltranslation/react-core/components';
 import { Suspense, use, useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';

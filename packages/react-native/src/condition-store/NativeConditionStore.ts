@@ -7,7 +7,7 @@ import {
   defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
   defaultLocaleCookieName as defaultLocaleStoreKey,
   defaultRegionCookieName as defaultRegionStoreKey,
-} from '@generaltranslation/react-core/internal';
+} from '@generaltranslation/react-core/pure';
 import { getLocale } from '../utils/getLocale';
 import {
   getInitialEnableI18n,
