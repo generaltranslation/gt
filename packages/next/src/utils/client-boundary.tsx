@@ -16,10 +16,13 @@ import { getI18nConfig, I18nConfig } from 'gt-i18n/internal';
 import { GTProvider, type SharedGTProviderProps } from 'gt-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
+import { initializeGT } from '../setup/initGT';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
 } from './cookies';
+
+initializeGT();
 
 /**
  * Small wrapper to embed nextjs app router behavior
