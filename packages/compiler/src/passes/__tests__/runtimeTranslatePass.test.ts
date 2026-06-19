@@ -456,6 +456,25 @@ describe('runtimeTranslatePass', () => {
       expect(state.settings.legacyGtReactImportSource).toBe(true);
     });
 
+    it('direct legacyGtReactImportSource option overrides gtConfig', () => {
+      const state = initializeState(
+        {
+          legacyGtReactImportSource: false,
+          gtConfig: {
+            files: {
+              gt: {
+                parsingFlags: {
+                  legacyGtReactImportSource: true,
+                },
+              },
+            },
+          },
+        },
+        'test.tsx'
+      );
+      expect(state.settings.legacyGtReactImportSource).toBe(false);
+    });
+
     it('direct option overrides gtConfig', () => {
       const state = initializeState(
         {

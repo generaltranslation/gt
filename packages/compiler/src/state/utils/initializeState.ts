@@ -43,7 +43,9 @@ export function initializeState(
     gtConfig?.files?.gt?.parsingFlags?.devHotReload ?? false;
   const rawAutoderive = gtConfig?.files?.gt?.parsingFlags?.autoderive ?? false;
   const legacyGtReactImportSource =
-    gtConfig?.files?.gt?.parsingFlags?.legacyGtReactImportSource ?? false;
+    options.legacyGtReactImportSource ??
+    gtConfig?.files?.gt?.parsingFlags?.legacyGtReactImportSource ??
+    false;
 
   const autoderive = resolveAutoderive(options.autoderive ?? rawAutoderive);
 
@@ -55,7 +57,12 @@ export function initializeState(
 
   // Spread options but exclude already-resolved fields
   // eslint-disable-next-line no-unused-vars
-  const { autoderive: _a, devHotReload: _b, ...restOptions } = options;
+  const {
+    autoderive: _a,
+    devHotReload: _b,
+    legacyGtReactImportSource: _c,
+    ...restOptions
+  } = options;
 
   const settings: PluginSettings = {
     ...DEFAULT_SETTINGS,

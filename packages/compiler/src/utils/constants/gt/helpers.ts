@@ -169,7 +169,12 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
   ).includes(name);
 }
 
-export function isGTReactImportSource(name: string): name is GT_IMPORT_SOURCES {
+export function isGTReactImportSource(
+  name: string
+): name is
+  | GT_IMPORT_SOURCES.GT_REACT
+  | GT_IMPORT_SOURCES.GT_REACT_CLIENT
+  | GT_IMPORT_SOURCES.GT_REACT_BROWSER {
   return (
     [
       GT_IMPORT_SOURCES.GT_REACT,
