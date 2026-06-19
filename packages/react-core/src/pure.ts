@@ -15,10 +15,23 @@ export {
 
 export { default as getPluralBranch } from './utils/plurals/getPluralBranch';
 export { getFormatLocales } from './hooks/utils/getFormatLocales';
+export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
+export { t } from './functions/translation/t';
+export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
+export type { RenderPipeline } from './utils/rendering/createRenderPipeline';
+export type { RenderPreparedT } from './utils/translation/prepareT.shared';
+export {
+  getReactI18nCache,
+  setReactI18nCache,
+} from './i18n-cache/singleton-operations';
 
 export type { RelativeTimeFormatOptions, RenderVariable } from './utils/types';
 
-export { internalInitializeGTSRA as initializeGT } from './setup/initializeGTSRA';
+export {
+  internalInitializeGTSRA,
+  internalInitializeGTSRA as initializeGT,
+} from './setup/initializeGTSRA';
+export { internalInitializeGTSPA } from './setup/initializeGTSPA';
 
 export {
   ReactI18nCache,

@@ -31,7 +31,10 @@ const contextDeps = {
 };
 
 const entries = [
-  'src/index.ts',
+  'src/index.rsc.ts',
+  'src/index.client.ts',
+  'src/index.server.ts',
+  'src/index.types.ts',
   'src/internal.ts',
   'src/client.ts',
   'src/context.rsc.ts',
@@ -44,7 +47,10 @@ const entries = [
 
 export default defineConfig(
   entries.flatMap((entry, index) => {
-    const entryDeps = entry.startsWith('src/context') ? contextDeps : deps;
+    const entryDeps =
+      entry.startsWith('src/index.') || entry.startsWith('src/context')
+        ? contextDeps
+        : deps;
     const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
     return [
