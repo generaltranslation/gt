@@ -1,17 +1,23 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import {
-  GT_IMPORT_SOURCES,
-  GT_OTHER_FUNCTIONS,
-} from '../../utils/constants/gt/constants';
+import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
+import { getGtReactImportSource } from '../../utils/constants/gt/helpers';
 
 /**
  * Inject runtime translate import with only the specifiers needed.
- * `import { GtInternalRuntimeTranslateString, GtInternalRuntimeTranslateJsx } from 'gt-react/browser'`
+ * `import { GtInternalRuntimeTranslateString, GtInternalRuntimeTranslateJsx } from 'gt-react'`
  */
 export function injectRuntimeTranslateImport(
   path: NodePath<t.Program>,
-  { needsString, needsJsx }: { needsString: boolean; needsJsx: boolean }
+  {
+    needsString,
+    needsJsx,
+    legacyGtReactImportSource,
+  }: {
+    needsString: boolean;
+    needsJsx: boolean;
+    legacyGtReactImportSource: boolean;
+  }
 ): NodePath<t.ImportDeclaration> | null {
   const specifiers: t.ImportSpecifier[] = [];
 
@@ -29,7 +35,7 @@ export function injectRuntimeTranslateImport(
 
   const importDecl = t.importDeclaration(
     specifiers,
-    t.stringLiteral(GT_IMPORT_SOURCES.GT_REACT_BROWSER)
+    t.stringLiteral(getGtReactImportSource(legacyGtReactImportSource))
   );
 
   const [inserted] = path.unshiftContainer('body', importDecl);

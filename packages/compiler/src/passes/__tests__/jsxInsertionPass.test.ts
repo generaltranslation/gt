@@ -8,13 +8,19 @@ import { initializeState } from '../../state/utils/initializeState';
 
 // --- Helpers ---
 
-function transform(code: string): {
+function transform(
+  code: string,
+  overrides: Record<string, unknown> = {}
+): {
   code: string;
   gtTranslateCalls: t.CallExpression[];
   gtVarCalls: t.CallExpression[];
   imports: t.ImportDeclaration[];
 } {
-  const state = initializeState({ enableAutoJsxInjection: true }, 'test.tsx');
+  const state = initializeState(
+    { enableAutoJsxInjection: true, ...overrides },
+    'test.tsx'
+  );
   const ast = parser.parse(code, {
     sourceType: 'module',
     plugins: ['typescript'],
@@ -479,7 +485,7 @@ describe('jsxInsertionPass', () => {
       jsx("div", { children: "Hello" });
     `;
     const { imports } = transform(code);
-    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
+    const gtImport = imports.find((i) => i.source.value === 'gt-react');
     expect(gtImport).toBeDefined();
     const names = gtImport!.specifiers
       .filter((s): s is t.ImportSpecifier => t.isImportSpecifier(s))
@@ -488,13 +494,25 @@ describe('jsxInsertionPass', () => {
     expect(names).toContain('GtInternalVar');
   });
 
+  it('injects import from gt-react/browser with legacy flag', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      jsx("div", { children: "Hello" });
+    `;
+    const { imports } = transform(code, {
+      legacyGtReactImportSource: true,
+    });
+    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
+    expect(gtImport).toBeDefined();
+  });
+
   it('does NOT inject import when no insertions', () => {
     const code = `
       import { jsx } from 'react/jsx-runtime';
       jsx("div", {});
     `;
     const { imports } = transform(code);
-    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
+    const gtImport = imports.find((i) => i.source.value === 'gt-react');
     expect(gtImport).toBeUndefined();
   });
 
