@@ -43,7 +43,7 @@ export function getI18nConfig(): ReactI18nConfig {
       severity: 'Error',
       whatHappened: 'Cannot read ReactI18nConfig after base I18nConfig setup.',
       why: 'the internal I18nConfig singleton was initialized without react-core render strategy support',
-      fix: 'Initialize GT through gt-react or @generaltranslation/react-core/context.',
+      fix: 'Initialize GT through gt-react or @generaltranslation/react-core/pure.',
     })
   );
 }

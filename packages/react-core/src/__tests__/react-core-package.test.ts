@@ -17,28 +17,21 @@ import {
 } from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-const packageRoot = dirname(
-  dirname(dirname(dirname(fileURLToPath(import.meta.url))))
-);
-const runtimeEntryNames = [
-  'components',
-  'components-rsc',
-  'context',
-  'errors',
-  'hooks',
-  'index',
-  'internal',
-  'pure',
-];
+const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+const runtimeEntryNames = ['components', 'components-rsc', 'hooks', 'pure'];
 const runtimeArtifactNames = runtimeEntryNames
   .flatMap((entryName) => [
     `${entryName}.cjs.min.cjs`,
     `${entryName}.esm.min.mjs`,
   ])
   .sort();
-const builtArtifacts = [...runtimeArtifactNames, 'types.d.ts'].map((artifact) =>
-  join(packageRoot, 'dist', artifact)
-);
+const builtArtifacts = runtimeEntryNames
+  .flatMap((entryName) => [
+    `${entryName}.cjs.min.cjs`,
+    `${entryName}.esm.min.mjs`,
+    `${entryName}.d.ts`,
+  ])
+  .map((artifact) => join(packageRoot, 'dist', artifact));
 const workspaceSubpathPackages = [
   '@generaltranslation/format',
   '@generaltranslation/react-core',
@@ -47,7 +40,11 @@ const workspaceSubpathPackages = [
 ];
 
 function hasBuiltArtifacts(): boolean {
-  return builtArtifacts.every((artifact) => existsSync(artifact));
+  return (
+    existsSync(join(packageRoot, 'dist')) &&
+    builtArtifacts.every((artifact) => existsSync(artifact)) &&
+    getRuntimeArtifactNames().join('\0') === runtimeArtifactNames.join('\0')
+  );
 }
 
 function buildPackage(): void {
@@ -83,9 +80,8 @@ function isAllowedExternalizedSubpath(
   specifier: string
 ): boolean {
   return (
-    ['components.', 'components-rsc.', 'context.', 'hooks.', 'pure.'].some(
-      (prefix) => file.startsWith(prefix)
-    ) && specifier.startsWith('gt-i18n/')
+    runtimeEntryNames.some((entryName) => file.startsWith(`${entryName}.`)) &&
+    specifier.startsWith('gt-i18n/')
   );
 }
 
@@ -137,16 +133,11 @@ describe('@generaltranslation/react-core package exports', () => {
       '-e',
       `
           const assert = require('node:assert/strict');
-          const reactCore = require('@generaltranslation/react-core');
-          const errors = require('@generaltranslation/react-core/errors');
           const pure = require('@generaltranslation/react-core/pure');
           const components = require('@generaltranslation/react-core/components');
           const hooks = require('@generaltranslation/react-core/hooks');
           const componentsRsc = require('@generaltranslation/react-core/components-rsc');
 
-          assert.equal(typeof reactCore.GTProvider, 'function');
-          assert.equal(typeof reactCore.T, 'function');
-          assert.equal(typeof errors.createUnsupportedLocaleWarning, 'function');
           assert.equal(typeof pure.msg, 'function');
           assert.equal(typeof components.T, 'function');
           assert.equal(typeof hooks.useGT, 'function');
@@ -161,18 +152,13 @@ describe('@generaltranslation/react-core package exports', () => {
       '-e',
       `
           import assert from 'node:assert/strict';
-          import { GTProvider, T } from '@generaltranslation/react-core';
-          import { createUnsupportedLocaleWarning } from '@generaltranslation/react-core/errors';
           import { msg } from '@generaltranslation/react-core/pure';
-          import { T as ComponentsT } from '@generaltranslation/react-core/components';
+          import { T } from '@generaltranslation/react-core/components';
           import { useGT } from '@generaltranslation/react-core/hooks';
           import { Branch } from '@generaltranslation/react-core/components-rsc';
 
-          assert.equal(typeof GTProvider, 'function');
-          assert.equal(typeof T, 'function');
-          assert.equal(typeof createUnsupportedLocaleWarning, 'function');
           assert.equal(typeof msg, 'function');
-          assert.equal(typeof ComponentsT, 'function');
+          assert.equal(typeof T, 'function');
           assert.equal(typeof useGT, 'function');
           assert.equal(typeof Branch, 'function');
         `,

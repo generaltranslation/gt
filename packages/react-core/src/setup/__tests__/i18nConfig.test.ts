@@ -18,11 +18,10 @@ describe('react i18n config', () => {
     expect(getI18nConfig().getRenderStrategy()).toBe('SPA');
   });
 
-  it('defaults public context initialization to server-render', async () => {
+  it('defaults public pure initialization to server-render', async () => {
     const { getI18nConfig: getBaseI18nConfig } =
       await import('gt-i18n/internal');
-    const { getI18nConfig, initializeI18nConfig } =
-      await import('../../context');
+    const { getI18nConfig, initializeI18nConfig } = await import('../../pure');
 
     const config = initializeI18nConfig({ defaultLocale: 'en' });
 

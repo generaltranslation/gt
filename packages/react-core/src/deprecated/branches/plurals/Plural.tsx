@@ -1,5 +1,5 @@
 import { ReactNode, useContext } from 'react';
-import { getPluralBranch } from '../../../internal';
+import getPluralBranch from './getPluralBranch';
 import { createPluralMissingError } from '../../errors-dir/createErrors';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { GTContext } from '../../provider/GTContext';

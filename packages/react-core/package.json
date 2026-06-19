@@ -2,9 +2,6 @@
   "name": "@generaltranslation/react-core",
   "version": "1.8.21",
   "description": "A pure React library for internationalization",
-  "main": "./dist/index.cjs.min.cjs",
-  "module": "./dist/index.esm.min.mjs",
-  "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "CHANGELOG.md"
@@ -50,21 +47,6 @@
     "typescript": "catalog:"
   },
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs.min.cjs",
-      "import": "./dist/index.esm.min.mjs"
-    },
-    "./internal": {
-      "types": "./dist/internal.d.ts",
-      "require": "./dist/internal.cjs.min.cjs",
-      "import": "./dist/internal.esm.min.mjs"
-    },
-    "./context": {
-      "types": "./dist/context.d.ts",
-      "require": "./dist/context.cjs.min.cjs",
-      "import": "./dist/context.esm.min.mjs"
-    },
     "./pure": {
       "types": "./dist/pure.d.ts",
       "require": "./dist/pure.cjs.min.cjs",
@@ -84,27 +66,10 @@
       "types": "./dist/components-rsc.d.ts",
       "require": "./dist/components-rsc.cjs.min.cjs",
       "import": "./dist/components-rsc.esm.min.mjs"
-    },
-    "./errors": {
-      "types": "./dist/errors.d.ts",
-      "require": "./dist/errors.cjs.min.cjs",
-      "import": "./dist/errors.esm.min.mjs"
-    },
-    "./types": {
-      "types": "./dist/types.d.ts"
     }
   },
   "typesVersions": {
     "*": {
-      "types": [
-        "./dist/types.d.ts"
-      ],
-      "internal": [
-        "./dist/internal.d.ts"
-      ],
-      "context": [
-        "./dist/context.d.ts"
-      ],
       "pure": [
         "./dist/pure.d.ts"
       ],
@@ -116,21 +81,12 @@
       ],
       "components-rsc": [
         "./dist/components-rsc.d.ts"
-      ],
-      "errors": [
-        "./dist/errors.d.ts"
       ]
     }
   },
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@generaltranslation/react-core/internal": [
-        "./dist/internal"
-      ],
-      "@generaltranslation/react-core/context": [
-        "./dist/context"
-      ],
       "@generaltranslation/react-core/pure": [
         "./dist/pure"
       ],
@@ -142,12 +98,6 @@
       ],
       "@generaltranslation/react-core/components-rsc": [
         "./dist/components-rsc"
-      ],
-      "@generaltranslation/react-core/types": [
-        "./dist/types.d.ts"
-      ],
-      "@generaltranslation/react-core/errors": [
-        "./dist/errors.d.ts"
       ]
     }
   },
