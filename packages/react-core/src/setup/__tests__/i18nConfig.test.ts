@@ -52,4 +52,25 @@ describe('react i18n config', () => {
       /Cannot read ReactI18nConfig after base I18nConfig setup/
     );
   });
+
+  it('accepts branded react i18n config instances from another bundle', async () => {
+    const { I18nConfig, setI18nConfig: setBaseI18nConfig } =
+      await import('gt-i18n/internal');
+    const { getI18nConfig } = await import('../i18nConfig');
+    const reactI18nConfigBrand = Symbol.for(
+      '@generaltranslation/react-core/ReactI18nConfig'
+    );
+
+    class CrossBundleReactI18nConfig extends I18nConfig {
+      constructor() {
+        super({ defaultLocale: 'en' });
+        Object.defineProperty(this, reactI18nConfigBrand, { value: true });
+      }
+    }
+
+    const config = new CrossBundleReactI18nConfig();
+    setBaseI18nConfig(config);
+
+    expect(getI18nConfig()).toBe(config);
+  });
 });
