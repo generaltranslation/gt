@@ -1,5 +1,14 @@
 # gt-react-native
 
+## 10.20.2
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - @generaltranslation/react-core@1.8.22
+  - @generaltranslation/supported-locales@2.1.2
+
 ## 10.20.1
 
 ### Patch Changes

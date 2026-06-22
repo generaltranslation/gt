@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 8.2.17
+
+### Patch Changes
+
+- [#1635](https://github.com/generaltranslation/gt/pull/1635) [`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01) Thanks [@brian-lou](https://github.com/brian-lou)! - Add retry mechanism for rate limits
+
 ## 8.2.16
 
 ### Patch Changes
