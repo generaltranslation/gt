@@ -8,6 +8,8 @@ import generateRequestHeaders from './generateRequestHeaders';
 
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 500;
+const RATE_LIMIT_RETRY_DELAY_MS = 60_000;
+const MS_PER_SECOND = 1000;
 
 type RetryPolicy = 'exponential' | 'linear' | 'none';
 
@@ -26,10 +28,61 @@ function getRetryDelay(policy: RetryPolicy, attempt: number): number {
   }
 }
 
+function parseDelayMs(value: string | null): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const seconds = Number(value.split(',')[0].split(';')[0].trim());
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return undefined;
+  }
+
+  return seconds * MS_PER_SECOND;
+}
+
+function parseRetryAfter(value: string | null): number | undefined {
+  const delayMs = parseDelayMs(value);
+  if (delayMs !== undefined) {
+    return delayMs;
+  }
+
+  if (!value) {
+    return undefined;
+  }
+
+  const retryDate = Date.parse(value);
+  if (Number.isNaN(retryDate)) {
+    return undefined;
+  }
+
+  return Math.max(retryDate - Date.now(), 0);
+}
+
+function getRateLimitRetryDelay(response: Response): number {
+  return (
+    parseRetryAfter(response.headers.get('Retry-After')) ??
+    parseDelayMs(response.headers.get('RateLimit-Reset')) ??
+    RATE_LIMIT_RETRY_DELAY_MS
+  );
+}
+
+function getResponseRetryDelay(
+  response: Response,
+  policy: RetryPolicy,
+  attempt: number
+): number {
+  if (response.status === 429) {
+    return getRateLimitRetryDelay(response);
+  }
+
+  return getRetryDelay(policy, attempt);
+}
+
 /**
  * @internal
  *
- * Makes an API request with automatic retry for 5XX errors.
+ * Makes an API request with automatic retry for 429 and 5XX errors.
  *
  * Encapsulates URL construction, fetch with timeout, error handling,
  * response validation, and JSON parsing.
@@ -75,9 +128,12 @@ export default async function apiRequest<T>(
       handleFetchError(error, timeout);
     }
 
-    // Retry on 5XX server errors.
-    if (response!.status >= 500 && attempt < maxRetries) {
-      await sleep(getRetryDelay(retryPolicy, attempt));
+    // Retry on rate limits and 5XX server errors.
+    if (
+      (response!.status === 429 || response!.status >= 500) &&
+      attempt < maxRetries
+    ) {
+      await sleep(getResponseRetryDelay(response!, retryPolicy, attempt));
       continue;
     }
 
