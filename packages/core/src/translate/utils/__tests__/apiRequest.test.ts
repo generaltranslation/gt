@@ -166,4 +166,34 @@ describe.sequential('apiRequest', () => {
     expect(fetchWithTimeout).toHaveBeenCalledTimes(1);
     expect(validateResponse).toHaveBeenCalledWith(rateLimitedResponse);
   });
+
+  it('surfaces the final 429 validation error after exhausting retries', async () => {
+    vi.useFakeTimers();
+
+    const rateLimitedResponses = Array.from({ length: 4 }, () =>
+      createResponse({
+        ok: false,
+        status: 429,
+        statusText: 'Too Many Requests',
+      })
+    );
+    const rateLimitError = new Error('rate limited');
+
+    vi.mocked(fetchWithTimeout)
+      .mockResolvedValueOnce(rateLimitedResponses[0])
+      .mockResolvedValueOnce(rateLimitedResponses[1])
+      .mockResolvedValueOnce(rateLimitedResponses[2])
+      .mockResolvedValueOnce(rateLimitedResponses[3]);
+    vi.mocked(validateResponse).mockRejectedValueOnce(rateLimitError);
+
+    const request = apiRequest(config, '/test');
+    const expectation = expect(request).rejects.toThrow(rateLimitError);
+
+    await vi.runAllTimersAsync();
+    await expectation;
+
+    expect(fetchWithTimeout).toHaveBeenCalledTimes(4);
+    expect(validateResponse).toHaveBeenCalledTimes(1);
+    expect(validateResponse).toHaveBeenCalledWith(rateLimitedResponses[3]);
+  });
 });

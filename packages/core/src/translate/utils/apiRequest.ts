@@ -28,7 +28,7 @@ function getRetryDelay(policy: RetryPolicy, attempt: number): number {
   }
 }
 
-function parseDelaySeconds(value: string | null): number | undefined {
+function parseDelayMs(value: string | null): number | undefined {
   if (!value) {
     return undefined;
   }
@@ -42,9 +42,9 @@ function parseDelaySeconds(value: string | null): number | undefined {
 }
 
 function parseRetryAfter(value: string | null): number | undefined {
-  const secondsDelay = parseDelaySeconds(value);
-  if (secondsDelay !== undefined) {
-    return secondsDelay;
+  const delayMs = parseDelayMs(value);
+  if (delayMs !== undefined) {
+    return delayMs;
   }
 
   if (!value) {
@@ -62,7 +62,7 @@ function parseRetryAfter(value: string | null): number | undefined {
 function getRateLimitRetryDelay(response: Response): number {
   return (
     parseRetryAfter(response.headers.get('Retry-After')) ??
-    parseDelaySeconds(response.headers.get('RateLimit-Reset')) ??
+    parseDelayMs(response.headers.get('RateLimit-Reset')) ??
     RATE_LIMIT_RETRY_DELAY_MS
   );
 }
