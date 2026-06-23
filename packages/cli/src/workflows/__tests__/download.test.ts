@@ -118,5 +118,11 @@ describe('runDownloadWorkflow', () => {
     expect(exclude).toBeUndefined();
     expect(cwd).toBe('/project');
     expect(downloadFileBatch).toHaveBeenCalledTimes(1);
+    const [, , downloadSettings] = vi.mocked(downloadFileBatch).mock.calls[0];
+    expect(downloadSettings).toEqual(
+      expect.objectContaining({ _branchId: 'branch-1' })
+    );
+    expect(downloadSettings).not.toBe(settings);
+    expect(settings._branchId).toBeUndefined();
   });
 });

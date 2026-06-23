@@ -68,7 +68,11 @@ export async function runDownloadWorkflow({
     branchData = branchResult;
   }
   // readLockfile uses _branchId to select branch-specific lockfile entries.
-  options._branchId = branchData.currentBranch.id;
+  // Keep it on a scoped copy so the caller's settings object is not mutated.
+  const settingsForBranch: Settings = {
+    ...options,
+    _branchId: branchData.currentBranch.id,
+  };
   // Prepare the query data
   const fileQueryData = prepareFileQueryData(
     fileVersionData,
@@ -150,7 +154,7 @@ export async function runDownloadWorkflow({
   });
 
   // Step 2: Download translations
-  const downloadStep = new DownloadTranslationsStep(gt, options);
+  const downloadStep = new DownloadTranslationsStep(gt, settingsForBranch);
   const downloadResult = await downloadStep.run({
     fileTracker,
     resolveOutputPath,
