@@ -38,6 +38,10 @@ import {
 import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath';
 import { ssgChecks } from './plugin/checks/ssgChecks';
 import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
+import {
+  getDefinedRuntimeCredentials,
+  withoutRuntimeCredentials,
+} from './config-dir/utils/runtimeCredentials';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 
@@ -147,32 +151,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     console.error('Error reading GT config file:', error);
   }
 
-  // ---------- LOAD ENVIRONMENT VARIABLES ---------- //
-
-  // resolve project ID
-  const projectId: string | undefined = process.env.GT_PROJECT_ID;
-
-  // resolve API keys
-  const envApiKey: string | undefined =
-    process.env.NODE_ENV === 'production'
-      ? process.env.GT_API_KEY
-      : process.env.GT_DEV_API_KEY || process.env.GT_API_KEY;
-  let apiKey, devApiKey;
-  if (envApiKey) {
-    const apiKeyType = envApiKey?.split('-')?.[1];
-    if (apiKeyType === 'api') {
-      apiKey = envApiKey;
-    } else if (apiKeyType === 'dev') {
-      devApiKey = envApiKey;
-    }
-  }
-
-  // conditionally add environment variables to config
-  const envConfig: Partial<InternalGTConfigProps> = {
-    ...(projectId ? { projectId } : {}),
-    ...(apiKey ? { apiKey } : {}),
-    ...(devApiKey ? { devApiKey } : {}),
-  };
+  const runtimeCredentials = getDefinedRuntimeCredentials();
 
   // ---------- CHECK FOR CONFIG CONFLICTS ---------- //
 
@@ -240,15 +219,18 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     ...props.experimentalCompilerOptions,
   };
 
-  // precedence: input > env > config file > defaults
+  // precedence: input > config file > defaults
   const mergedConfig: InternalGTConfigProps = {
     ...defaultWithGTConfigProps,
     ...loadedConfig,
-    ...envConfig,
     ...props,
     headersAndCookies: mergedHeadersAndCookies,
     experimentalCompilerOptions: mergedExperimentalCompilerOptions,
     _usingPlugin: true, // flag to indicate plugin usage
+  };
+  const runtimeConfig: InternalGTConfigProps = {
+    ...mergedConfig,
+    ...runtimeCredentials,
   };
 
   // clear up any issues with the compiler options
@@ -374,17 +356,17 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // Check if using Services
   const gtRuntimeTranslationEnabled = !!(
-    mergedConfig.runtimeUrl === defaultWithGTConfigProps.runtimeUrl &&
-    ((process.env.NODE_ENV === 'production' && mergedConfig.apiKey) ||
-      (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey))
+    runtimeConfig.runtimeUrl === defaultWithGTConfigProps.runtimeUrl &&
+    ((process.env.NODE_ENV === 'production' && runtimeConfig.apiKey) ||
+      (process.env.NODE_ENV === 'development' && runtimeConfig.devApiKey))
   );
   const gtRemoteCacheEnabled = !!(
-    mergedConfig.cacheUrl === defaultWithGTConfigProps.cacheUrl &&
-    mergedConfig.loadTranslationsType === 'remote'
+    runtimeConfig.cacheUrl === defaultWithGTConfigProps.cacheUrl &&
+    runtimeConfig.loadTranslationsType === 'remote'
   );
   const gtServicesEnabled = !!(
     (gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
-    mergedConfig.projectId
+    runtimeConfig.projectId
   );
 
   // Standardize locales
@@ -474,7 +456,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   // Set default cache expiry if and only if no dev key
   if (
     mergedConfig.loadTranslationsType == 'remote' &&
-    !mergedConfig.devApiKey &&
+    !runtimeConfig.devApiKey &&
     typeof mergedConfig.cacheExpiryTime === 'undefined'
   ) {
     mergedConfig.cacheExpiryTime = defaultCacheExpiryTime;
@@ -510,8 +492,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
-    (mergedConfig.cacheUrl || mergedConfig.runtimeUrl) &&
-    !mergedConfig.projectId &&
+    (runtimeConfig.cacheUrl || runtimeConfig.runtimeUrl) &&
+    !runtimeConfig.projectId &&
     process.env.NODE_ENV === 'development' &&
     mergedConfig.loadTranslationsType === 'remote' &&
     !mergedConfig.loadDictionaryEnabled // skip warn if using local dictionary
@@ -520,15 +502,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   }
 
   // Check: dev API key should not be included in production
-  if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
+  if (process.env.NODE_ENV === 'production' && runtimeConfig.devApiKey) {
     throw new Error(devApiKeyIncludedInProductionError);
   }
 
   // Check: An API key is required for runtime translation
   if (
-    mergedConfig.projectId && // must have projectId for this check to matter anyways
-    mergedConfig.runtimeUrl &&
-    !(mergedConfig.apiKey || mergedConfig.devApiKey) &&
+    runtimeConfig.projectId && // must have projectId for this check to matter anyways
+    runtimeConfig.runtimeUrl &&
+    !(runtimeConfig.apiKey || runtimeConfig.devApiKey) &&
     process.env.NODE_ENV === 'development'
   ) {
     console.warn(APIKeyMissingWarn);
@@ -550,7 +532,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   }
 
   // ---------- STORE CONFIGURATIONS ---------- //
-  const I18NConfigParams = JSON.stringify(mergedConfig);
+  const I18NConfigParams = JSON.stringify(
+    withoutRuntimeCredentials(mergedConfig)
+  );
 
   const { type: _type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
