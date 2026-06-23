@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { FileReference } from 'generaltranslation/types';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
-import { readLockfileForBranch } from '../../fs/config/downloadedVersions.js';
+import { readLockfile } from '../../fs/config/downloadedVersions.js';
 import type { BranchData } from '../../types/branch.js';
 import type { Settings } from '../../types/index.js';
 
@@ -31,7 +31,9 @@ export function filterFilesForEnqueue({
     return { filesToEnqueue: files, skippedFiles: [] };
   }
 
-  const { entryMap } = readLockfileForBranch(branchData.currentBranch.id, {
+  const { entryMap } = readLockfile(settings, {
+    branchId: branchData.currentBranch.id,
+    strictBranch: true,
     allowEmptyBranchId: !settings.branchOptions.enabled,
   });
   if (entryMap.size === 0) {

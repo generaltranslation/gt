@@ -49,6 +49,12 @@ export type DownloadedVersionsV1 = {
   };
 };
 
+export type ReadLockfileOptions = {
+  branchId?: string;
+  strictBranch?: boolean;
+  allowEmptyBranchId?: boolean;
+};
+
 // ── Conversion helpers ──────────────────────────────────────────────
 
 function convertV1ToV2(
@@ -135,12 +141,15 @@ function convertV2ToV1Branch(
  * If the file is v1, `originalV1` contains the full v1 data so that
  * `writeLockfile` can merge changes back without losing other branches.
  */
-export function readLockfile(settings: Settings): {
+export function readLockfile(
+  settings: Settings,
+  options: ReadLockfileOptions = {}
+): {
   data: DownloadedVersions;
   entryMap: EntryMap;
   originalV1: DownloadedVersionsV1 | null;
 } {
-  let branchId = settings._branchId ?? '';
+  let branchId = options.branchId ?? settings._branchId ?? '';
 
   let data: DownloadedVersions;
   let originalV1: DownloadedVersionsV1 | null = null;
@@ -154,11 +163,20 @@ export function readLockfile(settings: Settings): {
       if (!raw || typeof raw !== 'object' || !raw.entries) {
         data = { version: 2, branchId, entries: [] };
       } else if (raw.version === 2 && Array.isArray(raw.entries)) {
-        data = raw as DownloadedVersions;
-        if (branchId) data.branchId = branchId;
+        const rawBranchId = typeof raw.branchId === 'string' ? raw.branchId : '';
+        if (
+          options.strictBranch &&
+          rawBranchId !== branchId &&
+          !(options.allowEmptyBranchId && rawBranchId === '')
+        ) {
+          data = { version: 2, branchId, entries: [] };
+        } else {
+          data = raw as DownloadedVersions;
+          if (branchId) data.branchId = branchId;
+        }
       } else {
         originalV1 = raw as DownloadedVersionsV1;
-        if (!branchId) {
+        if (!branchId && !options.strictBranch) {
           const branches = Object.keys(originalV1.entries);
           if (branches.length > 0) branchId = branches[0];
         }
@@ -168,55 +186,6 @@ export function readLockfile(settings: Settings): {
   } catch (error) {
     logger.error(`An error occurred while reading ${GT_LOCK_FILE}: ${error}`);
     data = { version: 2, branchId, entries: [] };
-  }
-
-  return { data, entryMap: buildEntryMap(data.entries), originalV1 };
-}
-
-/**
- * Reads lockfile entries for one exact branch.
- *
- * Unlike `readLockfile`, this does not rewrite a v2 lockfile's branch id to
- * match settings. That makes it suitable for cache decisions where entries from
- * another branch must not be treated as current.
- */
-export function readLockfileForBranch(
-  branchId: string,
-  options: { allowEmptyBranchId?: boolean } = {}
-): {
-  data: DownloadedVersions;
-  entryMap: EntryMap;
-  originalV1: DownloadedVersionsV1 | null;
-} {
-  let data: DownloadedVersions = { version: 2, branchId, entries: [] };
-  let originalV1: DownloadedVersionsV1 | null = null;
-
-  try {
-    const rootPath = path.join(process.cwd(), GT_LOCK_FILE);
-    if (!fs.existsSync(rootPath)) {
-      return { data, entryMap: buildEntryMap(data.entries), originalV1 };
-    }
-
-    const raw = JSON.parse(fs.readFileSync(rootPath, 'utf8'));
-    if (!raw || typeof raw !== 'object' || !raw.entries) {
-      return { data, entryMap: buildEntryMap(data.entries), originalV1 };
-    }
-
-    if (raw.version === 2 && Array.isArray(raw.entries)) {
-      if (
-        raw.branchId !== branchId &&
-        !(options.allowEmptyBranchId && raw.branchId === '')
-      ) {
-        return { data, entryMap: buildEntryMap(data.entries), originalV1 };
-      }
-      data = raw as DownloadedVersions;
-      data.branchId = branchId;
-    } else {
-      originalV1 = raw as DownloadedVersionsV1;
-      data = convertV1ToV2(originalV1, branchId);
-    }
-  } catch (error) {
-    logger.error(`An error occurred while reading ${GT_LOCK_FILE}: ${error}`);
   }
 
   return { data, entryMap: buildEntryMap(data.entries), originalV1 };

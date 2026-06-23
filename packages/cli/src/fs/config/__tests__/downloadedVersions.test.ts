@@ -93,6 +93,79 @@ describe('readLockfile / writeLockfile', () => {
       expect(data.branchId).toBe('brc_new');
     });
 
+    it('returns empty v2 when strict branch does not match v2 lockfile', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_old',
+        entries: [
+          {
+            fileId: 'f1',
+            versionId: 'v1',
+            translations: {
+              es: { updatedAt: '2025-01-01T00:00:00Z' },
+            },
+          },
+        ],
+      });
+
+      const { data } = readLockfile(settings('brc_new'), {
+        branchId: 'brc_new',
+        strictBranch: true,
+      });
+
+      expect(data.branchId).toBe('brc_new');
+      expect(data.entries).toEqual([]);
+    });
+
+    it('accepts empty v2 branchId in strict mode when allowed', () => {
+      writeLockFile({
+        version: 2,
+        branchId: '',
+        entries: [
+          {
+            fileId: 'f1',
+            versionId: 'v1',
+            translations: {
+              es: { updatedAt: '2025-01-01T00:00:00Z' },
+            },
+          },
+        ],
+      });
+
+      const { data } = readLockfile(settings('brc_new'), {
+        branchId: 'brc_new',
+        strictBranch: true,
+        allowEmptyBranchId: true,
+      });
+
+      expect(data.branchId).toBe('brc_new');
+      expect(data.entries).toHaveLength(1);
+    });
+
+    it('uses the explicit read branchId over settings._branchId', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_requested',
+        entries: [
+          {
+            fileId: 'f1',
+            versionId: 'v1',
+            translations: {
+              es: { updatedAt: '2025-01-01T00:00:00Z' },
+            },
+          },
+        ],
+      });
+
+      const { data } = readLockfile(settings('brc_settings'), {
+        branchId: 'brc_requested',
+        strictBranch: true,
+      });
+
+      expect(data.branchId).toBe('brc_requested');
+      expect(data.entries).toHaveLength(1);
+    });
+
     it('converts v1 lockfile to v2 for the current branch', () => {
       writeLockFile({
         version: 1,
