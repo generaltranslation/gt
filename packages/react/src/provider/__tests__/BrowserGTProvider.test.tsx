@@ -4,12 +4,25 @@ import { describe, expect, it, vi } from 'vitest';
 
 const mockBrowserConditionStore = vi.hoisted(() => vi.fn());
 
+vi.mock('../../condition-store/createBrowserConditionStore', () => ({
+  createOrUpdateBrowserConditionStore: (config: unknown) => {
+    mockBrowserConditionStore(config);
+    return {
+      updateLocale: () => {},
+      updateEnableI18n: () => {},
+      reload: () => {},
+      getLocale: () => 'fr',
+      setLocale: () => {},
+      getRegion: () => undefined,
+      setRegion: () => {},
+      getEnableI18n: () => true,
+      setEnableI18n: () => {},
+    };
+  },
+}));
+
 vi.mock('../../condition-store/BrowserConditionStore', () => ({
   BrowserConditionStore: class {
-    constructor(config: unknown) {
-      mockBrowserConditionStore(config);
-    }
-
     getLocale = () => 'fr';
     setLocale = () => {};
     getRegion = () => undefined;

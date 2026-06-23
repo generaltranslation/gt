@@ -45,7 +45,7 @@ export function createOrUpdateBrowserConditionStore(
     const conditionStore = getBrowserConditionStore();
     conditionStore.updateLocale(locale);
     conditionStore.updateEnableI18n(enableI18n);
-    return;
+    return conditionStore;
   }
   const conditionStore = new BrowserConditionStore({
     ...config,
@@ -55,6 +55,7 @@ export function createOrUpdateBrowserConditionStore(
     enableI18n,
   });
   setBrowserConditionStore(conditionStore);
+  return conditionStore;
 }
 
 export function determineLocale({
