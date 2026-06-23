@@ -2,11 +2,11 @@ import {
   deprecatedExperimentalEnableSSGWarning,
   ssgMissingGetStaticLocaleFunctionError,
 } from '../../errors/ssg';
-import { type withGTConfigProps } from '../../config-dir/props/withGTConfigProps';
+import { type BaseWithGTConfigProps } from '../../config-dir/props/withGTConfigProps';
 import { RequestFunctionPaths } from '../../config-dir/utils/resolveRequestFunctionPaths';
 
 export function ssgChecks(
-  mergedConfig: withGTConfigProps,
+  mergedConfig: BaseWithGTConfigProps,
   requestFunctionPaths: RequestFunctionPaths
 ) {
   // Check (warn): if using deprecated experimentalEnableSSG configuration

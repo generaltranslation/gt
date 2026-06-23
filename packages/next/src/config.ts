@@ -5,7 +5,10 @@ import {
   defaultWithGTConfigProps,
   defaultCacheExpiryTime,
 } from './config-dir/props/defaultWithGTConfigProps';
-import { type withGTConfigProps } from './config-dir/props/withGTConfigProps';
+import {
+  type BaseWithGTConfigProps,
+  type withGTConfigProps,
+} from './config-dir/props/withGTConfigProps';
 import {
   APIKeyMissingWarn,
   conflictingConfigurationBuildError,
@@ -39,6 +42,7 @@ import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath'
 import { ssgChecks } from './plugin/checks/ssgChecks';
 import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
 import { I18nConfigParams } from 'gt-i18n/internal/types';
+import { getRuntimeCredentials } from './setup/runtimeCredentials';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 
@@ -53,9 +57,15 @@ type ConfigFileShape = {
   };
 };
 
-type InternalGTConfigProps = withGTConfigProps &
+type RuntimeCredentialProps = {
+  apiKey?: string;
+  devApiKey?: string;
+  projectId?: string;
+};
+
+type InternalGTConfigProps = BaseWithGTConfigProps &
+  RuntimeCredentialProps &
   ConfigFileShape & {
-    devApiKey?: string;
     loadDictionaryEnabled?: boolean;
     loadTranslationsType?: 'remote' | 'custom' | 'disabled';
     _dictionaryFileType?: string;
@@ -78,16 +88,12 @@ type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
  * } satisfies NextConfig;
  *
  * export default withGTConfig(nextConfig, {
- *   projectId: 'abc-123',
  *   locales: ['en', 'es', 'fr'],
  *   defaultLocale: 'en'
  * })
  *
  * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
- * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
- * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.
- * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
  * @param {string|null} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations. Set to null to disable.
  * @param {string|null} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations. Set to null to disable.
  * @param {string[]|undefined} - Whether to use local translations.
@@ -116,7 +122,7 @@ type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
  * @param {withGTConfigProps} props - General Translation configuration properties
  * @returns {NextConfig} - An updated Next.js config with GT settings applied
  *
- * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
+ * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing from the environment.
  */
 export function withGTConfig<TNextConfig extends object = NextConfig>(
   nextConfig?: TNextConfig,
@@ -150,23 +156,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // ---------- LOAD ENVIRONMENT VARIABLES ---------- //
 
-  // resolve project ID
-  const projectId: string | undefined = process.env.GT_PROJECT_ID;
-
-  // resolve API keys
-  const envApiKey: string | undefined =
-    process.env.NODE_ENV === 'production'
-      ? process.env.GT_API_KEY
-      : process.env.GT_DEV_API_KEY || process.env.GT_API_KEY;
-  let apiKey, devApiKey;
-  if (envApiKey) {
-    const apiKeyType = envApiKey?.split('-')?.[1];
-    if (apiKeyType === 'api') {
-      apiKey = envApiKey;
-    } else if (apiKeyType === 'dev') {
-      devApiKey = envApiKey;
-    }
-  }
+  const { projectId, apiKey, devApiKey } = getRuntimeCredentials();
 
   // conditionally add environment variables to config
   const envConfig: Partial<InternalGTConfigProps> = {
@@ -551,7 +541,13 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   }
 
   // ---------- STORE CONFIGURATIONS ---------- //
-  const I18NConfigParams = JSON.stringify(mergedConfig);
+  const {
+    projectId: _projectId,
+    apiKey: _apiKey,
+    devApiKey: _devApiKey,
+    ...privateConfigParams
+  } = mergedConfig;
+  const I18NConfigParams = JSON.stringify(privateConfigParams);
   const publicI18NConfigParams: Omit<
     I18nConfigParams,
     'projectId' | 'devApiKey' | 'apiKey'
