@@ -163,7 +163,8 @@ export function readLockfile(
       if (!raw || typeof raw !== 'object' || !raw.entries) {
         data = { version: 2, branchId, entries: [] };
       } else if (raw.version === 2 && Array.isArray(raw.entries)) {
-        const rawBranchId = typeof raw.branchId === 'string' ? raw.branchId : '';
+        const rawBranchId =
+          typeof raw.branchId === 'string' ? raw.branchId : '';
         if (
           options.strictBranch &&
           rawBranchId !== branchId &&
