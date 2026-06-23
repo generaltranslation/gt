@@ -50,6 +50,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
         i18nConfig.determineLocale(config.locale) ||
         i18nConfig.getDefaultLocale(),
     });
+    this.updateEnableI18n(config.enableI18n ?? true);
   }
 
   getLocale = (): string => {

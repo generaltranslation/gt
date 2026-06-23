@@ -1,10 +1,14 @@
 import {
   I18nStore,
   InternalGTProvider,
-  ReadonlyConditionStore,
 } from '@generaltranslation/react-core/context';
 import { useMemo, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
+import { BrowserConditionStore } from '../condition-store/BrowserConditionStore';
+import {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+} from '../internal';
 
 /**
  * Consumes snapshot from server
@@ -16,8 +20,14 @@ export function BrowserGTProvider({
   ...props
 }: SharedGTProviderProps) {
   const conditionStore = useMemo(() => {
-    return new ReadonlyConditionStore({ locale, enableI18n });
-  }, [locale, enableI18n]);
+    return new BrowserConditionStore({
+      ...props,
+      locale,
+      enableI18n,
+      localeCookieName: defaultLocaleCookieName,
+      enableI18nCookieName: defaultEnableI18nCookieName,
+    });
+  }, [props, locale, enableI18n]);
 
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {
