@@ -13,12 +13,6 @@ export function getRuntimeCredentials(): RuntimeCredentials {
   };
 }
 
-export function getDefinedRuntimeCredentials(): RuntimeCredentials {
-  return Object.fromEntries(
-    Object.entries(getRuntimeCredentials()).filter(([, value]) => value)
-  ) as RuntimeCredentials;
-}
-
 export function withoutRuntimeCredentials<T extends RuntimeCredentials>(
   config: T
 ): Omit<T, keyof RuntimeCredentials> {
