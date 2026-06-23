@@ -6,6 +6,7 @@ import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
 import { EnqueueStep } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { logger } from '../console/logger.js';
+import { filterFilesForEnqueue } from './filterFilesForEnqueue.js';
 
 /**
  * Enqueues translations for a given set of files
@@ -46,12 +47,23 @@ export async function runEnqueueWorkflow({
     logger.debug('Branch data: ' + JSON.stringify(branchData, null, 2));
 
     // (2) Enqueue the files
-    const enqueueResult = await enqueueStep.run(
-      files.map((files) => ({
-        branchId: branchData.currentBranch.id,
-        ...files,
-      }))
-    );
+    const filesWithBranch = files.map((files) => ({
+      branchId: branchData.currentBranch.id,
+      ...files,
+    }));
+    const { filesToEnqueue, skippedFiles } = filterFilesForEnqueue({
+      files: filesWithBranch,
+      settings,
+      branchData,
+      force: options.force,
+    });
+    if (skippedFiles.length > 0) {
+      logger.info(
+        `Skipped enqueue for ${skippedFiles.length} unchanged file${skippedFiles.length !== 1 ? 's' : ''}`
+      );
+    }
+
+    const enqueueResult = await enqueueStep.run(filesToEnqueue);
     await enqueueStep.wait();
 
     logger.debug('Enqueue result: ' + JSON.stringify(enqueueResult, null, 2));

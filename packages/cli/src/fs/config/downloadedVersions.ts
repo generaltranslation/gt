@@ -174,6 +174,55 @@ export function readLockfile(settings: Settings): {
 }
 
 /**
+ * Reads lockfile entries for one exact branch.
+ *
+ * Unlike `readLockfile`, this does not rewrite a v2 lockfile's branch id to
+ * match settings. That makes it suitable for cache decisions where entries from
+ * another branch must not be treated as current.
+ */
+export function readLockfileForBranch(
+  branchId: string,
+  options: { allowEmptyBranchId?: boolean } = {}
+): {
+  data: DownloadedVersions;
+  entryMap: EntryMap;
+  originalV1: DownloadedVersionsV1 | null;
+} {
+  let data: DownloadedVersions = { version: 2, branchId, entries: [] };
+  let originalV1: DownloadedVersionsV1 | null = null;
+
+  try {
+    const rootPath = path.join(process.cwd(), GT_LOCK_FILE);
+    if (!fs.existsSync(rootPath)) {
+      return { data, entryMap: buildEntryMap(data.entries), originalV1 };
+    }
+
+    const raw = JSON.parse(fs.readFileSync(rootPath, 'utf8'));
+    if (!raw || typeof raw !== 'object' || !raw.entries) {
+      return { data, entryMap: buildEntryMap(data.entries), originalV1 };
+    }
+
+    if (raw.version === 2 && Array.isArray(raw.entries)) {
+      if (
+        raw.branchId !== branchId &&
+        !(options.allowEmptyBranchId && raw.branchId === '')
+      ) {
+        return { data, entryMap: buildEntryMap(data.entries), originalV1 };
+      }
+      data = raw as DownloadedVersions;
+      data.branchId = branchId;
+    } else {
+      originalV1 = raw as DownloadedVersionsV1;
+      data = convertV1ToV2(originalV1, branchId);
+    }
+  } catch (error) {
+    logger.error(`An error occurred while reading ${GT_LOCK_FILE}: ${error}`);
+  }
+
+  return { data, entryMap: buildEntryMap(data.entries), originalV1 };
+}
+
+/**
  * Writes the lockfile. If `originalV1` is provided, merges the current
  * branch's data back into the v1 structure (preserving other branches)
  * and writes v1 format. Otherwise writes v2.

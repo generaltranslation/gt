@@ -67,40 +67,14 @@ export async function runDownloadWorkflow({
     }
     branchData = branchResult;
   }
+  options._branchId = branchData.currentBranch.id;
+
   // Prepare the query data
   const fileQueryData = prepareFileQueryData(
     fileVersionData,
     locales,
     branchData
   );
-
-  // Clear translated files before any downloads (if enabled)
-  if (
-    options.options?.experimentalClearLocaleDirs === true &&
-    fileQueryData.length > 0
-  ) {
-    const translatedFiles = new Set(
-      fileQueryData
-        .map((file) => {
-          const outputPath = resolveOutputPath(file.fileName, file.locale);
-          // Only clear if the output path is different from the source (i.e., there's a transform)
-          return outputPath !== null && outputPath !== file.fileName
-            ? outputPath
-            : null;
-        })
-        .filter((path): path is string => path !== null)
-    );
-
-    // Derive cwd from config path
-    const cwd = path.dirname(options.config);
-
-    await clearLocaleDirs(
-      translatedFiles,
-      locales,
-      options.options?.clearLocaleDirsExclude,
-      cwd
-    );
-  }
 
   // Initialize download status
   const fileTracker: FileStatusTracker = {
@@ -168,6 +142,13 @@ export async function runDownloadWorkflow({
     }
   }
 
+  await clearCompletedLocaleDirs({
+    fileTracker,
+    locales,
+    resolveOutputPath,
+    options,
+  });
+
   // Step 2: Download translations
   const downloadStep = new DownloadTranslationsStep(gt, options);
   const downloadResult = await downloadStep.run({
@@ -183,6 +164,48 @@ export async function runDownloadWorkflow({
   }
 
   return downloadResult;
+}
+
+async function clearCompletedLocaleDirs({
+  fileTracker,
+  locales,
+  resolveOutputPath,
+  options,
+}: {
+  fileTracker: FileStatusTracker;
+  locales: string[];
+  resolveOutputPath: (sourcePath: string, locale: string) => string | null;
+  options: Settings;
+}): Promise<void> {
+  if (
+    options.options?.experimentalClearLocaleDirs !== true ||
+    fileTracker.completed.size === 0
+  ) {
+    return;
+  }
+
+  const translatedFiles = new Set(
+    Array.from(fileTracker.completed.values())
+      .map((file) => {
+        const outputPath = resolveOutputPath(file.fileName, file.locale);
+        // Only clear if the output path is different from the source.
+        return outputPath !== null && outputPath !== file.fileName
+          ? outputPath
+          : null;
+      })
+      .filter((filePath): filePath is string => filePath !== null)
+  );
+
+  if (translatedFiles.size === 0) return;
+
+  const cwd = path.dirname(options.config);
+
+  await clearLocaleDirs(
+    translatedFiles,
+    locales,
+    options.options?.clearLocaleDirsExclude,
+    cwd
+  );
 }
 
 /**
