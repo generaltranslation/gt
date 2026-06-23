@@ -11,6 +11,7 @@ import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
   defaultRegionCookieName,
+  defaultResetLocaleCookieName,
 } from '../cookie-names';
 
 type SerializedBrowserConditionStoreState = {
@@ -72,6 +73,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
         value: config.region,
       });
     }
+    this.updateEnableI18n(config.enableI18n ?? true);
   }
 
   getLocale = (): string => {
@@ -80,6 +82,10 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
 
   setLocale = (locale: LocaleCandidates): void => {
     this.updateLocale(locale);
+    setCookieValue({
+      cookieName: defaultResetLocaleCookieName,
+      value: 'true',
+    });
     this.reload();
   };
 
