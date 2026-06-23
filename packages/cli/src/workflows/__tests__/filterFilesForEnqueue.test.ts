@@ -6,7 +6,7 @@ import type { FileReference } from 'generaltranslation/types';
 import { createMockSettings } from '../../api/__mocks__/settings.js';
 import type { BranchData } from '../../types/branch.js';
 import type { Settings } from '../../types/index.js';
-import { filterFilesForEnqueue } from '../filterFilesForEnqueue.js';
+import { filterFilesForEnqueue } from '../utils/filterFilesForEnqueue.js';
 
 describe('filterFilesForEnqueue', () => {
   const originalCwd = process.cwd();

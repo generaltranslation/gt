@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { FileReference } from 'generaltranslation/types';
-import { createFileMapping } from '../formats/files/fileMapping.js';
-import { readLockfileForBranch } from '../fs/config/downloadedVersions.js';
-import type { BranchData } from '../types/branch.js';
-import type { Settings } from '../types/index.js';
+import { createFileMapping } from '../../formats/files/fileMapping.js';
+import { readLockfileForBranch } from '../../fs/config/downloadedVersions.js';
+import type { BranchData } from '../../types/branch.js';
+import type { Settings } from '../../types/index.js';
 
 export type EnqueueFilterResult = {
   filesToEnqueue: FileReference[];

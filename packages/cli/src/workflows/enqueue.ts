@@ -6,7 +6,7 @@ import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
 import { EnqueueStep } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { logger } from '../console/logger.js';
-import { filterFilesForEnqueue } from './filterFilesForEnqueue.js';
+import { filterFilesForEnqueue } from './utils/filterFilesForEnqueue.js';
 
 /**
  * Enqueues translations for a given set of files

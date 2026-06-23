@@ -12,7 +12,7 @@ import { TagStep } from './steps/TagStep.js';
 import { UserEditDiffsStep } from './steps/UserEditDiffsStep.js';
 import { BranchData } from '../types/branch.js';
 import { calculateTimeoutMs } from '../utils/calculateTimeoutMs.js';
-import { filterFilesForEnqueue } from './filterFilesForEnqueue.js';
+import { filterFilesForEnqueue } from './utils/filterFilesForEnqueue.js';
 
 /**
  * Sends multiple files for translation to the API using a workflow pattern
