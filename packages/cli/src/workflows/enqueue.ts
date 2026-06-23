@@ -68,7 +68,10 @@ export async function runEnqueueWorkflow({
 
     logger.debug('Enqueue result: ' + JSON.stringify(enqueueResult, null, 2));
 
-    logEnqueueResult(enqueueResult, filesToEnqueue.length);
+    logEnqueueResult(
+      enqueueResult,
+      filesToEnqueue.length === 0 ? files.length : filesToEnqueue.length
+    );
     return enqueueResult;
   } catch (error) {
     return logErrorAndExit(
