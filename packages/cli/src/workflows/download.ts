@@ -67,6 +67,7 @@ export async function runDownloadWorkflow({
     }
     branchData = branchResult;
   }
+  // readLockfile uses _branchId to select branch-specific lockfile entries.
   options._branchId = branchData.currentBranch.id;
   // Prepare the query data
   const fileQueryData = prepareFileQueryData(
