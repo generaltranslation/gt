@@ -1,8 +1,13 @@
 import 'server-only';
 
 import { initializeGT } from './setup/initGT.rsc';
-import type { GetServerSidePropsContext, PreviewData } from 'next';
+import type {
+  GetServerSideProps,
+  GetServerSidePropsContext,
+  PreviewData,
+} from 'next';
 import type { ParsedUrlQuery } from 'querystring';
+import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 initializeGT();
 
 // ===== Overrides ===== //
@@ -81,6 +86,22 @@ export function parseLocale<
   throw new Error('parseLocale() is only available for the Pages Router.');
 }
 
+/**
+ * Placeholder for withGTServerSideProps()
+ * This function is for next-pages use, not next-app use
+ */
+export function withGTServerSideProps<
+  Props extends Record<string, unknown> = Record<string, unknown>,
+  Params extends ParsedUrlQuery = ParsedUrlQuery,
+  Preview extends PreviewData = PreviewData,
+>(
+  _?: GetServerSideProps<Props, Params, Preview>
+): GetServerSideProps<WithGTServerSideProps<Props>, Params, Preview> {
+  throw new Error(
+    'withGTServerSideProps() is only available for the Pages Router.'
+  );
+}
+
 export {
   GTProvider,
   T,
@@ -118,4 +139,5 @@ export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
+  WithGTServerSideProps,
 };

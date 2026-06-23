@@ -1,7 +1,12 @@
 import { typesFileError } from './errors/createErrors';
 import { T as _T } from './server-dir/buildtime/T';
-import type { GetServerSidePropsContext, PreviewData } from 'next';
+import type {
+  GetServerSideProps,
+  GetServerSidePropsContext,
+  PreviewData,
+} from 'next';
 import type { ParsedUrlQuery } from 'querystring';
+import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 import {
   useTranslations as _useTranslations,
   useLocale as _useLocale,
@@ -345,6 +350,20 @@ export function parseLocale<
 }
 
 /**
+ * Wraps a Pages Router `getServerSideProps` function and adds the resolved GT
+ * locale and translations snapshot to returned page props.
+ */
+export function withGTServerSideProps<
+  Props extends Record<string, unknown> = Record<string, unknown>,
+  Params extends ParsedUrlQuery = ParsedUrlQuery,
+  Preview extends PreviewData = PreviewData,
+>(
+  _?: GetServerSideProps<Props, Params, Preview>
+): GetServerSideProps<WithGTServerSideProps<Props>, Params, Preview> {
+  throw new Error(typesFileError);
+}
+
+/**
  * Returns the string translation function `t`.
  *
  * @returns {Function} A translation function that accepts an ICU format string and returns that ICU format string translated.
@@ -555,6 +574,7 @@ export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
+  WithGTServerSideProps,
 };
 
 export type { StringFormat };

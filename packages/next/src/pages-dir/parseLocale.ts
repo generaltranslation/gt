@@ -1,8 +1,8 @@
 import type { GetServerSidePropsContext, PreviewData } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
 import { getI18nConfig } from 'gt-i18n/internal';
-import { noLocalesCouldBeDeterminedWarning } from './errors/ssg';
-import { defaultLocaleHeaderName } from './utils/headers';
+import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
+import { defaultLocaleHeaderName } from '../utils/headers';
 import { defaultLocaleCookieName } from 'gt-react/internal';
 
 type HeaderValue = string | string[] | undefined;

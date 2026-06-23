@@ -49,8 +49,13 @@ import type {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-import type { GetServerSidePropsContext, PreviewData } from 'next';
+import type {
+  GetServerSideProps,
+  GetServerSidePropsContext,
+  PreviewData,
+} from 'next';
 import type { ParsedUrlQuery } from 'querystring';
+import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 
 export function parseLocale<
   Params extends ParsedUrlQuery = ParsedUrlQuery,
@@ -58,6 +63,18 @@ export function parseLocale<
 >(_: GetServerSidePropsContext<Params, Preview>): string {
   throw new Error(
     'parseLocale() is only available from gt-next on the server.'
+  );
+}
+
+export function withGTServerSideProps<
+  Props extends Record<string, unknown> = Record<string, unknown>,
+  Params extends ParsedUrlQuery = ParsedUrlQuery,
+  Preview extends PreviewData = PreviewData,
+>(
+  _?: GetServerSideProps<Props, Params, Preview>
+): GetServerSideProps<WithGTServerSideProps<Props>, Params, Preview> {
+  throw new Error(
+    'withGTServerSideProps() is only available from gt-next on the server.'
   );
 }
 
@@ -106,4 +123,5 @@ export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
+  WithGTServerSideProps,
 };
