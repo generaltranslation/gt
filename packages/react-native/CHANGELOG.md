@@ -1,5 +1,7 @@
 # gt-react-native
 
+## 11.0.0-odysseus.1
+
 ## 11.0.0-odysseus.0
 
 ### Major Changes
