@@ -37,7 +37,7 @@ export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
   getDomain: 'getDomainPath',
 } as const;
 
-export type withGTConfigProps = {
+export type BaseWithGTConfigProps = {
   // Additional top-level keys are forwarded as runtime translation metadata.
   [key: string]: unknown;
   // Request scoped filepath
@@ -45,9 +45,7 @@ export type withGTConfigProps = {
   config?: string;
   loadTranslationsPath?: string;
   loadDictionaryPath?: string;
-  // Cloud integration
-  apiKey?: string;
-  projectId?: string;
+  // Cloud integration. Credentials are read from environment variables.
   runtimeUrl?: string | null;
   cacheUrl?: string | null;
   cacheExpiryTime?: number;
@@ -90,4 +88,13 @@ export type withGTConfigProps = {
   getLocalePath?: string;
   getRegionPath?: string;
   getDomainPath?: string;
+};
+
+export type withGTConfigProps = BaseWithGTConfigProps & {
+  /** Use GT_API_KEY instead. */
+  apiKey?: never;
+  /** Use NEXT_PUBLIC_GT_DEV_API_KEY or GT_DEV_API_KEY instead. */
+  devApiKey?: never;
+  /** Use NEXT_PUBLIC_GT_PROJECT_ID or GT_PROJECT_ID instead. */
+  projectId?: never;
 };

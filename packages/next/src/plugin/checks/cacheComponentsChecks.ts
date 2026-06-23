@@ -1,5 +1,5 @@
 import { NextConfig } from 'next';
-import { type withGTConfigProps } from '../../config-dir/props/withGTConfigProps';
+import { type BaseWithGTConfigProps } from '../../config-dir/props/withGTConfigProps';
 import {
   experimentalLocaleResolutionDeprecatedWarning,
   createCacheComponentsMissingRequestFunctionsWarning,
@@ -19,7 +19,7 @@ export function cacheComponentsChecks({
   localTranslationsEnabled,
   localDictionaryEnabled,
 }: {
-  mergedConfig: withGTConfigProps;
+  mergedConfig: BaseWithGTConfigProps;
   nextConfig: NextConfig;
   requestFunctionPaths: RequestFunctionPaths;
   localTranslationsEnabled: boolean;
