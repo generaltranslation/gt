@@ -80,6 +80,35 @@ describe('filterFilesForEnqueue', () => {
     );
   }
 
+  function writeV1Lockfile(): void {
+    fs.writeFileSync(
+      path.join(tempDir, 'gt-lock.json'),
+      JSON.stringify(
+        {
+          version: 1,
+          entries: {
+            'branch-1': {
+              'file-1': {
+                'version-1': {
+                  es: {
+                    updatedAt: '2026-01-01T00:00:00.000Z',
+                    fileName: 'messages/es.json',
+                  },
+                  fr: {
+                    updatedAt: '2026-01-01T00:00:00.000Z',
+                    fileName: 'messages/fr.json',
+                  },
+                },
+              },
+            },
+          },
+        },
+        null,
+        2
+      )
+    );
+  }
+
   beforeEach(() => {
     tempDir = fs.realpathSync(
       fs.mkdtempSync(path.join(os.tmpdir(), 'enqueue-filter-'))
@@ -98,6 +127,19 @@ describe('filterFilesForEnqueue', () => {
 
   it('skips enqueue when the current branch lockfile has every locale locally', () => {
     writeLockfile();
+
+    const result = filterFilesForEnqueue({
+      files: [file],
+      settings: settings(),
+      branchData,
+    });
+
+    expect(result.filesToEnqueue).toEqual([]);
+    expect(result.skippedFiles).toEqual([file]);
+  });
+
+  it('skips enqueue when a v1 lockfile has every locale locally', () => {
+    writeV1Lockfile();
 
     const result = filterFilesForEnqueue({
       files: [file],

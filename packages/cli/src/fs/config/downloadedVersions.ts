@@ -95,6 +95,7 @@ function convertV1ToV2(
         ...(entry.postProcessHash
           ? { postProcessHash: entry.postProcessHash }
           : {}),
+        ...(entry.fileName ? { fileName: entry.fileName } : {}),
       };
     }
 

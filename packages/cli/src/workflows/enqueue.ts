@@ -68,7 +68,9 @@ export async function runEnqueueWorkflow({
 
     logger.debug('Enqueue result: ' + JSON.stringify(enqueueResult, null, 2));
 
-    logEnqueueResult(enqueueResult, files);
+    if (filesToEnqueue.length > 0 || skippedFiles.length === 0) {
+      logEnqueueResult(enqueueResult, filesToEnqueue.length);
+    }
     return enqueueResult;
   } catch (error) {
     return logErrorAndExit(
@@ -89,11 +91,11 @@ export async function runEnqueueWorkflow({
  */
 function logEnqueueResult(
   enqueueResult: EnqueueFilesResult,
-  files: FileToUpload[]
+  fileCount: number
 ): void {
   if (Object.keys(enqueueResult.jobData).length === 0) {
     logger.success(
-      `All ${files.length} files already translated. 0 files enqueued.`
+      `All ${fileCount} ${fileCount === 1 ? 'file' : 'files'} already translated. 0 files enqueued.`
     );
   } else {
     logger.success(enqueueResult.message);

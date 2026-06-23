@@ -176,6 +176,7 @@ describe('readLockfile / writeLockfile', () => {
                 ja: {
                   updatedAt: '2025-01-01T00:00:00Z',
                   postProcessHash: 'hash123',
+                  fileName: 'locales/ja/file.json',
                 },
               },
             },
@@ -191,6 +192,9 @@ describe('readLockfile / writeLockfile', () => {
       expect(data.entries[0].fileId).toBe('file1');
       expect(data.entries[0].versionId).toBe('ver1');
       expect(data.entries[0].translations.ja.postProcessHash).toBe('hash123');
+      expect(data.entries[0].translations.ja.fileName).toBe(
+        'locales/ja/file.json'
+      );
       expect(originalV1).not.toBeNull();
     });
 
