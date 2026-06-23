@@ -1,11 +1,13 @@
 'use client';
 
 import { initializeGT } from './setup/initGT';
-import { parseLocale } from './parseLocale';
+import { parseLocale } from './pages-dir/parseLocale';
+import { withGTServerSideProps } from './pages-dir/withGTServerSideProps';
 initializeGT();
 
 // ===== gt-react ===== //
-export { parseLocale };
+export { parseLocale, withGTServerSideProps };
+export type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 
 export {
   // ----- components ----- //
