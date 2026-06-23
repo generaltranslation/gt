@@ -1,5 +1,16 @@
 # gt-next
 
+## 7.0.0-odysseus.1
+
+### Patch Changes
+
+- [#1644](https://github.com/generaltranslation/gt/pull/1644) [`9652458`](https://github.com/generaltranslation/gt/commit/9652458372b09a746a9f241012cdfc75243cd7ea) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add a Pages Router server-side props helper for GT locale and translation snapshots.
+
+- [#1645](https://github.com/generaltranslation/gt/pull/1645) [`45a3241`](https://github.com/generaltranslation/gt/commit/45a3241decc10211fae84287ec74651f6864913d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Read Next runtime credentials from environment variables and keep them out of serialized config.
+
+- Updated dependencies [[`30918cf`](https://github.com/generaltranslation/gt/commit/30918cfa7fdb2072691681027ab8ad79cd8b73a7)]:
+  - gt-react@11.0.0-odysseus.1
+
 ## 7.0.0-odysseus.0
 
 ### Major Changes
