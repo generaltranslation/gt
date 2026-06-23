@@ -39,11 +39,14 @@
   },
   "changesets": [
     "bright-locale-selectors",
+    "browser-locale-cookie-updates",
     "green-region-selector",
     "odysseus-all-packages-patch",
     "odysseus-format-patch-bump",
     "odysseus-major-version-bumps",
     "odysseus-sanity-followup",
-    "odysseus-sanity-release-test"
+    "odysseus-sanity-release-test",
+    "pages-server-side-props",
+    "runtime-env-credentials"
   ]
 }

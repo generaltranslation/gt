@@ -1,5 +1,11 @@
 # gt-react
 
+## 11.0.0-odysseus.1
+
+### Patch Changes
+
+- [#1641](https://github.com/generaltranslation/gt/pull/1641) [`30918cf`](https://github.com/generaltranslation/gt/commit/30918cfa7fdb2072691681027ab8ad79cd8b73a7) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Preserve browser locale cookie updates when changing locales.
+
 ## 11.0.0-odysseus.0
 
 ### Major Changes

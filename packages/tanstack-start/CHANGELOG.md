@@ -1,5 +1,12 @@
 # gt-tanstack-start
 
+## 1.0.0-odysseus.1
+
+### Patch Changes
+
+- Updated dependencies [[`30918cf`](https://github.com/generaltranslation/gt/commit/30918cfa7fdb2072691681027ab8ad79cd8b73a7)]:
+  - gt-react@11.0.0-odysseus.1
+
 ## 1.0.0-odysseus.0
 
 ### Major Changes
