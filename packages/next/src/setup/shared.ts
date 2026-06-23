@@ -2,6 +2,7 @@ import { type I18nConfigParams } from 'gt-i18n/internal';
 import { type NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
 import type { GTServicesEnabledParams } from 'gt-i18n/internal/types';
 import { loadTranslations } from '../config-dir/loadTranslation';
+import { getRuntimeCredentials } from './runtimeCredentials';
 
 // TODO: better way of communicating from build to runtime
 export function getParams(): {
@@ -16,9 +17,7 @@ export function getParams(): {
   const privateConfig = JSON.parse(
     process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
   );
-  const projectId = process.env.NEXT_PUBLIC_GT_PROJECT_ID;
-  const devApiKey = process.env.NEXT_PUBLIC_GT_DEV_API_KEY;
-  const apiKey = process.env.GT_API_KEY;
+  const { projectId, devApiKey, apiKey } = getRuntimeCredentials();
 
   // I18nConfigParams
   const i18nConfigParams: I18nConfigParams = {

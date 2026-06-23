@@ -1,4 +1,4 @@
-import { type withGTConfigProps } from '../props/withGTConfigProps';
+import { type BaseWithGTConfigProps } from '../props/withGTConfigProps';
 import { babelPluginCompatible } from '../../plugin/getStableNextVersionInfo';
 import {
   babelCompilerTurbopackUnavailableWarning,
@@ -13,7 +13,7 @@ import { swcPluginCompatible } from '../../plugin/getStableNextVersionInfo';
  * @param mergedConfig - The merged config
  * @description If the compiler is not compatible, set the type to 'none'
  */
-export function validateCompiler(mergedConfig: withGTConfigProps) {
+export function validateCompiler(mergedConfig: BaseWithGTConfigProps) {
   const turboPackEnabled = !!process.env.TURBOPACK;
   if (!mergedConfig.experimentalCompilerOptions) return;
   const type = mergedConfig.experimentalCompilerOptions.type;

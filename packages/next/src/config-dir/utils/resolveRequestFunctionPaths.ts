@@ -5,7 +5,7 @@ import {
   STATIC_REQUEST_FUNCTIONS,
 } from '../../request/types';
 import {
-  type withGTConfigProps,
+  type BaseWithGTConfigProps,
   REQUEST_FUNCTION_TO_CONFIG_KEY,
 } from '../props/withGTConfigProps';
 import { resolveConfigFilepath } from './resolveConfigFilepath';
@@ -29,7 +29,7 @@ export type RequestFunctionPaths = Partial<
  * @returns Object mapping function names to their resolved paths and enabled status
  */
 export function resolveRequestFunctionPaths(
-  mergedConfig: withGTConfigProps
+  mergedConfig: BaseWithGTConfigProps
 ): RequestFunctionPaths {
   const result = {} as RequestFunctionPaths;
 
