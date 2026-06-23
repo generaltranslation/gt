@@ -51,6 +51,7 @@
     "definition": "dist/index.d.cts"
   },
   "dependencies": {
+    "i18next": "^25.10.10",
     "intl-messageformat": "^10.7.16"
   },
   "exports": {

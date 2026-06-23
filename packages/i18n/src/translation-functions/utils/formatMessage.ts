@@ -12,7 +12,7 @@ import { formatMessage as _formatMessage } from '@generaltranslation/format';
  */
 export function formatMessage(
   encodedMsg: string,
-  variables: Record<string, string>,
+  variables: Record<string, unknown>,
   locales?: string | string[],
   dataFormat?: StringFormat
 ): string {

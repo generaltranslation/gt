@@ -864,6 +864,9 @@ importers:
 
   packages/format:
     dependencies:
+      i18next:
+        specifier: ^25.10.10
+        version: 25.10.10(typescript@5.9.3)
       intl-messageformat:
         specifier: ^10.7.16
         version: 10.7.16

@@ -31,6 +31,15 @@ describe('msg function integration', () => {
     const decoded = decodeMsg(result);
     expect(decoded).toBe('5 items');
   });
+
+  it('should format i18next messages', () => {
+    const result = msg('Hello {{name}}', {
+      $format: 'I18NEXT',
+      name: 'World',
+    });
+    const decoded = decodeMsg(result);
+    expect(decoded).toBe('Hello World');
+  });
 });
 
 describe('msg function integration with variables', () => {
