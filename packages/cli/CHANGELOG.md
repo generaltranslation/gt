@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.53
+
+### Patch Changes
+
+- [#1642](https://github.com/generaltranslation/gt/pull/1642) [`28b1b59`](https://github.com/generaltranslation/gt/commit/28b1b59d13422ef665490a5500cacaabaa00541d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skip enqueue for already translated files
+
 ## 2.14.52
 
 ### Patch Changes
