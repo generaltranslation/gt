@@ -39,7 +39,7 @@ import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath'
 import { ssgChecks } from './plugin/checks/ssgChecks';
 import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
 import {
-  getDefinedRuntimeCredentials,
+  getRuntimeCredentials,
   withoutRuntimeCredentials,
 } from './config-dir/utils/runtimeCredentials';
 
@@ -151,7 +151,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     console.error('Error reading GT config file:', error);
   }
 
-  const runtimeCredentials = getDefinedRuntimeCredentials();
+  const runtimeCredentials = getRuntimeCredentials();
 
   // ---------- CHECK FOR CONFIG CONFLICTS ---------- //
 

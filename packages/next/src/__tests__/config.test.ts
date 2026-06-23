@@ -1000,11 +1000,10 @@ describe('withGTConfig', () => {
     it('devApiKey in production throws devApiKeyIncludedInProductionError', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.NODE_ENV = 'production';
+      process.env.GT_DEV_API_KEY = 'gt-dev-xyz';
       vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      expect(() => withGTConfig({}, { devApiKey: 'gt-dev-xyz' })).toThrow(
-        /development API key/i
-      );
+      expect(() => withGTConfig()).toThrow(/development API key/i);
     });
 
     it('invalid locales + GT services enabled throws invalidLocalesError', async () => {
@@ -1178,6 +1177,7 @@ describe('withGTConfig', () => {
       expect(raw).not.toContain('prop-api-key');
       expect(raw).not.toContain('prop-dev-key');
       expect(raw).not.toContain('prop-project-id');
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('false');
     });
 
     it('boolean flags are string "true"/"false", not booleans', async () => {
