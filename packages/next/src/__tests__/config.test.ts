@@ -57,6 +57,7 @@ beforeEach(() => {
   delete process.env.GT_PROJECT_ID;
   delete process.env.GT_API_KEY;
   delete process.env.GT_DEV_API_KEY;
+  delete process.env.NEXT_PUBLIC_GT_DEV_API_KEY;
   delete process.env.TURBOPACK;
   process.env.NODE_ENV = 'development';
   vi.clearAllMocks();
@@ -362,7 +363,7 @@ describe('withGTConfig', () => {
   // ==============================
   // 3. Config merge precedence
   // ==============================
-  describe('3. Config merge precedence: props > env > config file > defaults', () => {
+  describe('3. Config merge precedence: props > config file > defaults', () => {
     it('config file values override defaults', async () => {
       const withGTConfig = await getWithGTConfig();
       vi.mocked(fs.existsSync).mockImplementation((p) => {
@@ -379,7 +380,7 @@ describe('withGTConfig', () => {
       expect(params.maxBatchSize).toBe(99);
     });
 
-    it('GT_PROJECT_ID env var overrides config file projectId', async () => {
+    it('omits projectId from serialized config params', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'env-project-id';
       vi.mocked(fs.existsSync).mockImplementation((p) => {
@@ -393,17 +394,17 @@ describe('withGTConfig', () => {
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
-      expect(params.projectId).toBe('env-project-id');
+      expect(params.projectId).toBeUndefined();
     });
 
-    it('props override env vars', async () => {
+    it('omits prop projectId from serialized config params', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'env-project-id';
 
       const result = withGTConfig({}, { projectId: 'props-project-id' });
       const params = parseConfigParams(result);
 
-      expect(params.projectId).toBe('props-project-id');
+      expect(params.projectId).toBeUndefined();
     });
 
     it('full chain: each layer contributes different values', async () => {
@@ -428,8 +429,8 @@ describe('withGTConfig', () => {
 
       // From config file (not overridden)
       expect(params.maxBatchSize).toBe(99);
-      // From env (overrides config file)
-      expect(params.projectId).toBe('env-project-id');
+      // Runtime credentials are read directly from process.env, not serialized.
+      expect(params.projectId).toBeUndefined();
       // From props (overrides all)
       expect(params.defaultLocale).toBe('fr');
       expect(params.maxConcurrentRequests).toBe(200);
@@ -609,74 +610,97 @@ describe('withGTConfig', () => {
   // 5. Environment variable handling
   // ==============================
   describe('5. Environment variable handling', () => {
-    it('GT_PROJECT_ID sets projectId in merged config', async () => {
+    it('does not serialize runtime credential env vars into config params', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'my-project';
+      process.env.GT_API_KEY = 'gt-api-xyz';
+      process.env.GT_DEV_API_KEY = 'gt-dev-xyz';
 
       const result = withGTConfig();
       const params = parseConfigParams(result);
+      const raw = result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS!;
 
-      expect(params.projectId).toBe('my-project');
+      expect(params.projectId).toBeUndefined();
+      expect(params.apiKey).toBeUndefined();
+      expect(params.devApiKey).toBeUndefined();
+      expect(raw).not.toContain('my-project');
+      expect(raw).not.toContain('gt-api-xyz');
+      expect(raw).not.toContain('gt-dev-xyz');
     });
 
-    it('GT_API_KEY with gt-api- prefix in production sets apiKey', async () => {
+    it('uses GT_API_KEY in production without prefix parsing', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.NODE_ENV = 'production';
-      process.env.GT_API_KEY = 'gt-api-xyz';
+      process.env.GT_API_KEY = 'plain-production-key';
       process.env.GT_PROJECT_ID = 'proj';
 
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
-      expect(params.apiKey).toBe('gt-api-xyz');
-    });
-
-    it('GT_DEV_API_KEY with gt-dev- prefix in development sets devApiKey', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_DEV_API_KEY = 'gt-dev-xyz';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.devApiKey).toBe('gt-dev-xyz');
-    });
-
-    it('GT_API_KEY in development (no dev key) sets apiKey', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_API_KEY = 'gt-api-xyz';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.apiKey).toBe('gt-api-xyz');
-    });
-
-    it('GT_DEV_API_KEY preferred over GT_API_KEY in development', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_DEV_API_KEY = 'gt-dev-preferred';
-      process.env.GT_API_KEY = 'gt-api-fallback';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.devApiKey).toBe('gt-dev-preferred');
-      // apiKey should not be set from GT_API_KEY since GT_DEV_API_KEY took precedence
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
       expect(params.apiKey).toBeUndefined();
     });
 
-    it('key with unknown prefix sets neither apiKey nor devApiKey', async () => {
+    it('uses GT_DEV_API_KEY in development without prefix parsing', async () => {
+      const withGTConfig = await getWithGTConfig();
+      process.env.NODE_ENV = 'development';
+      process.env.GT_DEV_API_KEY = 'plain-dev-key';
+      process.env.GT_PROJECT_ID = 'proj';
+
+      const result = withGTConfig();
+      const params = parseConfigParams(result);
+
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
+      expect(params.devApiKey).toBeUndefined();
+    });
+
+    it('uses NEXT_PUBLIC_GT_DEV_API_KEY before GT_DEV_API_KEY', async () => {
+      const withGTConfig = await getWithGTConfig();
+      process.env.NODE_ENV = 'development';
+      process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'public-dev-key';
+      process.env.GT_DEV_API_KEY = 'server-dev-key';
+      process.env.GT_PROJECT_ID = 'proj';
+
+      const result = withGTConfig();
+      const params = parseConfigParams(result);
+
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
+      expect(params.devApiKey).toBeUndefined();
+      expect(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).not.toContain(
+        'public-dev-key'
+      );
+      expect(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).not.toContain(
+        'server-dev-key'
+      );
+    });
+
+    it('does not reject keys with unknown prefixes', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.NODE_ENV = 'development';
       process.env.GT_API_KEY = 'gt-unknown-xyz';
+      process.env.GT_PROJECT_ID = 'proj';
 
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
+      expect(() => withGTConfig()).not.toThrow();
       expect(params.apiKey).toBeUndefined();
       expect(params.devApiKey).toBeUndefined();
+    });
+
+    it('runtime credentials are read directly from process.env', async () => {
+      const { getRuntimeCredentials } =
+        await import('../config-dir/utils/runtimeCredentials');
+      process.env.GT_API_KEY = 'plain-api-key';
+      process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'public-dev-key';
+      process.env.GT_DEV_API_KEY = 'server-dev-key';
+      process.env.GT_PROJECT_ID = 'project-id';
+
+      expect(getRuntimeCredentials()).toEqual({
+        apiKey: 'plain-api-key',
+        devApiKey: 'public-dev-key',
+        projectId: 'project-id',
+      });
     });
   });
 
@@ -1132,15 +1156,28 @@ describe('withGTConfig', () => {
       expect(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).toBeDefined();
     });
 
-    it('I18N_CONFIG_PARAMS contains full merged config as JSON string', async () => {
+    it('I18N_CONFIG_PARAMS contains sanitized merged config as JSON string', async () => {
       const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
+      const result = withGTConfig(
+        {},
+        {
+          apiKey: 'prop-api-key',
+          devApiKey: 'prop-dev-key',
+          projectId: 'prop-project-id',
+        }
+      );
 
       const raw = result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
       expect(typeof raw).toBe('string');
       const parsed = JSON.parse(raw!);
       expect(parsed).toHaveProperty('defaultLocale');
       expect(parsed).toHaveProperty('_usingPlugin', true);
+      expect(parsed.apiKey).toBeUndefined();
+      expect(parsed.devApiKey).toBeUndefined();
+      expect(parsed.projectId).toBeUndefined();
+      expect(raw).not.toContain('prop-api-key');
+      expect(raw).not.toContain('prop-dev-key');
+      expect(raw).not.toContain('prop-project-id');
     });
 
     it('boolean flags are string "true"/"false", not booleans', async () => {

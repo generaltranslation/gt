@@ -319,6 +319,36 @@ describe('I18NConfiguration', () => {
     );
   });
 
+  it('hydrates runtime credentials from process.env with sanitized config params', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('GT_API_KEY', 'plain-api-key');
+    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', 'public-dev-key');
+    vi.stubEnv('GT_DEV_API_KEY', 'server-dev-key');
+    vi.stubEnv('GT_PROJECT_ID', 'runtime-project-id');
+    vi.stubEnv(
+      '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+      JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['en', 'es'],
+      })
+    );
+
+    const config = getI18NConfig();
+
+    expect(config.getClientSideConfig()).toEqual(
+      expect.objectContaining({
+        devApiKey: 'public-dev-key',
+        developmentApiEnabled: true,
+        projectId: 'runtime-project-id',
+      })
+    );
+    expectCacheParams({
+      apiKey: 'plain-api-key',
+      devApiKey: 'public-dev-key',
+      projectId: 'runtime-project-id',
+    });
+  });
+
   it('initializes locale metadata in the default config fallback', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 

@@ -7,6 +7,7 @@ import {
 } from '../errors/createErrors';
 import { getDefaultRenderSettings } from 'gt-react/internal';
 import { initializeI18nConfig } from 'gt-i18n/internal';
+import { getRuntimeCredentials } from './utils/runtimeCredentials';
 
 type GlobalWithI18NConfig = typeof globalThis & {
   _GENERALTRANSLATION_I18N_CONFIG_INSTANCE?: I18NConfiguration;
@@ -25,6 +26,7 @@ export function getI18NConfig(): I18NConfiguration {
     const configParams = {
       ...defaultWithGTConfigProps,
       ...JSON.parse(I18NConfigParams),
+      ...getRuntimeCredentials(),
     } as ConstructorParameters<typeof I18NConfiguration>[0];
     initializeI18nConfig(configParams);
     globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration(
@@ -36,19 +38,7 @@ export function getI18NConfig(): I18NConfiguration {
     //  - not translating at all
     //  - using only default locales
 
-    // Parse: projectId
-    const projectId = process.env.GT_PROJECT_ID || '';
-
-    // Parse: apiKey, devApiKey
-    let apiKey, devApiKey;
-    const envApiKey =
-      process.env.GT_DEV_API_KEY || process.env.GT_API_KEY || '';
-    const apiKeyType = envApiKey?.split('-')?.[1];
-    if (apiKeyType === 'api') {
-      apiKey = envApiKey;
-    } else if (apiKeyType === 'dev') {
-      devApiKey = envApiKey;
-    }
+    const { apiKey, devApiKey, projectId = '' } = getRuntimeCredentials();
 
     // Parse: defaultLocale
     // Currently, you have to specify the default locale in the config
