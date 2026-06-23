@@ -1,6 +1,7 @@
 import { typesFileError } from './errors/createErrors';
-import { GTProvider as _GTProvider } from './provider/GTProvider';
+import { PagesGTProvider as _GTProvider } from './provider/PagesGTProvider';
 import { T as _T } from './server-dir/buildtime/T';
+import { getTranslationsSnapshot as _getTranslationsSnapshot } from 'gt-react/context';
 import {
   useTranslations as _useTranslations,
   useLocale as _useLocale,
@@ -50,6 +51,11 @@ import {
 export const GTProvider: typeof _GTProvider = () => {
   throw new Error(typesFileError);
 };
+
+export const getTranslationsSnapshot: typeof _getTranslationsSnapshot =
+  async () => {
+    throw new Error(typesFileError);
+  };
 
 /**
  * Build-time translation component that renders its children in the user's given locale.

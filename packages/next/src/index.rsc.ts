@@ -34,6 +34,7 @@ import {
   useGT,
 } from './server-dir/buildtime/getTranslationFunction';
 import type { LocaleProperties } from '@generaltranslation/format/types';
+export { getTranslationsSnapshot } from './config-dir/initializeGTNextContext';
 export { LocaleSelector } from 'gt-react/context';
 
 export function useGTClass() {

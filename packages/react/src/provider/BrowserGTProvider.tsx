@@ -21,13 +21,12 @@ export function BrowserGTProvider({
 }: SharedGTProviderProps) {
   const conditionStore = useMemo(() => {
     return new BrowserConditionStore({
-      ...props,
       locale,
       enableI18n,
       localeCookieName: defaultLocaleCookieName,
       enableI18nCookieName: defaultEnableI18nCookieName,
     });
-  }, [props, locale, enableI18n]);
+  }, [locale, enableI18n]);
 
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {

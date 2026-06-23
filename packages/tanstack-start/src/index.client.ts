@@ -47,3 +47,4 @@ export {
   // ===== Setup ===== //
   initializeGT,
 } from 'gt-react/context';
+export { parseLocale } from './functions/parseLocale';

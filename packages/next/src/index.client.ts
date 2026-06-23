@@ -1,6 +1,12 @@
 'use client';
 
 import {
+  useGTClass,
+  useLocaleProperties,
+  useLocaleDirection,
+  useVersionId,
+} from 'gt-react/client';
+import {
   Var,
   Num,
   Currency,
@@ -10,15 +16,12 @@ import {
   T,
   Branch,
   Plural,
+  LocaleSelector,
   useGT,
   useTranslations,
   useLocale,
   useLocales,
   useDefaultLocale,
-  useGTClass,
-  useLocaleProperties,
-  useLocaleDirection,
-  useVersionId,
   useMessages,
   msg,
   decodeMsg,
@@ -28,22 +31,15 @@ import {
   decodeVars,
   mFallback,
   gtFallback,
-} from 'gt-react/client';
-import {
-  gtProviderUseClientError,
-  txUseClientError,
-} from './errors/createErrors';
+} from 'gt-react/context';
+import { txUseClientError } from './errors/createErrors';
 import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-export { LocaleSelector } from 'gt-react/context';
-
-// Mock <GTProvider> which throws an error
-export function GTProvider() {
-  throw new Error(gtProviderUseClientError);
-}
+export { PagesGTProvider as GTProvider } from './provider/PagesGTProvider';
+export { getTranslationsSnapshot } from './config-dir/initializeGTNextContext';
 
 // Mock <Tx> which throws an error
 export function Tx() {
@@ -60,6 +56,7 @@ export {
   Derive,
   Branch,
   Plural,
+  LocaleSelector,
   useGT,
   useTranslations,
   useLocale,

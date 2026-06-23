@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18NConfiguration } from '../I18NConfiguration';
 import { getI18NConfig } from '../getI18NConfig';
 import { defaultWithGTConfigProps } from '../props/defaultWithGTConfigProps';
+import { devApiKeyIncludedInProductionError } from '../../errors/createErrors';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 
 const mockI18nCacheParams = vi.hoisted(() => vi.fn());
@@ -347,6 +348,20 @@ describe('I18NConfiguration', () => {
       devApiKey: 'public-dev-key',
       projectId: 'runtime-project-id',
     });
+  });
+
+  it('rejects development runtime credentials in production with config params', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('NEXT_PUBLIC_GT_DEV_API_KEY', 'public-dev-key');
+    vi.stubEnv(
+      '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+      JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['en', 'es'],
+      })
+    );
+
+    expect(() => getI18NConfig()).toThrow(devApiKeyIncludedInProductionError);
   });
 
   it('initializes locale metadata in the default config fallback', () => {

@@ -28,6 +28,9 @@ export function getI18NConfig(): I18NConfiguration {
       ...JSON.parse(I18NConfigParams),
       ...getRuntimeCredentials(),
     } as ConstructorParameters<typeof I18NConfiguration>[0];
+    if (process.env.NODE_ENV === 'production' && configParams.devApiKey) {
+      throw new Error(devApiKeyIncludedInProductionError);
+    }
     initializeI18nConfig(configParams);
     globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration(
       configParams

@@ -6,10 +6,13 @@ const mockCookie = vi.hoisted(() => vi.fn());
 vi.mock('@tanstack/react-start', () => ({
   createIsomorphicFn: () => ({
     server: (serverFn: unknown) => ({
-      client: (clientFn: unknown) => ({
-        client: clientFn,
-        server: serverFn,
-      }),
+      client: (clientFn: unknown) =>
+        Object.assign((...args: unknown[]) => {
+          return (serverFn as (...args: unknown[]) => unknown)(...args);
+        }, {
+          client: clientFn,
+          server: serverFn,
+        }),
     }),
   }),
 }));
@@ -20,6 +23,7 @@ vi.mock('@tanstack/react-start/server', () => ({
 }));
 
 import { determineLocale } from '../determineLocale';
+import { parseLocale } from '../parseLocale';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 
 const localeConfig = {
@@ -114,5 +118,12 @@ describe('determineLocale', () => {
         }
       ).client(localeConfig)
     ).toBe('fr');
+  });
+
+  it('parses the locale from initialized config', () => {
+    mockCookie.mockReturnValue(undefined);
+    mockRequestHeader.mockReturnValue('es,en;q=0.8');
+
+    expect(parseLocale()).toBe('es');
   });
 });
