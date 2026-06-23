@@ -5,7 +5,7 @@ import {
   warnApiKeyInConfig,
   warnDeprecatedField,
 } from '../console/logging.js';
-import { loadConfig } from '../fs/config/loadConfig.js';
+import { parseConfigFile } from '../fs/config/loadConfig.js';
 import { FilesOptions, Settings } from '../types/index.js';
 import {
   defaultBaseUrl,
@@ -20,6 +20,7 @@ import {
 import { resolveProjectId } from '../fs/utils.js';
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
@@ -97,21 +98,27 @@ export async function generateSettings(
   if (flags.config && !flags.config.endsWith('.json')) {
     flags.config = `${flags.config}.json`;
   }
-  if (flags.config) {
-    gtConfig = loadConfig(flags.config);
-  } else {
-    const config = resolveConfig(cwd);
-    if (config) {
-      gtConfig = config.config as GenerateSettingsInput;
-      flags.config = config.path;
+  try {
+    if (flags.config) {
+      if (!fs.existsSync(flags.config)) {
+        return logErrorAndExit(`Config file not found: ${flags.config}`);
+      }
+      gtConfig = parseConfigFile(flags.config);
     } else {
-      if (options?.requireConfig) {
+      const config = resolveConfig(cwd);
+      if (config) {
+        gtConfig = config.config as GenerateSettingsInput;
+        flags.config = config.path;
+      } else if (options?.requireConfig) {
         return logErrorAndExit(
           'No gt.config.json file was found. Run `npx gt init` to create one, pass --config, or run this command from your project root.'
         );
+      } else {
+        gtConfig = {};
       }
-      gtConfig = {};
     }
+  } catch (error) {
+    return logErrorAndExit((error as Error).message);
   }
 
   // Warn if apiKey is present in gt.config.json
