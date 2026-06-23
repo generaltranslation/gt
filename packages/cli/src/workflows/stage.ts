@@ -12,6 +12,7 @@ import { TagStep } from './steps/TagStep.js';
 import { UserEditDiffsStep } from './steps/UserEditDiffsStep.js';
 import { BranchData } from '../types/branch.js';
 import { calculateTimeoutMs } from '../utils/calculateTimeoutMs.js';
+import { filterFilesForEnqueue } from './utils/filterFilesForEnqueue.js';
 
 /**
  * Sends multiple files for translation to the API using a workflow pattern
@@ -80,7 +81,19 @@ export async function runStageFilesWorkflow({
     await setupStep.wait();
 
     // then run the enqueue step
-    const enqueueResult = await enqueueStep.run(uploadedFiles);
+    const { filesToEnqueue, skippedFiles } = await filterFilesForEnqueue({
+      gt,
+      files: uploadedFiles,
+      locales: settings.locales,
+      force: options.force,
+    });
+    if (skippedFiles.length > 0) {
+      logger.info(
+        `Skipped enqueue for ${skippedFiles.length} already translated file${skippedFiles.length === 1 ? '' : 's'}`
+      );
+    }
+
+    const enqueueResult = await enqueueStep.run(filesToEnqueue);
     await enqueueStep.wait();
 
     return { branchData, enqueueResult };

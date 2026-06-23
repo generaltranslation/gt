@@ -26,7 +26,13 @@ export function persistPostProcessHashes(
     return;
   }
 
-  const { data, entryMap, originalV1 } = readLockfile(settings);
+  const branchId = findDownloadedBranchId(includeFiles, downloadedMeta);
+  if (!branchId) return;
+
+  const { data, entryMap, originalV1 } = readLockfile({
+    ...settings,
+    _branchId: branchId,
+  });
   let lockUpdated = false;
 
   for (const filePath of includeFiles) {
@@ -58,4 +64,15 @@ export function persistPostProcessHashes(
   if (lockUpdated) {
     writeLockfile(data, originalV1);
   }
+}
+
+function findDownloadedBranchId(
+  includeFiles: Set<string>,
+  downloadedMeta: Map<string, DownloadMeta>
+): string | undefined {
+  for (const filePath of includeFiles) {
+    const meta = downloadedMeta.get(filePath);
+    if (meta) return meta.branchId;
+  }
+  return undefined;
 }
