@@ -7,7 +7,7 @@ export default function generateRequestHeaders(
 ) {
   const authHeaders: Record<string, string> = {
     ...(!excludeContentType && { 'Content-Type': 'application/json' }),
-    'x-gt-project-id': config.projectId,
+    'gt-project-id': config.projectId,
   };
 
   if (config.apiKey) {

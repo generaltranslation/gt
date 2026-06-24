@@ -14,7 +14,7 @@ describe('generateRequestHeaders', () => {
 
     expect(headers).toEqual({
       'Content-Type': 'application/json',
-      'x-gt-project-id': 'test-project',
+      'gt-project-id': 'test-project',
       'gt-api-version': API_VERSION,
     });
   });
@@ -30,8 +30,8 @@ describe('generateRequestHeaders', () => {
 
     expect(headers).toEqual({
       'Content-Type': 'application/json',
-      'x-gt-api-key': 'test-api-key',
-      'x-gt-project-id': 'test-project',
+      'Authorization': 'Bearer test-api-key',
+      'gt-project-id': 'test-project',
       'gt-api-version': API_VERSION,
     });
   });
@@ -46,7 +46,7 @@ describe('generateRequestHeaders', () => {
 
     expect(headers).toEqual({
       'Content-Type': 'application/json',
-      'x-gt-project-id': 'test-project',
+      'gt-project-id': 'test-project',
       'gt-api-version': API_VERSION,
     });
   });
@@ -62,7 +62,7 @@ describe('generateRequestHeaders', () => {
 
     expect(headers).toEqual({
       'Content-Type': 'application/json',
-      'x-gt-project-id': 'test-project',
+      'gt-project-id': 'test-project',
       'gt-api-version': API_VERSION,
     });
   });
