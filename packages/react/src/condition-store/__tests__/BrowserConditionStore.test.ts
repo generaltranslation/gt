@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const mockGetCookieValue = vi.hoisted(() => vi.fn());
 const mockSetCookieValue = vi.hoisted(() => vi.fn());
 
 vi.mock('../cookies', () => ({
-  getCookieValue: vi.fn(),
+  getCookieValue: (...args: unknown[]) => mockGetCookieValue(...args),
   setCookieValue: (...args: unknown[]) => mockSetCookieValue(...args),
 }));
 
@@ -20,7 +21,12 @@ import { BrowserConditionStore } from '../BrowserConditionStore';
 
 describe('BrowserConditionStore', () => {
   beforeEach(() => {
+    mockGetCookieValue.mockReset();
     mockSetCookieValue.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('persists the initial locale, region, and enableI18n state', () => {
@@ -64,5 +70,20 @@ describe('BrowserConditionStore', () => {
       cookieName: 'generaltranslation.locale-reset',
       value: 'true',
     });
+  });
+
+  it('uses getLocale before browser fallbacks when reading locale state', () => {
+    vi.stubGlobal('navigator', { languages: ['fr'] });
+    mockGetCookieValue.mockImplementation(
+      ({ cookieName }: { cookieName: string }) =>
+        cookieName === 'locale-cookie' ? 'en' : undefined
+    );
+    const conditionStore = new BrowserConditionStore({
+      locale: 'en',
+      localeCookieName: 'locale-cookie',
+      _getLocale: () => 'zh',
+    });
+
+    expect(conditionStore.getLocale()).toBe('zh');
   });
 });

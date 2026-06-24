@@ -10,6 +10,7 @@ import {
   defaultRegionCookieName,
 } from '../internal';
 import { getCookieValue } from './cookies';
+import { readBrowserLocale } from './readBrowserLocale';
 import {
   getBrowserConditionStore,
   isBrowserConditionStoreInitialized,
@@ -36,8 +37,8 @@ export type CreateBrowserConditionStoreParams = Omit<
  *
  * This exists so we can keep the locale param as required in the constructor
  *
- * We want the values that we read from the cookies to override as this
- * persists state across page reloads
+ * Explicit values from the provider are treated as the source of truth. Cookie
+ * and browser values are fallbacks for SPA usage where no locale was provided.
  */
 export function createOrUpdateBrowserConditionStore(
   config: CreateBrowserConditionStoreParams
@@ -74,17 +75,11 @@ function determineLocale({
   locale,
 }: CreateBrowserConditionStoreParams): string {
   const candidates = [];
-  const cookieLocale = getCookieValue({
-    cookieName: localeCookieName,
-  });
-  if (cookieLocale) candidates.push(cookieLocale);
   if (locale) {
     candidates.push(...(Array.isArray(locale) ? locale : [locale]));
   }
   if (getLocale) candidates.push(getLocale());
-  const navigatorLocales =
-    typeof navigator !== 'undefined' ? navigator.languages : [];
-  candidates.push(...navigatorLocales);
+  candidates.push(...readBrowserLocale(localeCookieName));
   return resolveLocale(candidates);
 }
 

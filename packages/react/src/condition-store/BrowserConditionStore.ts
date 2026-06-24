@@ -165,8 +165,9 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
 }
 
 function getBrowserLocale(cookieName: string, getLocale?: GetLocale): string {
-  const candidates = readBrowserLocale(cookieName);
+  const candidates = [];
   if (getLocale) candidates.push(getLocale());
+  candidates.push(...readBrowserLocale(cookieName));
   const i18nConfig = getI18nConfig();
   return (
     i18nConfig.determineLocale(candidates) || i18nConfig.getDefaultLocale()

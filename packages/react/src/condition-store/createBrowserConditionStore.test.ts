@@ -56,4 +56,38 @@ describe('determineLocale', () => {
       createOrUpdateBrowserConditionStore({ locale: ['zh', 'fr'] }).getLocale()
     ).toBe('zh');
   });
+
+  it('prefers the provided locale over a cookie fallback', async () => {
+    const { initializeI18nConfig } = await import('gt-i18n/internal');
+    const { createOrUpdateBrowserConditionStore } =
+      await import('./createBrowserConditionStore');
+
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['fr', 'zh'],
+    });
+    document.cookie = 'generaltranslation.locale=en;path=/';
+
+    expect(
+      createOrUpdateBrowserConditionStore({ locale: 'fr' }).getLocale()
+    ).toBe('fr');
+  });
+
+  it('uses getLocale before cookie and browser fallbacks', async () => {
+    vi.stubGlobal('navigator', { languages: ['en-US'] });
+
+    const { initializeI18nConfig } = await import('gt-i18n/internal');
+    const { createOrUpdateBrowserConditionStore } =
+      await import('./createBrowserConditionStore');
+
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['fr', 'zh'],
+    });
+    document.cookie = 'generaltranslation.locale=en;path=/';
+
+    expect(
+      createOrUpdateBrowserConditionStore({ _getLocale: () => 'zh' }).getLocale()
+    ).toBe('zh');
+  });
 });
