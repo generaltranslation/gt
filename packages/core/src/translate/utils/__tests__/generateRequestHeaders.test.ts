@@ -30,7 +30,7 @@ describe('generateRequestHeaders', () => {
 
     expect(headers).toEqual({
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer test-api-key',
+      Authorization: 'Bearer test-api-key',
       'gt-project-id': 'test-project',
       'gt-api-version': API_VERSION,
     });
