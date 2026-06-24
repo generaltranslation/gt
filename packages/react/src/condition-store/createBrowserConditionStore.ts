@@ -4,7 +4,6 @@ import {
   BrowserConditionStore,
   BrowserConditionStoreParams,
 } from './BrowserConditionStore';
-import { readBrowserLocale } from './readBrowserLocale';
 import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
@@ -75,9 +74,17 @@ function determineLocale({
   locale,
 }: CreateBrowserConditionStoreParams): string {
   const candidates = [];
-  candidates.push(...readBrowserLocale(localeCookieName));
-  if (locale) candidates.push(...locale);
+  const cookieLocale = getCookieValue({
+    cookieName: localeCookieName,
+  });
+  if (cookieLocale) candidates.push(cookieLocale);
+  if (locale) {
+    candidates.push(...(Array.isArray(locale) ? locale : [locale]));
+  }
   if (getLocale) candidates.push(getLocale());
+  const navigatorLocales =
+    typeof navigator !== 'undefined' ? navigator.languages : [];
+  candidates.push(...navigatorLocales);
   return resolveLocale(candidates);
 }
 
