@@ -62,18 +62,20 @@ export function complete<T>(
 }
 
 export function getContentWidth(columns: number) {
-  return Math.min(Math.max(MIN_CONTENT_WIDTH, columns - 4), MAX_CONTENT_WIDTH);
-}
-
-export function getInputWidth(columns: number) {
-  return Math.max(
-    MIN_CONTENT_WIDTH,
-    getContentWidth(columns) - INPUT_HORIZONTAL_PADDING
+  const terminalWidth = Math.max(1, columns);
+  return Math.min(
+    Math.max(MIN_CONTENT_WIDTH, terminalWidth - 4),
+    MAX_CONTENT_WIDTH,
+    terminalWidth
   );
 }
 
+export function getInputWidth(columns: number) {
+  return Math.max(1, getContentWidth(columns) - INPUT_HORIZONTAL_PADDING);
+}
+
 export function getOptionWidth(columns: number) {
-  return Math.max(MIN_CONTENT_WIDTH, getContentWidth(columns) - 2);
+  return Math.max(1, getContentWidth(columns) - 2);
 }
 
 export function getVisibleCount(rows: number, reservedRows: number) {
@@ -95,6 +97,16 @@ export function truncate(value: string, width: number) {
   if (width <= 1) return value.slice(0, width);
   if (width <= 3) return '.'.repeat(width);
   return `${value.slice(0, width - 3)}...`;
+}
+
+export function limitLines(lines: string[], maxLines: number, width: number) {
+  const safeMaxLines = Math.max(1, maxLines);
+  const visibleLines = lines.slice(0, safeMaxLines);
+  if (lines.length > safeMaxLines) {
+    const lastIndex = visibleLines.length - 1;
+    visibleLines[lastIndex] = truncate(`${visibleLines[lastIndex]}...`, width);
+  }
+  return visibleLines;
 }
 
 export function getScrollWindow<T>({

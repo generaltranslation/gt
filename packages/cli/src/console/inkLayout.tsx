@@ -5,6 +5,7 @@ import { INK_ACCENT_COLOR } from './inkTheme.js';
 import type { PromptFrameProps } from './inkTypes.js';
 import {
   getContentWidth,
+  limitLines,
   normalizedMessage,
   truncate,
   wrapText,
@@ -13,7 +14,8 @@ import {
 export function PromptFrame({ message, children, footer }: PromptFrameProps) {
   const { columns, rows } = useTerminalSize();
   const width = getContentWidth(columns);
-  const topPadding = Math.max(1, Math.min(5, Math.floor(rows * 0.1)));
+  const topPadding = rows >= 10 ? 1 : 0;
+  const showWizardTitle = rows >= 16;
   const showFeedback = columns >= 88;
   const footerText =
     columns < 50
@@ -21,16 +23,27 @@ export function PromptFrame({ message, children, footer }: PromptFrameProps) {
       : columns < 72
         ? compactFooter(footer)
         : footer;
-  const messageLines = wrapText(normalizedMessage(message), width);
-  const headerTitle = `  General Translation Wizard v${PACKAGE_VERSION}`;
+  const messageLineLimit = rows < 14 ? 1 : rows < 18 ? 2 : 4;
+  const messageLines = limitLines(
+    wrapText(normalizedMessage(message), width),
+    messageLineLimit,
+    width
+  );
+  const headerTitle =
+    columns < 44
+      ? `  GT Wizard v${PACKAGE_VERSION}`
+      : `  General Translation Wizard v${PACKAGE_VERSION}`;
   const headerFeedback = 'Feedback: support@generaltranslation.com  ';
   const headerGap = Math.max(
     1,
     columns - headerTitle.length - (showFeedback ? headerFeedback.length : 0)
   );
-  const headerText = `${headerTitle}${' '.repeat(headerGap)}${
-    showFeedback ? headerFeedback : ''
-  }`;
+  const headerText = truncate(
+    `${headerTitle}${' '.repeat(headerGap)}${
+      showFeedback ? headerFeedback : ''
+    }`,
+    columns
+  ).padEnd(columns, ' ');
   const footerLine = `  ${footerText}`.padEnd(columns, ' ');
 
   return (
@@ -48,17 +61,19 @@ export function PromptFrame({ message, children, footer }: PromptFrameProps) {
         flexShrink={1}
       >
         <Box width={width} flexDirection='column'>
-          <Box justifyContent='center'>
-            <Text bold color={INK_ACCENT_COLOR}>
-              GT Wizard
-            </Text>
-          </Box>
-          <Box flexDirection='column' marginTop={1}>
+          {showWizardTitle ? (
+            <Box justifyContent='center'>
+              <Text bold color={INK_ACCENT_COLOR}>
+                GT Wizard
+              </Text>
+            </Box>
+          ) : null}
+          <Box flexDirection='column' marginTop={showWizardTitle ? 1 : 0}>
             {messageLines.map((line, index) => (
               <Text key={`${index}-${line}`}>{line}</Text>
             ))}
           </Box>
-          <Box marginTop={2} flexDirection='column'>
+          <Box marginTop={1} flexDirection='column'>
             {children}
           </Box>
         </Box>
@@ -90,12 +105,10 @@ function ultraCompactFooter(footer: string) {
   return compactFooter(footer)
     .replace(/\s{2,}esc quit\s*$/, '')
     .replace('↑↓ move', '↑↓')
-    .replace('space toggle', 'spc')
-    .replace('enter done', 'enter')
-    .replace('enter choose', 'enter')
-    .replace('enter select', 'enter')
-    .replace('enter save', 'enter')
-    .replace('enter confirm', 'enter')
+    .replace('space toggle', 'space')
+    .replace('enter done', 'done')
+    .replace('enter choose', 'choose')
+    .replace('enter save', 'save')
     .replace('type to edit', 'type')
     .replace('y/n select', 'y/n')
     .replace('←→ choose', '←→');
@@ -110,19 +123,19 @@ export function InputBox({
   width: number;
   placeholder?: string;
 }) {
-  const innerWidth = Math.max(1, width - 4);
+  const prefix = '> ';
+  const innerWidth = Math.max(1, width - prefix.length - 1);
   const hasValue = value.length > 0;
 
   if (hasValue) {
-    const visibleValue = truncate(value, Math.max(0, innerWidth - 1));
-    const padding = Math.max(0, innerWidth - visibleValue.length - 1);
+    const visibleValue = truncate(value, innerWidth);
+    const padding = Math.max(
+      0,
+      width - prefix.length - visibleValue.length - 1
+    );
     return (
-      <Box
-        width={width}
-        borderStyle='round'
-        borderColor={INK_ACCENT_COLOR}
-        paddingX={1}
-      >
+      <Box width={width}>
+        <Text color={INK_ACCENT_COLOR}>{prefix}</Text>
         <Text>{visibleValue}</Text>
         <Text inverse> </Text>
         <Text>{' '.repeat(padding)}</Text>
@@ -130,38 +143,25 @@ export function InputBox({
     );
   }
 
-  const placeholderText = truncate(
-    placeholder ?? '',
-    Math.max(0, innerWidth - 1)
+  const placeholderText = truncate(placeholder ?? '', innerWidth);
+  const cursorWidth = placeholderText ? 0 : 1;
+  const padding = Math.max(
+    0,
+    width - prefix.length - placeholderText.length - cursorWidth
   );
 
-  if (!placeholderText) {
-    const padding = Math.max(0, innerWidth - 1);
-    return (
-      <Box
-        width={width}
-        borderStyle='round'
-        borderColor={INK_ACCENT_COLOR}
-        paddingX={1}
-      >
-        <Text inverse> </Text>
-        <Text>{' '.repeat(padding)}</Text>
-      </Box>
-    );
-  }
-
-  const padding = Math.max(0, innerWidth - placeholderText.length);
   return (
-    <Box
-      width={width}
-      borderStyle='round'
-      borderColor={INK_ACCENT_COLOR}
-      paddingX={1}
-    >
-      <Text inverse dimColor>
-        {placeholderText.slice(0, 1)}
-      </Text>
-      <Text dimColor>{placeholderText.slice(1)}</Text>
+    <Box width={width}>
+      <Text color={INK_ACCENT_COLOR}>{prefix}</Text>
+      {placeholderText ? (
+        <>
+          <Text inverse dimColor>
+            {placeholderText.slice(0, 1)}
+          </Text>
+          <Text dimColor>{placeholderText.slice(1)}</Text>
+        </>
+      ) : null}
+      <Text inverse>{placeholderText ? '' : ' '}</Text>
       <Text>{' '.repeat(padding)}</Text>
     </Box>
   );
