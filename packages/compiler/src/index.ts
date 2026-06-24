@@ -21,7 +21,7 @@ import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
  * Architecture:
  *
  * Pass Pipeline:
- * - Pass 0: Macro expansion — transforms t`...` tagged templates and t(`...`) template/concatenation args
+ * - Pass 0: Macro expansion — transforms unbound global t`...` tagged templates
  * - Pass 1: Collection — collect + calculate all data, check for violations, register + track
  * - Pass 2: Injection — inject all data (hashes, messages, etc.)
  *

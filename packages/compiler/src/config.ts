@@ -34,7 +34,7 @@ export interface PluginConfig {
   compileTimeHash?: boolean;
   /** Disable dynamic content validation checks */
   disableBuildChecks?: boolean;
-  /** Enable macro transform (t`...`, t(`...`), t("a" + b)) */
+  /** Enable global tagged template macro transform (t`...`) */
   enableMacroTransform?: boolean;
   /** Name of the string translation macro function */
   stringTranslationMacro?: string;
@@ -60,10 +60,6 @@ export interface PluginSettings {
   filename?: string;
   enableMacroTransform: boolean;
   stringTranslationMacro: string;
-  enableTaggedTemplate: boolean;
-  enableTemplateLiteralArg: boolean;
-  enableConcatenationArg: boolean;
-  enableMacroImportInjection: boolean;
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection: boolean;
   /** Automatically treat interpolated/concatenated values as derive() calls */
