@@ -1,4 +1,5 @@
 export { parseLocale } from './functions/parseLocale';
+export { GTProvider } from './components/GTProvider.server';
 
 export {
   // ===== Components ===== //
@@ -12,7 +13,6 @@ export {
   RelativeTime,
   Var,
   Num,
-  GTProvider,
   // ===== Hooks ===== //
   useLocale,
   useSetLocale,
