@@ -1,0 +1,40 @@
+{
+  "app.1": [
+    {
+      "c": [
+        {
+          "c": [
+            "compteur : ",
+            {
+              "i": 3,
+              "k": "_gt_n_3",
+              "v": "n"
+            }
+          ],
+          "i": 2,
+          "t": "button"
+        },
+        {
+          "c": [
+            "Modifie ",
+            {
+              "c": "src/App.tsx",
+              "i": 5,
+              "t": "code"
+            },
+            " et enregistre pour tester le HMR"
+          ],
+          "i": 4,
+          "t": "p"
+        }
+      ],
+      "i": 1,
+      "t": "div"
+    },
+    {
+      "c": "Clique sur les logos de Vite et de React pour en savoir plus !",
+      "i": 6,
+      "t": "p"
+    }
+  ]
+}

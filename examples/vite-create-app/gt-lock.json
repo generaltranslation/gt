@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "branchId": "",
+  "entries": [
+    {
+      "fileId": "879f3a5f954ee8b75bf1e91f4ea9916b41c933e5beba7eb6362647a637c9c66d",
+      "versionId": "392f71698fdbee068633930b7052e3762adf9ec3abb67b9e10271c5ebcd68c1d",
+      "translations": {
+        "ja": {
+          "updatedAt": "2026-05-12T23:39:39.117Z",
+          "fileName": "/Users/mossbryophyta/workspace/gt/examples/vite-create-app/src/_gt/ja.json",
+          "postProcessHash": "d0b4c5ea953fc685dda7fcc2d1734384330beade3c6f4c2c0775ac9910c95dd2"
+        },
+        "zh": {
+          "updatedAt": "2026-05-12T23:39:39.118Z",
+          "fileName": "/Users/mossbryophyta/workspace/gt/examples/vite-create-app/src/_gt/zh.json",
+          "postProcessHash": "2ff8ff316632657437bdade2c5b2383a41b00e6ad2ac2f97cc32006ae5ca2430"
+        },
+        "es": {
+          "updatedAt": "2026-05-12T23:39:39.118Z",
+          "fileName": "/Users/mossbryophyta/workspace/gt/examples/vite-create-app/src/_gt/es.json",
+          "postProcessHash": "40d95c468d6bf4a90809f18ba16415b93d1d324ef900975559a16db72f0b2e5e"
+        },
+        "fr": {
+          "updatedAt": "2026-05-12T23:39:39.118Z",
+          "fileName": "/Users/mossbryophyta/workspace/gt/examples/vite-create-app/src/_gt/fr.json",
+          "postProcessHash": "559f3f34eee4035aae407493a94f097a9b5ca98004023d256a57a54962bd878e"
+        }
+      },
+      "fileName": "__INTERNAL_GT_TEMPLATE_NAME__",
+      "staged": false
+    }
+  ]
+}

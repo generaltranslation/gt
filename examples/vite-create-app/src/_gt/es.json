@@ -1,0 +1,40 @@
+{
+  "app.1": [
+    {
+      "c": [
+        {
+          "c": [
+            "el contador es ",
+            {
+              "i": 3,
+              "k": "_gt_n_3",
+              "v": "n"
+            }
+          ],
+          "i": 2,
+          "t": "button"
+        },
+        {
+          "c": [
+            "Edita ",
+            {
+              "c": "src/App.tsx",
+              "i": 5,
+              "t": "code"
+            },
+            " y guarda los cambios para probar HMR"
+          ],
+          "i": 4,
+          "t": "p"
+        }
+      ],
+      "i": 1,
+      "t": "div"
+    },
+    {
+      "c": "¡Haz clic en los logos de Vite y React para obtener más información!",
+      "i": 6,
+      "t": "p"
+    }
+  ]
+}
