@@ -7,7 +7,10 @@ initializeGT();
 
 // ===== gt-react ===== //
 export { parseLocale, withGTServerSideProps };
-export type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
+export type {
+  WithGTServerProps,
+  WithGTServerSideProps,
+} from './pages-dir/withGTServerSideProps';
 
 export {
   // ----- components ----- //

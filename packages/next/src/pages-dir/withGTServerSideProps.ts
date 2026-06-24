@@ -16,6 +16,10 @@ export type WithGTServerSideProps<
   Props extends Record<string, unknown> = Record<string, unknown>,
 > = Props & GTServerSideProps;
 
+export type WithGTServerProps<
+  Props extends Record<string, unknown> = Record<string, unknown>,
+> = WithGTServerSideProps<Props>;
+
 export function withGTServerSideProps<
   Props extends Record<string, unknown> = Record<string, unknown>,
   Params extends ParsedUrlQuery = ParsedUrlQuery,
