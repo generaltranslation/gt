@@ -1,5 +1,14 @@
 # gt-tanstack-start
 
+## 0.4.28
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@0.9.8
+  - gt-react@10.20.4
+  - @generaltranslation/react-core@1.8.24
+
 ## 0.4.27
 
 ### Patch Changes

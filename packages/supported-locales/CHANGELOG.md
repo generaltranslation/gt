@@ -1,5 +1,11 @@
 # @generaltranslation/supported-locales
 
+## 2.1.4
+
+### Patch Changes
+
+- [#1653](https://github.com/generaltranslation/gt/pull/1653) [`a2a3dd0`](https://github.com/generaltranslation/gt/commit/a2a3dd0bcdce9abe360c406a12fc6bb3bc3ca181) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `ar-OM`
+
 ## 2.1.3
 
 ### Patch Changes
