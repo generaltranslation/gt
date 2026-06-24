@@ -23,6 +23,10 @@ import { GTLibrary, GT_LIBRARIES } from '../../../types/libraries.js';
 import { declareVar } from 'generaltranslation/internal';
 import { isStaticExpression } from '../evaluateJsx.js';
 import generateModule from '@babel/generator';
+import {
+  evaluateStringExpression,
+  stringNodeToStaticValues,
+} from '@generaltranslation/compiler/extraction';
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
 const generate = generateModule.default || generateModule;
@@ -682,6 +686,11 @@ export function parseStringExpression(
   warnings: Set<string>,
   errors: string[]
 ): StringNode | null {
+  const sharedResult = evaluateSimpleStringExpression(node, tPath);
+  if (sharedResult) {
+    return sharedResult;
+  }
+
   // Unwrap TypeScript type annotations (as, satisfies, !, <Type>)
   if (
     t.isTSAsExpression(node) ||
@@ -1177,6 +1186,64 @@ export function parseStringExpression(
   }
 
   // Unsupported expression type
+  return null;
+}
+
+function evaluateSimpleStringExpression(
+  node: t.Node,
+  tPath: NodePath
+): StringNode | null {
+  const expressionPath = getExpressionPathForNode(node, tPath);
+  if (!expressionPath) {
+    return null;
+  }
+
+  const result = evaluateStringExpression(expressionPath);
+  if (result.diagnostics.length > 0 || !result.value) {
+    return null;
+  }
+
+  const values = stringNodeToStaticValues(result.value);
+  if (!values) {
+    return null;
+  }
+
+  if (values.length === 1) {
+    return { type: 'text', text: values[0] };
+  }
+
+  return {
+    type: 'choice',
+    nodes: values.map((value) => ({ type: 'text', text: value })),
+  };
+}
+
+function getExpressionPathForNode(
+  node: t.Node,
+  tPath: NodePath
+): NodePath<t.Expression> | null {
+  if (tPath.isExpression() && tPath.node === node) {
+    return tPath;
+  }
+
+  if (tPath.isVariableDeclarator() && tPath.node.init === node) {
+    const initPath = tPath.get('init');
+    return initPath.isExpression() ? initPath : null;
+  }
+
+  if (tPath.isReturnStatement() && tPath.node.argument === node) {
+    const argumentPath = tPath.get('argument');
+    return argumentPath.isExpression() ? argumentPath : null;
+  }
+
+  if (
+    (tPath.isArrowFunctionExpression() || tPath.isFunctionExpression()) &&
+    tPath.node.body === node
+  ) {
+    const bodyPath = tPath.get('body') as NodePath<t.Expression>;
+    return bodyPath.isExpression() ? bodyPath : null;
+  }
+
   return null;
 }
 

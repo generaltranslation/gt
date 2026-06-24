@@ -630,6 +630,9 @@ importers:
       '@formatjs/icu-messageformat-parser':
         specifier: ^2.11.4
         version: 2.11.4
+      '@generaltranslation/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
