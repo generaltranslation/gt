@@ -55,10 +55,7 @@ import type {
   PreviewData,
 } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import type {
-  WithGTServerProps,
-  WithGTServerSideProps,
-} from './pages-dir/withGTServerSideProps';
+import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 
 export function parseLocale<
   Params extends ParsedUrlQuery = ParsedUrlQuery,
@@ -126,6 +123,5 @@ export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-  WithGTServerProps,
   WithGTServerSideProps,
 };

@@ -6,10 +6,7 @@ import type {
   PreviewData,
 } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import type {
-  WithGTServerProps,
-  WithGTServerSideProps,
-} from './pages-dir/withGTServerSideProps';
+import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 import {
   useTranslations as _useTranslations,
   useLocale as _useLocale,
@@ -577,7 +574,6 @@ export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-  WithGTServerProps,
   WithGTServerSideProps,
 };
 

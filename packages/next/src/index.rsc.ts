@@ -7,10 +7,7 @@ import type {
   PreviewData,
 } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import type {
-  WithGTServerProps,
-  WithGTServerSideProps,
-} from './pages-dir/withGTServerSideProps';
+import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 initializeGT();
 
 // ===== Overrides ===== //
@@ -142,6 +139,5 @@ export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-  WithGTServerProps,
   WithGTServerSideProps,
 };
