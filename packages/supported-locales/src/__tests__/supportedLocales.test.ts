@@ -10,4 +10,10 @@ describe('@generaltranslation/supported-locales', () => {
     expect(getSupportedLocale('eo')).toBe('eo');
     expect(getSupportedLocale('eo-US')).toBe('eo');
   });
+
+  it('supports Omani Arabic', () => {
+    expect(listSupportedLocales()).toContain('ar-OM');
+    expect(getSupportedLocale('ar-OM')).toBe('ar-OM');
+    expect(getSupportedLocale('ar-Arab-OM')).toBe('ar-OM');
+  });
 });
