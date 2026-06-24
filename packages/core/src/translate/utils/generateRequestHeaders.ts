@@ -7,15 +7,11 @@ export default function generateRequestHeaders(
 ) {
   const authHeaders: Record<string, string> = {
     ...(!excludeContentType && { 'Content-Type': 'application/json' }),
-    'x-gt-project-id': config.projectId,
+    'gt-project-id': config.projectId,
   };
 
   if (config.apiKey) {
-    if (config.apiKey.startsWith('gtx-internal-')) {
-      authHeaders['x-gt-internal-api-key'] = config.apiKey;
-    } else {
-      authHeaders['x-gt-api-key'] = config.apiKey;
-    }
+    authHeaders['Authorization'] = `Bearer ${config.apiKey}`;
   }
 
   authHeaders['gt-api-version'] = API_VERSION;
