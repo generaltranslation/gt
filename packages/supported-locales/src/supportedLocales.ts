@@ -8,6 +8,7 @@ const supportedLocales = {
     'ar-EG', // Egypt
     'ar-LB', // Lebanon
     'ar-MA', // Morocco
+    'ar-OM', // Oman
     'ar-SA', // Saudi Arabia
   ],
   bg: ['bg'], // Bulgarian
