@@ -458,4 +458,57 @@ describe('Middleware Integration Tests', () => {
       expect(getResponseType(nextRes)).toBe('next');
     });
   });
+
+  // ================================================================
+  // Category 6: Security — open redirect prevention (CWE-601)
+  // ================================================================
+
+  describe('Category 6: Security — open redirect prevention', () => {
+    function getResponseHost(res: Response): string {
+      const loc = res.headers.get('location');
+      return loc ? new URL(loc).host : '';
+    }
+
+    it('6.1: reset cookie, /en//evil.com → redirect stays same-origin', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({ prefixDefaultLocale: false });
+
+      // Stripping the "/en" locale prefix yields "//evil.com", which without
+      // the same-origin guard resolves to http://evil.com/ (open redirect).
+      const res = middleware(
+        createRequest('/en//evil.com', {
+          cookies: {
+            [LOCALE_COOKIE]: 'en',
+            [RESET_COOKIE]: 'true',
+          },
+        })
+      );
+
+      expect(getResponseType(res)).toBe('redirect');
+      expect(getResponseHost(res)).toBe('localhost:3000');
+      expect(getResponseHost(res)).not.toBe('evil.com');
+      expect(getResponsePath(res)).toBe('/');
+    });
+
+    it('6.2: reset cookie, mismatched locale prefix /fr//evil.com → same-origin', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({ prefixDefaultLocale: false });
+
+      // userLocale resolves to en (cookie); pathnameLocale fr → "/fr" stripped
+      // leaving "//evil.com".
+      const res = middleware(
+        createRequest('/fr//evil.com', {
+          cookies: {
+            [LOCALE_COOKIE]: 'en',
+            [RESET_COOKIE]: 'true',
+          },
+        })
+      );
+
+      expect(getResponseType(res)).toBe('redirect');
+      expect(getResponseHost(res)).toBe('localhost:3000');
+      expect(getResponseHost(res)).not.toBe('evil.com');
+      expect(getResponsePath(res)).toBe('/');
+    });
+  });
 });

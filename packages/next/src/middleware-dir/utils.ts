@@ -44,6 +44,14 @@ export function getResponse({
     });
   } else {
     const responseUrl = new URL(responsePath, originalUrl);
+    // Security: locale routing only ever targets same-origin paths. A
+    // responsePath that resolves off-origin (e.g. a leading "//" or "/\"
+    // surviving from the request path after the locale prefix is stripped)
+    // would otherwise produce an open redirect / cross-origin rewrite
+    // (CWE-601). Force the target back to the request's own origin.
+    if (responseUrl.origin !== originalUrl.origin) {
+      responseUrl.href = new URL('/', originalUrl).href;
+    }
     responseUrl.search = originalUrl.search;
     response =
       type === 'rewrite'
