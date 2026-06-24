@@ -1,5 +1,14 @@
 # @generaltranslation/react-core
 
+## 1.8.23
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - gt-i18n@0.9.7
+  - @generaltranslation/supported-locales@2.1.3
+
 ## 1.8.22
 
 ### Patch Changes
