@@ -75,9 +75,11 @@ function determineLocale({
   locale,
 }: CreateBrowserConditionStoreParams): string {
   const candidates = [];
-  candidates.push(...readBrowserLocale(localeCookieName));
-  if (locale) candidates.push(...locale);
+  if (locale) {
+    candidates.push(...(Array.isArray(locale) ? locale : [locale]));
+  }
   if (getLocale) candidates.push(getLocale());
+  candidates.push(...readBrowserLocale(localeCookieName));
   return resolveLocale(candidates);
 }
 
