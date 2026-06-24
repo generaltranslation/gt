@@ -31,8 +31,8 @@ describe.sequential('_getProjectData', () => {
     vi.clearAllMocks();
     vi.mocked(generateRequestHeaders).mockReturnValue({
       'Content-Type': 'application/json',
-      'x-gt-api-key': 'test-api-key',
-      'x-gt-project-id': 'test-project',
+      Authorization: 'Bearer test-api-key',
+      'gt-project-id': 'test-project',
     });
   });
 
@@ -57,8 +57,8 @@ describe.sequential('_getProjectData', () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
+          Authorization: 'Bearer test-api-key',
+          'gt-project-id': 'test-project',
         },
       },
       5000
@@ -233,8 +233,8 @@ describe.sequential('_getProjectData', () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-api-key',
-          'x-gt-project-id': 'test-project',
+          Authorization: 'Bearer test-api-key',
+          'gt-project-id': 'test-project',
         },
       },
       expect.any(Number)
