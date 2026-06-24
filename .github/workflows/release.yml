@@ -294,6 +294,37 @@ jobs:
           mv .changeset/config.tmp.json .changeset/config.json
           git update-index --assume-unchanged .changeset/config.json
 
+      - name: Summarize Odysseus changesets
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const changesetDir = '.changeset';
+          const pre = JSON.parse(
+            fs.readFileSync(`${changesetDir}/pre.json`, 'utf8')
+          );
+          const files = fs
+            .readdirSync(changesetDir)
+            .filter((file) => file.endsWith('.md') && file !== 'README.md')
+            .map((file) => file.replace(/\.md$/, ''))
+            .sort();
+          const consumed = new Set(pre.changesets || []);
+          const unconsumed = files.filter((name) => !consumed.has(name));
+
+          console.log(`Changeset files: ${files.length}`);
+          console.log(`Consumed prerelease changesets: ${consumed.size}`);
+
+          if (unconsumed.length === 0) {
+            console.log(
+              'No unconsumed Odysseus changesets found; release PR creation will be skipped.'
+            );
+          } else {
+            console.log('Unconsumed Odysseus changesets:');
+            for (const name of unconsumed) {
+              console.log(`- ${name}`);
+            }
+          }
+          NODE
+
       - name: Create Odysseus Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
