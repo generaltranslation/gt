@@ -52,4 +52,25 @@ describe('react i18n config', () => {
       /Cannot read ReactI18nConfig after base I18nConfig setup/
     );
   });
+
+  it('accepts branded ReactI18nConfig instances from another bundled copy', async () => {
+    const { I18nConfig, setI18nConfig: setBaseI18nConfig } =
+      await import('gt-i18n/internal');
+    const { getI18nConfig } = await import('../i18nConfig');
+
+    const bundledConfig = new I18nConfig({ defaultLocale: 'en' });
+    Object.defineProperty(
+      bundledConfig,
+      Symbol.for('generaltranslation.react-core.ReactI18nConfig'),
+      { value: true }
+    );
+    Object.defineProperty(bundledConfig, 'getRenderStrategy', {
+      value: () => 'SPA',
+    });
+
+    setBaseI18nConfig(bundledConfig);
+
+    expect(getI18nConfig()).toBe(bundledConfig);
+    expect(getI18nConfig().getRenderStrategy()).toBe('SPA');
+  });
 });

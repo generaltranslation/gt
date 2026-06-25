@@ -14,6 +14,9 @@ import type { I18nConfigParams } from 'gt-i18n/internal/types';
 export type RenderStrategy = 'SPA' | 'server-render';
 
 const defaultRenderStrategy: RenderStrategy = 'server-render';
+const reactI18nConfigBrand = Symbol.for(
+  'generaltranslation.react-core.ReactI18nConfig'
+);
 
 export class ReactI18nConfig extends I18nConfig {
   private renderStrategy: RenderStrategy;
@@ -24,6 +27,7 @@ export class ReactI18nConfig extends I18nConfig {
   ) {
     super(params);
     validateRenderStrategy(renderStrategy);
+    Object.defineProperty(this, reactI18nConfigBrand, { value: true });
     this.renderStrategy = renderStrategy;
   }
 
@@ -79,5 +83,12 @@ function validateRenderStrategy(
 function isReactI18nConfig(
   i18nConfig: I18nConfig
 ): i18nConfig is ReactI18nConfig {
-  return i18nConfig instanceof ReactI18nConfig;
+  if (i18nConfig instanceof ReactI18nConfig) return true;
+
+  const maybeReactI18nConfig = i18nConfig as I18nConfig &
+    Record<PropertyKey, unknown>;
+  return (
+    maybeReactI18nConfig[reactI18nConfigBrand] === true &&
+    typeof maybeReactI18nConfig.getRenderStrategy === 'function'
+  );
 }
