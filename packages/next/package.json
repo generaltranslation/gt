@@ -84,6 +84,10 @@
       "types": "./dist/middleware.d.ts",
       "default": "./dist/middleware.js"
     },
+    "./link": {
+      "types": "./dist/link.d.ts",
+      "default": "./dist/link.js"
+    },
     "./types": {
       "types": "./dist/types.d.ts",
       "default": "./dist/types.js"
@@ -126,6 +130,9 @@
       "middleware": [
         "./dist/middleware.d.ts"
       ],
+      "link": [
+        "./dist/link.d.ts"
+      ],
       "types": [
         "./dist/types.d.ts"
       ],
@@ -166,6 +173,9 @@
       ],
       "gt-next/middleware": [
         "/dist/middleware"
+      ],
+      "gt-next/link": [
+        "/dist/link"
       ],
       "gt-next/types": [
         "/dist/types"
