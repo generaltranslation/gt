@@ -9,6 +9,8 @@ vi.mock('fs', () => ({
   default: {
     existsSync: vi.fn(() => false),
     readFileSync: vi.fn(() => '{}'),
+    mkdirSync: vi.fn(),
+    writeFileSync: vi.fn(),
   },
 }));
 
@@ -68,6 +70,8 @@ beforeEach(() => {
   mockVersionInfo.babelPluginCompatible = true;
   vi.mocked(fs.existsSync).mockReturnValue(false);
   vi.mocked(fs.readFileSync).mockReturnValue('{}');
+  vi.mocked(fs.mkdirSync).mockReturnValue(undefined);
+  vi.mocked(fs.writeFileSync).mockReturnValue(undefined);
 });
 
 afterEach(() => {
@@ -100,6 +104,15 @@ describe('withGTConfig', () => {
       expect(result).toHaveProperty('webpack');
       expect(result).toHaveProperty('experimental');
       expect(typeof result.webpack).toBe('function');
+    });
+
+    it('adds gt-next to transpilePackages while preserving user packages', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig({
+        transpilePackages: ['existing-package', 'gt-next'],
+      });
+
+      expect(result.transpilePackages).toEqual(['existing-package', 'gt-next']);
     });
 
     it('sets _usingPlugin to true in config params', async () => {
@@ -1158,6 +1171,32 @@ describe('withGTConfig', () => {
       expect(parsed.devApiKey).toBeUndefined();
     });
 
+    it('writes public config modules without private credentials', async () => {
+      const withGTConfig = await getWithGTConfig();
+      withGTConfig(
+        {},
+        {
+          defaultLocale: 'en',
+          locales: ['fr', 'zh'],
+          projectId: 'project-id',
+          apiKey: 'api-key',
+          devApiKey: 'dev-key',
+        }
+      );
+
+      expect(fs.mkdirSync).toHaveBeenCalled();
+      expect(fs.writeFileSync).toHaveBeenCalledTimes(2);
+      const writes = vi.mocked(fs.writeFileSync).mock.calls;
+      expect(String(writes[0][0])).toContain('client-config.cjs');
+      expect(String(writes[1][0])).toContain('server-config.cjs');
+      for (const [, contents] of writes) {
+        expect(String(contents)).toContain('"locales":["en","fr","zh"]');
+        expect(String(contents)).not.toContain('api-key');
+        expect(String(contents)).not.toContain('dev-key');
+        expect(String(contents)).not.toContain('project-id');
+      }
+    });
+
     it('boolean flags are string "true"/"false", not booleans', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
@@ -1296,6 +1335,8 @@ describe('withGTConfig', () => {
       const wc = makeWebpackConfig();
       runWebpack(result, wc);
 
+      expect(wc.resolve.alias).toHaveProperty('gt-next/_client-config');
+      expect(wc.resolve.alias).toHaveProperty('gt-next/_server-config');
       expect(wc.resolve.alias).toHaveProperty('gt-next/_dictionary');
     });
 
@@ -1337,6 +1378,12 @@ describe('withGTConfig', () => {
       expect(result.turbopack).toBeDefined();
       expect(result.turbopack!.resolveAlias).toBeDefined();
       expect(result.turbopack!.resolveAlias).toHaveProperty(
+        'gt-next/_client-config'
+      );
+      expect(result.turbopack!.resolveAlias).toHaveProperty(
+        'gt-next/_server-config'
+      );
+      expect(result.turbopack!.resolveAlias).toHaveProperty(
         'gt-next/_dictionary'
       );
     });
@@ -1361,6 +1408,32 @@ describe('withGTConfig', () => {
       expect(result.turbopack!.resolveAlias).toHaveProperty(
         'gt-next/_dictionary'
       );
+    });
+
+    it('uses existing nextConfig.turbopack even when stable turbopack config is not detected', async () => {
+      const withGTConfig = await getWithGTConfig();
+      process.env.TURBOPACK = '1';
+      mockVersionInfo.turboConfigStable = false;
+
+      const result = withGTConfig({
+        turbopack: {
+          root: '/fake/root',
+          resolveAlias: { 'existing-alias': '/some/path' },
+        },
+      });
+
+      expect(result.turbopack!.root).toBe('/fake/root');
+      expect(result.turbopack!.resolveAlias).toHaveProperty(
+        'existing-alias',
+        '/some/path'
+      );
+      expect(result.turbopack!.resolveAlias).toHaveProperty(
+        'gt-next/_client-config'
+      );
+      expect(result.turbopack!.resolveAlias).toHaveProperty(
+        'gt-next/_server-config'
+      );
+      expect(result.experimental?.turbo).toBeUndefined();
     });
   });
 

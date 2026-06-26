@@ -73,6 +73,13 @@ type InternalGTConfigProps = BaseWithGTConfigProps &
 
 type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
 
+const generatedConfigDir = path.join(
+  'node_modules',
+  '.cache',
+  'generaltranslation',
+  'next'
+);
+
 /**
  * Initializes General Translation settings for a Next.js application.
  *
@@ -557,6 +564,14 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     customMapping: mergedConfig.customMapping,
     runtimeUrl: mergedConfig.runtimeUrl,
   };
+  const clientConfigFilePath = writePublicConfigModule(
+    'client-config.cjs',
+    publicI18NConfigParams
+  );
+  const serverConfigFilePath = writePublicConfigModule(
+    'server-config.cjs',
+    publicI18NConfigParams
+  );
 
   const { type: _type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
@@ -585,6 +600,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       : null;
 
   const turboAliases = {
+    'gt-next/_client-config': clientConfigFilePath,
+    'gt-next/_server-config': serverConfigFilePath,
     'gt-next/_dictionary': resolvedDictionaryFilePath || '',
     'gt-next/_load-translations': customLoadTranslationsPath || '',
     'gt-next/_load-dictionary': customLoadDictionaryPath || '',
@@ -603,14 +620,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   // experimental.turbo is deprecated in next@15.3.0.
   // Check for experimental.turbo. If we write to turbopack field, experimental fields will be ignored.
   // Yet, if there are other resolveAlias fields, we don't want to be ignored either.
-  const experimentalTurbopack = !(
-    turboConfigStable &&
-    (!internalNextConfig.experimental?.turbo ||
-      internalNextConfig.turbopack?.resolveAlias)
-  );
+  const useStableTurbopackConfig =
+    turboConfigStable || !!internalNextConfig.turbopack;
+  const experimentalTurbopack = !useStableTurbopackConfig;
 
   const config: NextConfig = {
     ...internalNextConfig,
+    transpilePackages: Array.from(
+      new Set([...(internalNextConfig.transpilePackages || []), 'gt-next'])
+    ),
     env: {
       ...internalNextConfig.env,
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
@@ -715,6 +733,14 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         if (process.env.NODE_ENV === 'development') {
           webpackConfig.cache = false;
         }
+        webpackConfig.resolve.alias['gt-next/_client-config'] = path.resolve(
+          webpackConfig.context,
+          clientConfigFilePath
+        );
+        webpackConfig.resolve.alias['gt-next/_server-config'] = path.resolve(
+          webpackConfig.context,
+          serverConfigFilePath
+        );
         if (resolvedDictionaryFilePath) {
           webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
             webpackConfig.context,
@@ -756,3 +782,24 @@ export const initGT =
   (props: withGTConfigProps) =>
   <TNextConfig extends object = NextConfig>(nextConfig?: TNextConfig) =>
     withGTConfig(nextConfig, props);
+
+function writePublicConfigModule(
+  filename: string,
+  config: Omit<I18nConfigParams, 'projectId' | 'devApiKey' | 'apiKey'>
+): string {
+  const directory = path.resolve(process.cwd(), generatedConfigDir);
+  const filepath = path.join(directory, filename);
+  const serializedConfig = JSON.stringify(config);
+  const contents = [
+    `const config = ${serializedConfig};`,
+    'module.exports = config;',
+    'module.exports.default = config;',
+    'module.exports.publicConfig = config;',
+    '',
+  ].join('\n');
+
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(filepath, contents);
+
+  return `./${path.relative(process.cwd(), filepath).replace(/\\/g, '/')}`;
+}

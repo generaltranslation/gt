@@ -97,6 +97,12 @@
     "./_load-dictionary": {
       "default": "./dist/_load-dictionary.js"
     },
+    "./_client-config": {
+      "default": "./dist/_client-config.js"
+    },
+    "./_server-config": {
+      "default": "./dist/_server-config.js"
+    },
     "./compiler": {
       "types": "./dist/compiler/index.d.ts",
       "default": "./dist/compiler/index.js"
@@ -138,6 +144,12 @@
       "_load-dictionary": [
         "./dist/_load-dictionary.d.ts"
       ],
+      "_client-config": [
+        "./dist/_client-config.d.ts"
+      ],
+      "_server-config": [
+        "./dist/_server-config.d.ts"
+      ],
       "compiler": [
         "./dist/compiler/index.d.ts"
       ],
@@ -178,6 +190,12 @@
       ],
       "gt-next/_load-dictionary": [
         "/dist/_load-dictionary"
+      ],
+      "gt-next/_client-config": [
+        "/dist/_client-config"
+      ],
+      "gt-next/_server-config": [
+        "/dist/_server-config"
       ],
       "gt-next/compiler": [
         "/dist/compiler"
