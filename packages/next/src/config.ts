@@ -611,6 +611,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   const config: NextConfig = {
     ...internalNextConfig,
+    transpilePackages: Array.from(
+      new Set([...(internalNextConfig.transpilePackages || []), 'gt-next'])
+    ),
     env: {
       ...internalNextConfig.env,
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
