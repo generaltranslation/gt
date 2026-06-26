@@ -1,6 +1,5 @@
 'use client';
 
-export { initializeGTSPA } from './setup/initializeGTSPA';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
 export {

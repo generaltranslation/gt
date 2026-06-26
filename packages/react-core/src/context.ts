@@ -42,7 +42,6 @@ export { t } from './functions/translation/t';
 export { useInternalLocaleSelector } from './hooks/useInternalLocaleSelector';
 export { InternalLocaleSelector } from './components/helpers/InternalLocaleSelector';
 export { InternalGTProvider } from './context/InternalGTProvider';
-export { internalInitializeGTSPA } from './setup/initializeGTSPA';
 export { internalInitializeGTSRA } from './setup/initializeGTSRA';
 export {
   getI18nStore,

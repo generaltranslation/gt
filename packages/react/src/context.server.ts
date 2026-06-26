@@ -4,7 +4,6 @@
 // providers, and context modules, so it must be consumed as a client boundary by
 // React Server Component frameworks.
 
-export { initializeGTSPA } from './setup/initializeGTSPA';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useSetLocale, useSetEnableI18n } from './hooks/conditions-store';
 export {
@@ -56,7 +55,6 @@ export {
   t,
   // ===== Setup ===== //
   internalInitializeGTSRA as initializeGT,
-  internalInitializeGTSPA,
 } from '@generaltranslation/react-core/context';
 
 export type {
