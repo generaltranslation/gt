@@ -47,6 +47,7 @@
     "odysseus-sanity-followup",
     "odysseus-sanity-release-test",
     "pages-server-side-props",
-    "runtime-env-credentials"
+    "runtime-env-credentials",
+    "tanstack-locale-cookie"
   ]
 }

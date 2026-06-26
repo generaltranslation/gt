@@ -1,5 +1,12 @@
 # gt-react-native
 
+## 11.0.0-odysseus.2
+
+### Patch Changes
+
+- Updated dependencies [[`e29cd01`](https://github.com/generaltranslation/gt/commit/e29cd01c1bfe9ffba64c8fb3794d053a8c1304af)]:
+  - @generaltranslation/react-core@2.0.0-odysseus.1
+
 ## 11.0.0-odysseus.1
 
 ## 11.0.0-odysseus.0
