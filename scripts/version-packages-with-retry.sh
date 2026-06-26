@@ -8,10 +8,11 @@ attempt=1
 while true; do
   if pnpm exec changeset version; then
     break
+  else
+    status=$?
   fi
 
-  status=$?
-  if ! git diff --quiet --exit-code; then
+  if ! git diff HEAD --quiet --exit-code; then
     echo "changeset version failed after modifying files; refusing to retry"
     exit "$status"
   fi
