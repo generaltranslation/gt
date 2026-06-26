@@ -1,6 +1,4 @@
-export function parseLocale(): string {
-  throw new Error('A types-only entry point was executed at runtime.');
-}
+export { parseLocale } from './functions/parseLocale';
 
 export {
   // ===== Components ===== //

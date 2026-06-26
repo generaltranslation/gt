@@ -1,10 +1,6 @@
 'use client';
 
-export function parseLocale() {
-  throw new Error(
-    'parseLocale() is only available from gt-tanstack-start on the server.'
-  );
-}
+export { parseLocale } from './functions/parseLocale';
 
 export {
   // ===== Components ===== //
