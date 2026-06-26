@@ -1,5 +1,14 @@
 # gt-react
 
+## 11.0.0-odysseus.2
+
+### Patch Changes
+
+- [#1657](https://github.com/generaltranslation/gt/pull/1657) [`e29cd01`](https://github.com/generaltranslation/gt/commit/e29cd01c1bfe9ffba64c8fb3794d053a8c1304af) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Persist TanStack Start locale resolution through the browser locale cookie.
+  Allow React i18n config checks to work across bundled react-core entrypoints.
+- Updated dependencies [[`e29cd01`](https://github.com/generaltranslation/gt/commit/e29cd01c1bfe9ffba64c8fb3794d053a8c1304af)]:
+  - @generaltranslation/react-core@2.0.0-odysseus.1
+
 ## 11.0.0-odysseus.1
 
 ### Patch Changes
