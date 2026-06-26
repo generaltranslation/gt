@@ -102,6 +102,15 @@ describe('withGTConfig', () => {
       expect(typeof result.webpack).toBe('function');
     });
 
+    it('adds gt-next to transpilePackages while preserving user packages', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig({
+        transpilePackages: ['existing-package', 'gt-next'],
+      });
+
+      expect(result.transpilePackages).toEqual(['existing-package', 'gt-next']);
+    });
+
     it('sets _usingPlugin to true in config params', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
