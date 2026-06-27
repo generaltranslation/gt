@@ -13,6 +13,18 @@
 - Updated dependencies [[`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`620621a`](https://github.com/generaltranslation/gt/commit/620621aceeafedbb958884cacc5495736191b065)]:
   - @generaltranslation/format@0.1.2-odysseus.0
 
+## 8.2.18
+
+### Patch Changes
+
+- [#1648](https://github.com/generaltranslation/gt/pull/1648) [`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8) Thanks [@brian-lou](https://github.com/brian-lou)! - Use `gt-project-id` instead of `x-gt-project-id` for API request headers. Update the API key header to use standard `Authorization: Bearer <api-key>` prefix.
+
+## 8.2.17
+
+### Patch Changes
+
+- [#1635](https://github.com/generaltranslation/gt/pull/1635) [`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01) Thanks [@brian-lou](https://github.com/brian-lou)! - Add retry mechanism for rate limits
+
 ## 8.2.16
 
 ### Patch Changes

@@ -12,6 +12,7 @@ export class EnqueueStep extends WorkflowStep<
 > {
   private spinner = logger.createSpinner('dots');
   private result: EnqueueFilesResult | null = null;
+  private spinnerStarted = false;
 
   constructor(
     private gt: GT,
@@ -22,7 +23,17 @@ export class EnqueueStep extends WorkflowStep<
   }
 
   async run(files: FileReference[]): Promise<EnqueueFilesResult> {
+    if (files.length === 0) {
+      this.result = {
+        jobData: {},
+        locales: this.settings.locales,
+        message: 'No files need to be enqueued',
+      };
+      return this.result;
+    }
+
     this.spinner.start('Enqueuing translations...');
+    this.spinnerStarted = true;
 
     this.result = await this.gt.enqueueFiles(files, {
       sourceLocale: this.settings.defaultLocale,
@@ -36,7 +47,7 @@ export class EnqueueStep extends WorkflowStep<
   }
 
   async wait(): Promise<void> {
-    if (this.result) {
+    if (this.result && this.spinnerStarted) {
       this.spinner.stop(chalk.green('Translations enqueued successfully'));
     }
   }
