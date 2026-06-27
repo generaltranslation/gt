@@ -32,6 +32,34 @@
   - gt-react@11.0.0-odysseus.0
   - generaltranslation@9.0.0-odysseus.0
   - gt-i18n@1.0.0-odysseus.0
+## 0.4.28
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@0.9.8
+  - gt-react@10.20.4
+  - @generaltranslation/react-core@1.8.24
+
+## 0.4.27
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - gt-i18n@0.9.7
+  - gt-react@10.20.3
+  - @generaltranslation/react-core@1.8.23
+
+## 0.4.26
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - gt-i18n@0.9.6
+  - gt-react@10.20.2
+  - @generaltranslation/react-core@1.8.22
 
 ## 0.4.25
 

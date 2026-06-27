@@ -8,6 +8,40 @@
 
 - Updated dependencies [[`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575)]:
   - gt@2.14.51-odysseus.0
+## 2.14.55
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.55
+
+## 2.14.54
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - gt@2.14.54
+
+## 2.14.53
+
+### Patch Changes
+
+- Updated dependencies [[`28b1b59`](https://github.com/generaltranslation/gt/commit/28b1b59d13422ef665490a5500cacaabaa00541d)]:
+  - gt@2.14.53
+
+## 2.14.52
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.52
+
+## 2.14.51
+
+### Patch Changes
+
+- Updated dependencies [[`69172dc`](https://github.com/generaltranslation/gt/commit/69172dc72e3fe22b6072b4c60e26c3de2cd68494)]:
+  - gt@2.14.51
 
 ## 2.14.50
 

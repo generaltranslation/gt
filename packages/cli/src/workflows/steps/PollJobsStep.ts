@@ -5,6 +5,10 @@ import { GT } from 'generaltranslation';
 import { EnqueueFilesResult } from 'generaltranslation/types';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import type { FileProperties } from '../../types/files.js';
+import {
+  getFileTranslationKey,
+  queryCompletedTranslationKeys,
+} from '../utils/queryCompletedTranslations.js';
 
 export type PollJobsInput = {
   fileTracker: FileStatusTracker;
@@ -54,32 +58,19 @@ export class PollTranslationJobsStep extends WorkflowStep<
     // Build a map of branchId:fileId:versionId:locale -> FileProperties
     const filePropertiesMap = new Map<string, FileProperties>();
     fileQueryData.forEach((item) => {
-      filePropertiesMap.set(
-        `${item.branchId}:${item.fileId}:${item.versionId}:${item.locale}`,
-        item
-      );
+      filePropertiesMap.set(getFileTranslationKey(item), item);
     });
 
     // Initial query to check which files already have translations
     // Skip when force retranslation is enabled, since the server
     // no longer marks force-retranslated files as incomplete
     if (!forceRetranslation) {
-      const initialFileData = await this.gt.queryFileData({
-        translatedFiles: fileQueryData.map((item) => ({
-          fileId: item.fileId,
-          versionId: item.versionId,
-          branchId: item.branchId,
-          locale: item.locale,
-        })),
-      });
-      const existingTranslations = initialFileData.translatedFiles || [];
+      const completedKeys = await queryCompletedTranslationKeys(
+        this.gt,
+        fileQueryData
+      );
 
-      // Mark all existing translations as completed
-      existingTranslations.forEach((translation) => {
-        if (!translation.completedAt) {
-          return;
-        }
-        const fileKey = `${translation.branchId}:${translation.fileId}:${translation.versionId}:${translation.locale}`;
+      completedKeys.forEach((fileKey) => {
         const fileProperties = filePropertiesMap.get(fileKey);
         if (fileProperties) {
           fileTracker.completed.set(fileKey, fileProperties);
@@ -122,7 +113,7 @@ export class PollTranslationJobsStep extends WorkflowStep<
 
     // Categorize each file query item
     for (const item of fileQueryData) {
-      const fileKey = `${item.branchId}:${item.fileId}:${item.versionId}:${item.locale}`;
+      const fileKey = getFileTranslationKey(item);
 
       // Check if translation already exists (completedAt is truthy)
       const existingTranslation = fileTracker.completed.get(fileKey);

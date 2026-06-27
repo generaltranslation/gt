@@ -12,6 +12,44 @@
   - @generaltranslation/supported-locales@2.1.2-odysseus.0
   - generaltranslation@9.0.0-odysseus.0
   - gt-remark@1.0.11-odysseus.0
+## 2.14.55
+
+### Patch Changes
+
+- Updated dependencies [[`a2a3dd0`](https://github.com/generaltranslation/gt/commit/a2a3dd0bcdce9abe360c406a12fc6bb3bc3ca181)]:
+  - @generaltranslation/supported-locales@2.1.4
+
+## 2.14.54
+
+### Patch Changes
+
+- [#1648](https://github.com/generaltranslation/gt/pull/1648) [`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8) Thanks [@brian-lou](https://github.com/brian-lou)! - Use `gt-project-id` instead of `x-gt-project-id` for API request headers. Update the API key header to use standard `Authorization: Bearer <api-key>` prefix.
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - @generaltranslation/python-extractor@0.2.24
+  - @generaltranslation/supported-locales@2.1.3
+
+## 2.14.53
+
+### Patch Changes
+
+- [#1642](https://github.com/generaltranslation/gt/pull/1642) [`28b1b59`](https://github.com/generaltranslation/gt/commit/28b1b59d13422ef665490a5500cacaabaa00541d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skip enqueue for already translated files
+
+## 2.14.52
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - @generaltranslation/python-extractor@0.2.23
+  - @generaltranslation/supported-locales@2.1.2
+
+## 2.14.51
+
+### Patch Changes
+
+- [#1605](https://github.com/generaltranslation/gt/pull/1605) [`69172dc`](https://github.com/generaltranslation/gt/commit/69172dc72e3fe22b6072b4c60e26c3de2cd68494) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Aggregate files on `upload` command. Ensures consistency with `stage` and `translate`
 
 ## 2.14.50
 

@@ -20,6 +20,19 @@
 ### Patch Changes
 
 - [#1443](https://github.com/generaltranslation/gt/pull/1443) [`8673f8f`](https://github.com/generaltranslation/gt/commit/8673f8f710824784659686750f4e41e2cd4ff067) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Test the odysseus prerelease publishing flow with gt-sanity.
+## 2.0.20
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+
+## 2.0.19
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
 
 ## 2.0.18
 

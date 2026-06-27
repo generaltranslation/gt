@@ -6,6 +6,7 @@ import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
 import { EnqueueStep } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { logger } from '../console/logger.js';
+import { filterFilesForEnqueue } from './utils/filterFilesForEnqueue.js';
 
 /**
  * Enqueues translations for a given set of files
@@ -46,17 +47,31 @@ export async function runEnqueueWorkflow({
     logger.debug('Branch data: ' + JSON.stringify(branchData, null, 2));
 
     // (2) Enqueue the files
-    const enqueueResult = await enqueueStep.run(
-      files.map((files) => ({
-        branchId: branchData.currentBranch.id,
-        ...files,
-      }))
-    );
+    const filesWithBranch = files.map((files) => ({
+      branchId: branchData.currentBranch.id,
+      ...files,
+    }));
+    const { filesToEnqueue, skippedFiles } = await filterFilesForEnqueue({
+      gt,
+      files: filesWithBranch,
+      locales: settings.locales,
+      force: options.force,
+    });
+    if (skippedFiles.length > 0) {
+      logger.info(
+        `Skipped enqueue for ${skippedFiles.length} already translated file${skippedFiles.length === 1 ? '' : 's'}`
+      );
+    }
+
+    const enqueueResult = await enqueueStep.run(filesToEnqueue);
     await enqueueStep.wait();
 
     logger.debug('Enqueue result: ' + JSON.stringify(enqueueResult, null, 2));
 
-    logEnqueueResult(enqueueResult, files);
+    logEnqueueResult(
+      enqueueResult,
+      filesToEnqueue.length === 0 ? files.length : filesToEnqueue.length
+    );
     return enqueueResult;
   } catch (error) {
     return logErrorAndExit(
@@ -77,11 +92,11 @@ export async function runEnqueueWorkflow({
  */
 function logEnqueueResult(
   enqueueResult: EnqueueFilesResult,
-  files: FileToUpload[]
+  fileCount: number
 ): void {
   if (Object.keys(enqueueResult.jobData).length === 0) {
     logger.success(
-      `All ${files.length} files already translated. 0 files enqueued.`
+      `All ${fileCount} ${fileCount === 1 ? 'file' : 'files'} already translated. 0 files enqueued.`
     );
   } else {
     logger.success(enqueueResult.message);

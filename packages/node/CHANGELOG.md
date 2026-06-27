@@ -13,6 +13,28 @@
 - Updated dependencies [[`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0)]:
   - generaltranslation@9.0.0-odysseus.0
   - gt-i18n@1.0.0-odysseus.0
+## 0.7.8
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@0.9.8
+
+## 0.7.7
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - gt-i18n@0.9.7
+
+## 0.7.6
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - gt-i18n@0.9.6
 
 ## 0.7.5
 

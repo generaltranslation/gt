@@ -25,6 +25,31 @@
   - @generaltranslation/supported-locales@2.1.2-odysseus.0
   - generaltranslation@9.0.0-odysseus.0
   - gt-i18n@1.0.0-odysseus.0
+## 10.20.4
+
+### Patch Changes
+
+- Updated dependencies [[`a2a3dd0`](https://github.com/generaltranslation/gt/commit/a2a3dd0bcdce9abe360c406a12fc6bb3bc3ca181)]:
+  - @generaltranslation/supported-locales@2.1.4
+  - @generaltranslation/react-core@1.8.24
+
+## 10.20.3
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - @generaltranslation/react-core@1.8.23
+  - @generaltranslation/supported-locales@2.1.3
+
+## 10.20.2
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - @generaltranslation/react-core@1.8.22
+  - @generaltranslation/supported-locales@2.1.2
 
 ## 10.20.1
 
