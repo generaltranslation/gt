@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 9.0.0-odysseus.1
+
+### Patch Changes
+
+- [#1677](https://github.com/generaltranslation/gt/pull/1677) [`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove internal source barrel exports and update imports to reference defining files directly.
+
 ## 9.0.0-odysseus.0
 
 ### Major Changes

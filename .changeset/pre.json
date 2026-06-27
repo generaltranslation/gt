@@ -48,6 +48,7 @@
     "odysseus-sanity-followup",
     "odysseus-sanity-release-test",
     "pages-server-side-props",
+    "remove-source-barrel-exports",
     "runtime-env-credentials",
     "tanstack-locale-cookie"
   ]

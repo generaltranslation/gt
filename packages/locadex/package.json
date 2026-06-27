@@ -1,6 +1,6 @@
 {
   "name": "locadex",
-  "version": "1.0.186-odysseus.0",
+  "version": "1.0.186-odysseus.1",
   "description": "An AI agent for internationalization",
   "main": "dist/index.js",
   "type": "module",
