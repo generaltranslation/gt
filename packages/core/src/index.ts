@@ -43,64 +43,71 @@ import {
   noApiKeyProvidedError,
 } from './logging/errors';
 import { gtInstanceLogger } from './logging/logger';
-import _translateMany from './translate/translateMany';
-import _setupProject, {
+import { _translateMany } from './translate/translateMany';
+import {
+  _setupProject,
   SetupProjectResult,
   SetupProjectOptions,
 } from './translate/setupProject';
-import _enqueueFiles, { EnqueueOptions } from './translate/enqueueFiles';
-import _createTag, {
+import { _enqueueFiles, EnqueueOptions } from './translate/enqueueFiles';
+import {
+  _createTag,
   CreateTagOptions,
   CreateTagResult,
 } from './translate/createTag';
-import _downloadFileBatch from './translate/downloadFileBatch';
+import { _downloadFileBatch } from './translate/downloadFileBatch';
 import {
   FileQuery,
   FileQueryResult,
 } from './types-dir/api/checkFileTranslations';
-import _submitUserEditDiffs, {
+import {
+  _submitUserEditDiffs,
   SubmitUserEditDiffsPayload,
 } from './translate/submitUserEditDiffs';
-import _uploadSourceFiles from './translate/uploadSourceFiles';
-import _uploadTranslations from './translate/uploadTranslations';
+import { _uploadSourceFiles } from './translate/uploadSourceFiles';
+import { _uploadTranslations } from './translate/uploadTranslations';
 import {
   FileUpload,
   RequiredUploadFilesOptions,
   UploadFilesOptions,
   UploadFilesResponse,
 } from './types-dir/api/uploadFiles';
-import _querySourceFile from './translate/querySourceFile';
+import { _querySourceFile } from './translate/querySourceFile';
 import { ProjectData } from './types-dir/api/project';
-import _getProjectData from './projects/getProjectData';
+import { _getProjectData } from './projects/getProjectData';
 import { DownloadFileBatchRequest } from './types-dir/api/downloadFileBatch';
 import {
   _checkJobStatus,
   CheckJobStatusResult,
 } from './translate/checkJobStatus';
-import _awaitJobs, {
+import {
+  _awaitJobs,
   AwaitJobsOptions,
   AwaitJobsResult,
 } from './translate/awaitJobs';
 import type { FileDataQuery, FileDataResult } from './translate/queryFileData';
-import _queryFileData from './translate/queryFileData';
+import { _queryFileData } from './translate/queryFileData';
 import type { BranchQuery } from './translate/queryBranchData';
 import type { BranchDataResult } from './types-dir/api/branch';
-import _queryBranchData from './translate/queryBranchData';
+import { _queryBranchData } from './translate/queryBranchData';
 import type {
   CreateBranchQuery,
   CreateBranchResult,
 } from './translate/createBranch';
-import _createBranch from './translate/createBranch';
+import { _createBranch } from './translate/createBranch';
 import type { FileReference, FileReferenceIds } from './types-dir/api/file';
-import _processFileMoves, {
+import {
+  _processFileMoves,
   type MoveMapping,
   type ProcessMovesResponse,
   type ProcessMovesOptions,
 } from './translate/processFileMoves';
-import _getOrphanedFiles, {
+import {
+  _getOrphanedFiles,
   type GetOrphanedFilesResult,
 } from './translate/getOrphanedFiles';
-import _publishFiles, {
+import {
+  _publishFiles,
   type PublishFileEntry,
   type PublishFilesResult,
 } from './translate/publishFiles';

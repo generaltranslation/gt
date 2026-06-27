@@ -3,7 +3,7 @@ import type { PluginObj, types } from '@babel/core';
 import { LOCALE_POLYFILLS, POLYFILLS, type PluginOptions } from './types';
 import { resolveLocales } from './utils/resolveLocales';
 
-export default function (
+export function plugin(
   babel: { types: typeof types },
   {
     locales,

@@ -6,17 +6,18 @@ import {
   TranslatedElement,
   VariableProps,
 } from '../types';
-import getVariableProps, {
+import {
+  getVariableProps,
   isVariableElementProps,
 } from '../variables/_getVariableProps';
 import { createRenderDefaultChildren } from './renderDefaultChildren.shared';
 import { isVariable, libraryDefaultLocale } from 'generaltranslation/internal';
-import getPluralBranch from '../plurals/getPluralBranch';
+import { getPluralBranch } from '../plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
 } from '@generaltranslation/format/types';
-import getGTTag from './getGTTag';
+import { getGTTag } from './getGTTag';
 import type { RenderVariable } from '../types';
 
 // Shared implementation: the variable renderer is dependency-injected by a

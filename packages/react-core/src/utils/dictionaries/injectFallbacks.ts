@@ -1,6 +1,6 @@
 import type { Dictionary } from '../types';
 import { getDictionaryEntry } from './getDictionaryEntry';
-import getEntryAndMetadata from './getEntryAndMetadata';
+import { getEntryAndMetadata } from './getEntryAndMetadata';
 import { injectEntry } from './injectEntry';
 import { isDictionaryEntry } from './isDictionaryEntry';
 

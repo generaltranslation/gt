@@ -10,7 +10,7 @@ import {
  * @param {any} branches - The object containing possible branches.
  * @returns {any} The determined branch.
  */
-export default function getPluralBranch<T>(
+export function getPluralBranch<T>(
   n: number,
   locales: string[],
   branches: Record<string, T>

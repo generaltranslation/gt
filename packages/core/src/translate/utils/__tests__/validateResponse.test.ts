@@ -7,7 +7,7 @@ vi.mock('../../../logging/errors', () => ({
   ),
 }));
 
-import validateResponse from '../validateResponse';
+import { validateResponse } from '../validateResponse';
 import { apiError } from '../../../logging/errors';
 import { ApiError } from '../../../errors/ApiError';
 

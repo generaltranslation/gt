@@ -7,4 +7,5 @@ export interface Spec extends TurboModule {
   nativeStoreSet(key: string, value: string): void;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>('GtReactNative');
+export const GtReactNative =
+  TurboModuleRegistry.getEnforcing<Spec>('GtReactNative');

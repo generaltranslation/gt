@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import generateRequestHeaders from '../generateRequestHeaders';
+import { generateRequestHeaders } from '../generateRequestHeaders';
 import { TranslationRequestConfig } from '../../../types';
 import { API_VERSION } from '../../api';
 

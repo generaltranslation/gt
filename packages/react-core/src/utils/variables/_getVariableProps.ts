@@ -1,6 +1,6 @@
 import { VariableTransformationSuffix } from 'generaltranslation/types';
 import { GTTag, VariableProps } from '../types';
-import getVariableName from './getVariableName';
+import { getVariableName } from './getVariableName';
 import { minifyVariableType } from 'generaltranslation/internal';
 
 type VariableElementProps = {
@@ -24,9 +24,7 @@ export function isVariableElementProps(
   );
 }
 
-export default function getVariableProps(
-  props: VariableElementProps
-): VariableProps {
+export function getVariableProps(props: VariableElementProps): VariableProps {
   const variableType: VariableTransformationSuffix =
     props['data-_gt']?.variableType || 'variable';
 

@@ -5,6 +5,6 @@ import React from 'react';
  * It replaces all content with empty strings
  * @returns an empty string
  */
-export default function renderSkeleton(): React.ReactNode {
+export function renderSkeleton(): React.ReactNode {
   return '';
 }

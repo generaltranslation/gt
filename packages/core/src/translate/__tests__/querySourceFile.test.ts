@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _querySourceFile from '../querySourceFile';
-import apiRequest from '../utils/apiRequest';
+import { _querySourceFile } from '../querySourceFile';
+import { apiRequest } from '../utils/apiRequest';
 import { TranslationRequestConfig } from '../../types';
 import {
   FileQuery,

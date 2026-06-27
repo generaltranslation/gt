@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import mergeDictionaries from '../mergeDictionaries';
+import { mergeDictionaries } from '../mergeDictionaries';
 import { Dictionary } from '../../types';
 
 describe('mergeDictionaries', () => {

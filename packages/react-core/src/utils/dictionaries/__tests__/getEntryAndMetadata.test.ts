@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import getEntryAndMetadata from '../getEntryAndMetadata';
+import { getEntryAndMetadata } from '../getEntryAndMetadata';
 import { DictionaryEntry } from '../../types';
 
 describe('getEntryAndMetadata', () => {

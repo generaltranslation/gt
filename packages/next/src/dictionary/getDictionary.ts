@@ -23,7 +23,9 @@ export async function getDictionary(): Promise<Dictionary | undefined> {
     if (dictionaryFileType === '.json') {
       internalDictionary = require('gt-next/_dictionary');
     } else if (dictionaryFileType === '.ts' || dictionaryFileType === '.js') {
-      internalDictionary = require('gt-next/_dictionary').default;
+      const bundledDictionary = require('gt-next/_dictionary');
+      internalDictionary =
+        bundledDictionary.default || bundledDictionary.dictionary;
     }
   } catch {
     // No bundled dictionary module was generated.

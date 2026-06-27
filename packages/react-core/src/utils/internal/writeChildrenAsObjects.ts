@@ -1,4 +1,4 @@
-import getVariableName from '../variables/getVariableName';
+import { getVariableName } from '../variables/getVariableName';
 import { TaggedChild, TaggedChildren, TaggedElement } from '../../utils/types';
 import { isValidTaggedElement } from '../../utils/utils';
 import { minifyVariableType } from 'generaltranslation/internal';
@@ -169,9 +169,7 @@ const handleSingleChild = (child: TaggedChild): JsxChild => {
  * @param {Children} children - The children to process.
  * @returns {object} The processed children as objects.
  */
-export default function writeChildrenAsObjects(
-  children: TaggedChildren
-): JsxChildren {
+export function writeChildrenAsObjects(children: TaggedChildren): JsxChildren {
   const result = Array.isArray(children)
     ? children.map(handleSingleChild)
     : handleSingleChild(children);

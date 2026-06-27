@@ -17,7 +17,7 @@ type GTComponentType = {
   _gtt?: Transformation;
 };
 
-export default function addGTIdentifier(
+export function addGTIdentifier(
   children: ReactNode,
   startingIndex: number = 0
 ): TaggedChildren {
