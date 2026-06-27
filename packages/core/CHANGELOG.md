@@ -12,6 +12,7 @@
 
 - Updated dependencies [[`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`620621a`](https://github.com/generaltranslation/gt/commit/620621aceeafedbb958884cacc5495736191b065)]:
   - @generaltranslation/format@0.1.2-odysseus.0
+
 ## 8.2.18
 
 ### Patch Changes

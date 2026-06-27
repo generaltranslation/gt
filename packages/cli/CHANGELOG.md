@@ -12,6 +12,7 @@
   - @generaltranslation/supported-locales@2.1.2-odysseus.0
   - generaltranslation@9.0.0-odysseus.0
   - gt-remark@1.0.11-odysseus.0
+
 ## 2.14.55
 
 ### Patch Changes

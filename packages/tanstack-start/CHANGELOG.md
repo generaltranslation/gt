@@ -32,6 +32,7 @@
   - gt-react@11.0.0-odysseus.0
   - generaltranslation@9.0.0-odysseus.0
   - gt-i18n@1.0.0-odysseus.0
+
 ## 0.4.28
 
 ### Patch Changes

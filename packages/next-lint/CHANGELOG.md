@@ -1,6 +1,7 @@
 # @generaltranslation/gt-next-lint
 
 ## 15.0.0-odysseus.2
+
 ## 14.0.35
 
 ### Patch Changes

@@ -35,6 +35,7 @@
   - @generaltranslation/supported-locales@2.1.2-odysseus.0
   - generaltranslation@9.0.0-odysseus.0
   - gt-i18n@1.0.0-odysseus.0
+
 ## 10.20.4
 
 ### Patch Changes
