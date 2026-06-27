@@ -3,7 +3,7 @@ import type { ParsedUrlQuery } from 'querystring';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
 import { defaultLocaleHeaderName } from '../utils/headers';
-import { defaultLocaleCookieName } from 'gt-react/internal';
+import { defaultLocaleCookieName } from '@generaltranslation/react-core/cookies';
 
 type HeaderValue = string | string[] | undefined;
 

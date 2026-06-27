@@ -1,4 +1,4 @@
-import { RenderMethod } from 'gt-react/internal';
+import type { RenderMethod } from '@generaltranslation/react-core/pure';
 
 export type HeadersAndCookies = {
   localeHeaderName?: string;

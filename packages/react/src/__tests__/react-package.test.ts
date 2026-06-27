@@ -15,8 +15,6 @@ const runtimeArtifactNames = [
   'index.server.mjs',
   'index.types.cjs',
   'index.types.mjs',
-  'internal.cjs',
-  'internal.mjs',
   'macros.cjs',
   'macros.mjs',
 ].sort();
@@ -69,13 +67,11 @@ describe('gt-react package exports', () => {
       `
           const assert = require('node:assert/strict');
           const react = require('gt-react');
-          const internal = require('gt-react/internal');
 
           assert.equal(typeof react.GTProvider, 'function');
           assert.equal(typeof react.T, 'function');
           assert.equal(typeof react.GtInternalVar, 'function');
           assert.equal(typeof react.GtInternalRuntimeTranslateString, 'function');
-          assert.equal(typeof internal.renderDefaultChildren, 'function');
         `,
     ]);
   });
@@ -87,13 +83,11 @@ describe('gt-react package exports', () => {
       `
           import assert from 'node:assert/strict';
           import { GTProvider, GtInternalRuntimeTranslateString, GtInternalVar, T } from 'gt-react';
-          import { renderDefaultChildren } from 'gt-react/internal';
 
           assert.equal(typeof GTProvider, 'function');
           assert.equal(typeof T, 'function');
           assert.equal(typeof GtInternalVar, 'function');
           assert.equal(typeof GtInternalRuntimeTranslateString, 'function');
-          assert.equal(typeof renderDefaultChildren, 'function');
         `,
     ]);
   });

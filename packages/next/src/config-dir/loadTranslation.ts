@@ -1,4 +1,4 @@
-import { Translations } from 'gt-react/internal';
+import type { Translations } from '@generaltranslation/react-core/pure';
 import {
   customLoadTranslationsError,
   remoteTranslationsError,
