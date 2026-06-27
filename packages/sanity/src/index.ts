@@ -22,14 +22,14 @@ import {
   TranslationsTabConfigOptions,
 } from './types';
 import { findLatestDraft } from './configuration/utils/findLatestDraft';
+import { BaseDocumentSerializer } from './serialization/serialize/index';
+import { BaseDocumentDeserializer } from './serialization/deserialize/BaseDocumentDeserializer';
+import { BaseDocumentMerger } from './serialization/BaseDocumentMerger';
 import {
-  BaseDocumentSerializer,
-  BaseDocumentDeserializer,
-  BaseDocumentMerger,
   defaultStopTypes,
   customSerializers,
-  SerializedDocument,
-} from './serialization';
+} from './serialization/BaseSerializationConfig';
+import type { SerializedDocument } from './serialization/types';
 import { translateAction } from './actions/translateAction';
 
 export type {
@@ -71,7 +71,7 @@ import { SECRETS_NAMESPACE } from './utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import { attachGTData, detachGTData } from './serialization/data';
 import { documentInternationalization } from './documentInternationalization';
-import type { CustomDeserializers } from './serialization';
+import type { CustomDeserializers } from './serialization/types';
 
 export type GTPluginConfig = Omit<
   Parameters<typeof gt.setConfig>[0],

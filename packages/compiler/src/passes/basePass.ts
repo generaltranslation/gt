@@ -1,26 +1,39 @@
 import { TransformState } from '../state/types';
 import { TraverseOptions } from '@babel/traverse';
-import * as p from '../processing';
+import { processProgram } from '../processing/processProgram';
+import { processScopeChange } from '../processing/processScopeChange';
+import { processFunctionDeclaration } from '../processing/processFunctionDeclaration';
+import { processFunctionExpression } from '../processing/processFunctionExpression';
+import { processArrowFunctionExpression } from '../processing/processArrowFunctionExpression';
+import { processObjectMethod } from '../processing/processObjectMethod';
+import { processClassMethod } from '../processing/processClassMethod';
+import { processClassPrivateMethod } from '../processing/processClassPrivateMethod';
+import { processImportDeclaration } from '../processing/processImportDeclaration';
+import { processAssignmentExpression } from '../processing/processAssignmentExpression';
+import { processClassDeclaration } from '../processing/processClassDeclaration';
+import { processForInStatement } from '../processing/processForInStatement';
+import { processForOfStatement } from '../processing/processForOfStatement';
+import { processCatchClause } from '../processing/processCatchClause';
 
 export function basePass(state: TransformState): TraverseOptions {
   return {
     // Initialize trackers for this program
-    Program: p.processProgram(state),
+    Program: processProgram(state),
 
     /* ----------------------------- */
     /* Scope management */
     /* ----------------------------- */
 
     // for(let T in obj) { ... }
-    ForStatement: p.processScopeChange(state),
+    ForStatement: processScopeChange(state),
     // while(T) { ... }
-    WhileStatement: p.processScopeChange(state),
+    WhileStatement: processScopeChange(state),
     // switch(T) { ... }
-    SwitchStatement: p.processScopeChange(state),
+    SwitchStatement: processScopeChange(state),
     // { ... }
-    BlockStatement: p.processScopeChange(state),
+    BlockStatement: processScopeChange(state),
     // static { ... }
-    StaticBlock: p.processScopeChange(state),
+    StaticBlock: processScopeChange(state),
 
     /* ----------------------------- */
     /* Shadowing tracking */
@@ -28,30 +41,30 @@ export function basePass(state: TransformState): TraverseOptions {
 
     // --- Function Processing --- //
     // function T() { ... }
-    FunctionDeclaration: p.processFunctionDeclaration(state),
+    FunctionDeclaration: processFunctionDeclaration(state),
     // const a = function T() {...}
-    FunctionExpression: p.processFunctionExpression(state),
+    FunctionExpression: processFunctionExpression(state),
     // () => {...}
-    ArrowFunctionExpression: p.processArrowFunctionExpression(state),
+    ArrowFunctionExpression: processArrowFunctionExpression(state),
     // { T() {} } in objects
-    ObjectMethod: p.processObjectMethod(state),
+    ObjectMethod: processObjectMethod(state),
     // Class GT { T() { ... } } in classes
-    ClassMethod: p.processClassMethod(state),
+    ClassMethod: processClassMethod(state),
     // Class GT { #T() {...} }
-    ClassPrivateMethod: p.processClassPrivateMethod(state),
+    ClassPrivateMethod: processClassPrivateMethod(state),
 
     // --- Other Processing --- //
     // import T from '...'
-    ImportDeclaration: p.processImportDeclaration(state),
+    ImportDeclaration: processImportDeclaration(state),
     // let t = useGT(); t = undefined;
-    AssignmentExpression: p.processAssignmentExpression(state),
+    AssignmentExpression: processAssignmentExpression(state),
     // class T { ... }
-    ClassDeclaration: p.processClassDeclaration(state),
+    ClassDeclaration: processClassDeclaration(state),
     // for(let T in obj) { ... }
-    ForInStatement: p.processForInStatement(state),
+    ForInStatement: processForInStatement(state),
     // for(let T of items) { ... }
-    ForOfStatement: p.processForOfStatement(state),
+    ForOfStatement: processForOfStatement(state),
     // try { ... } catch(T) { ... }
-    CatchClause: p.processCatchClause(state),
+    CatchClause: processCatchClause(state),
   };
 }

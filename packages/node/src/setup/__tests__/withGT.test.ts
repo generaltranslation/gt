@@ -1,8 +1,8 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { getLocale } from '../../helpers';
+import { getLocale } from 'gt-i18n';
 import { initializeGT } from '../initializeGT';
 import { withGT } from '../withGT';
-import { tx } from '../../translation-functions';
+import { tx } from 'gt-i18n/internal';
 import { hashSource } from 'generaltranslation/id';
 
 describe.sequential('withGT', () => {
