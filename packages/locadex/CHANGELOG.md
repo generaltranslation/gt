@@ -1,5 +1,12 @@
 # locadex
 
+## 1.0.186-odysseus.1
+
+### Patch Changes
+
+- Updated dependencies [[`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64)]:
+  - gt@2.14.51-odysseus.1
+
 ## 1.0.186-odysseus.0
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "gt-tanstack-start",
-  "version": "1.0.0-odysseus.2",
+  "version": "11.0.0-odysseus.4",
   "description": "TanStack Start integration for General Translation",
   "main": "./dist/index.client.cjs",
   "module": "./dist/index.client.mjs",

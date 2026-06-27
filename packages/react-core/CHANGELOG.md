@@ -1,5 +1,14 @@
 # @generaltranslation/react-core
 
+## 11.0.0-odysseus.4
+
+### Patch Changes
+
+- Updated dependencies [[`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64)]:
+  - generaltranslation@9.0.0-odysseus.1
+  - gt-i18n@1.0.0-odysseus.1
+  - @generaltranslation/supported-locales@2.1.2-odysseus.1
+
 ## 2.0.0-odysseus.1
 
 ### Patch Changes
