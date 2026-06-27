@@ -2,7 +2,7 @@ import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-} from 'gt-react/internal';
+} from 'gt-i18n/types';
 
 export type {
   DictionaryTranslationOptions,

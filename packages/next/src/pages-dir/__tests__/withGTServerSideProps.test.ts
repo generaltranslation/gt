@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mockGetTranslationsSnapshot = vi.hoisted(() => vi.fn());
 const mockParseLocale = vi.hoisted(() => vi.fn());
 
-vi.mock('gt-react', () => ({
+vi.mock('@generaltranslation/react-core/pure', () => ({
   getTranslationsSnapshot: (...args: unknown[]) =>
     mockGetTranslationsSnapshot(...args),
 }));

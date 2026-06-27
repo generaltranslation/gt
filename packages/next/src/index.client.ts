@@ -4,20 +4,24 @@ import { initializeGT } from './setup/initGT';
 initializeGT();
 
 import {
-  Var,
-  Num,
-  Currency,
-  DateTime,
-  RelativeTime,
-  Derive,
-  T,
-  Branch,
-  Plural,
   LocaleSelector,
   RegionSelector,
   GTProvider,
   useSetLocale,
   useLocaleSelector,
+} from 'gt-react';
+import {
+  Branch,
+  Plural,
+  Derive,
+  T,
+  Currency,
+  DateTime,
+  RelativeTime,
+  Var,
+  Num,
+} from '@generaltranslation/react-core/components';
+import {
   useGT,
   useTranslations,
   useLocale,
@@ -29,6 +33,8 @@ import {
   useLocaleProperties,
   useLocaleDirection,
   useVersionId,
+} from '@generaltranslation/react-core/hooks';
+import {
   msg,
   decodeMsg,
   decodeOptions,
@@ -37,18 +43,18 @@ import {
   decodeVars,
   mFallback,
   gtFallback,
-  getTranslationsSnapshot,
   getDefaultLocale,
   getGTClass,
   getLocaleProperties,
   getLocales,
   getVersionId,
-} from 'gt-react';
+} from 'gt-i18n';
+import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-} from 'gt-react';
+} from 'gt-i18n/types';
 import type {
   GetServerSideProps,
   GetServerSidePropsContext,

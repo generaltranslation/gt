@@ -27,7 +27,8 @@ vi.mock('gt-i18n/internal', () => ({
   I18nCache: class {},
 }));
 
-vi.mock('gt-react', () => ({
+vi.mock('@generaltranslation/react-core/pure', () => ({
+  mergeDictionaries: mockMergeDictionaries,
   ReactI18nCache: class {
     constructor(params: unknown) {
       mockReactI18nCacheConstructor(params);
@@ -37,10 +38,6 @@ vi.mock('gt-react', () => ({
       return mockLoadDictionary(locale);
     }
   },
-}));
-
-vi.mock('gt-react/internal', () => ({
-  mergeDictionaries: mockMergeDictionaries,
 }));
 
 vi.mock('../../dictionary/getDictionary', () => ({

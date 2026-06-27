@@ -1,4 +1,7 @@
-import { Currency as RscCurrency, type CurrencyProps } from 'gt-react';
+import {
+  Currency as RscCurrency,
+  type CurrencyProps,
+} from '@generaltranslation/react-core/components-rsc';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
 

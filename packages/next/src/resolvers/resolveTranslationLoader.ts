@@ -1,4 +1,4 @@
-import { CustomLoader } from 'gt-react/internal';
+import type { CustomLoader } from '@generaltranslation/react-core/pure';
 import { unresolvedCustomLoadTranslationsError } from '../errors/createErrors';
 
 let customLoadTranslations: CustomLoader | undefined = undefined;

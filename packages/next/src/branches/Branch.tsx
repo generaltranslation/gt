@@ -1,4 +1,4 @@
-import { Branch as CoreBranch } from 'gt-react';
+import { Branch as CoreBranch } from '@generaltranslation/react-core/components-rsc';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
 

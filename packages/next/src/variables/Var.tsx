@@ -1,4 +1,4 @@
-import { Var as CoreVar } from 'gt-react';
+import { Var as CoreVar } from '@generaltranslation/react-core/components-rsc';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
 

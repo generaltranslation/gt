@@ -1,5 +1,5 @@
 import { getRequestConditions } from '../../request/getRequestConditions';
-import { T as RscT } from 'gt-react';
+import { T as RscT } from '@generaltranslation/react-core/components-rsc';
 import { renderPreparedT } from './renderPipeline';
 import type { ReactNode } from 'react';
 

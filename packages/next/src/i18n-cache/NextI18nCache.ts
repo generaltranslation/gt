@@ -2,12 +2,13 @@ import { getI18nCache, setI18nCache, type I18nCache } from 'gt-i18n/internal';
 import type { Locale } from 'gt-i18n/internal/types';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import { isValidElement } from 'react';
-import { ReactI18nCache, type ReactI18nCacheParams } from 'gt-react';
 import {
   mergeDictionaries,
+  ReactI18nCache,
   type Dictionary as LegacyDictionary,
   type DictionaryEntry,
-} from 'gt-react/internal';
+  type ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';
 import { getDictionary, getDictionaryEntry } from '../dictionary/getDictionary';
 import { createDictionarySubsetError } from '../errors/createErrors';
 import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';

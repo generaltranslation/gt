@@ -35,7 +35,7 @@ export {
 export { Client_LocaleSelector as LocaleSelector } from './utils/client-boundary';
 export { Client_RegionSelector as RegionSelector } from './utils/client-boundary';
 
-// ===== gt-react ===== //
+// ===== Shared Runtime ===== //
 import {
   msg,
   decodeMsg,
@@ -43,7 +43,6 @@ import {
   declareVar,
   decodeVars,
   derive,
-  Derive,
   mFallback,
   gtFallback,
   getDefaultLocale,
@@ -51,7 +50,9 @@ import {
   getLocaleProperties,
   getLocales,
   getVersionId,
-  // ----- hooks ----- //
+} from 'gt-i18n';
+import { Derive } from '@generaltranslation/react-core/components-rsc';
+import {
   useGTClass,
   useLocaleProperties,
   useLocales,
@@ -62,7 +63,7 @@ import type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-} from 'gt-react';
+} from 'gt-i18n/types';
 import { getTranslationsSnapshotRscError } from './errors/createErrors';
 
 // ===== other ===== //

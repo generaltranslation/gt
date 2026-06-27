@@ -4,7 +4,7 @@ import type {
   PreviewData,
 } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import { getTranslationsSnapshot } from 'gt-react';
+import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import { parseLocale } from './parseLocale';
 
 type GTServerSideProps = {

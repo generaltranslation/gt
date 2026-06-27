@@ -1,6 +1,6 @@
 import React from 'react';
 import { TxProps } from '../../utils/types';
-import { Tx as Core_Tx } from 'gt-react';
+import { Tx as Core_Tx } from '@generaltranslation/react-core/components-rsc';
 import { getRequestConditions } from '../../request/getRequestConditions';
 
 /**

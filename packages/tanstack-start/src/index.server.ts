@@ -1,32 +1,40 @@
 export { parseLocale } from './functions/parseLocale';
 
 export {
-  // ===== Components ===== //
+  LocaleSelector,
+  GTProvider,
+  useSetLocale,
+  useSetEnableI18n,
+  useLocaleSelector,
+  // ===== Setup ===== //
+  initializeGT,
+} from 'gt-react';
+
+export {
   Branch,
   Plural,
   Derive,
-  LocaleSelector,
   T,
   Currency,
   DateTime,
   RelativeTime,
   Var,
   Num,
-  GTProvider,
-  // ===== Hooks ===== //
+} from '@generaltranslation/react-core/components';
+
+export {
   useLocale,
-  useSetLocale,
   useCustomMapping,
   useDefaultLocale,
   useEnableI18n,
-  useSetEnableI18n,
   useLocales,
-  useLocaleSelector,
   useFormatLocales,
   useGT,
   useMessages,
   useTranslations,
-  // ===== Functions ===== //
+} from '@generaltranslation/react-core/hooks';
+
+export {
   msg,
   decodeMsg,
   decodeOptions,
@@ -35,8 +43,9 @@ export {
   decodeVars,
   mFallback,
   gtFallback,
+} from 'gt-i18n';
+
+export {
   getTranslationsSnapshot,
   t,
-  // ===== Setup ===== //
-  initializeGT,
-} from 'gt-react';
+} from '@generaltranslation/react-core/pure';

@@ -10,25 +10,26 @@ export { parseLocale, withGTServerSideProps };
 export type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 
 export {
-  // ----- components ----- //
   GTProvider,
-  Var,
-  Num,
+  LocaleSelector,
+  RegionSelector,
+  useSetLocale,
+  useLocaleSelector,
+} from 'gt-react';
+
+export {
+  Branch,
+  Plural,
+  Derive,
+  T,
   Currency,
   DateTime,
   RelativeTime,
-  Derive,
-  Branch,
-  Plural,
-  T,
-  LocaleSelector,
-  RegionSelector,
-  // ----- hooks ----- //
-  useGT,
-  useTranslations,
-  useMessages,
-  useSetLocale,
-  useLocaleSelector,
+  Var,
+  Num,
+} from '@generaltranslation/react-core/components';
+
+export {
   useLocale,
   useRegion,
   useLocaleDirection,
@@ -37,7 +38,12 @@ export {
   useDefaultLocale,
   useGTClass,
   useLocaleProperties,
-  // ----- functions ----- //
+  useGT,
+  useMessages,
+  useTranslations,
+} from '@generaltranslation/react-core/hooks';
+
+export {
   msg,
   decodeMsg,
   decodeOptions,
@@ -46,16 +52,17 @@ export {
   derive,
   mFallback,
   gtFallback,
-  getTranslationsSnapshot,
   getDefaultLocale,
   getGTClass,
   getLocaleProperties,
   getLocales,
   getVersionId,
-} from 'gt-react';
+} from 'gt-i18n';
+
+export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 
 export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-} from 'gt-react';
+} from 'gt-i18n/types';

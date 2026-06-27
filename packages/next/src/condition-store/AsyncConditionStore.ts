@@ -6,7 +6,7 @@ import { defaultLocaleHeaderName } from '../utils/headers';
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
-} from 'gt-react/internal';
+} from '@generaltranslation/react-core/pure';
 import { createConditionStoreSingleton } from 'gt-i18n/internal';
 import { localeStore } from '../request/localeStore';
 

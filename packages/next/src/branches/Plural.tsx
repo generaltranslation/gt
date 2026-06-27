@@ -1,4 +1,7 @@
-import { Plural as RscPlural, type PluralProps } from 'gt-react';
+import {
+  Plural as RscPlural,
+  type PluralProps,
+} from '@generaltranslation/react-core/components-rsc';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
 
