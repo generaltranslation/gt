@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "7.0.0-odysseus.2",
+  "version": "7.0.0-odysseus.3",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {

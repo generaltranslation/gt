@@ -1,5 +1,12 @@
 # @generaltranslation/gt-next-lint
 
+## 15.0.0-odysseus.3
+
+### Patch Changes
+
+- Updated dependencies [[`10e064c`](https://github.com/generaltranslation/gt/commit/10e064cf502cda0fc261e5eebe7514cc577d0d44)]:
+  - gt-next@7.0.0-odysseus.3
+
 ## 15.0.0-odysseus.2
 
 ## 14.0.35
