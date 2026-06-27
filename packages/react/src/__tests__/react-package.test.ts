@@ -75,7 +75,7 @@ describe('gt-react package exports', () => {
           assert.equal(typeof react.T, 'function');
           assert.equal(typeof react.GtInternalVar, 'function');
           assert.equal(typeof react.GtInternalRuntimeTranslateString, 'function');
-          assert.equal(typeof internal.renderDefaultChildren, 'function');
+          assert.equal(typeof internal.getDefaultRenderSettings, 'function');
         `,
     ]);
   });
@@ -87,13 +87,13 @@ describe('gt-react package exports', () => {
       `
           import assert from 'node:assert/strict';
           import { GTProvider, GtInternalRuntimeTranslateString, GtInternalVar, T } from 'gt-react';
-          import { renderDefaultChildren } from 'gt-react/internal';
+          import { getDefaultRenderSettings } from 'gt-react/internal';
 
           assert.equal(typeof GTProvider, 'function');
           assert.equal(typeof T, 'function');
           assert.equal(typeof GtInternalVar, 'function');
           assert.equal(typeof GtInternalRuntimeTranslateString, 'function');
-          assert.equal(typeof renderDefaultChildren, 'function');
+          assert.equal(typeof getDefaultRenderSettings, 'function');
         `,
     ]);
   });

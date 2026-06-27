@@ -154,6 +154,15 @@ export { initializeGT } from '@generaltranslation/react-core/pure';
 
 // ===== Types ===== //
 export type {
+  CustomLoader,
+  Dictionary,
+  DictionaryEntry,
+  RenderMethod,
+  Translations,
+  _Messages,
+} from '@generaltranslation/react-core/pure';
+
+export type {
   CurrencyProps,
   DateTimeProps,
   JsxTranslationOptions,

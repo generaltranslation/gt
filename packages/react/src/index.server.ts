@@ -98,6 +98,12 @@ export {
 } from '@generaltranslation/react-core/pure';
 
 export type {
+  CustomLoader,
+  Dictionary,
+  DictionaryEntry,
+  RenderMethod,
+  Translations,
+  _Messages,
   RenderPipeline,
   RenderPreparedT,
 } from '@generaltranslation/react-core/pure';
