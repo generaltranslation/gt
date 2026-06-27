@@ -57,7 +57,6 @@ export {
 } from './helpers/locale';
 export { getVersionId } from './helpers/versionId';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';
-export { createLookupOptions } from './translation-functions/internal/helpers';
 export { isEncodedTranslationOptions } from './translation-functions/utils/isEncodedTranslationOptions';
 export { extractVariables } from './utils/extractVariables';
 export {
@@ -81,7 +80,6 @@ export {
 
 /** @deprecated use I18nCache instead */
 export { I18nCache as I18nManager } from './i18n-cache/I18nCache';
-export { getI18nCache, setI18nCache } from './i18n-cache/singleton-operations';
 export {
   getI18nConfig,
   initializeI18nConfig,

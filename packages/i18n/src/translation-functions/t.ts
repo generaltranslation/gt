@@ -2,7 +2,7 @@ import {
   resolveStringContent,
   resolveStringContentWithFallback,
 } from './internal/helpers';
-import { InlineTranslationOptions } from './types/options';
+import { TranslationOptions } from './types/options';
 import { getLocale } from '../helpers/locale';
 
 /**
@@ -16,7 +16,7 @@ export const t: StringOrTemplateSyncResolutionFunction = (
   ...values: unknown[]
 ) => {
   if (typeof messageOrStrings === 'string') {
-    const options = values.at(0) as InlineTranslationOptions | undefined;
+    const options = values.at(0) as TranslationOptions | undefined;
     const locale = options?.$locale ?? getLocale();
     return resolveStringContentWithFallback(locale, messageOrStrings, {
       $format: 'ICU',
@@ -84,7 +84,7 @@ function extractInterpolatableValues(
 
 interface StringOrTemplateSyncResolutionFunction {
   (strings: TemplateStringsArray, ...values: unknown[]): string;
-  (message: string, options?: InlineTranslationOptions): string;
+  (message: string, options?: TranslationOptions): string;
 }
 
 export type TemplateSyncResolutionFunction = (

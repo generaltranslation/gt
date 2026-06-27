@@ -15,7 +15,10 @@ type StripDollarPrefix<T> = {
   [K in keyof T as K extends `$${infer Rest}` ? Rest : K]: T[K];
 };
 
-type JsxTranslationOptions = StripDollarPrefix<JsxTranslationOptionsWithSugar> &
+type JsxTranslationOptions = Omit<
+  StripDollarPrefix<JsxTranslationOptionsWithSugar>,
+  'context'
+> &
   JsxTranslationOptionsWithSugar;
 
 type PreparedT = {
@@ -89,17 +92,17 @@ function prepareTargetOptions({
 
 function normalizeParameters(
   parameters: {
-    context?: string;
+    context?: unknown;
     id?: string;
     _hash?: string;
   } & JsxTranslationOptions
 ): JsxTranslationOptionsWithSugar & { $format: 'JSX' } {
+  const { context: _context, ...activeParameters } = parameters;
   return {
-    ...parameters,
+    ...activeParameters,
     $format: 'JSX',
-    $context: parameters.$context ?? parameters.context,
-    $id: parameters.$id ?? parameters.id,
-    $_hash: parameters.$_hash ?? parameters._hash,
+    $id: activeParameters.$id ?? activeParameters.id,
+    $_hash: activeParameters.$_hash ?? activeParameters._hash,
   };
 }
 

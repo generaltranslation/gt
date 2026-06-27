@@ -1,7 +1,7 @@
 import type { JsxChildren } from '@generaltranslation/format/types';
 import {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
+  TranslationOptions,
   JsxTranslationOptions,
 } from './options';
 
@@ -14,37 +14,37 @@ export type DictionaryObjectTranslation =
 /**
  * Synchronous resolution function type
  * @param {string} message - The message to translate.
- * @param {InlineTranslationOptions} options - The options for the translation.
+ * @param {TranslationOptions} options - The options for the translation.
  * @returns {string | undefined} The translated message or undefined if the message is not found.
  *
  * @important This is base type for user API
  *
- * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
+ * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: TranslationOptions) => T extends string ? string : T;
  */
 export type SyncResolutionFunction = (
   message: string,
-  options?: InlineTranslationOptions
+  options?: TranslationOptions
 ) => string | undefined;
 
 /**
  * Synchronous resolution function type
  * @param {string} message - The message to translate.
- * @param {InlineTranslationOptions} options - The options for the translation.
+ * @param {TranslationOptions} options - The options for the translation.
  * @returns {string} The translated message.
  *
  * @important This is base type for user API
  *
- * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
+ * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: TranslationOptions) => T extends string ? string : T;
  */
 export type SyncResolutionFunctionWithFallback = (
   message: string,
-  options?: InlineTranslationOptions
+  options?: TranslationOptions
 ) => string;
 
 /**
  * Type for the gt() function
  * @param {string} message - The message to translate
- * @param {InlineTranslationOptions} options - The options for the translation
+ * @param {TranslationOptions} options - The options for the translation
  * @returns {string} The translated message
  * TODO: next major version, remove the "...type" suffix, it's redundant
  */
@@ -53,14 +53,14 @@ export type GTFunctionType = SyncResolutionFunctionWithFallback;
 /**
  * Type for the m() function
  * @param {string | null | undefined} encodedMsg - The encoded message to decode and interpolate.
- * @param {InlineTranslationOptions} options - The options to interpolate.
+ * @param {TranslationOptions} options - The options to interpolate.
  * @returns {string | null | undefined} The decoded and interpolated message.
- * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: InlineTranslationOptions) => T extends string ? string : T;
+ * TODO: next major version, this should be <T extends string | null | undefined>(message: T, options?: TranslationOptions) => T extends string ? string : T;
  * TODO: next major version, remove the "...type" suffix, it's redundant
  */
 export type MFunctionType = <T extends string | null | undefined>(
   encodedMsg: T,
-  // TODO: this needs to become a InlineTranslationOptions
+  // TODO: this needs to become a TranslationOptions
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options?: Record<string, any>
 ) => T extends string ? string : T;

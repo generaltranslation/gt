@@ -4,11 +4,12 @@ import {
   resolveDictionaryLookupOptions,
 } from '../../i18n-cache/translations-manager/utils/dictionary-helpers';
 import type { DictionaryObjectTranslation } from '../types/functions';
-import type { DictionaryLookupOptions } from '../types/options';
+import type { LookupOptions } from '../types/options';
 import type {
   DictionaryEntry,
   DictionaryValue,
 } from '../../i18n-cache/translations-manager/DictionaryCache';
+import type { StringFormat } from '@generaltranslation/format/types';
 
 export function renderDictionaryObject({
   sourceObject,
@@ -19,7 +20,7 @@ export function renderDictionaryObject({
   targetObject: DictionaryValue | undefined;
   translate?: (
     sourceEntry: DictionaryEntry,
-    dictionaryOptions: DictionaryLookupOptions
+    dictionaryOptions: LookupOptions<StringFormat>
   ) => string | undefined;
 }): DictionaryObjectTranslation {
   const targetEntry = getDictionaryEntry(targetObject);
@@ -71,7 +72,7 @@ function renderDictionaryObjectChildren({
   targetObject: DictionaryValue | undefined;
   translate?: (
     sourceEntry: DictionaryEntry,
-    dictionaryOptions: DictionaryLookupOptions
+    dictionaryOptions: LookupOptions<StringFormat>
   ) => string | undefined;
 }): DictionaryObjectTranslation {
   if (!isDictionaryValue(sourceObject)) {

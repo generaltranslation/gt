@@ -46,8 +46,7 @@ import {
 } from 'gt-react';
 import type {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
+  TranslationOptions,
 } from 'gt-react';
 import type {
   GetServerSideProps,
@@ -121,7 +120,6 @@ export {
 };
 export type {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
+  TranslationOptions,
   WithGTServerSideProps,
 };

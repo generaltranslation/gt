@@ -17,12 +17,12 @@ import { getRequestConditions } from '../../request/getRequestConditions';
  * @example
  * ```jsx
  * // With a context:
- * <Tx context="greeting">
+ * <Tx $context="greeting">
  *  Hello, {name}!
  * </Tx>
  * ```
  *
- * @param {string} [context] - A context for the translation.
+ * @param {string} [$context] - A context for the translation.
  * @param {string} [locale] - The locale to use for the translation.
  * @returns {Promise<React.ReactNode>} The translated content.
  */

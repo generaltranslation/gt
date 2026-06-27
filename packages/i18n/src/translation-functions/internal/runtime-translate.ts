@@ -5,17 +5,12 @@ import type {
 import { getLocale } from '../../helpers/locale';
 import type {
   JsxTranslationOptions,
-  RuntimeTranslationOptions,
+  TranslationOptions,
 } from '../types/options';
 import { resolveJsxWithRuntimeFallback } from './helpers';
 import { tx } from './tx';
 
-type RuntimeStringTranslationOptions = Omit<
-  RuntimeTranslationOptions,
-  '$format'
-> & {
-  $format?: StringFormat;
-};
+type RuntimeStringTranslationOptions = TranslationOptions<StringFormat>;
 
 type RuntimeJsxTranslationOptions = JsxTranslationOptions & {
   $locale?: string;

@@ -18,7 +18,6 @@ export {
 
 type TxProps = Record<string, ReactNode> & {
   children: ReactNode;
-  context?: string;
   locale?: string;
   maxChars?: number;
   $context?: string;
@@ -104,8 +103,7 @@ export {
 } from 'gt-i18n/internal';
 export type {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
+  TranslationOptions,
 } from 'gt-i18n/types';
 export type {
   SyncResolutionFunction,

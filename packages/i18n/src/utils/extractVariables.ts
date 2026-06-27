@@ -1,27 +1,16 @@
-import { BaseTranslationOptions } from '../translation-functions/types/options';
+import { isReservedOptionKey } from '../translation-functions/reservedKeys';
 
 /**
  * Given an object of options, returns an object with no gt-related options
+ * (i.e. only the user interpolation variables).
  *
  * TODO: next major version, this should extract any sugar syntax options
  * TODO: next major version, options should be Record<string, string>
  */
-export function extractVariables<T extends BaseTranslationOptions>(
+export function extractVariables<T extends Record<string, unknown>>(
   options: T
-): BaseTranslationOptions {
+): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(options).filter(
-      ([key]) =>
-        key !== '$id' &&
-        key !== '$context' &&
-        key !== '$maxChars' &&
-        key !== '$hash' && // this is already being done in @gt/react-core
-        key !== '$_hash' &&
-        key !== '$_source' &&
-        key !== '$_fallback' &&
-        key !== '$format' &&
-        key !== '$_locales' &&
-        key !== '$locale'
-    )
+    Object.entries(options).filter(([key]) => !isReservedOptionKey(key))
   );
 }

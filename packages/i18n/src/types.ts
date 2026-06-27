@@ -10,19 +10,13 @@ export type {
 } from './translation-functions/types/functions';
 export type { RegisterableMessages } from './translation-functions/types/message';
 export type {
-  BaseTranslationOptions,
   DictionaryTranslationOptions,
-  DictionaryOptions,
-  InlineTranslationOptionsFields,
-  InlineTranslationOptions,
-  InlineResolveOptions,
   EncodedTranslationOptions,
-  RuntimeTranslationOptions,
   JsxTranslationOptions,
   LookupOptions,
-  DictionaryLookupOptions,
-  ResolutionOptions,
   NormalizedLookupOptions,
+  ReservedTranslationOptions,
+  TranslationOptions,
 } from './translation-functions/types/options';
 export type { Translation } from './i18n-cache/translations-manager/utils/types/translation-data';
 export type {
@@ -30,7 +24,7 @@ export type {
   DictionaryEntry,
   DictionaryLeaf,
   DictionaryObject,
-  DictionaryOptions,
+  DictionaryEntryOptions,
   DictionaryValue,
   DictionaryPath,
   DictionaryKey,

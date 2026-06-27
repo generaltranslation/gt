@@ -60,8 +60,7 @@ import {
 } from 'gt-react';
 import type {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
+  TranslationOptions,
 } from 'gt-react';
 import { getTranslationsSnapshotRscError } from './errors/createErrors';
 
@@ -137,7 +136,6 @@ export {
 };
 export type {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
+  TranslationOptions,
   WithGTServerSideProps,
 };

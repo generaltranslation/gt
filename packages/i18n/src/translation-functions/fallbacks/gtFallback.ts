@@ -1,11 +1,11 @@
-import { InlineTranslationOptions } from '../types/options';
+import { TranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateIcuMessage } from '../utils/interpolation/interpolateIcuMessage';
 
 /**
  * A fallback function for the gt() function that decodes and interpolates.
  * @param {string | null | undefined} message - The ICU formatted message to interpolate.
- * @param {InlineTranslationOptions} options - The options to interpolate.
+ * @param {TranslationOptions} options - The options to interpolate.
  * @returns - The decoded and interpolated message.
  *
  * @note This function is useful as a placeholder when for incrementally migrating to the m() function.
@@ -29,7 +29,7 @@ import { interpolateIcuMessage } from '../utils/interpolation/interpolateIcuMess
  */
 export const gtFallback: GTFunctionType = <T extends string | null | undefined>(
   message: T,
-  options: InlineTranslationOptions = {}
+  options: TranslationOptions = {}
 ): T extends string ? string : T => {
   return interpolateIcuMessage(message, options);
 };

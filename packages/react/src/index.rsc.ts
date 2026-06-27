@@ -177,8 +177,7 @@ export {
 } from 'gt-i18n/internal';
 export type {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
+  TranslationOptions,
 } from 'gt-i18n/types';
 export type {
   SyncResolutionFunction,

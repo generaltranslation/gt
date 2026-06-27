@@ -6,9 +6,11 @@ import type {
   DictionaryValue,
 } from './types/dictionary';
 import type {
-  DictionaryLookupOptions,
-  DictionaryOptions,
+  DictionaryEntryOptions,
+  LookupOptions,
 } from '../../../translation-functions/types/options';
+import { DICTIONARY_OPTION_KEYS } from '../../../translation-functions/reservedKeys';
+import type { StringFormat } from '@generaltranslation/format/types';
 
 function getDictionaryPath(id: DictionaryPath): string[] {
   const path = id ? id.split('.') : [];
@@ -115,13 +117,11 @@ export function getDictionaryValue(value: DictionaryEntry): DictionaryValue {
 
 export function resolveDictionaryLookupOptions(
   options: DictionaryEntry['options']
-): DictionaryLookupOptions {
-  const { $format, context, ...rest } = options;
+): LookupOptions<StringFormat> {
+  const { $format, ...rest } = options;
   return {
     ...rest,
     $format: isStringFormat($format) ? $format : 'ICU',
-    ...(rest.$context === undefined &&
-      typeof context === 'string' && { $context: context }),
   };
 }
 
@@ -135,27 +135,38 @@ function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
   if (value.length === 1) {
     return true;
   }
-  return value.length === 2 && isDictionaryOptions(value[1]);
+  return value.length === 2 && isDictionaryEntryOptions(value[1]);
 }
 
-function isDictionaryOptions(value: unknown): value is DictionaryOptions {
+// Per-key validators for the dictionary option subset. The key set comes from
+// the reserved-key registry (DICTIONARY_OPTION_KEYS); this map just supplies the
+// expected type for each. Keyed by that subset, so adding a dictionary option
+// key to the registry forces a validator here (compile error otherwise).
+const DICTIONARY_OPTION_VALIDATORS: Record<
+  (typeof DICTIONARY_OPTION_KEYS)[number],
+  (value: unknown) => boolean
+> = {
+  $context: (value) => typeof value === 'string',
+  $format: (value) => isStringFormat(value),
+  $maxChars: (value) => typeof value === 'number',
+};
+
+function isDictionaryEntryOptions(
+  value: unknown
+): value is DictionaryEntryOptions {
   if (typeof value !== 'object' || value == null || Array.isArray(value)) {
     return false;
   }
 
   const options = value as Record<string, unknown>;
-  return (
-    (options.$context === undefined || typeof options.$context === 'string') &&
-    (options.$format === undefined || isStringFormat(options.$format)) &&
-    (options.$maxChars === undefined ||
-      typeof options.$maxChars === 'number') &&
-    (options.context === undefined || typeof options.context === 'string')
+  return DICTIONARY_OPTION_KEYS.every(
+    (key) =>
+      options[key] === undefined ||
+      DICTIONARY_OPTION_VALIDATORS[key](options[key])
   );
 }
 
-function isStringFormat(
-  value: unknown
-): value is DictionaryLookupOptions['$format'] {
+function isStringFormat(value: unknown): value is StringFormat {
   return value === 'ICU' || value === 'I18NEXT' || value === 'STRING';
 }
 

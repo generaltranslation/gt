@@ -24,7 +24,7 @@ export type {
   DictionaryKey,
   DictionaryLeaf,
   DictionaryObject,
-  DictionaryOptions,
+  DictionaryEntryOptions,
   DictionaryPath,
   DictionaryValue,
 } from './utils/types/dictionary';

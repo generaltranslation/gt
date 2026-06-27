@@ -6,7 +6,6 @@ import type { ReactNode } from 'react';
 type TProps = {
   children: ReactNode;
   id?: string;
-  context?: string;
   _hash?: string;
   $id?: string;
   $context?: string;

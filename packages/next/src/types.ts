@@ -1,11 +1,6 @@
 import type {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
+  TranslationOptions,
 } from '@generaltranslation/react-core/pure';
 
-export type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
-};
+export type { DictionaryTranslationOptions, TranslationOptions };

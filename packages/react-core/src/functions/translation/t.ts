@@ -3,10 +3,7 @@ import {
   getRuntimeEnvironment,
   interpolateMessage,
 } from 'gt-i18n/internal';
-import type {
-  InlineTranslationOptions,
-  ResolutionOptions,
-} from 'gt-i18n/types';
+import type { TranslationOptions } from 'gt-i18n/types';
 import { getI18nConfig } from '../../setup/i18nConfig';
 import {
   getReadonlyConditionStoreWithFallback,
@@ -20,7 +17,7 @@ import { createDiagnosticMessage } from 'generaltranslation/internal';
 /**
  * Translate a message
  * @param {string} message - The message to translate.
- * @param {InlineTranslationOptions} [options] - The options for the translation.
+ * @param {TranslationOptions} [options] - The options for the translation.
  * @returns {string} The translated message.
  *
  * @example
@@ -42,7 +39,7 @@ export const t: StringOrTemplateSyncResolutionFunction = (
 
   //  t("Hello, {name}!", { name: "John" })
   if (typeof messageOrStrings === 'string') {
-    const options = values.at(0) as InlineTranslationOptions | undefined;
+    const options = values.at(0) as TranslationOptions | undefined;
     const locale = options?.$locale ?? getLocale();
     return resolveStringContent(locale, messageOrStrings, options);
   }
@@ -56,7 +53,7 @@ export const t: StringOrTemplateSyncResolutionFunction = (
 export function resolveStringContent(
   locale: string,
   content: StringContent,
-  options: ResolutionOptions<StringFormat> = {}
+  options: TranslationOptions<StringFormat> = {}
 ): StringContent {
   const i18nCache = getReactI18nCache();
   const defaultLocale = getI18nConfig().getDefaultLocale();
@@ -222,7 +219,7 @@ function getLocale(): string {
  */
 interface StringOrTemplateSyncResolutionFunction {
   (strings: TemplateStringsArray, ...values: unknown[]): string;
-  (message: string, options?: InlineTranslationOptions): string;
+  (message: string, options?: TranslationOptions): string;
 }
 
 /**

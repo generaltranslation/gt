@@ -13,9 +13,8 @@ import React from 'react';
 export type {
   DictionaryTranslationOptions,
   GTFunctionType,
-  InlineTranslationOptions,
+  TranslationOptions,
   MFunctionType,
-  RuntimeTranslationOptions,
 } from 'gt-i18n/types';
 export type { GTProp };
 

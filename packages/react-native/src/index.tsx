@@ -15,8 +15,7 @@ import type { InitializeGTParams } from './setup/initializeGT';
 
 import type {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
+  TranslationOptions,
 } from '@generaltranslation/react-core/pure';
 import type {
   RenderPipeline,
@@ -88,8 +87,7 @@ export {
 
 export type {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
+  TranslationOptions,
   RenderPipeline,
   RenderPreparedT,
   GTProviderProps,

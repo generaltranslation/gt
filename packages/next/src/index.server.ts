@@ -56,6 +56,5 @@ export {
 
 export type {
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
+  TranslationOptions,
 } from 'gt-react';

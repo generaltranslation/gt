@@ -1,6 +1,6 @@
 import type {
   EncodedTranslationOptions,
-  InlineTranslationOptions,
+  TranslationOptions,
 } from '../types/options';
 import { formatMessage } from '@generaltranslation/format';
 import {
@@ -17,7 +17,7 @@ import { RegisterableMessages } from '../types/message';
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
  * @param {string | string[]} message The message to encode.
- * @param {InlineTranslationOptions} [options] The options to encode.
+ * @param {TranslationOptions} [options] The options to encode.
  * @returns The message or array of messages.
  *
  * @note - This function registers the message before the build process. The actual translation does not
@@ -51,11 +51,11 @@ import { RegisterableMessages } from '../types/message';
 export function msg<T extends RegisterableMessages = string>(message: T): T;
 export function msg<T extends RegisterableMessages = string>(
   message: T,
-  options?: InlineTranslationOptions
+  options?: TranslationOptions
 ): T extends string ? string : string[];
 export function msg(
   message: RegisterableMessages,
-  options?: InlineTranslationOptions
+  options?: TranslationOptions
 ): RegisterableMessages {
   // Handle array
   if (typeof message !== 'string') {
