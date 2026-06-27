@@ -14,31 +14,21 @@ export type {
 export { libraryDefaultLocale } from './settings/settings';
 export type { RuntimeTranslateManyOptions } from './types-dir/api/entry';
 export { pluralForms, isAcceptedPluralForm } from './settings/plurals';
-import _getPluralForm from './locales/getPluralForm';
-import { defaultTimeout } from './settings/settings';
-import type { _Content, JsxChild, JsxChildren, JsxElement } from './types';
-import type { LocaleProperties } from './types';
-import isVariable from './utils/isVariable';
-import { minifyVariableType } from './utils/minify';
-import { encode, decode } from './utils/base64';
-import { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
-import { validateFileFormatTransforms } from './translate/utils/validateFileFormatTransform';
 
-export {
-  _getPluralForm as getPluralForm,
+export { default as getPluralForm } from './locales/getPluralForm';
+export { defaultTimeout } from './settings/settings';
+export type {
   JsxChildren,
   _Content,
   JsxChild,
   JsxElement,
   LocaleProperties,
-  isVariable,
-  minifyVariableType,
-  defaultTimeout,
-  encode,
-  decode,
-  isSupportedFileFormatTransform,
-  validateFileFormatTransforms,
-};
+} from './types';
+export { default as isVariable } from './utils/isVariable';
+export { minifyVariableType } from './utils/minify';
+export { encode, decode } from './utils/base64';
+export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
+export { validateFileFormatTransforms } from './translate/utils/validateFileFormatTransform';
 
 // derive
 export { decodeVars } from './derive/decodeVars';

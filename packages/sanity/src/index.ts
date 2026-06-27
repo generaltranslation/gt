@@ -1,65 +1,10 @@
-export {
-  documentInternationalization,
-  useDocumentInternationalizationContext,
-  DocumentInternationalizationMenu,
-  useDeleteTranslationAction,
-  useDuplicateWithTranslationsAction,
-} from './documentInternationalization';
-export type {
-  DocumentInternationalizationConfig,
-  Language,
-  Metadata,
-  TranslationReference,
-} from './documentInternationalization';
-
-import TranslationsTab from './components/tab/TranslationsTab';
-import {
-  Secrets,
-  Adapter,
-  ExportForTranslation,
-  ImportTranslation,
-  TranslationFunctionContext,
-  TranslationsTabConfigOptions,
-} from './types';
-import { findLatestDraft } from './configuration/utils/findLatestDraft';
-import { BaseDocumentSerializer } from './serialization/serialize/index';
-import { BaseDocumentDeserializer } from './serialization/deserialize/BaseDocumentDeserializer';
-import { BaseDocumentMerger } from './serialization/BaseDocumentMerger';
-import {
-  defaultStopTypes,
-  customSerializers,
-} from './serialization/BaseSerializationConfig';
-import type { SerializedDocument } from './serialization/types';
-import { translateAction } from './actions/translateAction';
-
-export type {
-  Secrets,
-  Adapter,
-  ExportForTranslation,
-  ImportTranslation,
-  TranslationFunctionContext,
-  TranslationsTabConfigOptions,
-  SerializedDocument,
-};
-export {
-  TranslationsTab,
-  translateAction,
-  //helpers for end developers who may need to customize serialization
-  findLatestDraft,
-  BaseDocumentSerializer,
-  BaseDocumentDeserializer,
-  BaseDocumentMerger,
-  defaultStopTypes,
-  customSerializers,
-  attachGTData,
-  detachGTData,
-};
-
+import type { PortableTextHtmlComponents } from '@portabletext/to-html';
+import { getLocaleProperties } from 'generaltranslation';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
+import { translateAction } from './actions/translateAction';
 import { gt, pluginConfig } from './adapter/core';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { getLocaleProperties } from 'generaltranslation';
 import type {
   DedupeFields,
   IgnoreFields,
@@ -67,11 +12,46 @@ import type {
   TranslateDocumentFilter,
 } from './adapter/types';
 import TranslationsTool from './components/page/TranslationsTool';
-import { SECRETS_NAMESPACE } from './utils/shared';
-import type { PortableTextHtmlComponents } from '@portabletext/to-html';
-import { attachGTData, detachGTData } from './serialization/data';
 import { documentInternationalization } from './documentInternationalization';
 import type { CustomDeserializers } from './serialization/types';
+import { SECRETS_NAMESPACE } from './utils/shared';
+
+// ===== Document Internationalization ===== //
+export {
+  useDocumentInternationalizationContext,
+  DocumentInternationalizationMenu,
+  useDeleteTranslationAction,
+  useDuplicateWithTranslationsAction,
+} from './documentInternationalization';
+export { documentInternationalization };
+export type {
+  DocumentInternationalizationConfig,
+  Language,
+  Metadata,
+  TranslationReference,
+} from './documentInternationalization';
+
+// ===== Serialization Helpers ===== //
+export { default as TranslationsTab } from './components/tab/TranslationsTab';
+export { findLatestDraft } from './configuration/utils/findLatestDraft';
+export { BaseDocumentSerializer } from './serialization/serialize/index';
+export { BaseDocumentDeserializer } from './serialization/deserialize/BaseDocumentDeserializer';
+export { BaseDocumentMerger } from './serialization/BaseDocumentMerger';
+export {
+  defaultStopTypes,
+  customSerializers,
+} from './serialization/BaseSerializationConfig';
+export { attachGTData, detachGTData } from './serialization/data';
+export { translateAction };
+export type {
+  Secrets,
+  Adapter,
+  ExportForTranslation,
+  ImportTranslation,
+  TranslationFunctionContext,
+  TranslationsTabConfigOptions,
+} from './types';
+export type { SerializedDocument } from './serialization/types';
 
 export type GTPluginConfig = Omit<
   Parameters<typeof gt.setConfig>[0],
