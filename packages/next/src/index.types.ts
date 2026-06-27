@@ -52,10 +52,10 @@ import {
   derive,
   declareVar,
   decodeVars,
-  _Messages,
+  type _Messages,
   mFallback,
   gtFallback,
-} from 'gt-react/internal';
+} from '@generaltranslation/react-core/pure';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.

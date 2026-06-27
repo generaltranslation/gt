@@ -29,8 +29,9 @@ const entrypoints = [
 const workspaceSourceMap: Record<string, string> = {
   '#context-server': 'packages/react/src/index.server.ts',
   'gt-react': 'packages/react/src/index.rsc.ts',
-  'gt-react/internal': 'packages/react/src/internal.ts',
   '@generaltranslation/react-core/pure': 'packages/react-core/src/pure.ts',
+  '@generaltranslation/react-core/cookies':
+    'packages/react-core/src/cookies.ts',
   '@generaltranslation/react-core/components-rsc':
     'packages/react-core/src/components-rsc.ts',
 };

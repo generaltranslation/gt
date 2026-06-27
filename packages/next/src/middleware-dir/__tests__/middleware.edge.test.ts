@@ -5,8 +5,8 @@ import { createNextMiddleware } from '../createNextMiddleware';
 import type { PathConfig } from '../utils';
 import type { CustomMapping } from '@generaltranslation/format/types';
 
-// Mock gt-react/internal — only provides a constant, avoids deep react-core build chain
-vi.mock('gt-react/internal', () => ({
+// Mock react-core/cookies — only provides a constant, avoids deep react-core build chain
+vi.mock('@generaltranslation/react-core/cookies', () => ({
   defaultLocaleCookieName: 'generaltranslation.locale',
 }));
 

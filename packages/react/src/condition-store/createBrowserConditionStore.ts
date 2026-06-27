@@ -9,7 +9,7 @@ import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
   defaultRegionCookieName,
-} from '../internal';
+} from '../cookie-names';
 import { getCookieValue } from './cookies';
 import {
   getBrowserConditionStore,

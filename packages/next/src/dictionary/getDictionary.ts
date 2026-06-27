@@ -1,8 +1,8 @@
 import {
-  Dictionary,
-  DictionaryEntry,
   getDictionaryEntry as getEntry,
-} from 'gt-react/internal';
+  type Dictionary,
+  type DictionaryEntry,
+} from '@generaltranslation/react-core/pure';
 import { customLoadDictionaryWarning } from '../errors/createErrors';
 import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
 import { defaultWithGTConfigProps } from '../config-dir/props/defaultWithGTConfigProps';

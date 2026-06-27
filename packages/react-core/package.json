@@ -66,6 +66,11 @@
       "types": "./dist/components-rsc.d.ts",
       "require": "./dist/components-rsc.cjs.min.cjs",
       "import": "./dist/components-rsc.esm.min.mjs"
+    },
+    "./cookies": {
+      "types": "./dist/cookies.d.ts",
+      "require": "./dist/cookies.cjs.min.cjs",
+      "import": "./dist/cookies.esm.min.mjs"
     }
   },
   "typesVersions": {
@@ -81,6 +86,9 @@
       ],
       "components-rsc": [
         "./dist/components-rsc.d.ts"
+      ],
+      "cookies": [
+        "./dist/cookies.d.ts"
       ]
     }
   },
@@ -98,6 +106,9 @@
       ],
       "@generaltranslation/react-core/components-rsc": [
         "./dist/components-rsc"
+      ],
+      "@generaltranslation/react-core/cookies": [
+        "./dist/cookies"
       ]
     }
   },
