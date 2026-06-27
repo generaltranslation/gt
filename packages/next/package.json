@@ -20,6 +20,7 @@
     "@generaltranslation/compiler": "workspace:*",
     "@generaltranslation/format": "workspace:*",
     "@generaltranslation/next-internal": "workspace:*",
+    "@generaltranslation/react-core": "workspace:*",
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-react": "workspace:*",

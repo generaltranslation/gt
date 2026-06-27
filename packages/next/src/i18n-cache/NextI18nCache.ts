@@ -7,7 +7,7 @@ import {
   mergeDictionaries,
   type Dictionary as LegacyDictionary,
   type DictionaryEntry,
-} from 'gt-react/internal';
+} from '@generaltranslation/react-core/pure';
 import { getDictionary, getDictionaryEntry } from '../dictionary/getDictionary';
 import { createDictionarySubsetError } from '../errors/createErrors';
 import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';

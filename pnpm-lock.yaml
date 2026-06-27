@@ -989,6 +989,9 @@ importers:
       '@generaltranslation/next-internal':
         specifier: workspace:*
         version: link:../next-internal
+      '@generaltranslation/react-core':
+        specifier: workspace:*
+        version: link:../react-core
       '@generaltranslation/supported-locales':
         specifier: workspace:*
         version: link:../supported-locales

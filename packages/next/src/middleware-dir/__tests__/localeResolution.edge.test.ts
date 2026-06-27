@@ -4,8 +4,8 @@ import { NextRequest } from 'next/server';
 import { GT } from 'generaltranslation';
 import { getLocaleFromRequest } from '../utils';
 
-// Mock gt-react/internal — only provides a constant, avoids deep react-core build chain
-vi.mock('gt-react/internal', () => ({
+// Mock react-core/pure — only provides a constant, avoids deep react-core build chain
+vi.mock('@generaltranslation/react-core/pure', () => ({
   defaultLocaleCookieName: 'generaltranslation.locale',
 }));
 

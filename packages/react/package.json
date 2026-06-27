@@ -88,16 +88,6 @@
       },
       "default": "./dist/index.server.mjs"
     },
-    "./internal": {
-      "require": {
-        "types": "./dist/internal.d.cts",
-        "default": "./dist/internal.cjs"
-      },
-      "import": {
-        "types": "./dist/internal.d.mts",
-        "default": "./dist/internal.mjs"
-      }
-    },
     "./macros": {
       "require": {
         "types": "./dist/macros.d.cts",
@@ -111,9 +101,6 @@
   },
   "typesVersions": {
     "*": {
-      "internal": [
-        "./dist/internal.d.cts"
-      ],
       "setup": [
         "./dist/setup.d.cts"
       ],
@@ -125,9 +112,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "gt-react/internal": [
-        "./dist/internal"
-      ],
       "gt-react/setup": [
         "./dist/setup.d.cts"
       ],

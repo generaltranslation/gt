@@ -1,4 +1,4 @@
-import { CustomLoader } from 'gt-react/internal';
+import type { CustomLoader } from '@generaltranslation/react-core/pure';
 import { unresolvedCustomLoadDictionaryError } from '../errors/createErrors';
 
 let customLoadDictionary: CustomLoader | undefined = undefined;

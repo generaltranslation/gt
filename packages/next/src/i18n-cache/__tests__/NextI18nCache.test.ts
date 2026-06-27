@@ -39,7 +39,7 @@ vi.mock('gt-react', () => ({
   },
 }));
 
-vi.mock('gt-react/internal', () => ({
+vi.mock('@generaltranslation/react-core/pure', () => ({
   mergeDictionaries: mockMergeDictionaries,
 }));
 
