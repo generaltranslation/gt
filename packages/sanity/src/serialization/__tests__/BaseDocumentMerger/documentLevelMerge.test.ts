@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { BaseDocumentMerger } from '../../index';
+import { BaseDocumentMerger } from '../../BaseDocumentMerger';
 import { getNewDocument, getNewObject } from './utils';
 import documentLevelArticle from '../__fixtures__/documentLevelArticle.json';
 

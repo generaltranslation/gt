@@ -1,7 +1,7 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
 import { SanityClient, Schema, TypedObject } from 'sanity';
-import type { SerializedDocument } from './serialization';
+import type { SerializedDocument } from './serialization/types';
 import { PortableTextTypeComponent } from '@portabletext/to-html';
 import type { DeserializerRule } from '@portabletext/block-tools';
 

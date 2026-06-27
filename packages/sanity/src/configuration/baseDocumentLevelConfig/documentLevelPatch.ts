@@ -1,7 +1,7 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
 import { SanityClient, SanityDocument, SanityDocumentLike } from 'sanity';
-import { BaseDocumentMerger } from '../../serialization';
+import { BaseDocumentMerger } from '../../serialization/BaseDocumentMerger';
 
 import { findLatestDraft } from '../utils/findLatestDraft';
 import { findDocumentAtRevision } from '../utils/findDocumentAtRevision';

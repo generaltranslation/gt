@@ -6,12 +6,12 @@ import {
   PortableTextTextBlock,
 } from 'sanity';
 import { beforeEach, expect, test, vi } from 'vitest';
+import { BaseDocumentDeserializer } from '../../deserialize/BaseDocumentDeserializer';
+import { BaseDocumentSerializer } from '../../serialize/index';
 import {
-  BaseDocumentDeserializer,
-  BaseDocumentSerializer,
   customBlockDeserializers,
   defaultStopTypes,
-} from '../../index';
+} from '../../BaseSerializationConfig';
 import {
   annotationAndInlineBlocks,
   documentLevelArticle,
