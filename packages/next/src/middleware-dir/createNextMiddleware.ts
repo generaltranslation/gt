@@ -8,7 +8,7 @@ import {
   defaultReferrerLocaleCookieName,
   defaultResetLocaleCookieName,
 } from '../utils/cookies';
-import { defaultLocaleCookieName } from '@generaltranslation/react-core/pure';
+import { defaultLocaleCookieName } from '@generaltranslation/react-core/cookies';
 import {
   PathConfig,
   getSharedPath,

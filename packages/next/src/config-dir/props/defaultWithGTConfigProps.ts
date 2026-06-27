@@ -3,8 +3,8 @@ import {
   defaultCacheUrl,
   defaultRuntimeApiUrl,
 } from 'generaltranslation/internal';
+import { defaultLocaleCookieName } from '@generaltranslation/react-core/cookies';
 import {
-  defaultLocaleCookieName,
   getDefaultRenderSettings,
   type RenderMethod,
 } from '@generaltranslation/react-core/pure';

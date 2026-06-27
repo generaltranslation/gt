@@ -98,11 +98,11 @@ module.exports = [
   reactCore('@generaltranslation/react-core/hooks', 'hooks'),
   reactCore('@generaltranslation/react-core/components', 'components'),
   reactCore('@generaltranslation/react-core/components-rsc', 'components-rsc'),
+  reactCore('@generaltranslation/react-core/cookies', 'cookies'),
 
   react('gt-react (client)', 'index.client', '55 kB'),
   reactNode('gt-react (rsc)', 'index.rsc'),
   reactNode('gt-react (server)', 'index.server', '55 kB'),
-  react('gt-react/internal', 'internal'),
   react('gt-react/macros', 'macros'),
 
   next('gt-next (client)', 'index.client', '75 kB'),
