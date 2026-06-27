@@ -1,5 +1,13 @@
 # gt-next
 
+## 7.0.0-odysseus.3
+
+### Patch Changes
+
+- [#1659](https://github.com/generaltranslation/gt/pull/1659) [`807dc30`](https://github.com/generaltranslation/gt/commit/807dc305c4b5e4ce8f6982d96886a530910f3f37) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add a locale-aware Link component for Next.js applications.
+
+  Transpile gt-next in Next apps so package runtime config is compiled with app env values. See #1661.
+
 ## 7.0.0-odysseus.2
 
 ### Patch Changes
