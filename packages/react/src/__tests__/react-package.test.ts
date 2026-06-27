@@ -129,6 +129,21 @@ describe('gt-react package exports', () => {
     ]);
   });
 
+  it('resolves gt-react to the client implementation when browser and react-server are active', () => {
+    node([
+      '--conditions=browser',
+      '--conditions=react-server',
+      '-e',
+      `
+          const assert = require('node:assert/strict');
+          assert.equal(
+            require.resolve('gt-react').endsWith('/dist/index.client.cjs'),
+            true
+          );
+        `,
+    ]);
+  });
+
   it('preserves use client in emitted client entrypoints', () => {
     for (const file of [
       'dist/index.client.cjs',
