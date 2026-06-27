@@ -40,6 +40,7 @@
   "changesets": [
     "bright-locale-selectors",
     "browser-locale-cookie-updates",
+    "consolidated-next-odysseus",
     "green-region-selector",
     "odysseus-all-packages-patch",
     "odysseus-format-patch-bump",
