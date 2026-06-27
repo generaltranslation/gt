@@ -3,134 +3,75 @@ import type {
   StringFormat,
 } from '@generaltranslation/format/types';
 
-/**
- * Values that get interpolated
- */
-export type BaseTranslationOptions = Record<string, unknown>;
-
-// For t()
-export type DictionaryTranslationOptions = BaseTranslationOptions;
-
-export type DictionaryOptions = BaseTranslationOptions & {
-  $format?: StringFormat;
-  $context?: string;
-  $maxChars?: number;
-  /** @deprecated use {@link $context} instead */
-  context?: string;
-};
+type Variables = Record<string, unknown>;
 
 /**
- * Options for string resolution
- * Used by the gt() function
+ * Reserved translation options. All other keys are user interpolation variables.
  */
-export type InlineTranslationOptionsFields = {
+export type ReservedTranslationOptions<F extends DataFormat = StringFormat> = {
   $context?: string;
   $id?: string;
   /** The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'. */
-  $format?: StringFormat;
+  $format?: F;
   /** The locale to use for formatting the message. */
   $locale?: string;
-  /**
-   * @deprecated use {@link $locale} instead
-   */
-  $_locales?: string | string[];
-  $_hash?: string;
   $maxChars?: number;
-  /** @internal Used to carry the original source when rendering a translation */
-  $_fallback?: string;
-  /** @deprecated use {@link EncodedTranslationOptions} instead */
+  /** Precomputed message hash. */
+  $_hash?: string;
+  /** Original source message carried through msg() encoding. */
   $_source?: string;
-};
-
-export type InlineTranslationOptions = InlineTranslationOptionsFields &
-  BaseTranslationOptions;
-
-/**
- * Options for string resolution
- * Used by the m() function
- */
-export type InlineResolveOptions = BaseTranslationOptions & {
-  $_hash?: string;
-  $locale?: string;
-  $format?: StringFormat;
-  $maxChars?: number;
-  $id?: string;
+  /** Original source carried while rendering a translation. */
+  $_fallback?: string;
 };
 
 /**
- * Options for string registration
- * Used by the msg() function
+ * Everything an inline translation function (gt, m, t, msg) accepts: reserved
+ * options plus user interpolation variables. JSX options are metadata-only
+ * because JSX interpolates through children rather than option variables.
  */
-export type EncodedTranslationOptions = BaseTranslationOptions & {
-  $context?: string;
-  $id?: string;
-  $maxChars?: number;
+export type TranslationOptions<F extends DataFormat = StringFormat> =
+  F extends 'JSX'
+    ? ReservedTranslationOptions<F>
+    : ReservedTranslationOptions<F> & Variables;
+
+// For t()
+export type DictionaryTranslationOptions = Variables;
+
+export type DictionaryEntryOptions = Pick<
+  ReservedTranslationOptions,
+  '$format' | '$context' | '$maxChars'
+> &
+  Variables;
+
+/**
+ * The encoded form produced by msg() and read back by decode: a
+ * TranslationOptions with the internal hash + source guaranteed present.
+ */
+export type EncodedTranslationOptions = TranslationOptions & {
   $_hash: string;
   $_source: string;
 };
 
 /**
- * Options for runtime translation
- * Used by the tx() function
- */
-export type RuntimeTranslationOptions = {
-  $locale?: string;
-  $format?: DataFormat;
-} & Omit<InlineTranslationOptions, '$id' | '$format'>;
-
-/**
  * Options for JSX translation
  * Used by the resolveJsxTranslation() function
  */
-export type JsxTranslationOptions = {
-  // TODO: make this required, but internally, not user facing
-  $format?: 'JSX';
-  $context?: string;
-  $id?: string;
-  $_hash?: string;
-};
+export type JsxTranslationOptions = Pick<
+  ReservedTranslationOptions<'JSX'>,
+  '$format' | '$context' | '$id' | '$_hash'
+>;
 
 /**
- * Resolution options - options needed to perform a resolution for a given content
+ * Lookup options after core has applied a default format.
  */
-export type LookupOptions =
-  | (BaseTranslationOptions &
-      (Omit<InlineTranslationOptionsFields, '$format'> & {
-        $format: StringFormat;
-        $locale?: string;
-      }))
-  | (JsxTranslationOptions & {
-      $format: 'JSX';
-      $locale?: string;
-    });
-
-export type DictionaryLookupOptions = Omit<
-  InlineTranslationOptions,
-  '$format'
-> & {
-  $format: StringFormat;
-};
-
-export type ResolutionOptions<T extends DataFormat> = {
-  /**
-   * The locale to use for formatting looking up and formatting the message.
-   */
-  $locale?: string;
-} & (T extends 'JSX'
-  ? JsxTranslationOptions & {
-      $format?: 'JSX';
-    }
-  : Omit<InlineTranslationOptions, '$format'> & {
-      $format?: T;
-    });
+export type LookupOptions<F extends DataFormat = DataFormat> =
+  TranslationOptions<F> & {
+    $format: F;
+  };
 
 /**
  * Lookup options after core has applied defaults for locale and format.
  */
-export type NormalizedLookupOptions<T extends DataFormat> = Omit<
-  ResolutionOptions<T>,
-  '$format' | '$locale'
-> & {
-  $format: T;
+export type NormalizedLookupOptions<T extends DataFormat> = LookupOptions<T> & {
   $locale: string;
 };

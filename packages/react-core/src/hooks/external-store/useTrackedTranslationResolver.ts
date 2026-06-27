@@ -17,7 +17,7 @@ import type {
   TranslateLookup,
   TranslateSnapshot,
 } from '../../i18n-store/storeTypes';
-import type { InlineTranslationOptionsFields } from 'gt-i18n/internal/types';
+import type { ReservedTranslationOptions } from 'gt-i18n/internal/types';
 import type { StringFormat } from '@generaltranslation/format';
 import { useLocale } from '../condition-store';
 import { useShouldTranslate } from '../utils';
@@ -35,7 +35,7 @@ export type TrackedTranslationResolver = <T extends Translation>(
   lookup: TranslateLookup<T>
 ) => TranslateSnapshot<T>;
 
-export type Message = InlineTranslationOptionsFields & {
+export type Message = ReservedTranslationOptions & {
   message: string;
 };
 

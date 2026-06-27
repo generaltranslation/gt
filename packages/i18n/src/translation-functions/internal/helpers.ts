@@ -1,6 +1,6 @@
 import { getI18nCache } from '../../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../../i18n-config/singleton-operations';
-import { NormalizedLookupOptions, ResolutionOptions } from '../types/options';
+import { NormalizedLookupOptions, TranslationOptions } from '../types/options';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import type {
   DataFormat,
@@ -17,7 +17,7 @@ import type {
 export function resolveJsx(
   locale: string,
   content: JsxChildren,
-  options: ResolutionOptions<'JSX'> = {}
+  options: TranslationOptions<'JSX'> = {}
 ): JsxChildren | undefined {
   const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'JSX');
@@ -35,7 +35,7 @@ export function resolveJsx(
 export function resolveJsxWithFallback(
   locale: string,
   content: JsxChildren,
-  options: ResolutionOptions<'JSX'> = {}
+  options: TranslationOptions<'JSX'> = {}
 ): JsxChildren {
   const translation = resolveJsx(locale, content, options);
   return translation ?? content;
@@ -49,7 +49,7 @@ export function resolveJsxWithFallback(
 export async function resolveJsxWithRuntimeFallback(
   locale: string,
   content: JsxChildren,
-  options: ResolutionOptions<'JSX'> = {}
+  options: TranslationOptions<'JSX'> = {}
 ): Promise<JsxChildren> {
   const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'JSX');
@@ -70,7 +70,7 @@ export async function resolveJsxWithRuntimeFallback(
 export function resolveStringContent(
   locale: string,
   content: StringContent,
-  options: ResolutionOptions<StringFormat> = {}
+  options: TranslationOptions<StringFormat> = {}
 ): StringContent | undefined {
   const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'STRING');
@@ -94,7 +94,7 @@ export function resolveStringContent(
 export function resolveStringContentWithFallback(
   locale: string,
   content: StringContent,
-  options: ResolutionOptions<StringFormat> = {}
+  options: TranslationOptions<StringFormat> = {}
 ): StringContent {
   const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'STRING');
@@ -119,7 +119,7 @@ export function resolveStringContentWithFallback(
 export async function resolveStringContentWithRuntimeFallback(
   locale: string,
   content: StringContent,
-  options: ResolutionOptions<StringFormat> = {}
+  options: TranslationOptions<StringFormat> = {}
 ): Promise<StringContent> {
   const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'STRING');
@@ -140,12 +140,12 @@ export async function resolveStringContentWithRuntimeFallback(
  */
 export function createLookupOptions<T extends DataFormat>(
   locale: string,
-  options: ResolutionOptions<T>,
+  options: TranslationOptions<T>,
   defaultFormat: T
 ): NormalizedLookupOptions<T> {
   return {
     ...options,
     $format: (options.$format ?? defaultFormat) as T,
     $locale: locale,
-  };
+  } as NormalizedLookupOptions<T>;
 }
