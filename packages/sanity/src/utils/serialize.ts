@@ -1,18 +1,18 @@
 import { SanityDocument, Schema } from 'sanity';
+import { BaseDocumentDeserializer } from '../serialization/deserialize/BaseDocumentDeserializer';
+import { BaseDocumentSerializer } from '../serialization/serialize/index';
 import {
-  BaseDocumentDeserializer,
-  BaseDocumentSerializer,
   defaultStopTypes,
   customSerializers,
   customBlockDeserializers,
-} from '../serialization/';
+} from '../serialization/BaseSerializationConfig';
 import { PortableTextHtmlComponents } from '@portabletext/to-html';
 import { pluginConfig } from '../adapter/core';
 import merge from 'lodash.merge';
 import { deleteMatchingFields } from './applyDocuments';
 import type { FieldMatcher } from '../adapter/types';
 import { getPublishedId } from './documentIds';
-import type { CustomDeserializers } from '../serialization';
+import type { CustomDeserializers } from '../serialization/types';
 
 export function deserializeDocument(document: string) {
   const deserializers = merge(

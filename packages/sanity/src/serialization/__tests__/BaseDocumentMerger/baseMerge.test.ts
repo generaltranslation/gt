@@ -1,6 +1,6 @@
 import { PortableTextBlock } from 'sanity';
 import { expect, test } from 'vitest';
-import { BaseDocumentMerger } from '../../index';
+import { BaseDocumentMerger } from '../../BaseDocumentMerger';
 import { getNewDocument } from './utils';
 import documentLevelArticle from '../__fixtures__/documentLevelArticle.json';
 

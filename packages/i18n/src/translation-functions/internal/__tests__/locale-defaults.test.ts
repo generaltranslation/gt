@@ -5,7 +5,7 @@ import { setI18nCache } from '../../../i18n-cache/singleton-operations';
 import { setWritableConditionStore } from '../../../condition-store/singleton-operations';
 import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 import type { I18nConfigParams } from '../../../i18n-config/I18nConfig';
-import { msg } from '../../msg';
+import { msg } from '../../msg/msg';
 import { hashMessage } from '../../../utils/hashMessage';
 import { getGT } from '../getGT';
 import { getTranslations } from '../getTranslations';

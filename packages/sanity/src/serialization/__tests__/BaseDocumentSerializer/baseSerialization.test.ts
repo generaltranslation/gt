@@ -1,10 +1,10 @@
 import { PortableTextBlock } from 'sanity';
 import { describe, expect, test, vi } from 'vitest';
+import { BaseDocumentSerializer } from '../../serialize/index';
 import {
-  BaseDocumentSerializer,
   customSerializers,
   defaultStopTypes,
-} from '../../index';
+} from '../../BaseSerializationConfig';
 import {
   addedCustomSerializers,
   createCustomInnerHTML,

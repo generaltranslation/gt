@@ -2,9 +2,11 @@ import { SanityDocument } from 'sanity';
 import { expect, test } from 'vitest';
 import { getDeserialized } from '../helpers';
 import { docWithInlineMarks, findByClass, getHTMLNode, schema } from './utils';
-import { attachGTData, BaseDocumentSerializer, customSerializers } from '../..';
+import { attachGTData } from '../../data';
+import { BaseDocumentSerializer } from '../../serialize/index';
+import { customSerializers } from '../../BaseSerializationConfig';
 import { TranslationLevel } from '../../types';
-import { defaultStopTypes } from '../..';
+import { defaultStopTypes } from '../../BaseSerializationConfig';
 import merge from 'lodash.merge';
 import { PortableTextHtmlComponents } from '@portabletext/to-html';
 

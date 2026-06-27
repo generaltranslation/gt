@@ -41,7 +41,13 @@ export {
 };
 
 // derive
-export * from './derive';
+export { decodeVars } from './derive/decodeVars';
+export { declareVar } from './derive/declareVar';
+export { derive } from './derive/derive';
+export { indexVars } from './derive/indexVars';
+export { extractVars } from './derive/extractVars';
+export { condenseVars } from './derive/condenseVars';
+export { VAR_IDENTIFIER, VAR_NAME_IDENTIFIER } from './derive/utils/constants';
 
 // backwards compatability
 export {
