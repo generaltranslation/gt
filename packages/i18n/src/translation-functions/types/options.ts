@@ -80,7 +80,7 @@ export type RuntimeTranslationOptions = {
 
 /**
  * Options for JSX translation
- * Used by the resolveJsxTranslation() function
+ * Used by the resolveJsx() function
  */
 export type JsxTranslationOptions = {
   // TODO: make this required, but internally, not user facing
