@@ -19,7 +19,6 @@ export { _getPluralForm as getPluralForm } from './locales/getPluralForm';
 export { defaultTimeout } from './settings/settings';
 export type {
   JsxChildren,
-  _Content,
   JsxChild,
   JsxElement,
   LocaleProperties,
