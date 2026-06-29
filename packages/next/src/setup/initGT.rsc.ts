@@ -8,6 +8,7 @@ import { initializeGT as coreInitializeGT } from './initGT';
 import {
   AsyncConditionStore,
   type AsyncConditionStoreParams,
+  isAsyncConditionStoreInitialized,
 } from '../condition-store/AsyncConditionStore';
 import { setAsyncConditionStore } from '../condition-store/AsyncConditionStore';
 import {
@@ -34,6 +35,8 @@ export function initializeGT(
     gtservicesEnabledParams,
     nextI18nCacheParams,
   });
+
+  if (isAsyncConditionStoreInitialized()) return;
 
   const asyncConditionStoreParams = getAsyncConditionStoreParams();
 

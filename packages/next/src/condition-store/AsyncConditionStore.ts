@@ -22,6 +22,7 @@ export type AsyncConditionStoreParams = {
 
 export const {
   getConditionStore: getAsyncConditionStore,
+  isConditionStoreInitialized: isAsyncConditionStoreInitialized,
   setConditionStore: setAsyncConditionStore,
 } = createConditionStoreSingleton<AsyncConditionStore>(
   'AsyncConditionStore not initialized. Invoke initializeGT() to initialize.'

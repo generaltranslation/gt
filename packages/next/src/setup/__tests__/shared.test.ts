@@ -67,4 +67,14 @@ describe('getParams', () => {
     expect(i18nConfigParams.projectId).toBe('public-project-id');
     expect(i18nConfigParams.devApiKey).toBe('public-dev-key');
   });
+
+  it('passes configured cache expiry to i18n cache params', () => {
+    process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS = JSON.stringify({
+      cacheExpiryTime: 30000,
+    });
+
+    const { nextI18nCacheParams } = getParams();
+
+    expect(nextI18nCacheParams.cacheExpiryTime).toBe(30000);
+  });
 });
