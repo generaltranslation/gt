@@ -1,20 +1,8 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import {
-  createSourceFile,
-  forEachChild,
-  isCallExpression,
-  isExportDeclaration,
-  isIdentifier,
-  isImportDeclaration,
-  isStringLiteralLike,
-  type Node,
-  ScriptKind,
-  ScriptTarget,
-} from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
@@ -25,31 +13,20 @@ const runtimeEntryNames = [
   'hooks',
   'pure',
 ];
-const runtimeArtifactNames = runtimeEntryNames
+// Each public entrypoint is emitted as a thin re-export barrel in both module
+// formats, plus its type declaration.
+const entryArtifacts = runtimeEntryNames
   .flatMap((entryName) => [
-    `${entryName}.cjs.min.cjs`,
-    `${entryName}.esm.min.mjs`,
-  ])
-  .sort();
-const builtArtifacts = runtimeEntryNames
-  .flatMap((entryName) => [
-    `${entryName}.cjs.min.cjs`,
-    `${entryName}.esm.min.mjs`,
+    `${entryName}.cjs`,
+    `${entryName}.mjs`,
     `${entryName}.d.ts`,
   ])
   .map((artifact) => join(packageRoot, 'dist', artifact));
-const workspaceSubpathPackages = [
-  '@generaltranslation/format',
-  '@generaltranslation/react-core',
-  'generaltranslation',
-  'gt-i18n',
-];
 
 function hasBuiltArtifacts(): boolean {
   return (
     existsSync(join(packageRoot, 'dist')) &&
-    builtArtifacts.every((artifact) => existsSync(artifact)) &&
-    getRuntimeArtifactNames().join('\0') === runtimeArtifactNames.join('\0')
+    entryArtifacts.every((artifact) => existsSync(artifact))
   );
 }
 
@@ -69,63 +46,10 @@ function node(args: string[]): void {
   execFileSync(process.execPath, args, { cwd: packageRoot, stdio: 'pipe' });
 }
 
-function getRuntimeArtifactNames(): string[] {
-  return readdirSync(join(packageRoot, 'dist'))
-    .filter((file) => /\.(cjs|mjs)$/.test(file))
-    .sort();
-}
-
-function isWorkspaceSubpath(specifier: string): boolean {
-  return workspaceSubpathPackages.some((packageName) =>
-    specifier.startsWith(`${packageName}/`)
-  );
-}
-
-function isAllowedExternalizedSubpath(
-  file: string,
-  specifier: string
-): boolean {
-  return (
-    runtimeEntryNames.some((entryName) => file.startsWith(`${entryName}.`)) &&
-    specifier.startsWith('gt-i18n/')
-  );
-}
-
-function getModuleSpecifiers(file: string): string[] {
-  const code = readFileSync(join(packageRoot, 'dist', file), 'utf8');
-  const sourceFile = createSourceFile(
-    file,
-    code,
-    ScriptTarget.Latest,
-    false,
-    ScriptKind.JS
-  );
-  const specifiers: string[] = [];
-
-  function visit(node: Node): void {
-    if (
-      (isImportDeclaration(node) || isExportDeclaration(node)) &&
-      node.moduleSpecifier &&
-      isStringLiteralLike(node.moduleSpecifier)
-    ) {
-      specifiers.push(node.moduleSpecifier.text);
-    }
-
-    if (
-      isCallExpression(node) &&
-      isIdentifier(node.expression) &&
-      node.expression.text === 'require' &&
-      node.arguments.length === 1 &&
-      isStringLiteralLike(node.arguments[0])
-    ) {
-      specifiers.push(node.arguments[0].text);
-    }
-
-    forEachChild(node, visit);
-  }
-
-  visit(sourceFile);
-  return specifiers;
+function getRuntimeModuleFiles(): string[] {
+  return readdirSync(join(packageRoot, 'dist'), { recursive: true })
+    .map((entry) => String(entry))
+    .filter((file) => /\.(cjs|mjs)$/.test(file) && !file.endsWith('.map'));
 }
 
 describe('@generaltranslation/react-core package exports', () => {
@@ -171,22 +95,21 @@ describe('@generaltranslation/react-core package exports', () => {
     ]);
   });
 
-  it('emits independent runtime entrypoints without shared chunks', () => {
-    expect(getRuntimeArtifactNames()).toEqual(runtimeArtifactNames);
+  it('emits each entrypoint as a barrel in both module formats', () => {
+    const runtimeFiles = getRuntimeModuleFiles();
+    for (const entryName of runtimeEntryNames) {
+      expect(runtimeFiles).toContain(`${entryName}.cjs`);
+      expect(runtimeFiles).toContain(`${entryName}.mjs`);
+    }
   });
 
-  it(
-    'bundles workspace subpath imports in runtime artifacts',
-    { timeout: 15000 },
-    () => {
-      const externalizedSubpaths = getRuntimeArtifactNames().flatMap((file) => {
-        return getModuleSpecifiers(file)
-          .filter(isWorkspaceSubpath)
-          .filter((specifier) => !isAllowedExternalizedSubpath(file, specifier))
-          .map((specifier) => `${file}: ${specifier}`);
-      });
-
-      expect(externalizedSubpaths).toEqual([]);
-    }
-  );
+  it('emits unbundled runtime modules so consumers can tree-shake', () => {
+    // The build is intentionally unbundled: entrypoints are thin re-export
+    // barrels and the implementation lives in granular sibling modules that
+    // can be shared and individually dropped by a downstream bundler. This is
+    // the opposite of the previous per-entry bundled artifacts, so the dist
+    // tree contains far more runtime modules than there are entrypoints.
+    const runtimeFiles = getRuntimeModuleFiles();
+    expect(runtimeFiles.length).toBeGreaterThan(runtimeEntryNames.length * 2);
+  });
 });

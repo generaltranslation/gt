@@ -29,7 +29,7 @@ const i18n = (name, file) =>
   entry(name, `packages/i18n/dist/${file}.mjs`, '35 kB');
 
 const reactCore = (name, file) =>
-  entry(name, `packages/react-core/dist/${file}.esm.min.mjs`, '48 kB', {
+  entry(name, `packages/react-core/dist/${file}.mjs`, '48 kB', {
     ignore: ['react'],
   });
 

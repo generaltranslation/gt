@@ -1,36 +1,28 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownMinifiedDualFormatConfig } from '../../tsdown.preset.mts';
+import { createTsdownUnbundleConfig } from '../../tsdown.preset.mts';
 
-const deps = {
-  neverBundle: [
-    /^react$/,
-    /^react\//,
-    /^@generaltranslation\/format$/,
-    /^@generaltranslation\/supported-locales$/,
-    /^generaltranslation$/,
-  ],
-  alwaysBundle: [
-    /^@generaltranslation\/format\//,
-    /^generaltranslation\//,
-    /^gt-i18n(?:\/.*)?$/,
-  ],
-};
+const entries = [
+  'src/pure.ts',
+  'src/hooks.ts',
+  'src/components.ts',
+  'src/components-rsc.ts',
+  'src/cookies.ts',
+];
 
-const contextDeps = {
-  neverBundle: [...deps.neverBundle, /^gt-i18n$/, /^gt-i18n\//],
-  alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
-};
+const cjs = createTsdownUnbundleConfig({
+  format: 'cjs',
+  entry: entries,
+  outExtensions: () => ({ js: '.cjs', dts: '.d.ts' }),
+});
 
-export default defineConfig(
-  createTsdownMinifiedDualFormatConfig({
-    entries: [
-      'src/pure.ts',
-      'src/hooks.ts',
-      'src/components.ts',
-      'src/components-rsc.ts',
-      'src/cookies.ts',
-    ],
-    deps: contextDeps,
-    typeEntry: false,
-  })
-);
+const esm = createTsdownUnbundleConfig({
+  format: 'esm',
+  entry: entries,
+  clean: false,
+  outExtensions: () => ({ js: '.mjs', dts: '.d.ts' }),
+});
+
+export default defineConfig([
+  { ...cjs, minify: true, dts: true },
+  { ...esm, minify: true },
+]);
