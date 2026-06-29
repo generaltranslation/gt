@@ -1,7 +1,7 @@
 'use client';
 
-import { initializeGTClient } from './setup/initializeGTClient';
-initializeGTClient();
+import { initializeGTRuntime } from './setup/initializeGTRuntime';
+initializeGTRuntime();
 
 import type {
   GetServerSideProps,

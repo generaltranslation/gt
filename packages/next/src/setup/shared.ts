@@ -47,6 +47,9 @@ export function getParams(): {
     projectId,
     runtimeUrl: publicConfig.runtimeUrl,
     cacheUrl: privateConfig.cacheUrl,
+    ...(typeof privateConfig.cacheExpiryTime !== 'undefined' && {
+      cacheExpiryTime: privateConfig.cacheExpiryTime,
+    }),
     // batching config
     batchConfig: {
       maxConcurrentRequests: privateConfig.maxConcurrentRequests,

@@ -16,6 +16,15 @@ export function getNextI18nCache(): NextI18nCache {
   return getI18nCache() as NextI18nCache;
 }
 
+export function isNextI18nCacheInitialized(): boolean {
+  try {
+    getNextI18nCache();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function setNextI18nCache(i18nCache: NextI18nCache): void {
   setI18nCache(i18nCache as I18nCache<Translation>);
 }

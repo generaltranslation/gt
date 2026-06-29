@@ -1,9 +1,11 @@
 import {
   I18nConfigParams,
   initializeI18nConfig,
+  isI18nConfigInitialized,
   setupGTServicesEnabled,
 } from 'gt-i18n/internal';
 import {
+  isNextI18nCacheInitialized,
   NextI18nCache,
   NextI18nCacheParams,
   setNextI18nCache,
@@ -25,9 +27,18 @@ export function initializeGT(
     nextI18nCacheParams: NextI18nCacheParams;
   } = getParams()
 ): void {
-  setupGTServicesEnabled(gtservicesEnabledParams);
-  initializeI18nConfig(i18nConfigParams);
+  const i18nConfigInitialized = isI18nConfigInitialized();
+  const nextI18nCacheInitialized = isNextI18nCacheInitialized();
 
-  const i18nCache = new NextI18nCache(nextI18nCacheParams);
-  setNextI18nCache(i18nCache);
+  if (i18nConfigInitialized && nextI18nCacheInitialized) return;
+
+  if (!i18nConfigInitialized) {
+    setupGTServicesEnabled(gtservicesEnabledParams);
+    initializeI18nConfig(i18nConfigParams);
+  }
+
+  if (!nextI18nCacheInitialized) {
+    const i18nCache = new NextI18nCache(nextI18nCacheParams);
+    setNextI18nCache(i18nCache);
+  }
 }
