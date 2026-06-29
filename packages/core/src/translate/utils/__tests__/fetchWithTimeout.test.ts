@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import fetchWithTimeout from '../fetchWithTimeout.js';
+import { fetchWithTimeout } from '../fetchWithTimeout.js';
 import { defaultTimeout } from '../../../settings/settings.js';
 
 // Mock dependencies

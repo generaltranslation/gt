@@ -1,5 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 import type { BranchDataResult } from '../types-dir/api/branch';
 
 export type BranchQuery = {
@@ -13,7 +13,7 @@ export type BranchQuery = {
  * @param config - The configuration for the API call.
  * @returns The branch information.
  */
-export default async function _queryBranchData(
+export async function _queryBranchData(
   query: BranchQuery,
   config: TranslationRequestConfig
 ): Promise<BranchDataResult> {

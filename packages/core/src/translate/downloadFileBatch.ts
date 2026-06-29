@@ -4,7 +4,7 @@ import {
   DownloadFileBatchRequest,
   DownloadFileBatchResult,
 } from '../types-dir/api/downloadFileBatch';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 import { decode } from '../utils/base64';
 import { processBatches } from './utils/batch';
 
@@ -16,7 +16,7 @@ import { processBatches } from './utils/batch';
  * @param config - The configuration for the request.
  * @returns Promise resolving to a BatchList with all downloaded files
  */
-export default async function _downloadFileBatch(
+export async function _downloadFileBatch(
   requests: DownloadFileBatchRequest,
   options: DownloadFileBatchOptions,
   config: TranslationRequestConfig

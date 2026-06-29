@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _createTag, {
+import {
+  _createTag,
   CreateTagOptions,
   CreateTagResult,
   CreateTagFileReference,
 } from '../createTag';
 import { TranslationRequestConfig } from '../../types';
-import apiRequest from '../utils/apiRequest';
+import { apiRequest } from '../utils/apiRequest';
 
 vi.mock('../utils/apiRequest');
 

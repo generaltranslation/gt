@@ -1,5 +1,5 @@
 import type { Dictionary } from '../types';
-import getEntryAndMetadata from './getEntryAndMetadata';
+import { getEntryAndMetadata } from './getEntryAndMetadata';
 import { isDictionaryEntry } from './isDictionaryEntry';
 import { set } from './indexDict';
 

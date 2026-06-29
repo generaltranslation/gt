@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _enqueueFiles, { EnqueueOptions } from '../enqueueFiles';
+import { _enqueueFiles, EnqueueOptions } from '../enqueueFiles';
 import { TranslationRequestConfig, EnqueueFilesResult } from '../../types';
 import { FileReference } from '../../types-dir/api/file';
-import apiRequest from '../utils/apiRequest';
+import { apiRequest } from '../utils/apiRequest';
 
 vi.mock('../utils/apiRequest');
 

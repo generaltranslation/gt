@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import handleFetchError from '../handleFetchError';
+import { handleFetchError } from '../handleFetchError';
 import { fetchLogger } from '../../../logging/logger';
 import {
   translationRequestFailedError,

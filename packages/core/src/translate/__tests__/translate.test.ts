@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _translateMany from '../translateMany';
-import apiRequest from '../utils/apiRequest';
+import { _translateMany } from '../translateMany';
+import { apiRequest } from '../utils/apiRequest';
 import { TranslationRequestConfig, TranslationResult } from '../../types';
 import type { Content } from '@generaltranslation/format/types';
 import { SharedMetadata } from '../../types-dir/api/entry';

@@ -1,5 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 import type { FileReference } from '../types-dir/api/file';
 
 export type SetupProjectResult =
@@ -20,7 +20,7 @@ export type SetupProjectOptions = {
  * @param timeoutMS - The timeout in milliseconds
  * @returns The result of the API call.
  */
-export default async function _setupProject(
+export async function _setupProject(
   files: FileReference[],
   config: TranslationRequestConfig,
   options?: SetupProjectOptions

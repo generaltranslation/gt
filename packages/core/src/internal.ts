@@ -15,7 +15,7 @@ export { libraryDefaultLocale } from './settings/settings';
 export type { RuntimeTranslateManyOptions } from './types-dir/api/entry';
 export { pluralForms, isAcceptedPluralForm } from './settings/plurals';
 
-export { default as getPluralForm } from './locales/getPluralForm';
+export { _getPluralForm as getPluralForm } from './locales/getPluralForm';
 export { defaultTimeout } from './settings/settings';
 export type {
   JsxChildren,
@@ -24,7 +24,7 @@ export type {
   JsxElement,
   LocaleProperties,
 } from './types';
-export { default as isVariable } from './utils/isVariable';
+export { isVariable } from './utils/isVariable';
 export { minifyVariableType } from './utils/minify';
 export { encode, decode } from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';

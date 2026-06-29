@@ -1,10 +1,10 @@
 import { TranslationRequestConfig } from '../../types';
 import { defaultBaseUrl } from '../../settings/settingsUrls';
 import { defaultTimeout } from '../../settings/settings';
-import fetchWithTimeout from './fetchWithTimeout';
-import validateResponse from './validateResponse';
-import handleFetchError from './handleFetchError';
-import generateRequestHeaders from './generateRequestHeaders';
+import { fetchWithTimeout } from './fetchWithTimeout';
+import { validateResponse } from './validateResponse';
+import { handleFetchError } from './handleFetchError';
+import { generateRequestHeaders } from './generateRequestHeaders';
 
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 500;
@@ -92,7 +92,7 @@ function getResponseRetryDelay(
  * @param options - Optional request options.
  * @returns The parsed JSON response.
  */
-export default async function apiRequest<T>(
+export async function apiRequest<T>(
   config: TranslationRequestConfig,
   endpoint: string,
   options?: {

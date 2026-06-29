@@ -1,5 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 import { createBatches } from './utils/batch';
 
 export type OrphanedFile = {
@@ -23,7 +23,7 @@ export type GetOrphanedFilesResult = {
  * @param config - The configuration for the API call
  * @returns The orphaned files
  */
-export default async function _getOrphanedFiles(
+export async function _getOrphanedFiles(
   branchId: string,
   fileIds: string[],
   options: { timeout?: number } = {},
