@@ -7,23 +7,25 @@ import type {
   PreviewData,
 } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
+import { getTranslationsSnapshotRscError } from './errors/createErrors';
 import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 initializeGT();
 
-// ===== Overrides ===== //
-import { GTProvider } from './provider/GTProvider';
-import { Var } from './variables/Var';
-import { Num } from './variables/Num';
-import { Currency } from './variables/Currency';
-import { DateTime } from './variables/DateTime';
-import { RelativeTime } from './variables/RelativeTime';
-import { T } from './server-dir/buildtime/T';
-import { Branch } from './branches/Branch';
-import { Plural } from './branches/Plural';
-import { useLocale } from './request/getLocale';
-import { useRegion } from './request/getRegion';
-import { useLocaleDirection } from './request/getLocaleDirection';
+// ===== Components ===== //
+export { Branch } from './branches/Branch';
+export { Currency } from './variables/Currency';
+export { DateTime } from './variables/DateTime';
+export { GTProvider } from './provider/GTProvider';
+export { Num } from './variables/Num';
+export { Plural } from './branches/Plural';
+export { RelativeTime } from './variables/RelativeTime';
+export { T } from './server-dir/buildtime/T';
+export { Var } from './variables/Var';
 
+// ===== Hooks ===== //
+export { useLocale } from './request/getLocale';
+export { useRegion } from './request/getRegion';
+export { useLocaleDirection } from './request/getLocaleDirection';
 export {
   useTranslations,
   useMessages,
@@ -34,36 +36,6 @@ export {
 
 export { Client_LocaleSelector as LocaleSelector } from './utils/client-boundary';
 export { Client_RegionSelector as RegionSelector } from './utils/client-boundary';
-
-// ===== gt-react ===== //
-import {
-  msg,
-  decodeMsg,
-  decodeOptions,
-  declareVar,
-  decodeVars,
-  derive,
-  Derive,
-  mFallback,
-  gtFallback,
-  getDefaultLocale,
-  getGTClass,
-  getLocaleProperties,
-  getLocales,
-  getVersionId,
-  // ----- hooks ----- //
-  useGTClass,
-  useLocaleProperties,
-  useLocales,
-  useDefaultLocale,
-  useVersionId,
-} from 'gt-react';
-import type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
-} from 'gt-react';
-import { getTranslationsSnapshotRscError } from './errors/createErrors';
 
 // ===== other ===== //
 
@@ -102,42 +74,39 @@ export function withGTServerSideProps<
   );
 }
 
+// ===== gt-react Components ===== //
+export { Derive } from 'gt-react';
+
+// ===== gt-react Hooks ===== //
 export {
-  GTProvider,
-  T,
-  Var,
-  Num,
-  Currency,
-  DateTime,
-  RelativeTime,
-  Derive,
-  Branch,
-  Plural,
-  useLocale,
-  useRegion,
-  useLocaleDirection,
-  msg,
+  useDefaultLocale,
+  useGTClass,
+  useLocaleProperties,
+  useLocales,
+  useVersionId,
+} from 'gt-react';
+
+// ===== gt-react Functions ===== //
+export {
   decodeMsg,
   decodeOptions,
-  derive,
-  declareVar,
   decodeVars,
-  mFallback,
-  gtFallback,
+  declareVar,
+  derive,
   getDefaultLocale,
   getGTClass,
   getLocaleProperties,
   getLocales,
   getVersionId,
-  useGTClass,
-  useLocaleProperties,
-  useLocales,
-  useDefaultLocale,
-  useVersionId,
-};
+  gtFallback,
+  mFallback,
+  msg,
+} from 'gt-react';
+
+// ===== Types ===== //
 export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-  WithGTServerSideProps,
-};
+} from 'gt-react';
+export type { WithGTServerSideProps };
