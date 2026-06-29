@@ -56,17 +56,6 @@
   },
   "exports": {
     ".": {
-      "react-server": {
-        "require": {
-          "types": "./dist/index.rsc.d.cts",
-          "default": "./dist/index.rsc.cjs"
-        },
-        "import": {
-          "types": "./dist/index.rsc.d.mts",
-          "default": "./dist/index.rsc.mjs"
-        },
-        "default": "./dist/index.rsc.mjs"
-      },
       "browser": {
         "require": {
           "types": "./dist/index.types.d.cts",
@@ -77,6 +66,17 @@
           "default": "./dist/index.client.mjs"
         },
         "default": "./dist/index.client.mjs"
+      },
+      "react-server": {
+        "require": {
+          "types": "./dist/index.rsc.d.cts",
+          "default": "./dist/index.rsc.cjs"
+        },
+        "import": {
+          "types": "./dist/index.rsc.d.mts",
+          "default": "./dist/index.rsc.mjs"
+        },
+        "default": "./dist/index.rsc.mjs"
       },
       "require": {
         "types": "./dist/index.types.d.cts",

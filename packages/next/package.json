@@ -71,13 +71,13 @@
   },
   "exports": {
     ".": {
-      "react-server": {
-        "import": "./dist/index.rsc.mjs",
-        "default": "./dist/index.rsc.js"
-      },
       "browser": {
         "import": "./dist/index.client.mjs",
         "default": "./dist/index.client.js"
+      },
+      "react-server": {
+        "import": "./dist/index.rsc.mjs",
+        "default": "./dist/index.rsc.js"
       },
       "types": "./dist/index.types.d.ts",
       "import": "./dist/index.server.mjs",
