@@ -116,12 +116,10 @@ export function getDictionaryValue(value: DictionaryEntry): DictionaryValue {
 export function resolveDictionaryLookupOptions(
   options: DictionaryEntry['options']
 ): DictionaryLookupOptions {
-  const { $format, context, ...rest } = options;
+  const { $format, ...rest } = options;
   return {
     ...rest,
     $format: isStringFormat($format) ? $format : 'ICU',
-    ...(rest.$context === undefined &&
-      typeof context === 'string' && { $context: context }),
   };
 }
 
@@ -147,9 +145,7 @@ function isDictionaryOptions(value: unknown): value is DictionaryOptions {
   return (
     (options.$context === undefined || typeof options.$context === 'string') &&
     (options.$format === undefined || isStringFormat(options.$format)) &&
-    (options.$maxChars === undefined ||
-      typeof options.$maxChars === 'number') &&
-    (options.context === undefined || typeof options.context === 'string')
+    (options.$maxChars === undefined || typeof options.$maxChars === 'number')
   );
 }
 

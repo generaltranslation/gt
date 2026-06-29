@@ -15,8 +15,6 @@ export type DictionaryOptions = BaseTranslationOptions & {
   $format?: StringFormat;
   $context?: string;
   $maxChars?: number;
-  /** @deprecated use {@link $context} instead */
-  context?: string;
 };
 
 /**
@@ -30,10 +28,6 @@ export type InlineTranslationOptionsFields = {
   $format?: StringFormat;
   /** The locale to use for formatting the message. */
   $locale?: string;
-  /**
-   * @deprecated use {@link $locale} instead
-   */
-  $_locales?: string | string[];
   $_hash?: string;
   $maxChars?: number;
   /** @internal Used to carry the original source when rendering a translation */

@@ -22,11 +22,10 @@ type TxOptions = FormatVariables & {
  *
  * @param {string} content - The content string that needs to be translated.
  * @param {Object} [options] - Translation options.
- * @param {string} [options.locale] - The target locale for translation. Defaults to the current locale if not provided.
- * @param {string} [options.context] - Additional context for the translation process, which may influence the translation's outcome.
- * @param {number} [options.maxChars] - The maximum number of characters to translate.
- * @param {Object} [options.variables] - An optional map of variables to be injected into the translated content.
- * @param {Object} [options.variableOptions] - Options for formatting numbers and dates using `Intl.NumberFormat` or `Intl.DateTimeFormat`.
+ * @param {string} [options.$locale] - The target locale for translation. Defaults to the current locale if not provided.
+ * @param {string} [options.$context] - Additional context for the translation process, which may influence the translation's outcome.
+ * @param {number} [options.$maxChars] - The maximum number of characters to translate.
+ * @param {string|number|boolean|Date} [options.<variable>] - Variables to interpolate into the message, passed as top-level keys (e.g. `{ price: 29.99 }`).
  * @param {StringFormat} [options.$format] - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
  *
  * @returns {Promise<string>} - A promise that resolves to the translated content string, or the original content if no translation is needed.
@@ -39,11 +38,11 @@ type TxOptions = FormatVariables & {
  *
  * @example
  * // Providing specific translation options
- * const translation = await tx("Hello, world!", { locale: 'es', context: 'Translate informally' });
+ * const translation = await tx("Hello, world!", { $locale: 'es', $context: 'Translate informally' });
  *
  * @example
  * // Using variables in the content string
- * const translation = await tx("The price is {price}", { locale: 'es-MX', variables: { price: 29.99 } });
+ * const translation = await tx("The price is {price}", { $locale: 'es-MX', price: 29.99 });
  */
 export async function tx(
   message: string,
