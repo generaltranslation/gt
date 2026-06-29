@@ -14,7 +14,10 @@
   ],
   "sideEffects": [
     "./dist/index.server.*",
-    "./dist/server.*"
+    "./dist/index.rsc.*",
+    "./dist/index.client.*",
+    "./dist/server.*",
+    "./dist/utils/client-boundary.*"
   ],
   "dependencies": {
     "@generaltranslation/compiler": "workspace:*",
@@ -68,55 +71,75 @@
   },
   "exports": {
     ".": {
-      "react-server": "./dist/index.rsc.js",
-      "browser": "./dist/index.client.js",
+      "react-server": {
+        "import": "./dist/index.rsc.mjs",
+        "default": "./dist/index.rsc.js"
+      },
+      "browser": {
+        "import": "./dist/index.client.mjs",
+        "default": "./dist/index.client.js"
+      },
       "types": "./dist/index.types.d.ts",
+      "import": "./dist/index.server.mjs",
       "default": "./dist/index.server.js"
     },
     "./config": {
       "types": "./dist/config.d.ts",
+      "import": "./dist/config.mjs",
       "default": "./dist/config.js"
     },
     "./server": {
       "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs",
       "default": "./dist/server.js"
     },
     "./middleware": {
       "types": "./dist/middleware.d.ts",
+      "import": "./dist/middleware.mjs",
       "default": "./dist/middleware.js"
     },
     "./link": {
       "types": "./dist/link.d.ts",
+      "import": "./dist/link.mjs",
       "default": "./dist/link.js"
     },
     "./types": {
       "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
       "default": "./dist/types.js"
     },
     "./_dictionary": {
+      "import": "./dist/_dictionary.mjs",
       "default": "./dist/_dictionary.js"
     },
     "./_load-translations": {
+      "import": "./dist/_load-translations.mjs",
       "default": "./dist/_load-translations.js"
     },
     "./_load-dictionary": {
+      "import": "./dist/_load-dictionary.mjs",
       "default": "./dist/_load-dictionary.js"
     },
     "./compiler": {
       "types": "./dist/compiler/index.d.ts",
+      "import": "./dist/compiler/index.mjs",
       "default": "./dist/compiler/index.js"
     },
     "./eslint-plugin": {
       "types": "./dist/eslint-plugin/index.d.ts",
+      "import": "./dist/eslint-plugin/index.mjs",
       "default": "./dist/eslint-plugin/index.js"
     },
     "./internal/_getLocale": {
+      "import": "./dist/internal/_getLocale.mjs",
       "default": "./dist/internal/_getLocale.js"
     },
     "./internal/_getRegion": {
+      "import": "./dist/internal/_getRegion.mjs",
       "default": "./dist/internal/_getRegion.js"
     },
     "./internal/_getDomain": {
+      "import": "./dist/internal/_getDomain.mjs",
       "default": "./dist/internal/_getDomain.js"
     }
   },
