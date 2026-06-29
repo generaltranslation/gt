@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
+export { initializeGTSRAClient as initializeGT } from './setup/initializeGTSRAClient';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useRegionSelector } from './components/useRegionSelector';
 export {
@@ -79,7 +80,6 @@ export {
   mFallback,
   gtFallback,
   getFormatLocales,
-  initializeGT,
   getDefaultLocale,
   getGTClass,
   getLocaleProperties,
