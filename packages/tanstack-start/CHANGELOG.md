@@ -1,5 +1,15 @@
 # gt-tanstack-start
 
+## 11.0.0-odysseus.5
+
+### Patch Changes
+
+- Updated dependencies [[`795147f`](https://github.com/generaltranslation/gt/commit/795147f5b00f948b2b1876a919c0a16cf53c52b6), [`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660), [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447), [`41c938c`](https://github.com/generaltranslation/gt/commit/41c938c0d00f4b76faa7a2805ad0015891e0740e), [`b3c3b9a`](https://github.com/generaltranslation/gt/commit/b3c3b9af39f1b2abec2c2b6bf2c2a40fe76db5ce)]:
+  - gt-react@11.0.0-odysseus.5
+  - generaltranslation@9.0.0-odysseus.2
+  - @generaltranslation/react-core@11.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.2
+
 ## 11.0.0-odysseus.4
 
 ### Patch Changes

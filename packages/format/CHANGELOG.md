@@ -1,5 +1,11 @@
 # @generaltranslation/format
 
+## 0.1.2-odysseus.1
+
+### Patch Changes
+
+- [#1678](https://github.com/generaltranslation/gt/pull/1678) [`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Organize package entrypoint exports and replace re-export-only imports with direct export declarations.
+
 ## 0.1.2-odysseus.0
 
 ### Patch Changes

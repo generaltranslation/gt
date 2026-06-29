@@ -1,5 +1,38 @@
 # gt-next
 
+## 11.0.0-odysseus.5
+
+### Major Changes
+
+- [#1690](https://github.com/generaltranslation/gt/pull/1690) [`b3c3b9a`](https://github.com/generaltranslation/gt/commit/b3c3b9af39f1b2abec2c2b6bf2c2a40fe76db5ce) Thanks [@bgub](https://github.com/bgub)! - Simplify translation option types. Replace deprecated inline and dictionary option aliases with `GTTranslationOptions`, use interpolation variables for dictionary `t()` options, and trim higher-level type exports to avoid exposing internal translation option fields.
+
+### Patch Changes
+
+- [#1685](https://github.com/generaltranslation/gt/pull/1685) [`795147f`](https://github.com/generaltranslation/gt/commit/795147f5b00f948b2b1876a919c0a16cf53c52b6) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Allow client i18n cache expiry to default to no expiry while preserving explicit cache expiry configuration.
+
+- [#1688](https://github.com/generaltranslation/gt/pull/1688) [`2836b96`](https://github.com/generaltranslation/gt/commit/2836b964dcc1f005430c3fbcfb4f6ff3d948a3fb) Thanks [@bgub](https://github.com/bgub)! - Ship a dual ESM/CJS build for `gt-next` and add `import` export conditions.
+
+  Previously `gt-next` was published as CJS only (no `import` condition), so bundlers resolved the entire gt dependency graph (`gt-react`, `@generaltranslation/react-core`, `generaltranslation`, `gt-i18n`, `@generaltranslation/format`) through the `require` condition. That forced CJS variants onto the client, which cannot be tree-shaken — shipping `gt-next`'s own server/error code and unused dependency exports to the browser.
+
+  `gt-next` now emits unbundled `.mjs` output alongside the existing `.js` output, and every `exports` subpath exposes an `import` condition. Bundlers now resolve the gt graph as ESM, enabling tree-shaking across all gt packages. Measured on a real Next.js app, this cuts gt's total client bundle by ~19% gzip (≈96 kB → ≈78 kB) with no API changes.
+
+  The ESM build sets `polyfillRequire: false` so rolldown does not inject a `createRequire`-from-`node:module` shim (server-only `require()` calls are provided `require` by the bundler), and marks the `index.rsc`/`index.client` entrypoints as having side effects so their top-level initialization is not tree-shaken away.
+
+- [#1678](https://github.com/generaltranslation/gt/pull/1678) [`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Organize package entrypoint exports and replace re-export-only imports with direct export declarations.
+
+- [#1676](https://github.com/generaltranslation/gt/pull/1676) [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove default exports from package entrypoints and internal source modules.
+
+  Use named imports for affected public entrypoints, including `import { plugin } from 'gt-react-native/plugin'`. The `gt-next/link` entrypoint keeps its default export to match `next/link`.
+
+- Updated dependencies [[`795147f`](https://github.com/generaltranslation/gt/commit/795147f5b00f948b2b1876a919c0a16cf53c52b6), [`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660), [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447), [`41c938c`](https://github.com/generaltranslation/gt/commit/41c938c0d00f4b76faa7a2805ad0015891e0740e), [`b3c3b9a`](https://github.com/generaltranslation/gt/commit/b3c3b9af39f1b2abec2c2b6bf2c2a40fe76db5ce)]:
+  - gt-react@11.0.0-odysseus.5
+  - @generaltranslation/format@0.1.2-odysseus.1
+  - generaltranslation@9.0.0-odysseus.2
+  - @generaltranslation/react-core@11.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.2
+  - @generaltranslation/compiler@1.3.25-odysseus.2
+  - @generaltranslation/supported-locales@2.1.2-odysseus.2
+
 ## 11.0.0-odysseus.4
 
 ### Patch Changes
