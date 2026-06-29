@@ -16,7 +16,8 @@
     "./dist/index.server.*",
     "./dist/index.rsc.*",
     "./dist/index.client.*",
-    "./dist/server.*"
+    "./dist/server.*",
+    "./dist/utils/client-boundary.*"
   ],
   "dependencies": {
     "@generaltranslation/compiler": "workspace:*",
