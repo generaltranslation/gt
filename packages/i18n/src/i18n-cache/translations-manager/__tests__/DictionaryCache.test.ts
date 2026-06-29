@@ -8,7 +8,7 @@ describe('DictionaryCache', () => {
     greeting: 'Hello',
     cta: ['Click me'],
     header: ['Welcome', { $context: 'homepage', $maxChars: 12 }],
-    footer: ['Thanks', { context: 'homepage footer' }],
+    footer: ['Thanks', { $context: 'homepage footer' }],
     user: {
       profile: {
         name: 'Name',
@@ -57,7 +57,7 @@ describe('DictionaryCache', () => {
     });
     expect(cache.getEntry('footer')).toEqual({
       entry: 'Thanks',
-      options: { context: 'homepage footer' },
+      options: { $context: 'homepage footer' },
     });
   });
 

@@ -23,7 +23,7 @@ describe('LocalesCache', () => {
   };
   const frDictionary: Dictionary = {
     greeting: 'Bonjour',
-    cta: ['Cliquez', { context: 'button' }],
+    cta: ['Cliquez', { $context: 'button' }],
     user: {
       name: 'Nom',
     },
@@ -278,7 +278,7 @@ describe('LocalesCache', () => {
 
       expect(dictionaryCache.getEntry('cta')).toEqual({
         entry: 'Cliquez',
-        options: { context: 'button' },
+        options: { $context: 'button' },
       });
     });
 
@@ -325,7 +325,7 @@ describe('LocalesCache', () => {
       });
       expect(cache.getDictionary('fr')?.getInternalCache()).toEqual({
         greeting: 'Salut',
-        cta: ['Cliquez', { context: 'button' }],
+        cta: ['Cliquez', { $context: 'button' }],
         user: {
           name: 'Nom',
           title: 'Titre',

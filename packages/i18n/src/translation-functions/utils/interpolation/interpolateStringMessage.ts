@@ -9,7 +9,7 @@ export function interpolateStringMessage(
   options: InlineTranslationOptions
 ): string {
   const cutoffMessage = formatCutoff(encodedMsg, {
-    locales: options.$locale ?? options.$_locales,
+    locales: options.$locale,
     maxChars: options.$maxChars,
   });
   return cutoffMessage;

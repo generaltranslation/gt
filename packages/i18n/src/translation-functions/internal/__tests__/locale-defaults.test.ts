@@ -127,7 +127,7 @@ describe('translation function locale defaults', () => {
       { defaultLocale: 'en', locales: ['en', 'fr'] },
       {
         dictionary: {
-          greeting: [message, { context: 'homepage' }],
+          greeting: [message, { $context: 'homepage' }],
         },
         loadDictionary: vi.fn().mockResolvedValue({}),
         loadTranslations,
@@ -237,7 +237,7 @@ describe('translation function locale defaults', () => {
           user: {
             profile: {
               name: 'Name',
-              title: [title, { context: 'profile title' }],
+              title: [title, { $context: 'profile title' }],
             },
           },
         },
