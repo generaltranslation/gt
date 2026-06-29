@@ -3,7 +3,7 @@ import { extractVariables } from '../../utils/extractVariables';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import type {
   DictionaryLookupOptions,
-  DictionaryTranslationOptions,
+  TranslationVariables,
 } from '../types/options';
 import type { DictionaryEntry } from '../../i18n-cache/translations-manager/DictionaryCache';
 import type { StringFormat } from '@generaltranslation/format/types';
@@ -21,7 +21,7 @@ export function renderDictionaryEntry({
   sourceEntry: DictionaryEntry;
   target: string | undefined;
   dictionaryOptions: DictionaryLookupOptions;
-  options?: DictionaryTranslationOptions;
+  options?: TranslationVariables;
 }): string {
   const lookupOptions = createLookupOptions<StringFormat>(
     targetLocale,

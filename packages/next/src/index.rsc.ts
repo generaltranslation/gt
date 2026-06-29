@@ -104,9 +104,5 @@ export {
 } from 'gt-react';
 
 // ===== Types ===== //
-export type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
-} from 'gt-react';
+export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
 export type { WithGTServerSideProps };

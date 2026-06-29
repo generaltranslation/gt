@@ -1,5 +1,5 @@
 import { decodeMsg } from '../msg/decodeMsg';
-import { InlineResolveOptions } from '../types/options';
+import { GTTranslationOptions } from '../types/options';
 import { MFunctionType } from '../types/functions';
 import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
@@ -8,7 +8,7 @@ import { interpolateIcuMessage } from '../utils/interpolation/interpolateIcuMess
 /**
  * A fallback function for the m() function that decodes and interpolates.
  * @param {string | null | undefined} encodedMsg - The encoded message to decode and interpolate.
- * @param {InlineTranslationOptions} options - The options to interpolate.
+ * @param {GTTranslationOptions} options - The options to interpolate.
  * @returns - The decoded and interpolated message.
  *
  * @note This function is useful as a placeholder when for incrementally migrating to the m() function.
@@ -32,7 +32,7 @@ import { interpolateIcuMessage } from '../utils/interpolation/interpolateIcuMess
  */
 export const mFallback: MFunctionType = <T extends string | null | undefined>(
   encodedMsg: T,
-  options: InlineResolveOptions = {}
+  options: GTTranslationOptions = {}
 ): T extends string ? string : T => {
   // Return if the encoded message is null or undefined
   if (!encodedMsg) return encodedMsg as T extends string ? string : T;

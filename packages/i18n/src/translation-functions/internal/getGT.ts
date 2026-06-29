@@ -1,6 +1,6 @@
 import { getI18nCache } from '../../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../../i18n-config/singleton-operations';
-import { InlineTranslationOptions } from '../types/options';
+import { GTTranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
@@ -42,7 +42,7 @@ export async function getGTInternal({
   /**
    * Registers a message at build time and resolves its translation at runtime.
    * @param {string} message - The message to translate
-   * @param {InlineTranslationOptions} options - The options for the translation
+   * @param {GTTranslationOptions} options - The options for the translation
    * @returns The translated message
    *
    * @example
@@ -57,7 +57,7 @@ export async function getGTInternal({
    */
   const gt: GTFunctionType = (
     message: string,
-    options: InlineTranslationOptions = {}
+    options: GTTranslationOptions = {}
   ) => {
     const targetLocale = enableI18n
       ? (options.$locale ?? locale)

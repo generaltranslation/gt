@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
 import { useLocale } from './condition-store';
 import { useShouldTranslate } from './utils';
-import type { GTFunctionType, InlineTranslationOptions } from 'gt-i18n/types';
+import type { GTFunctionType, GTTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { useDefaultLocale } from './i18n-config';
 import {
@@ -22,7 +22,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
    * gt() string translation callback
    */
   return useCallback(
-    (message: string, options: InlineTranslationOptions = {}) => {
+    (message: string, options: GTTranslationOptions = {}) => {
       if (!shouldTranslate) {
         return interpolateMessage({
           options,

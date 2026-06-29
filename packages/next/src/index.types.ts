@@ -39,11 +39,7 @@ import {
   getVersionId,
 } from 'gt-react';
 import { GTProvider as _GTProvider } from 'gt-react';
-import type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
-} from 'gt-react';
+import type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
 import type { StringFormat } from '@generaltranslation/format/types';
 import {
   msg,
@@ -367,7 +363,7 @@ export function withGTServerSideProps<
  * Returns the string translation function `t`.
  *
  * @returns {Function} A translation function that accepts an ICU format string and returns that ICU format string translated.
- * @param {InlineTranslationOptions} [options] - Translation options including variables and special `$`-prefixed options.
+ * @param {GTTranslationOptions} [options] - Translation options including variables and special `$`-prefixed options.
  * @param {string} [options.$context] - Additional context for the translation.
  * @param {string} [options.$id] - Optional identifier for the translation string.
  * @param {number} [options.$maxChars] - Maximum number of characters for the translated message.
@@ -387,7 +383,7 @@ export function withGTServerSideProps<
  */
 export const useGT: (
   _messages?: _Messages
-) => (message: string, options?: InlineTranslationOptions) => string = () => {
+) => (message: string, options?: GTTranslationOptions) => string = () => {
   throw new Error(typesFileError);
 };
 
@@ -396,9 +392,7 @@ export const useGT: (
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
- * The returned function accepts `DictionaryTranslationOptions` which includes:
- * - `$format` - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
- * - `$maxChars` - Maximum number of characters for the translated message.
+ * The returned function accepts interpolation variables.
  *
  * @example
  * const t = useTranslations('user');
@@ -532,7 +526,7 @@ export const useVersionId: typeof _useVersionId = () => {
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
  * @param {string | string[]} message The message to encode.
- * @param {InlineTranslationOptions} [options] The options to encode.
+ * @param {GTTranslationOptions} [options] The options to encode.
  * @returns The message or array of messages.
  *
  * @note - This function registers the message before the build process. The actual translation does not
@@ -565,14 +559,13 @@ export const useMessages: (
   _messages?: _Messages
 ) => <T extends string | null | undefined>(
   encodedMsg: T,
-  options?: InlineTranslationOptions
+  options?: GTTranslationOptions
 ) => T extends string ? string : T = () => {
   throw new Error(typesFileError);
 };
 
 export type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
+  GTTranslationOptions,
   RuntimeTranslationOptions,
   WithGTServerSideProps,
 };

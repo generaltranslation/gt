@@ -1,6 +1,6 @@
 import { getI18nCache } from '../../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../../i18n-config/singleton-operations';
-import { DictionaryTranslationOptions } from '../types/options';
+import { TranslationVariables } from '../types/options';
 import { TFunctionType } from '../types/functions';
 import { renderDictionaryEntry } from './renderDictionaryEntry';
 import { renderDictionaryObject } from './renderDictionaryObject';
@@ -45,7 +45,7 @@ export async function getTranslationsInternal({
   /**
    * Dictionary resolution
    * @param {string} id - The id of the translation to translate.
-   * @param {DictionaryTranslationOptions} options - The options for interpolation.
+   * @param {TranslationVariables} options - The variables for interpolation.
    * @returns {string} The translated message.
    *
    * @example
@@ -58,10 +58,7 @@ export async function getTranslationsInternal({
    * const t = await getTranslations();
    * const greeting = t('user.greeting', { name: 'Bob' });
    */
-  const t = ((
-    id: string,
-    options: DictionaryTranslationOptions = {}
-  ): string => {
+  const t = ((id: string, options: TranslationVariables = {}): string => {
     const sourceEntry = i18nCache.lookupDictionary(sourceLocale, id);
     if (sourceEntry === undefined) {
       throw new Error(`Dictionary entry ${id} cannot be found`);

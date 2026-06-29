@@ -6,8 +6,8 @@ import type {
   DictionaryValue,
 } from './types/dictionary';
 import type {
+  DictionaryEntryOptions,
   DictionaryLookupOptions,
-  DictionaryOptions,
 } from '../../../translation-functions/types/options';
 
 function getDictionaryPath(id: DictionaryPath): string[] {
@@ -133,10 +133,12 @@ function isDictionaryLeafNode(value: unknown): value is DictionaryLeaf {
   if (value.length === 1) {
     return true;
   }
-  return value.length === 2 && isDictionaryOptions(value[1]);
+  return value.length === 2 && isDictionaryLeafOptions(value[1]);
 }
 
-function isDictionaryOptions(value: unknown): value is DictionaryOptions {
+function isDictionaryLeafOptions(
+  value: unknown
+): value is DictionaryEntryOptions {
   if (typeof value !== 'object' || value == null || Array.isArray(value)) {
     return false;
   }

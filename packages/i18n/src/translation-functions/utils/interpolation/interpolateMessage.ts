@@ -1,5 +1,5 @@
 import {
-  InlineTranslationOptions,
+  TranslationOptions,
   NormalizedLookupOptions,
 } from '../../types/options';
 import { interpolateIcuMessage } from './interpolateIcuMessage';
@@ -47,7 +47,7 @@ export function interpolateMessage({
  */
 function routeInterpolation(
   content: string,
-  options: InlineTranslationOptions
+  options: TranslationOptions
 ): string {
   switch (options.$format ?? 'STRING') {
     case 'ICU':

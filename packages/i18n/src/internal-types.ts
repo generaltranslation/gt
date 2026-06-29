@@ -20,7 +20,6 @@ export type {
   DictionaryEntry,
   DictionaryLeaf,
   DictionaryObject,
-  DictionaryOptions,
   DictionaryPath,
   DictionaryKey,
 } from './i18n-cache/translations-manager/DictionaryCache';
@@ -30,7 +29,7 @@ export type { GTServicesEnabledParams } from './globals/getGTServicesEnabled';
 
 // Translation Options (Function types exported by /types)
 export type * from './translation-functions/types/options';
-export type { InlineTranslationOptionsFields } from './translation-functions/types/options';
+export type { TranslationMetadata } from './translation-functions/types/options';
 
 // Config
 export type * from './config/types';
