@@ -145,8 +145,7 @@ function isDictionaryOptions(value: unknown): value is DictionaryOptions {
   return (
     (options.$context === undefined || typeof options.$context === 'string') &&
     (options.$format === undefined || isStringFormat(options.$format)) &&
-    (options.$maxChars === undefined ||
-      typeof options.$maxChars === 'number')
+    (options.$maxChars === undefined || typeof options.$maxChars === 'number')
   );
 }
 
