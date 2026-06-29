@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _getProjectData from '../getProjectData';
-import fetchWithTimeout from '../../translate/utils/fetchWithTimeout';
-import validateResponse from '../../translate/utils/validateResponse';
-import handleFetchError from '../../translate/utils/handleFetchError';
-import generateRequestHeaders from '../../translate/utils/generateRequestHeaders';
+import { _getProjectData } from '../getProjectData';
+import { fetchWithTimeout } from '../../translate/utils/fetchWithTimeout';
+import { validateResponse } from '../../translate/utils/validateResponse';
+import { handleFetchError } from '../../translate/utils/handleFetchError';
+import { generateRequestHeaders } from '../../translate/utils/generateRequestHeaders';
 import { TranslationRequestConfig } from '../../types';
 import { ProjectData } from '../../types-dir/api/project';
 

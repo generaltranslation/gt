@@ -11,7 +11,7 @@ import { defaultTimeout } from '../../settings/settings';
  * @param timeout - The timeout in milliseconds.
  * @returns The response from the fetch function.
  */
-export default async function fetchWithTimeout(
+export async function fetchWithTimeout(
   url: string | URL | globalThis.Request,
   options: RequestInit,
   timeout?: number

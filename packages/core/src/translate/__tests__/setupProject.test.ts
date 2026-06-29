@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _setupProject, { SetupProjectResult } from '../setupProject';
+import { _setupProject, SetupProjectResult } from '../setupProject';
 import { TranslationRequestConfig } from '../../types';
 import { FileReference } from '../../types-dir/api/file';
-import apiRequest from '../utils/apiRequest';
+import { apiRequest } from '../utils/apiRequest';
 
 vi.mock('../utils/apiRequest');
 

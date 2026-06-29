@@ -1,10 +1,10 @@
 import { defaultBaseUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from '../translate/utils/fetchWithTimeout';
+import { fetchWithTimeout } from '../translate/utils/fetchWithTimeout';
 import { defaultTimeout } from '../settings/settings';
-import validateResponse from '../translate/utils/validateResponse';
-import handleFetchError from '../translate/utils/handleFetchError';
+import { validateResponse } from '../translate/utils/validateResponse';
+import { handleFetchError } from '../translate/utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
-import generateRequestHeaders from '../translate/utils/generateRequestHeaders';
+import { generateRequestHeaders } from '../translate/utils/generateRequestHeaders';
 import { ProjectData } from '../types-dir/api/project';
 
 /**
@@ -15,7 +15,7 @@ import { ProjectData } from '../types-dir/api/project';
  * @param config - The configuration for the request.
  * @returns The project data for the given project ID.
  */
-export default async function _getProjectData(
+export async function _getProjectData(
   projectId: string,
   options: { timeout?: number },
   config: TranslationRequestConfig

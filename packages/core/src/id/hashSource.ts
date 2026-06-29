@@ -4,7 +4,7 @@ import { JsxChild, JsxChildren, Variable } from '../types';
 import { stableStringify as stringify } from '../utils/stableStringify';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
-import isVariable from '../utils/isVariable';
+import { isVariable } from '../utils/isVariable';
 import { HashMetadata } from './types';
 
 // ----- FUNCTIONS ----- //

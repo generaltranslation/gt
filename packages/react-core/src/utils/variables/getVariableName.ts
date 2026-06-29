@@ -8,7 +8,7 @@ const defaultVariableNames = {
 
 export const baseVariablePrefix = '_gt_';
 
-export default function getVariableName(
+export function getVariableName(
   props: Record<string, unknown> = {},
   variableType: keyof typeof defaultVariableNames
 ): string {

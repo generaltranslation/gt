@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _uploadSourceFiles from '../uploadSourceFiles';
+import { _uploadSourceFiles } from '../uploadSourceFiles';
 import { TranslationRequestConfig } from '../../types';
 import {
   FileUpload,
   RequiredUploadFilesOptions,
 } from '../../types-dir/api/uploadFiles';
-import apiRequest from '../utils/apiRequest';
+import { apiRequest } from '../utils/apiRequest';
 
 vi.mock('../utils/apiRequest');
 

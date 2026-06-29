@@ -1,6 +1,6 @@
-import addGTIdentifier from '../internal/addGTIdentifier';
+import { addGTIdentifier } from '../internal/addGTIdentifier';
 import { removeInjectedT } from '../internal/removeInjectedT';
-import writeChildrenAsObjects from '../internal/writeChildrenAsObjects';
+import { writeChildrenAsObjects } from '../internal/writeChildrenAsObjects';
 import type { JsxTranslationOptions as JsxTranslationOptionsWithSugar } from 'gt-i18n/types';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { ReactNode } from 'react';

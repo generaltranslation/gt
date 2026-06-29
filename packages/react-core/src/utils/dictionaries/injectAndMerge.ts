@@ -3,7 +3,7 @@ import { getDictionaryEntry } from './getDictionaryEntry';
 import { getSubtree } from './getSubtree';
 import { get, set } from './indexDict';
 import { isDictionaryEntry } from './isDictionaryEntry';
-import mergeDictionaries from './mergeDictionaries';
+import { mergeDictionaries } from './mergeDictionaries';
 
 const createSubtreeNotFoundError = (id: string) =>
   `Dictionary subtree "${id}" could not be found`;

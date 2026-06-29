@@ -29,7 +29,7 @@ export type AwaitJobsResult = {
  * @param config - API credentials and configuration.
  * @returns The final status of all jobs.
  */
-export default async function _awaitJobs(
+export async function _awaitJobs(
   enqueueResult: EnqueueFilesResult,
   options: AwaitJobsOptions | undefined,
   config: TranslationRequestConfig

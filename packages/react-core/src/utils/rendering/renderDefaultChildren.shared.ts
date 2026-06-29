@@ -1,11 +1,12 @@
 import React, { ReactNode } from 'react';
-import getVariableProps, {
+import {
+  getVariableProps,
   isVariableElementProps,
 } from '../variables/_getVariableProps';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { TaggedChild, TaggedChildren, TaggedElement } from '../types';
-import getGTTag from './getGTTag';
-import getPluralBranch from '../plurals/getPluralBranch';
+import { getGTTag } from './getGTTag';
+import { getPluralBranch } from '../plurals/getPluralBranch';
 import type { RenderVariable } from '../types';
 
 // Shared implementation: the variable renderer is dependency-injected by a

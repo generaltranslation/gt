@@ -1,5 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 import { processBatches } from './utils/batch';
 
 export type SubmitUserEditDiff = {
@@ -20,7 +20,7 @@ export type SubmitUserEditDiffsPayload = {
  * @internal
  * Submits user edit diffs so the service can learn/persist user-intended rules.
  */
-export default async function _submitUserEditDiffs(
+export async function _submitUserEditDiffs(
   payload: SubmitUserEditDiffsPayload,
   config: TranslationRequestConfig,
   options: { timeout?: number } = {}

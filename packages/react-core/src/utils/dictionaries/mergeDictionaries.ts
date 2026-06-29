@@ -8,7 +8,7 @@ const isPrimitiveOrArray = (value: unknown): boolean =>
 const isObjectDictionary = (value: unknown): boolean =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-export default function mergeDictionaries(
+export function mergeDictionaries(
   defaultLocaleDictionary: Dictionary,
   localeDictionary: Dictionary
 ): Dictionary {

@@ -1,7 +1,7 @@
 import { apiError } from '../../logging/errors';
 import { ApiError } from '../../errors/ApiError';
 
-export default async function validateResponse(response: Response) {
+export async function validateResponse(response: Response) {
   if (!response.ok) {
     let errorMsg = 'Unknown error';
     try {

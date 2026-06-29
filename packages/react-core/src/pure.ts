@@ -13,12 +13,12 @@ export {
   gtFallback,
 } from 'gt-i18n';
 
-export { default as getPluralBranch } from './utils/plurals/getPluralBranch';
-export { default as addGTIdentifier } from './utils/internal/addGTIdentifier';
-export { default as writeChildrenAsObjects } from './utils/internal/writeChildrenAsObjects';
-export { default as flattenDictionary } from './utils/dictionaries/flattenDictionary';
-export { default as getVariableProps } from './utils/variables/_getVariableProps';
-export { default as getVariableName } from './utils/variables/getVariableName';
+export { getPluralBranch } from './utils/plurals/getPluralBranch';
+export { addGTIdentifier } from './utils/internal/addGTIdentifier';
+export { writeChildrenAsObjects } from './utils/internal/writeChildrenAsObjects';
+export { flattenDictionary } from './utils/dictionaries/flattenDictionary';
+export { getVariableProps } from './utils/variables/_getVariableProps';
+export { getVariableName } from './utils/variables/getVariableName';
 export { getFormatLocales } from './hooks/utils/getFormatLocales';
 export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
 export { t } from './functions/translation/t';
@@ -38,10 +38,10 @@ export {
   getDictionaryEntry,
   isValidDictionaryEntry,
 } from './utils/dictionaries/getDictionaryEntry';
-export { default as getEntryAndMetadata } from './utils/dictionaries/getEntryAndMetadata';
-export { default as isVariableObject } from './utils/rendering/isVariableObject';
-export { default as renderSkeleton } from './utils/rendering/renderSkeleton';
-export { default as mergeDictionaries } from './utils/dictionaries/mergeDictionaries';
+export { getEntryAndMetadata } from './utils/dictionaries/getEntryAndMetadata';
+export { isVariableObject } from './utils/rendering/isVariableObject';
+export { renderSkeleton } from './utils/rendering/renderSkeleton';
+export { mergeDictionaries } from './utils/dictionaries/mergeDictionaries';
 export { getDefaultRenderSettings } from './utils/rendering/getDefaultRenderSettings';
 export { reactHasUse } from './utils/promises/reactHasUse';
 export {

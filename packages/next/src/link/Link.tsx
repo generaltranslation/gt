@@ -128,5 +128,3 @@ function localizePath(href: string, locale: string): string {
 
   return `${url.pathname}${url.search}${url.hash}`;
 }
-
-export default Link;
