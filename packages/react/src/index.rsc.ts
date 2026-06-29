@@ -176,8 +176,7 @@ export {
   GtInternalRuntimeTranslateString,
 } from 'gt-i18n/internal';
 export type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
+  GTTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-i18n/types';
 export type {

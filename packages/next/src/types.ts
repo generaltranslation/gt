@@ -1,5 +1,4 @@
 export type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
+  GTTranslationOptions,
   RuntimeTranslationOptions,
 } from '@generaltranslation/react-core/pure';

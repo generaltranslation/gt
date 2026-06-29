@@ -9,7 +9,7 @@ import { useLocale } from './condition-store';
 import { useGT } from './useGT';
 import type {
   DictionaryObjectTranslation,
-  DictionaryTranslationOptions,
+  TranslationVariables,
 } from 'gt-i18n/types';
 import { useDefaultLocale } from './i18n-config';
 import { useShouldTranslate } from './utils';
@@ -27,7 +27,7 @@ export function useTranslations(rootId?: string): UseTranslationsFunction {
   const translateObject = useTranslationsObj(rootId);
 
   const translateEntry = useCallback(
-    (suffix: string, options: DictionaryTranslationOptions = {}) => {
+    (suffix: string, options: TranslationVariables = {}) => {
       const id = getId(rootId, suffix);
 
       const sourceEntry = resolveDictionaryEntry({
@@ -128,7 +128,7 @@ function getId(prefix: string | undefined, suffix: string): string {
 
 export type UseTranslationsFunction = ((
   id: string,
-  options?: DictionaryTranslationOptions
+  options?: TranslationVariables
 ) => string) & {
   obj: (id: string) => DictionaryObjectTranslation;
 };
