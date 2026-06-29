@@ -8,4 +8,4 @@
 
 Remove default exports from package entrypoints and internal source modules.
 
-Use named imports for affected public entrypoints, including `import { Link } from 'gt-next/link'` and `import { plugin } from 'gt-react-native/plugin'`.
+Use named imports for affected public entrypoints, including `import { plugin } from 'gt-react-native/plugin'`. The `gt-next/link` entrypoint keeps its default export to match `next/link`.

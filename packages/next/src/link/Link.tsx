@@ -35,7 +35,7 @@ const LinkWithLocale = forwardRef<LinkRef, Omit<LinkProps, 'locale'>>(
  *
  * @example
  * ```tsx
- * import { Link } from 'gt-next/link';
+ * import Link from 'gt-next/link';
  *
  * export function Navigation() {
  *   return <Link href="/home">Home</Link>; // /en/home
@@ -44,7 +44,7 @@ const LinkWithLocale = forwardRef<LinkRef, Omit<LinkProps, 'locale'>>(
  *
  * @example
  * ```tsx
- * import { Link } from 'gt-next/link';
+ * import Link from 'gt-next/link';
  *
  * export function LocaleSwitcher() {
  *   return <Link href="/home" locale="fr">French</Link>; // /fr/home
@@ -53,7 +53,7 @@ const LinkWithLocale = forwardRef<LinkRef, Omit<LinkProps, 'locale'>>(
  *
  * @example
  * ```tsx
- * import { Link } from 'gt-next/link';
+ * import Link from 'gt-next/link';
  *
  * export function UnlocalizedLink() {
  *   return <Link href="/legal" locale={false}>Legal</Link>; // /legal
@@ -62,7 +62,7 @@ const LinkWithLocale = forwardRef<LinkRef, Omit<LinkProps, 'locale'>>(
  *
  * @example
  * ```tsx
- * import { Link } from 'gt-next/link';
+ * import Link from 'gt-next/link';
  *
  * export function ExternalLink() {
  *   return <Link href="https://example.com">Example</Link>; // https://example.com
