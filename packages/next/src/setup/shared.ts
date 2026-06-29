@@ -1,6 +1,7 @@
 import { type I18nConfigParams } from 'gt-i18n/internal';
 import { type NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
 import type { GTServicesEnabledParams } from 'gt-i18n/internal/types';
+import { loadTranslations } from '../config-dir/loadTranslation';
 import { getRuntimeCredentials } from './runtimeCredentials';
 
 // TODO: better way of communicating from build to runtime
@@ -90,9 +91,6 @@ function createLoadTranslations({
 }) {
   if (typeof window !== 'undefined') return;
   return async (locale: string) => {
-    // Imported lazily so this server-only loader chain (which uses a
-    // createRequire shim) stays out of the client module graph.
-    const { loadTranslations } = await import('../config-dir/loadTranslation');
     return (
       (await loadTranslations({
         targetLocale: locale,
