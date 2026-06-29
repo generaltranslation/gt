@@ -40,16 +40,22 @@
   "changesets": [
     "bright-locale-selectors",
     "browser-locale-cookie-updates",
+    "client-i18n-cache-expiry",
     "consolidated-next-odysseus",
     "green-region-selector",
+    "gt-next-esm-build",
     "odysseus-all-packages-patch",
     "odysseus-format-patch-bump",
     "odysseus-major-version-bumps",
     "odysseus-sanity-followup",
     "odysseus-sanity-release-test",
+    "organize-entrypoint-exports",
     "pages-server-side-props",
+    "remove-default-source-exports",
+    "remove-deprecated-context-locales-options",
     "remove-source-barrel-exports",
     "runtime-env-credentials",
+    "simplify-translation-option-types",
     "tanstack-locale-cookie"
   ]
 }
