@@ -8,9 +8,7 @@ import {
   type Dictionary as LegacyDictionary,
   type DictionaryEntry,
 } from '@generaltranslation/react-core/pure';
-import { getDictionary, getDictionaryEntry } from '../dictionary/getDictionary';
 import { createDictionarySubsetError } from '../errors/createErrors';
-import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
 
 export function getNextI18nCache(): NextI18nCache {
   return getI18nCache() as NextI18nCache;
@@ -24,14 +22,24 @@ export type NextI18nCacheParams = ReactI18nCacheParams;
 
 export class NextI18nCache extends ReactI18nCache {
   constructor(params: ReactI18nCacheParams) {
-    const loadDictionary = params.loadDictionary ?? resolveDictionaryLoader();
+    const explicitLoadDictionary = params.loadDictionary;
     super({
       ...params,
-      ...(loadDictionary && {
-        dictionary: params.dictionary ?? {},
-        loadDictionary: async (locale: string) =>
-          ((await loadDictionary(locale)) || {}) as Dictionary,
-      }),
+      dictionary: params.dictionary ?? {},
+      loadDictionary: async (locale: string) => {
+        let loadDictionary = explicitLoadDictionary;
+        // `resolveDictionaryLoader` uses require() and is server-only. Resolve
+        // it lazily behind a `typeof window` guard so bundlers drop it from the
+        // client build (its createRequire shim breaks client chunking).
+        if (loadDictionary === undefined && typeof window === 'undefined') {
+          const { resolveDictionaryLoader } = await import(
+            '../resolvers/resolveDictionaryLoader'
+          );
+          loadDictionary = resolveDictionaryLoader() as typeof loadDictionary;
+        }
+        if (!loadDictionary) return {} as Dictionary;
+        return ((await loadDictionary(locale)) || {}) as Dictionary;
+      },
     });
   }
 
@@ -41,8 +49,16 @@ export class NextI18nCache extends ReactI18nCache {
   ): Promise<Record<Locale, Dictionary>> {
     const dictionaryTranslations = await this.loadDictionary(locale);
 
-    let dictionary: LegacyDictionary | DictionaryEntry =
-      (prefixId ? getDictionaryEntry(prefixId) : await getDictionary()) || {};
+    // `getDictionary` uses require() (server-only). Imported lazily behind a
+    // `typeof window` guard so it stays out of the client build.
+    let dictionary: LegacyDictionary | DictionaryEntry = {};
+    if (typeof window === 'undefined') {
+      const { getDictionary, getDictionaryEntry } = await import(
+        '../dictionary/getDictionary'
+      );
+      dictionary =
+        (prefixId ? getDictionaryEntry(prefixId) : await getDictionary()) || {};
+    }
 
     if (
       isValidElement(dictionary) ||
