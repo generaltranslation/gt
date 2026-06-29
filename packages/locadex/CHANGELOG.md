@@ -1,5 +1,12 @@
 # locadex
 
+## 1.0.186-odysseus.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.51-odysseus.2
+
 ## 1.0.186-odysseus.1
 
 ### Patch Changes
