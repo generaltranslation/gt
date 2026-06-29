@@ -5,6 +5,7 @@ import { hashMessage } from '../../utils/hashMessage';
 import { LookupOptions } from '../../translation-functions/types/options';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import type { CustomMapping } from '@generaltranslation/format/types';
+import type { Dictionary } from '../translations-manager/DictionaryCache';
 
 // Mock createTranslateManyFactory to inject a controlled translateMany
 const mockTranslateMany = vi.fn();
@@ -96,6 +97,46 @@ describe('I18nCache', () => {
     expect(translations[expectedHash]).toBe(translatedString);
   });
 
+  it('loadTranslations() returns the same promise for concurrent locale loads', async () => {
+    let resolveTranslations!: (translations: Record<Hash, string>) => void;
+    const loadTranslations = vi.fn().mockReturnValue(
+      new Promise((resolve) => {
+        resolveTranslations = resolve;
+      })
+    );
+    const cache = createCache({ loadTranslations });
+
+    const firstTranslations = cache.loadTranslations('fr');
+    const secondTranslations = cache.loadTranslations('fr');
+    expect(secondTranslations).toBe(firstTranslations);
+    expect(loadTranslations).toHaveBeenCalledTimes(1);
+
+    resolveTranslations({ [expectedHash]: translatedString });
+    await expect(firstTranslations).resolves.toEqual({
+      [expectedHash]: translatedString,
+    });
+  });
+
+  it('getTranslations() returns the same promise for concurrent locale loads', async () => {
+    let resolveTranslations!: (translations: Record<Hash, string>) => void;
+    const loadTranslations = vi.fn().mockReturnValue(
+      new Promise((resolve) => {
+        resolveTranslations = resolve;
+      })
+    );
+    const cache = createCache({ loadTranslations });
+
+    const firstTranslations = cache.getTranslations('fr');
+    const secondTranslations = cache.getTranslations('fr');
+    expect(secondTranslations).toBe(firstTranslations);
+    expect(loadTranslations).toHaveBeenCalledTimes(1);
+
+    resolveTranslations({ [expectedHash]: translatedString });
+    await expect(firstTranslations).resolves.toEqual({
+      [expectedHash]: translatedString,
+    });
+  });
+
   it('loadDictionary() returns source dictionary without loading when locale does not require translation', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
     const cache = createCache({
@@ -111,6 +152,31 @@ describe('I18nCache', () => {
       greeting: 'Hello',
     });
     expect(loadDictionary).not.toHaveBeenCalled();
+  });
+
+  it('loadDictionary() returns the same promise for concurrent locale loads', async () => {
+    let resolveDictionary!: (dictionary: Dictionary) => void;
+    const loadDictionary = vi.fn().mockReturnValue(
+      new Promise((resolve) => {
+        resolveDictionary = resolve;
+      })
+    );
+    const cache = createCache({
+      dictionary: {
+        greeting: 'Hello',
+      },
+      loadDictionary,
+    });
+
+    const firstDictionary = cache.loadDictionary('fr');
+    const secondDictionary = cache.loadDictionary('fr');
+    expect(secondDictionary).toBe(firstDictionary);
+    expect(loadDictionary).toHaveBeenCalledTimes(1);
+
+    resolveDictionary({ greeting: 'Bonjour' });
+    await expect(firstDictionary).resolves.toEqual({
+      greeting: 'Bonjour',
+    });
   });
 
   it('loadDictionary() loads and caches dictionary for requested locale', async () => {

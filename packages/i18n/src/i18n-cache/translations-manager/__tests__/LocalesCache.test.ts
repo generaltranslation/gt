@@ -77,6 +77,7 @@ describe('LocalesCache', () => {
 
       const firstCache = cache.getOrLoadTranslations('fr');
       const secondCache = cache.getOrLoadTranslations('fr');
+      expect(secondCache).toBe(firstCache);
       const [firstResult, secondResult] = await Promise.all([
         firstCache,
         secondCache,
@@ -205,6 +206,7 @@ describe('LocalesCache', () => {
 
       const firstCache = cache.getOrLoadDictionary('fr');
       const secondCache = cache.getOrLoadDictionary('fr');
+      expect(secondCache).toBe(firstCache);
       const [firstResult, secondResult] = await Promise.all([
         firstCache,
         secondCache,

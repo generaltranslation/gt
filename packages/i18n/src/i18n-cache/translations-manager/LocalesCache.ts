@@ -5,6 +5,7 @@ import type {
   DictionaryKey,
   DictionaryLoader,
 } from './DictionaryCache';
+import { PendingPromiseCache } from './PendingPromiseCache';
 import { ResourceCache } from './ResourceCache';
 import { TranslationsCache } from './TranslationsCache';
 import type {
@@ -50,6 +51,14 @@ export class LocalesCache<TranslationValue extends Translation> {
     TranslationsCache<TranslationValue>
   >;
   private readonly dictionaries: ResourceCache<Locale, DictionaryCache>;
+  private readonly translationSnapshots = new PendingPromiseCache<
+    Locale,
+    Record<Hash, TranslationValue>
+  >();
+  private readonly dictionarySnapshots = new PendingPromiseCache<
+    Locale,
+    Dictionary
+  >();
   private readonly createTranslationsCache: (
     locale: Locale,
     init: Record<Hash, TranslationValue>
@@ -121,12 +130,40 @@ export class LocalesCache<TranslationValue extends Translation> {
     return this.translations.getOrLoad(locale);
   }
 
+  public getOrLoadTranslationsSnapshot(
+    locale: Locale,
+    onError: (error: unknown) => void
+  ): Promise<Record<Hash, TranslationValue>> {
+    return this.translationSnapshots.getOrCreate(locale, () =>
+      this.getOrLoadTranslations(locale)
+        .then((txCache) => txCache.getInternalCache())
+        .catch((error) => {
+          onError(error);
+          return {};
+        })
+    );
+  }
+
   public getDictionary(locale: Locale): DictionaryCache | undefined {
     return this.dictionaries.get(locale);
   }
 
   public getOrLoadDictionary(locale: Locale): Promise<DictionaryCache> {
     return this.dictionaries.getOrLoad(locale);
+  }
+
+  public getOrLoadDictionarySnapshot(
+    locale: Locale,
+    onError: (error: unknown) => void
+  ): Promise<Dictionary> {
+    return this.dictionarySnapshots.getOrCreate(locale, () =>
+      this.getOrLoadDictionary(locale)
+        .then((dictionaryCache) => dictionaryCache.getInternalCache())
+        .catch((error) => {
+          onError(error);
+          return {};
+        })
+    );
   }
 
   public updateTranslations(

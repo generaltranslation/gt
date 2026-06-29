@@ -248,25 +248,21 @@ class I18nCache<
    * Loads in translations for a given locale
    * Edge case usage: access the translations object directly
    */
-  async loadTranslations(
-    locale: string
-  ): Promise<Record<Hash, TranslationValue>> {
+  loadTranslations(locale: string): Promise<Record<Hash, TranslationValue>> {
     try {
       // Validate
       const translationLocale = this._resolveCacheLocale(locale);
       if (!translationLocale) {
-        return {};
+        return Promise.resolve({});
       }
 
-      const txCache =
-        await this.localesCache.getOrLoadTranslations(translationLocale);
-
-      // Get the translations
-      const translations = txCache.getInternalCache();
-      return translations;
+      return this.localesCache.getOrLoadTranslationsSnapshot(
+        translationLocale,
+        (error) => this.handleError(error)
+      );
     } catch (error) {
       this.handleError(error);
-      return {};
+      return Promise.resolve({});
     }
   }
 
@@ -274,21 +270,23 @@ class I18nCache<
    * Loads in the dictionary for a given locale
    * Edge case usage: access the dictionary object directly
    */
-  async loadDictionary(locale: string): Promise<Dictionary> {
+  loadDictionary(locale: string): Promise<Dictionary> {
     try {
       // Validate
       const dictionaryLocale = this._resolveCacheLocale(locale);
       if (!dictionaryLocale) {
-        return this.getDefaultDictionaryCache()?.getInternalCache() ?? {};
+        return Promise.resolve(
+          this.getDefaultDictionaryCache()?.getInternalCache() ?? {}
+        );
       }
 
-      const dictionaryCache =
-        await this.localesCache.getOrLoadDictionary(dictionaryLocale);
-
-      return dictionaryCache.getInternalCache();
+      return this.localesCache.getOrLoadDictionarySnapshot(
+        dictionaryLocale,
+        (error) => this.handleError(error)
+      );
     } catch (error) {
       this.handleError(error);
-      return {};
+      return Promise.resolve({});
     }
   }
 
@@ -581,14 +579,12 @@ class I18nCache<
    * Get the translations
    * @deprecated use loadTranslations instead
    */
-  async getTranslations(
-    locale: string
-  ): Promise<Record<Hash, TranslationValue>> {
+  getTranslations(locale: string): Promise<Record<Hash, TranslationValue>> {
     try {
       return this.loadTranslations(locale);
     } catch (error) {
       this.handleError(error);
-      return {};
+      return Promise.resolve({});
     }
   }
 

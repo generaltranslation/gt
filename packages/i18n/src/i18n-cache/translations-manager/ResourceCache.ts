@@ -15,7 +15,7 @@ type ResourceCacheLifecycle<Key extends string, Value> = LifecycleParam<
 
 export class ResourceCache<Key extends string, Value> {
   private cache = new Map<Key, ResourceCacheEntry<Value>>();
-  private pendingLoads = new Map<Key, Promise<ResourceCacheEntry<Value>>>();
+  private pendingLoads = new Map<Key, Promise<Value>>();
   private loadResource: (key: Key) => Promise<Value>;
   private lifecycle: ResourceCacheLifecycle<Key, Value>;
   private ttl: number;
@@ -61,11 +61,12 @@ export class ResourceCache<Key extends string, Value> {
     });
   }
 
-  public async getOrLoad(key: Key): Promise<Value> {
-    return this.get(key) ?? (await this.load(key));
+  public getOrLoad(key: Key): Promise<Value> {
+    const value = this.get(key);
+    return value === undefined ? this.load(key) : Promise.resolve(value);
   }
 
-  private async load(key: Key): Promise<Value> {
+  private load(key: Key): Promise<Value> {
     let loadPromise = this.pendingLoads.get(key);
     if (!loadPromise) {
       loadPromise = this.loadResource(key).then((value) => {
@@ -80,17 +81,17 @@ export class ResourceCache<Key extends string, Value> {
           cacheValue: entry,
           outputValue: entry.value,
         });
-        return entry;
+        return entry.value;
+      });
+      loadPromise = loadPromise.finally(() => {
+        if (this.pendingLoads.get(key) === loadPromise) {
+          this.pendingLoads.delete(key);
+        }
       });
       this.pendingLoads.set(key, loadPromise);
     }
 
-    try {
-      const entry = await loadPromise;
-      return entry.value;
-    } finally {
-      this.pendingLoads.delete(key);
-    }
+    return loadPromise;
   }
 
   private getExpiresAt(): number {
