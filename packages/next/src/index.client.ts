@@ -3,52 +3,6 @@
 import { initializeGT } from './setup/initGT';
 initializeGT();
 
-import {
-  Var,
-  Num,
-  Currency,
-  DateTime,
-  RelativeTime,
-  Derive,
-  T,
-  Branch,
-  Plural,
-  LocaleSelector,
-  RegionSelector,
-  GTProvider,
-  useSetLocale,
-  useLocaleSelector,
-  useGT,
-  useTranslations,
-  useLocale,
-  useRegion,
-  useLocales,
-  useDefaultLocale,
-  useMessages,
-  useGTClass,
-  useLocaleProperties,
-  useLocaleDirection,
-  useVersionId,
-  msg,
-  decodeMsg,
-  decodeOptions,
-  derive,
-  declareVar,
-  decodeVars,
-  mFallback,
-  gtFallback,
-  getTranslationsSnapshot,
-  getDefaultLocale,
-  getGTClass,
-  getLocaleProperties,
-  getLocales,
-  getVersionId,
-} from 'gt-react';
-import type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
-} from 'gt-react';
 import type {
   GetServerSideProps,
   GetServerSidePropsContext,
@@ -57,6 +11,7 @@ import type {
 import type { ParsedUrlQuery } from 'querystring';
 import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 
+// ===== Unsupported Server APIs ===== //
 export function parseLocale<
   Params extends ParsedUrlQuery = ParsedUrlQuery,
   Preview extends PreviewData = PreviewData,
@@ -78,50 +33,61 @@ export function withGTServerSideProps<
   );
 }
 
+// ===== Components ===== //
 export {
-  T,
-  Var,
-  Num,
+  Branch,
   Currency,
   DateTime,
-  RelativeTime,
   Derive,
-  Branch,
-  Plural,
   GTProvider,
   LocaleSelector,
+  Num,
+  Plural,
   RegionSelector,
-  useSetLocale,
-  useLocaleSelector,
-  useGT,
-  useTranslations,
-  useLocale,
-  useRegion,
-  useLocales,
+  RelativeTime,
+  T,
+  Var,
+} from 'gt-react';
+
+// ===== Hooks ===== //
+export {
   useDefaultLocale,
+  useGT,
   useGTClass,
-  useLocaleProperties,
+  useLocale,
   useLocaleDirection,
-  useVersionId,
+  useLocaleProperties,
+  useLocales,
+  useLocaleSelector,
   useMessages,
-  msg,
+  useRegion,
+  useSetLocale,
+  useTranslations,
+  useVersionId,
+} from 'gt-react';
+
+// ===== Functions ===== //
+export {
   decodeMsg,
   decodeOptions,
-  derive,
-  declareVar,
   decodeVars,
-  mFallback,
-  gtFallback,
-  getTranslationsSnapshot,
+  declareVar,
+  derive,
   getDefaultLocale,
   getGTClass,
   getLocaleProperties,
   getLocales,
+  getTranslationsSnapshot,
   getVersionId,
-};
+  gtFallback,
+  mFallback,
+  msg,
+} from 'gt-react';
+
+// ===== Types ===== //
 export type {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-  WithGTServerSideProps,
-};
+} from 'gt-react';
+export type { WithGTServerSideProps };
