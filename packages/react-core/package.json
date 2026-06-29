@@ -49,28 +49,28 @@
   "exports": {
     "./pure": {
       "types": "./dist/pure.d.ts",
-      "require": "./dist/pure.cjs.min.cjs",
-      "import": "./dist/pure.esm.min.mjs"
+      "require": "./dist/pure.cjs",
+      "import": "./dist/pure.mjs"
     },
     "./hooks": {
       "types": "./dist/hooks.d.ts",
-      "require": "./dist/hooks.cjs.min.cjs",
-      "import": "./dist/hooks.esm.min.mjs"
+      "require": "./dist/hooks.cjs",
+      "import": "./dist/hooks.mjs"
     },
     "./components": {
       "types": "./dist/components.d.ts",
-      "require": "./dist/components.cjs.min.cjs",
-      "import": "./dist/components.esm.min.mjs"
+      "require": "./dist/components.cjs",
+      "import": "./dist/components.mjs"
     },
     "./components-rsc": {
       "types": "./dist/components-rsc.d.ts",
-      "require": "./dist/components-rsc.cjs.min.cjs",
-      "import": "./dist/components-rsc.esm.min.mjs"
+      "require": "./dist/components-rsc.cjs",
+      "import": "./dist/components-rsc.mjs"
     },
     "./cookies": {
       "types": "./dist/cookies.d.ts",
-      "require": "./dist/cookies.cjs.min.cjs",
-      "import": "./dist/cookies.esm.min.mjs"
+      "require": "./dist/cookies.cjs",
+      "import": "./dist/cookies.mjs"
     }
   },
   "typesVersions": {
