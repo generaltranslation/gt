@@ -1,4 +1,4 @@
-import { InlineResolveOptions } from '../types/options';
+import { GTTranslationOptions } from '../types/options';
 import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
 import { getGTInternal } from './getGT';
@@ -40,7 +40,7 @@ export async function getMessagesInternal({
   /**
    * Resolves a registered message to its translation.
    * @param {string | null | undefined} encodedMsg - The encoded message to decode and interpolate.
-   * @param {InlineTranslationOptions} options - The options to interpolate.
+   * @param {GTTranslationOptions} options - The options to interpolate.
    * @returns - The decoded and interpolated message.
    *
    * @example
@@ -55,7 +55,7 @@ export async function getMessagesInternal({
    */
   const m: MFunctionType = <T extends string | null | undefined>(
     encodedMsg: T,
-    options: InlineResolveOptions = {}
+    options: GTTranslationOptions = {}
   ): T extends string ? string : T => {
     // Return if the encoded message is null or undefined
     if (encodedMsg == null) return encodedMsg as T extends string ? string : T;

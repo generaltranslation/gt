@@ -11,9 +11,8 @@ import type {
 import React from 'react';
 
 export type {
-  DictionaryTranslationOptions,
+  GTTranslationOptions,
   GTFunctionType,
-  InlineTranslationOptions,
   MFunctionType,
   RuntimeTranslationOptions,
 } from 'gt-i18n/types';

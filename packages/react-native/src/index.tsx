@@ -57,8 +57,7 @@ export { initializeGT } from './setup/initializeGT';
 
 // ===== Types ===== //
 export type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
+  GTTranslationOptions,
   RuntimeTranslationOptions,
   RenderPipeline,
   RenderPreparedT,

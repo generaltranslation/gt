@@ -1,4 +1,4 @@
-import { BaseTranslationOptions } from '../translation-functions/types/options';
+import { TranslationVariables } from '../translation-functions/types/options';
 
 /**
  * Given an object of options, returns an object with no gt-related options
@@ -6,9 +6,9 @@ import { BaseTranslationOptions } from '../translation-functions/types/options';
  * TODO: next major version, this should extract any sugar syntax options
  * TODO: next major version, options should be Record<string, string>
  */
-export function extractVariables<T extends BaseTranslationOptions>(
+export function extractVariables<T extends TranslationVariables>(
   options: T
-): BaseTranslationOptions {
+): TranslationVariables {
   return Object.fromEntries(
     Object.entries(options).filter(
       ([key]) =>

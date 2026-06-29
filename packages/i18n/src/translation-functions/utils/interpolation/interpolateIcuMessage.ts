@@ -8,17 +8,17 @@ import {
 import { formatCutoff } from '@generaltranslation/format';
 import logger from '../../../logs/logger';
 import { createInterpolationFailureMessage } from '../messages';
-import type { InlineTranslationOptions } from '../../types/options';
+import type { TranslationOptions } from '../../types/options';
 
 /**
  * Applies string interpolation and cutoff formatting. Fallsback to the original message if interpolation fails.
  * @param {string} message - The message to interpolate.
- * @param {InlineTranslationOptions} options - The options to interpolate.
+ * @param {TranslationOptions} options - The options to interpolate.
  * @returns {string} - The interpolated message.
  */
 export function interpolateIcuMessage<T extends string | null | undefined>(
   encodedMsg: T,
-  options: InlineTranslationOptions
+  options: TranslationOptions
 ): T extends string ? string : T {
   // Return if the encoded message is null or undefined
   if (!encodedMsg) return encodedMsg as T extends string ? string : T;

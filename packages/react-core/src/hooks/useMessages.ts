@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { decodeOptions } from 'gt-i18n';
 import { useGT } from './useGT';
-import type { InlineResolveOptions, MFunctionType } from 'gt-i18n/types';
+import type { GTTranslationOptions, MFunctionType } from 'gt-i18n/types';
 import { isEncodedTranslationOptions } from 'gt-i18n/internal';
 import { Message } from './external-store/useTrackedTranslationResolver';
 
@@ -13,7 +13,7 @@ export function useMessages(_messages?: Message[]): MFunctionType {
   return useCallback(
     <T extends string | null | undefined>(
       encodedMsg: T,
-      options: InlineResolveOptions = {}
+      options: GTTranslationOptions = {}
     ): T extends string ? string : T => {
       if (encodedMsg == null) {
         return encodedMsg as T extends string ? string : T;
