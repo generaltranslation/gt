@@ -1,7 +1,7 @@
 'use client';
 
-import { initializeGT } from './setup/initGT';
-initializeGT();
+import { initializeGTClient } from './setup/initializeGTClient';
+initializeGTClient();
 
 import type {
   GetServerSideProps,
