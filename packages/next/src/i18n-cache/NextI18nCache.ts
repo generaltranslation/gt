@@ -32,9 +32,8 @@ export class NextI18nCache extends ReactI18nCache {
         // it lazily behind a `typeof window` guard so bundlers drop it from the
         // client build (its createRequire shim breaks client chunking).
         if (loadDictionary === undefined && typeof window === 'undefined') {
-          const { resolveDictionaryLoader } = await import(
-            '../resolvers/resolveDictionaryLoader'
-          );
+          const { resolveDictionaryLoader } =
+            await import('../resolvers/resolveDictionaryLoader');
           loadDictionary = resolveDictionaryLoader() as typeof loadDictionary;
         }
         if (!loadDictionary) return {} as Dictionary;
@@ -53,9 +52,8 @@ export class NextI18nCache extends ReactI18nCache {
     // `typeof window` guard so it stays out of the client build.
     let dictionary: LegacyDictionary | DictionaryEntry = {};
     if (typeof window === 'undefined') {
-      const { getDictionary, getDictionaryEntry } = await import(
-        '../dictionary/getDictionary'
-      );
+      const { getDictionary, getDictionaryEntry } =
+        await import('../dictionary/getDictionary');
       dictionary =
         (prefixId ? getDictionaryEntry(prefixId) : await getDictionary()) || {};
     }
