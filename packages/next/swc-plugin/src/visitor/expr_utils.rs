@@ -130,7 +130,7 @@ pub fn contains_derive_call(expr: &Expr) -> bool {
   }
 }
 
-// Helper function to extract id, context, maxChars, and format from options
+// Helper function to extract $id, $context, $maxChars, and $format from options
 // Returns (id, context, maxChars, format, has_derive_context)
 pub fn extract_id_and_context_from_options(
   options: Option<&ExprOrSpread>,

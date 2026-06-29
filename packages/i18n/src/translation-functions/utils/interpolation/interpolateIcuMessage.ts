@@ -46,7 +46,7 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
         ...declaredVars,
         [VAR_IDENTIFIER]: 'other',
       },
-      options.$locale ?? options.$_locales,
+      options.$locale,
       options.$format
     );
     // Apply cutoff formatting

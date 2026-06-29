@@ -324,7 +324,7 @@ describe('I18nCache', () => {
         greeting: ['Hello', { $context: 'homepage', $maxChars: 10 }],
       },
       loadDictionary: vi.fn().mockResolvedValue({
-        greeting: ['Bonjour', { context: 'homepage' }],
+        greeting: ['Bonjour', { $context: 'homepage' }],
       }),
     });
 
@@ -332,7 +332,7 @@ describe('I18nCache', () => {
 
     expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
       entry: 'Bonjour',
-      options: { context: 'homepage' },
+      options: { $context: 'homepage' },
     });
   });
 
@@ -1092,7 +1092,7 @@ describe('I18nCache', () => {
     const sourceHash = hashMessage(source, sourceOptions);
     const cache = createCache({
       dictionary: {
-        greeting: [source, { $format: 'I18NEXT', context: 'homepage' }],
+        greeting: [source, { $format: 'I18NEXT', $context: 'homepage' }],
       },
       runtimeTranslation: {},
     });
@@ -1121,7 +1121,7 @@ describe('I18nCache', () => {
     const sourceHash = hashMessage(source, sourceOptions);
     const cache = createCache({
       dictionary: {
-        greeting: [source, { context: 'homepage' }],
+        greeting: [source, { $context: 'homepage' }],
       },
       runtimeTranslation: {},
     });
