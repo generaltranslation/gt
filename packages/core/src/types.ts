@@ -105,11 +105,6 @@ export type {
   SubmitUserEditDiffsPayload,
 } from './translate/submitUserEditDiffs';
 
-/**
- * @deprecated Use {@link Content} instead.
- */
-export type _Content = string | Array<string | FormatVariable>;
-
 export type {
   Transformation,
   TransformationPrefix,
@@ -128,82 +123,6 @@ export type Metadata = {
   actionType?: 'standard' | 'fast' | string;
   filePaths?: string[];
   [key: string]: unknown;
-};
-
-/**
- * @deprecated This type is deprecated and will be removed in a future version.
- */
-export type Update =
-  | {
-      type: 'content';
-      data: {
-        source: _Content;
-        metadata: Metadata;
-      };
-    }
-  | {
-      type: 'jsx';
-      data: {
-        source: FormatJsxChildren;
-        metadata: Metadata;
-      };
-    };
-
-/**
- * @deprecated This type is deprecated and will be removed in a future version.
- */
-export type Request =
-  | {
-      type: 'content';
-      data: {
-        source: _Content;
-        targetLocale: string;
-        metadata: Metadata;
-      };
-    }
-  | {
-      type: 'jsx';
-      data: {
-        source: FormatJsxChildren;
-        targetLocale: string;
-        metadata: Metadata;
-      };
-    };
-
-/**
- * @deprecated Use {@link TranslationResult} instead.
- */
-export type ContentTranslationResult = {
-  translation: _Content;
-  locale: string;
-  reference?: {
-    id: string;
-    key: string;
-  };
-};
-
-/**
- * @deprecated Use {@link TranslationResult} instead.
- */
-export type IcuTranslationResult = {
-  translation: string;
-  locale: string;
-  reference?: {
-    id: string;
-    key: string;
-  };
-};
-
-/**
- * @deprecated Use {@link TranslationResult} instead.
- */
-export type JsxTranslationResult = {
-  translation: FormatJsxChildren;
-  locale: string;
-  reference?: {
-    id: string;
-    key: string;
-  };
 };
 
 // ----- VARIABLES ----- //

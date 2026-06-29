@@ -30,7 +30,6 @@ export type {
   DictionaryEntry,
   DictionaryLeaf,
   DictionaryObject,
-  DictionaryOptions,
   DictionaryValue,
   DictionaryPath,
   DictionaryKey,

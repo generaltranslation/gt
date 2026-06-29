@@ -80,7 +80,7 @@ export type TFunctionType = ((
 };
 
 /**
- * Type for the resolveJsxTranslation() function
+ * Type for the resolveJsx() function
  * @param {JsxChildren} children - The children to resolve the translation for.
  * @param {JsxTranslationOptions} options - The options for the translation.
  * @returns {JsxChildren} The resolved translation.
