@@ -28,6 +28,12 @@ export default defineConfig([
       neverBundle,
     },
     outExtensions: () => ({ js: '.mjs', dts: '.d.ts' }),
+    // Server-only modules use require() for lazy loading. Don't emit rolldown's
+    // `createRequire`-from-`node:module` shim: it's statically reachable from
+    // client init code and breaks client bundlers (Turbopack "node:module"
+    // external; webpack UnhandledSchemeError). Next provides `require` for the
+    // guarded, server-only call sites in every bundling context that runs them.
+    outputOptions: { polyfillRequire: false },
     plugins: [
       createUseClientBoundaryPlugin({
         name: 'gt-next:use-client-boundaries',
