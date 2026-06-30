@@ -3,8 +3,6 @@ import { getI18NConfig } from '../config-dir/getI18NConfig';
 import type { I18NConfiguration } from '../config-dir/I18NConfiguration';
 import { createInvalidRequestLocaleWarning } from '../errors/createErrors';
 
-const warnedLocales = new Set<string>();
-
 function determineSupportedLocale(
   locale: unknown,
   I18NConfig: I18NConfiguration,
@@ -15,8 +13,6 @@ function determineSupportedLocale(
 }
 
 function warnInvalidLocale(locale: string, defaultLocale: string) {
-  if (warnedLocales.has(locale)) return;
-  warnedLocales.add(locale);
   console.warn(createInvalidRequestLocaleWarning(locale, defaultLocale));
 }
 
