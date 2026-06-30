@@ -60,7 +60,12 @@
     "simplify-translation-option-types",
     "tanstack-locale-cookie",
     "trim-core-backwards-compat",
+    "trim-core-hashtemplate",
+    "trim-i18n-localeresolver",
+    "trim-i18n-validatelocales",
+    "trim-i18ncache-deprecated",
     "trim-orphan-files",
-    "trim-react-core-dead-dictionaries"
+    "trim-react-core-dead-dictionaries",
+    "trim-react-core-pure-exports"
   ]
 }

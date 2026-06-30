@@ -1,5 +1,25 @@
 # gt-i18n
 
+## 1.0.0-odysseus.4
+
+### Patch Changes
+
+- 270b821: Remove the unused `condition-store/localeResolver` module from `gt-i18n/internal`.
+
+  `determineSupportedLocale`, `resolveSupportedLocale`, and `createLocaleResolver` were thin wrappers over `getI18nConfig().<method>()`. They had no consumers — callers (e.g. tanstack-start) use the `I18nConfig` methods directly via `getI18nConfig()`. Removing the module trims dead indirection from the `/internal` entry; the `LocaleCandidates` type re-export is unaffected (re-exported from its real source).
+
+- bffaa67: Remove the unused `validateLocales` config validator from `gt-i18n`.
+
+  `validateLocales` was defined but never called (config validation runs `validateLoadTranslations`, `validateTranslationApi`, and `validateDictionary`) and had no consumers anywhere. Dead code removed.
+
+- d602065: Remove deprecated methods from `gt-i18n`'s `I18nCache`.
+
+  Dropped the long-`@deprecated` cache methods that duplicated `I18nConfig`/loader APIs: `getDefaultLocale`, `getLocales`, `getCustomMapping`, `getGTClass`, `getTranslationLoader`, `resolveTranslationSync`, `getTranslations`, and `getTranslationResolver`. None were called anywhere (consumers use `getI18nConfig()` / `lookupTranslation` / `loadTranslations`). Removes the methods, their now-unused imports, and the tests that covered them.
+
+- Updated dependencies [26faa87]
+  - generaltranslation@9.0.0-odysseus.4
+  - @generaltranslation/supported-locales@2.1.2-odysseus.4
+
 ## 1.0.0-odysseus.3
 
 ### Patch Changes

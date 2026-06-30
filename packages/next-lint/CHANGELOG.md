@@ -1,5 +1,11 @@
 # @generaltranslation/gt-next-lint
 
+## 15.0.0-odysseus.8
+
+### Patch Changes
+
+- gt-next@11.0.0-odysseus.8
+
 ## 15.0.0-odysseus.7
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @generaltranslation/compiler
 
+## 1.3.25-odysseus.4
+
+### Patch Changes
+
+- Updated dependencies [26faa87]
+  - generaltranslation@9.0.0-odysseus.4
+
 ## 1.3.25-odysseus.3
 
 ### Patch Changes

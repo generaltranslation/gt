@@ -1,5 +1,18 @@
 # @generaltranslation/react-core
 
+## 11.0.0-odysseus.8
+
+### Patch Changes
+
+- 6da26e8: Remove three unused exports from `@generaltranslation/react-core/pure`: `isVariableObject`, `renderSkeleton`, and `reactHasUse`. None had consumers anywhere in the libraries. Trims dead code from the client-shipped `/pure` entry.
+- Updated dependencies [26faa87]
+- Updated dependencies [270b821]
+- Updated dependencies [bffaa67]
+- Updated dependencies [d602065]
+  - generaltranslation@9.0.0-odysseus.4
+  - gt-i18n@1.0.0-odysseus.4
+  - @generaltranslation/supported-locales@2.1.2-odysseus.4
+
 ## 11.0.0-odysseus.7
 
 ### Patch Changes
