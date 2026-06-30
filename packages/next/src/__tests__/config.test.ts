@@ -27,6 +27,10 @@ function parseConfigParams(result: NextConfig) {
   return JSON.parse(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS!);
 }
 
+function parsePublicConfigParams(result: NextConfig) {
+  return JSON.parse(result.env!._GENERALTRANSLATION_PUBLIC_I18N_CONFIG_PARAMS!);
+}
+
 function makeWebpackConfig() {
   return {
     context: '/fake/project',
@@ -1103,6 +1107,7 @@ describe('withGTConfig', () => {
 
       const expectedKeys = [
         '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+        '_GENERALTRANSLATION_PUBLIC_I18N_CONFIG_PARAMS',
         '_GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED',
         '_GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED',
         '_GENERALTRANSLATION_DEFAULT_LOCALE',
@@ -1142,6 +1147,27 @@ describe('withGTConfig', () => {
       const parsed = JSON.parse(raw!);
       expect(parsed).toHaveProperty('defaultLocale');
       expect(parsed).toHaveProperty('_usingPlugin', true);
+    });
+
+    it('PUBLIC_I18N_CONFIG_PARAMS contains locale config without credentials', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        {},
+        {
+          apiKey: 'gt-api-secret',
+          defaultLocale: 'en',
+          devApiKey: 'gt-dev-secret',
+          locales: ['en', 'fr'],
+        }
+      );
+
+      const parsed = parsePublicConfigParams(result);
+      expect(parsed).toEqual({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+      });
+      expect(parsed).not.toHaveProperty('apiKey');
+      expect(parsed).not.toHaveProperty('devApiKey');
     });
 
     it('boolean flags are string "true"/"false", not booleans', async () => {
@@ -1465,6 +1491,9 @@ describe('withGTConfig', () => {
       // Compare the env vars (serialized config params)
       expect(resultA.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).toBe(
         resultB.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS
+      );
+      expect(resultA.env!._GENERALTRANSLATION_PUBLIC_I18N_CONFIG_PARAMS).toBe(
+        resultB.env!._GENERALTRANSLATION_PUBLIC_I18N_CONFIG_PARAMS
       );
       expect(resultA.env!._GENERALTRANSLATION_DEFAULT_LOCALE).toBe(
         resultB.env!._GENERALTRANSLATION_DEFAULT_LOCALE

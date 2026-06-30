@@ -557,6 +557,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // ---------- STORE CONFIGURATIONS ---------- //
   const I18NConfigParams = JSON.stringify(mergedConfig);
+  const publicI18NConfigParams = JSON.stringify({
+    customMapping: mergedConfig.customMapping,
+    defaultLocale: mergedConfig.defaultLocale,
+    locales: mergedConfig.locales,
+  });
 
   const { type: _type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
@@ -616,6 +621,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     env: {
       ...internalNextConfig.env,
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
+      _GENERALTRANSLATION_PUBLIC_I18N_CONFIG_PARAMS: publicI18NConfigParams,
       ...(resolvedDictionaryFilePathType && {
         _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:
           resolvedDictionaryFilePathType,

@@ -58,7 +58,7 @@ function getClientI18NConfig(): ClientI18NConfig {
 
   try {
     clientI18NConfig = JSON.parse(
-      process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
+      process.env._GENERALTRANSLATION_PUBLIC_I18N_CONFIG_PARAMS || '{}'
     );
   } catch {
     clientI18NConfig = {};
