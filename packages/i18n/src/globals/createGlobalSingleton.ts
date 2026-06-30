@@ -70,7 +70,8 @@ export function createGlobalSingleton<T>({
   }
 
   function isInitialized(): boolean {
-    return getNamespace(namespace)[key] !== undefined;
+    const value = getNamespace(namespace)[key];
+    return value !== undefined && value !== null;
   }
 
   return { get, set, isInitialized };
