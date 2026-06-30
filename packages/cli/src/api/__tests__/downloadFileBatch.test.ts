@@ -3,13 +3,18 @@ import { BatchedFiles, downloadFileBatch } from '../downloadFileBatch.js';
 import { gt } from '../../utils/gt.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import nodePath from 'node:path';
 import { logger } from '../../console/logger.js';
 import {
   DownloadFileBatchResult as CoreDownloadFileBatchResult,
   FileFormat,
 } from 'generaltranslation/types';
 import { createMockSettings } from '../__mocks__/settings.js';
-import { readLockfile } from '../../fs/config/downloadedVersions.js';
+import {
+  findOrCreateEntry,
+  readLockfile,
+} from '../../fs/config/downloadedVersions.js';
+import type { DownloadedVersionEntry } from '../../fs/config/downloadedVersions.js';
 import type { FileStatusTracker } from '../../workflow/PollJobsStep.js';
 
 // Mock dependencies
@@ -30,14 +35,19 @@ vi.mock('fs', () => ({
   },
 }));
 
-vi.mock('path', () => {
+vi.mock('path', async () => {
+  const actualPath =
+    await vi.importActual<typeof import('node:path')>('node:path');
   // Shared instances so default and named imports resolve to the same mocks
-  const dirname = vi.fn();
-  const relative = vi.fn();
+  const dirname = vi.fn(actualPath.dirname);
+  const relative = vi.fn(actualPath.relative);
+  const resolve = vi.fn(actualPath.resolve);
   return {
-    default: { dirname, relative },
+    ...actualPath,
+    default: { ...actualPath, dirname, relative, resolve },
     dirname,
     relative,
+    resolve,
   };
 });
 
@@ -490,6 +500,48 @@ describe('downloadFileBatch', () => {
 
     expect(result.successful).toHaveLength(1);
     expect(result.failed).toHaveLength(0);
+  });
+
+  it('stores relative output paths in the lockfile', async () => {
+    const outputPath = nodePath.resolve('public/gt/es.json');
+    const files = createBatchedFiles(1, {
+      locale: 'es',
+      outputPath,
+    });
+    const fileTracker = createMockFileTracker(files);
+    const lockEntry: DownloadedVersionEntry = {
+      fileId: 'file-1',
+      versionId: 'version-1',
+      translations: {},
+    };
+
+    vi.mocked(findOrCreateEntry).mockReturnValue(lockEntry);
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          id: 'translation-1',
+          branchId: 'branch-1',
+          fileId: 'file-1',
+          versionId: 'version-1',
+          locale: 'es',
+          fileFormat: 'GTJSON' as FileFormat,
+          data: '{"hello":"Hola"}',
+          fileName: 'es.json',
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
+    setupFileSystemMocks();
+
+    const result = await downloadFileBatch(
+      fileTracker,
+      files,
+      createMockSettings()
+    );
+
+    expect(result.successful).toHaveLength(1);
+    expect(lockEntry.translations.es.fileName).toBe('public/gt/es.json');
   });
 
   it('should handle directory creation errors', async () => {
