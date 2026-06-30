@@ -21,11 +21,13 @@ export {
   useGT,
   useGTClass,
   useLocale,
+  useLocaleDirection,
   useLocaleProperties,
   useLocales,
   useMessages,
   useRegion,
   useTranslations,
+  useVersionId,
 } from '@generaltranslation/react-core/hooks';
 export {
   useSetLocale,
@@ -33,7 +35,6 @@ export {
   useSetEnableI18n,
 } from './hooks/condition-store';
 export { useLocaleSelector, useRegionSelector } from './hooks/selectors';
-export { useLocaleDirection, useVersionId } from './hooks/utils';
 
 // ===== Functions ===== //
 export {
