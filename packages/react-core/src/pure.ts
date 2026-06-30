@@ -44,8 +44,6 @@ export { getDefaultRenderSettings } from './utils/rendering/getDefaultRenderSett
 export { isDictionaryEntry } from './utils/dictionaries/isDictionaryEntry';
 
 export type {
-  AuthFromEnvParams,
-  AuthFromEnvReturn,
   CustomLoader,
   Dictionary,
   DictionaryContent,

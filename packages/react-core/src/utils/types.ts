@@ -124,11 +124,3 @@ export type _Message = {
   $_hash?: string;
 };
 export type _Messages = _Message[];
-export type AuthFromEnvParams = {
-  projectId?: string;
-  devApiKey?: string;
-};
-export type AuthFromEnvReturn = {
-  projectId: string;
-  devApiKey?: string;
-};
