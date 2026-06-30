@@ -6,6 +6,7 @@ import {
 } from 'gt-i18n/internal/types';
 import { Translation } from 'gt-i18n/types';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createGlobalSingleton } from 'gt-i18n/internal';
 import { createContext, useContext, type Context } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
 import { getI18nConfig } from '../setup/i18nConfig';
@@ -42,34 +43,21 @@ export type GTContextType = {
   onMissingDictionaryObj?: OnMissingDictionaryObj;
 };
 
-type ReactCoreGlobals = {
-  gtContext?: Context<GTContextType | undefined>;
-  [key: string]: unknown;
-};
-
-type GeneralTranslationGlobal = {
-  reactCore?: ReactCoreGlobals;
-  [key: string]: unknown;
-};
-
-type GlobalWithGeneralTranslation = {
-  __generaltranslation?: GeneralTranslationGlobal;
-};
-
-function getReactCoreGlobals(): ReactCoreGlobals {
-  const globalObj = globalThis as unknown as GlobalWithGeneralTranslation;
-  globalObj.__generaltranslation ??= {};
-  // TODO: Consider checking package versions and using a compatibility matrix before sharing global singletons.
-  globalObj.__generaltranslation.reactCore ??= {};
-  return globalObj.__generaltranslation.reactCore;
-}
+const gtContextSingleton = createGlobalSingleton<
+  Context<GTContextType | undefined>
+>({
+  namespace: 'reactCore',
+  key: 'gtContext',
+  source: '@generaltranslation/react-core',
+  notInitialized: () => 'GTContext has not been initialized.',
+});
 
 export function getGTContext(): Context<GTContextType | undefined> {
-  const reactCoreGlobals = getReactCoreGlobals();
-  reactCoreGlobals.gtContext ??= createContext<GTContextType | undefined>(
-    undefined
-  );
-  return reactCoreGlobals.gtContext;
+  // Lazily create the React context once and share it across instances.
+  if (!gtContextSingleton.isInitialized()) {
+    gtContextSingleton.set(createContext<GTContextType | undefined>(undefined));
+  }
+  return gtContextSingleton.get();
 }
 
 export function useGTContext(): GTContextType | undefined {
