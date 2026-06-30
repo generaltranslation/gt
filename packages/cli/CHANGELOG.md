@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.56
+
+### Patch Changes
+
+- [#1724](https://github.com/generaltranslation/gt/pull/1724) [`dd0d1cd`](https://github.com/generaltranslation/gt/commit/dd0d1cd0276cd0a158fc3dd73a312502066782a7) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fix translation file path in `gt-lock.json`
+
 ## 2.14.55
 
 ### Patch Changes
