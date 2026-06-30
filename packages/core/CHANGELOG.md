@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 9.0.0-odysseus.4
+
+### Patch Changes
+
+- 26faa87: Remove the unused `hashTemplate` export from `generaltranslation/id`. It had no consumers anywhere in the libraries. `hashSource`/`hashString` are unchanged.
+
 ## 9.0.0-odysseus.3
 
 ### Patch Changes
