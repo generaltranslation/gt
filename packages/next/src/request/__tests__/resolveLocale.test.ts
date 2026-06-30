@@ -76,18 +76,13 @@ describe('resolveLocale helpers', () => {
 
   it('extracts Accept-Language candidates from strings and arrays', () => {
     expect(
-      getAcceptLanguageCandidates([
-        'es-MX, fr;q=0.8',
-        ' , en-US;q=0.6',
-      ])
+      getAcceptLanguageCandidates(['es-MX, fr;q=0.8', ' , en-US;q=0.6'])
     ).toEqual(['es-MX', 'fr', 'en-US']);
   });
 
   it('extracts locale header candidates from strings and arrays', () => {
     expect(getLocaleHeaderCandidates(['', 'fr', 'es'])).toEqual(['fr', 'es']);
-    expect(getLocaleHeaderCandidates('brand-french')).toEqual([
-      'brand-french',
-    ]);
+    expect(getLocaleHeaderCandidates('brand-french')).toEqual(['brand-french']);
   });
 
   it('resolves candidates against the i18n config', () => {
