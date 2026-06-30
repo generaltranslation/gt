@@ -72,5 +72,7 @@ export {
 export { I18nConfig } from './i18n-config/I18nConfig';
 export type { I18nConfigParams } from './i18n-config/I18nConfig';
 export { createConditionStoreSingleton } from './condition-store/createConditionStoreSingleton';
+export { createGlobalSingleton } from './globals/createGlobalSingleton';
+export type { GlobalSingleton } from './globals/createGlobalSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';
 export { hashMessage } from './utils/hashMessage';
