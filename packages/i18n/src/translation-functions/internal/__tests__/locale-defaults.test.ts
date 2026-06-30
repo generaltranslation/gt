@@ -7,7 +7,7 @@ import { initializeI18nConfig } from '../../../i18n-config/singleton-operations'
 import type { I18nConfigParams } from '../../../i18n-config/I18nConfig';
 import { msg } from '../../msg/msg';
 import { hashMessage } from '../../../utils/hashMessage';
-import { getGT } from '../getGT';
+import { getGT, getGTInternal } from '../getGT';
 import { getTranslations } from '../getTranslations';
 import { getMessages } from '../getMessages';
 import { tx, txInternal } from '../tx';
@@ -15,6 +15,7 @@ import { tx, txInternal } from '../tx';
 describe('translation function locale defaults', () => {
   afterEach(() => {
     setWritableConditionStore(createConditionStore('en'));
+    vi.unstubAllEnvs();
   });
 
   function createConditionStore(locale: string) {
@@ -77,6 +78,89 @@ describe('translation function locale defaults', () => {
     await cache.loadTranslations('es');
 
     expect(gt(message, { $locale: 'es', name: 'Alice' })).toBe('Hola Alice!');
+  });
+
+  it('getGT preloads compiler messages when dev hot reload is enabled', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const cache = createCache(
+      {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        devApiKey: 'dev-key',
+        projectId: 'project-id',
+      },
+      {
+        loadTranslations: vi.fn().mockResolvedValue({}),
+      }
+    );
+    const lookupTranslationWithFallback = vi
+      .spyOn(cache, 'lookupTranslationWithFallback')
+      .mockResolvedValue('Bonjour Alice !');
+    setI18nCache(cache);
+
+    await getGTInternal({ locale: 'fr', enableI18n: true }, [
+      { message: 'Hello {name}!', $context: 'greeting' },
+    ]);
+
+    expect(lookupTranslationWithFallback).toHaveBeenCalledWith(
+      'fr',
+      'Hello {name}!',
+      expect.objectContaining({
+        $context: 'greeting',
+        $format: 'ICU',
+        $locale: 'fr',
+      })
+    );
+  });
+
+  it('getGT still returns a function when dev hot reload preload rejects', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const cache = createCache(
+      {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        devApiKey: 'dev-key',
+        projectId: 'project-id',
+      },
+      {
+        loadTranslations: vi.fn().mockResolvedValue({}),
+      }
+    );
+    vi.spyOn(cache, 'lookupTranslationWithFallback')
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue(undefined);
+    setI18nCache(cache);
+
+    const gt = await getGTInternal({ locale: 'fr', enableI18n: true }, [
+      { message: 'Hello {name}!' },
+    ]);
+
+    expect(gt('Hello {name}!', { name: 'Alice' })).toBe('Hello Alice!');
+  });
+
+  it('getGT catches fire-and-forget dev hot reload lookup rejections', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const cache = createCache(
+      {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        devApiKey: 'dev-key',
+        projectId: 'project-id',
+      },
+      {
+        loadTranslations: vi.fn().mockResolvedValue({}),
+      }
+    );
+    const catchHandler = vi.fn();
+    vi.spyOn(cache, 'lookupTranslationWithFallback').mockReturnValue({
+      catch: catchHandler,
+    } as unknown as ReturnType<typeof cache.lookupTranslationWithFallback>);
+    setI18nCache(cache);
+
+    const gt = await getGTInternal({ locale: 'fr', enableI18n: true });
+
+    expect(gt('Hello {name}!', { name: 'Alice' })).toBe('Hello Alice!');
+    expect(catchHandler).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it('getTranslations uses the current locale for dictionary entries', async () => {
