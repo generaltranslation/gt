@@ -70,6 +70,96 @@ describe('checkMonorepoVersionConsistency', () => {
     expect(process.exit).not.toHaveBeenCalled();
   });
 
+  it('should silently return when runtime package versions are compatible with the running CLI', () => {
+    setupMocks({
+      packageDirs: ['/repo/packages/app-a'],
+      packages: {
+        '/repo/packages/app-a': {
+          name: 'app-a',
+          dependencies: {
+            'gt-react': '^11.0.0-odysseus.5',
+            'gt-i18n': '^1.0.0-odysseus.2',
+          },
+        },
+      },
+    });
+
+    checkMonorepoVersionConsistency([...REACT_LIBRARIES, Libraries.GT_I18N], {
+      cliVersion: '2.14.51-odysseus.2',
+    });
+    expect(process.exit).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it('should exit when a runtime package version is incompatible with the running CLI', () => {
+    setupMocks({
+      packageDirs: ['/repo/packages/app-a'],
+      packages: {
+        '/repo/packages/app-a': {
+          name: 'app-a',
+          dependencies: { 'gt-react': '^12.0.0' },
+        },
+      },
+    });
+
+    checkMonorepoVersionConsistency(REACT_LIBRARIES, {
+      cliVersion: '2.14.51',
+    });
+    expect(logger.error).toHaveBeenCalled();
+    expect(process.exit).toHaveBeenCalledWith(1);
+
+    const errorMessage = vi.mocked(logger.error).mock.calls[0][0];
+    expect(errorMessage).toContain('Incompatible GT package versions');
+    expect(errorMessage).toContain('gt-react');
+    expect(errorMessage).toContain('^12.0.0');
+    expect(errorMessage).toContain('>=10.0.0 <12.0.0');
+  });
+
+  it('should check runtime compatibility for a single-package project root', () => {
+    process.cwd = () => '/repo';
+    setupMocks({
+      packageDirs: ['/repo'],
+      packages: {
+        '/repo': {
+          name: 'app',
+          dependencies: { 'gt-react': '^12.0.0' },
+        },
+      },
+    });
+
+    checkMonorepoVersionConsistency(REACT_LIBRARIES, {
+      cliVersion: '2.14.51',
+    });
+    expect(logger.error).toHaveBeenCalled();
+    expect(process.exit).toHaveBeenCalledWith(1);
+
+    const errorMessage = vi.mocked(logger.error).mock.calls[0][0];
+    expect(errorMessage).toContain('gt-react');
+    expect(errorMessage).toContain('app');
+  });
+
+  it('should check GT package versions declared as peer dependencies', () => {
+    setupMocks({
+      packageDirs: ['/repo/packages/app-a'],
+      packages: {
+        '/repo/packages/app-a': {
+          name: 'app-a',
+          peerDependencies: { 'gt-react': '^12.0.0' },
+        },
+      },
+    });
+
+    checkMonorepoVersionConsistency(REACT_LIBRARIES, {
+      cliVersion: '2.14.51',
+    });
+    expect(logger.error).toHaveBeenCalled();
+    expect(process.exit).toHaveBeenCalledWith(1);
+
+    const errorMessage = vi.mocked(logger.error).mock.calls[0][0];
+    expect(errorMessage).toContain('gt-react');
+    expect(errorMessage).toContain('^12.0.0');
+  });
+
   it('should silently return when all GT package version specifiers match', () => {
     setupMocks({
       packageDirs: ['/repo/packages/app-a', '/repo/packages/app-b'],
@@ -414,6 +504,7 @@ function setupMocks(config: {
       name: string;
       dependencies?: Record<string, string>;
       devDependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
     }
   >;
 }) {
