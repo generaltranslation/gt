@@ -16,6 +16,7 @@ minimumReleaseAgeExclude:
   - '@generaltranslation/format'
   - gt-i18n
   - gt
+  - create-gt-next
   - gtx-cli
   - generaltranslation
   - next
