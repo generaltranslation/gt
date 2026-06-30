@@ -1,8 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import path from 'node:path';
 import { createFileMapping } from '../fileMapping.js';
+import { TEMPLATE_FILE_NAME } from '../../../utils/constants.js';
 
 describe('createFileMapping', () => {
+  it('uses a relative output path for GTJSON template files', () => {
+    const outputPath = path.resolve('public/gt/[locale].json');
+
+    const mapping = createFileMapping(
+      {},
+      { gt: outputPath },
+      {},
+      {},
+      ['es'],
+      'en'
+    );
+
+    expect(mapping.es[TEMPLATE_FILE_NAME]).toBe('public/gt/es.json');
+  });
+
   // TODO: Re-enable when the API supports POT -> PO file format transforms.
   it.skip('uses the transformation format extension for mapped output files', () => {
     const sourcePath = path.resolve('locales/en/messages.pot');
