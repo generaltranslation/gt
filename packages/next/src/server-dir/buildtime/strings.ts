@@ -4,14 +4,18 @@ import {
   getMessagesInternal,
   getTranslationsInternal,
 } from 'gt-i18n/internal';
+import type { Message } from 'gt-i18n/types';
 import { getRequestConditions } from '../../request/getRequestConditions';
 
-export async function getGT() {
+export async function getGT(_messages?: Message[]) {
   const conditions = await getRequestConditions();
-  return getGTInternal({
-    locale: conditions._locale,
-    enableI18n: conditions._enableI18n,
-  });
+  return getGTInternal(
+    {
+      locale: conditions._locale,
+      enableI18n: conditions._enableI18n,
+    },
+    _messages
+  );
 }
 
 export async function getMessages() {
@@ -30,8 +34,8 @@ export async function getTranslations() {
   });
 }
 
-export function useGT() {
-  return use(getGT());
+export function useGT(_messages?: Message[]) {
+  return use(getGT(_messages));
 }
 
 export function useMessages() {

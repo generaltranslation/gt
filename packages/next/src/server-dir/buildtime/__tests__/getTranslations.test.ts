@@ -44,10 +44,30 @@ describe('buildtime translation helpers', () => {
 
     await expect(getGT()).resolves.toBe(gt);
 
-    expect(mockGetGTInternal).toHaveBeenCalledWith({
-      locale: 'fr',
-      enableI18n: false,
-    });
+    expect(mockGetGTInternal).toHaveBeenCalledWith(
+      {
+        locale: 'fr',
+        enableI18n: false,
+      },
+      undefined
+    );
+  });
+
+  it('getGT forwards compiler messages to gt-i18n', async () => {
+    const gt = vi.fn();
+    const messages = [{ message: 'A server-translated string from getGT.' }];
+    mockGetGTInternal.mockReturnValue(gt);
+    const { getGT } = await import('../strings');
+
+    await expect(getGT(messages)).resolves.toBe(gt);
+
+    expect(mockGetGTInternal).toHaveBeenCalledWith(
+      {
+        locale: 'fr',
+        enableI18n: false,
+      },
+      messages
+    );
   });
 
   it('getMessages passes request conditions to gt-i18n', async () => {
@@ -94,4 +114,28 @@ describe('buildtime translation helpers', () => {
       expect(mockUse).toHaveBeenCalledWith(expect.any(Promise));
     }
   );
+
+  it('useGT forwards compiler messages through getGT', async () => {
+    const value = vi.fn();
+    const messages = [{ message: 'A server-translated string from useGT.' }];
+    mockGetGTInternal.mockReturnValue(value);
+    mockUse.mockReturnValue(value);
+    const { useGT } = await import('../strings');
+
+    const result = useGT(messages);
+
+    expect(result).toBe(value);
+    expect(mockUse).toHaveBeenCalledWith(expect.any(Promise));
+    expect(mockGetGTInternal).not.toHaveBeenCalled();
+
+    await expect(mockUse.mock.calls[0][0]).resolves.toBe(value);
+
+    expect(mockGetGTInternal).toHaveBeenCalledWith(
+      {
+        locale: 'fr',
+        enableI18n: false,
+      },
+      messages
+    );
+  });
 });
