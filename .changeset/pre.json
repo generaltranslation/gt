@@ -64,6 +64,7 @@
     "trim-i18n-localeresolver",
     "trim-i18n-validatelocales",
     "trim-i18ncache-deprecated",
+    "trim-next-createerrors",
     "trim-orphan-files",
     "trim-react-core-dead-dictionaries",
     "trim-react-core-pure-exports"
