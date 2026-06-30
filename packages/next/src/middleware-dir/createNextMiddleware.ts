@@ -28,7 +28,16 @@ const NEXT_JS_INTERNAL_PATH = '/_next';
 const STATIC_FILE_PATH_REGEX =
   /\.(?:avif|css|eot|gif|gz|ico|jpe?g|js|json|map|mjs|otf|pdf|png|svg|tar|ttf|txt|wasm|webmanifest|webp|woff2?|xml|zip)$/i;
 
-function isNextJsPath(pathname: string): boolean {
+function isNextJsSourceMapPath(pathname: string): boolean {
+  return pathname.startsWith(NEXT_JS_SOURCE_MAP_PATH);
+}
+
+function shouldBypassNextJsPath(
+  pathname: string,
+  ignoreSourceMaps: boolean
+): boolean {
+  if (isNextJsSourceMapPath(pathname)) return ignoreSourceMaps;
+
   return (
     pathname === NEXT_JS_INTERNAL_PATH ||
     pathname.startsWith(`${NEXT_JS_INTERNAL_PATH}/`) ||
@@ -173,15 +182,7 @@ export function createNextMiddleware({
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
   function middleware(req: NextRequest) {
-    if (isNextJsPath(req.nextUrl.pathname)) {
-      return NextResponse.next();
-    }
-
-    // Ignore source maps
-    if (
-      ignoreSourceMaps &&
-      req.nextUrl.pathname.startsWith(NEXT_JS_SOURCE_MAP_PATH)
-    ) {
+    if (shouldBypassNextJsPath(req.nextUrl.pathname, ignoreSourceMaps)) {
       return NextResponse.next();
     }
 

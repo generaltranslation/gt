@@ -224,6 +224,25 @@ describe('Middleware Integration Tests', () => {
       expect(res.headers.get(LOCALE_HEADER)).toBeNull();
     });
 
+    it('2.7.1: ignoreSourceMaps=false, /__nextjs_source-map/* → rewrite with locale', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        ignoreSourceMaps: false,
+        prefixDefaultLocale: false,
+      });
+
+      const res = middleware(
+        createRequest('/__nextjs_source-map/main.chunk.js')
+      );
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe(
+        '/en/__nextjs_source-map/main.chunk.js'
+      );
+      expect(res.headers.get(LOCALE_HEADER)).toBe('en');
+      expect(res.cookies.get(ROUTING_COOKIE)?.value).toBe('true');
+    });
+
     it.each([
       '/llms.txt',
       '/llms-full.txt',
