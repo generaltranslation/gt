@@ -7,20 +7,19 @@ import type {
 } from './DictionaryCache';
 import { ResourceCache } from './ResourceCache';
 import { TranslationsCache } from './TranslationsCache';
-import type {
-  Hash,
-  TranslationBatchConfig,
-  TranslationKey,
-} from './TranslationsCache';
+import type { Hash, TranslationBatchConfig } from './TranslationsCache';
 import type { CreateTranslateMany } from './utils/createTranslateMany';
 import type { Translation } from './utils/types/translation-data';
 import type { SafeTranslationsLoader } from './translations-loaders/types';
-import type {
-  I18nCacheLifecycleCallbacks,
-  LifecycleCallback,
-  LifecycleParam,
-} from '../lifecycle-hooks/types';
 import { getI18nConfig } from '../../i18n-config/singleton-operations';
+
+/**
+ * Called when a translation is resolved through a runtime cache miss, with the
+ * resolving locale attached.
+ */
+export type LocalesTranslationsCacheMissCallback<
+  TranslationValue extends Translation,
+> = (locale: Locale, hash: Hash, translation: TranslationValue) => void;
 
 /**
  * Just being explicit about the purpose of this type
@@ -41,7 +40,7 @@ type LocalesCacheParams<TranslationValue extends Translation> = {
   loadTranslations: SafeTranslationsLoader<TranslationValue>;
   loadDictionary: DictionaryLoader;
   translateDictionaryEntry: TranslateLocaleDictionaryEntry;
-  lifecycle: I18nCacheLifecycleCallbacks<TranslationValue>;
+  onTranslationsCacheMiss?: LocalesTranslationsCacheMissCallback<TranslationValue>;
 };
 
 export class LocalesCache<TranslationValue extends Translation> {
@@ -67,38 +66,29 @@ export class LocalesCache<TranslationValue extends Translation> {
     loadDictionary,
     createTranslateMany,
     translateDictionaryEntry,
-    lifecycle,
+    onTranslationsCacheMiss,
   }: LocalesCacheParams<TranslationValue>) {
     this.createTranslationsCache = createTranslationsCacheFactory({
-      lifecycle,
+      onTranslationsCacheMiss,
       createTranslateMany,
       batchConfig,
     });
     this.createDictionaryCache = (locale, init) =>
-      createDictionaryCache({
-        locale,
-        dictionary: init,
-        translate: translateDictionaryEntry,
-        lifecycle,
+      new DictionaryCache({
+        init,
+        runtimeTranslate: (key, sourceEntry) =>
+          translateDictionaryEntry(locale, key, sourceEntry),
       });
     this.translations = new ResourceCache({
       ttl,
       load: async (locale) =>
         this.createTranslationsCache(locale, await loadTranslations(locale)),
-      lifecycle: {
-        onHit: lifecycle.onLocalesCacheHit,
-        onMiss: lifecycle.onLocalesCacheMiss,
-      },
     });
 
     this.dictionaries = new ResourceCache({
       ttl,
       load: async (locale) =>
         this.createDictionaryCache(locale, await loadDictionary(locale)),
-      lifecycle: {
-        onHit: lifecycle.onLocalesDictionaryCacheHit,
-        onMiss: lifecycle.onLocalesDictionaryCacheMiss,
-      },
     });
 
     const defaultLocale = getI18nConfig().getDefaultLocale();
@@ -161,79 +151,22 @@ export class LocalesCache<TranslationValue extends Translation> {
 }
 
 function createTranslationsCacheFactory<TranslationValue extends Translation>({
-  lifecycle,
+  onTranslationsCacheMiss,
   createTranslateMany,
   batchConfig,
 }: {
-  lifecycle: I18nCacheLifecycleCallbacks<TranslationValue>;
+  onTranslationsCacheMiss?: LocalesTranslationsCacheMissCallback<TranslationValue>;
   createTranslateMany: CreateTranslateMany;
   batchConfig?: TranslationBatchConfig;
 }) {
   return (locale: Locale, init: Record<Hash, TranslationValue>) =>
     new TranslationsCache<TranslationValue>({
       init,
-      lifecycle: createTranslationsCacheLifecycle(locale, lifecycle),
+      onMiss: onTranslationsCacheMiss
+        ? (hash, translation) =>
+            onTranslationsCacheMiss(locale, hash, translation)
+        : undefined,
       translateMany: createTranslateMany(locale),
       batchConfig,
     });
-}
-
-function createTranslationsCacheLifecycle<TranslationValue extends Translation>(
-  locale: Locale,
-  lifecycle: I18nCacheLifecycleCallbacks<TranslationValue>
-): LifecycleParam<
-  TranslationKey<TranslationValue>,
-  Hash,
-  TranslationValue,
-  TranslationValue
-> {
-  return {
-    onHit: withLocale(locale, lifecycle.onTranslationsCacheHit),
-    onMiss: withLocale(locale, lifecycle.onTranslationsCacheMiss),
-  };
-}
-
-function createDictionaryCache<TranslationValue extends Translation>({
-  locale,
-  dictionary,
-  translate,
-  lifecycle,
-}: {
-  locale: Locale;
-  dictionary: Dictionary;
-  translate: TranslateLocaleDictionaryEntry;
-  lifecycle: I18nCacheLifecycleCallbacks<TranslationValue>;
-}) {
-  const {
-    onDictionaryCacheHit,
-    onDictionaryCacheMiss,
-    onDictionaryObjectCacheHit,
-  } = lifecycle;
-  return new DictionaryCache({
-    init: dictionary,
-    runtimeTranslate: (key, sourceEntry) => translate(locale, key, sourceEntry),
-    lifecycle: {
-      onHit: withLocale(locale, onDictionaryCacheHit),
-      onMiss: withLocale(locale, onDictionaryCacheMiss),
-      onDictionaryObjectCacheHit: withLocale(
-        locale,
-        onDictionaryObjectCacheHit
-      ),
-    },
-  });
-}
-
-function withLocale<InputKey, CacheKey, CacheValue, OutputValue>(
-  locale: Locale,
-  callback:
-    | ((params: {
-        locale: Locale;
-        inputKey: InputKey;
-        cacheKey: CacheKey;
-        cacheValue: CacheValue;
-        outputValue: OutputValue;
-      }) => void)
-    | undefined
-): LifecycleCallback<InputKey, CacheKey, CacheValue, OutputValue> | undefined {
-  return callback ? (params) => callback({ locale, ...params }) : undefined;
 }

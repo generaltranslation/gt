@@ -1185,7 +1185,7 @@ describe('I18nCache', () => {
     );
   });
 
-  it('does not clone loaded dictionaries for cache hit events without subscribers', async () => {
+  it('does not clone leaf dictionary values on lookup', async () => {
     const cache = createCache({
       dictionary: {
         greeting: 'Hello',
@@ -1208,52 +1208,34 @@ describe('I18nCache', () => {
     }
   });
 
-  it('emits dictionary cache lifecycle events', async () => {
-    const cache = createCache({
-      dictionary: {
-        greeting: 'Hello',
+  it('emits translations-cache-miss when a runtime translation resolves', async () => {
+    const unknownMessage = 'Unknown message';
+    const unknownOptions: LookupOptions = { $format: 'ICU' };
+    const unknownHash = hashMessage(unknownMessage, unknownOptions);
+
+    const cache = createCache({ runtimeTranslation: {} });
+    const onTranslationsCacheMiss = vi.fn();
+    cache.subscribe('translations-cache-miss', onTranslationsCacheMiss);
+    // @ts-expect-error Removed cache events should not be accepted.
+    cache.subscribe('dictionary-cache-hit', vi.fn());
+
+    mockTranslateMany.mockResolvedValue({
+      [unknownHash]: {
+        success: true,
+        translation: 'Message inconnu',
       },
-      loadDictionary: vi.fn().mockResolvedValue({
-        greeting: 'Bonjour',
-      }),
-    });
-    const localesDictionaryMiss = vi.fn();
-    const localesDictionaryHit = vi.fn();
-    const dictionaryCacheHit = vi.fn();
-    const dictionaryCacheMiss = vi.fn();
-
-    cache.subscribe('locales-dictionary-cache-miss', localesDictionaryMiss);
-    cache.subscribe('locales-dictionary-cache-hit', localesDictionaryHit);
-    cache.subscribe('dictionary-cache-hit', dictionaryCacheHit);
-    cache.subscribe('dictionary-cache-miss', dictionaryCacheMiss);
-
-    await cache.loadDictionary('fr');
-    await cache.loadDictionary('fr');
-    expect(cache.lookupDictionary('fr', 'greeting')).toEqual({
-      entry: 'Bonjour',
-      options: {},
     });
 
-    expect(localesDictionaryMiss).toHaveBeenCalledWith({
+    await cache.lookupTranslationWithFallback(
+      'fr',
+      unknownMessage,
+      unknownOptions
+    );
+
+    expect(onTranslationsCacheMiss).toHaveBeenCalledWith({
       locale: 'fr',
-      dictionary: {
-        greeting: 'Bonjour',
-      },
+      hash: unknownHash,
+      translation: 'Message inconnu',
     });
-    expect(localesDictionaryHit).toHaveBeenCalledWith({
-      locale: 'fr',
-      dictionary: {
-        greeting: 'Bonjour',
-      },
-    });
-    expect(dictionaryCacheHit).toHaveBeenCalledWith({
-      locale: 'fr',
-      id: 'greeting',
-      dictionaryEntry: {
-        entry: 'Bonjour',
-        options: {},
-      },
-    });
-    expect(dictionaryCacheMiss).not.toHaveBeenCalled();
   });
 });

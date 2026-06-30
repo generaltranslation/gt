@@ -1,9 +1,9 @@
-import type { BaseEvent, Listener, ListenerStore } from './types';
+import type { EventMap, Listener, ListenerStore } from './types';
 
 /**
  * Base class for event emitters
  */
-export class EventEmitter<Events extends BaseEvent> {
+export class EventEmitter<Events extends EventMap> {
   /**
    * Events map
    */

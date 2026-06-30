@@ -223,9 +223,8 @@ describe('DictionaryCache', () => {
     });
   });
 
-  it('materializeEntry() emits one miss event for concurrent callers', async () => {
+  it('materializeEntry() deduplicates the translation for concurrent callers', async () => {
     runtimeTranslate.mockClear();
-    const onMiss = vi.fn();
     let resolveTranslation!: (value: string) => void;
     runtimeTranslate.mockImplementation(
       () =>
@@ -236,9 +235,6 @@ describe('DictionaryCache', () => {
     const cache = new DictionaryCache({
       init: {},
       runtimeTranslate,
-      lifecycle: {
-        onMiss,
-      },
     });
     const sourceEntry = { entry: 'Name', options: {} };
 
@@ -258,16 +254,6 @@ describe('DictionaryCache', () => {
       { entry: 'Name', options: {} },
       { entry: 'Name', options: {} },
     ]);
-    expect(onMiss).toHaveBeenCalledTimes(1);
-    expect(onMiss).toHaveBeenCalledWith({
-      inputKey: 'user.profile.name',
-      cacheKey: 'user.profile.name',
-      cacheValue: 'Name',
-      outputValue: {
-        entry: 'Name',
-        options: {},
-      },
-    });
   });
 
   it('materializeEntry() returns independent entries for concurrent callers', async () => {
@@ -384,47 +370,6 @@ describe('DictionaryCache', () => {
     expect(cache.getValue('user')).toEqual({
       profile: {
         name: 'Name',
-      },
-    });
-  });
-
-  it('getValue() emits value cache hits with raw dictionary values', () => {
-    const onDictionaryObjectCacheHit = vi.fn();
-    const cache = new DictionaryCache({
-      init: dictionary,
-      runtimeTranslate,
-      lifecycle: {
-        onDictionaryObjectCacheHit,
-      },
-    });
-
-    expect(cache.getValue('greeting')).toBe('Hello');
-    expect(cache.getValue('user')).toEqual({
-      profile: {
-        name: 'Name',
-      },
-    });
-    expect(cache.getValue('missing')).toBeUndefined();
-
-    expect(onDictionaryObjectCacheHit).toHaveBeenCalledTimes(2);
-    expect(onDictionaryObjectCacheHit).toHaveBeenNthCalledWith(1, {
-      inputKey: 'greeting',
-      cacheKey: 'greeting',
-      cacheValue: 'Hello',
-      outputValue: 'Hello',
-    });
-    expect(onDictionaryObjectCacheHit).toHaveBeenNthCalledWith(2, {
-      inputKey: 'user',
-      cacheKey: 'user',
-      cacheValue: {
-        profile: {
-          name: 'Name',
-        },
-      },
-      outputValue: {
-        profile: {
-          name: 'Name',
-        },
       },
     });
   });

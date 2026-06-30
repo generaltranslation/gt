@@ -1,36 +1,24 @@
 import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
-import type { LifecycleParam } from '../lifecycle-hooks/types';
 
 export type ResourceCacheEntry<Value> = {
   expiresAt: number;
   value: Value;
 };
 
-type ResourceCacheLifecycle<Key extends string, Value> = LifecycleParam<
-  Key,
-  Key,
-  ResourceCacheEntry<Value>,
-  Value
->;
-
 export class ResourceCache<Key extends string, Value> {
   private cache = new Map<Key, ResourceCacheEntry<Value>>();
   private pendingLoads = new Map<Key, Promise<ResourceCacheEntry<Value>>>();
   private loadResource: (key: Key) => Promise<Value>;
-  private lifecycle: ResourceCacheLifecycle<Key, Value>;
   private ttl: number;
 
   constructor({
     load,
-    lifecycle = {},
     ttl,
   }: {
     load: (key: Key) => Promise<Value>;
-    lifecycle?: ResourceCacheLifecycle<Key, Value>;
     ttl?: number | null;
   }) {
     this.loadResource = load;
-    this.lifecycle = lifecycle;
     this.ttl = ttl === null ? -1 : (ttl ?? DEFAULT_CACHE_EXPIRY_TIME);
   }
 
@@ -39,13 +27,6 @@ export class ResourceCache<Key extends string, Value> {
     if (!entry || this.isExpired(entry)) {
       return undefined;
     }
-
-    this.lifecycle.onHit?.({
-      inputKey: key,
-      cacheKey: key,
-      cacheValue: entry,
-      outputValue: entry.value,
-    });
 
     return entry.value;
   }
@@ -74,12 +55,6 @@ export class ResourceCache<Key extends string, Value> {
           value,
         };
         this.cache.set(key, entry);
-        this.lifecycle.onMiss?.({
-          inputKey: key,
-          cacheKey: key,
-          cacheValue: entry,
-          outputValue: entry.value,
-        });
         return entry;
       });
       this.pendingLoads.set(key, loadPromise);

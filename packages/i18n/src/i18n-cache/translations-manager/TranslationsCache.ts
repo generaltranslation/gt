@@ -1,5 +1,4 @@
 import { LookupOptions } from '../../translation-functions/types/options';
-import type { LifecycleParam } from '../lifecycle-hooks/types';
 import { Translation } from './utils/types/translation-data';
 import { hashMessage } from '../../utils/hashMessage';
 import type { Content } from '@generaltranslation/format/types';
@@ -75,6 +74,14 @@ export type TranslationKey<TranslationValue extends Translation> = {
 export type Hash = string;
 
 /**
+ * Called when a translation is resolved through a runtime cache miss.
+ * Locale is handled at the LocalesCache level, so it is not passed here.
+ */
+export type TranslationsCacheMissCallback<
+  TranslationValue extends Translation,
+> = (hash: Hash, translation: TranslationValue) => void;
+
+/**
  * A queue entry for batching, used to also handle reject and resolve
  */
 type QueueEntry<TranslationValue extends Translation> = {
@@ -108,12 +115,7 @@ export class TranslationsCache<TranslationValue extends Translation> {
   private activeRequests = 0;
   private batchConfig: Required<TranslationBatchConfig>;
   private translateMany: TranslateMany;
-  private lifecycle: LifecycleParam<
-    TranslationKey<TranslationValue>,
-    Hash,
-    TranslationValue,
-    TranslationValue
-  >;
+  private onMiss?: TranslationsCacheMissCallback<TranslationValue>;
 
   /**
    * Constructor
@@ -124,23 +126,18 @@ export class TranslationsCache<TranslationValue extends Translation> {
   constructor({
     init,
     translateMany,
-    lifecycle = {},
+    onMiss,
     batchConfig,
   }: {
     init: Record<Hash, TranslationValue>;
     translateMany: TranslateMany;
     batchConfig?: TranslationBatchConfig;
-    lifecycle?: LifecycleParam<
-      TranslationKey<TranslationValue>,
-      Hash,
-      TranslationValue,
-      TranslationValue
-    >;
+    onMiss?: TranslationsCacheMissCallback<TranslationValue>;
   }) {
     this.cache = structuredClone(init);
     this.translateMany = translateMany;
     this.batchConfig = normalizeBatchConfig(batchConfig);
-    this.lifecycle = lifecycle;
+    this.onMiss = onMiss;
   }
 
   /**
@@ -152,16 +149,7 @@ export class TranslationsCache<TranslationValue extends Translation> {
     key: TranslationKey<T>
   ): T | undefined {
     const cacheKey = this.getCacheKey(key);
-    const value = this.cache[cacheKey] as T | undefined;
-    if (value != null) {
-      this.lifecycle.onHit?.({
-        inputKey: key,
-        cacheKey,
-        cacheValue: value,
-        outputValue: value,
-      });
-    }
-    return value;
+    return this.cache[cacheKey] as T | undefined;
   }
 
   /**
@@ -182,12 +170,7 @@ export class TranslationsCache<TranslationValue extends Translation> {
     try {
       const value = await translationPromise;
       if (value != null) {
-        this.lifecycle.onMiss?.({
-          inputKey: key,
-          cacheKey,
-          cacheValue: value,
-          outputValue: value,
-        });
+        this.onMiss?.(cacheKey, value);
       }
       return value as T;
     } finally {
