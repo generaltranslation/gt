@@ -44,18 +44,7 @@ export { renderSkeleton } from './utils/rendering/renderSkeleton';
 export { mergeDictionaries } from './utils/dictionaries/mergeDictionaries';
 export { getDefaultRenderSettings } from './utils/rendering/getDefaultRenderSettings';
 export { reactHasUse } from './utils/promises/reactHasUse';
-export {
-  getSubtree,
-  getSubtreeWithCreation,
-} from './utils/dictionaries/getSubtree';
-export { injectEntry } from './utils/dictionaries/injectEntry';
 export { isDictionaryEntry } from './utils/dictionaries/isDictionaryEntry';
-export { stripMetadataFromEntries } from './utils/dictionaries/stripMetadataFromEntries';
-export { injectHashes } from './utils/dictionaries/injectHashes';
-export { injectTranslations } from './utils/dictionaries/injectTranslations';
-export { injectFallbacks } from './utils/dictionaries/injectFallbacks';
-export { injectAndMerge } from './utils/dictionaries/injectAndMerge';
-export { collectUntranslatedEntries } from './utils/dictionaries/collectUntranslatedEntries';
 
 export type {
   AuthFromEnvParams,
