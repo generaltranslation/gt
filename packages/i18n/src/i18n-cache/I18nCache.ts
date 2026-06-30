@@ -3,12 +3,8 @@ import logger from '../logs/logger';
 import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
 import { validateConfig } from './validation/validateConfig';
 import { Translation } from './translations-manager/utils/types/translation-data';
-import type { GT } from 'generaltranslation';
 import { LookupOptions } from '../translation-functions/types/options';
-import {
-  SafeTranslationsLoader,
-  TranslationsLoader,
-} from './translations-manager/translations-loaders/types';
+import { SafeTranslationsLoader } from './translations-manager/translations-loaders/types';
 import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
 import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
@@ -166,44 +162,10 @@ class I18nCache<
   // ========== Getters and Setters ========== //
 
   /**
-   * Get the default locale
-   * @deprecated use I18nConfig instead
-   */
-  getDefaultLocale(): string {
-    return getI18nConfig().getDefaultLocale();
-  }
-
-  /**
-   * Get the locales
-   * @deprecated use I18nConfig instead
-   */
-  getLocales(): string[] {
-    return getI18nConfig().getLocales();
-  }
-
-  /**
-   * Get the custom locale mapping
-   * @deprecated use I18nConfig instead
-   */
-  getCustomMapping() {
-    return getI18nConfig().getCustomMapping();
-  }
-
-  /**
    * Get the version ID
    */
   getVersionId(): string | undefined {
     return this.config._versionId;
-  }
-
-  /**
-   * Get a gt class instance
-   * @param locale - The locale to bind to the GT instance. When omitted, the GT instance is locale agnostic.
-   * TODO: keep a cache to avoid creating new instances unnecessarily
-   * @deprecated use getI18nConfig().getGTClass() instead
-   */
-  getGTClass(locale?: string): GT {
-    return getI18nConfig().getGTClass(locale);
   }
 
   // ========== Translation Updates ========== //
@@ -219,14 +181,6 @@ class I18nCache<
   }
 
   // ========== Translation Loading ========== //
-
-  /**
-   * Get the translation loader function
-   * @deprecated wrap a cb around loadTranslations instead
-   */
-  getTranslationLoader(): TranslationsLoader {
-    return (locale: string) => this.loadTranslations(locale);
-  }
 
   // ========== Translation Resolution ========== //
 
@@ -556,56 +510,6 @@ class I18nCache<
       this.handleError(error);
       return (message) => message;
     }
-  }
-
-  // ----- Sync Operations ----- //
-
-  /**
-   * Get the translations (error on unloaded translations)
-   * @param {string} message - The message to get the translation for
-   * @param {LookupOptions} [options] - The options for the translation
-   * @returns {TranslationValue | undefined} The translation for the given message and options synchronously
-   * @deprecated use lookupTranslation instead
-   */
-  resolveTranslationSync = <T extends TranslationValue = TranslationValue>(
-    locale: string,
-    message: T,
-    options: LookupOptions
-  ) => {
-    return this.lookupTranslation(locale, message, options);
-  };
-
-  // ----- Async Operations ----- //
-
-  /**
-   * Get the translations
-   * @deprecated use loadTranslations instead
-   */
-  async getTranslations(
-    locale: string
-  ): Promise<Record<Hash, TranslationValue>> {
-    try {
-      return this.loadTranslations(locale);
-    } catch (error) {
-      this.handleError(error);
-      return {};
-    }
-  }
-
-  /**
-   * Get translation for a given locale and message
-   *
-   * @param {string} locale - The locale to get the translation for
-   * @returns A function that resolves the translations for a given message and options synchronously
-   *
-   * Note: we can assume that the translation is a string because we are passing a string
-   *
-   * @deprecated use getLookupTranslation instead
-   */
-  async getTranslationResolver(
-    locale: string
-  ): Promise<TranslationResolver<TranslationValue>> {
-    return this.getLookupTranslation(locale);
   }
 
   // ========== Metadata ========== //
