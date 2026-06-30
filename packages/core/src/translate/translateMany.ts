@@ -71,8 +71,9 @@ export async function _translateMany(
       metadata?.hash ??
       hashSource({
         source,
+        ...(metadata?.context && { context: metadata.context }),
+        ...(metadata?.maxChars != null && { maxChars: metadata.maxChars }),
         dataFormat: metadata?.dataFormat ?? 'STRING',
-        ...metadata,
       });
     hashOrder?.push(hash);
     requestsObject[hash] = {

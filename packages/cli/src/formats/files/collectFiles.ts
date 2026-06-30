@@ -45,11 +45,8 @@ export async function collectFiles(
       for (const update of updates) {
         const { source, metadata, dataFormat } = update;
         metadata.dataFormat = dataFormat; // add the data format to the metadata
-        const { hash, id } = metadata;
-        if (id) {
-          fileData[id] = source;
-          fileMetadata[id] = metadata;
-        } else if (hash) {
+        const { hash } = metadata;
+        if (hash) {
           fileData[hash] = source;
           fileMetadata[hash] = metadata;
         }

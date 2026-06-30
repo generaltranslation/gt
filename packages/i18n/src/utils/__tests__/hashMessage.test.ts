@@ -48,4 +48,17 @@ describe('hashMessage', () => {
       })
     ).toBe('');
   });
+
+  it('does not include custom id in calculated hashes', () => {
+    const hash1 = hashMessage('Hello {name}!', {
+      $format: 'ICU',
+      $id: 'first',
+    });
+    const hash2 = hashMessage('Hello {name}!', {
+      $format: 'ICU',
+      $id: 'second',
+    });
+
+    expect(hash1).toBe(hash2);
+  });
 });
