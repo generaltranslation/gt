@@ -1,6 +1,6 @@
 {
   "name": "gt-react-native",
-  "version": "11.0.0-odysseus.8",
+  "version": "11.0.0-odysseus.9",
   "description": "An i18n package for React Native",
   "main": "./dist/commonjs/index.js",
   "module": "./dist/module/index.js",

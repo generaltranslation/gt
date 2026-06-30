@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.0.0-odysseus.9
+
+### Patch Changes
+
+- cf3e961: Remove 21 unused error/warning builders from `gt-next`'s `errors/createErrors.ts`.
+
+  The following had no consumers anywhere: `createDictionaryTranslationError`, `createInvalidDictionaryEntryWarning`, `createInvalidDictionaryTranslationEntryWarning`, `createInvalidIcuDictionaryEntryError`, `createInvalidIcuDictionaryEntryWarning`, `createMismatchingHashWarning`, `createNoEntryFoundWarning`, `createRequiredPrefixError`, `createStringRenderError`, `createStringRenderWarning`, `createStringTranslationError`, `createTranslationLoadingWarning`, `dictionaryDisabledError`, `dictionaryNotFoundWarning`, `gtProviderUseClientError`, `missingVariablesError`, `noInitGTWarn`, `runtimeTranslationTimeoutWarning`, `txUseClientError`, `unresolvedGetLocaleBuildError`, `usingDefaultsWarning`. ~155 LOC of dead error-string code removed.
+  - @generaltranslation/react-core@11.0.0-odysseus.9
+  - gt-react@11.0.0-odysseus.9
+
 ## 11.0.0-odysseus.8
 
 ### Patch Changes
