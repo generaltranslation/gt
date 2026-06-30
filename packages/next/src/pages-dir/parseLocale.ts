@@ -2,10 +2,11 @@ import type { GetServerSidePropsContext, PreviewData } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
 import {
   getAcceptLanguageCandidates,
-  getLocaleHeaderCandidates,
   getLocaleResolutionParams,
   resolveLocaleFromCandidates,
-} from '../request/resolveLocale';
+} from '../request/localeResolution';
+
+type HeaderValue = string | string[] | undefined;
 
 /**
  * Resolve the user's locale from a Next Pages Router server-side request.
@@ -18,9 +19,7 @@ export function parseLocale<
     getLocaleResolutionParams();
   const preferredLocales: string[] = [];
 
-  preferredLocales.push(
-    ...getLocaleHeaderCandidates(context.req.headers[headerName])
-  );
+  addHeaderCandidates(preferredLocales, context.req.headers[headerName]);
 
   const cookieLocale = context.req.cookies?.[cookieName];
   if (cookieLocale) {
@@ -37,4 +36,12 @@ export function parseLocale<
     preferredLocales,
     ignorePreferredLanguages
   );
+}
+
+function addHeaderCandidates(candidates: string[], headerValue: HeaderValue) {
+  if (Array.isArray(headerValue)) {
+    candidates.push(...headerValue.filter(Boolean));
+  } else if (headerValue) {
+    candidates.push(headerValue);
+  }
 }

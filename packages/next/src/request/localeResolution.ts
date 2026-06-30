@@ -40,15 +40,6 @@ export function getAcceptLanguageCandidates(
   );
 }
 
-export function getLocaleHeaderCandidates(
-  headerValue: LocaleHeaderValue
-): string[] {
-  if (Array.isArray(headerValue)) {
-    return headerValue.filter(Boolean);
-  }
-  return headerValue ? [headerValue] : [];
-}
-
 export function resolveLocaleFromCandidates(
   preferredLocales: string[],
   ignorePreferredLanguages: boolean

@@ -10,7 +10,7 @@ import { localeStore } from '../request/localeStore';
 import {
   getAcceptLanguageCandidates,
   resolveLocaleFromCandidates,
-} from '../request/resolveLocale';
+} from '../request/localeResolution';
 
 export type AsyncConditionStoreParams = {
   getLocale?: () => Promise<string>;

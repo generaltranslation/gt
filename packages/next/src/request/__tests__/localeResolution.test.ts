@@ -2,10 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import {
   getAcceptLanguageCandidates,
-  getLocaleHeaderCandidates,
   getLocaleResolutionParams,
   resolveLocaleFromCandidates,
-} from '../resolveLocale';
+} from '../localeResolution';
 
 const localeConfig = {
   defaultLocale: 'en',
@@ -37,7 +36,7 @@ function resetI18nConfigGlobal() {
   }
 }
 
-describe('resolveLocale helpers', () => {
+describe('localeResolution helpers', () => {
   beforeEach(() => {
     savedEnv = { ...process.env };
     delete process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
@@ -78,11 +77,6 @@ describe('resolveLocale helpers', () => {
     expect(
       getAcceptLanguageCandidates(['es-MX, fr;q=0.8', ' , en-US;q=0.6'])
     ).toEqual(['es-MX', 'fr', 'en-US']);
-  });
-
-  it('extracts locale header candidates from strings and arrays', () => {
-    expect(getLocaleHeaderCandidates(['', 'fr', 'es'])).toEqual(['fr', 'es']);
-    expect(getLocaleHeaderCandidates('brand-french')).toEqual(['brand-french']);
   });
 
   it('resolves candidates against the i18n config', () => {

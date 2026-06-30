@@ -11,7 +11,7 @@ import {
   customGetLocaleUnresolvedWarning,
   customGetRegionUnresolvedWarning,
 } from '../errors/createErrors';
-import { getLocaleResolutionParams } from '../request/resolveLocale';
+import { getLocaleResolutionParams } from '../request/localeResolution';
 
 /**
  * Initialize GT for Next.js
