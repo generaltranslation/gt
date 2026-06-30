@@ -71,18 +71,6 @@ export type BaseWithGTConfigProps = {
   experimentalCompilerOptions?: CompilerOptions;
   headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
-  // SSG
-  experimentalEnableSSG?: boolean;
-  /**
-   * @deprecated This option relies on unsupported Next.js internals. For
-   * cacheComponents support, define custom getLocale.ts and getRegion.ts files
-   * or configure getLocalePath and getRegionPath.
-   */
-  experimentalLocaleResolution?: boolean;
-  /**
-   * @deprecated Only used by deprecated experimentalLocaleResolution.
-   */
-  experimentalLocaleResolutionParam?: string;
   // Request function paths
   getLocalePath?: string;
   getRegionPath?: string;
