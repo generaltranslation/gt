@@ -488,6 +488,16 @@ export const useVersionId: typeof _useVersionId = () => {
 };
 
 /**
+ * Checks whether a locale is valid and supported by the current gt-next config.
+ *
+ * @param locale - The locale candidate to validate.
+ * @returns True when the locale resolves to one of the configured locales.
+ */
+export function isLocaleSupported(_locale: unknown): _locale is string {
+  throw new Error(typesFileError);
+}
+
+/**
  * A dropdown component that allows users to select a region.
  *
  * @param {string[]} [regions] - An optional array of ISO 3166 region codes to display. If not provided, regions are inferred from supported locales in the `<GTProvider>` context.
