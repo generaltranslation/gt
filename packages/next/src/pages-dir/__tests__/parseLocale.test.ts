@@ -78,4 +78,15 @@ describe('parseLocale', () => {
 
     expect(parseLocale(context)).toBe('es');
   });
+
+  it('uses the raw cookie header when parsed cookies are unavailable', () => {
+    const context = createContext({
+      headers: {
+        cookie: 'other=value; generaltranslation.locale=fr',
+        'accept-language': 'en-US,en;q=0.8',
+      },
+    });
+
+    expect(parseLocale(context)).toBe('fr');
+  });
 });

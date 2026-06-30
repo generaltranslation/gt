@@ -20,7 +20,9 @@ export function parseLocale<
 
   addHeaderCandidates(preferredLocales, context.req.headers[headerName]);
 
-  const cookieLocale = context.req.cookies?.[cookieName];
+  const cookieLocale =
+    context.req.cookies?.[cookieName] ||
+    getCookieHeaderValue(context.req.headers.cookie, cookieName);
   if (cookieLocale) {
     preferredLocales.push(cookieLocale);
   }
@@ -81,4 +83,26 @@ function getAcceptLanguageCandidates(headerValue: HeaderValue): string[] {
         .map((item) => item.split(';')?.[0].trim())
         .filter(Boolean) || []
   );
+}
+
+function getCookieHeaderValue(
+  headerValue: HeaderValue,
+  cookieName: string
+): string | undefined {
+  const headerValues = Array.isArray(headerValue) ? headerValue : [headerValue];
+  for (const value of headerValues) {
+    const cookies = value?.split(';') || [];
+    for (const cookie of cookies) {
+      const [name, ...rawValue] = cookie.trim().split('=');
+      if (name === cookieName && rawValue.length > 0) {
+        const value = rawValue.join('=');
+        try {
+          return decodeURIComponent(value);
+        } catch {
+          return value;
+        }
+      }
+    }
+  }
+  return undefined;
 }
