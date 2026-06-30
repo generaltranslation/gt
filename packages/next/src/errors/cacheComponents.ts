@@ -1,22 +1,4 @@
-import {
-  createGtNextDiagnostic,
-  formatDiagnosticErrorDetails,
-} from './diagnostics';
-
-// ---- ERRORS ---- //
-export const cacheComponentsLegacySsgConflictError = createGtNextDiagnostic({
-  severity: 'Error',
-  whatHappened:
-    'experimentalLocaleResolution and deprecated experimentalEnableSSG are both enabled',
-  fix: 'Disable one of them before building your app',
-});
-
-export const createExperimentalLocaleResolutionError = (error: unknown) =>
-  createGtNextDiagnostic({
-    whatHappened: 'Locale resolution with experimentalLocaleResolution failed',
-    wayOut: 'gt-next will fall back where possible',
-    details: formatDiagnosticErrorDetails(error),
-  });
+import { createGtNextDiagnostic } from './diagnostics';
 
 // ---- WARNINGS ---- //
 export type CacheComponentsRequestFunction = 'getLocale' | 'getRegion';
@@ -43,21 +25,6 @@ export const createCacheComponentsMissingRequestFunctionsWarning = (
   });
 };
 
-export const experimentalLocaleResolutionDeprecatedWarning =
-  createGtNextDiagnostic({
-    severity: 'Warning',
-    whatHappened: 'experimentalLocaleResolution is deprecated',
-    wayOut:
-      'This option relies on unsupported Next.js internals and may break in future Next.js releases',
-    fix: 'Remove experimentalLocaleResolution and define custom getLocale.ts and getRegion.ts files for cacheComponents support',
-  });
-
-export const cacheComponentsExperimentalFeatureDisableGetRequestFunctionWarning =
-  'gt-next: experimentalLocaleResolution is enabled. getRegion and getDomain are disabled.';
-
-export const cacheComponentsExperimentalLocaleResolutionDisableCustomGetLocaleWarning =
-  'gt-next: experimentalLocaleResolution is enabled. The provided getLocale function will be ignored.';
-
 export const cacheComponentsNonLocalTranslationsWarning =
   createGtNextDiagnostic({
     severity: 'Warning',
@@ -67,6 +34,3 @@ export const cacheComponentsNonLocalTranslationsWarning =
     fix: 'Store translations locally before building cached pages',
     docsUrl: 'https://generaltranslation.com/en-US/docs/next/guides/local-tx',
   });
-
-export const experimentalLocaleResolutionWithoutCacheComponentsWarning =
-  'gt-next: experimentalLocaleResolution is enabled, but cacheComponents is disabled. experimentalLocaleResolution is deprecated and should be removed.';

@@ -1,9 +1,4 @@
-import {
-  RequestFunctions,
-  StaticRequestFunctions,
-  REQUEST_FUNCTIONS,
-  STATIC_REQUEST_FUNCTIONS,
-} from '../../request/types';
+import { RequestFunctions, REQUEST_FUNCTIONS } from '../../request/types';
 import {
   type BaseWithGTConfigProps,
   REQUEST_FUNCTION_TO_CONFIG_KEY,
@@ -13,17 +8,12 @@ import { resolveConfigFilepath } from './resolveConfigFilepath';
 export const REQUEST_FUNCTION_ALIASES = {
   getLocale: 'gt-next/internal/_getLocale',
   getRegion: 'gt-next/internal/_getRegion',
-  getStaticLocale: 'gt-next/internal/static/_getLocale',
-  getStaticRegion: 'gt-next/internal/static/_getRegion',
-  getStaticDomain: 'gt-next/internal/static/_getDomain',
 } as const;
 
-export type RequestFunctionPaths = Partial<
-  Record<RequestFunctions | StaticRequestFunctions, string>
->;
+export type RequestFunctionPaths = Partial<Record<RequestFunctions, string>>;
 
 /**
- * Resolves paths for request functions (both regular and static variants)
+ * Resolves paths for request functions
  * @param mergedConfig Configuration object containing path settings
  * @returns Object mapping function names to their resolved paths and enabled status
  */
@@ -44,11 +34,5 @@ export function resolveRequestFunctionPaths(
     }
   }
 
-  for (const functionName of STATIC_REQUEST_FUNCTIONS) {
-    const path = resolveConfigFilepath(functionName, ['.ts', '.js']);
-    if (path) {
-      result[functionName] = path;
-    }
-  }
   return result;
 }
