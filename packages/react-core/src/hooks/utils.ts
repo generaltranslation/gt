@@ -1,9 +1,8 @@
 import type { LocaleProperties } from '@generaltranslation/format/types';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { useMemo } from 'react';
 import { useEnableI18n, useLocale } from './condition-store';
 import { getFormatLocales } from './utils/getFormatLocales';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig, getVersionId } from 'gt-i18n/internal';
 
 const EMPTY_LOCALES_PROP: string[] = [];
 
@@ -42,20 +41,15 @@ export function useLocaleProperties(locale: string): LocaleProperties {
   );
 }
 
-export function useLocaleDirection(locale: string) {
+export function useLocaleDirection(locale?: string): 'ltr' | 'rtl' {
+  const currentLocale = useLocale();
+  const resolvedLocale = locale ?? currentLocale;
   return useMemo(
-    () => getI18nConfig().getGTClass().getLocaleDirection(locale),
-    [locale]
+    () => getI18nConfig().getGTClass().getLocaleDirection(resolvedLocale),
+    [resolvedLocale]
   );
 }
 
-export function useVersionId() {
-  throw new Error(
-    createDiagnosticMessage({
-      source: '@generaltranslation/react-core',
-      severity: 'Error',
-      whatHappened: 'useVersionId() is not implemented in this entry point',
-      fix: 'Use getVersionId() or import useVersionId() from a supported runtime entry point.',
-    })
-  );
+export function useVersionId(): string | undefined {
+  return getVersionId();
 }
