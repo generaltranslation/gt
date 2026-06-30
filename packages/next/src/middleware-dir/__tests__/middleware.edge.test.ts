@@ -242,6 +242,23 @@ describe('Middleware Integration Tests', () => {
       expect(res.headers.get(LOCALE_HEADER)).toBeNull();
       expect(res.cookies.get(ROUTING_COOKIE)).toBeUndefined();
     });
+
+    it.each(['/release-notes/v1.5', '/pricing/plan.pro', '/blog/2024.01.15'])(
+      '2.9: dotted app route %s → rewrite with locale',
+      (pathname) => {
+        setEnvConfig();
+        const middleware = createNextMiddleware({
+          prefixDefaultLocale: false,
+        });
+
+        const res = middleware(createRequest(pathname));
+
+        expect(getResponseType(res)).toBe('rewrite');
+        expect(getResponsePath(res)).toBe(`/en${pathname}`);
+        expect(res.headers.get(LOCALE_HEADER)).toBe('en');
+        expect(res.cookies.get(ROUTING_COOKIE)?.value).toBe('true');
+      }
+    );
   });
 
   // ================================================================

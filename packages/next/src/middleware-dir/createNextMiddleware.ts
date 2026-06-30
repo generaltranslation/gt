@@ -25,13 +25,14 @@ import type { HeadersAndCookies } from '../config-dir/props/withGTConfigProps';
 
 const NEXT_JS_SOURCE_MAP_PATH = '/__nextjs_source-map';
 const NEXT_JS_INTERNAL_PATH = '/_next';
-const FILE_PATH_REGEX = /(?:^|\/)[^/]+\.[^/]+$/;
+const STATIC_FILE_PATH_REGEX =
+  /\.(?:avif|css|eot|gif|gz|ico|jpe?g|js|json|map|mjs|otf|pdf|png|svg|tar|ttf|txt|wasm|webmanifest|webp|woff2?|xml|zip)$/i;
 
 function isNextJsPath(pathname: string): boolean {
   return (
     pathname === NEXT_JS_INTERNAL_PATH ||
     pathname.startsWith(`${NEXT_JS_INTERNAL_PATH}/`) ||
-    FILE_PATH_REGEX.test(pathname)
+    STATIC_FILE_PATH_REGEX.test(pathname)
   );
 }
 
