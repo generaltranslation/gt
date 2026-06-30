@@ -12,6 +12,9 @@ export function get(dictionary: Dictionary, id: string | number) {
   if (Array.isArray(dictionary)) {
     return dictionary[id as number];
   }
+  if (!Object.prototype.hasOwnProperty.call(dictionary, id)) {
+    return undefined;
+  }
   return dictionary[id as string];
 }
 
@@ -29,7 +32,11 @@ export function set(
   if (Array.isArray(dictionary)) {
     dictionary[id as number] = value;
   } else {
-    (dictionary as Record<string, Dictionary | DictionaryEntry>)[id as string] =
-      value;
+    Object.defineProperty(dictionary, id, {
+      configurable: true,
+      enumerable: true,
+      value,
+      writable: true,
+    });
   }
 }
