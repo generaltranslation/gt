@@ -101,9 +101,6 @@
   },
   "typesVersions": {
     "*": {
-      "setup": [
-        "./dist/setup.d.cts"
-      ],
       "macros": [
         "./dist/macros.d.cts"
       ]
@@ -112,9 +109,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "gt-react/setup": [
-        "./dist/setup.d.cts"
-      ],
       "gt-react/macros": [
         "./dist/macros.d.cts"
       ]

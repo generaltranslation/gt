@@ -24,7 +24,6 @@ const entries = [
   'src/index.client.ts',
   'src/index.server.ts',
   'src/index.types.ts',
-  'src/types.ts',
 ];
 
 export default defineConfig(

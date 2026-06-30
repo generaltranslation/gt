@@ -2,8 +2,8 @@
   "name": "gt-tanstack-start",
   "version": "11.0.0-odysseus.9",
   "description": "TanStack Start integration for General Translation",
-  "main": "./dist/index.client.cjs",
-  "module": "./dist/index.client.mjs",
+  "main": "./dist/index.server.cjs",
+  "module": "./dist/index.server.mjs",
   "types": "./dist/index.types.d.cts",
   "files": [
     "dist",
@@ -84,24 +84,6 @@
         "default": "./dist/index.server.mjs"
       },
       "default": "./dist/index.server.mjs"
-    },
-    "./types": {
-      "types": "./dist/types.d.cts"
-    }
-  },
-  "typesVersions": {
-    "*": {
-      "types": [
-        "./dist/types.d.cts"
-      ]
-    }
-  },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "gt-tanstack-start/types": [
-        "./dist/types.d.cts"
-      ]
     }
   },
   "keywords": [
