@@ -4,7 +4,7 @@ import { DEFAULT_CACHE_EXPIRY_TIME } from '../utils/constants';
 import type { Dictionary, DictionaryLoader } from '../DictionaryCache';
 import type { Hash } from '../TranslationsCache';
 import type { CreateTranslateMany } from '../utils/createTranslateMany';
-import type { I18nCacheLifecycleCallbacks } from '../../lifecycle-hooks/types';
+import type { LocalesTranslationsCacheMissCallback } from '../LocalesCache';
 import type { SafeTranslationsLoader } from '../translations-loaders/types';
 import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 
@@ -44,7 +44,7 @@ describe('LocalesCache', () => {
 
   function createCache(opts?: {
     ttl?: number | null;
-    lifecycle?: I18nCacheLifecycleCallbacks<string>;
+    onTranslationsCacheMiss?: LocalesTranslationsCacheMissCallback<string>;
   }) {
     return new LocalesCache<string>({
       dictionary: enDictionary,
@@ -52,7 +52,9 @@ describe('LocalesCache', () => {
       loadDictionary: mockLoadDictionary as DictionaryLoader,
       createTranslateMany: mockCreateTranslateMany as CreateTranslateMany,
       translateDictionaryEntry: mockRuntimeTranslate,
-      lifecycle: opts?.lifecycle ?? {},
+      ...(opts?.onTranslationsCacheMiss
+        ? { onTranslationsCacheMiss: opts.onTranslationsCacheMiss }
+        : {}),
       ...(opts?.ttl !== undefined ? { ttl: opts.ttl } : {}),
     });
   }
@@ -84,33 +86,6 @@ describe('LocalesCache', () => {
 
       expect(mockLoadTranslations).toHaveBeenCalledTimes(1);
       expect(firstResult).toBe(secondResult);
-    });
-
-    it('getOrLoadTranslations() emits one locale miss for concurrent loads', async () => {
-      const onLocalesCacheMiss = vi.fn();
-      let resolveTranslations!: (translations: Record<Hash, string>) => void;
-      mockLoadTranslations.mockReturnValue(
-        new Promise((resolve) => {
-          resolveTranslations = resolve;
-        })
-      );
-      const cache = createCache({
-        lifecycle: {
-          onLocalesCacheMiss,
-        },
-      });
-
-      const firstCache = cache.getOrLoadTranslations('fr');
-      const secondCache = cache.getOrLoadTranslations('fr');
-      resolveTranslations(frTranslations);
-      const [firstResult, secondResult] = await Promise.all([
-        firstCache,
-        secondCache,
-      ]);
-
-      expect(firstResult).toBe(secondResult);
-      expect(mockLoadTranslations).toHaveBeenCalledTimes(1);
-      expect(onLocalesCacheMiss).toHaveBeenCalledTimes(1);
     });
 
     it('getTranslations() returns cache after getOrLoadTranslations() populates it', async () => {
@@ -212,33 +187,6 @@ describe('LocalesCache', () => {
 
       expect(mockLoadDictionary).toHaveBeenCalledTimes(1);
       expect(firstResult).toBe(secondResult);
-    });
-
-    it('getOrLoadDictionary() emits one locale miss for concurrent loads', async () => {
-      const onLocalesDictionaryCacheMiss = vi.fn();
-      let resolveDictionary!: (dictionary: Dictionary) => void;
-      mockLoadDictionary.mockReturnValue(
-        new Promise((resolve) => {
-          resolveDictionary = resolve;
-        })
-      );
-      const cache = createCache({
-        lifecycle: {
-          onLocalesDictionaryCacheMiss,
-        },
-      });
-
-      const firstCache = cache.getOrLoadDictionary('fr');
-      const secondCache = cache.getOrLoadDictionary('fr');
-      resolveDictionary(frDictionary);
-      const [firstResult, secondResult] = await Promise.all([
-        firstCache,
-        secondCache,
-      ]);
-
-      expect(firstResult).toBe(secondResult);
-      expect(mockLoadDictionary).toHaveBeenCalledTimes(1);
-      expect(onLocalesDictionaryCacheMiss).toHaveBeenCalledTimes(1);
     });
 
     it('getDictionary() returns cache after getOrLoadDictionary() populates it', async () => {

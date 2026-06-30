@@ -8,10 +8,6 @@ import {
 } from './utils/dictionary-helpers';
 import { materializeDictionaryValue } from './utils/materialize-dictionary';
 import type {
-  LifecycleCallback,
-  LifecycleParam,
-} from '../lifecycle-hooks/types';
-import type {
   Dictionary,
   DictionaryEntry,
   DictionaryKey,
@@ -35,20 +31,6 @@ export type DictionaryRuntimeTranslate = (
 
 export type DictionaryLoader = (locale: string) => Promise<Dictionary>;
 
-type DictionaryCacheLifecycle = LifecycleParam<
-  DictionaryKey,
-  DictionaryPath,
-  DictionaryValue,
-  DictionaryEntry
-> & {
-  onDictionaryObjectCacheHit?: LifecycleCallback<
-    DictionaryKey,
-    DictionaryPath,
-    DictionaryValue,
-    DictionaryValue
-  >;
-};
-
 function cloneDictionaryEntry(entry: DictionaryEntry): DictionaryEntry {
   return {
     entry: entry.entry,
@@ -67,20 +49,16 @@ export class DictionaryCache {
     Promise<DictionaryValue>
   >();
   private runtimeTranslate: DictionaryRuntimeTranslate;
-  private lifecycle: DictionaryCacheLifecycle;
 
   constructor({
     init,
-    lifecycle = {},
     runtimeTranslate,
   }: {
     init: Dictionary;
     runtimeTranslate: DictionaryRuntimeTranslate;
-    lifecycle?: DictionaryCacheLifecycle;
   }) {
     this.cache = structuredClone(init);
     this.runtimeTranslate = runtimeTranslate;
-    this.lifecycle = lifecycle;
   }
 
   public getEntry(key: DictionaryKey): DictionaryEntry | undefined {
@@ -89,15 +67,7 @@ export class DictionaryCache {
     if (entry === undefined) {
       return undefined;
     }
-    const outputEntry = cloneDictionaryEntry(entry);
-
-    this.lifecycle.onHit?.({
-      inputKey: key,
-      cacheKey: key,
-      cacheValue: value as DictionaryValue,
-      outputValue: outputEntry,
-    });
-    return outputEntry;
+    return cloneDictionaryEntry(entry);
   }
 
   public getValue(key: DictionaryKey): DictionaryValue | undefined {
@@ -105,15 +75,7 @@ export class DictionaryCache {
     if (value === undefined) {
       return undefined;
     }
-    const outputValue = cloneDictionaryValue(value);
-
-    this.lifecycle.onDictionaryObjectCacheHit?.({
-      inputKey: key,
-      cacheKey: key,
-      cacheValue: value as DictionaryValue,
-      outputValue,
-    });
-    return outputValue;
+    return cloneDictionaryValue(value);
   }
 
   public setValue(key: DictionaryKey, value: DictionaryValue): void {
@@ -173,12 +135,6 @@ export class DictionaryCache {
               'DictionaryCache materializeEntry did not return a DictionaryEntry'
             );
           }
-          this.lifecycle.onMiss?.({
-            inputKey: key,
-            cacheKey: key,
-            cacheValue: value,
-            outputValue: cloneDictionaryEntry(entry),
-          });
           return cloneDictionaryEntry(entry);
         }
       );
