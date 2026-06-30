@@ -28,11 +28,6 @@ export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore
 export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';
 export { WritableConditionStore } from './condition-store/WritableConditionStore';
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
-export {
-  createLocaleResolver,
-  determineSupportedLocale,
-  resolveSupportedLocale,
-} from './condition-store/localeResolver';
 export type { LocaleCandidates } from './i18n-config/I18nConfig';
 export {
   DICTIONARY_CACHE_MISS_EVENT_NAME,
