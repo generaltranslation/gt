@@ -335,7 +335,7 @@ export async function downloadFileBatch(
           entry.staged = false;
           entry.translations[locale] = {
             updatedAt: new Date().toISOString(),
-            fileName: outputPath,
+            fileName: getRelative(outputPath),
           };
           didUpdateDownloadedLock = true;
         }
