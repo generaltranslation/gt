@@ -17,20 +17,14 @@ export function parseLocale<
 >(context: GetServerSidePropsContext<Params, Preview>): string {
   const { headerName, cookieName, ignorePreferredLanguages } =
     getLocaleResolutionParams();
-  const preferredLocales: string[] = [];
-
-  addHeaderCandidates(preferredLocales, context.req.headers[headerName]);
-
   const cookieLocale = context.req.cookies?.[cookieName];
-  if (cookieLocale) {
-    preferredLocales.push(cookieLocale);
-  }
-
-  if (!ignorePreferredLanguages) {
-    preferredLocales.push(
-      ...getAcceptLanguageCandidates(context.req.headers['accept-language'])
-    );
-  }
+  const preferredLocales = [
+    ...getHeaderCandidates(context.req.headers[headerName]),
+    ...(cookieLocale ? [cookieLocale] : []),
+    ...(!ignorePreferredLanguages
+      ? getAcceptLanguageCandidates(context.req.headers['accept-language'])
+      : []),
+  ];
 
   return resolveLocaleFromCandidates(
     preferredLocales,
@@ -38,10 +32,9 @@ export function parseLocale<
   );
 }
 
-function addHeaderCandidates(candidates: string[], headerValue: HeaderValue) {
+function getHeaderCandidates(headerValue: HeaderValue): string[] {
   if (Array.isArray(headerValue)) {
-    candidates.push(...headerValue.filter(Boolean));
-  } else if (headerValue) {
-    candidates.push(headerValue);
+    return headerValue.filter(Boolean);
   }
+  return headerValue ? [headerValue] : [];
 }

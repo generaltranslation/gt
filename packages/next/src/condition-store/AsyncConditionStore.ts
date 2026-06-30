@@ -93,25 +93,17 @@ function createDefaultGetLocale({
   ignorePreferredLanguages: boolean;
 }): () => Promise<string> {
   return async () => {
-    const preferredLocales: string[] = [];
     const headersList = await headers();
 
-    // Language set by GT
     const headerLocale = headersList.get(headerName);
-    if (headerLocale) {
-      preferredLocales.push(headerLocale);
-    }
-    const cookieLocale = (await cookies()).get(cookieName);
-    if (cookieLocale?.value) {
-      preferredLocales.push(cookieLocale.value);
-    }
-
-    // Preferred languages
-    if (!ignorePreferredLanguages) {
-      preferredLocales.push(
-        ...getAcceptLanguageCandidates(headersList.get('accept-language'))
-      );
-    }
+    const cookieLocale = (await cookies()).get(cookieName)?.value;
+    const preferredLocales = [
+      ...(headerLocale ? [headerLocale] : []),
+      ...(cookieLocale ? [cookieLocale] : []),
+      ...(!ignorePreferredLanguages
+        ? getAcceptLanguageCandidates(headersList.get('accept-language'))
+        : []),
+    ];
 
     return resolveLocaleFromCandidates(
       preferredLocales,

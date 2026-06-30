@@ -3,9 +3,7 @@ import { getI18nConfig } from 'gt-i18n/internal';
 import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
 import { defaultLocaleHeaderName } from '../utils/headers';
 
-export type LocaleHeaderValue = string | string[] | null | undefined;
-
-export type LocaleResolutionParams = {
+type LocaleResolutionParams = {
   headerName: string;
   cookieName: string;
   ignorePreferredLanguages: boolean;
@@ -28,7 +26,7 @@ export function getLocaleResolutionParams(): LocaleResolutionParams {
 }
 
 export function getAcceptLanguageCandidates(
-  headerValue: LocaleHeaderValue
+  headerValue: string | string[] | null | undefined
 ): string[] {
   const headerValues = Array.isArray(headerValue) ? headerValue : [headerValue];
   return headerValues.flatMap(
