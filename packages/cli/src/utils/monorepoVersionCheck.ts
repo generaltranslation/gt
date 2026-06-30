@@ -5,12 +5,14 @@ import chalk from 'chalk';
 import { logger } from '../console/logger.js';
 import { Libraries, type GTLibrary } from '../types/libraries.js';
 import { resolveConfig } from '../config/resolveConfig.js';
+import { PACKAGE_VERSION } from '../generated/version.js';
 
 interface PackageJson {
   name?: string;
   version?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
 }
 
 interface VersionInfo {
@@ -30,10 +32,63 @@ interface SyncedVersionGroup {
   minVersion?: string;
 }
 
+interface VersionRange {
+  minInclusive: string;
+  maxExclusive: string;
+}
+
+interface RuntimeCompatibilityRule {
+  cli: VersionRange;
+  runtimes: Partial<Record<GTLibrary, VersionRange>>;
+}
+
+interface RuntimeCompatibilityMismatch {
+  packageName: string;
+  version: string;
+  workspace: string;
+  compatibleRange: VersionRange;
+}
+
 const SYNCED_VERSION_GROUPS: readonly SyncedVersionGroup[] = [
   {
     packages: [Libraries.GT_REACT, Libraries.GT_REACT_NATIVE],
     minVersion: '10.19.1',
+  },
+];
+
+const CLI_RUNTIME_COMPATIBILITY: readonly RuntimeCompatibilityRule[] = [
+  {
+    cli: { minInclusive: '2.0.0', maxExclusive: '3.0.0' },
+    runtimes: {
+      [Libraries.GT_REACT]: {
+        minInclusive: '10.0.0',
+        maxExclusive: '12.0.0',
+      },
+      [Libraries.GT_NEXT]: {
+        minInclusive: '6.0.0',
+        maxExclusive: '12.0.0',
+      },
+      [Libraries.GT_REACT_NATIVE]: {
+        minInclusive: '10.0.0',
+        maxExclusive: '12.0.0',
+      },
+      [Libraries.GT_NODE]: {
+        minInclusive: '0.6.0',
+        maxExclusive: '2.0.0',
+      },
+      [Libraries.GT_I18N]: {
+        minInclusive: '0.8.0',
+        maxExclusive: '2.0.0',
+      },
+      [Libraries.GT_REACT_CORE]: {
+        minInclusive: '1.0.0',
+        maxExclusive: '12.0.0',
+      },
+      [Libraries.GT_TANSTACK_START]: {
+        minInclusive: '10.0.0',
+        maxExclusive: '12.0.0',
+      },
+    },
   },
 ];
 
@@ -73,7 +128,7 @@ function scanForPackageDirs(rootDir: string): string[] {
     ignore: ['**/node_modules/**'],
   });
 
-  return matches.map((m) => path.dirname(m)).filter((dir) => dir !== rootDir);
+  return [...new Set(matches.map((m) => path.dirname(m)))];
 }
 
 /**
@@ -119,7 +174,11 @@ function getDeclaredVersion(
 ): string | null {
   const pkg = readPkgJson(workspaceDir);
   if (!pkg) return null;
-  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  const deps = {
+    ...pkg.dependencies,
+    ...pkg.devDependencies,
+    ...pkg.peerDependencies,
+  };
   const version = deps[packageName];
   if (!version || !isSemverSpecifier(version)) return null;
   return version;
@@ -169,6 +228,41 @@ function findVersionMismatches(
     ...mismatches,
     ...findSyncedPackageVersionMismatches(packageVersions, libraries),
   ];
+}
+
+function findRuntimeCompatibilityMismatches(
+  workspaceDirs: string[],
+  readPkgJson: PackageJsonReader,
+  libraries: readonly GTLibrary[],
+  cliVersion: string
+): RuntimeCompatibilityMismatch[] {
+  const compatibilityRule = CLI_RUNTIME_COMPATIBILITY.find((rule) =>
+    versionSpecifierIntersectsRange(cliVersion, rule.cli)
+  );
+  if (!compatibilityRule) return [];
+
+  const mismatches: RuntimeCompatibilityMismatch[] = [];
+  for (const wsDir of workspaceDirs) {
+    const wsName = getWorkspaceName(wsDir, readPkgJson);
+
+    for (const packageName of libraries) {
+      const compatibleRange = compatibilityRule.runtimes[packageName];
+      if (!compatibleRange) continue;
+
+      const version = getDeclaredVersion(packageName, wsDir, readPkgJson);
+      if (!version) continue;
+      if (versionSpecifierIntersectsRange(version, compatibleRange)) continue;
+
+      mismatches.push({
+        packageName,
+        version,
+        workspace: wsName,
+        compatibleRange,
+      });
+    }
+  }
+
+  return mismatches;
 }
 
 /**
@@ -239,6 +333,24 @@ function isVersionAtLeast(version: string, minVersion: string): boolean {
   return compareSemverVersions(parsedVersion, parsedMinVersion) >= 0;
 }
 
+function versionSpecifierIntersectsRange(
+  version: string,
+  range: VersionRange
+): boolean {
+  const parsedVersions = parseSemverVersions(version);
+  if (parsedVersions.length === 0) return true;
+
+  const minVersion = parseSemverVersion(range.minInclusive);
+  const maxVersion = parseSemverVersion(range.maxExclusive);
+  if (!minVersion || !maxVersion) return true;
+
+  return parsedVersions.some(
+    (parsedVersion) =>
+      compareSemverVersions(parsedVersion, minVersion) >= 0 &&
+      compareSemverVersions(parsedVersion, maxVersion) < 0
+  );
+}
+
 function parseSemverVersion(
   version: string
 ): { major: number; minor: number; patch: number } | null {
@@ -252,6 +364,17 @@ function parseSemverVersion(
     minor: Number(match[2] ?? 0),
     patch: Number(match[3] ?? 0),
   };
+}
+
+function parseSemverVersions(
+  version: string
+): { major: number; minor: number; patch: number }[] {
+  const matches = version.matchAll(/(\d+)(?:\.(\d+))?(?:\.(\d+))?/g);
+  return [...matches].map((match) => ({
+    major: Number(match[1]),
+    minor: Number(match[2] ?? 0),
+    patch: Number(match[3] ?? 0),
+  }));
 }
 
 function compareSemverVersions(
@@ -322,6 +445,50 @@ function formatMismatchError(mismatches: VersionMismatch[]): string {
   return lines.join('\n');
 }
 
+function formatCompatibilityError(
+  mismatches: RuntimeCompatibilityMismatch[],
+  cliVersion: string
+): string {
+  const lines: string[] = [
+    chalk.red.bold('Incompatible GT package versions detected!'),
+    '',
+    chalk.yellow(
+      `The installed gt CLI version (${cliVersion}) is not compatible with the following GT runtime package versions.`
+    ),
+    '',
+  ];
+
+  for (const mismatch of mismatches) {
+    lines.push(
+      `  ${chalk.white.bold(mismatch.packageName)} ${chalk.cyan(
+        mismatch.version
+      )} ${chalk.dim('←')} ${mismatch.workspace}`
+    );
+    lines.push(
+      `    Compatible range for gt ${cliVersion}: ${chalk.green(
+        formatVersionRange(mismatch.compatibleRange)
+      )}`
+    );
+  }
+
+  lines.push(
+    '',
+    chalk.yellow(
+      'Please upgrade gt and your GT runtime packages to compatible versions, then reinstall.'
+    ),
+    '',
+    chalk.dim(
+      'To skip this check, use --skip-version-check or set "skipVersionCheck": true in gt.config.json.\n'
+    )
+  );
+
+  return lines.join('\n');
+}
+
+function formatVersionRange(range: VersionRange): string {
+  return `>=${range.minInclusive} <${range.maxExclusive}`;
+}
+
 /**
  * Run the monorepo version consistency check.
  * If mismatched GT package versions are found, logs an error and exits with code 1.
@@ -329,9 +496,11 @@ function formatMismatchError(mismatches: VersionMismatch[]): string {
  * Can be skipped via the --skip-version-check flag or "skipVersionCheck": true in gt.config.json.
  */
 export function checkMonorepoVersionConsistency(
-  libraries: readonly GTLibrary[]
+  libraries: readonly GTLibrary[],
+  options: { cliVersion?: string } = {}
 ): void {
   const cwd = process.cwd();
+  const cliVersion = options.cliVersion ?? PACKAGE_VERSION;
 
   // Check if skipped via config
   const resolved = resolveConfig(cwd);
@@ -341,16 +510,28 @@ export function checkMonorepoVersionConsistency(
   if (!rootDir) return; // No lockfile found — nothing to check
 
   const workspaceDirs = scanForPackageDirs(rootDir);
-  if (workspaceDirs.length <= 1) return; // Single package — no mismatches possible
+  if (workspaceDirs.length === 0) return; // No package workspaces found
 
   const readPkgJson = createPackageJsonReader();
-  const mismatches = findVersionMismatches(
+  const mismatches =
+    workspaceDirs.length > 1
+      ? findVersionMismatches(workspaceDirs, readPkgJson, libraries)
+      : [];
+  const compatibilityMismatches = findRuntimeCompatibilityMismatches(
     workspaceDirs,
     readPkgJson,
-    libraries
+    libraries,
+    cliVersion
   );
-  if (mismatches.length === 0) return; // All consistent
+  if (mismatches.length === 0 && compatibilityMismatches.length === 0) return; // All consistent
 
-  logger.error(formatMismatchError(mismatches));
+  logger.error(
+    [
+      ...(mismatches.length > 0 ? [formatMismatchError(mismatches)] : []),
+      ...(compatibilityMismatches.length > 0
+        ? [formatCompatibilityError(compatibilityMismatches, cliVersion)]
+        : []),
+    ].join('\n')
+  );
   process.exit(1);
 }
