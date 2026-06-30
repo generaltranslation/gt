@@ -6,9 +6,8 @@ import remarkFrontmatter from 'remark-frontmatter';
 import YAML, { isMap, isScalar } from 'yaml';
 import type { Content, Root, Yaml } from 'mdast';
 import { createFileMapping } from '../formats/files/fileMapping.js';
+import { localizePathSegment } from './localizePathSegment.js';
 import type { Settings } from '../types/index.js';
-
-const SKIPPABLE_URL_REGEX = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#|\.\/|\.\.\/)/i;
 
 function getYamlFrontmatter(content: string): Yaml | null {
   let tree: Root;
@@ -35,38 +34,6 @@ function getYamlFrontmatter(content: string): Yaml | null {
   return yamlNode;
 }
 
-function normalizeMintlifyFrontmatterUrl(
-  url: string,
-  targetLocale: string,
-  knownLocales: Set<string>
-): string | null {
-  const trimmed = url.trim();
-  if (!trimmed || SKIPPABLE_URL_REGEX.test(trimmed)) {
-    return null;
-  }
-
-  const leadingWhitespace = url.match(/^\s*/)?.[0] ?? '';
-  const trailingWhitespace = url.match(/\s*$/)?.[0] ?? '';
-  const leadingSlash = trimmed.startsWith('/') ? '/' : '';
-  const pathBody = trimmed.replace(/^\/+/, '');
-  const [firstSegment, ...restSegments] = pathBody.split('/');
-
-  if (firstSegment === targetLocale) {
-    const normalized = `${leadingWhitespace}${leadingSlash}${pathBody}${trailingWhitespace}`;
-    return normalized === url ? null : normalized;
-  }
-
-  const unprefixedPath = knownLocales.has(firstSegment)
-    ? restSegments.join('/')
-    : pathBody;
-  const localizedPath = unprefixedPath
-    ? `${targetLocale}/${unprefixedPath}`
-    : `${targetLocale}/`;
-  const normalized = `${leadingWhitespace}${leadingSlash}${localizedPath}${trailingWhitespace}`;
-
-  return normalized === url ? null : normalized;
-}
-
 export function localizeMintlifyFrontmatterUrlForContent(
   content: string,
   targetLocale: string,
@@ -91,10 +58,11 @@ export function localizeMintlifyFrontmatterUrlForContent(
     return { content, changed: false };
   }
 
-  const localizedUrl = normalizeMintlifyFrontmatterUrl(
+  const localizedUrl = localizePathSegment(
     urlNode.value,
     targetLocale,
-    new Set(knownLocaleValues)
+    new Set(knownLocaleValues),
+    { trailingSlashWhenEmpty: true }
   );
   if (!localizedUrl) {
     return { content, changed: false };
