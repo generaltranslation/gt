@@ -72,6 +72,7 @@
   "exports": {
     ".": {
       "react-server": {
+        "types": "./dist/index.rsc.d.ts",
         "import": "./dist/index.rsc.mjs",
         "default": "./dist/index.rsc.js"
       },
