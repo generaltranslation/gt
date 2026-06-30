@@ -92,7 +92,6 @@ export {
   getVersionId,
   createRenderPipeline,
   internalInitializeGTSRA as initializeGT,
-  internalInitializeGTSPA,
   setReactI18nCache,
   t,
 } from '@generaltranslation/react-core/pure';

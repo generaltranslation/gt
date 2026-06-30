@@ -88,7 +88,6 @@ export {
   getTranslationsSnapshot,
   getVersionId,
   createRenderPipeline,
-  internalInitializeGTSPA,
   setReactI18nCache,
   t,
 } from '@generaltranslation/react-core/pure';

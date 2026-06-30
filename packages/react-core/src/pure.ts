@@ -74,7 +74,6 @@ export {
   internalInitializeGTSRA,
   internalInitializeGTSRA as initializeGT,
 } from './setup/initializeGTSRA';
-export { internalInitializeGTSPA } from './setup/initializeGTSPA';
 
 export {
   ReactI18nCache,
