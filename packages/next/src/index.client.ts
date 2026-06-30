@@ -1,7 +1,5 @@
 'use client';
 
-import { determineLocale } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
 import {
   Var,
   Num,
@@ -44,52 +42,6 @@ import type {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from 'gt-react';
-
-type ClientI18NConfig = {
-  customMapping?: CustomMapping;
-  defaultLocale?: string;
-  locales?: string[];
-};
-
-let clientI18NConfig: ClientI18NConfig | undefined;
-
-function getClientI18NConfig(): ClientI18NConfig {
-  if (clientI18NConfig) return clientI18NConfig;
-
-  try {
-    clientI18NConfig = JSON.parse(
-      process.env._GENERALTRANSLATION_PUBLIC_I18N_CONFIG_PARAMS || '{}'
-    );
-  } catch {
-    clientI18NConfig = {};
-  }
-
-  return clientI18NConfig || {};
-}
-
-/**
- * Checks whether a locale is valid and supported by the current gt-next config.
- *
- * @param locale - The locale candidate to validate.
- * @returns True when the locale resolves to one of the configured locales.
- */
-export function isLocaleSupported(locale: unknown): locale is string {
-  if (typeof locale !== 'string' || locale.length === 0) return false;
-
-  const { customMapping, defaultLocale, locales } = getClientI18NConfig();
-  const approvedLocales =
-    locales && locales.length > 0
-      ? locales
-      : [
-          defaultLocale ||
-            process.env._GENERALTRANSLATION_DEFAULT_LOCALE ||
-            'en',
-        ];
-
-  return (
-    determineLocale([locale], approvedLocales, customMapping) !== undefined
-  );
-}
 
 // Mock <GTProvider> which throws an error
 export function GTProvider() {

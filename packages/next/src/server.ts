@@ -5,6 +5,7 @@ import { tx } from './server-dir/runtime/tx';
 import { getLocale } from './request/getLocale';
 import { registerLocale } from './request/registerLocale';
 import { getRegion } from './request/getRegion';
+import { isLocaleSupported } from './request/localeValidation';
 import { getI18NConfig } from './config-dir/getI18NConfig';
 import { getTranslations } from './server-dir/buildtime/getTranslations';
 import { GTProvider } from './provider/GTProvider';
@@ -55,6 +56,7 @@ export {
   tx,
   Tx,
   getLocale,
+  isLocaleSupported,
   registerLocale,
   getRegion,
   getLocaleDirection,

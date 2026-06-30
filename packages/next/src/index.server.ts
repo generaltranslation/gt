@@ -12,7 +12,6 @@ import { GTProvider } from './provider/GTProvider';
 import { Tx } from './server';
 import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
-import { isLocaleSupported } from './request/localeValidation';
 import { useLocaleDirection } from './request/getLocaleDirection';
 import { getI18NConfig } from './config-dir/getI18NConfig';
 import {
@@ -81,7 +80,6 @@ export {
   useTranslations,
   useMessages,
   useLocale,
-  isLocaleSupported,
   useLocaleDirection,
   msg,
   decodeMsg,
