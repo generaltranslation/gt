@@ -1,7 +1,5 @@
 import { AsyncReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import { cookies, headers } from 'next/headers';
-import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
-import { getI18nConfig } from 'gt-i18n/internal';
 import { defaultLocaleHeaderName } from '../utils/headers';
 import {
   defaultLocaleCookieName,
@@ -9,6 +7,10 @@ import {
 } from '@generaltranslation/react-core/cookies';
 import { createConditionStoreSingleton } from 'gt-i18n/internal';
 import { localeStore } from '../request/localeStore';
+import {
+  getAcceptLanguageCandidates,
+  resolveLocaleFromCandidates,
+} from '../request/resolveLocale';
 
 export type AsyncConditionStoreParams = {
   getLocale?: () => Promise<string>;
@@ -106,26 +108,14 @@ function createDefaultGetLocale({
 
     // Preferred languages
     if (!ignorePreferredLanguages) {
-      const acceptedLocales = headersList
-        .get('accept-language')
-        ?.split(',')
-        .map((item: string) => item.split(';')?.[0].trim());
-
-      if (acceptedLocales) {
-        preferredLocales.push(...acceptedLocales);
-      }
+      preferredLocales.push(
+        ...getAcceptLanguageCandidates(headersList.get('accept-language'))
+      );
     }
 
-    // Warn if no locales found
-    if (preferredLocales.length === 0 && !ignorePreferredLanguages) {
-      console.warn(noLocalesCouldBeDeterminedWarning);
-    }
-
-    const i18nConfig = getI18nConfig();
-    const locales = i18nConfig.getLocales();
-    return (
-      i18nConfig.getGTClass().determineLocale(preferredLocales, locales) ||
-      i18nConfig.getDefaultLocale()
+    return resolveLocaleFromCandidates(
+      preferredLocales,
+      ignorePreferredLanguages
     );
   };
 }

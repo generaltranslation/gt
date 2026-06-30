@@ -11,6 +11,7 @@ import {
   customGetLocaleUnresolvedWarning,
   customGetRegionUnresolvedWarning,
 } from '../errors/createErrors';
+import { getLocaleResolutionParams } from '../request/resolveLocale';
 
 /**
  * Initialize GT for Next.js
@@ -38,14 +39,8 @@ export function initializeGT(
 }
 
 function getAsyncConditionStoreParams(): AsyncConditionStoreParams {
-  // TODO: we are parsing this twice, address in separate PR
-  const privateConfig = JSON.parse(
-    process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
-  );
   return {
-    headerName: privateConfig.headersAndCookies?.localeHeaderName,
-    cookieName: privateConfig.headersAndCookies?.localeCookieName,
-    ignorePreferredLanguages: privateConfig.ignoreBrowserLocales,
+    ...getLocaleResolutionParams(),
     getLocale: resolveGetLocale(),
     getRegion: resolveGetRegion(),
   };
