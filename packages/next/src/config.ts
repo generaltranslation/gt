@@ -39,7 +39,6 @@ import {
   resolveRequestFunctionPaths,
 } from './config-dir/utils/resolveRequestFunctionPaths';
 import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath';
-import { ssgChecks } from './plugin/checks/ssgChecks';
 import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
 import { I18nConfigParams } from 'gt-i18n/internal/types';
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
@@ -108,13 +107,6 @@ type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
- * @param {boolean} [experimentalEnableSSG=false] - Whether to enable SSG.
- * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings. (deprecated)
- * @param {string|undefined} [getStaticLocalePath="getStaticLocale"] - The path to the static getLocale function. (deprecated)
- * @param {string|undefined} [getStaticRegionPath="getStaticRegion"] - The path to the static getRegion function. (deprecated)
- * @param {string|undefined} [getStaticDomainPath="getStaticDomain"] - The path to the static getDomain function. (deprecated)
- * @param {boolean} [experimentalLocaleResolution=defaultWithGTConfigProps.experimentalLocaleResolution] - Deprecated. Uses unsupported Next.js internals to infer locale from root params.
- * @param {string|undefined} [experimentalLocaleResolutionParam=defaultWithGTConfigProps.experimentalLocaleResolutionParam] - Deprecated. Only used by experimentalLocaleResolution.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {object} nextConfig - The Next.js configuration object to extend
@@ -419,12 +411,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     );
   }
 
-  // Run SSG checks
-  ssgChecks(mergedConfig, requestFunctionPaths);
-
   // Run cache component checks
   cacheComponentsChecks({
-    mergedConfig,
     nextConfig: internalNextConfig,
     requestFunctionPaths,
     localTranslationsEnabled: !!customLoadTranslationsPath,
@@ -642,18 +630,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         requestFunctionPaths.getLocale ? 'true' : 'false',
       _GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED:
         requestFunctionPaths.getRegion ? 'true' : 'false',
-      _GENERALTRANSLATION_STATIC_GET_LOCALE_ENABLED:
-        requestFunctionPaths.getStaticLocale ? 'true' : 'false',
-      _GENERALTRANSLATION_STATIC_GET_REGION_ENABLED:
-        requestFunctionPaths.getStaticRegion ? 'true' : 'false',
-      _GENERALTRANSLATION_STATIC_GET_DOMAIN_ENABLED:
-        requestFunctionPaths.getStaticDomain ? 'true' : 'false',
-      _GENERALTRANSLATION_ENABLE_SSG:
-        mergedConfig.experimentalEnableSSG?.toString() || 'false',
-      _GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION:
-        mergedConfig.experimentalLocaleResolution?.toString() || 'false',
-      _GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM:
-        mergedConfig.experimentalLocaleResolutionParam,
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {

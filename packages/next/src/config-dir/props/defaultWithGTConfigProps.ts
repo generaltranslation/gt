@@ -15,7 +15,6 @@ import {
   defaultResetLocaleCookieName,
 } from '../../utils/cookies';
 import { CompilerOptions } from './withGTConfigProps';
-import { defaultExperimentalLocaleResolutionParam } from '../../utils/constants';
 
 type DefaultGTConfigProps = {
   config: string;
@@ -41,9 +40,6 @@ type DefaultGTConfigProps = {
     resetLocaleCookieName: string;
   };
   experimentalCompilerOptions: CompilerOptions;
-  experimentalEnableSSG: boolean;
-  experimentalLocaleResolution: boolean;
-  experimentalLocaleResolutionParam: string;
 };
 
 export const defaultWithGTConfigProps: DefaultGTConfigProps = {
@@ -72,9 +68,6 @@ export const defaultWithGTConfigProps: DefaultGTConfigProps = {
     compileTimeHash: true,
     disableBuildChecks: false,
   },
-  experimentalEnableSSG: false,
-  experimentalLocaleResolution: false,
-  experimentalLocaleResolutionParam: defaultExperimentalLocaleResolutionParam,
 } as const;
 
 // exported separately because it's only used in production
