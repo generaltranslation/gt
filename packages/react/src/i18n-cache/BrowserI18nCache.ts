@@ -2,7 +2,11 @@ import type {
   I18nCacheConstructorParams,
   TranslationsLoader,
 } from 'gt-i18n/internal/types';
-import { getI18nConfig, I18nCache } from 'gt-i18n/internal';
+import {
+  getI18nConfig,
+  getRuntimeEnvironment,
+  I18nCache,
+} from 'gt-i18n/internal';
 import type { HtmlTagOptions } from './types';
 import type { Translation } from 'gt-i18n/types';
 import { DEFAULT_HTML_TAG_OPTIONS } from './constants';
@@ -95,7 +99,7 @@ export class BrowserI18nCache extends I18nCache<Translation> {
     locale: string,
     init?: Record<string, Translation>
   ): LocalStorageTranslationCache | undefined {
-    if (!import.meta.env?.DEV) return undefined;
+    if (getRuntimeEnvironment() !== 'development') return undefined;
 
     if (!this._localStorageCaches[locale]) {
       this._localStorageCaches[locale] = new LocalStorageTranslationCache({
