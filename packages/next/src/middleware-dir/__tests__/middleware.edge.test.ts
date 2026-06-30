@@ -223,6 +223,25 @@ describe('Middleware Integration Tests', () => {
       // Source map next() is bare — no locale header or routing cookie
       expect(res.headers.get(LOCALE_HEADER)).toBeNull();
     });
+
+    it.each([
+      '/llms.txt',
+      '/llms-full.txt',
+      '/favicon-light.ico',
+      '/apple-touch-icon.png',
+      '/apple-touch-icon-precomposed.png',
+      '/_next/image',
+      '/_next/static/chunks/app.js',
+    ])('2.8: Next.js static route %s → bare next()', (pathname) => {
+      setEnvConfig();
+      const middleware = createNextMiddleware();
+
+      const res = middleware(createRequest(pathname));
+
+      expect(getResponseType(res)).toBe('next');
+      expect(res.headers.get(LOCALE_HEADER)).toBeNull();
+      expect(res.cookies.get(ROUTING_COOKIE)).toBeUndefined();
+    });
   });
 
   // ================================================================
