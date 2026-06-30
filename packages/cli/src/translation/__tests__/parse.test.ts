@@ -18,7 +18,7 @@ describe('createUpdates', () => {
     vi.clearAllMocks();
   });
 
-  it('does not reject duplicate custom ids when entries have distinct hashes', async () => {
+  it('rejects duplicate custom ids when entries have distinct hashes', async () => {
     vi.mocked(createInlineUpdates).mockResolvedValue({
       updates: [
         {
@@ -46,11 +46,45 @@ describe('createUpdates', () => {
       {} as ParsingConfigOptions
     );
 
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toContain('same id');
+    expect(result.errors[0]).toContain('shared-id');
+    expect(result.updates).toEqual([]);
+  });
+
+  it('allows duplicate custom ids when entries have matching hashes', async () => {
+    vi.mocked(createInlineUpdates).mockResolvedValue({
+      updates: [
+        {
+          dataFormat: 'ICU',
+          source: 'Hello',
+          metadata: { id: 'shared-id', hash: 'same-hash' },
+        },
+        {
+          dataFormat: 'ICU',
+          source: 'Hello',
+          metadata: { id: 'shared-id', hash: 'same-hash' },
+        },
+      ],
+      errors: [],
+      warnings: [],
+    });
+
+    const result = await createUpdates(
+      {} as TranslateFlags,
+      [],
+      undefined,
+      Libraries.GT_REACT,
+      false,
+      {},
+      {} as ParsingConfigOptions
+    );
+
     expect(result.errors).toEqual([]);
     expect(result.updates).toHaveLength(2);
-    expect(result.updates.map((update) => update.metadata.hash)).toEqual([
-      'first-hash',
-      'second-hash',
+    expect(result.updates.map((update) => update.metadata.id)).toEqual([
+      'shared-id',
+      'shared-id',
     ]);
   });
 });

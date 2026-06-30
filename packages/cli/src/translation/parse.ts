@@ -6,6 +6,7 @@ import { createDictionaryUpdates } from '../react/parse/createDictionaryUpdates.
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 import { createPythonInlineUpdates } from '../python/parse/createPythonInlineUpdates.js';
 import createESBuildConfig from '../react/config/createESBuildConfig.js';
+import chalk from 'chalk';
 import type { ParsingConfigOptions, GTParsingFlags } from '../types/parsing.js';
 import { exitSync } from '../console/logging.js';
 import { InlineLibrary, isPythonLibrary } from '../types/libraries.js';
@@ -86,6 +87,59 @@ export async function createUpdates(
   errors = [...errors, ...newErrors];
   warnings = [...warnings, ...newWarnings];
   updates = [...updates, ...newUpdates];
+
+  // Validate user-supplied IDs without using them as translation lookup keys.
+  const idHashMap = new Map<string, string>();
+  const hashlessIds = new Set<string>();
+  const warnedHashlessDuplicateIds = new Set<string>();
+  const duplicateIds = new Set<string>();
+
+  const warnHashlessDuplicateId = (id: string) => {
+    if (warnedHashlessDuplicateIds.has(id)) return;
+    warnings.push(
+      `Duplicate id ${chalk.blue(
+        id
+      )} includes at least one entry without a hash. Hashless duplicate IDs cannot be compared, and later entries may overwrite earlier entries.`
+    );
+    warnedHashlessDuplicateIds.add(id);
+  };
+
+  updates = updates.map((update) => {
+    const { id, hash } = update.metadata;
+    if (!id) return update;
+    if (!hash) {
+      if (hashlessIds.has(id) || idHashMap.has(id)) {
+        warnHashlessDuplicateId(id);
+      }
+      hashlessIds.add(id);
+      return update;
+    }
+
+    if (hashlessIds.has(id)) {
+      warnHashlessDuplicateId(id);
+    }
+
+    const existingHash = idHashMap.get(id);
+    if (existingHash !== undefined) {
+      if (existingHash !== hash) {
+        errors.push(
+          `Hashes don't match on two components with the same id: ${chalk.blue(
+            id
+          )}. Check your ${chalk.green(
+            '<T>'
+          )} tags and dictionary entries and make sure you're not accidentally duplicating IDs.`
+        );
+        duplicateIds.add(id);
+      }
+    } else {
+      idHashMap.set(id, hash);
+    }
+    return update;
+  });
+
+  updates = updates.filter(
+    (update) => !update.metadata.id || !duplicateIds.has(update.metadata.id)
+  );
 
   return { updates, errors, warnings };
 }
