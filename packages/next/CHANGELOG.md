@@ -1,5 +1,14 @@
 # gt-next
 
+## 11.0.0-odysseus.6
+
+### Patch Changes
+
+- Updated dependencies [c1aa794]
+- Updated dependencies [e0ace5b]
+  - @generaltranslation/react-core@11.0.0-odysseus.6
+  - gt-react@11.0.0-odysseus.6
+
 ## 11.0.0-odysseus.5
 
 ### Major Changes
