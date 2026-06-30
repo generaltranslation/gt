@@ -19,7 +19,6 @@ export default function hashSource({
 }: {
   source: JsxChildren | string;
   context?: string;
-  id?: string;
   maxChars?: number;
   dataFormat: DataFormat;
 }): string {

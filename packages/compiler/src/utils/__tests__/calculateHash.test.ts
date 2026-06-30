@@ -21,7 +21,6 @@ describe('calculateHash', () => {
       const params = {
         source: 'Hello world',
         context: 'greeting',
-        id: 'test-id',
         dataFormat: 'ICU' as DataFormat,
       };
 
@@ -39,7 +38,6 @@ describe('calculateHash', () => {
       const params = {
         source: 'Hello world',
         context: 'greeting',
-        id: 'test-id',
         dataFormat: 'I18NEXT' as DataFormat,
       };
 
