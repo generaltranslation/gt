@@ -25,7 +25,6 @@ export function hashMessage<T extends Translation>(
     source:
       options.$format === 'ICU' ? indexVars(message as IcuMessage) : message,
     ...(metadataOptions.$context && { context: metadataOptions.$context }),
-    ...(metadataOptions.$id && { id: metadataOptions.$id }),
     ...(metadataOptions.$maxChars != null && {
       maxChars: Math.abs(metadataOptions.$maxChars),
     }),

@@ -17,31 +17,37 @@ describe('calculateHash', () => {
   });
 
   describe('ICU and I18NEXT data formats', () => {
-    it('should delegate to original hashSource for ICU format', () => {
+    it('should delegate to original hashSource without id for ICU format', () => {
       const params = {
         source: 'Hello world',
         context: 'greeting',
-        id: 'test-id',
         dataFormat: 'ICU' as DataFormat,
       };
 
       const result = hashSource(params);
 
-      expect(mockHashSource).toHaveBeenCalledWith(params);
+      expect(mockHashSource).toHaveBeenCalledWith({
+        source: 'Hello world',
+        context: 'greeting',
+        dataFormat: 'ICU',
+      });
       expect(result).toBe('mocked-hash-ICU');
     });
 
-    it('should delegate to original hashSource for I18NEXT format', () => {
+    it('should delegate to original hashSource without id for I18NEXT format', () => {
       const params = {
         source: 'Hello world',
         context: 'greeting',
-        id: 'test-id',
         dataFormat: 'I18NEXT' as DataFormat,
       };
 
       const result = hashSource(params);
 
-      expect(mockHashSource).toHaveBeenCalledWith(params);
+      expect(mockHashSource).toHaveBeenCalledWith({
+        source: 'Hello world',
+        context: 'greeting',
+        dataFormat: 'I18NEXT',
+      });
       expect(result).toBe('mocked-hash-I18NEXT');
     });
   });

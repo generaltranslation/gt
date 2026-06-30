@@ -26,7 +26,6 @@ export function registerStandaloneTranslation({
 }): void {
   hash ??= hashSource({
     source: content,
-    ...(id && { id }),
     ...(context && { context }),
     ...(maxChars != null && { maxChars }),
     dataFormat: (format || 'ICU') as DataFormat,

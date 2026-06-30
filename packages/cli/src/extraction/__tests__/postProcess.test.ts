@@ -32,6 +32,17 @@ describe('calculateHashes', () => {
 
     expect(updates[0].metadata.hash).not.toBe(updates[1].metadata.hash);
   });
+
+  it('does not include custom id in calculated hashes', async () => {
+    const updates: Updates = [
+      { dataFormat: 'ICU', source: 'hello', metadata: { id: 'first' } },
+      { dataFormat: 'ICU', source: 'hello', metadata: { id: 'second' } },
+    ];
+
+    await calculateHashes(updates);
+
+    expect(updates[0].metadata.hash).toBe(updates[1].metadata.hash);
+  });
 });
 
 describe('dedupeUpdates', () => {

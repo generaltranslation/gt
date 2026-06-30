@@ -28,7 +28,6 @@ export function registerUseGTCallback({
   // Calculate hash for the call expression (skip if already set, including empty string for derive context)
   hash ??= hashSource({
     source: content,
-    id,
     context,
     maxChars,
     dataFormat: (format || 'ICU') as DataFormat,

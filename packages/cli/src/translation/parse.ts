@@ -88,7 +88,7 @@ export async function createUpdates(
   warnings = [...warnings, ...newWarnings];
   updates = [...updates, ...newUpdates];
 
-  // Metadata addition and validation
+  // Validate user-supplied IDs without using them as translation lookup keys.
   const idHashMap = new Map<string, string>();
   const hashlessIds = new Set<string>();
   const warnedHashlessDuplicateIds = new Set<string>();
@@ -137,9 +137,9 @@ export async function createUpdates(
     return update;
   });
 
-  // Filter out updates with duplicate IDs
   updates = updates.filter(
     (update) => !update.metadata.id || !duplicateIds.has(update.metadata.id)
   );
+
   return { updates, errors, warnings };
 }
