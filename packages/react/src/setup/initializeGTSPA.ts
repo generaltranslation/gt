@@ -7,8 +7,6 @@ import {
   initializeI18nConfig,
 } from '@generaltranslation/react-core/pure';
 import type { I18nConfigParams } from '@generaltranslation/react-core/pure';
-import { setupGTServicesEnabled } from 'gt-i18n/internal';
-import type { GTServicesEnabledParams } from 'gt-i18n/internal/types';
 import { BrowserI18nCache } from '../i18n-cache/BrowserI18nCache';
 import type { BrowserI18nCacheParams } from '../i18n-cache/BrowserI18nCache';
 import {
@@ -26,11 +24,9 @@ import {
  */
 export async function initializeGTSPA(
   config: I18nConfigParams &
-    GTServicesEnabledParams &
     BrowserI18nCacheParams &
     CreateBrowserConditionStoreParams
 ) {
-  setupGTServicesEnabled(config);
   initializeI18nConfig(config, 'SPA');
 
   const i18nCache = new BrowserI18nCache(config);

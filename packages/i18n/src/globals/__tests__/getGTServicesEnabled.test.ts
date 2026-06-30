@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  getGTServicesEnabled,
-  setupGTServicesEnabled,
-} from '../getGTServicesEnabled';
+import { getGTServicesEnabled } from '../getGTServicesEnabled';
+import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: Record<string, unknown>;
@@ -14,13 +12,13 @@ describe('getGTServicesEnabled', () => {
   });
 
   it('stores true when GT remote translations are enabled', () => {
-    setupGTServicesEnabled({ projectId: 'test-project' });
+    initializeI18nConfig({ projectId: 'test-project' });
 
     expect(getGTServicesEnabled()).toBe(true);
   });
 
   it('stores true when the GT runtime API is enabled', () => {
-    setupGTServicesEnabled({
+    initializeI18nConfig({
       projectId: 'test-project',
       devApiKey: 'test-key',
       cacheUrl: null,
@@ -30,11 +28,15 @@ describe('getGTServicesEnabled', () => {
   });
 
   it('stores false when GT services are disabled', () => {
-    setupGTServicesEnabled({
+    initializeI18nConfig({
       cacheUrl: null,
       runtimeUrl: null,
     });
 
+    expect(getGTServicesEnabled()).toBe(false);
+  });
+
+  it('returns false before config is initialized', () => {
     expect(getGTServicesEnabled()).toBe(false);
   });
 });
