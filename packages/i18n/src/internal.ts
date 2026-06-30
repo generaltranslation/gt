@@ -16,11 +16,13 @@ export {
   resolveJsx,
   resolveJsxWithFallback,
   resolveJsxWithRuntimeFallback,
+} from './translation-functions/internal/jsx';
+export {
   resolveStringContent,
   resolveStringContentWithFallback,
   resolveStringContentWithRuntimeFallback,
-  createLookupOptions,
-} from './translation-functions/internal/helpers';
+} from './translation-functions/t';
+export { createLookupOptions } from './translation-functions/internal/createLookupOptions';
 export { renderDictionaryEntry } from './translation-functions/internal/renderDictionaryEntry';
 export { renderDictionaryObject } from './translation-functions/internal/renderDictionaryObject';
 export { I18nCache } from './i18n-cache/I18nCache';

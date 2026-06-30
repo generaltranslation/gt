@@ -1,4 +1,4 @@
-import { createLookupOptions } from './helpers';
+import { createLookupOptions } from './createLookupOptions';
 import { extractVariables } from '../../utils/extractVariables';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import type {

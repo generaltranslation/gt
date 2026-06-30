@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { resolveJsx } from '../jsx';
 import {
-  resolveJsx,
   resolveStringContentWithFallback,
   resolveStringContentWithRuntimeFallback,
-} from '../helpers';
+} from '../../t';
 import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 import { getI18nCache } from '../../../i18n-cache/singleton-operations';
 import { interpolateMessage } from '../../utils/interpolation/interpolateMessage';

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getLocale } from '../../../helpers/locale';
-import { resolveJsxWithRuntimeFallback } from '../helpers';
+import { resolveJsxWithRuntimeFallback } from '../jsx';
 import {
   GtInternalRuntimeTranslateJsx,
   GtInternalRuntimeTranslateString,
@@ -8,7 +8,7 @@ import {
 import { tx } from '../tx';
 
 vi.mock('../../../helpers/locale');
-vi.mock('../helpers');
+vi.mock('../jsx');
 vi.mock('../tx');
 
 describe('internal runtime translate helpers', () => {

@@ -7,7 +7,7 @@ import type {
   JsxTranslationOptions,
   RuntimeTranslationOptions,
 } from '../types/options';
-import { resolveJsxWithRuntimeFallback } from './helpers';
+import { resolveJsxWithRuntimeFallback } from './jsx';
 import { tx } from './tx';
 
 type RuntimeStringTranslationOptions = Omit<

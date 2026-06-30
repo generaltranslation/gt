@@ -3,7 +3,7 @@ import { getI18nConfig } from '../../i18n-config/singleton-operations';
 import { GTTranslationOptions } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
-import { createLookupOptions } from './helpers';
+import { createLookupOptions } from './createLookupOptions';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 

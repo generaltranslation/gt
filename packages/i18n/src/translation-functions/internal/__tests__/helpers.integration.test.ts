@@ -4,10 +4,8 @@ import { setI18nCache } from '../../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../types/options';
-import {
-  resolveStringContentWithRuntimeFallback,
-  resolveJsxWithRuntimeFallback,
-} from '../helpers';
+import { resolveJsxWithRuntimeFallback } from '../jsx';
+import { resolveStringContentWithRuntimeFallback } from '../../t';
 
 // Mock createTranslateManyFactory to inject controlled translateMany
 const mockTranslateMany = vi.fn();
@@ -20,7 +18,7 @@ vi.mock(
   })
 );
 
-describe('translation helpers (deep integration)', () => {
+describe('translation resolution helpers (deep integration)', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();

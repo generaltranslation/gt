@@ -1,8 +1,10 @@
 import { RuntimeTranslationOptions } from '../types/options';
 import type { StringFormat } from '@generaltranslation/format/types';
-import { resolveStringContentWithRuntimeFallback } from './helpers';
 import { getI18nConfig } from '../../i18n-config/singleton-operations';
 import { getWritableConditionStore } from '../../condition-store/singleton-operations';
+import { getI18nCache } from '../../i18n-cache/singleton-operations';
+import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
+import { createLookupOptions } from './createLookupOptions';
 
 type RuntimeTranslationOptionsWithFormat = Omit<
   RuntimeTranslationOptions,
@@ -55,8 +57,24 @@ export async function txInternal({
       ? options.$locale
       : locale
     : getI18nConfig().getDefaultLocale();
-  return resolveStringContentWithRuntimeFallback(targetLocale, content, {
-    $format: 'STRING',
-    ...options,
+  const lookupOptions = createLookupOptions(
+    targetLocale,
+    {
+      $format: 'STRING',
+      ...options,
+    },
+    'STRING'
+  );
+  const translation = await getI18nCache().lookupTranslationWithFallback(
+    lookupOptions.$locale,
+    content,
+    lookupOptions
+  );
+
+  return interpolateMessage({
+    source: content,
+    target: translation,
+    options: lookupOptions,
+    sourceLocale: getI18nConfig().getDefaultLocale(),
   });
 }
