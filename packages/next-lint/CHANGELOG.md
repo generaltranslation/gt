@@ -1,5 +1,12 @@
 # @generaltranslation/gt-next-lint
 
+## 15.0.0-odysseus.9
+
+### Patch Changes
+
+- Updated dependencies [cf3e961]
+  - gt-next@11.0.0-odysseus.9
+
 ## 15.0.0-odysseus.8
 
 ### Patch Changes
