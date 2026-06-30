@@ -10,7 +10,7 @@ import { createErrorLocation } from '../../utils/errors';
 
 /**
  * inject parameters into invocation of translation function
- * - useGT(messages=[{hash, message, id, context, maxChars}])
+ * - useGT(messages=[{$_hash, message, $id, $context, $maxChars}])
  */
 export function injectCallbackDeclaratorFunctionParameters(
   varDeclarator: t.VariableDeclarator,
@@ -121,7 +121,10 @@ function injectUseGTParameters(
     t.arrayExpression(
       translationContent.map((content) =>
         t.objectExpression([
-          t.objectProperty(t.identifier('hash'), t.stringLiteral(content.hash)),
+          t.objectProperty(
+            t.identifier('$_hash'),
+            t.stringLiteral(content.hash)
+          ),
           t.objectProperty(
             t.identifier('message'),
             t.stringLiteral(content.message)
@@ -129,7 +132,7 @@ function injectUseGTParameters(
           ...(content.id
             ? [
                 t.objectProperty(
-                  t.identifier('id'),
+                  t.identifier('$id'),
                   t.stringLiteral(content.id)
                 ),
               ]
@@ -137,7 +140,7 @@ function injectUseGTParameters(
           ...(content.context
             ? [
                 t.objectProperty(
-                  t.identifier('context'),
+                  t.identifier('$context'),
                   t.stringLiteral(content.context)
                 ),
               ]
@@ -145,7 +148,7 @@ function injectUseGTParameters(
           ...(content.maxChars != null
             ? [
                 t.objectProperty(
-                  t.identifier('maxChars'),
+                  t.identifier('$maxChars'),
                   t.numericLiteral(content.maxChars)
                 ),
               ]
