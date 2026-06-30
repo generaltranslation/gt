@@ -20,7 +20,7 @@ export const createCacheComponentsMissingRequestFunctionsWarning = (
   return createGtNextDiagnostic({
     whatHappened: `cacheComponents is enabled, but custom ${functionNames} ${isPlural ? 'are' : 'is'} not configured`,
     wayOut:
-      'Automatic root parameter detection is deprecated because it relies on unsupported Next.js internals',
+      'cacheComponents requires explicit request functions because request values cannot be inferred safely during prerendering',
     fix: `Add ${fileNames} ${isPlural ? 'files' : 'file'}, or configure ${configKeys}`,
   });
 };
