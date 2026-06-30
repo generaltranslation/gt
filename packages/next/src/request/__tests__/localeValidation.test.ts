@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { I18NConfiguration } from '../../config-dir/I18NConfiguration';
+import { localeStore } from '../localeStore';
 import { isLocaleSupported, resolveLocaleOrDefault } from '../localeValidation';
+import { registerLocale } from '../registerLocale';
 
 const mockGt = vi.hoisted(() => ({
   determineLocale: vi.fn(),
@@ -89,5 +91,12 @@ describe('locale validation', () => {
   it('checks if a locale is supported by the gt-next config', () => {
     expect(isLocaleSupported('fr')).toBe(true);
     expect(isLocaleSupported('llms.txt')).toBe(false);
+  });
+
+  it('falls back when registering an unsupported locale', () => {
+    localeStore.run('fr', () => {
+      registerLocale('llms.txt');
+      expect(localeStore.getStore()).toBe('en');
+    });
   });
 });
