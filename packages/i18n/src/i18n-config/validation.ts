@@ -1,11 +1,13 @@
 import { isValidLocale } from '@generaltranslation/format';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
-import { getGTServicesEnabled } from '../globals/getGTServicesEnabled';
 import logger from '../logs/logger';
 import type { I18nConfigParams } from './I18nConfig';
 
-export function validateI18nConfigParams(params: I18nConfigParams): void {
-  if (!getGTServicesEnabled()) {
+export function validateI18nConfigParams(
+  params: I18nConfigParams,
+  gtServicesEnabled: boolean
+): void {
+  if (!gtServicesEnabled) {
     return;
   }
 

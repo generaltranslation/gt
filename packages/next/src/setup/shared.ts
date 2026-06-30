@@ -1,13 +1,15 @@
 import { type I18nConfigParams } from 'gt-i18n/internal';
 import { type NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
-import type { GTServicesEnabledParams } from 'gt-i18n/internal/types';
 import { loadTranslations } from '../config-dir/loadTranslation';
 import { getRuntimeCredentials } from './runtimeCredentials';
 
+export type NextSetupI18nConfigParams = I18nConfigParams & {
+  cacheUrl?: string | null;
+};
+
 // TODO: better way of communicating from build to runtime
 export function getParams(): {
-  i18nConfigParams: I18nConfigParams;
-  gtservicesEnabledParams: GTServicesEnabledParams;
+  i18nConfigParams: NextSetupI18nConfigParams;
   nextI18nCacheParams: NextI18nCacheParams;
 } {
   // Read from build output
@@ -20,7 +22,7 @@ export function getParams(): {
   const { projectId, devApiKey, apiKey } = getRuntimeCredentials();
 
   // I18nConfigParams
-  const i18nConfigParams: I18nConfigParams = {
+  const i18nConfigParams: NextSetupI18nConfigParams = {
     defaultLocale: publicConfig.defaultLocale,
     locales: publicConfig.locales,
     customMapping: publicConfig.customMapping,
@@ -28,14 +30,6 @@ export function getParams(): {
     projectId,
     devApiKey,
     apiKey,
-  };
-
-  // GTServicesEnabledParams
-  const gtservicesEnabledParams: GTServicesEnabledParams = {
-    projectId,
-    devApiKey,
-    apiKey,
-    runtimeUrl: publicConfig.runtimeUrl,
     cacheUrl: privateConfig.cacheUrl,
   };
 
@@ -75,7 +69,6 @@ export function getParams(): {
 
   return {
     i18nConfigParams,
-    gtservicesEnabledParams,
     nextI18nCacheParams,
   };
 }

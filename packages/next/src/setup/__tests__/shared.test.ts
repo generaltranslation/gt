@@ -36,18 +36,13 @@ describe('getParams', () => {
     process.env.GT_API_KEY = 'api-key';
     process.env.GT_DEV_API_KEY = 'dev-key';
 
-    const { i18nConfigParams, gtservicesEnabledParams, nextI18nCacheParams } =
-      getParams();
+    const { i18nConfigParams, nextI18nCacheParams } = getParams();
 
     expect(i18nConfigParams).toMatchObject({
       projectId: 'project-id',
       apiKey: 'api-key',
       devApiKey: 'dev-key',
-    });
-    expect(gtservicesEnabledParams).toMatchObject({
-      projectId: 'project-id',
-      apiKey: 'api-key',
-      devApiKey: 'dev-key',
+      cacheUrl: 'https://cache.example.com',
     });
     expect(nextI18nCacheParams).toMatchObject({
       projectId: 'project-id',

@@ -4,11 +4,16 @@ import {
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { GT } from 'generaltranslation';
-import {
-  defaultRuntimeApiUrl,
-  libraryDefaultLocale,
-} from 'generaltranslation/internal';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
+import {
+  getLoadTranslationsType,
+  LoadTranslationsType,
+} from '../i18n-cache/utils/getLoadTranslationsType';
+import {
+  getTranslationApiType,
+  TranslationApiType,
+} from '../i18n-cache/utils/getTranslationApiType';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { validateI18nConfigParams } from './validation';
 
@@ -20,6 +25,7 @@ export type I18nConfigParams = Pick<
   | 'projectId'
   | 'devApiKey'
   | 'apiKey'
+  | 'cacheUrl'
   | 'runtimeUrl'
 >;
 
@@ -32,15 +38,18 @@ export type LocaleCandidates = string | string[] | undefined;
 
 export class I18nConfig extends LocaleConfig {
   private runtimeConfig: RuntimeConfig;
+  private gtServicesEnabled: boolean;
 
   constructor(params: I18nConfigParams = {}) {
-    super(getLocaleConfigParams(params));
+    const gtServicesEnabled = resolveGTServicesEnabled(params);
+    super(getLocaleConfigParams(params, gtServicesEnabled));
     this.runtimeConfig = {
       projectId: params.projectId,
       devApiKey: params.devApiKey,
       apiKey: params.apiKey,
       runtimeUrl: params.runtimeUrl,
     };
+    this.gtServicesEnabled = gtServicesEnabled;
   }
 
   getDefaultLocale(): string {
@@ -132,15 +141,8 @@ export class I18nConfig extends LocaleConfig {
     );
   }
 
-  /**
-   * TODO: also check the cache url too, really this can be more specific
-   */
   isGTServicesEnabled(): boolean {
-    return (
-      !!this.runtimeConfig.projectId &&
-      (this.runtimeConfig.runtimeUrl === undefined ||
-        this.runtimeConfig.runtimeUrl === defaultRuntimeApiUrl)
-    );
+    return this.gtServicesEnabled;
   }
 
   /**
@@ -187,7 +189,8 @@ export class I18nConfig extends LocaleConfig {
 }
 
 function getLocaleConfigParams(
-  params: I18nConfigParams = {}
+  params: I18nConfigParams,
+  gtServicesEnabled: boolean
 ): LocaleConfigConstructorParams {
   const {
     defaultLocale = libraryDefaultLocale,
@@ -195,12 +198,15 @@ function getLocaleConfigParams(
     customMapping,
   } = params;
 
-  validateI18nConfigParams({
-    ...params,
-    defaultLocale,
-    locales,
-    customMapping,
-  });
+  validateI18nConfigParams(
+    {
+      ...params,
+      defaultLocale,
+      locales,
+      customMapping,
+    },
+    gtServicesEnabled
+  );
 
   return {
     defaultLocale,
@@ -226,5 +232,12 @@ function hasI18nConfigParams(config: I18nConfigParams): boolean {
     config.defaultLocale !== undefined ||
     config.locales !== undefined ||
     config.customMapping !== undefined
+  );
+}
+
+function resolveGTServicesEnabled(config: I18nConfigParams): boolean {
+  return (
+    getLoadTranslationsType(config) === LoadTranslationsType.GT_REMOTE ||
+    getTranslationApiType(config) === TranslationApiType.GT
   );
 }

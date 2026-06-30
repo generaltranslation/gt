@@ -58,10 +58,7 @@ export {
   getDictionaryValue,
   resolveDictionaryLookupOptions,
 } from './i18n-cache/translations-manager/utils/dictionary-helpers';
-export {
-  getGTServicesEnabled,
-  setupGTServicesEnabled,
-} from './globals/getGTServicesEnabled';
+export { getGTServicesEnabled } from './globals/getGTServicesEnabled';
 
 export {
   getI18nConfig,

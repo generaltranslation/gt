@@ -4,7 +4,6 @@ type TestGlobal = typeof globalThis & {
   __generaltranslation?: {
     i18n?: {
       i18nConfig?: unknown;
-      gtServicesEnabled?: boolean | undefined;
       [key: string]: unknown;
     };
     [key: string]: unknown;
@@ -86,7 +85,7 @@ describe('i18n config singleton operations', () => {
     const globalObj = globalThis as TestGlobal;
     globalObj.__generaltranslation ??= {};
     globalObj.__generaltranslation.i18n = {
-      gtServicesEnabled: true,
+      marker: true,
     };
     const { initializeI18nConfig } = await import('../singleton-operations');
 
@@ -94,6 +93,18 @@ describe('i18n config singleton operations', () => {
       defaultLocale: 'en',
     });
 
-    expect(globalObj.__generaltranslation.i18n.gtServicesEnabled).toBe(true);
+    expect(globalObj.__generaltranslation.i18n.marker).toBe(true);
+  });
+
+  it('stores the GT services enabled flag on the config singleton', async () => {
+    const { getI18nConfig, initializeI18nConfig } =
+      await import('../singleton-operations');
+
+    const config = initializeI18nConfig({
+      projectId: 'test-project',
+    });
+
+    expect(config.isGTServicesEnabled()).toBe(true);
+    expect(getI18nConfig().isGTServicesEnabled()).toBe(true);
   });
 });

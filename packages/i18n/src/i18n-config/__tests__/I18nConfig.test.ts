@@ -1,13 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setupGTServicesEnabled } from '../../globals/getGTServicesEnabled';
 import { I18nConfig } from '../I18nConfig';
 
 describe('I18nConfig', () => {
   beforeEach(() => {
-    setupGTServicesEnabled({
-      cacheUrl: null,
-      runtimeUrl: null,
-    });
+    vi.restoreAllMocks();
   });
 
   afterEach(() => {
@@ -23,19 +19,21 @@ describe('I18nConfig', () => {
   it('skips locale validation when GT services are disabled', () => {
     const config = new I18nConfig({
       defaultLocale: 'invalid-locale',
+      cacheUrl: null,
+      runtimeUrl: null,
     });
 
     expect(config.getDefaultLocale()).toBe('invalid-locale');
   });
 
   it('validates configured locales when GT services are enabled', () => {
-    setupGTServicesEnabled({ projectId: 'test-project' });
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(
       () =>
         new I18nConfig({
           defaultLocale: 'invalid-locale',
+          projectId: 'test-project',
         })
     ).toThrow('Invalid I18nConfig locale configuration');
     expect(errorSpy).toHaveBeenCalledWith(
@@ -46,13 +44,13 @@ describe('I18nConfig', () => {
   });
 
   it('validates custom mapping locales when GT services are enabled', () => {
-    setupGTServicesEnabled({ projectId: 'test-project' });
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(
       () =>
         new I18nConfig({
           defaultLocale: 'en',
+          projectId: 'test-project',
           customMapping: {
             invalidStringMapping: 'invalid-locale',
             invalidObjectMapping: {

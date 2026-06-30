@@ -1,8 +1,5 @@
 import { getParams } from './shared';
-import type {
-  I18nConfigParams,
-  GTServicesEnabledParams,
-} from 'gt-i18n/internal/types';
+import type { NextSetupI18nConfigParams } from './shared';
 import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
 import { initializeGT as coreInitializeGT } from './initGT';
 import {
@@ -21,17 +18,14 @@ import {
 export function initializeGT(
   {
     i18nConfigParams,
-    gtservicesEnabledParams,
     nextI18nCacheParams,
   }: {
-    i18nConfigParams: I18nConfigParams;
-    gtservicesEnabledParams: GTServicesEnabledParams;
+    i18nConfigParams: NextSetupI18nConfigParams;
     nextI18nCacheParams: NextI18nCacheParams;
   } = getParams()
 ): void {
   coreInitializeGT({
     i18nConfigParams,
-    gtservicesEnabledParams,
     nextI18nCacheParams,
   });
 
