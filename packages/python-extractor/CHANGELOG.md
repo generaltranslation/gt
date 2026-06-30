@@ -1,5 +1,12 @@
 # @generaltranslation/python-extractor
 
+## 0.2.23-odysseus.3
+
+### Patch Changes
+
+- Updated dependencies [b1eef00]
+  - generaltranslation@9.0.0-odysseus.3
+
 ## 0.2.23-odysseus.2
 
 ### Patch Changes

@@ -1,5 +1,19 @@
 # @generaltranslation/react-core
 
+## 11.0.0-odysseus.7
+
+### Patch Changes
+
+- 07bfb00: Remove the unused dictionary-injection helpers from `@generaltranslation/react-core/pure`.
+
+  `collectUntranslatedEntries`, `injectAndMerge`, `injectEntry`, `injectFallbacks`, `injectHashes`, `injectTranslations`, `getSubtree`, `getSubtreeWithCreation`, and `stripMetadataFromEntries` were a self-referential cluster with no consumers anywhere in the library or its packages. Removing them (and their modules/tests) trims ~415 LOC of dead code from the client-shipped `/pure` entry. The still-used dictionary helpers (`getDictionaryEntry`, `getEntryAndMetadata`, `mergeDictionaries`, `flattenDictionary`, `indexDict`, `isDictionaryEntry`) are unchanged.
+
+- Updated dependencies [b1eef00]
+- Updated dependencies [b765174]
+  - generaltranslation@9.0.0-odysseus.3
+  - gt-i18n@1.0.0-odysseus.3
+  - @generaltranslation/supported-locales@2.1.2-odysseus.3
+
 ## 11.0.0-odysseus.6
 
 ### Patch Changes
