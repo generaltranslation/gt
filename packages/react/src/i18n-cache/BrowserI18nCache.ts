@@ -12,7 +12,7 @@ import { createDiagnosticMessage } from 'generaltranslation/internal';
 /**
  * The configuration for the BrowserI18nCache
  */
-export type BrowserI18nCacheParams = I18nCacheConstructorParams<Translation> & {
+export type BrowserI18nCacheParams = I18nCacheConstructorParams & {
   htmlTagOptions?: HtmlTagOptions;
 };
 

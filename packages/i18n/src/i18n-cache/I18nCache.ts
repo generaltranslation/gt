@@ -18,9 +18,7 @@ import type {
 } from './translations-manager/DictionaryCache';
 import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
-import { createLifecycleCallbacks } from './lifecycle-hooks/createLifecycleCallbacks';
 import { EventEmitter } from './event-subscription/EventEmitter';
-import { subscribeLifecycleCallbacks } from './lifecycle-hooks/subscribeLifecycleCallbacks';
 import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
 import type { I18nEvents } from './event-subscription/types';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
@@ -77,7 +75,7 @@ class I18nCache<
    * @param params - The parameters for the I18nCache constructor
    * @param params.config - The configuration for the I18nCache
    */
-  constructor(params: I18nCacheConstructorParams<TranslationValue>) {
+  constructor(params: I18nCacheConstructorParams) {
     super();
 
     // Validation
@@ -109,16 +107,6 @@ class I18nCache<
       runtimeTranslationMetadata
     );
 
-    // Subscribe lifecycle callbacks
-    subscribeLifecycleCallbacks(params.lifecycle ?? {}, (...args) =>
-      this.subscribe(...args)
-    );
-
-    const lifecycle = createLifecycleCallbacks<TranslationValue>(
-      (...args) => this.emit(...args),
-      (eventName) => this.hasListeners(eventName)
-    );
-
     // Setup locale-scoped caches
     this.localesCache = new LocalesCache<TranslationValue>({
       dictionary: params.dictionary,
@@ -129,7 +117,12 @@ class I18nCache<
         this.translateDictionaryEntry(locale, id, sourceEntry),
       ttl: this.config.cacheExpiryTime,
       batchConfig: this.config.batchConfig,
-      lifecycle,
+      onTranslationsCacheMiss: (locale, hash, translation) =>
+        this.emit(TRANSLATIONS_CACHE_MISS_EVENT_NAME, {
+          locale,
+          hash,
+          translation,
+        }),
     });
   }
 
@@ -621,9 +614,7 @@ export { I18nCache };
  * @param config - The config to standardize
  * @returns The standardized config
  */
-function standardizeConfig<TranslationValue extends Translation>(
-  config: I18nCacheConstructorParams<TranslationValue>
-) {
+function standardizeConfig(config: I18nCacheConstructorParams) {
   return {
     projectId: config.projectId,
     devApiKey: config.devApiKey,

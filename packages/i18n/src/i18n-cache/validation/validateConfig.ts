@@ -3,15 +3,14 @@ import { I18nCacheConstructorParams } from '../types';
 import { validateLoadTranslations } from './config-validation/validateLoadTranslations';
 import { validateTranslationApi } from './config-validation/validateTranslationApi';
 import { validateDictionary } from './config-validation/validateDictionary';
-import type { Translation } from '../translations-manager/utils/types/translation-data';
 
 /**
  * Validate the configuration
  * @param config - The configuration to validate
  * @returns The validation results
  */
-export function validateConfig<TranslationValue extends Translation>(
-  config: I18nCacheConstructorParams<TranslationValue>
+export function validateConfig(
+  config: I18nCacheConstructorParams
 ): ValidationResult[] {
   const results: ValidationResult[] = [];
 

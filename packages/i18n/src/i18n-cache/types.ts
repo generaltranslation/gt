@@ -2,8 +2,6 @@ import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { GTConfig } from '../config/types';
 import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
-import type { Translation } from './translations-manager/utils/types/translation-data';
-import type { LifecycleCallbacks } from './lifecycle-hooks/types';
 import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
 import type {
   Dictionary,
@@ -23,9 +21,7 @@ type RuntimeTranslationConfig = {
 /**
  * Parameters for the I18nCache constructor
  */
-export type I18nCacheConstructorParams<
-  TranslationValue extends Translation = Translation,
-> = DictionaryConfig &
+export type I18nCacheConstructorParams = DictionaryConfig &
   Omit<
     GTConfig,
     | 'cacheExpiryTime'
@@ -42,9 +38,6 @@ export type I18nCacheConstructorParams<
     loadTranslations?: TranslationsLoader;
     batchConfig?: TranslationBatchConfig;
     runtimeTranslation?: RuntimeTranslationConfig;
-    // Cache lifecycle hooks
-    /** @deprecated - move to subscription api instead */
-    lifecycle?: LifecycleCallbacks<TranslationValue>;
   };
 
 /**
@@ -122,9 +115,4 @@ export interface AsyncReadonlyConditionStoreInterface {
   getEnableI18n(): Promise<boolean>;
 }
 
-export type {
-  TranslationsLoader,
-  LifecycleCallbacks,
-  Dictionary,
-  DictionaryLoader,
-};
+export type { TranslationsLoader, Dictionary, DictionaryLoader };
