@@ -1,9 +1,21 @@
 import { useCallback, useMemo } from 'react';
+import type { LocaleProperties } from '@generaltranslation/format/types';
 import { useCustomMapping, useLocales } from './i18n-config';
 import { useLocale } from './condition-store';
 import { getLocaleProperties } from 'generaltranslation';
 
-export function useInternalLocaleSelector(locales?: string[]) {
+// Explicit return type so the inferred type stays portable for downstream
+// packages (e.g. gt-react-native), otherwise the getLocaleProperties callback
+// pulls in generaltranslation's bundled, non-nameable type (TS2742).
+export type InternalLocaleSelectorResult = {
+  locale: string;
+  locales: string[];
+  getLocaleProperties: (locale: string) => LocaleProperties;
+};
+
+export function useInternalLocaleSelector(
+  locales?: string[]
+): InternalLocaleSelectorResult {
   // Retrieve the locale, locales, and setLocale function
   const contextLocales = useLocales();
   const customMapping = useCustomMapping();

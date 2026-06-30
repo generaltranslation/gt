@@ -22,6 +22,14 @@ export type InternalRegionSelectorOptions = {
   sortRegionsAlphabetically?: boolean;
 };
 
+export type InternalRegionSelectorResult = {
+  region: string | undefined;
+  regions: string[];
+  regionData: Map<string, RegionData>;
+  locale: string;
+  localeRegion: string;
+};
+
 /**
  * Internal logic for region selection in applications supporting multiple regions.
  *
@@ -34,7 +42,7 @@ export function useInternalRegionSelector({
   customMapping,
   prioritizeCurrentLocaleRegion = true,
   sortRegionsAlphabetically = true,
-}: InternalRegionSelectorOptions = {}) {
+}: InternalRegionSelectorOptions = {}): InternalRegionSelectorResult {
   // Retrieve the locale, locales, and region
   const contextLocales = useLocales();
   const localeCustomMapping = useCustomMapping();
