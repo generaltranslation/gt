@@ -96,6 +96,29 @@ describe('I18nCache', () => {
     expect(translations[expectedHash]).toBe(translatedString);
   });
 
+  it('loadTranslations() deduplicates concurrent locale loads', async () => {
+    let resolveTranslations!: (translations: Record<string, string>) => void;
+    const loadTranslations = vi.fn().mockReturnValue(
+      new Promise((resolve) => {
+        resolveTranslations = resolve;
+      })
+    );
+    const cache = createCache({ loadTranslations });
+
+    const firstTranslations = cache.loadTranslations('fr');
+    const secondTranslations = cache.loadTranslations('fr');
+    expect(loadTranslations).toHaveBeenCalledTimes(1);
+
+    resolveTranslations({ [expectedHash]: translatedString });
+    const [firstResult, secondResult] = await Promise.all([
+      firstTranslations,
+      secondTranslations,
+    ]);
+
+    expect(secondResult).toEqual(firstResult);
+    expect(firstResult[expectedHash]).toBe(translatedString);
+  });
+
   it('loadDictionary() returns source dictionary without loading when locale does not require translation', async () => {
     const loadDictionary = vi.fn().mockResolvedValue({ greeting: 'Bonjour' });
     const cache = createCache({
