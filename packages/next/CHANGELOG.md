@@ -1,5 +1,19 @@
 # gt-next
 
+## 11.0.0-odysseus.7
+
+### Patch Changes
+
+- Updated dependencies [b1eef00]
+- Updated dependencies [b765174]
+- Updated dependencies [07bfb00]
+  - generaltranslation@9.0.0-odysseus.3
+  - gt-i18n@1.0.0-odysseus.3
+  - @generaltranslation/react-core@11.0.0-odysseus.7
+  - @generaltranslation/compiler@1.3.25-odysseus.3
+  - gt-react@11.0.0-odysseus.7
+  - @generaltranslation/supported-locales@2.1.2-odysseus.3
+
 ## 11.0.0-odysseus.6
 
 ### Patch Changes
