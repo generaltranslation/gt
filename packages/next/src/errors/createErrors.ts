@@ -4,7 +4,6 @@ import { getLocaleProperties } from '@generaltranslation/format';
 import {
   createGtNextDiagnostic,
   createGtNextPluginDiagnostic,
-  formatDiagnosticErrorDetails,
 } from './diagnostics';
 import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 
