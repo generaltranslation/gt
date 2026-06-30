@@ -34,7 +34,6 @@ export type CompilerOptions = {
 export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
   getLocale: 'getLocalePath',
   getRegion: 'getRegionPath',
-  getDomain: 'getDomainPath',
 } as const;
 
 export type BaseWithGTConfigProps = {
@@ -87,7 +86,6 @@ export type BaseWithGTConfigProps = {
   // Request function paths
   getLocalePath?: string;
   getRegionPath?: string;
-  getDomainPath?: string;
 };
 
 export type withGTConfigProps = BaseWithGTConfigProps & {

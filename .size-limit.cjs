@@ -118,7 +118,6 @@ module.exports = [
   nextNode('gt-next/_load-dictionary', '_load-dictionary'),
   nextNode('gt-next/internal/_getLocale', 'internal/_getLocale', '60 kB'),
   nextNode('gt-next/internal/_getRegion', 'internal/_getRegion'),
-  nextNode('gt-next/internal/_getDomain', 'internal/_getDomain'),
 
   node('gt-node', 'index', '40 kB'),
   node('gt-node/types', 'types'),
