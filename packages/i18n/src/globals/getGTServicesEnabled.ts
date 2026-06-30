@@ -6,6 +6,7 @@ import {
   getTranslationApiType,
   TranslationApiType,
 } from '../i18n-cache/utils/getTranslationApiType';
+import { createGlobalSingleton } from './createGlobalSingleton';
 
 export type GTServicesEnabledParams = {
   projectId?: string;
@@ -15,24 +16,12 @@ export type GTServicesEnabledParams = {
   runtimeUrl?: string | null;
 };
 
-declare global {
-  interface GeneralTranslationGlobal {
-    i18n?: {
-      gtServicesEnabled: boolean | undefined;
-    };
-  }
-
-  var __generaltranslation: GeneralTranslationGlobal | undefined;
-}
-
-function getI18nGlobals() {
-  globalThis.__generaltranslation ??= {};
-  // Add new gt-i18n globals here so this module owns the i18n namespace shape.
-  globalThis.__generaltranslation.i18n ??= {
-    gtServicesEnabled: undefined,
-  };
-  return globalThis.__generaltranslation.i18n;
-}
+const gtServicesEnabledSingleton = createGlobalSingleton<boolean>({
+  namespace: 'i18n',
+  key: 'gtServicesEnabled',
+  source: 'gt-i18n',
+  notInitialized: () => 'GT services enabled flag has not been initialized.',
+});
 
 function resolveGTServicesEnabled(config: GTServicesEnabledParams): boolean {
   return (
@@ -45,7 +34,9 @@ function resolveGTServicesEnabled(config: GTServicesEnabledParams): boolean {
  * Returns true if GT services are enabled.
  */
 export function getGTServicesEnabled(): boolean {
-  return getI18nGlobals().gtServicesEnabled ?? false;
+  return gtServicesEnabledSingleton.isInitialized()
+    ? gtServicesEnabledSingleton.get()
+    : false;
 }
 
 /**
@@ -57,6 +48,6 @@ export function setupGTServicesEnabled(
   config: GTServicesEnabledParams = {}
 ): boolean {
   const gtServicesEnabled = resolveGTServicesEnabled(config);
-  getI18nGlobals().gtServicesEnabled = gtServicesEnabled;
+  gtServicesEnabledSingleton.set(gtServicesEnabled);
   return gtServicesEnabled;
 }

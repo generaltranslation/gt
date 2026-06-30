@@ -4,9 +4,13 @@ import {
   setupGTServicesEnabled,
 } from '../getGTServicesEnabled';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: Record<string, unknown>;
+};
+
 describe('getGTServicesEnabled', () => {
   afterEach(() => {
-    globalThis.__generaltranslation = undefined;
+    (globalThis as TestGlobal).__generaltranslation = undefined;
   });
 
   it('stores true when GT remote translations are enabled', () => {
