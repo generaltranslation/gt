@@ -12,11 +12,7 @@ export const STATIC_REQUEST_FUNCTIONS = [
   'getStaticDomain',
 ] as const;
 
-export const REQUEST_FUNCTIONS = [
-  'getLocale',
-  'getRegion',
-  'getDomain',
-] as const;
+export const REQUEST_FUNCTIONS = ['getLocale', 'getRegion'] as const;
 
 export type RequestFunctions = (typeof REQUEST_FUNCTIONS)[number];
 

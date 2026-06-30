@@ -101,7 +101,6 @@ type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {string|undefined} [getLocalePath="getLocale"] - The path to the custom getLocale function.
  * @param {string|undefined} [getRegionPath="getRegion"] - The path to the custom getRegion function.
- * @param {string|undefined} [getDomainPath="getDomain"] - The path to the custom getDomain function.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
  * @param {number} [cacheExpiryTime] - The time in milliseconds for how long translations should be cached.
  * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
@@ -643,8 +642,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         requestFunctionPaths.getLocale ? 'true' : 'false',
       _GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED:
         requestFunctionPaths.getRegion ? 'true' : 'false',
-      _GENERALTRANSLATION_CUSTOM_GET_DOMAIN_ENABLED:
-        requestFunctionPaths.getDomain ? 'true' : 'false',
       _GENERALTRANSLATION_STATIC_GET_LOCALE_ENABLED:
         requestFunctionPaths.getStaticLocale ? 'true' : 'false',
       _GENERALTRANSLATION_STATIC_GET_REGION_ENABLED:

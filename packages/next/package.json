@@ -137,10 +137,6 @@
     "./internal/_getRegion": {
       "import": "./dist/internal/_getRegion.mjs",
       "default": "./dist/internal/_getRegion.js"
-    },
-    "./internal/_getDomain": {
-      "import": "./dist/internal/_getDomain.mjs",
-      "default": "./dist/internal/_getDomain.js"
     }
   },
   "typesVersions": {
@@ -180,9 +176,6 @@
       ],
       "internal/_getRegion": [
         "./dist/internal/_getRegion.d.ts"
-      ],
-      "internal/_getDomain": [
-        "./dist/internal/_getDomain.d.ts"
       ]
     }
   },
@@ -224,9 +217,6 @@
       ],
       "gt-next/internal/_getRegion": [
         "/dist/internal/_getRegion"
-      ],
-      "gt-next/internal/_getDomain": [
-        "/dist/internal/_getDomain"
       ]
     }
   },

@@ -13,7 +13,6 @@ import { resolveConfigFilepath } from './resolveConfigFilepath';
 export const REQUEST_FUNCTION_ALIASES = {
   getLocale: 'gt-next/internal/_getLocale',
   getRegion: 'gt-next/internal/_getRegion',
-  getDomain: 'gt-next/internal/_getDomain',
   getStaticLocale: 'gt-next/internal/static/_getLocale',
   getStaticRegion: 'gt-next/internal/static/_getRegion',
   getStaticDomain: 'gt-next/internal/static/_getDomain',
