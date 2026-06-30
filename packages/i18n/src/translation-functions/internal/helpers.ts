@@ -9,38 +9,6 @@ import type {
   StringFormat,
 } from '@generaltranslation/format/types';
 
-// ----- JSX TRANSLATION FUNCTIONS ----- //
-
-/**
- * Just do a simple lookup of the translation
- */
-export function resolveJsx(
-  locale: string,
-  content: JsxChildren,
-  options: LookupOptionsFor<'JSX'> = {}
-): JsxChildren | undefined {
-  const i18nCache = getI18nCache();
-  const lookupOptions = createLookupOptions(locale, options, 'JSX');
-  const translation = i18nCache.lookupTranslation(
-    lookupOptions.$locale,
-    content,
-    lookupOptions
-  );
-  return translation;
-}
-
-/**
- * Lookup translation, fallback to source
- */
-export function resolveJsxWithFallback(
-  locale: string,
-  content: JsxChildren,
-  options: LookupOptionsFor<'JSX'> = {}
-): JsxChildren {
-  const translation = resolveJsx(locale, content, options);
-  return translation ?? content;
-}
-
 /**
  * Lookup translation
  * fallback to runtime translate

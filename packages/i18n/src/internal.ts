@@ -12,15 +12,7 @@ export {
   GtInternalRuntimeTranslateString,
   GtInternalRuntimeTranslateJsx,
 } from './translation-functions/internal/runtime-translate';
-export {
-  resolveJsx,
-  resolveJsxWithFallback,
-  resolveJsxWithRuntimeFallback,
-  resolveStringContent,
-  resolveStringContentWithFallback,
-  resolveStringContentWithRuntimeFallback,
-  createLookupOptions,
-} from './translation-functions/internal/helpers';
+export { createLookupOptions } from './translation-functions/internal/helpers';
 export { renderDictionaryEntry } from './translation-functions/internal/renderDictionaryEntry';
 export { renderDictionaryObject } from './translation-functions/internal/renderDictionaryObject';
 export { I18nCache } from './i18n-cache/I18nCache';
