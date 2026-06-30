@@ -53,17 +53,6 @@
   },
   "exports": {
     ".": {
-      "react-server": {
-        "require": {
-          "types": "./dist/index.types.d.cts",
-          "default": "./dist/index.server.cjs"
-        },
-        "import": {
-          "types": "./dist/index.types.d.mts",
-          "default": "./dist/index.server.mjs"
-        },
-        "default": "./dist/index.server.mjs"
-      },
       "browser": {
         "require": {
           "types": "./dist/index.types.d.cts",
