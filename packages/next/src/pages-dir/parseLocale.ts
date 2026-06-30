@@ -95,11 +95,11 @@ function getCookieHeaderValue(
     for (const cookie of cookies) {
       const [name, ...rawValue] = cookie.trim().split('=');
       if (name === cookieName && rawValue.length > 0) {
-        const value = rawValue.join('=');
+        const cookieValue = rawValue.join('=');
         try {
-          return decodeURIComponent(value);
+          return decodeURIComponent(cookieValue);
         } catch {
-          return value;
+          return cookieValue;
         }
       }
     }
