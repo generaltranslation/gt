@@ -5,6 +5,7 @@ import { getRuntimeCredentials } from './runtimeCredentials';
 
 export type NextSetupI18nConfigParams = I18nConfigParams & {
   cacheUrl?: string | null;
+  _disableDevHotReload?: boolean;
 };
 
 // TODO: better way of communicating from build to runtime
@@ -31,6 +32,7 @@ export function getParams(): {
     devApiKey,
     apiKey,
     cacheUrl: privateConfig.cacheUrl,
+    _disableDevHotReload: privateConfig._disableDevHotReload,
   };
 
   // NextI18nCacheParams
@@ -41,6 +43,7 @@ export function getParams(): {
     projectId,
     runtimeUrl: publicConfig.runtimeUrl,
     cacheUrl: privateConfig.cacheUrl,
+    cacheExpiryTime: privateConfig.cacheExpiryTime,
     // batching config
     batchConfig: {
       maxConcurrentRequests: privateConfig.maxConcurrentRequests,
@@ -78,7 +81,7 @@ function createLoadTranslations({
   projectId,
   _versionId,
 }: {
-  cacheUrl: string | undefined;
+  cacheUrl: string | null | undefined;
   projectId: string | undefined;
   _versionId: string | undefined;
 }) {

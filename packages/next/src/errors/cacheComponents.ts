@@ -34,3 +34,22 @@ export const cacheComponentsNonLocalTranslationsWarning =
     fix: 'Store translations locally before building cached pages',
     docsUrl: 'https://generaltranslation.com/en-US/docs/next/guides/local-tx',
   });
+
+export const cacheComponentsMissingLoadTranslationsError =
+  createGtNextDiagnostic({
+    severity: 'Error',
+    whatHappened:
+      'cacheComponents is enabled, but custom loadTranslations() is not configured',
+    wayOut:
+      'gt-next cannot safely use the default remote translation loader with Cache Components',
+    fix: 'Add a loadTranslations.ts file, or configure loadTranslationsPath, and mark any dynamic loading with "use cache"',
+  });
+
+export const cacheComponentsDevHotReloadDisabledWarning =
+  createGtNextDiagnostic({
+    severity: 'Warning',
+    whatHappened:
+      'cacheComponents is enabled, so development runtime translation hot reload has been disabled',
+    why: 'development runtime translation performs dynamic requests that are not safe inside Cache Components',
+    fix: 'Use local translations, or disable cacheComponents while using development runtime translation hot reload',
+  });

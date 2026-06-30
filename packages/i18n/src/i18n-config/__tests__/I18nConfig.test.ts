@@ -110,6 +110,18 @@ describe('I18nConfig', () => {
     expect(config.isDevHotReloadEnabled()).toBe(true);
   });
 
+  it('disables dev hot reload when the config switch is set', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+
+    const config = new I18nConfig({
+      devApiKey: 'dev-key',
+      projectId: 'project-id',
+      _disableDevHotReload: true,
+    });
+
+    expect(config.isDevHotReloadEnabled()).toBe(false);
+  });
+
   it.each([
     {
       name: 'missing dev API key',

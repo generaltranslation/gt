@@ -69,10 +69,13 @@ export class ResourceCache<Key extends string, Value> {
   }
 
   private getExpiresAt(): number {
-    return this.ttl < 0 ? this.ttl : Date.now() + this.ttl;
+    // Avoid Date.now() for Next.js Cache Components; Next handles caching.
+    return this.ttl <= 0 ? this.ttl : Date.now() + this.ttl;
   }
 
   private isExpired(entry: ResourceCacheEntry<Value>): boolean {
+    // Avoid Date.now() for Next.js Cache Components; Next handles caching.
+    if (entry.expiresAt === 0) return true;
     return entry.expiresAt > 0 && entry.expiresAt < Date.now();
   }
 }
