@@ -39,11 +39,8 @@ export {
   isValidDictionaryEntry,
 } from './utils/dictionaries/getDictionaryEntry';
 export { getEntryAndMetadata } from './utils/dictionaries/getEntryAndMetadata';
-export { isVariableObject } from './utils/rendering/isVariableObject';
-export { renderSkeleton } from './utils/rendering/renderSkeleton';
 export { mergeDictionaries } from './utils/dictionaries/mergeDictionaries';
 export { getDefaultRenderSettings } from './utils/rendering/getDefaultRenderSettings';
-export { reactHasUse } from './utils/promises/reactHasUse';
 export { isDictionaryEntry } from './utils/dictionaries/isDictionaryEntry';
 
 export type {
