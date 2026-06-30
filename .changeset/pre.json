@@ -58,6 +58,9 @@
     "remove-source-barrel-exports",
     "runtime-env-credentials",
     "simplify-translation-option-types",
-    "tanstack-locale-cookie"
+    "tanstack-locale-cookie",
+    "trim-core-backwards-compat",
+    "trim-orphan-files",
+    "trim-react-core-dead-dictionaries"
   ]
 }

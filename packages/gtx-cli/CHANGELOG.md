@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.51-odysseus.3
+
+### Patch Changes
+
+- gt@2.14.51-odysseus.3
+
 ## 2.14.51-odysseus.2
 
 ### Patch Changes
