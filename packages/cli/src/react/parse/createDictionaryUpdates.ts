@@ -103,7 +103,6 @@ export async function createDictionaryUpdates(
       hash: hashSource({
         source: entry,
         ...(context && { context }),
-        ...(id && { id }),
         ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
         dataFormat: 'ICU',
       }),

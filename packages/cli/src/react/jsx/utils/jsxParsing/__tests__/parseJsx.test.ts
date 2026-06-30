@@ -193,7 +193,6 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       const hash = hashSource({
         source: update.source,
         ...(context && { context }),
-        ...(update.metadata.id && { id: update.metadata.id }),
         dataFormat: update.dataFormat,
       });
       return { hash, source: update.source };
@@ -1240,7 +1239,6 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       const hash = hashSource({
         source: update.source,
         ...(context && { context }),
-        ...(update.metadata.id && { id: update.metadata.id }),
         dataFormat: update.dataFormat,
       });
       return { hash, source: update.source };

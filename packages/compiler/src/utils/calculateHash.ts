@@ -14,7 +14,6 @@ import { hashSource as _hashSource } from 'generaltranslation/id';
 export default function hashSource({
   source,
   context,
-  id,
   maxChars,
   dataFormat,
 }: {
@@ -24,15 +23,15 @@ export default function hashSource({
   maxChars?: number;
   dataFormat: DataFormat;
 }): string {
-  // No change needed for ICU or I18NEXT
+  // Delegate to the shared hasher without custom ids; ids are metadata only.
   if (dataFormat === 'ICU' || dataFormat === 'I18NEXT') {
-    return _hashSource({ source, context, id, maxChars, dataFormat });
+    return _hashSource({ source, context, maxChars, dataFormat });
   }
   // For Jsx, we set hash to empty string if it contains a static component
   if (containsStatic(source)) {
     return '';
   }
-  return _hashSource({ source, context, id, maxChars, dataFormat });
+  return _hashSource({ source, context, maxChars, dataFormat });
 }
 
 /* =============================================== */

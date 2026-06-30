@@ -97,7 +97,6 @@ async function createTest(dirPath: string) {
           const expectedHash = hashSource({
             source: update.source,
             ...(context && { context }),
-            ...(update.metadata.id && { id: update.metadata.id }),
             ...(update.metadata.maxChars && {
               maxChars: update.metadata.maxChars,
             }),
