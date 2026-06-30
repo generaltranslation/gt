@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.14.51-odysseus.4
+
+### Patch Changes
+
+- Updated dependencies [26faa87]
+  - generaltranslation@9.0.0-odysseus.4
+  - @generaltranslation/python-extractor@0.2.23-odysseus.4
+  - @generaltranslation/supported-locales@2.1.2-odysseus.4
+
 ## 2.14.51-odysseus.3
 
 ### Patch Changes
