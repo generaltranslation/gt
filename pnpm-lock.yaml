@@ -835,8 +835,8 @@ importers:
         specifier: 'catalog:'
         version: 22.13.10
       intl-messageformat:
-        specifier: ^10.7.16
-        version: 10.7.16
+        specifier: ^10.7.18
+        version: 10.7.18
       tsdown:
         specifier: 'catalog:'
         version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
@@ -847,8 +847,8 @@ importers:
   packages/format:
     dependencies:
       intl-messageformat:
-        specifier: ^10.7.16
-        version: 10.7.16
+        specifier: ^10.7.18
+        version: 10.7.18
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -4134,23 +4134,14 @@ packages:
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
 
-  '@formatjs/ecma402-abstract@2.3.4':
-    resolution: {integrity: sha512-qrycXDeaORzIqNhBOx0btnhpD1c+/qFIHAN9znofuMJX6QBwtbrmlpWfD4oiUUD2vJUOIYFA/gYtg2KAMGG7sA==}
-
   '@formatjs/ecma402-abstract@2.3.6':
     resolution: {integrity: sha512-HJnTFeRM2kVFVr5gr5kH1XP6K0JcJtE7Lzvtr3FS/so5f1kpsqqqxy5JF+FRaO6H2qmcMfAUIox7AJteieRtVw==}
 
   '@formatjs/fast-memoize@2.2.7':
     resolution: {integrity: sha512-Yabmi9nSvyOMrlSeGGWDiH7rf3a7sIwplbvo/dlz9WCIjzIQAfy1RMf4S0X3yG724n5Ghu2GmEl5NJIV6O9sZQ==}
 
-  '@formatjs/icu-messageformat-parser@2.11.2':
-    resolution: {integrity: sha512-AfiMi5NOSo2TQImsYAg8UYddsNJ/vUEv/HaNqiFjnI3ZFfWihUtD5QtuX6kHl8+H+d3qvnE/3HZrfzgdWpsLNA==}
-
   '@formatjs/icu-messageformat-parser@2.11.4':
     resolution: {integrity: sha512-7kR78cRrPNB4fjGFZg3Rmj5aah8rQj9KPzuLsmcSn4ipLXQvC04keycTI1F7kJYDwIXtT2+7IDEto842CfZBtw==}
-
-  '@formatjs/icu-skeleton-parser@1.8.14':
-    resolution: {integrity: sha512-i4q4V4qslThK4Ig8SxyD76cp3+QJ3sAqr7f6q9VVfeGtxG9OhiAk3y9XF6Q41OymsKzsGQ6OQQoJNY4/lI8TcQ==}
 
   '@formatjs/icu-skeleton-parser@1.8.16':
     resolution: {integrity: sha512-H13E9Xl+PxBd8D5/6TVUluSpxGNvFSlN/b3coUp0e0JpuWXXnQDiavIpY3NnvSp4xhEMoXyyBvVfdFX8jglOHQ==}
@@ -4173,9 +4164,6 @@ packages:
 
   '@formatjs/intl-locale@4.2.13':
     resolution: {integrity: sha512-Qcs0mP9JhEPCinPfpZ5JKzOa+VYDg94TQSFZozYuqG8R+hEGUTKyoyMqB5xi5QZT/hlB0CSgeNc/0fWMGtTFXA==}
-
-  '@formatjs/intl-localematcher@0.6.1':
-    resolution: {integrity: sha512-ePEgLgVCqi2BBFnTMWPfIghu6FkbZnnBVhO2sSxvLfrdFw7wCHAHiDoM2h4NRgjbaY7+B7HgOLZGkK187pZTZg==}
 
   '@formatjs/intl-localematcher@0.6.2':
     resolution: {integrity: sha512-XOMO2Hupl0wdd172Y06h6kLpBz6Dv+J4okPLl4LPtzbr8f66WbIoy4ev98EBuZ6ZK4h5ydTN6XneT4QVpD7cdA==}
@@ -11886,8 +11874,8 @@ packages:
     resolution: {integrity: sha512-4gd7VpWNQNB4UKKCFFVcp1AVv+FMOgs9NKzjHKusc8jTMhd5eL1NqQqOpE0KzMds804/yHlglp3uxgluOqAPLw==}
     engines: {node: '>= 0.4'}
 
-  intl-messageformat@10.7.16:
-    resolution: {integrity: sha512-UmdmHUmp5CIKKjSoE10la5yfU+AYJAaiYLsodbjL4lji83JNvgOQUjGaGhGrpFCb0Uh7sl7qfP1IyILa8Z40ug==}
+  intl-messageformat@10.7.18:
+    resolution: {integrity: sha512-m3Ofv/X/tV8Y3tHXLohcuVuhWKo7BBq62cqY15etqmLxg2DZ34AGGgQDeR+SCta2+zICb1NX83af0GJmbQ1++g==}
 
   invariant@2.2.4:
     resolution: {integrity: sha512-phJfQVBuaJM5raOpJjSfkiD6BpbCE4Ns//LaXl6wGYtUBY83nWS6Rf9tXm2e8VaK60JEjYldbPif/A2B1C2gNA==}
@@ -20522,13 +20510,6 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@formatjs/ecma402-abstract@2.3.4':
-    dependencies:
-      '@formatjs/fast-memoize': 2.2.7
-      '@formatjs/intl-localematcher': 0.6.1
-      decimal.js: 10.6.0
-      tslib: 2.8.1
-
   '@formatjs/ecma402-abstract@2.3.6':
     dependencies:
       '@formatjs/fast-memoize': 2.2.7
@@ -20540,21 +20521,10 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@formatjs/icu-messageformat-parser@2.11.2':
-    dependencies:
-      '@formatjs/ecma402-abstract': 2.3.4
-      '@formatjs/icu-skeleton-parser': 1.8.14
-      tslib: 2.8.1
-
   '@formatjs/icu-messageformat-parser@2.11.4':
     dependencies:
       '@formatjs/ecma402-abstract': 2.3.6
       '@formatjs/icu-skeleton-parser': 1.8.16
-      tslib: 2.8.1
-
-  '@formatjs/icu-skeleton-parser@1.8.14':
-    dependencies:
-      '@formatjs/ecma402-abstract': 2.3.4
       tslib: 2.8.1
 
   '@formatjs/icu-skeleton-parser@1.8.16':
@@ -20595,10 +20565,6 @@ snapshots:
       '@formatjs/ecma402-abstract': 2.3.6
       '@formatjs/intl-enumerator': 1.8.12
       '@formatjs/intl-getcanonicallocales': 2.5.6
-      tslib: 2.8.1
-
-  '@formatjs/intl-localematcher@0.6.1':
-    dependencies:
       tslib: 2.8.1
 
   '@formatjs/intl-localematcher@0.6.2':
@@ -29969,11 +29935,11 @@ snapshots:
       hasown: 2.0.2
       side-channel: 1.1.0
 
-  intl-messageformat@10.7.16:
+  intl-messageformat@10.7.18:
     dependencies:
-      '@formatjs/ecma402-abstract': 2.3.4
+      '@formatjs/ecma402-abstract': 2.3.6
       '@formatjs/fast-memoize': 2.2.7
-      '@formatjs/icu-messageformat-parser': 2.11.2
+      '@formatjs/icu-messageformat-parser': 2.11.4
       tslib: 2.8.1
 
   invariant@2.2.4:

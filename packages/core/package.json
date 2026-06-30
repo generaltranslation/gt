@@ -44,7 +44,7 @@
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@types/node": "catalog:",
-    "intl-messageformat": "^10.7.16",
+    "intl-messageformat": "^10.7.18",
     "tsdown": "catalog:",
     "typescript": "catalog:"
   },
