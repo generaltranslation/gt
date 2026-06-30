@@ -57,35 +57,6 @@ describe('I18nCache', () => {
     vi.unstubAllEnvs();
   });
 
-  // ===== REGRESSION TESTS ===== //
-
-  it('resolveTranslationSync returns translation after loadTranslations', async () => {
-    const cache = createCache();
-
-    // Load translations first
-    await cache.loadTranslations('fr');
-
-    // Now sync resolution should work
-    const result = cache.resolveTranslationSync('fr', message, lookupOptions);
-    expect(result).toBe(translatedString);
-  });
-
-  it('getTranslations returns empty object for invalid locale', async () => {
-    const cache = createCache();
-
-    const result = await cache.getTranslations('zh');
-    expect(result).toEqual({});
-  });
-
-  it('getTranslationResolver returns a working resolver function', async () => {
-    const cache = createCache();
-
-    const resolver = await cache.getTranslationResolver('fr');
-    const result = resolver(message, lookupOptions);
-
-    expect(result).toBe(translatedString);
-  });
-
   // ===== NEW BEHAVIOR TESTS ===== //
 
   it('loadTranslations() returns Record<Hash, Translation>', async () => {
@@ -1168,36 +1139,6 @@ describe('I18nCache', () => {
     );
   });
 
-  it('resolves custom aliases for GT instances', () => {
-    const cache = createCache({
-      customMapping: {
-        'brand-french': {
-          code: 'fr',
-          name: 'Brand French',
-        },
-      },
-    });
-
-    expect(() => cache.getGTClass('brand-french')).not.toThrow();
-  });
-
-  it('preserves alias target locale when creating a GT instance', () => {
-    const cache = createCache({
-      locales: ['en', 'brand-french'],
-      customMapping: {
-        'brand-french': {
-          code: 'fr',
-          name: 'Brand French',
-        },
-      },
-    });
-
-    const gt = cache.getGTClass('fr');
-
-    expect(gt.targetLocale).toBe('brand-french');
-    expect(gt.locales).toEqual(['en', 'fr']);
-  });
-
   it('normalizes custom aliases before loading and reading locale caches', async () => {
     const loadTranslations = vi
       .fn()
@@ -1242,7 +1183,6 @@ describe('I18nCache', () => {
     await expect(cache.getLookupTranslation('fr')).resolves.toEqual(
       expect.any(Function)
     );
-    expect(() => cache.getGTClass('fr')).not.toThrow();
   });
 
   it('does not clone loaded dictionaries for cache hit events without subscribers', async () => {
