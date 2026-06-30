@@ -81,17 +81,12 @@ export async function runStageFilesWorkflow({
     await setupStep.wait();
 
     // then run the enqueue step
-    const { filesToEnqueue, skippedFiles } = await filterFilesForEnqueue({
+    const { filesToEnqueue } = await filterFilesForEnqueue({
       gt,
       files: uploadedFiles,
       locales: settings.locales,
       force: options.force,
     });
-    if (skippedFiles.length > 0) {
-      logger.info(
-        `Skipped enqueue for ${skippedFiles.length} already translated file${skippedFiles.length === 1 ? '' : 's'}`
-      );
-    }
 
     const enqueueResult = await enqueueStep.run(filesToEnqueue);
     await enqueueStep.wait();

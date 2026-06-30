@@ -2,6 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GT } from 'generaltranslation';
 import type { FileReference } from 'generaltranslation/types';
 import { filterFilesForEnqueue } from '../filterFilesForEnqueue.js';
+import { logger } from '../../../console/logger.js';
+
+vi.mock('../../../console/logger.js', () => ({
+  logger: {
+    info: vi.fn(),
+  },
+}));
 
 describe('filterFilesForEnqueue', () => {
   const file: FileReference = {
@@ -41,6 +48,9 @@ describe('filterFilesForEnqueue', () => {
 
     expect(result.filesToEnqueue).toEqual([]);
     expect(result.skippedFiles).toEqual([file]);
+    expect(logger.info).toHaveBeenCalledWith(
+      'Skipped enqueue for 1 already translated file'
+    );
     expect(gt.queryFileData).toHaveBeenCalledWith({
       translatedFiles: [
         {
@@ -78,6 +88,7 @@ describe('filterFilesForEnqueue', () => {
 
     expect(result.filesToEnqueue).toEqual([file]);
     expect(result.skippedFiles).toEqual([]);
+    expect(logger.info).not.toHaveBeenCalled();
   });
 
   it('does not query status when force is enabled', async () => {
