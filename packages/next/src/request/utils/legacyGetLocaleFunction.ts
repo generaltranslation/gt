@@ -3,6 +3,7 @@ import { RequestFunctionReturnType } from '../types';
 import { legacyGetRequestFunction } from './legacyGetRequestFunction';
 import { isSSR } from './isSSR';
 import { I18NConfiguration } from '../../config-dir/I18NConfiguration';
+import { resolveLocaleOrDefault } from '../localeValidation';
 
 let getLocaleFunction: () => Promise<RequestFunctionReturnType>;
 let getStaticLocaleFunction: () => Promise<RequestFunctionReturnType>;
@@ -24,6 +25,6 @@ export function legacyGetLocaleFunction(
     const locale = isSSR()
       ? await getLocaleFunction()
       : await getStaticLocaleFunction();
-    return gt.resolveAliasLocale(locale || I18NConfig.getDefaultLocale());
+    return resolveLocaleOrDefault(locale, I18NConfig, gt);
   };
 }
