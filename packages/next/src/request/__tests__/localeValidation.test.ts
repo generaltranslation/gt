@@ -25,10 +25,21 @@ describe('locale validation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockI18NConfig.getLocales.mockReturnValue(['en', 'fr']);
 
     mockGt.determineLocale.mockImplementation(
-      (locales: string[], approvedLocales: string[]) =>
-        locales.find((locale) => approvedLocales.includes(locale))
+      (locales: string[], approvedLocales: string[]) => {
+        const standardizedLocales = locales.flatMap((locale) => {
+          try {
+            return Intl.getCanonicalLocales(locale)[0] || [];
+          } catch {
+            return [];
+          }
+        });
+        return approvedLocales.find((locale) =>
+          standardizedLocales.includes(locale)
+        );
+      }
     );
   });
 
@@ -74,6 +85,20 @@ describe('locale validation', () => {
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('Locale "de" is not valid or is not supported')
     );
+  });
+
+  it('resolves supported locales with non-standard casing', () => {
+    mockI18NConfig.getLocales.mockReturnValue(['en', 'zh-CN']);
+
+    expect(
+      resolveLocaleOrDefault(
+        'ZH-cn',
+        mockI18NConfig as unknown as I18NConfiguration,
+        mockGt
+      )
+    ).toBe('zh-CN');
+
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
   it('does not warn when no request locale is available', () => {
