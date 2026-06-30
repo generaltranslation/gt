@@ -4,18 +4,11 @@ import {
 } from '@generaltranslation/react-core/pure';
 import { ReactI18nCache } from '@generaltranslation/react-core/pure';
 import type { ReactI18nCacheParams } from '@generaltranslation/react-core/pure';
-import { setupGTServicesEnabled } from 'gt-i18n/internal';
-import type {
-  GTServicesEnabledParams,
-  I18nConfigParams,
-} from 'gt-i18n/internal/types';
+import type { I18nConfigParams } from 'gt-i18n/internal/types';
 
-export type InitializeGTParams = I18nConfigParams &
-  GTServicesEnabledParams &
-  ReactI18nCacheParams;
+export type InitializeGTParams = I18nConfigParams & ReactI18nCacheParams;
 
 export function initializeGT(config: InitializeGTParams): void {
-  setupGTServicesEnabled(config);
   initializeI18nConfig(config, 'server-render');
 
   const i18nCache = new ReactI18nCache(config);
