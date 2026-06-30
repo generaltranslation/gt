@@ -1,7 +1,7 @@
 import {
   type ArgumentElement,
-  TYPE,
 } from '@formatjs/icu-messageformat-parser/types.js';
+import { TYPE } from '@formatjs/icu-messageformat-parser';
 import { printAST } from '@formatjs/icu-messageformat-parser/printer.js';
 import { traverseIcu } from './utils/traverseIcu';
 import { VAR_IDENTIFIER } from './utils/constants';
