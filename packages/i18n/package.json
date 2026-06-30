@@ -77,16 +77,6 @@
         "default": "./dist/types.mjs"
       }
     },
-    "./fallbacks": {
-      "require": {
-        "types": "./dist/fallbacks.d.cts",
-        "default": "./dist/fallbacks.cjs"
-      },
-      "import": {
-        "types": "./dist/fallbacks.d.mts",
-        "default": "./dist/fallbacks.mjs"
-      }
-    },
     "./internal": {
       "require": {
         "types": "./dist/internal.d.cts",
@@ -113,9 +103,6 @@
       "types": [
         "./dist/types.d.cts"
       ],
-      "fallbacks": [
-        "./dist/fallbacks.d.cts"
-      ],
       "internal": [
         "./dist/internal.d.cts"
       ],
@@ -129,9 +116,6 @@
     "paths": {
       "gt-i18n/types": [
         "/dist/types"
-      ],
-      "gt-i18n/fallbacks": [
-        "/dist/fallbacks"
       ],
       "gt-i18n/internal": [
         "/dist/internal"
