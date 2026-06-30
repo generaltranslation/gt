@@ -1,5 +1,6 @@
 import { use } from '../utils/use';
 import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
+import { ensureGTServerInitialized } from '../setup/ensureGTServerInitialized';
 
 /**
  * Gets the user's current region code.
@@ -11,6 +12,7 @@ import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
  * console.log(region); // 'US' or undefined
  */
 export function getRegion(): Promise<string | undefined> {
+  ensureGTServerInitialized();
   return getAsyncConditionStore().getRegion();
 }
 

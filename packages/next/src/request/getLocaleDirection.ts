@@ -1,5 +1,6 @@
 import { getI18nConfig } from 'gt-i18n/internal';
 import { getLocale, useLocale } from './getLocale';
+import { ensureGTServerInitialized } from '../setup/ensureGTServerInitialized';
 
 /**
  * Retrieves the text direction ('ltr' or 'rtl') for the current or specified locale.
@@ -18,6 +19,7 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl';
 export function getLocaleDirection(): Promise<'ltr' | 'rtl'>;
 // Implementation
 export function getLocaleDirection(locale?: string) {
+  ensureGTServerInitialized();
   const gtInstance = getI18nConfig().getGTClass();
   if (typeof locale === 'string') {
     // Synchronous result when locale is given
@@ -42,6 +44,7 @@ export function getLocaleDirection(locale?: string) {
  * const arabicDir = useLocaleDirection('ar'); // 'rtl'
  */
 export function useLocaleDirection(locale?: string): 'ltr' | 'rtl' {
+  ensureGTServerInitialized();
   locale = locale || useLocale();
   return getI18nConfig().getGTClass().getLocaleDirection(locale);
 }

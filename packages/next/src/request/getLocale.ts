@@ -1,5 +1,6 @@
 import { use } from '../utils/use';
 import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
+import { ensureGTServerInitialized } from '../setup/ensureGTServerInitialized';
 
 /**
  * Gets the user's current locale.
@@ -11,6 +12,7 @@ import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
  * console.log(locale); // 'en-US'
  */
 export function getLocale(): Promise<string> {
+  ensureGTServerInitialized();
   return getAsyncConditionStore().getLocale();
 }
 

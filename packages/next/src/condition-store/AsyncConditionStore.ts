@@ -20,12 +20,15 @@ export type AsyncConditionStoreParams = {
   ignorePreferredLanguages?: boolean;
 };
 
-export const {
+const {
   getConditionStore: getAsyncConditionStore,
   setConditionStore: setAsyncConditionStore,
+  isConditionStoreInitialized,
 } = createConditionStoreSingleton<AsyncConditionStore>(
   'AsyncConditionStore not initialized. Invoke initializeGT() to initialize.'
 );
+
+export { getAsyncConditionStore, setAsyncConditionStore };
 
 /**
  * Server-side (app router) condition store
@@ -75,6 +78,15 @@ export class AsyncConditionStore implements AsyncReadonlyConditionStoreInterface
     // Technically does not need async, but good for parity
     return this.enableI18n;
   }
+}
+
+export function isAsyncConditionStoreInitialized(): boolean {
+  // The i18n condition-store singleton is shared across packages; make sure
+  // gt-next/server sees the async Next store, not another implementation.
+  return (
+    isConditionStoreInitialized() &&
+    getAsyncConditionStore() instanceof AsyncConditionStore
+  );
 }
 
 /**
