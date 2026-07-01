@@ -853,7 +853,7 @@ describe('runtimeTranslatePass', () => {
         import { getGT } from 'gt-next/server';
         async function Page() {
           const gt = await getGT();
-          return gt("Hello", { $context: "nav", $id: "greet", $maxChars: 50 });
+          return gt("Hello", { $context: "nav", $id: "greet", $maxChars: 50, $format: "STRING" });
         }
       `,
         {
@@ -875,8 +875,9 @@ describe('runtimeTranslatePass', () => {
       expect(getObjectPropertyValue(message!, '$context')).toBe('nav');
       expect(getObjectPropertyValue(message!, '$id')).toBe('greet');
       expect(getObjectPropertyValue(message!, '$maxChars')).toBe(50);
+      expect(getObjectPropertyValue(message!, '$format')).toBe('STRING');
       expect(getObjectPropertyNames(message!)).not.toEqual(
-        expect.arrayContaining(['hash', 'context', 'id', 'maxChars'])
+        expect.arrayContaining(['hash', 'context', 'id', 'maxChars', 'format'])
       );
     });
 
