@@ -190,8 +190,6 @@ jobs:
       - name: Release gt binary to npm
         if: steps.check-gt.outputs.should_release_bin == 'true'
         run: pnpm --filter gt run bin:prep && pnpm --filter gt publish --tag bin --no-git-checks && pnpm --filter gt run bin:restore && pnpm --filter gt run build:clean
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # gtx-cli (backward-compat wrapper, lives in packages/gtx-cli/)
       - name: Check if gtx-cli was published
@@ -243,5 +241,3 @@ jobs:
       - name: Release gtx-cli binary to npm
         if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
         run: pnpm --filter gtx-cli run bin:prep && pnpm --filter gtx-cli publish --tag bin --no-git-checks && pnpm --filter gtx-cli run bin:restore && pnpm --filter gtx-cli run build:clean
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
