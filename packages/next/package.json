@@ -17,6 +17,8 @@
     "./dist/index.rsc.*",
     "./dist/index.client.*",
     "./dist/server.*",
+    "./dist/link.*",
+    "./dist/link/Link.*",
     "./dist/utils/client-boundary.*"
   ],
   "dependencies": {
@@ -121,16 +123,6 @@
       "import": "./dist/_load-dictionary.mjs",
       "default": "./dist/_load-dictionary.js"
     },
-    "./compiler": {
-      "types": "./dist/compiler/index.d.ts",
-      "import": "./dist/compiler/index.mjs",
-      "default": "./dist/compiler/index.js"
-    },
-    "./eslint-plugin": {
-      "types": "./dist/eslint-plugin/index.d.ts",
-      "import": "./dist/eslint-plugin/index.mjs",
-      "default": "./dist/eslint-plugin/index.js"
-    },
     "./internal/_getLocale": {
       "import": "./dist/internal/_getLocale.mjs",
       "default": "./dist/internal/_getLocale.js"
@@ -166,12 +158,6 @@
       "_load-dictionary": [
         "./dist/_load-dictionary.d.ts"
       ],
-      "compiler": [
-        "./dist/compiler/index.d.ts"
-      ],
-      "eslint-plugin": [
-        "./dist/eslint-plugin/index.d.ts"
-      ],
       "internal/_getLocale": [
         "./dist/internal/_getLocale.d.ts"
       ],
@@ -206,12 +192,6 @@
       ],
       "gt-next/_load-dictionary": [
         "/dist/_load-dictionary"
-      ],
-      "gt-next/compiler": [
-        "/dist/compiler"
-      ],
-      "gt-next/eslint-plugin": [
-        "/dist/eslint-plugin"
       ],
       "gt-next/internal/_getLocale": [
         "/dist/internal/_getLocale"
