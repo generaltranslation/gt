@@ -69,7 +69,6 @@ function getReadonlyConditionStoreWithFallback(): ReadonlyConditionStoreInterfac
 }
 
 export {
-  getConditionStore as getReadonlyConditionStore,
   getReadonlyConditionStoreWithFallback,
   setConditionStore as setReadonlyConditionStore,
   isConditionStoreInitialized as isReadonlyConditionStoreInitialized,

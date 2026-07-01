@@ -402,7 +402,6 @@ export const noLocalesError = `No target locales were found. Add locales to gt.c
 export const noDefaultLocaleError = `No default locale was found. Add defaultLocale to gt.config.json or pass it with --default-locale.`;
 export const noFilesError = `The files configuration is missing or invalid. Check the files section in gt.config.json and try again.`;
 export const noSourceFileError = `No source translation file was found. Check your translations directory and default locale configuration.`;
-export const noSupportedFormatError = `The translation file format is not supported. Use a supported file extension in translationsDir.`;
 export const noApiKeyError = `No API key was found. Pass --api-key or set the GT_API_KEY environment variable.`;
 export const devApiKeyError = `Development API keys cannot be used with the General Translation API. Use a production API key instead.\nGenerate a production API key with: npx gt auth -t production`;
 export const noProjectIdError = `No project ID was found. Pass --project-id, add projectId to gt.config.json, or set the GT_PROJECT_ID environment variable.`;

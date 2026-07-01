@@ -27,7 +27,6 @@ export type { WritableConditionStoreParams } from './condition-store/WritableCon
 
 // Translation Options (Function types exported by /types)
 export type * from './translation-functions/types/options';
-export type { TranslationMetadata } from './translation-functions/types/options';
 
 // Config
 export type * from './config/types';

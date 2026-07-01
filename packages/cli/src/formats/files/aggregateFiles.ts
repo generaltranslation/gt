@@ -44,7 +44,6 @@ function isCompanionMetadataFile(
   );
   return allFilePaths.includes(sourceFilePath);
 }
-export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export async function aggregateFiles(
   settings: Settings
