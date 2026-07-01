@@ -6,12 +6,10 @@ import {
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
-  StoreListener,
 } from '../../i18n-store/storeTypes';
 import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
-import { useSyncExternalStore } from 'react';
-import type { RefObject } from 'react';
 import { useHandleMissingDictionaryEntry } from '../utils/missing-translation';
+import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
 
 export type TrackedDictionaryEntryResolver = (
   lookup: DictionaryLookup
@@ -30,7 +28,11 @@ export function useTrackedDictionaryResolver(): TrackedDictionaryEntryResolver {
   }
 
   // subscribe to dictionary entry updates
-  useSubscribeToLookups(trackedKeysRef);
+  useSubscribeToTrackedLookups(
+    trackedKeysRef,
+    i18nStore.subscribeToDictionaryEntryEvents,
+    getDictionaryListenerKey
+  );
 
   // Resolution callback
   return useCallback(
@@ -61,26 +63,4 @@ export function useTrackedDictionaryResolver(): TrackedDictionaryEntryResolver {
       onMissingDictionaryEntry,
     ]
   );
-}
-
-function useSubscribeToLookups(trackedKeysRef: RefObject<Set<string> | null>) {
-  // invalidation counter for triggering updates
-  const versionRef = useRef(0);
-  const i18nStore = useI18nStore();
-  const subscribe = useCallback(
-    (listener: StoreListener) => {
-      return i18nStore.subscribeToDictionaryEntryEvents((lookup) => {
-        const key = getDictionaryListenerKey(lookup);
-        if (!trackedKeysRef.current!.has(key)) return;
-        versionRef.current++;
-        listener();
-      });
-    },
-    [i18nStore]
-  );
-  const getSnapshot = useCallback(() => {
-    return versionRef.current;
-  }, []);
-
-  useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
