@@ -11,14 +11,16 @@ The compiler uses a **4-pass Babel pipeline** on `.tsx/.jsx/.ts/.js` files:
 3. **Collection Pass** — Collects translation data, computes hashes, validates usage
 4. **Injection Pass** — Injects hashes and metadata into the AST
 
-Entry point: `src/index.ts` (creates the unplugin).
+Entry point: `src/index.ts` (creates the unplugin). The top level of `src` is reserved for package entrypoints; all implementation logic belongs in subdirectories. Existing non-entrypoint top-level files are legacy locations, not precedent for new files.
 
 ## Code Organization
+
+Target organization for new or moved code:
 
 ```
 src/
 ├── index.ts              # Unplugin entry point
-├── config.ts             # PluginConfig / PluginSettings types
+├── config/               # PluginConfig / PluginSettings types and config helpers
 ├── passes/               # Babel visitor passes (one per pipeline stage)
 │   ├── jsxInsertionPass.ts
 │   ├── macroExpansionPass.ts
@@ -49,7 +51,7 @@ Key concepts:
 
 ## Configuration
 
-Key flags in `PluginConfig` (`src/config.ts`):
+Key flags in `PluginConfig` (currently in legacy top-level `src/config.ts`; new or moved config code should live under `src/config/`):
 
 - `enableAutoJsxInjection` — enables JSX insertion pass
 - `enableMacroTransform` — enables t\`\` macro expansion
