@@ -3,7 +3,8 @@ import {
   resolveStringContentWithFallback,
 } from './internal/helpers';
 import { GTTranslationOptions } from './types/options';
-import { getLocale } from '../helpers/locale';
+import { getDefaultLocale } from '../helpers/locale';
+import { getWritableConditionStore } from '../condition-store/singleton-operations';
 
 /**
  * Translate a message
@@ -17,7 +18,10 @@ export const t: StringOrTemplateSyncResolutionFunction = (
 ) => {
   if (typeof messageOrStrings === 'string') {
     const options = values.at(0) as GTTranslationOptions | undefined;
-    const locale = options?.$locale ?? getLocale();
+    const conditionStore = getWritableConditionStore();
+    const locale = conditionStore.getEnableI18n()
+      ? (options?.$locale ?? conditionStore.getLocale())
+      : getDefaultLocale();
     return resolveStringContentWithFallback(locale, messageOrStrings, {
       $format: 'ICU',
       ...options,
@@ -31,7 +35,10 @@ function handleTaggedTemplateLiteralTranslation(
   messageOrStrings: TemplateStringsArray,
   values: unknown[]
 ): string {
-  const locale = getLocale();
+  const conditionStore = getWritableConditionStore();
+  const locale = conditionStore.getEnableI18n()
+    ? conditionStore.getLocale()
+    : getDefaultLocale();
   const interpolatedTemplate = messageOrStrings
     .map((string, index) => string + (values[index] ?? ''))
     .join('');
