@@ -42,7 +42,11 @@ export async function getGTInternal(
   // Get the translation resolver
   const i18nCache = getI18nCache();
   const sourceLocale = getI18nConfig().getDefaultLocale();
-  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
+  // Statically gated so bundlers can drop dev hot-reload work from
+  // production builds.
+  const devHotReloadEnabled =
+    process.env.NODE_ENV !== 'production' &&
+    getI18nConfig().isDevHotReloadEnabled();
   const lookupTranslation = await i18nCache.getLookupTranslation(
     enableI18n ? locale : sourceLocale
   );

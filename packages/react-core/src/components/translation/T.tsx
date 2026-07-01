@@ -61,6 +61,7 @@ function useComputeT({
   // TODO: account for success vs loading vs failed request states
   const prev = useRef<ReactNode | null>(null);
   if (
+    process.env.NODE_ENV !== 'production' &&
     getI18nConfig().isDevHotReloadEnabled() &&
     targetJsxChildren == null &&
     prev.current != null &&

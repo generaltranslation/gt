@@ -99,7 +99,11 @@ export function useHandleMissingDictionaryObject(): OnMissingDictionaryObj {
  * HMR translation needs to be deferred to post-commit phase
  */
 function useDevHotReloadQueue() {
-  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
+  // Statically gated so bundlers can drop dev hot-reload work from
+  // production builds.
+  const devHotReloadEnabled =
+    process.env.NODE_ENV !== 'production' &&
+    getI18nConfig().isDevHotReloadEnabled();
   const shouldTranslate = useShouldTranslate();
   const i18nStore = useI18nStore();
 
