@@ -1,6 +1,7 @@
 import type { GT } from 'generaltranslation';
 import type { FileReference } from 'generaltranslation/types';
 import type { FileProperties } from '../../types/files.js';
+import { logger } from '../../console/logger.js';
 import {
   getFileTranslationKey,
   queryCompletedTranslationKeys,
@@ -65,6 +66,12 @@ export async function filterFilesForEnqueue({
     } else {
       filesToEnqueue.push(file);
     }
+  }
+
+  if (skippedFiles.length > 0) {
+    logger.info(
+      `Skipped enqueue for ${skippedFiles.length} already translated file${skippedFiles.length === 1 ? '' : 's'}`
+    );
   }
 
   return { filesToEnqueue, skippedFiles };

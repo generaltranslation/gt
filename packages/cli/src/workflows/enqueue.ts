@@ -51,17 +51,12 @@ export async function runEnqueueWorkflow({
       branchId: branchData.currentBranch.id,
       ...files,
     }));
-    const { filesToEnqueue, skippedFiles } = await filterFilesForEnqueue({
+    const { filesToEnqueue } = await filterFilesForEnqueue({
       gt,
       files: filesWithBranch,
       locales: settings.locales,
       force: options.force,
     });
-    if (skippedFiles.length > 0) {
-      logger.info(
-        `Skipped enqueue for ${skippedFiles.length} already translated file${skippedFiles.length === 1 ? '' : 's'}`
-      );
-    }
 
     const enqueueResult = await enqueueStep.run(filesToEnqueue);
     await enqueueStep.wait();
