@@ -13,6 +13,10 @@ vi.mock('gt-i18n/internal', () => ({
       return Array.isArray(locale) ? locale[0] : locale;
     },
     getDefaultLocale: () => 'en',
+    resolveSupportedLocale: (locale?: string | string[]) => {
+      const resolved = Array.isArray(locale) ? locale[0] : locale;
+      return resolved || 'en';
+    },
   }),
 }));
 

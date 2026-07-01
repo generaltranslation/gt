@@ -85,6 +85,5 @@ export class AsyncConditionStore implements ScopedConditionStoreInterface {
 }
 
 function resolveLocale(locale?: string): string {
-  const i18nConfig = getI18nConfig();
-  return i18nConfig.determineLocale(locale) || i18nConfig.getDefaultLocale();
+  return getI18nConfig().resolveSupportedLocale(locale);
 }

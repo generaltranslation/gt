@@ -41,7 +41,7 @@ export function createFileMapping(
     // Start with GTJSON Template files
     if (translatedPaths.gt) {
       const filepath = translatedPaths.gt;
-      localeMapping[TEMPLATE_FILE_NAME] = filepath;
+      localeMapping[TEMPLATE_FILE_NAME] = getRelative(filepath);
     }
 
     for (const typeIndex of SUPPORTED_FILE_EXTENSIONS) {

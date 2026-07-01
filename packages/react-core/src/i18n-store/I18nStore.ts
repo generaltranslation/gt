@@ -99,6 +99,8 @@ export class I18nStore {
 
   // ----- Subscriptions ----- //
 
+  // Keep subscription methods as arrow fields so hooks can pass them by
+  // reference without losing access to this store instance.
   subscribeToTranslate = <T extends Translation>(
     lookup: TranslateLookup<T>,
     listener: StoreListener

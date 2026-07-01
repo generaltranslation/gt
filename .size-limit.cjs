@@ -61,11 +61,6 @@ const tanstack = (name, file) =>
     ignore: tanstackPeerIgnore,
   });
 
-const tanstackNode = (name, file) =>
-  nodeEntry(name, `packages/tanstack-start/dist/${file}.mjs`, '52 kB', {
-    ignore: tanstackPeerIgnore,
-  });
-
 const reactNative = (name, file, limit = '50 kB') =>
   entry(name, `packages/react-native/dist/module/${file}.js`, limit, {
     ignore: reactNativePeerIgnore,
@@ -123,8 +118,7 @@ module.exports = [
   node('gt-node/types', 'types'),
   node('gt-node/internal', 'internal'),
 
-  tanstack('gt-tanstack-start (client)', 'index.client'),
-  tanstackNode('gt-tanstack-start (server)', 'index.server'),
+  tanstack('gt-tanstack-start', 'index'),
 
   reactNative('gt-react-native', 'index', '52 kB'),
   reactNativeNode('gt-react-native/plugin', 'plugin'),

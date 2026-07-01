@@ -9,6 +9,7 @@ import {
 } from '@generaltranslation/react-core/cookies';
 import { createConditionStoreSingleton } from 'gt-i18n/internal';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { resolveLocaleOrDefault } from '../request/localeValidation';
 
 export type AsyncConditionStoreParams = {
   getLocale?: () => Promise<string>;
@@ -66,7 +67,7 @@ export class AsyncConditionStore implements AsyncReadonlyConditionStoreInterface
     const registeredLocale = this.localeStore.getStore();
     if (registeredLocale) return registeredLocale;
 
-    return await this.getLocaleFn();
+    return resolveLocaleOrDefault(await this.getLocaleFn());
   }
 
   async getRegion(): Promise<string | undefined> {
@@ -128,9 +129,8 @@ function createDefaultGetLocale({
     }
 
     const i18nConfig = getI18nConfig();
-    const locales = i18nConfig.getLocales();
     return (
-      i18nConfig.getGTClass().determineLocale(preferredLocales, locales) ||
+      i18nConfig.determineSupportedLocale(preferredLocales) ||
       i18nConfig.getDefaultLocale()
     );
   };

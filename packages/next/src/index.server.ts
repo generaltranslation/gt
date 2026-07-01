@@ -65,6 +65,7 @@ export {
   mFallback,
   msg,
 } from 'gt-react';
+export { isLocaleSupported } from './request/localeValidation';
 
 // ===== Types ===== //
 export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
