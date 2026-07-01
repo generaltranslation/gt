@@ -5,11 +5,6 @@ import {
   BrowserConditionStoreParams,
 } from './BrowserConditionStore';
 import { readBrowserLocale } from './readBrowserLocale';
-import {
-  defaultEnableI18nCookieName,
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
-} from '../cookie-names';
 import { getCookieValue } from './cookies';
 import {
   getBrowserConditionStore,
@@ -39,13 +34,24 @@ export type CreateBrowserConditionStoreParams = Omit<
  *
  * We want the values that we read from the cookies to override as this
  * persists state across page reloads
+ *
+ * Cookie names fall back to the I18nConfig singleton so custom names passed
+ * to initializeGT() apply here without being threaded through provider props
  */
 export function createOrUpdateBrowserConditionStore(
   config: CreateBrowserConditionStoreParams
 ) {
-  const locale = determineLocale(config);
-  const region = determineRegion(config);
-  const enableI18n = determineEnableI18n(config);
+  const i18nConfig = getI18nConfig();
+  const localeCookieName =
+    config.localeCookieName ?? i18nConfig.getLocaleCookieName();
+  const regionCookieName =
+    config.regionCookieName ?? i18nConfig.getRegionCookieName();
+  const enableI18nCookieName =
+    config.enableI18nCookieName ?? i18nConfig.getEnableI18nCookieName();
+
+  const locale = determineLocale(config, localeCookieName);
+  const region = determineRegion(config, regionCookieName);
+  const enableI18n = determineEnableI18n(config, enableI18nCookieName);
 
   if (isBrowserConditionStoreInitialized()) {
     // This represents an update from server
@@ -58,9 +64,9 @@ export function createOrUpdateBrowserConditionStore(
 
   const conditionStore = new BrowserConditionStore({
     ...config,
-    localeCookieName: defaultLocaleCookieName,
-    regionCookieName: defaultRegionCookieName,
-    enableI18nCookieName: defaultEnableI18nCookieName,
+    localeCookieName,
+    regionCookieName,
+    enableI18nCookieName,
     locale,
     region,
     enableI18n,
@@ -69,11 +75,10 @@ export function createOrUpdateBrowserConditionStore(
   return conditionStore;
 }
 
-function determineLocale({
-  localeCookieName = defaultLocaleCookieName,
-  _getLocale: getLocale,
-  locale,
-}: CreateBrowserConditionStoreParams): string {
+function determineLocale(
+  { _getLocale: getLocale, locale }: CreateBrowserConditionStoreParams,
+  localeCookieName: string
+): string {
   const candidates = [];
   if (locale) {
     candidates.push(...(Array.isArray(locale) ? locale : [locale]));
@@ -83,22 +88,23 @@ function determineLocale({
   return getI18nConfig().resolveSupportedLocale(candidates);
 }
 
-function determineRegion({
-  regionCookieName = defaultRegionCookieName,
-  _getRegion: getRegion,
-  region,
-}: CreateBrowserConditionStoreParams): string | undefined {
+function determineRegion(
+  { _getRegion: getRegion, region }: CreateBrowserConditionStoreParams,
+  regionCookieName: string
+): string | undefined {
   const cookieRegion = getCookieValue({
     cookieName: regionCookieName,
   });
   return cookieRegion || getRegion?.() || region;
 }
 
-function determineEnableI18n({
-  enableI18n,
-  enableI18nCookieName = defaultEnableI18nCookieName,
-  _getEnableI18n: getEnableI18n,
-}: CreateBrowserConditionStoreParams): boolean {
+function determineEnableI18n(
+  {
+    enableI18n,
+    _getEnableI18n: getEnableI18n,
+  }: CreateBrowserConditionStoreParams,
+  enableI18nCookieName: string
+): boolean {
   const cookieEnableI18n = getCookieValue({
     cookieName: enableI18nCookieName,
   });

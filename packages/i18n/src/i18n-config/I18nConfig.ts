@@ -5,6 +5,11 @@ import {
 import type { CustomMapping } from '@generaltranslation/format/types';
 import { GT } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from '../config/cookie-names';
 import type { GTConfig } from '../config/types';
 import {
   getLoadTranslationsType,
@@ -28,6 +33,9 @@ export type I18nConfigParams = Pick<
   | 'cacheUrl'
   | 'runtimeUrl'
   | '_disableDevHotReload'
+  | 'localeCookieName'
+  | 'regionCookieName'
+  | 'enableI18nCookieName'
 >;
 
 type RuntimeConfig = Pick<
@@ -35,10 +43,16 @@ type RuntimeConfig = Pick<
   'projectId' | 'devApiKey' | 'apiKey' | 'runtimeUrl' | '_disableDevHotReload'
 >;
 
+type CookieConfig = Pick<
+  I18nConfigParams,
+  'localeCookieName' | 'regionCookieName' | 'enableI18nCookieName'
+>;
+
 export type LocaleCandidates = string | string[] | undefined;
 
 export class I18nConfig extends LocaleConfig {
   private runtimeConfig: RuntimeConfig;
+  private cookieConfig: CookieConfig;
   private gtServicesEnabled: boolean;
 
   constructor(params: I18nConfigParams = {}) {
@@ -50,6 +64,11 @@ export class I18nConfig extends LocaleConfig {
       apiKey: params.apiKey,
       runtimeUrl: params.runtimeUrl,
       _disableDevHotReload: params._disableDevHotReload,
+    };
+    this.cookieConfig = {
+      localeCookieName: params.localeCookieName,
+      regionCookieName: params.regionCookieName,
+      enableI18nCookieName: params.enableI18nCookieName,
     };
     this.gtServicesEnabled = gtServicesEnabled;
   }
@@ -68,6 +87,20 @@ export class I18nConfig extends LocaleConfig {
 
   getProjectId(): string | undefined {
     return this.runtimeConfig.projectId;
+  }
+
+  getLocaleCookieName(): string {
+    return this.cookieConfig.localeCookieName ?? defaultLocaleCookieName;
+  }
+
+  getRegionCookieName(): string {
+    return this.cookieConfig.regionCookieName ?? defaultRegionCookieName;
+  }
+
+  getEnableI18nCookieName(): string {
+    return (
+      this.cookieConfig.enableI18nCookieName ?? defaultEnableI18nCookieName
+    );
   }
 
   /**

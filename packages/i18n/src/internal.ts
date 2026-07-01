@@ -68,6 +68,11 @@ export {
 } from './i18n-config/singleton-operations';
 export { I18nConfig } from './i18n-config/I18nConfig';
 export type { I18nConfigParams } from './i18n-config/I18nConfig';
+export {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from './config/cookie-names';
 export { createConditionStoreSingleton } from './condition-store/createConditionStoreSingleton';
 export { createGlobalSingleton } from './globals/createGlobalSingleton';
 export type { GlobalSingleton } from './globals/createGlobalSingleton';

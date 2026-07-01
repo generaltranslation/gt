@@ -7,12 +7,7 @@ import {
   LocaleCandidates,
   WritableConditionStoreInterface,
 } from 'gt-i18n/internal/types';
-import {
-  defaultEnableI18nCookieName,
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
-  defaultResetLocaleCookieName,
-} from '../cookie-names';
+import { defaultResetLocaleCookieName } from '../cookie-names';
 
 type SerializedBrowserConditionStoreState = {
   locale: string;
@@ -56,10 +51,12 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     this.customGetLocale = config._getLocale;
     this.customGetRegion = config._getRegion;
     this.customGetEnableI18n = config._getEnableI18n;
-    this.localeCookieName = config.localeCookieName ?? defaultLocaleCookieName;
-    this.regionCookieName = config.regionCookieName ?? defaultRegionCookieName;
+    this.localeCookieName =
+      config.localeCookieName ?? getI18nConfig().getLocaleCookieName();
+    this.regionCookieName =
+      config.regionCookieName ?? getI18nConfig().getRegionCookieName();
     this.enableI18nCookieName =
-      config.enableI18nCookieName ?? defaultEnableI18nCookieName;
+      config.enableI18nCookieName ?? getI18nConfig().getEnableI18nCookieName();
     setCookieValue({
       cookieName: this.localeCookieName,
       value: getI18nConfig().resolveSupportedLocale(config.locale),
