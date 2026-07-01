@@ -1,6 +1,6 @@
 import { type I18nConfigParams } from 'gt-i18n/internal';
 import { type NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
-import { loadTranslations } from '../config-dir/loadTranslation';
+import { resolveTranslationLoader } from '../resolvers/resolveTranslationLoader';
 import { getRuntimeCredentials } from './runtimeCredentials';
 
 export type NextSetupI18nConfigParams = I18nConfigParams & {
@@ -43,6 +43,7 @@ export function getParams(): {
     projectId,
     runtimeUrl: publicConfig.runtimeUrl,
     cacheUrl: privateConfig.cacheUrl,
+    _versionId: privateConfig._versionId,
     cacheExpiryTime: privateConfig.cacheExpiryTime,
     // batching config
     batchConfig: {
@@ -63,11 +64,7 @@ export function getParams(): {
       },
     },
     // loader
-    loadTranslations: createLoadTranslations({
-      cacheUrl: privateConfig.cacheUrl,
-      projectId,
-      _versionId: privateConfig._versionId,
-    }),
+    loadTranslations: createLoadTranslations(),
   };
 
   return {
@@ -76,24 +73,7 @@ export function getParams(): {
   };
 }
 
-function createLoadTranslations({
-  cacheUrl,
-  projectId,
-  _versionId,
-}: {
-  cacheUrl: string | null | undefined;
-  projectId: string | undefined;
-  _versionId: string | undefined;
-}) {
+function createLoadTranslations() {
   if (typeof window !== 'undefined') return;
-  return async (locale: string) => {
-    return (
-      (await loadTranslations({
-        targetLocale: locale,
-        ...(cacheUrl && { cacheUrl }),
-        ...(projectId && { projectId }),
-        ...(_versionId && { _versionId }),
-      })) || {}
-    );
-  };
+  return resolveTranslationLoader();
 }
