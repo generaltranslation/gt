@@ -29,8 +29,11 @@ export function initializeGT(
     nextI18nCacheParams,
   });
 
-  const asyncConditionStoreParams = getAsyncConditionStoreParams();
+  initializeAsyncConditionStore();
+}
 
+export function initializeAsyncConditionStore(): void {
+  const asyncConditionStoreParams = getAsyncConditionStoreParams();
   // Note that this gets used by RSC, but SSR (aka 'use client' bondary on server)
   // uses context to access this condition store
   const conditionStore = new AsyncConditionStore(asyncConditionStoreParams);
