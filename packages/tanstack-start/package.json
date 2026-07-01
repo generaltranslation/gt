@@ -62,31 +62,6 @@
         "default": "./dist/index.mjs"
       },
       "default": "./dist/index.mjs"
-    },
-    "./types": {
-      "require": {
-        "types": "./dist/types.d.cts",
-        "default": "./dist/types.cjs"
-      },
-      "import": {
-        "types": "./dist/types.d.mts",
-        "default": "./dist/types.mjs"
-      }
-    }
-  },
-  "typesVersions": {
-    "*": {
-      "types": [
-        "./dist/types.d.cts"
-      ]
-    }
-  },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "gt-tanstack-start/types": [
-        "./dist/types.d.cts"
-      ]
     }
   },
   "keywords": [
