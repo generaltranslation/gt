@@ -24,8 +24,10 @@ export {
   useVersionId,
 } from './hooks/utils';
 export { useInternalLocaleSelector } from './hooks/useInternalLocaleSelector';
+export type { InternalLocaleSelectorResult } from './hooks/useInternalLocaleSelector';
 export { useInternalRegionSelector } from './hooks/useInternalRegionSelector';
 export type {
   InternalRegionSelectorOptions,
+  InternalRegionSelectorResult,
   RegionData,
 } from './hooks/useInternalRegionSelector';
