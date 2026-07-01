@@ -2,8 +2,17 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { initializeGT } from '../../setup/initializeGT';
 import { getRequestLocale } from '../getRequestLocale';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 describe('getLocale', () => {
   beforeEach(() => {
+    resetGTGlobals();
     initializeGT({
       defaultLocale: 'en-US',
       locales: ['en-US', 'es', 'fr', 'ja'],
@@ -53,6 +62,7 @@ describe('getLocale', () => {
   });
 
   it('resolves custom mapped request locales', () => {
+    resetGTGlobals();
     initializeGT({
       defaultLocale: 'en-US',
       locales: ['en-US', 'fr', 'brand-french'],
