@@ -67,6 +67,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 - Prefer `const` over `let`. Never `var`.
 - Test files: `*.test.ts` / `*.spec.ts` using Vitest.
 - Build outputs go to `dist/`. Change source files and rebuild instead of editing `dist/` directly.
+- In package directories, top-level `src` files are reserved for package entrypoints consumed through `package.json` exports, bin entries, or documented subpaths. Put all non-entrypoint implementation logic inside a `src` subdirectory; do not add loose top-level `src/*.ts` or `src/*.tsx` modules for helpers, config, or runtime logic.
 - Do not use default exports.
 - Avoid `useEffect` in React code. Prefer derived state, event handlers, refs, or framework data-loading patterns; only use `useEffect` when synchronizing with an external system.
 
