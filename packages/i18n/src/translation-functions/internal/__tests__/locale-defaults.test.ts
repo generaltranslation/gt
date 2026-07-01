@@ -12,8 +12,26 @@ import { getTranslations } from '../getTranslations';
 import { getMessages } from '../getMessages';
 import { tx, txInternal } from '../tx';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: {
+    i18n?: {
+      i18nCache?: unknown;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+};
+
+function resetI18nCacheGlobal() {
+  const globalObj = globalThis as TestGlobal;
+  if (globalObj.__generaltranslation?.i18n) {
+    Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nCache');
+  }
+}
+
 describe('translation function locale defaults', () => {
   afterEach(() => {
+    resetI18nCacheGlobal();
     setWritableConditionStore(createConditionStore('en'));
     vi.unstubAllEnvs();
   });

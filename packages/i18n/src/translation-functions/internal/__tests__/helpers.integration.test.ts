@@ -9,6 +9,23 @@ import {
   resolveJsxWithRuntimeFallback,
 } from '../helpers';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: {
+    i18n?: {
+      i18nCache?: unknown;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+};
+
+function resetI18nCacheGlobal() {
+  const globalObj = globalThis as TestGlobal;
+  if (globalObj.__generaltranslation?.i18n) {
+    Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nCache');
+  }
+}
+
 // Mock createTranslateManyFactory to inject controlled translateMany
 const mockTranslateMany = vi.fn();
 vi.mock(
@@ -28,6 +45,7 @@ describe('translation helpers (deep integration)', () => {
   });
 
   afterEach(() => {
+    resetI18nCacheGlobal();
     vi.useRealTimers();
   });
 

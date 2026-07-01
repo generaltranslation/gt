@@ -14,6 +14,23 @@ import {
 import { hashMessage } from '../../utils/hashMessage';
 import { t } from '../t';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: {
+    i18n?: {
+      i18nCache?: unknown;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+};
+
+function resetI18nCacheGlobal() {
+  const globalObj = globalThis as TestGlobal;
+  if (globalObj.__generaltranslation?.i18n) {
+    Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nCache');
+  }
+}
+
 describe('t', () => {
   function createCache(
     i18nConfig: I18nConfigParams,
@@ -24,6 +41,7 @@ describe('t', () => {
   }
 
   afterEach(() => {
+    resetI18nCacheGlobal();
     setWritableConditionStore({ getLocale: () => 'en' });
   });
 
