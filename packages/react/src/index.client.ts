@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import type { TxProps } from './TxProps';
+import type { TxProps } from './utils/TxProps';
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { initializeGTSRAClient as initializeGT } from './setup/initializeGTSRAClient';

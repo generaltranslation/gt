@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import type { TxProps } from './TxProps';
+import type { TxProps } from './utils/TxProps';
 
 // SSR/context-capable React runtime surface. This entrypoint may import hooks,
 // providers, and context modules, so it must be consumed as a client boundary by
