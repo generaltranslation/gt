@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { initializeGT } from './setup/initGT.rsc';
+import { initializeGTServer } from './setup/initGT.server';
 import type {
   GetServerSideProps,
   GetServerSidePropsContext,
@@ -9,7 +9,7 @@ import type {
 import type { ParsedUrlQuery } from 'querystring';
 import { getTranslationsSnapshotRscError } from './errors/createErrors';
 import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
-initializeGT();
+initializeGTServer();
 
 // ===== Components ===== //
 export { Branch } from './branches/Branch';

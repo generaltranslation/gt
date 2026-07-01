@@ -44,8 +44,8 @@ vi.mock('../request/getRequestConditions', () => ({
 
 vi.mock('server-only', () => ({}));
 
-vi.mock('../setup/initGT.rsc', () => ({
-  initializeGT: vi.fn(),
+vi.mock('../setup/initGT.server', () => ({
+  initializeGTServer: vi.fn(),
 }));
 
 vi.mock('../setup/initGT', () => ({
@@ -143,10 +143,10 @@ describe('rsc component wrappers', () => {
   });
 
   it('initializes GT from the server entrypoint', async () => {
-    const { initializeGT } = await import('../setup/initGT.rsc');
+    const { initializeGTServer } = await import('../setup/initGT.server');
 
     await import('../server');
 
-    expect(initializeGT).toHaveBeenCalledOnce();
+    expect(initializeGTServer).toHaveBeenCalledOnce();
   });
 });

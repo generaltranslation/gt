@@ -8,7 +8,7 @@ import {
   defaultRegionCookieName,
 } from '@generaltranslation/react-core/cookies';
 import { createConditionStoreSingleton } from 'gt-i18n/internal';
-import { localeStore } from '../request/localeStore';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 export type AsyncConditionStoreParams = {
   getLocale?: () => Promise<string>;
@@ -37,6 +37,7 @@ export class AsyncConditionStore implements AsyncReadonlyConditionStoreInterface
   private getLocaleFn: () => Promise<string>;
   private getRegionFn: () => Promise<string | undefined>;
   private enableI18n: boolean;
+  private localeStore: AsyncLocalStorage<string>;
 
   constructor({
     getLocale,
@@ -47,6 +48,7 @@ export class AsyncConditionStore implements AsyncReadonlyConditionStoreInterface
     regionCookieName = defaultRegionCookieName,
     ignorePreferredLanguages = false,
   }: AsyncConditionStoreParams) {
+    this.localeStore = new AsyncLocalStorage<string>();
     this.getLocaleFn =
       getLocale ??
       createDefaultGetLocale({
@@ -61,7 +63,7 @@ export class AsyncConditionStore implements AsyncReadonlyConditionStoreInterface
 
   async getLocale() {
     // If a locale has been registered for this request, return it
-    const registeredLocale = localeStore.getStore();
+    const registeredLocale = this.localeStore.getStore();
     if (registeredLocale) return registeredLocale;
 
     return await this.getLocaleFn();
@@ -74,6 +76,10 @@ export class AsyncConditionStore implements AsyncReadonlyConditionStoreInterface
   async getEnableI18n(): Promise<boolean> {
     // Technically does not need async, but good for parity
     return this.enableI18n;
+  }
+
+  enterWith(locale: string) {
+    this.localeStore.enterWith(locale);
   }
 }
 

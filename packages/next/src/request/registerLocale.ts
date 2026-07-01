@@ -1,5 +1,5 @@
 import { getI18nConfig } from 'gt-i18n/internal';
-import { localeStore } from './localeStore';
+import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
 
 /**
  * Set the locale for the current request context.
@@ -10,5 +10,5 @@ import { localeStore } from './localeStore';
  */
 export function registerLocale(locale: string): void {
   const gt = getI18nConfig().getGTClass();
-  localeStore.enterWith(gt.resolveAliasLocale(locale));
+  getAsyncConditionStore().enterWith(gt.resolveAliasLocale(locale));
 }

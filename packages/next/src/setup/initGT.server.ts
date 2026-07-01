@@ -14,8 +14,17 @@ import {
 
 /**
  * Initialize GT for Next.js
+ *
+ * Something to note is that even though we initialize the
+ * AsyncConditionStore on the server SSR logic is actually
+ * bound to the ReadonlyConditionStore from ServerGTProvider.
+ *
+ * While technically, this could risk a divergence in locale state,
+ * the ReadonlyConditionStore is tied to the getLocale() function
+ * in the RSC GTProvider, so ReadonlyConditionStore always reads from
+ * the AsyncConditionStore.
  */
-export function initializeGT(
+export function initializeGTServer(
   {
     i18nConfigParams,
     nextI18nCacheParams,

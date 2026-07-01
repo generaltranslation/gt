@@ -22,6 +22,12 @@ import {
   defaultReferrerLocaleCookieName,
 } from './cookies';
 
+/**
+ * Unlike index.server.ts, we do not need to initalize
+ * AsyncConditionStore here even though this can be called
+ * during SSR. This is because this file is only consumed
+ * by index.rsc.ts which already initializes the AsyncConditionStore.
+ */
 initializeGTClient();
 
 /**
