@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.51-odysseus.5
+
+### Patch Changes
+
+- 4a5f8e8: Remove unused internal exports and dead utility code.
+
 ## 2.14.51-odysseus.4
 
 ### Patch Changes

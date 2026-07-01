@@ -1,5 +1,24 @@
 # @generaltranslation/react-core
 
+## 11.0.0-odysseus.10
+
+### Patch Changes
+
+- bcba6fd: Fix `useVersionId()` throwing and `useLocaleDirection()` requiring a locale argument in the client and server entrypoints.
+
+  `useVersionId()` now returns the current version id (instead of throwing the react-core "not implemented" error), and `useLocaleDirection()` once again accepts an optional locale that defaults to the current locale. The shared implementation now lives in `@generaltranslation/react-core/hooks`, so `gt-react` and `gt-react-native` use the same behavior; the RSC entrypoint keeps its stricter signatures.
+
+- b7b3eaf: Share render pipeline child renderers with prepared translation rendering.
+- dfb5fc9: Add portable selector hook return types for React Native declarations.
+- 4a5f8e8: Remove unused internal exports and dead utility code.
+- 288c9f8: Remove the deprecated `internalInitializeGTSPA` export from `@generaltranslation/react-core/pure` and the downstream `gt-react` server/types surfaces. Use `initializeGTSPA` from `gt-react` for browser SPA initialization.
+- Updated dependencies [432fa49]
+- Updated dependencies [432fa49]
+- Updated dependencies [933916e]
+- Updated dependencies [4a5f8e8]
+- Updated dependencies [083d306]
+  - gt-i18n@1.0.0-odysseus.5
+
 ## 11.0.0-odysseus.9
 
 ## 11.0.0-odysseus.8
