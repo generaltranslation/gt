@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { getParams } from './shared';
 import type { NextSetupI18nConfigParams } from './shared';
 import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
@@ -11,6 +12,9 @@ import {
   customGetLocaleUnresolvedWarning,
   customGetRegionUnresolvedWarning,
 } from '../errors/createErrors';
+
+// @ts-expect-error: import.meta.url is valid in the emitted ESM entrypoint.
+const serverRequire = createRequire(import.meta.url);
 
 /**
  * Initialize GT for Next.js
@@ -64,7 +68,7 @@ function resolveGetLocale(): (() => Promise<string>) | undefined {
   const isCustomGetLocaleEnabled =
     process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true';
   if (!isCustomGetLocaleEnabled) return undefined;
-  const module: unknown = require('gt-next/internal/_getLocale');
+  const module: unknown = serverRequire('gt-next/internal/_getLocale');
 
   if (typeof module === 'function') {
     return module as () => Promise<string>;
@@ -85,7 +89,7 @@ function resolveGetRegion(): (() => Promise<string | undefined>) | undefined {
   const isCustomGetRegionEnabled =
     process.env._GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED === 'true';
   if (!isCustomGetRegionEnabled) return undefined;
-  const module: unknown = require('gt-next/internal/_getRegion');
+  const module: unknown = serverRequire('gt-next/internal/_getRegion');
 
   if (typeof module === 'function') {
     return module as () => Promise<string | undefined>;
