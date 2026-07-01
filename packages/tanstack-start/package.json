@@ -64,7 +64,14 @@
       "default": "./dist/index.mjs"
     },
     "./types": {
-      "types": "./dist/types.d.cts"
+      "require": {
+        "types": "./dist/types.d.cts",
+        "default": "./dist/types.cjs"
+      },
+      "import": {
+        "types": "./dist/types.d.mts",
+        "default": "./dist/types.mjs"
+      }
     }
   },
   "typesVersions": {
