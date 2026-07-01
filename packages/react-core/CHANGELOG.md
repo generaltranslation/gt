@@ -1,5 +1,7 @@
 # @generaltranslation/react-core
 
+## 11.0.0-odysseus.11
+
 ## 11.0.0-odysseus.10
 
 ### Patch Changes

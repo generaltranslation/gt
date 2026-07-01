@@ -1,5 +1,11 @@
 # @generaltranslation/compiler
 
+## 1.3.25-odysseus.6
+
+### Patch Changes
+
+- c34cab3: Preserve `$format` in compiler-injected `getGT` and `useGT` preload metadata so preloaded runtime lookups use the same hash format as the original translation call.
+
 ## 1.3.25-odysseus.5
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # gt-tanstack-start
 
+## 11.0.0-odysseus.11
+
+### Patch Changes
+
+- @generaltranslation/react-core@11.0.0-odysseus.11
+- gt-react@11.0.0-odysseus.11
+
 ## 11.0.0-odysseus.10
 
 ### Patch Changes
