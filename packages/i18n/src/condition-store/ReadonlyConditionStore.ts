@@ -18,9 +18,7 @@ export class ReadonlyConditionStore implements ReadonlyConditionStoreContract {
     region,
     enableI18n = true,
   }: ReadonlyConditionStoreParams) {
-    const i18nConfig = getI18nConfig();
-    this.locale =
-      i18nConfig.determineLocale(locale) || i18nConfig.getDefaultLocale();
+    this.locale = getI18nConfig().resolveSupportedLocale(locale);
     this.region = region;
     this.enableI18n = enableI18n;
   }
