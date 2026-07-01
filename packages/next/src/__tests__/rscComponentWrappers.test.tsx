@@ -141,4 +141,12 @@ describe('rsc component wrappers', () => {
     expect(module.useDefaultLocale).toBeTypeOf('function');
     expect(module.useVersionId).toBeTypeOf('function');
   });
+
+  it('initializes GT from the server entrypoint', async () => {
+    const { initializeGT } = await import('../setup/initGT.rsc');
+
+    await import('../server');
+
+    expect(initializeGT).toHaveBeenCalledOnce();
+  });
 });

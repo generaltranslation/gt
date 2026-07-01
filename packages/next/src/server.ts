@@ -1,5 +1,9 @@
 import 'server-only';
 
+import { initializeGT } from './setup/initGT.rsc';
+
+initializeGT();
+
 /**
  * Rule: have to throw an error if called in a "use client" context
  */
