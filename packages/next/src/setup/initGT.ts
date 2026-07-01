@@ -1,6 +1,5 @@
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import {
-  hasNextI18nCache,
   NextI18nCache,
   NextI18nCacheParams,
   setNextI18nCache,
@@ -20,10 +19,6 @@ export function initializeGT(
   } = getParams()
 ): void {
   initializeI18nConfig(i18nConfigParams);
-
-  if (hasNextI18nCache()) {
-    return;
-  }
 
   const i18nCache = new NextI18nCache(nextI18nCacheParams);
   setNextI18nCache(i18nCache);

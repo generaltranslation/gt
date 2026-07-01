@@ -39,7 +39,11 @@ export function getI18nCache<U extends Translation = Translation>():
  * Note: should not be consumed by gt-react, consumers should use a wrapper
  */
 export function setI18nCache<TranslationValue extends Translation>(
-  i18nCacheInstance: I18nCache<TranslationValue>
+  i18nCacheInstance: I18nCache<TranslationValue>,
+  options?: { overwrite?: boolean }
 ): void {
+  if (options?.overwrite === false && i18nCacheSingleton.isInitialized()) {
+    return;
+  }
   i18nCacheSingleton.set(i18nCacheInstance as unknown as I18nCache);
 }
