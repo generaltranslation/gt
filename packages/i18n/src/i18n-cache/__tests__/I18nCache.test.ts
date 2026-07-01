@@ -1260,16 +1260,18 @@ describe('I18nCache', () => {
     }
   });
 
-  it('emits translations-cache-miss when a runtime translation resolves', async () => {
+  it('notifies onTranslationsCacheMiss when a runtime translation resolves', async () => {
     const unknownMessage = 'Unknown message';
     const unknownOptions: LookupOptions = { $format: 'ICU' };
     const unknownHash = hashMessage(unknownMessage, unknownOptions);
 
     const cache = createCache({ runtimeTranslation: {} });
     const onTranslationsCacheMiss = vi.fn();
-    cache.subscribe('translations-cache-miss', onTranslationsCacheMiss);
-    // @ts-expect-error Removed cache events should not be accepted.
-    cache.subscribe('dictionary-cache-hit', vi.fn());
+    (
+      cache as unknown as {
+        onTranslationsCacheMiss?: typeof onTranslationsCacheMiss;
+      }
+    ).onTranslationsCacheMiss = onTranslationsCacheMiss;
 
     mockTranslateMany.mockResolvedValue({
       [unknownHash]: {

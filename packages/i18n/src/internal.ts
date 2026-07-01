@@ -29,7 +29,6 @@ export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyCon
 export { WritableConditionStore } from './condition-store/WritableConditionStore';
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
 export type { LocaleCandidates } from './i18n-config/I18nConfig';
-export { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './i18n-cache/event-subscription/types';
 export { getI18nCache, setI18nCache } from './i18n-cache/singleton-operations';
 export { interpolateIcuMessage } from './translation-functions/utils/interpolation/interpolateIcuMessage';
 export {
