@@ -89,14 +89,7 @@ function renderLink(
   { href, locale, ...props }: ResolvedLinkProps,
   ref: ForwardedRef<LinkRef>
 ) {
-  return (
-    <NextLink
-      {...props}
-      href={localizeHref(href, locale)}
-      locale={false}
-      ref={ref}
-    />
-  );
+  return <NextLink {...props} href={localizeHref(href, locale)} ref={ref} />;
 }
 
 function localizeHref(href: LinkHref, locale: LinkProps['locale']): LinkHref {
