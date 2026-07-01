@@ -1,13 +1,13 @@
-import { createRenderDefaultChildren } from './renderDefaultChildren.shared';
-import { createRenderTranslatedChildren } from './renderTranslatedChildren.shared';
+import type { RenderDefaultChildrenArgs } from './renderDefaultChildren.shared';
+import type { RenderTranslatedChildrenArgs } from './renderTranslatedChildren.shared';
 import type { JsxChildren } from 'generaltranslation/types';
 import type { ReactNode } from 'react';
-import type { RenderVariable, TaggedChildren } from '../types';
+import type { TaggedChildren } from '../types';
 
-// Shared rendering logic. The variable renderer is injected through a factory
-// so the RSC code path never statically imports the hook-based variable
-// components. This module must stay free of hook/context imports so it can be
-// reached from the components-rsc entrypoint.
+// Shared rendering logic. The child renderers are injected so the RSC code path
+// never statically imports the hook-based variable components, and so the
+// pipeline can build them once and share them. This module must stay free of
+// hook/context imports so it can be reached from the components-rsc entrypoint.
 
 type RenderPreparedTParams = {
   taggedSourceChildren: TaggedChildren;
@@ -19,15 +19,12 @@ type RenderPreparedTParams = {
 };
 
 function createRenderPreparedT({
-  renderVariable,
+  renderDefaultChildren,
+  renderTranslatedChildren,
 }: {
-  renderVariable: RenderVariable;
+  renderDefaultChildren: (args: RenderDefaultChildrenArgs) => ReactNode;
+  renderTranslatedChildren: (args: RenderTranslatedChildrenArgs) => ReactNode;
 }): (args: RenderPreparedTParams) => ReactNode {
-  const renderDefaultChildren = createRenderDefaultChildren({ renderVariable });
-  const renderTranslatedChildren = createRenderTranslatedChildren({
-    renderVariable,
-  });
-
   function renderPreparedT({
     taggedSourceChildren,
     targetJsxChildren,
