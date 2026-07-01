@@ -1,9 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
 
 describe('react i18n config', () => {
   beforeEach(() => {
+    resetGTGlobals();
     vi.resetModules();
   });
+
+  afterEach(resetGTGlobals);
 
   it('stores render strategy on the I18nConfig singleton', async () => {
     const { getI18nConfig: getBaseI18nConfig } =

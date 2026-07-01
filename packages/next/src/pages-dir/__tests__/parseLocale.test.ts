@@ -3,6 +3,14 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { parseLocale } from '../parseLocale';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 const localeConfig = {
   defaultLocale: 'en',
   locales: ['en', 'fr', 'es', 'brand-french'],
@@ -31,6 +39,7 @@ function createContext({
 
 describe('parseLocale', () => {
   beforeEach(() => {
+    resetGTGlobals();
     initializeI18nConfig(localeConfig);
     delete process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
   });

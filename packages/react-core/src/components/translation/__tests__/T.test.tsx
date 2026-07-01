@@ -4,6 +4,14 @@ import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
 import { RscT } from '../T.rsc';
 import type { ReactI18nCache } from '../../../i18n-cache/ReactI18nCache';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 const getLookupTranslation = vi.fn();
 
 function setup() {
@@ -18,6 +26,7 @@ function setup() {
 
 describe('RscT', () => {
   beforeEach(() => {
+    resetGTGlobals();
     vi.clearAllMocks();
     setup();
   });

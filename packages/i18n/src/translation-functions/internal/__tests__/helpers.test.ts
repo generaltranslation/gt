@@ -8,11 +8,20 @@ import { initializeI18nConfig } from '../../../i18n-config/singleton-operations'
 import { getI18nCache } from '../../../i18n-cache/singleton-operations';
 import { interpolateMessage } from '../../utils/interpolation/interpolateMessage';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 vi.mock('../../../i18n-cache/singleton-operations');
 vi.mock('../../utils/interpolation/interpolateMessage');
 
 describe('translation helpers', () => {
   beforeEach(() => {
+    resetGTGlobals();
     vi.clearAllMocks();
     initializeI18nConfig({ defaultLocale: 'en' });
     vi.mocked(interpolateMessage).mockReturnValue('interpolated-result');

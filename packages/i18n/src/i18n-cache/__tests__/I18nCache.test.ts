@@ -21,6 +21,14 @@ const lookupOptions: LookupOptions = {
 const expectedHash = hashMessage(message, lookupOptions);
 const translatedString = 'Bonjour {name} !';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 function createCache(overrides: Record<string, unknown> = {}) {
   const {
     defaultLocale = 'en',
@@ -28,6 +36,7 @@ function createCache(overrides: Record<string, unknown> = {}) {
     customMapping,
     ...cacheOverrides
   } = overrides;
+  resetGTGlobals();
   initializeI18nConfig({
     defaultLocale: defaultLocale as string,
     locales: locales as string[],
@@ -44,6 +53,7 @@ function createCache(overrides: Record<string, unknown> = {}) {
 
 describe('I18nCache', () => {
   beforeEach(() => {
+    resetGTGlobals();
     initializeI18nConfig({
       defaultLocale: 'en',
       locales: ['en', 'fr', 'es'],
@@ -53,6 +63,7 @@ describe('I18nCache', () => {
   });
 
   afterEach(() => {
+    resetGTGlobals();
     vi.useRealTimers();
     vi.unstubAllEnvs();
   });

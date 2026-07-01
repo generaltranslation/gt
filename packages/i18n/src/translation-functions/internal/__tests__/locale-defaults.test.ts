@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nCache } from '../../../i18n-cache/I18nCache';
 import type { I18nCacheConstructorParams } from '../../../i18n-cache/types';
 import { setI18nCache } from '../../../i18n-cache/singleton-operations';
@@ -13,26 +13,18 @@ import { getMessages } from '../getMessages';
 import { tx, txInternal } from '../tx';
 
 type TestGlobal = typeof globalThis & {
-  __generaltranslation?: {
-    i18n?: {
-      i18nCache?: unknown;
-      [key: string]: unknown;
-    };
-    [key: string]: unknown;
-  };
+  __generaltranslation?: unknown;
 };
 
-function resetI18nCacheGlobal() {
-  const globalObj = globalThis as TestGlobal;
-  if (globalObj.__generaltranslation?.i18n) {
-    Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nCache');
-  }
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
 }
 
 describe('translation function locale defaults', () => {
+  beforeEach(resetGTGlobals);
+
   afterEach(() => {
-    resetI18nCacheGlobal();
-    setWritableConditionStore(createConditionStore('en'));
+    resetGTGlobals();
     vi.unstubAllEnvs();
   });
 

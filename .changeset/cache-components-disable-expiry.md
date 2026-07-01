@@ -7,4 +7,4 @@ Use Next.js caching semantics for Cache Components by disabling GT cache expiry 
 
 Async translation and dictionary lookup boundaries now keep synchronous access to the loaded snapshot, so APIs like `getGT` and `getTranslations` can still resolve strings after cache expiry is delegated to Next.js.
 
-The global i18n cache singleton now preserves the first initialized cache instead of replacing it on later initialization attempts.
+Global singleton setup now preserves the first initialized instance instead of replacing it on later initialization attempts.

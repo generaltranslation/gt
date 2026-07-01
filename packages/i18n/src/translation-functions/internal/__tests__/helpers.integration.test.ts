@@ -10,20 +10,11 @@ import {
 } from '../helpers';
 
 type TestGlobal = typeof globalThis & {
-  __generaltranslation?: {
-    i18n?: {
-      i18nCache?: unknown;
-      [key: string]: unknown;
-    };
-    [key: string]: unknown;
-  };
+  __generaltranslation?: unknown;
 };
 
-function resetI18nCacheGlobal() {
-  const globalObj = globalThis as TestGlobal;
-  if (globalObj.__generaltranslation?.i18n) {
-    Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nCache');
-  }
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
 }
 
 // Mock createTranslateManyFactory to inject controlled translateMany
@@ -39,13 +30,14 @@ vi.mock(
 
 describe('translation helpers (deep integration)', () => {
   beforeEach(() => {
+    resetGTGlobals();
     vi.useFakeTimers();
     vi.clearAllMocks();
     mockTranslateMany.mockReset();
   });
 
   afterEach(() => {
-    resetI18nCacheGlobal();
+    resetGTGlobals();
     vi.useRealTimers();
   });
 
