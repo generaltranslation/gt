@@ -30,6 +30,15 @@ describe('gt-next package exports', () => {
 
   const distIt = existsSync(distInitGTServerPath) ? it : it.skip;
 
+  distIt('keeps custom request functions visible to bundler aliases', () => {
+    const serverBuild = readFileSync(distInitGTServerPath, 'utf8');
+
+    expect(serverBuild).toContain('gt-next/internal/_getLocale');
+    expect(serverBuild).toContain('gt-next/internal/_getRegion');
+    expect(serverBuild).not.toContain('createRequire');
+    expect(serverBuild).not.toContain('serverRequire');
+  });
+
   distIt('initializes custom resolvers from the ESM server build', () => {
     const script = `
       import { initializeGTServer } from ${JSON.stringify(

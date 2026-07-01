@@ -8,4 +8,4 @@ Previously `gt-next` was published as CJS only (no `import` condition), so bundl
 
 `gt-next` now emits unbundled `.mjs` output alongside the existing `.js` output, and every `exports` subpath exposes an `import` condition. Bundlers now resolve the gt graph as ESM, enabling tree-shaking across all gt packages. Measured on a real Next.js app, this cuts gt's total client bundle by ~19% gzip (≈96 kB → ≈78 kB) with no API changes.
 
-The ESM build sets `polyfillRequire: false` so rolldown does not inject a package-wide `createRequire`-from-`node:module` shim, uses an explicit server-only `createRequire(import.meta.url)` for custom request function loading, and marks the `index.rsc`/`index.client` entrypoints as having side effects so their top-level initialization is not tree-shaken away.
+The ESM build sets `polyfillRequire: false` so rolldown does not inject a package-wide `createRequire`-from-`node:module` shim, keeps custom request function imports visible to bundler aliases, and marks the `index.rsc`/`index.client` entrypoints as having side effects so their top-level initialization is not tree-shaken away.
