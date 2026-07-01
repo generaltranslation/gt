@@ -60,6 +60,7 @@ vi.mock('gt-react', () => mockComponents);
 
 describe('rsc component wrappers', () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
     mockGetRequestConditions.mockResolvedValue({
       _locale: 'fr',
