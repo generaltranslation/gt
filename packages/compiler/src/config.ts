@@ -7,18 +7,24 @@ export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug';
 /**
  * The only relevant parts of the GT config that we are concerned with
  */
-type GTConfig = {
+export type GTConfigParsingFlags = {
+  enableAutoJsxInjection?: boolean;
+  autoderive?: boolean | { jsx?: boolean; strings?: boolean };
+  legacyGtReactImportSource?: boolean;
+  /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
+  devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
+  [key: string]: unknown;
+};
+
+export type GTConfig = {
   files?: {
+    [key: string]: unknown;
     gt?: {
-      parsingFlags?: {
-        enableAutoJsxInjection?: boolean;
-        autoderive?: boolean | { jsx?: boolean; strings?: boolean };
-        legacyGtReactImportSource?: boolean;
-        /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
-        devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
-      };
+      parsingFlags?: GTConfigParsingFlags;
+      [key: string]: unknown;
     };
   };
+  [key: string]: unknown;
 };
 
 /**
