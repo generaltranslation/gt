@@ -42,6 +42,13 @@
 - Updated dependencies [[`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575)]:
   - gt@2.14.51-odysseus.0
 
+## 1.0.191
+
+### Patch Changes
+
+- Updated dependencies [[`dd0d1cd`](https://github.com/generaltranslation/gt/commit/dd0d1cd0276cd0a158fc3dd73a312502066782a7)]:
+  - gt@2.14.56
+
 ## 1.0.190
 
 ### Patch Changes

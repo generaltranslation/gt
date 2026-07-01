@@ -360,6 +360,16 @@ export function withGTServerSideProps<
 }
 
 /**
+ * Checks whether a locale is valid and supported by the current gt-next config.
+ *
+ * @param locale - The locale candidate to validate.
+ * @returns True when the locale resolves to one of the configured locales.
+ */
+export function isLocaleSupported(_: unknown): _ is string {
+  throw new Error(typesFileError);
+}
+
+/**
  * Returns the string translation function `t`.
  *
  * @returns {Function} A translation function that accepts an ICU format string and returns that ICU format string translated.
