@@ -1185,6 +1185,47 @@ describe('I18nCache', () => {
     );
   });
 
+  it('async lookup resolvers retain the loaded snapshot when cacheExpiryTime is 0', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Bonjour',
+      user: {
+        profile: {
+          name: 'Nom',
+        },
+      },
+    });
+    const cache = createCache({
+      cacheExpiryTime: 0,
+      dictionary: {
+        greeting: 'Hello',
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+      loadDictionary,
+    });
+
+    const lookupTranslation = await cache.getLookupTranslation('fr');
+    const lookupDictionary = await cache.getLookupDictionary('fr');
+    const lookupDictionaryObj = await cache.getLookupDictionaryObj('fr');
+
+    expect(
+      cache.lookupTranslation('fr', message, lookupOptions)
+    ).toBeUndefined();
+    expect(cache.lookupDictionary('fr', 'greeting')).toBeUndefined();
+    expect(cache.lookupDictionaryObj('fr', 'user.profile')).toBeUndefined();
+    expect(lookupTranslation(message, lookupOptions)).toBe(translatedString);
+    expect(lookupDictionary('greeting')).toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
+    expect(lookupDictionaryObj('user.profile')).toEqual({
+      name: 'Nom',
+    });
+  });
+
   it('does not clone leaf dictionary values on lookup', async () => {
     const cache = createCache({
       dictionary: {

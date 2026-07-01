@@ -43,7 +43,9 @@ export async function getGTInternal(
   const i18nCache = getI18nCache();
   const sourceLocale = getI18nConfig().getDefaultLocale();
   const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
-  const lookupTranslation = await i18nCache.getLookupTranslation(locale);
+  const lookupTranslation = await i18nCache.getLookupTranslation(
+    enableI18n ? locale : sourceLocale
+  );
 
   // dev hot reload translate compiler injected lookups
   if (devHotReloadEnabled && lookupTranslation.prefetchEntries) {

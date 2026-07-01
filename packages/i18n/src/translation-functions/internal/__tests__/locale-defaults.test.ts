@@ -93,24 +93,27 @@ describe('translation function locale defaults', () => {
         loadTranslations: vi.fn().mockResolvedValue({}),
       }
     );
-    const lookupTranslationWithFallback = vi
-      .spyOn(cache, 'lookupTranslationWithFallback')
-      .mockResolvedValue('Bonjour Alice !');
+    const prefetchEntries = vi.fn();
+    vi.spyOn(cache, 'getLookupTranslation').mockResolvedValue(
+      Object.assign(vi.fn(), { prefetchEntries }) as Awaited<
+        ReturnType<typeof cache.getLookupTranslation>
+      >
+    );
     setI18nCache(cache);
 
     await getGTInternal({ locale: 'fr', enableI18n: true }, [
       { message: 'Hello {name}!', $context: 'greeting' },
     ]);
 
-    expect(lookupTranslationWithFallback).toHaveBeenCalledWith(
-      'fr',
-      'Hello {name}!',
-      expect.objectContaining({
-        $context: 'greeting',
-        $format: 'ICU',
-        $locale: 'fr',
-      })
-    );
+    expect(prefetchEntries).toHaveBeenCalledWith([
+      {
+        message: 'Hello {name}!',
+        options: {
+          $context: 'greeting',
+          $format: 'ICU',
+        },
+      },
+    ]);
   });
 
   it('getGT still returns a function when dev hot reload preload rejects', async () => {
@@ -224,6 +227,34 @@ describe('translation function locale defaults', () => {
 
     expect(t('greeting', { name: 'Alice' })).toBe('Bonjour Alice !');
     expect(loadTranslations).toHaveBeenCalledWith('fr');
+  });
+
+  it('getTranslations uses async lookup snapshots when cacheExpiryTime is 0', async () => {
+    const message = 'Hello {name}!';
+    const lookupOptions = { $format: 'ICU', $context: 'homepage' } as const;
+    const loadTranslations = vi.fn().mockResolvedValue({
+      [hashMessage(message, lookupOptions)]: 'Bonjour {name} !',
+    });
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        cacheExpiryTime: 0,
+        dictionary: {
+          greeting: [message, { $context: 'homepage' }],
+        },
+        loadDictionary: vi.fn().mockResolvedValue({}),
+        loadTranslations,
+      }
+    );
+    setI18nCache(cache);
+    setWritableConditionStore(createConditionStore('fr'));
+
+    const t = await getTranslations();
+
+    expect(
+      cache.lookupTranslation('fr', message, lookupOptions)
+    ).toBeUndefined();
+    expect(t('greeting', { name: 'Alice' })).toBe('Bonjour Alice !');
   });
 
   it('getTranslations throws when the source dictionary entry is missing', async () => {

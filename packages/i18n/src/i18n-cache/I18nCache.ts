@@ -43,6 +43,10 @@ type TranslationResolver<U extends Translation = Translation> = <
   options?: LookupOptions
 ) => T | undefined;
 
+type DictionaryResolver = (id: string) => DictionaryEntry | undefined;
+
+type DictionaryObjResolver = (id: string) => DictionaryObject | undefined;
+
 /**
  * A prefetch entry is an entry that we want to prefetch during the async period
  * @template TranslationType - The type of the translation
@@ -275,6 +279,34 @@ class I18nCache<
     } catch (error) {
       this.handleError(error);
       return undefined;
+    }
+  }
+
+  async getLookupDictionary(locale: string): Promise<DictionaryResolver> {
+    try {
+      const asyncBoundaryLocale = this._resolveCacheLocale(locale);
+      const asyncBoundaryDictionaryCache = asyncBoundaryLocale
+        ? await this.localesCache.getOrLoadDictionary(asyncBoundaryLocale)
+        : this.getDefaultDictionaryCache();
+
+      return (id) => asyncBoundaryDictionaryCache?.getEntry(id);
+    } catch (error) {
+      this.handleError(error);
+      return () => undefined;
+    }
+  }
+
+  async getLookupDictionaryObj(locale: string): Promise<DictionaryObjResolver> {
+    try {
+      const asyncBoundaryLocale = this._resolveCacheLocale(locale);
+      const asyncBoundaryDictionaryCache = asyncBoundaryLocale
+        ? await this.localesCache.getOrLoadDictionary(asyncBoundaryLocale)
+        : this.getDefaultDictionaryCache();
+
+      return (id) => asyncBoundaryDictionaryCache?.getValue(id);
+    } catch (error) {
+      this.handleError(error);
+      return () => undefined;
     }
   }
 
