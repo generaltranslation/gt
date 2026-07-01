@@ -11,17 +11,37 @@ export function getRuntimeEnvironment(): 'development' | 'production' {
     return 'development';
   }
 
-  const importMetaEnv = (
-    import.meta as ImportMeta & {
-      env?: RuntimeEnvironment;
-    }
-  ).env;
-  if (importMetaEnv?.MODE) {
-    return importMetaEnv.MODE === 'development' ? 'development' : 'production';
+  const importMetaMode = readImportMetaEnv(
+    () =>
+      (
+        import.meta as ImportMeta & {
+          env?: RuntimeEnvironment;
+        }
+      ).env?.MODE
+  );
+  if (importMetaMode) {
+    return importMetaMode === 'development' ? 'development' : 'production';
   }
-  if (importMetaEnv?.DEV === true) {
+  if (
+    readImportMetaEnv(
+      () =>
+        (
+          import.meta as ImportMeta & {
+            env?: RuntimeEnvironment;
+          }
+        ).env?.DEV
+    ) === true
+  ) {
     return 'development';
   }
 
   return 'production';
+}
+
+function readImportMetaEnv<T>(readValue: () => T | undefined): T | undefined {
+  try {
+    return readValue();
+  } catch {
+    return undefined;
+  }
 }

@@ -13,6 +13,7 @@ import {
   createOrUpdateBrowserConditionStore,
   CreateBrowserConditionStoreParams,
 } from '../condition-store/createBrowserConditionStore';
+import { addRuntimeCredentials } from './runtimeCredentials';
 
 /**
  * Initialize GT for an SPA
@@ -27,12 +28,13 @@ export async function initializeGTSPA(
     BrowserI18nCacheParams &
     CreateBrowserConditionStoreParams
 ) {
-  initializeI18nConfig(config, 'SPA');
+  const runtimeConfig = addRuntimeCredentials(config);
+  initializeI18nConfig(runtimeConfig, 'SPA');
 
-  const i18nCache = new BrowserI18nCache(config);
+  const i18nCache = new BrowserI18nCache(runtimeConfig);
   setReactI18nCache(i18nCache);
 
-  createOrUpdateBrowserConditionStore(config);
+  createOrUpdateBrowserConditionStore(runtimeConfig);
 
   const i18nStore = new I18nStore();
   setI18nStore(i18nStore);
