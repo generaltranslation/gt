@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import type { TxProps } from './TxProps';
 
 // SSR/context-capable React runtime surface. This entrypoint may import hooks,
 // providers, and context modules, so it must be consumed as a client boundary by
@@ -19,16 +20,6 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from './cookie-names';
-
-type TxProps = Record<string, ReactNode> & {
-  children: ReactNode;
-  context?: string;
-  locale?: string;
-  maxChars?: number;
-  $context?: string;
-  $locale?: string;
-  $maxChars?: number;
-};
 
 // ===== Components ===== //
 export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
