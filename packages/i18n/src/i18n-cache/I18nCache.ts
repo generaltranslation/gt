@@ -56,6 +56,12 @@ type PrefetchEntry<TranslationType extends Translation> = {
 };
 
 /**
+ * Callback function to prefetch entries during the async period
+ */
+type PrefetchEntriesType<TranslationType extends Translation> = (
+  prefetchEntries: PrefetchEntry<TranslationType>[]
+) => Promise<void>;
+/**
  * Class for managing translation functionality
  * @template TranslationValue - The type of the translation that will be cached
  */
@@ -403,9 +409,7 @@ class I18nCache<
         this.resolveLookupParams(locale, options);
 
       // Early return if in default locale
-      if (!translationLocale) {
-        return message;
-      }
+      if (!translationLocale) return message;
 
       // Get the locale cache
       const txCache = this.localesCache.getTranslations(translationLocale);
@@ -446,59 +450,94 @@ class I18nCache<
    * Saves a current lookup translation function immune to expiry
    * Useful for operations involving lookup callbacks like useGT()
    * @param locale - The locale to get the lookup translation for
-   * @param prefetchEntries - Any entries we want to prefetch during the async period
    * @returns A lookup translation function
    *
    * @important prefetchEntries must all be the same locale
    */
-  async getLookupTranslation(
-    locale: string,
-    prefetchEntries: {
-      message: TranslationValue;
-      options: LookupOptions;
-    }[] = []
-  ): Promise<TranslationResolver<TranslationValue>> {
+  async getLookupTranslation(locale: string): Promise<
+    TranslationResolver<TranslationValue> & {
+      prefetchEntries?: PrefetchEntriesType<TranslationValue>;
+    }
+  > {
     try {
-      // Validate
-      const translationLocale = this._resolveCacheLocale(locale);
+      // Locale used for the async load
+      const asyncBoundaryLocale = this._resolveCacheLocale(locale);
 
       // Early return if i18n is disabled or default locale
-      if (!translationLocale) {
+      if (!asyncBoundaryLocale) {
         return (message) => message;
       }
 
-      // Invariant: all prefetchEntries must be the same locale
-      const resolvedPrefetchEntries = resolvePrefetchEntriesByLocale(
-        prefetchEntries,
-        translationLocale,
-        (entryLocale) =>
-          this._resolveCacheLocale(entryLocale) ??
-          this._resolveLocale(entryLocale)
-      );
-      if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
-        logger.warn(
-          `I18nCache: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${translationLocale}`
+      const asyncBoundaryTxCache =
+        await this.localesCache.getOrLoadTranslations(asyncBoundaryLocale);
+
+      // Prefetch any entries during async block (dev hot reload only)
+      const prefetchEntries = async (
+        prefetchEntries: {
+          message: TranslationValue;
+          options: LookupOptions;
+        }[] = []
+      ) => {
+        if (!getI18nConfig().isDevHotReloadEnabled()) return;
+
+        // Invariant: all prefetchEntries must be the same locale
+        // TODO: investigate why we have made this an invariant, we may be able to drop this requirement
+        const resolvedPrefetchEntries = resolvePrefetchEntriesByLocale(
+          prefetchEntries,
+          asyncBoundaryLocale,
+          (entryLocale) =>
+            this._resolveCacheLocale(entryLocale) ??
+            this._resolveLocale(entryLocale)
         );
-      }
+        if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
+          logger.warn(
+            `I18nCache: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${asyncBoundaryLocale}`
+          );
+        }
 
-      const txCache =
-        await this.localesCache.getOrLoadTranslations(translationLocale);
-
-      // Prefetch any entries during async block
-      await Promise.all(
-        resolvedPrefetchEntries
-          .filter((entry) => txCache.get(entry) == null)
-          .map((entry) => txCache.miss(entry))
-      );
+        await Promise.allSettled(
+          resolvedPrefetchEntries
+            .filter((entry) => asyncBoundaryTxCache.get(entry) == null)
+            .map((entry) => asyncBoundaryTxCache.miss(entry))
+        );
+      };
 
       // Create translation resolver
-      return (message, options: LookupOptions = {} as LookupOptions) => {
-        // Calculate hash
-        return txCache.get({
-          message,
-          options: this.resolveLookupOptions(options),
-        });
+      const lookupTranslation: TranslationResolver<TranslationValue> = (
+        message,
+        lookupOptions: LookupOptions = {} as LookupOptions
+      ) => {
+        try {
+          const { translationLocale, options } = this.resolveLookupParams(
+            lookupOptions.$locale ?? asyncBoundaryLocale,
+            lookupOptions
+          );
+
+          // Default locale, return the message
+          if (!translationLocale) return message;
+
+          // Request locale overriden, to attempt a synchronous lookup if an alternate locale is requested
+          let txCache = asyncBoundaryTxCache;
+          if (translationLocale !== asyncBoundaryLocale) {
+            const syncBoundaryTxCache =
+              this.localesCache.getTranslations(translationLocale);
+            if (!syncBoundaryTxCache) return undefined;
+            txCache = syncBoundaryTxCache;
+          }
+
+          // Get the translation
+          return txCache.get({
+            message,
+            options,
+          });
+        } catch (error) {
+          this.handleError(error);
+          return undefined;
+        }
       };
+
+      Object.assign(lookupTranslation, { prefetchEntries });
+      return lookupTranslation;
     } catch (error) {
       this.handleError(error);
       return (message) => message;
@@ -571,7 +610,7 @@ class I18nCache<
   private resolveLookupOptions(
     options: LookupOptions = {} as LookupOptions,
     translationLocale?: string
-  ) {
+  ): LookupOptions {
     if (!options.$locale) {
       return options;
     }

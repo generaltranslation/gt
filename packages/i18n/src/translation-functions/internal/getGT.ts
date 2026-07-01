@@ -1,10 +1,6 @@
 import { getI18nCache } from '../../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../../i18n-config/singleton-operations';
-import {
-  GTTranslationOptions,
-  NormalizedLookupOptions,
-  TranslationMetadata,
-} from '../types/options';
+import { GTTranslationOptions, TranslationMetadata } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
@@ -45,52 +41,21 @@ export async function getGTInternal(
 ): Promise<GTFunctionType> {
   // Get the translation resolver
   const i18nCache = getI18nCache();
-  await i18nCache.loadTranslations(locale);
   const sourceLocale = getI18nConfig().getDefaultLocale();
   const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
+  const lookupTranslation = await i18nCache.getLookupTranslation(locale);
 
   // dev hot reload translate compiler injected lookups
-  if (devHotReloadEnabled && _messages && _messages.length > 0) {
-    const lookups: {
-      message: string;
-      lookupOptions: NormalizedLookupOptions<StringFormat>;
-    }[] = _messages
-      .map(({ message, ...options }) => {
-        const targetLocale = enableI18n
-          ? (options.$locale ?? locale)
-          : getI18nConfig().getDefaultLocale();
-        const lookupOptions = createLookupOptions<StringFormat>(
-          targetLocale,
-          options,
-          'ICU'
-        );
-        return {
-          lookupOptions,
-          message,
-        };
-      })
-      .filter(({ lookupOptions, message }) => {
-        // Filter lookups that are already in the cache
-        return (
-          i18nCache.lookupTranslation(
-            lookupOptions.$locale,
-            message,
-            lookupOptions
-          ) == null
-        );
-      });
-
-    if (lookups.length > 0) {
-      await Promise.allSettled(
-        lookups.map(({ lookupOptions, message }) =>
-          i18nCache.lookupTranslationWithFallback(
-            lookupOptions.$locale,
-            message,
-            lookupOptions
-          )
-        )
-      );
-    }
+  if (devHotReloadEnabled && lookupTranslation.prefetchEntries) {
+    await lookupTranslation.prefetchEntries(
+      _messages?.map(({ message, ...options }) => ({
+        message,
+        options: {
+          $format: 'ICU',
+          ...options,
+        },
+      })) ?? []
+    );
   }
 
   /**
@@ -123,11 +88,7 @@ export async function getGTInternal(
     );
 
     // Lookup translation
-    const translation = i18nCache.lookupTranslation(
-      lookupOptions.$locale,
-      message,
-      lookupOptions
-    );
+    const translation = lookupTranslation(message, lookupOptions);
 
     // Dev hot reload (fire and forget, will be available in a later lookup)
     if (devHotReloadEnabled && translation == null) {
