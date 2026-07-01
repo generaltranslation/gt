@@ -69,7 +69,7 @@ describe('condition store singleton factory', () => {
 
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining(
-        'Overwriting global conditionStore singleton instance'
+        'Global conditionStore singleton instance was already initialized'
       )
     );
     expect(singleton.getConditionStore()).toBe(conditionStore);

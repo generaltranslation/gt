@@ -77,7 +77,7 @@ describe('i18n config singleton operations', () => {
 
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining(
-        'Overwriting global i18nConfig singleton instance'
+        'Global i18nConfig singleton instance was already initialized'
       )
     );
     expect(getI18nConfig()).toBe(config);
