@@ -19,7 +19,9 @@ export type TrackedDictionaryEntryResolver = (
 export function useTrackedDictionaryResolver(): TrackedDictionaryEntryResolver {
   const dictionariesSnapshot = useDictionariesSnapshot();
   const i18nStore = useI18nStore();
-  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
+  const devHotReloadEnabled =
+    process.env.NODE_ENV !== 'production' &&
+    getI18nConfig().isDevHotReloadEnabled();
   const onMissingDictionaryEntry = useHandleMissingDictionaryEntry();
 
   const trackedKeysRef = useRef<Set<string> | null>(null);
