@@ -13,9 +13,7 @@ export class WritableConditionStore
   implements WritableConditionStoreInterface
 {
   setLocale = (locale: LocaleCandidates): void => {
-    const i18nConfig = getI18nConfig();
-    this.locale =
-      i18nConfig.determineLocale(locale) || i18nConfig.getDefaultLocale();
+    this.locale = getI18nConfig().resolveSupportedLocale(locale);
   };
 
   setRegion = (region: string | undefined): void => {
