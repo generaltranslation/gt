@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { standardizeLocale } from '@generaltranslation/format';
 import { GT } from 'generaltranslation';
+import { parseAcceptLanguage } from 'gt-i18n/internal';
 import { NextURL } from 'next/dist/server/web/next-url';
 
 export type PathConfig = {
@@ -346,12 +347,10 @@ export function getLocaleFromRequest(
 
   // Get locales from accept-language header
   if (process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false') {
-    const acceptedLocales =
-      headerList
-        .get('accept-language')
-        ?.split(',')
-        .map((item) => item.split(';')?.[0].trim()) || [];
-    if (acceptedLocales) candidates.push(...acceptedLocales);
+    const acceptLanguage = headerList.get('accept-language');
+    if (acceptLanguage) {
+      candidates.push(...parseAcceptLanguage(acceptLanguage));
+    }
   }
 
   // Get default locale

@@ -44,6 +44,7 @@ export { getVersionId } from './helpers/versionId';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';
 export { isEncodedTranslationOptions } from './translation-functions/utils/isEncodedTranslationOptions';
 export { extractVariables } from './utils/extractVariables';
+export { parseAcceptLanguage } from './utils/parseAcceptLanguage';
 export {
   getDictionaryListenerKey,
   getTranslateListenerKey,

@@ -5,8 +5,7 @@ import {
   getCookie,
   setCookie,
 } from '@tanstack/react-start/server';
-import { getI18nConfig } from 'gt-i18n/internal';
-import type { I18nConfigParams } from 'gt-i18n/internal/types';
+import { getI18nConfig, parseAcceptLanguage } from 'gt-i18n/internal';
 
 export const determineLocale = createIsomorphicFn()
   .server(determineLocaleServer)
@@ -16,29 +15,20 @@ export const determineLocale = createIsomorphicFn()
  * Resolve the user's locale for the current TanStack Start request or browser.
  */
 export function parseLocale(): string {
-  const i18nConfig = getI18nConfig();
-  return determineLocale({
-    defaultLocale: i18nConfig.getDefaultLocale(),
-    locales: i18nConfig.getLocales(),
-    customMapping: i18nConfig.getCustomMapping(),
-  });
+  return determineLocale();
 }
 
-function determineLocaleServer({
-  defaultLocale,
-  locales,
-  customMapping,
-}: I18nConfigParams) {
+// createIsomorphicFn is a build-time split (not an RPC), so the i18n config
+// singleton is available in both branches. There is no need to thread its
+// values through — resolveSupportedLocale() reads them off the singleton.
+function determineLocaleServer() {
   const candidates: string[] = [];
 
   const cookie = getCookie(defaultLocaleCookieName);
   if (cookie) candidates.push(cookie);
 
-  const headers =
-    getRequestHeader('accept-language')
-      ?.split(',')
-      .map((item) => item.split(';')?.[0].trim()) || [];
-  candidates.push(...headers);
+  const acceptLanguage = getRequestHeader('accept-language');
+  if (acceptLanguage) candidates.push(...parseAcceptLanguage(acceptLanguage));
 
   if (candidates.length === 0) {
     console.warn(
@@ -46,11 +36,7 @@ function determineLocaleServer({
     );
   }
 
-  const locale = getI18nConfig().resolveSupportedLocale(candidates, {
-    defaultLocale,
-    locales,
-    customMapping,
-  });
+  const locale = getI18nConfig().resolveSupportedLocale(candidates);
 
   setCookie(defaultLocaleCookieName, locale, {
     path: '/',
@@ -61,11 +47,7 @@ function determineLocaleServer({
   return locale;
 }
 
-function determineLocaleClient({
-  defaultLocale,
-  locales,
-  customMapping,
-}: I18nConfigParams) {
+function determineLocaleClient() {
   const candidates: string[] = [];
 
   const cookie = document.cookie
@@ -80,9 +62,5 @@ function determineLocaleClient({
     );
   }
 
-  return getI18nConfig().resolveSupportedLocale(candidates, {
-    defaultLocale,
-    locales,
-    customMapping,
-  });
+  return getI18nConfig().resolveSupportedLocale(candidates);
 }

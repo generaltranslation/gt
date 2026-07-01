@@ -1,7 +1,7 @@
 import { AsyncReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import { cookies, headers } from 'next/headers';
 import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig, parseAcceptLanguage } from 'gt-i18n/internal';
 import { defaultLocaleHeaderName } from '../utils/headers';
 import {
   defaultLocaleCookieName,
@@ -106,13 +106,9 @@ function createDefaultGetLocale({
 
     // Preferred languages
     if (!ignorePreferredLanguages) {
-      const acceptedLocales = headersList
-        .get('accept-language')
-        ?.split(',')
-        .map((item: string) => item.split(';')?.[0].trim());
-
-      if (acceptedLocales) {
-        preferredLocales.push(...acceptedLocales);
+      const acceptLanguage = headersList.get('accept-language');
+      if (acceptLanguage) {
+        preferredLocales.push(...parseAcceptLanguage(acceptLanguage));
       }
     }
 

@@ -1,6 +1,6 @@
 import type { GetServerSidePropsContext, PreviewData } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig, parseAcceptLanguage } from 'gt-i18n/internal';
 import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
 import { defaultLocaleHeaderName } from '../utils/headers';
 import { defaultLocaleCookieName } from '@generaltranslation/react-core/cookies';
@@ -74,11 +74,7 @@ function addHeaderCandidates(candidates: string[], headerValue: HeaderValue) {
 
 function getAcceptLanguageCandidates(headerValue: HeaderValue): string[] {
   const headerValues = Array.isArray(headerValue) ? headerValue : [headerValue];
-  return headerValues.flatMap(
-    (value) =>
-      value
-        ?.split(',')
-        .map((item) => item.split(';')?.[0].trim())
-        .filter(Boolean) || []
+  return headerValues.flatMap((value) =>
+    value ? parseAcceptLanguage(value) : []
   );
 }
