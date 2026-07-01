@@ -36,7 +36,10 @@ describe('t', () => {
   afterEach(resetGTGlobals);
 
   it('works without an explicit locale', () => {
-    setWritableConditionStore({ getLocale: () => 'en' });
+    setWritableConditionStore({
+      getLocale: () => 'en',
+      getEnableI18n: () => true,
+    });
     setI18nCache(
       createCache(
         { defaultLocale: 'en', locales: ['en', 'fr'] },
@@ -60,7 +63,10 @@ describe('t', () => {
         }),
       }
     );
-    const conditionStore = { getLocale: () => 'fr' };
+    const conditionStore = {
+      getLocale: () => 'fr',
+      getEnableI18n: () => true,
+    };
 
     setI18nCache(cache);
     setWritableConditionStore(conditionStore);
@@ -82,7 +88,10 @@ describe('t', () => {
     );
 
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore({
+      getLocale: () => 'fr',
+      getEnableI18n: () => true,
+    });
     await cache.loadTranslations('es');
 
     expect(t(message, { $locale: 'es', name: 'Alice' })).toBe('Hola Alice!');
@@ -101,7 +110,10 @@ describe('t', () => {
     );
 
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore({
+      getLocale: () => 'fr',
+      getEnableI18n: () => true,
+    });
     await cache.loadTranslations('fr');
 
     expect(t`Hello ${name}!`).toBe('Bonjour Alice !');
@@ -120,7 +132,10 @@ describe('t', () => {
     );
 
     setI18nCache(cache);
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore({
+      getLocale: () => 'fr',
+      getEnableI18n: () => true,
+    });
     await cache.loadTranslations('fr');
 
     expect(t`Hello ${name}!`).toBe('Bonjour Alice !');
@@ -142,6 +157,7 @@ describe('t', () => {
       getLocale: () => {
         throw new Error('current locale should not be read');
       },
+      getEnableI18n: () => true,
     });
     await cache.loadTranslations('fr');
 
@@ -150,8 +166,32 @@ describe('t', () => {
     );
   });
 
+  it('returns the source when i18n is disabled', async () => {
+    const message = 'Hello {name}!';
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        loadTranslations: vi.fn().mockResolvedValue({
+          [hashMessage(message, { $format: 'ICU' })]: 'Bonjour {name} !',
+        }),
+      }
+    );
+
+    setI18nCache(cache);
+    setWritableConditionStore({
+      getLocale: () => 'fr',
+      getEnableI18n: () => false,
+    });
+    await cache.loadTranslations('fr');
+
+    expect(t(message, { name: 'Alice' })).toBe('Hello Alice!');
+  });
+
   it('keeps the configured condition store when the singleton cache is replaced', () => {
-    setWritableConditionStore({ getLocale: () => 'fr' });
+    setWritableConditionStore({
+      getLocale: () => 'fr',
+      getEnableI18n: () => true,
+    });
 
     setI18nCache(
       createCache(
