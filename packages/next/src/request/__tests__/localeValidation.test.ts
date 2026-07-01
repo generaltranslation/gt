@@ -1,12 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
-import { localeStore } from '../localeStore';
+import {
+  AsyncConditionStore,
+  getAsyncConditionStore,
+  setAsyncConditionStore,
+} from '../../condition-store/AsyncConditionStore';
 import { isLocaleSupported, resolveLocaleOrDefault } from '../localeValidation';
 import { registerLocale } from '../registerLocale';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: {
     i18n?: {
+      conditionStore?: unknown;
       i18nConfig?: unknown;
       [key: string]: unknown;
     };
@@ -17,6 +22,10 @@ type TestGlobal = typeof globalThis & {
 function resetI18nConfigGlobal() {
   const globalObj = globalThis as TestGlobal;
   if (globalObj.__generaltranslation?.i18n) {
+    Reflect.deleteProperty(
+      globalObj.__generaltranslation.i18n,
+      'conditionStore'
+    );
     Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nConfig');
   }
 }
@@ -38,6 +47,11 @@ describe('locale validation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setupI18nConfig();
+    setAsyncConditionStore(
+      new AsyncConditionStore({
+        getLocale: async () => 'fr',
+      })
+    );
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
@@ -87,10 +101,9 @@ describe('locale validation', () => {
     expect(isLocaleSupported('llms.txt')).toBe(false);
   });
 
-  it('falls back when registering an unsupported locale', () => {
-    localeStore.run('fr', () => {
-      registerLocale('llms.txt');
-      expect(localeStore.getStore()).toBe('en');
-    });
+  it('falls back when registering an unsupported locale', async () => {
+    registerLocale('llms.txt');
+
+    await expect(getAsyncConditionStore().getLocale()).resolves.toBe('en');
   });
 });

@@ -1,4 +1,4 @@
-import { localeStore } from './localeStore';
+import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
 import { resolveLocaleOrDefault } from './localeValidation';
 
 /**
@@ -9,5 +9,5 @@ import { resolveLocaleOrDefault } from './localeValidation';
  * @param locale - A locale candidate to use for this request.
  */
 export function registerLocale(locale: string): void {
-  localeStore.enterWith(resolveLocaleOrDefault(locale));
+  getAsyncConditionStore().enterWith(resolveLocaleOrDefault(locale));
 }

@@ -22,7 +22,14 @@ import {
   defaultReferrerLocaleCookieName,
 } from './cookies';
 
-initializeGTClient();
+/**
+ * Only need to initalize client. We know server was already
+ * inialaized by index.rsc.ts. We do not know yet if client
+ * has been initialized by index.client.ts.
+ */
+if (typeof window !== 'undefined') {
+  initializeGTClient();
+}
 
 /**
  * Small wrapper to embed nextjs app router behavior
