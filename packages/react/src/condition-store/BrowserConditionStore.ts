@@ -60,12 +60,9 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     this.regionCookieName = config.regionCookieName ?? defaultRegionCookieName;
     this.enableI18nCookieName =
       config.enableI18nCookieName ?? defaultEnableI18nCookieName;
-    const i18nConfig = getI18nConfig();
     setCookieValue({
       cookieName: this.localeCookieName,
-      value:
-        i18nConfig.determineLocale(config.locale) ||
-        i18nConfig.getDefaultLocale(),
+      value: getI18nConfig().resolveSupportedLocale(config.locale),
     });
     if (config.region !== undefined) {
       setCookieValue({
@@ -121,11 +118,9 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
    * Soft locale update
    */
   updateLocale = (locale: LocaleCandidates): void => {
-    const i18nConfig = getI18nConfig();
     setCookieValue({
       cookieName: this.localeCookieName,
-      value:
-        i18nConfig.determineLocale(locale) || i18nConfig.getDefaultLocale(),
+      value: getI18nConfig().resolveSupportedLocale(locale),
     });
   };
 
@@ -167,8 +162,5 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
 function getBrowserLocale(cookieName: string, getLocale?: GetLocale): string {
   const candidates = readBrowserLocale(cookieName);
   if (getLocale) candidates.push(getLocale());
-  const i18nConfig = getI18nConfig();
-  return (
-    i18nConfig.determineLocale(candidates) || i18nConfig.getDefaultLocale()
-  );
+  return getI18nConfig().resolveSupportedLocale(candidates);
 }

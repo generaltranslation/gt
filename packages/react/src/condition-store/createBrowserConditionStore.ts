@@ -80,14 +80,7 @@ function determineLocale({
   }
   if (getLocale) candidates.push(getLocale());
   candidates.push(...readBrowserLocale(localeCookieName));
-  return resolveLocale(candidates);
-}
-
-function resolveLocale(candidates?: LocaleCandidates): string {
-  const i18nConfig = getI18nConfig();
-  return (
-    i18nConfig.determineLocale(candidates) || i18nConfig.getDefaultLocale()
-  );
+  return getI18nConfig().resolveSupportedLocale(candidates);
 }
 
 function determineRegion({
