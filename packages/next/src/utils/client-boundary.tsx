@@ -23,12 +23,13 @@ import {
 } from './cookies';
 
 /**
- * Unlike index.server.ts, we do not need to initalize
- * AsyncConditionStore here even though this can be called
- * during SSR. This is because this file is only consumed
- * by index.rsc.ts which already initializes the AsyncConditionStore.
+ * Only need to initalize client. We know server was already
+ * inialaized by index.rsc.ts. We do not know yet if client
+ * has been initialized by index.client.ts.
  */
-initializeGTClient();
+if (typeof window !== 'undefined') {
+  initializeGTClient();
+}
 
 /**
  * Small wrapper to embed nextjs app router behavior

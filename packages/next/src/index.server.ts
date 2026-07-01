@@ -1,12 +1,14 @@
 'use client';
 
-import { initializeGTServer } from './setup/initGT.server';
+import { initializeGT } from './setup/initGT';
 /**
- * We need to invoke initializeGTServer() and not
- * initializeGTClient() because we also want to initialize
- * the AsyncConditionStore on the server side.
+ * No initializeGTServer() here because we do not want to
+ * initialize the AsyncConditionStore on the server side.
+ *
+ * No initializeGTClient() here because we do want to enforce
+ * expiry times here.
  */
-initializeGTServer();
+initializeGT();
 
 // ===== Pages Router ===== //
 export { parseLocale } from './pages-dir/parseLocale';
