@@ -12,6 +12,9 @@ import {
   customGetRegionUnresolvedWarning,
 } from '../errors/createErrors';
 
+const getLocaleModulePath = 'gt-next/internal/_getLocale';
+const getRegionModulePath = 'gt-next/internal/_getRegion';
+
 /**
  * Initialize GT for Next.js
  *
@@ -64,40 +67,42 @@ function resolveGetLocale(): (() => Promise<string>) | undefined {
   const isCustomGetLocaleEnabled =
     process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true';
   if (!isCustomGetLocaleEnabled) return undefined;
-  const module: unknown = require('gt-next/internal/_getLocale');
-
-  if (typeof module === 'function') {
-    return module as () => Promise<string>;
-  } else if (typeof module === 'object' && module !== null) {
-    if ('default' in module && typeof module.default === 'function') {
-      return module.default as () => Promise<string>;
-    } else if (
-      'getLocale' in module &&
-      typeof module.getLocale === 'function'
-    ) {
-      return module.getLocale as () => Promise<string>;
-    }
-  }
-  console.warn(customGetLocaleUnresolvedWarning);
+  return async () => {
+    const module = await import(getLocaleModulePath);
+    const getLocale = resolveRequestFunction<string>(module, 'getLocale');
+    if (getLocale) return getLocale();
+    console.warn(customGetLocaleUnresolvedWarning);
+    return undefined as never;
+  };
 }
 
 function resolveGetRegion(): (() => Promise<string | undefined>) | undefined {
   const isCustomGetRegionEnabled =
     process.env._GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED === 'true';
   if (!isCustomGetRegionEnabled) return undefined;
-  const module: unknown = require('gt-next/internal/_getRegion');
+  return async () => {
+    const module = await import(getRegionModulePath);
+    const getRegion = resolveRequestFunction<string | undefined>(
+      module,
+      'getRegion'
+    );
+    if (getRegion) return getRegion();
+    console.warn(customGetRegionUnresolvedWarning);
+  };
+}
 
+function resolveRequestFunction<T>(
+  module: unknown,
+  exportName: string
+): (() => Promise<T>) | undefined {
   if (typeof module === 'function') {
-    return module as () => Promise<string | undefined>;
+    return module as () => Promise<T>;
   } else if (typeof module === 'object' && module !== null) {
-    if ('default' in module && typeof module.default === 'function') {
-      return module.default as () => Promise<string | undefined>;
-    } else if (
-      'getRegion' in module &&
-      typeof module.getRegion === 'function'
-    ) {
-      return module.getRegion as () => Promise<string | undefined>;
+    const record = module as Record<string, unknown>;
+    if (typeof record.default === 'function') {
+      return record.default as () => Promise<T>;
+    } else if (typeof record[exportName] === 'function') {
+      return record[exportName] as () => Promise<T>;
     }
   }
-  console.warn(customGetRegionUnresolvedWarning);
 }
