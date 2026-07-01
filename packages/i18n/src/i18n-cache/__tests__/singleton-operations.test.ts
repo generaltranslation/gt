@@ -50,13 +50,16 @@ describe('i18n cache singleton operations', () => {
     expect(getI18nCache()).toBe(cache);
   });
 
-  it('warns when overwriting an existing global cache', async () => {
-    const { setI18nCache } = await import('../singleton-operations');
+  it('warns and preserves an existing global cache', async () => {
+    const { getI18nCache, setI18nCache } =
+      await import('../singleton-operations');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cache = createCacheStub();
 
-    setI18nCache(createCacheStub());
+    setI18nCache(cache);
     setI18nCache(createCacheStub());
 
+    expect(getI18nCache()).toBe(cache);
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('Overwriting global i18nCache singleton instance')
     );

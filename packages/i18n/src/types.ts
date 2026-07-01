@@ -9,6 +9,7 @@ export type {
   ResolveJsxTranslationFunction,
 } from './translation-functions/types/functions';
 export type { RegisterableMessages } from './translation-functions/types/message';
+export type { Message } from './translation-functions/internal/getGT';
 export type {
   TranslationMetadata,
   TranslationOptions,

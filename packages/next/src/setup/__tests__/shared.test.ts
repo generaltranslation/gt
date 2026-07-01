@@ -16,7 +16,15 @@ function setConfigEnv() {
     maxConcurrentRequests: 1,
     maxBatchSize: 2,
     batchInterval: 3,
+    cacheExpiryTime: 12345,
     _versionId: 'version-id',
+  });
+}
+
+function updatePrivateConfig(config: Record<string, unknown>) {
+  process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS = JSON.stringify({
+    ...JSON.parse(process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'),
+    ...config,
   });
 }
 
@@ -48,6 +56,7 @@ describe('getParams', () => {
       projectId: 'project-id',
       apiKey: 'api-key',
       devApiKey: 'dev-key',
+      cacheExpiryTime: 12345,
     });
   });
 
@@ -61,5 +70,22 @@ describe('getParams', () => {
 
     expect(i18nConfigParams.projectId).toBe('public-project-id');
     expect(i18nConfigParams.devApiKey).toBe('public-dev-key');
+  });
+
+  it('keeps the default translation loader when cacheComponents is enabled', () => {
+    updatePrivateConfig({
+      _cacheComponentsEnabled: true,
+      _disableDevHotReload: true,
+      loadTranslationsType: 'remote',
+      cacheExpiryTime: 0,
+    });
+
+    const { i18nConfigParams, nextI18nCacheParams } = getParams();
+
+    expect(i18nConfigParams._disableDevHotReload).toBe(true);
+    expect(nextI18nCacheParams.cacheExpiryTime).toBe(0);
+    expect(nextI18nCacheParams.loadTranslations?.toString()).toContain(
+      'loadTranslations'
+    );
   });
 });

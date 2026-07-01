@@ -37,10 +37,20 @@ export async function getTranslationsInternal({
   const i18nCache = getI18nCache();
   const sourceLocale = getI18nConfig().getDefaultLocale();
   const targetLocale = enableI18n ? locale : sourceLocale;
-  await Promise.all([
-    i18nCache.loadDictionary(targetLocale),
-    i18nCache.loadTranslations(targetLocale),
-  ]);
+  const [sourceDictionary, targetDictionary, lookupTranslation] =
+    await Promise.all([
+      i18nCache.getLookupDictionary(sourceLocale),
+      i18nCache.getLookupDictionary(targetLocale),
+      i18nCache.getLookupTranslation(targetLocale),
+    ]);
+  const {
+    lookupDictionary: lookupSourceDictionary,
+    lookupDictionaryObj: lookupSourceDictionaryObj,
+  } = sourceDictionary;
+  const {
+    lookupDictionary: lookupTargetDictionary,
+    lookupDictionaryObj: lookupTargetDictionaryObj,
+  } = targetDictionary;
 
   /**
    * Dictionary resolution
@@ -59,21 +69,17 @@ export async function getTranslationsInternal({
    * const greeting = t('user.greeting', { name: 'Bob' });
    */
   const t = ((id: string, options: TranslationVariables = {}): string => {
-    const sourceEntry = i18nCache.lookupDictionary(sourceLocale, id);
+    const sourceEntry = lookupSourceDictionary(id);
     if (sourceEntry === undefined) {
       throw new Error(`Dictionary entry ${id} cannot be found`);
     }
-    const targetEntry = i18nCache.lookupDictionary(targetLocale, id);
+    const targetEntry = lookupTargetDictionary(id);
     const dictionaryOptions = resolveDictionaryLookupOptions(
       sourceEntry.options
     );
     const target =
       targetEntry?.entry ??
-      i18nCache.lookupTranslation(
-        targetLocale,
-        sourceEntry.entry,
-        dictionaryOptions
-      );
+      lookupTranslation(sourceEntry.entry, dictionaryOptions);
     return renderDictionaryEntry({
       sourceLocale,
       targetLocale: targetLocale,
@@ -96,20 +102,16 @@ export async function getTranslationsInternal({
    * // { greeting1: 'Hello', greeting2: 'Hi' }
    */
   t.obj = (id: string): DictionaryObjectTranslation => {
-    const sourceObject = i18nCache.lookupDictionaryObj(sourceLocale, id);
+    const sourceObject = lookupSourceDictionaryObj(id);
     if (sourceObject === undefined) {
       throw new Error(`Dictionary entry ${id} cannot be found`);
     }
-    const targetObject = i18nCache.lookupDictionaryObj(targetLocale, id);
+    const targetObject = lookupTargetDictionaryObj(id);
     return renderDictionaryObject({
       sourceObject,
       targetObject,
       translate: (sourceEntry, dictionaryOptions) =>
-        i18nCache.lookupTranslation(
-          targetLocale,
-          sourceEntry.entry,
-          dictionaryOptions
-        ),
+        lookupTranslation(sourceEntry.entry, dictionaryOptions),
     });
   };
 

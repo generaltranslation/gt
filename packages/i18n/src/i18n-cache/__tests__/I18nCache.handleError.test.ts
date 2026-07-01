@@ -2,6 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { I18nCache } from '../I18nCache';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 // Mock createTranslateManyFactory so constructor doesn't need real GT
 vi.mock('../translations-manager/utils/createTranslateMany', () => ({
   createTranslateManyFactory: vi.fn().mockReturnValue(() => vi.fn()),
@@ -9,6 +17,7 @@ vi.mock('../translations-manager/utils/createTranslateMany', () => ({
 
 describe('I18nCache.handleError', () => {
   beforeEach(() => {
+    resetGTGlobals();
     initializeI18nConfig({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
@@ -17,6 +26,7 @@ describe('I18nCache.handleError', () => {
   });
 
   afterEach(() => {
+    resetGTGlobals();
     vi.unstubAllEnvs();
   });
 

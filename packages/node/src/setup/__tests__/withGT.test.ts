@@ -5,8 +5,17 @@ import { withGT } from '../withGT';
 import { tx } from 'gt-i18n/internal';
 import { hashSource } from 'generaltranslation/id';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 describe.sequential('withGT', () => {
   beforeEach(() => {
+    resetGTGlobals();
     initializeGT({
       defaultLocale: 'en-US',
       locales: ['en-US', 'fr', 'es'],
@@ -29,6 +38,7 @@ describe.sequential('withGT', () => {
   });
 
   it('preserves same-language default locale dialects', () => {
+    resetGTGlobals();
     initializeGT({
       defaultLocale: 'pt-BR',
       locales: ['pt', 'fr'],
@@ -40,6 +50,7 @@ describe.sequential('withGT', () => {
   });
 
   it('allows explicit runtime locale to override the callback context', async () => {
+    resetGTGlobals();
     initializeGT({
       defaultLocale: 'en-US',
       locales: ['en-US', 'fr'],

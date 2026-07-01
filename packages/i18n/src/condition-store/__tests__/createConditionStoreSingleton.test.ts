@@ -57,13 +57,14 @@ describe('condition store singleton factory', () => {
     );
   });
 
-  it('warns when overwriting an existing global condition store', async () => {
+  it('warns and preserves an existing global condition store', async () => {
     const { createConditionStoreSingleton } =
       await import('../createConditionStoreSingleton');
     const singleton = createConditionStoreSingleton('not initialized');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const conditionStore = createConditionStoreStub();
 
-    singleton.setConditionStore(createConditionStoreStub());
+    singleton.setConditionStore(conditionStore);
     singleton.setConditionStore(createConditionStoreStub());
 
     expect(warn).toHaveBeenCalledWith(
@@ -71,5 +72,6 @@ describe('condition store singleton factory', () => {
         'Overwriting global conditionStore singleton instance'
       )
     );
+    expect(singleton.getConditionStore()).toBe(conditionStore);
   });
 });

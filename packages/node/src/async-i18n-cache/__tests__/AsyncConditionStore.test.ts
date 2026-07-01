@@ -6,14 +6,23 @@ import {
 } from 'gt-i18n/internal';
 import { AsyncConditionStore } from '../AsyncConditionStore';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 describe('AsyncConditionStore', () => {
   afterEach(() => {
-    setTestCache();
+    resetGTGlobals();
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
   function setTestCache() {
+    resetGTGlobals();
     initializeI18nConfig({
       defaultLocale: 'en',
       locales: ['en', 'fr'],

@@ -1,8 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { setReadonlyConditionStore } from '../../condition-store/singleton-operations';
 import { getFormatLocales } from '../utils';
 import { getShouldTranslate } from '../utils/getShouldTranslate';
+
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
 
 function setup({
   locale,
@@ -27,6 +35,9 @@ function setup({
 }
 
 describe('getShouldTranslate', () => {
+  beforeEach(resetGTGlobals);
+  afterEach(resetGTGlobals);
+
   it('returns false for the default locale', () => {
     setup({ locale: 'en' });
 
@@ -62,6 +73,9 @@ describe('getShouldTranslate', () => {
 });
 
 describe('getFormatLocales', () => {
+  beforeEach(resetGTGlobals);
+  afterEach(resetGTGlobals);
+
   it('uses an explicit locale when translation is required', () => {
     setup({ locale: 'en' });
 
