@@ -1,5 +1,47 @@
 # gt-next
 
+## 11.0.0-odysseus.10
+
+### Patch Changes
+
+- 432fa49: Use Next.js caching semantics for Cache Components by disabling GT cache expiry and development hot reload runtime translation.
+
+  Async translation and dictionary lookup boundaries now keep synchronous access to the loaded snapshot, so APIs like `getGT` and `getTranslations` can still resolve strings after cache expiry is delegated to Next.js.
+
+  Global singleton setup now preserves the first initialized instance instead of replacing it on later initialization attempts.
+
+- 07f74f0: Clean up stale package metadata and align TanStack Start package entry points.
+- 432fa49: Support dev hot reload lookups for server `getGT` strings.
+
+  `getGT` can now receive compiler-injected message metadata and prefetch missing translations through the runtime cache in development. `gt-next` forwards the server request conditions into this path so App Router server strings can participate in hot reload translation updates.
+
+  Compiler-injected `getGT` and `useGT` preload messages now emit the same sugar metadata keys used by runtime lookup options.
+
+- 33d4be2: Point the `react-server` export condition at the RSC-specific declaration file so TypeScript no longer exposes client-only hooks in React Server Components.
+- 75dc650: Remove the unused `getDomain` request-function plumbing from `gt-next`.
+
+  `getDomain` was scaffolded (a throw-only `internal/_getDomain` stub, a `getDomainPath` config prop, a `getDomain` entry in the request-function registry, and a `_GENERALTRANSLATION_CUSTOM_GET_DOMAIN_ENABLED` build env var) but never wired to any runtime consumer — no `getDomain()` request helper exists and nothing reads the env var. Removes the stub module, the `./internal/_getDomain` export, the config prop/registry entries, and the dead env var. `getLocale`/`getRegion` are unchanged.
+
+- 8e0a992: Remove the deprecated SSG and experimental-locale-resolution code paths from `gt-next`.
+
+  Drops the long-deprecated, runtime-dead config surface: `experimentalEnableSSG`, `experimentalLocaleResolution`/`experimentalLocaleResolutionParam`, the static request functions (`STATIC_REQUEST_FUNCTIONS`/`getStatic*` and their non-existent `internal/static/*` aliases), and `disableSSGWarnings`/`getStatic*Path` doc props. Removes `plugin/checks/ssgChecks.ts`, the experimental branch of `cacheComponentsChecks`, the related error/warning builders, and the corresponding build-time env vars (`_GENERALTRANSLATION_ENABLE_SSG`, `_GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION[_PARAM]`, `_GENERALTRANSLATION_STATIC_GET_*_ENABLED`) — none of which were read at runtime. The live cacheComponents checks and `noLocalesCouldBeDeterminedWarning` are retained.
+
+- Updated dependencies [432fa49]
+- Updated dependencies [07f74f0]
+- Updated dependencies [432fa49]
+- Updated dependencies [ee34fea]
+- Updated dependencies [bcba6fd]
+- Updated dependencies [933916e]
+- Updated dependencies [b7b3eaf]
+- Updated dependencies [dfb5fc9]
+- Updated dependencies [4a5f8e8]
+- Updated dependencies [288c9f8]
+- Updated dependencies [083d306]
+  - gt-i18n@1.0.0-odysseus.5
+  - gt-react@11.0.0-odysseus.10
+  - @generaltranslation/compiler@1.3.25-odysseus.5
+  - @generaltranslation/react-core@11.0.0-odysseus.10
+
 ## 11.0.0-odysseus.9
 
 ### Patch Changes

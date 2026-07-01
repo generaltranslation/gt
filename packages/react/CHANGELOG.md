@@ -1,5 +1,28 @@
 # gt-react
 
+## 11.0.0-odysseus.10
+
+### Patch Changes
+
+- 07f74f0: Clean up stale package metadata and align TanStack Start package entry points.
+- ee34fea: Use the shared runtime environment helper for browser cache dev-mode checks so `gt-react` typechecks without Vite ambient types.
+- bcba6fd: Fix `useVersionId()` throwing and `useLocaleDirection()` requiring a locale argument in the client and server entrypoints.
+
+  `useVersionId()` now returns the current version id (instead of throwing the react-core "not implemented" error), and `useLocaleDirection()` once again accepts an optional locale that defaults to the current locale. The shared implementation now lives in `@generaltranslation/react-core/hooks`, so `gt-react` and `gt-react-native` use the same behavior; the RSC entrypoint keeps its stricter signatures.
+
+- 288c9f8: Remove the deprecated `internalInitializeGTSPA` export from `@generaltranslation/react-core/pure` and the downstream `gt-react` server/types surfaces. Use `initializeGTSPA` from `gt-react` for browser SPA initialization.
+- Updated dependencies [432fa49]
+- Updated dependencies [432fa49]
+- Updated dependencies [bcba6fd]
+- Updated dependencies [933916e]
+- Updated dependencies [b7b3eaf]
+- Updated dependencies [dfb5fc9]
+- Updated dependencies [4a5f8e8]
+- Updated dependencies [288c9f8]
+- Updated dependencies [083d306]
+  - gt-i18n@1.0.0-odysseus.5
+  - @generaltranslation/react-core@11.0.0-odysseus.10
+
 ## 11.0.0-odysseus.9
 
 ### Patch Changes
