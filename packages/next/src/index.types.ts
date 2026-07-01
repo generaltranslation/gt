@@ -365,7 +365,7 @@ export function withGTServerSideProps<
  * @param locale - The locale candidate to validate.
  * @returns True when the locale resolves to one of the configured locales.
  */
-export function isLocaleSupported(_: unknown): _ is string {
+export function isLocaleSupported(_: unknown): boolean {
   throw new Error(typesFileError);
 }
 

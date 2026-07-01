@@ -36,6 +36,6 @@ export function resolveLocaleOrDefault(locale: unknown): string {
  * @param locale - The locale candidate to validate.
  * @returns True when the locale resolves to one of the configured locales.
  */
-export function isLocaleSupported(locale: unknown): locale is string {
+export function isLocaleSupported(locale: unknown): boolean {
   return determineSupportedLocale(locale) !== undefined;
 }
