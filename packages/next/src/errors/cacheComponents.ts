@@ -50,6 +50,6 @@ export const cacheComponentsDevHotReloadDisabledWarning =
     severity: 'Warning',
     whatHappened:
       'cacheComponents is enabled, so development runtime translation hot reload has been disabled',
-    why: 'development runtime translation performs dynamic requests that are not safe inside Cache Components',
+    why: 'development runtime translation performs dynamic requests that are not allowed with Cache Components',
     fix: 'Use local translations, or disable cacheComponents while using development runtime translation hot reload',
   });
