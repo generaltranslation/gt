@@ -37,19 +37,20 @@ export async function getTranslationsInternal({
   const i18nCache = getI18nCache();
   const sourceLocale = getI18nConfig().getDefaultLocale();
   const targetLocale = enableI18n ? locale : sourceLocale;
-  const [
-    lookupSourceDictionary,
-    lookupTargetDictionary,
-    lookupSourceDictionaryObj,
-    lookupTargetDictionaryObj,
-    lookupTranslation,
-  ] = await Promise.all([
-    i18nCache.getLookupDictionary(sourceLocale),
-    i18nCache.getLookupDictionary(targetLocale),
-    i18nCache.getLookupDictionaryObj(sourceLocale),
-    i18nCache.getLookupDictionaryObj(targetLocale),
-    i18nCache.getLookupTranslation(targetLocale),
-  ]);
+  const [sourceDictionary, targetDictionary, lookupTranslation] =
+    await Promise.all([
+      i18nCache.getLookupDictionary(sourceLocale),
+      i18nCache.getLookupDictionary(targetLocale),
+      i18nCache.getLookupTranslation(targetLocale),
+    ]);
+  const {
+    lookupDictionary: lookupSourceDictionary,
+    lookupDictionaryObj: lookupSourceDictionaryObj,
+  } = sourceDictionary;
+  const {
+    lookupDictionary: lookupTargetDictionary,
+    lookupDictionaryObj: lookupTargetDictionaryObj,
+  } = targetDictionary;
 
   /**
    * Dictionary resolution

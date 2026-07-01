@@ -1208,8 +1208,8 @@ describe('I18nCache', () => {
     });
 
     const lookupTranslation = await cache.getLookupTranslation('fr');
-    const lookupDictionary = await cache.getLookupDictionary('fr');
-    const lookupDictionaryObj = await cache.getLookupDictionaryObj('fr');
+    const { lookupDictionary, lookupDictionaryObj } =
+      await cache.getLookupDictionary('fr');
 
     expect(
       cache.lookupTranslation('fr', message, lookupOptions)
