@@ -1,16 +1,9 @@
-import {
-  initializeI18nConfig,
-  setReactI18nCache,
-} from '@generaltranslation/react-core/pure';
-import { ReactI18nCache } from '@generaltranslation/react-core/pure';
 import type { ReactI18nCacheParams } from '@generaltranslation/react-core/pure';
 import type { I18nConfigParams } from 'gt-i18n/internal/types';
 
 export type InitializeGTParams = I18nConfigParams & ReactI18nCacheParams;
 
-export function initializeGT(config: InitializeGTParams): void {
-  initializeI18nConfig(config, 'server-render');
-
-  const i18nCache = new ReactI18nCache(config);
-  setReactI18nCache(i18nCache);
-}
+// Server-render initialization is identical to react-core's shared implementation
+// (there is no native-specific setup here), so re-export it directly instead of
+// maintaining a byte-for-byte copy.
+export { internalInitializeGTSRA as initializeGT } from '@generaltranslation/react-core/pure';
