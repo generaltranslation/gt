@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { standardizeLocale } from '@generaltranslation/format';
-import { GT } from 'generaltranslation';
+import { GTRuntime } from 'generaltranslation/runtime';
 import { NextURL } from 'next/dist/server/web/next-url';
 
 export type PathConfig = {
@@ -269,7 +269,7 @@ export function getLocaleFromRequest(
   referrerLocaleCookieName: string,
   localeCookieName: string,
   resetLocaleCookieName: string,
-  gt: GT
+  gt: GTRuntime
 ): {
   userLocale: string;
   pathnameLocale: string | undefined;
