@@ -62,7 +62,7 @@ export function createGlobalSingleton<T>({
         createDiagnosticMessage({
           source,
           severity: 'Warning',
-          whatHappened: `Overwriting global ${key} singleton instance`,
+          whatHappened: `Global ${key} singleton instance was already initialized`,
         })
       );
       return;

@@ -57,7 +57,9 @@ describe('createGlobalSingleton', () => {
     singleton.set({ id: 'second' });
 
     expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('Overwriting global singleton singleton instance')
+      expect.stringContaining(
+        'Global singleton singleton instance was already initialized'
+      )
     );
     expect(singleton.get()).toBe(value);
   });
