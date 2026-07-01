@@ -1,11 +1,4 @@
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useSyncExternalStore,
-} from 'react';
+import { type RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   createLookupOptions,
   getI18nConfig,
@@ -13,7 +6,6 @@ import {
 } from 'gt-i18n/internal';
 import type { Translation } from 'gt-i18n/types';
 import type {
-  StoreListener,
   TranslateLookup,
   TranslateSnapshot,
 } from '../../i18n-store/storeTypes';
@@ -26,6 +18,7 @@ import {
   useTranslationsSnapshot,
 } from '../../i18n-store/useI18nStore';
 import { useHandleMissingTranslation } from '../utils/missing-translation';
+import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
 
 /**
  * Returns the translation, but also triggers a translation if it is not found
@@ -71,7 +64,11 @@ export function useTrackedTranslationResolver(
   usePreloadCompilerLookups(messages, trackedKeysRef);
 
   // (tx hot reload) Subscribe to translation updates
-  useSubscribeToLookups(trackedKeysRef);
+  useSubscribeToTrackedLookups(
+    trackedKeysRef,
+    i18nStore.subscribeToTranslationEvents,
+    getTranslateListenerKey
+  );
 
   /**
    * Remember that we can make no assumptions about when this cb gets invoked
@@ -102,38 +99,6 @@ export function useTrackedTranslationResolver(
     },
     [i18nStore, translationsSnapshot, onMissingTranslation, devHotReloadEnabled]
   );
-}
-
-/**
- * Subscribe to translation updates, but only trigger re-renders
- * if the lookup is in the tracked keys. Remember that we can make
- * no assumptions about when this list gets updated. Technically,
- * not pure, but this is an acceptable trade since this is
- * really just for translation hot reload.
- *
- * TODO: (separate PR) we can probably do better filtering for adding to the set since this is primarily dev only
- * TODO: reduce code duplication with the other two useSubscribeToLookups functions
- */
-function useSubscribeToLookups(trackedKeysRef: RefObject<Set<string> | null>) {
-  // invalidation counter for triggering updates
-  const versionRef = useRef(0);
-  const i18nStore = useI18nStore();
-  const subscribe = useCallback(
-    (listener: StoreListener) => {
-      return i18nStore.subscribeToTranslationEvents((lookup) => {
-        const key = getTranslateListenerKey(lookup);
-        if (!trackedKeysRef.current!.has(key)) return;
-        versionRef.current++;
-        listener();
-      });
-    },
-    [i18nStore]
-  );
-  const getSnapshot = useCallback(() => {
-    return versionRef.current;
-  }, []);
-
-  useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
 /**
