@@ -61,7 +61,9 @@ describe('i18n cache singleton operations', () => {
 
     expect(getI18nCache()).toBe(cache);
     expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('Overwriting global i18nCache singleton instance')
+      expect.stringContaining(
+        'Global i18nCache singleton instance was already initialized'
+      )
     );
   });
 });
