@@ -12,3 +12,11 @@ export const defaultRegionCookieName = 'generaltranslation.region';
  * Cookie name for persisting the enableI18n feature flag.
  */
 export const defaultEnableI18nCookieName = 'generaltranslation.enable-i18n';
+
+/**
+ * Cookie name for tracking the locale reset.
+ * Used by gt-react's BrowserConditionStore and gt-next's middleware.
+ *
+ * TODO: remove this cookie when we come up with a better solution.
+ */
+export const defaultResetLocaleCookieName = 'generaltranslation.locale-reset';

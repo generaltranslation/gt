@@ -33,6 +33,7 @@ export {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
   defaultRegionCookieName,
+  defaultResetLocaleCookieName,
 } from './utils/cookies';
 export {
   getDictionaryEntry,

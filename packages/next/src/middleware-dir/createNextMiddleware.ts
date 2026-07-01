@@ -6,9 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
-  defaultResetLocaleCookieName,
 } from '../utils/cookies';
-import { defaultLocaleCookieName } from '@generaltranslation/react-core/cookies';
+import {
+  defaultLocaleCookieName,
+  defaultResetLocaleCookieName,
+} from '@generaltranslation/react-core/cookies';
 import {
   PathConfig,
   getSharedPath,
