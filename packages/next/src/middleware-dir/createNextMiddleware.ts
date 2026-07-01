@@ -1,5 +1,5 @@
 import { isSameDialect, standardizeLocale } from '@generaltranslation/format';
-import { GT } from 'generaltranslation';
+import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
@@ -70,7 +70,7 @@ export function createNextMiddleware({
   }
 
   // gt instance
-  const gt = new GT({
+  const gt = new GTRuntime({
     customMapping: envParams?.customMapping,
   });
 
