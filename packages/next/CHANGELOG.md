@@ -1,5 +1,18 @@
 # gt-next
 
+## 11.0.0-odysseus.11
+
+### Patch Changes
+
+- fe7dfd3: Stop forwarding `locale={false}` from `gt-next/link` to the underlying Next.js link after localizing the href.
+
+  This avoids React DOM warnings in newer Next.js versions where the control prop can reach the rendered anchor.
+
+- Updated dependencies [c34cab3]
+  - @generaltranslation/compiler@1.3.25-odysseus.6
+  - @generaltranslation/react-core@11.0.0-odysseus.11
+  - gt-react@11.0.0-odysseus.11
+
 ## 11.0.0-odysseus.10
 
 ### Patch Changes
