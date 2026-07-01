@@ -1,5 +1,12 @@
 # gt-react
 
+## 11.0.0-odysseus.12
+
+### Patch Changes
+
+- Updated dependencies [7be23bc]
+  - @generaltranslation/react-core@11.0.0-odysseus.12
+
 ## 11.0.0-odysseus.11
 
 ### Patch Changes
