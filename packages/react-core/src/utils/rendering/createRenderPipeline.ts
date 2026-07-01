@@ -36,6 +36,7 @@ function createRenderPipeline(components: VariableComponents): RenderPipeline {
   const renderDefaultChildren = createRenderDefaultChildren({ renderVariable });
   const renderTranslatedChildren = createRenderTranslatedChildren({
     renderVariable,
+    renderDefaultChildren,
   });
   const renderPreparedT = createRenderPreparedT({
     renderDefaultChildren,

@@ -10,7 +10,7 @@ import {
   getVariableProps,
   isVariableElementProps,
 } from '../variables/_getVariableProps';
-import { createRenderDefaultChildren } from './renderDefaultChildren.shared';
+import type { RenderDefaultChildrenArgs } from './renderDefaultChildren.shared';
 import { isVariable, libraryDefaultLocale } from 'generaltranslation/internal';
 import { getPluralBranch } from '../plurals/getPluralBranch';
 import {
@@ -34,11 +34,11 @@ type RenderTranslatedChildrenArgs = {
 
 function createRenderTranslatedChildren({
   renderVariable,
+  renderDefaultChildren,
 }: {
   renderVariable: RenderVariable;
+  renderDefaultChildren: (args: RenderDefaultChildrenArgs) => ReactNode;
 }): (args: RenderTranslatedChildrenArgs) => ReactNode {
-  const renderDefaultChildren = createRenderDefaultChildren({ renderVariable });
-
   function renderTranslatedElement({
     sourceElement,
     targetElement,
