@@ -1,5 +1,12 @@
 # gtx-cli
 
+## 2.14.51-odysseus.5
+
+### Patch Changes
+
+- Updated dependencies [4a5f8e8]
+  - gt@2.14.51-odysseus.5
+
 ## 2.14.51-odysseus.4
 
 ### Patch Changes

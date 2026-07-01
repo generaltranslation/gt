@@ -1,5 +1,25 @@
 # gt-tanstack-start
 
+## 11.0.0-odysseus.10
+
+### Patch Changes
+
+- 07f74f0: Clean up stale package metadata and align TanStack Start package entry points.
+- Updated dependencies [432fa49]
+- Updated dependencies [07f74f0]
+- Updated dependencies [432fa49]
+- Updated dependencies [ee34fea]
+- Updated dependencies [bcba6fd]
+- Updated dependencies [933916e]
+- Updated dependencies [b7b3eaf]
+- Updated dependencies [dfb5fc9]
+- Updated dependencies [4a5f8e8]
+- Updated dependencies [288c9f8]
+- Updated dependencies [083d306]
+  - gt-i18n@1.0.0-odysseus.5
+  - gt-react@11.0.0-odysseus.10
+  - @generaltranslation/react-core@11.0.0-odysseus.10
+
 ## 11.0.0-odysseus.9
 
 ### Patch Changes
