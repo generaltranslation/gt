@@ -37,8 +37,8 @@ export function useInternalLocaleSelector(
 
   // create getLocaleProperties callback
   const getLocalePropertiesCallback = useCallback(
-    (locale: string) => {
-      return getLocaleProperties(locale, locale, customMapping);
+    (targetLocale: string) => {
+      return getLocaleProperties(targetLocale, locale, customMapping);
     },
     [locale, customMapping]
   );

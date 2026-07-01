@@ -105,7 +105,7 @@ function handleTaggedTemplateLiteralTranslation(
   const translatedInterpolatedTemplate = i18nCache.lookupTranslation(
     locale,
     interpolatedTemplate,
-    { $format: 'STRING' }
+    { $format: 'ICU' }
   );
   if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
 
