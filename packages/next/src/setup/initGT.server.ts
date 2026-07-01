@@ -1,3 +1,7 @@
+// @ts-expect-error: resolved by Next aliases or gt-next package exports.
+import * as getLocaleModule from 'gt-next/internal/_getLocale';
+// @ts-expect-error: resolved by Next aliases or gt-next package exports.
+import * as getRegionModule from 'gt-next/internal/_getRegion';
 import { getParams } from './shared';
 import type { NextSetupI18nConfigParams } from './shared';
 import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
@@ -14,8 +18,17 @@ import {
 
 /**
  * Initialize GT for Next.js
+ *
+ * Something to note is that even though we initialize the
+ * AsyncConditionStore on the server SSR logic is actually
+ * bound to the ReadonlyConditionStore from ServerGTProvider.
+ *
+ * While technically, this could risk a divergence in locale state,
+ * the ReadonlyConditionStore is tied to the getLocale() function
+ * in the RSC GTProvider, so ReadonlyConditionStore always reads from
+ * the AsyncConditionStore.
  */
-export function initializeGT(
+export function initializeGTServer(
   {
     i18nConfigParams,
     nextI18nCacheParams,
@@ -55,7 +68,7 @@ function resolveGetLocale(): (() => Promise<string>) | undefined {
   const isCustomGetLocaleEnabled =
     process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true';
   if (!isCustomGetLocaleEnabled) return undefined;
-  const module: unknown = require('gt-next/internal/_getLocale');
+  const module: unknown = getLocaleModule;
 
   if (typeof module === 'function') {
     return module as () => Promise<string>;
@@ -76,7 +89,7 @@ function resolveGetRegion(): (() => Promise<string | undefined>) | undefined {
   const isCustomGetRegionEnabled =
     process.env._GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED === 'true';
   if (!isCustomGetRegionEnabled) return undefined;
-  const module: unknown = require('gt-next/internal/_getRegion');
+  const module: unknown = getRegionModule;
 
   if (typeof module === 'function') {
     return module as () => Promise<string | undefined>;

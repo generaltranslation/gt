@@ -44,8 +44,8 @@ vi.mock('../request/getRequestConditions', () => ({
 
 vi.mock('server-only', () => ({}));
 
-vi.mock('../setup/initGT.rsc', () => ({
-  initializeGT: vi.fn(),
+vi.mock('../setup/initGT.server', () => ({
+  initializeGTServer: vi.fn(),
 }));
 
 vi.mock('../setup/initGT', () => ({
@@ -60,6 +60,7 @@ vi.mock('gt-react', () => mockComponents);
 
 describe('rsc component wrappers', () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
     mockGetRequestConditions.mockResolvedValue({
       _locale: 'fr',
@@ -140,5 +141,13 @@ describe('rsc component wrappers', () => {
     expect(module.useLocales).toBeTypeOf('function');
     expect(module.useDefaultLocale).toBeTypeOf('function');
     expect(module.useVersionId).toBeTypeOf('function');
+  });
+
+  it('initializes GT from the server entrypoint', async () => {
+    const { initializeGTServer } = await import('../setup/initGT.server');
+
+    await import('../server');
+
+    expect(initializeGTServer).toHaveBeenCalledOnce();
   });
 });

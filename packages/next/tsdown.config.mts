@@ -4,7 +4,10 @@ import {
   createUseClientBoundaryPlugin,
 } from '../../tsdown.preset.mts';
 
-const neverBundle = [/^server-only$/];
+const neverBundle = [
+  /^server-only$/,
+  /^gt-next\/internal\/_get(Locale|Region)$/,
+];
 
 export default defineConfig([
   createTsdownUnbundleConfig({

@@ -1,5 +1,8 @@
 import 'server-only';
 
+import { initializeGTServer } from './setup/initGT.server';
+initializeGTServer();
+
 /**
  * Rule: have to throw an error if called in a "use client" context
  */
