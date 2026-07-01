@@ -1,4 +1,5 @@
 export { parseLocale } from './functions/parseLocale';
+export { initializeGT } from './setup/initializeGT';
 
 export {
   // ===== Components ===== //
@@ -37,6 +38,4 @@ export {
   gtFallback,
   getTranslationsSnapshot,
   t,
-  // ===== Setup ===== //
-  initializeGT,
 } from 'gt-react';
