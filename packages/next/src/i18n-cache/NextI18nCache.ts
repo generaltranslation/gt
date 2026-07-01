@@ -20,6 +20,14 @@ export function setNextI18nCache(i18nCache: NextI18nCache): void {
   setI18nCache(i18nCache as I18nCache<Translation>);
 }
 
+export function hasNextI18nCache(): boolean {
+  try {
+    return getI18nCache() instanceof NextI18nCache;
+  } catch {
+    return false;
+  }
+}
+
 export type NextI18nCacheParams = ReactI18nCacheParams;
 
 export class NextI18nCache extends ReactI18nCache {
