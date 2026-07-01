@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nCache } from '../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
 import type { I18nCacheConstructorParams } from '../../i18n-cache/types';
@@ -14,6 +14,14 @@ import {
 import { hashMessage } from '../../utils/hashMessage';
 import { t } from '../t';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 describe('t', () => {
   function createCache(
     i18nConfig: I18nConfigParams,
@@ -23,9 +31,9 @@ describe('t', () => {
     return new I18nCache(cacheConfig);
   }
 
-  afterEach(() => {
-    setWritableConditionStore({ getLocale: () => 'en' });
-  });
+  beforeEach(resetGTGlobals);
+
+  afterEach(resetGTGlobals);
 
   it('works without an explicit locale', () => {
     setWritableConditionStore({ getLocale: () => 'en' });

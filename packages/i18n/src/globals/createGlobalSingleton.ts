@@ -65,6 +65,7 @@ export function createGlobalSingleton<T>({
           whatHappened: `Overwriting global ${key} singleton instance`,
         })
       );
+      return;
     }
     ns[key] = next as unknown;
   }

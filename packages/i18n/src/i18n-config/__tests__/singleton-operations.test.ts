@@ -63,11 +63,12 @@ describe('i18n config singleton operations', () => {
     expect(getI18nConfig()).toBe(config);
   });
 
-  it('warns when overwriting an existing global config', async () => {
-    const { initializeI18nConfig } = await import('../singleton-operations');
+  it('warns and preserves an existing global config', async () => {
+    const { getI18nConfig, initializeI18nConfig } =
+      await import('../singleton-operations');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    initializeI18nConfig({
+    const config = initializeI18nConfig({
       defaultLocale: 'en',
     });
     initializeI18nConfig({
@@ -79,6 +80,7 @@ describe('i18n config singleton operations', () => {
         'Overwriting global i18nConfig singleton instance'
       )
     );
+    expect(getI18nConfig()).toBe(config);
   });
 
   it('preserves existing i18n global fields when setting config', async () => {

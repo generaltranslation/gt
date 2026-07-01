@@ -10,8 +10,14 @@ export function initializeGTClient(): void {
   coreInitializeGT({
     ...params,
     nextI18nCacheParams: {
-      cacheExpiryTime: null,
       ...params.nextI18nCacheParams,
+      /**
+       * Always disable cache expiry for client-side lookups.
+       * Translations are exclusively passed from server to client, so
+       * if translations ever expire, then the client will have no way
+       * to fetch new translations.
+       */
+      cacheExpiryTime: null,
     },
   });
 }

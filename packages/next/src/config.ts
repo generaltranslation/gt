@@ -40,6 +40,10 @@ import {
 } from './config-dir/utils/resolveRequestFunctionPaths';
 import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath';
 import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
+import {
+  cacheComponentsDevHotReloadDisabledWarning,
+  cacheComponentsMissingLoadTranslationsError,
+} from './errors/cacheComponents';
 import { I18nConfigParams } from 'gt-i18n/internal/types';
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
 
@@ -68,6 +72,8 @@ type InternalGTConfigProps = BaseWithGTConfigProps &
     loadDictionaryEnabled?: boolean;
     loadTranslationsType?: 'remote' | 'custom' | 'disabled';
     _dictionaryFileType?: string;
+    _cacheComponentsEnabled?: boolean;
+    _disableDevHotReload?: boolean;
   };
 
 type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
@@ -449,6 +455,18 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     mergedConfig.loadTranslationsType = 'remote';
   }
 
+  if (internalNextConfig.cacheComponents) {
+    if (mergedConfig.loadTranslationsType !== 'custom') {
+      throw new Error(cacheComponentsMissingLoadTranslationsError);
+    }
+    if (isDevHotReloadEnabled(mergedConfig)) {
+      console.warn(cacheComponentsDevHotReloadDisabledWarning);
+    }
+    mergedConfig._cacheComponentsEnabled = true;
+    mergedConfig._disableDevHotReload = true;
+    mergedConfig.cacheExpiryTime = 0;
+  }
+
   // Set default cache expiry if and only if no dev key
   if (
     mergedConfig.loadTranslationsType == 'remote' &&
@@ -725,6 +743,16 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     },
   };
   return config as WithGTConfigResult<TNextConfig>;
+}
+
+function isDevHotReloadEnabled(config: InternalGTConfigProps): boolean {
+  return (
+    !!config.devApiKey &&
+    !!config.projectId &&
+    config.runtimeUrl !== null &&
+    config.runtimeUrl !== '' &&
+    process.env.NODE_ENV === 'development'
+  );
 }
 
 // Keep initGT for backward compatibility

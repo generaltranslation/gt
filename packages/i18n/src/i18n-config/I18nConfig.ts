@@ -27,11 +27,12 @@ export type I18nConfigParams = Pick<
   | 'apiKey'
   | 'cacheUrl'
   | 'runtimeUrl'
+  | '_disableDevHotReload'
 >;
 
 type RuntimeConfig = Pick<
   I18nConfigParams,
-  'projectId' | 'devApiKey' | 'apiKey' | 'runtimeUrl'
+  'projectId' | 'devApiKey' | 'apiKey' | 'runtimeUrl' | '_disableDevHotReload'
 >;
 
 export type LocaleCandidates = string | string[] | undefined;
@@ -48,6 +49,7 @@ export class I18nConfig extends LocaleConfig {
       devApiKey: params.devApiKey,
       apiKey: params.apiKey,
       runtimeUrl: params.runtimeUrl,
+      _disableDevHotReload: params._disableDevHotReload,
     };
     this.gtServicesEnabled = gtServicesEnabled;
   }
@@ -133,6 +135,7 @@ export class I18nConfig extends LocaleConfig {
    */
   isDevHotReloadEnabled(): boolean {
     return (
+      !this.runtimeConfig._disableDevHotReload &&
       !!this.runtimeConfig.devApiKey &&
       !!this.runtimeConfig.projectId &&
       this.runtimeConfig.runtimeUrl !== null &&

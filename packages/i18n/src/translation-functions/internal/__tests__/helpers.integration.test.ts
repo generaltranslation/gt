@@ -9,6 +9,14 @@ import {
   resolveJsxWithRuntimeFallback,
 } from '../helpers';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 // Mock createTranslateManyFactory to inject controlled translateMany
 const mockTranslateMany = vi.fn();
 vi.mock(
@@ -22,12 +30,14 @@ vi.mock(
 
 describe('translation helpers (deep integration)', () => {
   beforeEach(() => {
+    resetGTGlobals();
     vi.useFakeTimers();
     vi.clearAllMocks();
     mockTranslateMany.mockReset();
   });
 
   afterEach(() => {
+    resetGTGlobals();
     vi.useRealTimers();
   });
 

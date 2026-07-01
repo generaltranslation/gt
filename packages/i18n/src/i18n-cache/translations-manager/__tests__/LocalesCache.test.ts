@@ -8,6 +8,14 @@ import type { LocalesTranslationsCacheMissCallback } from '../LocalesCache';
 import type { SafeTranslationsLoader } from '../translations-loaders/types';
 import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 describe('LocalesCache', () => {
   let mockLoadTranslations: ReturnType<typeof vi.fn>;
   let mockLoadDictionary: ReturnType<typeof vi.fn>;
@@ -30,6 +38,7 @@ describe('LocalesCache', () => {
   };
 
   beforeEach(() => {
+    resetGTGlobals();
     vi.useFakeTimers();
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
     mockLoadTranslations = vi.fn().mockResolvedValue(frTranslations);
@@ -39,6 +48,7 @@ describe('LocalesCache', () => {
   });
 
   afterEach(() => {
+    resetGTGlobals();
     vi.useRealTimers();
   });
 

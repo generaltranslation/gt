@@ -50,16 +50,19 @@ describe('react-core i18n store singleton operations', () => {
     expect(getI18nStore()).toBe(store);
   });
 
-  it('warns when overwriting an existing global i18n store', async () => {
-    const { setI18nStore } = await import('../singleton-operations');
+  it('warns and preserves an existing global i18n store', async () => {
+    const { getI18nStore, setI18nStore } =
+      await import('../singleton-operations');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const store = createI18nStoreStub();
 
-    setI18nStore(createI18nStoreStub());
+    setI18nStore(store);
     setI18nStore(createI18nStoreStub());
 
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('Overwriting global i18nStore singleton instance')
     );
+    expect(getI18nStore()).toBe(store);
   });
 
   it('preserves existing package globals when setting the i18n store', async () => {

@@ -44,6 +44,7 @@ export type GTConfig = {
   // remote translate config
   runtimeUrl?: string | null;
   modelProvider?: string;
+  _disableDevHotReload?: boolean;
 
   // other
   localeCookieName?: string;

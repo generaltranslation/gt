@@ -1105,6 +1105,73 @@ describe('withGTConfig', () => {
       // loadTranslationsType is 'custom' so cacheExpiryTime should not be defaulted
       expect(params.cacheExpiryTime).toBeUndefined();
     });
+
+    it('0 when cacheComponents is enabled', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const resolvedPath = require('path').resolve('./loadTranslations.ts');
+      vi.mocked(fs.existsSync).mockImplementation((p) => p === resolvedPath);
+
+      const result = withGTConfig(
+        { cacheComponents: true },
+        { loadTranslationsPath: './loadTranslations.ts' }
+      );
+      const params = parseConfigParams(result);
+
+      expect(params.cacheExpiryTime).toBe(0);
+      expect(params._cacheComponentsEnabled).toBe(true);
+      expect(params._disableDevHotReload).toBe(true);
+    });
+
+    it('overrides explicit cacheExpiryTime when cacheComponents is enabled', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const resolvedPath = require('path').resolve('./loadTranslations.ts');
+      vi.mocked(fs.existsSync).mockImplementation((p) => p === resolvedPath);
+
+      const result = withGTConfig(
+        { cacheComponents: true },
+        {
+          cacheExpiryTime: 30000,
+          loadTranslationsPath: './loadTranslations.ts',
+        }
+      );
+      const params = parseConfigParams(result);
+
+      expect(params.cacheExpiryTime).toBe(0);
+    });
+
+    it('warns when cacheComponents disables active dev hot reload translation', async () => {
+      const withGTConfig = await getWithGTConfig();
+      process.env.GT_PROJECT_ID = 'project-id';
+      process.env.GT_DEV_API_KEY = 'dev-key';
+      const resolvedPath = require('path').resolve('./loadTranslations.ts');
+      vi.mocked(fs.existsSync).mockImplementation((p) => p === resolvedPath);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = withGTConfig(
+        { cacheComponents: true },
+        {
+          loadTranslationsPath: './loadTranslations.ts',
+          getLocalePath: './getLocale.ts',
+          getRegionPath: './getRegion.ts',
+        }
+      );
+      const params = parseConfigParams(result);
+
+      expect(params._disableDevHotReload).toBe(true);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'development runtime translation hot reload has been disabled'
+        )
+      );
+    });
+
+    it('throws when cacheComponents is enabled without custom loadTranslations', async () => {
+      const withGTConfig = await getWithGTConfig();
+
+      expect(() => withGTConfig({ cacheComponents: true })).toThrow(
+        /custom loadTranslations\(\) is not configured/
+      );
+    });
   });
 
   // ==============================

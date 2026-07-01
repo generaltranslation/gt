@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createGlobalSingleton } from '../createGlobalSingleton';
 
 type TestGlobal = typeof globalThis & {
@@ -41,5 +41,24 @@ describe('createGlobalSingleton', () => {
 
     expect(singleton.isInitialized()).toBe(false);
     expect(() => singleton.get()).toThrow('singleton missing');
+  });
+
+  it('warns and preserves an existing singleton instance', () => {
+    const singleton = createGlobalSingleton<{ id: string }>({
+      namespace: 'testGlobalSingleton',
+      key: 'singleton',
+      source: 'gt-i18n',
+      notInitialized: () => 'singleton missing',
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const value = { id: 'first' };
+
+    singleton.set(value);
+    singleton.set({ id: 'second' });
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Overwriting global singleton singleton instance')
+    );
+    expect(singleton.get()).toBe(value);
   });
 });

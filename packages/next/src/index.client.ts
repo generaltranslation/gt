@@ -1,6 +1,6 @@
 'use client';
 
-import { initializeGTClient } from './setup/initializeGTClient';
+import { initializeGTClient } from './setup/initGT.client';
 initializeGTClient();
 
 import type {

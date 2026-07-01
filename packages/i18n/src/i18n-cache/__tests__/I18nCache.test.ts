@@ -21,6 +21,14 @@ const lookupOptions: LookupOptions = {
 const expectedHash = hashMessage(message, lookupOptions);
 const translatedString = 'Bonjour {name} !';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 function createCache(overrides: Record<string, unknown> = {}) {
   const {
     defaultLocale = 'en',
@@ -28,6 +36,7 @@ function createCache(overrides: Record<string, unknown> = {}) {
     customMapping,
     ...cacheOverrides
   } = overrides;
+  resetGTGlobals();
   initializeI18nConfig({
     defaultLocale: defaultLocale as string,
     locales: locales as string[],
@@ -44,6 +53,7 @@ function createCache(overrides: Record<string, unknown> = {}) {
 
 describe('I18nCache', () => {
   beforeEach(() => {
+    resetGTGlobals();
     initializeI18nConfig({
       defaultLocale: 'en',
       locales: ['en', 'fr', 'es'],
@@ -53,6 +63,7 @@ describe('I18nCache', () => {
   });
 
   afterEach(() => {
+    resetGTGlobals();
     vi.useRealTimers();
     vi.unstubAllEnvs();
   });
@@ -1183,6 +1194,47 @@ describe('I18nCache', () => {
     await expect(cache.getLookupTranslation('fr')).resolves.toEqual(
       expect.any(Function)
     );
+  });
+
+  it('async lookup resolvers retain the loaded snapshot when cacheExpiryTime is 0', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Bonjour',
+      user: {
+        profile: {
+          name: 'Nom',
+        },
+      },
+    });
+    const cache = createCache({
+      cacheExpiryTime: 0,
+      dictionary: {
+        greeting: 'Hello',
+        user: {
+          profile: {
+            name: 'Name',
+          },
+        },
+      },
+      loadDictionary,
+    });
+
+    const lookupTranslation = await cache.getLookupTranslation('fr');
+    const { lookupDictionary, lookupDictionaryObj } =
+      await cache.getLookupDictionary('fr');
+
+    expect(
+      cache.lookupTranslation('fr', message, lookupOptions)
+    ).toBeUndefined();
+    expect(cache.lookupDictionary('fr', 'greeting')).toBeUndefined();
+    expect(cache.lookupDictionaryObj('fr', 'user.profile')).toBeUndefined();
+    expect(lookupTranslation(message, lookupOptions)).toBe(translatedString);
+    expect(lookupDictionary('greeting')).toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
+    expect(lookupDictionaryObj('user.profile')).toEqual({
+      name: 'Nom',
+    });
   });
 
   it('does not clone leaf dictionary values on lookup', async () => {
