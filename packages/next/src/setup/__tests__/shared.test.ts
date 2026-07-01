@@ -72,7 +72,7 @@ describe('getParams', () => {
     expect(i18nConfigParams.devApiKey).toBe('public-dev-key');
   });
 
-  it('keeps the default translation loader when cacheComponents is enabled', () => {
+  it('lets the i18n cache choose the remote translation loader', () => {
     updatePrivateConfig({
       _cacheComponentsEnabled: true,
       _disableDevHotReload: true,
@@ -84,8 +84,7 @@ describe('getParams', () => {
 
     expect(i18nConfigParams._disableDevHotReload).toBe(true);
     expect(nextI18nCacheParams.cacheExpiryTime).toBe(0);
-    expect(nextI18nCacheParams.loadTranslations?.toString()).toContain(
-      'loadTranslations'
-    );
+    expect(nextI18nCacheParams._versionId).toBe('version-id');
+    expect(nextI18nCacheParams.loadTranslations).toBeUndefined();
   });
 });
