@@ -1,5 +1,11 @@
 # @generaltranslation/react-core
 
+## 11.0.0-odysseus.12
+
+### Patch Changes
+
+- 7be23bc: Share tracked lookup subscription handling across resolver hooks.
+
 ## 11.0.0-odysseus.11
 
 ## 11.0.0-odysseus.10

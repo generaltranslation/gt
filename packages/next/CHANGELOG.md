@@ -1,5 +1,14 @@
 # gt-next
 
+## 11.0.0-odysseus.12
+
+### Patch Changes
+
+- 31884d2: Initialize gt-next server entrypoints with a shared server condition store.
+- Updated dependencies [7be23bc]
+  - @generaltranslation/react-core@11.0.0-odysseus.12
+  - gt-react@11.0.0-odysseus.12
+
 ## 11.0.0-odysseus.11
 
 ### Patch Changes
