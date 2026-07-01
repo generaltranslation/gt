@@ -41,8 +41,5 @@ export function getI18nCache<U extends Translation = Translation>():
 export function setI18nCache<TranslationValue extends Translation>(
   i18nCacheInstance: I18nCache<TranslationValue>
 ): void {
-  if (i18nCacheSingleton.isInitialized()) {
-    return;
-  }
   i18nCacheSingleton.set(i18nCacheInstance as unknown as I18nCache);
 }
