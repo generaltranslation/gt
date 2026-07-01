@@ -10,7 +10,4 @@ export type TxProps = Record<string, ReactNode> & {
   context?: string;
   maxChars?: number;
   locale?: string;
-  $context?: string;
-  $maxChars?: number;
-  $locale?: string;
 };

@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import type { TxProps } from './utils/TxProps';
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { initializeGTSRAClient as initializeGT } from './setup/initializeGTSRAClient';
@@ -16,16 +17,6 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from './cookie-names';
-
-type TxProps = Record<string, ReactNode> & {
-  children: ReactNode;
-  context?: string;
-  locale?: string;
-  maxChars?: number;
-  $context?: string;
-  $locale?: string;
-  $maxChars?: number;
-};
 
 // ===== Components ===== //
 export { LocaleSelector } from './components/LocaleSelector';
