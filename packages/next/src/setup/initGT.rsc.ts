@@ -1,5 +1,8 @@
 import { getParams } from './shared';
-import type { NextSetupI18nConfigParams } from './shared';
+import type {
+  NextSetupI18nConfigParams,
+  PrivateI18nConfigParams,
+} from './shared';
 import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
 import { initializeGT as coreInitializeGT } from './initGT';
 import {
@@ -19,9 +22,11 @@ export function initializeGT(
   {
     i18nConfigParams,
     nextI18nCacheParams,
+    privateConfig,
   }: {
     i18nConfigParams: NextSetupI18nConfigParams;
     nextI18nCacheParams: NextI18nCacheParams;
+    privateConfig: PrivateI18nConfigParams;
   } = getParams()
 ): void {
   coreInitializeGT({
@@ -29,7 +34,7 @@ export function initializeGT(
     nextI18nCacheParams,
   });
 
-  const asyncConditionStoreParams = getAsyncConditionStoreParams();
+  const asyncConditionStoreParams = getAsyncConditionStoreParams(privateConfig);
 
   // Note that this gets used by RSC, but SSR (aka 'use client' bondary on server)
   // uses context to access this condition store
@@ -37,58 +42,52 @@ export function initializeGT(
   setAsyncConditionStore(conditionStore);
 }
 
-function getAsyncConditionStoreParams(): AsyncConditionStoreParams {
-  // TODO: we are parsing this twice, address in separate PR
-  const privateConfig = JSON.parse(
-    process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
-  );
+function getAsyncConditionStoreParams(
+  privateConfig: PrivateI18nConfigParams
+): AsyncConditionStoreParams {
   return {
     headerName: privateConfig.headersAndCookies?.localeHeaderName,
     cookieName: privateConfig.headersAndCookies?.localeCookieName,
     ignorePreferredLanguages: privateConfig.ignoreBrowserLocales,
-    getLocale: resolveGetLocale(),
-    getRegion: resolveGetRegion(),
+    getLocale: resolveCustomGetter<string>(
+      process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true',
+      // Keep require paths static string literals so the bundler can resolve them.
+      () => require('gt-next/internal/_getLocale'),
+      'getLocale',
+      customGetLocaleUnresolvedWarning
+    ),
+    getRegion: resolveCustomGetter<string | undefined>(
+      process.env._GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED === 'true',
+      () => require('gt-next/internal/_getRegion'),
+      'getRegion',
+      customGetRegionUnresolvedWarning
+    ),
   };
 }
 
-function resolveGetLocale(): (() => Promise<string>) | undefined {
-  const isCustomGetLocaleEnabled =
-    process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true';
-  if (!isCustomGetLocaleEnabled) return undefined;
-  const module: unknown = require('gt-next/internal/_getLocale');
+/**
+ * Resolve a user-provided custom getter (getLocale / getRegion) from its module,
+ * accepting either a bare function export, a default export, or a named export.
+ */
+function resolveCustomGetter<T>(
+  isEnabled: boolean,
+  loadModule: () => unknown,
+  memberName: string,
+  unresolvedWarning: string
+): (() => Promise<T>) | undefined {
+  if (!isEnabled) return undefined;
+  const module = loadModule();
 
   if (typeof module === 'function') {
-    return module as () => Promise<string>;
+    return module as () => Promise<T>;
   } else if (typeof module === 'object' && module !== null) {
     if ('default' in module && typeof module.default === 'function') {
-      return module.default as () => Promise<string>;
-    } else if (
-      'getLocale' in module &&
-      typeof module.getLocale === 'function'
-    ) {
-      return module.getLocale as () => Promise<string>;
+      return module.default as () => Promise<T>;
+    }
+    const namedExport = (module as Record<string, unknown>)[memberName];
+    if (typeof namedExport === 'function') {
+      return namedExport as () => Promise<T>;
     }
   }
-  console.warn(customGetLocaleUnresolvedWarning);
-}
-
-function resolveGetRegion(): (() => Promise<string | undefined>) | undefined {
-  const isCustomGetRegionEnabled =
-    process.env._GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED === 'true';
-  if (!isCustomGetRegionEnabled) return undefined;
-  const module: unknown = require('gt-next/internal/_getRegion');
-
-  if (typeof module === 'function') {
-    return module as () => Promise<string | undefined>;
-  } else if (typeof module === 'object' && module !== null) {
-    if ('default' in module && typeof module.default === 'function') {
-      return module.default as () => Promise<string | undefined>;
-    } else if (
-      'getRegion' in module &&
-      typeof module.getRegion === 'function'
-    ) {
-      return module.getRegion as () => Promise<string | undefined>;
-    }
-  }
-  console.warn(customGetRegionUnresolvedWarning);
+  console.warn(unresolvedWarning);
 }

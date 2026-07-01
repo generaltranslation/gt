@@ -44,7 +44,8 @@ describe('getParams', () => {
     process.env.GT_API_KEY = 'api-key';
     process.env.GT_DEV_API_KEY = 'dev-key';
 
-    const { i18nConfigParams, nextI18nCacheParams } = getParams();
+    const { i18nConfigParams, nextI18nCacheParams, privateConfig } =
+      getParams();
 
     expect(i18nConfigParams).toMatchObject({
       projectId: 'project-id',
@@ -57,6 +58,11 @@ describe('getParams', () => {
       apiKey: 'api-key',
       devApiKey: 'dev-key',
       cacheExpiryTime: 12345,
+    });
+    expect(privateConfig).toMatchObject({
+      cacheUrl: 'https://cache.example.com',
+      cacheExpiryTime: 12345,
+      _versionId: 'version-id',
     });
   });
 

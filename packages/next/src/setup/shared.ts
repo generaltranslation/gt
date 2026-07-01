@@ -8,16 +8,38 @@ export type NextSetupI18nConfigParams = I18nConfigParams & {
   _disableDevHotReload?: boolean;
 };
 
+/**
+ * Shape of the private build-time config serialized into
+ * `_GENERALTRANSLATION_I18N_CONFIG_PARAMS`. Only the fields consumed at runtime
+ * are typed here.
+ */
+export type PrivateI18nConfigParams = {
+  cacheUrl?: string;
+  cacheExpiryTime?: number | null;
+  _versionId?: string;
+  _disableDevHotReload?: boolean;
+  ignoreBrowserLocales?: boolean;
+  maxConcurrentRequests?: number;
+  maxBatchSize?: number;
+  batchInterval?: number;
+  renderSettings?: { timeout?: number };
+  headersAndCookies?: {
+    localeHeaderName?: string;
+    localeCookieName?: string;
+  };
+};
+
 // TODO: better way of communicating from build to runtime
 export function getParams(): {
   i18nConfigParams: NextSetupI18nConfigParams;
   nextI18nCacheParams: NextI18nCacheParams;
+  privateConfig: PrivateI18nConfigParams;
 } {
   // Read from build output
   const publicConfig = JSON.parse(
     process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
   );
-  const privateConfig = JSON.parse(
+  const privateConfig: PrivateI18nConfigParams = JSON.parse(
     process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
   );
   const { projectId, devApiKey, apiKey } = getRuntimeCredentials();
@@ -73,6 +95,7 @@ export function getParams(): {
   return {
     i18nConfigParams,
     nextI18nCacheParams,
+    privateConfig,
   };
 }
 
