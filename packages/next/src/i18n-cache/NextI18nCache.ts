@@ -1,4 +1,9 @@
-import { getI18nCache, setI18nCache, type I18nCache } from 'gt-i18n/internal';
+import {
+  getI18nCache,
+  getI18nConfig,
+  setI18nCache,
+  type I18nCache,
+} from 'gt-i18n/internal';
 import type { Locale } from 'gt-i18n/internal/types';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import { isValidElement } from 'react';
@@ -30,7 +35,9 @@ export class NextI18nCache extends ReactI18nCache {
       ...(loadDictionary && {
         dictionary: params.dictionary ?? {},
         loadDictionary: async (locale: string) =>
-          ((await loadDictionary(locale)) || {}) as Dictionary,
+          locale === getI18nConfig().getDefaultLocale()
+            ? (((await getDictionary()) || {}) as Dictionary)
+            : (((await loadDictionary(locale)) || {}) as Dictionary),
       }),
     });
   }
@@ -66,5 +73,12 @@ export class NextI18nCache extends ReactI18nCache {
     return {
       [locale]: dictionary as unknown as Dictionary,
     };
+  }
+
+  override async getLookupDictionary(
+    locale: string
+  ): Promise<Awaited<ReturnType<ReactI18nCache['getLookupDictionary']>>> {
+    this.updateDictionaries(await this.loadDictionaries(locale));
+    return super.getLookupDictionary(locale);
   }
 }
