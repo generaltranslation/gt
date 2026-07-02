@@ -48,6 +48,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 | `gt-node`                               | `packages/node`              | Node.js backend translation utilities                             |
 | `gt-react-native`                       | `packages/react-native`      | React Native i18n with native module support                      |
 | `gt-tanstack-start`                     | `packages/tanstack-start`    | TanStack Start integration                                        |
+| `gt-vue`                                | `packages/vue`               | Vue 3 i18n with `<T>` component, composables, SPA bootstrap       |
 | `gt-sanity`                             | `packages/sanity`            | Sanity CMS plugin                                                 |
 | `@generaltranslation/compiler`          | `packages/compiler`          | Build plugin (webpack, Vite, Rollup, esbuild) via unplugin        |
 | `gt`                                    | `packages/cli`               | Main CLI tool (`npx gt`)                                          |
