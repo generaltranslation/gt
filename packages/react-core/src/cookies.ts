@@ -5,4 +5,5 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
   defaultEnableI18nCookieName,
+  defaultResetLocaleCookieName,
 } from './utils/cookies';

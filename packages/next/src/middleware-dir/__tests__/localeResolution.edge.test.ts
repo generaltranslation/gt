@@ -7,6 +7,7 @@ import { getLocaleFromRequest } from '../utils';
 // Mock react-core/cookies — only provides a constant, avoids deep react-core build chain
 vi.mock('@generaltranslation/react-core/cookies', () => ({
   defaultLocaleCookieName: 'generaltranslation.locale',
+  defaultResetLocaleCookieName: 'generaltranslation.locale-reset',
 }));
 
 // ---- Cookie Constants ----
