@@ -1,5 +1,12 @@
 # gt-i18n
 
+## 1.0.0-odysseus.6
+
+### Patch Changes
+
+- a2b9677: Restore namespace scoping for getTranslations and server useTranslations.
+- 41371e0: Read Vite runtime credentials during React initialization while keeping dev API keys out of production bundles.
+
 ## 1.0.0-odysseus.5
 
 ### Patch Changes

@@ -46,6 +46,7 @@
     "consolidated-next-odysseus",
     "dev-hot-reload-getgt",
     "fix-link-locale-false",
+    "fix-namespace-translations",
     "fix-react-import-meta-env",
     "fix-react-version-id-locale-direction-hooks",
     "getgt-preload-format",
@@ -53,6 +54,7 @@
     "gt-next-esm-build",
     "gt-next-react-server-types",
     "gt-services-enabled-singleton",
+    "keep-locale-cookie-on-reset",
     "odysseus-all-packages-patch",
     "odysseus-format-patch-bump",
     "odysseus-major-version-bumps",
@@ -86,6 +88,7 @@
     "trim-next-ssg-experimental",
     "trim-orphan-files",
     "trim-react-core-dead-dictionaries",
-    "trim-react-core-pure-exports"
+    "trim-react-core-pure-exports",
+    "vite-runtime-credentials"
   ]
 }
