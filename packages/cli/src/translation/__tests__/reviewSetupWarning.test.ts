@@ -94,6 +94,10 @@ describe('warnManualReviewSetup', () => {
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
+  // Wrapping may break phrases across lines, so assert on unwrapped text
+  const unwrappedWarning = () =>
+    (vi.mocked(logger.warn).mock.calls[0][0] as string).replace(/\n/g, ' ');
+
   it('warns definitively when the project auto-approves', () => {
     warnManualReviewSetup(
       makeSettings(['a.json']),
@@ -101,7 +105,7 @@ describe('warnManualReviewSetup', () => {
       true
     );
     expect(logger.warn).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(logger.warn).mock.calls[0][0]).toContain(
+    expect(unwrappedWarning()).toContain(
       'this project approves new translations automatically'
     );
   });
@@ -109,9 +113,7 @@ describe('warnManualReviewSetup', () => {
   it('warns conditionally when the auto-approve setting is unknown', () => {
     warnManualReviewSetup(makeSettings(['a.json']), [normalFile('a.json')]);
     expect(logger.warn).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(logger.warn).mock.calls[0][0]).toContain(
-      'unless auto-approval is turned off'
-    );
+    expect(unwrappedWarning()).toContain('unless auto-approval is turned off');
   });
 
   it('names the exact dashboard setting in the call to action', () => {
@@ -120,8 +122,20 @@ describe('warnManualReviewSetup', () => {
       [normalFile('a.json')],
       true
     );
-    expect(vi.mocked(logger.warn).mock.calls[0][0]).toContain(
+    expect(unwrappedWarning()).toContain(
       '"Auto approve translations" in your project settings'
     );
+  });
+
+  it('wraps the warning into consistent-width lines', () => {
+    warnManualReviewSetup(makeSettings(['a.json']), [normalFile('a.json')]);
+    const textLines = (vi.mocked(logger.warn).mock.calls[0][0] as string)
+      .split('\n')
+      .slice(0, -1); // last line is the URL, which is never wrapped
+    expect(textLines.length).toBeGreaterThanOrEqual(3);
+    for (const line of textLines) {
+      expect(line.length).toBeLessThanOrEqual(70);
+      expect(line.length).toBeGreaterThan(40);
+    }
   });
 });

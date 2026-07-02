@@ -43,17 +43,32 @@ export function warnManualReviewSetup(
     autoApprove === true
       ? 'but this project approves new translations automatically.'
       : 'but new translations are approved automatically unless auto-approval is turned off for this project.';
-  // Short lines with explicit breaks so terminal wrapping stays clean.
   // "Auto approve translations" matches the dashboard setting title exactly.
+  const message =
+    `Some of your content requires review (requiresReview), ${autoApproveClause} ` +
+    `To review translations before they are used, disable "Auto approve translations" in your project settings:`;
   logger.warn(
     chalk.yellow(
-      [
-        `Some of your content requires review (requiresReview),`,
-        autoApproveClause,
-        `To review translations before they are used, disable`,
-        `"Auto approve translations" in your project settings:`,
-        chalk.cyan(settingsUrl),
-      ].join('\n')
+      [...wrapWords(message, 70), chalk.cyan(settingsUrl)].join('\n')
     )
   );
+}
+
+/**
+ * Greedy word wrap so warning lines render at a consistent width instead of
+ * one terminal-width line followed by stubby fragments.
+ */
+function wrapWords(text: string, width: number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    if (line && line.length + 1 + word.length > width) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = line ? `${line} ${word}` : word;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
 }
