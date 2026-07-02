@@ -135,6 +135,7 @@ export type _Message = {
   $id?: string;
   $context?: string;
   $maxChars?: number;
+  $requiresReview?: boolean;
   $_hash?: string;
 };
 export type _Messages = _Message[];

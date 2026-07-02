@@ -52,6 +52,7 @@ export default function useGT(_messages?: _Messages) {
       $id?: string;
       $context?: string;
       $maxChars?: number;
+      $requiresReview?: boolean;
       $_hash?: string;
     } = {}
   ): string {
@@ -64,6 +65,7 @@ export default function useGT(_messages?: _Messages) {
    * @param {string} [options.$context] - Additional context for the translation.
    * @param {string} [options.$id] - Optional identifier for the translation string.
    * @param {number} [options.$maxChars] - Maximum number of characters for the translated message.
+   * @param {boolean} [options.$requiresReview] - Whether the translated message requires approval before use. Must be a boolean literal.
    * @param {StringFormat} [options.$format] - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
    * @returns The translated version of content
    *

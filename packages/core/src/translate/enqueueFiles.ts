@@ -7,7 +7,6 @@ import { validateFileFormatTransforms } from './utils/validateFileFormatTransfor
 export type EnqueueOptions = {
   sourceLocale?: string;
   targetLocales: string[];
-  requireApproval?: boolean;
   modelProvider?: string;
   force?: boolean;
   timeout?: number;
@@ -41,7 +40,6 @@ export default async function _enqueueFiles(
         })),
         targetLocales: options.targetLocales,
         sourceLocale: options.sourceLocale,
-        requireApproval: options.requireApproval,
         modelProvider: options.modelProvider,
         force: options.force,
       };

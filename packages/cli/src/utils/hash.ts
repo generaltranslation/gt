@@ -10,3 +10,19 @@ export function hashStringSync(string: string): string {
   hash.update(string);
   return hash.digest('hex');
 }
+
+/**
+ * Computes a file content version hash. When the file's effective
+ * requiresReview policy is true, the policy is mixed into the hash so
+ * review-policy changes produce a new version identity even for unchanged
+ * content. A false policy hashes identically to the plain content hash,
+ * preserving pre-requiresReview version IDs.
+ */
+export function hashVersionId(
+  content: string,
+  requiresReview: boolean
+): string {
+  return requiresReview
+    ? hashStringSync(content + '\u0000requiresReview:true')
+    : hashStringSync(content);
+}

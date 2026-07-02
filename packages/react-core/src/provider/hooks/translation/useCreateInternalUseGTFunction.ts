@@ -138,6 +138,7 @@ export default function useCreateInternalUseGTFunction({
       $maxChars?: number;
       $id?: string;
       $_hash?: string;
+      $requiresReview?: boolean;
     } = {}
   ) {
     if (!message || typeof message !== 'string') return null;
@@ -148,6 +149,7 @@ export default function useCreateInternalUseGTFunction({
       $maxChars: maxChars,
       $_hash: _hash,
       $format: rawFormat,
+      $requiresReview: requiresReview,
       ...variables
     } = options;
     const format =
@@ -176,6 +178,7 @@ export default function useCreateInternalUseGTFunction({
         source: indexVars(message),
         ...(context && { context }),
         ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
+        ...(requiresReview === true && { requiresReview: true }),
         ...(id && { id }),
         dataFormat: format || 'ICU',
       });
@@ -184,6 +187,7 @@ export default function useCreateInternalUseGTFunction({
       id,
       context,
       maxChars,
+      requiresReview,
       _hash,
       variables,
       calculateHash,
@@ -240,7 +244,8 @@ export default function useCreateInternalUseGTFunction({
       // Setup
       const init = initializeGT(message, options);
       if (!init) return;
-      const { id, context, maxChars, _hash, calculateHash } = init;
+      const { id, context, maxChars, requiresReview, _hash, calculateHash } =
+        init;
       const { translationEntry, hash } = getTranslationData(
         calculateHash,
         id,
@@ -252,6 +257,9 @@ export default function useCreateInternalUseGTFunction({
       }
       // Await the creation of the translation
       // Should update the translations object
+      // Dev-mode runtime translation is intentionally NOT review-gated (it's
+      // a live preview; review gates production serving) — the flag rides
+      // along so the platform records review intent on anything it persists
       preloadedTranslations[hash] = await registerIcuForTranslation({
         source: indexVars(message),
         targetLocale: locale,
@@ -259,6 +267,7 @@ export default function useCreateInternalUseGTFunction({
           ...(context && { context }),
           ...(id && { id }),
           ...(maxChars != null && { maxChars }),
+          ...(requiresReview === true && { requiresReview: true }),
           hash,
         },
       });
@@ -275,7 +284,15 @@ export default function useCreateInternalUseGTFunction({
     // ----- SET UP ----- //
     const init = initializeGT(message, options);
     if (!init) return '';
-    const { id, context, maxChars, _hash, calculateHash, renderMessage } = init;
+    const {
+      id,
+      context,
+      maxChars,
+      requiresReview,
+      _hash,
+      calculateHash,
+      renderMessage,
+    } = init;
 
     // ----- EARLY RETURN IF TRANSLATION NOT REQUIRED ----- //
     // Check: translation required
@@ -320,6 +337,9 @@ export default function useCreateInternalUseGTFunction({
       return renderMessage(message, [defaultLocale]);
     }
 
+    // Dev-mode runtime translation is intentionally NOT review-gated (it's
+    // a live preview; review gates production serving) — the flag rides
+    // along so the platform records review intent on anything it persists
     registerIcuForTranslation({
       source: indexVars(message),
       targetLocale: locale,
@@ -327,6 +347,7 @@ export default function useCreateInternalUseGTFunction({
         ...(context && { context }),
         ...(id && { id }),
         ...(maxChars != null && { maxChars }),
+        ...(requiresReview === true && { requiresReview: true }),
         hash: hash || '',
       },
     });
@@ -361,6 +382,7 @@ export default function useCreateInternalUseGTFunction({
       $id: _$id,
       $maxChars: maxChars,
       $format: format,
+      $requiresReview: requiresReview,
       ...decodedVariables
     } = decodedOptions;
 
@@ -418,12 +440,16 @@ export default function useCreateInternalUseGTFunction({
       return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
     }
 
+    // Dev-mode runtime translation is intentionally NOT review-gated (it's
+    // a live preview; review gates production serving) — the flag rides
+    // along so the platform records review intent on anything it persists
     registerIcuForTranslation({
       source: indexVars($_source),
       targetLocale: locale,
       metadata: {
         ...(context && { context }),
         ...(maxChars != null && { maxChars }),
+        ...(requiresReview === true && { requiresReview: true }),
         hash: $_hash,
       },
     });

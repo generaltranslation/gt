@@ -11,6 +11,7 @@ export function registerStandaloneTranslation({
   context,
   id,
   maxChars,
+  requiresReview,
   hash,
   format,
   injectHash,
@@ -20,6 +21,7 @@ export function registerStandaloneTranslation({
   context?: string;
   id?: string;
   maxChars?: number;
+  requiresReview?: boolean;
   hash?: string;
   format?: string;
   injectHash?: boolean;
@@ -29,6 +31,7 @@ export function registerStandaloneTranslation({
     ...(id && { id }),
     ...(context && { context }),
     ...(maxChars != null && { maxChars }),
+    ...(requiresReview === true && { requiresReview: true }),
     dataFormat: (format || 'ICU') as DataFormat,
   });
 
@@ -38,6 +41,7 @@ export function registerStandaloneTranslation({
     id,
     context,
     maxChars,
+    requiresReview,
     format,
   });
 

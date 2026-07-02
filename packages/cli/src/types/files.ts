@@ -7,4 +7,6 @@ export type FileProperties = {
   fileId: string;
   locale: string;
   branchId: string;
+  /** Source component count for GTJSON files, used to report review-withheld components after download */
+  componentCount?: number;
 };

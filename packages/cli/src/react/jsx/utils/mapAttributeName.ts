@@ -9,7 +9,9 @@ type MapAttributeName<T extends string> = T extends '$id'
       ? 'maxChars'
       : T extends '$format'
         ? 'format'
-        : T;
+        : T extends '$requiresReview'
+          ? 'requiresReview'
+          : T;
 
 /**
  * Map the attribute name to the corresponding attribute name in the metadata
@@ -29,6 +31,8 @@ export function mapAttributeName(attrName: string): string {
       return 'maxChars';
     case '$format':
       return 'format';
+    case '$requiresReview':
+      return 'requiresReview';
     default:
       return attrName;
   }

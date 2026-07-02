@@ -2,12 +2,14 @@ import path from 'node:path';
 import {
   FilesOptions,
   IncludePattern,
+  RequiresReviewConfig,
   ResolvedFiles,
   Settings,
   TransformFormats,
   TransformFiles,
   TransformOption,
 } from '../../types/index.js';
+import { logErrorAndExit } from '../../console/logging.js';
 import fg from 'fast-glob';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
 import { logger } from '../../console/logger.js';
@@ -87,7 +89,8 @@ export function resolveFiles(
   locale: string,
   locales: string[],
   cwd: string,
-  compositePatterns?: string[]
+  compositePatterns?: string[],
+  requiresReviewDefault: boolean = false
 ): Settings['files'] {
   // Initialize result object with empty arrays for each file type
   const resolvedPaths: ResolvedFiles = {};
@@ -97,6 +100,7 @@ export function resolveFiles(
   const transformFormats: TransformFormats = {};
   const publishPaths = new Set<string>();
   const unpublishPaths = new Set<string>();
+  const requiresReviewPaths = new Set<string>();
   const parsingFlags: ParseFlagsByFileType = {};
 
   // Process GT files
@@ -150,6 +154,16 @@ export function resolveFiles(
         publishPaths,
         unpublishPaths
       );
+
+      // Classify resolved paths by effective requiresReview policy
+      classifyRequiresReviewPaths(
+        filePaths.resolvedPaths,
+        validateRequiresReviewConfig(files[fileType]?.requiresReview, fileType),
+        requiresReviewDefault,
+        cwd,
+        locale,
+        requiresReviewPaths
+      );
     }
     // ==== OTHER ==== //
     if (files[fileType]?.parsingFlags) {
@@ -167,6 +181,7 @@ export function resolveFiles(
     transformFormats,
     publishPaths,
     unpublishPaths,
+    requiresReviewPaths,
     parsingFlags,
     gtJson: (() => {
       const rawGtFlags = (files.gt?.parsingFlags || {}) as Record<
@@ -371,6 +386,88 @@ function classifyPublishPaths(
       if (matched.has(posixPaths[i])) {
         unpublishPaths.add(resolvedPaths[i]);
       }
+    }
+  }
+}
+
+/**
+ * Validates a file-type requiresReview config value. Only a boolean or an
+ * object of include/exclude glob string arrays is accepted — notably not
+ * string "true"/"false", so a misquoted boolean fails loudly instead of
+ * silently changing review policy (and with it, version identity).
+ */
+function validateRequiresReviewConfig(
+  config: unknown,
+  fileType: string
+): RequiresReviewConfig | undefined {
+  if (config === undefined || typeof config === 'boolean') {
+    return config;
+  }
+  const isStringArray = (value: unknown): value is string[] =>
+    Array.isArray(value) && value.every((item) => typeof item === 'string');
+  if (
+    config !== null &&
+    typeof config === 'object' &&
+    !Array.isArray(config) &&
+    Object.keys(config).every((key) => key === 'include' || key === 'exclude')
+  ) {
+    const { include, exclude } = config as Record<string, unknown>;
+    if (
+      (include === undefined || isStringArray(include)) &&
+      (exclude === undefined || isStringArray(exclude))
+    ) {
+      return config as RequiresReviewConfig;
+    }
+  }
+  return logErrorAndExit(
+    `files.${fileType}.requiresReview must be a boolean or an object of glob string arrays: { include?: string[], exclude?: string[] }`
+  );
+}
+
+/**
+ * Classifies resolved file paths by effective requiresReview policy and adds
+ * paths whose policy is true to requiresReviewPaths. Precedence: file-type
+ * include/exclude globs (exclude wins) > file-type boolean > top-level default.
+ */
+function classifyRequiresReviewPaths(
+  resolvedPaths: string[],
+  config: RequiresReviewConfig | undefined,
+  requiresReviewDefault: boolean,
+  cwd: string,
+  locale: string,
+  requiresReviewPaths: Set<string>
+): void {
+  if (typeof config === 'boolean' || config === undefined) {
+    if (config ?? requiresReviewDefault) {
+      for (const resolvedPath of resolvedPaths) {
+        requiresReviewPaths.add(resolvedPath);
+      }
+    }
+    return;
+  }
+
+  const posixPaths = resolvedPaths.map(toPosixPath);
+  const toAbsoluteGlob = (p: string) =>
+    toPosixPath(path.resolve(cwd, p.replace(/\[locale\]/g, locale)));
+  const matchAny = (patterns: string[]) => {
+    const matched = new Set<string>();
+    for (const pattern of patterns) {
+      for (const match of micromatch(posixPaths, toAbsoluteGlob(pattern))) {
+        matched.add(match);
+      }
+    }
+    return matched;
+  };
+
+  const included = matchAny(config.include ?? []);
+  const excluded = matchAny(config.exclude ?? []);
+
+  for (let i = 0; i < posixPaths.length; i++) {
+    const requiresReview = excluded.has(posixPaths[i])
+      ? false
+      : included.has(posixPaths[i]) || requiresReviewDefault;
+    if (requiresReview) {
+      requiresReviewPaths.add(resolvedPaths[i]);
     }
   }
 }

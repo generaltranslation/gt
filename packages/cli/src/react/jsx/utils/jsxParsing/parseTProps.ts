@@ -9,6 +9,7 @@ import { mapAttributeName } from '../mapAttributeName.js';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
   warnInvalidMaxCharsSync,
+  warnInvalidRequiresReviewSync,
   warnVariablePropSync,
 } from '../../../../console/index.js';
 import { isNumberLiteral } from '../isNumberLiteral.js';
@@ -30,6 +31,39 @@ export function parseTProps({
     if (!t.isJSXAttribute(attr)) return;
     const attrName = attr.name.name;
     if (typeof attrName !== 'string') return;
+
+    const isRequiresReviewAttr =
+      attrName === 'requiresReview' || attrName === '$requiresReview';
+
+    // requiresReview is boolean-only and hash-changing, so it gets strict
+    // handling before the generic attribute logic:
+    // - bare attribute (<T requiresReview>) compiles to `requiresReview: true`,
+    //   so it must mean true here too or CLI and compiler hashes disagree
+    // - string values like requiresReview="false" are rejected, never coerced
+    if (isRequiresReviewAttr) {
+      if (!attr.value) {
+        metadata[mapAttributeName(attrName)] = true;
+        return;
+      }
+      if (
+        t.isJSXExpressionContainer(attr.value) &&
+        t.isBooleanLiteral(attr.value.expression)
+      ) {
+        metadata[mapAttributeName(attrName)] = attr.value.expression.value;
+        return;
+      }
+      const code = t.isJSXExpressionContainer(attr.value)
+        ? generate(attr.value.expression).code
+        : generate(attr.value).code;
+      componentErrors.push(
+        warnInvalidRequiresReviewSync(
+          file,
+          code,
+          `${attr.value.loc?.start?.line}:${attr.value.loc?.start?.column}`
+        )
+      );
+      return;
+    }
 
     if (attr.value) {
       // If it's a plain string literal like id="hello"

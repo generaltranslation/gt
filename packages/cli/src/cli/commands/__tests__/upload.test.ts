@@ -34,6 +34,10 @@ vi.mock('../../../formats/files/fileMapping.js', () => ({
 }));
 vi.mock('../../../utils/hash.js', () => ({
   hashStringSync: vi.fn((s: string) => `hash_${s.slice(0, 16)}`),
+  hashVersionId: vi.fn(
+    (s: string, requiresReview: boolean) =>
+      `hash_${requiresReview ? 'rr_' : ''}${s.slice(0, 16)}`
+  ),
 }));
 vi.mock('./utils/validation.js', () => ({
   hasValidCredentials: vi.fn(() => true),
@@ -83,6 +87,7 @@ function makeSettings(
       transformFormats: {},
       publishPaths: new Set<string>(),
       unpublishPaths: new Set<string>(),
+      requiresReviewPaths: new Set<string>(),
       parsingFlags: {},
       gtJson: {
         parsingFlags: {},
