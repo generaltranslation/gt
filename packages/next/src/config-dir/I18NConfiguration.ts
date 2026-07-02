@@ -45,6 +45,7 @@ type I18NConfigurationParams = {
   _usingPlugin: boolean;
   _versionId?: string;
   customMapping?: CustomMapping | undefined;
+  disableInvalidLocaleWarning?: boolean;
   [key: string]: unknown;
 };
 
@@ -106,10 +107,12 @@ export class I18NConfiguration {
     _usingPlugin,
     headersAndCookies,
     customMapping,
+    disableInvalidLocaleWarning: _disableInvalidLocaleWarning,
     // Other metadata
     ...metadata
   }: I18NConfigurationParams) {
     void _dictionary;
+    void _disableInvalidLocaleWarning;
 
     // ----- CLOUD INTEGRATION ----- //
 
