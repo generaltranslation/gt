@@ -1,5 +1,20 @@
 # gt-next
 
+## 6.16.37
+
+### Patch Changes
+
+- [#1796](https://github.com/generaltranslation/gt/pull/1796) [`9f305a9`](https://github.com/generaltranslation/gt/commit/9f305a9209acbc773015e187a7da0c5c10083a52) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add a withGTConfig flag for disabling invalid request locale warnings.
+
+- [#1786](https://github.com/generaltranslation/gt/pull/1786) [`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `requiresReview`
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - @generaltranslation/compiler@1.3.27
+  - generaltranslation@8.2.19
+  - gt-i18n@0.9.9
+  - gt-react@10.20.5
+  - @generaltranslation/supported-locales@2.1.5
+
 ## 6.16.36
 
 ### Patch Changes

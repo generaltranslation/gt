@@ -1,5 +1,16 @@
 # gtx-cli
 
+## 2.14.58
+
+### Patch Changes
+
+- [#1786](https://github.com/generaltranslation/gt/pull/1786) [`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `requiresReview`
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - generaltranslation@8.2.19
+  - @generaltranslation/python-extractor@0.2.25
+  - @generaltranslation/supported-locales@2.1.5
+
 ## 2.14.57
 
 ## 2.14.56
