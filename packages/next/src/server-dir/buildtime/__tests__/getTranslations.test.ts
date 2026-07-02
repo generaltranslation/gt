@@ -93,6 +93,43 @@ describe('buildtime translation helpers', () => {
     expect(mockGetTranslationsInternal).toHaveBeenCalledWith({
       locale: 'fr',
       enableI18n: false,
+      rootId: undefined,
+    });
+  });
+
+  it('getTranslations forwards root id to gt-i18n', async () => {
+    const translations = vi.fn();
+    mockGetRequestConditions.mockResolvedValue({
+      _locale: 'fr',
+      _enableI18n: true,
+    });
+    mockGetTranslationsInternal.mockReturnValue(translations);
+    const { getTranslations } = await import('../strings');
+
+    await expect(getTranslations('metadata')).resolves.toBe(translations);
+
+    expect(mockGetTranslationsInternal).toHaveBeenCalledWith({
+      locale: 'fr',
+      enableI18n: true,
+      rootId: 'metadata',
+    });
+  });
+
+  it('getTranslations loads one dictionary when request locale matches source locale', async () => {
+    const translations = vi.fn();
+    mockGetRequestConditions.mockResolvedValue({
+      _locale: 'en',
+      _enableI18n: true,
+    });
+    mockGetTranslationsInternal.mockReturnValue(translations);
+    const { getTranslations } = await import('../strings');
+
+    await expect(getTranslations()).resolves.toBe(translations);
+
+    expect(mockGetTranslationsInternal).toHaveBeenCalledWith({
+      locale: 'en',
+      enableI18n: true,
+      rootId: undefined,
     });
   });
 
@@ -137,5 +174,26 @@ describe('buildtime translation helpers', () => {
       },
       messages
     );
+  });
+
+  it('useTranslations forwards root id through getTranslations', async () => {
+    const value = vi.fn();
+    mockGetTranslationsInternal.mockReturnValue(value);
+    mockUse.mockReturnValue(value);
+    const { useTranslations } = await import('../strings');
+
+    const result = useTranslations('metadata');
+
+    expect(result).toBe(value);
+    expect(mockUse).toHaveBeenCalledWith(expect.any(Promise));
+    expect(mockGetTranslationsInternal).not.toHaveBeenCalled();
+
+    await expect(mockUse.mock.calls[0][0]).resolves.toBe(value);
+
+    expect(mockGetTranslationsInternal).toHaveBeenCalledWith({
+      locale: 'fr',
+      enableI18n: false,
+      rootId: 'metadata',
+    });
   });
 });

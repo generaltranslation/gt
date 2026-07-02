@@ -6,7 +6,7 @@ import { getNextI18nCache } from '../i18n-cache/NextI18nCache';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { getEnableI18n } from '../request/getEnableI18n';
 
-export async function GTProvider({ children, id: prefixId }: GTProviderProps) {
+export async function GTProvider({ children }: GTProviderProps) {
   // ---------- SETUP ---------- //
   const i18nCache = getNextI18nCache();
   const i18nConfig = getI18nConfig();
@@ -21,10 +21,7 @@ export async function GTProvider({ children, id: prefixId }: GTProviderProps) {
     ? i18nCache.loadTranslations(locale)
     : Promise.resolve({});
 
-  const dictionariesSnapshotPromise = i18nCache.loadDictionaries(
-    locale,
-    prefixId
-  );
+  const dictionariesSnapshotPromise = i18nCache.loadDictionaries(locale);
 
   // Block until cache check resolves
   const translationsSnapshot = { [locale]: await translationsSnapshotPromise };

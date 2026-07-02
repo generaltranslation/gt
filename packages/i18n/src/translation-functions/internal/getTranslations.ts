@@ -17,11 +17,11 @@ import { getWritableConditionStore } from '../../condition-store/singleton-opera
  * const t = await getTranslations();
  * const title = await t('page.title');
  */
-export async function getTranslations(): Promise<TFunctionType> {
+export async function getTranslations(rootId?: string): Promise<TFunctionType> {
   const conditionStore = getWritableConditionStore();
   const locale = conditionStore.getLocale();
   const enableI18n = conditionStore.getEnableI18n();
-  return getTranslationsInternal({ locale, enableI18n });
+  return getTranslationsInternal({ locale, enableI18n, rootId });
 }
 
 /**
@@ -30,9 +30,11 @@ export async function getTranslations(): Promise<TFunctionType> {
 export async function getTranslationsInternal({
   locale,
   enableI18n,
+  rootId,
 }: {
   locale: string;
   enableI18n: boolean;
+  rootId?: string;
 }): Promise<TFunctionType> {
   const i18nCache = getI18nCache();
   const sourceLocale = getI18nConfig().getDefaultLocale();
@@ -69,6 +71,7 @@ export async function getTranslationsInternal({
    * const greeting = t('user.greeting', { name: 'Bob' });
    */
   const t = ((id: string, options: TranslationVariables = {}): string => {
+    id = getId(rootId, id);
     const sourceEntry = lookupSourceDictionary(id);
     if (sourceEntry === undefined) {
       throw new Error(`Dictionary entry ${id} cannot be found`);
@@ -102,6 +105,7 @@ export async function getTranslationsInternal({
    * // { greeting1: 'Hello', greeting2: 'Hi' }
    */
   t.obj = (id: string): DictionaryObjectTranslation => {
+    id = getId(rootId, id);
     const sourceObject = lookupSourceDictionaryObj(id);
     if (sourceObject === undefined) {
       throw new Error(`Dictionary entry ${id} cannot be found`);
@@ -116,4 +120,8 @@ export async function getTranslationsInternal({
   };
 
   return t;
+}
+
+function getId(prefix: string | undefined, suffix: string): string {
+  return prefix ? `${prefix}.${suffix}` : suffix;
 }
