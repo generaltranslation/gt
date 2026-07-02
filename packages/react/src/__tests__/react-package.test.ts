@@ -76,6 +76,27 @@ describe('gt-react package exports', () => {
     ]);
   });
 
+  it('throws when initializeGTSPA is called from the server entrypoint', () => {
+    node([
+      '-e',
+      `
+          const assert = require('node:assert/strict');
+          const react = require('gt-react');
+
+          assert.equal(typeof react.initializeGTSPA, 'function');
+          (async () => {
+            await assert.rejects(
+              () => react.initializeGTSPA({}),
+              /server runtime entry point/
+            );
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+        `,
+    ]);
+  });
+
   it('loads named exports from built ESM entrypoints', () => {
     node([
       '--input-type=module',
