@@ -81,12 +81,14 @@ export const CONTEXT_OPTION_NAME = '$context';
 export const ID_OPTION_NAME = '$id';
 export const FORMAT_OPTION_NAME = '$format';
 export const MAX_CHARS_OPTION_NAME = '$maxChars';
+export const REQUIRES_REVIEW_OPTION_NAME = '$requiresReview';
 
 export const SUGAR_VARIABLE_NAMES = [
   CONTEXT_OPTION_NAME,
   ID_OPTION_NAME,
   FORMAT_OPTION_NAME,
   MAX_CHARS_OPTION_NAME,
+  REQUIRES_REVIEW_OPTION_NAME,
 ] as const;
 
 // Format option values
