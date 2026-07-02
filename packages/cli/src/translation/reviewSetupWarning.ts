@@ -41,12 +41,19 @@ export function warnManualReviewSetup(
     : settings.dashboardUrl;
   const autoApproveClause =
     autoApprove === true
-      ? 'but this project approves new translations automatically'
-      : 'but new translations are approved automatically unless auto-approval is turned off for this project';
-  // "Auto approve translations" matches the dashboard setting title exactly
+      ? 'but this project approves new translations automatically.'
+      : 'but new translations are approved automatically unless auto-approval is turned off for this project.';
+  // Short lines with explicit breaks so terminal wrapping stays clean.
+  // "Auto approve translations" matches the dashboard setting title exactly.
   logger.warn(
     chalk.yellow(
-      `Some of your content requires review (requiresReview), ${autoApproveClause}. To review translations before they are used, disable "Auto approve translations" in your project settings: ${chalk.cyan(settingsUrl)}`
+      [
+        `Some of your content requires review (requiresReview),`,
+        autoApproveClause,
+        `To review translations before they are used, disable`,
+        `"Auto approve translations" in your project settings:`,
+        chalk.cyan(settingsUrl),
+      ].join('\n')
     )
   );
 }

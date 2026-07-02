@@ -121,7 +121,7 @@ describe('warnManualReviewSetup', () => {
       true
     );
     expect(vi.mocked(logger.warn).mock.calls[0][0]).toContain(
-      'disable "Auto approve translations" in your project settings'
+      '"Auto approve translations" in your project settings'
     );
   });
 });
