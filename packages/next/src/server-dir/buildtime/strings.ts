@@ -1,13 +1,11 @@
 import { use } from '../../utils/use';
 import {
   getGTInternal,
-  getI18nConfig,
   getMessagesInternal,
   getTranslationsInternal,
 } from 'gt-i18n/internal';
 import type { Message } from 'gt-i18n/types';
 import { getRequestConditions } from '../../request/getRequestConditions';
-import { getNextI18nCache } from '../../i18n-cache/NextI18nCache';
 
 export async function getGT(_messages?: Message[]) {
   const conditions = await getRequestConditions();
