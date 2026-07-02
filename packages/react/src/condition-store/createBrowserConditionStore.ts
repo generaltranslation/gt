@@ -1,4 +1,4 @@
-import type { LocaleCandidates } from 'gt-i18n/internal';
+import type { I18nConfig, LocaleCandidates } from 'gt-i18n/internal';
 import { getI18nConfig } from 'gt-i18n/internal';
 import {
   BrowserConditionStore,
@@ -49,7 +49,7 @@ export function createOrUpdateBrowserConditionStore(
   const enableI18nCookieName =
     config.enableI18nCookieName ?? i18nConfig.getEnableI18nCookieName();
 
-  const locale = determineLocale(config, localeCookieName);
+  const locale = determineLocale(config, localeCookieName, i18nConfig);
   const region = determineRegion(config, regionCookieName);
   const enableI18n = determineEnableI18n(config, enableI18nCookieName);
 
@@ -77,7 +77,8 @@ export function createOrUpdateBrowserConditionStore(
 
 function determineLocale(
   { _getLocale: getLocale, locale }: CreateBrowserConditionStoreParams,
-  localeCookieName: string
+  localeCookieName: string,
+  i18nConfig: I18nConfig
 ): string {
   const candidates = [];
   if (locale) {
@@ -85,7 +86,7 @@ function determineLocale(
   }
   if (getLocale) candidates.push(getLocale());
   candidates.push(...readBrowserLocale(localeCookieName));
-  return getI18nConfig().resolveSupportedLocale(candidates);
+  return i18nConfig.resolveSupportedLocale(candidates);
 }
 
 function determineRegion(

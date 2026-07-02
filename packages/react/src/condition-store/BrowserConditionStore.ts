@@ -44,6 +44,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   private customGetEnableI18n?: GetEnableI18n;
 
   constructor(config: BrowserConditionStoreParams) {
+    const i18nConfig = getI18nConfig();
     this.customReload =
       config._reload ??
       (() =>
@@ -52,14 +53,14 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     this.customGetRegion = config._getRegion;
     this.customGetEnableI18n = config._getEnableI18n;
     this.localeCookieName =
-      config.localeCookieName ?? getI18nConfig().getLocaleCookieName();
+      config.localeCookieName ?? i18nConfig.getLocaleCookieName();
     this.regionCookieName =
-      config.regionCookieName ?? getI18nConfig().getRegionCookieName();
+      config.regionCookieName ?? i18nConfig.getRegionCookieName();
     this.enableI18nCookieName =
-      config.enableI18nCookieName ?? getI18nConfig().getEnableI18nCookieName();
+      config.enableI18nCookieName ?? i18nConfig.getEnableI18nCookieName();
     setCookieValue({
       cookieName: this.localeCookieName,
-      value: getI18nConfig().resolveSupportedLocale(config.locale),
+      value: i18nConfig.resolveSupportedLocale(config.locale),
     });
     if (config.region !== undefined) {
       setCookieValue({

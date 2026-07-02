@@ -43,9 +43,11 @@ type RuntimeConfig = Pick<
   'projectId' | 'devApiKey' | 'apiKey' | 'runtimeUrl' | '_disableDevHotReload'
 >;
 
-type CookieConfig = Pick<
-  I18nConfigParams,
-  'localeCookieName' | 'regionCookieName' | 'enableI18nCookieName'
+type CookieConfig = Required<
+  Pick<
+    I18nConfigParams,
+    'localeCookieName' | 'regionCookieName' | 'enableI18nCookieName'
+  >
 >;
 
 export type LocaleCandidates = string | string[] | undefined;
@@ -66,9 +68,10 @@ export class I18nConfig extends LocaleConfig {
       _disableDevHotReload: params._disableDevHotReload,
     };
     this.cookieConfig = {
-      localeCookieName: params.localeCookieName,
-      regionCookieName: params.regionCookieName,
-      enableI18nCookieName: params.enableI18nCookieName,
+      localeCookieName: params.localeCookieName ?? defaultLocaleCookieName,
+      regionCookieName: params.regionCookieName ?? defaultRegionCookieName,
+      enableI18nCookieName:
+        params.enableI18nCookieName ?? defaultEnableI18nCookieName,
     };
     this.gtServicesEnabled = gtServicesEnabled;
   }
@@ -90,17 +93,15 @@ export class I18nConfig extends LocaleConfig {
   }
 
   getLocaleCookieName(): string {
-    return this.cookieConfig.localeCookieName ?? defaultLocaleCookieName;
+    return this.cookieConfig.localeCookieName;
   }
 
   getRegionCookieName(): string {
-    return this.cookieConfig.regionCookieName ?? defaultRegionCookieName;
+    return this.cookieConfig.regionCookieName;
   }
 
   getEnableI18nCookieName(): string {
-    return (
-      this.cookieConfig.enableI18nCookieName ?? defaultEnableI18nCookieName
-    );
+    return this.cookieConfig.enableI18nCookieName;
   }
 
   /**
