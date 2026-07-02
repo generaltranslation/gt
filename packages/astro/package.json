@@ -9,10 +9,7 @@
     "dist",
     "CHANGELOG.md"
   ],
-  "sideEffects": [
-    "./dist/client.cjs",
-    "./dist/client.mjs"
-  ],
+  "sideEffects": false,
   "peerDependencies": {
     "astro": ">=5.0.0",
     "react": ">=16.8.0",

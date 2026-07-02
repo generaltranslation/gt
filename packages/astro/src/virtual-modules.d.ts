@@ -5,10 +5,3 @@ declare module 'virtual:gt-astro/config-server' {
     | ((locale: string) => Promise<unknown>)
     | undefined;
 }
-
-declare module 'virtual:gt-astro/config-client' {
-  export const config: import('./types').GTAstroRuntimeConfig;
-  export const loadTranslations:
-    | ((locale: string) => Promise<unknown>)
-    | undefined;
-}

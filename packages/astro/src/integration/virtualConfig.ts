@@ -1,13 +1,11 @@
 import type { GTAstroRuntimeConfig, GTAstroRuntimeSettings } from '../types';
 
 export const SERVER_CONFIG_MODULE_ID = 'virtual:gt-astro/config-server';
-export const CLIENT_CONFIG_MODULE_ID = 'virtual:gt-astro/config-client';
 
 const RESOLVED_PREFIX = '\0';
 
 type VirtualConfigPluginParams = {
   serverConfig: GTAstroRuntimeConfig;
-  clientConfig: GTAstroRuntimeConfig;
   settings: GTAstroRuntimeSettings;
   /** Absolute path to the app's loadTranslations module, if any. */
   loadTranslationsPath?: string;
@@ -25,13 +23,13 @@ export type MinimalVitePlugin = {
 };
 
 /**
- * Serves the virtual config modules consumed by gt-astro/middleware (server)
- * and gt-astro/client (browser). Credentials are split so the API key never
- * reaches a client bundle.
+ * Serves the virtual config module consumed by gt-astro/middleware on the
+ * server. The client gets its (credential-stripped) config inlined into the
+ * injected before-hydration script instead, so no gt-astro module has to
+ * resolve virtual ids in the client bundle.
  */
 export function createVirtualConfigPlugin({
   serverConfig,
-  clientConfig,
   settings,
   loadTranslationsPath,
 }: VirtualConfigPluginParams): MinimalVitePlugin {
@@ -41,27 +39,21 @@ export function createVirtualConfigPlugin({
       )};`
     : 'export const loadTranslations = undefined;';
 
-  const modules: Record<string, string> = {
-    [SERVER_CONFIG_MODULE_ID]: [
-      `export const config = ${JSON.stringify(serverConfig)};`,
-      `export const settings = ${JSON.stringify(settings)};`,
-      loadTranslationsExport,
-    ].join('\n'),
-    [CLIENT_CONFIG_MODULE_ID]: [
-      `export const config = ${JSON.stringify(clientConfig)};`,
-      loadTranslationsExport,
-    ].join('\n'),
-  };
+  const serverModule = [
+    `export const config = ${JSON.stringify(serverConfig)};`,
+    `export const settings = ${JSON.stringify(settings)};`,
+    loadTranslationsExport,
+  ].join('\n');
 
   return {
     name: 'gt-astro:config',
     resolveId(id: string) {
-      if (id in modules) return RESOLVED_PREFIX + id;
+      if (id === SERVER_CONFIG_MODULE_ID) return RESOLVED_PREFIX + id;
       return undefined;
     },
     load(id: string) {
-      if (!id.startsWith(RESOLVED_PREFIX)) return undefined;
-      return modules[id.slice(RESOLVED_PREFIX.length)];
+      if (id === RESOLVED_PREFIX + SERVER_CONFIG_MODULE_ID) return serverModule;
+      return undefined;
     },
   };
 }

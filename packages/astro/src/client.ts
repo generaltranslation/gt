@@ -1,8 +1,10 @@
-// Injected as a `before-hydration` script by the gt-astro integration so the
-// client-side GT runtime (config + translation cache) is initialized before
-// any React island hydrates. Island providers receive locale and translations
-// via serialized props; this module supplies the shared configuration.
+// Called by the `before-hydration` script the gt-astro integration injects,
+// so the client-side GT runtime (config + translation cache) is initialized
+// before any React island hydrates. Island providers receive locale and
+// translations via serialized props; this supplies the shared configuration.
 import { initializeGT } from 'gt-react';
-import { config, loadTranslations } from 'virtual:gt-astro/config-client';
+import type { InitializeGTAstroParams } from './types';
 
-initializeGT({ ...config, loadTranslations });
+export function initializeGTAstroClient(config: InitializeGTAstroParams): void {
+  initializeGT(config);
+}

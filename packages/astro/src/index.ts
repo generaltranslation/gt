@@ -85,7 +85,6 @@ export function gtAstro(options: GTAstroOptions = {}): AstroIntegration {
         const plugins: unknown[] = [
           createVirtualConfigPlugin({
             serverConfig: stripUndefined({ ...sharedConfig, apiKey }),
-            clientConfig: stripUndefined(sharedConfig),
             settings: { localeRouting: options.localeRouting ?? true },
             loadTranslationsPath,
           }),
@@ -109,8 +108,9 @@ export function gtAstro(options: GTAstroOptions = {}): AstroIntegration {
         updateConfig({
           vite: {
             plugins: plugins as never,
+            // The middleware imports virtual:gt-astro/config-server, so it
+            // must stay in the Vite pipeline where that id resolves.
             ssr: { noExternal: ['gt-astro'] },
-            optimizeDeps: { exclude: ['gt-astro'] },
           },
         });
 
@@ -119,14 +119,38 @@ export function gtAstro(options: GTAstroOptions = {}): AstroIntegration {
             i18n: {
               defaultLocale: gtConfig.defaultLocale,
               locales: dedupe([gtConfig.defaultLocale, ...gtConfig.locales]),
-              // gt-astro's middleware owns locale detection and redirects
-              routing: 'manual',
+              // gt-astro's 'pre' middleware owns locale detection and
+              // redirects; keep Astro's built-in i18n middleware passive.
+              // ('manual' would require a user middleware file.)
+              routing: {
+                prefixDefaultLocale: true,
+                redirectToDefaultLocale: false,
+                fallbackType: 'redirect',
+              },
             },
           });
         }
 
         addMiddleware({ entrypoint: 'gt-astro/middleware', order: 'pre' });
-        injectScript('before-hydration', `import 'gt-astro/client';`);
+
+        // The client config is inlined here (credentials stripped) instead of
+        // referencing a virtual module, so gt-astro's client modules stay
+        // prebundle-friendly.
+        const loadTranslationsImport = loadTranslationsPath
+          ? `import { loadTranslations } from ${JSON.stringify(
+              loadTranslationsPath.replace(/\\/g, '/')
+            )};`
+          : `const loadTranslations = undefined;`;
+        injectScript(
+          'before-hydration',
+          [
+            `import { initializeGTAstroClient } from 'gt-astro/client';`,
+            loadTranslationsImport,
+            `initializeGTAstroClient({ ...${JSON.stringify(
+              stripUndefined(sharedConfig)
+            )}, loadTranslations });`,
+          ].join('\n')
+        );
       },
       'astro:config:done': ({ injectTypes }) => {
         injectTypes({ filename: 'types.d.ts', content: LOCALS_TYPES });

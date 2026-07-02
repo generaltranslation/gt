@@ -16,7 +16,6 @@ vi.mock('@generaltranslation/compiler', () => ({
 
 const { gtAstro } = await import('../index');
 import {
-  CLIENT_CONFIG_MODULE_ID,
   SERVER_CONFIG_MODULE_ID,
   createVirtualConfigPlugin,
 } from '../integration/virtualConfig';
@@ -82,9 +81,13 @@ describe('gtAstro astro:config:setup', () => {
     expect(middleware).toEqual([
       { entrypoint: 'gt-astro/middleware', order: 'pre' },
     ]);
-    expect(scripts).toEqual([
-      ['before-hydration', `import 'gt-astro/client';`],
-    ]);
+    expect(scripts).toHaveLength(1);
+    expect(scripts[0][0]).toBe('before-hydration');
+    expect(scripts[0][1]).toContain(
+      `import { initializeGTAstroClient } from 'gt-astro/client';`
+    );
+    expect(scripts[0][1]).toContain('"defaultLocale":"en"');
+    expect(scripts[0][1]).not.toContain('apiKey');
 
     const viteUpdate = updates.find(
       (update) => 'vite' in update
@@ -106,7 +109,11 @@ describe('gtAstro astro:config:setup', () => {
       i18n: {
         defaultLocale: 'en',
         locales: ['en', 'fr', 'zh'],
-        routing: 'manual',
+        routing: {
+          prefixDefaultLocale: true,
+          redirectToDefaultLocale: false,
+          fallbackType: 'redirect',
+        },
       },
     });
   });
@@ -141,14 +148,13 @@ describe('gtAstro astro:config:setup', () => {
 });
 
 describe('createVirtualConfigPlugin', () => {
-  it('serves server and client config modules', () => {
+  it('serves the server config module', () => {
     const plugin = createVirtualConfigPlugin({
       serverConfig: {
         defaultLocale: 'en',
         locales: ['fr'],
         apiKey: 'secret',
       },
-      clientConfig: { defaultLocale: 'en', locales: ['fr'] },
       settings: { localeRouting: true },
     });
 
@@ -158,16 +164,11 @@ describe('createVirtualConfigPlugin', () => {
     expect(serverCode).toContain('"apiKey":"secret"');
     expect(serverCode).toContain('"localeRouting":true');
     expect(serverCode).toContain('export const loadTranslations = undefined;');
-
-    const resolvedClient = plugin.resolveId?.(CLIENT_CONFIG_MODULE_ID);
-    const clientCode = plugin.load?.(resolvedClient!);
-    expect(clientCode).not.toContain('secret');
   });
 
   it('re-exports loadTranslations from the app module when configured', () => {
     const plugin = createVirtualConfigPlugin({
       serverConfig: { defaultLocale: 'en', locales: ['fr'] },
-      clientConfig: { defaultLocale: 'en', locales: ['fr'] },
       settings: { localeRouting: false },
       loadTranslationsPath: '/app/src/loadTranslations.ts',
     });
@@ -180,7 +181,6 @@ describe('createVirtualConfigPlugin', () => {
   it('ignores unrelated module ids', () => {
     const plugin = createVirtualConfigPlugin({
       serverConfig: { defaultLocale: 'en', locales: ['fr'] },
-      clientConfig: { defaultLocale: 'en', locales: ['fr'] },
       settings: { localeRouting: true },
     });
     expect(plugin.resolveId?.('some-module')).toBeUndefined();
