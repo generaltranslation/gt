@@ -30,17 +30,6 @@ export async function getMessages() {
 
 export async function getTranslations(rootId?: string) {
   const conditions = await getRequestConditions();
-  const cache = getNextI18nCache();
-  const sourceLocale = getI18nConfig().getDefaultLocale();
-  const targetLocale = conditions._enableI18n
-    ? conditions._locale
-    : sourceLocale;
-  const dictionariesToLoad = [cache.loadDictionaries(sourceLocale)];
-  if (targetLocale !== sourceLocale) {
-    dictionariesToLoad.push(cache.loadDictionaries(targetLocale));
-  }
-  const dictionaries = await Promise.all(dictionariesToLoad);
-  cache.updateDictionaries(Object.assign({}, ...dictionaries));
   return getTranslationsInternal({
     locale: conditions._locale,
     enableI18n: conditions._enableI18n,
