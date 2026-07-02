@@ -27,13 +27,13 @@ export function getLoadTranslationsType(config: {
 }): LoadTranslationsType {
   if (config.loadTranslations) {
     return LoadTranslationsType.CUSTOM;
-  } else if (config.cacheUrl) {
-    return LoadTranslationsType.REMOTE;
   } else if (
     (config.cacheUrl === undefined || config.cacheUrl === defaultCacheUrl) &&
     config.projectId
   ) {
     return LoadTranslationsType.GT_REMOTE;
+  } else if (config.cacheUrl) {
+    return LoadTranslationsType.REMOTE;
   } else {
     return LoadTranslationsType.DISABLED;
   }
