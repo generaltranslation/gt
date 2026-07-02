@@ -194,6 +194,7 @@ function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
     Libraries.GT_NODE,
     Libraries.GT_REACT_NATIVE,
     Libraries.GT_TANSTACK_START,
+    Libraries.GT_ASTRO,
     Libraries.GT_FLASK,
     Libraries.GT_FASTAPI,
   ].includes(library as Libraries)
@@ -202,6 +203,7 @@ function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
         | typeof Libraries.GT_NODE
         | typeof Libraries.GT_REACT_NATIVE
         | typeof Libraries.GT_TANSTACK_START
+        | typeof Libraries.GT_ASTRO
         | typeof Libraries.GT_FLASK
         | typeof Libraries.GT_FASTAPI)
     : Libraries.GT_REACT;
