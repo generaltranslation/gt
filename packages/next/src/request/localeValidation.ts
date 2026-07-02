@@ -13,6 +13,12 @@ function determineSupportedLocale(
 }
 
 function warnInvalidLocale(locale: string, defaultLocale: string) {
+  if (
+    process.env._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING === 'true'
+  ) {
+    return;
+  }
+
   console.warn(createInvalidRequestLocaleWarning(locale, defaultLocale));
 }
 
