@@ -45,19 +45,21 @@ function prepareT({
   sourceChildren,
   params,
   locale,
+  sourceJsxChildren,
 }: {
   sourceChildren: ReactNode;
   params: JsxTranslationOptions;
   locale: string;
+  sourceJsxChildren?: JsxChildren;
 }): PreparedT {
   const taggedSourceChildren = prepareTaggedSourceChildren(sourceChildren);
-  const sourceJsxChildren = prepareSourceJsxChildren(taggedSourceChildren);
-  const options = normalizeParameters(params);
-  const targetOptions = prepareTargetOptions({ options, locale });
+  const preparedSourceJsxChildren =
+    sourceJsxChildren ?? prepareSourceJsxChildren(taggedSourceChildren);
+  const targetOptions = prepareTTargetOptions({ params, locale });
 
   return {
     taggedSourceChildren,
-    sourceJsxChildren,
+    sourceJsxChildren: preparedSourceJsxChildren,
     targetOptions,
   };
 }
@@ -87,6 +89,22 @@ function prepareTargetOptions({
   return { ...options, $locale: locale };
 }
 
+function prepareTTargetOptions({
+  params,
+  locale,
+}: {
+  params: JsxTranslationOptions;
+  locale: string;
+}): JsxTranslationOptionsWithSugar & {
+  $format: 'JSX';
+  $locale: string;
+} {
+  return prepareTargetOptions({
+    options: normalizeParameters(params),
+    locale,
+  });
+}
+
 function normalizeParameters(
   parameters: {
     context?: string;
@@ -103,7 +121,7 @@ function normalizeParameters(
   };
 }
 
-export { prepareT };
+export { prepareT, prepareTTargetOptions };
 export type {
   JsxTranslationOptions,
   PreparedT,

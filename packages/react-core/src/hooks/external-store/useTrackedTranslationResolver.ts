@@ -92,7 +92,7 @@ export function useTrackedTranslationResolver(
       );
 
       // Trigger a hot reload if the translation is not found
-      if (translation == null && devHotReloadEnabled) {
+      if (translation === undefined && devHotReloadEnabled) {
         onMissingTranslation(lookup);
       }
       return translation;
@@ -162,7 +162,8 @@ function usePreloadCompilerLookups(
     lookups
       .filter(
         ([lookup]) =>
-          i18nStore.getTranslateSnapshot(lookup, translationsSnapshot) == null
+          i18nStore.getTranslateSnapshot(lookup, translationsSnapshot) ===
+          undefined
       )
       .forEach(([lookup]) => i18nStore.translate(lookup));
   }, [txHotReloadEnabled, i18nStore, lookups, translationsSnapshot]);

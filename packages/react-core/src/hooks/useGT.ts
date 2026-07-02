@@ -44,7 +44,7 @@ export function useGT(_messages?: Message[]): GTFunctionType {
 
       return interpolateMessage({
         source: message,
-        target: translation,
+        target: translation ?? undefined,
         options: lookupOptions,
         sourceLocale: defaultLocale,
       });

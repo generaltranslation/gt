@@ -138,13 +138,14 @@ export class I18nStore {
     lookup: TranslateLookup<T>,
     translationsSnapshot: Record<Locale, Record<Hash, Translation>> = {}
   ): TranslateSnapshot<T> => {
-    return (
-      lookupTranslation(translationsSnapshot, lookup) ??
-      getReactI18nCache().lookupTranslation<T>(
-        lookup.locale,
-        lookup.message,
-        lookup.options
-      )
+    const snapshotTranslation = lookupTranslation(translationsSnapshot, lookup);
+    if (snapshotTranslation !== undefined) {
+      return snapshotTranslation;
+    }
+    return getReactI18nCache().lookupTranslation<T>(
+      lookup.locale,
+      lookup.message,
+      lookup.options
     );
   };
 

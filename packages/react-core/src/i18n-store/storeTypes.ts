@@ -27,6 +27,7 @@ export type DictionaryLookup = {
 
 export type TranslateSnapshot<T extends Translation = Translation> =
   | T
+  | null
   | undefined;
 export type TranslateManySnapshot<T extends Translation = Translation> =
   readonly TranslateSnapshot<T>[];

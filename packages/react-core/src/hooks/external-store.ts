@@ -31,7 +31,10 @@ export function useTranslate<T extends Translation>(
     () => i18nStore.getTranslateSnapshot(lookup, translationsSnapshot)
   );
 
-  if (storeTranslation == null && getI18nConfig().isDevHotReloadEnabled()) {
+  if (
+    storeTranslation === undefined &&
+    getI18nConfig().isDevHotReloadEnabled()
+  ) {
     // TODO: (separate PR): add configuration for a use() + suspense strategy
     // TODO: consider moving this to a useEffect
     onMissingTranslation(lookup);
