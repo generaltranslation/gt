@@ -1,5 +1,16 @@
 # @generaltranslation/react-core
 
+## 1.8.25
+
+### Patch Changes
+
+- [#1786](https://github.com/generaltranslation/gt/pull/1786) [`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `requiresReview`
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - generaltranslation@8.2.19
+  - gt-i18n@0.9.9
+  - @generaltranslation/supported-locales@2.1.5
+
 ## 1.8.24
 
 ### Patch Changes
