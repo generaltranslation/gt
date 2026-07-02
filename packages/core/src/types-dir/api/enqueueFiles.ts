@@ -77,9 +77,4 @@ export type EnqueueFilesResult = {
   };
   locales: string[];
   message: string;
-  // Present when the API returns project settings with the enqueue response;
-  // used by the CLI to decide whether review-setup guidance is needed
-  projectSettings?: {
-    autoApprove?: boolean;
-  };
 };

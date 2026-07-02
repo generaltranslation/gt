@@ -35,11 +35,8 @@ export async function handleEnqueue(
   // Collect the data for all files we need to enqueue
   const { files } = await collectFiles(options, settings, library);
 
-  const result = await runEnqueueWorkflow({ files, options, settings });
+  // Point at dashboard review setup when uploading review-gated content
+  await warnManualReviewSetup(settings, files);
 
-  // Point at dashboard review setup when the project auto-approves
-  // review-gated content that was just enqueued
-  warnManualReviewSetup(settings, files, result?.projectSettings?.autoApprove);
-
-  return result;
+  return runEnqueueWorkflow({ files, options, settings });
 }

@@ -27,7 +27,6 @@ export default async function _enqueueFiles(
 ): Promise<EnqueueFilesResult> {
   validateFileFormatTransforms(files);
 
-  let projectSettings: EnqueueFilesResult['projectSettings'];
   const result = await processBatches(
     files,
     async (batch) => {
@@ -50,7 +49,6 @@ export default async function _enqueueFiles(
         '/v2/project/translations/enqueue',
         { body, timeout: options.timeout }
       );
-      projectSettings ??= apiResult.projectSettings;
       return Array.from(Object.entries(apiResult.jobData));
     },
     { batchSize: 100 }
@@ -63,6 +61,5 @@ export default async function _enqueueFiles(
     jobData: jobs,
     locales: options.targetLocales,
     message: `Successfully enqueued ${result.count} file translation jobs in ${result.batchCount} batch(es)`,
-    ...(projectSettings && { projectSettings }),
   };
 }

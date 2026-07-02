@@ -11,6 +11,14 @@ vi.mock('../../console/logger.js', () => ({
   },
 }));
 
+vi.mock('../../utils/gt.js', () => ({
+  gt: {
+    getProjectInfo: vi.fn(),
+  },
+}));
+
+import { gt } from '../../utils/gt.js';
+
 const makeSettings = (reviewPaths: string[] = []): Settings =>
   ({
     projectId: 'proj-123',
@@ -48,87 +56,105 @@ const gtjsonFile = (
 describe('warnManualReviewSetup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: setting unavailable (older API / no credentials)
+    vi.mocked(gt.getProjectInfo).mockRejectedValue(new Error('unavailable'));
   });
 
-  it('does not warn when nothing requires review', () => {
-    warnManualReviewSetup(makeSettings(), [
+  it('does not warn when nothing requires review', async () => {
+    await warnManualReviewSetup(makeSettings(), [
       normalFile('a.json'),
       gtjsonFile({ hashA: {} }),
     ]);
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it('warns with the project settings URL for review-gated normal files', () => {
-    warnManualReviewSetup(makeSettings(['a.json']), [normalFile('a.json')]);
+  it('warns with the project settings URL for review-gated normal files', async () => {
+    await warnManualReviewSetup(makeSettings(['a.json']), [
+      normalFile('a.json'),
+    ]);
     expect(logger.warn).toHaveBeenCalledTimes(1);
     expect(vi.mocked(logger.warn).mock.calls[0][0]).toContain(
       'https://dash.generaltranslation.com/project/proj-123/settings'
     );
   });
 
-  it('does not warn when the review-gated file is not part of the upload', () => {
-    warnManualReviewSetup(makeSettings(['other.json']), [normalFile('a.json')]);
+  it('does not warn when the review-gated file is not part of the upload', async () => {
+    await warnManualReviewSetup(makeSettings(['other.json']), [
+      normalFile('a.json'),
+    ]);
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it('warns for review-gated GTJSON components', () => {
-    warnManualReviewSetup(makeSettings(), [
+  it('warns for review-gated GTJSON components', async () => {
+    await warnManualReviewSetup(makeSettings(), [
       gtjsonFile({ hashA: { requires_review: true }, hashB: {} }),
     ]);
     expect(logger.warn).toHaveBeenCalledTimes(1);
   });
 
-  it('does not warn for explicitly opted-out GTJSON components', () => {
-    warnManualReviewSetup(makeSettings(), [
+  it('does not warn for explicitly opted-out GTJSON components', async () => {
+    await warnManualReviewSetup(makeSettings(), [
       gtjsonFile({ hashA: { requires_review: false } }),
     ]);
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it('does not warn when the project has manual review enabled (autoApprove false)', () => {
-    warnManualReviewSetup(
-      makeSettings(['a.json']),
-      [normalFile('a.json')],
-      false
-    );
+  it('does not warn when the project has manual review enabled (autoApprove false)', async () => {
+    vi.mocked(gt.getProjectInfo).mockResolvedValue({
+      autoApprove: false,
+    } as Awaited<ReturnType<typeof gt.getProjectInfo>>);
+    await warnManualReviewSetup(makeSettings(['a.json']), [
+      normalFile('a.json'),
+    ]);
     expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('does not fetch project info when nothing requires review', async () => {
+    await warnManualReviewSetup(makeSettings(), [normalFile('a.json')]);
+    expect(gt.getProjectInfo).not.toHaveBeenCalled();
   });
 
   // Wrapping may break phrases across lines, so assert on unwrapped text
   const unwrappedWarning = () =>
     (vi.mocked(logger.warn).mock.calls[0][0] as string).replace(/\n/g, ' ');
 
-  it('warns definitively when the project auto-approves', () => {
-    warnManualReviewSetup(
-      makeSettings(['a.json']),
-      [normalFile('a.json')],
-      true
-    );
+  it('warns definitively when the project auto-approves', async () => {
+    vi.mocked(gt.getProjectInfo).mockResolvedValue({
+      autoApprove: true,
+    } as Awaited<ReturnType<typeof gt.getProjectInfo>>);
+    await warnManualReviewSetup(makeSettings(['a.json']), [
+      normalFile('a.json'),
+    ]);
     expect(logger.warn).toHaveBeenCalledTimes(1);
     expect(unwrappedWarning()).toContain(
       'this project approves new translations automatically'
     );
   });
 
-  it('warns conditionally when the auto-approve setting is unknown', () => {
-    warnManualReviewSetup(makeSettings(['a.json']), [normalFile('a.json')]);
+  it('warns conditionally when the auto-approve setting is unknown', async () => {
+    await warnManualReviewSetup(makeSettings(['a.json']), [
+      normalFile('a.json'),
+    ]);
     expect(logger.warn).toHaveBeenCalledTimes(1);
     expect(unwrappedWarning()).toContain('unless auto-approval is turned off');
   });
 
-  it('names the exact dashboard setting in the call to action', () => {
-    warnManualReviewSetup(
-      makeSettings(['a.json']),
-      [normalFile('a.json')],
-      true
-    );
+  it('names the exact dashboard setting in the call to action', async () => {
+    vi.mocked(gt.getProjectInfo).mockResolvedValue({
+      autoApprove: true,
+    } as Awaited<ReturnType<typeof gt.getProjectInfo>>);
+    await warnManualReviewSetup(makeSettings(['a.json']), [
+      normalFile('a.json'),
+    ]);
     expect(unwrappedWarning()).toContain(
       '"Auto approve translations" in your project settings'
     );
   });
 
-  it('wraps the warning into consistent-width lines', () => {
-    warnManualReviewSetup(makeSettings(['a.json']), [normalFile('a.json')]);
+  it('wraps the warning into consistent-width lines', async () => {
+    await warnManualReviewSetup(makeSettings(['a.json']), [
+      normalFile('a.json'),
+    ]);
     const textLines = (vi.mocked(logger.warn).mock.calls[0][0] as string)
       .split('\n')
       .slice(0, -1); // last line is the URL, which is never wrapped

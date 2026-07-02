@@ -2,7 +2,10 @@ import path from 'node:path';
 import chalk from 'chalk';
 import type { FileToUpload } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
+import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
+
+const PROJECT_INFO_TIMEOUT_MS = 10_000;
 
 /**
  * Warns when an upload contains review-gated content but the project
@@ -10,19 +13,17 @@ import { Settings } from '../types/index.js';
  * settings page. The CLI cannot change the auto-approve setting itself —
  * review setup happens in the dashboard.
  *
- * `autoApprove` comes from the enqueue API response when available:
+ * The project's auto-approve setting is fetched lazily (only when the upload
+ * actually contains review-gated content):
  * - false: manual review is already the project workflow — no warning
  * - true: requiresReview config has no gating effect — warn
- * - undefined (API does not return project settings yet): warn with
+ * - unavailable (older API, dry runs without credentials): warn with
  *   conditional wording, since auto-approve is the platform default
  */
-export function warnManualReviewSetup(
+export async function warnManualReviewSetup(
   settings: Settings,
-  files: FileToUpload[],
-  autoApprove?: boolean
-): void {
-  if (autoApprove === false) return;
-
+  files: FileToUpload[]
+): Promise<void> {
   const requiresReviewPaths = settings.files?.requiresReviewPaths;
 
   const hasReviewGatedFile = files.some((file) => {
@@ -36,6 +37,16 @@ export function warnManualReviewSetup(
     return requiresReviewPaths?.has(path.resolve(process.cwd(), file.fileName));
   });
   if (!hasReviewGatedFile) return;
+
+  let autoApprove: boolean | undefined;
+  try {
+    autoApprove = (
+      await gt.getProjectInfo({ timeout: PROJECT_INFO_TIMEOUT_MS })
+    ).autoApprove;
+  } catch {
+    // Setting unavailable — fall through to the conditional wording
+  }
+  if (autoApprove === false) return;
 
   const settingsUrl = settings.projectId
     ? `${settings.dashboardUrl}/project/${settings.projectId}/settings`

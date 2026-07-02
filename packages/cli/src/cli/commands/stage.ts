@@ -38,10 +38,11 @@ export async function handleStage(
     publishMap,
   } = await collectFiles(options, settings, library);
 
+  // Point at dashboard review setup when uploading review-gated content
+  await warnManualReviewSetup(settings, allFiles);
+
   // Dry run
   if (options.dryRun) {
-    // No enqueue response to read auto-approve from, so warn conditionally
-    warnManualReviewSetup(settings, allFiles);
     logger.success(`Dry run: No files were sent to General Translation.`);
     logCollectedFiles(allFiles, reactComponents);
     return null;
@@ -62,14 +63,6 @@ export async function handleStage(
       await runStageFilesWorkflow({ files: allFiles, options, settings });
     jobData = enqueueResult;
     branchData = branchDataResult;
-
-    // Point at dashboard review setup when the project auto-approves
-    // review-gated content that was just enqueued
-    warnManualReviewSetup(
-      settings,
-      allFiles,
-      jobData?.projectSettings?.autoApprove
-    );
 
     fileVersionData = convertToFileTranslationData(allFiles);
 
