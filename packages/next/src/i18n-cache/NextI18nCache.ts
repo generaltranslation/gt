@@ -4,13 +4,14 @@ import type { Dictionary, Translation } from 'gt-i18n/types';
 import { isValidElement } from 'react';
 import { ReactI18nCache, type ReactI18nCacheParams } from 'gt-react';
 import {
-  mergeDictionaries,
+  getDictionaryEntry as getEntry,
   type Dictionary as LegacyDictionary,
   type DictionaryEntry,
 } from '@generaltranslation/react-core/pure';
 import { getDictionary, getDictionaryEntry } from '../dictionary/getDictionary';
 import { createDictionarySubsetError } from '../errors/createErrors';
 import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 export function getNextI18nCache(): NextI18nCache {
   return getI18nCache() as NextI18nCache;
@@ -39,32 +40,67 @@ export class NextI18nCache extends ReactI18nCache {
     locale: Locale,
     prefixId?: string
   ): Promise<Record<Locale, Dictionary>> {
-    const dictionaryTranslations = await this.loadDictionary(locale);
-
-    let dictionary: LegacyDictionary | DictionaryEntry =
+    const defaultLocale = getI18nConfig().getDefaultLocale();
+    const sourceDictionary =
       (prefixId ? getDictionaryEntry(prefixId) : await getDictionary()) || {};
 
-    if (
-      isValidElement(dictionary) ||
-      Array.isArray(dictionary) ||
-      typeof dictionary !== 'object'
-    ) {
+    const dictionaries: Record<Locale, Dictionary> = {
+      [defaultLocale]: createDictionarySnapshot(
+        sourceDictionary,
+        prefixId,
+        true
+      ),
+    };
+
+    if (locale !== defaultLocale) {
+      const targetDictionary = await this.loadDictionary(locale);
+      dictionaries[locale] = createDictionarySnapshot(
+        prefixId
+          ? getEntry(targetDictionary as LegacyDictionary, prefixId)
+          : targetDictionary,
+        prefixId,
+        false
+      );
+    }
+
+    this.updateDictionaries(dictionaries);
+    return dictionaries;
+  }
+}
+
+function createDictionarySnapshot(
+  dictionary: LegacyDictionary | DictionaryEntry | undefined,
+  prefixId: string | undefined,
+  throwOnInvalid: boolean
+): Dictionary {
+  let snapshot = dictionary;
+
+  if (!isDictionaryObject(snapshot)) {
+    if (throwOnInvalid) {
       throw new Error(
         createDictionarySubsetError(prefixId ?? '', '<GTProvider>')
       );
     }
-
-    if (prefixId) {
-      const prefixPath = prefixId.split('.').reverse();
-      dictionary = prefixPath.reduce<LegacyDictionary>((acc, prefix) => {
-        return { [prefix]: acc };
-      }, dictionary as LegacyDictionary);
-    }
-
-    dictionary = mergeDictionaries(dictionary, dictionaryTranslations);
-
-    return {
-      [locale]: dictionary as unknown as Dictionary,
-    };
+    snapshot = {};
   }
+
+  if (!prefixId) return snapshot as unknown as Dictionary;
+
+  return prefixId
+    .split('.')
+    .reverse()
+    .reduce<LegacyDictionary>((acc, prefix) => {
+      return { [prefix]: acc };
+    }, snapshot as LegacyDictionary) as unknown as Dictionary;
+}
+
+function isDictionaryObject(
+  dictionary: LegacyDictionary | DictionaryEntry | undefined
+): dictionary is LegacyDictionary {
+  return (
+    !!dictionary &&
+    !isValidElement(dictionary) &&
+    !Array.isArray(dictionary) &&
+    typeof dictionary === 'object'
+  );
 }
