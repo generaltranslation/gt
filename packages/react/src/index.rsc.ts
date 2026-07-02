@@ -53,8 +53,8 @@ export {
 export function useGT() {
   return use(getGT());
 }
-export function useTranslations() {
-  return use(getTranslations());
+export function useTranslations(rootId?: string) {
+  return use(getTranslations(rootId));
 }
 export function useMessages() {
   return use(getMessages());

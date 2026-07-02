@@ -72,7 +72,7 @@ describe('GTProvider', () => {
 
     expect(mockGetLocale).toHaveBeenCalled();
     expect(mockGetRegion).toHaveBeenCalled();
-    expect(mockLoadDictionaries).toHaveBeenCalledWith('fr', undefined);
+    expect(mockLoadDictionaries).toHaveBeenCalledWith('fr');
     expect(React.isValidElement(element)).toBe(true);
     expect(element).toMatchObject({
       type: mockClientGTProvider,
@@ -113,12 +113,11 @@ describe('GTProvider', () => {
 
     const element = await GTProvider({
       children: 'content',
-      id: 'marketing.hero',
     });
 
     expect(mockGetLocale).toHaveBeenCalled();
     expect(mockGetRegion).toHaveBeenCalled();
-    expect(mockLoadDictionaries).toHaveBeenCalledWith('en', 'marketing.hero');
+    expect(mockLoadDictionaries).toHaveBeenCalledWith('en');
     expect(mockLoadTranslations).not.toHaveBeenCalled();
     expect(React.isValidElement(element)).toBe(true);
     expect(element).toMatchObject({

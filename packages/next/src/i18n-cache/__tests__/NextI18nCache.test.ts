@@ -1,21 +1,18 @@
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockGetDictionary,
-  mockGetDictionaryEntry,
   mockGetI18nCache,
+  mockGetI18nConfig,
   mockLoadDictionary,
-  mockMergeDictionaries,
   mockReactI18nCacheConstructor,
   mockResolveDictionaryLoader,
   mockSetI18nCache,
 } = vi.hoisted(() => ({
   mockGetDictionary: vi.fn(),
-  mockGetDictionaryEntry: vi.fn(),
   mockGetI18nCache: vi.fn(),
+  mockGetI18nConfig: vi.fn(),
   mockLoadDictionary: vi.fn(),
-  mockMergeDictionaries: vi.fn(),
   mockReactI18nCacheConstructor: vi.fn(),
   mockResolveDictionaryLoader: vi.fn(),
   mockSetI18nCache: vi.fn(),
@@ -23,6 +20,7 @@ const {
 
 vi.mock('gt-i18n/internal', () => ({
   getI18nCache: mockGetI18nCache,
+  getI18nConfig: mockGetI18nConfig,
   setI18nCache: mockSetI18nCache,
   I18nCache: class {},
 }));
@@ -39,42 +37,79 @@ vi.mock('gt-react', () => ({
   },
 }));
 
-vi.mock('@generaltranslation/react-core/pure', () => ({
-  mergeDictionaries: mockMergeDictionaries,
-}));
-
 vi.mock('../../dictionary/getDictionary', () => ({
   getDictionary: mockGetDictionary,
-  getDictionaryEntry: mockGetDictionaryEntry,
 }));
 
 vi.mock('../../resolvers/resolveDictionaryLoader', () => ({
   resolveDictionaryLoader: mockResolveDictionaryLoader,
 }));
 
-vi.mock('../../errors/createErrors', () => ({
-  createDictionarySubsetError: (id: string, functionName: string) =>
-    `${functionName} with id "${id}" could not read a valid dictionary subtree`,
-}));
-
 describe('NextI18nCache', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetI18nConfig.mockReturnValue({
+      getDefaultLocale: () => 'en',
+    });
+    mockGetDictionary.mockReturnValue({
+      greeting: 'Hello',
+    });
     mockLoadDictionary.mockResolvedValue({
       greeting: 'Bonjour',
     });
-    mockGetDictionary.mockResolvedValue({
-      greeting: 'Hello',
-    });
-    mockGetDictionaryEntry.mockReturnValue({
-      title: 'Title',
-    });
-    mockMergeDictionaries.mockReturnValue({
-      greeting: 'Bonjour',
+    mockResolveDictionaryLoader.mockReturnValue(undefined);
+  });
+
+  it('seeds the source dictionary without a custom dictionary loader', async () => {
+    const { NextI18nCache } = await import('../NextI18nCache');
+
+    new NextI18nCache({});
+
+    expect(mockResolveDictionaryLoader).toHaveBeenCalled();
+    expect(mockGetDictionary).toHaveBeenCalled();
+    expect(mockReactI18nCacheConstructor).toHaveBeenCalledWith({
+      dictionary: {
+        greeting: 'Hello',
+      },
     });
   });
 
-  it('loads a locale-scoped dictionaries snapshot', async () => {
+  it('preserves an explicit source dictionary', async () => {
+    const { NextI18nCache } = await import('../NextI18nCache');
+
+    new NextI18nCache({
+      dictionary: {
+        greeting: 'Explicit hello',
+      },
+    });
+
+    expect(mockGetDictionary).not.toHaveBeenCalled();
+    expect(mockReactI18nCacheConstructor).toHaveBeenCalledWith({
+      dictionary: {
+        greeting: 'Explicit hello',
+      },
+    });
+  });
+
+  it('wraps a configured dictionary loader', async () => {
+    const loadDictionary = vi.fn().mockResolvedValue({
+      greeting: 'Salut',
+    });
+    mockResolveDictionaryLoader.mockReturnValue(loadDictionary);
+    const { NextI18nCache } = await import('../NextI18nCache');
+
+    new NextI18nCache({});
+
+    const params = mockReactI18nCacheConstructor.mock.calls[0][0] as {
+      loadDictionary: (locale: string) => Promise<unknown>;
+    };
+    await expect(params.loadDictionary('fr')).resolves.toEqual({
+      greeting: 'Salut',
+    });
+    expect(loadDictionary).toHaveBeenCalledWith('fr');
+  });
+
+  it('loads a target dictionary snapshot with the source dictionary', async () => {
     const { NextI18nCache } = await import('../NextI18nCache');
     const cache = new NextI18nCache({});
 
@@ -82,53 +117,24 @@ describe('NextI18nCache', () => {
       fr: {
         greeting: 'Bonjour',
       },
-    });
-
-    expect(mockGetDictionary).toHaveBeenCalled();
-    expect(mockGetDictionaryEntry).not.toHaveBeenCalled();
-    expect(mockLoadDictionary).toHaveBeenCalledWith('fr');
-    expect(mockMergeDictionaries).toHaveBeenCalledWith(
-      {
+      en: {
         greeting: 'Hello',
       },
-      {
-        greeting: 'Bonjour',
-      }
-    );
-  });
+    });
 
-  it('loads, validates, and re-wraps a prefixed dictionary subtree', async () => {
-    const { NextI18nCache } = await import('../NextI18nCache');
-    const cache = new NextI18nCache({});
-
-    await cache.loadDictionaries('fr', 'marketing.hero');
-
-    expect(mockGetDictionary).not.toHaveBeenCalled();
-    expect(mockGetDictionaryEntry).toHaveBeenCalledWith('marketing.hero');
     expect(mockLoadDictionary).toHaveBeenCalledWith('fr');
-    expect(mockMergeDictionaries).toHaveBeenCalledWith(
-      {
-        marketing: {
-          hero: {
-            title: 'Title',
-          },
-        },
-      },
-      {
-        greeting: 'Bonjour',
-      }
-    );
   });
 
-  it('throws when a prefixed dictionary subtree is not an object', async () => {
+  it('loads one dictionary when the requested locale is the source locale', async () => {
     const { NextI18nCache } = await import('../NextI18nCache');
     const cache = new NextI18nCache({});
-    mockGetDictionaryEntry.mockReturnValue(React.createElement('span'));
 
-    await expect(
-      cache.loadDictionaries('fr', 'marketing.hero')
-    ).rejects.toThrow(
-      '<GTProvider> with id "marketing.hero" could not read a valid dictionary subtree'
-    );
+    await expect(cache.loadDictionaries('en')).resolves.toEqual({
+      en: {
+        greeting: 'Bonjour',
+      },
+    });
+
+    expect(mockLoadDictionary).toHaveBeenCalledWith('en');
   });
 });

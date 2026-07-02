@@ -26,6 +26,7 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     msg: vi.fn(),
     Num: vi.fn(),
     Plural: vi.fn(),
+    ReactI18nCache: class {},
     RelativeTime: vi.fn(),
     RscT: vi.fn(),
     useDefaultLocale: vi.fn(),

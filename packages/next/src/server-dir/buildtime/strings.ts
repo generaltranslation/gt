@@ -26,11 +26,12 @@ export async function getMessages() {
   });
 }
 
-export async function getTranslations() {
+export async function getTranslations(rootId?: string) {
   const conditions = await getRequestConditions();
   return getTranslationsInternal({
     locale: conditions._locale,
     enableI18n: conditions._enableI18n,
+    rootId,
   });
 }
 
@@ -42,6 +43,6 @@ export function useMessages() {
   return use(getMessages());
 }
 
-export function useTranslations() {
-  return use(getTranslations());
+export function useTranslations(rootId?: string) {
+  return use(getTranslations(rootId));
 }
