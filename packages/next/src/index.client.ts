@@ -3,13 +3,8 @@
 import { initializeGTClient } from './setup/initGT.client';
 initializeGTClient();
 
-import type {
-  GetServerSideProps,
-  GetServerSidePropsContext,
-  PreviewData,
-} from 'next';
+import type { GetServerSidePropsContext, PreviewData } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 
 // ===== Unsupported Server APIs ===== //
 export function parseLocale<
@@ -18,18 +13,6 @@ export function parseLocale<
 >(_: GetServerSidePropsContext<Params, Preview>): string {
   throw new Error(
     'parseLocale() is only available from gt-next on the server.'
-  );
-}
-
-export function withGTServerSideProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  _?: GetServerSideProps<Props, Params, Preview>
-): GetServerSideProps<WithGTServerSideProps<Props>, Params, Preview> {
-  throw new Error(
-    'withGTServerSideProps() is only available from gt-next on the server.'
   );
 }
 
@@ -77,7 +60,6 @@ export {
   getGTClass,
   getLocaleProperties,
   getLocales,
-  getTranslationsSnapshot,
   getVersionId,
   gtFallback,
   mFallback,
@@ -87,4 +69,3 @@ export { isLocaleSupported } from './request/localeValidation';
 
 // ===== Types ===== //
 export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
-export type { WithGTServerSideProps };

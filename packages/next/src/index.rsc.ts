@@ -1,14 +1,8 @@
 import 'server-only';
 
 import { initializeGTServer } from './setup/initGT.server';
-import type {
-  GetServerSideProps,
-  GetServerSidePropsContext,
-  PreviewData,
-} from 'next';
+import type { GetServerSidePropsContext, PreviewData } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import { getTranslationsSnapshotRscError } from './errors/createErrors';
-import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 initializeGTServer();
 
 // ===== Components ===== //
@@ -40,14 +34,6 @@ export { Client_RegionSelector as RegionSelector } from './utils/client-boundary
 // ===== other ===== //
 
 /**
- * Placeholder for getTranslationsSnapshot()
- * This function is for next-pages use, not next-app use
- */
-export function getTranslationsSnapshot(_: string) {
-  throw new Error(getTranslationsSnapshotRscError);
-}
-
-/**
  * Placeholder for parseLocale()
  * This function is for next-pages use, not next-app use
  */
@@ -56,22 +42,6 @@ export function parseLocale<
   Preview extends PreviewData = PreviewData,
 >(_: GetServerSidePropsContext<Params, Preview>): string {
   throw new Error('parseLocale() is only available for the Pages Router.');
-}
-
-/**
- * Placeholder for withGTServerSideProps()
- * This function is for next-pages use, not next-app use
- */
-export function withGTServerSideProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  _?: GetServerSideProps<Props, Params, Preview>
-): GetServerSideProps<WithGTServerSideProps<Props>, Params, Preview> {
-  throw new Error(
-    'withGTServerSideProps() is only available for the Pages Router.'
-  );
 }
 
 // ===== gt-react Components ===== //
@@ -106,4 +76,3 @@ export { isLocaleSupported } from './request/localeValidation';
 
 // ===== Types ===== //
 export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
-export type { WithGTServerSideProps };
