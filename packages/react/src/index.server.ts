@@ -16,11 +16,6 @@ export {
   useSetRegion,
   useSetEnableI18n,
 } from './hooks/conditions-store';
-export {
-  defaultEnableI18nCookieName,
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
-} from '@generaltranslation/react-core/pure';
 
 type InitializeGTSPA = typeof import('./setup/initializeGTSPA').initializeGTSPA;
 
