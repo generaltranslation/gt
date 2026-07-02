@@ -1,0 +1,133 @@
+{
+  "name": "gt-astro",
+  "version": "11.0.0-odysseus.12",
+  "description": "Astro integration for General Translation",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.cts",
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": [
+    "./dist/client.cjs",
+    "./dist/client.mjs"
+  ],
+  "peerDependencies": {
+    "astro": ">=5.0.0",
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@generaltranslation/compiler": "workspace:*",
+    "@generaltranslation/react-core": "workspace:*",
+    "generaltranslation": "workspace:*",
+    "gt-i18n": "workspace:*",
+    "gt-react": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "author": "General Translation, Inc.",
+  "license": "FSL-1.1-ALv2",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": ">=18.0.0 <20.0.0",
+    "@types/react-dom": ">=18.0.0 <20.0.0",
+    "astro": "^7.0.0",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "default": "./dist/index.mjs"
+    },
+    "./middleware": {
+      "require": {
+        "types": "./dist/middleware.d.cts",
+        "default": "./dist/middleware.cjs"
+      },
+      "import": {
+        "types": "./dist/middleware.d.mts",
+        "default": "./dist/middleware.mjs"
+      },
+      "default": "./dist/middleware.mjs"
+    },
+    "./server": {
+      "require": {
+        "types": "./dist/server.d.cts",
+        "default": "./dist/server.cjs"
+      },
+      "import": {
+        "types": "./dist/server.d.mts",
+        "default": "./dist/server.mjs"
+      },
+      "default": "./dist/server.mjs"
+    },
+    "./react": {
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      },
+      "import": {
+        "types": "./dist/react.d.mts",
+        "default": "./dist/react.mjs"
+      },
+      "default": "./dist/react.mjs"
+    },
+    "./client": {
+      "require": {
+        "types": "./dist/client.d.cts",
+        "default": "./dist/client.cjs"
+      },
+      "import": {
+        "types": "./dist/client.d.mts",
+        "default": "./dist/client.mjs"
+      },
+      "default": "./dist/client.mjs"
+    }
+  },
+  "keywords": [
+    "astro",
+    "astro-integration",
+    "react",
+    "translation",
+    "internationalization",
+    "localization",
+    "i18n"
+  ]
+}

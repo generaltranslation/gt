@@ -12,7 +12,8 @@
       "gt-next",
       "gt-react",
       "gt-react-native",
-      "gt-tanstack-start"
+      "gt-tanstack-start",
+      "gt-astro"
     ]
   ],
   "linked": [],

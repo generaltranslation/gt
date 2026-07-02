@@ -30,6 +30,8 @@ export function determineLibrary(): {
         library = Libraries.GT_NEXT;
       } else if (dependencies[Libraries.GT_TANSTACK_START]) {
         library = Libraries.GT_TANSTACK_START;
+      } else if (dependencies[Libraries.GT_ASTRO]) {
+        library = Libraries.GT_ASTRO;
       } else if (dependencies[Libraries.GT_REACT]) {
         library = Libraries.GT_REACT;
       } else if (dependencies[Libraries.GT_REACT_NATIVE]) {

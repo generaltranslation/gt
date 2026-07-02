@@ -1,0 +1,33 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ES2022",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "moduleResolution": "Bundler",
+    "sourceMap": true,
+    "declarationMap": true,
+    "jsx": "react-jsx",
+    "composite": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"],
+  "references": [
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../supported-locales"
+    },
+    {
+      "path": "../react"
+    },
+    {
+      "path": "../i18n"
+    },
+    {
+      "path": "../react-core"
+    }
+  ]
+}
