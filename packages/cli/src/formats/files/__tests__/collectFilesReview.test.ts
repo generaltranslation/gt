@@ -74,10 +74,10 @@ describe('collectFiles GTJSON requiresReview', () => {
     );
     const metadata = gtFile?.formatMetadata as Record<
       string,
-      { requiresReview?: boolean }
+      { requires_review?: boolean }
     >;
-    expect(metadata.aaa.requiresReview).toBeUndefined();
-    expect(metadata.bbb.requiresReview).toBeUndefined();
+    expect(metadata.aaa.requires_review).toBeUndefined();
+    expect(metadata.bbb.requires_review).toBeUndefined();
   });
 
   it('materializes the top-level default into component metadata', async () => {
@@ -88,12 +88,12 @@ describe('collectFiles GTJSON requiresReview', () => {
 
     const metadata = gtFile?.formatMetadata as Record<
       string,
-      { requiresReview?: boolean }
+      { requires_review?: boolean }
     >;
     // no prop -> inherits default true
-    expect(metadata.aaa.requiresReview).toBe(true);
+    expect(metadata.aaa.requires_review).toBe(true);
     // explicit false prop wins over the default
-    expect(metadata.bbb.requiresReview).toBe(false);
+    expect(metadata.bbb.requires_review).toBe(false);
   });
 
   it('keeps an explicit true prop without a default', async () => {
@@ -104,10 +104,10 @@ describe('collectFiles GTJSON requiresReview', () => {
 
     const metadata = gtFile?.formatMetadata as Record<
       string,
-      { requiresReview?: boolean }
+      { requires_review?: boolean }
     >;
-    expect(metadata.aaa.requiresReview).toBe(true);
-    expect(metadata.bbb.requiresReview).toBeUndefined();
+    expect(metadata.aaa.requires_review).toBe(true);
+    expect(metadata.bbb.requires_review).toBeUndefined();
   });
 
   it('changes the versionId when effective review flags change', async () => {

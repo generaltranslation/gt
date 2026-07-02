@@ -33,7 +33,7 @@ const normalFile = (fileName: string): FileToUpload =>
   }) as FileToUpload;
 
 const gtjsonFile = (
-  metadata: Record<string, { requiresReview?: boolean }>
+  metadata: Record<string, { requires_review?: boolean }>
 ): FileToUpload =>
   ({
     fileName: '__GT_TEMPLATE__.json',
@@ -73,14 +73,14 @@ describe('warnManualReviewSetup', () => {
 
   it('warns for review-gated GTJSON components', () => {
     warnManualReviewSetup(makeSettings(), [
-      gtjsonFile({ hashA: { requiresReview: true }, hashB: {} }),
+      gtjsonFile({ hashA: { requires_review: true }, hashB: {} }),
     ]);
     expect(logger.warn).toHaveBeenCalledTimes(1);
   });
 
   it('does not warn for explicitly opted-out GTJSON components', () => {
     warnManualReviewSetup(makeSettings(), [
-      gtjsonFile({ hashA: { requiresReview: false } }),
+      gtjsonFile({ hashA: { requires_review: false } }),
     ]);
     expect(logger.warn).not.toHaveBeenCalled();
   });

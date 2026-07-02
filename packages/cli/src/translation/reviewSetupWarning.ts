@@ -27,9 +27,10 @@ export function warnManualReviewSetup(
 
   const hasReviewGatedFile = files.some((file) => {
     if (file.fileFormat === 'GTJSON') {
+      // Uploaded GTJSON metadata carries the platform's snake_case key
       return Object.values(file.formatMetadata ?? {}).some(
         (metadata) =>
-          (metadata as { requiresReview?: boolean })?.requiresReview === true
+          (metadata as { requires_review?: boolean })?.requires_review === true
       );
     }
     return requiresReviewPaths?.has(path.resolve(process.cwd(), file.fileName));
