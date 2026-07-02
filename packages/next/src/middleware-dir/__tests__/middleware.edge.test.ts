@@ -457,5 +457,28 @@ describe('Middleware Integration Tests', () => {
       // This should be a next() since the locale and path now match
       expect(getResponseType(nextRes)).toBe('next');
     });
+
+    it('keeps the locale cookie when clearing the reset cookie', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+      });
+
+      const res = middleware(
+        createRequest('/fr/about', {
+          cookies: {
+            [LOCALE_COOKIE]: 'fr',
+            [RESET_COOKIE]: 'true',
+          },
+        })
+      );
+      expect(getResponseType(res)).toBe('next');
+      const setCookie = res.headers.get('set-cookie') || '';
+      expect(setCookie).toContain(`${RESET_COOKIE}=;`);
+      // The locale cookie must survive: the client re-reads it on every
+      // render, and deleting it races with concurrent prefetch responses
+      // after a locale switch.
+      expect(setCookie).not.toContain(`${LOCALE_COOKIE}=;`);
+    });
   });
 });

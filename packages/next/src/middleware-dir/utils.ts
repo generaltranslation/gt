@@ -16,7 +16,6 @@ export type ResponseConfig = {
   headerList: Headers;
   localeRouting: boolean;
   localeRoutingEnabledCookieName: string;
-  localeCookieName: string;
   resetLocaleCookieName: string;
   localeHeaderName: string;
 };
@@ -30,7 +29,6 @@ export function getResponse({
   headerList,
   localeRouting,
   localeRoutingEnabledCookieName,
-  localeCookieName,
   resetLocaleCookieName,
   localeHeaderName,
 }: ResponseConfig): NextResponse<unknown> {
@@ -61,10 +59,12 @@ export function getResponse({
     localeRoutingEnabledCookieName,
     localeRouting.toString()
   );
-  // Clear setLocale cookies
+  // Clear the setLocale reset cookie once it has been processed. The locale
+  // cookie must be kept: the client re-reads it on every render, and deleting
+  // it here races with concurrent prefetch responses after a locale switch,
+  // dropping client components back to the browser's default locale.
   if (clearResetCookie && type !== 'redirect') {
     response.cookies.delete(resetLocaleCookieName);
-    response.cookies.delete(localeCookieName);
   }
   return response;
 }
