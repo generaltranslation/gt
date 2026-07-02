@@ -37,9 +37,7 @@ export function parseLocale<
 
   const i18nConfig = getI18nConfig();
   return (
-    i18nConfig
-      .getGTClass()
-      .determineLocale(preferredLocales, i18nConfig.getLocales()) ||
+    i18nConfig.determineLocale(preferredLocales, i18nConfig.getLocales()) ||
     i18nConfig.getDefaultLocale()
   );
 }

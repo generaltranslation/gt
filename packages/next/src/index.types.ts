@@ -13,7 +13,6 @@ import {
   useRegion as _useRegion,
   useLocales as _useLocales,
   useDefaultLocale as _useDefaultLocale,
-  useGTClass as _useGTClass,
   useLocaleProperties as _useLocaleProperties,
   Currency as _Currency,
   DateTime as _DateTime,
@@ -33,7 +32,6 @@ import {
   useLocaleSelector as _useLocaleSelector,
   getTranslationsSnapshot,
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
   getVersionId,
@@ -478,19 +476,6 @@ export const useDefaultLocale: typeof _useDefaultLocale = () => {
 };
 
 /**
- * Returns the configured GT class instance.
- *
- * @returns {GT} The configured GT class instance.
- *
- * @example
- * const gt = useGTClass();
- * console.log(gt.getLocaleProperties('en-US'));
- */
-export const useGTClass: typeof _useGTClass = () => {
-  throw new Error(typesFileError);
-};
-
-/**
  * Returns the locale properties for the given locale.
  *
  * @param {string} locale - The locale to get the properties for.
@@ -593,7 +578,6 @@ export {
   decodeVars,
   getTranslationsSnapshot,
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
   getVersionId,

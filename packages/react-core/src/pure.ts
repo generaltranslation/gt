@@ -112,7 +112,6 @@ export type {
 } from './i18n-store/storeTypes';
 export {
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
   getVersionId,

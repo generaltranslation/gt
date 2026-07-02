@@ -1055,7 +1055,7 @@ describe('I18nCache', () => {
     expect(result).toBe('Message inconnu');
     expect(mockTranslateMany).toHaveBeenCalled();
     expect(createTranslateManyFactory).toHaveBeenCalledWith(
-      expect.any(Object),
+      expect.any(Function),
       4321,
       {
         sourceLocale: 'en',

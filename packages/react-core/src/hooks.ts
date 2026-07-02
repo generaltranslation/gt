@@ -18,7 +18,6 @@ export { useTranslations } from './hooks/useTranslations';
 export {
   useFormatLocales,
   useShouldTranslate,
-  useGTClass,
   useLocaleProperties,
   useLocaleDirection,
   useVersionId,

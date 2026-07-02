@@ -116,8 +116,10 @@ class I18nCache<
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT;
     const runtimeTranslationMetadata =
       this.config.runtimeTranslation?.metadata ?? {};
+    const i18nConfig = getI18nConfig();
     const createTranslateMany = createTranslateManyFactory(
-      getI18nConfig().getGTClass(),
+      (sources, options, timeout) =>
+        i18nConfig.translateMany(sources, options, timeout),
       runtimeTranslationTimeout,
       runtimeTranslationMetadata
     );
