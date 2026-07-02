@@ -146,6 +146,17 @@ export const warnInvalidFormatSync = (
     location
   );
 
+export const warnInvalidRequiresReviewSync = (
+  file: string,
+  value: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Found invalid requiresReview value: ${colorizeContent(value)}. Must be a boolean literal (true or false) — strings and dynamic expressions are not allowed.`,
+    location
+  );
+
 export const warnInvalidIcuSync = (
   file: string,
   value: string,

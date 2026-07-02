@@ -82,6 +82,15 @@ function buildStringCall(entry: TranslationContent): t.CallExpression {
     );
   }
 
+  if (entry.requiresReview === true) {
+    properties.push(
+      t.objectProperty(
+        t.stringLiteral(USEGT_CALLBACK_OPTIONS.$requiresReview),
+        t.booleanLiteral(true)
+      )
+    );
+  }
+
   if (entry.format !== undefined) {
     properties.push(
       t.objectProperty(
@@ -117,6 +126,17 @@ function buildJsxCall(entry: TranslationJsx): t.CallExpression {
       t.objectProperty(
         t.stringLiteral(USEGT_CALLBACK_OPTIONS.$id),
         t.stringLiteral(entry.id)
+      )
+    );
+  }
+
+  // requiresReview is part of the review-aware hash; without it the runtime
+  // recomputes a non-review hash and misses the cached entry
+  if (entry.requiresReview === true) {
+    properties.push(
+      t.objectProperty(
+        t.stringLiteral(USEGT_CALLBACK_OPTIONS.$requiresReview),
+        t.booleanLiteral(true)
       )
     );
   }

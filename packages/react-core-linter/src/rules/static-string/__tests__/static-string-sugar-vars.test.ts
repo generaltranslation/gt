@@ -543,3 +543,69 @@ describe('static-string: non-sugar options keys are ignored (ICU params)', () =>
     invalid: [],
   });
 });
+
+// ===================================================================
+// $requiresReview — boolean literal only
+// ===================================================================
+
+// gt("Hello", { $requiresReview: true })  — valid, boolean literal
+// gt("Hello", { $requiresReview: false }) — valid, boolean literal
+describe('static-string: $requiresReview with boolean literal is valid', () => {
+  ruleTester.run('requires-review-static-valid', staticString, {
+    valid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello", { $requiresReview: true });
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+      },
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello", { $requiresReview: false });
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+      },
+    ],
+    invalid: [],
+  });
+});
+
+// gt("Hello", { $requiresReview: "true" })  — invalid, string literal
+// gt("Hello", { $requiresReview: flag })    — invalid, dynamic expression
+describe('static-string: $requiresReview with non-boolean is invalid', () => {
+  ruleTester.run('requires-review-static-invalid', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello", { $requiresReview: "true" });
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'sugarVariableMustBeStatic' }],
+      },
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component(flag: boolean) {
+            const gt = useGT();
+            return gt("Hello", { $requiresReview: flag });
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'sugarVariableMustBeStatic' }],
+      },
+    ],
+  });
+});

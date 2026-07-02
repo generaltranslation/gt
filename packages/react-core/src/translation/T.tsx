@@ -54,6 +54,8 @@ function T({
   $id?: string;
   $context?: string;
   $maxChars?: number;
+  requiresReview?: boolean;
+  $requiresReview?: boolean;
   [key: string]: unknown;
 }): React.JSX.Element | undefined {
   if (!children) return undefined;
@@ -63,6 +65,12 @@ function T({
   context = context ?? options?.$context;
   const maxChars =
     typeof options?.$maxChars === 'number' ? options.$maxChars : undefined;
+  const requiresReview =
+    typeof options?.$requiresReview === 'boolean'
+      ? options.$requiresReview
+      : typeof options?.requiresReview === 'boolean'
+        ? options.requiresReview
+        : undefined;
 
   const {
     translations,
@@ -106,6 +114,7 @@ function T({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
+      ...(requiresReview === true && { requiresReview: true }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
@@ -115,6 +124,7 @@ function T({
     context,
     id,
     maxChars,
+    requiresReview,
     translationRequired,
     translationEntry,
   ]);
@@ -173,6 +183,10 @@ function T({
     }
     if (translationEntry) return renderTranslation(translationEntry);
     try {
+      // Dev-mode runtime translation is intentionally NOT review-gated:
+      // it's a live preview convenience, while requiresReview gates
+      // production serving. The flag still rides along in metadata so the
+      // platform records review intent on anything it persists.
       const translatedChildren = await registerJsxForTranslation({
         source: childrenAsObjects,
         targetLocale: locale,
@@ -181,6 +195,7 @@ function T({
           hash,
           context,
           ...(maxChars != null && { maxChars }),
+          ...(requiresReview === true && { requiresReview: true }),
         },
       });
       if (!translatedChildren) return renderDefault();

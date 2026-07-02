@@ -45,6 +45,25 @@ export async function collectFiles(
       for (const update of updates) {
         const { source, metadata, dataFormat } = update;
         metadata.dataFormat = dataFormat; // add the data format to the metadata
+        // Materialize effective requiresReview into component metadata:
+        // the explicit prop wins; otherwise inherit the top-level config
+        // default. Only the explicit prop is part of component hashes — the
+        // effective flag here is what the platform filters serving on.
+        // Uploaded metadata uses the platform's canonical snake_case key;
+        // camelCase requiresReview stays client-internal (props + hashing).
+        // An explicit prop (true or false) is always materialized; without
+        // one, only a true config default is — a false/absent default means
+        // the key is omitted entirely, matching pre-feature metadata.
+        const effectiveRequiresReview =
+          metadata.requiresReview !== undefined
+            ? metadata.requiresReview
+            : settings.requiresReview
+              ? true
+              : undefined;
+        delete metadata.requiresReview;
+        if (effectiveRequiresReview !== undefined) {
+          metadata.requires_review = effectiveRequiresReview;
+        }
         const { hash, id } = metadata;
         if (id) {
           fileData[id] = source;
@@ -55,13 +74,30 @@ export async function collectFiles(
         }
       }
       reactComponents = updates.length;
+      // Version identity includes which components effectively require
+      // review, so config-only review changes produce a new source version.
+      // When nothing requires review this reduces to the legacy key-only
+      // hash, keeping existing projects' version IDs stable.
+      const sortedKeys = Object.keys(fileData).sort();
+      const reviewRequiredKeys = sortedKeys.filter(
+        (key) =>
+          (fileMetadata[key] as { requires_review?: boolean })
+            ?.requires_review === true
+      );
+      const versionId = reviewRequiredKeys.length
+        ? hashStringSync(
+            JSON.stringify(sortedKeys) +
+              '\u0000requiresReview\u0000' +
+              JSON.stringify(reviewRequiredKeys)
+          )
+        : hashStringSync(JSON.stringify(sortedKeys));
       files.push({
         fileName: TEMPLATE_FILE_NAME,
         content: JSON.stringify(fileData),
         fileFormat: 'GTJSON',
         formatMetadata: fileMetadata,
         fileId: TEMPLATE_FILE_ID,
-        versionId: hashStringSync(JSON.stringify(Object.keys(fileData).sort())),
+        versionId,
         locale: settings.defaultLocale,
       } satisfies FileToUpload);
       // Only add GT JSON to publishMap if there's an explicit publish config
