@@ -4,10 +4,10 @@ import {
   createLookupOptions,
   getI18nCache,
   getI18nConfig,
+  getShouldTranslate,
 } from 'gt-i18n/internal';
 import type { JsxChildren } from 'generaltranslation/types';
 import { getConditionStore } from '../condition-store';
-import { getShouldTranslate } from '../internal/getFormatLocales';
 import {
   queueRuntimeTranslation,
   trackTranslations,

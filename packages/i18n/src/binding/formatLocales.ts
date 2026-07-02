@@ -1,7 +1,14 @@
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig } from '../i18n-config/singleton-operations';
 
 const EMPTY_LOCALES_PROP: string[] = [];
 
+/**
+ * Resolves the locale chain used to format variables (numbers, currencies,
+ * dates): user-provided locales first, then the current locale, then the
+ * default locale — or only the default locale when not translating.
+ *
+ * Shared by the framework bindings (gt-react via react-core, gt-vue).
+ */
 export function getFormatLocales({
   locale,
   enableI18n,
@@ -18,6 +25,9 @@ export function getFormatLocales({
     : [defaultLocale];
 }
 
+/**
+ * Whether content should be translated for the given locale.
+ */
 export function getShouldTranslate({
   locale,
   enableI18n,

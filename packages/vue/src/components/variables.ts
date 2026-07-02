@@ -1,8 +1,13 @@
 import type { VNodeChild } from 'vue';
+import {
+  computeCurrency,
+  computeDateTime,
+  computeNum,
+  computeRelativeTime,
+} from 'gt-i18n/internal';
+import type { RelativeTimeFormatOptions } from 'gt-i18n/internal';
 import type { GTFunctionalComponent } from '../types';
-import { getI18nConfig } from 'gt-i18n/internal';
 import { getConditionStore } from '../condition-store';
-import { getFormatLocales } from '../internal/getFormatLocales';
 import { getVNodeChildText } from '../internal/vnode-utils';
 
 type SharedVariableProps = {
@@ -15,39 +20,13 @@ type SharedVariableProps = {
 function resolveConditions(props: SharedVariableProps): {
   locale: string;
   enableI18n: boolean;
+  locales?: string[];
 } {
   return {
     locale: props._locale ?? getConditionStore().getLocale(),
     enableI18n: props._enableI18n ?? getConditionStore().getEnableI18n(),
+    locales: props.locales,
   };
-}
-
-function resolveFormatLocales(props: SharedVariableProps): string[] {
-  const { locale, enableI18n } = resolveConditions(props);
-  return getFormatLocales({
-    locale,
-    enableI18n,
-    localesProp: props.locales ?? [],
-  });
-}
-
-function resolveNumericContent(
-  props: { value?: number | string | null },
-  slotChildren: VNodeChild
-): number | null {
-  const raw = props.value ?? getVNodeChildText(slotChildren);
-  if (raw == null || raw === '') return null;
-  return typeof raw === 'string' ? parseFloat(raw) : raw;
-}
-
-function resolveDateContent(
-  props: { value?: Date | string | number | null },
-  slotChildren: VNodeChild
-): Date | null {
-  const raw = props.value ?? getVNodeChildText(slotChildren);
-  if (raw == null || raw === '') return null;
-  const date = raw instanceof Date ? raw : new Date(raw);
-  return isNaN(date.getTime()) ? null : date;
 }
 
 // ===== Var ===== //
@@ -79,14 +58,11 @@ type NumProps = SharedVariableProps & {
  * Renders a number with locale-aware formatting.
  */
 export const Num: GTFunctionalComponent<NumProps> = (props, { slots }) => {
-  const parsed = resolveNumericContent(props, slots.default?.());
-  if (parsed == null) return null;
-  return getI18nConfig()
-    .getGTClass()
-    .formatNum(parsed, {
-      locales: resolveFormatLocales(props),
-      ...props.options,
-    });
+  return computeNum({
+    value: props.value ?? getVNodeChildText(slots.default?.()),
+    options: props.options,
+    ...resolveConditions(props),
+  });
 };
 Num.props = ['name', 'value', 'options', 'locales', '_locale', '_enableI18n'];
 Num.inheritAttrs = false;
@@ -107,14 +83,12 @@ export const Currency: GTFunctionalComponent<CurrencyProps> = (
   props,
   { slots }
 ) => {
-  const parsed = resolveNumericContent(props, slots.default?.());
-  if (parsed == null) return null;
-  return getI18nConfig()
-    .getGTClass()
-    .formatCurrency(parsed, props.currency ?? 'USD', {
-      locales: resolveFormatLocales(props),
-      ...props.options,
-    });
+  return computeCurrency({
+    value: props.value ?? getVNodeChildText(slots.default?.()),
+    currency: props.currency,
+    options: props.options,
+    ...resolveConditions(props),
+  });
 };
 Currency.props = [
   'name',
@@ -142,15 +116,11 @@ export const DateTime: GTFunctionalComponent<DateTimeProps> = (
   props,
   { slots }
 ) => {
-  const date = resolveDateContent(props, slots.default?.());
-  if (date == null) return null;
-  return getI18nConfig()
-    .getGTClass()
-    .formatDateTime(date, {
-      locales: resolveFormatLocales(props),
-      ...props.options,
-    })
-    .replace(/[\u200F\u202B\u202E]/g, '');
+  return computeDateTime({
+    value: props.value ?? getVNodeChildText(slots.default?.()),
+    options: props.options,
+    ...resolveConditions(props),
+  });
 };
 DateTime.props = [
   'name',
@@ -164,11 +134,6 @@ DateTime.inheritAttrs = false;
 DateTime._gtt = 'variable-datetime';
 
 // ===== RelativeTime ===== //
-
-type RelativeTimeFormatOptions = Intl.RelativeTimeFormatOptions & {
-  unit?: Intl.RelativeTimeFormatUnit;
-  baseDate?: Date;
-};
 
 type RelativeTimeProps = SharedVariableProps & {
   date?: Date | string | number | null;
@@ -185,28 +150,13 @@ export const RelativeTime: GTFunctionalComponent<RelativeTimeProps> = (
   props,
   { slots }
 ) => {
-  const locales = resolveFormatLocales(props);
-  const gt = getI18nConfig().getGTClass();
-  const options = props.options ?? {};
-
-  const unit = props.unit ?? options.unit;
-  if (props.value !== undefined && unit) {
-    return gt.formatRelativeTime(props.value, unit, {
-      locales,
-      numeric: options.numeric,
-      style: options.style,
-      localeMatcher: options.localeMatcher,
-    });
-  }
-
-  const date = resolveDateContent({ value: props.date }, slots.default?.());
-  if (date == null) return null;
-  return gt.formatRelativeTimeFromDate(date, {
-    locales,
-    baseDate: props.baseDate ?? options.baseDate ?? new Date(),
-    numeric: options.numeric,
-    style: options.style,
-    localeMatcher: options.localeMatcher,
+  return computeRelativeTime({
+    date: props.date ?? getVNodeChildText(slots.default?.()),
+    value: props.value,
+    unit: props.unit ?? props.options?.unit,
+    baseDate: props.baseDate,
+    options: props.options,
+    ...resolveConditions(props),
   });
 };
 RelativeTime.props = [

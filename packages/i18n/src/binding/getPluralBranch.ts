@@ -6,6 +6,8 @@ import {
 /**
  * Selects the appropriate plural branch for `n` from the provided branches,
  * following the locales' plural rules.
+ *
+ * Shared by the framework bindings (gt-react via react-core, gt-vue).
  */
 export function getPluralBranch<T>(
   n: number,

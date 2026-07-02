@@ -1,5 +1,4 @@
-import { getI18nConfig } from 'gt-i18n/internal';
-import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
+import { computeDateTime as computeDateTimeBase } from 'gt-i18n/internal';
 
 // Pure compute logic shared by the hook-based and RSC implementations. This
 // module must stay free of hook/context imports so it can be reached from the
@@ -23,20 +22,16 @@ function computeDateTime({
   _enableI18n,
   _locale,
   children,
-  options = {},
-  locales: localesProp = [],
+  options,
+  locales,
 }: ResolvedDateTimeProps): string | null {
-  const locales = getFormatLocales({
+  return computeDateTimeBase({
+    value: children,
+    options,
+    locales,
     locale: _locale,
     enableI18n: _enableI18n,
-    localesProp,
   });
-  // TODO: theres a world in which we don't need the i18n cache, if user passes their own params
-  const gt = getI18nConfig().getGTClass();
-  if (children == null) return null;
-  return gt
-    .formatDateTime(children, { locales, ...options })
-    .replace(/[\u200F\u202B\u202E]/g, '');
 }
 
 export { computeDateTime };

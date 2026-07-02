@@ -7,7 +7,8 @@ vi.mock('../cookies', () => ({
   setCookieValue: (...args: unknown[]) => mockSetCookieValue(...args),
 }));
 
-vi.mock('gt-i18n/internal', () => ({
+vi.mock('gt-i18n/internal', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   getI18nConfig: () => ({
     determineLocale: (locale: string | string[] | undefined) => {
       return Array.isArray(locale) ? locale[0] : locale;

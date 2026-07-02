@@ -1,10 +1,11 @@
-import { t as baseT, decodeOptions } from 'gt-i18n';
+import { t as baseT } from 'gt-i18n';
 import {
   createLookupOptions,
+  createMFunction,
   getI18nCache,
   getI18nConfig,
+  getShouldTranslate,
   interpolateMessage,
-  isEncodedTranslationOptions,
 } from 'gt-i18n/internal';
 import type {
   GTFunctionType,
@@ -12,7 +13,6 @@ import type {
   MFunctionType,
 } from 'gt-i18n/types';
 import { getConditionStore } from './condition-store';
-import { getShouldTranslate } from './internal/getFormatLocales';
 import {
   queueRuntimeTranslation,
   trackTranslations,
@@ -112,19 +112,7 @@ export function useGT(): GTFunctionType {
   return gt;
 }
 
-const m: MFunctionType = (<T extends string | null | undefined>(
-  encodedMsg: T,
-  options: GTTranslationOptions = {}
-): T extends string ? string : T => {
-  type Result = T extends string ? string : T;
-  if (encodedMsg == null) return encodedMsg as Result;
-
-  const decodedOptions = decodeOptions(encodedMsg) ?? {};
-  if (isEncodedTranslationOptions(decodedOptions)) {
-    return gt(decodedOptions.$_source, decodedOptions) as Result;
-  }
-  return gt(encodedMsg, options) as Result;
-}) as MFunctionType;
+const m: MFunctionType = createMFunction(gt);
 
 /**
  * Returns the `m()` function, which resolves strings encoded with `msg()`.

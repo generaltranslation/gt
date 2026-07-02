@@ -1,5 +1,5 @@
-import { getI18nConfig } from 'gt-i18n/internal';
-import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
+import { computeRelativeTime as computeRelativeTimeBase } from 'gt-i18n/internal';
+import type { RelativeTimeFormatOptions } from 'gt-i18n/internal';
 
 // Pure compute logic shared by the hook-based and RSC implementations. This
 // module must stay free of hook/context imports so it can be reached from the
@@ -31,44 +31,19 @@ function computeRelativeTime({
   value,
   unit,
   baseDate,
-  locales: localesProp = [],
-  options = {},
+  options,
+  locales,
 }: ResolvedRelativeTimeProps): string | null {
-  const locales = getFormatLocales({
+  return computeRelativeTimeBase({
+    date: date ?? children,
+    value,
+    unit,
+    baseDate,
+    options: options as RelativeTimeFormatOptions | undefined,
+    locales,
     locale: _locale,
     enableI18n: _enableI18n,
-    localesProp,
   });
-  const gt = getI18nConfig().getGTClass();
-  const resolvedDate = date ?? children;
-
-  if (process.env.NODE_ENV === 'development' && value !== undefined && !unit) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      '<RelativeTime>: `value` was provided without `unit`. The `value` prop will be ignored.'
-    );
-  }
-
-  if (value !== undefined && unit) {
-    return gt.formatRelativeTime(value, unit, {
-      locales,
-      numeric: options.numeric,
-      style: options.style,
-      localeMatcher: options.localeMatcher,
-    });
-  }
-
-  if (resolvedDate != null) {
-    return gt.formatRelativeTimeFromDate(resolvedDate, {
-      locales,
-      baseDate: baseDate ?? new Date(),
-      numeric: options.numeric,
-      style: options.style,
-      localeMatcher: options.localeMatcher,
-    });
-  }
-
-  return null;
 }
 
 export { computeRelativeTime };
