@@ -196,6 +196,30 @@ describe('translation function locale defaults', () => {
     expect(t('greeting', { name: 'Alice' })).toBe('Bonjour Alice !');
   });
 
+  it('getTranslations scopes dictionary entries by root id', async () => {
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        dictionary: {
+          metadata: {
+            greeting: 'Hello {name}!',
+          },
+        },
+        loadDictionary: vi.fn().mockResolvedValue({
+          metadata: {
+            greeting: 'Bonjour {name} !',
+          },
+        }),
+      }
+    );
+    setI18nCache(cache);
+    setWritableConditionStore(createConditionStore('fr'));
+
+    const t = await getTranslations('metadata');
+
+    expect(t('greeting', { name: 'Alice' })).toBe('Bonjour Alice !');
+  });
+
   it('getTranslations returns source dictionary entries when no target translation exists', async () => {
     const cache = createCache(
       { defaultLocale: 'en', locales: ['en', 'fr'] },
@@ -342,6 +366,38 @@ describe('translation function locale defaults', () => {
     expect(t.obj('user.profile')).toEqual({
       name: 'Nom',
       greeting: 'Bonjour {name} !',
+      title: 'Title',
+    });
+  });
+
+  it('getTranslations obj scopes dictionary objects by root id', async () => {
+    const cache = createCache(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      {
+        dictionary: {
+          metadata: {
+            user: {
+              name: 'Name',
+              title: 'Title',
+            },
+          },
+        },
+        loadDictionary: vi.fn().mockResolvedValue({
+          metadata: {
+            user: {
+              name: 'Nom',
+            },
+          },
+        }),
+      }
+    );
+    setI18nCache(cache);
+    setWritableConditionStore(createConditionStore('fr'));
+
+    const t = await getTranslations('metadata');
+
+    expect(t.obj('user')).toEqual({
+      name: 'Nom',
       title: 'Title',
     });
   });
