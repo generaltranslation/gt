@@ -1,4 +1,5 @@
 ---
+"@generaltranslation/react-core-linter": patch
 "@generaltranslation/react-core": patch
 "@generaltranslation/compiler": patch
 "generaltranslation": patch
