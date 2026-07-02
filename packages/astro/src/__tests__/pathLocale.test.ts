@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { I18nConfig } from 'gt-i18n/internal';
-import { getLocalizedPath, matchPathLocale } from '../pathLocale';
+import { getLocalizedPath, matchPathLocale } from '../utils';
 
 const i18nConfig = new I18nConfig({
   defaultLocale: 'en',

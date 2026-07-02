@@ -6,9 +6,12 @@ import {
   vite as gtCompilerVite,
   type GTUnpluginOptions,
 } from '@generaltranslation/compiler';
+import {
+  createVirtualConfigPlugin,
+  loadGTConfig,
+  type MinimalVitePlugin,
+} from './config';
 import type { GTAstroFileConfig, GTAstroOptions } from './types';
-import { loadGTConfig } from './integration/loadGTConfig';
-import { createVirtualConfigPlugin } from './integration/virtualConfig';
 
 const DEFAULT_GT_CONFIG_PATH = 'gt.config.json';
 const DEFAULT_LOAD_TRANSLATIONS_CANDIDATES = [
@@ -56,33 +59,33 @@ export function gtAstro(options: GTAstroOptions = {}): AstroIntegration {
         addWatchFile(gtConfigPath);
 
         const isDev = command === 'dev';
-        const projectId =
-          options.projectId ?? process.env.GT_PROJECT_ID ?? gtConfig.projectId;
-        const apiKey =
-          options.apiKey ?? process.env.GT_API_KEY ?? gtConfig.apiKey;
-        const devApiKey = isDev
-          ? (options.devApiKey ??
-            process.env.GT_DEV_API_KEY ??
-            gtConfig.devApiKey)
-          : undefined;
-
-        const sharedConfig = {
+        const sharedConfig = stripUndefined({
           defaultLocale: gtConfig.defaultLocale,
           locales: gtConfig.locales,
           customMapping: gtConfig.customMapping,
           cacheUrl: gtConfig.cacheUrl,
           runtimeUrl: gtConfig.runtimeUrl,
           localeCookieName: gtConfig.localeCookieName,
-          projectId,
-          devApiKey,
-        };
+          projectId:
+            options.projectId ??
+            process.env.GT_PROJECT_ID ??
+            gtConfig.projectId,
+          // Dev credentials never reach production bundles
+          devApiKey: isDev
+            ? (options.devApiKey ??
+              process.env.GT_DEV_API_KEY ??
+              gtConfig.devApiKey)
+            : undefined,
+        });
+        const apiKey =
+          options.apiKey ?? process.env.GT_API_KEY ?? gtConfig.apiKey;
 
         const loadTranslationsPath = resolveLoadTranslationsPath(
           root,
           options.loadTranslationsPath
         );
 
-        const plugins: unknown[] = [
+        const plugins: MinimalVitePlugin[] = [
           createVirtualConfigPlugin({
             serverConfig: stripUndefined({ ...sharedConfig, apiKey }),
             settings: { localeRouting: options.localeRouting ?? true },
@@ -118,7 +121,9 @@ export function gtAstro(options: GTAstroOptions = {}): AstroIntegration {
           updateConfig({
             i18n: {
               defaultLocale: gtConfig.defaultLocale,
-              locales: dedupe([gtConfig.defaultLocale, ...gtConfig.locales]),
+              locales: [
+                ...new Set([gtConfig.defaultLocale, ...gtConfig.locales]),
+              ],
               // gt-astro's 'pre' middleware owns locale detection and
               // redirects; keep Astro's built-in i18n middleware passive.
               // ('manual' would require a user middleware file.)
@@ -136,18 +141,17 @@ export function gtAstro(options: GTAstroOptions = {}): AstroIntegration {
         // The client config is inlined here (credentials stripped) instead of
         // referencing a virtual module, so gt-astro's client modules stay
         // prebundle-friendly.
-        const loadTranslationsImport = loadTranslationsPath
-          ? `import { loadTranslations } from ${JSON.stringify(
-              loadTranslationsPath.replace(/\\/g, '/')
-            )};`
-          : `const loadTranslations = undefined;`;
         injectScript(
           'before-hydration',
           [
             `import { initializeGTAstroClient } from 'gt-astro/client';`,
-            loadTranslationsImport,
+            loadTranslationsPath
+              ? `import { loadTranslations } from ${JSON.stringify(
+                  loadTranslationsPath.replace(/\\/g, '/')
+                )};`
+              : `const loadTranslations = undefined;`,
             `initializeGTAstroClient({ ...${JSON.stringify(
-              stripUndefined(sharedConfig)
+              sharedConfig
             )}, loadTranslations });`,
           ].join('\n')
         );
@@ -175,10 +179,6 @@ function stripUndefined<T extends Record<string, unknown>>(record: T): T {
   return Object.fromEntries(
     Object.entries(record).filter(([, value]) => value !== undefined)
   ) as T;
-}
-
-function dedupe(values: string[]): string[] {
-  return [...new Set(values)];
 }
 
 export type { GTAstroFileConfig, GTAstroOptions };

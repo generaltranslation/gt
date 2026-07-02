@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseAcceptLanguage } from '../parseAcceptLanguage';
+import { parseAcceptLanguage } from '../utils';
 
 describe('parseAcceptLanguage', () => {
   it('returns an empty array for a missing header', () => {

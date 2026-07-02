@@ -172,5 +172,6 @@ inside a `<GTProvider>` island. For custom switchers, use
 npx gt translate
 ```
 
-See the [full documentation](https://generaltranslation.com/docs) for guides
-and API reference.
+See [USAGE.md](./USAGE.md) for the full setup and API guide, and the
+[General Translation documentation](https://generaltranslation.com/docs) for
+platform reference.

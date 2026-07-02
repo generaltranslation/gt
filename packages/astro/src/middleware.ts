@@ -6,11 +6,9 @@ import {
   loadTranslations,
   settings,
 } from 'virtual:gt-astro/config-server';
-import { getAsyncConditionStore } from './condition-store/singleton-operations';
-import { initializeGTAstro } from './setup/initialize';
+import { getAsyncConditionStore, initializeGTAstro } from './runtime';
 import type { GTLocals } from './types';
-import { parseAcceptLanguage } from './utils/parseAcceptLanguage';
-import { matchPathLocale } from './utils/pathLocale';
+import { matchPathLocale, parseAcceptLanguage } from './utils';
 
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 

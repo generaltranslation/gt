@@ -1,8 +1,30 @@
-import type { GTAstroRuntimeConfig, GTAstroRuntimeSettings } from '../types';
+// Internal config plumbing for the integration: gt.config.json loading and
+// the virtual module that carries server config to the middleware.
+import fs from 'node:fs';
+import type {
+  GTAstroFileConfig,
+  GTAstroRuntimeConfig,
+  GTAstroRuntimeSettings,
+} from './types';
 
 export const SERVER_CONFIG_MODULE_ID = 'virtual:gt-astro/config-server';
 
 const RESOLVED_PREFIX = '\0';
+
+/**
+ * Reads gt.config.json from disk. Returns an empty config when the file is
+ * missing so apps can configure gt-astro entirely via integration options.
+ */
+export function loadGTConfig(gtConfigPath: string): {
+  gtConfig: GTAstroFileConfig;
+  exists: boolean;
+} {
+  if (!fs.existsSync(gtConfigPath)) {
+    return { gtConfig: {}, exists: false };
+  }
+  const raw = fs.readFileSync(gtConfigPath, 'utf-8');
+  return { gtConfig: JSON.parse(raw) as GTAstroFileConfig, exists: true };
+}
 
 type VirtualConfigPluginParams = {
   serverConfig: GTAstroRuntimeConfig;
@@ -33,16 +55,10 @@ export function createVirtualConfigPlugin({
   settings,
   loadTranslationsPath,
 }: VirtualConfigPluginParams): MinimalVitePlugin {
-  const loadTranslationsExport = loadTranslationsPath
-    ? `export { loadTranslations } from ${JSON.stringify(
-        loadTranslationsPath.replace(/\\/g, '/')
-      )};`
-    : 'export const loadTranslations = undefined;';
-
   const serverModule = [
     `export const config = ${JSON.stringify(serverConfig)};`,
     `export const settings = ${JSON.stringify(settings)};`,
-    loadTranslationsExport,
+    loadTranslationsExport(loadTranslationsPath),
   ].join('\n');
 
   return {
@@ -56,4 +72,12 @@ export function createVirtualConfigPlugin({
       return undefined;
     },
   };
+}
+
+function loadTranslationsExport(loadTranslationsPath?: string): string {
+  return loadTranslationsPath
+    ? `export { loadTranslations } from ${JSON.stringify(
+        loadTranslationsPath.replace(/\\/g, '/')
+      )};`
+    : 'export const loadTranslations = undefined;';
 }

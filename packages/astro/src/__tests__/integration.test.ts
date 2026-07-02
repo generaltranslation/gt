@@ -15,10 +15,7 @@ vi.mock('@generaltranslation/compiler', () => ({
 }));
 
 const { gtAstro } = await import('../index');
-import {
-  SERVER_CONFIG_MODULE_ID,
-  createVirtualConfigPlugin,
-} from '../integration/virtualConfig';
+import { SERVER_CONFIG_MODULE_ID, createVirtualConfigPlugin } from '../config';
 
 const GT_CONFIG = {
   defaultLocale: 'en',

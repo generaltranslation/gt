@@ -39,9 +39,6 @@ export {
   t,
 } from 'gt-react';
 
-export {
-  LocaleSelector,
-  type LocaleSelectorProps,
-} from './components/LocaleSelector';
-export { getLocalizedPath } from './utils/pathLocale';
-export type { GTProviderIslandProps } from './functions/getGTProviderProps';
+export { LocaleSelector, type LocaleSelectorProps } from './LocaleSelector';
+export { getLocalizedPath } from './utils';
+export type { GTProviderIslandProps } from './server';

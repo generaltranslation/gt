@@ -2,7 +2,7 @@ import type React from 'react';
 import { InternalLocaleSelector } from '@generaltranslation/react-core/components';
 import type { CustomMapping } from 'generaltranslation/types';
 import { defaultLocaleCookieName, useLocaleSelector } from 'gt-react';
-import { getLocalizedPath } from '../utils/pathLocale';
+import { getLocalizedPath } from './utils';
 
 export type LocaleSelectorProps = {
   locales?: string[];
