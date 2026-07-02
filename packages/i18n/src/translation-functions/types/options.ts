@@ -80,6 +80,9 @@ export type JsxTranslationOptions = {
   $context?: string;
   $id?: string;
   $_hash?: string;
+  $maxChars?: number;
+  /** Whether the translated content requires approval before use */
+  $requiresReview?: boolean;
 };
 
 /**

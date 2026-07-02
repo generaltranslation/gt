@@ -20,6 +20,8 @@ type TProps = {
   $id?: string;
   $context?: string;
   $maxChars?: number;
+  requiresReview?: boolean;
+  $requiresReview?: boolean;
   [key: string]: ReactNode;
 };
 
@@ -71,6 +73,12 @@ export async function T({
   id = id ?? options?.$id;
   context = context ?? options?.$context;
   const maxChars = options?.$maxChars;
+  const requiresReview =
+    typeof options?.$requiresReview === 'boolean'
+      ? options.$requiresReview
+      : typeof options?.requiresReview === 'boolean'
+        ? options.requiresReview
+        : undefined;
 
   // ----- TAG CHILDREN ----- //
 
@@ -121,6 +129,7 @@ export async function T({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
+      ...(requiresReview === true && { requiresReview: true }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
@@ -173,9 +182,13 @@ export async function T({
           source: childrenAsObjects,
           ...(context && { context }),
           ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
+          ...(requiresReview === true && { requiresReview: true }),
           ...(id && { id }),
           dataFormat: 'JSX',
         });
+      // Dev-mode runtime translation is intentionally NOT review-gated (it's
+      // a live preview; review gates production serving) — the flag rides
+      // along so the platform records review intent on anything it persists
       const target = await I18NConfig.translate({
         // do on demand translation
         source: childrenAsObjects,
@@ -186,6 +199,7 @@ export async function T({
           $format: 'JSX',
           ...(context && { $context: context }),
           ...(maxChars != null && { $maxChars: maxChars }),
+          ...(requiresReview === true && { $requiresReview: true }),
         },
       });
       return renderTranslation(target);

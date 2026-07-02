@@ -50,6 +50,7 @@ type InitResult = {
   id?: string;
   context?: string;
   maxChars?: number;
+  requiresReview?: boolean;
   _hash?: string;
   variables: FormatVariables;
   calculateHash: () => string;
@@ -157,6 +158,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       $maxChars: maxChars,
       $_hash: _hash,
       $format: format,
+      $requiresReview: requiresReview,
       ...variables
     } = options;
     const formatVariables = variables as FormatVariables;
@@ -178,6 +180,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
         source: indexVars(message),
         ...(context && { context }),
         ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
+        ...(requiresReview === true && { requiresReview: true }),
         ...(id && { id }),
         dataFormat: format || 'ICU',
       });
@@ -186,6 +189,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       id,
       context,
       maxChars,
+      requiresReview,
       _hash,
       variables: formatVariables,
       calculateHash,
@@ -216,18 +220,31 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
     source: string;
     context?: string;
     maxChars?: number;
+    requiresReview?: boolean;
     id?: string;
     hash: string;
     renderMessage: RenderFn;
   }) {
-    const { source, context, maxChars, id, hash, renderMessage } = args;
+    const {
+      source,
+      context,
+      maxChars,
+      requiresReview,
+      id,
+      hash,
+      renderMessage,
+    } = args;
     try {
+      // Dev-mode runtime translation is intentionally NOT review-gated (it's
+      // a live preview; review gates production serving) — the flag rides
+      // along so the platform records review intent on anything it persists
       I18NConfig.translate({
         source: indexVars(source),
         targetLocale: locale,
         options: {
           ...(context && { $context: context }),
           ...(maxChars != null && { $maxChars: maxChars }),
+          ...(requiresReview === true && { $requiresReview: true }),
           ...(id && { $id: id }),
           $_hash: hash,
           $format: 'ICU',
@@ -268,7 +285,8 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       const init = initializeGT(message, options);
       if (!init) return;
 
-      const { id, context, maxChars, _hash, calculateHash } = init;
+      const { id, context, maxChars, requiresReview, _hash, calculateHash } =
+        init;
       const { translationEntry, hash } = getTranslationData(
         calculateHash,
         id,
@@ -283,6 +301,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
           options: {
             ...(context && { $context: context }),
             ...(maxChars != null && { $maxChars: maxChars }),
+            ...(requiresReview === true && { $requiresReview: true }),
             ...(id && { $id: id }),
             $_hash: hash,
             $format: 'ICU',
@@ -300,7 +319,15 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
   const gt = (message: string, options: GTStringOptions = {}): string => {
     const init = initializeGT(message, options);
     if (!init) return '';
-    const { id, context, maxChars, _hash, calculateHash, renderMessage } = init;
+    const {
+      id,
+      context,
+      maxChars,
+      requiresReview,
+      _hash,
+      calculateHash,
+      renderMessage,
+    } = init;
 
     // Early: no translation needed
     if (!translationRequired) return renderMessage(message, [defaultLocale]);
@@ -337,6 +364,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       source: message,
       context,
       maxChars,
+      requiresReview,
       id,
       hash,
       renderMessage,
@@ -370,12 +398,15 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       $id,
       $maxChars,
       $format,
+      $requiresReview,
       ...decodedVariables
     } = decodedOptions;
     const context = typeof $context === 'string' ? $context : undefined;
     const id = typeof $id === 'string' ? $id : undefined;
     const maxChars = typeof $maxChars === 'number' ? $maxChars : undefined;
     const format = typeof $format === 'string' ? $format : undefined;
+    const requiresReview =
+      typeof $requiresReview === 'boolean' ? $requiresReview : undefined;
     const formatVariables = decodedVariables as FormatVariables;
 
     const renderMessage: RenderFn = (msg, locales, fallback) => {
@@ -440,6 +471,7 @@ async function createTranslator(_messages?: _Messages): Promise<Translator> {
       source: $_source,
       context,
       maxChars,
+      requiresReview,
       id,
       hash: $_hash,
       renderMessage,

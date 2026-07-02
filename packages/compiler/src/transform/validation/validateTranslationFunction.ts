@@ -464,7 +464,13 @@ function validateDeclareStaticExpression(
 
 /**
  * Validate that an expression is a boolean literal (strictly `true` or
- * `false` — never string "true"/"false" or a dynamic expression)
+ * `false` — never string "true"/"false" or a dynamic expression).
+ *
+ * NOTE: a standalone predicate with the same logic exists at
+ * `../../utils/validation/validateExpressionIsBooleanLiteral` (returns a
+ * plain boolean). This local copy returns `{ errors, value }` to match the
+ * interface of the sibling string/number validators in this file — the same
+ * local-vs-utility duality those validators already have.
  */
 function validateExpressionIsBooleanLiteral(expr: t.Expression): {
   errors: string[];
