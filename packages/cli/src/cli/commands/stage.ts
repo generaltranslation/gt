@@ -25,6 +25,7 @@ export async function handleStage(
 ): Promise<{
   fileVersionData: FileTranslationData | undefined;
   jobData: EnqueueFilesResult | undefined;
+  completedTranslationKeys: ReadonlySet<string> | undefined;
   branchData: BranchData | undefined;
   publishMap: Map<string, boolean>;
 } | null> {
@@ -57,11 +58,16 @@ export async function handleStage(
   // Send translations to General Translation
   let fileVersionData: FileTranslationData | undefined;
   let jobData: EnqueueFilesResult | undefined;
+  let completedTranslationKeys: ReadonlySet<string> | undefined;
   let branchData: BranchData | undefined;
   if (allFiles.length > 0) {
-    const { branchData: branchDataResult, enqueueResult } =
-      await runStageFilesWorkflow({ files: allFiles, options, settings });
+    const {
+      branchData: branchDataResult,
+      enqueueResult,
+      completedTranslationKeys: completedKeys,
+    } = await runStageFilesWorkflow({ files: allFiles, options, settings });
     jobData = enqueueResult;
+    completedTranslationKeys = completedKeys;
     branchData = branchDataResult;
 
     fileVersionData = convertToFileTranslationData(allFiles);
@@ -106,6 +112,7 @@ export async function handleStage(
   return {
     fileVersionData,
     jobData,
+    completedTranslationKeys,
     branchData,
     publishMap,
   };

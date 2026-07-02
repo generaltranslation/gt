@@ -12,11 +12,16 @@ import { Settings } from '../../types/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { FileStatusTracker } from './PollJobsStep.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
+import {
+  getFileTranslationKey,
+  queryCompletedTranslationKeys,
+} from '../utils/queryCompletedTranslations.js';
 
 export type DownloadTranslationsInput = {
   fileTracker: FileStatusTracker;
   resolveOutputPath: (sourcePath: string, locale: string) => string | null;
   forceDownload?: boolean;
+  skipTranslationCheck?: boolean;
 };
 
 export class DownloadTranslationsStep extends WorkflowStep<
@@ -36,18 +41,11 @@ export class DownloadTranslationsStep extends WorkflowStep<
     fileTracker,
     resolveOutputPath,
     forceDownload,
+    skipTranslationCheck,
   }: DownloadTranslationsInput): Promise<boolean> {
     this.spinner = logger.createProgressBar(fileTracker.completed.size);
     this.spinner.start('Downloading files...');
 
-    return this.downloadFiles(fileTracker, resolveOutputPath, forceDownload);
-  }
-
-  private async downloadFiles(
-    fileTracker: FileStatusTracker,
-    resolveOutputPath: (sourcePath: string, locale: string) => string | null,
-    forceDownload?: boolean
-  ): Promise<boolean> {
     try {
       // Only download files that are marked as completed
       const currentQueryData = Array.from(fileTracker.completed.values());
@@ -58,34 +56,43 @@ export class DownloadTranslationsStep extends WorkflowStep<
         return true;
       }
 
-      // Check for translations
-      const responseData = await this.gt.queryFileData({
-        translatedFiles: currentQueryData.map((item) => ({
-          fileId: item.fileId,
-          versionId: item.versionId,
-          branchId: item.branchId,
-          locale: item.locale,
-        })),
-      });
-      const translatedFiles = responseData.translatedFiles || [];
+      const requiresReviewPaths =
+        this.settings.files?.requiresReviewPaths ?? new Set<string>();
+      let readyTranslations: Awaited<
+        ReturnType<GT['queryFileData']>
+      >['translatedFiles'] = [];
+      let readyKeys: Set<string> | undefined;
 
-      // Filter for ready translations
-      const readyTranslations = translatedFiles.filter(
-        (file) => file.completedAt !== null
-      );
+      if (requiresReviewPaths.size > 0) {
+        const responseData = await this.gt.queryFileData({
+          translatedFiles: currentQueryData.map((item) => ({
+            fileId: item.fileId,
+            versionId: item.versionId,
+            branchId: item.branchId,
+            locale: item.locale,
+          })),
+        });
+        readyTranslations = (responseData.translatedFiles || []).filter(
+          (file) => file.completedAt !== null
+        );
+        readyKeys = new Set(readyTranslations.map(getFileTranslationKey));
+      } else if (!skipTranslationCheck) {
+        readyKeys = await queryCompletedTranslationKeys(
+          this.gt,
+          currentQueryData
+        );
+      }
+
+      const readyFiles = readyKeys
+        ? currentQueryData.filter((file) =>
+            readyKeys.has(getFileTranslationKey(file))
+          )
+        : currentQueryData;
       let missingCount = 0;
 
-      if (readyTranslations.length < currentQueryData.length) {
-        const readyKeys = new Set(
-          readyTranslations.map(
-            (t) => `${t.branchId}:${t.fileId}:${t.versionId}:${t.locale}`
-          )
-        );
+      if (readyKeys && readyFiles.length < currentQueryData.length) {
         const missing = currentQueryData.filter(
-          (item) =>
-            !readyKeys.has(
-              `${item.branchId}:${item.fileId}:${item.versionId}:${item.locale}`
-            )
+          (item) => !readyKeys.has(getFileTranslationKey(item))
         );
         missingCount = missing.length;
         logger.warn(
@@ -106,8 +113,6 @@ export class DownloadTranslationsStep extends WorkflowStep<
       // simply absent locally and falls back to source behavior.
       // GTJSON is exempt: it is always requested, and the platform filters
       // unapproved components out of the served content itself.
-      const requiresReviewPaths =
-        this.settings.files?.requiresReviewPaths ?? new Set<string>();
       const reviewGatedKeys = new Set<string>();
       if (requiresReviewPaths.size > 0) {
         for (const translation of readyTranslations) {
@@ -138,39 +143,30 @@ export class DownloadTranslationsStep extends WorkflowStep<
       }
 
       // Prepare batch download data
-      const batchFiles: BatchedFiles = readyTranslations
-        .map((translation) => {
-          const fileKey = `${translation.branchId}:${translation.fileId}:${translation.versionId}:${translation.locale}`;
+      const batchFiles: BatchedFiles = [];
+      for (const file of readyFiles) {
+        const fileKey = getFileTranslationKey(file);
+        if (reviewGatedKeys.has(fileKey)) continue;
 
-          const fileProperties = fileTracker.completed.get(fileKey);
-          if (!fileProperties) {
-            return null;
-          }
-          const outputPath = resolveOutputPath(
-            fileProperties.fileName,
-            translation.locale
-          );
-
-          // Skip downloading GTJSON files that are not in the files configuration
-          if (outputPath === null) {
-            fileTracker.completed.delete(fileKey);
-            fileTracker.skipped.set(fileKey, fileProperties);
-            return null;
-          }
-          return {
-            branchId: translation.branchId,
-            fileId: translation.fileId,
-            versionId: translation.versionId,
-            locale: translation.locale,
-            inputPath: fileProperties.fileName,
-            outputPath,
-          };
-        })
-        .filter((file) => file !== null) as BatchedFiles;
+        const outputPath = resolveOutputPath(file.fileName, file.locale);
+        if (outputPath === null) {
+          fileTracker.completed.delete(fileKey);
+          fileTracker.skipped.set(fileKey, file);
+          continue;
+        }
+        batchFiles.push({
+          branchId: file.branchId,
+          fileId: file.fileId,
+          versionId: file.versionId,
+          locale: file.locale,
+          inputPath: file.fileName,
+          outputPath,
+          componentCount: file.componentCount,
+        });
+      }
 
       if (batchFiles.length > 0) {
         const batchResult = await this.downloadFilesWithRetry(
-          fileTracker,
           batchFiles,
           forceDownload
         );
@@ -210,7 +206,6 @@ export class DownloadTranslationsStep extends WorkflowStep<
   }
 
   private async downloadFilesWithRetry(
-    fileTracker: FileStatusTracker,
     files: BatchedFiles,
     forceDownload?: boolean,
     maxRetries: number = 3,
@@ -222,7 +217,6 @@ export class DownloadTranslationsStep extends WorkflowStep<
     let allSkipped: BatchedFiles = [];
     while (remainingFiles.length > 0 && retryCount <= maxRetries) {
       const batchResult = await downloadFileBatch(
-        fileTracker,
         remainingFiles,
         this.settings,
         forceDownload

@@ -16,6 +16,7 @@ export type PollJobsInput = {
   jobData: EnqueueFilesResult;
   timeoutDuration: number;
   forceRetranslation?: boolean;
+  completedTranslationKeys?: ReadonlySet<string>;
 };
 
 export type FileStatusTracker = {
@@ -28,6 +29,11 @@ export type FileStatusTracker = {
 export type PollJobsOutput = {
   success: boolean;
   fileTracker: FileStatusTracker;
+};
+
+type TranslationJob = EnqueueFilesResult['jobData'][string] & {
+  jobId: string;
+  locale: string;
 };
 
 export class PollTranslationJobsStep extends WorkflowStep<
@@ -47,6 +53,7 @@ export class PollTranslationJobsStep extends WorkflowStep<
     jobData,
     timeoutDuration,
     forceRetranslation,
+    completedTranslationKeys,
   }: PollJobsInput): Promise<PollJobsOutput> {
     const startTime = Date.now();
     this.spinner = logger.createProgressBar(fileQueryData.length);
@@ -55,20 +62,46 @@ export class PollTranslationJobsStep extends WorkflowStep<
       : 'Waiting for translation...';
     this.spinner.start(spinnerMessage);
 
-    // Build a map of branchId:fileId:versionId:locale -> FileProperties
-    const filePropertiesMap = new Map<string, FileProperties>();
-    fileQueryData.forEach((item) => {
-      filePropertiesMap.set(getFileTranslationKey(item), item);
-    });
+    const filePropertiesMap = new Map(
+      fileQueryData.map((item) => [getFileTranslationKey(item), item])
+    );
 
-    // Initial query to check which files already have translations
+    const jobsByFileKey = new Map<string, TranslationJob>();
+    const jobsById = new Map<string, TranslationJob>();
+    for (const [jobId, job] of Object.entries(jobData.jobData)) {
+      const normalizedJob = {
+        ...job,
+        jobId,
+        locale: this.gt.resolveAliasLocale(job.targetLocale),
+      };
+      jobsById.set(jobId, normalizedJob);
+      jobsByFileKey.set(getFileTranslationKey(normalizedJob), normalizedJob);
+    }
+
+    // Initial query to check which files already have translations.
+    // When the enqueue filter already queried completion, reuse those keys.
+    // If any non-job keys are still unknown, query only that smaller set.
     // Skip when force retranslation is enabled, since the server
-    // no longer marks force-retranslated files as incomplete
+    // no longer marks force-retranslated files as incomplete.
     if (!forceRetranslation) {
-      const completedKeys = await queryCompletedTranslationKeys(
-        this.gt,
-        fileQueryData
-      );
+      const completedKeys = new Set(completedTranslationKeys);
+      const filesNeedingStatus =
+        completedTranslationKeys === undefined
+          ? fileQueryData
+          : fileQueryData.filter((item) => {
+              const fileKey = getFileTranslationKey(item);
+              return !completedKeys.has(fileKey) && !jobsByFileKey.has(fileKey);
+            });
+
+      if (filesNeedingStatus.length > 0) {
+        const queriedKeys = await queryCompletedTranslationKeys(
+          this.gt,
+          filesNeedingStatus
+        );
+        for (const key of queriedKeys) {
+          completedKeys.add(key);
+        }
+      }
 
       completedKeys.forEach((fileKey) => {
         const fileProperties = filePropertiesMap.get(fileKey);
@@ -77,39 +110,6 @@ export class PollTranslationJobsStep extends WorkflowStep<
         }
       });
     }
-
-    // Build a map of jobs for quick lookup:
-    // branchId:fileId:versionId:locale -> job
-    const jobMap = new Map<
-      string,
-      (typeof jobData.jobData)[number] & { jobId: string }
-    >();
-    Object.entries(jobData.jobData).forEach(([jobId, job]) => {
-      const jobLocale = this.gt.resolveAliasLocale(job.targetLocale);
-      const key = `${job.branchId}:${job.fileId}:${job.versionId}:${jobLocale}`;
-      jobMap.set(key, { ...job, jobId, targetLocale: jobLocale });
-    });
-
-    // Build a map of jobs for quick lookup:
-    // jobId -> file data for the job
-    const jobFileMap = new Map<
-      string,
-      {
-        branchId: string;
-        fileId: string;
-        versionId: string;
-        locale: string;
-      }
-    >();
-    Object.entries(jobData.jobData).forEach(([jobId, job]) => {
-      const jobLocale = this.gt.resolveAliasLocale(job.targetLocale);
-      jobFileMap.set(jobId, {
-        branchId: job.branchId,
-        fileId: job.fileId,
-        versionId: job.versionId,
-        locale: jobLocale,
-      });
-    });
 
     // Categorize each file query item
     for (const item of fileQueryData) {
@@ -123,8 +123,7 @@ export class PollTranslationJobsStep extends WorkflowStep<
       }
 
       // Check if there's a job for this file
-      const jobKey = `${item.branchId}:${item.fileId}:${item.versionId}:${item.locale}`;
-      const job = jobMap.get(jobKey);
+      const job = jobsByFileKey.get(fileKey);
 
       if (job) {
         // Job exists - mark as in progress initially
@@ -160,30 +159,30 @@ export class PollTranslationJobsStep extends WorkflowStep<
         intervalCheck = setInterval(async () => {
           try {
             // Query job status
-            const jobIds = Array.from(jobFileMap.keys());
+            const jobIds = Array.from(jobsById.keys());
             const jobStatusResponse = await this.gt.checkJobStatus(jobIds);
 
             // Update status based on job completion
-            for (const job of jobStatusResponse) {
-              const jobFileProperties = jobFileMap.get(job.jobId);
-              if (jobFileProperties) {
-                const fileKey = `${jobFileProperties.branchId}:${jobFileProperties.fileId}:${jobFileProperties.versionId}:${jobFileProperties.locale}`;
+            for (const status of jobStatusResponse) {
+              const job = jobsById.get(status.jobId);
+              if (job) {
+                const fileKey = getFileTranslationKey(job);
                 const fileProperties = filePropertiesMap.get(fileKey);
                 if (!fileProperties) {
                   continue;
                 }
-                if (job.status === 'completed') {
+                if (status.status === 'completed') {
                   fileTracker.completed.set(fileKey, fileProperties);
                   fileTracker.inProgress.delete(fileKey);
-                  jobFileMap.delete(job.jobId);
-                } else if (job.status === 'failed') {
+                  jobsById.delete(status.jobId);
+                } else if (status.status === 'failed') {
                   fileTracker.failed.set(fileKey, fileProperties);
                   fileTracker.inProgress.delete(fileKey);
-                  jobFileMap.delete(job.jobId);
-                } else if (job.status === 'unknown') {
+                  jobsById.delete(status.jobId);
+                } else if (status.status === 'unknown') {
                   fileTracker.skipped.set(fileKey, fileProperties);
                   fileTracker.inProgress.delete(fileKey);
-                  jobFileMap.delete(job.jobId);
+                  jobsById.delete(status.jobId);
                 }
               }
             }

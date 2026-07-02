@@ -21,7 +21,6 @@ import {
 import { recordDownloaded, recordRemerged } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import stringify from 'fast-json-stable-stringify';
-import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
 import { getRelative } from '../fs/findFilepath.js';
@@ -48,6 +47,25 @@ function reportWithheldGtJsonComponents(
       '<React Elements>',
       `${withheld} component translation(s) for locale ${locale} require review and are not approved yet`
     );
+  }
+}
+
+function reportWithheldGtJsonComponentsFromFile(
+  outputPath: string,
+  componentCount: number | undefined,
+  locale: string
+): void {
+  if (componentCount == null) return;
+  try {
+    reportWithheldGtJsonComponents(
+      'GTJSON',
+      fs.readFileSync(outputPath, 'utf8'),
+      componentCount,
+      locale
+    );
+  } catch {
+    // Warning metadata is advisory; an unreadable cached output should not
+    // turn an otherwise valid skipped download into a batch failure.
   }
 }
 
@@ -170,6 +188,7 @@ export type BatchedFiles = {
   locale: string;
   outputPath: string;
   inputPath: string;
+  componentCount?: number;
 }[];
 
 export type DownloadFileBatchResult = {
@@ -177,6 +196,71 @@ export type DownloadFileBatchResult = {
   failed: BatchedFiles;
   skipped: BatchedFiles;
 };
+
+async function remergeExistingTranslation(
+  outputPath: string,
+  inputPath: string,
+  locale: string,
+  options: Settings
+): Promise<void> {
+  if (!options.options?.jsonSchema && !options.options?.yamlSchema) {
+    return;
+  }
+
+  // For schema-based files, re-merge with current source in case
+  // non-translatable fields changed (skip the API download, not the merge).
+  try {
+    let existingContent = fs.readFileSync(outputPath, 'utf8');
+    // Resolve $ref before extraction if configured
+    if (shouldResolveRefs(outputPath, options.options)) {
+      try {
+        const json = JSON.parse(existingContent);
+        const { resolved } = resolveMintlifyRefs(json, outputPath);
+        existingContent = JSON.stringify(resolved, null, 2);
+      } catch {
+        // Fall through with original content
+      }
+    }
+    const jsonExtracted = options.options?.jsonSchema
+      ? extractJson(
+          existingContent,
+          inputPath,
+          options.options,
+          locale,
+          options.defaultLocale
+        )
+      : null;
+    const extracted =
+      jsonExtracted ??
+      (options.options?.yamlSchema
+        ? extractYaml(existingContent, inputPath, options.options)
+        : null);
+    if (!extracted) return;
+
+    const remerged = mergeWithSource(extracted, locale, inputPath, options);
+    let remergedData = remerged;
+    if (outputPath.endsWith('.json')) {
+      try {
+        remergedData = sortJsonString(remergedData);
+      } catch {
+        // Fall through with unsorted content
+      }
+    }
+    if (remergedData !== existingContent) {
+      await fs.promises.writeFile(outputPath, remergedData);
+    }
+    // Track for postprocessing (e.g. openapi path localization)
+    // even when the API download was skipped.
+    recordRemerged(outputPath);
+  } catch (error) {
+    // If re-merge fails, still count as skipped — not worth failing
+    // the download, but surface it so missing output is diagnosable.
+    logger.warn(
+      `Failed to re-merge existing translation for ${outputPath} (${locale}): ${error}`
+    );
+  }
+}
+
 /**
  * Downloads multiple translation files in a single batch request
  * @param files - Array of files to download with their output paths
@@ -185,7 +269,6 @@ export type DownloadFileBatchResult = {
  * @returns Object containing successful and failed file IDs
  */
 export async function downloadFileBatch(
-  fileTracker: FileStatusTracker,
   files: BatchedFiles,
   options: Settings,
   forceDownload: boolean = false
@@ -198,31 +281,59 @@ export async function downloadFileBatch(
   } = readLockfile(options);
   let didUpdateDownloadedLock = false;
 
-  // Create a map of requested file keys to the file object
-  const requestedFileMap = new Map(
-    files.map((file) => [
-      `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`,
-      file,
-    ])
-  );
   const result: DownloadFileBatchResult = {
     successful: [],
     failed: [],
     skipped: [],
   };
 
-  // Create a map of translationId to outputPath for easier lookup
-  const outputPathMap = new Map(
-    files.map((file) => [
+  const filesToDownload: BatchedFiles = [];
+  for (const file of files) {
+    const existingEntry = entryMap.get(file.fileId);
+    const isComposite = !!(
+      options.options?.jsonSchema &&
+      validateJsonSchema(options.options, file.inputPath)?.composite
+    );
+    if (
+      !forceDownload &&
+      fs.existsSync(file.outputPath) &&
+      existingEntry?.versionId === file.versionId &&
+      existingEntry.translations[file.locale] &&
+      !isComposite
+    ) {
+      await remergeExistingTranslation(
+        file.outputPath,
+        file.inputPath,
+        file.locale,
+        options
+      );
+      reportWithheldGtJsonComponentsFromFile(
+        file.outputPath,
+        file.componentCount,
+        file.locale
+      );
+      result.skipped.push(file);
+      continue;
+    }
+
+    filesToDownload.push(file);
+  }
+
+  if (filesToDownload.length === 0) {
+    return result;
+  }
+
+  const requestedFiles = new Map(
+    filesToDownload.map((file) => [
       `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`,
-      file.outputPath,
+      file,
     ])
   );
 
   try {
     // Download the files
     const responseData = await gt.downloadFileBatch(
-      files.map((file) => ({
+      filesToDownload.map((file) => ({
         fileId: file.fileId,
         branchId: file.branchId,
         versionId: file.versionId,
@@ -233,134 +344,33 @@ export async function downloadFileBatch(
 
     // Process each file in the response
     for (const file of downloadedFiles) {
+      if (!file.locale) {
+        continue;
+      }
       const fileKey = `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`;
-      const requestedFile = requestedFileMap.get(fileKey);
+      const requestedFile = requestedFiles.get(fileKey);
       if (!requestedFile) {
         continue;
       }
+      requestedFiles.delete(fileKey);
       try {
-        const outputPath = outputPathMap.get(fileKey);
-        const fileProperties = fileTracker.completed.get(fileKey);
-
-        if (!outputPath || !fileProperties) {
-          logger.warn(`No input/output path found for file: ${fileKey}`);
-          recordWarning(
-            'failed_download',
-            fileKey,
-            'No input/output path found'
-          );
-          result.failed.push(requestedFile);
-          continue;
-        }
-
-        const {
-          fileId,
-          versionId,
-          locale,
-          branchId,
-          fileName: inputPath,
-        } = fileProperties;
-
         // Ensure the directory exists
-        const dir = path.dirname(outputPath);
+        const dir = path.dirname(requestedFile.outputPath);
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
         }
-        // If a local translation already exists for the same source version, skip overwrite
-        const existingEntry = entryMap.get(fileId);
-        const downloadedTranslation =
-          existingEntry?.versionId === versionId
-            ? existingEntry.translations[locale]
-            : undefined;
-        const fileExists = fs.existsSync(outputPath);
-
-        // Composite schema files merge translations into the source file itself,
-        // so outputPath always exists and the lock can't tell whether derived
-        // split outputs (e.g. {locale}/docs.json) are still on disk. Always
-        // merge fresh API data so derived files are regenerated every run;
-        // local edits to translated output are preserved via `gt save-local`.
-        const isInPlaceComposite = options.options?.jsonSchema
-          ? !!validateJsonSchema(options.options, inputPath)?.composite
-          : false;
-
-        if (
-          !forceDownload &&
-          fileExists &&
-          downloadedTranslation &&
-          !isInPlaceComposite
-        ) {
-          // For schema-based files, re-merge with current source in case
-          // non-translatable fields changed (skip the API download, not the merge)
-          try {
-            let existingContent = fs.readFileSync(outputPath, 'utf8');
-            // Resolve $ref before extraction if configured
-            if (shouldResolveRefs(outputPath, options.options)) {
-              try {
-                const json = JSON.parse(existingContent);
-                const { resolved } = resolveMintlifyRefs(json, outputPath);
-                existingContent = JSON.stringify(resolved, null, 2);
-              } catch {
-                // Fall through with original content
-              }
-            }
-            const jsonExtracted = options.options?.jsonSchema
-              ? extractJson(
-                  existingContent,
-                  inputPath,
-                  options.options,
-                  locale,
-                  options.defaultLocale
-                )
-              : null;
-            const extracted =
-              jsonExtracted ??
-              (options.options?.yamlSchema
-                ? extractYaml(existingContent, inputPath, options.options)
-                : null);
-            if (extracted) {
-              const remerged = mergeWithSource(
-                extracted,
-                locale,
-                inputPath,
-                options
-              );
-              let remergedData = remerged;
-              if (outputPath.endsWith('.json')) {
-                try {
-                  remergedData = sortJsonString(remergedData);
-                } catch {
-                  // Fall through with unsorted content
-                }
-              }
-              if (remergedData !== existingContent) {
-                await fs.promises.writeFile(outputPath, remergedData);
-              }
-              // Track for postprocessing (e.g. openapi path localization)
-              // even when the API download was skipped
-              recordRemerged(outputPath);
-            }
-          } catch (error) {
-            // If re-merge fails, still count as skipped — not worth failing
-            // the download, but surface it so missing output is diagnosable
-            logger.warn(
-              `Failed to re-merge existing translation for ${outputPath} (${locale}): ${error}`
-            );
-          }
-          // Even when the local copy is current, the served content may
-          // still be missing review-withheld components — keep reporting
-          reportWithheldGtJsonComponents(
-            file.fileFormat,
-            file.data,
-            fileProperties.componentCount,
-            locale
-          );
-          result.skipped.push(requestedFile);
-          continue;
-        }
-        let data = mergeWithSource(file.data, locale, inputPath, options);
+        let data = mergeWithSource(
+          file.data,
+          requestedFile.locale,
+          requestedFile.inputPath,
+          options
+        );
 
         // Stable sort JSON keys for deterministic output
-        if (file.fileFormat === 'GTJSON' || outputPath.endsWith('.json')) {
+        if (
+          file.fileFormat === 'GTJSON' ||
+          requestedFile.outputPath.endsWith('.json')
+        ) {
           try {
             data = sortJsonString(data);
           } catch (error) {
@@ -369,39 +379,37 @@ export async function downloadFileBatch(
         }
 
         // Write the file to disk
-        await fs.promises.writeFile(outputPath, data);
+        await fs.promises.writeFile(requestedFile.outputPath, data);
         // Track as downloaded with metadata for downstream postprocessing
-        recordDownloaded(outputPath, {
-          branchId,
-          fileId,
-          versionId,
-          locale,
-          inputPath,
+        recordDownloaded(requestedFile.outputPath, {
+          branchId: requestedFile.branchId,
+          fileId: requestedFile.fileId,
+          versionId: requestedFile.versionId,
+          locale: requestedFile.locale,
+          inputPath: requestedFile.inputPath,
         });
 
         reportWithheldGtJsonComponents(
           file.fileFormat,
           data,
-          fileProperties.componentCount,
-          locale
+          requestedFile.componentCount,
+          requestedFile.locale
         );
 
         result.successful.push(requestedFile);
-        if (fileId && versionId && locale) {
-          const entry = findOrCreateEntry(
-            entryMap,
-            downloadedVersions.entries,
-            fileId,
-            versionId
-          );
-          entry.fileName = inputPath;
-          entry.staged = false;
-          entry.translations[locale] = {
-            updatedAt: new Date().toISOString(),
-            fileName: getRelative(outputPath),
-          };
-          didUpdateDownloadedLock = true;
-        }
+        const entry = findOrCreateEntry(
+          entryMap,
+          downloadedVersions.entries,
+          requestedFile.fileId,
+          requestedFile.versionId
+        );
+        entry.fileName = requestedFile.inputPath;
+        entry.staged = false;
+        entry.translations[requestedFile.locale] = {
+          updatedAt: new Date().toISOString(),
+          fileName: getRelative(requestedFile.outputPath),
+        };
+        didUpdateDownloadedLock = true;
       } catch (error) {
         logger.error(`Error saving file ${fileKey}: ` + error);
         recordWarning(
@@ -413,23 +421,11 @@ export async function downloadFileBatch(
       }
     }
 
-    // Add any files that weren't in the response to the failed list
-    const downloadedFileKeys = new Set(
-      downloadedFiles.map(
-        (file) =>
-          `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`
-      )
-    );
-    for (const [fileKey, requestedFile] of requestedFileMap.entries()) {
-      if (!downloadedFileKeys.has(fileKey)) {
-        result.failed.push(requestedFile);
-      }
-    }
+    result.failed.push(...requestedFiles.values());
 
     // Persist any updates to the downloaded map at the end of a successful cycle
     if (didUpdateDownloadedLock) {
       writeLockfile(downloadedVersions, originalV1);
-      didUpdateDownloadedLock = false;
     }
     return result;
   } catch (error) {
@@ -439,7 +435,7 @@ export async function downloadFileBatch(
   }
 
   // Mark all files as failed if we get here
-  result.failed = [...requestedFileMap.values()];
+  result.failed.push(...requestedFiles.values());
   if (didUpdateDownloadedLock) {
     writeLockfile(downloadedVersions, originalV1);
   }

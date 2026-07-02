@@ -41,6 +41,7 @@ export type FileTranslationData = {
 export async function runDownloadWorkflow({
   fileVersionData,
   jobData,
+  completedTranslationKeys,
   branchData,
   locales,
   timeoutDuration,
@@ -51,6 +52,7 @@ export async function runDownloadWorkflow({
 }: {
   fileVersionData: FileTranslationData;
   jobData: EnqueueFilesResult | undefined;
+  completedTranslationKeys?: ReadonlySet<string>;
   branchData: BranchData | undefined;
   locales: string[];
   timeoutDuration: number;
@@ -100,6 +102,7 @@ export async function runDownloadWorkflow({
       jobData,
       timeoutDuration,
       forceRetranslation,
+      completedTranslationKeys,
     });
     await pollStep.wait();
 
@@ -161,6 +164,7 @@ export async function runDownloadWorkflow({
     fileTracker,
     resolveOutputPath,
     forceDownload,
+    skipTranslationCheck: !!jobData,
   });
   await downloadStep.wait();
 
