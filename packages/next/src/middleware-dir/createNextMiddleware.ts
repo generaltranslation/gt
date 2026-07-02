@@ -200,7 +200,6 @@ export function createNextMiddleware({
       clearResetCookie,
       localeRouting,
       localeRoutingEnabledCookieName,
-      localeCookieName,
       resetLocaleCookieName,
       localeHeaderName,
     };
