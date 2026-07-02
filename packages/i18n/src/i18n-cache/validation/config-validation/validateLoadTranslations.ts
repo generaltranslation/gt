@@ -5,6 +5,13 @@ import { ValidationResult } from '../types';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 /**
+ * Missing configuration (eg a missing projectId) is only a problem if a load
+ * is actually attempted, so those warnings are deferred to loader invocation
+ * (see {@link routeCreateTranslationLoader}). Translations may instead be
+ * provided externally via updateTranslations() (eg streamed from a server).
+ */
+
+/**
  * Load translation configuration
  *
  * Types of load translations:
@@ -28,22 +35,12 @@ export function validateLoadTranslations(params: {
   loadTranslations?: TranslationsLoader;
 }): ValidationResult[] {
   const results: ValidationResult[] = [];
-  const { projectId, loadTranslations } = params;
+  const { loadTranslations } = params;
 
   const loadTranslationsType = getLoadTranslationsType(params);
   switch (loadTranslationsType) {
     case LoadTranslationsType.REMOTE:
     case LoadTranslationsType.GT_REMOTE:
-      if (!projectId) {
-        results.push({
-          type: 'warning',
-          message: createDiagnosticMessage({
-            whatHappened:
-              'Loading translations from a remote store needs a projectId',
-            fix: 'Add projectId to the I18nCache config or disable remote translation loading',
-          }),
-        });
-      }
       break;
     case LoadTranslationsType.CUSTOM:
       if (!loadTranslations) {

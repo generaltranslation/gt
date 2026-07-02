@@ -1,9 +1,9 @@
 import { TranslationsLoader } from './types';
 import { LoadTranslationsType } from '../../utils/getLoadTranslationsType';
-import logger from '../../../logs/logger';
 import { createRemoteTranslationLoader } from './createRemoteTranslationLoader';
 import { createFallbackTranslationLoader } from './createFallbackTranslationLoader';
 import { getI18nConfig } from '../../../i18n-config/singleton-operations';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 /**
  * Creates a translation loader function that loads translations from a remote store (CDN or other)
@@ -27,22 +27,28 @@ export function routeCreateTranslationLoader({
   };
   loadTranslations?: TranslationsLoader;
 }): TranslationsLoader {
-  if (type === LoadTranslationsType.DISABLED) {
-    // TODO: move this warning to validation layer
-    logger.warn(
-      'I18nCache: No translation loader found. No translations will be loaded.'
-    );
-  }
-
   const { cacheUrl, projectId, _versionId, _branchId } =
     remoteTranslationLoaderParams;
 
+  // Warnings are deferred to loader invocation: translations may be provided
+  // externally via updateTranslations() (eg streamed from a server), in which
+  // case the loader is never invoked and the warnings do not apply
   switch (type) {
     case LoadTranslationsType.REMOTE:
     case LoadTranslationsType.GT_REMOTE:
+      if (!projectId) {
+        return createFallbackTranslationLoader(
+          'I18nCache: ' +
+            createDiagnosticMessage({
+              whatHappened:
+                'Loading translations from a remote store needs a projectId. No translations will be loaded.',
+              fix: 'Add projectId to the I18nCache config or disable remote translation loading',
+            })
+        );
+      }
       return createRemoteTranslationLoader({
         cacheUrl: cacheUrl as string | undefined,
-        projectId: projectId || '',
+        projectId,
         _versionId,
         _branchId,
         customMapping: getI18nConfig().getCustomMapping(),
@@ -50,6 +56,8 @@ export function routeCreateTranslationLoader({
     case LoadTranslationsType.CUSTOM:
       return loadTranslations!;
     case LoadTranslationsType.DISABLED:
-      return createFallbackTranslationLoader();
+      return createFallbackTranslationLoader(
+        'I18nCache: No translation loader found. No translations will be loaded.'
+      );
   }
 }
