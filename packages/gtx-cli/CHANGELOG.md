@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.14.57
+
+### Patch Changes
+
+- [#1768](https://github.com/generaltranslation/gt/pull/1768) [`da5385f`](https://github.com/generaltranslation/gt/commit/da5385f6ce6497c542a68d4c9207ce2bd0aa2a25) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Retry main releases that were blocked by recent release workflow failures.
+
+- Updated dependencies []:
+  - gt@2.14.57
+
 ## 2.14.56
 
 ### Patch Changes
