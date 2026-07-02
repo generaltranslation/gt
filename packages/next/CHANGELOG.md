@@ -1,5 +1,17 @@
 # gt-next
 
+## 11.0.0-odysseus.13
+
+### Patch Changes
+
+- a2b9677: Restore namespace scoping for getTranslations and server useTranslations.
+- 3e199a2: Keep the locale cookie when the middleware clears the setLocale reset cookie. Deleting it raced with concurrent prefetch responses after a locale switch in production builds, causing client components to fall back to the browser's default locale while server components rendered the selected locale.
+- Updated dependencies [a2b9677]
+- Updated dependencies [41371e0]
+  - gt-i18n@1.0.0-odysseus.6
+  - gt-react@11.0.0-odysseus.13
+  - @generaltranslation/react-core@11.0.0-odysseus.13
+
 ## 11.0.0-odysseus.12
 
 ### Patch Changes

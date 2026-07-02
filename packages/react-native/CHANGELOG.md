@@ -1,5 +1,14 @@
 # gt-react-native
 
+## 11.0.0-odysseus.13
+
+### Patch Changes
+
+- Updated dependencies [a2b9677]
+- Updated dependencies [41371e0]
+  - gt-i18n@1.0.0-odysseus.6
+  - @generaltranslation/react-core@11.0.0-odysseus.13
+
 ## 11.0.0-odysseus.12
 
 ### Patch Changes
