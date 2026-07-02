@@ -29,9 +29,10 @@ const LinkWithLocale = forwardRef<LinkRef, Omit<LinkProps, 'locale'>>(
 /**
  * Locale-aware wrapper around Next.js's `<Link>` component.
  *
- * Internal hrefs are prefixed with the current GT locale by default. Pass a
- * locale string to use a specific locale, or pass `locale={false}` to leave the
- * href unchanged. External URLs are never prefixed.
+ * Internal hrefs are prefixed with the current GT locale by default. Use this
+ * component only when GT middleware locale routing is enabled. Without locale
+ * routing, use `next/link` or pass `locale={false}` to leave the href
+ * unchanged. External URLs are never prefixed.
  *
  * @example
  * ```tsx
