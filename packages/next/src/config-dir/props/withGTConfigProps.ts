@@ -63,6 +63,7 @@ export type withGTConfigProps = {
   locales?: string[];
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
+  disableInvalidLocaleWarning?: boolean;
   // Custom mapping
   /**@deprecated Use customMapping in gt.config.json instead */
   customMapping?: CustomMapping;

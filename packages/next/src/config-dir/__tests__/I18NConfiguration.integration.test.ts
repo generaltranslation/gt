@@ -93,6 +93,7 @@ describe('I18NConfiguration integration', () => {
       }) as GT['translateMany']);
     const config = createConfig({
       dictionary: './dictionary.json',
+      disableInvalidLocaleWarning: true,
       projectId: 'project-id',
       description: 'Clinical UI',
       renderSettings: {
@@ -122,5 +123,6 @@ describe('I18NConfiguration integration', () => {
       timeout: 4321,
     });
     expect(metadata).not.toHaveProperty('dictionary');
+    expect(metadata).not.toHaveProperty('disableInvalidLocaleWarning');
   });
 });

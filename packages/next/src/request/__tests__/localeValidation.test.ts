@@ -20,10 +20,13 @@ vi.mock('../../config-dir/getI18NConfig', () => ({
 }));
 
 describe('locale validation', () => {
+  const originalDisableInvalidLocaleWarning =
+    process.env._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING;
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING;
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     mockI18NConfig.getLocales.mockReturnValue(['en', 'fr']);
 
@@ -44,6 +47,12 @@ describe('locale validation', () => {
   });
 
   afterEach(() => {
+    if (originalDisableInvalidLocaleWarning === undefined) {
+      delete process.env._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING;
+    } else {
+      process.env._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING =
+        originalDisableInvalidLocaleWarning;
+    }
     consoleWarnSpy.mockRestore();
   });
 
@@ -71,6 +80,20 @@ describe('locale validation', () => {
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('Locale "llms.txt" is not valid')
     );
+  });
+
+  it('does not warn for invalid request locales when disabled by env', () => {
+    process.env._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING = 'true';
+
+    expect(
+      resolveLocaleOrDefault(
+        'llms.txt',
+        mockI18NConfig as unknown as I18NConfiguration,
+        mockGt
+      )
+    ).toBe('en');
+
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
   it('falls back to the default locale for unsupported request locales', () => {
