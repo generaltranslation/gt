@@ -1,5 +1,6 @@
 'use client';
 
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import type { ReactNode } from 'react';
 import type { TxProps } from './utils/TxProps';
 
@@ -7,7 +8,7 @@ import type { TxProps } from './utils/TxProps';
 // providers, and context modules, so it must be consumed as a client boundary by
 // React Server Component frameworks.
 
-export { initializeGTSPA } from './setup/initializeGTSPA';
+export { initializeGTSRA as initializeGT } from './setup/initializeGTSRA';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useRegionSelector } from './components/useRegionSelector';
 export {
@@ -20,6 +21,21 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
 } from './cookie-names';
+
+type InitializeGTSPA = typeof import('./setup/initializeGTSPA').initializeGTSPA;
+
+export const initializeGTSPA: InitializeGTSPA = async () => {
+  throw new Error(
+    createDiagnosticMessage({
+      source: 'gt-react',
+      severity: 'Error',
+      whatHappened:
+        'initializeGTSPA() cannot be called from the server runtime entry point',
+      why: 'initializeGTSPA() initializes browser-only SPA state and translation cache behavior.',
+      fix: 'Use initializeGT() for server-rendered React runtimes or import initializeGTSPA from the browser entry point.',
+    })
+  );
+};
 
 // ===== Components ===== //
 export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';
@@ -82,7 +98,6 @@ export {
   getTranslationsSnapshot,
   getVersionId,
   createRenderPipeline,
-  internalInitializeGTSRA as initializeGT,
   setReactI18nCache,
   t,
 } from '@generaltranslation/react-core/pure';
