@@ -80,7 +80,6 @@ export { Derive } from 'gt-react';
 // ===== gt-react Hooks ===== //
 export {
   useDefaultLocale,
-  useGTClass,
   useLocaleProperties,
   useLocales,
   useVersionId,
@@ -94,7 +93,6 @@ export {
   declareVar,
   derive,
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
   getVersionId,

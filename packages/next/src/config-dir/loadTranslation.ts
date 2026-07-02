@@ -58,8 +58,9 @@ export async function loadTranslations(
       _props: RemoteLoadTranslationsInput
     ): Promise<Translations | undefined> => {
       try {
-        const gt = getI18nConfig().getGTClass();
-        const targetLocale = gt.resolveCanonicalLocale(_props.targetLocale);
+        const targetLocale = getI18nConfig().resolveCanonicalLocale(
+          _props.targetLocale
+        );
         const response = await fetch(
           `${_props.cacheUrl}/${_props.projectId}/${targetLocale}${
             _props._versionId ? `/${_props._versionId}` : ''

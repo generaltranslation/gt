@@ -87,6 +87,16 @@
         "default": "./dist/core.mjs"
       }
     },
+    "./runtime": {
+      "require": {
+        "types": "./dist/runtime.d.cts",
+        "default": "./dist/runtime.cjs"
+      },
+      "import": {
+        "types": "./dist/runtime.d.mts",
+        "default": "./dist/runtime.mjs"
+      }
+    },
     "./internal": {
       "require": {
         "types": "./dist/internal.d.cts",
@@ -129,6 +139,9 @@
       "core": [
         "./dist/core.d.cts"
       ],
+      "runtime": [
+        "./dist/runtime.d.cts"
+      ],
       "types": [
         "./dist/types.d.cts"
       ],
@@ -148,6 +161,9 @@
       ],
       "generaltranslation/core": [
         "/dist/core"
+      ],
+      "generaltranslation/runtime": [
+        "/dist/runtime"
       ],
       "generaltranslation/types": [
         "/dist/types"

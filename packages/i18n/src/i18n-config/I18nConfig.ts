@@ -1,10 +1,25 @@
 import {
   LocaleConfig,
   type LocaleConfigConstructorParams,
+  getRegionProperties as getFormatRegionProperties,
 } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
-import { GT } from 'generaltranslation';
+import type {
+  CustomMapping,
+  CustomRegionMapping,
+} from '@generaltranslation/format/types';
+import {
+  translate as runtimeTranslate,
+  translateMany as runtimeTranslateMany,
+  type RuntimeTranslateConfig,
+  type RuntimeTranslateOptions,
+} from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import type {
+  TranslateManyEntry,
+  TranslateManyResult,
+  TranslationError,
+  TranslationResult,
+} from 'generaltranslation/types';
 import type { GTConfig } from '../config/types';
 import {
   getLoadTranslationsType,
@@ -40,6 +55,7 @@ export type LocaleCandidates = string | string[] | undefined;
 export class I18nConfig extends LocaleConfig {
   private runtimeConfig: RuntimeConfig;
   private gtServicesEnabled: boolean;
+  private customRegionMapping?: CustomRegionMapping;
 
   constructor(params: I18nConfigParams = {}) {
     const gtServicesEnabled = resolveGTServicesEnabled(params);
@@ -68,18 +84,6 @@ export class I18nConfig extends LocaleConfig {
 
   getProjectId(): string | undefined {
     return this.runtimeConfig.projectId;
-  }
-
-  /**
-   * Get a GT instance bound to the resolved target locale. When omitted, the
-   * instance is locale agnostic.
-   *
-   * TODO: keep a cache to avoid creating new instances unnecessarily.
-   */
-  getGTClass(locale?: string): GT {
-    return this.getGTClassClean(
-      locale ? this.resolveLocale(locale) : undefined
-    );
   }
 
   determineLocale(
@@ -130,6 +134,60 @@ export class I18nConfig extends LocaleConfig {
     );
   }
 
+  async translate(
+    source: TranslateManyEntry,
+    options: RuntimeTranslateOptions,
+    timeout?: number
+  ): Promise<TranslationResult | TranslationError> {
+    return await runtimeTranslate(
+      source,
+      options,
+      this.getRuntimeTranslateConfig(),
+      timeout
+    );
+  }
+
+  async translateMany(
+    sources: TranslateManyEntry[],
+    options: RuntimeTranslateOptions,
+    timeout?: number
+  ): Promise<TranslateManyResult>;
+  async translateMany(
+    sources: Record<string, TranslateManyEntry>,
+    options: RuntimeTranslateOptions,
+    timeout?: number
+  ): Promise<Record<string, TranslationResult>>;
+  async translateMany(
+    sources: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
+    options: RuntimeTranslateOptions,
+    timeout?: number
+  ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
+    if (Array.isArray(sources)) {
+      return await runtimeTranslateMany(
+        sources,
+        options,
+        this.getRuntimeTranslateConfig(),
+        timeout
+      );
+    }
+    return await runtimeTranslateMany(
+      sources,
+      options,
+      this.getRuntimeTranslateConfig(),
+      timeout
+    );
+  }
+
+  getRegionProperties(
+    region: string,
+    targetLocale: string = this.defaultLocale,
+    customMapping:
+      | CustomRegionMapping
+      | undefined = this.getCustomRegionMapping()
+  ): { code: string; name: string; emoji: string } {
+    return getFormatRegionProperties(region, targetLocale, customMapping);
+  }
+
   /**
    * Returns true when development hot reload runtime translation requests can run.
    */
@@ -148,26 +206,44 @@ export class I18nConfig extends LocaleConfig {
     return this.gtServicesEnabled;
   }
 
-  /**
-   * Create a GT instance without resolving the target locale first.
-   */
-  private getGTClassClean(locale?: string) {
-    return new GT({
+  private getRuntimeTranslateConfig(): RuntimeTranslateConfig {
+    return {
       sourceLocale: this.getDefaultLocale(),
-      targetLocale: locale,
-      // GT validates approved locales before constructing its LocaleConfig, so
-      // pass canonical locales here while preserving alias target locales.
+      // Runtime requests should use canonical approved locales while preserving
+      // alias target locales until each request is resolved.
       locales: Array.from(
         new Set(
           this.getLocales().map((locale) => this.resolveCanonicalLocale(locale))
         )
       ),
       customMapping: this.getCustomMapping(),
-      projectId: this.runtimeConfig.projectId,
+      projectId: this.runtimeConfig.projectId || '',
       baseUrl: this.runtimeConfig.runtimeUrl || undefined,
-      apiKey: this.runtimeConfig.apiKey,
-      devApiKey: this.runtimeConfig.devApiKey,
-    });
+      apiKey: this.runtimeConfig.apiKey || this.runtimeConfig.devApiKey,
+    };
+  }
+
+  private getCustomRegionMapping(): CustomRegionMapping | undefined {
+    if (!this.customMapping) return undefined;
+    if (this.customRegionMapping) return this.customRegionMapping;
+    const customRegionMapping: CustomRegionMapping = {};
+    for (const [locale, properties] of Object.entries(this.customMapping)) {
+      if (
+        properties &&
+        typeof properties === 'object' &&
+        properties.regionCode &&
+        !customRegionMapping[properties.regionCode]
+      ) {
+        const { regionName: name, emoji } = properties;
+        customRegionMapping[properties.regionCode] = {
+          locale,
+          ...(name && { name }),
+          ...(emoji && { emoji }),
+        };
+      }
+    }
+    this.customRegionMapping = customRegionMapping;
+    return customRegionMapping;
   }
 
   private getLocaleConfig(config?: I18nConfigParams): LocaleConfig {

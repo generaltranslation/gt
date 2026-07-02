@@ -31,11 +31,9 @@ function computeDateTime({
     enableI18n: _enableI18n,
     localesProp,
   });
-  // TODO: theres a world in which we don't need the i18n cache, if user passes their own params
-  const gt = getI18nConfig().getGTClass();
   if (children == null) return null;
-  return gt
-    .formatDateTime(children, { locales, ...options })
+  return getI18nConfig()
+    .formatDateTime(children, undefined, { locales, ...options })
     .replace(/[\u200F\u202B\u202E]/g, '');
 }
 

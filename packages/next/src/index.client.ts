@@ -53,7 +53,6 @@ export {
 export {
   useDefaultLocale,
   useGT,
-  useGTClass,
   useLocale,
   useLocaleDirection,
   useLocaleProperties,
@@ -74,7 +73,6 @@ export {
   declareVar,
   derive,
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
   getTranslationsSnapshot,

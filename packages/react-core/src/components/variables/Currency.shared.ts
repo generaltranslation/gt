@@ -33,11 +33,10 @@ function computeCurrency({
     enableI18n: _enableI18n,
     localesProp,
   });
-  const gt = getI18nConfig().getGTClass();
   if (children == null) return null;
   const parsedNumber =
     typeof children === 'string' ? parseFloat(children) : children;
-  return gt.formatCurrency(parsedNumber, currency, {
+  return getI18nConfig().formatCurrency(parsedNumber, currency, undefined, {
     locales,
     ...options,
   });

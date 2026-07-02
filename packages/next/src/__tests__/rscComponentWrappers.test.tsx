@@ -17,7 +17,6 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     derive: vi.fn(),
     gtFallback: vi.fn(),
     getDefaultLocale: vi.fn(),
-    getGTClass: vi.fn(),
     getLocaleProperties: vi.fn(),
     getLocales: vi.fn(),
     getVersionId: vi.fn(),
@@ -29,7 +28,6 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     RelativeTime: vi.fn(),
     RscT: vi.fn(),
     useDefaultLocale: vi.fn(),
-    useGTClass: vi.fn(),
     useLocaleProperties: vi.fn(),
     useLocales: vi.fn(),
     useVersionId: vi.fn(),
@@ -136,7 +134,6 @@ describe('rsc component wrappers', () => {
     expect(module.useMessages).toBeTypeOf('function');
     expect(module.useLocale).toBeTypeOf('function');
     expect(module.useLocaleDirection).toBeTypeOf('function');
-    expect(module.useGTClass).toBeTypeOf('function');
     expect(module.useLocaleProperties).toBeTypeOf('function');
     expect(module.useLocales).toBeTypeOf('function');
     expect(module.useDefaultLocale).toBeTypeOf('function');

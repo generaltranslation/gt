@@ -56,7 +56,6 @@ export {
   useTranslations,
   useLocaleDirection,
   useVersionId,
-  useGTClass,
   useLocaleProperties,
 } from '@generaltranslation/react-core/hooks';
 
@@ -72,7 +71,6 @@ export {
   gtFallback,
   getFormatLocales,
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
   getReactI18nCache,

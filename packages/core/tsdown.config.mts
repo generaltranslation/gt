@@ -5,6 +5,7 @@ export default defineConfig(
   createTsdownConfig(
     [
       'src/index.ts',
+      'src/runtime.ts',
       'src/core.ts',
       'src/id.ts',
       'src/internal.ts',
