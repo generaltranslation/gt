@@ -1,5 +1,13 @@
 # gt-next
 
+## 6.16.36
+
+### Patch Changes
+
+- [#1768](https://github.com/generaltranslation/gt/pull/1768) [`da5385f`](https://github.com/generaltranslation/gt/commit/da5385f6ce6497c542a68d4c9207ce2bd0aa2a25) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Retry main releases that were blocked by recent release workflow failures.
+
+- [#1729](https://github.com/generaltranslation/gt/pull/1729) [`3b389dc`](https://github.com/generaltranslation/gt/commit/3b389dc08f3d86e2cea91a25e22840c188328d94) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fallback to the default locale when request locale resolution returns an invalid or unsupported locale. This prevents request-derived locale values from causing runtime errors, and adds `isLocaleSupported()` to `gt-next/server` for apps that want to explicitly reject invalid locale route params.
+
 ## 6.16.35
 
 ### Patch Changes
