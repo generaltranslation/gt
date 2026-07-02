@@ -155,6 +155,7 @@ function handleUseGTCallback(
     context: useGTCallbackParams.context,
     id: useGTCallbackParams.id,
     maxChars: useGTCallbackParams.maxChars,
+    requiresReview: useGTCallbackParams.requiresReview,
     hash,
     format: useGTCallbackParams.format,
   });
@@ -263,8 +264,16 @@ function handleReactInvocation(
   }
 
   // Validate the arguments
-  const { errors, _hash, id, context, children, maxChars, hasDeriveContext } =
-    validateTranslationComponentArgs(callExprPath, canonicalName, state);
+  const {
+    errors,
+    _hash,
+    id,
+    context,
+    children,
+    maxChars,
+    requiresReview,
+    hasDeriveContext,
+  } = validateTranslationComponentArgs(callExprPath, canonicalName, state);
 
   if (errors.length > 0) {
     state.errorTracker.addErrors(errors);
@@ -280,6 +289,7 @@ function handleReactInvocation(
         ...(context && { context }),
         ...(id && { id }),
         ...(maxChars != null && { maxChars }),
+        ...(requiresReview === true && { requiresReview: true }),
         dataFormat: 'JSX',
       });
 
@@ -292,7 +302,12 @@ function handleReactInvocation(
   }
 
   // Track the component (increment counter, initialize aggregator, set hash)
-  registerTranslationComponent(state, hash, { children, id, context });
+  registerTranslationComponent(state, hash, {
+    children,
+    id,
+    context,
+    requiresReview,
+  });
 }
 
 /**
@@ -323,6 +338,7 @@ function handleStandaloneTranslation(
     id: params.id,
     context: params.context,
     maxChars: params.maxChars,
+    requiresReview: params.requiresReview,
     format: params.format,
     injectHash,
   });

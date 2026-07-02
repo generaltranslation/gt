@@ -123,6 +123,7 @@ export type Metadata = {
   id?: string;
   hash?: string;
   format?: string;
+  requiresReview?: boolean;
   dataFormat?: FormatDataFormat;
   sourceLocale?: string;
   actionType?: 'standard' | 'fast' | string;

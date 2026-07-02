@@ -34,6 +34,8 @@ export type InlineTranslationOptions = BaseTranslationOptions & {
   $_locales?: string | string[];
   $_hash?: string;
   $maxChars?: number;
+  /** Whether the translated message requires approval before use. Must be a boolean literal. */
+  $requiresReview?: boolean;
   /** @internal Used to carry the original source when rendering a translation */
   $_fallback?: string;
   /** @deprecated use {@link EncodedTranslationOptions} instead */
@@ -54,6 +56,7 @@ export type EncodedTranslationOptions = BaseTranslationOptions & {
   $context?: string;
   $id?: string;
   $maxChars?: number;
+  $requiresReview?: boolean;
   $_hash: string;
   $_source: string;
 };

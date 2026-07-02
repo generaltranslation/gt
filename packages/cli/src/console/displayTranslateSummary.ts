@@ -8,6 +8,7 @@ import {
 
 const CATEGORY_LABELS: Record<WarningCategory, string> = {
   skipped_file: 'Files skipped',
+  pending_review: 'Awaiting review approval',
   failed_move: 'File moves failed',
   failed_translation: 'Translations failed',
   failed_download: 'Downloads failed',
@@ -15,6 +16,7 @@ const CATEGORY_LABELS: Record<WarningCategory, string> = {
 
 const CATEGORY_ORDER: WarningCategory[] = [
   'skipped_file',
+  'pending_review',
   'failed_move',
   'failed_translation',
   'failed_download',

@@ -9,6 +9,7 @@ import { collectFiles } from '../../formats/files/collectFiles.js';
 import { noFilesError, noVersionIdError } from '../../console/index.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
+import { warnManualReviewSetup } from '../../translation/reviewSetupWarning.js';
 
 /**
  * Enqueues translations for a given set of files
@@ -34,5 +35,11 @@ export async function handleEnqueue(
   // Collect the data for all files we need to enqueue
   const { files } = await collectFiles(options, settings, library);
 
-  return runEnqueueWorkflow({ files, options, settings });
+  const result = await runEnqueueWorkflow({ files, options, settings });
+
+  // Point at dashboard review setup when the project auto-approves
+  // review-gated content that was just enqueued
+  warnManualReviewSetup(settings, files, result?.projectSettings?.autoApprove);
+
+  return result;
 }

@@ -15,6 +15,7 @@ import { TEMPLATE_FILE_ID } from '../../utils/constants.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
 import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
+import { warnManualReviewSetup } from '../../translation/reviewSetupWarning.js';
 
 export async function handleStage(
   options: TranslateFlags,
@@ -39,6 +40,8 @@ export async function handleStage(
 
   // Dry run
   if (options.dryRun) {
+    // No enqueue response to read auto-approve from, so warn conditionally
+    warnManualReviewSetup(settings, allFiles);
     logger.success(`Dry run: No files were sent to General Translation.`);
     logCollectedFiles(allFiles, reactComponents);
     return null;
@@ -59,6 +62,14 @@ export async function handleStage(
       await runStageFilesWorkflow({ files: allFiles, options, settings });
     jobData = enqueueResult;
     branchData = branchDataResult;
+
+    // Point at dashboard review setup when the project auto-approves
+    // review-gated content that was just enqueued
+    warnManualReviewSetup(
+      settings,
+      allFiles,
+      jobData?.projectSettings?.autoApprove
+    );
 
     fileVersionData = convertToFileTranslationData(allFiles);
 

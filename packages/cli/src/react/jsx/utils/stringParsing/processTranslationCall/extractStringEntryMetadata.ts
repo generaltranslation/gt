@@ -4,6 +4,7 @@ import { ParsingOutput } from '../types.js';
 import { isStaticExpression } from '../../../evaluateJsx.js';
 import { warnInvalidMaxCharsSync } from '../../../../../console/index.js';
 import { warnInvalidFormatSync } from '../../../../../console/index.js';
+import { warnInvalidRequiresReviewSync } from '../../../../../console/index.js';
 import { warnNonStaticExpressionSync } from '../../../../../console/index.js';
 import { GT_ATTRIBUTES_WITH_SUGAR } from '../../constants.js';
 import { containsDeriveCall } from '../derivation/containsDeriveCall.js';
@@ -27,6 +28,7 @@ export type InlineMetadata = {
   id?: string;
   hash?: string;
   format?: string;
+  requiresReview?: boolean;
   filePaths?: string[];
   sourceCode?: Record<string, SourceCode[]>;
   contextDeriveExpr?: t.Expression;
@@ -113,7 +115,7 @@ function extractInlineMetadata({
   output: ParsingOutput;
   config: ParsingConfig;
 }): InlineMetadata {
-  const metadata: Record<string, string | number | string[]> = {};
+  const metadata: Record<string, string | number | boolean | string[]> = {};
   let contextDeriveExpr: t.Expression | undefined;
   if (options && options.type === 'ObjectExpression') {
     options.properties.forEach((prop) => {
@@ -165,6 +167,21 @@ function extractInlineMetadata({
               } else if (typeof result.value === 'string') {
                 // Add the maxChars value to the metadata
                 metadata[mappedKey] = Math.abs(Number(result.value));
+              }
+            } else if (mappedKey === 'requiresReview') {
+              // Handle $requiresReview attribute - boolean literal only,
+              // string "true"/"false" is rejected because the value is
+              // hash-changing and coercion would be too easy to get wrong
+              if (t.isBooleanLiteral(prop.value)) {
+                metadata[mappedKey] = prop.value.value;
+              } else {
+                output.errors.push(
+                  warnInvalidRequiresReviewSync(
+                    config.file,
+                    generate(prop).code,
+                    `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
+                  )
+                );
               }
             } else if (mappedKey === 'format') {
               // Handle format attribute - validate allowed values

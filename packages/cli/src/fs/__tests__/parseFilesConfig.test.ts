@@ -17,6 +17,13 @@ vi.mock('fast-glob', () => ({
 // Mock logging module
 vi.mock('../../console/logger.js');
 
+// Surface logErrorAndExit as a throw so tests can assert on it
+vi.mock('../../console/logging.js', () => ({
+  logErrorAndExit: vi.fn((message: string) => {
+    throw new Error(message);
+  }),
+}));
+
 // Mock chalk
 vi.mock('chalk', () => ({
   default: {
@@ -1028,6 +1035,194 @@ describe('parseFilesConfig', () => {
         absolute: true,
         ignore: [],
       });
+    });
+  });
+
+  describe('requiresReview classification', () => {
+    const defaultLocales = ['en', 'fr', 'es'];
+    const resolved = [
+      '/project/locales/en/prod/a.json',
+      '/project/locales/en/prod/public/b.json',
+      '/project/locales/en/dev/c.json',
+    ];
+
+    beforeEach(() => {
+      vi.mocked(fg.sync).mockReturnValue(resolved);
+    });
+
+    it('defaults to no review-required paths without any config', () => {
+      const files = { json: { include: ['locales/[locale]/**/*.json'] } };
+
+      const result = resolveFiles(files, 'en', defaultLocales, '/project');
+
+      expect(result.requiresReviewPaths.size).toBe(0);
+    });
+
+    it('marks all matched files when top-level default is true', () => {
+      const files = { json: { include: ['locales/[locale]/**/*.json'] } };
+
+      const result = resolveFiles(
+        files,
+        'en',
+        defaultLocales,
+        '/project',
+        undefined,
+        true
+      );
+
+      expect(result.requiresReviewPaths).toEqual(new Set(resolved));
+    });
+
+    it('marks all matched files when file-type requiresReview is true', () => {
+      const files = {
+        json: {
+          include: ['locales/[locale]/**/*.json'],
+          requiresReview: true,
+        },
+      };
+
+      const result = resolveFiles(files, 'en', defaultLocales, '/project');
+
+      expect(result.requiresReviewPaths).toEqual(new Set(resolved));
+    });
+
+    it('file-type false overrides a top-level true default', () => {
+      const files = {
+        json: {
+          include: ['locales/[locale]/**/*.json'],
+          requiresReview: false,
+        },
+      };
+
+      const result = resolveFiles(
+        files,
+        'en',
+        defaultLocales,
+        '/project',
+        undefined,
+        true
+      );
+
+      expect(result.requiresReviewPaths.size).toBe(0);
+    });
+
+    it('object include marks only matching files', () => {
+      const files = {
+        json: {
+          include: ['locales/[locale]/**/*.json'],
+          requiresReview: {
+            include: ['locales/[locale]/prod/**/*.json'],
+          },
+        },
+      };
+
+      const result = resolveFiles(files, 'en', defaultLocales, '/project');
+
+      expect(result.requiresReviewPaths).toEqual(
+        new Set([
+          '/project/locales/en/prod/a.json',
+          '/project/locales/en/prod/public/b.json',
+        ])
+      );
+    });
+
+    it('exclude wins over include', () => {
+      const files = {
+        json: {
+          include: ['locales/[locale]/**/*.json'],
+          requiresReview: {
+            include: ['locales/[locale]/prod/**/*.json'],
+            exclude: ['locales/[locale]/prod/public/**/*.json'],
+          },
+        },
+      };
+
+      const result = resolveFiles(files, 'en', defaultLocales, '/project');
+
+      expect(result.requiresReviewPaths).toEqual(
+        new Set(['/project/locales/en/prod/a.json'])
+      );
+    });
+
+    it('files matching neither glob inherit the top-level default', () => {
+      const files = {
+        json: {
+          include: ['locales/[locale]/**/*.json'],
+          requiresReview: {
+            exclude: ['locales/[locale]/prod/public/**/*.json'],
+          },
+        },
+      };
+
+      const result = resolveFiles(
+        files,
+        'en',
+        defaultLocales,
+        '/project',
+        undefined,
+        true
+      );
+
+      expect(result.requiresReviewPaths).toEqual(
+        new Set([
+          '/project/locales/en/prod/a.json',
+          '/project/locales/en/dev/c.json',
+        ])
+      );
+    });
+
+    it('exclude wins even when top-level default is true', () => {
+      const files = {
+        json: {
+          include: ['locales/[locale]/**/*.json'],
+          requiresReview: {
+            include: ['locales/[locale]/**/*.json'],
+            exclude: ['locales/[locale]/dev/**/*.json'],
+          },
+        },
+      };
+
+      const result = resolveFiles(
+        files,
+        'en',
+        defaultLocales,
+        '/project',
+        undefined,
+        true
+      );
+
+      expect(result.requiresReviewPaths).toEqual(
+        new Set([
+          '/project/locales/en/prod/a.json',
+          '/project/locales/en/prod/public/b.json',
+        ])
+      );
+    });
+
+    it('rejects string values instead of coercing them', () => {
+      const files = {
+        json: {
+          include: ['locales/[locale]/**/*.json'],
+          requiresReview: 'false' as unknown as boolean,
+        },
+      };
+
+      expect(() =>
+        resolveFiles(files, 'en', defaultLocales, '/project')
+      ).toThrow(/files\.json\.requiresReview must be a boolean/);
+    });
+
+    it('rejects objects with unknown keys', () => {
+      const files = {
+        json: {
+          include: ['locales/[locale]/**/*.json'],
+          requiresReview: { includes: ['typo/**'] } as unknown as boolean,
+        },
+      };
+
+      expect(() =>
+        resolveFiles(files, 'en', defaultLocales, '/project')
+      ).toThrow(/files\.json\.requiresReview must be a boolean/);
     });
   });
 });

@@ -7,7 +7,6 @@ import { validateFileFormatTransforms } from './utils/validateFileFormatTransfor
 export type EnqueueOptions = {
   sourceLocale?: string;
   targetLocales: string[];
-  requireApproval?: boolean;
   modelProvider?: string;
   force?: boolean;
   timeout?: number;
@@ -28,6 +27,7 @@ export default async function _enqueueFiles(
 ): Promise<EnqueueFilesResult> {
   validateFileFormatTransforms(files);
 
+  let projectSettings: EnqueueFilesResult['projectSettings'];
   const result = await processBatches(
     files,
     async (batch) => {
@@ -41,7 +41,6 @@ export default async function _enqueueFiles(
         })),
         targetLocales: options.targetLocales,
         sourceLocale: options.sourceLocale,
-        requireApproval: options.requireApproval,
         modelProvider: options.modelProvider,
         force: options.force,
       };
@@ -51,6 +50,7 @@ export default async function _enqueueFiles(
         '/v2/project/translations/enqueue',
         { body, timeout: options.timeout }
       );
+      projectSettings ??= apiResult.projectSettings;
       return Array.from(Object.entries(apiResult.jobData));
     },
     { batchSize: 100 }
@@ -63,5 +63,6 @@ export default async function _enqueueFiles(
     jobData: jobs,
     locales: options.targetLocales,
     message: `Successfully enqueued ${result.count} file translation jobs in ${result.batchCount} batch(es)`,
+    ...(projectSettings && { projectSettings }),
   };
 }

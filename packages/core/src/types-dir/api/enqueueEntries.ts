@@ -10,7 +10,6 @@ export type EnqueueEntriesOptions = {
   dataFormat?: DataFormat;
   version?: string;
   description?: string;
-  requireApproval?: boolean;
   modelProvider?: string;
 };
 
@@ -20,6 +19,5 @@ export type EnqueueEntriesResult = {
   message: string;
   projectSettings: {
     cdnEnabled: boolean;
-    requireApproval: boolean;
   };
 };
