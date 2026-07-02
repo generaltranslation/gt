@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import {
+  initializeI18nConfig,
   defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
   defaultLocaleCookieName as defaultLocaleStoreKey,
   defaultRegionCookieName as defaultRegionStoreKey,

@@ -3,8 +3,9 @@ import {
   defaultCacheUrl,
   defaultRuntimeApiUrl,
 } from 'generaltranslation/internal';
-import { defaultLocaleCookieName } from '@generaltranslation/react-core/cookies';
 import {
+  defaultLocaleCookieName,
+  defaultResetLocaleCookieName,
   getDefaultRenderSettings,
   type RenderMethod,
 } from '@generaltranslation/react-core/pure';
@@ -12,7 +13,6 @@ import { defaultLocaleHeaderName } from '../../utils/headers';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
-  defaultResetLocaleCookieName,
 } from '../../utils/cookies';
 import { CompilerOptions } from './withGTConfigProps';
 

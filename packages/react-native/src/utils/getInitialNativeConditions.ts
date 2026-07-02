@@ -1,8 +1,5 @@
 import type { WritableConditionStoreParams } from 'gt-i18n/internal/types';
-import {
-  defaultEnableI18nCookieName as defaultEnableI18nStoreKey,
-  defaultRegionCookieName as defaultRegionStoreKey,
-} from '@generaltranslation/react-core/pure';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { nativeStoreGet } from './nativeStore';
 
 type InitialRegionParams = Pick<WritableConditionStoreParams, 'region'> & {
@@ -18,7 +15,7 @@ type InitialEnableI18nParams = Pick<
 
 export function getInitialRegion({
   region,
-  regionStoreKey = defaultRegionStoreKey,
+  regionStoreKey = getI18nConfig().getRegionCookieName(),
 }: InitialRegionParams): string | undefined {
   if (region !== undefined) return region;
   return nativeStoreGet(regionStoreKey) || undefined;
@@ -26,7 +23,7 @@ export function getInitialRegion({
 
 export function getInitialEnableI18n({
   enableI18n,
-  enableI18nStoreKey = defaultEnableI18nStoreKey,
+  enableI18nStoreKey = getI18nConfig().getEnableI18nCookieName(),
 }: InitialEnableI18nParams): boolean {
   if (enableI18n !== undefined) return enableI18n;
   const storedEnableI18n = nativeStoreGet(enableI18nStoreKey);

@@ -20,7 +20,7 @@ export {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
   defaultRegionCookieName,
-} from './cookie-names';
+} from '@generaltranslation/react-core/pure';
 
 type InitializeGTSPA = typeof import('./setup/initializeGTSPA').initializeGTSPA;
 

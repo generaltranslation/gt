@@ -1,14 +1,9 @@
 // @vitest-environment edge-runtime
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createNextMiddleware } from '../createNextMiddleware';
 import type { PathConfig } from '../utils';
 import type { CustomMapping } from '@generaltranslation/format/types';
-
-// Mock react-core/cookies — only provides a constant, avoids deep react-core build chain
-vi.mock('@generaltranslation/react-core/cookies', () => ({
-  defaultLocaleCookieName: 'generaltranslation.locale',
-}));
 
 // ---- Cookie Constants (must match the real defaults) ----
 const LOCALE_COOKIE = 'generaltranslation.locale';

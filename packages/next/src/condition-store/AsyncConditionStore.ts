@@ -1,13 +1,12 @@
 import { AsyncReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import { cookies, headers } from 'next/headers';
 import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
-import { getI18nConfig } from 'gt-i18n/internal';
-import { defaultLocaleHeaderName } from '../utils/headers';
+import { createConditionStoreSingleton, getI18nConfig } from 'gt-i18n/internal';
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
-} from '@generaltranslation/react-core/cookies';
-import { createConditionStoreSingleton } from 'gt-i18n/internal';
+} from '@generaltranslation/react-core/pure';
+import { defaultLocaleHeaderName } from '../utils/headers';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { resolveLocaleOrDefault } from '../request/localeValidation';
 

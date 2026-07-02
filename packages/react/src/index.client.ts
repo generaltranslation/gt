@@ -16,7 +16,7 @@ export {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
   defaultRegionCookieName,
-} from './cookie-names';
+} from '@generaltranslation/react-core/pure';
 
 // ===== Components ===== //
 export { LocaleSelector } from './components/LocaleSelector';

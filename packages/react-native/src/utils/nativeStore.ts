@@ -1,5 +1,5 @@
-import { defaultLocaleCookieName as defaultLocaleStoreKey } from '@generaltranslation/react-core/pure';
 import { Platform } from 'react-native';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { GtReactNative } from '../NativeGtReactNative';
 import { ssrUnsupportedWarning } from '../errors-dir/warnings';
 
@@ -9,13 +9,13 @@ import { ssrUnsupportedWarning } from '../errors-dir/warnings';
  * This reads persisted native storage directly, so it can temporarily be out of
  * sync with React state while a locale change is in progress.
  *
- * If GTProvider uses a custom localeStoreKey, pass that same value as the key.
+ * Defaults to the store key configured through initializeGT().
  *
  * @param key - The key to get the locale from
  * @returns The locale from the native store
  */
 export function getLocaleFromNativeStore(
-  key = defaultLocaleStoreKey
+  key = getI18nConfig().getLocaleCookieName()
 ): string | null {
   return nativeStoreGet(key);
 }

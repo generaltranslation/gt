@@ -46,9 +46,6 @@ export type GTConfig = {
   modelProvider?: string;
   _disableDevHotReload?: boolean;
 
-  // other
-  localeCookieName?: string;
-
   // parsing options (shared with compiler via gt.config.json)
   files?: {
     gt?: {
