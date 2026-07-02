@@ -382,6 +382,7 @@ export default function useCreateInternalUseGTFunction({
       $id: _$id,
       $maxChars: maxChars,
       $format: format,
+      $requiresReview: requiresReview,
       ...decodedVariables
     } = decodedOptions;
 
@@ -439,12 +440,16 @@ export default function useCreateInternalUseGTFunction({
       return renderMessage($_source, [defaultLocale]) as MReturnType<T>;
     }
 
+    // Dev-mode runtime translation is intentionally NOT review-gated (it's
+    // a live preview; review gates production serving) — the flag rides
+    // along so the platform records review intent on anything it persists
     registerIcuForTranslation({
       source: indexVars($_source),
       targetLocale: locale,
       metadata: {
         ...(context && { context }),
         ...(maxChars != null && { maxChars }),
+        ...(requiresReview === true && { requiresReview: true }),
         hash: $_hash,
       },
     });
