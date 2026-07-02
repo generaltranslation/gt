@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { I18nCache } from '../I18nCache';
+import type { TranslationsCacheMissEvent } from '../I18nCache';
 import { createTranslateManyFactory } from '../translations-manager/utils/createTranslateMany';
 import { hashMessage } from '../../utils/hashMessage';
 import { LookupOptions } from '../../translation-functions/types/options';
@@ -25,6 +26,14 @@ type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
 };
 
+class TestI18nCache extends I18nCache {
+  setTranslationsCacheMissListener(
+    listener: (event: TranslationsCacheMissEvent) => void
+  ) {
+    this.onTranslationsCacheMiss = listener;
+  }
+}
+
 function resetGTGlobals() {
   Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
 }
@@ -43,7 +52,7 @@ function createCache(overrides: Record<string, unknown> = {}) {
     customMapping: customMapping as CustomMapping | undefined,
   });
 
-  return new I18nCache({
+  return new TestI18nCache({
     loadTranslations: vi
       .fn()
       .mockResolvedValue({ [expectedHash]: translatedString }),
@@ -1267,9 +1276,7 @@ describe('I18nCache', () => {
 
     const cache = createCache({ runtimeTranslation: {} });
     const onTranslationsCacheMiss = vi.fn();
-    cache.subscribe('translations-cache-miss', onTranslationsCacheMiss);
-    // @ts-expect-error Removed cache events should not be accepted.
-    cache.subscribe('dictionary-cache-hit', vi.fn());
+    cache.setTranslationsCacheMissListener(onTranslationsCacheMiss);
 
     mockTranslateMany.mockResolvedValue({
       [unknownHash]: {
