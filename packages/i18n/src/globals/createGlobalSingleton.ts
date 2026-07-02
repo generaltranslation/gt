@@ -1,4 +1,8 @@
 import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  getGeneralTranslationLogLevel,
+  isDebugLogLevel,
+} from '../logs/logLevel';
 
 /**
  * Shared global registry stored on `globalThis.__generaltranslation`. Each
@@ -8,6 +12,10 @@ type SingletonRegistry = Record<string, Record<string, unknown> | undefined>;
 
 type GlobalWithRegistry = {
   __generaltranslation?: SingletonRegistry;
+};
+
+type DebugLoggingConfig = {
+  isDebugLoggingEnabled: () => boolean;
 };
 
 function getNamespace(namespace: string): Record<string, unknown> {
@@ -58,13 +66,15 @@ export function createGlobalSingleton<T>({
   function set(next: T): void {
     const ns = getNamespace(namespace);
     if (ns[key] !== undefined && ns[key] !== next) {
-      console.warn(
-        createDiagnosticMessage({
-          source,
-          severity: 'Warning',
-          whatHappened: `Global ${key} singleton instance was already initialized`,
-        })
-      );
+      if (shouldLogDebugWarnings(ns)) {
+        console.warn(
+          createDiagnosticMessage({
+            source,
+            severity: 'Warning',
+            whatHappened: `Global ${key} singleton instance was already initialized`,
+          })
+        );
+      }
       return;
     }
     ns[key] = next as unknown;
@@ -76,4 +86,21 @@ export function createGlobalSingleton<T>({
   }
 
   return { get, set, isInitialized };
+}
+
+function shouldLogDebugWarnings(namespace: Record<string, unknown>): boolean {
+  const config = namespace.i18nConfig;
+  if (hasDebugLoggingConfig(config)) {
+    return config.isDebugLoggingEnabled();
+  }
+  return isDebugLogLevel(getGeneralTranslationLogLevel());
+}
+
+function hasDebugLoggingConfig(value: unknown): value is DebugLoggingConfig {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as Partial<DebugLoggingConfig>).isDebugLoggingEnabled ===
+      'function'
+  );
 }
