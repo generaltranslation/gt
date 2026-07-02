@@ -125,7 +125,7 @@ export class DownloadTranslationsStep extends WorkflowStep<
           fileTracker.completed.delete(fileKey);
           fileTracker.skipped.set(fileKey, fileProperties);
           recordWarning(
-            'skipped_file',
+            'pending_review',
             fileProperties.fileName,
             `Translation for locale ${translation.locale} requires review and is not approved yet`
           );

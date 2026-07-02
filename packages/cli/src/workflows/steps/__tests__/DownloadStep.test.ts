@@ -184,7 +184,7 @@ describe('DownloadTranslationsStep review gating', () => {
     expect(logger.warn).not.toHaveBeenCalled();
     expect(getWarnings()).toEqual([
       {
-        category: 'skipped_file',
+        category: 'pending_review',
         fileName: 'messages.json',
         reason:
           'Translation for locale fr requires review and is not approved yet',
