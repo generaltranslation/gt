@@ -1,5 +1,6 @@
 import { TranslationsLoader } from './types';
 import { LoadTranslationsType } from '../../utils/getLoadTranslationsType';
+import logger from '../../../logs/logger';
 import { createRemoteTranslationLoader } from './createRemoteTranslationLoader';
 import { createFallbackTranslationLoader } from './createFallbackTranslationLoader';
 import { getI18nConfig } from '../../../i18n-config/singleton-operations';
@@ -36,14 +37,14 @@ export function routeCreateTranslationLoader({
   switch (type) {
     case LoadTranslationsType.REMOTE:
     case LoadTranslationsType.GT_REMOTE:
+      // Only reachable for REMOTE: GT_REMOTE requires a projectId
       if (!projectId) {
-        return createFallbackTranslationLoader(
-          'I18nCache: ' +
-            createDiagnosticMessage({
-              whatHappened:
-                'Loading translations from a remote store needs a projectId. No translations will be loaded.',
-              fix: 'Add projectId to the I18nCache config or disable remote translation loading',
-            })
+        return createWarnOnceTranslationLoader(
+          createDiagnosticMessage({
+            whatHappened:
+              'Loading translations from a remote store needs a projectId. No translations will be loaded.',
+            fix: 'Add projectId to the I18nCache config, or set cacheUrl to null to disable translation loading',
+          })
         );
       }
       return createRemoteTranslationLoader({
@@ -56,8 +57,30 @@ export function routeCreateTranslationLoader({
     case LoadTranslationsType.CUSTOM:
       return loadTranslations!;
     case LoadTranslationsType.DISABLED:
-      return createFallbackTranslationLoader(
-        'I18nCache: No translation loader found. No translations will be loaded.'
+      // cacheUrl: null is an explicit opt-out of translation loading
+      if (cacheUrl === null) {
+        return createFallbackTranslationLoader();
+      }
+      return createWarnOnceTranslationLoader(
+        createDiagnosticMessage({
+          whatHappened:
+            'No translation loader found. No translations will be loaded.',
+          fix: 'Add projectId to the I18nCache config (to load from the GT remote store), provide a loadTranslations function, or set cacheUrl to null to disable translation loading',
+        })
       );
   }
+}
+
+/**
+ * Loads no translations and logs a warning once on first invocation
+ */
+function createWarnOnceTranslationLoader(warning: string): TranslationsLoader {
+  let warned = false;
+  return async (_locale: string) => {
+    if (!warned) {
+      warned = true;
+      logger.warn('I18nCache: ' + warning);
+    }
+    return {};
+  };
 }
