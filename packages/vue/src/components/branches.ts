@@ -1,7 +1,6 @@
 import type { GTFunctionalComponent } from '../types';
+import { getFormatLocales, getPluralBranch } from 'gt-i18n/internal';
 import { getConditionStore } from '../condition-store';
-import { getFormatLocales } from '../internal/getFormatLocales';
-import { getPluralBranch } from '../internal/getPluralBranch';
 
 type BranchProps = {
   branch?: string | number | boolean;

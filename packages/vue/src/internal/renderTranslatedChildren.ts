@@ -6,8 +6,8 @@ import {
   type JsxChildren,
   type JsxElement,
 } from '@generaltranslation/format/types';
+import { getPluralBranch } from 'gt-i18n/internal';
 import type { TaggedChildren, TaggedElement, VariableProps } from '../types';
-import { getPluralBranch } from './getPluralBranch';
 import { getVariableProps, isVariableTaggedElement } from './getVariableProps';
 import { recreateVNode } from './recreateVNode';
 import { renderDefaultChildren } from './renderDefaultChildren';

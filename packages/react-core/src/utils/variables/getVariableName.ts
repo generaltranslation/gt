@@ -1,19 +1,15 @@
-const defaultVariableNames = {
-  variable: 'value',
-  number: 'n',
-  datetime: 'date',
-  currency: 'cost',
-  'relative-time': 'time',
-} as const;
+import {
+  baseVariablePrefix,
+  getVariableName as getVariableNameBase,
+} from 'gt-i18n/internal';
+import type { VariableTransformationSuffix } from 'generaltranslation/types';
 
-export const baseVariablePrefix = '_gt_';
+export { baseVariablePrefix };
 
 export function getVariableName(
   props: Record<string, unknown> = {},
-  variableType: keyof typeof defaultVariableNames
+  variableType: VariableTransformationSuffix
 ): string {
-  if (typeof props.name === 'string') return props.name;
-  const baseVariableName = defaultVariableNames[variableType] || 'value';
   const gtTag = props['data-_gt'] as { id?: number } | undefined;
-  return `${baseVariablePrefix}${baseVariableName}_${gtTag?.id}`;
+  return getVariableNameBase(props, variableType, gtTag?.id);
 }

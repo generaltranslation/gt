@@ -1,7 +1,7 @@
 import type { VNodeChild } from 'vue';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { getPluralBranch } from 'gt-i18n/internal';
 import type { TaggedChild, TaggedChildren, TaggedElement } from '../types';
-import { getPluralBranch } from './getPluralBranch';
 import { getVariableProps, isVariableTaggedElement } from './getVariableProps';
 import { recreateVNode } from './recreateVNode';
 import { renderVariable } from './renderVariable';

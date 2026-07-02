@@ -1,5 +1,4 @@
-import { getI18nConfig } from 'gt-i18n/internal';
-import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
+import { computeCurrency as computeCurrencyBase } from 'gt-i18n/internal';
 
 // Pure compute logic shared by the hook-based and RSC implementations. This
 // module must stay free of hook/context imports so it can be reached from the
@@ -24,22 +23,17 @@ function computeCurrency({
   _enableI18n,
   _locale,
   children,
-  currency = 'USD',
-  options = {},
-  locales: localesProp = [],
+  currency,
+  options,
+  locales,
 }: ResolvedCurrencyProps): string | null {
-  const locales = getFormatLocales({
+  return computeCurrencyBase({
+    value: children,
+    currency,
+    options,
+    locales,
     locale: _locale,
     enableI18n: _enableI18n,
-    localesProp,
-  });
-  const gt = getI18nConfig().getGTClass();
-  if (children == null) return null;
-  const parsedNumber =
-    typeof children === 'string' ? parseFloat(children) : children;
-  return gt.formatCurrency(parsedNumber, currency, {
-    locales,
-    ...options,
   });
 }
 

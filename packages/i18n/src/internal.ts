@@ -73,3 +73,31 @@ export { createGlobalSingleton } from './globals/createGlobalSingleton';
 export type { GlobalSingleton } from './globals/createGlobalSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';
 export { hashMessage } from './utils/hashMessage';
+
+// ===== Binding utilities (shared by framework bindings) ===== //
+export { getPluralBranch } from './binding/getPluralBranch';
+export { getFormatLocales, getShouldTranslate } from './binding/formatLocales';
+export { baseVariablePrefix, getVariableName } from './binding/variableNames';
+export {
+  computeCurrency,
+  computeDateTime,
+  computeNum,
+  computeRelativeTime,
+} from './binding/computeVariables';
+export type { RelativeTimeFormatOptions } from './binding/computeVariables';
+export { createRuntimeTranslationQueue } from './binding/runtimeTranslationQueue';
+export type { RuntimeTranslationQueue } from './binding/runtimeTranslationQueue';
+export { createMFunction } from './binding/createMFunction';
+export {
+  resolveDictionaryEntryTranslation,
+  resolveDictionaryObjectTranslation,
+} from './binding/dictionaryTranslation';
+export {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+  defaultResetLocaleCookieName,
+  getCookieValue,
+  readBrowserLocale,
+  setCookieValue,
+} from './binding/browserCookies';

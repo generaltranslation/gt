@@ -1,9 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import {
-  extractVariables,
-  renderDictionaryEntry,
-  renderDictionaryObject,
-  resolveDictionaryLookupOptions,
+  resolveDictionaryEntryTranslation,
+  resolveDictionaryObjectTranslation,
 } from 'gt-i18n/internal';
 import { useLocale } from './condition-store';
 import { useGT } from './useGT';
@@ -28,40 +26,16 @@ export function useTranslations(rootId?: string): UseTranslationsFunction {
 
   const translateEntry = useCallback(
     (suffix: string, options: TranslationVariables = {}) => {
-      const id = getId(rootId, suffix);
-
-      const sourceEntry = resolveDictionaryEntry({
-        locale: defaultLocale,
-        id,
-      });
-      if (sourceEntry === undefined) {
-        throw new Error(`Dictionary entry ${id} cannot be found`);
-      }
-      const sourceOptions = resolveDictionaryLookupOptions(sourceEntry.options);
-      if (!shouldTranslate) {
-        return gt(sourceEntry.entry, {
-          ...sourceOptions,
-          ...extractVariables(options),
-          $locale: defaultLocale,
-        });
-      }
-
-      const targetEntry = resolveDictionaryEntry({ locale, id });
-      if (targetEntry?.entry != null) {
-        return renderDictionaryEntry({
-          sourceLocale: defaultLocale,
-          targetLocale: locale,
-          sourceEntry,
-          target: targetEntry.entry,
-          dictionaryOptions: sourceOptions,
-          options,
-        });
-      }
-
-      return gt(sourceEntry.entry, {
-        ...sourceOptions,
-        ...extractVariables(options),
-        $locale: locale,
+      // Miss handling lives inside the tracked resolver, which enqueues dev
+      // hot reload translations for missing entries itself.
+      return resolveDictionaryEntryTranslation({
+        id: getId(rootId, suffix),
+        options,
+        locale,
+        defaultLocale,
+        shouldTranslate,
+        resolveEntry: (locale, id) => resolveDictionaryEntry({ locale, id }),
+        gt,
       });
     },
     [defaultLocale, gt, rootId, locale, resolveDictionaryEntry, shouldTranslate]
@@ -82,29 +56,13 @@ function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
 
   return useCallback(
     (suffix: string) => {
-      const entryId = getId(rootId, suffix);
-      const sourceObject = resolveDictionaryObject({
-        locale: defaultLocale,
-        id: entryId,
-      });
-      if (sourceObject === undefined) {
-        throw new Error(`Dictionary entry ${entryId} cannot be found`);
-      }
-
-      let targetObject = undefined;
-      if (shouldTranslate) {
-        const targetLookup = { locale, id: entryId };
-        targetObject = resolveDictionaryObject(targetLookup);
-      }
-
-      return renderDictionaryObject({
-        sourceObject,
-        targetObject,
-        translate: (sourceEntry, dictionaryOptions) =>
-          gt(sourceEntry.entry, {
-            ...dictionaryOptions,
-            $locale: shouldTranslate ? locale : defaultLocale,
-          }),
+      return resolveDictionaryObjectTranslation({
+        id: getId(rootId, suffix),
+        locale,
+        defaultLocale,
+        shouldTranslate,
+        resolveObject: (locale, id) => resolveDictionaryObject({ locale, id }),
+        gt,
       });
     },
     [

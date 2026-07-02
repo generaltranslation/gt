@@ -1,19 +1,18 @@
 import { ref } from 'vue';
 import {
   createConditionStoreSingleton,
+  defaultLocaleCookieName,
+  getCookieValue,
   getI18nCache,
   getI18nConfig,
+  setCookieValue,
 } from 'gt-i18n/internal';
 import type {
   LocaleCandidates,
   WritableConditionStoreInterface,
 } from 'gt-i18n/internal/types';
 
-/**
- * Cookie used to persist the user's locale across visits.
- * Shared with the other GT libraries.
- */
-export const defaultLocaleCookieName = 'generaltranslation.locale';
+export { defaultLocaleCookieName };
 
 export type ConditionStoreOptions = {
   locale?: LocaleCandidates;
@@ -53,7 +52,7 @@ export function createConditionStore(
 
   // Priority: cookie (persisted user selection) > explicit option > navigator
   const candidates = [
-    ...toArray(readCookie(localeCookieName)),
+    ...toArray(getCookieValue({ cookieName: localeCookieName })),
     ...toArray(options.locale),
     ...(typeof navigator !== 'undefined' ? navigator.languages || [] : []),
   ];
@@ -61,7 +60,7 @@ export function createConditionStore(
   const region = ref(options.region);
   const enableI18n = ref(options.enableI18n ?? true);
 
-  writeCookie(localeCookieName, locale.value);
+  setCookieValue({ cookieName: localeCookieName, value: locale.value });
   const syncHtmlAttrs = (): void => {
     if (!syncHtml || typeof document === 'undefined') return;
     document.documentElement.setAttribute('lang', locale.value);
@@ -76,7 +75,7 @@ export function createConditionStore(
   const setLocale = (candidate: LocaleCandidates): void => {
     const resolved = config.resolveSupportedLocale(candidate);
     if (resolved === locale.value) return;
-    writeCookie(localeCookieName, resolved);
+    setCookieValue({ cookieName: localeCookieName, value: resolved });
     pendingLocale = resolved;
     // Load translations for the new locale, then flip the ref so the app
     // re-renders with everything synchronously available.
@@ -109,17 +108,4 @@ export function createConditionStore(
 function toArray(value: LocaleCandidates | undefined): string[] {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
-}
-
-function readCookie(cookieName: string): string | undefined {
-  if (typeof document === 'undefined') return undefined;
-  return document.cookie
-    .split('; ')
-    .find((row) => row.startsWith(`${cookieName}=`))
-    ?.split('=')[1];
-}
-
-function writeCookie(cookieName: string, value: string): void {
-  if (typeof document === 'undefined') return;
-  document.cookie = `${cookieName}=${value};path=/`;
 }
