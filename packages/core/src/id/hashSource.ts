@@ -37,6 +37,7 @@ export function hashSource(
     context,
     id,
     maxChars,
+    requiresReview,
     dataFormat,
   }: {
     source: JsxChildren | string;
@@ -56,6 +57,9 @@ export function hashSource(
     ...(id && { id }),
     ...(context && { context }),
     ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
+    // Only mixed in when true: false/absent must hash identically to
+    // pre-requiresReview versions so existing projects keep their hashes
+    ...(requiresReview === true && { requiresReview: true }),
     ...(dataFormat && { dataFormat }),
   };
   const stringifiedData = stringify(sanitizedData);

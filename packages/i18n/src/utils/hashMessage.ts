@@ -16,6 +16,7 @@ export function hashMessage<T extends Translation>(
     $context?: string;
     $id?: string;
     $maxChars?: number;
+    $requiresReview?: boolean;
   };
   if (metadataOptions.$_hash != null) {
     return metadataOptions.$_hash;
@@ -29,6 +30,7 @@ export function hashMessage<T extends Translation>(
     ...(metadataOptions.$maxChars != null && {
       maxChars: Math.abs(metadataOptions.$maxChars),
     }),
+    ...(metadataOptions.$requiresReview === true && { requiresReview: true }),
     dataFormat: options.$format,
   });
 }

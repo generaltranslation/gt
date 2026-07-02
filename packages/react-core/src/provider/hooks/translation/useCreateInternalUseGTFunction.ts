@@ -138,6 +138,7 @@ export default function useCreateInternalUseGTFunction({
       $maxChars?: number;
       $id?: string;
       $_hash?: string;
+      $requiresReview?: boolean;
     } = {}
   ) {
     if (!message || typeof message !== 'string') return null;
@@ -148,6 +149,7 @@ export default function useCreateInternalUseGTFunction({
       $maxChars: maxChars,
       $_hash: _hash,
       $format: rawFormat,
+      $requiresReview: requiresReview,
       ...variables
     } = options;
     const format =
@@ -176,6 +178,7 @@ export default function useCreateInternalUseGTFunction({
         source: indexVars(message),
         ...(context && { context }),
         ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
+        ...(requiresReview === true && { requiresReview: true }),
         ...(id && { id }),
         dataFormat: format || 'ICU',
       });

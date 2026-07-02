@@ -83,12 +83,14 @@ export const GT_ATTRIBUTES_WITH_SUGAR = [
   '$context',
   '$maxChars',
   '$format',
+  '$requiresReview',
 ] as const;
 
 export const GT_ATTRIBUTES = [
   'id',
   'context',
   'maxChars',
+  'requiresReview',
   ...GT_ATTRIBUTES_WITH_SUGAR,
 ] as const;
 

@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import path from 'node:path';
 import { WorkflowStep } from './WorkflowStep.js';
 import { logger } from '../../console/logger.js';
 import {
@@ -10,6 +11,7 @@ import { GT } from 'generaltranslation';
 import { Settings } from '../../types/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { FileStatusTracker } from './PollJobsStep.js';
+import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 
 export type DownloadTranslationsInput = {
   fileTracker: FileStatusTracker;
@@ -94,6 +96,43 @@ export class DownloadTranslationsStep extends WorkflowStep<
             'failed_download',
             f.fileName,
             `Failed to download for locale ${f.locale}`
+          );
+        }
+      }
+
+      // Review gating: skip completed translations for normal files whose
+      // effective requiresReview policy is true but that are not approved
+      // yet. Skips are intentional, not failures — a review-gated file is
+      // simply absent locally and falls back to source behavior.
+      // GTJSON is exempt: it is always requested, and the platform filters
+      // unapproved components out of the served content itself.
+      const requiresReviewPaths =
+        this.settings.files?.requiresReviewPaths ?? new Set<string>();
+      const reviewGatedKeys = new Set<string>();
+      if (requiresReviewPaths.size > 0) {
+        for (const translation of readyTranslations) {
+          if (translation.approvedAt !== null) continue;
+          const fileKey = `${translation.branchId}:${translation.fileId}:${translation.versionId}:${translation.locale}`;
+          const fileProperties = fileTracker.completed.get(fileKey);
+          if (!fileProperties) continue;
+          if (fileProperties.fileName === TEMPLATE_FILE_NAME) continue;
+          const absolutePath = path.resolve(
+            process.cwd(),
+            fileProperties.fileName
+          );
+          if (!requiresReviewPaths.has(absolutePath)) continue;
+          reviewGatedKeys.add(fileKey);
+          fileTracker.completed.delete(fileKey);
+          fileTracker.skipped.set(fileKey, fileProperties);
+          recordWarning(
+            'skipped_file',
+            fileProperties.fileName,
+            `Translation for locale ${translation.locale} requires review and is not approved yet`
+          );
+        }
+        if (reviewGatedKeys.size > 0) {
+          logger.info(
+            `Skipped ${reviewGatedKeys.size} file(s) awaiting review approval. They will download once approved.`
           );
         }
       }

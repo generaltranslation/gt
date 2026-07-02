@@ -5,6 +5,7 @@ type UpdateMetadata = {
   hash?: string;
   context?: string;
   maxChars?: number;
+  requiresReview?: boolean;
   dataFormat?: DataFormat;
   actionType?: 'standard' | 'fast' | string;
   staticId?: string;
@@ -40,7 +41,6 @@ export type Updates = ({
 
 /**
  * Options for enqueueing files
- * @param requireApproval - Whether to require approval for the files.
  * @param description - Optional description for the project.
  * @param sourceLocale - The project's source locale.
  * @param targetLocales - The locales to translate the files to.
@@ -49,7 +49,6 @@ export type Updates = ({
  * @param modelProvider - Optional model provider to use.
  */
 export type EnqueueFilesOptions = {
-  requireApproval?: boolean;
   description?: string; // @deprecated Will be removed in v8.0.0
   sourceLocale?: string;
   targetLocales: string[];
@@ -78,4 +77,9 @@ export type EnqueueFilesResult = {
   };
   locales: string[];
   message: string;
+  // Present when the API returns project settings with the enqueue response;
+  // used by the CLI to decide whether review-setup guidance is needed
+  projectSettings?: {
+    autoApprove?: boolean;
+  };
 };
