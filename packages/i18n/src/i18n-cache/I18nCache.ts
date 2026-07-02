@@ -18,9 +18,6 @@ import type {
 } from './translations-manager/DictionaryCache';
 import { resolveDictionaryLookupOptions } from './translations-manager/utils/dictionary-helpers';
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
-import { EventEmitter } from './event-subscription/EventEmitter';
-import { TRANSLATIONS_CACHE_MISS_EVENT_NAME } from './event-subscription/types';
-import type { I18nEvents } from './event-subscription/types';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 
@@ -70,14 +67,31 @@ type PrefetchEntry<TranslationType extends Translation> = {
 type PrefetchEntriesType<TranslationType extends Translation> = (
   prefetchEntries: PrefetchEntry<TranslationType>[]
 ) => Promise<void>;
+
+/**
+ * Event fired when a runtime translation resolves a cache miss
+ */
+export type TranslationsCacheMissEvent<
+  TranslationValue extends Translation = Translation,
+> = {
+  locale: Locale;
+  hash: Hash;
+  translation: TranslationValue;
+};
+
 /**
  * Class for managing translation functionality
  * @template TranslationValue - The type of the translation that will be cached
  */
-class I18nCache<
-  TranslationValue extends Translation = Translation,
-> extends EventEmitter<I18nEvents<TranslationValue>> {
+class I18nCache<TranslationValue extends Translation = Translation> {
   protected config: I18nCacheConfig;
+
+  /**
+   * Dev hot-reload listener for runtime-translation cache misses
+   */
+  protected onTranslationsCacheMiss?: (
+    event: TranslationsCacheMissEvent<TranslationValue>
+  ) => void;
 
   /**
    * Locale-scoped caches for translations and dictionaries
@@ -91,8 +105,6 @@ class I18nCache<
    * @param params.config - The configuration for the I18nCache
    */
   constructor(params: I18nCacheConstructorParams) {
-    super();
-
     // Validation
     const validationResults = validateConfig(params);
     publishValidationResults(validationResults, 'I18nCache: ');
@@ -133,37 +145,11 @@ class I18nCache<
       ttl: this.config.cacheExpiryTime,
       batchConfig: this.config.batchConfig,
       onTranslationsCacheMiss: (locale, hash, translation) =>
-        this.emit(TRANSLATIONS_CACHE_MISS_EVENT_NAME, {
+        this.onTranslationsCacheMiss?.({
           locale,
           hash,
           translation,
         }),
-    });
-  }
-
-  // ========== Subscribers and Emitters ========== //
-
-  /**
-   * Subscribes to a change in a translation entry (eg a runtime translation)
-   * @param listener - The subscriber function
-   * @param locale - The locale of the translation entry
-   * @param hash - The hash of the translation entry
-   * @returns An unsubscribe function
-   *
-   * Pair this with {@link lookupTranslation} to get the translation entry
-   */
-  subscribeToTranslationsCacheMiss(
-    listener: (
-      event: I18nEvents<TranslationValue>[typeof TRANSLATIONS_CACHE_MISS_EVENT_NAME]
-    ) => void,
-    locale: Locale,
-    hash: Hash
-  ) {
-    return this.subscribe(TRANSLATIONS_CACHE_MISS_EVENT_NAME, (event) => {
-      if (event.locale !== locale || event.hash !== hash) {
-        return;
-      }
-      listener(event);
     });
   }
 
@@ -191,20 +177,6 @@ class I18nCache<
   // ========== Translation Loading ========== //
 
   // ========== Translation Resolution ========== //
-
-  /**
-   * Used for checking the status of a translation load
-   */
-  hasTranslations(locale: string): boolean {
-    try {
-      const translationLocale = this._resolveCacheLocale(locale);
-      if (!translationLocale) return false;
-      return this.localesCache.getTranslations(translationLocale) !== undefined;
-    } catch (error) {
-      this.handleError(error);
-      return false;
-    }
-  }
 
   /**
    * Loads in translations for a given locale
@@ -507,28 +479,33 @@ class I18nCache<
           options: LookupOptions;
         }[] = []
       ) => {
-        if (!getI18nConfig().isDevHotReloadEnabled()) return;
+        // Statically gated so bundlers can drop the prefetch machinery from
+        // production builds.
+        if (
+          process.env.NODE_ENV !== 'production' &&
+          getI18nConfig().isDevHotReloadEnabled()
+        ) {
+          // Invariant: all prefetchEntries must be the same locale
+          // TODO: investigate why we have made this an invariant, we may be able to drop this requirement
+          const resolvedPrefetchEntries = resolvePrefetchEntriesByLocale(
+            prefetchEntries,
+            asyncBoundaryLocale,
+            (entryLocale) =>
+              this._resolveCacheLocale(entryLocale) ??
+              this._resolveLocale(entryLocale)
+          );
+          if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
+            logger.warn(
+              `I18nCache: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${asyncBoundaryLocale}`
+            );
+          }
 
-        // Invariant: all prefetchEntries must be the same locale
-        // TODO: investigate why we have made this an invariant, we may be able to drop this requirement
-        const resolvedPrefetchEntries = resolvePrefetchEntriesByLocale(
-          prefetchEntries,
-          asyncBoundaryLocale,
-          (entryLocale) =>
-            this._resolveCacheLocale(entryLocale) ??
-            this._resolveLocale(entryLocale)
-        );
-        if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
-          logger.warn(
-            `I18nCache: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${asyncBoundaryLocale}`
+          await Promise.allSettled(
+            resolvedPrefetchEntries
+              .filter((entry) => asyncBoundaryTxCache.get(entry) == null)
+              .map((entry) => asyncBoundaryTxCache.miss(entry))
           );
         }
-
-        await Promise.allSettled(
-          resolvedPrefetchEntries
-            .filter((entry) => asyncBoundaryTxCache.get(entry) == null)
-            .map((entry) => asyncBoundaryTxCache.miss(entry))
-        );
       };
 
       // Create translation resolver
