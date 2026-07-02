@@ -45,7 +45,7 @@ import { TranslateOptions } from './types-dir/api/entry';
 //                       Runtime Class                          //
 // ============================================================ //
 /**
- * Type representing the constructor parameters for the GT class.
+ * Type representing the constructor parameters for the GT and GTRuntime classes.
  * @typedef {Object} GTConstructorParams
  * @property {string} [apiKey] - The API key for accessing the translation service
  * @property {string} [devApiKey] - The development API key for accessing the translation service
@@ -122,14 +122,14 @@ export class GTRuntime {
   }
 
   /**
-   * Constructs an instance of the GT class.
+   * Constructs an instance of the GTRuntime class.
    *
-   * @param {GTConstructorParams} [params] - The parameters for initializing the GT instance
+   * @param {GTConstructorParams} [params] - The parameters for initializing the GTRuntime instance
    * @throws {Error} If an invalid locale is provided
    * @throws {Error} If any of the provided locales are invalid
    *
    * @example
-   * const gt = new GT({
+   * const gt = new GTRuntime({
    *   apiKey: 'your-api-key',
    *   sourceLocale: 'en-US',
    *   targetLocale: 'es-ES',
@@ -400,7 +400,7 @@ export class GTRuntime {
    * @returns {string} The formatted string with terminator applied if cutoff occurs.
    *
    * @example
-   * const gt = new GT({ targetLocale: 'en-US' });
+   * const gt = new GTRuntime({ targetLocale: 'en-US' });
    * gt.formatCutoff('Hello, world!', { maxChars: 8 });
    * // Returns: 'Hello, w...'
    *
@@ -715,12 +715,12 @@ export class GTRuntime {
    * @throws {Error} If no target locale is available to determine region properties.
    *
    * @example
-   * const gt = new GT({ targetLocale: 'en-US' });
+   * const gt = new GTRuntime({ targetLocale: 'en-US' });
    * gt.getRegionProperties('US');
    * // => { code: 'US', name: 'United States', emoji: '🇺🇸' }
    *
    * @example
-   * const gt = new GT({ targetLocale: 'fr-FR' });
+   * const gt = new GTRuntime({ targetLocale: 'fr-FR' });
    * gt.getRegionProperties('US');
    * // => { code: 'US', name: 'États-Unis', emoji: '🇺🇸' }
    *
