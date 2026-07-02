@@ -16,6 +16,29 @@ describe('I18nConfig', () => {
     expect(config.getLocales()).toEqual(['fr']);
   });
 
+  it('falls back to the default cookie names', () => {
+    const config = new I18nConfig({ defaultLocale: 'en' });
+
+    expect(config.getLocaleCookieName()).toBe('generaltranslation.locale');
+    expect(config.getRegionCookieName()).toBe('generaltranslation.region');
+    expect(config.getEnableI18nCookieName()).toBe(
+      'generaltranslation.enable-i18n'
+    );
+  });
+
+  it('returns configured custom cookie names', () => {
+    const config = new I18nConfig({
+      defaultLocale: 'en',
+      localeCookieName: 'custom-locale',
+      regionCookieName: 'custom-region',
+      enableI18nCookieName: 'custom-enable-i18n',
+    });
+
+    expect(config.getLocaleCookieName()).toBe('custom-locale');
+    expect(config.getRegionCookieName()).toBe('custom-region');
+    expect(config.getEnableI18nCookieName()).toBe('custom-enable-i18n');
+  });
+
   it('skips locale validation when GT services are disabled', () => {
     const config = new I18nConfig({
       defaultLocale: 'invalid-locale',

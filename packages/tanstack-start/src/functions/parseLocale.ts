@@ -1,4 +1,3 @@
-import { defaultLocaleCookieName } from 'gt-react';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import {
   getRequestHeader,
@@ -29,9 +28,11 @@ function determineLocaleServer({
   locales,
   customMapping,
 }: I18nConfigParams) {
+  const i18nConfig = getI18nConfig();
+  const localeCookieName = i18nConfig.getLocaleCookieName();
   const candidates: string[] = [];
 
-  const cookie = getCookie(defaultLocaleCookieName);
+  const cookie = getCookie(localeCookieName);
   if (cookie) candidates.push(cookie);
 
   const headers =
@@ -46,13 +47,13 @@ function determineLocaleServer({
     );
   }
 
-  const locale = getI18nConfig().resolveSupportedLocale(candidates, {
+  const locale = i18nConfig.resolveSupportedLocale(candidates, {
     defaultLocale,
     locales,
     customMapping,
   });
 
-  setCookie(defaultLocaleCookieName, locale, {
+  setCookie(localeCookieName, locale, {
     path: '/',
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 365,
@@ -66,12 +67,14 @@ function determineLocaleClient({
   locales,
   customMapping,
 }: I18nConfigParams) {
+  const i18nConfig = getI18nConfig();
+  const localeCookieName = i18nConfig.getLocaleCookieName();
   const candidates: string[] = [];
 
   const cookie = document.cookie
     .split('; ')
-    .find((row) => row.startsWith(`${defaultLocaleCookieName}=`))
-    ?.slice(defaultLocaleCookieName.length + 1);
+    .find((row) => row.startsWith(`${localeCookieName}=`))
+    ?.slice(localeCookieName.length + 1);
   if (cookie) candidates.push(cookie);
 
   if (candidates.length === 0) {
@@ -80,7 +83,7 @@ function determineLocaleClient({
     );
   }
 
-  return getI18nConfig().resolveSupportedLocale(candidates, {
+  return i18nConfig.resolveSupportedLocale(candidates, {
     defaultLocale,
     locales,
     customMapping,

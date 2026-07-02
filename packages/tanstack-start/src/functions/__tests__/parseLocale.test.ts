@@ -24,6 +24,19 @@ vi.mock('@tanstack/react-start/server', () => ({
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { determineLocale } from '../parseLocale';
 
+type GlobalWithRegistry = {
+  __generaltranslation?: {
+    i18n?: Record<string, unknown>;
+  };
+};
+
+function resetI18nConfigSingleton() {
+  const globalObj = globalThis as GlobalWithRegistry;
+  if (globalObj.__generaltranslation?.i18n) {
+    Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nConfig');
+  }
+}
+
 const localeConfig = {
   defaultLocale: 'en',
   locales: ['en', 'fr', 'es', 'brand-french'],
@@ -58,6 +71,7 @@ function restoreGlobalProperty(
 
 describe('parseLocale', () => {
   beforeEach(() => {
+    resetI18nConfigSingleton();
     initializeI18nConfig(localeConfig);
     mockCookie.mockReset();
     mockRequestHeader.mockReset();
@@ -118,6 +132,58 @@ describe('parseLocale', () => {
       configurable: true,
       value: {
         cookie: 'generaltranslation.locale=brand-french',
+      },
+    });
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        language: 'es',
+      },
+    });
+
+    expect(
+      (
+        determineLocale as unknown as {
+          client: (config: typeof localeConfig) => string;
+        }
+      ).client(localeConfig)
+    ).toBe('fr');
+  });
+
+  it('reads and writes a custom locale cookie name on the server', () => {
+    resetI18nConfigSingleton();
+    initializeI18nConfig({
+      ...localeConfig,
+      localeCookieName: 'custom-locale',
+    });
+    mockCookie.mockReturnValue('fr');
+    mockRequestHeader.mockReturnValue('es,en;q=0.8');
+
+    expect(
+      (
+        determineLocale as unknown as {
+          server: (config: typeof localeConfig) => string;
+        }
+      ).server(localeConfig)
+    ).toBe('fr');
+    expect(mockCookie).toHaveBeenCalledWith('custom-locale');
+    expect(mockSetCookie).toHaveBeenCalledWith('custom-locale', 'fr', {
+      path: '/',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365,
+    });
+  });
+
+  it('reads a custom locale cookie name on the client', () => {
+    resetI18nConfigSingleton();
+    initializeI18nConfig({
+      ...localeConfig,
+      localeCookieName: 'custom-locale',
+    });
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: {
+        cookie: 'generaltranslation.locale=es; custom-locale=fr',
       },
     });
     Object.defineProperty(globalThis, 'navigator', {
