@@ -10,6 +10,7 @@ import {
   getLocale,
   getLocaleProperties,
   getLocales,
+  resolveCanonicalLocale,
 } from '../../helpers/locale';
 import { hashMessage } from '../../utils/hashMessage';
 import { t } from '../t';
@@ -237,5 +238,6 @@ describe('t', () => {
       code: 'fr',
       name: 'Brand French',
     });
+    expect(resolveCanonicalLocale('brand-french')).toBe('fr');
   });
 });

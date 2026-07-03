@@ -65,13 +65,14 @@ export function getLocaleProperties(locale = getLocale()) {
 }
 
 /**
- * Get the GT class
- * @returns The GT class
+ * Resolve a locale to its canonical locale code using the configured custom mapping.
+ * @param {string} locale - The locale to resolve.
+ * @returns The canonical locale code.
  *
  * @example
- * const gtClass = getGTClass();
- * console.log(gtClass); // 'en-US'
+ * const canonicalLocale = resolveCanonicalLocale('brand-french');
+ * console.log(canonicalLocale); // 'fr-FR'
  */
-export function getGTClass(locale?: string) {
-  return getI18nConfig().getGTClass(locale);
+export function resolveCanonicalLocale(locale: string) {
+  return getI18nConfig().resolveCanonicalLocale(locale);
 }

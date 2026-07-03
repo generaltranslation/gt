@@ -111,8 +111,8 @@ export type {
 } from './i18n-store/storeTypes';
 export {
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
+  resolveCanonicalLocale,
   getVersionId,
 } from 'gt-i18n';
