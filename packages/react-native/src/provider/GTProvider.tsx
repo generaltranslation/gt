@@ -29,29 +29,20 @@ export type GTProviderProps = Omit<
     loadingFallback?: ReactNode;
   };
 
-type LoadableGTProviderProps = Omit<GTProviderProps, 'loadingFallback'>;
 type LoadedGTProviderProps = Omit<NativeGTProviderProps, 'translations'>;
 type TranslationSnapshot = Record<Locale, LocaleTranslations>;
 
 export function GTProvider(props: GTProviderProps) {
-  const { loadingFallback, ...providerProps } = props;
-
-  return (
-    <LoadableGTProvider
-      {...providerProps}
-      loadingFallback={loadingFallback ?? <DefaultLoadingFallback />}
-    />
-  );
+  return <LoadableGTProvider {...props} />;
 }
 
 /**
  * This wrapper takes the place of a loader that would be present in
  * SSR style applications.
  */
-function LoadableGTProvider(
-  props: LoadableGTProviderProps & { loadingFallback: ReactNode }
-) {
+function LoadableGTProvider(props: GTProviderProps) {
   const { loadingFallback, ...providerProps } = props;
+  const fallback = loadingFallback ?? <DefaultLoadingFallback />;
   const { locale, region, enableI18n } = providerProps;
   // Keep native conditions in React state so condition-store writes trigger rerenders.
   const [nativeConditions, setNativeConditions] =
@@ -92,7 +83,7 @@ function LoadableGTProvider(
           translations={fallbackTranslations}
           _reload={reload}
         >
-          {loadingFallback}
+          {fallback}
         </NativeGTProvider>
       }
     >
