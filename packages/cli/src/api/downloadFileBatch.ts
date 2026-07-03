@@ -26,6 +26,54 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
 import { getRelative } from '../fs/findFilepath.js';
 
+/**
+ * The platform withholds unapproved review-gated GTJSON components from
+ * served output. Reports the delta between the source component count and
+ * the served content so partially-served files don't read as fully
+ * translated — for both fresh downloads and already-downloaded skips.
+ */
+function reportWithheldGtJsonComponents(
+  fileFormat: string | undefined,
+  servedContent: string,
+  componentCount: number | undefined,
+  locale: string
+): void {
+  if (fileFormat !== 'GTJSON' || componentCount == null) return;
+  const received = countGtJsonEntries(servedContent);
+  if (received == null) return;
+  const withheld = componentCount - received;
+  if (withheld > 0) {
+    recordWarning(
+      'pending_review',
+      '<React Elements>',
+      `${withheld} component translation(s) for locale ${locale} require review and are not approved yet`
+    );
+  }
+}
+
+/**
+ * Counts entries in downloaded GTJSON output, tolerating both the flat
+ * public shape and a wrapped { type, data } shape.
+ */
+function countGtJsonEntries(content: string): number | undefined {
+  try {
+    const parsed = JSON.parse(content);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return undefined;
+    }
+    const entries =
+      parsed.type === 'GTJSON' &&
+      parsed.data &&
+      typeof parsed.data === 'object' &&
+      !Array.isArray(parsed.data)
+        ? parsed.data
+        : parsed;
+    return Object.keys(entries).length;
+  } catch {
+    return undefined;
+  }
+}
+
 function sortJsonString(data: string): string {
   const sortedData = stringify(JSON.parse(data));
   return JSON.stringify(JSON.parse(sortedData), null, 2);
@@ -298,6 +346,14 @@ export async function downloadFileBatch(
               `Failed to re-merge existing translation for ${outputPath} (${locale}): ${error}`
             );
           }
+          // Even when the local copy is current, the served content may
+          // still be missing review-withheld components — keep reporting
+          reportWithheldGtJsonComponents(
+            file.fileFormat,
+            file.data,
+            fileProperties.componentCount,
+            locale
+          );
           result.skipped.push(requestedFile);
           continue;
         }
@@ -322,6 +378,13 @@ export async function downloadFileBatch(
           locale,
           inputPath,
         });
+
+        reportWithheldGtJsonComponents(
+          file.fileFormat,
+          data,
+          fileProperties.componentCount,
+          locale
+        );
 
         result.successful.push(requestedFile);
         if (fileId && versionId && locale) {

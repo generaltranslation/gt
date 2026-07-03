@@ -100,6 +100,8 @@ function normalizeParameters(
     $context: parameters.$context ?? parameters.context,
     $id: parameters.$id ?? parameters.id,
     $_hash: parameters.$_hash ?? parameters._hash,
+    $maxChars: parameters.$maxChars ?? parameters.maxChars,
+    $requiresReview: parameters.$requiresReview ?? parameters.requiresReview,
   };
 }
 

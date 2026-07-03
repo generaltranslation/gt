@@ -190,6 +190,151 @@
 - Updated dependencies [[`cc4edc1`](https://github.com/generaltranslation/gt/commit/cc4edc1e40d9977125bf6d053fb7f8cdbdd40b05)]:
   - @generaltranslation/supported-locales@2.1.0
 
+## 2.14.58
+
+### Patch Changes
+
+- [#1786](https://github.com/generaltranslation/gt/pull/1786) [`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `requiresReview`
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - generaltranslation@8.2.19
+  - @generaltranslation/python-extractor@0.2.25
+  - @generaltranslation/supported-locales@2.1.5
+
+## 2.14.57
+
+## 2.14.56
+
+### Patch Changes
+
+- [#1724](https://github.com/generaltranslation/gt/pull/1724) [`dd0d1cd`](https://github.com/generaltranslation/gt/commit/dd0d1cd0276cd0a158fc3dd73a312502066782a7) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fix translation file path in `gt-lock.json`
+
+## 2.14.55
+
+### Patch Changes
+
+- Updated dependencies [[`a2a3dd0`](https://github.com/generaltranslation/gt/commit/a2a3dd0bcdce9abe360c406a12fc6bb3bc3ca181)]:
+  - @generaltranslation/supported-locales@2.1.4
+
+## 2.14.54
+
+### Patch Changes
+
+- [#1648](https://github.com/generaltranslation/gt/pull/1648) [`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8) Thanks [@brian-lou](https://github.com/brian-lou)! - Use `gt-project-id` instead of `x-gt-project-id` for API request headers. Update the API key header to use standard `Authorization: Bearer <api-key>` prefix.
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - @generaltranslation/python-extractor@0.2.24
+  - @generaltranslation/supported-locales@2.1.3
+
+## 2.14.53
+
+### Patch Changes
+
+- [#1642](https://github.com/generaltranslation/gt/pull/1642) [`28b1b59`](https://github.com/generaltranslation/gt/commit/28b1b59d13422ef665490a5500cacaabaa00541d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skip enqueue for already translated files
+
+## 2.14.52
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - @generaltranslation/python-extractor@0.2.23
+  - @generaltranslation/supported-locales@2.1.2
+
+## 2.14.51
+
+### Patch Changes
+
+- [#1605](https://github.com/generaltranslation/gt/pull/1605) [`69172dc`](https://github.com/generaltranslation/gt/commit/69172dc72e3fe22b6072b4c60e26c3de2cd68494) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Aggregate files on `upload` command. Ensures consistency with `stage` and `translate`
+
+## 2.14.50
+
+### Patch Changes
+
+- [#1586](https://github.com/generaltranslation/gt/pull/1586) [`81d0d09`](https://github.com/generaltranslation/gt/commit/81d0d09db3f0d9d8a2ce7fc45f76bf5dd34fa34a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Refetch composite content
+
+## 2.14.49
+
+### Patch Changes
+
+- Updated dependencies [[`a41729b`](https://github.com/generaltranslation/gt/commit/a41729b0f6f42ec3bccd6d99299b35eebfb0cc6e)]:
+  - gt-remark@1.0.10
+
+## 2.14.48
+
+### Patch Changes
+
+- [#1582](https://github.com/generaltranslation/gt/pull/1582) [`1e5e748`](https://github.com/generaltranslation/gt/commit/1e5e748b1aef33eb58f536496592a6258fc441e5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle Mintlify `$ref` siblings, add omit to composite JSONs
+
+## 2.14.47
+
+### Patch Changes
+
+- Updated dependencies [[`34aae81`](https://github.com/generaltranslation/gt/commit/34aae8107d69e6cc1a54cde5d7645ebcd8e14d21)]:
+  - gt-remark@1.0.9
+
+## 2.14.46
+
+### Patch Changes
+
+- [#1534](https://github.com/generaltranslation/gt/pull/1534) [`e64b96d`](https://github.com/generaltranslation/gt/commit/e64b96db770c0049551277b2d4ed1034ad977ce5) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Hash cooked static template literal values during CLI extraction.
+
+## 2.14.45
+
+### Patch Changes
+
+- Updated dependencies [[`1245397`](https://github.com/generaltranslation/gt/commit/12453971eac9dbdea5abac0d2ad67d56e5f1580a)]:
+  - gt-remark@1.0.8
+
+## 2.14.44
+
+### Patch Changes
+
+- [#1523](https://github.com/generaltranslation/gt/pull/1523) [`bda984e`](https://github.com/generaltranslation/gt/commit/bda984e3351520e49314d1b3601a362ea9eb7396) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Update Mintlify `$ref` handling
+
+## 2.14.43
+
+### Patch Changes
+
+- [#1502](https://github.com/generaltranslation/gt/pull/1502) [`0c5cb81`](https://github.com/generaltranslation/gt/commit/0c5cb817468acf1b140ec5371aa003c739584579) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove default target locales from the setup prompt.
+
+## 2.14.42
+
+### Patch Changes
+
+- [#1491](https://github.com/generaltranslation/gt/pull/1491) [`205c246`](https://github.com/generaltranslation/gt/commit/205c24647b9f50a68358ee6c3332d110a77ce1b3) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle derived children with whitespace
+
+## 2.14.41
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - @generaltranslation/python-extractor@0.2.22
+  - @generaltranslation/supported-locales@2.1.1
+
+## 2.14.40
+
+### Patch Changes
+
+- [#1456](https://github.com/generaltranslation/gt/pull/1456) [`8094012`](https://github.com/generaltranslation/gt/commit/8094012f9827f3a35e053776946bea67492da9db) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handling slash in Mint `url` fields
+
+## 2.14.39
+
+### Patch Changes
+
+- [#1455](https://github.com/generaltranslation/gt/pull/1455) [`cd8fa50`](https://github.com/generaltranslation/gt/commit/cd8fa505c90624160d6ef4d044946b3bf230f646) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle Mintlify `docs.json` `directory` field
+
+- [#1448](https://github.com/generaltranslation/gt/pull/1448) [`f19bade`](https://github.com/generaltranslation/gt/commit/f19bade4741e934505e75880218599d27873e864) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fix CLI binary release builds by resolving Ink's devtools peer dependency and failing binary build scripts on compile errors.
+
+## 2.14.38
+
+### Patch Changes
+
+- Updated dependencies [[`cc4edc1`](https://github.com/generaltranslation/gt/commit/cc4edc1e40d9977125bf6d053fb7f8cdbdd40b05)]:
+  - @generaltranslation/supported-locales@2.1.0
+
 ## 2.14.37
 
 ### Patch Changes

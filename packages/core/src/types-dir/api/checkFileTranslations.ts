@@ -27,7 +27,6 @@ export type FileQueryResult = {
     dataFormat: string | null;
     createdAt: string;
     updatedAt: string;
-    approvalRequiredAt: string | null;
     locales: string[];
   };
   translations: {

@@ -86,7 +86,6 @@ describe.sequential('_enqueueFiles', () => {
           ],
           targetLocales: ['es', 'fr'],
           sourceLocale: 'en',
-          requireApproval: undefined,
           modelProvider: undefined,
           force: undefined,
         },
@@ -129,7 +128,6 @@ describe.sequential('_enqueueFiles', () => {
   it('should handle all optional parameters', async () => {
     const mockFiles = [createMockFile()];
     const mockOptions = createMockOptions({
-      requireApproval: true,
       modelProvider: 'openai',
       force: true,
       timeout: 30000,
@@ -161,7 +159,6 @@ describe.sequential('_enqueueFiles', () => {
       expect.any(String),
       expect.objectContaining({
         body: expect.objectContaining({
-          requireApproval: true,
           modelProvider: 'openai',
           force: true,
         }),

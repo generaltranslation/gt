@@ -87,6 +87,11 @@ import {
 } from './translate/awaitJobs';
 import type { FileDataQuery, FileDataResult } from './translate/queryFileData';
 import { _queryFileData } from './translate/queryFileData';
+import type {
+  GetProjectInfoOptions,
+  ProjectInfoResult,
+} from './translate/getProjectInfo';
+import { _getProjectInfo } from './translate/getProjectInfo';
 import type { BranchQuery } from './translate/queryBranchData';
 import type { BranchDataResult } from './types-dir/api/branch';
 import { _queryBranchData } from './translate/queryBranchData';
@@ -619,6 +624,19 @@ export class GT {
    * });
    *
    */
+  /**
+   * Fetches project info (name, locales, review settings) for the
+   * authenticated project.
+   * @param options - The options for the API call.
+   * @returns The project info.
+   */
+  async getProjectInfo(
+    options: GetProjectInfoOptions = {}
+  ): Promise<ProjectInfoResult> {
+    this._validateAuth('getProjectInfo');
+    return await _getProjectInfo(options, this._getTranslationConfig());
+  }
+
   async queryFileData(
     data: FileDataQuery,
     options: CheckFileTranslationsOptions = {}

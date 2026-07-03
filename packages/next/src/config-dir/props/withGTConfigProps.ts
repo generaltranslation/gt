@@ -52,6 +52,7 @@ export type BaseWithGTConfigProps = {
   locales?: string[];
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
+  disableInvalidLocaleWarning?: boolean;
   // Rendering
   renderSettings?: {
     method: RenderMethod;

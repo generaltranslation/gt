@@ -53,6 +53,7 @@ function makeSettings(): Settings {
       },
       publishPaths: new Set(),
       unpublishPaths: new Set(),
+      requiresReviewPaths: new Set(),
       parsingFlags: {},
       gtJson: {
         parsingFlags: {},

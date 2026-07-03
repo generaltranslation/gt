@@ -190,6 +190,16 @@ export type TransformFormats = {
 // Include patterns can be plain strings or objects with a publish flag
 export type IncludePattern = string | { pattern: string; publish?: boolean };
 
+// Review requirement for matched files: a boolean applies to all files of the
+// type; the object form opts path groups in/out with globs. exclude wins over
+// include; files matching neither inherit the top-level requiresReview default.
+export type RequiresReviewConfig =
+  | boolean
+  | {
+      include?: string[];
+      exclude?: string[];
+    };
+
 // Update FilesOptions to fix the error
 export type FilesOptions = {
   [K in SupportedFileExtension]?: {
@@ -198,6 +208,7 @@ export type FilesOptions = {
     transform?: string | TransformOption | TransformOption[];
     transformationFormat?: FileFormat;
     parsingFlags?: BaseParsingFlags; // Flags for parsing inline content
+    requiresReview?: RequiresReviewConfig; // Whether translated versions of matched files require approval before use
   };
 } & {
   gt?: {
@@ -230,6 +241,7 @@ export type Settings = {
     transformFormats: TransformFormats; // Output file format transforms keyed by config file type
     publishPaths: Set<string>; // Absolute paths explicitly opted IN to publishing
     unpublishPaths: Set<string>; // Absolute paths explicitly opted OUT of publishing
+    requiresReviewPaths: Set<string>; // Absolute paths whose effective requiresReview policy is true
     parsingFlags: ParseFlagsByFileType;
     gtJson: {
       publish?: boolean; // if true, publish gtjson translations to the CDN
@@ -242,6 +254,7 @@ export type Settings = {
     };
   };
   stageTranslations: boolean; // if true, always stage the project during translate command
+  requiresReview?: boolean; // top-level default: translated artifacts require approval before the client uses them
   publish?: boolean; // if true, publish the translations to the CDN; undefined means no global publish intent
   _versionId?: string; // internal use only
   _branchId?: string; // internal use only

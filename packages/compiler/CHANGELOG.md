@@ -78,6 +78,36 @@
 - Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
   - generaltranslation@8.2.16
 
+## 1.3.27
+
+### Patch Changes
+
+- [#1786](https://github.com/generaltranslation/gt/pull/1786) [`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `requiresReview`
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - generaltranslation@8.2.19
+
+## 1.3.26
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+
+## 1.3.25
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+
+## 1.3.24
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+
 ## 1.3.23
 
 ### Patch Changes
