@@ -122,6 +122,16 @@ describe('I18nConfig', () => {
     expect(config.isDevHotReloadEnabled()).toBe(false);
   });
 
+  it('stores the configured log level at initialization', () => {
+    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'debug');
+
+    const config = new I18nConfig();
+    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', '');
+
+    expect(config.getLogLevel()).toBe('debug');
+    expect(config.isDebugLoggingEnabled()).toBe(true);
+  });
+
   it.each([
     {
       name: 'missing dev API key',

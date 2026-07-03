@@ -1,4 +1,8 @@
 import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  getGeneralTranslationLogLevel,
+  isDebugLogLevel,
+} from '../logs/logLevel';
 
 /**
  * Shared global registry stored on `globalThis.__generaltranslation`. Each
@@ -10,12 +14,23 @@ type GlobalWithRegistry = {
   __generaltranslation?: SingletonRegistry;
 };
 
+type DebugLoggingConfig = {
+  isDebugLoggingEnabled: () => boolean;
+};
+
 function getNamespace(namespace: string): Record<string, unknown> {
   const globalObj = globalThis as unknown as GlobalWithRegistry;
   globalObj.__generaltranslation ??= {};
   // TODO: Consider checking package versions and using a compatibility matrix before sharing global singletons.
   globalObj.__generaltranslation[namespace] ??= {};
   return globalObj.__generaltranslation[namespace]!;
+}
+
+function getExistingNamespace(
+  namespace: string
+): Record<string, unknown> | undefined {
+  const globalObj = globalThis as unknown as GlobalWithRegistry;
+  return globalObj.__generaltranslation?.[namespace];
 }
 
 export type GlobalSingleton<T> = {
@@ -58,13 +73,15 @@ export function createGlobalSingleton<T>({
   function set(next: T): void {
     const ns = getNamespace(namespace);
     if (ns[key] !== undefined && ns[key] !== next) {
-      console.warn(
-        createDiagnosticMessage({
-          source,
-          severity: 'Warning',
-          whatHappened: `Global ${key} singleton instance was already initialized`,
-        })
-      );
+      if (shouldLogDebugWarnings()) {
+        console.warn(
+          createDiagnosticMessage({
+            source,
+            severity: 'Warning',
+            whatHappened: `Global ${key} singleton instance was already initialized`,
+          })
+        );
+      }
       return;
     }
     ns[key] = next as unknown;
@@ -76,4 +93,21 @@ export function createGlobalSingleton<T>({
   }
 
   return { get, set, isInitialized };
+}
+
+function shouldLogDebugWarnings(): boolean {
+  const config = getExistingNamespace('i18n')?.i18nConfig;
+  if (hasDebugLoggingConfig(config)) {
+    return config.isDebugLoggingEnabled();
+  }
+  return isDebugLogLevel(getGeneralTranslationLogLevel());
+}
+
+function hasDebugLoggingConfig(value: unknown): value is DebugLoggingConfig {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as Partial<DebugLoggingConfig>).isDebugLoggingEnabled ===
+      'function'
+  );
 }
