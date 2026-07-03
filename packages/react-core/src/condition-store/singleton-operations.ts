@@ -8,7 +8,7 @@ import {
   getRuntimeEnvironment,
 } from 'gt-i18n/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
-import { getI18nConfig } from '../setup/i18nConfig';
+import { readRenderStrategy } from '../setup/i18nConfig';
 
 const conditionStoreNotInitializedError = createDiagnosticMessage({
   source: '@generaltranslation/react-core',
@@ -31,8 +31,11 @@ function getReadonlyConditionStoreWithFallback(): ReadonlyConditionStoreInterfac
     return getConditionStore();
   } catch (error) {
     // Error handling
+    // readRenderStrategy() must not throw here: if I18nConfig is also
+    // uninitialized, a throwing getter would replace this diagnostic (and
+    // skip the production fallback below) with a config error.
     const runtimeEnvironment = getRuntimeEnvironment();
-    const renderStrategy = getI18nConfig().getRenderStrategy();
+    const renderStrategy = readRenderStrategy();
     const errorMessage = createDiagnosticMessage({
       source: '@generaltranslation/react-core',
       severity: 'Error',
@@ -41,7 +44,9 @@ function getReadonlyConditionStoreWithFallback(): ReadonlyConditionStoreInterfac
       fix:
         renderStrategy === 'SPA'
           ? 'Initialize GT before reading GT runtime context.'
-          : 'Add a <GTProvider> at the root of your component tree.',
+          : renderStrategy === 'server-render'
+            ? 'Add a <GTProvider> at the root of your component tree.'
+            : 'Initialize GT before rendering and add a <GTProvider> at the root of your component tree.',
       wayOut:
         runtimeEnvironment === 'development'
           ? undefined

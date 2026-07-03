@@ -13,7 +13,7 @@ const i18nCacheSingleton = createGlobalSingleton<I18nCache>({
       severity: 'Error',
       whatHappened: 'Cannot read I18nCache before it has been initialized',
       why: 'the internal I18nCache singleton is unavailable',
-      fix: 'Call initializeGT() before accessing I18nCache.',
+      fix: 'Initialize GT before accessing I18nCache (call initializeGT() from your GT framework package, or make sure your app imports its GT entry point so setup runs).',
     }),
 });
 
