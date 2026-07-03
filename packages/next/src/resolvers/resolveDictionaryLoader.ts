@@ -15,7 +15,7 @@ export function resolveDictionaryLoader(): CustomLoader | undefined {
   // get load dictionary file
   let customLoadDictionaryConfig;
   try {
-    customLoadDictionaryConfig = require('gt-next/_load-dictionary');
+    customLoadDictionaryConfig = require('gt-next/internal/_load-dictionary');
   } catch {
     // No custom dictionary loader module was generated.
   }

@@ -13,9 +13,9 @@ export function getDictionary(): Dictionary | undefined {
   // Check for a dictionary file
   try {
     if (dictionaryFileType === '.json') {
-      internalDictionary = require('gt-next/_dictionary');
+      internalDictionary = require('gt-next/internal/_dictionary');
     } else if (dictionaryFileType === '.ts' || dictionaryFileType === '.js') {
-      const bundledDictionary = require('gt-next/_dictionary');
+      const bundledDictionary = require('gt-next/internal/_dictionary');
       internalDictionary =
         bundledDictionary.default || bundledDictionary.dictionary;
     }

@@ -591,9 +591,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       : null;
 
   const turboAliases = {
-    'gt-next/_dictionary': resolvedDictionaryFilePath || '',
-    'gt-next/_load-translations': customLoadTranslationsPath || '',
-    'gt-next/_load-dictionary': customLoadDictionaryPath || '',
+    'gt-next/internal/_dictionary': resolvedDictionaryFilePath || '',
+    'gt-next/internal/_load-translations': customLoadTranslationsPath || '',
+    'gt-next/internal/_load-dictionary': customLoadDictionaryPath || '',
     ...Object.fromEntries(
       Object.entries(requestFunctionPaths).map(([functionName, path]) => {
         return [
@@ -713,17 +713,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
           webpackConfig.cache = false;
         }
         if (resolvedDictionaryFilePath) {
-          webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
-            webpackConfig.context,
-            resolvedDictionaryFilePath
-          );
+          webpackConfig.resolve.alias['gt-next/internal/_dictionary'] =
+            path.resolve(webpackConfig.context, resolvedDictionaryFilePath);
         }
         if (customLoadTranslationsPath) {
-          webpackConfig.resolve.alias[`gt-next/_load-translations`] =
+          webpackConfig.resolve.alias[`gt-next/internal/_load-translations`] =
             path.resolve(webpackConfig.context, customLoadTranslationsPath);
         }
         if (customLoadDictionaryPath) {
-          webpackConfig.resolve.alias[`gt-next/_load-dictionary`] =
+          webpackConfig.resolve.alias[`gt-next/internal/_load-dictionary`] =
             path.resolve(webpackConfig.context, customLoadDictionaryPath);
         }
         for (const [functionName, pathString] of Object.entries(
@@ -757,9 +755,3 @@ function isDevHotReloadEnabled(config: InternalGTConfigProps): boolean {
     process.env.NODE_ENV === 'development'
   );
 }
-
-// Keep initGT for backward compatibility
-export const initGT =
-  (props: withGTConfigProps) =>
-  <TNextConfig extends object = NextConfig>(nextConfig?: TNextConfig) =>
-    withGTConfig(nextConfig, props);
