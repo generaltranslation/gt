@@ -17,9 +17,6 @@ export const setI18nStore = i18nStoreSingleton.set;
 export const isI18nStoreInitialized = i18nStoreSingleton.isInitialized;
 
 function createI18nStoreNotInitializedError(): Error {
-  // If I18nConfig is uninitialized, getI18nConfig() throws its own
-  // not-initialized error: GT initialization never ran, which is the root
-  // cause and carries its own fix.
   const renderStrategy = getI18nConfig().getRenderStrategy();
   const errorMessage = createDiagnosticMessage({
     source: '@generaltranslation/react-core',

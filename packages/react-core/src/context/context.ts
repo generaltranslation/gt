@@ -69,9 +69,6 @@ export function getGTContext(): Context<GTContextType | undefined> {
 
 export function useGTContext(): GTContextType | undefined {
   const context = useContext(getGTContext());
-  // If I18nConfig is uninitialized, getI18nConfig() throws its own
-  // not-initialized error: GT initialization never ran, which is the root
-  // cause and carries its own fix.
   if (context || getI18nConfig().getRenderStrategy() === 'SPA') {
     return context;
   }
