@@ -83,11 +83,6 @@ describe('withGTConfig', () => {
     return mod.withGTConfig;
   }
 
-  async function getInitGT() {
-    const mod = await import('../config');
-    return mod.initGT;
-  }
-
   // ==============================
   // 1. Default behavior
   // ==============================
@@ -1379,7 +1374,7 @@ describe('withGTConfig', () => {
       const wc = makeWebpackConfig();
       runWebpack(result, wc);
 
-      expect(wc.resolve.alias).toHaveProperty('gt-next/_dictionary');
+      expect(wc.resolve.alias).toHaveProperty('gt-next/internal/_dictionary');
     });
 
     it('does NOT set aliases when TURBOPACK enabled', async () => {
@@ -1391,7 +1386,9 @@ describe('withGTConfig', () => {
       const wc = makeWebpackConfig();
       runWebpack(result, wc);
 
-      expect(wc.resolve.alias).not.toHaveProperty('gt-next/_dictionary');
+      expect(wc.resolve.alias).not.toHaveProperty(
+        'gt-next/internal/_dictionary'
+      );
     });
 
     it('disables webpackConfig.cache in development', async () => {
@@ -1420,7 +1417,7 @@ describe('withGTConfig', () => {
       expect(result.turbopack).toBeDefined();
       expect(result.turbopack!.resolveAlias).toBeDefined();
       expect(result.turbopack!.resolveAlias).toHaveProperty(
-        'gt-next/_dictionary'
+        'gt-next/internal/_dictionary'
       );
     });
 
@@ -1442,7 +1439,7 @@ describe('withGTConfig', () => {
         '/some/path'
       );
       expect(result.turbopack!.resolveAlias).toHaveProperty(
-        'gt-next/_dictionary'
+        'gt-next/internal/_dictionary'
       );
     });
   });
@@ -1540,38 +1537,6 @@ describe('withGTConfig', () => {
       expect(result).toHaveProperty('env');
       expect(result).toHaveProperty('webpack');
       expect(result).toHaveProperty('experimental');
-    });
-  });
-
-  // ==============================
-  // 18. initGT backward compatibility
-  // ==============================
-  describe('18. initGT backward compatibility', () => {
-    it('initGT(props) returns a function (nextConfig) => NextConfig', async () => {
-      const initGT = await getInitGT();
-      const configFn = initGT({ defaultLocale: 'es' });
-
-      expect(typeof configFn).toBe('function');
-    });
-
-    it('produces equivalent result to withGTConfig(nextConfig, props)', async () => {
-      const { withGTConfig, initGT } = await import('../config');
-      const props = { defaultLocale: 'es' };
-      const nextConfig = {};
-
-      const resultA = withGTConfig(nextConfig, props);
-      const resultB = initGT(props)(nextConfig);
-
-      // Compare the env vars (serialized config params)
-      expect(resultA.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).toBe(
-        resultB.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS
-      );
-      expect(resultA.env!._GENERALTRANSLATION_DEFAULT_LOCALE).toBe(
-        resultB.env!._GENERALTRANSLATION_DEFAULT_LOCALE
-      );
-      expect(resultA.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
-        resultB.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED
-      );
     });
   });
 });

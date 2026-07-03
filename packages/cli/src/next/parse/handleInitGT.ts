@@ -39,16 +39,14 @@ export async function handleInitGT(
       tsconfigJson,
     });
 
-    // Check if withGTConfig or initGT is already imported/required
+    // Check if withGTConfig is already imported/required
     let hasGTConfig = false;
-    let hasInitGT = false;
     traverse(ast, {
       ImportDeclaration(path) {
         if (path.node.source.value === 'gt-next/config') {
           path.node.specifiers.forEach((spec) => {
             if (t.isImportSpecifier(spec)) {
               if (spec.local.name === 'withGTConfig') hasGTConfig = true;
-              if (spec.local.name === 'initGT') hasInitGT = true;
             }
           });
         }
@@ -67,7 +65,6 @@ export async function handleInitGT(
               // Handle simple assignment: const withGTConfig = require(...)
               if (t.isIdentifier(dec.id, { name: 'withGTConfig' }))
                 hasGTConfig = true;
-              if (t.isIdentifier(dec.id, { name: 'initGT' })) hasInitGT = true;
 
               // Handle destructuring: const { withGTConfig } = require(...)
               if (t.isObjectPattern(dec.id)) {
@@ -78,7 +75,6 @@ export async function handleInitGT(
                     t.isIdentifier(prop.value)
                   ) {
                     if (prop.key.name === 'withGTConfig') hasGTConfig = true;
-                    if (prop.key.name === 'initGT') hasInitGT = true;
                   }
                 });
               }
@@ -98,20 +94,14 @@ export async function handleInitGT(
               ) {
                 hasGTConfig = true;
               }
-              if (
-                t.isIdentifier(dec.id, { name: 'initGT' }) &&
-                t.isIdentifier(dec.init.property, { name: 'initGT' })
-              ) {
-                hasInitGT = true;
-              }
             }
           }
         });
       },
     });
 
-    // Return early if either withGTConfig or initGT is already present
-    if (hasGTConfig || hasInitGT) {
+    // Return early if withGTConfig is already present
+    if (hasGTConfig) {
       return;
     }
 

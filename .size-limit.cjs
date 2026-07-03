@@ -107,10 +107,12 @@ module.exports = [
   nextNode('gt-next/server', 'server', '85 kB'),
   nextNode('gt-next/middleware', 'middleware'),
   next('gt-next/link', 'link', '65 kB'),
-  nextNode('gt-next/types', 'types'),
-  nextNode('gt-next/_dictionary', '_dictionary'),
-  nextNode('gt-next/_load-translations', '_load-translations'),
-  nextNode('gt-next/_load-dictionary', '_load-dictionary'),
+  nextNode('gt-next/internal/_dictionary', 'internal/_dictionary'),
+  nextNode(
+    'gt-next/internal/_load-translations',
+    'internal/_load-translations'
+  ),
+  nextNode('gt-next/internal/_load-dictionary', 'internal/_load-dictionary'),
   nextNode('gt-next/internal/_getLocale', 'internal/_getLocale', '60 kB'),
   nextNode('gt-next/internal/_getRegion', 'internal/_getRegion'),
 

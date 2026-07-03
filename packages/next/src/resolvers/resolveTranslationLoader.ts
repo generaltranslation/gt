@@ -14,7 +14,7 @@ export function resolveTranslationLoader(): CustomLoader | undefined {
   // get load translation file
   let customLoadTranslationsConfig;
   try {
-    customLoadTranslationsConfig = require('gt-next/_load-translations');
+    customLoadTranslationsConfig = require('gt-next/internal/_load-translations');
   } catch {
     // No custom translation loader module was generated.
   }
