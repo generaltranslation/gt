@@ -8,14 +8,13 @@ import {
   defaultEnableI18nCookieName,
   defaultResetLocaleCookieName,
   getDefaultRenderSettings,
-  type RenderMethod,
 } from '@generaltranslation/react-core/pure';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
 } from '../../utils/cookies';
-import { CompilerOptions } from './withGTConfigProps';
+import type { CompilerOptions, RenderMethod } from './withGTConfigProps';
 
 type DefaultGTConfigProps = {
   config: string;

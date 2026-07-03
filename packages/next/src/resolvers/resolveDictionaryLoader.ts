@@ -1,5 +1,6 @@
-import type { CustomLoader } from '@generaltranslation/react-core/pure';
 import { unresolvedCustomLoadDictionaryError } from '../errors/createErrors';
+
+type CustomLoader = (locale: string) => Promise<unknown>;
 
 let customLoadDictionary: CustomLoader | undefined = undefined;
 

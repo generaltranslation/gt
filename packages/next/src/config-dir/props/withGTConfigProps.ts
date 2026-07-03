@@ -1,5 +1,3 @@
-import type { RenderMethod } from '@generaltranslation/react-core/pure';
-
 export type HeadersAndCookies = {
   localeHeaderName?: string;
   localeCookieName?: string;
@@ -31,6 +29,8 @@ export type CompilerOptions = {
    */
   disableBuildChecks?: boolean;
 };
+
+export type RenderMethod = 'skeleton' | 'replace' | 'default';
 
 export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
   getLocale: 'getLocalePath',
