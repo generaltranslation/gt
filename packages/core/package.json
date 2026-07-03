@@ -67,6 +67,16 @@
         "default": "./dist/index.mjs"
       }
     },
+    "./runtime": {
+      "require": {
+        "types": "./dist/runtime.d.cts",
+        "default": "./dist/runtime.cjs"
+      },
+      "import": {
+        "types": "./dist/runtime.d.mts",
+        "default": "./dist/runtime.mjs"
+      }
+    },
     "./id": {
       "require": {
         "types": "./dist/id.d.cts",
@@ -134,6 +144,9 @@
       ],
       "errors": [
         "./dist/errors.d.cts"
+      ],
+      "runtime": [
+        "./dist/runtime.d.cts"
       ]
     }
   },
