@@ -144,9 +144,40 @@ function resolveSourceFile(source: string, importer: string): string | null {
 function hasUseClientDirective(file: string): boolean {
   if (!existsSync(file)) return false;
   const code = readFileSync(file, 'utf8');
-  return /^\s*(?:(?:\/\/[^\n]*|\/\*[\s\S]*?\*\/)\s*)*['"]use client['"];?/.test(
-    code
+  const index = firstCodeIndex(code);
+  return (
+    code.startsWith("'use client'", index) ||
+    code.startsWith('"use client"', index)
   );
+}
+
+function firstCodeIndex(code: string): number {
+  let index = 0;
+  while (index < code.length) {
+    if (isWhitespace(code[index])) {
+      index += 1;
+      continue;
+    }
+
+    if (code.startsWith('//', index)) {
+      const nextLine = code.indexOf('\n', index + 2);
+      index = nextLine === -1 ? code.length : nextLine + 1;
+      continue;
+    }
+
+    if (code.startsWith('/*', index)) {
+      const commentEnd = code.indexOf('*/', index + 2);
+      index = commentEnd === -1 ? code.length : commentEnd + 2;
+      continue;
+    }
+
+    return index;
+  }
+  return index;
+}
+
+function isWhitespace(character: string): boolean {
+  return /\s/.test(character);
 }
 
 function outputSpecifier({
