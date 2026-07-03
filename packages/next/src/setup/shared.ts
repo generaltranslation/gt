@@ -1,4 +1,4 @@
-import { type I18nConfigParams } from 'gt-i18n/internal';
+import { type I18nConfigParams } from '@generaltranslation/react-core/pure';
 import { type NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
 import { resolveTranslationLoader } from '../resolvers/resolveTranslationLoader';
 import { getRuntimeCredentials } from './runtimeCredentials';
@@ -33,6 +33,7 @@ export function getParams(): {
     apiKey,
     cacheUrl: privateConfig.cacheUrl,
     _disableDevHotReload: privateConfig._disableDevHotReload,
+    localeCookieName: privateConfig.headersAndCookies?.localeCookieName,
   };
 
   // NextI18nCacheParams

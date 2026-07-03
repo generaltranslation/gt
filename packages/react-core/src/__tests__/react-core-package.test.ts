@@ -6,13 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
-const runtimeEntryNames = [
-  'components',
-  'components-rsc',
-  'cookies',
-  'hooks',
-  'pure',
-];
+const runtimeEntryNames = ['components', 'components-rsc', 'hooks', 'pure'];
 // Each public entrypoint is emitted as a thin re-export barrel in both module
 // formats, plus its type declaration.
 const entryArtifacts = runtimeEntryNames

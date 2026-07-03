@@ -1,8 +1,8 @@
 import {
   internalInitializeGTSRA,
+  type I18nConfigParams,
   type ReactI18nCacheParams,
 } from '@generaltranslation/react-core/pure';
-import type { I18nConfigParams } from 'gt-i18n/internal/types';
 import { addRuntimeCredentials } from './runtimeCredentials';
 
 /**

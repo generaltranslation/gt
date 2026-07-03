@@ -33,7 +33,8 @@ export {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
   defaultRegionCookieName,
-} from './utils/cookies';
+  defaultResetLocaleCookieName,
+} from './setup/i18nConfig';
 export {
   getDictionaryEntry,
   isValidDictionaryEntry,
@@ -97,10 +98,8 @@ export {
   ReadonlyConditionStore,
   WritableConditionStore,
 } from 'gt-i18n/internal';
-export type {
-  I18nConfigParams,
-  WritableConditionStoreParams,
-} from 'gt-i18n/internal/types';
+export type { WritableConditionStoreParams } from 'gt-i18n/internal/types';
+export type { ReactI18nConfigParams as I18nConfigParams } from './setup/i18nConfig';
 export type {
   OnMissingDictionaryObj,
   OnMissingDictionaryEntry,

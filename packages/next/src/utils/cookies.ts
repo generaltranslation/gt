@@ -9,8 +9,3 @@ export const defaultLocaleRoutingEnabledCookieName =
  */
 export const defaultReferrerLocaleCookieName =
   'generaltranslation.referrer-locale';
-
-/**
- * Cookie name for tracking the locale reset
- */
-export const defaultResetLocaleCookieName = 'generaltranslation.locale-reset';

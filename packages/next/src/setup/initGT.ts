@@ -1,4 +1,4 @@
-import { initializeI18nConfig } from 'gt-i18n/internal';
+import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import {
   NextI18nCache,
   NextI18nCacheParams,

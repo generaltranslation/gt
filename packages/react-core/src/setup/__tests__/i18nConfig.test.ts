@@ -41,6 +41,33 @@ describe('react i18n config', () => {
     expect(getI18nConfig().getRenderStrategy()).toBe('server-render');
   });
 
+  it('falls back to the default storage names', async () => {
+    const { initializeI18nConfig } = await import('../i18nConfig');
+
+    const config = initializeI18nConfig({ defaultLocale: 'en' });
+
+    expect(config.getLocaleCookieName()).toBe('generaltranslation.locale');
+    expect(config.getRegionCookieName()).toBe('generaltranslation.region');
+    expect(config.getEnableI18nCookieName()).toBe(
+      'generaltranslation.enable-i18n'
+    );
+  });
+
+  it('returns configured custom storage names', async () => {
+    const { initializeI18nConfig } = await import('../i18nConfig');
+
+    const config = initializeI18nConfig({
+      defaultLocale: 'en',
+      localeCookieName: 'custom-locale',
+      regionCookieName: 'custom-region',
+      enableI18nCookieName: 'custom-enable-i18n',
+    });
+
+    expect(config.getLocaleCookieName()).toBe('custom-locale');
+    expect(config.getRegionCookieName()).toBe('custom-region');
+    expect(config.getEnableI18nCookieName()).toBe('custom-enable-i18n');
+  });
+
   it('rejects invalid runtime render strategy values', async () => {
     const { initializeI18nConfig } = await import('../i18nConfig');
     const initializeWithRuntimeRenderStrategy = initializeI18nConfig as (
@@ -78,10 +105,20 @@ describe('react i18n config', () => {
     Object.defineProperty(bundledConfig, 'getRenderStrategy', {
       value: () => 'SPA',
     });
+    Object.defineProperty(bundledConfig, 'getLocaleCookieName', {
+      value: () => 'custom-locale',
+    });
+    Object.defineProperty(bundledConfig, 'getRegionCookieName', {
+      value: () => 'custom-region',
+    });
+    Object.defineProperty(bundledConfig, 'getEnableI18nCookieName', {
+      value: () => 'custom-enable-i18n',
+    });
 
     setBaseI18nConfig(bundledConfig);
 
     expect(getI18nConfig()).toBe(bundledConfig);
     expect(getI18nConfig().getRenderStrategy()).toBe('SPA');
+    expect(getI18nConfig().getLocaleCookieName()).toBe('custom-locale');
   });
 });
