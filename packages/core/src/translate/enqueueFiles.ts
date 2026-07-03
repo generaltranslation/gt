@@ -4,7 +4,7 @@ import type { FileReferenceIds } from '../types-dir/api/file';
 import { processBatches } from './utils/batch';
 import { validateFileFormatTransforms } from './utils/validateFileFormatTransform';
 
-export type EnqueueOptions = {
+export type EnqueueFilesOptions = {
   sourceLocale?: string;
   targetLocales: string[];
   modelProvider?: string;
@@ -22,7 +22,7 @@ export type EnqueueOptions = {
  */
 export async function _enqueueFiles(
   files: FileReferenceIds[],
-  options: EnqueueOptions,
+  options: EnqueueFilesOptions,
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {
   validateFileFormatTransforms(files);

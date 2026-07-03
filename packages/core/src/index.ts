@@ -21,7 +21,10 @@ import {
   SetupProjectResult,
   SetupProjectOptions,
 } from './translate/setupProject';
-import { _enqueueFiles, EnqueueOptions } from './translate/enqueueFiles';
+import {
+  _enqueueFiles,
+  type EnqueueFilesOptions,
+} from './translate/enqueueFiles';
 import {
   _createTag,
   CreateTagOptions,
@@ -88,10 +91,12 @@ import {
   type PublishFileEntry,
   type PublishFilesResult,
 } from './translate/publishFiles';
-import { API_VERSION as _API_VERSION } from './translate/api';
 import { GTRuntime } from './runtime';
 
 export { GTRuntime, type GTConstructorParams } from './runtime';
+export { decodeVars } from './derive/decodeVars';
+export { declareVar } from './derive/declareVar';
+export { derive } from './derive/derive';
 
 export {
   LocaleConfig,
@@ -311,18 +316,18 @@ export class GT extends GTRuntime {
    * generate translated content based on the source files and target locales provided.
    *
    * @param {FileReferenceIds[]} files - Array of file references containing IDs of previously uploaded source files
-   * @param {EnqueueOptions} options - Configuration options including source locale, target locales, and job settings.
+   * @param {EnqueueFilesOptions} options - Configuration options including source locale, target locales, and job settings.
    * @returns {Promise<EnqueueFilesResult>} Result containing job IDs, queue status, and processing information.
    */
   async enqueueFiles(
     files: FileReferenceIds[],
-    options: EnqueueOptions
+    options: EnqueueFilesOptions
   ): Promise<EnqueueFilesResult> {
     // Validation
     this._validateAuth('enqueueFiles');
 
     // Merge instance settings with options.
-    let mergedOptions: EnqueueOptions = {
+    let mergedOptions: EnqueueFilesOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale!,
       targetLocales: options.targetLocales ?? [this.targetLocale!],
@@ -757,5 +762,3 @@ export class GT extends GTRuntime {
     };
   }
 }
-
-export const API_VERSION = _API_VERSION;
