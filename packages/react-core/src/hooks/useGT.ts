@@ -23,19 +23,20 @@ export function useGT(_messages?: Message[]): GTFunctionType {
    */
   return useCallback(
     (message: string, options: GTTranslationOptions = {}) => {
-      if (!shouldTranslate) {
-        return interpolateMessage({
-          options,
-          source: message,
-          sourceLocale: defaultLocale,
-        });
-      }
-
       const lookupOptions = createLookupOptions<StringFormat>(
         options.$locale ?? locale,
         options,
         'ICU'
       );
+
+      if (!shouldTranslate) {
+        return interpolateMessage({
+          options: lookupOptions,
+          source: message,
+          sourceLocale: defaultLocale,
+        });
+      }
+
       const translation = resolveTranslation({
         locale: lookupOptions.$locale,
         message,
