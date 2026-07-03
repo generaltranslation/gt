@@ -1,5 +1,13 @@
 # gt-node
 
+## 1.0.0-odysseus.7
+
+### Patch Changes
+
+- Updated dependencies [ab61565]
+- Updated dependencies [0cd7813]
+  - gt-i18n@1.0.0-odysseus.7
+
 ## 1.0.0-odysseus.6
 
 ### Patch Changes
