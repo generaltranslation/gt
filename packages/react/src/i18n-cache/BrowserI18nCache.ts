@@ -65,21 +65,18 @@ export class BrowserI18nCache extends I18nCache<Translation> {
 
     // For dev hot reload, we need to write the translations to the localStorage cache
     if (devHotReloadEnabled) {
-      this.subscribe(
-        'translations-cache-miss',
-        ({ locale, hash, translation }) => {
-          const cache = localStorageCaches[locale];
-          if (cache) {
-            cache.write(hash, translation);
-          } else {
-            localStorageCaches[locale] = new LocalStorageTranslationCache({
-              locale,
-              projectId,
-              init: { [hash]: translation },
-            });
-          }
+      this.onTranslationsCacheMiss = ({ locale, hash, translation }) => {
+        const cache = localStorageCaches[locale];
+        if (cache) {
+          cache.write(hash, translation);
+        } else {
+          localStorageCaches[locale] = new LocalStorageTranslationCache({
+            locale,
+            projectId,
+            init: { [hash]: translation },
+          });
         }
-      );
+      };
     }
   }
 
