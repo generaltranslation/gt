@@ -192,6 +192,7 @@ describe('withGTConfig', () => {
       expect(params.headersAndCookies).toMatchObject({
         localeHeaderName: 'x-generaltranslation-locale',
         localeCookieName: 'generaltranslation.locale',
+        enableI18nCookieName: 'generaltranslation.enable-i18n',
         referrerLocaleCookieName: 'generaltranslation.referrer-locale',
         localeRoutingEnabledCookieName:
           'generaltranslation.locale-routing-enabled',
@@ -1460,6 +1461,9 @@ describe('withGTConfig', () => {
       );
       expect(params.headersAndCookies.localeCookieName).toBe(
         'generaltranslation.locale'
+      );
+      expect(params.headersAndCookies.enableI18nCookieName).toBe(
+        'generaltranslation.enable-i18n'
       );
     });
 

@@ -56,6 +56,7 @@ describe('initializeGT', () => {
         defaultLocale: 'en',
         locales: ['en', 'fr'],
         localeCookieName: 'custom-locale',
+        enableI18nCookieName: 'custom-enable-i18n',
       },
       nextI18nCacheParams: {
         defaultLocale: 'en',
@@ -64,5 +65,8 @@ describe('initializeGT', () => {
     });
 
     expect(getI18nConfig().getLocaleCookieName()).toBe('custom-locale');
+    expect(getI18nConfig().getEnableI18nCookieName()).toBe(
+      'custom-enable-i18n'
+    );
   });
 });

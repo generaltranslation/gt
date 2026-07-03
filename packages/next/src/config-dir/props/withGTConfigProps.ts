@@ -3,6 +3,7 @@ import type { RenderMethod } from '@generaltranslation/react-core/pure';
 export type HeadersAndCookies = {
   localeHeaderName?: string;
   localeCookieName?: string;
+  enableI18nCookieName?: string;
   referrerLocaleCookieName?: string;
   localeRoutingEnabledCookieName?: string;
   resetLocaleCookieName?: string;

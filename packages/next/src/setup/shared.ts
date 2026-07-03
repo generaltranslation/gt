@@ -34,6 +34,7 @@ export function getParams(): {
     cacheUrl: privateConfig.cacheUrl,
     _disableDevHotReload: privateConfig._disableDevHotReload,
     localeCookieName: privateConfig.headersAndCookies?.localeCookieName,
+    enableI18nCookieName: privateConfig.headersAndCookies?.enableI18nCookieName,
   };
 
   // NextI18nCacheParams

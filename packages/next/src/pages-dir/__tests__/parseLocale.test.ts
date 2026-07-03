@@ -1,6 +1,6 @@
 import type { GetServerSidePropsContext } from 'next';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { initializeI18nConfig } from 'gt-i18n/internal';
+import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { parseLocale } from '../parseLocale';
 
 type TestGlobal = typeof globalThis & {
@@ -59,10 +59,14 @@ describe('parseLocale', () => {
   });
 
   it('uses configured header and cookie names', () => {
+    resetGTGlobals();
+    initializeI18nConfig({
+      ...localeConfig,
+      localeCookieName: 'custom-locale',
+    });
     process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS = JSON.stringify({
       headersAndCookies: {
         localeHeaderName: 'x-custom-locale',
-        localeCookieName: 'custom-locale',
       },
     });
     const context = createContext({
