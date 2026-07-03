@@ -91,6 +91,20 @@ describe('generaltranslation/core export', () => {
       expect(builtGraph).not.toContain(forbidden);
     }
   });
+
+  it('does not import FormatJS runtime values from the types subpath', () => {
+    const internalEsm = readFileSync(
+      join(process.cwd(), 'dist/internal.mjs'),
+      'utf8'
+    );
+
+    expect(internalEsm).not.toContain(
+      'from "@formatjs/icu-messageformat-parser/types.js"'
+    );
+    expect(internalEsm).not.toContain(
+      "from '@formatjs/icu-messageformat-parser/types.js'"
+    );
+  });
 });
 
 function readBuiltFileGraph(entryFileName: string) {
