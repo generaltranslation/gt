@@ -91,7 +91,7 @@ export {
   setI18nConfig,
 } from './setup/i18nConfig';
 export {
-  getReadonlyConditionStoreWithFallback,
+  getReadonlyConditionStore,
   setReadonlyConditionStore,
 } from './condition-store/singleton-operations';
 export {

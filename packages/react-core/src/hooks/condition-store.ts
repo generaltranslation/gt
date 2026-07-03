@@ -1,5 +1,5 @@
 import { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
-import { getReadonlyConditionStoreWithFallback } from '../condition-store/singleton-operations';
+import { getReadonlyConditionStore } from '../condition-store/singleton-operations';
 import { useGTContext } from '../context/context';
 
 /**
@@ -9,7 +9,7 @@ import { useGTContext } from '../context/context';
 
 export function useConditionStore(): ReadonlyConditionStoreInterface {
   const context = useGTContext();
-  return context?.conditionStore ?? getReadonlyConditionStoreWithFallback();
+  return context?.conditionStore ?? getReadonlyConditionStore();
 }
 
 /**
