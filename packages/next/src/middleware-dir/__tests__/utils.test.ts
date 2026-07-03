@@ -382,6 +382,19 @@ describe('getSharedPath', () => {
     ).toBe('/user/[id]/settings');
   });
 
+  it('should preserve regex metacharacter matching outside dynamic segments', () => {
+    const pathMap = {
+      '/files/v.+/[^/]+': '/files/[version]/[id]',
+    };
+
+    expect(getSharedPath('/files/v12/report', pathMap, undefined)).toBe(
+      '/files/[version]/[id]'
+    );
+    expect(getSharedPath('/files/v.+/report', pathMap, undefined)).toBe(
+      '/files/[version]/[id]'
+    );
+  });
+
   it('should return undefined for no matches', () => {
     expect(getSharedPath('/nonexistent', pathToSharedPath, undefined)).toBe(
       undefined
