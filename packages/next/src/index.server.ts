@@ -35,7 +35,6 @@ export {
 export {
   useDefaultLocale,
   useGT,
-  useGTClass,
   useLocaleDirection,
   useLocales,
   useLocaleProperties,

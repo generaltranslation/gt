@@ -30,10 +30,6 @@ export function useShouldTranslate(): boolean {
   return enableI18n && getI18nConfig().requiresTranslation(locale);
 }
 
-export function useGTClass() {
-  return useMemo(() => getI18nConfig().getGTClass(), []);
-}
-
 export function useLocaleProperties(locale: string): LocaleProperties {
   return useMemo(
     () => getI18nConfig().getGTClass().getLocaleProperties(locale),

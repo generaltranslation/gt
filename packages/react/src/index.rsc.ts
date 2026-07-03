@@ -78,9 +78,6 @@ export function useVersionId() {
 export function useLocales() {
   return getI18nConfig().getLocales();
 }
-export function useGTClass() {
-  return getI18nConfig().getGTClass();
-}
 export function useLocaleDirection(locale: string) {
   return getI18nConfig().getGTClass().getLocaleDirection(locale);
 }

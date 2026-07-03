@@ -13,7 +13,6 @@ import {
   useRegion as _useRegion,
   useLocales as _useLocales,
   useDefaultLocale as _useDefaultLocale,
-  useGTClass as _useGTClass,
   useLocaleProperties as _useLocaleProperties,
   Currency as _Currency,
   DateTime as _DateTime,
@@ -475,19 +474,6 @@ export const useLocales: typeof _useLocales = () => {
  * console.log(locale); // 'en-US'
  */
 export const useDefaultLocale: typeof _useDefaultLocale = () => {
-  throw new Error(typesFileError);
-};
-
-/**
- * Returns the configured GT class instance.
- *
- * @returns {GT} The configured GT class instance.
- *
- * @example
- * const gt = useGTClass();
- * console.log(gt.getLocaleProperties('en-US'));
- */
-export const useGTClass: typeof _useGTClass = () => {
   throw new Error(typesFileError);
 };
 

@@ -19,7 +19,6 @@ export {
   useEnableI18n,
   useFormatLocales,
   useGT,
-  useGTClass,
   useLocale,
   useLocaleDirection,
   useLocaleProperties,
