@@ -1,5 +1,21 @@
 # gt-i18n
 
+## 1.0.0-odysseus.7
+
+### Minor Changes
+
+- 0cd7813: Store cookie names in I18nConfig so custom cookie names work before the condition store is initialized.
+  - `gt-i18n`: Removed the unused React locale cookie name from the shared GT config type.
+  - `@generaltranslation/react-core`: `ReactI18nConfig` now accepts `localeCookieName`, `regionCookieName`, and `enableI18nCookieName`, exposes getters that fall back to the default names, and exports the default storage names from the `pure` entrypoint.
+  - `gt-next`: Imports default cookie names from the React Core `pure` entrypoint instead of the removed React Core cookie constants subpath.
+  - `gt-react`: The browser condition store now resolves cookie names from `I18nConfig` instead of hardcoding the defaults, so custom cookie names passed to `initializeGT()` are honored for both reads and writes.
+  - `gt-react-native`: Native condition storage now resolves its store keys from `I18nConfig`, matching `gt-react` behavior.
+  - `gt-tanstack-start`: `parseLocale()` reads and writes the locale cookie using the configured cookie name instead of the default.
+
+### Patch Changes
+
+- ab61565: Defer the missing-projectId and missing-translation-loader warnings from I18nCache construction to the first translation loader invocation. Clients of server-rendered apps receive translations via updateTranslations() and never invoke the fallback loader, so they no longer log spurious warnings on initialization. Explicitly disabling translation loading with cacheUrl: null no longer logs at all, and explicitly setting cacheUrl to the default GT CDN URL alongside a projectId is now classified as GT remote loading.
+
 ## 1.0.0-odysseus.6
 
 ### Patch Changes
