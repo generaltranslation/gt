@@ -5,6 +5,9 @@ import {
 } from 'gt-i18n/internal';
 import { BrowserConditionStore } from './BrowserConditionStore';
 
+// Both singletons below are typed views of the same global slot (namespace
+// 'i18n', key 'conditionStore'), so there is a single uninitialized state and
+// one message describes it for both getters.
 const conditionStoreNotInitializedError = createDiagnosticMessage({
   source: 'gt-react',
   severity: 'Error',

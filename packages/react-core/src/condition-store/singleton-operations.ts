@@ -8,7 +8,7 @@ import {
   getRuntimeEnvironment,
 } from 'gt-i18n/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
-import { readRenderStrategy } from '../setup/i18nConfig';
+import { getI18nConfig, type RenderStrategy } from '../setup/i18nConfig';
 
 const conditionStoreNotInitializedError = createDiagnosticMessage({
   source: '@generaltranslation/react-core',
@@ -23,6 +23,20 @@ const { getConditionStore, setConditionStore, isConditionStoreInitialized } =
   );
 
 /**
+ * Deliberate exception to the throw-on-uninitialized singleton protocol:
+ * this fallback path exists to keep production rendering, so reading the
+ * render strategy for its diagnostic must not throw when I18nConfig is
+ * also uninitialized.
+ */
+function readRenderStrategy(): RenderStrategy | undefined {
+  try {
+    return getI18nConfig().getRenderStrategy();
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Opinionated decision: add a safety wrapper around the condition store to be more forgiving in production
  * TODO: perhaps this is how condition store should always be accessed
  */
@@ -31,9 +45,6 @@ function getReadonlyConditionStoreWithFallback(): ReadonlyConditionStoreInterfac
     return getConditionStore();
   } catch (error) {
     // Error handling
-    // readRenderStrategy() must not throw here: if I18nConfig is also
-    // uninitialized, a throwing getter would replace this diagnostic (and
-    // skip the production fallback below) with a config error.
     const runtimeEnvironment = getRuntimeEnvironment();
     const renderStrategy = readRenderStrategy();
     const errorMessage = createDiagnosticMessage({
@@ -46,7 +57,7 @@ function getReadonlyConditionStoreWithFallback(): ReadonlyConditionStoreInterfac
           ? 'Initialize GT before reading GT runtime context.'
           : renderStrategy === 'server-render'
             ? 'Add a <GTProvider> at the root of your component tree.'
-            : 'Initialize GT before rendering and add a <GTProvider> at the root of your component tree.',
+            : 'Call initializeGT() from your GT framework package before rendering (gt-next runs this automatically) and add a <GTProvider> at the root of your component tree.',
       wayOut:
         runtimeEnvironment === 'development'
           ? undefined

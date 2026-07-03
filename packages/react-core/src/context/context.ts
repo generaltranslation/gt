@@ -9,7 +9,7 @@ import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { createGlobalSingleton } from 'gt-i18n/internal';
 import { createContext, useContext, type Context } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
-import { readRenderStrategy } from '../setup/i18nConfig';
+import { getI18nConfig } from '../setup/i18nConfig';
 import type {
   OnMissingTranslation,
   OnMissingDictionaryEntry,
@@ -69,30 +69,24 @@ export function getGTContext(): Context<GTContextType | undefined> {
 
 export function useGTContext(): GTContextType | undefined {
   const context = useContext(getGTContext());
-  // readRenderStrategy() must not throw here: when I18nConfig is also
-  // uninitialized we still want the missing-provider diagnostic below,
-  // not a masking I18nConfig error.
-  const renderStrategy = readRenderStrategy();
-  if (context || renderStrategy === 'SPA') {
+  // If I18nConfig is uninitialized, getI18nConfig() throws its own
+  // not-initialized error: GT initialization never ran, which is the root
+  // cause and carries its own fix.
+  if (context || getI18nConfig().getRenderStrategy() === 'SPA') {
     return context;
   }
   /**
    * TODO: in a separate PR, we should figure out how to make this more of a forgiving system
    */
-  throw new Error(createMissingGTProviderError(renderStrategy === undefined));
+  throw new Error(createMissingGTProviderError());
 }
 
-function createMissingGTProviderError(
-  isI18nConfigUninitialized: boolean
-): string {
+function createMissingGTProviderError(): string {
   return createDiagnosticMessage({
     source: '@generaltranslation/react-core',
     severity: 'Error',
     whatHappened: 'GT runtime context could not be read',
     why: 'GTContext was accessed outside of a <GTProvider>',
     fix: 'Add a <GTProvider> at the root of your component tree.',
-    details: isI18nConfigUninitialized
-      ? 'The I18nConfig singleton is also uninitialized, so GT initialization has not run in this runtime. This can happen when a bundler drops GT setup side effects or an edge/serverless isolate loads a bundle that never runs initialization.'
-      : undefined,
   });
 }

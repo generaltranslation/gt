@@ -99,21 +99,6 @@ export function getI18nConfig(): ReactI18nConfig {
   );
 }
 
-/**
- * Reads the render strategy without throwing when the I18nConfig singleton is
- * missing or was initialized without react-core support. Error and fallback
- * paths must use this instead of getI18nConfig() so that building one
- * diagnostic cannot throw a different, masking error (e.g. when GT
- * initialization never ran in this bundle or isolate).
- */
-export function readRenderStrategy(): RenderStrategy | undefined {
-  try {
-    return getI18nConfig().getRenderStrategy();
-  } catch {
-    return undefined;
-  }
-}
-
 export function setI18nConfig(nextI18nConfig: ReactI18nConfig): void {
   setBaseI18nConfig(nextI18nConfig);
 }
