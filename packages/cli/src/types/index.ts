@@ -118,7 +118,8 @@ export type Framework =
   | typeof Libraries.GT_NEXT
   | typeof Libraries.GT_REACT
   | typeof Libraries.GT_REACT_NATIVE
-  | typeof Libraries.GT_TANSTACK_START;
+  | typeof Libraries.GT_TANSTACK_START
+  | typeof Libraries.GT_ASTRO;
 
 export type FrameworkObject =
   | {
