@@ -136,6 +136,45 @@ describe('DictionaryCache', () => {
     expect(result).toBeUndefined();
   });
 
+  it('update() merges the cached dictionary', () => {
+    const cache = new DictionaryCache({
+      init: dictionary,
+      runtimeTranslate,
+    });
+
+    const updatedDictionary: Dictionary = {
+      greeting: 'Hi',
+      user: {
+        profile: {
+          title: 'Title',
+        },
+      },
+    };
+    cache.update(updatedDictionary);
+    updatedDictionary.user = {
+      profile: {
+        title: 'Changed',
+      },
+    };
+
+    expect(cache.getEntry('greeting')).toEqual({
+      entry: 'Hi',
+      options: {},
+    });
+    expect(cache.getEntry('cta')).toEqual({
+      entry: 'Click me',
+      options: {},
+    });
+    expect(cache.getEntry('user.profile.name')).toEqual({
+      entry: 'Name',
+      options: {},
+    });
+    expect(cache.getEntry('user.profile.title')).toEqual({
+      entry: 'Title',
+      options: {},
+    });
+  });
+
   it('materializeEntry() rejects because fallback is not implemented', async () => {
     const cache = new DictionaryCache({
       init: {},

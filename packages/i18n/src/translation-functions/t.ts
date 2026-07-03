@@ -1,6 +1,6 @@
-import { resolveStringContentWithFallback } from './internal/helpers';
-import { InlineTranslationOptions } from './types/options';
-import { getCurrentLocale } from '../i18n-manager/singleton-operations';
+import { resolveStringContentWithFallback } from "./internal/helpers";
+import { InlineTranslationOptions } from "./types/options";
+import { getLocale } from "../helpers/locale";
 
 /**
  * Translate a message
@@ -9,9 +9,9 @@ import { getCurrentLocale } from '../i18n-manager/singleton-operations';
  * @returns The translated message.
  */
 export function t(message: string, options: InlineTranslationOptions = {}) {
-  const locale = options.$locale ?? getCurrentLocale();
+  const locale = options.$locale ?? getLocale();
   return resolveStringContentWithFallback(locale, message, {
-    $format: 'ICU',
+    $format: "ICU",
     ...options,
   });
 }

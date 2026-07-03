@@ -1,43 +1,46 @@
 // No useContext related exports should go through here!
 
-import flattenDictionary from './internal/flattenDictionary';
-import addGTIdentifier from './internal/addGTIdentifier';
-import { removeInjectedT } from './internal/removeInjectedT';
-import writeChildrenAsObjects from './internal/writeChildrenAsObjects';
-import getPluralBranch from './branches/plurals/getPluralBranch';
+import flattenDictionary from "./deprecated/internal/flattenDictionary";
+import addGTIdentifier from "./deprecated/internal/addGTIdentifier";
+import { removeInjectedT } from "./deprecated/internal/removeInjectedT";
+import writeChildrenAsObjects from "./deprecated/internal/writeChildrenAsObjects";
+import getPluralBranch from "./deprecated/branches/plurals/getPluralBranch";
 import {
   getDictionaryEntry,
   isValidDictionaryEntry,
-} from './dictionaries/getDictionaryEntry';
-import getEntryAndMetadata from './dictionaries/getEntryAndMetadata';
-import getVariableProps from './variables/_getVariableProps';
-import isVariableObject from './rendering/isVariableObject';
-import getVariableName from './variables/getVariableName';
-import renderDefaultChildren from './rendering/renderDefaultChildren';
-import renderTranslatedChildren from './rendering/renderTranslatedChildren';
-import { getDefaultRenderSettings } from './rendering/getDefaultRenderSettings';
-import renderSkeleton from './rendering/renderSkeleton';
+} from "./deprecated/dictionaries/getDictionaryEntry";
+import getEntryAndMetadata from "./deprecated/dictionaries/getEntryAndMetadata";
+import getVariableProps from "./deprecated/variables/_getVariableProps";
+import isVariableObject from "./deprecated/rendering/isVariableObject";
+import getVariableName from "./deprecated/variables/getVariableName";
+import renderDefaultChildren from "./deprecated/rendering/renderDefaultChildren";
+import renderTranslatedChildren from "./deprecated/rendering/renderTranslatedChildren";
+import { getDefaultRenderSettings } from "./deprecated/rendering/getDefaultRenderSettings";
+import renderSkeleton from "./deprecated/rendering/renderSkeleton";
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
   defaultEnableI18nCookieName,
-} from './utils/cookies';
-import mergeDictionaries from './dictionaries/mergeDictionaries';
-import { reactHasUse } from './promises/reactHasUse';
-import { getSubtree, getSubtreeWithCreation } from './dictionaries/getSubtree';
-import { injectEntry } from './dictionaries/injectEntry';
-import { isDictionaryEntry } from './dictionaries/isDictionaryEntry';
-import { stripMetadataFromEntries } from './dictionaries/stripMetadataFromEntries';
-import { injectHashes } from './dictionaries/injectHashes';
-import { injectTranslations } from './dictionaries/injectTranslations';
-import { injectFallbacks } from './dictionaries/injectFallbacks';
-import { injectAndMerge } from './dictionaries/injectAndMerge';
-import { collectUntranslatedEntries } from './dictionaries/collectUntranslatedEntries';
-import { msg, decodeMsg, decodeOptions } from './messages/messages';
-import { Static, Derive } from './variables/Derive';
+} from "./deprecated/utils/cookies";
+import mergeDictionaries from "./deprecated/dictionaries/mergeDictionaries";
+import { reactHasUse } from "./deprecated/promises/reactHasUse";
+import {
+  getSubtree,
+  getSubtreeWithCreation,
+} from "./deprecated/dictionaries/getSubtree";
+import { injectEntry } from "./deprecated/dictionaries/injectEntry";
+import { isDictionaryEntry } from "./deprecated/dictionaries/isDictionaryEntry";
+import { stripMetadataFromEntries } from "./deprecated/dictionaries/stripMetadataFromEntries";
+import { injectHashes } from "./deprecated/dictionaries/injectHashes";
+import { injectTranslations } from "./deprecated/dictionaries/injectTranslations";
+import { injectFallbacks } from "./deprecated/dictionaries/injectFallbacks";
+import { injectAndMerge } from "./deprecated/dictionaries/injectAndMerge";
+import { collectUntranslatedEntries } from "./deprecated/dictionaries/collectUntranslatedEntries";
+import { msg, decodeMsg, decodeOptions } from "./deprecated/messages/messages";
+import { Static, Derive } from "./deprecated/variables/Derive";
 
-export * from 'gt-i18n/fallbacks';
-export { declareStatic, derive, declareVar, decodeVars } from 'gt-i18n';
+export * from "gt-i18n/fallbacks";
+export { declareStatic, derive, declareVar, decodeVars } from "gt-i18n";
 
 export {
   addGTIdentifier,

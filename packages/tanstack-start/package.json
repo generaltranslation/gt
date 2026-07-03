@@ -2,9 +2,9 @@
   "name": "gt-tanstack-start",
   "version": "0.4.21",
   "description": "TanStack Start integration for General Translation",
-  "main": "dist/index.cjs.min.cjs",
-  "module": "dist/index.esm.min.mjs",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.client.cjs",
+  "module": "./dist/index.client.mjs",
+  "types": "./dist/index.types.d.cts",
   "files": [
     "dist",
     "CHANGELOG.md"
@@ -53,18 +53,46 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs.min.cjs",
-      "import": "./dist/index.esm.min.mjs"
+      "react-server": {
+        "require": {
+          "types": "./dist/index.types.d.cts",
+          "default": "./dist/index.server.cjs"
+        },
+        "import": {
+          "types": "./dist/index.types.d.mts",
+          "default": "./dist/index.server.mjs"
+        },
+        "default": "./dist/index.server.mjs"
+      },
+      "browser": {
+        "require": {
+          "types": "./dist/index.types.d.cts",
+          "default": "./dist/index.client.cjs"
+        },
+        "import": {
+          "types": "./dist/index.types.d.mts",
+          "default": "./dist/index.client.mjs"
+        },
+        "default": "./dist/index.client.mjs"
+      },
+      "require": {
+        "types": "./dist/index.types.d.cts",
+        "default": "./dist/index.server.cjs"
+      },
+      "import": {
+        "types": "./dist/index.types.d.mts",
+        "default": "./dist/index.server.mjs"
+      },
+      "default": "./dist/index.server.mjs"
     },
     "./types": {
-      "types": "./dist/types.d.ts"
+      "types": "./dist/types.d.cts"
     }
   },
   "typesVersions": {
     "*": {
       "types": [
-        "./dist/types.d.ts"
+        "./dist/types.d.cts"
       ]
     }
   },
@@ -72,7 +100,7 @@
     "baseUrl": ".",
     "paths": {
       "gt-tanstack-start/types": [
-        "./dist/types"
+        "./dist/types.d.cts"
       ]
     }
   },

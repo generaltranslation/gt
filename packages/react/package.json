@@ -14,8 +14,8 @@
     "./dist/macros.*"
   ],
   "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "dependencies": {
     "@generaltranslation/format": "workspace:*",
@@ -86,6 +86,39 @@
         "default": "./dist/client.mjs"
       }
     },
+    "./context": {
+      "react-server": {
+        "require": {
+          "types": "./dist/context.types.d.cts",
+          "default": "./dist/context.server.cjs"
+        },
+        "import": {
+          "types": "./dist/context.types.d.mts",
+          "default": "./dist/context.server.mjs"
+        },
+        "default": "./dist/context.server.mjs"
+      },
+      "browser": {
+        "require": {
+          "types": "./dist/context.types.d.cts",
+          "default": "./dist/context.client.cjs"
+        },
+        "import": {
+          "types": "./dist/context.types.d.mts",
+          "default": "./dist/context.client.mjs"
+        },
+        "default": "./dist/context.client.mjs"
+      },
+      "require": {
+        "types": "./dist/context.types.d.cts",
+        "default": "./dist/context.server.cjs"
+      },
+      "import": {
+        "types": "./dist/context.types.d.mts",
+        "default": "./dist/context.server.mjs"
+      },
+      "default": "./dist/context.server.mjs"
+    },
     "./browser": {
       "require": {
         "types": "./dist/browser.d.cts",
@@ -115,8 +148,14 @@
       "client": [
         "./dist/client.d.cts"
       ],
+      "context": [
+        "./dist/context.types.d.cts"
+      ],
       "internal": [
         "./dist/internal.d.cts"
+      ],
+      "setup": [
+        "./dist/setup.d.cts"
       ],
       "browser": [
         "./dist/browser.d.cts"
@@ -135,8 +174,14 @@
       "gt-react/client": [
         "./dist/client"
       ],
+      "gt-react/context": [
+        "./dist/context.types.d.cts"
+      ],
       "gt-react/internal": [
         "./dist/internal"
+      ],
+      "gt-react/setup": [
+        "./dist/setup.d.cts"
       ],
       "gt-react/browser": [
         "./dist/browser.d.cts"

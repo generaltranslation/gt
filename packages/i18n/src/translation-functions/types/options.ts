@@ -3,7 +3,9 @@ import type {
   StringFormat,
 } from '@generaltranslation/format/types';
 
-// TODO: next major version, this should be Record<string, string>
+/**
+ * Values that get interpolated
+ */
 export type BaseTranslationOptions = Record<string, unknown>;
 
 // For t()
@@ -21,7 +23,7 @@ export type DictionaryOptions = BaseTranslationOptions & {
  * Options for string resolution
  * Used by the gt() function
  */
-export type InlineTranslationOptions = BaseTranslationOptions & {
+export type InlineTranslationOptionsFields = {
   $context?: string;
   $id?: string;
   /** The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'. */
@@ -40,11 +42,20 @@ export type InlineTranslationOptions = BaseTranslationOptions & {
   $_source?: string;
 };
 
+export type InlineTranslationOptions = InlineTranslationOptionsFields &
+  BaseTranslationOptions;
+
 /**
  * Options for string resolution
  * Used by the m() function
  */
-export type InlineResolveOptions = BaseTranslationOptions;
+export type InlineResolveOptions = BaseTranslationOptions & {
+  $_hash?: string;
+  $locale?: string;
+  $format?: StringFormat;
+  $maxChars?: number;
+  $id?: string;
+};
 
 /**
  * Options for string registration
@@ -83,10 +94,11 @@ export type JsxTranslationOptions = {
  * Resolution options - options needed to perform a resolution for a given content
  */
 export type LookupOptions =
-  | (Omit<InlineTranslationOptions, '$format'> & {
-      $format: StringFormat;
-      $locale?: string;
-    })
+  | (BaseTranslationOptions &
+      (Omit<InlineTranslationOptionsFields, '$format'> & {
+        $format: StringFormat;
+        $locale?: string;
+      }))
   | (JsxTranslationOptions & {
       $format: 'JSX';
       $locale?: string;

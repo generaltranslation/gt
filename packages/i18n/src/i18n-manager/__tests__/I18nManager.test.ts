@@ -69,6 +69,54 @@ describe('I18nManager', () => {
     expect(result).toBe(translatedString);
   });
 
+  it('enables dev hot reload with dev credentials, a project id, and development environment', () => {
+    const manager = createManager({
+      devApiKey: 'dev-key',
+      projectId: 'project-id',
+      environment: 'development',
+    });
+
+    expect(manager.isDevHotReloadEnabled()).toBe(true);
+  });
+
+  it.each([
+    {
+      name: 'missing dev API key',
+      config: {
+        projectId: 'project-id',
+        environment: 'development',
+      },
+    },
+    {
+      name: 'missing project id',
+      config: {
+        devApiKey: 'dev-key',
+        environment: 'development',
+      },
+    },
+    {
+      name: 'disabled runtime URL',
+      config: {
+        devApiKey: 'dev-key',
+        projectId: 'project-id',
+        runtimeUrl: null,
+        environment: 'development',
+      },
+    },
+    {
+      name: 'production environment',
+      config: {
+        devApiKey: 'dev-key',
+        projectId: 'project-id',
+        environment: 'production',
+      },
+    },
+  ])('disables dev hot reload for $name', ({ config }) => {
+    const manager = createManager(config);
+
+    expect(manager.isDevHotReloadEnabled()).toBe(false);
+  });
+
   // ===== NEW BEHAVIOR TESTS ===== //
 
   it('loadTranslations() returns Record<Hash, Translation>', async () => {
@@ -181,6 +229,53 @@ describe('I18nManager', () => {
           name: 'Nom',
         },
       },
+    });
+  });
+
+  it('updateDictionaries() updates locale dictionary lookups', () => {
+    const manager = createManager({
+      dictionary: {
+        greeting: 'Hello',
+        cta: 'Click me',
+        navigation: {
+          about: 'About',
+        },
+      },
+    });
+
+    manager.updateDictionaries({
+      en: {
+        greeting: 'Hi',
+        navigation: {
+          home: 'Home',
+        },
+      },
+      fr: {
+        greeting: 'Bonjour',
+        navigation: {
+          home: 'Accueil',
+        },
+      },
+    });
+
+    expect(manager.lookupDictionary('en', 'greeting')).toEqual({
+      entry: 'Hi',
+      options: {},
+    });
+    expect(manager.lookupDictionaryObj('en', 'navigation')).toEqual({
+      about: 'About',
+      home: 'Home',
+    });
+    expect(manager.lookupDictionary('en', 'cta')).toEqual({
+      entry: 'Click me',
+      options: {},
+    });
+    expect(manager.lookupDictionary('fr', 'greeting')).toEqual({
+      entry: 'Bonjour',
+      options: {},
+    });
+    expect(manager.lookupDictionaryObj('fr', 'navigation')).toEqual({
+      home: 'Accueil',
     });
   });
 

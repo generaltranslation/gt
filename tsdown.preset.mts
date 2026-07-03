@@ -85,6 +85,7 @@ type TsdownMinifiedDualFormatConfigOptions = Pick<
   UserConfig,
   'deps' | 'outDir'
 > & {
+  clean?: boolean;
   entries: string[];
   packageDir?: string;
   /** Defaults to the conventional type entry when it exists. Pass false to skip the types-only CJS artifact. */
@@ -121,6 +122,7 @@ function createRemoveTypeRuntimeArtifactsHook(
 }
 
 export function createTsdownMinifiedDualFormatConfig({
+  clean = true,
   entries,
   packageDir = process.cwd(),
   typeEntry,
@@ -147,7 +149,7 @@ export function createTsdownMinifiedDualFormatConfig({
       entry: [entry],
       format: ['cjs'] as const,
       dts: true,
-      clean: index === 0,
+      clean: clean && index === 0,
     },
     {
       ...outputOptions,

@@ -70,7 +70,7 @@ import type {
 import type {
   ClientProviderProps,
   GTProviderProps,
-} from './react-context/types/config';
+} from './deprecated/react-context/types/config';
 
 // Type exports
 export type {

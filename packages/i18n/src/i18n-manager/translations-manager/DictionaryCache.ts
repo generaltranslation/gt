@@ -3,6 +3,7 @@ import {
   getDictionaryEntry,
   getDictionaryValue,
   getDictionaryValueAtPath,
+  isDictionaryObject,
   setDictionaryValueAtPath,
 } from './utils/dictionary-helpers';
 import { materializeDictionaryValue } from './utils/materialize-dictionary';
@@ -124,6 +125,10 @@ export class DictionaryCache {
     return cloneDictionaryValue(this.cache);
   }
 
+  public update(dictionary: Dictionary): void {
+    mergeDictionary(this.cache, dictionary);
+  }
+
   public async materializeValue(
     key: DictionaryKey,
     sourceValue: DictionaryValue,
@@ -185,6 +190,17 @@ export class DictionaryCache {
       return cloneDictionaryEntry(await translationPromise);
     } finally {
       this.pendingTranslations.delete(key);
+    }
+  }
+}
+
+function mergeDictionary(target: Dictionary, source: Dictionary): void {
+  for (const [key, value] of Object.entries(source)) {
+    const targetValue = target[key];
+    if (isDictionaryObject(targetValue) && isDictionaryObject(value)) {
+      mergeDictionary(targetValue, value);
+    } else {
+      target[key] = cloneDictionaryValue(value);
     }
   }
 }

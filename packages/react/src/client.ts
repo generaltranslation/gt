@@ -1,8 +1,8 @@
 'use client';
 
-import { ClientProvider } from './react-context/provider/ClientProvider';
-import { LocaleSelector } from './react-context/ui/LocaleSelector';
-import { RegionSelector } from './react-context/ui/RegionSelector';
+import { ClientProvider } from './deprecated/react-context/provider/ClientProvider';
+import { LocaleSelector } from './deprecated/react-context/ui/LocaleSelector';
+import { RegionSelector } from './deprecated/react-context/ui/RegionSelector';
 
 import {
   T,

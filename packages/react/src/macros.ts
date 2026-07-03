@@ -1,5 +1,5 @@
-import { t as _t } from './i18n-context/functions/translation/t';
-import type { TemplateSyncResolutionFunction } from './i18n-context/functions/translation/types';
+import { t as _t } from './deprecated/i18n-context/functions/translation/t';
+import type { TemplateSyncResolutionFunction } from './deprecated/i18n-context/functions/translation/types';
 
 declare global {
   /**

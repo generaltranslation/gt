@@ -1,12 +1,10 @@
-import {
-  getCurrentLocale,
-  getI18nManager,
-} from '../../i18n-manager/singleton-operations';
-import { InlineTranslationOptions } from '../types/options';
-import { GTFunctionType } from '../types/functions';
-import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
-import { createLookupOptions } from './helpers';
-import type { StringFormat } from '@generaltranslation/format/types';
+import { getI18nManager } from "../../i18n-manager/singleton-operations";
+import { InlineTranslationOptions } from "../types/options";
+import { GTFunctionType } from "../types/functions";
+import { interpolateMessage } from "../utils/interpolation/interpolateMessage";
+import { createLookupOptions } from "./helpers";
+import type { StringFormat } from "@generaltranslation/format/types";
+import { getLocale } from "../../helpers/locale";
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
@@ -19,7 +17,7 @@ import type { StringFormat } from '@generaltranslation/format/types';
 export async function getGT(): Promise<GTFunctionType> {
   // Get the translation resolver
   const i18nManager = getI18nManager();
-  const locale = getCurrentLocale();
+  const locale = getLocale();
   await i18nManager.loadTranslations(locale);
   const sourceLocale = i18nManager.getDefaultLocale();
 
@@ -41,20 +39,20 @@ export async function getGT(): Promise<GTFunctionType> {
    */
   const gt: GTFunctionType = (
     message: string,
-    options: InlineTranslationOptions = {}
+    options: InlineTranslationOptions = {},
   ) => {
     const targetLocale = options.$locale ?? locale;
     const lookupOptions = createLookupOptions<StringFormat>(
       targetLocale,
       options,
-      'ICU'
+      "ICU",
     );
 
     // Lookup translation
     const translation = i18nManager.lookupTranslation(
       lookupOptions.$locale,
       message,
-      lookupOptions
+      lookupOptions,
     );
 
     // Format result

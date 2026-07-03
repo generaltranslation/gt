@@ -31,8 +31,12 @@ export function assertSafeDictionaryPathSegment(
   }
 }
 
-export function isDictionaryObject(value: unknown): value is Dictionary {
+export function isDictionaryValue(value: unknown): value is Dictionary {
   return typeof value === 'object' && value != null && !Array.isArray(value);
+}
+
+export function isDictionaryObject(value: unknown): value is Dictionary {
+  return isDictionaryValue(value);
 }
 
 export function cloneDictionaryValue<Value extends DictionaryValue | undefined>(
