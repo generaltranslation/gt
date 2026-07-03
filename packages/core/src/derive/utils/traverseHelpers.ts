@@ -3,10 +3,8 @@ import {
   GT_UNINDEXED_IDENTIFIER_REGEX,
 } from './regex';
 import { GTIndexedSelectElement, GTUnindexedSelectElement } from './types';
-import {
-  type MessageFormatElement,
-  TYPE,
-} from '@formatjs/icu-messageformat-parser/types.js';
+import { TYPE } from '@formatjs/icu-messageformat-parser';
+import type { MessageFormatElement } from '@formatjs/icu-messageformat-parser/types.js';
 
 // Visit any _gt_# select
 export function isGTIndexedSelectElement(
