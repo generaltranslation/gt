@@ -13,7 +13,10 @@ function setConfigEnv() {
   process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS = JSON.stringify({
     cacheUrl: 'https://cache.example.com',
     renderSettings: { timeout: 123 },
-    headersAndCookies: { localeCookieName: 'custom-locale' },
+    headersAndCookies: {
+      localeCookieName: 'custom-locale',
+      enableI18nCookieName: 'custom-enable-i18n',
+    },
     maxConcurrentRequests: 1,
     maxBatchSize: 2,
     batchInterval: 3,
@@ -53,6 +56,7 @@ describe('getParams', () => {
       devApiKey: 'dev-key',
       cacheUrl: 'https://cache.example.com',
       localeCookieName: 'custom-locale',
+      enableI18nCookieName: 'custom-enable-i18n',
     });
     expect(nextI18nCacheParams).toMatchObject({
       projectId: 'project-id',

@@ -25,8 +25,8 @@ export type CreateBrowserConditionStoreParams = Omit<
  *
  * This exists so we can keep the locale param as required in the constructor
  *
- * We want the values that we read from the cookies to override as this
- * persists state across page reloads
+ * Server-provided props are the first candidates for hydration consistency.
+ * Cookies fill in missing values to persist state across page reloads.
  *
  * Cookie names come from the I18nConfig singleton so custom names passed to
  * initializeGT() apply here without being threaded through provider props.
@@ -85,11 +85,13 @@ function determineEnableI18n({
   enableI18n,
   _getEnableI18n: getEnableI18n,
 }: CreateBrowserConditionStoreParams): boolean {
+  if (enableI18n !== undefined) return enableI18n;
+
   const cookieEnableI18n = getCookieValue({
     cookieName: getI18nConfig().getEnableI18nCookieName(),
   });
   if (cookieEnableI18n === undefined) {
-    return getEnableI18n?.() ?? enableI18n ?? true;
+    return getEnableI18n?.() ?? true;
   }
   return cookieEnableI18n === 'true';
 }

@@ -1,5 +1,6 @@
 import type { GetServerSidePropsContext } from 'next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 
 const mockGetTranslationsSnapshot = vi.hoisted(() => vi.fn());
 const mockParseLocale = vi.hoisted(() => vi.fn());
@@ -17,8 +18,19 @@ import { withGTServerSideProps } from '../withGTServerSideProps';
 
 const context = { req: {} } as GetServerSidePropsContext;
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 describe('withGTServerSideProps', () => {
   beforeEach(() => {
+    resetGTGlobals();
+    initializeI18nConfig();
+    delete process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
     mockParseLocale.mockReset();
     mockParseLocale.mockReturnValue('fr');
     mockGetTranslationsSnapshot.mockReset();
@@ -31,6 +43,7 @@ describe('withGTServerSideProps', () => {
     await expect(getServerSideProps(context)).resolves.toEqual({
       props: {
         locale: 'fr',
+        enableI18n: true,
         translations: { fr: { hash: 'Bonjour' } },
       },
     });
@@ -51,6 +64,27 @@ describe('withGTServerSideProps', () => {
       props: {
         renderedAt: 'now',
         locale: 'fr',
+        enableI18n: true,
+        translations: { fr: { hash: 'Bonjour' } },
+      },
+    });
+  });
+
+  it('adds enableI18n from the request cookie', async () => {
+    const getServerSideProps = withGTServerSideProps();
+
+    await expect(
+      getServerSideProps({
+        req: {
+          cookies: {
+            'generaltranslation.enable-i18n': 'false',
+          },
+        },
+      } as GetServerSidePropsContext)
+    ).resolves.toEqual({
+      props: {
+        locale: 'fr',
+        enableI18n: false,
         translations: { fr: { hash: 'Bonjour' } },
       },
     });
