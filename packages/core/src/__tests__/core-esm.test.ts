@@ -105,6 +105,17 @@ describe('generaltranslation/core export', () => {
       "from '@formatjs/icu-messageformat-parser/types.js'"
     );
   });
+
+  it('does not leave the CommonJS FormatJS printer in the ESM graph', () => {
+    const internalEsmGraph = readBuiltFileGraph('internal.mjs').join('\n');
+
+    expect(internalEsmGraph).not.toContain(
+      'from "@formatjs/icu-messageformat-parser/printer.js"'
+    );
+    expect(internalEsmGraph).not.toContain(
+      "from '@formatjs/icu-messageformat-parser/printer.js'"
+    );
+  });
 });
 
 function readBuiltFileGraph(entryFileName: string) {
