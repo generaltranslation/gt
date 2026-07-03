@@ -39,6 +39,7 @@ Make the minimal changes to pass all gold standard tests.
 - Run tests after implementation to verify all pass
 - Minimize code footprint
 - Observe existing patterns and conventions (constants, naming, file structure, etc.)
+- Maintain package source layout: before adding files, check `package.json` exports/bin entries and keep top-level `src` files for package entrypoints only. Put implementation code under existing or new `src` subdirectories.
 
 **Output**: Report test results. All gold standard tests must pass, all existing tests must still pass.
 
