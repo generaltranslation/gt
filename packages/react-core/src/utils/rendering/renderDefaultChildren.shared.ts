@@ -63,7 +63,7 @@ function createRenderDefaultChildren({
           branches
         );
         return handleChildren(
-          (resolvedBranch !== null
+          (resolvedBranch != null
             ? resolvedBranch
             : child.props.children) as TaggedChildren
         );
