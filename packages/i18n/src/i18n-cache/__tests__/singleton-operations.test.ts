@@ -27,6 +27,7 @@ describe('i18n cache singleton operations', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     resetI18nCacheGlobal();
   });
 
@@ -50,7 +51,21 @@ describe('i18n cache singleton operations', () => {
     expect(getI18nCache()).toBe(cache);
   });
 
-  it('warns and preserves an existing global cache', async () => {
+  it('preserves an existing global cache', async () => {
+    const { getI18nCache, setI18nCache } =
+      await import('../singleton-operations');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cache = createCacheStub();
+
+    setI18nCache(cache);
+    setI18nCache(createCacheStub());
+
+    expect(getI18nCache()).toBe(cache);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('warns about an existing global cache when debug logging is enabled', async () => {
+    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
     const { getI18nCache, setI18nCache } =
       await import('../singleton-operations');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

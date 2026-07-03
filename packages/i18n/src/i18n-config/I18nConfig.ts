@@ -14,6 +14,11 @@ import {
   getTranslationApiType,
   TranslationApiType,
 } from '../i18n-cache/utils/getTranslationApiType';
+import {
+  getGeneralTranslationLogLevel,
+  isDebugLogLevel,
+  type GeneralTranslationLogLevel,
+} from '../logs/logLevel';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { validateI18nConfigParams } from './validation';
 
@@ -40,6 +45,7 @@ export type LocaleCandidates = string | string[] | undefined;
 export class I18nConfig extends LocaleConfig {
   private runtimeConfig: RuntimeConfig;
   private gtServicesEnabled: boolean;
+  private logLevel: GeneralTranslationLogLevel;
 
   constructor(params: I18nConfigParams = {}) {
     const gtServicesEnabled = resolveGTServicesEnabled(params);
@@ -52,6 +58,7 @@ export class I18nConfig extends LocaleConfig {
       _disableDevHotReload: params._disableDevHotReload,
     };
     this.gtServicesEnabled = gtServicesEnabled;
+    this.logLevel = getGeneralTranslationLogLevel();
   }
 
   getDefaultLocale(): string {
@@ -146,6 +153,14 @@ export class I18nConfig extends LocaleConfig {
 
   isGTServicesEnabled(): boolean {
     return this.gtServicesEnabled;
+  }
+
+  getLogLevel(): GeneralTranslationLogLevel {
+    return this.logLevel;
+  }
+
+  isDebugLoggingEnabled(): boolean {
+    return isDebugLogLevel(this.logLevel);
   }
 
   /**

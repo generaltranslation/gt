@@ -36,6 +36,7 @@ describe('condition store singleton factory', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     resetConditionStoreGlobal();
   });
 
@@ -57,7 +58,22 @@ describe('condition store singleton factory', () => {
     );
   });
 
-  it('warns and preserves an existing global condition store', async () => {
+  it('preserves an existing global condition store', async () => {
+    const { createConditionStoreSingleton } =
+      await import('../createConditionStoreSingleton');
+    const singleton = createConditionStoreSingleton('not initialized');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const conditionStore = createConditionStoreStub();
+
+    singleton.setConditionStore(conditionStore);
+    singleton.setConditionStore(createConditionStoreStub());
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(singleton.getConditionStore()).toBe(conditionStore);
+  });
+
+  it('warns about an existing global condition store when debug logging is enabled', async () => {
+    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
     const { createConditionStoreSingleton } =
       await import('../createConditionStoreSingleton');
     const singleton = createConditionStoreSingleton('not initialized');

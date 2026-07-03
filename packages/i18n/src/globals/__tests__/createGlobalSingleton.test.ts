@@ -23,6 +23,7 @@ function resetTestGlobalSingleton() {
 
 describe('createGlobalSingleton', () => {
   beforeEach(() => {
+    vi.unstubAllEnvs();
     resetTestGlobalSingleton();
   });
 
@@ -43,7 +44,25 @@ describe('createGlobalSingleton', () => {
     expect(() => singleton.get()).toThrow('singleton missing');
   });
 
-  it('warns and preserves an existing singleton instance', () => {
+  it('preserves an existing singleton instance', () => {
+    const singleton = createGlobalSingleton<{ id: string }>({
+      namespace: 'testGlobalSingleton',
+      key: 'singleton',
+      source: 'gt-i18n',
+      notInitialized: () => 'singleton missing',
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const value = { id: 'first' };
+
+    singleton.set(value);
+    singleton.set({ id: 'second' });
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(singleton.get()).toBe(value);
+  });
+
+  it('warns about existing singleton instances when debug logging is enabled', () => {
+    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
     const singleton = createGlobalSingleton<{ id: string }>({
       namespace: 'testGlobalSingleton',
       key: 'singleton',

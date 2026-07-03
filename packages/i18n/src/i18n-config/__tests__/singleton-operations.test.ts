@@ -21,6 +21,7 @@ describe('i18n config singleton operations', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     resetI18nConfigGlobal();
   });
 
@@ -63,7 +64,7 @@ describe('i18n config singleton operations', () => {
     expect(getI18nConfig()).toBe(config);
   });
 
-  it('warns and preserves an existing global config', async () => {
+  it('preserves an existing global config', async () => {
     const { getI18nConfig, initializeI18nConfig } =
       await import('../singleton-operations');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -71,6 +72,24 @@ describe('i18n config singleton operations', () => {
     const config = initializeI18nConfig({
       defaultLocale: 'en',
     });
+    initializeI18nConfig({
+      defaultLocale: 'fr',
+    });
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(getI18nConfig()).toBe(config);
+  });
+
+  it('warns about an existing global config when debug logging is enabled', async () => {
+    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
+    const { getI18nConfig, initializeI18nConfig } =
+      await import('../singleton-operations');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const config = initializeI18nConfig({
+      defaultLocale: 'en',
+    });
+    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', '');
     initializeI18nConfig({
       defaultLocale: 'fr',
     });
