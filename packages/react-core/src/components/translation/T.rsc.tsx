@@ -44,7 +44,10 @@ async function RscT({
 
   let targetJsxChildren: JsxChildren | undefined;
   const i18nCache = getReactI18nCache();
-  if (getI18nConfig().isDevHotReloadEnabled()) {
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    getI18nConfig().isDevHotReloadEnabled()
+  ) {
     targetJsxChildren = await i18nCache.lookupTranslationWithFallback(
       locale,
       prepared.sourceJsxChildren,

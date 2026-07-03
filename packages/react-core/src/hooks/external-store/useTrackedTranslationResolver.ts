@@ -49,7 +49,9 @@ export function useTrackedTranslationResolver(
 ): TrackedTranslationResolver {
   const translationsSnapshot = useTranslationsSnapshot();
   const i18nStore = useI18nStore();
-  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
+  const devHotReloadEnabled =
+    process.env.NODE_ENV !== 'production' &&
+    getI18nConfig().isDevHotReloadEnabled();
   const onMissingTranslation = useHandleMissingTranslation();
 
   /**
@@ -114,7 +116,9 @@ function usePreloadCompilerLookups(
 ) {
   const i18nStore = useI18nStore();
   const locale = useLocale();
-  const devHotReloadEnabled = getI18nConfig().isDevHotReloadEnabled();
+  const devHotReloadEnabled =
+    process.env.NODE_ENV !== 'production' &&
+    getI18nConfig().isDevHotReloadEnabled();
   const shouldTranslate = useShouldTranslate();
   const translationsSnapshot = useTranslationsSnapshot();
   const txHotReloadEnabled = useMemo(() => {
