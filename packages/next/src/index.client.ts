@@ -53,7 +53,6 @@ export {
 export {
   useDefaultLocale,
   useGT,
-  useGTClass,
   useLocale,
   useLocaleDirection,
   useLocaleProperties,

@@ -49,7 +49,6 @@ export {
   useMessages,
   useTranslations,
   useLocaleDirection,
-  useGTClass,
   useLocaleProperties,
 } from '@generaltranslation/react-core/hooks';
 
