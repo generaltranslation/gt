@@ -20,6 +20,13 @@ export type ResponseConfig = {
   localeHeaderName: string;
 };
 
+const DYNAMIC_PATH_SEGMENT_PATTERN = '/[^/]+';
+const PATH_REGEX_SLASHES = /[\\/]/g;
+
+function escapePathRegexSlashes(pathPattern: string): string {
+  return pathPattern.replace(PATH_REGEX_SLASHES, '\\$&');
+}
+
 export function getResponse({
   type,
   originalUrl,
@@ -207,9 +214,9 @@ export function getSharedPath(
   // Try regex pattern match
   let candidateSharedPath = undefined;
   for (const [pattern, sharedPath] of Object.entries(pathToSharedPath)) {
-    if (pattern.includes('/[^/]+')) {
+    if (pattern.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
       // Convert the pattern to a strict regex that matches the exact path structure
-      const regex = new RegExp(`^${pattern.replace(/\//g, '\\/')}$`);
+      const regex = new RegExp(`^${escapePathRegexSlashes(pattern)}$`);
       // Exact match
       if (regex.test(standardizedPathname)) {
         return sharedPath;
@@ -245,8 +252,8 @@ function inDefaultLocalePaths(
 
   // Try regex pattern match
   for (const path of defaultLocalePaths) {
-    if (path.includes('/[^/]+')) {
-      const regex = new RegExp(`^${path.replace(/\//g, '\\/')}$`);
+    if (path.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
+      const regex = new RegExp(`^${escapePathRegexSlashes(path)}$`);
       if (regex.test(pathname)) {
         return true;
       }
