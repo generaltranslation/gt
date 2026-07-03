@@ -55,7 +55,7 @@ const gtContextSingleton = createGlobalSingleton<
       severity: 'Error',
       whatHappened: 'Cannot read GTContext before it has been initialized',
       why: 'the internal GTContext singleton is unavailable',
-      fix: 'Access GTContext through getGTContext() so it is created lazily.',
+      fix: 'Add a <GTProvider> at the root of your component tree.',
     }),
 });
 
