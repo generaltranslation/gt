@@ -29,7 +29,7 @@ export type { WritableConditionStoreParams } from './condition-store/WritableCon
 export type * from './translation-functions/types/options';
 
 // Config
-export type * from './config/types';
+export type { GTConfig } from './config/types';
 
 // Internal types
 export type { Hash } from './i18n-cache/translations-manager/TranslationsCache';

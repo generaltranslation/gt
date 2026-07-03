@@ -1,11 +1,6 @@
 import type { CustomMapping } from '@generaltranslation/format/types';
 
 /**
- * TODO: this is a react-only type, we need to move this
- */
-export type RenderMethod = 'skeleton' | 'replace' | 'default';
-
-/**
  * TODO: this disagrees with the type in react-core/src/types-dir/config.ts, we need to move this
  * General Config:
  * @param defaultLocale - The default locale to use

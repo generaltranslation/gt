@@ -1,9 +1,4 @@
-import type { JsxChildren } from '@generaltranslation/format/types';
-import {
-  GTTranslationOptions,
-  JsxTranslationOptions,
-  TranslationVariables,
-} from './options';
+import { GTTranslationOptions, TranslationVariables } from './options';
 
 export type DictionaryObjectTranslation =
   | string
@@ -76,15 +71,3 @@ export type TFunctionType = ((
 ) => string) & {
   obj: (id: string) => DictionaryObjectTranslation;
 };
-
-/**
- * Type for the resolveJsx() function
- * @param {JsxChildren} children - The children to resolve the translation for.
- * @param {JsxTranslationOptions} options - The options for the translation.
- * @returns {JsxChildren} The resolved translation.
- */
-export type ResolveJsxTranslationFunction = (
-  locale: string,
-  children: JsxChildren,
-  options?: JsxTranslationOptions
-) => JsxChildren | undefined;

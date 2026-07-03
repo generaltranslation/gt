@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
+import { interpolateMessage } from 'gt-i18n/internal';
 import { useLocale } from './condition-store';
 import { useShouldTranslate } from './utils';
 import type { GTFunctionType, GTTranslationOptions } from 'gt-i18n/types';
@@ -9,6 +9,7 @@ import {
   type Message,
   useTrackedTranslationResolver,
 } from './external-store/useTrackedTranslationResolver';
+import { createLookupOptions } from '../utils/translation/createLookupOptions';
 
 // ===== Hook ===== //
 

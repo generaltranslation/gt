@@ -1,9 +1,9 @@
 import type {
   DictionaryEntry,
   DictionaryObject,
-  LookupOptions,
   Translation,
 } from 'gt-i18n/types';
+import type { LookupOptions } from 'gt-i18n/internal/types';
 
 // ----- Listeners ----- //
 
