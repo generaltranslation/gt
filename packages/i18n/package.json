@@ -123,22 +123,5 @@
         "./dist/internal-types.d.cts"
       ]
     }
-  },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "gt-i18n/types": [
-        "/dist/types"
-      ],
-      "gt-i18n/fallbacks": [
-        "/dist/fallbacks"
-      ],
-      "gt-i18n/internal": [
-        "/dist/internal"
-      ],
-      "gt-i18n/internal/types": [
-        "/dist/internal-types"
-      ]
-    }
   }
 }

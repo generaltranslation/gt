@@ -106,14 +106,6 @@
       ]
     }
   },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "gt-react/macros": [
-        "./dist/macros.d.cts"
-      ]
-    }
-  },
   "keywords": [
     "react",
     "translation",

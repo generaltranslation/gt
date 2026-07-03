@@ -84,23 +84,6 @@
       ]
     }
   },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@generaltranslation/react-core/pure": [
-        "./dist/pure"
-      ],
-      "@generaltranslation/react-core/hooks": [
-        "./dist/hooks"
-      ],
-      "@generaltranslation/react-core/components": [
-        "./dist/components"
-      ],
-      "@generaltranslation/react-core/components-rsc": [
-        "./dist/components-rsc"
-      ]
-    }
-  },
   "keywords": [
     "react",
     "translation",
