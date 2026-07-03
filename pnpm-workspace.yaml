@@ -21,8 +21,11 @@ minimumReleaseAgeExclude:
   - next
   - '@next/*'
   - gt-react-native
+  - gt-vue
   - 'react'
   - 'react-dom'
+  - 'vue'
+  - '@vue/*'
 
 catalog:
   '@babel/core': ^7.28.4
