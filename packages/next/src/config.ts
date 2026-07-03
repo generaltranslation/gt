@@ -112,6 +112,7 @@ type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
  * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
+ * @param {boolean} [disableInvalidLocaleWarning=defaultWithGTConfigProps.disableInvalidLocaleWarning] - Whether to disable invalid request locale warnings.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
@@ -648,6 +649,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         requestFunctionPaths.getLocale ? 'true' : 'false',
       _GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED:
         requestFunctionPaths.getRegion ? 'true' : 'false',
+      _GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING:
+        mergedConfig.disableInvalidLocaleWarning?.toString() || 'false',
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {

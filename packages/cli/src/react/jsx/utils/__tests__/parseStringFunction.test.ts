@@ -3520,3 +3520,116 @@ describe('parseStrings', () => {
     });
   });
 });
+
+describe('parseStrings $requiresReview', () => {
+  const FILE_PATH = 'test.tsx';
+
+  const createMockParams = () => ({
+    updates: [] as Updates,
+    errors: [] as string[],
+    warnings: new Set<string>(),
+    file: FILE_PATH,
+    parsingOptions: { conditionNames: [] },
+  });
+
+  const runUseGTParseStrings = (
+    code: string,
+    params: ReturnType<typeof createMockParams>
+  ) => {
+    const ast = parse(code, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+    traverse(ast, {
+      ImportSpecifier(path) {
+        if (
+          t.isIdentifier(path.node.imported) &&
+          path.node.imported.name === 'useGT' &&
+          t.isIdentifier(path.node.local)
+        ) {
+          parseStrings(
+            path.node.local.name,
+            'useGT',
+            path,
+            {
+              parsingOptions: params.parsingOptions,
+              file: params.file,
+              ignoreInlineMetadata: false,
+              ignoreDynamicContent: false,
+              ignoreInvalidIcu: false,
+              ignoreInlineListContent: true,
+              ignoreTaggedTemplates: false,
+              ignoreGlobalTaggedTemplates: false,
+              autoderiveMethod: 'DISABLED',
+            },
+            {
+              updates: params.updates,
+              errors: params.errors,
+              warnings: params.warnings,
+            }
+          );
+        }
+      },
+    });
+  };
+
+  it('extracts $requiresReview: true into metadata', () => {
+    const code = `
+      import { useGT } from 'gt-react';
+      const gt = useGT();
+      gt('hello world', { $requiresReview: true });
+    `;
+    const params = createMockParams();
+    runUseGTParseStrings(code, params);
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0].metadata.requiresReview).toBe(true);
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('extracts $requiresReview: false into metadata', () => {
+    const code = `
+      import { useGT } from 'gt-react';
+      const gt = useGT();
+      gt('hello world', { $requiresReview: false });
+    `;
+    const params = createMockParams();
+    runUseGTParseStrings(code, params);
+
+    expect(params.updates).toHaveLength(1);
+    expect(params.updates[0].metadata.requiresReview).toBe(false);
+    expect(params.errors).toHaveLength(0);
+  });
+
+  it('rejects string "true" as a $requiresReview value', () => {
+    const code = `
+      import { useGT } from 'gt-react';
+      const gt = useGT();
+      gt('hello world', { $requiresReview: 'true' });
+    `;
+    const params = createMockParams();
+    runUseGTParseStrings(code, params);
+
+    expect(params.errors.length).toBeGreaterThan(0);
+    expect(params.errors.join('\n')).toContain('requiresReview');
+    expect(
+      params.updates[0]?.metadata.requiresReview ?? undefined
+    ).toBeUndefined();
+  });
+
+  it('rejects dynamic $requiresReview expressions', () => {
+    const code = `
+      import { useGT } from 'gt-react';
+      const flag = Math.random() > 0.5;
+      const gt = useGT();
+      gt('hello world', { $requiresReview: flag });
+    `;
+    const params = createMockParams();
+    runUseGTParseStrings(code, params);
+
+    expect(params.errors.length).toBeGreaterThan(0);
+    expect(
+      params.updates[0]?.metadata.requiresReview ?? undefined
+    ).toBeUndefined();
+  });
+});

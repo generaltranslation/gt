@@ -208,6 +208,78 @@
   - gt-react@10.19.18
   - @generaltranslation/react-core@1.8.20
 
+## 0.4.29
+
+### Patch Changes
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - @generaltranslation/react-core@1.8.25
+  - generaltranslation@8.2.19
+  - gt-i18n@0.9.9
+  - gt-react@10.20.5
+
+## 0.4.28
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@0.9.8
+  - gt-react@10.20.4
+  - @generaltranslation/react-core@1.8.24
+
+## 0.4.27
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - gt-i18n@0.9.7
+  - gt-react@10.20.3
+  - @generaltranslation/react-core@1.8.23
+
+## 0.4.26
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - gt-i18n@0.9.6
+  - gt-react@10.20.2
+  - @generaltranslation/react-core@1.8.22
+
+## 0.4.25
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-react@10.20.1
+
+## 0.4.24
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-react@10.20.0
+
+## 0.4.23
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - gt-i18n@0.9.5
+  - gt-react@10.19.19
+  - @generaltranslation/react-core@1.8.21
+
+## 0.4.22
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@0.9.4
+  - gt-react@10.19.18
+  - @generaltranslation/react-core@1.8.20
+
 ## 0.4.21
 
 ### Patch Changes

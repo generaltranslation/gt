@@ -54,6 +54,11 @@
       "description": "Optional boolean flag that indicates whether your project is configured to use human review",
       "default": false
     },
+    "requiresReview": {
+      "type": "boolean",
+      "description": "When true, translated files require approval before the CLI downloads and uses them. File-type requiresReview settings and component-level $requiresReview props override this default.",
+      "default": false
+    },
     "modelProvider": {
       "type": "string",
       "description": "AI model provider to use for translations",
@@ -144,6 +149,28 @@
               "type": "string",
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
               "examples": ["*.[locale].json", "*-[locale].json"]
+            },
+            "requiresReview": {
+              "oneOf": [
+                { "type": "boolean" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "include": {
+                      "type": "array",
+                      "description": "Glob patterns for files that require review approval",
+                      "items": { "type": "string" }
+                    },
+                    "exclude": {
+                      "type": "array",
+                      "description": "Glob patterns for files that never require review approval (wins over include)",
+                      "items": { "type": "string" }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
             }
           },
           "required": ["include"],
@@ -174,6 +201,28 @@
               "type": "string",
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
               "examples": ["*.[locale].mdx"]
+            },
+            "requiresReview": {
+              "oneOf": [
+                { "type": "boolean" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "include": {
+                      "type": "array",
+                      "description": "Glob patterns for files that require review approval",
+                      "items": { "type": "string" }
+                    },
+                    "exclude": {
+                      "type": "array",
+                      "description": "Glob patterns for files that never require review approval (wins over include)",
+                      "items": { "type": "string" }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
             }
           },
           "required": ["include"],
@@ -204,6 +253,28 @@
               "type": "string",
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
               "examples": ["*.[locale].md"]
+            },
+            "requiresReview": {
+              "oneOf": [
+                { "type": "boolean" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "include": {
+                      "type": "array",
+                      "description": "Glob patterns for files that require review approval",
+                      "items": { "type": "string" }
+                    },
+                    "exclude": {
+                      "type": "array",
+                      "description": "Glob patterns for files that never require review approval (wins over include)",
+                      "items": { "type": "string" }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
             }
           },
           "required": ["include"],
@@ -234,6 +305,28 @@
               "type": "string",
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
               "examples": ["*.[locale].js"]
+            },
+            "requiresReview": {
+              "oneOf": [
+                { "type": "boolean" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "include": {
+                      "type": "array",
+                      "description": "Glob patterns for files that require review approval",
+                      "items": { "type": "string" }
+                    },
+                    "exclude": {
+                      "type": "array",
+                      "description": "Glob patterns for files that never require review approval (wins over include)",
+                      "items": { "type": "string" }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
             }
           },
           "required": ["include"],
@@ -264,6 +357,28 @@
               "type": "string",
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
               "examples": ["*.[locale].ts"]
+            },
+            "requiresReview": {
+              "oneOf": [
+                { "type": "boolean" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "include": {
+                      "type": "array",
+                      "description": "Glob patterns for files that require review approval",
+                      "items": { "type": "string" }
+                    },
+                    "exclude": {
+                      "type": "array",
+                      "description": "Glob patterns for files that never require review approval (wins over include)",
+                      "items": { "type": "string" }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
             }
           },
           "required": ["include"],
@@ -296,6 +411,28 @@
               "type": "string",
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
               "examples": ["*.[locale].yaml", "*-[locale].yml"]
+            },
+            "requiresReview": {
+              "oneOf": [
+                { "type": "boolean" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "include": {
+                      "type": "array",
+                      "description": "Glob patterns for files that require review approval",
+                      "items": { "type": "string" }
+                    },
+                    "exclude": {
+                      "type": "array",
+                      "description": "Glob patterns for files that never require review approval (wins over include)",
+                      "items": { "type": "string" }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
             }
           },
           "required": ["include"],

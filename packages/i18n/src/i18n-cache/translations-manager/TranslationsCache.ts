@@ -243,6 +243,7 @@ export class TranslationsCache<TranslationValue extends Translation> {
       $context?: string;
       $id?: string;
       $maxChars?: number;
+      $requiresReview?: boolean;
     };
     return new Promise<TranslationValue>((resolve, reject) => {
       this.queue.push({
@@ -256,6 +257,11 @@ export class TranslationsCache<TranslationValue extends Translation> {
           ...(metadataOptions.$id && { id: metadataOptions.$id }),
           ...(metadataOptions.$maxChars != null && {
             maxChars: Math.abs(metadataOptions.$maxChars),
+          }),
+          // The hash is review-aware; the request metadata must carry the
+          // same intent so the platform records it on anything it persists
+          ...(metadataOptions.$requiresReview === true && {
+            requiresReview: true,
           }),
           dataFormat: options.$format,
         },

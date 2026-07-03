@@ -1191,6 +1191,7 @@ describe('withGTConfig', () => {
         '_GENERALTRANSLATION_IGNORE_BROWSER_LOCALES',
         '_GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED',
         '_GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED',
+        '_GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING',
       ];
 
       for (const key of expectedKeys) {
@@ -1242,6 +1243,18 @@ describe('withGTConfig', () => {
       expect(typeof result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
         'string'
       );
+      expect(
+        result.env!._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING
+      ).toBe('false');
+    });
+
+    it('sets invalid locale warning env flag from withGTConfig props', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig({}, { disableInvalidLocaleWarning: true });
+
+      expect(
+        result.env!._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING
+      ).toBe('true');
     });
   });
 

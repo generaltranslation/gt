@@ -33,7 +33,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 24.18.0
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
@@ -126,13 +126,17 @@ jobs:
             }
 
       # gt (primary CLI package, lives in packages/cli/)
-      - name: Check if gt was published
+      - name: Check if gt binary release is needed
         id: check-gt
-        if: steps.changesets.outputs.published == 'true'
         run: |
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
+          version=$(jq -r .version packages/cli/package.json)
 
-          if echo "$published_packages" | jq -e 'any(.[]; .name == "gt")' > /dev/null; then
+          if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gt")' > /dev/null; then
+            echo "should_release_bin=true" >> $GITHUB_OUTPUT
+          elif npm view "gt@${version}" version > /dev/null 2>&1 && ! npm view "gt@${version}-bin.0" version > /dev/null 2>&1; then
+            # A previous run published gt but failed before the binary
+            # release landed; finish it on this run.
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
@@ -142,8 +146,7 @@ jobs:
         id: gt-version
         if: steps.check-gt.outputs.should_release_bin == 'true'
         run: |
-          published_packages='${{ steps.changesets.outputs.publishedPackages }}'
-          version=$(echo "$published_packages" | jq -er '.[] | select(.name == "gt") | .version')
+          version=$(jq -er .version packages/cli/package.json)
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Build gt binaries
@@ -191,18 +194,42 @@ jobs:
 
       - name: Release gt binary to npm
         if: steps.check-gt.outputs.should_release_bin == 'true'
-        run: pnpm --filter gt run bin:prep && pnpm --filter gt publish --tag bin --no-git-checks && pnpm --filter gt run bin:restore && pnpm --filter gt run build:clean
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          pnpm --filter gt run bin:prep
+          bin_version="${{ steps.gt-version.outputs.version }}-bin.0"
+          # The registry intermittently rejects the short-lived trusted
+          # publishing token partway through these large uploads; each retry
+          # is a fresh npm invocation and a fresh OIDC token exchange.
+          for attempt in 1 2 3 4 5; do
+            if pnpm --filter gt publish --tag bin --no-git-checks; then
+              break
+            fi
+            if npm view "gt@${bin_version}" version > /dev/null 2>&1; then
+              echo "gt@${bin_version} reached the registry despite the error"
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "Publishing gt@${bin_version} failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "Publish attempt ${attempt} failed, retrying in 30s"
+            sleep 30
+          done
+          pnpm --filter gt run bin:restore
+          pnpm --filter gt run build:clean
 
       # gtx-cli (backward-compat wrapper, lives in packages/gtx-cli/)
-      - name: Check if gtx-cli was published
+      - name: Check if gtx-cli binary release is needed
         id: check-gtx-cli
-        if: steps.changesets.outputs.published == 'true'
         run: |
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
+          version=$(jq -r .version packages/gtx-cli/package.json)
 
-          if echo "$published_packages" | jq -e 'any(.[]; .name == "gtx-cli")' > /dev/null; then
+          if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gtx-cli")' > /dev/null; then
+            echo "should_release_bin=true" >> $GITHUB_OUTPUT
+          elif npm view "gtx-cli@${version}" version > /dev/null 2>&1 && ! npm view "gtx-cli@${version}-bin.0" version > /dev/null 2>&1; then
+            # A previous run published gtx-cli but failed before the binary
+            # release landed; finish it on this run.
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
@@ -212,8 +239,7 @@ jobs:
         id: gtx-cli-version
         if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
         run: |
-          published_packages='${{ steps.changesets.outputs.publishedPackages }}'
-          version=$(echo "$published_packages" | jq -er '.[] | select(.name == "gtx-cli") | .version')
+          version=$(jq -er .version packages/gtx-cli/package.json)
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Build gtx-cli binaries
@@ -244,9 +270,29 @@ jobs:
 
       - name: Release gtx-cli binary to npm
         if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
-        run: pnpm --filter gtx-cli run bin:prep && pnpm --filter gtx-cli publish --tag bin --no-git-checks && pnpm --filter gtx-cli run bin:restore && pnpm --filter gtx-cli run build:clean
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          pnpm --filter gtx-cli run bin:prep
+          bin_version="${{ steps.gtx-cli-version.outputs.version }}-bin.0"
+          # The registry intermittently rejects the short-lived trusted
+          # publishing token partway through these large uploads; each retry
+          # is a fresh npm invocation and a fresh OIDC token exchange.
+          for attempt in 1 2 3 4 5; do
+            if pnpm --filter gtx-cli publish --tag bin --no-git-checks; then
+              break
+            fi
+            if npm view "gtx-cli@${bin_version}" version > /dev/null 2>&1; then
+              echo "gtx-cli@${bin_version} reached the registry despite the error"
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "Publishing gtx-cli@${bin_version} failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "Publish attempt ${attempt} failed, retrying in 30s"
+            sleep 30
+          done
+          pnpm --filter gtx-cli run bin:restore
+          pnpm --filter gtx-cli run build:clean
 
   odysseus-release:
     if: github.ref_name == 'odysseus'

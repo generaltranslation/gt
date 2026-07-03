@@ -206,6 +206,68 @@
   - gt-i18n@0.9.4
   - @generaltranslation/react-core@1.8.20
 
+## 10.20.5
+
+### Patch Changes
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - @generaltranslation/react-core@1.8.25
+  - generaltranslation@8.2.19
+  - gt-i18n@0.9.9
+  - @generaltranslation/supported-locales@2.1.5
+
+## 10.20.4
+
+### Patch Changes
+
+- Updated dependencies [[`a2a3dd0`](https://github.com/generaltranslation/gt/commit/a2a3dd0bcdce9abe360c406a12fc6bb3bc3ca181)]:
+  - @generaltranslation/supported-locales@2.1.4
+  - gt-i18n@0.9.8
+  - @generaltranslation/react-core@1.8.24
+
+## 10.20.3
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - gt-i18n@0.9.7
+  - @generaltranslation/react-core@1.8.23
+  - @generaltranslation/supported-locales@2.1.3
+
+## 10.20.2
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - gt-i18n@0.9.6
+  - @generaltranslation/react-core@1.8.22
+  - @generaltranslation/supported-locales@2.1.2
+
+## 10.20.1
+
+## 10.20.0
+
+## 10.19.19
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - gt-i18n@0.9.5
+  - @generaltranslation/react-core@1.8.21
+  - @generaltranslation/supported-locales@2.1.1
+
+## 10.19.18
+
+### Patch Changes
+
+- Updated dependencies [[`cc4edc1`](https://github.com/generaltranslation/gt/commit/cc4edc1e40d9977125bf6d053fb7f8cdbdd40b05)]:
+  - @generaltranslation/supported-locales@2.1.0
+  - gt-i18n@0.9.4
+  - @generaltranslation/react-core@1.8.20
+
 ## 10.19.17
 
 ### Patch Changes

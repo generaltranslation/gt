@@ -20,7 +20,8 @@ export function extractVariables<T extends TranslationVariables>(
         key !== '$_source' &&
         key !== '$_fallback' &&
         key !== '$format' &&
-        key !== '$locale'
+        key !== '$locale' &&
+        key !== '$requiresReview'
     )
   );
 }

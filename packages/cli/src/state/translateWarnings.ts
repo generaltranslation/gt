@@ -1,5 +1,6 @@
 export type WarningCategory =
   | 'skipped_file'
+  | 'pending_review'
   | 'failed_move'
   | 'failed_translation'
   | 'failed_download';

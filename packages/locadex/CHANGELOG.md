@@ -175,6 +175,153 @@
 - Updated dependencies []:
   - gt@2.14.38
 
+## 1.0.193
+
+### Patch Changes
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - gt@2.14.58
+
+## 1.0.192
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.57
+
+## 1.0.191
+
+### Patch Changes
+
+- Updated dependencies [[`dd0d1cd`](https://github.com/generaltranslation/gt/commit/dd0d1cd0276cd0a158fc3dd73a312502066782a7)]:
+  - gt@2.14.56
+
+## 1.0.190
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.55
+
+## 1.0.189
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - gt@2.14.54
+
+## 1.0.188
+
+### Patch Changes
+
+- Updated dependencies [[`28b1b59`](https://github.com/generaltranslation/gt/commit/28b1b59d13422ef665490a5500cacaabaa00541d)]:
+  - gt@2.14.53
+
+## 1.0.187
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.52
+
+## 1.0.186
+
+### Patch Changes
+
+- Updated dependencies [[`69172dc`](https://github.com/generaltranslation/gt/commit/69172dc72e3fe22b6072b4c60e26c3de2cd68494)]:
+  - gt@2.14.51
+
+## 1.0.185
+
+### Patch Changes
+
+- Updated dependencies [[`81d0d09`](https://github.com/generaltranslation/gt/commit/81d0d09db3f0d9d8a2ce7fc45f76bf5dd34fa34a)]:
+  - gt@2.14.50
+
+## 1.0.184
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.49
+
+## 1.0.183
+
+### Patch Changes
+
+- Updated dependencies [[`1e5e748`](https://github.com/generaltranslation/gt/commit/1e5e748b1aef33eb58f536496592a6258fc441e5)]:
+  - gt@2.14.48
+
+## 1.0.182
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.47
+
+## 1.0.181
+
+### Patch Changes
+
+- Updated dependencies [[`e64b96d`](https://github.com/generaltranslation/gt/commit/e64b96db770c0049551277b2d4ed1034ad977ce5)]:
+  - gt@2.14.46
+
+## 1.0.180
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.45
+
+## 1.0.179
+
+### Patch Changes
+
+- Updated dependencies [[`bda984e`](https://github.com/generaltranslation/gt/commit/bda984e3351520e49314d1b3601a362ea9eb7396)]:
+  - gt@2.14.44
+
+## 1.0.178
+
+### Patch Changes
+
+- Updated dependencies [[`0c5cb81`](https://github.com/generaltranslation/gt/commit/0c5cb817468acf1b140ec5371aa003c739584579)]:
+  - gt@2.14.43
+
+## 1.0.177
+
+### Patch Changes
+
+- Updated dependencies [[`205c246`](https://github.com/generaltranslation/gt/commit/205c24647b9f50a68358ee6c3332d110a77ce1b3)]:
+  - gt@2.14.42
+
+## 1.0.176
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.41
+
+## 1.0.175
+
+### Patch Changes
+
+- Updated dependencies [[`8094012`](https://github.com/generaltranslation/gt/commit/8094012f9827f3a35e053776946bea67492da9db)]:
+  - gt@2.14.40
+
+## 1.0.174
+
+### Patch Changes
+
+- Updated dependencies [[`cd8fa50`](https://github.com/generaltranslation/gt/commit/cd8fa505c90624160d6ef4d044946b3bf230f646), [`f19bade`](https://github.com/generaltranslation/gt/commit/f19bade4741e934505e75880218599d27873e864)]:
+  - gt@2.14.39
+
+## 1.0.173
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.38
+
 ## 1.0.172
 
 ### Patch Changes

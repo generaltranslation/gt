@@ -140,6 +140,7 @@ export enum USEGT_CALLBACK_OPTIONS {
   $maxChars = '$maxChars',
   $_hash = '$_hash',
   $format = '$format',
+  $requiresReview = '$requiresReview',
 }
 
 /**

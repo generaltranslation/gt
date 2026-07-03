@@ -17,6 +17,8 @@ export type TranslationMetadata = {
   /** The locale to use for formatting the message. */
   $locale?: string;
   $_hash?: string;
+  /** Whether the translated message requires approval before use. Must be a boolean literal. */
+  $requiresReview?: boolean;
   /** @internal Used to carry the original source when rendering a translation */
   $_fallback?: string;
   /** @deprecated use {@link EncodedTranslationOptions} instead */
@@ -37,7 +39,13 @@ export type TranslationOptions = TranslationVariables & TranslationMetadata;
 export type GTTranslationOptions = TranslationVariables &
   Pick<
     TranslationMetadata,
-    '$context' | '$id' | '$format' | '$locale' | '$_hash' | '$maxChars'
+    | '$context'
+    | '$id'
+    | '$format'
+    | '$locale'
+    | '$_hash'
+    | '$maxChars'
+    | '$requiresReview'
   >;
 
 export type DictionaryEntryOptions = TranslationVariables &
@@ -75,6 +83,9 @@ export type JsxTranslationOptions = Pick<
 > & {
   // TODO: make this required, but internally, not user facing
   $format?: 'JSX';
+  $maxChars?: number;
+  /** Whether the translated content requires approval before use */
+  $requiresReview?: boolean;
 };
 
 /**

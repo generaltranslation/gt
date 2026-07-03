@@ -282,6 +282,96 @@
   - gt-i18n@0.9.4
   - gt-react@10.19.18
 
+## 6.16.37
+
+### Patch Changes
+
+- [#1796](https://github.com/generaltranslation/gt/pull/1796) [`9f305a9`](https://github.com/generaltranslation/gt/commit/9f305a9209acbc773015e187a7da0c5c10083a52) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add a withGTConfig flag for disabling invalid request locale warnings.
+
+- [#1786](https://github.com/generaltranslation/gt/pull/1786) [`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `requiresReview`
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - @generaltranslation/compiler@1.3.27
+  - generaltranslation@8.2.19
+  - gt-i18n@0.9.9
+  - gt-react@10.20.5
+  - @generaltranslation/supported-locales@2.1.5
+
+## 6.16.36
+
+### Patch Changes
+
+- [#1768](https://github.com/generaltranslation/gt/pull/1768) [`da5385f`](https://github.com/generaltranslation/gt/commit/da5385f6ce6497c542a68d4c9207ce2bd0aa2a25) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Retry main releases that were blocked by recent release workflow failures.
+
+- [#1729](https://github.com/generaltranslation/gt/pull/1729) [`3b389dc`](https://github.com/generaltranslation/gt/commit/3b389dc08f3d86e2cea91a25e22840c188328d94) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fallback to the default locale when request locale resolution returns an invalid or unsupported locale. This prevents request-derived locale values from causing runtime errors, and adds `isLocaleSupported()` to `gt-next/server` for apps that want to explicitly reject invalid locale route params.
+
+## 6.16.35
+
+### Patch Changes
+
+- Updated dependencies [[`a2a3dd0`](https://github.com/generaltranslation/gt/commit/a2a3dd0bcdce9abe360c406a12fc6bb3bc3ca181)]:
+  - @generaltranslation/supported-locales@2.1.4
+  - gt-i18n@0.9.8
+  - gt-react@10.20.4
+
+## 6.16.34
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - @generaltranslation/compiler@1.3.26
+  - gt-i18n@0.9.7
+  - gt-react@10.20.3
+  - @generaltranslation/supported-locales@2.1.3
+
+## 6.16.33
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - @generaltranslation/compiler@1.3.25
+  - gt-i18n@0.9.6
+  - gt-react@10.20.2
+  - @generaltranslation/supported-locales@2.1.2
+
+## 6.16.32
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-react@10.20.1
+
+## 6.16.31
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-react@10.20.0
+
+## 6.16.30
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - @generaltranslation/compiler@1.3.24
+  - gt-i18n@0.9.5
+  - gt-react@10.19.19
+  - @generaltranslation/supported-locales@2.1.1
+
+## 6.16.29
+
+### Patch Changes
+
+- [#1437](https://github.com/generaltranslation/gt/pull/1437) [`fd61c44`](https://github.com/generaltranslation/gt/commit/fd61c4487a790e0802021478986b8c5b3dc0fb2b) Thanks [@bgub](https://github.com/bgub)! - Deprecate `experimentalLocaleResolution` and update cache components warnings to recommend explicit custom `getLocale.ts` and `getRegion.ts` request functions instead of automatic root parameter detection.
+
+- Updated dependencies [[`cc4edc1`](https://github.com/generaltranslation/gt/commit/cc4edc1e40d9977125bf6d053fb7f8cdbdd40b05)]:
+  - @generaltranslation/supported-locales@2.1.0
+  - gt-i18n@0.9.4
+  - gt-react@10.19.18
+
 ## 6.16.28
 
 ### Patch Changes

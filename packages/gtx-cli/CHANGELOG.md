@@ -177,6 +177,157 @@
 - Updated dependencies []:
   - gt@2.14.38
 
+## 2.14.58
+
+### Patch Changes
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - gt@2.14.58
+
+## 2.14.57
+
+### Patch Changes
+
+- [#1768](https://github.com/generaltranslation/gt/pull/1768) [`da5385f`](https://github.com/generaltranslation/gt/commit/da5385f6ce6497c542a68d4c9207ce2bd0aa2a25) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Retry main releases that were blocked by recent release workflow failures.
+
+- Updated dependencies []:
+  - gt@2.14.57
+
+## 2.14.56
+
+### Patch Changes
+
+- Updated dependencies [[`dd0d1cd`](https://github.com/generaltranslation/gt/commit/dd0d1cd0276cd0a158fc3dd73a312502066782a7)]:
+  - gt@2.14.56
+
+## 2.14.55
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.55
+
+## 2.14.54
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - gt@2.14.54
+
+## 2.14.53
+
+### Patch Changes
+
+- Updated dependencies [[`28b1b59`](https://github.com/generaltranslation/gt/commit/28b1b59d13422ef665490a5500cacaabaa00541d)]:
+  - gt@2.14.53
+
+## 2.14.52
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.52
+
+## 2.14.51
+
+### Patch Changes
+
+- Updated dependencies [[`69172dc`](https://github.com/generaltranslation/gt/commit/69172dc72e3fe22b6072b4c60e26c3de2cd68494)]:
+  - gt@2.14.51
+
+## 2.14.50
+
+### Patch Changes
+
+- Updated dependencies [[`81d0d09`](https://github.com/generaltranslation/gt/commit/81d0d09db3f0d9d8a2ce7fc45f76bf5dd34fa34a)]:
+  - gt@2.14.50
+
+## 2.14.49
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.49
+
+## 2.14.48
+
+### Patch Changes
+
+- Updated dependencies [[`1e5e748`](https://github.com/generaltranslation/gt/commit/1e5e748b1aef33eb58f536496592a6258fc441e5)]:
+  - gt@2.14.48
+
+## 2.14.47
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.47
+
+## 2.14.46
+
+### Patch Changes
+
+- Updated dependencies [[`e64b96d`](https://github.com/generaltranslation/gt/commit/e64b96db770c0049551277b2d4ed1034ad977ce5)]:
+  - gt@2.14.46
+
+## 2.14.45
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.45
+
+## 2.14.44
+
+### Patch Changes
+
+- Updated dependencies [[`bda984e`](https://github.com/generaltranslation/gt/commit/bda984e3351520e49314d1b3601a362ea9eb7396)]:
+  - gt@2.14.44
+
+## 2.14.43
+
+### Patch Changes
+
+- Updated dependencies [[`0c5cb81`](https://github.com/generaltranslation/gt/commit/0c5cb817468acf1b140ec5371aa003c739584579)]:
+  - gt@2.14.43
+
+## 2.14.42
+
+### Patch Changes
+
+- Updated dependencies [[`205c246`](https://github.com/generaltranslation/gt/commit/205c24647b9f50a68358ee6c3332d110a77ce1b3)]:
+  - gt@2.14.42
+
+## 2.14.41
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.41
+
+## 2.14.40
+
+### Patch Changes
+
+- Updated dependencies [[`8094012`](https://github.com/generaltranslation/gt/commit/8094012f9827f3a35e053776946bea67492da9db)]:
+  - gt@2.14.40
+
+## 2.14.39
+
+### Patch Changes
+
+- [#1448](https://github.com/generaltranslation/gt/pull/1448) [`f19bade`](https://github.com/generaltranslation/gt/commit/f19bade4741e934505e75880218599d27873e864) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fix CLI binary release builds by resolving Ink's devtools peer dependency and failing binary build scripts on compile errors.
+
+- Updated dependencies [[`cd8fa50`](https://github.com/generaltranslation/gt/commit/cd8fa505c90624160d6ef4d044946b3bf230f646), [`f19bade`](https://github.com/generaltranslation/gt/commit/f19bade4741e934505e75880218599d27873e864)]:
+  - gt@2.14.39
+
+## 2.14.38
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.38
+
 ## 2.14.37
 
 ### Patch Changes
