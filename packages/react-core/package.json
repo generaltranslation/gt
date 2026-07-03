@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/react-core",
-  "version": "11.0.0-odysseus.14",
+  "version": "11.0.0-odysseus.15",
   "description": "A pure React library for internationalization",
   "files": [
     "dist",

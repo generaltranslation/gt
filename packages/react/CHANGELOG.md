@@ -1,5 +1,24 @@
 # gt-react
 
+## 11.0.0-odysseus.15
+
+### Patch Changes
+
+- 8d2e84e: Preserve enableI18n hydration state from server props and request cookies.
+- c5364f9: Slim the i18n cache event surface by replacing the generic EventEmitter base class with a single cache-miss listener and removing unused cache helper methods.
+- 195f009: fix: make singleton not-initialized errors consistent and descriptive, and stop error paths from masking the original failure when I18nConfig is also uninitialized
+- Updated dependencies [04f419d]
+- Updated dependencies [72e9e16]
+- Updated dependencies [42a440f]
+- Updated dependencies [5adeede]
+- Updated dependencies [c5364f9]
+- Updated dependencies [2e85ebd]
+- Updated dependencies [195f009]
+  - @generaltranslation/react-core@11.0.0-odysseus.15
+  - generaltranslation@9.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.8
+  - @generaltranslation/supported-locales@2.1.2-odysseus.5
+
 ## 11.0.0-odysseus.14
 
 ### Patch Changes

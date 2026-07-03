@@ -1,5 +1,11 @@
 # locadex
 
+## 1.0.186-odysseus.6
+
+### Patch Changes
+
+- gt@2.14.51-odysseus.6
+
 ## 1.0.186-odysseus.5
 
 ### Patch Changes
