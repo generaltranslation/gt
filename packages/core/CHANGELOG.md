@@ -64,6 +64,30 @@
 
 - [#1460](https://github.com/generaltranslation/gt/pull/1460) [`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: escape characters in declareVar() for source locale consumed by condenseVars()
 
+## 8.2.19
+
+### Patch Changes
+
+- [#1786](https://github.com/generaltranslation/gt/pull/1786) [`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `requiresReview`
+
+## 8.2.18
+
+### Patch Changes
+
+- [#1648](https://github.com/generaltranslation/gt/pull/1648) [`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8) Thanks [@brian-lou](https://github.com/brian-lou)! - Use `gt-project-id` instead of `x-gt-project-id` for API request headers. Update the API key header to use standard `Authorization: Bearer <api-key>` prefix.
+
+## 8.2.17
+
+### Patch Changes
+
+- [#1635](https://github.com/generaltranslation/gt/pull/1635) [`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01) Thanks [@brian-lou](https://github.com/brian-lou)! - Add retry mechanism for rate limits
+
+## 8.2.16
+
+### Patch Changes
+
+- [#1460](https://github.com/generaltranslation/gt/pull/1460) [`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: escape characters in declareVar() for source locale consumed by condenseVars()
+
 ## 8.2.15
 
 ### Patch Changes

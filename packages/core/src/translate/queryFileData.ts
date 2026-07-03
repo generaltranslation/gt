@@ -26,7 +26,6 @@ export type FileDataResult = {
     dataFormat: string | null;
     createdAt: string;
     updatedAt: string;
-    approvalRequiredAt: string | null;
     publishedAt: string | null;
     locales: string[];
     sourceLocale: string;

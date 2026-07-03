@@ -21,6 +21,8 @@ export interface TranslationContent {
   maxChars?: number;
   /** Optional format from options: t("text", {$format: "STRING"}) → "STRING" */
   format?: string;
+  /** Optional requiresReview from options: t("text", {$requiresReview: true}) → true */
+  requiresReview?: boolean;
 }
 
 /**
@@ -35,6 +37,8 @@ export interface TranslationJsx {
   id?: string;
   /** Optional context from props */
   context?: string;
+  /** Optional requiresReview from props */
+  requiresReview?: boolean;
 }
 
 /**

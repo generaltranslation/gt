@@ -11,6 +11,7 @@ export function registerTranslationComponent(
     children?: unknown;
     id?: string;
     context?: string;
+    requiresReview?: boolean;
   }
 ): void {
   // Increment counter
@@ -21,5 +22,6 @@ export function registerTranslationComponent(
     children: options?.children,
     id: options?.id,
     context: options?.context,
+    requiresReview: options?.requiresReview,
   });
 }

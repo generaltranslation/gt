@@ -13,6 +13,7 @@ export function registerUseGTCallback({
   context,
   id,
   maxChars,
+  requiresReview,
   hash,
   format,
 }: {
@@ -22,6 +23,7 @@ export function registerUseGTCallback({
   context?: string;
   id?: string;
   maxChars?: number;
+  requiresReview?: boolean;
   hash?: string;
   format?: string;
 }): void {
@@ -30,6 +32,7 @@ export function registerUseGTCallback({
     source: content,
     context,
     maxChars,
+    requiresReview,
     dataFormat: (format || 'ICU') as DataFormat,
   });
 
@@ -40,6 +43,7 @@ export function registerUseGTCallback({
     id,
     context,
     maxChars,
+    requiresReview,
     format,
   });
 

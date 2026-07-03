@@ -22,7 +22,26 @@ export function convertToFileTranslationData(
       {
         versionId: file.versionId,
         fileName: file.fileName,
+        ...(file.fileFormat === 'GTJSON' && {
+          componentCount: countGtJsonComponents(file.content),
+        }),
       },
     ])
   );
+}
+
+/**
+ * Counts source components in a GTJSON template so the download step can
+ * report how many were withheld from the served output pending review.
+ */
+function countGtJsonComponents(content: string): number | undefined {
+  try {
+    const parsed = JSON.parse(content);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return Object.keys(parsed).length;
+    }
+  } catch {
+    // Not parsable — no count available
+  }
+  return undefined;
 }

@@ -15,22 +15,30 @@ export default function hashSource({
   source,
   context,
   maxChars,
+  requiresReview,
   dataFormat,
 }: {
   source: JsxChildren | string;
   context?: string;
   maxChars?: number;
+  requiresReview?: boolean;
   dataFormat: DataFormat;
 }): string {
   // Delegate to the shared hasher without custom ids; ids are metadata only.
   if (dataFormat === 'ICU' || dataFormat === 'I18NEXT') {
-    return _hashSource({ source, context, maxChars, dataFormat });
+    return _hashSource({
+      source,
+      context,
+      maxChars,
+      requiresReview,
+      dataFormat,
+    });
   }
   // For Jsx, we set hash to empty string if it contains a static component
   if (containsStatic(source)) {
     return '';
   }
-  return _hashSource({ source, context, maxChars, dataFormat });
+  return _hashSource({ source, context, maxChars, requiresReview, dataFormat });
 }
 
 /* =============================================== */

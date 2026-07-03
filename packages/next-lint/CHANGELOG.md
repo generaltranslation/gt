@@ -148,6 +148,69 @@
 - Updated dependencies [[`fd61c44`](https://github.com/generaltranslation/gt/commit/fd61c4487a790e0802021478986b8c5b3dc0fb2b)]:
   - gt-next@6.16.29
 
+## 14.0.37
+
+### Patch Changes
+
+- Updated dependencies [[`9f305a9`](https://github.com/generaltranslation/gt/commit/9f305a9209acbc773015e187a7da0c5c10083a52), [`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - gt-next@6.16.37
+
+## 14.0.36
+
+### Patch Changes
+
+- Updated dependencies [[`da5385f`](https://github.com/generaltranslation/gt/commit/da5385f6ce6497c542a68d4c9207ce2bd0aa2a25), [`3b389dc`](https://github.com/generaltranslation/gt/commit/3b389dc08f3d86e2cea91a25e22840c188328d94)]:
+  - gt-next@6.16.36
+
+## 14.0.35
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.16.35
+
+## 14.0.34
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.16.34
+
+## 14.0.33
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.16.33
+
+## 14.0.32
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.16.32
+
+## 14.0.31
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.16.31
+
+## 14.0.30
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-next@6.16.30
+
+## 14.0.29
+
+### Patch Changes
+
+- Updated dependencies [[`fd61c44`](https://github.com/generaltranslation/gt/commit/fd61c4487a790e0802021478986b8c5b3dc0fb2b)]:
+  - gt-next@6.16.29
+
 ## 14.0.28
 
 ### Patch Changes

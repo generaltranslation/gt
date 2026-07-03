@@ -7,6 +7,12 @@ function determineSupportedLocale(locale: unknown): string | undefined {
 }
 
 function warnInvalidLocale(locale: string, defaultLocale: string) {
+  if (
+    process.env._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING === 'true'
+  ) {
+    return;
+  }
+
   console.warn(createInvalidRequestLocaleWarning(locale, defaultLocale));
 }
 
@@ -36,6 +42,6 @@ export function resolveLocaleOrDefault(locale: unknown): string {
  * @param locale - The locale candidate to validate.
  * @returns True when the locale resolves to one of the configured locales.
  */
-export function isLocaleSupported(locale: unknown): boolean {
+export function isLocaleSupported(locale: unknown): locale is string {
   return determineSupportedLocale(locale) !== undefined;
 }
