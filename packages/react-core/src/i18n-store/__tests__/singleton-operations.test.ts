@@ -33,6 +33,7 @@ describe('react-core i18n store singleton operations', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     resetI18nStoreGlobal();
   });
 
@@ -50,7 +51,21 @@ describe('react-core i18n store singleton operations', () => {
     expect(getI18nStore()).toBe(store);
   });
 
-  it('warns and preserves an existing global i18n store', async () => {
+  it('preserves an existing global i18n store', async () => {
+    const { getI18nStore, setI18nStore } =
+      await import('../singleton-operations');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const store = createI18nStoreStub();
+
+    setI18nStore(store);
+    setI18nStore(createI18nStoreStub());
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(getI18nStore()).toBe(store);
+  });
+
+  it('warns about an existing global i18n store when debug logging is enabled', async () => {
+    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
     const { getI18nStore, setI18nStore } =
       await import('../singleton-operations');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

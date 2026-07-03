@@ -23,7 +23,7 @@ export function getGeneralTranslationLogLevel(): GeneralTranslationLogLevel {
 }
 
 export function isDebugLogLevel(logLevel: GeneralTranslationLogLevel): boolean {
-  return logLevel === debugLogLevel;
+  return logLevel?.toUpperCase() === debugLogLevel;
 }
 
 function readProcessEnvLogLevel(): GeneralTranslationLogLevel {
