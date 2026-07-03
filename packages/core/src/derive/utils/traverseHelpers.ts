@@ -3,22 +3,20 @@ import {
   GT_UNINDEXED_IDENTIFIER_REGEX,
 } from './regex';
 import { GTIndexedSelectElement, GTUnindexedSelectElement } from './types';
-import {
-  type MessageFormatElement,
-  TYPE,
-} from '@formatjs/icu-messageformat-parser/types.js';
+import type { MessageFormatElement } from '@formatjs/icu-messageformat-parser/types.js';
+import { ICU_TYPE } from './icuTypes';
 
 // Visit any _gt_# select
 export function isGTIndexedSelectElement(
   child: MessageFormatElement
 ): child is GTIndexedSelectElement {
   return (
-    child.type === TYPE.select &&
+    child.type === ICU_TYPE.select &&
     GT_INDEXED_IDENTIFIER_REGEX.test(child.value) &&
     !!child.options.other &&
     (child.options.other.value.length === 0 ||
       (child.options.other.value.length > 0 &&
-        child.options.other.value[0]?.type === TYPE.literal))
+        child.options.other.value[0]?.type === ICU_TYPE.literal))
   );
 }
 
@@ -27,11 +25,11 @@ export function isGTUnindexedSelectElement(
   child: MessageFormatElement
 ): child is GTUnindexedSelectElement {
   return (
-    child.type === TYPE.select &&
+    child.type === ICU_TYPE.select &&
     GT_UNINDEXED_IDENTIFIER_REGEX.test(child.value) &&
     !!child.options.other &&
     (child.options.other.value.length === 0 ||
       (child.options.other.value.length > 0 &&
-        child.options.other.value[0]?.type === TYPE.literal))
+        child.options.other.value[0]?.type === ICU_TYPE.literal))
   );
 }

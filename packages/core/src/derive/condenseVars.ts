@@ -1,12 +1,10 @@
-import {
-  type ArgumentElement,
-  TYPE,
-} from '@formatjs/icu-messageformat-parser/types.js';
+import type { ArgumentElement } from '@formatjs/icu-messageformat-parser/types.js';
 import { printAST } from '@formatjs/icu-messageformat-parser/printer.js';
 import { traverseIcu } from './utils/traverseIcu';
 import { VAR_IDENTIFIER } from './utils/constants';
 import { GTIndexedSelectElement } from './utils/types';
 import { isGTIndexedSelectElement } from './utils/traverseHelpers';
+import { ICU_TYPE } from './utils/icuTypes';
 interface GTIndexedArgumentElement extends ArgumentElement {
   value: `${typeof VAR_IDENTIFIER}${number}`;
 }
@@ -29,7 +27,7 @@ export function condenseVars(icuString: string): string {
 
   // Replace with argument
   function visitor(child: GTIndexedSelectElement): void {
-    (child as unknown as GTIndexedArgumentElement).type = TYPE.argument;
+    (child as unknown as GTIndexedArgumentElement).type = ICU_TYPE.argument;
     Reflect.deleteProperty(child, 'options');
   }
 

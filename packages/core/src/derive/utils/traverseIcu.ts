@@ -2,8 +2,8 @@ import {
   MessageFormatElement,
   parse,
   ParserOptions,
-  TYPE,
 } from '@formatjs/icu-messageformat-parser';
+import { ICU_TYPE } from './icuTypes';
 
 type TraverseIcuOptions = ParserOptions & {
   recurseIntoVisited?: boolean;
@@ -46,11 +46,11 @@ export function traverseIcu<T extends MessageFormatElement>({
     }
     // recurse on children
     if (!visited || recurseIntoVisited) {
-      if (child.type === TYPE.select || child.type === TYPE.plural) {
+      if (child.type === ICU_TYPE.select || child.type === ICU_TYPE.plural) {
         Object.values(child.options)
           .map((option) => option.value)
           .map(handleChildren);
-      } else if (child.type === TYPE.tag) {
+      } else if (child.type === ICU_TYPE.tag) {
         handleChildren(child.children);
       }
     }
