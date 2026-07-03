@@ -65,16 +65,6 @@ export function useLocale() {
 export function useRegion() {
   return getRegion();
 }
-export function useVersionId() {
-  throw new Error(
-    createDiagnosticMessage({
-      source: 'gt-react',
-      severity: 'Error',
-      whatHappened: 'useVersionId() is not implemented in the RSC entry point',
-      fix: 'Use getVersionId() or import useVersionId() from a supported runtime entry point.',
-    })
-  );
-}
 export function useLocales() {
   return getI18nConfig().getLocales();
 }

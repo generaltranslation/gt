@@ -33,7 +33,6 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     useGTClass: vi.fn(),
     useLocaleProperties: vi.fn(),
     useLocales: vi.fn(),
-    useVersionId: vi.fn(),
     Var: vi.fn(),
   },
   mockGetRequestConditions: vi.fn(),
@@ -141,7 +140,6 @@ describe('rsc component wrappers', () => {
     expect(module.useLocaleProperties).toBeTypeOf('function');
     expect(module.useLocales).toBeTypeOf('function');
     expect(module.useDefaultLocale).toBeTypeOf('function');
-    expect(module.useVersionId).toBeTypeOf('function');
   });
 
   it('initializes GT from the server entrypoint', async () => {

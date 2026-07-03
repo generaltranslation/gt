@@ -83,7 +83,6 @@ export {
   useGTClass,
   useLocaleProperties,
   useLocales,
-  useVersionId,
 } from 'gt-react';
 
 // ===== gt-react Functions ===== //
