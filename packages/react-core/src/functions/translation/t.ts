@@ -41,7 +41,11 @@ export const t: StringOrTemplateSyncResolutionFunction = (
   if (typeof messageOrStrings === 'string') {
     const options = values.at(0) as GTTranslationOptions | undefined;
     const locale = options?.$locale ?? getLocale();
-    return resolveStringContent(locale, messageOrStrings, options);
+    return resolveStringContent(
+      locale,
+      messageOrStrings,
+      createLookupOptions(locale, options ?? {}, 'ICU')
+    );
   }
 
   // t`Hello, ${name}`
