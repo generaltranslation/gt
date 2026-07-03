@@ -16,6 +16,7 @@ export { registerLocale } from './request/registerLocale';
 export { getRegion } from './request/getRegion';
 
 // Translation
+export { getTranslationsSnapshot } from 'gt-react';
 export { tx } from './server-dir/runtime/tx';
 export { Tx } from './server-dir/runtime/_Tx';
 export {
@@ -23,3 +24,8 @@ export {
   getMessages,
   getGT,
 } from './server-dir/buildtime/strings';
+
+// Pages Router
+export { withGTStaticProps } from './pages-dir/withGTStaticProps';
+export { withGTServerSideProps } from './pages-dir/withGTServerSideProps';
+export type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';

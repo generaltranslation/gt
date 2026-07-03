@@ -12,8 +12,6 @@ initializeGT();
 
 // ===== Pages Router ===== //
 export { parseLocale } from './pages-dir/parseLocale';
-export { withGTServerSideProps } from './pages-dir/withGTServerSideProps';
-export type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 
 // ===== Components ===== //
 export {
@@ -59,7 +57,6 @@ export {
   getGTClass,
   getLocaleProperties,
   getLocales,
-  getTranslationsSnapshot,
   getVersionId,
   gtFallback,
   mFallback,

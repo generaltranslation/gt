@@ -1,12 +1,7 @@
 import { typesFileError } from './errors/createErrors';
 import { T as _T } from './server-dir/buildtime/T';
-import type {
-  GetServerSideProps,
-  GetServerSidePropsContext,
-  PreviewData,
-} from 'next';
+import type { GetServerSidePropsContext, PreviewData } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 import {
   useTranslations as _useTranslations,
   useLocale as _useLocale,
@@ -31,7 +26,6 @@ import {
   RegionSelector as _RegionSelector,
   useSetLocale as _useSetLocale,
   useLocaleSelector as _useLocaleSelector,
-  getTranslationsSnapshot,
   getDefaultLocale,
   getGTClass,
   getLocaleProperties,
@@ -346,20 +340,6 @@ export function parseLocale<
 }
 
 /**
- * Wraps a Pages Router `getServerSideProps` function and adds the resolved GT
- * locale and translations snapshot to returned page props.
- */
-export function withGTServerSideProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  _?: GetServerSideProps<Props, Params, Preview>
-): GetServerSideProps<WithGTServerSideProps<Props>, Params, Preview> {
-  throw new Error(typesFileError);
-}
-
-/**
  * Checks whether a locale is valid and supported by the current gt-next config.
  *
  * @param locale - The locale candidate to validate.
@@ -575,11 +555,7 @@ export const useMessages: (
   throw new Error(typesFileError);
 };
 
-export type {
-  GTTranslationOptions,
-  RuntimeTranslationOptions,
-  WithGTServerSideProps,
-};
+export type { GTTranslationOptions, RuntimeTranslationOptions };
 
 export type { StringFormat };
 
@@ -592,7 +568,6 @@ export {
   derive,
   declareVar,
   decodeVars,
-  getTranslationsSnapshot,
   getDefaultLocale,
   getGTClass,
   getLocaleProperties,
