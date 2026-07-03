@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useCustomMapping, useLocales } from './i18n-config';
 import { useLocale, useRegion } from './condition-store';
-import { getLocaleProperties } from 'generaltranslation';
+import { getLocaleProperties } from '@generaltranslation/format';
 import { getI18nConfig } from 'gt-i18n/internal';
 
 export type RegionData = {

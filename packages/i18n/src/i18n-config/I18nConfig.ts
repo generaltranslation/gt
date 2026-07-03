@@ -3,7 +3,7 @@ import {
   type LocaleConfigConstructorParams,
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
-import { GT } from 'generaltranslation';
+import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import {
@@ -83,7 +83,7 @@ export class I18nConfig extends LocaleConfig {
    *
    * TODO: keep a cache to avoid creating new instances unnecessarily.
    */
-  getGTClass(locale?: string): GT {
+  getGTClass(locale?: string): GTRuntime {
     return this.getGTClassClean(
       locale ? this.resolveLocale(locale) : undefined
     );
@@ -167,7 +167,7 @@ export class I18nConfig extends LocaleConfig {
    * Create a GT instance without resolving the target locale first.
    */
   private getGTClassClean(locale?: string) {
-    return new GT({
+    return new GTRuntime({
       sourceLocale: this.getDefaultLocale(),
       targetLocale: locale,
       // GT validates approved locales before constructing its LocaleConfig, so
