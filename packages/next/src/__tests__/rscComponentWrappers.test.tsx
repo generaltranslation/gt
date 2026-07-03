@@ -17,7 +17,6 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     derive: vi.fn(),
     gtFallback: vi.fn(),
     getDefaultLocale: vi.fn(),
-    getGTClass: vi.fn(),
     getLocaleProperties: vi.fn(),
     getLocales: vi.fn(),
     getVersionId: vi.fn(),
@@ -28,6 +27,7 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     Plural: vi.fn(),
     ReactI18nCache: class {},
     RelativeTime: vi.fn(),
+    resolveCanonicalLocale: vi.fn(),
     RscT: vi.fn(),
     useDefaultLocale: vi.fn(),
     useLocaleProperties: vi.fn(),
@@ -138,6 +138,9 @@ describe('rsc component wrappers', () => {
     expect(module.useLocaleProperties).toBeTypeOf('function');
     expect(module.useLocales).toBeTypeOf('function');
     expect(module.useDefaultLocale).toBeTypeOf('function');
+    expect(module.resolveCanonicalLocale).toBe(
+      mockComponents.resolveCanonicalLocale
+    );
   });
 
   it('initializes GT from the server entrypoint', async () => {

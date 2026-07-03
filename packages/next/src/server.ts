@@ -11,6 +11,7 @@ initializeGTServer();
 export { getLocale } from './request/getLocale';
 export { getLocaleDirection } from './request/getLocaleDirection';
 export { registerLocale } from './request/registerLocale';
+export { resolveCanonicalLocale } from 'gt-i18n';
 
 // Region management
 export { getRegion } from './request/getRegion';

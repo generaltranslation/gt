@@ -14,6 +14,6 @@ export {
   getLocales,
   getDefaultLocale,
   getLocaleProperties,
-  getGTClass,
+  resolveCanonicalLocale,
 } from './helpers/locale';
 export { getVersionId } from './helpers/versionId';

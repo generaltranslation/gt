@@ -31,9 +31,9 @@ import {
   useLocaleSelector as _useLocaleSelector,
   getTranslationsSnapshot,
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
+  resolveCanonicalLocale,
   getVersionId,
 } from 'gt-react';
 import { GTProvider as _GTProvider } from 'gt-react';
@@ -574,8 +574,8 @@ export {
   decodeVars,
   getTranslationsSnapshot,
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
+  resolveCanonicalLocale,
   getVersionId,
 };

@@ -113,9 +113,9 @@ export {
   mFallback,
   msg,
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
+  resolveCanonicalLocale,
   getVersionId,
 } from '@generaltranslation/react-core/pure';
 
