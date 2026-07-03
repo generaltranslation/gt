@@ -44,20 +44,13 @@ export function GTProvider(props: GTProviderProps) {
  * SSR style applications.
  */
 function LoadableGTProvider(props: LoadableGTProviderProps) {
-  const {
-    locale,
-    localeStoreKey,
-    region,
-    regionStoreKey,
-    enableI18n,
-    enableI18nStoreKey,
-  } = props;
+  const { locale, region, enableI18n } = props;
   // Keep native conditions in React state so condition-store writes trigger rerenders.
   const [nativeConditions, setNativeConditions] =
     useState<NativeConditionStoreState>(() => ({
-      locale: getLocale({ localeStoreKey }),
-      region: getInitialRegion({ region, regionStoreKey }),
-      enableI18n: getInitialEnableI18n({ enableI18n, enableI18nStoreKey }),
+      locale: getLocale(),
+      region: getInitialRegion({ region }),
+      enableI18n: getInitialEnableI18n({ enableI18n }),
     }));
   const activeLocale = resolveLocale(locale ?? nativeConditions.locale);
   const activeRegion = region ?? nativeConditions.region;

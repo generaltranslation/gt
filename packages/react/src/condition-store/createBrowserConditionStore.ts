@@ -1,15 +1,10 @@
 import type { LocaleCandidates } from 'gt-i18n/internal';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import {
   BrowserConditionStore,
   BrowserConditionStoreParams,
 } from './BrowserConditionStore';
 import { readBrowserLocale } from './readBrowserLocale';
-import {
-  defaultEnableI18nCookieName,
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
-} from '../cookie-names';
 import { getCookieValue } from './cookies';
 import {
   getBrowserConditionStore,
@@ -19,17 +14,10 @@ import {
 
 export type CreateBrowserConditionStoreParams = Omit<
   BrowserConditionStoreParams,
-  | 'locale'
-  | 'enableI18n'
-  | 'localeCookieName'
-  | 'regionCookieName'
-  | 'enableI18nCookieName'
+  'locale' | 'enableI18n'
 > & {
   locale?: LocaleCandidates;
   enableI18n?: boolean;
-  localeCookieName?: string;
-  regionCookieName?: string;
-  enableI18nCookieName?: string;
 };
 
 /**
@@ -39,6 +27,9 @@ export type CreateBrowserConditionStoreParams = Omit<
  *
  * We want the values that we read from the cookies to override as this
  * persists state across page reloads
+ *
+ * Cookie names come from the I18nConfig singleton so custom names passed to
+ * initializeGT() apply here without being threaded through provider props.
  */
 export function createOrUpdateBrowserConditionStore(
   config: CreateBrowserConditionStoreParams
@@ -58,9 +49,6 @@ export function createOrUpdateBrowserConditionStore(
 
   const conditionStore = new BrowserConditionStore({
     ...config,
-    localeCookieName: defaultLocaleCookieName,
-    regionCookieName: defaultRegionCookieName,
-    enableI18nCookieName: defaultEnableI18nCookieName,
     locale,
     region,
     enableI18n,
@@ -70,37 +58,35 @@ export function createOrUpdateBrowserConditionStore(
 }
 
 function determineLocale({
-  localeCookieName = defaultLocaleCookieName,
   _getLocale: getLocale,
   locale,
 }: CreateBrowserConditionStoreParams): string {
+  const i18nConfig = getI18nConfig();
   const candidates = [];
   if (locale) {
     candidates.push(...(Array.isArray(locale) ? locale : [locale]));
   }
   if (getLocale) candidates.push(getLocale());
-  candidates.push(...readBrowserLocale(localeCookieName));
-  return getI18nConfig().resolveSupportedLocale(candidates);
+  candidates.push(...readBrowserLocale(i18nConfig.getLocaleCookieName()));
+  return i18nConfig.resolveSupportedLocale(candidates);
 }
 
 function determineRegion({
-  regionCookieName = defaultRegionCookieName,
   _getRegion: getRegion,
   region,
 }: CreateBrowserConditionStoreParams): string | undefined {
   const cookieRegion = getCookieValue({
-    cookieName: regionCookieName,
+    cookieName: getI18nConfig().getRegionCookieName(),
   });
   return cookieRegion || getRegion?.() || region;
 }
 
 function determineEnableI18n({
   enableI18n,
-  enableI18nCookieName = defaultEnableI18nCookieName,
   _getEnableI18n: getEnableI18n,
 }: CreateBrowserConditionStoreParams): boolean {
   const cookieEnableI18n = getCookieValue({
-    cookieName: enableI18nCookieName,
+    cookieName: getI18nConfig().getEnableI18nCookieName(),
   });
   if (cookieEnableI18n === undefined) {
     return getEnableI18n?.() ?? enableI18n ?? true;

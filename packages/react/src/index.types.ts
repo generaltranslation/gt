@@ -11,11 +11,6 @@ export {
   useSetRegion,
   useSetEnableI18n,
 } from './hooks/conditions-store';
-export {
-  defaultEnableI18nCookieName,
-  defaultLocaleCookieName,
-  defaultRegionCookieName,
-} from './cookie-names';
 
 // ===== Components ===== //
 export { LocaleSelector } from './components/LocaleSelector';

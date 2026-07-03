@@ -1,5 +1,7 @@
-import type { ReactI18nCacheParams } from '@generaltranslation/react-core/pure';
-import type { I18nConfigParams } from 'gt-i18n/internal/types';
+import type {
+  I18nConfigParams,
+  ReactI18nCacheParams,
+} from '@generaltranslation/react-core/pure';
 
 export type InitializeGTParams = I18nConfigParams & ReactI18nCacheParams;
 

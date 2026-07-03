@@ -19,15 +19,7 @@ export type NativeGTProviderProps = Omit<
 export function NativeGTProvider(props: NativeGTProviderProps) {
   const conditionStore = useMemo(() => {
     return new NativeConditionStore(props);
-  }, [
-    props.locale,
-    props.region,
-    props.enableI18n,
-    props.localeStoreKey,
-    props.regionStoreKey,
-    props.enableI18nStoreKey,
-    props._reload,
-  ]);
+  }, [props.locale, props.region, props.enableI18n, props._reload]);
 
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {

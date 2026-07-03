@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getNextI18nCache } from '../../i18n-cache/NextI18nCache';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { initializeGT } from '../initGT';
 
 type TestGlobal = typeof globalThis & {
@@ -47,5 +48,21 @@ describe('initializeGT', () => {
 
     expect(getNextI18nCache()).toBe(cache);
     warn.mockRestore();
+  });
+
+  it('initializes the React Core config singleton', () => {
+    initializeGT({
+      i18nConfigParams: {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        localeCookieName: 'custom-locale',
+      },
+      nextI18nCacheParams: {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+      },
+    });
+
+    expect(getI18nConfig().getLocaleCookieName()).toBe('custom-locale');
   });
 });
