@@ -26,7 +26,7 @@ export type GTProviderProps = Omit<
   Omit<NativeConditionStoreParams, 'locale' | '_reload'> & {
     children?: ReactNode;
     locale?: LocaleCandidates;
-    loadingFallback?: ReactNode;
+    fallback?: ReactNode;
   };
 
 type LoadedGTProviderProps = Omit<NativeGTProviderProps, 'translations'>;
@@ -41,8 +41,8 @@ export function GTProvider(props: GTProviderProps) {
  * SSR style applications.
  */
 function LoadableGTProvider(props: GTProviderProps) {
-  const { loadingFallback, ...providerProps } = props;
-  const fallback = loadingFallback ?? <DefaultLoadingFallback />;
+  const { fallback, ...providerProps } = props;
+  const renderedFallback = fallback ?? <DefaultLoadingFallback />;
   const { locale, region, enableI18n } = providerProps;
   // Keep native conditions in React state so condition-store writes trigger rerenders.
   const [nativeConditions, setNativeConditions] =
@@ -83,7 +83,7 @@ function LoadableGTProvider(props: GTProviderProps) {
           translations={fallbackTranslations}
           _reload={reload}
         >
-          {fallback}
+          {renderedFallback}
         </NativeGTProvider>
       }
     >
