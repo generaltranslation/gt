@@ -38,8 +38,16 @@ type PendingLookup =
  * in development hot reload
  */
 
+const noopOnMissingTranslation: OnMissingTranslation = () => {};
+const noopOnMissingDictionaryEntry: OnMissingDictionaryEntry = () => {};
+const noopOnMissingDictionaryObj: OnMissingDictionaryObj = () => {};
+
 // TODO: reduce code duplication with the three below functions
-export function useHandleMissingTranslation(): OnMissingTranslation {
+function useHandleMissingTranslationProd(): OnMissingTranslation {
+  return noopOnMissingTranslation;
+}
+
+function useHandleMissingTranslationDev(): OnMissingTranslation {
   const customHandleMissing = useGTContext()?.onMissingTranslation;
   const pureHandleMissing = useDevHotReloadQueue();
 
@@ -58,7 +66,11 @@ export function useHandleMissingTranslation(): OnMissingTranslation {
   );
 }
 
-export function useHandleMissingDictionaryEntry(): OnMissingDictionaryEntry {
+function useHandleMissingDictionaryEntryProd(): OnMissingDictionaryEntry {
+  return noopOnMissingDictionaryEntry;
+}
+
+function useHandleMissingDictionaryEntryDev(): OnMissingDictionaryEntry {
   const customHandleMissing = useGTContext()?.onMissingDictionaryEntry;
   const pureHandleMissing = useDevHotReloadQueue();
 
@@ -77,7 +89,11 @@ export function useHandleMissingDictionaryEntry(): OnMissingDictionaryEntry {
   );
 }
 
-export function useHandleMissingDictionaryObject(): OnMissingDictionaryObj {
+function useHandleMissingDictionaryObjectProd(): OnMissingDictionaryObj {
+  return noopOnMissingDictionaryObj;
+}
+
+function useHandleMissingDictionaryObjectDev(): OnMissingDictionaryObj {
   const customHandleMissing = useGTContext()?.onMissingDictionaryObj;
   const pureHandleMissing = useDevHotReloadQueue();
   return useCallback(
@@ -94,6 +110,21 @@ export function useHandleMissingDictionaryObject(): OnMissingDictionaryObj {
     [customHandleMissing, pureHandleMissing]
   );
 }
+
+export const useHandleMissingTranslation: () => OnMissingTranslation =
+  process.env.NODE_ENV === 'production'
+    ? useHandleMissingTranslationProd
+    : useHandleMissingTranslationDev;
+
+export const useHandleMissingDictionaryEntry: () => OnMissingDictionaryEntry =
+  process.env.NODE_ENV === 'production'
+    ? useHandleMissingDictionaryEntryProd
+    : useHandleMissingDictionaryEntryDev;
+
+export const useHandleMissingDictionaryObject: () => OnMissingDictionaryObj =
+  process.env.NODE_ENV === 'production'
+    ? useHandleMissingDictionaryObjectProd
+    : useHandleMissingDictionaryObjectDev;
 
 /**
  * HMR translation needs to be deferred to post-commit phase
