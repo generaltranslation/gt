@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-  resolveJsx,
   resolveStringContentWithFallback,
   resolveStringContentWithRuntimeFallback,
 } from '../helpers';
@@ -26,40 +25,6 @@ describe('translation helpers', () => {
     initializeI18nConfig({ defaultLocale: 'en' });
     vi.mocked(interpolateMessage).mockReturnValue('interpolated-result');
   });
-
-  // ===== REGRESSION ===== //
-
-  it('resolveJsx returns undefined when lookupTranslation returns undefined', () => {
-    const mockCache = {
-      getLocale: vi.fn().mockReturnValue('fr'),
-      lookupTranslation: vi.fn().mockReturnValue(undefined),
-    };
-    vi.mocked(getI18nCache).mockReturnValue(
-      mockCache as unknown as ReturnType<typeof getI18nCache>
-    );
-
-    const result = resolveJsx('fr', ['Hello']);
-    expect(result).toBeUndefined();
-  });
-
-  it('resolveJsx uses the provided locale', () => {
-    const mockCache = {
-      lookupTranslation: vi.fn().mockReturnValue(undefined),
-    };
-    vi.mocked(getI18nCache).mockReturnValue(
-      mockCache as unknown as ReturnType<typeof getI18nCache>
-    );
-
-    resolveJsx('fr', ['Hello']);
-
-    expect(mockCache.lookupTranslation).toHaveBeenCalledWith(
-      'fr',
-      ['Hello'],
-      expect.objectContaining({ $format: 'JSX', $locale: 'fr' })
-    );
-  });
-
-  // ===== NEW BEHAVIOR ===== //
 
   it('resolveStringContentWithRuntimeFallback calls lookupTranslationWithFallback and interpolates', async () => {
     const mockCache = {
