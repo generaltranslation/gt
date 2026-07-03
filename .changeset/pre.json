@@ -41,6 +41,7 @@
     "bright-locale-selectors",
     "browser-locale-cookie-updates",
     "cache-components-disable-expiry",
+    "clean-react-core-api-surface",
     "clean-package-config-metadata",
     "client-default-interpolation",
     "client-i18n-cache-expiry",

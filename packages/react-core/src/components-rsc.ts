@@ -35,7 +35,8 @@ export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnap
 export { t } from './functions/translation/t';
 
 // ===== Helpers ===== //
-export { getFormatLocales, getPluralBranch } from './pure';
+export { getFormatLocales } from './pure';
+export { getPluralBranch } from './utils/plurals/getPluralBranch';
 export { getShouldTranslate } from './hooks/utils/getShouldTranslate';
 export { prepareT } from './utils/translation/prepareT.shared';
 export { createRenderVariable } from './utils/rendering/createRenderVariable';
@@ -88,4 +89,4 @@ export type {
   RelativeTimeProps,
   ResolvedRelativeTimeProps,
 } from './components/variables/RelativeTime.shared';
-export type { RelativeTimeFormatOptions, RenderVariable } from './pure';
+export type { RelativeTimeFormatOptions, RenderVariable } from './utils/types';

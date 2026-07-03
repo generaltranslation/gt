@@ -150,7 +150,7 @@ export {
 } from '@generaltranslation/react-core/pure';
 
 // ===== Setup ===== //
-export { initializeGT } from '@generaltranslation/react-core/pure';
+export { internalInitializeGTSRA as initializeGT } from '@generaltranslation/react-core/pure';
 
 // ===== Types ===== //
 export type {

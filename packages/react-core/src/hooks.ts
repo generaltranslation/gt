@@ -17,7 +17,6 @@ export { useMessages } from './hooks/useMessages';
 export { useTranslations } from './hooks/useTranslations';
 export {
   useFormatLocales,
-  useShouldTranslate,
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
