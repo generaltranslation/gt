@@ -20,7 +20,6 @@ export {
   useGTClass,
   useLocaleProperties,
   useLocaleDirection,
-  useVersionId,
 } from './hooks/utils';
 export { useInternalLocaleSelector } from './hooks/useInternalLocaleSelector';
 export type { InternalLocaleSelectorResult } from './hooks/useInternalLocaleSelector';

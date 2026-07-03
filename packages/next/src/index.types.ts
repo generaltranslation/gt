@@ -24,7 +24,6 @@ import {
   Plural as _Plural,
   Derive as _Derive,
   useLocaleDirection as _useLocaleDirection,
-  useVersionId as _useVersionId,
 } from 'gt-react';
 import {
   LocaleSelector as _LocaleSelector,
@@ -526,19 +525,6 @@ export const useLocaleProperties: typeof _useLocaleProperties = () => {
  * const arabicDir = useLocaleDirection('ar'); // 'rtl'
  */
 export const useLocaleDirection: typeof _useLocaleDirection = () => {
-  throw new Error(typesFileError);
-};
-
-/**
- * Returns the version ID for the current source, if set.
- *
- * @returns {string | undefined} The version ID.
- *
- * @example
- * const versionId = useVersionId();
- * console.log(versionId); // 'abc123'
- */
-export const useVersionId: typeof _useVersionId = () => {
   throw new Error(typesFileError);
 };
 

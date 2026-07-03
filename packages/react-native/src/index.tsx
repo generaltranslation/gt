@@ -27,7 +27,6 @@ export {
   useMessages,
   useRegion,
   useTranslations,
-  useVersionId,
 } from '@generaltranslation/react-core/hooks';
 export {
   useSetLocale,

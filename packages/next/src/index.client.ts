@@ -63,7 +63,6 @@ export {
   useRegion,
   useSetLocale,
   useTranslations,
-  useVersionId,
 } from 'gt-react';
 
 // ===== Functions ===== //

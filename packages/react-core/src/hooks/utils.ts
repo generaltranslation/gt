@@ -2,7 +2,7 @@ import type { LocaleProperties } from '@generaltranslation/format/types';
 import { useMemo } from 'react';
 import { useEnableI18n, useLocale } from './condition-store';
 import { getFormatLocales } from './utils/getFormatLocales';
-import { getI18nConfig, getVersionId } from 'gt-i18n/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 const EMPTY_LOCALES_PROP: string[] = [];
 
@@ -48,8 +48,4 @@ export function useLocaleDirection(locale?: string): 'ltr' | 'rtl' {
     () => getI18nConfig().getGTClass().getLocaleDirection(resolvedLocale),
     [resolvedLocale]
   );
-}
-
-export function useVersionId(): string | undefined {
-  return getVersionId();
 }

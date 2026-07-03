@@ -50,7 +50,6 @@ export {
   useMessages,
   useTranslations,
   useLocaleDirection,
-  useVersionId,
   useGTClass,
   useLocaleProperties,
 } from '@generaltranslation/react-core/hooks';
