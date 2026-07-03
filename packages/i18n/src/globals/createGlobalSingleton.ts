@@ -26,6 +26,13 @@ function getNamespace(namespace: string): Record<string, unknown> {
   return globalObj.__generaltranslation[namespace]!;
 }
 
+function getExistingNamespace(
+  namespace: string
+): Record<string, unknown> | undefined {
+  const globalObj = globalThis as unknown as GlobalWithRegistry;
+  return globalObj.__generaltranslation?.[namespace];
+}
+
 export type GlobalSingleton<T> = {
   get: () => T;
   set: (next: T) => void;
@@ -66,7 +73,7 @@ export function createGlobalSingleton<T>({
   function set(next: T): void {
     const ns = getNamespace(namespace);
     if (ns[key] !== undefined && ns[key] !== next) {
-      if (shouldLogDebugWarnings(ns)) {
+      if (shouldLogDebugWarnings()) {
         console.warn(
           createDiagnosticMessage({
             source,
@@ -88,8 +95,8 @@ export function createGlobalSingleton<T>({
   return { get, set, isInitialized };
 }
 
-function shouldLogDebugWarnings(namespace: Record<string, unknown>): boolean {
-  const config = namespace.i18nConfig;
+function shouldLogDebugWarnings(): boolean {
+  const config = getExistingNamespace('i18n')?.i18nConfig;
   if (hasDebugLoggingConfig(config)) {
     return config.isDebugLoggingEnabled();
   }

@@ -4,6 +4,7 @@ import type { I18nStore } from '../I18nStore';
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: {
     i18n?: {
+      i18nConfig?: unknown;
       marker?: string;
       [key: string]: unknown;
     };
@@ -22,6 +23,9 @@ function resetI18nStoreGlobal() {
       globalObj.__generaltranslation.reactCore,
       'i18nStore'
     );
+  }
+  if (globalObj.__generaltranslation?.i18n) {
+    Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nConfig');
   }
 }
 
@@ -66,6 +70,29 @@ describe('react-core i18n store singleton operations', () => {
 
   it('warns about an existing global i18n store when debug logging is enabled', async () => {
     vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
+    const { getI18nStore, setI18nStore } =
+      await import('../singleton-operations');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const store = createI18nStoreStub();
+
+    setI18nStore(store);
+    setI18nStore(createI18nStoreStub());
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Global i18nStore singleton instance was already initialized'
+      )
+    );
+    expect(getI18nStore()).toBe(store);
+  });
+
+  it('warns about an existing global i18n store when cached config enables debug logging', async () => {
+    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', 'DEBUG');
+    const { initializeI18nConfig } = await import('../../setup/i18nConfig');
+
+    initializeI18nConfig({ defaultLocale: 'en' });
+    vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', '');
+
     const { getI18nStore, setI18nStore } =
       await import('../singleton-operations');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
