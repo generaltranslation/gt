@@ -12,7 +12,7 @@ const i18nConfigSingleton = createGlobalSingleton<I18nConfig>({
       severity: 'Error',
       whatHappened: 'Cannot read I18nConfig before it has been initialized',
       why: 'the internal I18nConfig singleton is unavailable',
-      fix: 'Call initializeGT() before reading locale config.',
+      fix: 'Initialize GT before reading locale config (call initializeGT() from your GT framework package).',
     }),
 });
 

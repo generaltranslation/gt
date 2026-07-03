@@ -1,4 +1,5 @@
 import { AsyncReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { cookies, headers } from 'next/headers';
 import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
 import { createConditionStoreSingleton, getI18nConfig } from 'gt-i18n/internal';
@@ -24,7 +25,16 @@ export const {
   getConditionStore: getAsyncConditionStore,
   setConditionStore: setAsyncConditionStore,
 } = createConditionStoreSingleton<AsyncConditionStore>(
-  'AsyncConditionStore not initialized. Invoke initializeGT() to initialize.'
+  createDiagnosticMessage({
+    source: 'gt-next',
+    severity: 'Error',
+    whatHappened:
+      'Cannot read request locale state before GT has been initialized',
+    why: 'the internal ConditionStore singleton is unavailable in this server runtime',
+    fix: "Import GT server APIs from the 'gt-next' or 'gt-next/server' entry points so initialization runs before use.",
+    wayOut:
+      'If this only happens in certain deployments (e.g. edge or serverless), check that your bundler preserves gt-next import side effects and resolves a single copy of the package.',
+  })
 );
 
 /**

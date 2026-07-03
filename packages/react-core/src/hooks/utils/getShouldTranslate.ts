@@ -1,4 +1,4 @@
-import { getReadonlyConditionStoreWithFallback } from '../../condition-store/singleton-operations';
+import { getReadonlyConditionStore } from '../../condition-store/singleton-operations';
 import { getI18nConfig } from 'gt-i18n/internal';
 
 // Pure helper shared by hook-based and RSC code paths. This module must stay
@@ -9,7 +9,7 @@ import { getI18nConfig } from 'gt-i18n/internal';
  * Returns true if (1) i18n enabled and (2) translation is required
  */
 export function getShouldTranslate(): boolean {
-  const conditionStore = getReadonlyConditionStoreWithFallback();
+  const conditionStore = getReadonlyConditionStore();
   const i18nConfig = getI18nConfig();
 
   const enableI18n = conditionStore.getEnableI18n();

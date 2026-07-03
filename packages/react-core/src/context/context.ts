@@ -49,7 +49,14 @@ const gtContextSingleton = createGlobalSingleton<
   namespace: 'reactCore',
   key: 'gtContext',
   source: '@generaltranslation/react-core',
-  notInitialized: () => 'GTContext has not been initialized.',
+  notInitialized: () =>
+    createDiagnosticMessage({
+      source: '@generaltranslation/react-core',
+      severity: 'Error',
+      whatHappened: 'Cannot read GTContext before it has been initialized',
+      why: 'the internal GTContext singleton is unavailable',
+      fix: 'Add a <GTProvider> at the root of your component tree.',
+    }),
 });
 
 export function getGTContext(): Context<GTContextType | undefined> {
