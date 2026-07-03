@@ -1,5 +1,19 @@
 # gt-i18n
 
+## 1.0.0-odysseus.8
+
+### Patch Changes
+
+- 72e9e16: Split the runtime surface of the GT class (locale management, formatting, runtime translation) into a GTRuntime base class exported from the new `generaltranslation/runtime` entry point. The SDK runtime (gt-i18n's I18nConfig, gt-next middleware) now constructs GTRuntime, so production browser bundles no longer ship the project/file management API client (enqueueFiles, uploads, downloads, etc.). The GT class extends GTRuntime and keeps its full API for the CLI and other tooling. Also import getLocaleProperties from @generaltranslation/format directly in react-core so client bundles don't reach the full core entry.
+- 42a440f: Gate duplicate singleton initialization warnings behind `_GENERALTRANSLATION_LOG_LEVEL=DEBUG`.
+- c5364f9: Slim the i18n cache event surface by replacing the generic EventEmitter base class with a single cache-miss listener and removing unused cache helper methods.
+- 195f009: fix: make singleton not-initialized errors consistent and descriptive, and stop error paths from masking the original failure when I18nConfig is also uninitialized
+- Updated dependencies [72e9e16]
+- Updated dependencies [5adeede]
+- Updated dependencies [2e85ebd]
+  - generaltranslation@9.0.0-odysseus.5
+  - @generaltranslation/supported-locales@2.1.2-odysseus.5
+
 ## 1.0.0-odysseus.7
 
 ### Minor Changes

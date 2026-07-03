@@ -1,5 +1,22 @@
 # gt-react-native
 
+## 11.0.0-odysseus.15
+
+### Patch Changes
+
+- 57047ea: Rename the React Native `GTProvider` loading fallback prop to `fallback`.
+- Updated dependencies [04f419d]
+- Updated dependencies [72e9e16]
+- Updated dependencies [42a440f]
+- Updated dependencies [5adeede]
+- Updated dependencies [c5364f9]
+- Updated dependencies [2e85ebd]
+- Updated dependencies [195f009]
+  - @generaltranslation/react-core@11.0.0-odysseus.15
+  - generaltranslation@9.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.8
+  - @generaltranslation/supported-locales@2.1.2-odysseus.5
+
 ## 11.0.0-odysseus.14
 
 ### Patch Changes

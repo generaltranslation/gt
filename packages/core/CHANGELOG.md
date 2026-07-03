@@ -1,5 +1,13 @@
 # generaltranslation
 
+## 9.0.0-odysseus.5
+
+### Patch Changes
+
+- 72e9e16: Split the runtime surface of the GT class (locale management, formatting, runtime translation) into a GTRuntime base class exported from the new `generaltranslation/runtime` entry point. The SDK runtime (gt-i18n's I18nConfig, gt-next middleware) now constructs GTRuntime, so production browser bundles no longer ship the project/file management API client (enqueueFiles, uploads, downloads, etc.). The GT class extends GTRuntime and keeps its full API for the CLI and other tooling. Also import getLocaleProperties from @generaltranslation/format directly in react-core so client bundles don't reach the full core entry.
+- 5adeede: Trigger an odysseus prerelease patch for generaltranslation.
+- 2e85ebd: Import the FormatJS `TYPE` runtime enum from the parser entrypoint so Vite dev does not request the CommonJS `types.js` subpath as a browser ESM module.
+
 ## 9.0.0-odysseus.4
 
 ### Patch Changes

@@ -1,5 +1,30 @@
 # gt-next
 
+## 11.0.0-odysseus.15
+
+### Patch Changes
+
+- 04f419d: Fix source interpolation for default-locale string helpers.
+  Clarify that `tx()` does not apply ICU formatting by default.
+- 98698de: Escape backslashes in middleware path regex input before dynamic path matching.
+- 72e9e16: Split the runtime surface of the GT class (locale management, formatting, runtime translation) into a GTRuntime base class exported from the new `generaltranslation/runtime` entry point. The SDK runtime (gt-i18n's I18nConfig, gt-next middleware) now constructs GTRuntime, so production browser bundles no longer ship the project/file management API client (enqueueFiles, uploads, downloads, etc.). The GT class extends GTRuntime and keeps its full API for the CLI and other tooling. Also import getLocaleProperties from @generaltranslation/format directly in react-core so client bundles don't reach the full core entry.
+- 8d2e84e: Preserve enableI18n hydration state from server props and request cookies.
+- 195f009: fix: make singleton not-initialized errors consistent and descriptive, and stop error paths from masking the original failure when I18nConfig is also uninitialized
+- Updated dependencies [04f419d]
+- Updated dependencies [72e9e16]
+- Updated dependencies [42a440f]
+- Updated dependencies [8d2e84e]
+- Updated dependencies [5adeede]
+- Updated dependencies [c5364f9]
+- Updated dependencies [2e85ebd]
+- Updated dependencies [195f009]
+  - @generaltranslation/react-core@11.0.0-odysseus.15
+  - generaltranslation@9.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.8
+  - gt-react@11.0.0-odysseus.15
+  - @generaltranslation/compiler@1.3.25-odysseus.7
+  - @generaltranslation/supported-locales@2.1.2-odysseus.5
+
 ## 11.0.0-odysseus.14
 
 ### Patch Changes

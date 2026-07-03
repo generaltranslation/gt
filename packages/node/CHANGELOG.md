@@ -1,5 +1,19 @@
 # gt-node
 
+## 1.0.0-odysseus.8
+
+### Patch Changes
+
+- 195f009: fix: make singleton not-initialized errors consistent and descriptive, and stop error paths from masking the original failure when I18nConfig is also uninitialized
+- Updated dependencies [72e9e16]
+- Updated dependencies [42a440f]
+- Updated dependencies [5adeede]
+- Updated dependencies [c5364f9]
+- Updated dependencies [2e85ebd]
+- Updated dependencies [195f009]
+  - generaltranslation@9.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.8
+
 ## 1.0.0-odysseus.7
 
 ### Patch Changes
