@@ -36,7 +36,8 @@ function renderPlural({
   if (typeof n !== 'number') {
     return children;
   }
-  return getPluralBranch(n, locales, branches) || children;
+  const resolvedBranch = getPluralBranch(n, locales, branches);
+  return resolvedBranch != null ? resolvedBranch : children;
 }
 
 export { renderPlural };

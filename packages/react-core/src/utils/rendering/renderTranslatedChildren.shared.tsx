@@ -83,13 +83,13 @@ function createRenderTranslatedChildren({
       const sourceBranches = sourceGT.branches || {};
       const resolvedSourceBranch = getPluralBranch(n, locales, sourceBranches);
       const sourceBranch =
-        resolvedSourceBranch !== null
+        resolvedSourceBranch != null
           ? resolvedSourceBranch
           : sourceElement.props.children;
       const targetBranches = targetElement.d?.b || {};
       const resolvedTargetBranch = getPluralBranch(n, locales, targetBranches);
       const targetBranch =
-        resolvedTargetBranch !== null ? resolvedTargetBranch : targetElement.c;
+        resolvedTargetBranch != null ? resolvedTargetBranch : targetElement.c;
       return renderTranslatedChildren({
         source: sourceBranch as TaggedChildren,
         target: targetBranch as TranslatedChildren,
