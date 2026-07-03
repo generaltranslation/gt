@@ -14,7 +14,10 @@ import {
 } from '../utils/getInitialNativeConditions';
 import { resolveLocale } from '../utils/resolveLocale';
 import { loadTranslations, type LocaleTranslations } from './loadTranslations';
-import { NativeGTProvider } from './NativeGTProvider';
+import {
+  NativeGTProvider,
+  type NativeGTProviderProps,
+} from './NativeGTProvider';
 
 export type GTProviderProps = Omit<
   InternalGTProviderProps,
@@ -26,25 +29,21 @@ export type GTProviderProps = Omit<
     loadingFallback?: ReactNode;
   };
 
-type LoadableGTProviderProps = Omit<GTProviderProps, 'loadingFallback'>;
+type LoadedGTProviderProps = Omit<NativeGTProviderProps, 'translations'>;
 type TranslationSnapshot = Record<Locale, LocaleTranslations>;
 
 export function GTProvider(props: GTProviderProps) {
-  const { loadingFallback, ...providerProps } = props;
-
-  return (
-    <Suspense fallback={loadingFallback ?? <DefaultLoadingFallback />}>
-      <LoadableGTProvider {...providerProps} />
-    </Suspense>
-  );
+  return <LoadableGTProvider {...props} />;
 }
 
 /**
  * This wrapper takes the place of a loader that would be present in
  * SSR style applications.
  */
-function LoadableGTProvider(props: LoadableGTProviderProps) {
-  const { locale, region, enableI18n } = props;
+function LoadableGTProvider(props: GTProviderProps) {
+  const { loadingFallback, ...providerProps } = props;
+  const fallback = loadingFallback ?? <DefaultLoadingFallback />;
+  const { locale, region, enableI18n } = providerProps;
   // Keep native conditions in React state so condition-store writes trigger rerenders.
   const [nativeConditions, setNativeConditions] =
     useState<NativeConditionStoreState>(() => ({
@@ -55,10 +54,9 @@ function LoadableGTProvider(props: LoadableGTProviderProps) {
   const activeLocale = resolveLocale(locale ?? nativeConditions.locale);
   const activeRegion = region ?? nativeConditions.region;
   const activeEnableI18n = enableI18n ?? nativeConditions.enableI18n;
-  const localeTranslations = use(loadTranslations(activeLocale));
-  const translations = useMemo<TranslationSnapshot>(
-    () => ({ [activeLocale]: localeTranslations }),
-    [activeLocale, localeTranslations]
+  const fallbackTranslations = useMemo<TranslationSnapshot>(
+    () => ({ [activeLocale]: {} }),
+    [activeLocale]
   );
   const reload = useCallback(
     (state: NativeConditionStoreState) => {
@@ -75,13 +73,44 @@ function LoadableGTProvider(props: LoadableGTProviderProps) {
   );
 
   return (
+    <Suspense
+      fallback={
+        <NativeGTProvider
+          {...providerProps}
+          locale={activeLocale}
+          region={activeRegion}
+          enableI18n={activeEnableI18n}
+          translations={fallbackTranslations}
+          _reload={reload}
+        >
+          {fallback}
+        </NativeGTProvider>
+      }
+    >
+      <LoadedGTProvider
+        {...providerProps}
+        locale={activeLocale}
+        region={activeRegion}
+        enableI18n={activeEnableI18n}
+        _reload={reload}
+      />
+    </Suspense>
+  );
+}
+
+function LoadedGTProvider(props: LoadedGTProviderProps) {
+  const activeLocale = resolveLocale(props.locale);
+  const localeTranslations = use(loadTranslations(activeLocale));
+  const translations = useMemo<TranslationSnapshot>(
+    () => ({ [activeLocale]: localeTranslations }),
+    [activeLocale, localeTranslations]
+  );
+
+  return (
     <NativeGTProvider
       {...props}
       locale={activeLocale}
-      region={activeRegion}
-      enableI18n={activeEnableI18n}
       translations={translations}
-      _reload={reload}
     />
   );
 }
