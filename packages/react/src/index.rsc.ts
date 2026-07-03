@@ -128,7 +128,7 @@ export {
 // ===== Internal ===== //
 export {
   getReactI18nCache,
-  getReadonlyConditionStoreWithFallback,
+  getReadonlyConditionStore,
   setReactI18nCache,
 } from '@generaltranslation/react-core/components-rsc';
 

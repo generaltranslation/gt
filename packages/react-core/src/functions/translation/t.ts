@@ -6,7 +6,7 @@ import {
 import type { GTTranslationOptions, LookupOptionsFor } from 'gt-i18n/types';
 import { getI18nConfig } from '../../setup/i18nConfig';
 import {
-  getReadonlyConditionStoreWithFallback,
+  getReadonlyConditionStore,
   isReadonlyConditionStoreInitialized,
 } from '../../condition-store/singleton-operations';
 import { StringContent, StringFormat } from 'generaltranslation/types';
@@ -210,7 +210,7 @@ function enforceSSRRules(messageOrStrings: string | TemplateStringsArray) {
 }
 
 function getLocale(): string {
-  return getReadonlyConditionStoreWithFallback().getLocale();
+  return getReadonlyConditionStore().getLocale();
 }
 
 /**

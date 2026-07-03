@@ -3,7 +3,7 @@ import {
   I18nStore,
   setI18nStore,
   setReactI18nCache,
-  getReadonlyConditionStoreWithFallback,
+  getReadonlyConditionStore,
   initializeI18nConfig,
 } from '@generaltranslation/react-core/pure';
 import type { I18nConfigParams } from '@generaltranslation/react-core/pure';
@@ -40,7 +40,5 @@ export async function initializeGTSPA(
   setI18nStore(i18nStore);
 
   // Block until translations are loaded
-  await getTranslationsSnapshot(
-    getReadonlyConditionStoreWithFallback().getLocale()
-  );
+  await getTranslationsSnapshot(getReadonlyConditionStore().getLocale());
 }
