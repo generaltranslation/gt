@@ -1,9 +1,8 @@
 import type { GetServerSidePropsContext, PreviewData } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
 import { defaultLocaleHeaderName } from '../utils/headers';
-import { defaultLocaleCookieName } from '@generaltranslation/react-core/pure';
 
 type HeaderValue = string | string[] | undefined;
 
@@ -14,13 +13,13 @@ export function parseLocale<
   Params extends ParsedUrlQuery = ParsedUrlQuery,
   Preview extends PreviewData = PreviewData,
 >(context: GetServerSidePropsContext<Params, Preview>): string {
-  const { headerName, cookieName, ignorePreferredLanguages } =
-    getParseLocaleParams();
+  const i18nConfig = getI18nConfig();
+  const { headerName, ignorePreferredLanguages } = getParseLocaleParams();
   const preferredLocales: string[] = [];
 
   addHeaderCandidates(preferredLocales, context.req.headers[headerName]);
 
-  const cookieLocale = context.req.cookies?.[cookieName];
+  const cookieLocale = context.req.cookies?.[i18nConfig.getLocaleCookieName()];
   if (cookieLocale) {
     preferredLocales.push(cookieLocale);
   }
@@ -35,7 +34,6 @@ export function parseLocale<
     console.warn(noLocalesCouldBeDeterminedWarning);
   }
 
-  const i18nConfig = getI18nConfig();
   return (
     i18nConfig
       .getGTClass()
@@ -46,7 +44,6 @@ export function parseLocale<
 
 function getParseLocaleParams(): {
   headerName: string;
-  cookieName: string;
   ignorePreferredLanguages: boolean;
 } {
   const privateConfig = JSON.parse(
@@ -57,9 +54,6 @@ function getParseLocaleParams(): {
     headerName:
       privateConfig.headersAndCookies?.localeHeaderName ||
       defaultLocaleHeaderName,
-    cookieName:
-      privateConfig.headersAndCookies?.localeCookieName ||
-      defaultLocaleCookieName,
     ignorePreferredLanguages: privateConfig.ignoreBrowserLocales || false,
   };
 }

@@ -5,6 +5,7 @@ import {
 } from 'generaltranslation/internal';
 import {
   defaultLocaleCookieName,
+  defaultEnableI18nCookieName,
   defaultResetLocaleCookieName,
   getDefaultRenderSettings,
   type RenderMethod,
@@ -35,6 +36,7 @@ type DefaultGTConfigProps = {
   headersAndCookies: {
     localeHeaderName: string;
     localeCookieName: string;
+    enableI18nCookieName: string;
     referrerLocaleCookieName: string;
     localeRoutingEnabledCookieName: string;
     resetLocaleCookieName: string;
@@ -59,6 +61,7 @@ export const defaultWithGTConfigProps: DefaultGTConfigProps = {
   headersAndCookies: {
     localeHeaderName: defaultLocaleHeaderName,
     localeCookieName: defaultLocaleCookieName,
+    enableI18nCookieName: defaultEnableI18nCookieName,
     referrerLocaleCookieName: defaultReferrerLocaleCookieName,
     localeRoutingEnabledCookieName: defaultLocaleRoutingEnabledCookieName,
     resetLocaleCookieName: defaultResetLocaleCookieName,
