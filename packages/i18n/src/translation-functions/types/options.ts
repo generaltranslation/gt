@@ -123,5 +123,7 @@ export type NormalizedLookupOptions<T extends DataFormat> =
 
 /**
  * Options for string interpolation, as accepted by `interpolateMessage`.
+ * `$locale` and `$format` may be omitted: interpolation falls back to the
+ * source locale and 'STRING' format.
  */
-export type InterpolationOptions = NormalizedLookupOptions<StringFormat>;
+export type InterpolationOptions = LookupOptionsFor<StringFormat>;
