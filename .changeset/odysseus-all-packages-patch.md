@@ -1,9 +1,7 @@
 ---
 "@generaltranslation/compiler": patch
 "@generaltranslation/format": patch
-"@generaltranslation/gt-next-lint": patch
 "@generaltranslation/mcp": patch
-"@generaltranslation/next-internal": patch
 "@generaltranslation/python-extractor": patch
 "@generaltranslation/react-core": patch
 "@generaltranslation/react-core-linter": patch
