@@ -1,5 +1,128 @@
 # gt-next
 
+## 11.0.0
+
+### Major Changes
+
+- [#1816](https://github.com/generaltranslation/gt/pull/1816) [`463a8db`](https://github.com/generaltranslation/gt/commit/463a8dbb03bde35f2f229dfdabfe117197d4527b) Thanks [@bgub](https://github.com/bgub)! - Add a config-aware `resolveCanonicalLocale` helper and remove the public `getGTClass` helper.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`e12fb17`](https://github.com/generaltranslation/gt/commit/e12fb17d41cfa5fa231e64fe70423434739ea985) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Prepare Odysseus major releases for core runtime packages.
+
+- [#1816](https://github.com/generaltranslation/gt/pull/1816) [`463a8db`](https://github.com/generaltranslation/gt/commit/463a8dbb03bde35f2f229dfdabfe117197d4527b) Thanks [@bgub](https://github.com/bgub)! - Remove the deprecated `useGTClass` hook from public entry points.
+
+- [#1821](https://github.com/generaltranslation/gt/pull/1821) [`40db0c5`](https://github.com/generaltranslation/gt/commit/40db0c54a58e82d693d8a16d19fe5071baabecdc) Thanks [@bgub](https://github.com/bgub)! - Remove `useVersionId` from public package entrypoints.
+
+  The `getVersionId` helper remains available from public function entrypoints and `gt-i18n/internal`.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`8a2f7ee`](https://github.com/generaltranslation/gt/commit/8a2f7ee79f4b890fb1aaf47f42bb844334899793) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Simplify translation option types. Replace deprecated inline and dictionary option aliases with `GTTranslationOptions`, use interpolation variables for dictionary `t()` options, and trim higher-level type exports to avoid exposing internal translation option fields.
+
+### Patch Changes
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`8870496`](https://github.com/generaltranslation/gt/commit/88704963eb74e81401994681ce7cdae3ba91b6c0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Use Next.js caching semantics for Cache Components by disabling GT cache expiry and development hot reload runtime translation.
+
+  Async translation and dictionary lookup boundaries now keep synchronous access to the loaded snapshot, so APIs like `getGT` and `getTranslations` can still resolve strings after cache expiry is delegated to Next.js.
+
+  Global singleton setup now preserves the first initialized instance instead of replacing it on later initialization attempts.
+
+- [#1824](https://github.com/generaltranslation/gt/pull/1824) [`1a483ae`](https://github.com/generaltranslation/gt/commit/1a483aee3e8d8dff8ee1052da089e494965ad350) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove deprecated Next internal packages.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`7a9dbe3`](https://github.com/generaltranslation/gt/commit/7a9dbe3c188787a39ee1de78f54c92dff470b502) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Clean up stale package metadata and align TanStack Start package entry points.
+
+- [#1815](https://github.com/generaltranslation/gt/pull/1815) [`1212135`](https://github.com/generaltranslation/gt/commit/1212135e4e09ed754756cac2805bc3a139408dc1) Thanks [@bgub](https://github.com/bgub)! - Clean up the `@generaltranslation/react-core` public API surface.
+  - `@generaltranslation/react-core`: Removed dead dictionary helper exports and source files, stopped exporting JSX serialization internals from `/pure`, dropped internal singleton/plumbing exports from `/pure`, removed `useShouldTranslate` from `/hooks`, and kept only `internalInitializeGTSRA` for the server-rendered initializer.
+  - `gt-react`: Aliases `internalInitializeGTSRA` locally from the RSC entrypoint so the public `initializeGT` export remains unchanged.
+  - `gt-next`: Replaced imports of removed react-core legacy types with equivalent local types.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`04f419d`](https://github.com/generaltranslation/gt/commit/04f419d65e69db3eb4adb8ee6299c0ddee153135) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fix source interpolation for default-locale string helpers.
+  Clarify that `tx()` does not apply ICU formatting by default.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`bd52e5e`](https://github.com/generaltranslation/gt/commit/bd52e5ef3fb38a63d9bac8a4af08ff93402c0749) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Allow client i18n cache expiry to default to no expiry while preserving explicit cache expiry configuration.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`98698de`](https://github.com/generaltranslation/gt/commit/98698de8da1f60baab3dc218c75c87cc172a24bf) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Escape backslashes in middleware path regex input before dynamic path matching.
+
+- [#1659](https://github.com/generaltranslation/gt/pull/1659) [`807dc30`](https://github.com/generaltranslation/gt/commit/807dc305c4b5e4ce8f6982d96886a530910f3f37) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add a locale-aware Link component for Next.js applications.
+
+  Transpile gt-next in Next apps so package runtime config is compiled with app env values. See #1661.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`72e9e16`](https://github.com/generaltranslation/gt/commit/72e9e1643797be8e4ae1453897fd0b023fce2674) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Split the runtime surface of the GT class (locale management, formatting, runtime translation) into a GTRuntime base class exported from the new `generaltranslation/runtime` entry point. The SDK runtime (gt-i18n's I18nConfig, gt-next middleware) now constructs GTRuntime, so production browser bundles no longer ship the project/file management API client (enqueueFiles, uploads, downloads, etc.). The GT class extends GTRuntime and keeps its full API for the CLI and other tooling. Also import getLocaleProperties from @generaltranslation/format directly in react-core so client bundles don't reach the full core entry.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`8870496`](https://github.com/generaltranslation/gt/commit/88704963eb74e81401994681ce7cdae3ba91b6c0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Support dev hot reload lookups for server `getGT` strings.
+
+  `getGT` can now receive compiler-injected message metadata and prefetch missing translations through the runtime cache in development. `gt-next` forwards the server request conditions into this path so App Router server strings can participate in hot reload translation updates.
+
+  Compiler-injected `getGT` and `useGT` preload messages now emit the same sugar metadata keys used by runtime lookup options.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`8d2e84e`](https://github.com/generaltranslation/gt/commit/8d2e84e5083bb740815004bec90eaa341be7aff5) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Preserve enableI18n hydration state from server props and request cookies.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`361e158`](https://github.com/generaltranslation/gt/commit/361e158626c39fb79132ec31315bbfae9c525305) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Stop forwarding `locale={false}` from `gt-next/link` to the underlying Next.js link after localizing the href.
+
+  This avoids React DOM warnings in newer Next.js versions where the control prop can reach the rendered anchor.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`04b5064`](https://github.com/generaltranslation/gt/commit/04b50645675abb9e927a82056b249b50f0907fcc) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Restore namespace scoping for getTranslations and server useTranslations.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`ca7218e`](https://github.com/generaltranslation/gt/commit/ca7218e0e509d84d874ce4ec622a0dbea7a2ae52) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Ship a dual ESM/CJS build for `gt-next` and add `import` export conditions.
+
+  Previously `gt-next` was published as CJS only (no `import` condition), so bundlers resolved the entire gt dependency graph (`gt-react`, `@generaltranslation/react-core`, `generaltranslation`, `gt-i18n`, `@generaltranslation/format`) through the `require` condition. That forced CJS variants onto the client, which cannot be tree-shaken — shipping `gt-next`'s own server/error code and unused dependency exports to the browser.
+
+  `gt-next` now emits unbundled `.mjs` output alongside the existing `.js` output, and every `exports` subpath exposes an `import` condition. Bundlers now resolve the gt graph as ESM, enabling tree-shaking across all gt packages. Measured on a real Next.js app, this cuts gt's total client bundle by ~19% gzip (≈96 kB → ≈78 kB) with no API changes.
+
+  The ESM build sets `polyfillRequire: false` so rolldown does not inject a package-wide `createRequire`-from-`node:module` shim, keeps custom request function imports visible to bundler aliases, and marks the `index.rsc`/`index.client` entrypoints as having side effects so their top-level initialization is not tree-shaken away.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`1f10252`](https://github.com/generaltranslation/gt/commit/1f1025268c24472b03402e9dcb5626ca6f618b46) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Point the `react-server` export condition at the RSC-specific declaration file so TypeScript no longer exposes client-only hooks in React Server Components.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`b3bb391`](https://github.com/generaltranslation/gt/commit/b3bb391d33041680e2d62b6a7c9b05662946544f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Store cookie names in I18nConfig so custom cookie names work before the condition store is initialized.
+  - `gt-i18n`: Removed the unused React locale cookie name from the shared GT config type.
+  - `@generaltranslation/react-core`: `ReactI18nConfig` now accepts `localeCookieName`, `regionCookieName`, and `enableI18nCookieName`, exposes getters that fall back to the default names, and exports the default storage names from the `pure` entrypoint.
+  - `gt-next`: Imports default cookie names from the React Core `pure` entrypoint instead of the removed React Core cookie constants subpath.
+  - `gt-react`: The browser condition store now resolves cookie names from `I18nConfig` instead of hardcoding the defaults, so custom cookie names passed to `initializeGT()` are honored for both reads and writes.
+  - `gt-react-native`: Native condition storage now resolves its store keys from `I18nConfig`, matching `gt-react` behavior.
+  - `gt-tanstack-start`: `parseLocale()` reads and writes the locale cookie using the configured cookie name instead of the default.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`0a6a11c`](https://github.com/generaltranslation/gt/commit/0a6a11c07adb409c844e7bf85fa56d265cb556cd) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Keep the locale cookie when the middleware clears the setLocale reset cookie. Deleting it raced with concurrent prefetch responses after a locale switch in production builds, causing client components to fall back to the browser's default locale while server components rendered the selected locale.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`cecb3e1`](https://github.com/generaltranslation/gt/commit/cecb3e1f0c9d15c4d5fde6a43a007884e8dac11e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Delegate remote translation loading to the shared i18n cache and only pass custom Next.js translation loaders when configured.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`5752fe8`](https://github.com/generaltranslation/gt/commit/5752fe81bf5b5deaae878638e0de99959bf719be) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Organize package entrypoint exports and replace re-export-only imports with direct export declarations.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`294791a`](https://github.com/generaltranslation/gt/commit/294791a931f35143524ce685777bb9485fac099e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add a Pages Router server-side props helper for GT locale and translation snapshots.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`97dc7f4`](https://github.com/generaltranslation/gt/commit/97dc7f4818476a319a54b1519e994a62d5a9a3a5) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove default exports from package entrypoints and internal source modules.
+
+  Use named imports for affected public entrypoints, including `import { plugin } from 'gt-react-native/plugin'`. The `gt-next/link` entrypoint keeps its default export to match `next/link`.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`ee688b2`](https://github.com/generaltranslation/gt/commit/ee688b2259451f4fc56d24d0a398d8f001eabfa2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Read Next runtime credentials from environment variables and keep them out of serialized config.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`a8876d4`](https://github.com/generaltranslation/gt/commit/a8876d400b3099b5257d391af76df1d9814c7b7a) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Initialize gt-next server entrypoints with a shared server condition store.
+
+- [#1822](https://github.com/generaltranslation/gt/pull/1822) [`ce8a665`](https://github.com/generaltranslation/gt/commit/ce8a665fd077ce2acb66c3f81db3bad5a781e9a7) Thanks [@bgub](https://github.com/bgub)! - Clean up the `gt-next` API surface for the next major prerelease.
+
+  Removes the deprecated `initGT` config alias and the redundant `gt-next/types` subpath. Moves the hidden dictionary and loader subpaths under `gt-next/internal/*`, updates the Next config alias plumbing to match, and adjusts CLI setup detection so it no longer treats `initGT` as a valid existing config wrapper.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`384be28`](https://github.com/generaltranslation/gt/commit/384be28f4d6fe924696dc4f30dcb31823f17c254) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove 21 unused error/warning builders from `gt-next`'s `errors/createErrors.ts`.
+
+  The following had no consumers anywhere: `createDictionaryTranslationError`, `createInvalidDictionaryEntryWarning`, `createInvalidDictionaryTranslationEntryWarning`, `createInvalidIcuDictionaryEntryError`, `createInvalidIcuDictionaryEntryWarning`, `createMismatchingHashWarning`, `createNoEntryFoundWarning`, `createRequiredPrefixError`, `createStringRenderError`, `createStringRenderWarning`, `createStringTranslationError`, `createTranslationLoadingWarning`, `dictionaryDisabledError`, `dictionaryNotFoundWarning`, `gtProviderUseClientError`, `missingVariablesError`, `noInitGTWarn`, `runtimeTranslationTimeoutWarning`, `txUseClientError`, `unresolvedGetLocaleBuildError`, `usingDefaultsWarning`. ~155 LOC of dead error-string code removed.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`bd02086`](https://github.com/generaltranslation/gt/commit/bd020860e98977d7cd1b36e310c92c8727e63865) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove the unused `getDomain` request-function plumbing from `gt-next`.
+
+  `getDomain` was scaffolded (a throw-only `internal/_getDomain` stub, a `getDomainPath` config prop, a `getDomain` entry in the request-function registry, and a `_GENERALTRANSLATION_CUSTOM_GET_DOMAIN_ENABLED` build env var) but never wired to any runtime consumer — no `getDomain()` request helper exists and nothing reads the env var. Removes the stub module, the `./internal/_getDomain` export, the config prop/registry entries, and the dead env var. `getLocale`/`getRegion` are unchanged.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`d6ffb70`](https://github.com/generaltranslation/gt/commit/d6ffb7094d46294de2f61acfba9b4c6cb044b0db) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove the deprecated SSG and experimental-locale-resolution code paths from `gt-next`.
+
+  Drops the long-deprecated, runtime-dead config surface: `experimentalEnableSSG`, `experimentalLocaleResolution`/`experimentalLocaleResolutionParam`, the static request functions (`STATIC_REQUEST_FUNCTIONS`/`getStatic*` and their non-existent `internal/static/*` aliases), and `disableSSGWarnings`/`getStatic*Path` doc props. Removes `plugin/checks/ssgChecks.ts`, the experimental branch of `cacheComponentsChecks`, the related error/warning builders, and the corresponding build-time env vars (`_GENERALTRANSLATION_ENABLE_SSG`, `_GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION[_PARAM]`, `_GENERALTRANSLATION_STATIC_GET_*_ENABLED`) — none of which were read at runtime. The live cacheComponents checks and `noLocalesCouldBeDeterminedWarning` are retained.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`195f009`](https://github.com/generaltranslation/gt/commit/195f00910c2a675a6f9da327e19e3d3c5e44e26b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: make singleton not-initialized errors consistent and descriptive, and stop error paths from masking the original failure when I18nConfig is also uninitialized
+
+- Updated dependencies [[`463a8db`](https://github.com/generaltranslation/gt/commit/463a8dbb03bde35f2f229dfdabfe117197d4527b), [`37e0080`](https://github.com/generaltranslation/gt/commit/37e0080b2c072840cf6c0f1c66a8f0f3a54e17e5), [`5bfd0a7`](https://github.com/generaltranslation/gt/commit/5bfd0a73e286bf76ae26f9178171aeca1c53ecc5), [`8870496`](https://github.com/generaltranslation/gt/commit/88704963eb74e81401994681ce7cdae3ba91b6c0), [`7a9dbe3`](https://github.com/generaltranslation/gt/commit/7a9dbe3c188787a39ee1de78f54c92dff470b502), [`1212135`](https://github.com/generaltranslation/gt/commit/1212135e4e09ed754756cac2805bc3a139408dc1), [`04f419d`](https://github.com/generaltranslation/gt/commit/04f419d65e69db3eb4adb8ee6299c0ddee153135), [`bd52e5e`](https://github.com/generaltranslation/gt/commit/bd52e5ef3fb38a63d9bac8a4af08ff93402c0749), [`b72c30b`](https://github.com/generaltranslation/gt/commit/b72c30bc603562310a51b656fb003f1486315a8a), [`72e9e16`](https://github.com/generaltranslation/gt/commit/72e9e1643797be8e4ae1453897fd0b023fce2674), [`42a440f`](https://github.com/generaltranslation/gt/commit/42a440ff3420bdbdb35ed24f9a5af1c9040eaf66), [`fd22c68`](https://github.com/generaltranslation/gt/commit/fd22c68978af50ce519dc06c7b887d3fa67181ae), [`bea8233`](https://github.com/generaltranslation/gt/commit/bea8233d8b055980483cb2e226157f6adcbd8c2b), [`8870496`](https://github.com/generaltranslation/gt/commit/88704963eb74e81401994681ce7cdae3ba91b6c0), [`5736d58`](https://github.com/generaltranslation/gt/commit/5736d585b8285ef56cc6f412799308969ac786c0), [`8d2e84e`](https://github.com/generaltranslation/gt/commit/8d2e84e5083bb740815004bec90eaa341be7aff5), [`04b5064`](https://github.com/generaltranslation/gt/commit/04b50645675abb9e927a82056b249b50f0907fcc), [`4335432`](https://github.com/generaltranslation/gt/commit/43354326beb16e13784b0c82faad447768bb8404), [`04c285c`](https://github.com/generaltranslation/gt/commit/04c285c7b44f5404918cd4c80336dddf412472e9), [`947fe0c`](https://github.com/generaltranslation/gt/commit/947fe0c97a2821a0980cd3e779252ea0078e80f8), [`5adeede`](https://github.com/generaltranslation/gt/commit/5adeede157922d547a33a078d0f527f572c9a8b4), [`55c77ea`](https://github.com/generaltranslation/gt/commit/55c77ea871f5c7bc333c046d89a32472e68f0f4b), [`e026c42`](https://github.com/generaltranslation/gt/commit/e026c42bc137e9865b548daee7238e6a458a5662), [`328795b`](https://github.com/generaltranslation/gt/commit/328795bf730296658a57b7132bbd1e0bbff2fd62), [`1f53e42`](https://github.com/generaltranslation/gt/commit/1f53e420e9a6475f85cf27e1cd0c9c89f4beeb36), [`b3bb391`](https://github.com/generaltranslation/gt/commit/b3bb391d33041680e2d62b6a7c9b05662946544f), [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546), [`88f3a2e`](https://github.com/generaltranslation/gt/commit/88f3a2e0f304fdd19891afac0b41954edc9497c6), [`e12fb17`](https://github.com/generaltranslation/gt/commit/e12fb17d41cfa5fa231e64fe70423434739ea985), [`44bc998`](https://github.com/generaltranslation/gt/commit/44bc998abf813ea4a96ade6c2632e1143034bd45), [`5752fe8`](https://github.com/generaltranslation/gt/commit/5752fe81bf5b5deaae878638e0de99959bf719be), [`7744c55`](https://github.com/generaltranslation/gt/commit/7744c557d37c85ce3626681410cc0cd622374ecf), [`b7d44dc`](https://github.com/generaltranslation/gt/commit/b7d44dc2d79ac3332a0ed55da0ba130b6896f756), [`9561761`](https://github.com/generaltranslation/gt/commit/9561761c3ab72a5e39327415b3274eccc63f4ffe), [`72c6a85`](https://github.com/generaltranslation/gt/commit/72c6a85cc3ca025ebdeb006dbdd865e935ec77ae), [`3d95277`](https://github.com/generaltranslation/gt/commit/3d95277a057b28fffc73b3fa616210bdcb447e85), [`97dc7f4`](https://github.com/generaltranslation/gt/commit/97dc7f4818476a319a54b1519e994a62d5a9a3a5), [`c1e0a0f`](https://github.com/generaltranslation/gt/commit/c1e0a0f837da440eeed84af10b553dee24bfc936), [`85a0c19`](https://github.com/generaltranslation/gt/commit/85a0c1998a6500233affd8c1987551170584c782), [`693288d`](https://github.com/generaltranslation/gt/commit/693288d632c42b923920a2fdd9ae2babc1bc28f5), [`463a8db`](https://github.com/generaltranslation/gt/commit/463a8dbb03bde35f2f229dfdabfe117197d4527b), [`e343775`](https://github.com/generaltranslation/gt/commit/e343775d8a41ce3eea03dd319b90497a9744cc4f), [`40db0c5`](https://github.com/generaltranslation/gt/commit/40db0c54a58e82d693d8a16d19fe5071baabecdc), [`8a2f7ee`](https://github.com/generaltranslation/gt/commit/8a2f7ee79f4b890fb1aaf47f42bb844334899793), [`c5364f9`](https://github.com/generaltranslation/gt/commit/c5364f977ffb4b387ad39206e6ed626bbeec56f3), [`2e85ebd`](https://github.com/generaltranslation/gt/commit/2e85ebd1528a4f99a8e36e1d8d6714a639040596), [`2c46baf`](https://github.com/generaltranslation/gt/commit/2c46baf137400613495e3fe2865865b5506edece), [`d5cf2d3`](https://github.com/generaltranslation/gt/commit/d5cf2d34f412ad49e8b2818fe788b870a5964d65), [`9e78cf0`](https://github.com/generaltranslation/gt/commit/9e78cf07db58bfe6063bcd0b217553176c9681bd), [`4986567`](https://github.com/generaltranslation/gt/commit/498656728741898a56ae348a536107bd92f95c04), [`795edc8`](https://github.com/generaltranslation/gt/commit/795edc8a2b3e91fc9801d726f4b5cd6fbbc98fb0), [`d863bcf`](https://github.com/generaltranslation/gt/commit/d863bcf05770c336c98b2b2fae8534c90f00df51), [`11ecf87`](https://github.com/generaltranslation/gt/commit/11ecf876a1221b9dbce9fc0c0f0804101558c8a7), [`03bae6d`](https://github.com/generaltranslation/gt/commit/03bae6d3b4791107781cb800c1ae7ac4f675705c), [`5d42608`](https://github.com/generaltranslation/gt/commit/5d426089f04f37dd7369620e9db3e6512f06eee8), [`9804aa4`](https://github.com/generaltranslation/gt/commit/9804aa460c07ec36d2e667d79a839720a1e011e8), [`338e5e8`](https://github.com/generaltranslation/gt/commit/338e5e8a42354c7d288d9be960ebd1d58adfd402), [`8834c51`](https://github.com/generaltranslation/gt/commit/8834c518ac84259706f2b603fd024ad13a9072ee), [`2ca78ec`](https://github.com/generaltranslation/gt/commit/2ca78ec4805639c10c7b200c8dee660b55eddf15), [`195f009`](https://github.com/generaltranslation/gt/commit/195f00910c2a675a6f9da327e19e3d3c5e44e26b)]:
+  - gt-i18n@1.0.0
+  - @generaltranslation/react-core@11.0.0
+  - gt-react@11.0.0
+  - generaltranslation@9.0.0
+  - @generaltranslation/compiler@1.3.25
+  - @generaltranslation/format@0.1.2
+  - @generaltranslation/supported-locales@2.1.2
+
 ## 11.0.0-odysseus.16
 
 ### Major Changes

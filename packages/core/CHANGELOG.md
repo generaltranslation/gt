@@ -1,5 +1,44 @@
 # generaltranslation
 
+## 9.0.0
+
+### Major Changes
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`e12fb17`](https://github.com/generaltranslation/gt/commit/e12fb17d41cfa5fa231e64fe70423434739ea985) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Prepare Odysseus major releases for core runtime packages.
+
+### Patch Changes
+
+- [#1818](https://github.com/generaltranslation/gt/pull/1818) [`b72c30b`](https://github.com/generaltranslation/gt/commit/b72c30bc603562310a51b656fb003f1486315a8a) Thanks [@bgub](https://github.com/bgub)! - Clean up the `generaltranslation` public API surface for the next major.
+
+  Removes the unused `generaltranslation/core` subpath, stale endpoint types, duplicate `ApiError` accessors, and dead `/internal` exports. Moves `API_VERSION` to `generaltranslation/internal`, exports the derivation helpers from the public root, and points `gt-i18n` at that public entry.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`72e9e16`](https://github.com/generaltranslation/gt/commit/72e9e1643797be8e4ae1453897fd0b023fce2674) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Split the runtime surface of the GT class (locale management, formatting, runtime translation) into a GTRuntime base class exported from the new `generaltranslation/runtime` entry point. The SDK runtime (gt-i18n's I18nConfig, gt-next middleware) now constructs GTRuntime, so production browser bundles no longer ship the project/file management API client (enqueueFiles, uploads, downloads, etc.). The GT class extends GTRuntime and keeps its full API for the CLI and other tooling. Also import getLocaleProperties from @generaltranslation/format directly in react-core so client bundles don't reach the full core entry.
+
+- [#1809](https://github.com/generaltranslation/gt/pull/1809) [`5adeede`](https://github.com/generaltranslation/gt/commit/5adeede157922d547a33a078d0f527f572c9a8b4) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for generaltranslation.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`5752fe8`](https://github.com/generaltranslation/gt/commit/5752fe81bf5b5deaae878638e0de99959bf719be) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Organize package entrypoint exports and replace re-export-only imports with direct export declarations.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`97dc7f4`](https://github.com/generaltranslation/gt/commit/97dc7f4818476a319a54b1519e994a62d5a9a3a5) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove default exports from package entrypoints and internal source modules.
+
+  Use named imports for affected public entrypoints, including `import { plugin } from 'gt-react-native/plugin'`. The `gt-next/link` entrypoint keeps its default export to match `next/link`.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`693288d`](https://github.com/generaltranslation/gt/commit/693288d632c42b923920a2fdd9ae2babc1bc28f5) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove internal source barrel exports and update imports to reference defining files directly.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`2e85ebd`](https://github.com/generaltranslation/gt/commit/2e85ebd1528a4f99a8e36e1d8d6714a639040596) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Import the FormatJS `TYPE` runtime enum from the parser entrypoint so Vite dev does not request the CommonJS `types.js` subpath as a browser ESM module.
+
+- [#1814](https://github.com/generaltranslation/gt/pull/1814) [`d5cf2d3`](https://github.com/generaltranslation/gt/commit/d5cf2d34f412ad49e8b2818fe788b870a5964d65) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Vendor the FormatJS ICU AST printer so the ESM internal build no longer imports the CommonJS `printer.js` subpath, which Vite-based dev servers (e.g. TanStack Start) cannot load. Serialized output is byte-identical, so hashes are unchanged.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`4986567`](https://github.com/generaltranslation/gt/commit/498656728741898a56ae348a536107bd92f95c04) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove the v8-era backwards-compatibility shim from `generaltranslation`.
+
+  Deletes `src/backwards-compatability/` (`dataConversion`, `oldTypes`, `typeChecking`, `oldHashJsxChildren`) and its 26 re-exports from `generaltranslation/internal` — the old↔new JSX/variable-format converters, legacy type guards, and the legacy hashers. These had no consumers anywhere in the libraries; the old format they bridged is no longer produced. Safe to drop in the next major. ~477 LOC removed from the `/internal` entry.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`795edc8`](https://github.com/generaltranslation/gt/commit/795edc8a2b3e91fc9801d726f4b5cd6fbbc98fb0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove the unused `hashTemplate` export from `generaltranslation/id`. It had no consumers anywhere in the libraries. `hashSource`/`hashString` are unchanged.
+
+- Updated dependencies [[`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546), [`88f3a2e`](https://github.com/generaltranslation/gt/commit/88f3a2e0f304fdd19891afac0b41954edc9497c6), [`5752fe8`](https://github.com/generaltranslation/gt/commit/5752fe81bf5b5deaae878638e0de99959bf719be)]:
+  - @generaltranslation/format@0.1.2
+
 ## 9.0.0-odysseus.6
 
 ### Patch Changes

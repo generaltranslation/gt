@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.14.51
+
+### Patch Changes
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- Updated dependencies [[`b72c30b`](https://github.com/generaltranslation/gt/commit/b72c30bc603562310a51b656fb003f1486315a8a), [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546), [`3d95277`](https://github.com/generaltranslation/gt/commit/3d95277a057b28fffc73b3fa616210bdcb447e85), [`693288d`](https://github.com/generaltranslation/gt/commit/693288d632c42b923920a2fdd9ae2babc1bc28f5), [`ce8a665`](https://github.com/generaltranslation/gt/commit/ce8a665fd077ce2acb66c3f81db3bad5a781e9a7)]:
+  - gt@2.14.51
+
 ## 2.14.51-odysseus.7
 
 ### Patch Changes
