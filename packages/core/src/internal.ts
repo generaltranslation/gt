@@ -16,7 +16,6 @@ export type { RuntimeTranslateManyOptions } from './types-dir/api/entry';
 export { pluralForms, isAcceptedPluralForm } from './settings/plurals';
 
 export { _getPluralForm as getPluralForm } from './locales/getPluralForm';
-export { defaultTimeout } from './settings/settings';
 export type {
   JsxChildren,
   JsxChild,
@@ -27,7 +26,7 @@ export { isVariable } from './utils/isVariable';
 export { minifyVariableType } from './utils/minify';
 export { encode, decode } from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
-export { validateFileFormatTransforms } from './translate/utils/validateFileFormatTransform';
+export { API_VERSION } from './translate/api';
 
 // derive
 export { decodeVars } from './derive/decodeVars';
@@ -36,4 +35,4 @@ export { derive } from './derive/derive';
 export { indexVars } from './derive/indexVars';
 export { extractVars } from './derive/extractVars';
 export { condenseVars } from './derive/condenseVars';
-export { VAR_IDENTIFIER, VAR_NAME_IDENTIFIER } from './derive/utils/constants';
+export { VAR_IDENTIFIER } from './derive/utils/constants';

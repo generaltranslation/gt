@@ -1,8 +1,4 @@
-import type {
-  DataFormat as FormatDataFormat,
-  JsxChildren as FormatJsxChildren,
-  Variable as FormatVariable,
-} from '@generaltranslation/format/types';
+import type { DataFormat as FormatDataFormat } from '@generaltranslation/format/types';
 export { HTML_CONTENT_PROPS } from '@generaltranslation/format/types';
 export type {
   Content,
@@ -32,38 +28,22 @@ export type {
   TranslateManyEntry,
 } from './types-dir/api/entry';
 export type { HashMetadata } from './id/types';
-export type { TranslationStatusResult } from './types-dir/api/translationStatus';
 export type {
   JsonObject,
   JsonPrimitive,
   JsonValue,
 } from './types-dir/api/json';
 
-export type {
-  FileTranslationQuery,
-  CheckFileTranslationsOptions,
-} from './types-dir/api/checkFileTranslations';
+export type { CheckFileTranslationsOptions } from './types-dir/api/checkFileTranslations';
 export type {
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
 } from './types-dir/api/downloadFileBatch';
-export type {
-  FetchTranslationsOptions,
-  FetchTranslationsResult,
-  RetrievedTranslations,
-} from './types-dir/api/fetchTranslations';
-export type {
-  EnqueueFilesOptions,
-  EnqueueFilesResult,
-  Updates,
-} from './types-dir/api/enqueueFiles';
+export type { EnqueueFilesOptions } from './translate/enqueueFiles';
+export type { EnqueueFilesResult, Updates } from './types-dir/api/enqueueFiles';
 export type { CreateTagOptions, CreateTagResult } from './translate/createTag';
 export type { FileToUpload } from './types-dir/api/file';
 export type { FileUpload } from './types-dir/api/uploadFiles';
-export type {
-  EnqueueEntriesOptions,
-  EnqueueEntriesResult,
-} from './types-dir/api/enqueueEntries';
 export type { FileReference } from './types-dir/api/file';
 export type {
   PublishFileEntry,

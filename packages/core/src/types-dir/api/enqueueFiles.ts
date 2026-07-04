@@ -39,29 +39,6 @@ export type Updates = ({
     }
 ))[];
 
-/**
- * Options for enqueueing files
- * @param description - Optional description for the project.
- * @param sourceLocale - The project's source locale.
- * @param targetLocales - The locales to translate the files to.
- * @param version - Optional custom version ID to specify.
- * @param timeout - Optional timeout for the request.
- * @param modelProvider - Optional model provider to use.
- */
-export type EnqueueFilesOptions = {
-  description?: string; // @deprecated Will be removed in v8.0.0
-  sourceLocale?: string;
-  targetLocales: string[];
-  version?: string;
-  _versionId?: string; // @deprecated Will be removed in v8.0.0
-  timeout?: number;
-  modelProvider?: string;
-  force?: boolean;
-};
-
-export type RequiredEnqueueFilesOptions = EnqueueFilesOptions &
-  Required<Pick<EnqueueFilesOptions, 'sourceLocale'>>;
-
 export type EnqueueFilesResult = {
   jobData: {
     [jobId: string]: {

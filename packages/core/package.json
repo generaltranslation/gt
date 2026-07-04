@@ -87,16 +87,6 @@
         "default": "./dist/id.mjs"
       }
     },
-    "./core": {
-      "require": {
-        "types": "./dist/core.d.cts",
-        "default": "./dist/core.cjs"
-      },
-      "import": {
-        "types": "./dist/core.d.mts",
-        "default": "./dist/core.mjs"
-      }
-    },
     "./internal": {
       "require": {
         "types": "./dist/internal.d.cts",
@@ -135,9 +125,6 @@
       ],
       "id": [
         "./dist/id.d.cts"
-      ],
-      "core": [
-        "./dist/core.d.cts"
       ],
       "types": [
         "./dist/types.d.cts"

@@ -8,12 +8,4 @@ export class ApiError extends Error {
     this.code = code;
     this.message = message;
   }
-
-  getCode() {
-    return this.code;
-  }
-
-  getMessage() {
-    return this.message;
-  }
 }
