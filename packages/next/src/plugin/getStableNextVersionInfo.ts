@@ -8,6 +8,7 @@ import {
   STABLE_TURBO_CONFIG_VERSION,
   SWC_PLUGIN_SUPPORT,
 } from './constants';
+import { nodeRequire } from './nodeCompat';
 
 /**
  * Get the next version of the package.
@@ -16,12 +17,12 @@ function getPackageVersion(packageName: string): string {
   const packageJsonPath = `${packageName}/package.json`;
 
   try {
-    const resolvedPackageJsonPath = require.resolve(packageJsonPath, {
+    const resolvedPackageJsonPath = nodeRequire.resolve(packageJsonPath, {
       paths: [process.cwd()],
     });
-    return require(resolvedPackageJsonPath).version;
+    return nodeRequire(resolvedPackageJsonPath).version;
   } catch (_error) {
-    return require(packageJsonPath).version;
+    return nodeRequire(packageJsonPath).version;
   }
 }
 
