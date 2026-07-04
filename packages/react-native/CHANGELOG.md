@@ -1,5 +1,11 @@
 # gt-react-native
 
+## 11.0.0-odysseus.17
+
+### Patch Changes
+
+- @generaltranslation/react-core@11.0.0-odysseus.17
+
 ## 11.0.0-odysseus.16
 
 ### Major Changes
