@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@generaltranslation/next-internal": "workspace:*",
     "gt-next": "workspace:*",
     "gt": "workspace:*",
     "next": "latest",

@@ -254,7 +254,6 @@
   - gt-react@11.0.0-odysseus.0
   - @generaltranslation/compiler@1.3.25-odysseus.0
   - @generaltranslation/format@0.1.2-odysseus.0
-  - @generaltranslation/next-internal@0.1.3-odysseus.0
   - @generaltranslation/supported-locales@2.1.2-odysseus.0
   - generaltranslation@9.0.0-odysseus.0
   - gt-i18n@1.0.0-odysseus.0
@@ -738,7 +737,6 @@
   - gt-i18n@0.7.9
   - generaltranslation@8.2.1
   - @generaltranslation/compiler@1.2.1
-  - @generaltranslation/next-internal@0.1.2
   - @generaltranslation/supported-locales@2.0.59
 
 ## 6.15.0
@@ -832,7 +830,6 @@
   - @generaltranslation/compiler@1.1.32
   - generaltranslation@8.1.20
   - gt-i18n@0.7.2
-  - @generaltranslation/next-internal@0.1.1
   - gt-react@10.15.1
   - @generaltranslation/supported-locales@2.0.53
 
@@ -1230,11 +1227,6 @@
 ### Minor Changes
 
 - [#842](https://github.com/generaltranslation/gt/pull/842) [`3f19da3`](https://github.com/generaltranslation/gt/commit/3f19da3fd8b3e1813bef63471c0e5419cefc4c1d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: use cache
-
-### Patch Changes
-
-- Updated dependencies [[`3f19da3`](https://github.com/generaltranslation/gt/commit/3f19da3fd8b3e1813bef63471c0e5419cefc4c1d)]:
-  - @generaltranslation/next-internal@0.1.0
 
 ## 6.9.5
 

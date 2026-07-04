@@ -21,7 +21,6 @@ const PACKED_WORKSPACE_DEPENDENCIES = [
   ['@generaltranslation/compiler', 'packages/compiler'],
   ['@generaltranslation/format', 'packages/format'],
   ['generaltranslation', 'packages/core'],
-  ['@generaltranslation/next-internal', 'packages/next-internal'],
   ['@generaltranslation/supported-locales', 'packages/supported-locales'],
   ['gt-react', 'packages/react'],
   ['@generaltranslation/react-core', 'packages/react-core'],

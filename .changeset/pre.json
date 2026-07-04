@@ -10,8 +10,6 @@
     "gt-i18n": "0.9.3",
     "locadex": "1.0.172",
     "@generaltranslation/mcp": "1.0.7",
-    "@generaltranslation/next-internal": "0.1.2",
-    "@generaltranslation/gt-next-lint": "14.0.28",
     "gt-next": "6.16.28",
     "gt-node": "0.7.3",
     "@generaltranslation/python-extractor": "0.2.21",
