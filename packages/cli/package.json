@@ -1,6 +1,6 @@
 {
   "name": "gt",
-  "version": "2.14.51-odysseus.6",
+  "version": "2.14.51-odysseus.7",
   "main": "dist/index.js",
   "bin": "bin/main.js",
   "files": [

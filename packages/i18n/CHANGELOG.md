@@ -1,5 +1,24 @@
 # gt-i18n
 
+## 1.0.0-odysseus.9
+
+### Major Changes
+
+- 463a8db: Add a config-aware `resolveCanonicalLocale` helper and remove the public `getGTClass` helper.
+- 1f53e42: Clean up the `gt-i18n` public API surface by removing dead subpaths, internal exports, and unused types.
+
+### Patch Changes
+
+- b72c30b: Clean up the `generaltranslation` public API surface for the next major.
+
+  Removes the unused `generaltranslation/core` subpath, stale endpoint types, duplicate `ApiError` accessors, and dead `/internal` exports. Moves `API_VERSION` to `generaltranslation/internal`, exports the derivation helpers from the public root, and points `gt-i18n` at that public entry.
+
+- bea8233: Statically gate dev hot-reload code paths (tracked resolver invalidation, missing-translation queue, T hot-reload fallbacks, getGT dev preload) behind `process.env.NODE_ENV !== 'production'` so bundlers can drop them from production builds. Behavior is unchanged: the existing runtime `isDevHotReloadEnabled()` check still applies in development.
+- Updated dependencies [b72c30b]
+- Updated dependencies [d5cf2d3]
+  - generaltranslation@9.0.0-odysseus.6
+  - @generaltranslation/supported-locales@2.1.2-odysseus.6
+
 ## 1.0.0-odysseus.8
 
 ### Patch Changes

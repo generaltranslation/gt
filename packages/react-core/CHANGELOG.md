@@ -1,5 +1,30 @@
 # @generaltranslation/react-core
 
+## 11.0.0-odysseus.16
+
+### Major Changes
+
+- 463a8db: Add a config-aware `resolveCanonicalLocale` helper and remove the public `getGTClass` helper.
+- 463a8db: Remove the deprecated `useGTClass` hook from public entry points.
+- 40db0c5: Remove `useVersionId` from public package entrypoints.
+
+  The `getVersionId` helper remains available from public function entrypoints and `gt-i18n/internal`.
+
+### Patch Changes
+
+- bea8233: Statically gate dev hot-reload code paths (tracked resolver invalidation, missing-translation queue, T hot-reload fallbacks, getGT dev preload) behind `process.env.NODE_ENV !== 'production'` so bundlers can drop them from production builds. Behavior is unchanged: the existing runtime `isDevHotReloadEnabled()` check still applies in development.
+- 5736d58: Use production no-op stubs for dev hot-reload hooks so bundlers can drop more dev-only hot-reload code.
+- 1f53e42: Clean up the `gt-i18n` public API surface by removing dead subpaths, internal exports, and unused types.
+- e343775: Remove the accidental `useShouldTranslate` export from `@generaltranslation/react-core/hooks`. The hook is an internal implementation detail and was never meant to be public.
+- Updated dependencies [463a8db]
+- Updated dependencies [b72c30b]
+- Updated dependencies [bea8233]
+- Updated dependencies [1f53e42]
+- Updated dependencies [d5cf2d3]
+  - gt-i18n@1.0.0-odysseus.9
+  - generaltranslation@9.0.0-odysseus.6
+  - @generaltranslation/supported-locales@2.1.2-odysseus.6
+
 ## 11.0.0-odysseus.15
 
 ### Patch Changes

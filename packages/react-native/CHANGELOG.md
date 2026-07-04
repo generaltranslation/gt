@@ -1,5 +1,31 @@
 # gt-react-native
 
+## 11.0.0-odysseus.16
+
+### Major Changes
+
+- 463a8db: Add a config-aware `resolveCanonicalLocale` helper and remove the public `getGTClass` helper.
+- 463a8db: Remove the deprecated `useGTClass` hook from public entry points.
+- 40db0c5: Remove `useVersionId` from public package entrypoints.
+
+  The `getVersionId` helper remains available from public function entrypoints and `gt-i18n/internal`.
+
+### Patch Changes
+
+- Updated dependencies [463a8db]
+- Updated dependencies [b72c30b]
+- Updated dependencies [bea8233]
+- Updated dependencies [5736d58]
+- Updated dependencies [1f53e42]
+- Updated dependencies [463a8db]
+- Updated dependencies [e343775]
+- Updated dependencies [40db0c5]
+- Updated dependencies [d5cf2d3]
+  - gt-i18n@1.0.0-odysseus.9
+  - @generaltranslation/react-core@11.0.0-odysseus.16
+  - generaltranslation@9.0.0-odysseus.6
+  - @generaltranslation/supported-locales@2.1.2-odysseus.6
+
 ## 11.0.0-odysseus.15
 
 ### Patch Changes
