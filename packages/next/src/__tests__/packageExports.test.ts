@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const distInitGTServerPath = join(packageRoot, 'dist/setup/initGT.server.mjs');
+const distConfigPath = join(packageRoot, 'dist/config.mjs');
 
 describe('gt-next package exports', () => {
   it('uses RSC-specific declarations for the react-server condition', () => {
@@ -81,5 +82,33 @@ describe('gt-next package exports', () => {
       expect(result.status, result.stderr).toBe(0);
       expect(result.stdout).toContain('ok');
     }
+  });
+
+  const distConfigIt = existsSync(distConfigPath) ? it : it.skip;
+
+  distConfigIt('loads the config entry from Node ESM', () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `
+          import { withGTConfig } from 'gt-next/config';
+
+          if (typeof withGTConfig !== 'function') {
+            throw new Error('withGTConfig export not found');
+          }
+
+          console.log('ok');
+        `,
+      ],
+      {
+        cwd: packageRoot,
+        encoding: 'utf8',
+      }
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain('ok');
   });
 });
