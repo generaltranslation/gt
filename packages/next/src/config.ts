@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
 import {
   defaultWithGTConfigProps,
@@ -46,6 +47,16 @@ import {
 } from './errors/cacheComponents';
 import { I18nConfigParams } from 'gt-i18n/internal/types';
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
+
+const configDirname =
+  typeof __dirname === 'string'
+    ? __dirname
+    : path.dirname(
+        fileURLToPath(
+          // @ts-expect-error import.meta is available in the ESM build.
+          import.meta.url
+        )
+      );
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 
@@ -251,11 +262,17 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   if (mergedConfig.experimentalCompilerOptions?.type === 'swc') {
     try {
       if (turboPackEnabled) {
-        const absolutePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+        const absolutePath = path.resolve(
+          configDirname,
+          './gt_swc_plugin.wasm'
+        );
         resolvedWasmFilePath =
           './' + path.relative(process.cwd(), absolutePath).replace(/\\/g, '/');
       } else {
-        resolvedWasmFilePath = path.resolve(__dirname, './gt_swc_plugin.wasm');
+        resolvedWasmFilePath = path.resolve(
+          configDirname,
+          './gt_swc_plugin.wasm'
+        );
       }
     } catch (error) {
       console.error(

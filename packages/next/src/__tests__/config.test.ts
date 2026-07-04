@@ -1258,6 +1258,27 @@ describe('withGTConfig', () => {
   // 13. Compiler configuration
   // ==============================
   describe('13. Compiler configuration', () => {
+    it('keeps the SWC compiler enabled when resolving the plugin path', async () => {
+      const withGTConfig = await getWithGTConfig();
+
+      const result = withGTConfig(
+        {},
+        { experimentalCompilerOptions: { type: 'swc' } }
+      );
+      const params = parseConfigParams(result);
+
+      expect(params.experimentalCompilerOptions.type).toBe('swc');
+      expect(result.experimental!.swcPlugins).toEqual([
+        [
+          expect.stringMatching(/gt_swc_plugin\.wasm$/),
+          expect.objectContaining({
+            autoderiveJsx: false,
+            autoderiveStrings: false,
+          }),
+        ],
+      ]);
+    });
+
     it('uses a Turbopack-specific babel compiler warning', async () => {
       const withGTConfig = await getWithGTConfig();
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
