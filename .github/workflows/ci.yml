@@ -78,8 +78,14 @@ jobs:
       - name: Build packages
         run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
+      - name: Run typecheck
+        run: pnpm exec turbo typecheck --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
+
       - name: Run tests
         run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
+
+      - name: Run smoke tests
+        run: pnpm exec turbo smoke --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
   test-builds:
     strategy:
