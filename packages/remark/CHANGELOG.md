@@ -1,5 +1,11 @@
 # gt-remark
 
+## 1.0.11
+
+### Patch Changes
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
 ## 1.0.11-odysseus.0
 
 ### Patch Changes

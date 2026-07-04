@@ -1,5 +1,97 @@
 # gt-i18n
 
+## 1.0.0
+
+### Major Changes
+
+- [#1816](https://github.com/generaltranslation/gt/pull/1816) [`463a8db`](https://github.com/generaltranslation/gt/commit/463a8dbb03bde35f2f229dfdabfe117197d4527b) Thanks [@bgub](https://github.com/bgub)! - Add a config-aware `resolveCanonicalLocale` helper and remove the public `getGTClass` helper.
+
+- [#1820](https://github.com/generaltranslation/gt/pull/1820) [`1f53e42`](https://github.com/generaltranslation/gt/commit/1f53e420e9a6475f85cf27e1cd0c9c89f4beeb36) Thanks [@bgub](https://github.com/bgub)! - Clean up the `gt-i18n` public API surface by removing dead subpaths, internal exports, and unused types.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`e12fb17`](https://github.com/generaltranslation/gt/commit/e12fb17d41cfa5fa231e64fe70423434739ea985) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Prepare Odysseus major releases for core runtime packages.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`c1e0a0f`](https://github.com/generaltranslation/gt/commit/c1e0a0f837da440eeed84af10b553dee24bfc936) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove deprecated translation options. The `context` dictionary option has been removed in favor of `$context`, and the `$_locales` inline option has been removed in favor of `$locale`.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`8a2f7ee`](https://github.com/generaltranslation/gt/commit/8a2f7ee79f4b890fb1aaf47f42bb844334899793) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Simplify translation option types. Replace deprecated inline and dictionary option aliases with `GTTranslationOptions`, use interpolation variables for dictionary `t()` options, and trim higher-level type exports to avoid exposing internal translation option fields.
+
+### Minor Changes
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`b3bb391`](https://github.com/generaltranslation/gt/commit/b3bb391d33041680e2d62b6a7c9b05662946544f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Store cookie names in I18nConfig so custom cookie names work before the condition store is initialized.
+  - `gt-i18n`: Removed the unused React locale cookie name from the shared GT config type.
+  - `@generaltranslation/react-core`: `ReactI18nConfig` now accepts `localeCookieName`, `regionCookieName`, and `enableI18nCookieName`, exposes getters that fall back to the default names, and exports the default storage names from the `pure` entrypoint.
+  - `gt-next`: Imports default cookie names from the React Core `pure` entrypoint instead of the removed React Core cookie constants subpath.
+  - `gt-react`: The browser condition store now resolves cookie names from `I18nConfig` instead of hardcoding the defaults, so custom cookie names passed to `initializeGT()` are honored for both reads and writes.
+  - `gt-react-native`: Native condition storage now resolves its store keys from `I18nConfig`, matching `gt-react` behavior.
+  - `gt-tanstack-start`: `parseLocale()` reads and writes the locale cookie using the configured cookie name instead of the default.
+
+### Patch Changes
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`8870496`](https://github.com/generaltranslation/gt/commit/88704963eb74e81401994681ce7cdae3ba91b6c0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Use Next.js caching semantics for Cache Components by disabling GT cache expiry and development hot reload runtime translation.
+
+  Async translation and dictionary lookup boundaries now keep synchronous access to the loaded snapshot, so APIs like `getGT` and `getTranslations` can still resolve strings after cache expiry is delegated to Next.js.
+
+  Global singleton setup now preserves the first initialized instance instead of replacing it on later initialization attempts.
+
+- [#1818](https://github.com/generaltranslation/gt/pull/1818) [`b72c30b`](https://github.com/generaltranslation/gt/commit/b72c30bc603562310a51b656fb003f1486315a8a) Thanks [@bgub](https://github.com/bgub)! - Clean up the `generaltranslation` public API surface for the next major.
+
+  Removes the unused `generaltranslation/core` subpath, stale endpoint types, duplicate `ApiError` accessors, and dead `/internal` exports. Moves `API_VERSION` to `generaltranslation/internal`, exports the derivation helpers from the public root, and points `gt-i18n` at that public entry.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`72e9e16`](https://github.com/generaltranslation/gt/commit/72e9e1643797be8e4ae1453897fd0b023fce2674) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Split the runtime surface of the GT class (locale management, formatting, runtime translation) into a GTRuntime base class exported from the new `generaltranslation/runtime` entry point. The SDK runtime (gt-i18n's I18nConfig, gt-next middleware) now constructs GTRuntime, so production browser bundles no longer ship the project/file management API client (enqueueFiles, uploads, downloads, etc.). The GT class extends GTRuntime and keeps its full API for the CLI and other tooling. Also import getLocaleProperties from @generaltranslation/format directly in react-core so client bundles don't reach the full core entry.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`42a440f`](https://github.com/generaltranslation/gt/commit/42a440ff3420bdbdb35ed24f9a5af1c9040eaf66) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Gate duplicate singleton initialization warnings behind `_GENERALTRANSLATION_LOG_LEVEL=DEBUG`.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`fd22c68`](https://github.com/generaltranslation/gt/commit/fd22c68978af50ce519dc06c7b887d3fa67181ae) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Defer the missing-projectId and missing-translation-loader warnings from I18nCache construction to the first translation loader invocation. Clients of server-rendered apps receive translations via updateTranslations() and never invoke the fallback loader, so they no longer log spurious warnings on initialization. Explicitly disabling translation loading with cacheUrl: null no longer logs at all, and explicitly setting cacheUrl to the default GT CDN URL alongside a projectId is now classified as GT remote loading.
+
+- [#1811](https://github.com/generaltranslation/gt/pull/1811) [`bea8233`](https://github.com/generaltranslation/gt/commit/bea8233d8b055980483cb2e226157f6adcbd8c2b) Thanks [@bgub](https://github.com/bgub)! - Statically gate dev hot-reload code paths (tracked resolver invalidation, missing-translation queue, T hot-reload fallbacks, getGT dev preload) behind `process.env.NODE_ENV !== 'production'` so bundlers can drop them from production builds. Behavior is unchanged: the existing runtime `isDevHotReloadEnabled()` check still applies in development.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`8870496`](https://github.com/generaltranslation/gt/commit/88704963eb74e81401994681ce7cdae3ba91b6c0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Support dev hot reload lookups for server `getGT` strings.
+
+  `getGT` can now receive compiler-injected message metadata and prefetch missing translations through the runtime cache in development. `gt-next` forwards the server request conditions into this path so App Router server strings can participate in hot reload translation updates.
+
+  Compiler-injected `getGT` and `useGT` preload messages now emit the same sugar metadata keys used by runtime lookup options.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`04b5064`](https://github.com/generaltranslation/gt/commit/04b50645675abb9e927a82056b249b50f0907fcc) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Restore namespace scoping for getTranslations and server useTranslations.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`328795b`](https://github.com/generaltranslation/gt/commit/328795bf730296658a57b7132bbd1e0bbff2fd62) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Store the GT services enabled flag on the i18n config singleton.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`3d95277`](https://github.com/generaltranslation/gt/commit/3d95277a057b28fffc73b3fa616210bdcb447e85) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove unused internal exports and dead utility code.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`693288d`](https://github.com/generaltranslation/gt/commit/693288d632c42b923920a2fdd9ae2babc1bc28f5) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove internal source barrel exports and update imports to reference defining files directly.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`c5364f9`](https://github.com/generaltranslation/gt/commit/c5364f977ffb4b387ad39206e6ed626bbeec56f3) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Slim the i18n cache event surface by replacing the generic EventEmitter base class with a single cache-miss listener and removing unused cache helper methods.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`d863bcf`](https://github.com/generaltranslation/gt/commit/d863bcf05770c336c98b2b2fae8534c90f00df51) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove deprecated i18n cache lifecycle hooks and unused cache events.
+
+  The cache subscription surface now only exposes `translations-cache-miss`, which is used for runtime translation updates. Deprecated lifecycle constructor callbacks and unused locale/dictionary cache hit/miss events have been removed.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`11ecf87`](https://github.com/generaltranslation/gt/commit/11ecf876a1221b9dbce9fc0c0f0804101558c8a7) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove the unused `condition-store/localeResolver` module from `gt-i18n/internal`.
+
+  `determineSupportedLocale`, `resolveSupportedLocale`, and `createLocaleResolver` were thin wrappers over `getI18nConfig().<method>()`. They had no consumers — callers (e.g. tanstack-start) use the `I18nConfig` methods directly via `getI18nConfig()`. Removing the module trims dead indirection from the `/internal` entry; the `LocaleCandidates` type re-export is unaffected (re-exported from its real source).
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`03bae6d`](https://github.com/generaltranslation/gt/commit/03bae6d3b4791107781cb800c1ae7ac4f675705c) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove the unused `validateLocales` config validator from `gt-i18n`.
+
+  `validateLocales` was defined but never called (config validation runs `validateLoadTranslations`, `validateTranslationApi`, and `validateDictionary`) and had no consumers anywhere. Dead code removed.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`5d42608`](https://github.com/generaltranslation/gt/commit/5d426089f04f37dd7369620e9db3e6512f06eee8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove deprecated methods from `gt-i18n`'s `I18nCache`.
+
+  Dropped the long-`@deprecated` cache methods that duplicated `I18nConfig`/loader APIs: `getDefaultLocale`, `getLocales`, `getCustomMapping`, `getGTClass`, `getTranslationLoader`, `resolveTranslationSync`, `getTranslations`, and `getTranslationResolver`. None were called anywhere (consumers use `getI18nConfig()` / `lookupTranslation` / `loadTranslations`). Removes the methods, their now-unused imports, and the tests that covered them.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`9804aa4`](https://github.com/generaltranslation/gt/commit/9804aa460c07ec36d2e667d79a839720a1e011e8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove three orphaned, never-imported files:
+  - `gt-tanstack-start`: `condition-store/WritableConditionStore.ts` (an orphaned local copy; the package uses gt-i18n's writable condition store).
+  - `gt-react-native`: `utils/utils.ts` (`readAuthFromEnv`, no consumers).
+  - `gt-i18n`: `i18n-cache/translations-manager/utils/types/translations-manager.ts` (unreferenced `TranslationsManagerConfig` type).
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`2ca78ec`](https://github.com/generaltranslation/gt/commit/2ca78ec4805639c10c7b200c8dee660b55eddf15) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Read Vite runtime credentials during React initialization while keeping dev API keys out of production bundles.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`195f009`](https://github.com/generaltranslation/gt/commit/195f00910c2a675a6f9da327e19e3d3c5e44e26b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: make singleton not-initialized errors consistent and descriptive, and stop error paths from masking the original failure when I18nConfig is also uninitialized
+
+- Updated dependencies [[`b72c30b`](https://github.com/generaltranslation/gt/commit/b72c30bc603562310a51b656fb003f1486315a8a), [`72e9e16`](https://github.com/generaltranslation/gt/commit/72e9e1643797be8e4ae1453897fd0b023fce2674), [`5adeede`](https://github.com/generaltranslation/gt/commit/5adeede157922d547a33a078d0f527f572c9a8b4), [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546), [`88f3a2e`](https://github.com/generaltranslation/gt/commit/88f3a2e0f304fdd19891afac0b41954edc9497c6), [`e12fb17`](https://github.com/generaltranslation/gt/commit/e12fb17d41cfa5fa231e64fe70423434739ea985), [`5752fe8`](https://github.com/generaltranslation/gt/commit/5752fe81bf5b5deaae878638e0de99959bf719be), [`97dc7f4`](https://github.com/generaltranslation/gt/commit/97dc7f4818476a319a54b1519e994a62d5a9a3a5), [`693288d`](https://github.com/generaltranslation/gt/commit/693288d632c42b923920a2fdd9ae2babc1bc28f5), [`2e85ebd`](https://github.com/generaltranslation/gt/commit/2e85ebd1528a4f99a8e36e1d8d6714a639040596), [`d5cf2d3`](https://github.com/generaltranslation/gt/commit/d5cf2d34f412ad49e8b2818fe788b870a5964d65), [`4986567`](https://github.com/generaltranslation/gt/commit/498656728741898a56ae348a536107bd92f95c04), [`795edc8`](https://github.com/generaltranslation/gt/commit/795edc8a2b3e91fc9801d726f4b5cd6fbbc98fb0)]:
+  - generaltranslation@9.0.0
+  - @generaltranslation/format@0.1.2
+  - @generaltranslation/supported-locales@2.1.2
+
 ## 1.0.0-odysseus.9
 
 ### Major Changes
