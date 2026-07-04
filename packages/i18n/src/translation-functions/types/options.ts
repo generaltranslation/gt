@@ -120,3 +120,8 @@ export type NormalizedLookupOptions<T extends DataFormat> =
     $format: T;
     $locale: string;
   };
+
+/**
+ * Options for string interpolation, as accepted by `interpolateMessage`.
+ */
+export type InterpolationOptions = NormalizedLookupOptions<StringFormat>;

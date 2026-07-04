@@ -1,16 +1,6 @@
-import {
-  TranslationOptions,
-  NormalizedLookupOptions,
-} from '../../types/options';
+import { TranslationOptions, InterpolationOptions } from '../../types/options';
 import { interpolateIcuMessage } from './interpolateIcuMessage';
 import { interpolateStringMessage } from './interpolateStringMessage';
-import type { StringFormat } from '@generaltranslation/format/types';
-
-/**
- * Options for string interpolation
- * @internal
- */
-export type InterpolationOptions = NormalizedLookupOptions<StringFormat>;
 
 /**
  * Interpolation router function for all {@link StringFormat} types
