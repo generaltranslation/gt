@@ -149,25 +149,5 @@
         "./dist/runtime.d.cts"
       ]
     }
-  },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "generaltranslation/internal": [
-        "/dist/internal"
-      ],
-      "generaltranslation/id": [
-        "/dist/id"
-      ],
-      "generaltranslation/core": [
-        "/dist/core"
-      ],
-      "generaltranslation/types": [
-        "/dist/types"
-      ],
-      "generaltranslation/errors": [
-        "/dist/errors"
-      ]
-    }
   }
 }

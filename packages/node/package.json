@@ -100,16 +100,5 @@
         "./dist/internal.d.cts"
       ]
     }
-  },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "gt-node/types": [
-        "./dist/types"
-      ],
-      "gt-node/internal": [
-        "./dist/internal"
-      ]
-    }
   }
 }

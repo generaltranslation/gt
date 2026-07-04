@@ -158,38 +158,6 @@
       ]
     }
   },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "gt-next/config": [
-        "/dist/config"
-      ],
-      "gt-next/server": [
-        "/dist/server"
-      ],
-      "gt-next/middleware": [
-        "/dist/middleware"
-      ],
-      "gt-next/link": [
-        "/dist/link"
-      ],
-      "gt-next/internal/_dictionary": [
-        "/dist/internal/_dictionary"
-      ],
-      "gt-next/internal/_load-translations": [
-        "/dist/internal/_load-translations"
-      ],
-      "gt-next/internal/_load-dictionary": [
-        "/dist/internal/_load-dictionary"
-      ],
-      "gt-next/internal/_getLocale": [
-        "/dist/internal/_getLocale"
-      ],
-      "gt-next/internal/_getRegion": [
-        "/dist/internal/_getRegion"
-      ]
-    }
-  },
   "keywords": [
     "react",
     "translation",

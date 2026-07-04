@@ -55,7 +55,6 @@
     "url": "https://github.com/generaltranslation/gt/issues"
   },
   "homepage": "https://generaltranslation.com/",
-  "compilerOptions": {},
   "keywords": [
     "react",
     "translation",
