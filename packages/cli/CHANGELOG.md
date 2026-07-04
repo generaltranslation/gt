@@ -1,5 +1,23 @@
 # gtx-cli
 
+## 2.14.51-odysseus.7
+
+### Patch Changes
+
+- b72c30b: Clean up the `generaltranslation` public API surface for the next major.
+
+  Removes the unused `generaltranslation/core` subpath, stale endpoint types, duplicate `ApiError` accessors, and dead `/internal` exports. Moves `API_VERSION` to `generaltranslation/internal`, exports the derivation helpers from the public root, and points `gt-i18n` at that public entry.
+
+- ce8a665: Clean up the `gt-next` API surface for the next major prerelease.
+
+  Removes the deprecated `initGT` config alias and the redundant `gt-next/types` subpath. Moves the hidden dictionary and loader subpaths under `gt-next/internal/*`, updates the Next config alias plumbing to match, and adjusts CLI setup detection so it no longer treats `initGT` as a valid existing config wrapper.
+
+- Updated dependencies [b72c30b]
+- Updated dependencies [d5cf2d3]
+  - generaltranslation@9.0.0-odysseus.6
+  - @generaltranslation/python-extractor@0.2.23-odysseus.6
+  - @generaltranslation/supported-locales@2.1.2-odysseus.6
+
 ## 2.14.51-odysseus.6
 
 ### Patch Changes

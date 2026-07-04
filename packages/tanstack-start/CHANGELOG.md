@@ -1,5 +1,24 @@
 # gt-tanstack-start
 
+## 11.0.0-odysseus.16
+
+### Patch Changes
+
+- Updated dependencies [463a8db]
+- Updated dependencies [b72c30b]
+- Updated dependencies [bea8233]
+- Updated dependencies [5736d58]
+- Updated dependencies [1f53e42]
+- Updated dependencies [7744c55]
+- Updated dependencies [463a8db]
+- Updated dependencies [e343775]
+- Updated dependencies [40db0c5]
+- Updated dependencies [d5cf2d3]
+  - gt-i18n@1.0.0-odysseus.9
+  - @generaltranslation/react-core@11.0.0-odysseus.16
+  - gt-react@11.0.0-odysseus.16
+  - generaltranslation@9.0.0-odysseus.6
+
 ## 11.0.0-odysseus.15
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # gt-sanity
 
+## 2.0.18-odysseus.8
+
+### Patch Changes
+
+- Updated dependencies [b72c30b]
+- Updated dependencies [d5cf2d3]
+  - generaltranslation@9.0.0-odysseus.6
+
 ## 2.0.18-odysseus.7
 
 ### Patch Changes

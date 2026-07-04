@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/supported-locales",
-  "version": "2.1.2-odysseus.5",
+  "version": "2.1.2-odysseus.6",
   "description": "List of supported locales for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

@@ -1,5 +1,15 @@
 # generaltranslation
 
+## 9.0.0-odysseus.6
+
+### Patch Changes
+
+- b72c30b: Clean up the `generaltranslation` public API surface for the next major.
+
+  Removes the unused `generaltranslation/core` subpath, stale endpoint types, duplicate `ApiError` accessors, and dead `/internal` exports. Moves `API_VERSION` to `generaltranslation/internal`, exports the derivation helpers from the public root, and points `gt-i18n` at that public entry.
+
+- d5cf2d3: Vendor the FormatJS ICU AST printer so the ESM internal build no longer imports the CommonJS `printer.js` subpath, which Vite-based dev servers (e.g. TanStack Start) cannot load. Serialized output is byte-identical, so hashes are unchanged.
+
 ## 9.0.0-odysseus.5
 
 ### Patch Changes
