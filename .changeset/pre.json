@@ -58,6 +58,7 @@
     "fix-link-locale-false",
     "fix-namespace-translations",
     "fix-react-import-meta-env",
+    "fix-react-initialize-gt-types",
     "fix-react-version-id-locale-direction-hooks",
     "generaltranslation-odysseus-patch",
     "getgt-preload-format",

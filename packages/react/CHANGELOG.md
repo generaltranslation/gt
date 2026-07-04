@@ -1,5 +1,12 @@
 # gt-react
 
+## 11.0.0-odysseus.17
+
+### Patch Changes
+
+- 04c285c: Fix shipped types for the initializeGT export.
+  - @generaltranslation/react-core@11.0.0-odysseus.17
+
 ## 11.0.0-odysseus.16
 
 ### Major Changes

@@ -1,5 +1,7 @@
 # @generaltranslation/react-core
 
+## 11.0.0-odysseus.17
+
 ## 11.0.0-odysseus.16
 
 ### Major Changes
