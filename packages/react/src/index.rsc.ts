@@ -5,11 +5,10 @@ import { CustomMapping } from 'generaltranslation/types';
 import {
   getGT,
   getI18nConfig,
-  getLocale,
   getMessages,
-  getRegion,
   getTranslations,
 } from 'gt-i18n/internal';
+import { getLocale, getRegion } from 'gt-i18n';
 import { use } from 'react';
 
 // ===== Error for client components ===== //

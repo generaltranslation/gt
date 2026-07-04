@@ -130,13 +130,6 @@ export class I18nConfig extends LocaleConfig {
     return resolvedLocale;
   }
 
-  requiresDialectTranslation(locale: string): boolean {
-    return (
-      this.requiresTranslation(locale) &&
-      this.isSameLanguage(this.getDefaultLocale(), locale)
-    );
-  }
-
   /**
    * Returns true when development hot reload runtime translation requests can run.
    */
@@ -153,10 +146,6 @@ export class I18nConfig extends LocaleConfig {
 
   isGTServicesEnabled(): boolean {
     return this.gtServicesEnabled;
-  }
-
-  getLogLevel(): GeneralTranslationLogLevel {
-    return this.logLevel;
   }
 
   isDebugLoggingEnabled(): boolean {

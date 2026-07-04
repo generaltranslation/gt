@@ -3,7 +3,8 @@ import {
   getRuntimeEnvironment,
   interpolateMessage,
 } from 'gt-i18n/internal';
-import type { GTTranslationOptions, LookupOptionsFor } from 'gt-i18n/types';
+import type { GTTranslationOptions } from 'gt-i18n/types';
+import type { LookupOptionsFor } from 'gt-i18n/internal/types';
 import { getI18nConfig } from '../../setup/i18nConfig';
 import {
   getReadonlyConditionStore,

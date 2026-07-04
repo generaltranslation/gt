@@ -12,15 +12,7 @@ export {
   GtInternalRuntimeTranslateString,
   GtInternalRuntimeTranslateJsx,
 } from './translation-functions/internal/runtime-translate';
-export {
-  resolveJsx,
-  resolveJsxWithFallback,
-  resolveJsxWithRuntimeFallback,
-  resolveStringContent,
-  resolveStringContentWithFallback,
-  resolveStringContentWithRuntimeFallback,
-  createLookupOptions,
-} from './translation-functions/internal/helpers';
+export { createLookupOptions } from './translation-functions/internal/helpers';
 export { renderDictionaryEntry } from './translation-functions/internal/renderDictionaryEntry';
 export { renderDictionaryObject } from './translation-functions/internal/renderDictionaryObject';
 export { I18nCache } from './i18n-cache/I18nCache';
@@ -31,15 +23,6 @@ export { WritableConditionStore } from './condition-store/WritableConditionStore
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
 export type { LocaleCandidates } from './i18n-config/I18nConfig';
 export { getI18nCache, setI18nCache } from './i18n-cache/singleton-operations';
-export { interpolateIcuMessage } from './translation-functions/utils/interpolation/interpolateIcuMessage';
-export {
-  getLocale,
-  getRegion,
-  getLocales,
-  getDefaultLocale,
-  getLocaleProperties,
-  resolveCanonicalLocale,
-} from './helpers/locale';
 export { getVersionId } from './helpers/versionId';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';
 export { isEncodedTranslationOptions } from './translation-functions/utils/isEncodedTranslationOptions';
@@ -58,12 +41,10 @@ export {
   getDictionaryValue,
   resolveDictionaryLookupOptions,
 } from './i18n-cache/translations-manager/utils/dictionary-helpers';
-export { getGTServicesEnabled } from './globals/getGTServicesEnabled';
 
 export {
   getI18nConfig,
   initializeI18nConfig,
-  isI18nConfigInitialized,
   setI18nConfig,
 } from './i18n-config/singleton-operations';
 export { I18nConfig } from './i18n-config/I18nConfig';

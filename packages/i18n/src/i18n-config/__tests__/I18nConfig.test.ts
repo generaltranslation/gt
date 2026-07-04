@@ -128,7 +128,6 @@ describe('I18nConfig', () => {
     const config = new I18nConfig();
     vi.stubEnv('_GENERALTRANSLATION_LOG_LEVEL', '');
 
-    expect(config.getLogLevel()).toBe('debug');
     expect(config.isDebugLoggingEnabled()).toBe(true);
   });
 
