@@ -38,7 +38,7 @@ export {
   getLocales,
   getDefaultLocale,
   getLocaleProperties,
-  getGTClass,
+  resolveCanonicalLocale,
 } from './helpers/locale';
 export { getVersionId } from './helpers/versionId';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';

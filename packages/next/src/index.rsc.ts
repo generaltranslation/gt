@@ -78,12 +78,7 @@ export function withGTServerSideProps<
 export { Derive } from 'gt-react';
 
 // ===== gt-react Hooks ===== //
-export {
-  useDefaultLocale,
-  useGTClass,
-  useLocaleProperties,
-  useLocales,
-} from 'gt-react';
+export { useDefaultLocale, useLocaleProperties, useLocales } from 'gt-react';
 
 // ===== gt-react Functions ===== //
 export {
@@ -93,9 +88,9 @@ export {
   declareVar,
   derive,
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
+  resolveCanonicalLocale,
   getVersionId,
   gtFallback,
   mFallback,

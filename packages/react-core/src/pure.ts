@@ -61,8 +61,8 @@ export type {
 } from './hooks/utils/missing-translation';
 export {
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
+  resolveCanonicalLocale,
   getVersionId,
 } from 'gt-i18n';

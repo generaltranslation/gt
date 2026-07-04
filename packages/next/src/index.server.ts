@@ -35,7 +35,6 @@ export {
 export {
   useDefaultLocale,
   useGT,
-  useGTClass,
   useLocaleDirection,
   useLocales,
   useLocaleProperties,
@@ -55,9 +54,9 @@ export {
   declareVar,
   derive,
   getDefaultLocale,
-  getGTClass,
   getLocaleProperties,
   getLocales,
+  resolveCanonicalLocale,
   getTranslationsSnapshot,
   getVersionId,
   gtFallback,
