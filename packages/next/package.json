@@ -49,7 +49,8 @@
     "test:watch": "vitest",
     "bench": "vitest bench --run --config vitest.config.bench.ts",
     "bench:unit:json": "vitest bench --run --config vitest.config.bench.ts --outputJson benchmarks/results/unit-latest.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/smoke.mjs"
   },
   "repository": {
     "type": "git",

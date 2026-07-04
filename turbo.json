@@ -27,6 +27,10 @@
       "cache": false,
       "env": ["VITE_CI_TEST_GT_PROJECT_ID", "VITE_CI_TEST_GT_API_KEY"]
     },
+    "smoke": {
+      "dependsOn": ["build", "^build"],
+      "cache": false
+    },
     "test:watch": {
       "cache": false,
       "persistent": true
