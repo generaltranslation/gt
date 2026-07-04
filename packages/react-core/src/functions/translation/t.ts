@@ -1,4 +1,8 @@
-import { getRuntimeEnvironment, interpolateMessage } from 'gt-i18n/internal';
+import {
+  createLookupOptions,
+  getRuntimeEnvironment,
+  interpolateMessage,
+} from 'gt-i18n/internal';
 import type { GTTranslationOptions } from 'gt-i18n/types';
 import type { LookupOptionsFor } from 'gt-i18n/internal/types';
 import { getI18nConfig } from '../../setup/i18nConfig';
@@ -10,7 +14,6 @@ import { StringContent, StringFormat } from 'generaltranslation/types';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils/getShouldTranslate';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
-import { createLookupOptions } from '../../utils/translation/createLookupOptions';
 
 /**
  * Translate a message

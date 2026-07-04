@@ -1,5 +1,9 @@
 import { type RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
-import { getI18nConfig, getTranslateListenerKey } from 'gt-i18n/internal';
+import {
+  createLookupOptions,
+  getI18nConfig,
+  getTranslateListenerKey,
+} from 'gt-i18n/internal';
 import type { Translation } from 'gt-i18n/types';
 import type {
   TranslateLookup,
@@ -15,7 +19,6 @@ import {
 } from '../../i18n-store/useI18nStore';
 import { useHandleMissingTranslation } from '../utils/missing-translation';
 import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
-import { createLookupOptions } from '../../utils/translation/createLookupOptions';
 
 /**
  * Returns the translation, but also triggers a translation if it is not found
