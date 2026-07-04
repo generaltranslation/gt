@@ -23,7 +23,6 @@ export { WritableConditionStore } from './condition-store/WritableConditionStore
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
 export type { LocaleCandidates } from './i18n-config/I18nConfig';
 export { getI18nCache, setI18nCache } from './i18n-cache/singleton-operations';
-export { getGTClass } from './helpers/locale';
 export { getVersionId } from './helpers/versionId';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';
 export { isEncodedTranslationOptions } from './translation-functions/utils/isEncodedTranslationOptions';
