@@ -38,3 +38,9 @@ packageExtensions:
   eslint-config-next@*:
     peerDependencies:
       next: '*'
+  '@expo/cli@*':
+    dependencies:
+      metro-runtime: '*'
+  size-limit@*:
+    dependencies:
+      '@size-limit/preset-small-lib': '*'

@@ -25,7 +25,6 @@ import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
   DATA_ATTR_PREFIX,
-  STATIC_COMPONENT,
   DERIVE_COMPONENT,
   TRANSLATION_COMPONENT,
   INTERNAL_TRANSLATION_COMPONENT,
@@ -441,10 +440,7 @@ function buildJSXTree({
     });
 
     if (elementIsVariable) {
-      if (
-        componentType === STATIC_COMPONENT ||
-        componentType === DERIVE_COMPONENT
-      ) {
+      if (componentType === DERIVE_COMPONENT) {
         const helperElement = helperPath.get('children');
         const results = {
           nodeType: 'element' as const,
@@ -786,9 +782,7 @@ function parseJSXElement({
       ? new Set(
           Object.values(config.importAliases).filter(
             (name) =>
-              VARIABLE_COMPONENTS.includes(name) &&
-              name !== DERIVE_COMPONENT &&
-              name !== STATIC_COMPONENT
+              VARIABLE_COMPONENTS.includes(name) && name !== DERIVE_COMPONENT
           )
         )
       : undefined;

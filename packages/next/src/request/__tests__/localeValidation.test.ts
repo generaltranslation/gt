@@ -1,23 +1,45 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { I18NConfiguration } from '../../config-dir/I18NConfiguration';
-import { localeStore } from '../localeStore';
+import { initializeI18nConfig } from 'gt-i18n/internal';
+import {
+  AsyncConditionStore,
+  getAsyncConditionStore,
+  setAsyncConditionStore,
+} from '../../condition-store/AsyncConditionStore';
 import { isLocaleSupported, resolveLocaleOrDefault } from '../localeValidation';
 import { registerLocale } from '../registerLocale';
 
-const mockGt = vi.hoisted(() => ({
-  determineLocale: vi.fn(),
-  resolveAliasLocale: vi.fn((locale: string) => locale),
-}));
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: {
+    i18n?: {
+      conditionStore?: unknown;
+      i18nConfig?: unknown;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+};
 
-const mockI18NConfig = vi.hoisted(() => ({
-  getDefaultLocale: vi.fn(() => 'en'),
-  getGTClass: vi.fn(() => mockGt),
-  getLocales: vi.fn(() => ['en', 'fr']),
-}));
+function resetI18nConfigGlobal() {
+  const globalObj = globalThis as TestGlobal;
+  if (globalObj.__generaltranslation?.i18n) {
+    Reflect.deleteProperty(
+      globalObj.__generaltranslation.i18n,
+      'conditionStore'
+    );
+    Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nConfig');
+  }
+}
 
-vi.mock('../../config-dir/getI18NConfig', () => ({
-  getI18NConfig: () => mockI18NConfig,
-}));
+function setupI18nConfig({
+  defaultLocale = 'en',
+  locales = ['en', 'fr'],
+}: {
+  defaultLocale?: string;
+  locales?: string[];
+} = {}) {
+  resetI18nConfigGlobal();
+  initializeI18nConfig({ defaultLocale, locales });
+}
 
 describe('locale validation', () => {
   const originalDisableInvalidLocaleWarning =
@@ -27,23 +49,13 @@ describe('locale validation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING;
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    mockI18NConfig.getLocales.mockReturnValue(['en', 'fr']);
-
-    mockGt.determineLocale.mockImplementation(
-      (locales: string[], approvedLocales: string[]) => {
-        const standardizedLocales = locales.flatMap((locale) => {
-          try {
-            return Intl.getCanonicalLocales(locale)[0] || [];
-          } catch {
-            return [];
-          }
-        });
-        return approvedLocales.find((locale) =>
-          standardizedLocales.includes(locale)
-        );
-      }
+    setupI18nConfig();
+    setAsyncConditionStore(
+      new AsyncConditionStore({
+        getLocale: async () => 'fr',
+      })
     );
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -54,28 +66,17 @@ describe('locale validation', () => {
         originalDisableInvalidLocaleWarning;
     }
     consoleWarnSpy.mockRestore();
+    resetI18nConfigGlobal();
   });
 
   it('returns supported locales without warning', () => {
-    expect(
-      resolveLocaleOrDefault(
-        'fr',
-        mockI18NConfig as unknown as I18NConfiguration,
-        mockGt
-      )
-    ).toBe('fr');
+    expect(resolveLocaleOrDefault('fr')).toBe('fr');
 
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
   it('falls back to the default locale for invalid request locales', () => {
-    expect(
-      resolveLocaleOrDefault(
-        'llms.txt',
-        mockI18NConfig as unknown as I18NConfiguration,
-        mockGt
-      )
-    ).toBe('en');
+    expect(resolveLocaleOrDefault('llms.txt')).toBe('en');
 
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('Locale "llms.txt" is not valid')
@@ -85,25 +86,13 @@ describe('locale validation', () => {
   it('does not warn for invalid request locales when disabled by env', () => {
     process.env._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING = 'true';
 
-    expect(
-      resolveLocaleOrDefault(
-        'llms.txt',
-        mockI18NConfig as unknown as I18NConfiguration,
-        mockGt
-      )
-    ).toBe('en');
+    expect(resolveLocaleOrDefault('llms.txt')).toBe('en');
 
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
   it('falls back to the default locale for unsupported request locales', () => {
-    expect(
-      resolveLocaleOrDefault(
-        'de',
-        mockI18NConfig as unknown as I18NConfiguration,
-        mockGt
-      )
-    ).toBe('en');
+    expect(resolveLocaleOrDefault('de')).toBe('en');
 
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('Locale "de" is not valid or is not supported')
@@ -111,27 +100,15 @@ describe('locale validation', () => {
   });
 
   it('resolves supported locales with non-standard casing', () => {
-    mockI18NConfig.getLocales.mockReturnValue(['en', 'zh-CN']);
+    setupI18nConfig({ locales: ['en', 'zh-CN'] });
 
-    expect(
-      resolveLocaleOrDefault(
-        'ZH-cn',
-        mockI18NConfig as unknown as I18NConfiguration,
-        mockGt
-      )
-    ).toBe('zh-CN');
+    expect(resolveLocaleOrDefault('ZH-cn')).toBe('zh-CN');
 
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
   it('does not warn when no request locale is available', () => {
-    expect(
-      resolveLocaleOrDefault(
-        undefined,
-        mockI18NConfig as unknown as I18NConfiguration,
-        mockGt
-      )
-    ).toBe('en');
+    expect(resolveLocaleOrDefault(undefined)).toBe('en');
 
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
@@ -141,10 +118,9 @@ describe('locale validation', () => {
     expect(isLocaleSupported('llms.txt')).toBe(false);
   });
 
-  it('falls back when registering an unsupported locale', () => {
-    localeStore.run('fr', () => {
-      registerLocale('llms.txt');
-      expect(localeStore.getStore()).toBe('en');
-    });
+  it('falls back when registering an unsupported locale', async () => {
+    registerLocale('llms.txt');
+
+    await expect(getAsyncConditionStore().getLocale()).resolves.toBe('en');
   });
 });

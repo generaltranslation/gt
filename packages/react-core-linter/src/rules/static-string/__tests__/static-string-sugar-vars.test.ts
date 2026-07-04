@@ -20,7 +20,7 @@ const ruleTester = new RuleTester({
 // ===================================================================
 
 // ===================================================================
-// 1. $context — static string, supports derive()/declareStatic()
+// 1. $context — static string, supports derive()
 // ===================================================================
 
 // gt("Hello", { $context: "greeting" })  — valid, static string
@@ -55,8 +55,8 @@ describe('static-string: $context with static string is valid', () => {
 
 // gt("Hello", { $context: "formal " + derive(getStyle()) })  — valid, derive() is allowed in $context
 // gt("Hello", { $context: derive(getCtx()) })                — valid, standalone derive()
-// gt("Hello", { $context: "prefix " + declareStatic(x) })    — valid, declareStatic() alias
-describe('static-string: $context with derive()/declareStatic() is valid', () => {
+// gt("Hello", { $context: "prefix " + derive(x) })    — valid, derive()
+describe('static-string: $context with derive() is valid', () => {
   ruleTester.run('context-derive-valid', staticString, {
     valid: [
       {
@@ -81,10 +81,10 @@ describe('static-string: $context with derive()/declareStatic() is valid', () =>
       },
       {
         code: `
-          import { useGT, declareStatic } from 'gt-react';
+          import { useGT, derive } from 'gt-react';
           function Component() {
             const gt = useGT();
-            return gt("Hello", { $context: "prefix " + declareStatic(x) });
+            return gt("Hello", { $context: "prefix " + derive(x) });
           }
         `,
         options: [{ libs: ['gt-react'] }],

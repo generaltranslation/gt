@@ -57,6 +57,8 @@ beforeEach(() => {
   delete process.env.GT_PROJECT_ID;
   delete process.env.GT_API_KEY;
   delete process.env.GT_DEV_API_KEY;
+  delete process.env.NEXT_PUBLIC_GT_PROJECT_ID;
+  delete process.env.NEXT_PUBLIC_GT_DEV_API_KEY;
   delete process.env.TURBOPACK;
   process.env.NODE_ENV = 'development';
   vi.clearAllMocks();
@@ -81,11 +83,6 @@ describe('withGTConfig', () => {
     return mod.withGTConfig;
   }
 
-  async function getInitGT() {
-    const mod = await import('../config');
-    return mod.initGT;
-  }
-
   // ==============================
   // 1. Default behavior
   // ==============================
@@ -98,6 +95,15 @@ describe('withGTConfig', () => {
       expect(result).toHaveProperty('webpack');
       expect(result).toHaveProperty('experimental');
       expect(typeof result.webpack).toBe('function');
+    });
+
+    it('adds gt-next to transpilePackages while preserving user packages', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig({
+        transpilePackages: ['existing-package', 'gt-next'],
+      });
+
+      expect(result.transpilePackages).toEqual(['existing-package', 'gt-next']);
     });
 
     it('sets _usingPlugin to true in config params', async () => {
@@ -181,6 +187,7 @@ describe('withGTConfig', () => {
       expect(params.headersAndCookies).toMatchObject({
         localeHeaderName: 'x-generaltranslation-locale',
         localeCookieName: 'generaltranslation.locale',
+        enableI18nCookieName: 'generaltranslation.enable-i18n',
         referrerLocaleCookieName: 'generaltranslation.referrer-locale',
         localeRoutingEnabledCookieName:
           'generaltranslation.locale-routing-enabled',
@@ -379,7 +386,7 @@ describe('withGTConfig', () => {
       expect(params.maxBatchSize).toBe(99);
     });
 
-    it('GT_PROJECT_ID env var overrides config file projectId', async () => {
+    it('GT_PROJECT_ID env var is not serialized when config file has projectId', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'env-project-id';
       vi.mocked(fs.existsSync).mockImplementation((p) => {
@@ -393,17 +400,17 @@ describe('withGTConfig', () => {
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
-      expect(params.projectId).toBe('env-project-id');
+      expect(params.projectId).toBeUndefined();
     });
 
-    it('props override env vars', async () => {
+    it('props projectId is not serialized when overriding env vars', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'env-project-id';
 
       const result = withGTConfig({}, { projectId: 'props-project-id' });
       const params = parseConfigParams(result);
 
-      expect(params.projectId).toBe('props-project-id');
+      expect(params.projectId).toBeUndefined();
     });
 
     it('full chain: each layer contributes different values', async () => {
@@ -428,8 +435,8 @@ describe('withGTConfig', () => {
 
       // From config file (not overridden)
       expect(params.maxBatchSize).toBe(99);
-      // From env (overrides config file)
-      expect(params.projectId).toBe('env-project-id');
+      // From env (not serialized)
+      expect(params.projectId).toBeUndefined();
       // From props (overrides all)
       expect(params.defaultLocale).toBe('fr');
       expect(params.maxConcurrentRequests).toBe(200);
@@ -609,74 +616,77 @@ describe('withGTConfig', () => {
   // 5. Environment variable handling
   // ==============================
   describe('5. Environment variable handling', () => {
-    it('GT_PROJECT_ID sets projectId in merged config', async () => {
+    it('GT_PROJECT_ID enables services but is not serialized', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'my-project';
+      process.env.GT_DEV_API_KEY = 'dev-key-value';
 
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
-      expect(params.projectId).toBe('my-project');
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
+      expect(params.projectId).toBeUndefined();
     });
 
-    it('GT_API_KEY with gt-api- prefix in production sets apiKey', async () => {
+    it('GT_API_KEY in production enables services but is not serialized', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.NODE_ENV = 'production';
-      process.env.GT_API_KEY = 'gt-api-xyz';
+      process.env.GT_API_KEY = 'api-key-value';
       process.env.GT_PROJECT_ID = 'proj';
 
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
-      expect(params.apiKey).toBe('gt-api-xyz');
-    });
-
-    it('GT_DEV_API_KEY with gt-dev- prefix in development sets devApiKey', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_DEV_API_KEY = 'gt-dev-xyz';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.devApiKey).toBe('gt-dev-xyz');
-    });
-
-    it('GT_API_KEY in development (no dev key) sets apiKey', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_API_KEY = 'gt-api-xyz';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.apiKey).toBe('gt-api-xyz');
-    });
-
-    it('GT_DEV_API_KEY preferred over GT_API_KEY in development', async () => {
-      const withGTConfig = await getWithGTConfig();
-      process.env.NODE_ENV = 'development';
-      process.env.GT_DEV_API_KEY = 'gt-dev-preferred';
-      process.env.GT_API_KEY = 'gt-api-fallback';
-
-      const result = withGTConfig();
-      const params = parseConfigParams(result);
-
-      expect(params.devApiKey).toBe('gt-dev-preferred');
-      // apiKey should not be set from GT_API_KEY since GT_DEV_API_KEY took precedence
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
       expect(params.apiKey).toBeUndefined();
     });
 
-    it('key with unknown prefix sets neither apiKey nor devApiKey', async () => {
+    it('GT_DEV_API_KEY in development enables services but is not serialized', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.NODE_ENV = 'development';
-      process.env.GT_API_KEY = 'gt-unknown-xyz';
+      process.env.GT_PROJECT_ID = 'proj';
+      process.env.GT_DEV_API_KEY = 'dev-key-value';
 
       const result = withGTConfig();
       const params = parseConfigParams(result);
 
-      expect(params.apiKey).toBeUndefined();
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
       expect(params.devApiKey).toBeUndefined();
+    });
+
+    it('GT_API_KEY in development is not serialized', async () => {
+      const withGTConfig = await getWithGTConfig();
+      process.env.NODE_ENV = 'development';
+      process.env.GT_API_KEY = 'api-key-value';
+
+      const result = withGTConfig();
+      const params = parseConfigParams(result);
+
+      expect(params.apiKey).toBeUndefined();
+    });
+
+    it('NEXT_PUBLIC_GT_DEV_API_KEY is not serialized', async () => {
+      const withGTConfig = await getWithGTConfig();
+      process.env.NODE_ENV = 'development';
+      process.env.NEXT_PUBLIC_GT_DEV_API_KEY = 'public-dev-key-value';
+
+      const result = withGTConfig();
+      const params = parseConfigParams(result);
+
+      expect(params.devApiKey).toBeUndefined();
+    });
+
+    it('does not parse key prefixes', async () => {
+      const withGTConfig = await getWithGTConfig();
+      process.env.NODE_ENV = 'development';
+      process.env.GT_PROJECT_ID = 'proj';
+      process.env.GT_DEV_API_KEY = 'not-prefixed';
+
+      const result = withGTConfig();
+      const params = parseConfigParams(result);
+
+      expect(params.devApiKey).toBeUndefined();
+      expect(result.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe('true');
     });
   });
 
@@ -1091,6 +1101,73 @@ describe('withGTConfig', () => {
       // loadTranslationsType is 'custom' so cacheExpiryTime should not be defaulted
       expect(params.cacheExpiryTime).toBeUndefined();
     });
+
+    it('0 when cacheComponents is enabled', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const resolvedPath = require('path').resolve('./loadTranslations.ts');
+      vi.mocked(fs.existsSync).mockImplementation((p) => p === resolvedPath);
+
+      const result = withGTConfig(
+        { cacheComponents: true },
+        { loadTranslationsPath: './loadTranslations.ts' }
+      );
+      const params = parseConfigParams(result);
+
+      expect(params.cacheExpiryTime).toBe(0);
+      expect(params._cacheComponentsEnabled).toBe(true);
+      expect(params._disableDevHotReload).toBe(true);
+    });
+
+    it('overrides explicit cacheExpiryTime when cacheComponents is enabled', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const resolvedPath = require('path').resolve('./loadTranslations.ts');
+      vi.mocked(fs.existsSync).mockImplementation((p) => p === resolvedPath);
+
+      const result = withGTConfig(
+        { cacheComponents: true },
+        {
+          cacheExpiryTime: 30000,
+          loadTranslationsPath: './loadTranslations.ts',
+        }
+      );
+      const params = parseConfigParams(result);
+
+      expect(params.cacheExpiryTime).toBe(0);
+    });
+
+    it('warns when cacheComponents disables active dev hot reload translation', async () => {
+      const withGTConfig = await getWithGTConfig();
+      process.env.GT_PROJECT_ID = 'project-id';
+      process.env.GT_DEV_API_KEY = 'dev-key';
+      const resolvedPath = require('path').resolve('./loadTranslations.ts');
+      vi.mocked(fs.existsSync).mockImplementation((p) => p === resolvedPath);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = withGTConfig(
+        { cacheComponents: true },
+        {
+          loadTranslationsPath: './loadTranslations.ts',
+          getLocalePath: './getLocale.ts',
+          getRegionPath: './getRegion.ts',
+        }
+      );
+      const params = parseConfigParams(result);
+
+      expect(params._disableDevHotReload).toBe(true);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'development runtime translation hot reload has been disabled'
+        )
+      );
+    });
+
+    it('throws when cacheComponents is enabled without custom loadTranslations', async () => {
+      const withGTConfig = await getWithGTConfig();
+
+      expect(() => withGTConfig({ cacheComponents: true })).toThrow(
+        /custom loadTranslations\(\) is not configured/
+      );
+    });
   });
 
   // ==============================
@@ -1110,14 +1187,6 @@ describe('withGTConfig', () => {
         '_GENERALTRANSLATION_IGNORE_BROWSER_LOCALES',
         '_GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED',
         '_GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED',
-        '_GENERALTRANSLATION_CUSTOM_GET_DOMAIN_ENABLED',
-        '_GENERALTRANSLATION_STATIC_GET_LOCALE_ENABLED',
-        '_GENERALTRANSLATION_STATIC_GET_REGION_ENABLED',
-        '_GENERALTRANSLATION_STATIC_GET_DOMAIN_ENABLED',
-        '_GENERALTRANSLATION_DISABLE_SSG_WARNINGS',
-        '_GENERALTRANSLATION_ENABLE_SSG',
-        '_GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION',
-        '_GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM',
         '_GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING',
       ];
 
@@ -1134,15 +1203,25 @@ describe('withGTConfig', () => {
       expect(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).toBeDefined();
     });
 
-    it('I18N_CONFIG_PARAMS contains full merged config as JSON string', async () => {
+    it('I18N_CONFIG_PARAMS contains non-credential config as JSON string', async () => {
       const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig();
+      const result = withGTConfig(
+        {},
+        {
+          projectId: 'project-id',
+          apiKey: 'api-key',
+          devApiKey: 'dev-key',
+        }
+      );
 
       const raw = result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
       expect(typeof raw).toBe('string');
       const parsed = JSON.parse(raw!);
       expect(parsed).toHaveProperty('defaultLocale');
       expect(parsed).toHaveProperty('_usingPlugin', true);
+      expect(parsed.projectId).toBeUndefined();
+      expect(parsed.apiKey).toBeUndefined();
+      expect(parsed.devApiKey).toBeUndefined();
     });
 
     it('boolean flags are string "true"/"false", not booleans', async () => {
@@ -1295,7 +1374,7 @@ describe('withGTConfig', () => {
       const wc = makeWebpackConfig();
       runWebpack(result, wc);
 
-      expect(wc.resolve.alias).toHaveProperty('gt-next/_dictionary');
+      expect(wc.resolve.alias).toHaveProperty('gt-next/internal/_dictionary');
     });
 
     it('does NOT set aliases when TURBOPACK enabled', async () => {
@@ -1307,7 +1386,9 @@ describe('withGTConfig', () => {
       const wc = makeWebpackConfig();
       runWebpack(result, wc);
 
-      expect(wc.resolve.alias).not.toHaveProperty('gt-next/_dictionary');
+      expect(wc.resolve.alias).not.toHaveProperty(
+        'gt-next/internal/_dictionary'
+      );
     });
 
     it('disables webpackConfig.cache in development', async () => {
@@ -1336,7 +1417,7 @@ describe('withGTConfig', () => {
       expect(result.turbopack).toBeDefined();
       expect(result.turbopack!.resolveAlias).toBeDefined();
       expect(result.turbopack!.resolveAlias).toHaveProperty(
-        'gt-next/_dictionary'
+        'gt-next/internal/_dictionary'
       );
     });
 
@@ -1358,7 +1439,7 @@ describe('withGTConfig', () => {
         '/some/path'
       );
       expect(result.turbopack!.resolveAlias).toHaveProperty(
-        'gt-next/_dictionary'
+        'gt-next/internal/_dictionary'
       );
     });
   });
@@ -1377,6 +1458,9 @@ describe('withGTConfig', () => {
       );
       expect(params.headersAndCookies.localeCookieName).toBe(
         'generaltranslation.locale'
+      );
+      expect(params.headersAndCookies.enableI18nCookieName).toBe(
+        'generaltranslation.enable-i18n'
       );
     });
 
@@ -1453,38 +1537,6 @@ describe('withGTConfig', () => {
       expect(result).toHaveProperty('env');
       expect(result).toHaveProperty('webpack');
       expect(result).toHaveProperty('experimental');
-    });
-  });
-
-  // ==============================
-  // 18. initGT backward compatibility
-  // ==============================
-  describe('18. initGT backward compatibility', () => {
-    it('initGT(props) returns a function (nextConfig) => NextConfig', async () => {
-      const initGT = await getInitGT();
-      const configFn = initGT({ defaultLocale: 'es' });
-
-      expect(typeof configFn).toBe('function');
-    });
-
-    it('produces equivalent result to withGTConfig(nextConfig, props)', async () => {
-      const { withGTConfig, initGT } = await import('../config');
-      const props = { defaultLocale: 'es' };
-      const nextConfig = {};
-
-      const resultA = withGTConfig(nextConfig, props);
-      const resultB = initGT(props)(nextConfig);
-
-      // Compare the env vars (serialized config params)
-      expect(resultA.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).toBe(
-        resultB.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS
-      );
-      expect(resultA.env!._GENERALTRANSLATION_DEFAULT_LOCALE).toBe(
-        resultB.env!._GENERALTRANSLATION_DEFAULT_LOCALE
-      );
-      expect(resultA.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED).toBe(
-        resultB.env!._GENERALTRANSLATION_GT_SERVICES_ENABLED
-      );
     });
   });
 });

@@ -121,10 +121,8 @@ export class InlineCLI extends BaseCLI {
     const newData: Record<string, unknown> = {};
     for (const update of updates) {
       const { source, metadata } = update;
-      const { hash, id } = metadata;
-      if (id) {
-        newData[id] = source;
-      } else if (hash) {
+      const { hash } = metadata;
+      if (hash) {
         newData[hash] = source;
       }
     }

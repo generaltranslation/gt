@@ -1,5 +1,96 @@
 # gt-sanity
 
+## 2.0.18-odysseus.8
+
+### Patch Changes
+
+- Updated dependencies [b72c30b]
+- Updated dependencies [d5cf2d3]
+  - generaltranslation@9.0.0-odysseus.6
+
+## 2.0.18-odysseus.7
+
+### Patch Changes
+
+- Updated dependencies [72e9e16]
+- Updated dependencies [5adeede]
+- Updated dependencies [2e85ebd]
+  - generaltranslation@9.0.0-odysseus.5
+
+## 2.0.18-odysseus.6
+
+### Patch Changes
+
+- Updated dependencies [26faa87]
+  - generaltranslation@9.0.0-odysseus.4
+
+## 2.0.18-odysseus.5
+
+### Patch Changes
+
+- Updated dependencies [b1eef00]
+  - generaltranslation@9.0.0-odysseus.3
+
+## 2.0.18-odysseus.4
+
+### Patch Changes
+
+- [#1678](https://github.com/generaltranslation/gt/pull/1678) [`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Organize package entrypoint exports and replace re-export-only imports with direct export declarations.
+
+- Updated dependencies [[`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660), [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447)]:
+  - generaltranslation@9.0.0-odysseus.2
+
+## 2.0.18-odysseus.3
+
+### Patch Changes
+
+- [#1677](https://github.com/generaltranslation/gt/pull/1677) [`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove internal source barrel exports and update imports to reference defining files directly.
+
+- Updated dependencies [[`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64)]:
+  - generaltranslation@9.0.0-odysseus.1
+
+## 2.0.18-odysseus.2
+
+### Patch Changes
+
+- [#1508](https://github.com/generaltranslation/gt/pull/1508) [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- Updated dependencies [[`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0)]:
+  - generaltranslation@9.0.0-odysseus.0
+
+## 2.0.18-odysseus.1
+
+### Patch Changes
+
+- [#1446](https://github.com/generaltranslation/gt/pull/1446) [`3f912c4`](https://github.com/generaltranslation/gt/commit/3f912c495930a2a9f57b9f28acf6ed8c10c8ba88) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Bump gt-sanity for a follow-up odysseus prerelease.
+
+## 2.0.18-odysseus.0
+
+### Patch Changes
+
+- [#1443](https://github.com/generaltranslation/gt/pull/1443) [`8673f8f`](https://github.com/generaltranslation/gt/commit/8673f8f710824784659686750f4e41e2cd4ff067) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Test the odysseus prerelease publishing flow with gt-sanity.
+
+## 2.0.20
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+
+## 2.0.19
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+
+## 2.0.18
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+
 ## 2.0.21
 
 ### Patch Changes

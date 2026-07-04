@@ -28,7 +28,6 @@ export function registerStandaloneTranslation({
 }): void {
   hash ??= hashSource({
     source: content,
-    ...(id && { id }),
     ...(context && { context }),
     ...(maxChars != null && { maxChars }),
     ...(requiresReview === true && { requiresReview: true }),

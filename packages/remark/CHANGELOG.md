@@ -1,5 +1,29 @@
 # gt-remark
 
+## 1.0.11-odysseus.0
+
+### Patch Changes
+
+- [#1508](https://github.com/generaltranslation/gt/pull/1508) [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+## 1.0.10
+
+### Patch Changes
+
+- [#1583](https://github.com/generaltranslation/gt/pull/1583) [`a41729b`](https://github.com/generaltranslation/gt/commit/a41729b0f6f42ec3bccd6d99299b35eebfb0cc6e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Adding escape plugin for MDX JSX text nodes
+
+## 1.0.9
+
+### Patch Changes
+
+- [#1563](https://github.com/generaltranslation/gt/pull/1563) [`34aae81`](https://github.com/generaltranslation/gt/commit/34aae8107d69e6cc1a54cde5d7645ebcd8e14d21) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Escaping terminal backslashes
+
+## 1.0.8
+
+### Patch Changes
+
+- [#1526](https://github.com/generaltranslation/gt/pull/1526) [`1245397`](https://github.com/generaltranslation/gt/commit/12453971eac9dbdea5abac0d2ad67d56e5f1580a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add backtick escaping
+
 ## 1.0.10
 
 ### Patch Changes

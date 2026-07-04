@@ -129,7 +129,7 @@ function processJsxNode({
     return;
   }
 
-  // Branch/Plural/Derive/Static → opaque for static JSX, dynamic props get _Var
+  // Branch/Plural/Derive → opaque for static JSX, dynamic props get _Var
   if (isGTBranchComponent(firstArgPath) || isGTDeriveComponent(firstArgPath)) {
     // Process props BEFORE wrapping — path still points to the opaque component
     processOpaqueComponentProps({
@@ -474,7 +474,7 @@ function processOpaqueComponentProps({
     if (!valuePath.isExpression()) continue;
 
     // children is fallback content for Branch/Plural — process element-by-element
-    // For Derive/Static, children is opaque — skip entirely
+    // For Derive, children is opaque — skip entirely
     if (propName === 'children') {
       if (
         insideAutoT &&

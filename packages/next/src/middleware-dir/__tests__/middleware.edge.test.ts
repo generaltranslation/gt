@@ -1,14 +1,9 @@
 // @vitest-environment edge-runtime
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createNextMiddleware } from '../createNextMiddleware';
 import type { PathConfig } from '../utils';
 import type { CustomMapping } from '@generaltranslation/format/types';
-
-// Mock gt-react/internal — only provides a constant, avoids deep react-core build chain
-vi.mock('gt-react/internal', () => ({
-  defaultLocaleCookieName: 'generaltranslation.locale',
-}));
 
 // ---- Cookie Constants (must match the real defaults) ----
 const LOCALE_COOKIE = 'generaltranslation.locale';
@@ -456,6 +451,29 @@ describe('Middleware Integration Tests', () => {
       );
       // This should be a next() since the locale and path now match
       expect(getResponseType(nextRes)).toBe('next');
+    });
+
+    it('keeps the locale cookie when clearing the reset cookie', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+      });
+
+      const res = middleware(
+        createRequest('/fr/about', {
+          cookies: {
+            [LOCALE_COOKIE]: 'fr',
+            [RESET_COOKIE]: 'true',
+          },
+        })
+      );
+      expect(getResponseType(res)).toBe('next');
+      const setCookie = res.headers.get('set-cookie') || '';
+      expect(setCookie).toContain(`${RESET_COOKIE}=;`);
+      // The locale cookie must survive: the client re-reads it on every
+      // render, and deleting it races with concurrent prefetch responses
+      // after a locale switch.
+      expect(setCookie).not.toContain(`${LOCALE_COOKIE}=;`);
     });
   });
 });

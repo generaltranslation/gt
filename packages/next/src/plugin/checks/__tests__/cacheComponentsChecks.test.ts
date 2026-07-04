@@ -1,24 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { NextConfig } from 'next';
 import { cacheComponentsChecks } from '../cacheComponentsChecks';
-import {
-  createCacheComponentsMissingRequestFunctionsWarning,
-  experimentalLocaleResolutionDeprecatedWarning,
-} from '../../../errors/cacheComponents';
-import type { withGTConfigProps } from '../../../config-dir/props/withGTConfigProps';
+import { createCacheComponentsMissingRequestFunctionsWarning } from '../../../errors/cacheComponents';
 import type { RequestFunctionPaths } from '../../../config-dir/utils/resolveRequestFunctionPaths';
 
 function runCacheComponentsChecks({
-  mergedConfig = {},
   nextConfig = {},
   requestFunctionPaths = {},
 }: {
-  mergedConfig?: withGTConfigProps;
   nextConfig?: NextConfig;
   requestFunctionPaths?: RequestFunctionPaths;
 } = {}) {
   cacheComponentsChecks({
-    mergedConfig,
     nextConfig,
     requestFunctionPaths,
     localTranslationsEnabled: true,
@@ -77,23 +70,6 @@ describe('cacheComponentsChecks', () => {
         'getLocale',
         'getRegion',
       ])
-    );
-  });
-
-  it('warns that experimentalLocaleResolution is deprecated when enabled', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    runCacheComponentsChecks({
-      mergedConfig: { experimentalLocaleResolution: true },
-      nextConfig: { cacheComponents: true },
-      requestFunctionPaths: {
-        getLocale: './getLocale.ts',
-        getRegion: './getRegion.ts',
-      },
-    });
-
-    expect(warnSpy).toHaveBeenCalledWith(
-      experimentalLocaleResolutionDeprecatedWarning
     );
   });
 });

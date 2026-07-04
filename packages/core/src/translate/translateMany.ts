@@ -9,7 +9,7 @@ import {
   TranslateOptions,
   EntryMetadata,
 } from '../types-dir/api/entry';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 import type { Content } from '@generaltranslation/format/types';
 import { hashSource } from '../id';
 
@@ -25,7 +25,7 @@ import { hashSource } from '../id';
  * @param config - The configuration for the translation.
  * @returns The results of the translation. An array if requests was an array, a record if requests was a record.
  */
-export default async function _translateMany<
+export async function _translateMany<
   T extends TranslateManyEntry[] | Record<string, TranslateManyEntry>,
 >(
   requests: T,
@@ -40,7 +40,7 @@ export default async function _translateMany<
     ? TranslateManyResult
     : Record<string, TranslationResult>
 >;
-export default async function _translateMany(
+export async function _translateMany(
   requests: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
   globalMetadata: {
     targetLocale: string;
@@ -71,8 +71,9 @@ export default async function _translateMany(
       metadata?.hash ??
       hashSource({
         source,
+        ...(metadata?.context && { context: metadata.context }),
+        ...(metadata?.maxChars != null && { maxChars: metadata.maxChars }),
         dataFormat: metadata?.dataFormat ?? 'STRING',
-        ...metadata,
       });
     hashOrder?.push(hash);
     requestsObject[hash] = {

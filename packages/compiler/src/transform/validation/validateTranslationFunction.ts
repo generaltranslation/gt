@@ -286,7 +286,7 @@ function validatePropertyFromObjectExpression(
     } else if (resolutionErrors.length > 0) {
       result.errors.push(...resolutionErrors);
     } else if (state) {
-      // Static resolution failed — check if it's a valid derive() expression
+      // Static expression resolution failed; check if it's a valid derive() expression.
       const deriveErrors: string[] = [];
       validateDerive(value.value, state, deriveErrors);
       if (deriveErrors.length === 0) {
@@ -360,14 +360,13 @@ export function validateDerive(
     // Validate the function is actually the GT derive function
     if (
       type !== 'generaltranslation' ||
-      (canonicalName !== GT_OTHER_FUNCTIONS.declareStatic &&
-        canonicalName !== GT_OTHER_FUNCTIONS.derive)
+      canonicalName !== GT_OTHER_FUNCTIONS.derive
     ) {
       errors.push('Expression does not use an allowed call expression');
       return { errors };
     }
     // Validate that the call expression has exactly one argument and the argument is a call expression
-    validateDeclareStaticExpression(expr, errors);
+    validateDeriveCallExpression(expr, errors);
     return { errors };
   }
 
@@ -429,7 +428,7 @@ export function validateDerive(
  * - the argument is a call expression
  * Example: derive(getName())
  */
-function validateDeclareStaticExpression(
+function validateDeriveCallExpression(
   expr: t.CallExpression,
   errors: string[]
 ): {

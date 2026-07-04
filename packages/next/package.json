@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "6.16.37",
+  "version": "11.0.0-odysseus.16",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -14,12 +14,17 @@
   ],
   "sideEffects": [
     "./dist/index.server.*",
-    "./dist/server.*"
+    "./dist/index.rsc.*",
+    "./dist/index.client.*",
+    "./dist/server.*",
+    "./dist/link.*",
+    "./dist/link/Link.*",
+    "./dist/utils/client-boundary.*"
   ],
   "dependencies": {
     "@generaltranslation/compiler": "workspace:*",
     "@generaltranslation/format": "workspace:*",
-    "@generaltranslation/next-internal": "workspace:*",
+    "@generaltranslation/react-core": "workspace:*",
     "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-react": "workspace:*",
@@ -67,68 +72,58 @@
   },
   "exports": {
     ".": {
-      "react-server": "./dist/index.server.js",
-      "browser": "./dist/index.client.js",
+      "react-server": {
+        "types": "./dist/index.rsc.d.ts",
+        "import": "./dist/index.rsc.mjs",
+        "default": "./dist/index.rsc.js"
+      },
+      "browser": {
+        "import": "./dist/index.client.mjs",
+        "default": "./dist/index.client.js"
+      },
       "types": "./dist/index.types.d.ts",
-      "default": "./dist/index.client.js"
+      "import": "./dist/index.server.mjs",
+      "default": "./dist/index.server.js"
     },
     "./config": {
       "types": "./dist/config.d.ts",
+      "import": "./dist/config.mjs",
       "default": "./dist/config.js"
-    },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "default": "./dist/client.js"
     },
     "./server": {
       "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs",
       "default": "./dist/server.js"
     },
     "./middleware": {
       "types": "./dist/middleware.d.ts",
+      "import": "./dist/middleware.mjs",
       "default": "./dist/middleware.js"
     },
-    "./types": {
-      "types": "./dist/types.d.ts",
-      "default": "./dist/types.js"
+    "./link": {
+      "types": "./dist/link.d.ts",
+      "import": "./dist/link.mjs",
+      "default": "./dist/link.js"
     },
-    "./_request": {
-      "default": "./dist/_request.js"
+    "./internal/_dictionary": {
+      "import": "./dist/internal/_dictionary.mjs",
+      "default": "./dist/internal/_dictionary.js"
     },
-    "./_dictionary": {
-      "default": "./dist/_dictionary.js"
+    "./internal/_load-translations": {
+      "import": "./dist/internal/_load-translations.mjs",
+      "default": "./dist/internal/_load-translations.js"
     },
-    "./_load-translations": {
-      "default": "./dist/_load-translations.js"
-    },
-    "./_load-dictionary": {
-      "default": "./dist/_load-dictionary.js"
-    },
-    "./compiler": {
-      "types": "./dist/compiler/index.d.ts",
-      "default": "./dist/compiler/index.js"
-    },
-    "./eslint-plugin": {
-      "types": "./dist/eslint-plugin/index.d.ts",
-      "default": "./dist/eslint-plugin/index.js"
+    "./internal/_load-dictionary": {
+      "import": "./dist/internal/_load-dictionary.mjs",
+      "default": "./dist/internal/_load-dictionary.js"
     },
     "./internal/_getLocale": {
+      "import": "./dist/internal/_getLocale.mjs",
       "default": "./dist/internal/_getLocale.js"
     },
     "./internal/_getRegion": {
+      "import": "./dist/internal/_getRegion.mjs",
       "default": "./dist/internal/_getRegion.js"
-    },
-    "./internal/_getDomain": {
-      "default": "./dist/internal/_getDomain.js"
-    },
-    "./internal/static/_getLocale": {
-      "default": "./dist/internal/static/_getLocale.js"
-    },
-    "./internal/static/_getRegion": {
-      "default": "./dist/internal/static/_getRegion.js"
-    },
-    "./internal/static/_getDomain": {
-      "default": "./dist/internal/static/_getDomain.js"
     }
   },
   "typesVersions": {
@@ -136,106 +131,29 @@
       "config": [
         "./dist/config.d.ts"
       ],
-      "client": [
-        "./dist/client.d.ts"
-      ],
       "server": [
         "./dist/server.d.ts"
       ],
       "middleware": [
         "./dist/middleware.d.ts"
       ],
-      "types": [
-        "./dist/types.d.ts"
+      "link": [
+        "./dist/link.d.ts"
       ],
-      "_request": [
-        "./dist/_request.d.ts"
+      "internal/_dictionary": [
+        "./dist/internal/_dictionary.d.ts"
       ],
-      "_dictionary": [
-        "./dist/_dictionary.d.ts"
+      "internal/_load-translations": [
+        "./dist/internal/_load-translations.d.ts"
       ],
-      "_load-translations": [
-        "./dist/_load-translations.d.ts"
-      ],
-      "_load-dictionary": [
-        "./dist/_load-dictionary.d.ts"
-      ],
-      "compiler": [
-        "./dist/compiler/index.d.ts"
-      ],
-      "eslint-plugin": [
-        "./dist/eslint-plugin/index.d.ts"
+      "internal/_load-dictionary": [
+        "./dist/internal/_load-dictionary.d.ts"
       ],
       "internal/_getLocale": [
         "./dist/internal/_getLocale.d.ts"
       ],
       "internal/_getRegion": [
         "./dist/internal/_getRegion.d.ts"
-      ],
-      "internal/_getDomain": [
-        "./dist/internal/_getDomain.d.ts"
-      ],
-      "internal/static/_getLocale": [
-        "./dist/internal/static/_getLocale.d.ts"
-      ],
-      "internal/static/_getRegion": [
-        "./dist/internal/static/_getRegion.d.ts"
-      ],
-      "internal/static/_getDomain": [
-        "./dist/internal/static/_getDomain.d.ts"
-      ]
-    }
-  },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "gt-next/config": [
-        "/dist/config"
-      ],
-      "gt-next/client": [
-        "/dist/client"
-      ],
-      "gt-next/server": [
-        "/dist/server"
-      ],
-      "gt-next/middleware": [
-        "/dist/middleware"
-      ],
-      "gt-next/types": [
-        "/dist/types"
-      ],
-      "gt-next/_dictionary": [
-        "/dist/_dictionary"
-      ],
-      "gt-next/_load-translations": [
-        "/dist/_load-translations"
-      ],
-      "gt-next/_load-dictionary": [
-        "/dist/_load-dictionary"
-      ],
-      "gt-next/compiler": [
-        "/dist/compiler"
-      ],
-      "gt-next/eslint-plugin": [
-        "/dist/eslint-plugin"
-      ],
-      "gt-next/internal/_getLocale": [
-        "/dist/internal/_getLocale"
-      ],
-      "gt-next/internal/_getRegion": [
-        "/dist/internal/_getRegion"
-      ],
-      "gt-next/internal/_getDomain": [
-        "/dist/internal/_getDomain"
-      ],
-      "gt-next/internal/static/_getLocale": [
-        "/dist/internal/static/_getLocale"
-      ],
-      "gt-next/internal/static/_getRegion": [
-        "/dist/internal/static/_getRegion"
-      ],
-      "gt-next/internal/static/_getDomain": [
-        "/dist/internal/static/_getDomain"
       ]
     }
   },

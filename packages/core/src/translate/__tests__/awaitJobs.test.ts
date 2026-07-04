@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import _awaitJobs from '../awaitJobs';
+import { _awaitJobs } from '../awaitJobs';
 import { _checkJobStatus } from '../checkJobStatus';
 import { TranslationRequestConfig } from '../../types';
 import { EnqueueFilesResult } from '../../types-dir/api/enqueueFiles';

@@ -1,7 +1,5 @@
-import {
-  getCurrentLocale,
-  getI18nManager,
-} from '../i18n-manager/singleton-operations';
+import { getWritableConditionStore } from '../condition-store/singleton-operations';
+import { getI18nConfig } from '../i18n-config/singleton-operations';
 
 /**
  * Get the current locale
@@ -12,7 +10,19 @@ import {
  * console.log(locale); // 'en-US'
  */
 export function getLocale() {
-  return getCurrentLocale();
+  return getWritableConditionStore().getLocale();
+}
+
+/**
+ * Get the current region
+ * @returns The current region, or undefined if no region is set
+ *
+ * @example
+ * const region = getRegion();
+ * console.log(region); // 'US' or undefined
+ */
+export function getRegion() {
+  return getWritableConditionStore().getRegion();
 }
 
 /**
@@ -24,8 +34,7 @@ export function getLocale() {
  * console.log(locales); // ['en-US', 'es-ES']
  */
 export function getLocales() {
-  const i18nManager = getI18nManager();
-  return i18nManager.getLocales();
+  return getI18nConfig().getLocales();
 }
 
 /**
@@ -37,8 +46,7 @@ export function getLocales() {
  * console.log(defaultLocale); // 'en-US'
  */
 export function getDefaultLocale() {
-  const i18nManager = getI18nManager();
-  return i18nManager.getDefaultLocale();
+  return getI18nConfig().getDefaultLocale();
 }
 
 /**
@@ -52,8 +60,19 @@ export function getDefaultLocale() {
  * @example
  * const localeProperties = getLocaleProperties('en-US');
  */
-export function getLocaleProperties(locale = getCurrentLocale()) {
-  const i18nManager = getI18nManager();
-  const gtInstance = i18nManager.getGTClass();
-  return gtInstance.getLocaleProperties(locale);
+export function getLocaleProperties(locale = getLocale()) {
+  return getI18nConfig().getLocaleProperties(locale);
+}
+
+/**
+ * Resolve a locale to its canonical locale code using the configured custom mapping.
+ * @param {string} locale - The locale to resolve.
+ * @returns The canonical locale code.
+ *
+ * @example
+ * const canonicalLocale = resolveCanonicalLocale('brand-french');
+ * console.log(canonicalLocale); // 'fr-FR'
+ */
+export function resolveCanonicalLocale(locale: string) {
+  return getI18nConfig().resolveCanonicalLocale(locale);
 }

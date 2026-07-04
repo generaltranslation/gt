@@ -1,6 +1,6 @@
 import { TranslationRequestConfig } from '../types';
 import { CheckFileTranslationsOptions } from '../types-dir/api/checkFileTranslations';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 
 export type FileDataQuery = {
   sourceFiles?: {
@@ -53,7 +53,7 @@ export type FileDataResult = {
  * @param config - The configuration for the API call.
  * @returns The file data.
  */
-export default async function _queryFileData(
+export async function _queryFileData(
   data: FileDataQuery,
   options: CheckFileTranslationsOptions = {},
   config: TranslationRequestConfig

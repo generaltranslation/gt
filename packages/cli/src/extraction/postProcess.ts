@@ -11,7 +11,6 @@ export async function calculateHashes(updates: Updates): Promise<void> {
       const hash = hashSource({
         source: update.source,
         ...(update.metadata.context && { context: update.metadata.context }),
-        ...(update.metadata.id && { id: update.metadata.id }),
         ...(update.metadata.maxChars != null && {
           maxChars: update.metadata.maxChars,
         }),

@@ -1,5 +1,87 @@
 # generaltranslation
 
+## 9.0.0-odysseus.6
+
+### Patch Changes
+
+- b72c30b: Clean up the `generaltranslation` public API surface for the next major.
+
+  Removes the unused `generaltranslation/core` subpath, stale endpoint types, duplicate `ApiError` accessors, and dead `/internal` exports. Moves `API_VERSION` to `generaltranslation/internal`, exports the derivation helpers from the public root, and points `gt-i18n` at that public entry.
+
+- d5cf2d3: Vendor the FormatJS ICU AST printer so the ESM internal build no longer imports the CommonJS `printer.js` subpath, which Vite-based dev servers (e.g. TanStack Start) cannot load. Serialized output is byte-identical, so hashes are unchanged.
+
+## 9.0.0-odysseus.5
+
+### Patch Changes
+
+- 72e9e16: Split the runtime surface of the GT class (locale management, formatting, runtime translation) into a GTRuntime base class exported from the new `generaltranslation/runtime` entry point. The SDK runtime (gt-i18n's I18nConfig, gt-next middleware) now constructs GTRuntime, so production browser bundles no longer ship the project/file management API client (enqueueFiles, uploads, downloads, etc.). The GT class extends GTRuntime and keeps its full API for the CLI and other tooling. Also import getLocaleProperties from @generaltranslation/format directly in react-core so client bundles don't reach the full core entry.
+- 5adeede: Trigger an odysseus prerelease patch for generaltranslation.
+- 2e85ebd: Import the FormatJS `TYPE` runtime enum from the parser entrypoint so Vite dev does not request the CommonJS `types.js` subpath as a browser ESM module.
+
+## 9.0.0-odysseus.4
+
+### Patch Changes
+
+- 26faa87: Remove the unused `hashTemplate` export from `generaltranslation/id`. It had no consumers anywhere in the libraries. `hashSource`/`hashString` are unchanged.
+
+## 9.0.0-odysseus.3
+
+### Patch Changes
+
+- b1eef00: Remove the v8-era backwards-compatibility shim from `generaltranslation`.
+
+  Deletes `src/backwards-compatability/` (`dataConversion`, `oldTypes`, `typeChecking`, `oldHashJsxChildren`) and its 26 re-exports from `generaltranslation/internal` — the old↔new JSX/variable-format converters, legacy type guards, and the legacy hashers. These had no consumers anywhere in the libraries; the old format they bridged is no longer produced. Safe to drop in the next major. ~477 LOC removed from the `/internal` entry.
+
+## 9.0.0-odysseus.2
+
+### Patch Changes
+
+- [#1678](https://github.com/generaltranslation/gt/pull/1678) [`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Organize package entrypoint exports and replace re-export-only imports with direct export declarations.
+
+- [#1676](https://github.com/generaltranslation/gt/pull/1676) [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove default exports from package entrypoints and internal source modules.
+
+  Use named imports for affected public entrypoints, including `import { plugin } from 'gt-react-native/plugin'`. The `gt-next/link` entrypoint keeps its default export to match `next/link`.
+
+- Updated dependencies [[`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660)]:
+  - @generaltranslation/format@0.1.2-odysseus.1
+
+## 9.0.0-odysseus.1
+
+### Patch Changes
+
+- [#1677](https://github.com/generaltranslation/gt/pull/1677) [`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove internal source barrel exports and update imports to reference defining files directly.
+
+## 9.0.0-odysseus.0
+
+### Major Changes
+
+- [#1627](https://github.com/generaltranslation/gt/pull/1627) [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Prepare Odysseus major releases for core runtime packages.
+
+### Patch Changes
+
+- [#1508](https://github.com/generaltranslation/gt/pull/1508) [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- Updated dependencies [[`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`620621a`](https://github.com/generaltranslation/gt/commit/620621aceeafedbb958884cacc5495736191b065)]:
+  - @generaltranslation/format@0.1.2-odysseus.0
+
+## 8.2.18
+
+### Patch Changes
+
+- [#1648](https://github.com/generaltranslation/gt/pull/1648) [`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8) Thanks [@brian-lou](https://github.com/brian-lou)! - Use `gt-project-id` instead of `x-gt-project-id` for API request headers. Update the API key header to use standard `Authorization: Bearer <api-key>` prefix.
+
+## 8.2.17
+
+### Patch Changes
+
+- [#1635](https://github.com/generaltranslation/gt/pull/1635) [`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01) Thanks [@brian-lou](https://github.com/brian-lou)! - Add retry mechanism for rate limits
+
+## 8.2.16
+
+### Patch Changes
+
+- [#1460](https://github.com/generaltranslation/gt/pull/1460) [`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: escape characters in declareVar() for source locale consumed by condenseVars()
+
 ## 8.2.19
 
 ### Patch Changes

@@ -1,7 +1,11 @@
-import { setAsyncConditionStore } from '../async-i18n-manager/singleton-operations';
+import { setAsyncConditionStore } from '../async-i18n-cache/singleton-operations';
 import type { InitializeGTParams } from './types';
-import { I18nManager, setI18nManager } from 'gt-i18n/internal';
-import { AsyncConditionStore } from '../async-i18n-manager/AsyncConditionStore';
+import {
+  I18nCache,
+  initializeI18nConfig,
+  setI18nCache,
+} from 'gt-i18n/internal';
+import { AsyncConditionStore } from '../async-i18n-cache/AsyncConditionStore';
 
 /**
  * Configure GT for node runtime. This must be called to setup GT for node runtime.
@@ -9,13 +13,11 @@ import { AsyncConditionStore } from '../async-i18n-manager/AsyncConditionStore';
  * TODO: auto detect if can find gt.config.json files
  */
 export function initializeGT(params: InitializeGTParams): void {
-  const i18nManager = new I18nManager<string>(params);
-  const conditionStore = new AsyncConditionStore({
-    defaultLocale: i18nManager.getDefaultLocale(),
-    locales: i18nManager.getLocales(),
-    customMapping: i18nManager.getCustomMapping(),
-  });
+  initializeI18nConfig(params);
 
-  setI18nManager(i18nManager);
+  const i18nCache = new I18nCache<string>(params);
+  const conditionStore = new AsyncConditionStore();
+
+  setI18nCache(i18nCache);
   setAsyncConditionStore(conditionStore);
 }

@@ -49,26 +49,72 @@
       }
     },
     {
-      "files": ["packages/react/src/i18n-context/**/*.{ts,tsx}"],
+      "files": ["packages/next/src/**/*.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "paths": [
               {
-                "name": "gt-i18n",
-                "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types."
+                "name": "gt-react/client",
+                "message": "Next server/RSC code must not import the gt-react client entrypoint. Use a 'use client' boundary module instead."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "packages/next/src/client.ts",
+        "packages/next/src/index.client.ts",
+        "packages/next/src/index.types.ts",
+        "packages/next/src/components/ClientSelectors.tsx",
+        "packages/next/src/provider/ClientProviderWrapper.tsx",
+        "packages/next/src/**/__tests__/**"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
+    {
+      "files": [
+        "packages/react-core/src/components-rsc.ts",
+        "packages/react-core/src/**/*.rsc.{ts,tsx}",
+        "packages/react-core/src/**/*.shared.{ts,tsx}",
+        "packages/react/src/context.rsc.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@generaltranslation/react-core/context",
+                "message": "RSC-safe modules must not import the broad context barrel; import from @generaltranslation/react-core/components-rsc or pure helpers instead."
+              },
+              {
+                "name": "react",
+                "importNames": [
+                  "createContext",
+                  "useContext",
+                  "useEffect",
+                  "useState",
+                  "useSyncExternalStore"
+                ],
+                "message": "RSC-safe modules must not use context- or state-backed React APIs."
               }
             ],
             "patterns": [
               {
                 "group": [
-                  "gt-i18n/**",
-                  "!gt-i18n/types",
-                  "!gt-i18n/internal",
-                  "!gt-i18n/internal/types"
+                  "**/hooks/condition-store",
+                  "**/hooks/external-store",
+                  "**/hooks/i18n-config",
+                  "**/context/context",
+                  "**/context/InternalGTProvider"
                 ],
-                "message": "In i18n-context, only import from gt-i18n/types, gt-i18n/internal, or gt-i18n/internal/types. Importing from other gt-i18n subpaths is likely to break i18n context."
+                "message": "RSC-safe modules must not import hook or context modules; pass request conditions explicitly."
               }
             ]
           }

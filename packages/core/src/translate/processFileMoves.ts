@@ -1,5 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 import { processBatches } from './utils/batch';
 
 export type MoveMapping = {
@@ -40,7 +40,7 @@ export type ProcessMovesOptions = {
  * @param config - The configuration for the API call.
  * @returns Promise resolving to the move results
  */
-export default async function _processFileMoves(
+export async function _processFileMoves(
   moves: MoveMapping[],
   options: ProcessMovesOptions,
   config: TranslationRequestConfig

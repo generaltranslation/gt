@@ -10,7 +10,7 @@ import { libraryDefaultLocale } from '../settings/settings';
  * @param {PluralType[]} forms - The allowed plural forms.
  * @returns {PluralType} The determined plural form, or an empty string if none fit.
  */
-export default function _getPluralForm(
+export function _getPluralForm(
   n: number,
   forms: readonly PluralType[] = pluralForms,
   locales: string[] = [libraryDefaultLocale]

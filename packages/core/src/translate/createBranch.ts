@@ -1,5 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 
 export type CreateBranchQuery = {
   branchName: string;
@@ -17,7 +17,7 @@ export type CreateBranchResult = {
  * @param config - The configuration for the API call.
  * @returns The created branch information.
  */
-export default async function _createBranch(
+export async function _createBranch(
   query: CreateBranchQuery,
   config: TranslationRequestConfig
 ): Promise<CreateBranchResult> {

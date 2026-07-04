@@ -1,5 +1,152 @@
 # gt-node
 
+## 1.0.0-odysseus.9
+
+### Patch Changes
+
+- Updated dependencies [463a8db]
+- Updated dependencies [b72c30b]
+- Updated dependencies [bea8233]
+- Updated dependencies [1f53e42]
+- Updated dependencies [d5cf2d3]
+  - gt-i18n@1.0.0-odysseus.9
+  - generaltranslation@9.0.0-odysseus.6
+
+## 1.0.0-odysseus.8
+
+### Patch Changes
+
+- 195f009: fix: make singleton not-initialized errors consistent and descriptive, and stop error paths from masking the original failure when I18nConfig is also uninitialized
+- Updated dependencies [72e9e16]
+- Updated dependencies [42a440f]
+- Updated dependencies [5adeede]
+- Updated dependencies [c5364f9]
+- Updated dependencies [2e85ebd]
+- Updated dependencies [195f009]
+  - generaltranslation@9.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.8
+
+## 1.0.0-odysseus.7
+
+### Patch Changes
+
+- Updated dependencies [ab61565]
+- Updated dependencies [0cd7813]
+  - gt-i18n@1.0.0-odysseus.7
+
+## 1.0.0-odysseus.6
+
+### Patch Changes
+
+- Updated dependencies [a2b9677]
+- Updated dependencies [41371e0]
+  - gt-i18n@1.0.0-odysseus.6
+
+## 1.0.0-odysseus.5
+
+### Patch Changes
+
+- Updated dependencies [432fa49]
+- Updated dependencies [432fa49]
+- Updated dependencies [933916e]
+- Updated dependencies [4a5f8e8]
+- Updated dependencies [083d306]
+  - gt-i18n@1.0.0-odysseus.5
+
+## 1.0.0-odysseus.4
+
+### Patch Changes
+
+- Updated dependencies [26faa87]
+- Updated dependencies [270b821]
+- Updated dependencies [bffaa67]
+- Updated dependencies [d602065]
+  - generaltranslation@9.0.0-odysseus.4
+  - gt-i18n@1.0.0-odysseus.4
+
+## 1.0.0-odysseus.3
+
+### Patch Changes
+
+- Updated dependencies [b1eef00]
+- Updated dependencies [b765174]
+  - generaltranslation@9.0.0-odysseus.3
+  - gt-i18n@1.0.0-odysseus.3
+
+## 1.0.0-odysseus.2
+
+### Major Changes
+
+- [#1690](https://github.com/generaltranslation/gt/pull/1690) [`b3c3b9a`](https://github.com/generaltranslation/gt/commit/b3c3b9af39f1b2abec2c2b6bf2c2a40fe76db5ce) Thanks [@bgub](https://github.com/bgub)! - Simplify translation option types. Replace deprecated inline and dictionary option aliases with `GTTranslationOptions`, use interpolation variables for dictionary `t()` options, and trim higher-level type exports to avoid exposing internal translation option fields.
+
+### Patch Changes
+
+- Updated dependencies [[`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660), [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447), [`41c938c`](https://github.com/generaltranslation/gt/commit/41c938c0d00f4b76faa7a2805ad0015891e0740e), [`b3c3b9a`](https://github.com/generaltranslation/gt/commit/b3c3b9af39f1b2abec2c2b6bf2c2a40fe76db5ce)]:
+  - generaltranslation@9.0.0-odysseus.2
+  - gt-i18n@1.0.0-odysseus.2
+
+## 1.0.0-odysseus.1
+
+### Patch Changes
+
+- [#1677](https://github.com/generaltranslation/gt/pull/1677) [`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove internal source barrel exports and update imports to reference defining files directly.
+
+- Updated dependencies [[`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64)]:
+  - generaltranslation@9.0.0-odysseus.1
+  - gt-i18n@1.0.0-odysseus.1
+
+## 1.0.0-odysseus.0
+
+### Major Changes
+
+- [#1627](https://github.com/generaltranslation/gt/pull/1627) [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Prepare Odysseus major releases for core runtime packages.
+
+### Patch Changes
+
+- [#1508](https://github.com/generaltranslation/gt/pull/1508) [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- Updated dependencies [[`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0)]:
+  - generaltranslation@9.0.0-odysseus.0
+  - gt-i18n@1.0.0-odysseus.0
+
+## 0.7.8
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@0.9.8
+
+## 0.7.7
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - gt-i18n@0.9.7
+
+## 0.7.6
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - gt-i18n@0.9.6
+
+## 0.7.5
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - gt-i18n@0.9.5
+
+## 0.7.4
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@0.9.4
+
 ## 0.7.9
 
 ### Patch Changes

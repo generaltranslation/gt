@@ -490,21 +490,21 @@ describe('static-jsx: Branch import added alongside existing specifiers', () => 
   });
 });
 
-describe('static-jsx: Branch import from @generaltranslation/react-core', () => {
+describe('static-jsx: Branch import from @generaltranslation/react-core/components', () => {
   ruleTester.run('branch-import-react-core', staticJsx, {
     valid: [],
     invalid: [
       {
         code: `
-          import { T } from '@generaltranslation/react-core';
+          import { T } from '@generaltranslation/react-core/components';
           function Component({ cond }) {
             return <T>{cond ? "a" : "b"}</T>;
           }
         `,
-        options: [{ libs: ['@generaltranslation/react-core'] }],
+        options: [{ libs: ['@generaltranslation/react-core/components'] }],
         errors: [{ messageId: 'dynamicContent' }],
         output: `
-          import { T, Branch } from '@generaltranslation/react-core';
+          import { T, Branch } from '@generaltranslation/react-core/components';
           function Component({ cond }) {
             return <T><Branch branch={cond} true="a">b</Branch></T>;
           }

@@ -135,7 +135,14 @@ function getOptionValue(
 ): string | number | undefined {
   const arg = call.arguments[1];
   if (!arg || !t.isObjectExpression(arg)) return undefined;
-  for (const prop of arg.properties) {
+  return getObjectPropertyValue(arg, key);
+}
+
+function getObjectPropertyValue(
+  object: t.ObjectExpression,
+  key: string
+): string | number | undefined {
+  for (const prop of object.properties) {
     if (!t.isObjectProperty(prop)) continue;
     const propKey = t.isStringLiteral(prop.key)
       ? prop.key.value
@@ -148,6 +155,40 @@ function getOptionValue(
     }
   }
   return undefined;
+}
+
+function getObjectPropertyNames(object: t.ObjectExpression): string[] {
+  return object.properties.flatMap((prop) => {
+    if (!t.isObjectProperty(prop)) return [];
+    if (t.isStringLiteral(prop.key)) return [prop.key.value];
+    if (t.isIdentifier(prop.key)) return [prop.key.name];
+    return [];
+  });
+}
+
+function getFirstArrayObjectArg(
+  call: t.CallExpression
+): t.ObjectExpression | undefined {
+  const arg = call.arguments[0];
+  if (!arg || !t.isArrayExpression(arg)) return undefined;
+  const firstElement = arg.elements[0];
+  if (!firstElement || !t.isObjectExpression(firstElement)) return undefined;
+  return firstElement;
+}
+
+function getCallExpressionsByName(
+  ast: t.File,
+  name: string
+): t.CallExpression[] {
+  const calls: t.CallExpression[] = [];
+  traverse(ast, {
+    CallExpression(path) {
+      if (t.isIdentifier(path.node.callee, { name })) {
+        calls.push(path.node);
+      }
+    },
+  });
+  return calls;
 }
 
 /** Check if code contains a Promise.all call */
@@ -351,11 +392,26 @@ describe('runtimeTranslatePass', () => {
   // ===== Import handling =====
 
   describe('import handling', () => {
-    it('injects import from gt-react/browser', () => {
+    it('injects import from gt-react', () => {
       const { imports } = transform(`
         ${USEGT_SETUP}
         const msg = t("Hello");
       `);
+
+      const specifiers = getImportSpecifiers(imports, 'gt-react');
+      expect(specifiers).toContain(
+        GT_OTHER_FUNCTIONS.GtInternalRuntimeTranslateString
+      );
+    });
+
+    it('injects import from gt-react/browser with legacy flag', () => {
+      const { imports } = transform(
+        `
+        ${USEGT_SETUP}
+        const msg = t("Hello");
+      `,
+        { legacyGtReactImportSource: true }
+      );
 
       const specifiers = getImportSpecifiers(imports, 'gt-react/browser');
       expect(specifiers).toContain(
@@ -396,7 +452,7 @@ describe('runtimeTranslatePass', () => {
       `);
 
       expect(runtimeCalls).toHaveLength(0);
-      const specifiers = getImportSpecifiers(imports, 'gt-react/browser');
+      const specifiers = getImportSpecifiers(imports, 'gt-react');
       expect(specifiers).not.toContain(
         GT_OTHER_FUNCTIONS.GtInternalRuntimeTranslateString
       );
@@ -421,6 +477,43 @@ describe('runtimeTranslatePass', () => {
         strings: true,
         jsx: false,
       });
+    });
+
+    it('respects legacyGtReactImportSource from gtConfig', () => {
+      const state = initializeState(
+        {
+          gtConfig: {
+            files: {
+              gt: {
+                parsingFlags: {
+                  legacyGtReactImportSource: true,
+                },
+              },
+            },
+          },
+        },
+        'test.tsx'
+      );
+      expect(state.settings.legacyGtReactImportSource).toBe(true);
+    });
+
+    it('direct legacyGtReactImportSource option overrides gtConfig', () => {
+      const state = initializeState(
+        {
+          legacyGtReactImportSource: false,
+          gtConfig: {
+            files: {
+              gt: {
+                parsingFlags: {
+                  legacyGtReactImportSource: true,
+                },
+              },
+            },
+          },
+        },
+        'test.tsx'
+      );
+      expect(state.settings.legacyGtReactImportSource).toBe(false);
     });
 
     it('direct option overrides gtConfig', () => {
@@ -751,6 +844,41 @@ describe('runtimeTranslatePass', () => {
       expect(calls).toHaveLength(1);
       expect(getOptionValue(calls[0], '$context')).toBe('greeting');
       expect(getOptionValue(calls[0], '$_hash')).toBeDefined();
+    });
+
+    it('injects getGT preload messages with TranslationMetadata keys', () => {
+      const state = initializeState({}, 'test.tsx');
+      const ast = parser.parse(
+        `
+        import { getGT } from 'gt-next/server';
+        async function Page() {
+          const gt = await getGT();
+          return gt("Hello", { $context: "nav", $id: "greet", $maxChars: 50, $format: "STRING" });
+        }
+      `,
+        {
+          sourceType: 'module',
+          plugins: ['jsx', 'typescript'],
+        }
+      );
+
+      traverse(ast, collectionPass(state));
+      traverse(ast, injectionPass(state));
+
+      const getGTCalls = getCallExpressionsByName(ast, 'getGT');
+      expect(getGTCalls).toHaveLength(1);
+
+      const message = getFirstArrayObjectArg(getGTCalls[0]);
+      expect(message).toBeDefined();
+      expect(getObjectPropertyValue(message!, 'message')).toBe('Hello');
+      expect(getObjectPropertyValue(message!, '$_hash')).toBeDefined();
+      expect(getObjectPropertyValue(message!, '$context')).toBe('nav');
+      expect(getObjectPropertyValue(message!, '$id')).toBe('greet');
+      expect(getObjectPropertyValue(message!, '$maxChars')).toBe(50);
+      expect(getObjectPropertyValue(message!, '$format')).toBe('STRING');
+      expect(getObjectPropertyNames(message!)).not.toEqual(
+        expect.arrayContaining(['hash', 'context', 'id', 'maxChars', 'format'])
+      );
     });
 
     it('does not inject compile-time hash into msg() calls', () => {

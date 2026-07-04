@@ -1,12 +1,21 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { getLocale } from '../../helpers';
+import { getLocale } from 'gt-i18n';
 import { initializeGT } from '../initializeGT';
 import { withGT } from '../withGT';
-import { tx } from '../../translation-functions';
+import { tx } from 'gt-i18n/internal';
 import { hashSource } from 'generaltranslation/id';
+
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
 
 describe.sequential('withGT', () => {
   beforeEach(() => {
+    resetGTGlobals();
     initializeGT({
       defaultLocale: 'en-US',
       locales: ['en-US', 'fr', 'es'],
@@ -29,6 +38,7 @@ describe.sequential('withGT', () => {
   });
 
   it('preserves same-language default locale dialects', () => {
+    resetGTGlobals();
     initializeGT({
       defaultLocale: 'pt-BR',
       locales: ['pt', 'fr'],
@@ -39,7 +49,8 @@ describe.sequential('withGT', () => {
     expect(locale).toBe('pt-BR');
   });
 
-  it('allows explicit runtime locale outside a callback context', async () => {
+  it('allows explicit runtime locale to override the callback context', async () => {
+    resetGTGlobals();
     initializeGT({
       defaultLocale: 'en-US',
       locales: ['en-US', 'fr'],
@@ -48,6 +59,8 @@ describe.sequential('withGT', () => {
       }),
     });
 
-    await expect(tx('Hello', { $locale: 'fr' })).resolves.toBe('Bonjour');
+    await expect(
+      withGT('en-US', () => tx('Hello', { $locale: 'fr' }))
+    ).resolves.toBe('Bonjour');
   });
 });

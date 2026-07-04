@@ -8,13 +8,19 @@ import { initializeState } from '../../state/utils/initializeState';
 
 // --- Helpers ---
 
-function transform(code: string): {
+function transform(
+  code: string,
+  overrides: Record<string, unknown> = {}
+): {
   code: string;
   gtTranslateCalls: t.CallExpression[];
   gtVarCalls: t.CallExpression[];
   imports: t.ImportDeclaration[];
 } {
-  const state = initializeState({ enableAutoJsxInjection: true }, 'test.tsx');
+  const state = initializeState(
+    { enableAutoJsxInjection: true, ...overrides },
+    'test.tsx'
+  );
   const ast = parser.parse(code, {
     sourceType: 'module',
     plugins: ['typescript'],
@@ -476,6 +482,30 @@ describe('jsxInsertionPass edge cases', () => {
   // ===== 12. Already imported GtInternalTranslateJsx =====
 
   describe('existing GT import', () => {
+    it('injects import from gt-react by default', () => {
+      const code = `
+        import { jsx } from 'react/jsx-runtime';
+        jsx("div", { children: "Hello" });
+      `;
+      const { imports } = transform(code);
+      const gtImports = imports.filter((i) => i.source.value === 'gt-react');
+      expect(gtImports).toHaveLength(1);
+    });
+
+    it('injects import from gt-react/browser with legacy flag', () => {
+      const code = `
+        import { jsx } from 'react/jsx-runtime';
+        jsx("div", { children: "Hello" });
+      `;
+      const { imports } = transform(code, {
+        legacyGtReactImportSource: true,
+      });
+      const gtImports = imports.filter(
+        (i) => i.source.value === 'gt-react/browser'
+      );
+      expect(gtImports).toHaveLength(1);
+    });
+
     it('does not inject duplicate import when already imported', () => {
       const code = `
         import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
@@ -540,19 +570,6 @@ describe('jsxInsertionPass edge cases', () => {
   // ===== 15. Derive edge cases =====
 
   describe('Derive edge cases', () => {
-    it('Static (deprecated alias) treated exactly like Derive', () => {
-      // BEFORE JSX:  <div>Hello <Static>{getLabel()}</Static></div>
-      // AFTER JSX:   <div><_T>Hello <Static>{getLabel()}</Static></_T></div>
-      const code = `
-        import { jsx, jsxs } from 'react/jsx-runtime';
-        import { Static } from 'gt-react';
-        jsxs("div", { children: ["Hello ", jsx(Static, { children: getLabel() })] });
-      `;
-      const { gtTranslateCalls, gtVarCalls } = transform(code);
-      expect(gtTranslateCalls).toHaveLength(1);
-      expect(gtVarCalls).toHaveLength(0);
-    });
-
     it('multiple Derive siblings — single _T, both opaque', () => {
       // BEFORE JSX:  <div>The <Derive>{getSubject()}</Derive> plays with the <Derive>{getObject()}</Derive></div>
       // AFTER JSX:   <div><_T>The <Derive>...</Derive> plays with the <Derive>...</Derive></_T></div>

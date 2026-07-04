@@ -1,17 +1,14 @@
 {
   "name": "@generaltranslation/react-core",
-  "version": "1.8.25",
+  "version": "11.0.0-odysseus.16",
   "description": "A pure React library for internationalization",
-  "main": "./dist/index.cjs.min.cjs",
-  "module": "./dist/index.esm.min.mjs",
-  "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "CHANGELOG.md"
   ],
   "sideEffects": false,
   "peerDependencies": {
-    "react": ">=16.8.0"
+    "react": ">=18.0.0"
   },
   "dependencies": {
     "@generaltranslation/format": "workspace:*",
@@ -50,49 +47,40 @@
     "typescript": "catalog:"
   },
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs.min.cjs",
-      "import": "./dist/index.esm.min.mjs"
+    "./pure": {
+      "types": "./dist/pure.d.ts",
+      "require": "./dist/pure.cjs",
+      "import": "./dist/pure.mjs"
     },
-    "./internal": {
-      "types": "./dist/internal.d.ts",
-      "require": "./dist/internal.cjs.min.cjs",
-      "import": "./dist/internal.esm.min.mjs"
+    "./hooks": {
+      "types": "./dist/hooks.d.ts",
+      "require": "./dist/hooks.cjs",
+      "import": "./dist/hooks.mjs"
     },
-    "./errors": {
-      "types": "./dist/errors.d.ts",
-      "require": "./dist/errors.cjs.min.cjs",
-      "import": "./dist/errors.esm.min.mjs"
+    "./components": {
+      "types": "./dist/components.d.ts",
+      "require": "./dist/components.cjs",
+      "import": "./dist/components.mjs"
     },
-    "./types": {
-      "types": "./dist/types.d.ts"
+    "./components-rsc": {
+      "types": "./dist/components-rsc.d.ts",
+      "require": "./dist/components-rsc.cjs",
+      "import": "./dist/components-rsc.mjs"
     }
   },
   "typesVersions": {
     "*": {
-      "types": [
-        "./dist/types.d.ts"
+      "pure": [
+        "./dist/pure.d.ts"
       ],
-      "internal": [
-        "./dist/internal.d.ts"
+      "hooks": [
+        "./dist/hooks.d.ts"
       ],
-      "errors": [
-        "./dist/errors.d.ts"
-      ]
-    }
-  },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@generaltranslation/react-core/internal": [
-        "./dist/internal"
+      "components": [
+        "./dist/components.d.ts"
       ],
-      "@generaltranslation/react-core/types": [
-        "./dist/types.d.ts"
-      ],
-      "@generaltranslation/react-core/errors": [
-        "./dist/errors.d.ts"
+      "components-rsc": [
+        "./dist/components-rsc.d.ts"
       ]
     }
   },

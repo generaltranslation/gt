@@ -1,22 +1,4 @@
-import {
-  createGtNextDiagnostic,
-  formatDiagnosticErrorDetails,
-} from './diagnostics';
-
-// ---- ERRORS ---- //
-export const cacheComponentsLegacySsgConflictError = createGtNextDiagnostic({
-  severity: 'Error',
-  whatHappened:
-    'experimentalLocaleResolution and deprecated experimentalEnableSSG are both enabled',
-  fix: 'Disable one of them before building your app',
-});
-
-export const createExperimentalLocaleResolutionError = (error: unknown) =>
-  createGtNextDiagnostic({
-    whatHappened: 'Locale resolution with experimentalLocaleResolution failed',
-    wayOut: 'gt-next will fall back where possible',
-    details: formatDiagnosticErrorDetails(error),
-  });
+import { createGtNextDiagnostic } from './diagnostics';
 
 // ---- WARNINGS ---- //
 export type CacheComponentsRequestFunction = 'getLocale' | 'getRegion';
@@ -38,25 +20,10 @@ export const createCacheComponentsMissingRequestFunctionsWarning = (
   return createGtNextDiagnostic({
     whatHappened: `cacheComponents is enabled, but custom ${functionNames} ${isPlural ? 'are' : 'is'} not configured`,
     wayOut:
-      'Automatic root parameter detection is deprecated because it relies on unsupported Next.js internals',
+      'cacheComponents requires explicit request functions because request values cannot be inferred safely during prerendering',
     fix: `Add ${fileNames} ${isPlural ? 'files' : 'file'}, or configure ${configKeys}`,
   });
 };
-
-export const experimentalLocaleResolutionDeprecatedWarning =
-  createGtNextDiagnostic({
-    severity: 'Warning',
-    whatHappened: 'experimentalLocaleResolution is deprecated',
-    wayOut:
-      'This option relies on unsupported Next.js internals and may break in future Next.js releases',
-    fix: 'Remove experimentalLocaleResolution and define custom getLocale.ts and getRegion.ts files for cacheComponents support',
-  });
-
-export const cacheComponentsExperimentalFeatureDisableGetRequestFunctionWarning =
-  'gt-next: experimentalLocaleResolution is enabled. getRegion and getDomain are disabled.';
-
-export const cacheComponentsExperimentalLocaleResolutionDisableCustomGetLocaleWarning =
-  'gt-next: experimentalLocaleResolution is enabled. The provided getLocale function will be ignored.';
 
 export const cacheComponentsNonLocalTranslationsWarning =
   createGtNextDiagnostic({
@@ -68,5 +35,21 @@ export const cacheComponentsNonLocalTranslationsWarning =
     docsUrl: 'https://generaltranslation.com/en-US/docs/next/guides/local-tx',
   });
 
-export const experimentalLocaleResolutionWithoutCacheComponentsWarning =
-  'gt-next: experimentalLocaleResolution is enabled, but cacheComponents is disabled. experimentalLocaleResolution is deprecated and should be removed.';
+export const cacheComponentsMissingLoadTranslationsError =
+  createGtNextDiagnostic({
+    severity: 'Error',
+    whatHappened:
+      'cacheComponents is enabled, but custom loadTranslations() is not configured',
+    wayOut:
+      'gt-next cannot safely use the default remote translation loader with Cache Components',
+    fix: 'Add a loadTranslations.ts file, or configure loadTranslationsPath, and mark any dynamic loading with "use cache"',
+  });
+
+export const cacheComponentsDevHotReloadDisabledWarning =
+  createGtNextDiagnostic({
+    severity: 'Warning',
+    whatHappened:
+      'cacheComponents is enabled, so development runtime translation hot reload has been disabled',
+    why: 'development runtime translation performs dynamic requests that are not allowed with Cache Components',
+    fix: 'Use local translations, or disable cacheComponents while using development runtime translation hot reload',
+  });

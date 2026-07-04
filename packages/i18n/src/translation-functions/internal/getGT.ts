@@ -1,12 +1,15 @@
-import {
-  getCurrentLocale,
-  getI18nManager,
-} from '../../i18n-manager/singleton-operations';
-import { InlineTranslationOptions } from '../types/options';
+import { getI18nCache } from '../../i18n-cache/singleton-operations';
+import { getI18nConfig } from '../../i18n-config/singleton-operations';
+import { GTTranslationOptions, TranslationMetadata } from '../types/options';
 import { GTFunctionType } from '../types/functions';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import { createLookupOptions } from './helpers';
 import type { StringFormat } from '@generaltranslation/format/types';
+import { getWritableConditionStore } from '../../condition-store/singleton-operations';
+
+export type Message = TranslationMetadata & {
+  message: string;
+};
 
 /**
  * Returns the gt function that registers a string at build time and resolves its translation at runtime.
@@ -16,17 +19,55 @@ import type { StringFormat } from '@generaltranslation/format/types';
  * const gt = await getGT();
  * const greeting = gt('Hello, world!');
  */
-export async function getGT(): Promise<GTFunctionType> {
+export async function getGT(_messages?: Message[]): Promise<GTFunctionType> {
+  const conditionStore = getWritableConditionStore();
+  const locale = conditionStore.getLocale();
+  const enableI18n = conditionStore.getEnableI18n();
+  return getGTInternal({ locale, enableI18n }, _messages);
+}
+
+/**
+ * Condition store agnostic getGT function
+ */
+export async function getGTInternal(
+  {
+    locale,
+    enableI18n,
+  }: {
+    locale: string;
+    enableI18n: boolean;
+  },
+  _messages?: Message[]
+): Promise<GTFunctionType> {
   // Get the translation resolver
-  const i18nManager = getI18nManager();
-  const locale = getCurrentLocale();
-  await i18nManager.loadTranslations(locale);
-  const sourceLocale = i18nManager.getDefaultLocale();
+  const i18nCache = getI18nCache();
+  const sourceLocale = getI18nConfig().getDefaultLocale();
+  // Statically gated so bundlers can drop dev hot-reload work from
+  // production builds.
+  const devHotReloadEnabled =
+    process.env.NODE_ENV !== 'production' &&
+    getI18nConfig().isDevHotReloadEnabled();
+  const lookupTranslation = await i18nCache.getLookupTranslation(
+    enableI18n ? locale : sourceLocale
+  );
+
+  // dev hot reload translate compiler injected lookups
+  if (devHotReloadEnabled && lookupTranslation.prefetchEntries) {
+    await lookupTranslation.prefetchEntries(
+      _messages?.map(({ message, ...options }) => ({
+        message,
+        options: {
+          $format: 'ICU',
+          ...options,
+        },
+      })) ?? []
+    );
+  }
 
   /**
    * Registers a message at build time and resolves its translation at runtime.
    * @param {string} message - The message to translate
-   * @param {InlineTranslationOptions} options - The options for the translation
+   * @param {GTTranslationOptions} options - The options for the translation
    * @returns The translated message
    *
    * @example
@@ -41,9 +82,11 @@ export async function getGT(): Promise<GTFunctionType> {
    */
   const gt: GTFunctionType = (
     message: string,
-    options: InlineTranslationOptions = {}
+    options: GTTranslationOptions = {}
   ) => {
-    const targetLocale = options.$locale ?? locale;
+    const targetLocale = enableI18n
+      ? (options.$locale ?? locale)
+      : getI18nConfig().getDefaultLocale();
     const lookupOptions = createLookupOptions<StringFormat>(
       targetLocale,
       options,
@@ -51,11 +94,18 @@ export async function getGT(): Promise<GTFunctionType> {
     );
 
     // Lookup translation
-    const translation = i18nManager.lookupTranslation(
-      lookupOptions.$locale,
-      message,
-      lookupOptions
-    );
+    const translation = lookupTranslation(message, lookupOptions);
+
+    // Dev hot reload (fire and forget, will be available in a later lookup)
+    if (devHotReloadEnabled && translation == null) {
+      void i18nCache
+        .lookupTranslationWithFallback(
+          lookupOptions.$locale,
+          message,
+          lookupOptions
+        )
+        .catch(() => {});
+    }
 
     // Format result
     return interpolateMessage({

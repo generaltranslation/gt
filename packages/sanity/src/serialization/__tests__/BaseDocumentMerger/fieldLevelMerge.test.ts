@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { BaseDocumentMerger } from '../../index';
+import { BaseDocumentMerger } from '../../BaseDocumentMerger';
 import { getDeserialized } from '../helpers';
 import { getNewFieldLevelDocument, getNewObject } from './utils';
 import clone from 'just-clone';

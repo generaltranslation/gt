@@ -8,11 +8,11 @@ pub struct TranslationContent {
   pub message: String,
   /// Pre-calculated hash for this content
   pub hash: String,
-  /// Optional ID from options: t("text", {id: "greeting"}) → Some("greeting")
+  /// Optional ID from options: t("text", {$id: "greeting"}) → Some("greeting")
   pub id: Option<String>,
-  /// Optional context from options: t("text", {context: "nav"}) → Some("nav")
+  /// Optional context from options: t("text", {$context: "nav"}) → Some("nav")
   pub context: Option<String>,
-  /// Optional max chars from options: t("text", {maxChars: 10}) → Some(10)
+  /// Optional max chars from options: t("text", {$maxChars: 10}) → Some(10)
   pub max_chars: Option<i32>,
 }
 

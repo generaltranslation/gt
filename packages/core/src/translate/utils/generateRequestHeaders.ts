@@ -1,7 +1,7 @@
 import { TranslationRequestConfig } from '../../types';
 import { API_VERSION } from '../api';
 
-export default function generateRequestHeaders(
+export function generateRequestHeaders(
   config: TranslationRequestConfig,
   excludeContentType = false
 ) {

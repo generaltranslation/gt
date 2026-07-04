@@ -1,9 +1,7 @@
-import type { CustomMapping } from '@generaltranslation/format/types';
-import { RenderMethod } from 'gt-react/internal';
-
 export type HeadersAndCookies = {
   localeHeaderName?: string;
   localeCookieName?: string;
+  enableI18nCookieName?: string;
   referrerLocaleCookieName?: string;
   localeRoutingEnabledCookieName?: string;
   resetLocaleCookieName?: string;
@@ -32,20 +30,14 @@ export type CompilerOptions = {
   disableBuildChecks?: boolean;
 };
 
-export const DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY = {
-  getStaticLocale: 'getStaticLocalePath',
-  getStaticRegion: 'getStaticRegionPath',
-  getStaticDomain: 'getStaticDomainPath',
-} as const;
+export type RenderMethod = 'skeleton' | 'replace' | 'default';
 
 export const REQUEST_FUNCTION_TO_CONFIG_KEY = {
   getLocale: 'getLocalePath',
   getRegion: 'getRegionPath',
-  getDomain: 'getDomainPath',
-  ...DEPRECATED_REQUEST_FUNCTION_TO_CONFIG_KEY,
 } as const;
 
-export type withGTConfigProps = {
+export type BaseWithGTConfigProps = {
   // Additional top-level keys are forwarded as runtime translation metadata.
   [key: string]: unknown;
   // Request scoped filepath
@@ -53,9 +45,7 @@ export type withGTConfigProps = {
   config?: string;
   loadTranslationsPath?: string;
   loadDictionaryPath?: string;
-  // Cloud integration
-  apiKey?: string;
-  projectId?: string;
+  // Cloud integration. Credentials are read from environment variables.
   runtimeUrl?: string | null;
   cacheUrl?: string | null;
   cacheExpiryTime?: number;
@@ -64,9 +54,6 @@ export type withGTConfigProps = {
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
   disableInvalidLocaleWarning?: boolean;
-  // Custom mapping
-  /**@deprecated Use customMapping in gt.config.json instead */
-  customMapping?: CustomMapping;
   // Rendering
   renderSettings?: {
     method: RenderMethod;
@@ -83,35 +70,19 @@ export type withGTConfigProps = {
   eslintSeverity?: 'error' | 'warn'; // Severity level for ESLint rules (default: 'warn')
   overwriteESLintConfig?: boolean; // Allow overwriting existing eslint.config.mjs (default: false)
   // Other
-  /**
-   * @deprecated use experimentalCompilerOptions instead
-   */
-  experimentalSwcPluginOptions?: Omit<CompilerOptions, 'type'>;
   experimentalCompilerOptions?: CompilerOptions;
   headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
-  // SSG
-  experimentalEnableSSG?: boolean;
-  /**
-   * @deprecated This option relies on unsupported Next.js internals. For
-   * cacheComponents support, define custom getLocale.ts and getRegion.ts files
-   * or configure getLocalePath and getRegionPath.
-   */
-  experimentalLocaleResolution?: boolean;
-  /**
-   * @deprecated Only used by deprecated experimentalLocaleResolution.
-   */
-  experimentalLocaleResolutionParam?: string;
-  /** @deprecated */
-  disableSSGWarnings?: boolean;
   // Request function paths
   getLocalePath?: string;
   getRegionPath?: string;
-  getDomainPath?: string;
-  /** @deprecated use getLocalePath instead */
-  getStaticLocalePath?: string;
-  /** @deprecated use getRegionPath instead */
-  getStaticRegionPath?: string;
-  /** @deprecated use getDomainPath instead */
-  getStaticDomainPath?: string;
+};
+
+export type withGTConfigProps = BaseWithGTConfigProps & {
+  /** Use GT_API_KEY instead. */
+  apiKey?: never;
+  /** Use NEXT_PUBLIC_GT_DEV_API_KEY or GT_DEV_API_KEY instead. */
+  devApiKey?: never;
+  /** Use NEXT_PUBLIC_GT_PROJECT_ID or GT_PROJECT_ID instead. */
+  projectId?: never;
 };

@@ -1,5 +1,6 @@
-import { CustomLoader } from 'gt-react/internal';
 import { unresolvedCustomLoadTranslationsError } from '../errors/createErrors';
+
+type CustomLoader = (locale: string) => Promise<unknown>;
 
 let customLoadTranslations: CustomLoader | undefined = undefined;
 
@@ -14,7 +15,7 @@ export function resolveTranslationLoader(): CustomLoader | undefined {
   // get load translation file
   let customLoadTranslationsConfig;
   try {
-    customLoadTranslationsConfig = require('gt-next/_load-translations');
+    customLoadTranslationsConfig = require('gt-next/internal/_load-translations');
   } catch {
     // No custom translation loader module was generated.
   }

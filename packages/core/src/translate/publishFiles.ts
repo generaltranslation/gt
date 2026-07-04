@@ -1,5 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 
 export type PublishFileEntry = {
   fileId: string;
@@ -27,7 +27,7 @@ export type PublishFilesResult = {
  * @param config - The configuration for the API call.
  * @returns The result of the API call.
  */
-export default async function _publishFiles(
+export async function _publishFiles(
   files: PublishFileEntry[],
   config: TranslationRequestConfig
 ): Promise<PublishFilesResult> {

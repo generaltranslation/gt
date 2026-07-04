@@ -1,7 +1,6 @@
 import Image from 'next/image';
 
-import { getLocales } from 'gt-next/server';
-import { T } from 'gt-next';
+import { getLocales, T } from 'gt-next';
 
 export async function generateStaticParams() {
   return getLocales().map((locale: string) => ({ locale }));

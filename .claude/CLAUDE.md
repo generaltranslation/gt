@@ -55,7 +55,6 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 | `locadex`                               | `packages/locadex`           | AI agent for i18n with MCP support                                |
 | `@generaltranslation/mcp`               | `packages/mcp`               | MCP server for AI tool integration                                |
 | `@generaltranslation/react-core-linter` | `packages/react-core-linter` | ESLint plugin for react-core                                      |
-| `@generaltranslation/gt-next-lint`      | `packages/next-lint`         | ESLint plugin for gt-next                                         |
 | `gt-remark`                             | `packages/remark`            | Remark plugin for MDX escaping                                    |
 | `@generaltranslation/python-extractor`  | `packages/python-extractor`  | Python source extraction (tree-sitter)                            |
 

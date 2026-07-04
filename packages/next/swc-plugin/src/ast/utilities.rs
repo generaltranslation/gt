@@ -51,7 +51,7 @@ pub fn get_variable_type(component_name: &str) -> VariableType {
     "Currency" => VariableType::Currency,
     "DateTime" => VariableType::Date,
     "RelativeTime" => VariableType::RelativeTime,
-    "Static" | "Derive" => VariableType::Static,
+    "Derive" => VariableType::Static,
     _ => VariableType::Variable,
   }
 }
@@ -338,8 +338,8 @@ mod tests {
     }
 
     #[test]
-    fn identifies_static_variable() {
-      assert_eq!(get_variable_type("Static"), VariableType::Static);
+    fn identifies_derive_variable() {
+      assert_eq!(get_variable_type("Derive"), VariableType::Static);
     }
 
     #[test]

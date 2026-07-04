@@ -1,4 +1,4 @@
-import { getAsyncConditionStore } from '../async-i18n-manager/singleton-operations';
+import { getAsyncConditionStore } from '../async-i18n-cache/singleton-operations';
 
 /**
  * This function wraps entry points to provide GT context

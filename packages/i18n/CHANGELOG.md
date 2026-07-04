@@ -1,5 +1,194 @@
 # gt-i18n
 
+## 1.0.0-odysseus.9
+
+### Major Changes
+
+- 463a8db: Add a config-aware `resolveCanonicalLocale` helper and remove the public `getGTClass` helper.
+- 1f53e42: Clean up the `gt-i18n` public API surface by removing dead subpaths, internal exports, and unused types.
+
+### Patch Changes
+
+- b72c30b: Clean up the `generaltranslation` public API surface for the next major.
+
+  Removes the unused `generaltranslation/core` subpath, stale endpoint types, duplicate `ApiError` accessors, and dead `/internal` exports. Moves `API_VERSION` to `generaltranslation/internal`, exports the derivation helpers from the public root, and points `gt-i18n` at that public entry.
+
+- bea8233: Statically gate dev hot-reload code paths (tracked resolver invalidation, missing-translation queue, T hot-reload fallbacks, getGT dev preload) behind `process.env.NODE_ENV !== 'production'` so bundlers can drop them from production builds. Behavior is unchanged: the existing runtime `isDevHotReloadEnabled()` check still applies in development.
+- Updated dependencies [b72c30b]
+- Updated dependencies [d5cf2d3]
+  - generaltranslation@9.0.0-odysseus.6
+  - @generaltranslation/supported-locales@2.1.2-odysseus.6
+
+## 1.0.0-odysseus.8
+
+### Patch Changes
+
+- 72e9e16: Split the runtime surface of the GT class (locale management, formatting, runtime translation) into a GTRuntime base class exported from the new `generaltranslation/runtime` entry point. The SDK runtime (gt-i18n's I18nConfig, gt-next middleware) now constructs GTRuntime, so production browser bundles no longer ship the project/file management API client (enqueueFiles, uploads, downloads, etc.). The GT class extends GTRuntime and keeps its full API for the CLI and other tooling. Also import getLocaleProperties from @generaltranslation/format directly in react-core so client bundles don't reach the full core entry.
+- 42a440f: Gate duplicate singleton initialization warnings behind `_GENERALTRANSLATION_LOG_LEVEL=DEBUG`.
+- c5364f9: Slim the i18n cache event surface by replacing the generic EventEmitter base class with a single cache-miss listener and removing unused cache helper methods.
+- 195f009: fix: make singleton not-initialized errors consistent and descriptive, and stop error paths from masking the original failure when I18nConfig is also uninitialized
+- Updated dependencies [72e9e16]
+- Updated dependencies [5adeede]
+- Updated dependencies [2e85ebd]
+  - generaltranslation@9.0.0-odysseus.5
+  - @generaltranslation/supported-locales@2.1.2-odysseus.5
+
+## 1.0.0-odysseus.7
+
+### Minor Changes
+
+- 0cd7813: Store cookie names in I18nConfig so custom cookie names work before the condition store is initialized.
+  - `gt-i18n`: Removed the unused React locale cookie name from the shared GT config type.
+  - `@generaltranslation/react-core`: `ReactI18nConfig` now accepts `localeCookieName`, `regionCookieName`, and `enableI18nCookieName`, exposes getters that fall back to the default names, and exports the default storage names from the `pure` entrypoint.
+  - `gt-next`: Imports default cookie names from the React Core `pure` entrypoint instead of the removed React Core cookie constants subpath.
+  - `gt-react`: The browser condition store now resolves cookie names from `I18nConfig` instead of hardcoding the defaults, so custom cookie names passed to `initializeGT()` are honored for both reads and writes.
+  - `gt-react-native`: Native condition storage now resolves its store keys from `I18nConfig`, matching `gt-react` behavior.
+  - `gt-tanstack-start`: `parseLocale()` reads and writes the locale cookie using the configured cookie name instead of the default.
+
+### Patch Changes
+
+- ab61565: Defer the missing-projectId and missing-translation-loader warnings from I18nCache construction to the first translation loader invocation. Clients of server-rendered apps receive translations via updateTranslations() and never invoke the fallback loader, so they no longer log spurious warnings on initialization. Explicitly disabling translation loading with cacheUrl: null no longer logs at all, and explicitly setting cacheUrl to the default GT CDN URL alongside a projectId is now classified as GT remote loading.
+
+## 1.0.0-odysseus.6
+
+### Patch Changes
+
+- a2b9677: Restore namespace scoping for getTranslations and server useTranslations.
+- 41371e0: Read Vite runtime credentials during React initialization while keeping dev API keys out of production bundles.
+
+## 1.0.0-odysseus.5
+
+### Patch Changes
+
+- 432fa49: Use Next.js caching semantics for Cache Components by disabling GT cache expiry and development hot reload runtime translation.
+
+  Async translation and dictionary lookup boundaries now keep synchronous access to the loaded snapshot, so APIs like `getGT` and `getTranslations` can still resolve strings after cache expiry is delegated to Next.js.
+
+  Global singleton setup now preserves the first initialized instance instead of replacing it on later initialization attempts.
+
+- 432fa49: Support dev hot reload lookups for server `getGT` strings.
+
+  `getGT` can now receive compiler-injected message metadata and prefetch missing translations through the runtime cache in development. `gt-next` forwards the server request conditions into this path so App Router server strings can participate in hot reload translation updates.
+
+  Compiler-injected `getGT` and `useGT` preload messages now emit the same sugar metadata keys used by runtime lookup options.
+
+- 933916e: Store the GT services enabled flag on the i18n config singleton.
+- 4a5f8e8: Remove unused internal exports and dead utility code.
+- 083d306: Remove deprecated i18n cache lifecycle hooks and unused cache events.
+
+  The cache subscription surface now only exposes `translations-cache-miss`, which is used for runtime translation updates. Deprecated lifecycle constructor callbacks and unused locale/dictionary cache hit/miss events have been removed.
+
+## 1.0.0-odysseus.4
+
+### Patch Changes
+
+- 270b821: Remove the unused `condition-store/localeResolver` module from `gt-i18n/internal`.
+
+  `determineSupportedLocale`, `resolveSupportedLocale`, and `createLocaleResolver` were thin wrappers over `getI18nConfig().<method>()`. They had no consumers — callers (e.g. tanstack-start) use the `I18nConfig` methods directly via `getI18nConfig()`. Removing the module trims dead indirection from the `/internal` entry; the `LocaleCandidates` type re-export is unaffected (re-exported from its real source).
+
+- bffaa67: Remove the unused `validateLocales` config validator from `gt-i18n`.
+
+  `validateLocales` was defined but never called (config validation runs `validateLoadTranslations`, `validateTranslationApi`, and `validateDictionary`) and had no consumers anywhere. Dead code removed.
+
+- d602065: Remove deprecated methods from `gt-i18n`'s `I18nCache`.
+
+  Dropped the long-`@deprecated` cache methods that duplicated `I18nConfig`/loader APIs: `getDefaultLocale`, `getLocales`, `getCustomMapping`, `getGTClass`, `getTranslationLoader`, `resolveTranslationSync`, `getTranslations`, and `getTranslationResolver`. None were called anywhere (consumers use `getI18nConfig()` / `lookupTranslation` / `loadTranslations`). Removes the methods, their now-unused imports, and the tests that covered them.
+
+- Updated dependencies [26faa87]
+  - generaltranslation@9.0.0-odysseus.4
+  - @generaltranslation/supported-locales@2.1.2-odysseus.4
+
+## 1.0.0-odysseus.3
+
+### Patch Changes
+
+- b765174: Remove three orphaned, never-imported files:
+  - `gt-tanstack-start`: `condition-store/WritableConditionStore.ts` (an orphaned local copy; the package uses gt-i18n's writable condition store).
+  - `gt-react-native`: `utils/utils.ts` (`readAuthFromEnv`, no consumers).
+  - `gt-i18n`: `i18n-cache/translations-manager/utils/types/translations-manager.ts` (unreferenced `TranslationsManagerConfig` type).
+
+- Updated dependencies [b1eef00]
+  - generaltranslation@9.0.0-odysseus.3
+  - @generaltranslation/supported-locales@2.1.2-odysseus.3
+
+## 1.0.0-odysseus.2
+
+### Major Changes
+
+- [#1687](https://github.com/generaltranslation/gt/pull/1687) [`41c938c`](https://github.com/generaltranslation/gt/commit/41c938c0d00f4b76faa7a2805ad0015891e0740e) Thanks [@bgub](https://github.com/bgub)! - Remove deprecated translation options. The `context` dictionary option has been removed in favor of `$context`, and the `$_locales` inline option has been removed in favor of `$locale`.
+
+- [#1690](https://github.com/generaltranslation/gt/pull/1690) [`b3c3b9a`](https://github.com/generaltranslation/gt/commit/b3c3b9af39f1b2abec2c2b6bf2c2a40fe76db5ce) Thanks [@bgub](https://github.com/bgub)! - Simplify translation option types. Replace deprecated inline and dictionary option aliases with `GTTranslationOptions`, use interpolation variables for dictionary `t()` options, and trim higher-level type exports to avoid exposing internal translation option fields.
+
+### Patch Changes
+
+- Updated dependencies [[`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660), [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447)]:
+  - @generaltranslation/format@0.1.2-odysseus.1
+  - generaltranslation@9.0.0-odysseus.2
+  - @generaltranslation/supported-locales@2.1.2-odysseus.2
+
+## 1.0.0-odysseus.1
+
+### Patch Changes
+
+- [#1677](https://github.com/generaltranslation/gt/pull/1677) [`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove internal source barrel exports and update imports to reference defining files directly.
+
+- Updated dependencies [[`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64)]:
+  - generaltranslation@9.0.0-odysseus.1
+  - @generaltranslation/supported-locales@2.1.2-odysseus.1
+
+## 1.0.0-odysseus.0
+
+### Major Changes
+
+- [#1627](https://github.com/generaltranslation/gt/pull/1627) [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Prepare Odysseus major releases for core runtime packages.
+
+### Patch Changes
+
+- [#1508](https://github.com/generaltranslation/gt/pull/1508) [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- Updated dependencies [[`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`620621a`](https://github.com/generaltranslation/gt/commit/620621aceeafedbb958884cacc5495736191b065), [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0)]:
+  - @generaltranslation/format@0.1.2-odysseus.0
+  - @generaltranslation/supported-locales@2.1.2-odysseus.0
+  - generaltranslation@9.0.0-odysseus.0
+
+## 0.9.8
+
+### Patch Changes
+
+- Updated dependencies [[`a2a3dd0`](https://github.com/generaltranslation/gt/commit/a2a3dd0bcdce9abe360c406a12fc6bb3bc3ca181)]:
+  - @generaltranslation/supported-locales@2.1.4
+
+## 0.9.7
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - @generaltranslation/supported-locales@2.1.3
+
+## 0.9.6
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - @generaltranslation/supported-locales@2.1.2
+
+## 0.9.5
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - @generaltranslation/supported-locales@2.1.1
+
+## 0.9.4
+
+### Patch Changes
+
+- Updated dependencies [[`cc4edc1`](https://github.com/generaltranslation/gt/commit/cc4edc1e40d9977125bf6d053fb7f8cdbdd40b05)]:
+  - @generaltranslation/supported-locales@2.1.0
+
 ## 0.9.9
 
 ### Patch Changes

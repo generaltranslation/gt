@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { I18nManager } from '../../../i18n-manager/I18nManager';
-import { setI18nManager } from '../../../i18n-manager/singleton-operations';
+import { I18nCache } from '../../../i18n-cache/I18nCache';
+import { setI18nCache } from '../../../i18n-cache/singleton-operations';
+import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../types/options';
 import {
@@ -8,10 +9,18 @@ import {
   resolveJsxWithRuntimeFallback,
 } from '../helpers';
 
+type TestGlobal = typeof globalThis & {
+  __generaltranslation?: unknown;
+};
+
+function resetGTGlobals() {
+  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+}
+
 // Mock createTranslateManyFactory to inject controlled translateMany
 const mockTranslateMany = vi.fn();
 vi.mock(
-  '../../../i18n-manager/translations-manager/utils/createTranslateMany',
+  '../../../i18n-cache/translations-manager/utils/createTranslateMany',
   () => ({
     createTranslateManyFactory: vi
       .fn()
@@ -21,23 +30,27 @@ vi.mock(
 
 describe('translation helpers (deep integration)', () => {
   beforeEach(() => {
+    resetGTGlobals();
     vi.useFakeTimers();
     vi.clearAllMocks();
     mockTranslateMany.mockReset();
   });
 
   afterEach(() => {
+    resetGTGlobals();
     vi.useRealTimers();
   });
 
   function setupManager(preloadedTranslations: Record<string, string> = {}) {
-    const manager = new I18nManager({
+    initializeI18nConfig({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
+    });
+    const cache = new I18nCache({
       loadTranslations: vi.fn().mockResolvedValue(preloadedTranslations),
     });
-    setI18nManager(manager);
-    return manager;
+    setI18nCache(cache);
+    return cache;
   }
 
   it('resolveStringContentWithRuntimeFallback triggers translateMany when translation not preloaded', async () => {

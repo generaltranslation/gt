@@ -1,5 +1,364 @@
 # gt-next
 
+## 11.0.0-odysseus.16
+
+### Major Changes
+
+- 463a8db: Add a config-aware `resolveCanonicalLocale` helper and remove the public `getGTClass` helper.
+- 463a8db: Remove the deprecated `useGTClass` hook from public entry points.
+- 40db0c5: Remove `useVersionId` from public package entrypoints.
+
+  The `getVersionId` helper remains available from public function entrypoints and `gt-i18n/internal`.
+
+### Patch Changes
+
+- 1a483ae: Remove deprecated Next internal packages.
+- ce8a665: Clean up the `gt-next` API surface for the next major prerelease.
+
+  Removes the deprecated `initGT` config alias and the redundant `gt-next/types` subpath. Moves the hidden dictionary and loader subpaths under `gt-next/internal/*`, updates the Next config alias plumbing to match, and adjusts CLI setup detection so it no longer treats `initGT` as a valid existing config wrapper.
+
+- Updated dependencies [463a8db]
+- Updated dependencies [b72c30b]
+- Updated dependencies [bea8233]
+- Updated dependencies [5736d58]
+- Updated dependencies [1f53e42]
+- Updated dependencies [7744c55]
+- Updated dependencies [463a8db]
+- Updated dependencies [e343775]
+- Updated dependencies [40db0c5]
+- Updated dependencies [d5cf2d3]
+  - gt-i18n@1.0.0-odysseus.9
+  - @generaltranslation/react-core@11.0.0-odysseus.16
+  - gt-react@11.0.0-odysseus.16
+  - generaltranslation@9.0.0-odysseus.6
+  - @generaltranslation/compiler@1.3.25-odysseus.8
+  - @generaltranslation/supported-locales@2.1.2-odysseus.6
+
+## 11.0.0-odysseus.15
+
+### Patch Changes
+
+- 04f419d: Fix source interpolation for default-locale string helpers.
+  Clarify that `tx()` does not apply ICU formatting by default.
+- 98698de: Escape backslashes in middleware path regex input before dynamic path matching.
+- 72e9e16: Split the runtime surface of the GT class (locale management, formatting, runtime translation) into a GTRuntime base class exported from the new `generaltranslation/runtime` entry point. The SDK runtime (gt-i18n's I18nConfig, gt-next middleware) now constructs GTRuntime, so production browser bundles no longer ship the project/file management API client (enqueueFiles, uploads, downloads, etc.). The GT class extends GTRuntime and keeps its full API for the CLI and other tooling. Also import getLocaleProperties from @generaltranslation/format directly in react-core so client bundles don't reach the full core entry.
+- 8d2e84e: Preserve enableI18n hydration state from server props and request cookies.
+- 195f009: fix: make singleton not-initialized errors consistent and descriptive, and stop error paths from masking the original failure when I18nConfig is also uninitialized
+- Updated dependencies [04f419d]
+- Updated dependencies [72e9e16]
+- Updated dependencies [42a440f]
+- Updated dependencies [8d2e84e]
+- Updated dependencies [5adeede]
+- Updated dependencies [c5364f9]
+- Updated dependencies [2e85ebd]
+- Updated dependencies [195f009]
+  - @generaltranslation/react-core@11.0.0-odysseus.15
+  - generaltranslation@9.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.8
+  - gt-react@11.0.0-odysseus.15
+  - @generaltranslation/compiler@1.3.25-odysseus.7
+  - @generaltranslation/supported-locales@2.1.2-odysseus.5
+
+## 11.0.0-odysseus.14
+
+### Patch Changes
+
+- 0cd7813: Store cookie names in I18nConfig so custom cookie names work before the condition store is initialized.
+  - `gt-i18n`: Removed the unused React locale cookie name from the shared GT config type.
+  - `@generaltranslation/react-core`: `ReactI18nConfig` now accepts `localeCookieName`, `regionCookieName`, and `enableI18nCookieName`, exposes getters that fall back to the default names, and exports the default storage names from the `pure` entrypoint.
+  - `gt-next`: Imports default cookie names from the React Core `pure` entrypoint instead of the removed React Core cookie constants subpath.
+  - `gt-react`: The browser condition store now resolves cookie names from `I18nConfig` instead of hardcoding the defaults, so custom cookie names passed to `initializeGT()` are honored for both reads and writes.
+  - `gt-react-native`: Native condition storage now resolves its store keys from `I18nConfig`, matching `gt-react` behavior.
+  - `gt-tanstack-start`: `parseLocale()` reads and writes the locale cookie using the configured cookie name instead of the default.
+
+- 00ae256: Delegate remote translation loading to the shared i18n cache and only pass custom Next.js translation loaders when configured.
+- Updated dependencies [ab61565]
+- Updated dependencies [0cd7813]
+  - gt-i18n@1.0.0-odysseus.7
+  - @generaltranslation/react-core@11.0.0-odysseus.14
+  - gt-react@11.0.0-odysseus.14
+
+## 11.0.0-odysseus.13
+
+### Patch Changes
+
+- a2b9677: Restore namespace scoping for getTranslations and server useTranslations.
+- 3e199a2: Keep the locale cookie when the middleware clears the setLocale reset cookie. Deleting it raced with concurrent prefetch responses after a locale switch in production builds, causing client components to fall back to the browser's default locale while server components rendered the selected locale.
+- Updated dependencies [a2b9677]
+- Updated dependencies [41371e0]
+  - gt-i18n@1.0.0-odysseus.6
+  - gt-react@11.0.0-odysseus.13
+  - @generaltranslation/react-core@11.0.0-odysseus.13
+
+## 11.0.0-odysseus.12
+
+### Patch Changes
+
+- 31884d2: Initialize gt-next server entrypoints with a shared server condition store.
+- Updated dependencies [7be23bc]
+  - @generaltranslation/react-core@11.0.0-odysseus.12
+  - gt-react@11.0.0-odysseus.12
+
+## 11.0.0-odysseus.11
+
+### Patch Changes
+
+- fe7dfd3: Stop forwarding `locale={false}` from `gt-next/link` to the underlying Next.js link after localizing the href.
+
+  This avoids React DOM warnings in newer Next.js versions where the control prop can reach the rendered anchor.
+
+- Updated dependencies [c34cab3]
+  - @generaltranslation/compiler@1.3.25-odysseus.6
+  - @generaltranslation/react-core@11.0.0-odysseus.11
+  - gt-react@11.0.0-odysseus.11
+
+## 11.0.0-odysseus.10
+
+### Patch Changes
+
+- 432fa49: Use Next.js caching semantics for Cache Components by disabling GT cache expiry and development hot reload runtime translation.
+
+  Async translation and dictionary lookup boundaries now keep synchronous access to the loaded snapshot, so APIs like `getGT` and `getTranslations` can still resolve strings after cache expiry is delegated to Next.js.
+
+  Global singleton setup now preserves the first initialized instance instead of replacing it on later initialization attempts.
+
+- 07f74f0: Clean up stale package metadata and align TanStack Start package entry points.
+- 432fa49: Support dev hot reload lookups for server `getGT` strings.
+
+  `getGT` can now receive compiler-injected message metadata and prefetch missing translations through the runtime cache in development. `gt-next` forwards the server request conditions into this path so App Router server strings can participate in hot reload translation updates.
+
+  Compiler-injected `getGT` and `useGT` preload messages now emit the same sugar metadata keys used by runtime lookup options.
+
+- 33d4be2: Point the `react-server` export condition at the RSC-specific declaration file so TypeScript no longer exposes client-only hooks in React Server Components.
+- 75dc650: Remove the unused `getDomain` request-function plumbing from `gt-next`.
+
+  `getDomain` was scaffolded (a throw-only `internal/_getDomain` stub, a `getDomainPath` config prop, a `getDomain` entry in the request-function registry, and a `_GENERALTRANSLATION_CUSTOM_GET_DOMAIN_ENABLED` build env var) but never wired to any runtime consumer — no `getDomain()` request helper exists and nothing reads the env var. Removes the stub module, the `./internal/_getDomain` export, the config prop/registry entries, and the dead env var. `getLocale`/`getRegion` are unchanged.
+
+- 8e0a992: Remove the deprecated SSG and experimental-locale-resolution code paths from `gt-next`.
+
+  Drops the long-deprecated, runtime-dead config surface: `experimentalEnableSSG`, `experimentalLocaleResolution`/`experimentalLocaleResolutionParam`, the static request functions (`STATIC_REQUEST_FUNCTIONS`/`getStatic*` and their non-existent `internal/static/*` aliases), and `disableSSGWarnings`/`getStatic*Path` doc props. Removes `plugin/checks/ssgChecks.ts`, the experimental branch of `cacheComponentsChecks`, the related error/warning builders, and the corresponding build-time env vars (`_GENERALTRANSLATION_ENABLE_SSG`, `_GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION[_PARAM]`, `_GENERALTRANSLATION_STATIC_GET_*_ENABLED`) — none of which were read at runtime. The live cacheComponents checks and `noLocalesCouldBeDeterminedWarning` are retained.
+
+- Updated dependencies [432fa49]
+- Updated dependencies [07f74f0]
+- Updated dependencies [432fa49]
+- Updated dependencies [ee34fea]
+- Updated dependencies [bcba6fd]
+- Updated dependencies [933916e]
+- Updated dependencies [b7b3eaf]
+- Updated dependencies [dfb5fc9]
+- Updated dependencies [4a5f8e8]
+- Updated dependencies [288c9f8]
+- Updated dependencies [083d306]
+  - gt-i18n@1.0.0-odysseus.5
+  - gt-react@11.0.0-odysseus.10
+  - @generaltranslation/compiler@1.3.25-odysseus.5
+  - @generaltranslation/react-core@11.0.0-odysseus.10
+
+## 11.0.0-odysseus.9
+
+### Patch Changes
+
+- cf3e961: Remove 21 unused error/warning builders from `gt-next`'s `errors/createErrors.ts`.
+
+  The following had no consumers anywhere: `createDictionaryTranslationError`, `createInvalidDictionaryEntryWarning`, `createInvalidDictionaryTranslationEntryWarning`, `createInvalidIcuDictionaryEntryError`, `createInvalidIcuDictionaryEntryWarning`, `createMismatchingHashWarning`, `createNoEntryFoundWarning`, `createRequiredPrefixError`, `createStringRenderError`, `createStringRenderWarning`, `createStringTranslationError`, `createTranslationLoadingWarning`, `dictionaryDisabledError`, `dictionaryNotFoundWarning`, `gtProviderUseClientError`, `missingVariablesError`, `noInitGTWarn`, `runtimeTranslationTimeoutWarning`, `txUseClientError`, `unresolvedGetLocaleBuildError`, `usingDefaultsWarning`. ~155 LOC of dead error-string code removed.
+  - @generaltranslation/react-core@11.0.0-odysseus.9
+  - gt-react@11.0.0-odysseus.9
+
+## 11.0.0-odysseus.8
+
+### Patch Changes
+
+- Updated dependencies [26faa87]
+- Updated dependencies [270b821]
+- Updated dependencies [bffaa67]
+- Updated dependencies [d602065]
+- Updated dependencies [6da26e8]
+  - generaltranslation@9.0.0-odysseus.4
+  - gt-i18n@1.0.0-odysseus.4
+  - @generaltranslation/react-core@11.0.0-odysseus.8
+  - @generaltranslation/compiler@1.3.25-odysseus.4
+  - gt-react@11.0.0-odysseus.8
+  - @generaltranslation/supported-locales@2.1.2-odysseus.4
+
+## 11.0.0-odysseus.7
+
+### Patch Changes
+
+- Updated dependencies [b1eef00]
+- Updated dependencies [b765174]
+- Updated dependencies [07bfb00]
+  - generaltranslation@9.0.0-odysseus.3
+  - gt-i18n@1.0.0-odysseus.3
+  - @generaltranslation/react-core@11.0.0-odysseus.7
+  - @generaltranslation/compiler@1.3.25-odysseus.3
+  - gt-react@11.0.0-odysseus.7
+  - @generaltranslation/supported-locales@2.1.2-odysseus.3
+
+## 11.0.0-odysseus.6
+
+### Patch Changes
+
+- Updated dependencies [c1aa794]
+- Updated dependencies [e0ace5b]
+  - @generaltranslation/react-core@11.0.0-odysseus.6
+  - gt-react@11.0.0-odysseus.6
+
+## 11.0.0-odysseus.5
+
+### Major Changes
+
+- [#1690](https://github.com/generaltranslation/gt/pull/1690) [`b3c3b9a`](https://github.com/generaltranslation/gt/commit/b3c3b9af39f1b2abec2c2b6bf2c2a40fe76db5ce) Thanks [@bgub](https://github.com/bgub)! - Simplify translation option types. Replace deprecated inline and dictionary option aliases with `GTTranslationOptions`, use interpolation variables for dictionary `t()` options, and trim higher-level type exports to avoid exposing internal translation option fields.
+
+### Patch Changes
+
+- [#1685](https://github.com/generaltranslation/gt/pull/1685) [`795147f`](https://github.com/generaltranslation/gt/commit/795147f5b00f948b2b1876a919c0a16cf53c52b6) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Allow client i18n cache expiry to default to no expiry while preserving explicit cache expiry configuration.
+
+- [#1688](https://github.com/generaltranslation/gt/pull/1688) [`2836b96`](https://github.com/generaltranslation/gt/commit/2836b964dcc1f005430c3fbcfb4f6ff3d948a3fb) Thanks [@bgub](https://github.com/bgub)! - Ship a dual ESM/CJS build for `gt-next` and add `import` export conditions.
+
+  Previously `gt-next` was published as CJS only (no `import` condition), so bundlers resolved the entire gt dependency graph (`gt-react`, `@generaltranslation/react-core`, `generaltranslation`, `gt-i18n`, `@generaltranslation/format`) through the `require` condition. That forced CJS variants onto the client, which cannot be tree-shaken — shipping `gt-next`'s own server/error code and unused dependency exports to the browser.
+
+  `gt-next` now emits unbundled `.mjs` output alongside the existing `.js` output, and every `exports` subpath exposes an `import` condition. Bundlers now resolve the gt graph as ESM, enabling tree-shaking across all gt packages. Measured on a real Next.js app, this cuts gt's total client bundle by ~19% gzip (≈96 kB → ≈78 kB) with no API changes.
+
+  The ESM build sets `polyfillRequire: false` so rolldown does not inject a `createRequire`-from-`node:module` shim (server-only `require()` calls are provided `require` by the bundler), and marks the `index.rsc`/`index.client` entrypoints as having side effects so their top-level initialization is not tree-shaken away.
+
+- [#1678](https://github.com/generaltranslation/gt/pull/1678) [`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Organize package entrypoint exports and replace re-export-only imports with direct export declarations.
+
+- [#1676](https://github.com/generaltranslation/gt/pull/1676) [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove default exports from package entrypoints and internal source modules.
+
+  Use named imports for affected public entrypoints, including `import { plugin } from 'gt-react-native/plugin'`. The `gt-next/link` entrypoint keeps its default export to match `next/link`.
+
+- Updated dependencies [[`795147f`](https://github.com/generaltranslation/gt/commit/795147f5b00f948b2b1876a919c0a16cf53c52b6), [`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660), [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447), [`41c938c`](https://github.com/generaltranslation/gt/commit/41c938c0d00f4b76faa7a2805ad0015891e0740e), [`b3c3b9a`](https://github.com/generaltranslation/gt/commit/b3c3b9af39f1b2abec2c2b6bf2c2a40fe76db5ce)]:
+  - gt-react@11.0.0-odysseus.5
+  - @generaltranslation/format@0.1.2-odysseus.1
+  - generaltranslation@9.0.0-odysseus.2
+  - @generaltranslation/react-core@11.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.2
+  - @generaltranslation/compiler@1.3.25-odysseus.2
+  - @generaltranslation/supported-locales@2.1.2-odysseus.2
+
+## 11.0.0-odysseus.4
+
+### Patch Changes
+
+- Updated dependencies [[`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64)]:
+  - @generaltranslation/compiler@1.3.25-odysseus.1
+  - generaltranslation@9.0.0-odysseus.1
+  - gt-i18n@1.0.0-odysseus.1
+  - gt-react@11.0.0-odysseus.4
+  - @generaltranslation/react-core@11.0.0-odysseus.4
+  - @generaltranslation/supported-locales@2.1.2-odysseus.1
+
+## 7.0.0-odysseus.3
+
+### Patch Changes
+
+- [#1659](https://github.com/generaltranslation/gt/pull/1659) [`807dc30`](https://github.com/generaltranslation/gt/commit/807dc305c4b5e4ce8f6982d96886a530910f3f37) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add a locale-aware Link component for Next.js applications.
+
+  Transpile gt-next in Next apps so package runtime config is compiled with app env values. See #1661.
+
+## 7.0.0-odysseus.2
+
+### Patch Changes
+
+- Updated dependencies [[`e29cd01`](https://github.com/generaltranslation/gt/commit/e29cd01c1bfe9ffba64c8fb3794d053a8c1304af)]:
+  - gt-react@11.0.0-odysseus.2
+
+## 7.0.0-odysseus.1
+
+### Patch Changes
+
+- [#1644](https://github.com/generaltranslation/gt/pull/1644) [`9652458`](https://github.com/generaltranslation/gt/commit/9652458372b09a746a9f241012cdfc75243cd7ea) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add a Pages Router server-side props helper for GT locale and translation snapshots.
+
+- [#1645](https://github.com/generaltranslation/gt/pull/1645) [`45a3241`](https://github.com/generaltranslation/gt/commit/45a3241decc10211fae84287ec74651f6864913d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Read Next runtime credentials from environment variables and keep them out of serialized config.
+
+- Updated dependencies [[`30918cf`](https://github.com/generaltranslation/gt/commit/30918cfa7fdb2072691681027ab8ad79cd8b73a7)]:
+  - gt-react@11.0.0-odysseus.1
+
+## 7.0.0-odysseus.0
+
+### Major Changes
+
+- [#1627](https://github.com/generaltranslation/gt/pull/1627) [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Prepare Odysseus major releases for core runtime packages.
+
+### Patch Changes
+
+- [#1508](https://github.com/generaltranslation/gt/pull/1508) [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- Updated dependencies [[`33203b1`](https://github.com/generaltranslation/gt/commit/33203b1953727647f61a21136b4c9570efbc8620), [`af441bd`](https://github.com/generaltranslation/gt/commit/af441bdfb3a4cabe28985c59104ab7d60ee83d83), [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`620621a`](https://github.com/generaltranslation/gt/commit/620621aceeafedbb958884cacc5495736191b065), [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0)]:
+  - gt-react@11.0.0-odysseus.0
+  - @generaltranslation/compiler@1.3.25-odysseus.0
+  - @generaltranslation/format@0.1.2-odysseus.0
+  - @generaltranslation/supported-locales@2.1.2-odysseus.0
+  - generaltranslation@9.0.0-odysseus.0
+  - gt-i18n@1.0.0-odysseus.0
+
+## 6.16.35
+
+### Patch Changes
+
+- Updated dependencies [[`a2a3dd0`](https://github.com/generaltranslation/gt/commit/a2a3dd0bcdce9abe360c406a12fc6bb3bc3ca181)]:
+  - @generaltranslation/supported-locales@2.1.4
+  - gt-i18n@0.9.8
+  - gt-react@10.20.4
+
+## 6.16.34
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - @generaltranslation/compiler@1.3.26
+  - gt-i18n@0.9.7
+  - gt-react@10.20.3
+  - @generaltranslation/supported-locales@2.1.3
+
+## 6.16.33
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - @generaltranslation/compiler@1.3.25
+  - gt-i18n@0.9.6
+  - gt-react@10.20.2
+  - @generaltranslation/supported-locales@2.1.2
+
+## 6.16.32
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-react@10.20.1
+
+## 6.16.31
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-react@10.20.0
+
+## 6.16.30
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - @generaltranslation/compiler@1.3.24
+  - gt-i18n@0.9.5
+  - gt-react@10.19.19
+  - @generaltranslation/supported-locales@2.1.1
+
+## 6.16.29
+
+### Patch Changes
+
+- [#1437](https://github.com/generaltranslation/gt/pull/1437) [`fd61c44`](https://github.com/generaltranslation/gt/commit/fd61c4487a790e0802021478986b8c5b3dc0fb2b) Thanks [@bgub](https://github.com/bgub)! - Deprecate `experimentalLocaleResolution` and update cache components warnings to recommend explicit custom `getLocale.ts` and `getRegion.ts` request functions instead of automatic root parameter detection.
+
+- Updated dependencies [[`cc4edc1`](https://github.com/generaltranslation/gt/commit/cc4edc1e40d9977125bf6d053fb7f8cdbdd40b05)]:
+  - @generaltranslation/supported-locales@2.1.0
+  - gt-i18n@0.9.4
+  - gt-react@10.19.18
+
 ## 6.16.37
 
 ### Patch Changes
@@ -412,7 +771,6 @@
   - gt-i18n@0.7.9
   - generaltranslation@8.2.1
   - @generaltranslation/compiler@1.2.1
-  - @generaltranslation/next-internal@0.1.2
   - @generaltranslation/supported-locales@2.0.59
 
 ## 6.15.0
@@ -506,7 +864,6 @@
   - @generaltranslation/compiler@1.1.32
   - generaltranslation@8.1.20
   - gt-i18n@0.7.2
-  - @generaltranslation/next-internal@0.1.1
   - gt-react@10.15.1
   - @generaltranslation/supported-locales@2.0.53
 
@@ -904,11 +1261,6 @@
 ### Minor Changes
 
 - [#842](https://github.com/generaltranslation/gt/pull/842) [`3f19da3`](https://github.com/generaltranslation/gt/commit/3f19da3fd8b3e1813bef63471c0e5419cefc4c1d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: use cache
-
-### Patch Changes
-
-- Updated dependencies [[`3f19da3`](https://github.com/generaltranslation/gt/commit/3f19da3fd8b3e1813bef63471c0e5419cefc4c1d)]:
-  - @generaltranslation/next-internal@0.1.0
 
 ## 6.9.5
 

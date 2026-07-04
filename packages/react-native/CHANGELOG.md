@@ -1,5 +1,266 @@
 # gt-react-native
 
+## 11.0.0-odysseus.16
+
+### Major Changes
+
+- 463a8db: Add a config-aware `resolveCanonicalLocale` helper and remove the public `getGTClass` helper.
+- 463a8db: Remove the deprecated `useGTClass` hook from public entry points.
+- 40db0c5: Remove `useVersionId` from public package entrypoints.
+
+  The `getVersionId` helper remains available from public function entrypoints and `gt-i18n/internal`.
+
+### Patch Changes
+
+- Updated dependencies [463a8db]
+- Updated dependencies [b72c30b]
+- Updated dependencies [bea8233]
+- Updated dependencies [5736d58]
+- Updated dependencies [1f53e42]
+- Updated dependencies [463a8db]
+- Updated dependencies [e343775]
+- Updated dependencies [40db0c5]
+- Updated dependencies [d5cf2d3]
+  - gt-i18n@1.0.0-odysseus.9
+  - @generaltranslation/react-core@11.0.0-odysseus.16
+  - generaltranslation@9.0.0-odysseus.6
+  - @generaltranslation/supported-locales@2.1.2-odysseus.6
+
+## 11.0.0-odysseus.15
+
+### Patch Changes
+
+- 57047ea: Rename the React Native `GTProvider` loading fallback prop to `fallback`.
+- Updated dependencies [04f419d]
+- Updated dependencies [72e9e16]
+- Updated dependencies [42a440f]
+- Updated dependencies [5adeede]
+- Updated dependencies [c5364f9]
+- Updated dependencies [2e85ebd]
+- Updated dependencies [195f009]
+  - @generaltranslation/react-core@11.0.0-odysseus.15
+  - generaltranslation@9.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.8
+  - @generaltranslation/supported-locales@2.1.2-odysseus.5
+
+## 11.0.0-odysseus.14
+
+### Patch Changes
+
+- 0cd7813: Store cookie names in I18nConfig so custom cookie names work before the condition store is initialized.
+  - `gt-i18n`: Removed the unused React locale cookie name from the shared GT config type.
+  - `@generaltranslation/react-core`: `ReactI18nConfig` now accepts `localeCookieName`, `regionCookieName`, and `enableI18nCookieName`, exposes getters that fall back to the default names, and exports the default storage names from the `pure` entrypoint.
+  - `gt-next`: Imports default cookie names from the React Core `pure` entrypoint instead of the removed React Core cookie constants subpath.
+  - `gt-react`: The browser condition store now resolves cookie names from `I18nConfig` instead of hardcoding the defaults, so custom cookie names passed to `initializeGT()` are honored for both reads and writes.
+  - `gt-react-native`: Native condition storage now resolves its store keys from `I18nConfig`, matching `gt-react` behavior.
+  - `gt-tanstack-start`: `parseLocale()` reads and writes the locale cookie using the configured cookie name instead of the default.
+
+- 870e1d3: Render `GTProvider` loading fallbacks inside the native GT context so app children can safely be used as the fallback while translations load.
+- Updated dependencies [ab61565]
+- Updated dependencies [0cd7813]
+  - gt-i18n@1.0.0-odysseus.7
+  - @generaltranslation/react-core@11.0.0-odysseus.14
+
+## 11.0.0-odysseus.13
+
+### Patch Changes
+
+- Updated dependencies [a2b9677]
+- Updated dependencies [41371e0]
+  - gt-i18n@1.0.0-odysseus.6
+  - @generaltranslation/react-core@11.0.0-odysseus.13
+
+## 11.0.0-odysseus.12
+
+### Patch Changes
+
+- Updated dependencies [7be23bc]
+  - @generaltranslation/react-core@11.0.0-odysseus.12
+
+## 11.0.0-odysseus.11
+
+### Patch Changes
+
+- @generaltranslation/react-core@11.0.0-odysseus.11
+
+## 11.0.0-odysseus.10
+
+### Patch Changes
+
+- bcba6fd: Fix `useVersionId()` throwing and `useLocaleDirection()` requiring a locale argument in the client and server entrypoints.
+
+  `useVersionId()` now returns the current version id (instead of throwing the react-core "not implemented" error), and `useLocaleDirection()` once again accepts an optional locale that defaults to the current locale. The shared implementation now lives in `@generaltranslation/react-core/hooks`, so `gt-react` and `gt-react-native` use the same behavior; the RSC entrypoint keeps its stricter signatures.
+
+- dfb5fc9: Add portable selector hook return types for React Native declarations.
+- Updated dependencies [432fa49]
+- Updated dependencies [432fa49]
+- Updated dependencies [bcba6fd]
+- Updated dependencies [933916e]
+- Updated dependencies [b7b3eaf]
+- Updated dependencies [dfb5fc9]
+- Updated dependencies [4a5f8e8]
+- Updated dependencies [288c9f8]
+- Updated dependencies [083d306]
+  - gt-i18n@1.0.0-odysseus.5
+  - @generaltranslation/react-core@11.0.0-odysseus.10
+
+## 11.0.0-odysseus.9
+
+### Patch Changes
+
+- @generaltranslation/react-core@11.0.0-odysseus.9
+
+## 11.0.0-odysseus.8
+
+### Patch Changes
+
+- Updated dependencies [26faa87]
+- Updated dependencies [270b821]
+- Updated dependencies [bffaa67]
+- Updated dependencies [d602065]
+- Updated dependencies [6da26e8]
+  - generaltranslation@9.0.0-odysseus.4
+  - gt-i18n@1.0.0-odysseus.4
+  - @generaltranslation/react-core@11.0.0-odysseus.8
+  - @generaltranslation/supported-locales@2.1.2-odysseus.4
+
+## 11.0.0-odysseus.7
+
+### Patch Changes
+
+- b765174: Remove three orphaned, never-imported files:
+  - `gt-tanstack-start`: `condition-store/WritableConditionStore.ts` (an orphaned local copy; the package uses gt-i18n's writable condition store).
+  - `gt-react-native`: `utils/utils.ts` (`readAuthFromEnv`, no consumers).
+  - `gt-i18n`: `i18n-cache/translations-manager/utils/types/translations-manager.ts` (unreferenced `TranslationsManagerConfig` type).
+
+- Updated dependencies [b1eef00]
+- Updated dependencies [b765174]
+- Updated dependencies [07bfb00]
+  - generaltranslation@9.0.0-odysseus.3
+  - gt-i18n@1.0.0-odysseus.3
+  - @generaltranslation/react-core@11.0.0-odysseus.7
+  - @generaltranslation/supported-locales@2.1.2-odysseus.3
+
+## 11.0.0-odysseus.6
+
+### Patch Changes
+
+- Updated dependencies [c1aa794]
+- Updated dependencies [e0ace5b]
+  - @generaltranslation/react-core@11.0.0-odysseus.6
+
+## 11.0.0-odysseus.5
+
+### Major Changes
+
+- [#1690](https://github.com/generaltranslation/gt/pull/1690) [`b3c3b9a`](https://github.com/generaltranslation/gt/commit/b3c3b9af39f1b2abec2c2b6bf2c2a40fe76db5ce) Thanks [@bgub](https://github.com/bgub)! - Simplify translation option types. Replace deprecated inline and dictionary option aliases with `GTTranslationOptions`, use interpolation variables for dictionary `t()` options, and trim higher-level type exports to avoid exposing internal translation option fields.
+
+### Patch Changes
+
+- [#1678](https://github.com/generaltranslation/gt/pull/1678) [`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Organize package entrypoint exports and replace re-export-only imports with direct export declarations.
+
+- [#1676](https://github.com/generaltranslation/gt/pull/1676) [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove default exports from package entrypoints and internal source modules.
+
+  Use named imports for affected public entrypoints, including `import { plugin } from 'gt-react-native/plugin'`. The `gt-next/link` entrypoint keeps its default export to match `next/link`.
+
+- Updated dependencies [[`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660), [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447), [`41c938c`](https://github.com/generaltranslation/gt/commit/41c938c0d00f4b76faa7a2805ad0015891e0740e), [`b3c3b9a`](https://github.com/generaltranslation/gt/commit/b3c3b9af39f1b2abec2c2b6bf2c2a40fe76db5ce)]:
+  - @generaltranslation/format@0.1.2-odysseus.1
+  - generaltranslation@9.0.0-odysseus.2
+  - @generaltranslation/react-core@11.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.2
+  - @generaltranslation/supported-locales@2.1.2-odysseus.2
+
+## 11.0.0-odysseus.4
+
+### Patch Changes
+
+- Updated dependencies [[`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64)]:
+  - generaltranslation@9.0.0-odysseus.1
+  - gt-i18n@1.0.0-odysseus.1
+  - @generaltranslation/react-core@11.0.0-odysseus.4
+  - @generaltranslation/supported-locales@2.1.2-odysseus.1
+
+## 11.0.0-odysseus.2
+
+### Patch Changes
+
+- Updated dependencies [[`e29cd01`](https://github.com/generaltranslation/gt/commit/e29cd01c1bfe9ffba64c8fb3794d053a8c1304af)]:
+  - @generaltranslation/react-core@2.0.0-odysseus.1
+
+## 11.0.0-odysseus.1
+
+## 11.0.0-odysseus.0
+
+### Major Changes
+
+- [#1627](https://github.com/generaltranslation/gt/pull/1627) [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Prepare Odysseus major releases for core runtime packages.
+
+### Patch Changes
+
+- [#1508](https://github.com/generaltranslation/gt/pull/1508) [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- Updated dependencies [[`33203b1`](https://github.com/generaltranslation/gt/commit/33203b1953727647f61a21136b4c9570efbc8620), [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`620621a`](https://github.com/generaltranslation/gt/commit/620621aceeafedbb958884cacc5495736191b065), [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0)]:
+  - @generaltranslation/react-core@2.0.0-odysseus.0
+  - @generaltranslation/format@0.1.2-odysseus.0
+  - @generaltranslation/supported-locales@2.1.2-odysseus.0
+  - generaltranslation@9.0.0-odysseus.0
+  - gt-i18n@1.0.0-odysseus.0
+
+## 10.20.4
+
+### Patch Changes
+
+- Updated dependencies [[`a2a3dd0`](https://github.com/generaltranslation/gt/commit/a2a3dd0bcdce9abe360c406a12fc6bb3bc3ca181)]:
+  - @generaltranslation/supported-locales@2.1.4
+  - @generaltranslation/react-core@1.8.24
+
+## 10.20.3
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - @generaltranslation/react-core@1.8.23
+  - @generaltranslation/supported-locales@2.1.3
+
+## 10.20.2
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - @generaltranslation/react-core@1.8.22
+  - @generaltranslation/supported-locales@2.1.2
+
+## 10.20.1
+
+### Patch Changes
+
+- [#1562](https://github.com/generaltranslation/gt/pull/1562) [`b8ce13d`](https://github.com/generaltranslation/gt/commit/b8ce13d77540b3a680ba21b110d2340501377287) Thanks [@bgub](https://github.com/bgub)! - Export the `RelativeTime` component from `gt-react-native`, restoring parity with `gt-react`. It was already available in `@generaltranslation/react-core` and is platform-agnostic, but was the only variable component missing from the React Native entry point.
+
+## 10.20.0
+
+### Minor Changes
+
+- [#1537](https://github.com/generaltranslation/gt/pull/1537) [`d547737`](https://github.com/generaltranslation/gt/commit/d5477375011924ac3770c9da07db7a07bdb177b1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add getLocaleFromNativeStore for reading the persisted locale imperatively.
+
+## 10.19.19
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - @generaltranslation/react-core@1.8.21
+  - @generaltranslation/supported-locales@2.1.1
+
+## 10.19.18
+
+### Patch Changes
+
+- Updated dependencies [[`cc4edc1`](https://github.com/generaltranslation/gt/commit/cc4edc1e40d9977125bf6d053fb7f8cdbdd40b05)]:
+  - @generaltranslation/supported-locales@2.1.0
+  - @generaltranslation/react-core@1.8.20
+
 ## 10.20.5
 
 ### Patch Changes

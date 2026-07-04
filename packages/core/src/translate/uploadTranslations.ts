@@ -1,5 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 import { processBatches } from './utils/batch';
 
 import {
@@ -18,7 +18,7 @@ import { validateFileFormatTransforms } from './utils/validateFileFormatTransfor
  * @param config - The configuration for the API call.
  * @returns Promise resolving to a BatchList with all uploaded files
  */
-export default async function _uploadTranslations(
+export async function _uploadTranslations(
   files: {
     source: FileUpload;
     translations: FileUpload[];

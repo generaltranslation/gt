@@ -5,7 +5,7 @@ import type { NodePath } from '@babel/traverse';
 import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { validateExpressionIsStringLiteral } from '../../utils/validation/validateExpressionIsStringLiteral';
 import type { JsxChildren } from '@generaltranslation/format/types';
-import { constructJsxChildren } from '../jsx-children';
+import { constructJsxChildren } from '../jsx-children/constructJsxChildren';
 import { validateChildrenPropertyFromObjectExpression } from '../../utils/validation/validateChildrenFromObjectExpression';
 import { validateExpressionIsNumericLiteral } from '../../utils/validation/validateExpressionIsNumericLiteral';
 import { validateExpressionIsBooleanLiteral } from '../../utils/validation/validateExpressionIsBooleanLiteral';

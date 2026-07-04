@@ -34,6 +34,7 @@ describe('validateTranslationFunctionCallback', () => {
       enableMacroImportInjection: true,
       enableAutoJsxInjection: false,
       autoderive: { jsx: false, strings: false },
+      legacyGtReactImportSource: false,
       _debugHashManifest: false,
       devHotReload: { strings: false, jsx: false },
     };
@@ -139,7 +140,7 @@ describe('validateTranslationFunctionCallback', () => {
           state
         );
 
-        // When an identifier is passed, validateDeclareStatic adds errors
+        // When an identifier is passed, derive validation adds errors
         expect(result.errors).toHaveLength(3);
         expect(result.errors).toEqual([
           'Variables are not allowed',
@@ -464,85 +465,6 @@ describe('validateTranslationFunctionCallback', () => {
             e.includes('derive() must have a call expression as the argument')
           )
         ).toBe(true);
-      });
-    });
-
-    describe('backwards compatibility - declareStatic', () => {
-      beforeEach(() => {
-        // Also register declareStatic in scope tracker for backwards compat
-        state.scopeTracker.trackTranslationVariable(
-          GT_OTHER_FUNCTIONS.declareStatic,
-          GT_OTHER_FUNCTIONS.declareStatic,
-          0
-        );
-      });
-
-      it('should accept direct declareStatic call as first argument', () => {
-        const declareStaticCall = t.callExpression(
-          t.identifier(GT_OTHER_FUNCTIONS.declareStatic),
-          [t.callExpression(t.identifier('getName'), [])]
-        );
-
-        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
-          declareStaticCall,
-        ]);
-
-        const result = validateTranslationFunction(
-          getCallExpressionPath(callExpr),
-          state
-        );
-
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should accept template literal with declareStatic', () => {
-        const declareStaticCall = t.callExpression(
-          t.identifier(GT_OTHER_FUNCTIONS.declareStatic),
-          [t.callExpression(t.identifier('getName'), [])]
-        );
-
-        const templateLiteral = t.templateLiteral(
-          [
-            t.templateElement({ raw: 'Hello ', cooked: 'Hello ' }),
-            t.templateElement({ raw: '!', cooked: '!' }),
-          ],
-          [declareStaticCall]
-        );
-
-        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
-          templateLiteral,
-        ]);
-
-        const result = validateTranslationFunction(
-          getCallExpressionPath(callExpr),
-          state
-        );
-
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should accept string concatenation with declareStatic', () => {
-        const declareStaticCall = t.callExpression(
-          t.identifier(GT_OTHER_FUNCTIONS.declareStatic),
-          [t.callExpression(t.identifier('getName'), [])]
-        );
-
-        const binaryExpr = t.binaryExpression(
-          '+',
-          t.stringLiteral('Hello '),
-          declareStaticCall
-        );
-
-        const callExpr = t.callExpression(t.identifier('useGT_callback'), [
-          binaryExpr,
-        ]);
-
-        const result = validateTranslationFunction(
-          getCallExpressionPath(callExpr),
-          state
-        );
-
-        expect(result.errors).toHaveLength(0);
       });
     });
 
@@ -1066,6 +988,7 @@ describe('validateTranslationFunctionCallback', () => {
         enableMacroImportInjection: true,
         enableAutoJsxInjection: false,
         autoderive: { jsx: true, strings: true },
+        legacyGtReactImportSource: false,
         _debugHashManifest: false,
         devHotReload: { strings: false, jsx: false },
       };
@@ -1390,6 +1313,7 @@ describe('validateTranslationFunctionCallback', () => {
         enableMacroImportInjection: true,
         enableAutoJsxInjection: false,
         autoderive: { jsx: true, strings: false },
+        legacyGtReactImportSource: false,
         _debugHashManifest: false,
         devHotReload: { strings: false, jsx: false },
       };
@@ -1471,6 +1395,7 @@ describe('validateTranslationFunctionCallback', () => {
         enableMacroImportInjection: true,
         enableAutoJsxInjection: false,
         autoderive: { jsx: false, strings: true },
+        legacyGtReactImportSource: false,
         _debugHashManifest: false,
         devHotReload: { strings: false, jsx: false },
       };

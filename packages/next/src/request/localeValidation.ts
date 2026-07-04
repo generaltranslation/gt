@@ -1,15 +1,9 @@
-import type { GT } from 'generaltranslation';
-import { getI18NConfig } from '../config-dir/getI18NConfig';
-import type { I18NConfiguration } from '../config-dir/I18NConfiguration';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { createInvalidRequestLocaleWarning } from '../errors/createErrors';
 
-function determineSupportedLocale(
-  locale: unknown,
-  I18NConfig: I18NConfiguration,
-  gt: GT
-): string | undefined {
+function determineSupportedLocale(locale: unknown): string | undefined {
   if (typeof locale !== 'string' || locale.length === 0) return undefined;
-  return gt.determineLocale([locale], I18NConfig.getLocales());
+  return getI18nConfig().determineSupportedLocale(locale);
 }
 
 function warnInvalidLocale(locale: string, defaultLocale: string) {
@@ -22,21 +16,21 @@ function warnInvalidLocale(locale: string, defaultLocale: string) {
   console.warn(createInvalidRequestLocaleWarning(locale, defaultLocale));
 }
 
-export function resolveLocaleOrDefault(
-  locale: unknown,
-  I18NConfig: I18NConfiguration,
-  gt: GT
-): string {
-  const defaultLocale = I18NConfig.getDefaultLocale();
-  const supportedLocale = determineSupportedLocale(locale, I18NConfig, gt);
+export function resolveLocaleOrDefault(locale: unknown): string {
+  const i18nConfig = getI18nConfig();
+  const defaultLocale = i18nConfig.getDefaultLocale();
+  const supportedLocale =
+    typeof locale === 'string' && locale.length > 0
+      ? i18nConfig.determineSupportedLocale(locale)
+      : undefined;
 
-  if (supportedLocale) return gt.resolveAliasLocale(supportedLocale);
+  if (supportedLocale) return i18nConfig.resolveAliasLocale(supportedLocale);
 
   if (typeof locale === 'string' && locale.length > 0) {
     warnInvalidLocale(locale, defaultLocale);
   }
 
-  return gt.resolveAliasLocale(defaultLocale);
+  return i18nConfig.resolveAliasLocale(defaultLocale);
 }
 
 /**
@@ -49,8 +43,5 @@ export function resolveLocaleOrDefault(
  * @returns True when the locale resolves to one of the configured locales.
  */
 export function isLocaleSupported(locale: unknown): locale is string {
-  const I18NConfig = getI18NConfig();
-  const gt = I18NConfig.getGTClass();
-
-  return determineSupportedLocale(locale, I18NConfig, gt) !== undefined;
+  return determineSupportedLocale(locale) !== undefined;
 }

@@ -239,6 +239,10 @@ export class LocaleConfig {
     );
   }
 
+  /**
+   * NOTE: consider moving LocaleCandidates type to this package, and
+   * determineLocale could accept that as a parameter.
+   */
   determineLocale(
     locales: string | string[],
     approvedLocales: string[] = this.locales

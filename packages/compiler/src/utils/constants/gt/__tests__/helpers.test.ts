@@ -16,7 +16,6 @@ describe('isGTComponent', () => {
       'Currency',
       'DateTime',
       'RelativeTime',
-      'Static',
       'Derive',
     ];
     for (const name of variableComponents) {
@@ -53,9 +52,8 @@ describe('isVariableComponent', () => {
 });
 
 describe('isDeriveComponent', () => {
-  it('should recognize Derive and Static', () => {
+  it('should recognize Derive', () => {
     expect(isDeriveComponent('Derive')).toBe(true);
-    expect(isDeriveComponent('Static')).toBe(true);
   });
 
   it('should reject non-derive components', () => {

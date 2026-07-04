@@ -201,13 +201,21 @@ describe('macroExpansionPass', () => {
 
   it('adds auto-import when macros are expanded', () => {
     const { imports } = transform('const x = t`hello`;');
+    const gtImport = imports.find((i) => i.source.value === 'gt-react');
+    expect(gtImport).toBeDefined();
+  });
+
+  it('adds legacy auto-import when configured', () => {
+    const { imports } = transform('const x = t`hello`;', {
+      legacyGtReactImportSource: true,
+    });
     const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
     expect(gtImport).toBeDefined();
   });
 
   it('does NOT add auto-import when no macros are found', () => {
     const { imports } = transform('const x = t("hello");');
-    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
+    const gtImport = imports.find((i) => i.source.value === 'gt-react');
     expect(gtImport).toBeUndefined();
   });
 
@@ -215,9 +223,7 @@ describe('macroExpansionPass', () => {
     const { tCalls, imports } = transform(
       'const a = t`hello ${name}`;\nconst b = t`goodbye ${name}`;'
     );
-    const gtImports = imports.filter(
-      (i) => i.source.value === 'gt-react/browser'
-    );
+    const gtImports = imports.filter((i) => i.source.value === 'gt-react');
     expect(gtImports).toHaveLength(1);
     expect(tCalls).toHaveLength(2);
     expect(getMessageString(tCalls[0])).toBe('hello {0}');
@@ -236,9 +242,25 @@ describe('macroExpansionPass', () => {
     expect(getMessageString(tCalls[0])).toBe('hello {0}');
   });
 
+  it('transforms tagged template when t is imported from gt-react', () => {
+    const { tCalls } = transform(
+      "import { t } from 'gt-react';\nconst x = t`hello ${name}`;"
+    );
+    expect(tCalls).toHaveLength(1);
+    expect(getMessageString(tCalls[0])).toBe('hello {0}');
+  });
+
+  it('transforms tagged template when t is imported from gt-react/client', () => {
+    const { tCalls } = transform(
+      "import { t } from 'gt-react/client';\nconst x = t`hello ${name}`;"
+    );
+    expect(tCalls).toHaveLength(1);
+    expect(getMessageString(tCalls[0])).toBe('hello {0}');
+  });
+
   // --- Scope guarding ---
 
-  it('does NOT transform tagged template t imported from a non-browser GT source', () => {
+  it('does NOT transform tagged template t imported from a non-react GT source', () => {
     const { ast } = transform(
       "import { t } from 'gt-next';\nconst x = t`hello ${name}`;"
     );
@@ -293,7 +315,7 @@ describe('macroExpansionPass', () => {
     });
     expect(tCalls).toHaveLength(1);
     expect(getMessageString(tCalls[0])).toBe('hello');
-    const gtImport = imports.find((i) => i.source.value === 'gt-react/browser');
+    const gtImport = imports.find((i) => i.source.value === 'gt-react');
     expect(gtImport).toBeUndefined();
   });
 

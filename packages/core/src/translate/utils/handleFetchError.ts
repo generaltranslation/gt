@@ -4,10 +4,7 @@ import {
   translationTimeoutError,
 } from '../../logging/errors';
 
-export default function handleFetchError(
-  error: unknown,
-  timeout: number
-): never {
+export function handleFetchError(error: unknown, timeout: number): never {
   if (error instanceof Error && error.name === 'AbortError') {
     const errorMessage = translationTimeoutError(timeout);
     fetchLogger.error(errorMessage);

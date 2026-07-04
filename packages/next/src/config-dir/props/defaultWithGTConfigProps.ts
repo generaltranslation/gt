@@ -5,17 +5,16 @@ import {
 } from 'generaltranslation/internal';
 import {
   defaultLocaleCookieName,
+  defaultEnableI18nCookieName,
+  defaultResetLocaleCookieName,
   getDefaultRenderSettings,
-  RenderMethod,
-} from 'gt-react/internal';
+} from '@generaltranslation/react-core/pure';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
-  defaultResetLocaleCookieName,
 } from '../../utils/cookies';
-import { CompilerOptions } from './withGTConfigProps';
-import { defaultExperimentalLocaleResolutionParam } from '../../utils/constants';
+import type { CompilerOptions, RenderMethod } from './withGTConfigProps';
 
 type DefaultGTConfigProps = {
   config: string;
@@ -36,15 +35,12 @@ type DefaultGTConfigProps = {
   headersAndCookies: {
     localeHeaderName: string;
     localeCookieName: string;
+    enableI18nCookieName: string;
     referrerLocaleCookieName: string;
     localeRoutingEnabledCookieName: string;
     resetLocaleCookieName: string;
   };
   experimentalCompilerOptions: CompilerOptions;
-  disableSSGWarnings: boolean;
-  experimentalEnableSSG: boolean;
-  experimentalLocaleResolution: boolean;
-  experimentalLocaleResolutionParam: string;
   disableInvalidLocaleWarning: boolean;
 };
 
@@ -64,6 +60,7 @@ export const defaultWithGTConfigProps: DefaultGTConfigProps = {
   headersAndCookies: {
     localeHeaderName: defaultLocaleHeaderName,
     localeCookieName: defaultLocaleCookieName,
+    enableI18nCookieName: defaultEnableI18nCookieName,
     referrerLocaleCookieName: defaultReferrerLocaleCookieName,
     localeRoutingEnabledCookieName: defaultLocaleRoutingEnabledCookieName,
     resetLocaleCookieName: defaultResetLocaleCookieName,
@@ -74,10 +71,6 @@ export const defaultWithGTConfigProps: DefaultGTConfigProps = {
     compileTimeHash: true,
     disableBuildChecks: false,
   },
-  disableSSGWarnings: false,
-  experimentalEnableSSG: false,
-  experimentalLocaleResolution: false,
-  experimentalLocaleResolutionParam: defaultExperimentalLocaleResolutionParam,
   disableInvalidLocaleWarning: false,
 } as const;
 

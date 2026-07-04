@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _translateMany from '../translateMany';
-import apiRequest from '../utils/apiRequest';
+import { _translateMany } from '../translateMany';
+import { apiRequest } from '../utils/apiRequest';
 import { TranslationRequestConfig, TranslationResult } from '../../types';
 import { TranslateManyEntry, SharedMetadata } from '../../types-dir/api/entry';
 
@@ -113,6 +113,62 @@ describe.sequential('_translateMany', () => {
       })
     );
     expect(Array.isArray(result)).toBe(true);
+  });
+
+  it('uses content hash keys while preserving custom id metadata', async () => {
+    vi.mocked(apiRequest).mockResolvedValue({});
+
+    const requests: TranslateManyEntry[] = [
+      {
+        source: 'Hello',
+        metadata: { id: 'custom-id', dataFormat: 'ICU' },
+      },
+    ];
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
+      targetLocale: 'es',
+      sourceLocale: 'en',
+    };
+
+    await _translateMany(requests, globalMetadata, mockConfig);
+
+    const body = vi.mocked(apiRequest).mock.calls[0][2].body as {
+      requests: Record<
+        string,
+        { source: string; metadata?: { id?: string; hash?: string } }
+      >;
+    };
+    const key = Object.keys(body.requests)[0];
+    expect(key).not.toBe('custom-id');
+    expect(body.requests[key].source).toBe('Hello');
+    expect(body.requests[key].metadata).toMatchObject({ id: 'custom-id' });
+  });
+
+  it('uses explicit hash keys before calculating a hash', async () => {
+    vi.mocked(apiRequest).mockResolvedValue({});
+
+    const requests: TranslateManyEntry[] = [
+      {
+        source: 'Hello',
+        metadata: { id: 'custom-id', hash: 'precomputed-hash' },
+      },
+    ];
+    const globalMetadata: {
+      targetLocale: string;
+      sourceLocale: string;
+    } & SharedMetadata = {
+      targetLocale: 'es',
+      sourceLocale: 'en',
+    };
+
+    await _translateMany(requests, globalMetadata, mockConfig);
+
+    const body = vi.mocked(apiRequest).mock.calls[0][2].body as {
+      requests: Record<string, unknown>;
+    };
+    expect(Object.keys(body.requests)).toEqual(['precomputed-hash']);
   });
 
   it('should use default timeout when not specified', async () => {

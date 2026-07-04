@@ -1,5 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 
 export type ProjectInfoResult = {
   id: string;
@@ -21,7 +21,7 @@ export type GetProjectInfoOptions = {
  * @param config - The configuration for the API call.
  * @returns The project info.
  */
-export default async function _getProjectInfo(
+export async function _getProjectInfo(
   options: GetProjectInfoOptions,
   config: TranslationRequestConfig
 ): Promise<ProjectInfoResult> {

@@ -64,11 +64,8 @@ export async function collectFiles(
         if (effectiveRequiresReview !== undefined) {
           metadata.requires_review = effectiveRequiresReview;
         }
-        const { hash, id } = metadata;
-        if (id) {
-          fileData[id] = source;
-          fileMetadata[id] = metadata;
-        } else if (hash) {
+        const { hash } = metadata;
+        if (hash) {
           fileData[hash] = source;
           fileMetadata[hash] = metadata;
         }

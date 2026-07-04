@@ -1,5 +1,4 @@
-import { getI18NConfig } from '../config-dir/getI18NConfig';
-import { localeStore } from './localeStore';
+import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
 import { resolveLocaleOrDefault } from './localeValidation';
 
 /**
@@ -10,7 +9,5 @@ import { resolveLocaleOrDefault } from './localeValidation';
  * @param locale - A locale candidate to use for this request.
  */
 export function registerLocale(locale: string): void {
-  const I18NConfig = getI18NConfig();
-  const gt = I18NConfig.getGTClass();
-  localeStore.enterWith(resolveLocaleOrDefault(locale, I18NConfig, gt));
+  getAsyncConditionStore().enterWith(resolveLocaleOrDefault(locale));
 }

@@ -1,6 +1,6 @@
 {
   "name": "generaltranslation",
-  "version": "8.2.19",
+  "version": "9.0.0-odysseus.6",
   "description": "A language toolkit for AI developers",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -67,6 +67,16 @@
         "default": "./dist/index.mjs"
       }
     },
+    "./runtime": {
+      "require": {
+        "types": "./dist/runtime.d.cts",
+        "default": "./dist/runtime.cjs"
+      },
+      "import": {
+        "types": "./dist/runtime.d.mts",
+        "default": "./dist/runtime.mjs"
+      }
+    },
     "./id": {
       "require": {
         "types": "./dist/id.d.cts",
@@ -75,16 +85,6 @@
       "import": {
         "types": "./dist/id.d.mts",
         "default": "./dist/id.mjs"
-      }
-    },
-    "./core": {
-      "require": {
-        "types": "./dist/core.d.cts",
-        "default": "./dist/core.cjs"
-      },
-      "import": {
-        "types": "./dist/core.d.mts",
-        "default": "./dist/core.mjs"
       }
     },
     "./internal": {
@@ -126,34 +126,14 @@
       "id": [
         "./dist/id.d.cts"
       ],
-      "core": [
-        "./dist/core.d.cts"
-      ],
       "types": [
         "./dist/types.d.cts"
       ],
       "errors": [
         "./dist/errors.d.cts"
-      ]
-    }
-  },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "generaltranslation/internal": [
-        "/dist/internal"
       ],
-      "generaltranslation/id": [
-        "/dist/id"
-      ],
-      "generaltranslation/core": [
-        "/dist/core"
-      ],
-      "generaltranslation/types": [
-        "/dist/types"
-      ],
-      "generaltranslation/errors": [
-        "/dist/errors"
+      "runtime": [
+        "./dist/runtime.d.cts"
       ]
     }
   }

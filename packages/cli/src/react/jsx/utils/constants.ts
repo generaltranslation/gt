@@ -1,8 +1,4 @@
 export const DECLARE_VAR_FUNCTION = 'declareVar';
-/**
- * COMPAT: Legacy support for declareStatic function.
- */
-export const DECLARE_STATIC_FUNCTION = 'declareStatic';
 export const DERIVE_FUNCTION = 'derive';
 export const MSG_REGISTRATION_FUNCTION = 'msg';
 export const T_REGISTRATION_FUNCTION = 't';
@@ -12,15 +8,20 @@ export const INLINE_TRANSLATION_HOOK_ASYNC = 'getGT';
 export const INLINE_MESSAGE_HOOK = 'useMessages';
 export const INLINE_MESSAGE_HOOK_ASYNC = 'getMessages';
 export const TRANSLATION_COMPONENT = 'T';
-/**
- * COMPAT: Legacy support for Static component.
- */
-export const STATIC_COMPONENT = 'Static';
 export const DERIVE_COMPONENT = 'Derive';
 export const BRANCH_COMPONENT = 'Branch';
-export const DEFAULT_GT_IMPORT_SOURCE = 'gt-react/browser';
+export const DEFAULT_GT_IMPORT_SOURCE = 'gt-react';
+export const LEGACY_GT_IMPORT_SOURCE = 'gt-react/browser';
 export const INTERNAL_TRANSLATION_COMPONENT = 'GtInternalTranslateJsx';
 export const INTERNAL_VAR_COMPONENT = 'GtInternalVar';
+
+export function getGtReactImportSource(
+  legacyGtReactImportSource: boolean
+): typeof DEFAULT_GT_IMPORT_SOURCE | typeof LEGACY_GT_IMPORT_SOURCE {
+  return legacyGtReactImportSource
+    ? LEGACY_GT_IMPORT_SOURCE
+    : DEFAULT_GT_IMPORT_SOURCE;
+}
 
 // Variable components
 export const VAR_COMPONENT = 'Var';
@@ -39,10 +40,8 @@ export const GT_TRANSLATION_FUNCS = [
   MSG_REGISTRATION_FUNCTION,
   T_REGISTRATION_FUNCTION,
   DECLARE_VAR_FUNCTION,
-  DECLARE_STATIC_FUNCTION,
   DERIVE_FUNCTION,
   TRANSLATION_COMPONENT,
-  STATIC_COMPONENT,
   DERIVE_COMPONENT,
   VAR_COMPONENT,
   DATETIME_COMPONENT,
@@ -61,10 +60,7 @@ export const STRING_REGISTRATION_FUNCS = [
 ] as const;
 
 // Derive functions that are imported from GT
-export const GT_DERIVE_STRING_FUNCTIONS = [
-  DECLARE_STATIC_FUNCTION,
-  DERIVE_FUNCTION,
-];
+export const GT_DERIVE_STRING_FUNCTIONS = [DERIVE_FUNCTION];
 
 // Valid variable components
 export const VARIABLE_COMPONENTS = [
@@ -73,7 +69,6 @@ export const VARIABLE_COMPONENTS = [
   RELATIVE_TIME_COMPONENT,
   CURRENCY_COMPONENT,
   NUM_COMPONENT,
-  STATIC_COMPONENT,
   DERIVE_COMPONENT,
   INTERNAL_VAR_COMPONENT,
 ];

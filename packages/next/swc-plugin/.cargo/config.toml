@@ -1,4 +1,10 @@
 # Multi-platform build aliases
+[net]
+retry = 10
+
+[http]
+multiplexing = false
+
 [alias]
 # WASM builds (original SWC plugin targets)
 build-plugin = "build --target wasm32-wasip1 --release"

@@ -287,7 +287,6 @@ function handleReactInvocation(
       hashSource({
         source: children!,
         ...(context && { context }),
-        ...(id && { id }),
         ...(maxChars != null && { maxChars }),
         ...(requiresReview === true && { requiresReview: true }),
         dataFormat: 'JSX',

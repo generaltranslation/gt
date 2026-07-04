@@ -1,14 +1,16 @@
 import { isSameDialect, standardizeLocale } from '@generaltranslation/format';
-import { GT } from 'generaltranslation';
+import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
-  defaultResetLocaleCookieName,
 } from '../utils/cookies';
-import { defaultLocaleCookieName } from 'gt-react/internal';
+import {
+  defaultLocaleCookieName,
+  defaultResetLocaleCookieName,
+} from '@generaltranslation/react-core/pure';
 import {
   PathConfig,
   getSharedPath,
@@ -70,7 +72,7 @@ export function createNextMiddleware({
   }
 
   // gt instance
-  const gt = new GT({
+  const gt = new GTRuntime({
     customMapping: envParams?.customMapping,
   });
 
@@ -200,7 +202,6 @@ export function createNextMiddleware({
       clearResetCookie,
       localeRouting,
       localeRoutingEnabledCookieName,
-      localeCookieName,
       resetLocaleCookieName,
       localeHeaderName,
     };

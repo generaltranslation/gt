@@ -20,9 +20,8 @@ import {
   VARIABLE_COMPONENTS,
   BRANCH_COMPONENT,
   PLURAL_COMPONENT,
-  DEFAULT_GT_IMPORT_SOURCE,
+  getGtReactImportSource,
   DERIVE_COMPONENT,
-  STATIC_COMPONENT,
   BRANCH_CONTROL_PROPS,
   PLURAL_CONTROL_PROPS,
 } from '../constants.js';
@@ -39,14 +38,15 @@ export function isAutoInserted(node: t.Node): boolean {
 
 /**
  * Ensure GtInternalTranslateJsx and GtInternalVar are imported in the AST.
- * Always adds: import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
+ * Adds: import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react';
  * These are distinct from user T/Var so there's no ambiguity.
  *
  * Updates importAliases in-place.
  */
 export function ensureTAndVarImported(
   ast: t.File,
-  importAliases: Record<string, string>
+  importAliases: Record<string, string>,
+  legacyGtReactImportSource = false
 ): void {
   // Check if internal components are already imported
   const hasInternalT = Object.values(importAliases).includes(
@@ -81,7 +81,7 @@ export function ensureTAndVarImported(
 
   const importDecl = t.importDeclaration(
     specifiers,
-    t.stringLiteral(DEFAULT_GT_IMPORT_SOURCE)
+    t.stringLiteral(getGtReactImportSource(legacyGtReactImportSource))
   );
 
   traverse(ast, {
@@ -165,13 +165,12 @@ function processJsxElement({
     return;
   }
 
-  // Branch/Plural/Derive/Static → opaque, process props for dynamic Var
-  // Must be checked BEFORE user variable check because Derive/Static are in VARIABLE_COMPONENTS
+  // Branch/Plural/Derive → opaque, process props for dynamic Var
+  // Must be checked BEFORE user variable check because Derive is in VARIABLE_COMPONENTS
   if (
     canonicalName === BRANCH_COMPONENT ||
     canonicalName === PLURAL_COMPONENT ||
-    canonicalName === DERIVE_COMPONENT ||
-    canonicalName === STATIC_COMPONENT
+    canonicalName === DERIVE_COMPONENT
   ) {
     if (!insideAutoT) {
       // Root-level opaque component — wrap in _T
@@ -444,13 +443,10 @@ function processOpaqueComponentProps({
 
   // Mark remaining descendant JSX as processed, but skip auto-inserted nodes
   // so the top-level visitor can still discover JSX inside _Var wrappers.
-  // For Derive/Static, only mark props — leave children unmarked so the
+  // For Derive, only mark props — leave children unmarked so the
   // top-level visitor can independently process them (e.g. Branch/Plural
   // inside Derive should get their own _T, matching compiler behavior).
-  if (
-    canonicalName === DERIVE_COMPONENT ||
-    canonicalName === STATIC_COMPONENT
-  ) {
+  if (canonicalName === DERIVE_COMPONENT) {
     for (const attrPath of path.get('openingElement').get('attributes')) {
       attrPath.traverse({
         JSXElement(childPath) {
@@ -516,8 +512,7 @@ function hasOpaqueGTChild(
     return (
       canonical === BRANCH_COMPONENT ||
       canonical === PLURAL_COMPONENT ||
-      canonical === DERIVE_COMPONENT ||
-      canonical === STATIC_COMPONENT
+      canonical === DERIVE_COMPONENT
     );
   });
 }

@@ -29,7 +29,7 @@ export function processProgram({
       // (2) If the macro import injection is disabled, return.
       if (!state.settings.enableMacroImportInjection) return;
       // Inject the macro import.
-      injectMacroImport(path);
+      injectMacroImport(path, state.settings.legacyGtReactImportSource);
     },
   };
 }

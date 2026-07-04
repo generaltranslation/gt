@@ -89,11 +89,6 @@ jobs:
         if: steps.should-run.outputs.run == 'true'
         run: pnpm install
 
-      - name: Install Playwright browsers
-        if: steps.should-run.outputs.run == 'true'
-        working-directory: tests/apps/next/middleware
-        run: npx playwright install chromium
-
       # --- Resolve version ---
 
       - name: Read gt-next version

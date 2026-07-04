@@ -52,15 +52,15 @@ describe('static-jsx auto-fix should add Var import', () => {
     invalid: [
       {
         code: `
-          import { T } from '@generaltranslation/react-core';
+          import { T } from '@generaltranslation/react-core/components';
           function Component({ name }) {
             return <T>{name}</T>;
           }
         `,
-        options: [{ libs: ['@generaltranslation/react-core'] }],
+        options: [{ libs: ['@generaltranslation/react-core/components'] }],
         errors: [{ messageId: 'dynamicContent' }],
         output: `
-          import { T, Var } from '@generaltranslation/react-core';
+          import { T, Var } from '@generaltranslation/react-core/components';
           function Component({ name }) {
             return <T><Var>{name}</Var></T>;
           }

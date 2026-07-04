@@ -1,2 +1,6 @@
-export * from './async-i18n-manager';
-export { getI18nManager, setI18nManager, I18nManager } from 'gt-i18n/internal';
+export { AsyncConditionStore } from './async-i18n-cache/AsyncConditionStore';
+export {
+  getAsyncConditionStore,
+  setAsyncConditionStore,
+} from './async-i18n-cache/singleton-operations';
+export { getI18nCache, setI18nCache, I18nCache } from 'gt-i18n/internal';

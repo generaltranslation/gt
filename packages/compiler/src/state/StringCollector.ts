@@ -13,11 +13,11 @@ export interface TranslationContent {
   message: string;
   /** Pre-calculated hash for this content */
   hash: string;
-  /** Optional ID from options: t("text", {id: "greeting"}) → "greeting" */
+  /** Optional ID from options: t("text", {$id: "greeting"}) → "greeting" */
   id?: string;
-  /** Optional context from options: t("text", {context: "nav"}) → "nav" */
+  /** Optional context from options: t("text", {$context: "nav"}) → "nav" */
   context?: string;
-  /** Optional maxChars from options: t("text", {maxChars: 10}) → 10 */
+  /** Optional maxChars from options: t("text", {$maxChars: 10}) → 10 */
   maxChars?: number;
   /** Optional format from options: t("text", {$format: "STRING"}) → "STRING" */
   format?: string;
