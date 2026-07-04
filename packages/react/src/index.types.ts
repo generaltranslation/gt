@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import type { TxProps } from './utils/TxProps';
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
+export { initializeGTSRA as initializeGT } from './setup/initializeGTSRA';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useRegionSelector } from './components/useRegionSelector';
 export {
@@ -63,7 +64,6 @@ export {
   mFallback,
   gtFallback,
   getFormatLocales,
-  initializeGT,
   getDefaultLocale,
   getLocaleProperties,
   getLocales,
