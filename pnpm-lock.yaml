@@ -603,6 +603,9 @@ importers:
       '@babel/traverse':
         specifier: ^7.25.7
         version: 7.28.4
+      '@babel/types':
+        specifier: ^7.25.7
+        version: 7.28.4
       '@clack/prompts':
         specifier: 1.0.0-alpha.6
         version: 1.0.0-alpha.6
@@ -706,9 +709,6 @@ importers:
         specifier: ^2.8.0
         version: 2.8.1
     devDependencies:
-      '@babel/types':
-        specifier: ^7.28.4
-        version: 7.28.4
       '@types/babel__generator':
         specifier: ^7.27.0
         version: 7.27.0
