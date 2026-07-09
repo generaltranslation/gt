@@ -100,10 +100,13 @@ describe('Middleware Integration Tests', () => {
         process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED,
       _GENERALTRANSLATION_IGNORE_BROWSER_LOCALES:
         process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES,
+      _GENERALTRANSLATION_PATH_REGEX:
+        process.env._GENERALTRANSLATION_PATH_REGEX,
     };
     // Default: GT services disabled
     delete process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED;
     delete process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES;
+    delete process.env._GENERALTRANSLATION_PATH_REGEX;
   });
 
   afterEach(() => {
@@ -219,11 +222,10 @@ describe('Middleware Integration Tests', () => {
       expect(res.headers.get(LOCALE_HEADER)).toBeNull();
     });
 
-    it('2.8: regexFilter applies i18n middleware only to matching paths', () => {
+    it('2.8: pathRegex applies i18n middleware only to matching paths', () => {
       setEnvConfig();
-      const middleware = createNextMiddleware({
-        regexFilter: '^/(?!excluded(?:/|$)).*',
-      });
+      process.env._GENERALTRANSLATION_PATH_REGEX = '^/(?!excluded(?:/|$)).*';
+      const middleware = createNextMiddleware();
 
       const includedRes = middleware(createRequest('/about'));
       const excludedRes = middleware(createRequest('/excluded/about'));
@@ -235,11 +237,11 @@ describe('Middleware Integration Tests', () => {
       expect(excludedRes.cookies.get(ROUTING_COOKIE)).toBeUndefined();
     });
 
-    it('2.9: invalid regexFilter throws a descriptive error', () => {
-      expect(() =>
-        createNextMiddleware({ regexFilter: '[unclosed' })
-      ).toThrowError(
-        'gt-next Error: regexFilter "[unclosed" is not a valid regular expression.'
+    it('2.9: invalid pathRegex throws a descriptive error', () => {
+      process.env._GENERALTRANSLATION_PATH_REGEX = '[unclosed';
+
+      expect(() => createNextMiddleware()).toThrowError(
+        'gt-next Error: pathRegex "[unclosed" is not a valid regular expression.'
       );
     });
   });
