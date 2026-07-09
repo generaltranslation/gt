@@ -11,27 +11,55 @@ import {
 import { getLocale, getRegion } from 'gt-i18n';
 import { use } from 'react';
 
-// ===== Error for client components ===== //
-function failClientComponent(componentName: string) {
+type InitializeGTSPA = typeof import('./setup/initializeGTSPA').initializeGTSPA;
+type UseLocaleSelector =
+  typeof import('./components/useLocaleSelector').useLocaleSelector;
+type UseRegionSelector =
+  typeof import('./components/useRegionSelector').useRegionSelector;
+type UseSetLocale = typeof import('./hooks/conditions-store').useSetLocale;
+type UseSetRegion = typeof import('./hooks/conditions-store').useSetRegion;
+type UseSetEnableI18n =
+  typeof import('./hooks/conditions-store').useSetEnableI18n;
+
+// ===== Error for client exports ===== //
+function failClientExport(exportName: string): never {
   throw new Error(
     createDiagnosticMessage({
       source: 'gt-react',
       severity: 'Error',
-      whatHappened: `${componentName} cannot be consumed via the RSC entry point`,
-      fix: 'Import this component from a client or server runtime entry point instead.',
+      whatHappened: `${exportName} cannot be consumed via the RSC entry point`,
+      fix: 'Import this API from a client or server runtime entry point instead.',
     })
   );
 }
 
 export function GTProvider() {
-  return failClientComponent('GTProvider');
+  return failClientExport('GTProvider');
 }
 export function LocaleSelector() {
-  return failClientComponent('LocaleSelector');
+  return failClientExport('LocaleSelector');
 }
 export function RegionSelector() {
-  return failClientComponent('RegionSelector');
+  return failClientExport('RegionSelector');
 }
+export const initializeGTSPA: InitializeGTSPA = async () => {
+  return failClientExport('initializeGTSPA');
+};
+export const useLocaleSelector: UseLocaleSelector = (_locales) => {
+  return failClientExport('useLocaleSelector');
+};
+export const useRegionSelector: UseRegionSelector = (_options) => {
+  return failClientExport('useRegionSelector');
+};
+export const useSetLocale: UseSetLocale = () => {
+  return failClientExport('useSetLocale');
+};
+export const useSetRegion: UseSetRegion = () => {
+  return failClientExport('useSetRegion');
+};
+export const useSetEnableI18n: UseSetEnableI18n = () => {
+  return failClientExport('useSetEnableI18n');
+};
 
 // ===== Components ===== //
 export {
@@ -64,8 +92,14 @@ export function useLocale() {
 export function useRegion() {
   return getRegion();
 }
+export function useEnableI18n(): boolean {
+  return failClientExport('useEnableI18n');
+}
 export function useLocales() {
   return getI18nConfig().getLocales();
+}
+export function useFormatLocales(_localesProp?: string[]): string[] {
+  return failClientExport('useFormatLocales');
 }
 export function useLocaleDirection(locale: string) {
   return getI18nConfig().getGTClass().getLocaleDirection(locale);
