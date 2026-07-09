@@ -1,7 +1,10 @@
 import { isSameDialect, standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { createUnsupportedLocalesWarning } from '../errors/createErrors';
+import {
+  createInvalidMiddlewareRegexError,
+  createUnsupportedLocalesWarning,
+} from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   defaultLocaleRoutingEnabledCookieName,
@@ -45,6 +48,7 @@ type MiddlewareEnvConfig = {
  * @param {boolean} [config.localeRouting=true] - Flag to enable or disable automatic locale-based routing.
  * @param {boolean} [config.prefixDefaultLocale=false] - Flag to enable or disable prefixing the default locale to the pathname, i.e., /en/about -> /about
  * @param {boolean} [config.ignoreSourceMaps=true] - Flag to enable or disable ignoring source maps
+ * @param {string} [config.regexFilter] - Regular expression that request pathnames must match for i18n middleware to be applied
  * @param {PathConfig} [config.pathConfig] - Path configuration for locale routing
  * @returns {function} - A middleware function that processes the request and response.
  */
@@ -52,13 +56,24 @@ export function createNextMiddleware({
   localeRouting = true,
   prefixDefaultLocale = false,
   ignoreSourceMaps = true,
+  regexFilter,
   pathConfig = {},
 }: {
   localeRouting?: boolean;
   prefixDefaultLocale?: boolean;
   ignoreSourceMaps?: boolean;
+  regexFilter?: string;
   pathConfig?: PathConfig;
 } = {}) {
+  let pathFilter: RegExp | undefined;
+  if (regexFilter !== undefined) {
+    try {
+      pathFilter = new RegExp(regexFilter);
+    } catch (error) {
+      throw new Error(createInvalidMiddlewareRegexError(regexFilter, error));
+    }
+  }
+
   // i18n config
   let envParams: MiddlewareEnvConfig | undefined;
   if (process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS) {
@@ -164,6 +179,10 @@ export function createNextMiddleware({
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
   function middleware(req: NextRequest) {
+    if (pathFilter && !pathFilter.test(req.nextUrl.pathname)) {
+      return NextResponse.next();
+    }
+
     // Ignore source maps
     if (
       ignoreSourceMaps &&

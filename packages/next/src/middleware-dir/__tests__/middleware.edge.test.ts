@@ -218,6 +218,30 @@ describe('Middleware Integration Tests', () => {
       // Source map next() is bare — no locale header or routing cookie
       expect(res.headers.get(LOCALE_HEADER)).toBeNull();
     });
+
+    it('2.8: regexFilter applies i18n middleware only to matching paths', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        regexFilter: '^/(?!excluded(?:/|$)).*',
+      });
+
+      const includedRes = middleware(createRequest('/about'));
+      const excludedRes = middleware(createRequest('/excluded/about'));
+
+      expect(getResponseType(includedRes)).toBe('rewrite');
+      expect(getResponsePath(includedRes)).toBe('/en/about');
+      expect(getResponseType(excludedRes)).toBe('next');
+      expect(excludedRes.headers.get(LOCALE_HEADER)).toBeNull();
+      expect(excludedRes.cookies.get(ROUTING_COOKIE)).toBeUndefined();
+    });
+
+    it('2.9: invalid regexFilter throws a descriptive error', () => {
+      expect(() =>
+        createNextMiddleware({ regexFilter: '[unclosed' })
+      ).toThrowError(
+        'gt-next Error: regexFilter "[unclosed" is not a valid regular expression.'
+      );
+    });
   });
 
   // ================================================================
