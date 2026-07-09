@@ -133,14 +133,14 @@ export const createInvalidRequestLocaleWarning = (
     fix: 'Use a valid BCP 47 locale code, add a custom mapping, or configure the locale in gt-next',
   });
 
-export const createInvalidMiddlewareRegexError = (
-  regexFilter: string,
+export const createInvalidPathRegexError = (
+  pathRegex: string,
   error: unknown
 ) =>
   createGtNextDiagnostic({
     severity: 'Error',
-    whatHappened: `regexFilter "${regexFilter}" is not a valid regular expression`,
-    fix: 'Pass a valid JavaScript regular expression string to createNextMiddleware()',
+    whatHappened: `pathRegex "${pathRegex}" is not a valid regular expression`,
+    fix: 'Pass a valid JavaScript regular expression string to withGTConfig()',
     details: formatDiagnosticErrorDetails(error),
   });
 

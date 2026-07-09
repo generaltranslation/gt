@@ -21,6 +21,10 @@ import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
 } from './cookies';
+import { compilePathRegex, pathnameMatchesRegex } from './pathRegex';
+
+// withGTConfig exposes this build-time value to both middleware and client code.
+const pathRegex = compilePathRegex(process.env._GENERALTRANSLATION_PATH_REGEX);
 
 /**
  * Only need to initalize client. We know server was already
@@ -75,7 +79,7 @@ function usePathCheck({
         .split('; ')
         .find((row) => row.startsWith(`${localeRoutingEnabledCookieName}=`))
         ?.split('=')[1] === 'true';
-    if (middlewareEnabled) {
+    if (middlewareEnabled && pathnameMatchesRegex(pathname, pathRegex)) {
       // Extract locale from pathname
       const extractedLocale =
         extractLocale(pathname, i18nConfig) || defaultLocale;
