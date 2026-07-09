@@ -4,6 +4,7 @@ import { getLocaleProperties } from '@generaltranslation/format';
 import {
   createGtNextDiagnostic,
   createGtNextPluginDiagnostic,
+  formatDiagnosticErrorDetails,
 } from './diagnostics';
 import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 
@@ -130,6 +131,17 @@ export const createInvalidRequestLocaleWarning = (
     whatHappened: `Locale "${locale}" is not valid or is not supported by this app`,
     wayOut: `The default locale "${defaultLocale}" will be used for this request`,
     fix: 'Use a valid BCP 47 locale code, add a custom mapping, or configure the locale in gt-next',
+  });
+
+export const createInvalidMiddlewareRegexError = (
+  regexFilter: string,
+  error: unknown
+) =>
+  createGtNextDiagnostic({
+    severity: 'Error',
+    whatHappened: `regexFilter "${regexFilter}" is not a valid regular expression`,
+    fix: 'Pass a valid JavaScript regular expression string to createNextMiddleware()',
+    details: formatDiagnosticErrorDetails(error),
   });
 
 // ---- WARNINGS ---- //

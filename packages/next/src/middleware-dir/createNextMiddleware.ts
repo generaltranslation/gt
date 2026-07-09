@@ -1,7 +1,10 @@
 import { isSameDialect, standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { createUnsupportedLocalesWarning } from '../errors/createErrors';
+import {
+  createInvalidMiddlewareRegexError,
+  createUnsupportedLocalesWarning,
+} from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   defaultLocaleRoutingEnabledCookieName,
@@ -63,15 +66,12 @@ export function createNextMiddleware({
   pathConfig?: PathConfig;
 } = {}) {
   let pathFilter: RegExp | undefined;
-  try {
-    pathFilter =
-      regexFilter === undefined ? undefined : new RegExp(regexFilter);
-  } catch (error) {
-    throw new SyntaxError(
-      `gt-next middleware: invalid regexFilter "${regexFilter}": ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
+  if (regexFilter !== undefined) {
+    try {
+      pathFilter = new RegExp(regexFilter);
+    } catch (error) {
+      throw new Error(createInvalidMiddlewareRegexError(regexFilter, error));
+    }
   }
 
   // i18n config

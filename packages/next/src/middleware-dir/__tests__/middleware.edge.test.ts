@@ -238,7 +238,9 @@ describe('Middleware Integration Tests', () => {
     it('2.9: invalid regexFilter throws a descriptive error', () => {
       expect(() =>
         createNextMiddleware({ regexFilter: '[unclosed' })
-      ).toThrowError('gt-next middleware: invalid regexFilter "[unclosed"');
+      ).toThrowError(
+        'gt-next Error: regexFilter "[unclosed" is not a valid regular expression.'
+      );
     });
   });
 
