@@ -234,6 +234,12 @@ describe('Middleware Integration Tests', () => {
       expect(excludedRes.headers.get(LOCALE_HEADER)).toBeNull();
       expect(excludedRes.cookies.get(ROUTING_COOKIE)).toBeUndefined();
     });
+
+    it('2.9: invalid regexFilter throws a descriptive error', () => {
+      expect(() =>
+        createNextMiddleware({ regexFilter: '[unclosed' })
+      ).toThrowError('gt-next middleware: invalid regexFilter "[unclosed"');
+    });
   });
 
   // ================================================================

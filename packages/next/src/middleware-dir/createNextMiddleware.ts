@@ -62,8 +62,17 @@ export function createNextMiddleware({
   regexFilter?: string;
   pathConfig?: PathConfig;
 } = {}) {
-  const pathFilter =
-    regexFilter === undefined ? undefined : new RegExp(regexFilter);
+  let pathFilter: RegExp | undefined;
+  try {
+    pathFilter =
+      regexFilter === undefined ? undefined : new RegExp(regexFilter);
+  } catch (error) {
+    throw new SyntaxError(
+      `gt-next middleware: invalid regexFilter "${regexFilter}": ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
 
   // i18n config
   let envParams: MiddlewareEnvConfig | undefined;
