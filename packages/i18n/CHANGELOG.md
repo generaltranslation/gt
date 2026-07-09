@@ -1,5 +1,12 @@
 # gt-i18n
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [[`7db86bd`](https://github.com/generaltranslation/gt/commit/7db86bd92be5d09a2da10133dbb873248b0e5a5c)]:
+  - @generaltranslation/supported-locales@2.1.3
+
 ## 1.0.0
 
 ### Major Changes

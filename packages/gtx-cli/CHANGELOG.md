@@ -1,5 +1,12 @@
 # gtx-cli
 
+## 2.14.52
+
+### Patch Changes
+
+- Updated dependencies [[`b4ef241`](https://github.com/generaltranslation/gt/commit/b4ef2412635f7bc64886b8babde475c6ea1c3503)]:
+  - gt@2.14.52
+
 ## 2.14.51
 
 ### Patch Changes
