@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.0.3
+
+### Patch Changes
+
+- [#1844](https://github.com/generaltranslation/gt/pull/1844) [`d5a705f`](https://github.com/generaltranslation/gt/commit/d5a705f44991e3eb55a1ee803cfa816b53194a02) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Move middleware path filtering to `withGTConfig` and apply it to client-side locale path checks.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.3
+  - gt-react@11.0.3
+
 ## 11.0.2
 
 ### Patch Changes
