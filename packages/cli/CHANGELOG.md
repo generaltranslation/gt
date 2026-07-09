@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.14.52
+
+### Patch Changes
+
+- [#1838](https://github.com/generaltranslation/gt/pull/1838) [`b4ef241`](https://github.com/generaltranslation/gt/commit/b4ef2412635f7bc64886b8babde475c6ea1c3503) Thanks [@bgub](https://github.com/bgub)! - Move `@babel/types` from `devDependencies` to `dependencies`. The CLI imports `@babel/types` at runtime across its parsing/JSX-injection code, but it was only declared as a dev dependency and left external in the published build. On strict/isolated installs (e.g. pnpm on Vercel) consumers hit `ERR_MODULE_NOT_FOUND: Cannot find package '@babel/types'` when running `gtx-cli translate`. It now sits alongside the other `@babel/*` runtime dependencies so it is installed for consumers.
+
+- Updated dependencies [[`7db86bd`](https://github.com/generaltranslation/gt/commit/7db86bd92be5d09a2da10133dbb873248b0e5a5c)]:
+  - @generaltranslation/supported-locales@2.1.3
+
 ## 2.14.51
 
 ### Patch Changes

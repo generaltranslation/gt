@@ -1,5 +1,11 @@
 # @generaltranslation/supported-locales
 
+## 2.1.3
+
+### Patch Changes
+
+- [#1840](https://github.com/generaltranslation/gt/pull/1840) [`7db86bd`](https://github.com/generaltranslation/gt/commit/7db86bd92be5d09a2da10133dbb873248b0e5a5c) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Expand supported locales
+
 ## 2.1.2
 
 ### Patch Changes
