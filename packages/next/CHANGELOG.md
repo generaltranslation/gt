@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.0.2
+
+### Patch Changes
+
+- [#1841](https://github.com/generaltranslation/gt/pull/1841) [`ae7eb72`](https://github.com/generaltranslation/gt/commit/ae7eb72ec46ad72fb693521faddc03d4950a3973) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add a `regexFilter` option to `createNextMiddleware` for limiting i18n middleware routing to matching pathnames.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.2
+  - gt-react@11.0.2
+
 ## 11.0.1
 
 ### Patch Changes
