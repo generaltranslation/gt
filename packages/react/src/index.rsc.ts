@@ -1,5 +1,7 @@
 // React Server Component context surface.
 
+export { parseLocale } from './functions/parseLocale';
+
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { CustomMapping } from 'generaltranslation/types';
 import {

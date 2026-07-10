@@ -22,5 +22,6 @@ describe('gt-react react-server surface', () => {
     expect('renderVariable' in mod).toBe(false);
     expect(mod.GTProvider).toBeTypeOf('function');
     expect(mod.LocaleSelector).toBeTypeOf('function');
+    expect(mod.parseLocale).toBeTypeOf('function');
   });
 });

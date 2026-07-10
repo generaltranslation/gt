@@ -1,3 +1,5 @@
+import { getCookieValue as getCookieValueFromString } from 'gt-i18n/internal';
+
 /**
  * Minimally parses a cookie value for a given cookie name
  * @param cookieName - The name of the cookie
@@ -9,11 +11,7 @@ export function getCookieValue({
   cookieName: string;
 }): string | undefined {
   if (typeof document === 'undefined') return undefined;
-  const rawCookieValue = document.cookie
-    .split('; ')
-    .find((row) => row.startsWith(`${cookieName}=`))
-    ?.split('=')[1];
-  return rawCookieValue;
+  return getCookieValueFromString(document.cookie, cookieName);
 }
 
 /**

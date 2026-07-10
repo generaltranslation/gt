@@ -11,7 +11,8 @@ const { mockGetI18nConfig, mockInitializeGTClient, mockRefresh } = vi.hoisted(
   })
 );
 
-vi.mock('gt-i18n/internal', () => ({
+vi.mock('gt-i18n/internal', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('gt-i18n/internal')>()),
   getI18nConfig: mockGetI18nConfig,
 }));
 
