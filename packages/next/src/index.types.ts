@@ -3,12 +3,14 @@ import { T as _T } from './server-dir/buildtime/T';
 import type {
   GetServerSideProps,
   GetServerSidePropsContext,
-  GetStaticProps,
   PreviewData,
 } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
 import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
-import type { WithGTStaticProps } from './pages-dir/withGTStaticProps';
+import type {
+  WithGTStaticProps,
+  WithGTStaticPropsFunction,
+} from './pages-dir/withGTStaticProps';
 import {
   useTranslations as _useTranslations,
   useLocale as _useLocale,
@@ -374,31 +376,9 @@ export function withGTServerSideProps<
  * Pass a locale before the optional page function to override the locale for
  * pages generated without a Next.js locale context.
  */
-export function withGTStaticProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  getStaticProps?: GetStaticProps<Props, Params, Preview>
-): GetStaticProps<WithGTStaticProps<Props>, Params, Preview>;
-export function withGTStaticProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  locale: string,
-  getStaticProps?: GetStaticProps<Props, Params, Preview>
-): GetStaticProps<WithGTStaticProps<Props>, Params, Preview>;
-export function withGTStaticProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  _firstArg?: string | GetStaticProps<Props, Params, Preview>,
-  _secondArg?: GetStaticProps<Props, Params, Preview>
-): GetStaticProps<WithGTStaticProps<Props>, Params, Preview> {
+export const withGTStaticProps: WithGTStaticPropsFunction = () => {
   throw new Error(typesFileError);
-}
+};
 
 /**
  * Checks whether a locale is valid and supported by the current gt-next config.

@@ -4,13 +4,18 @@ import { initializeGTServer } from './setup/initGT.server';
 import type {
   GetServerSideProps,
   GetServerSidePropsContext,
-  GetStaticProps,
   PreviewData,
 } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import { getTranslationsSnapshotRscError } from './errors/createErrors';
+import {
+  getTranslationsSnapshotRscError,
+  withGTStaticPropsRscError,
+} from './errors/createErrors';
 import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
-import type { WithGTStaticProps } from './pages-dir/withGTStaticProps';
+import type {
+  WithGTStaticProps,
+  WithGTStaticPropsFunction,
+} from './pages-dir/withGTStaticProps';
 initializeGTServer();
 
 // ===== Components ===== //
@@ -80,33 +85,9 @@ export function withGTServerSideProps<
  * Placeholder for withGTStaticProps()
  * This function is for next-pages use, not next-app use
  */
-export function withGTStaticProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  getStaticProps?: GetStaticProps<Props, Params, Preview>
-): GetStaticProps<WithGTStaticProps<Props>, Params, Preview>;
-export function withGTStaticProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  locale: string,
-  getStaticProps?: GetStaticProps<Props, Params, Preview>
-): GetStaticProps<WithGTStaticProps<Props>, Params, Preview>;
-export function withGTStaticProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  _firstArg?: string | GetStaticProps<Props, Params, Preview>,
-  _secondArg?: GetStaticProps<Props, Params, Preview>
-): GetStaticProps<WithGTStaticProps<Props>, Params, Preview> {
-  throw new Error(
-    'withGTStaticProps() is only available for the Pages Router.'
-  );
-}
+export const withGTStaticProps: WithGTStaticPropsFunction = () => {
+  throw new Error(withGTStaticPropsRscError);
+};
 
 // ===== gt-react Components ===== //
 export { Derive } from 'gt-react';

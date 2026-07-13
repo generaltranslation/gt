@@ -66,3 +66,5 @@ export function withGTStaticProps<
     };
   };
 }
+
+export type WithGTStaticPropsFunction = typeof withGTStaticProps;

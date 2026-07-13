@@ -6,12 +6,15 @@ initializeGTClient();
 import type {
   GetServerSideProps,
   GetServerSidePropsContext,
-  GetStaticProps,
   PreviewData,
 } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
 import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
-import type { WithGTStaticProps } from './pages-dir/withGTStaticProps';
+import type {
+  WithGTStaticProps,
+  WithGTStaticPropsFunction,
+} from './pages-dir/withGTStaticProps';
+import { withGTStaticPropsClientError } from './errors/createErrors';
 
 // ===== Unsupported Server APIs ===== //
 export function parseLocale<
@@ -35,33 +38,9 @@ export function withGTServerSideProps<
   );
 }
 
-export function withGTStaticProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  getStaticProps?: GetStaticProps<Props, Params, Preview>
-): GetStaticProps<WithGTStaticProps<Props>, Params, Preview>;
-export function withGTStaticProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  locale: string,
-  getStaticProps?: GetStaticProps<Props, Params, Preview>
-): GetStaticProps<WithGTStaticProps<Props>, Params, Preview>;
-export function withGTStaticProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  _firstArg?: string | GetStaticProps<Props, Params, Preview>,
-  _secondArg?: GetStaticProps<Props, Params, Preview>
-): GetStaticProps<WithGTStaticProps<Props>, Params, Preview> {
-  throw new Error(
-    'withGTStaticProps() is only available from gt-next on the server.'
-  );
-}
+export const withGTStaticProps: WithGTStaticPropsFunction = () => {
+  throw new Error(withGTStaticPropsClientError);
+};
 
 // ===== Components ===== //
 export {
