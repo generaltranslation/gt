@@ -890,9 +890,6 @@ importers:
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
-      '@generaltranslation/supported-locales':
-        specifier: workspace:*
-        version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
         version: link:../core
@@ -986,9 +983,6 @@ importers:
       '@generaltranslation/react-core':
         specifier: workspace:*
         version: link:../react-core
-      '@generaltranslation/supported-locales':
-        specifier: workspace:*
-        version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
         version: link:../core
@@ -1073,15 +1067,9 @@ importers:
 
   packages/react:
     dependencies:
-      '@generaltranslation/format':
-        specifier: workspace:*
-        version: link:../format
       '@generaltranslation/react-core':
         specifier: workspace:*
         version: link:../react-core
-      '@generaltranslation/supported-locales':
-        specifier: workspace:*
-        version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
         version: link:../core
@@ -1116,9 +1104,6 @@ importers:
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
-      '@generaltranslation/supported-locales':
-        specifier: workspace:*
-        version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
         version: link:../core
