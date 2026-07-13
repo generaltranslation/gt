@@ -370,11 +370,8 @@ export function withGTServerSideProps<
 }
 
 /**
- * Wraps a Pages Router `getStaticProps` function and adds the locale and
- * translations snapshot for each statically generated locale variant.
- *
- * Pass a locale before the optional page function to override the locale for
- * pages generated without a Next.js locale context.
+ * Wraps a Pages Router `getStaticProps` function and adds translation
+ * snapshots for every configured locale.
  */
 export const withGTStaticProps: WithGTStaticPropsFunction = () => {
   throw new Error(typesFileError);

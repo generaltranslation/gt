@@ -38,19 +38,24 @@ describe('withGTStaticProps', () => {
     }));
   });
 
-  it('adds the generated locale and its translations without a page handler', async () => {
+  it('adds translations for every configured locale without a page handler', async () => {
     const getStaticProps = withGTStaticProps();
 
     await expect(getStaticProps(context)).resolves.toEqual({
       props: {
-        locale: 'fr',
-        translations: { fr: { hash: 'fr translation' } },
+        translations: {
+          en: { hash: 'en translation' },
+          fr: { hash: 'fr translation' },
+          es: { hash: 'es translation' },
+        },
       },
     });
-    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('fr');
+    expect(mockGetTranslationsSnapshot).toHaveBeenNthCalledWith(1, 'en');
+    expect(mockGetTranslationsSnapshot).toHaveBeenNthCalledWith(2, 'fr');
+    expect(mockGetTranslationsSnapshot).toHaveBeenNthCalledWith(3, 'es');
   });
 
-  it('generates props and translations for each locale context', async () => {
+  it('merges every translation snapshot with page props', async () => {
     const pageGetStaticProps = vi.fn(
       async (currentContext: GetStaticPropsContext) => ({
         props: {
@@ -60,30 +65,17 @@ describe('withGTStaticProps', () => {
     );
     const getStaticProps = withGTStaticProps(pageGetStaticProps);
 
-    await expect(
-      Promise.all([
-        getStaticProps({ ...context, locale: 'fr' }),
-        getStaticProps({ ...context, locale: 'es' }),
-      ])
-    ).resolves.toEqual([
-      {
-        props: {
-          greeting: 'Greeting for fr',
-          locale: 'fr',
-          translations: { fr: { hash: 'fr translation' } },
+    await expect(getStaticProps(context)).resolves.toEqual({
+      props: {
+        greeting: 'Greeting for fr',
+        translations: {
+          en: { hash: 'en translation' },
+          fr: { hash: 'fr translation' },
+          es: { hash: 'es translation' },
         },
       },
-      {
-        props: {
-          greeting: 'Greeting for es',
-          locale: 'es',
-          translations: { es: { hash: 'es translation' } },
-        },
-      },
-    ]);
-    expect(pageGetStaticProps).toHaveBeenCalledTimes(2);
-    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('fr');
-    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('es');
+    });
+    expect(pageGetStaticProps).toHaveBeenCalledWith(context);
   });
 
   it('preserves incremental static regeneration options', async () => {
@@ -99,41 +91,13 @@ describe('withGTStaticProps', () => {
     await expect(getStaticProps(context)).resolves.toEqual({
       props: {
         renderedAt: 'build',
-        locale: 'fr',
-        translations: { fr: { hash: 'fr translation' } },
+        translations: {
+          en: { hash: 'en translation' },
+          fr: { hash: 'fr translation' },
+          es: { hash: 'es translation' },
+        },
       },
       revalidate: 60,
-    });
-  });
-
-  it('uses an explicit locale parameter', async () => {
-    const getStaticProps = withGTStaticProps(
-      'es',
-      async (_context: GetStaticPropsContext) => ({
-        props: {
-          renderedAt: 'build',
-        },
-      })
-    );
-
-    await expect(getStaticProps(context)).resolves.toEqual({
-      props: {
-        renderedAt: 'build',
-        locale: 'es',
-        translations: { es: { hash: 'es translation' } },
-      },
-    });
-    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('es');
-  });
-
-  it('falls back to the configured default locale', async () => {
-    const getStaticProps = withGTStaticProps();
-
-    await expect(getStaticProps({} as GetStaticPropsContext)).resolves.toEqual({
-      props: {
-        locale: 'en',
-        translations: { en: { hash: 'en translation' } },
-      },
     });
   });
 

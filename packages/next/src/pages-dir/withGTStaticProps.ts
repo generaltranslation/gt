@@ -3,9 +3,10 @@ import type { ParsedUrlQuery } from 'querystring';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { getTranslationsSnapshot } from 'gt-react';
 
+type TranslationsSnapshot = Awaited<ReturnType<typeof getTranslationsSnapshot>>;
+
 type GTStaticProps = {
-  locale: string;
-  translations: Awaited<ReturnType<typeof getTranslationsSnapshot>>;
+  translations: TranslationsSnapshot;
 };
 
 export type WithGTStaticProps<
@@ -18,28 +19,7 @@ export function withGTStaticProps<
   Preview extends PreviewData = PreviewData,
 >(
   getStaticProps?: GetStaticProps<Props, Params, Preview>
-): GetStaticProps<WithGTStaticProps<Props>, Params, Preview>;
-
-export function withGTStaticProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  locale: string,
-  getStaticProps?: GetStaticProps<Props, Params, Preview>
-): GetStaticProps<WithGTStaticProps<Props>, Params, Preview>;
-
-export function withGTStaticProps<
-  Props extends Record<string, unknown> = Record<string, unknown>,
-  Params extends ParsedUrlQuery = ParsedUrlQuery,
-  Preview extends PreviewData = PreviewData,
->(
-  firstArg?: string | GetStaticProps<Props, Params, Preview>,
-  secondArg?: GetStaticProps<Props, Params, Preview>
 ): GetStaticProps<WithGTStaticProps<Props>, Params, Preview> {
-  const localeArg = typeof firstArg === 'string' ? firstArg : undefined;
-  const getStaticProps = typeof firstArg === 'function' ? firstArg : secondArg;
-
   return async (context: GetStaticPropsContext<Params, Preview>) => {
     const result = getStaticProps
       ? await getStaticProps(context)
@@ -50,18 +30,24 @@ export function withGTStaticProps<
     }
 
     const props = await result.props;
-    const locale =
-      localeArg ||
-      context.locale ||
-      context.defaultLocale ||
-      getI18nConfig().getDefaultLocale();
+    const snapshots = await Promise.all(
+      getI18nConfig()
+        .getLocales()
+        .map((locale) => getTranslationsSnapshot(locale))
+    );
+    const translations = snapshots.reduce<TranslationsSnapshot>(
+      (allTranslations, snapshot) => ({
+        ...allTranslations,
+        ...snapshot,
+      }),
+      {}
+    );
 
     return {
       ...result,
       props: {
         ...props,
-        locale,
-        translations: await getTranslationsSnapshot(locale),
+        translations,
       },
     };
   };
