@@ -44,6 +44,13 @@ export async function handleStage(
     return null;
   }
 
+  if (settings.omitConfigIds) {
+    await updateConfig(settings.config, {
+      _versionId: null,
+      _branchId: null,
+    });
+  }
+
   if (allFiles.length === 0 && !settings.publish) {
     logger.error(
       'No files to translate were found. Check your configuration and try again.'
@@ -76,7 +83,7 @@ export async function handleStage(
     const templateData = allFiles.find(
       (file) => file.fileId === TEMPLATE_FILE_ID
     );
-    if (templateData?.versionId) {
+    if (templateData?.versionId && !settings.omitConfigIds) {
       await updateConfig(settings.config, {
         _versionId: templateData.versionId,
         _branchId: branchData.currentBranch.id,
@@ -86,7 +93,7 @@ export async function handleStage(
 
   // Always delete branch id from config if branching is disabled
   // Avoids incorrect CDN queries at runtime
-  if (!settings.branchOptions.enabled) {
+  if (!settings.branchOptions.enabled && !settings.omitConfigIds) {
     await updateConfig(settings.config, {
       _branchId: null,
     });

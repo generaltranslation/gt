@@ -3,6 +3,7 @@ import { generateSettings } from '../generateSettings';
 import { resolveFiles } from '../../fs/config/parseFilesConfig';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { logger } from '../../console/logger.js';
+import { resolveConfig } from '../resolveConfig.js';
 
 // Mock resolveFiles
 vi.mock('../../fs/config/parseFilesConfig', () => ({
@@ -71,10 +72,18 @@ vi.mock('../optionPresets.js', () => ({
 
 const mockDetermineLibrary = vi.mocked(determineLibrary);
 const mockLogWarning = vi.mocked(logger.warn);
+const mockResolveConfig = vi.mocked(resolveConfig);
 
 describe('generateSettings - composite patterns', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockResolveConfig.mockReturnValue({
+      config: {
+        defaultLocale: 'en',
+        locales: ['fr', 'es'],
+      },
+      path: '/test/gt.config.json',
+    });
     vi.mocked(resolveFiles).mockReturnValue({
       resolvedPaths: {},
       placeholderPaths: {},
@@ -214,6 +223,38 @@ describe('generateSettings - composite patterns', () => {
       ['fr', 'es'],
       '/test/cwd',
       []
+    );
+  });
+
+  it('reads omitConfigIds from config', async () => {
+    mockResolveConfig.mockReturnValue({
+      config: {
+        defaultLocale: 'en',
+        locales: ['fr', 'es'],
+        omitConfigIds: true,
+      },
+      path: '/test/gt.config.json',
+    });
+
+    const settings = await generateSettings({}, '/test/cwd');
+
+    expect(settings.omitConfigIds).toBe(true);
+  });
+
+  it('reads omitConfigIds from flags', async () => {
+    const settings = await generateSettings(
+      { omitConfigIds: true },
+      '/test/cwd'
+    );
+
+    expect(settings.omitConfigIds).toBe(true);
+  });
+
+  it('warns when config ids are omitted while publish is enabled', async () => {
+    await generateSettings({ omitConfigIds: true, publish: true }, '/test/cwd');
+
+    expect(mockLogWarning).toHaveBeenCalledWith(
+      expect.stringContaining('Config IDs will be omitted')
     );
   });
 

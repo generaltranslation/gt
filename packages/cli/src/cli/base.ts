@@ -9,6 +9,7 @@ import {
   displayHeader,
   promptText,
   logErrorAndExit,
+  exitSync,
   promptConfirm,
   promptMultiSelect,
   promptSelect,
@@ -69,6 +70,8 @@ import {
 import { INLINE_LIBRARIES } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
+import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
+import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 
 export type UploadOptions = {
   config?: string;
@@ -80,6 +83,13 @@ export type UploadOptions = {
 export type LoginOptions = {
   config?: string;
   keyType?: 'development' | 'production' | 'all';
+};
+
+export type GitSetupOptions = {
+  config?: string;
+  dryRun?: boolean;
+  omitConfigIds?: boolean;
+  driverCommand?: string;
 };
 
 export class BaseCLI {
@@ -106,6 +116,7 @@ export class BaseCLI {
     this.setupUploadCommand();
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
+    this.setupGitCommand();
   }
   // Init is never called in a child class
   public init() {
@@ -216,6 +227,119 @@ export class BaseCLI {
         await saveLocalEdits(settings);
         logger.endCommand('Saved local edits');
       });
+  }
+
+  protected setupGitCommand(): void {
+    const gitCommand = this.program
+      .command('git')
+      .description('Configure Git integrations for General Translation');
+
+    gitCommand
+      .command('setup')
+      .description('Set up GT merge drivers for generated translation files')
+      .option(
+        '-c, --config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
+      )
+      .option('--dry-run', 'Print changes without writing files', false)
+      .option(
+        '--omit-config-ids',
+        'Persist omitConfigIds and remove generated config IDs'
+      )
+      .option(
+        '--driver-command <command>',
+        'Command Git should use to invoke gt, e.g. "pnpm exec gt"'
+      )
+      .action(async (options: GitSetupOptions) => {
+        displayHeader('Setting up GT Git merge drivers...');
+        const settings = await generateSettings(options, undefined, {
+          requireConfig: true,
+        });
+        const omitConfigIds = await this.resolveGitSetupOmitConfigIds(
+          options,
+          settings
+        );
+        const result = await setupGitMergeDrivers(settings, {
+          dryRun: options.dryRun,
+          omitConfigIds,
+          driverCommand: options.driverCommand,
+        });
+
+        for (const line of result.addedAttributes) {
+          logger.step(
+            `${options.dryRun ? 'Would add' : 'Added'} ${chalk.cyan(
+              line
+            )} to ${chalk.cyan(result.gitattributesPath)}`
+          );
+        }
+        if (result.addedAttributes.length === 0) {
+          logger.info(`${chalk.cyan('.gitattributes')} is already configured.`);
+        }
+
+        for (const args of result.gitConfigCommands) {
+          logger.step(
+            `${options.dryRun ? 'Would run' : 'Configured'} ${chalk.cyan(
+              `git config --local ${args.join(' ')}`
+            )}`
+          );
+        }
+
+        if (result.updatedConfig) {
+          logger.step(
+            `${options.dryRun ? 'Would persist' : 'Persisted'} ${chalk.cyan(
+              'omitConfigIds: true'
+            )} in ${chalk.cyan(settings.config)}`
+          );
+        }
+
+        logger.endCommand(
+          options.dryRun
+            ? 'Dry run complete.'
+            : 'GT Git merge drivers configured.'
+        );
+      });
+
+    gitCommand
+      .command('merge-driver', { hidden: true })
+      .argument('<driver>', 'Merge driver name')
+      .argument('<base>', 'Common ancestor file')
+      .argument('<ours>', 'Current branch file')
+      .argument('<theirs>', 'Incoming branch file')
+      .argument('[path]', 'Merged path')
+      .action((driver: string, base: string, ours: string, theirs: string) => {
+        if (driver !== 'gt-lock' && driver !== 'gtjson') {
+          logger.error(`Unknown GT merge driver: ${driver}`);
+          exitSync(1);
+        }
+        const result = runMergeDriver(
+          driver as MergeDriverName,
+          base,
+          ours,
+          theirs
+        );
+        if (!result.ok) {
+          logger.error(result.reason);
+          exitSync(1);
+        }
+      });
+  }
+
+  protected async resolveGitSetupOmitConfigIds(
+    options: GitSetupOptions,
+    settings: Settings
+  ): Promise<boolean> {
+    if (options.omitConfigIds) return true;
+    // Already opted in: persist again so stale config IDs still get removed
+    if (settings.omitConfigIds) return true;
+    if (options.dryRun || !process.stdin.isTTY || !process.stdout.isTTY) {
+      return false;
+    }
+    return promptConfirm({
+      message:
+        'Also set omitConfigIds: true to reduce gt.config.json merge conflicts?',
+      defaultValue: true,
+    });
   }
 
   protected async handleSetupProject(

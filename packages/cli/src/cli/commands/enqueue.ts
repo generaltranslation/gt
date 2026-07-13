@@ -6,7 +6,7 @@ import {
 } from '../../types/index.js';
 import { runEnqueueWorkflow } from '../../workflows/enqueue.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
-import { noFilesError, noVersionIdError } from '../../console/index.js';
+import { noFilesError } from '../../console/index.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
 
@@ -24,9 +24,6 @@ export async function handleEnqueue(
   if (!hasValidLocales(settings)) return exitSync(1);
   // Validate credentials if not in dry run
   if (!options.dryRun && !hasValidCredentials(settings)) return exitSync(1);
-  if (!settings._versionId) {
-    return logErrorAndExit(noVersionIdError);
-  }
   if (!settings.files) {
     return logErrorAndExit(noFilesError);
   }

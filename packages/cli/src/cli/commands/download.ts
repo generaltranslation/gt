@@ -1,4 +1,4 @@
-import { noVersionIdError, noFilesError } from '../../console/index.js';
+import { noFilesError } from '../../console/index.js';
 import { SupportedLibraries, TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
@@ -27,9 +27,6 @@ export async function handleDownload(
   if (!hasValidLocales(settings)) return exitSync(1);
   // Validate credentials if not in dry run
   if (!options.dryRun && !hasValidCredentials(settings)) return exitSync(1);
-  if (!settings._versionId) {
-    return logErrorAndExit(noVersionIdError);
-  }
   if (!settings.files) {
     return logErrorAndExit(noFilesError);
   }

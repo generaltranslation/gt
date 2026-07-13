@@ -55,6 +55,7 @@ type GenerateSettingsInput = Partial<Omit<Settings, 'tag'>> & {
   options?: Settings['options'];
   files?: unknown;
   publish?: boolean;
+  omitConfigIds?: boolean;
   tag?: string | boolean;
   message?: string;
   branch?: string;
@@ -243,6 +244,9 @@ export async function generateSettings(
     mergedOptions.publish = undefined;
   }
 
+  mergedOptions.omitConfigIds =
+    flags.omitConfigIds === true || gtConfig.omitConfigIds === true;
+
   // Don't default src here — each pipeline (JS/Python) has its own defaults.
   // Only set src if the user explicitly provided it via flags or config.
 
@@ -302,6 +306,18 @@ export async function generateSettings(
     clearLocaleDirsExclude:
       gtConfig.options?.clearLocaleDirsExclude || flags.clearLocaleDirsExclude,
   };
+
+  if (
+    mergedOptions.omitConfigIds &&
+    (mergedOptions.publish === true ||
+      mergedOptions.files.gtJson.publish === true)
+  ) {
+    logger.warn(
+      chalk.yellow(
+        'Config IDs will be omitted even though CDN publishing is enabled. Remote cache/CDN consumers may load the latest available translations instead of a pinned version.'
+      )
+    );
+  }
 
   // Add additional options if provided
   if (mergedOptions.options) {
