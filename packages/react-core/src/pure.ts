@@ -28,7 +28,7 @@ export {
   defaultLocaleCookieName,
   defaultRegionCookieName,
   defaultResetLocaleCookieName,
-} from './setup/i18nConfig';
+} from './setup/cookieNames';
 export { getDefaultRenderSettings } from './utils/rendering/getDefaultRenderSettings';
 
 export type {

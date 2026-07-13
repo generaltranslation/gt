@@ -5,26 +5,11 @@ import {
   setI18nConfig as setBaseI18nConfig,
 } from 'gt-i18n/internal';
 import type { I18nConfigParams as BaseI18nConfigParams } from 'gt-i18n/internal/types';
-
-/**
- * Cookie name for tracking the user's selected locale.
- */
-export const defaultLocaleCookieName = 'generaltranslation.locale';
-
-/**
- * Cookie name for tracking the user's selected region.
- */
-export const defaultRegionCookieName = 'generaltranslation.region';
-
-/**
- * Cookie name for persisting the enableI18n feature flag.
- */
-export const defaultEnableI18nCookieName = 'generaltranslation.enable-i18n';
-
-/**
- * Cookie name for tracking the locale reset.
- */
-export const defaultResetLocaleCookieName = 'generaltranslation.locale-reset';
+import {
+  defaultEnableI18nCookieName,
+  defaultLocaleCookieName,
+  defaultRegionCookieName,
+} from './cookieNames';
 
 /**
  * Helps us distinguish behavior for SPA vs server-rendered apps.
