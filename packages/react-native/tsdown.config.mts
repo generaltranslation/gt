@@ -8,9 +8,14 @@ const deps = {
     /^react-native$/,
     /^react-native\//,
     /^@generaltranslation\/react-core$/,
+    /^@generaltranslation\/react-core\//,
     /^@generaltranslation\/format$/,
+    /^@generaltranslation\/format\//,
     /^@generaltranslation\/supported-locales$/,
     /^generaltranslation$/,
+    /^generaltranslation\//,
+    /^gt-i18n$/,
+    /^gt-i18n\//,
   ],
 };
 

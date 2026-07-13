@@ -7,15 +7,15 @@ use swc_core::ecma::atoms::Atom;
  * - it has exactly one argument
  * - the argument is a call expression or an await expression wrapping a call expression
  * Examples:
- *   declareStatic(getName())
- *   declareStatic(await getName())
+ *   derive(getName())
+ *   derive(await getName())
  */
-pub fn validate_declare_static(call_expr: &CallExpr, errors: &mut Vec<String>) {
+pub fn validate_derive(call_expr: &CallExpr, errors: &mut Vec<String>) {
   // Check if the expression is a call expression
     // Check if it has only one argument
     if call_expr.args.len() != 1 {
       errors.push(format!(
-        "declareStatic/derive must have exactly one argument, found {}",
+        "derive() must have exactly one argument, found {}",
         call_expr.args.len()
       ));
       return;
@@ -24,10 +24,10 @@ pub fn validate_declare_static(call_expr: &CallExpr, errors: &mut Vec<String>) {
     // Check if that argument is a call expression or await expression wrapping a call
     if let Some(first_arg) = call_expr.args.first() {
       let is_valid = match first_arg.expr.as_ref() {
-        // Direct call expression: declareStatic(getName())
+        // Direct call expression: derive(getName())
         Expr::Call(_) => true,
 
-        // Await expression: declareStatic(await getName())
+        // Await expression: derive(await getName())
         Expr::Await(await_expr) => {
           // Validate that the awaited expression is a call expression
           matches!(await_expr.arg.as_ref(), Expr::Call(_))
@@ -38,7 +38,7 @@ pub fn validate_declare_static(call_expr: &CallExpr, errors: &mut Vec<String>) {
 
       if !is_valid {
         errors.push(
-          "declareStatic/derive first argument must be a call expression".to_string()
+          "derive() first argument must be a call expression".to_string()
         );
       }
     }
@@ -101,19 +101,19 @@ pub fn extract_number_from_expr(expr: &Expr) -> Option<i32> {
   }
 }
 
-/// Checks if an expression is a derive()/declareStatic() call by name
+/// Checks if an expression is a derive() call by name
 fn is_derive_call_expr(expr: &Expr) -> bool {
   if let Expr::Call(call_expr) = expr {
     if let Callee::Expr(callee_expr) = &call_expr.callee {
       if let Expr::Ident(ident) = callee_expr.as_ref() {
-        return matches!(ident.sym.as_str(), "derive" | "declareStatic");
+        return ident.sym.as_str() == "derive";
       }
     }
   }
   false
 }
 
-/// Recursively checks if an expression contains a derive()/declareStatic() call.
+/// Recursively checks if an expression contains a derive() call.
 /// Handles: bare call, binary concat ("a" + derive(fn())), template literal (`a${derive(fn())}`)
 pub fn contains_derive_call(expr: &Expr) -> bool {
   match expr {
@@ -130,7 +130,7 @@ pub fn contains_derive_call(expr: &Expr) -> bool {
   }
 }
 
-// Helper function to extract id, context, maxChars, and format from options
+// Helper function to extract $id, $context, $maxChars, and $format from options
 // Returns (id, context, maxChars, format, has_derive_context)
 pub fn extract_id_and_context_from_options(
   options: Option<&ExprOrSpread>,

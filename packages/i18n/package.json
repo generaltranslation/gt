@@ -1,6 +1,6 @@
 {
   "name": "gt-i18n",
-  "version": "0.9.8",
+  "version": "1.0.1",
   "description": "Pure JS i18n library for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -77,16 +77,6 @@
         "default": "./dist/types.mjs"
       }
     },
-    "./fallbacks": {
-      "require": {
-        "types": "./dist/fallbacks.d.cts",
-        "default": "./dist/fallbacks.cjs"
-      },
-      "import": {
-        "types": "./dist/fallbacks.d.mts",
-        "default": "./dist/fallbacks.mjs"
-      }
-    },
     "./internal": {
       "require": {
         "types": "./dist/internal.d.cts",
@@ -113,31 +103,11 @@
       "types": [
         "./dist/types.d.cts"
       ],
-      "fallbacks": [
-        "./dist/fallbacks.d.cts"
-      ],
       "internal": [
         "./dist/internal.d.cts"
       ],
       "internal/types": [
         "./dist/internal-types.d.cts"
-      ]
-    }
-  },
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "gt-i18n/types": [
-        "/dist/types"
-      ],
-      "gt-i18n/fallbacks": [
-        "/dist/fallbacks"
-      ],
-      "gt-i18n/internal": [
-        "/dist/internal"
-      ],
-      "gt-i18n/internal/types": [
-        "/dist/internal-types"
       ]
     }
   }

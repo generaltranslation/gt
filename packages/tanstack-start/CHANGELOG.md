@@ -1,5 +1,338 @@
 # gt-tanstack-start
 
+## 11.0.3
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.3
+  - gt-react@11.0.3
+
+## 11.0.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.2
+  - gt-react@11.0.2
+
+## 11.0.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@1.0.1
+  - gt-react@11.0.1
+  - @generaltranslation/react-core@11.0.1
+
+## 11.0.0
+
+### Major Changes
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`e12fb17`](https://github.com/generaltranslation/gt/commit/e12fb17d41cfa5fa231e64fe70423434739ea985) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Prepare Odysseus major releases for core runtime packages.
+
+### Patch Changes
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`7a9dbe3`](https://github.com/generaltranslation/gt/commit/7a9dbe3c188787a39ee1de78f54c92dff470b502) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Clean up stale package metadata and align TanStack Start package entry points.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`b3bb391`](https://github.com/generaltranslation/gt/commit/b3bb391d33041680e2d62b6a7c9b05662946544f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Store cookie names in I18nConfig so custom cookie names work before the condition store is initialized.
+  - `gt-i18n`: Removed the unused React locale cookie name from the shared GT config type.
+  - `@generaltranslation/react-core`: `ReactI18nConfig` now accepts `localeCookieName`, `regionCookieName`, and `enableI18nCookieName`, exposes getters that fall back to the default names, and exports the default storage names from the `pure` entrypoint.
+  - `gt-next`: Imports default cookie names from the React Core `pure` entrypoint instead of the removed React Core cookie constants subpath.
+  - `gt-react`: The browser condition store now resolves cookie names from `I18nConfig` instead of hardcoding the defaults, so custom cookie names passed to `initializeGT()` are honored for both reads and writes.
+  - `gt-react-native`: Native condition storage now resolves its store keys from `I18nConfig`, matching `gt-react` behavior.
+  - `gt-tanstack-start`: `parseLocale()` reads and writes the locale cookie using the configured cookie name instead of the default.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`2c46baf`](https://github.com/generaltranslation/gt/commit/2c46baf137400613495e3fe2865865b5506edece) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Persist TanStack Start locale resolution through the browser locale cookie.
+  Allow React i18n config checks to work across bundled react-core entrypoints.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`efbd970`](https://github.com/generaltranslation/gt/commit/efbd9704d43912e3febb888e7acb3670fc9e70fc) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Consolidate TanStack Start package entrypoint exports.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`9804aa4`](https://github.com/generaltranslation/gt/commit/9804aa460c07ec36d2e667d79a839720a1e011e8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove three orphaned, never-imported files:
+  - `gt-tanstack-start`: `condition-store/WritableConditionStore.ts` (an orphaned local copy; the package uses gt-i18n's writable condition store).
+  - `gt-react-native`: `utils/utils.ts` (`readAuthFromEnv`, no consumers).
+  - `gt-i18n`: `i18n-cache/translations-manager/utils/types/translations-manager.ts` (unreferenced `TranslationsManagerConfig` type).
+
+- Updated dependencies [[`463a8db`](https://github.com/generaltranslation/gt/commit/463a8dbb03bde35f2f229dfdabfe117197d4527b), [`37e0080`](https://github.com/generaltranslation/gt/commit/37e0080b2c072840cf6c0f1c66a8f0f3a54e17e5), [`5bfd0a7`](https://github.com/generaltranslation/gt/commit/5bfd0a73e286bf76ae26f9178171aeca1c53ecc5), [`8870496`](https://github.com/generaltranslation/gt/commit/88704963eb74e81401994681ce7cdae3ba91b6c0), [`7a9dbe3`](https://github.com/generaltranslation/gt/commit/7a9dbe3c188787a39ee1de78f54c92dff470b502), [`1212135`](https://github.com/generaltranslation/gt/commit/1212135e4e09ed754756cac2805bc3a139408dc1), [`04f419d`](https://github.com/generaltranslation/gt/commit/04f419d65e69db3eb4adb8ee6299c0ddee153135), [`bd52e5e`](https://github.com/generaltranslation/gt/commit/bd52e5ef3fb38a63d9bac8a4af08ff93402c0749), [`b72c30b`](https://github.com/generaltranslation/gt/commit/b72c30bc603562310a51b656fb003f1486315a8a), [`72e9e16`](https://github.com/generaltranslation/gt/commit/72e9e1643797be8e4ae1453897fd0b023fce2674), [`42a440f`](https://github.com/generaltranslation/gt/commit/42a440ff3420bdbdb35ed24f9a5af1c9040eaf66), [`fd22c68`](https://github.com/generaltranslation/gt/commit/fd22c68978af50ce519dc06c7b887d3fa67181ae), [`bea8233`](https://github.com/generaltranslation/gt/commit/bea8233d8b055980483cb2e226157f6adcbd8c2b), [`8870496`](https://github.com/generaltranslation/gt/commit/88704963eb74e81401994681ce7cdae3ba91b6c0), [`5736d58`](https://github.com/generaltranslation/gt/commit/5736d585b8285ef56cc6f412799308969ac786c0), [`8d2e84e`](https://github.com/generaltranslation/gt/commit/8d2e84e5083bb740815004bec90eaa341be7aff5), [`04b5064`](https://github.com/generaltranslation/gt/commit/04b50645675abb9e927a82056b249b50f0907fcc), [`4335432`](https://github.com/generaltranslation/gt/commit/43354326beb16e13784b0c82faad447768bb8404), [`04c285c`](https://github.com/generaltranslation/gt/commit/04c285c7b44f5404918cd4c80336dddf412472e9), [`947fe0c`](https://github.com/generaltranslation/gt/commit/947fe0c97a2821a0980cd3e779252ea0078e80f8), [`5adeede`](https://github.com/generaltranslation/gt/commit/5adeede157922d547a33a078d0f527f572c9a8b4), [`e026c42`](https://github.com/generaltranslation/gt/commit/e026c42bc137e9865b548daee7238e6a458a5662), [`328795b`](https://github.com/generaltranslation/gt/commit/328795bf730296658a57b7132bbd1e0bbff2fd62), [`1f53e42`](https://github.com/generaltranslation/gt/commit/1f53e420e9a6475f85cf27e1cd0c9c89f4beeb36), [`b3bb391`](https://github.com/generaltranslation/gt/commit/b3bb391d33041680e2d62b6a7c9b05662946544f), [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546), [`e12fb17`](https://github.com/generaltranslation/gt/commit/e12fb17d41cfa5fa231e64fe70423434739ea985), [`44bc998`](https://github.com/generaltranslation/gt/commit/44bc998abf813ea4a96ade6c2632e1143034bd45), [`5752fe8`](https://github.com/generaltranslation/gt/commit/5752fe81bf5b5deaae878638e0de99959bf719be), [`7744c55`](https://github.com/generaltranslation/gt/commit/7744c557d37c85ce3626681410cc0cd622374ecf), [`b7d44dc`](https://github.com/generaltranslation/gt/commit/b7d44dc2d79ac3332a0ed55da0ba130b6896f756), [`9561761`](https://github.com/generaltranslation/gt/commit/9561761c3ab72a5e39327415b3274eccc63f4ffe), [`72c6a85`](https://github.com/generaltranslation/gt/commit/72c6a85cc3ca025ebdeb006dbdd865e935ec77ae), [`3d95277`](https://github.com/generaltranslation/gt/commit/3d95277a057b28fffc73b3fa616210bdcb447e85), [`97dc7f4`](https://github.com/generaltranslation/gt/commit/97dc7f4818476a319a54b1519e994a62d5a9a3a5), [`c1e0a0f`](https://github.com/generaltranslation/gt/commit/c1e0a0f837da440eeed84af10b553dee24bfc936), [`85a0c19`](https://github.com/generaltranslation/gt/commit/85a0c1998a6500233affd8c1987551170584c782), [`693288d`](https://github.com/generaltranslation/gt/commit/693288d632c42b923920a2fdd9ae2babc1bc28f5), [`463a8db`](https://github.com/generaltranslation/gt/commit/463a8dbb03bde35f2f229dfdabfe117197d4527b), [`e343775`](https://github.com/generaltranslation/gt/commit/e343775d8a41ce3eea03dd319b90497a9744cc4f), [`40db0c5`](https://github.com/generaltranslation/gt/commit/40db0c54a58e82d693d8a16d19fe5071baabecdc), [`8a2f7ee`](https://github.com/generaltranslation/gt/commit/8a2f7ee79f4b890fb1aaf47f42bb844334899793), [`c5364f9`](https://github.com/generaltranslation/gt/commit/c5364f977ffb4b387ad39206e6ed626bbeec56f3), [`2e85ebd`](https://github.com/generaltranslation/gt/commit/2e85ebd1528a4f99a8e36e1d8d6714a639040596), [`2c46baf`](https://github.com/generaltranslation/gt/commit/2c46baf137400613495e3fe2865865b5506edece), [`d5cf2d3`](https://github.com/generaltranslation/gt/commit/d5cf2d34f412ad49e8b2818fe788b870a5964d65), [`9e78cf0`](https://github.com/generaltranslation/gt/commit/9e78cf07db58bfe6063bcd0b217553176c9681bd), [`4986567`](https://github.com/generaltranslation/gt/commit/498656728741898a56ae348a536107bd92f95c04), [`795edc8`](https://github.com/generaltranslation/gt/commit/795edc8a2b3e91fc9801d726f4b5cd6fbbc98fb0), [`d863bcf`](https://github.com/generaltranslation/gt/commit/d863bcf05770c336c98b2b2fae8534c90f00df51), [`11ecf87`](https://github.com/generaltranslation/gt/commit/11ecf876a1221b9dbce9fc0c0f0804101558c8a7), [`03bae6d`](https://github.com/generaltranslation/gt/commit/03bae6d3b4791107781cb800c1ae7ac4f675705c), [`5d42608`](https://github.com/generaltranslation/gt/commit/5d426089f04f37dd7369620e9db3e6512f06eee8), [`9804aa4`](https://github.com/generaltranslation/gt/commit/9804aa460c07ec36d2e667d79a839720a1e011e8), [`338e5e8`](https://github.com/generaltranslation/gt/commit/338e5e8a42354c7d288d9be960ebd1d58adfd402), [`8834c51`](https://github.com/generaltranslation/gt/commit/8834c518ac84259706f2b603fd024ad13a9072ee), [`2ca78ec`](https://github.com/generaltranslation/gt/commit/2ca78ec4805639c10c7b200c8dee660b55eddf15), [`195f009`](https://github.com/generaltranslation/gt/commit/195f00910c2a675a6f9da327e19e3d3c5e44e26b)]:
+  - gt-i18n@1.0.0
+  - @generaltranslation/react-core@11.0.0
+  - gt-react@11.0.0
+  - generaltranslation@9.0.0
+
+## 11.0.0-odysseus.16
+
+### Patch Changes
+
+- Updated dependencies [463a8db]
+- Updated dependencies [b72c30b]
+- Updated dependencies [bea8233]
+- Updated dependencies [5736d58]
+- Updated dependencies [1f53e42]
+- Updated dependencies [7744c55]
+- Updated dependencies [463a8db]
+- Updated dependencies [e343775]
+- Updated dependencies [40db0c5]
+- Updated dependencies [d5cf2d3]
+  - gt-i18n@1.0.0-odysseus.9
+  - @generaltranslation/react-core@11.0.0-odysseus.16
+  - gt-react@11.0.0-odysseus.16
+  - generaltranslation@9.0.0-odysseus.6
+
+## 11.0.0-odysseus.15
+
+### Patch Changes
+
+- Updated dependencies [04f419d]
+- Updated dependencies [72e9e16]
+- Updated dependencies [42a440f]
+- Updated dependencies [8d2e84e]
+- Updated dependencies [5adeede]
+- Updated dependencies [c5364f9]
+- Updated dependencies [2e85ebd]
+- Updated dependencies [195f009]
+  - @generaltranslation/react-core@11.0.0-odysseus.15
+  - generaltranslation@9.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.8
+  - gt-react@11.0.0-odysseus.15
+
+## 11.0.0-odysseus.14
+
+### Patch Changes
+
+- 0cd7813: Store cookie names in I18nConfig so custom cookie names work before the condition store is initialized.
+  - `gt-i18n`: Removed the unused React locale cookie name from the shared GT config type.
+  - `@generaltranslation/react-core`: `ReactI18nConfig` now accepts `localeCookieName`, `regionCookieName`, and `enableI18nCookieName`, exposes getters that fall back to the default names, and exports the default storage names from the `pure` entrypoint.
+  - `gt-next`: Imports default cookie names from the React Core `pure` entrypoint instead of the removed React Core cookie constants subpath.
+  - `gt-react`: The browser condition store now resolves cookie names from `I18nConfig` instead of hardcoding the defaults, so custom cookie names passed to `initializeGT()` are honored for both reads and writes.
+  - `gt-react-native`: Native condition storage now resolves its store keys from `I18nConfig`, matching `gt-react` behavior.
+  - `gt-tanstack-start`: `parseLocale()` reads and writes the locale cookie using the configured cookie name instead of the default.
+
+- Updated dependencies [ab61565]
+- Updated dependencies [0cd7813]
+  - gt-i18n@1.0.0-odysseus.7
+  - @generaltranslation/react-core@11.0.0-odysseus.14
+  - gt-react@11.0.0-odysseus.14
+
+## 11.0.0-odysseus.13
+
+### Patch Changes
+
+- Updated dependencies [a2b9677]
+- Updated dependencies [41371e0]
+  - gt-i18n@1.0.0-odysseus.6
+  - gt-react@11.0.0-odysseus.13
+  - @generaltranslation/react-core@11.0.0-odysseus.13
+
+## 11.0.0-odysseus.12
+
+### Patch Changes
+
+- cde28be: Consolidate TanStack Start package entrypoint exports.
+- Updated dependencies [7be23bc]
+  - @generaltranslation/react-core@11.0.0-odysseus.12
+  - gt-react@11.0.0-odysseus.12
+
+## 11.0.0-odysseus.11
+
+### Patch Changes
+
+- @generaltranslation/react-core@11.0.0-odysseus.11
+- gt-react@11.0.0-odysseus.11
+
+## 11.0.0-odysseus.10
+
+### Patch Changes
+
+- 07f74f0: Clean up stale package metadata and align TanStack Start package entry points.
+- Updated dependencies [432fa49]
+- Updated dependencies [07f74f0]
+- Updated dependencies [432fa49]
+- Updated dependencies [ee34fea]
+- Updated dependencies [bcba6fd]
+- Updated dependencies [933916e]
+- Updated dependencies [b7b3eaf]
+- Updated dependencies [dfb5fc9]
+- Updated dependencies [4a5f8e8]
+- Updated dependencies [288c9f8]
+- Updated dependencies [083d306]
+  - gt-i18n@1.0.0-odysseus.5
+  - gt-react@11.0.0-odysseus.10
+  - @generaltranslation/react-core@11.0.0-odysseus.10
+
+## 11.0.0-odysseus.9
+
+### Patch Changes
+
+- @generaltranslation/react-core@11.0.0-odysseus.9
+- gt-react@11.0.0-odysseus.9
+
+## 11.0.0-odysseus.8
+
+### Patch Changes
+
+- Updated dependencies [26faa87]
+- Updated dependencies [270b821]
+- Updated dependencies [bffaa67]
+- Updated dependencies [d602065]
+- Updated dependencies [6da26e8]
+  - generaltranslation@9.0.0-odysseus.4
+  - gt-i18n@1.0.0-odysseus.4
+  - @generaltranslation/react-core@11.0.0-odysseus.8
+  - gt-react@11.0.0-odysseus.8
+
+## 11.0.0-odysseus.7
+
+### Patch Changes
+
+- b765174: Remove three orphaned, never-imported files:
+  - `gt-tanstack-start`: `condition-store/WritableConditionStore.ts` (an orphaned local copy; the package uses gt-i18n's writable condition store).
+  - `gt-react-native`: `utils/utils.ts` (`readAuthFromEnv`, no consumers).
+  - `gt-i18n`: `i18n-cache/translations-manager/utils/types/translations-manager.ts` (unreferenced `TranslationsManagerConfig` type).
+
+- Updated dependencies [b1eef00]
+- Updated dependencies [b765174]
+- Updated dependencies [07bfb00]
+  - generaltranslation@9.0.0-odysseus.3
+  - gt-i18n@1.0.0-odysseus.3
+  - @generaltranslation/react-core@11.0.0-odysseus.7
+  - gt-react@11.0.0-odysseus.7
+
+## 11.0.0-odysseus.6
+
+### Patch Changes
+
+- Updated dependencies [c1aa794]
+- Updated dependencies [e0ace5b]
+  - @generaltranslation/react-core@11.0.0-odysseus.6
+  - gt-react@11.0.0-odysseus.6
+
+## 11.0.0-odysseus.5
+
+### Patch Changes
+
+- Updated dependencies [[`795147f`](https://github.com/generaltranslation/gt/commit/795147f5b00f948b2b1876a919c0a16cf53c52b6), [`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660), [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447), [`41c938c`](https://github.com/generaltranslation/gt/commit/41c938c0d00f4b76faa7a2805ad0015891e0740e), [`b3c3b9a`](https://github.com/generaltranslation/gt/commit/b3c3b9af39f1b2abec2c2b6bf2c2a40fe76db5ce)]:
+  - gt-react@11.0.0-odysseus.5
+  - generaltranslation@9.0.0-odysseus.2
+  - @generaltranslation/react-core@11.0.0-odysseus.5
+  - gt-i18n@1.0.0-odysseus.2
+
+## 11.0.0-odysseus.4
+
+### Patch Changes
+
+- Updated dependencies [[`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64)]:
+  - generaltranslation@9.0.0-odysseus.1
+  - gt-i18n@1.0.0-odysseus.1
+  - gt-react@11.0.0-odysseus.4
+  - @generaltranslation/react-core@11.0.0-odysseus.4
+
+## 1.0.0-odysseus.2
+
+### Patch Changes
+
+- [#1657](https://github.com/generaltranslation/gt/pull/1657) [`e29cd01`](https://github.com/generaltranslation/gt/commit/e29cd01c1bfe9ffba64c8fb3794d053a8c1304af) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Persist TanStack Start locale resolution through the browser locale cookie.
+  Allow React i18n config checks to work across bundled react-core entrypoints.
+- Updated dependencies [[`e29cd01`](https://github.com/generaltranslation/gt/commit/e29cd01c1bfe9ffba64c8fb3794d053a8c1304af)]:
+  - @generaltranslation/react-core@2.0.0-odysseus.1
+  - gt-react@11.0.0-odysseus.2
+
+## 1.0.0-odysseus.1
+
+### Patch Changes
+
+- Updated dependencies [[`30918cf`](https://github.com/generaltranslation/gt/commit/30918cfa7fdb2072691681027ab8ad79cd8b73a7)]:
+  - gt-react@11.0.0-odysseus.1
+
+## 1.0.0-odysseus.0
+
+### Major Changes
+
+- [#1627](https://github.com/generaltranslation/gt/pull/1627) [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Prepare Odysseus major releases for core runtime packages.
+
+### Patch Changes
+
+- [#1508](https://github.com/generaltranslation/gt/pull/1508) [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- Updated dependencies [[`33203b1`](https://github.com/generaltranslation/gt/commit/33203b1953727647f61a21136b4c9570efbc8620), [`af441bd`](https://github.com/generaltranslation/gt/commit/af441bdfb3a4cabe28985c59104ab7d60ee83d83), [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0)]:
+  - @generaltranslation/react-core@2.0.0-odysseus.0
+  - gt-react@11.0.0-odysseus.0
+  - generaltranslation@9.0.0-odysseus.0
+  - gt-i18n@1.0.0-odysseus.0
+
+## 0.4.28
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@0.9.8
+  - gt-react@10.20.4
+  - @generaltranslation/react-core@1.8.24
+
+## 0.4.27
+
+### Patch Changes
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - gt-i18n@0.9.7
+  - gt-react@10.20.3
+  - @generaltranslation/react-core@1.8.23
+
+## 0.4.26
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - gt-i18n@0.9.6
+  - gt-react@10.20.2
+  - @generaltranslation/react-core@1.8.22
+
+## 0.4.25
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-react@10.20.1
+
+## 0.4.24
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-react@10.20.0
+
+## 0.4.23
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - gt-i18n@0.9.5
+  - gt-react@10.19.19
+  - @generaltranslation/react-core@1.8.21
+
+## 0.4.22
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@0.9.4
+  - gt-react@10.19.18
+  - @generaltranslation/react-core@1.8.20
+
+## 0.4.29
+
+### Patch Changes
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - @generaltranslation/react-core@1.8.25
+  - generaltranslation@8.2.19
+  - gt-i18n@0.9.9
+  - gt-react@10.20.5
+
 ## 0.4.28
 
 ### Patch Changes

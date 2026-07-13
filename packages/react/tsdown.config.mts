@@ -1,14 +1,11 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownConfig } from '../../tsdown.preset.mts';
+import {
+  createTsdownConfig,
+  createUseClientBoundaryPlugin,
+} from '../../tsdown.preset.mts';
 
 const deps = {
-  neverBundle: [
-    /^react$/,
-    /^react\//,
-    /^react-dom$/,
-    /^react-dom\//,
-    /^@generaltranslation\/react-core$/,
-  ],
+  neverBundle: [/^react$/, /^react\//, /^react-dom$/, /^react-dom\//],
   alwaysBundle: [
     /^@generaltranslation\/format\//,
     /^@generaltranslation\/react-core\//,
@@ -17,17 +14,28 @@ const deps = {
   ],
 };
 
+const contextDeps = {
+  neverBundle: [
+    ...deps.neverBundle,
+    /^@generaltranslation\/react-core\//,
+    /^gt-i18n$/,
+    /^gt-i18n\//,
+  ],
+  alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
+};
+
 const entries = [
-  'src/index.ts',
-  'src/internal.ts',
-  'src/client.ts',
-  'src/browser.ts',
+  'src/index.rsc.ts',
+  'src/index.client.ts',
+  'src/index.server.ts',
+  'src/index.types.ts',
   'src/macros.ts',
 ];
 
 export default defineConfig(
   entries.flatMap((entry, index) => {
-    const [cjsConfig, esmConfig] = createTsdownConfig([entry], deps);
+    const entryDeps = entry.startsWith('src/index.') ? contextDeps : deps;
+    const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
     return [
       {
@@ -36,13 +44,27 @@ export default defineConfig(
         define: {
           'import.meta.env': '{}',
         },
+        plugins: [
+          createUseClientBoundaryPlugin({
+            emittedSourceFiles: entries,
+            name: 'gt-react:use-client-boundaries',
+            outputExtension: '.cjs',
+          }),
+        ],
       },
       {
         ...esmConfig,
         deps: {
           onlyBundle: false,
-          ...deps,
+          ...entryDeps,
         },
+        plugins: [
+          createUseClientBoundaryPlugin({
+            emittedSourceFiles: entries,
+            name: 'gt-react:use-client-boundaries',
+            outputExtension: '.mjs',
+          }),
+        ],
       },
     ];
   })

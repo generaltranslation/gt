@@ -5,7 +5,10 @@ export const GT_LIBRARIES = [
   'gt-next',
   'gt-react-native',
   'gt-i18n',
-  '@generaltranslation/react-core',
+  '@generaltranslation/react-core/components',
+  '@generaltranslation/react-core/components-rsc',
+  '@generaltranslation/react-core/hooks',
+  '@generaltranslation/react-core/pure',
 ];
 
 export type GTLibrary = (typeof GT_LIBRARIES)[number];
@@ -17,8 +20,6 @@ export const NUM_COMPONENT_NAME = 'Num';
 export const CURRENCY_COMPONENT_NAME = 'Currency';
 export const DATE_TIME_COMPONENT_NAME = 'DateTime';
 export const DERIVE_COMPONENT_NAME = 'Derive';
-/** @deprecated Use `DERIVE_COMPONENT_NAME` instead. */
-export const STATIC_COMPONENT_NAME = 'Static';
 export const BRANCH_COMPONENT_NAME = 'Branch';
 export const PLURAL_COMPONENT_NAME = 'Plural';
 
@@ -31,8 +32,6 @@ export const USE_MESSAGES_FUNCTION_NAME = 'useMessages';
 export const GET_MESSAGES_FUNCTION_NAME = 'getMessages';
 export const MSG_FUNCTION_NAME = 'msg';
 export const DERIVE_FUNCTION_NAME = 'derive';
-/** @deprecated Use `DERIVE_FUNCTION_NAME` instead. */
-export const DECLARE_STATIC_FUNCTION_NAME = 'declareStatic';
 
 export const GT_COMPONENT_NAMES = [
   T_COMPONENT_NAME,
@@ -40,7 +39,6 @@ export const GT_COMPONENT_NAMES = [
   NUM_COMPONENT_NAME,
   CURRENCY_COMPONENT_NAME,
   DATE_TIME_COMPONENT_NAME,
-  STATIC_COMPONENT_NAME,
   DERIVE_COMPONENT_NAME,
 ];
 
@@ -81,12 +79,14 @@ export const CONTEXT_OPTION_NAME = '$context';
 export const ID_OPTION_NAME = '$id';
 export const FORMAT_OPTION_NAME = '$format';
 export const MAX_CHARS_OPTION_NAME = '$maxChars';
+export const REQUIRES_REVIEW_OPTION_NAME = '$requiresReview';
 
 export const SUGAR_VARIABLE_NAMES = [
   CONTEXT_OPTION_NAME,
   ID_OPTION_NAME,
   FORMAT_OPTION_NAME,
   MAX_CHARS_OPTION_NAME,
+  REQUIRES_REVIEW_OPTION_NAME,
 ] as const;
 
 // Format option values

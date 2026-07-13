@@ -55,7 +55,6 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 | `locadex`                               | `packages/locadex`           | AI agent for i18n with MCP support                                |
 | `@generaltranslation/mcp`               | `packages/mcp`               | MCP server for AI tool integration                                |
 | `@generaltranslation/react-core-linter` | `packages/react-core-linter` | ESLint plugin for react-core                                      |
-| `@generaltranslation/gt-next-lint`      | `packages/next-lint`         | ESLint plugin for gt-next                                         |
 | `gt-remark`                             | `packages/remark`            | Remark plugin for MDX escaping                                    |
 | `@generaltranslation/python-extractor`  | `packages/python-extractor`  | Python source extraction (tree-sitter)                            |
 
@@ -69,6 +68,16 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 - Build outputs go to `dist/`. Change source files and rebuild instead of editing `dist/` directly.
 - Do not use default exports.
 - Avoid `useEffect` in React code. Prefer derived state, event handlers, refs, or framework data-loading patterns; only use `useEffect` when synchronizing with an external system.
+
+## Diagnostics and User-Facing Messages
+
+- Format new user-facing logs, warnings, errors, thrown error messages, and validation messages that report actionable problems with `createDiagnosticMessage()`. Import it from `generaltranslation/internal` outside `packages/core`; code inside `packages/core` can import the local implementation from `src/logging/diagnostics.ts`. Routine progress, status, and debug output does not need to be a diagnostic.
+- Prefer an existing package- or runtime-specific wrapper when one is available. For example, gt-next code should use `createGtNextDiagnostic()` for the `gt-next` prefix and `createGtNextPluginDiagnostic()` for the `gt-next (plugin)` prefix. If a package repeatedly supplies the same source, add or reuse a small typed wrapper instead of duplicating the prefix at every call site.
+- When calling `createDiagnosticMessage()` directly, set `source` to the owning package or runtime and set `severity` to `Error` or `Warning` when the diagnostic should include that label. Match the severity to the logger or console method that emits it. Do not manually embed package names, `Error:`, or `Warning:` in the message text.
+- Use the structured fields for their intended roles: `whatHappened` is required; `reassurance`, `why`, `fix`, and `wayOut` form the explanatory and recovery guidance; `details` holds variable context or error text; and `docsUrl` adds a Learn more link. Use `formatDiagnosticErrorDetails()` to safely turn an unknown caught value into `details`.
+- Let the formatter handle sentence punctuation, combine `whatHappened` with `why`, combine compatible `fix` and `wayOut` text, format detail lists, and order the final message. Do not recreate that formatting with string concatenation.
+- Create the diagnostic before passing it to `logger.error()`, `logger.warn()`, `console.error()`, `console.warn()`, or `new Error()`. Define a constant for a static diagnostic and a factory function for a diagnostic containing runtime values.
+- A body-only diagnostic may omit `source` and `severity` when an outer validation or publishing layer already owns that context. Avoid double-prefixing: either the diagnostic helper or the outer layer should add the source and severity, not both.
 
 ## Git and PR Conventions
 

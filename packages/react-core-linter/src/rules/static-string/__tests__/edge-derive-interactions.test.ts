@@ -37,29 +37,7 @@ describe('derive interactions: standalone derive() is valid', () => {
 });
 
 // ===================================================================
-// 2. Standalone declareStatic(): deprecated alias for derive, still valid
-// ===================================================================
-
-describe('derive interactions: standalone declareStatic() is valid (deprecated alias)', () => {
-  ruleTester.run('declareStatic-standalone', staticString, {
-    valid: [
-      {
-        code: `
-          import { useGT, declareStatic } from 'gt-react';
-          function Component() {
-            const gt = useGT();
-            return gt(declareStatic(getValue()));
-          }
-        `,
-        options: [{ libs: ['gt-react'] }],
-      },
-    ],
-    invalid: [],
-  });
-});
-
-// ===================================================================
-// 3. Static + derive: static string concatenated with derive is valid
+// 2. Static + derive: static string concatenated with derive is valid
 // ===================================================================
 
 describe('derive interactions: static + derive is valid', () => {

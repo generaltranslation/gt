@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _enqueueFiles, { EnqueueOptions } from '../enqueueFiles';
+import { _enqueueFiles, type EnqueueFilesOptions } from '../enqueueFiles';
 import { TranslationRequestConfig, EnqueueFilesResult } from '../../types';
 import { FileReference } from '../../types-dir/api/file';
-import apiRequest from '../utils/apiRequest';
+import { apiRequest } from '../utils/apiRequest';
 
 vi.mock('../utils/apiRequest');
 
@@ -25,8 +25,8 @@ describe.sequential('_enqueueFiles', () => {
   });
 
   const createMockOptions = (
-    overrides: Partial<EnqueueOptions> = {}
-  ): EnqueueOptions => ({
+    overrides: Partial<EnqueueFilesOptions> = {}
+  ): EnqueueFilesOptions => ({
     sourceLocale: 'en',
     targetLocales: ['es', 'fr'],
     ...overrides,
@@ -86,7 +86,6 @@ describe.sequential('_enqueueFiles', () => {
           ],
           targetLocales: ['es', 'fr'],
           sourceLocale: 'en',
-          requireApproval: undefined,
           modelProvider: undefined,
           force: undefined,
         },
@@ -129,7 +128,6 @@ describe.sequential('_enqueueFiles', () => {
   it('should handle all optional parameters', async () => {
     const mockFiles = [createMockFile()];
     const mockOptions = createMockOptions({
-      requireApproval: true,
       modelProvider: 'openai',
       force: true,
       timeout: 30000,
@@ -161,7 +159,6 @@ describe.sequential('_enqueueFiles', () => {
       expect.any(String),
       expect.objectContaining({
         body: expect.objectContaining({
-          requireApproval: true,
           modelProvider: 'openai',
           force: true,
         }),

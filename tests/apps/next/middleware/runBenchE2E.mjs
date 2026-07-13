@@ -21,7 +21,6 @@ const PACKED_WORKSPACE_DEPENDENCIES = [
   ['@generaltranslation/compiler', 'packages/compiler'],
   ['@generaltranslation/format', 'packages/format'],
   ['generaltranslation', 'packages/core'],
-  ['@generaltranslation/next-internal', 'packages/next-internal'],
   ['@generaltranslation/supported-locales', 'packages/supported-locales'],
   ['gt-react', 'packages/react'],
   ['@generaltranslation/react-core', 'packages/react-core'],
@@ -120,10 +119,15 @@ try {
     stdio: 'inherit',
   });
 
+  logSection('Installing Playwright browser');
+  runPnpm(['exec', 'playwright', 'install', 'chromium-headless-shell'], {
+    cwd: __dirname,
+    stdio: 'inherit',
+  });
+
   logSection('Running e2e benchmarks');
-  execFileSync(
-    'npx',
-    ['playwright', 'test', '--config=benchmarks/playwright.config.ts'],
+  runPnpm(
+    ['exec', 'playwright', 'test', '--config=benchmarks/playwright.config.ts'],
     {
       cwd: __dirname,
       stdio: 'inherit',

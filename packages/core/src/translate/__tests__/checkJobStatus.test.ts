@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TranslationRequestConfig } from '../../types';
-import apiRequest from '../utils/apiRequest';
+import { apiRequest } from '../utils/apiRequest';
 import { _checkJobStatus, CheckJobStatusResult } from '../checkJobStatus';
 
 vi.mock('../utils/apiRequest');

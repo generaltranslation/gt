@@ -1,6 +1,6 @@
 {
   "name": "locadex",
-  "version": "1.0.191",
+  "version": "1.0.187",
   "description": "An AI agent for internationalization",
   "main": "dist/index.js",
   "type": "module",
@@ -55,7 +55,6 @@
     "url": "https://github.com/generaltranslation/gt/issues"
   },
   "homepage": "https://generaltranslation.com/",
-  "compilerOptions": {},
   "keywords": [
     "react",
     "translation",

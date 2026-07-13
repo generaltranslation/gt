@@ -233,6 +233,18 @@ export async function generateSettings(
   // For human review, always stage the project
   mergedOptions.stageTranslations = mergedOptions.stageTranslations ?? false;
 
+  // Top-level default for whether translated files require approval before use.
+  // Effective policy is hash-changing, so reject anything but a real boolean.
+  if (
+    mergedOptions.requiresReview !== undefined &&
+    typeof mergedOptions.requiresReview !== 'boolean'
+  ) {
+    logErrorAndExit(
+      'requiresReview in gt.config.json must be a boolean. Use files.<type>.requiresReview for glob-scoped overrides.'
+    );
+  }
+  mergedOptions.requiresReview = mergedOptions.requiresReview ?? false;
+
   // Add publish — only set if explicitly configured or passed via flag.
   // When neither is set, leave undefined so the publish step knows
   // there is no global publish intent.
@@ -262,7 +274,8 @@ export async function generateSettings(
         mergedOptions.defaultLocale,
         mergedOptions.locales,
         cwd,
-        compositePatterns
+        compositePatterns,
+        mergedOptions.requiresReview
       )
     : {
         resolvedPaths: {},
@@ -271,6 +284,7 @@ export async function generateSettings(
         transformFormats: {},
         publishPaths: new Set<string>(),
         unpublishPaths: new Set<string>(),
+        requiresReviewPaths: new Set<string>(),
         parsingFlags: {},
         gtJson: {
           parsingFlags: GT_PARSING_FLAGS_DEFAULT,

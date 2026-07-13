@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _querySourceFile from '../querySourceFile';
-import apiRequest from '../utils/apiRequest';
+import { _querySourceFile } from '../querySourceFile';
+import { apiRequest } from '../utils/apiRequest';
 import { TranslationRequestConfig } from '../../types';
 import {
   FileQuery,
@@ -28,7 +28,6 @@ describe.sequential('_querySourceFile', () => {
       dataFormat: null,
       createdAt: '2024-01-01T00:00:00Z',
       updatedAt: '2024-01-01T12:00:00Z',
-      approvalRequiredAt: null,
       locales: ['es', 'fr', 'de'],
     },
     translations: [

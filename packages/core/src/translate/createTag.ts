@@ -1,5 +1,5 @@
 import { TranslationRequestConfig } from '../types';
-import apiRequest from './utils/apiRequest';
+import { apiRequest } from './utils/apiRequest';
 
 export type CreateTagFileReference = {
   fileId: string;
@@ -30,7 +30,7 @@ export type CreateTagResult = {
  * @param config - The configuration for the API call.
  * @returns The created or updated tag.
  */
-export default async function _createTag(
+export async function _createTag(
   options: CreateTagOptions,
   config: TranslationRequestConfig
 ): Promise<CreateTagResult> {

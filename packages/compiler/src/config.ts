@@ -13,8 +13,7 @@ type GTConfig = {
       parsingFlags?: {
         enableAutoJsxInjection?: boolean;
         autoderive?: boolean | { jsx?: boolean; strings?: boolean };
-        /** @deprecated Use `autoderive` instead */
-        autoDerive?: boolean;
+        legacyGtReactImportSource?: boolean;
         /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
         devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
       };
@@ -42,8 +41,8 @@ export interface PluginConfig {
   enableAutoJsxInjection?: boolean;
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive?: boolean | { jsx?: boolean; strings?: boolean };
-  /** @deprecated Use `autoderive` instead */
-  autoDerive?: boolean;
+  /** Emit compiler-injected gt-react imports from gt-react/browser */
+  legacyGtReactImportSource?: boolean;
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest?: boolean;
   /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
@@ -68,6 +67,8 @@ export interface PluginSettings {
   enableAutoJsxInjection: boolean;
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive: { jsx: boolean; strings: boolean };
+  /** Emit compiler-injected gt-react imports from gt-react/browser */
+  legacyGtReactImportSource: boolean;
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest: boolean;
   /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */

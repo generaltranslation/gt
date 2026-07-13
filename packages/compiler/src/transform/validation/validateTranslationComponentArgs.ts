@@ -5,9 +5,10 @@ import type { NodePath } from '@babel/traverse';
 import { getObjectPropertyFromObjectExpression } from '../../utils/parsing/getObjectPropertyFromObjectExpression';
 import { validateExpressionIsStringLiteral } from '../../utils/validation/validateExpressionIsStringLiteral';
 import type { JsxChildren } from '@generaltranslation/format/types';
-import { constructJsxChildren } from '../jsx-children';
+import { constructJsxChildren } from '../jsx-children/constructJsxChildren';
 import { validateChildrenPropertyFromObjectExpression } from '../../utils/validation/validateChildrenFromObjectExpression';
 import { validateExpressionIsNumericLiteral } from '../../utils/validation/validateExpressionIsNumericLiteral';
+import { validateExpressionIsBooleanLiteral } from '../../utils/validation/validateExpressionIsBooleanLiteral';
 import { validateDerive } from './validateTranslationFunction';
 import { JsxValidationError } from '../jsx-children/errors';
 /**
@@ -23,6 +24,7 @@ export function validateTranslationComponentArgs(
   id?: string;
   context?: string;
   maxChars?: number;
+  requiresReview?: boolean;
   children?: JsxChildren;
   hasDeriveContext?: boolean;
 } {
@@ -80,6 +82,7 @@ function validateTComponentArgs(
   id?: string;
   context?: string;
   maxChars?: number;
+  requiresReview?: boolean;
   children?: JsxChildren;
   hasDeriveContext?: boolean;
 } {
@@ -100,6 +103,14 @@ function validateTComponentArgs(
   errors.push(...maxCharsValidation.errors);
   const maxChars = maxCharsValidation.value;
 
+  // Validate requiresReview
+  const requiresReviewValidation = validateBooleanProperty(
+    args,
+    'requiresReview'
+  );
+  errors.push(...requiresReviewValidation.errors);
+  const requiresReview = requiresReviewValidation.value;
+
   // Validate hash
   const hashValidation = validateStringProperty(args, '_hash');
   errors.push(...hashValidation.errors);
@@ -113,7 +124,16 @@ function validateTComponentArgs(
   const hasDeriveContext =
     contextValidation.hasDeriveExpression || childrenValidation.hasAutoderive;
 
-  return { errors, id, context, _hash, maxChars, children, hasDeriveContext };
+  return {
+    errors,
+    id,
+    context,
+    _hash,
+    maxChars,
+    requiresReview,
+    children,
+    hasDeriveContext,
+  };
 }
 
 /**
@@ -341,4 +361,42 @@ function getNumberLiteralFromExpression(
  */
 function validateNumberLiteralIsInteger(value: number): boolean {
   return Number.isInteger(value);
+}
+
+// Boolean Literal Functions
+
+/**
+ * Will validate and retrieve property from object expression and also try prefixing with a $.
+ * Only boolean literals are accepted — string "true"/"false" and dynamic
+ * expressions are rejected because the value is hash-changing.
+ */
+function validateBooleanProperty(
+  args: t.ObjectExpression,
+  name: string
+): {
+  errors: string[];
+  value?: boolean;
+} {
+  const errors: string[] = [];
+
+  // Get the property
+  const property =
+    getObjectPropertyFromObjectExpression(args, name) ||
+    getObjectPropertyFromObjectExpression(args, '$' + name);
+  if (!property) {
+    return { errors };
+  }
+
+  if (
+    !t.isObjectProperty(property) ||
+    !t.isExpression(property.value) ||
+    !validateExpressionIsBooleanLiteral(property.value)
+  ) {
+    errors.push(
+      `The <${GT_COMPONENT_TYPES.T}> component must have a boolean literal (true or false) in its ${name} field`
+    );
+    return { errors };
+  }
+
+  return { errors, value: (property.value as t.BooleanLiteral).value };
 }

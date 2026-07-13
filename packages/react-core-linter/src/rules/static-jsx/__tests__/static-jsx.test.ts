@@ -20,57 +20,57 @@ describe('static-jsx rule', () => {
       valid: [
         {
           code: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component() {
               return <T>Hello world</T>;
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
         },
         {
           code: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component() {
               return <T>{"static string"}</T>;
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
         },
         {
           code: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component() {
               return <T>{123}</T>;
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
         },
         {
           code: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component() {
               return <T>{\`template literal\`}</T>;
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
         },
       ],
       invalid: [
         {
           code: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component({ name }) {
               return <T>{name}</T>;
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
           errors: [
             {
               messageId: 'dynamicContent',
             },
           ],
           output: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component({ name }) {
               return <T><Var>{name}</Var></T>;
             }
@@ -78,20 +78,20 @@ describe('static-jsx rule', () => {
         },
         {
           code: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component() {
               const variable = "dynamic";
               return <T>{variable}</T>;
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
           errors: [
             {
               messageId: 'dynamicContent',
             },
           ],
           output: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component() {
               const variable = "dynamic";
               return <T><Var>{variable}</Var></T>;
@@ -100,19 +100,19 @@ describe('static-jsx rule', () => {
         },
         {
           code: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component() {
               return <T>{someFunction()}</T>;
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
           errors: [
             {
               messageId: 'dynamicContent',
             },
           ],
           output: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component() {
               return <T><Var>{someFunction()}</Var></T>;
             }
@@ -120,12 +120,12 @@ describe('static-jsx rule', () => {
         },
         {
           code: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component({ user }) {
               return <T>{\`Hello \${user.name}\`}</T>;
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
           errors: [
             {
               messageId: 'dynamicContent',
@@ -145,7 +145,7 @@ describe('static-jsx rule', () => {
               return <div>{name}</div>;
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
         },
         {
           code: `
@@ -154,7 +154,7 @@ describe('static-jsx rule', () => {
               return <OtherComponent>{name}</OtherComponent>;
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
         },
       ],
       invalid: [],
@@ -198,7 +198,7 @@ describe('static-jsx rule', () => {
       valid: [
         {
           code: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component() {
               return (
                 <div>
@@ -208,13 +208,13 @@ describe('static-jsx rule', () => {
               );
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
         },
       ],
       invalid: [
         {
           code: `
-            import { T } from '@generaltranslation/react-core';
+            import { T } from '@generaltranslation/react-core/components';
             function Component({ name }) {
               return (
                 <div>
@@ -224,7 +224,7 @@ describe('static-jsx rule', () => {
               );
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/components'] }],
           errors: [
             {
               messageId: 'dynamicContent',

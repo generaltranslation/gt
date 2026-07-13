@@ -1,0 +1,97 @@
+import type { LocaleCandidates } from 'gt-i18n/internal';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
+import {
+  BrowserConditionStore,
+  BrowserConditionStoreParams,
+} from './BrowserConditionStore';
+import { readBrowserLocale } from './readBrowserLocale';
+import { getCookieValue } from './cookies';
+import {
+  getBrowserConditionStore,
+  isBrowserConditionStoreInitialized,
+  setBrowserConditionStore,
+} from './singleton-operations';
+
+export type CreateBrowserConditionStoreParams = Omit<
+  BrowserConditionStoreParams,
+  'locale' | 'enableI18n'
+> & {
+  locale?: LocaleCandidates;
+  enableI18n?: boolean;
+};
+
+/**
+ * Factory to create a BrowserConditionStore for Singleton
+ *
+ * This exists so we can keep the locale param as required in the constructor
+ *
+ * Server-provided props are the first candidates for hydration consistency.
+ * Cookies fill in missing values to persist state across page reloads.
+ *
+ * Cookie names come from the I18nConfig singleton so custom names passed to
+ * initializeGT() apply here without being threaded through provider props.
+ */
+export function createOrUpdateBrowserConditionStore(
+  config: CreateBrowserConditionStoreParams
+) {
+  const locale = determineLocale(config);
+  const region = determineRegion(config);
+  const enableI18n = determineEnableI18n(config);
+
+  if (isBrowserConditionStoreInitialized()) {
+    // This represents an update from server
+    const conditionStore = getBrowserConditionStore();
+    conditionStore.updateLocale(locale);
+    if (region !== undefined) conditionStore.updateRegion(region);
+    conditionStore.updateEnableI18n(enableI18n);
+    return conditionStore;
+  }
+
+  const conditionStore = new BrowserConditionStore({
+    ...config,
+    locale,
+    region,
+    enableI18n,
+  });
+  setBrowserConditionStore(conditionStore);
+  return conditionStore;
+}
+
+function determineLocale({
+  _getLocale: getLocale,
+  locale,
+}: CreateBrowserConditionStoreParams): string {
+  const i18nConfig = getI18nConfig();
+  const candidates = [];
+  if (locale) {
+    candidates.push(...(Array.isArray(locale) ? locale : [locale]));
+  }
+  if (getLocale) candidates.push(getLocale());
+  candidates.push(...readBrowserLocale(i18nConfig.getLocaleCookieName()));
+  return i18nConfig.resolveSupportedLocale(candidates);
+}
+
+function determineRegion({
+  _getRegion: getRegion,
+  region,
+}: CreateBrowserConditionStoreParams): string | undefined {
+  const cookieRegion = getCookieValue({
+    cookieName: getI18nConfig().getRegionCookieName(),
+  });
+  return cookieRegion || getRegion?.() || region;
+}
+
+function determineEnableI18n({
+  enableI18n,
+  _getEnableI18n: getEnableI18n,
+}: CreateBrowserConditionStoreParams): boolean {
+  if (enableI18n !== undefined) return enableI18n;
+
+  const cookieEnableI18n = getCookieValue({
+    cookieName: getI18nConfig().getEnableI18nCookieName(),
+  });
+  if (cookieEnableI18n === undefined) {
+    return getEnableI18n?.() ?? true;
+  }
+  return cookieEnableI18n === 'true';
+}

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import apiRequest from '../apiRequest';
-import fetchWithTimeout from '../fetchWithTimeout';
-import validateResponse from '../validateResponse';
+import { apiRequest } from '../apiRequest';
+import { fetchWithTimeout } from '../fetchWithTimeout';
+import { validateResponse } from '../validateResponse';
 
 vi.mock('../fetchWithTimeout');
 vi.mock('../validateResponse');

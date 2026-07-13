@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GT, LocaleConfig } from '../index';
-import _translateMany from '../translate/translateMany';
+import { _translateMany } from '../translate/translateMany';
 import {
   TranslationResult,
   TranslateManyResult,
@@ -11,7 +11,7 @@ import {
 
 // Mock the internal translate function
 vi.mock('../translate/translateMany', () => ({
-  default: vi.fn(),
+  _translateMany: vi.fn(),
 }));
 
 const numberValue = 1234.56;

@@ -2,7 +2,7 @@
  * Sugar variable validation for gt()/msg() options objects.
  *
  * Validates that metadata keys ($context, $id, $format, $maxChars) are static:
- * - $context: static string or derive()/declareStatic() in concatenation
+ * - $context: static string or derive() in concatenation
  * - $id:      static string only
  * - $format:  static string only
  * - $maxChars: number literal only
@@ -17,6 +17,7 @@ import {
   FORMAT_OPTION_NAME,
   ICU_FORMAT,
   MAX_CHARS_OPTION_NAME,
+  REQUIRES_REVIEW_OPTION_NAME,
   SUGAR_VARIABLE_NAMES,
 } from '../../utils/constants.js';
 import type { GTLibrary } from '../../utils/constants.js';
@@ -48,6 +49,13 @@ function getPropertyKeyName(
 /**
  * Accepts number literals and unary +/- on number literals (e.g. -5, +10).
  */
+function isBooleanLiteral(node: TSESTree.Expression): boolean {
+  return (
+    node.type === TSESTree.AST_NODE_TYPES.Literal &&
+    typeof node.value === 'boolean'
+  );
+}
+
 function isStaticNumber(node: TSESTree.Expression): boolean {
   if (
     node.type === TSESTree.AST_NODE_TYPES.Literal &&
@@ -67,7 +75,7 @@ function isStaticNumber(node: TSESTree.Expression): boolean {
 }
 
 /**
- * $context allows static strings, derive()/declareStatic(), and concatenation of those.
+ * $context allows static strings, derive(), and concatenation of those.
  */
 function isStaticOrDerive(
   expr: TSESTree.Expression,
@@ -176,6 +184,18 @@ export function validateSugarVariables(
 
     if (key === CONTEXT_OPTION_NAME) {
       if (!isStaticOrDerive(value, context, libs)) {
+        context.report({
+          node: value,
+          messageId: 'sugarVariableMustBeStatic',
+        });
+      }
+      continue;
+    }
+
+    if (key === REQUIRES_REVIEW_OPTION_NAME) {
+      // Must be a boolean literal — string "true"/"false" and dynamic
+      // expressions are rejected (the value is hash-changing)
+      if (!isBooleanLiteral(value)) {
         context.report({
           node: value,
           messageId: 'sugarVariableMustBeStatic',

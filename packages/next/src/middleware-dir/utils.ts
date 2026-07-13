@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { standardizeLocale } from '@generaltranslation/format';
-import { GT } from 'generaltranslation';
+import { GTRuntime } from 'generaltranslation/runtime';
 import { NextURL } from 'next/dist/server/web/next-url';
 
 export type PathConfig = {
@@ -16,10 +16,16 @@ export type ResponseConfig = {
   headerList: Headers;
   localeRouting: boolean;
   localeRoutingEnabledCookieName: string;
-  localeCookieName: string;
   resetLocaleCookieName: string;
   localeHeaderName: string;
 };
+
+const DYNAMIC_PATH_SEGMENT_PATTERN = '/[^/]+';
+const PATH_REGEX_SLASHES = /[\\/]/g;
+
+function escapePathRegexSlashes(pathPattern: string): string {
+  return pathPattern.replace(PATH_REGEX_SLASHES, '\\$&');
+}
 
 export function getResponse({
   type,
@@ -30,7 +36,6 @@ export function getResponse({
   headerList,
   localeRouting,
   localeRoutingEnabledCookieName,
-  localeCookieName,
   resetLocaleCookieName,
   localeHeaderName,
 }: ResponseConfig): NextResponse<unknown> {
@@ -61,10 +66,12 @@ export function getResponse({
     localeRoutingEnabledCookieName,
     localeRouting.toString()
   );
-  // Clear setLocale cookies
+  // Clear the setLocale reset cookie once it has been processed. The locale
+  // cookie must be kept: the client re-reads it on every render, and deleting
+  // it here races with concurrent prefetch responses after a locale switch,
+  // dropping client components back to the browser's default locale.
   if (clearResetCookie && type !== 'redirect') {
     response.cookies.delete(resetLocaleCookieName);
-    response.cookies.delete(localeCookieName);
   }
   return response;
 }
@@ -207,9 +214,9 @@ export function getSharedPath(
   // Try regex pattern match
   let candidateSharedPath = undefined;
   for (const [pattern, sharedPath] of Object.entries(pathToSharedPath)) {
-    if (pattern.includes('/[^/]+')) {
+    if (pattern.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
       // Convert the pattern to a strict regex that matches the exact path structure
-      const regex = new RegExp(`^${pattern.replace(/\//g, '\\/')}$`);
+      const regex = new RegExp(`^${escapePathRegexSlashes(pattern)}$`);
       // Exact match
       if (regex.test(standardizedPathname)) {
         return sharedPath;
@@ -245,8 +252,8 @@ function inDefaultLocalePaths(
 
   // Try regex pattern match
   for (const path of defaultLocalePaths) {
-    if (path.includes('/[^/]+')) {
-      const regex = new RegExp(`^${path.replace(/\//g, '\\/')}$`);
+    if (path.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
+      const regex = new RegExp(`^${escapePathRegexSlashes(path)}$`);
       if (regex.test(pathname)) {
         return true;
       }
@@ -269,7 +276,7 @@ export function getLocaleFromRequest(
   referrerLocaleCookieName: string,
   localeCookieName: string,
   resetLocaleCookieName: string,
-  gt: GT
+  gt: GTRuntime
 ): {
   userLocale: string;
   pathnameLocale: string | undefined;

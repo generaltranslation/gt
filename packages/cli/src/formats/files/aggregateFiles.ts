@@ -16,7 +16,7 @@ import { flattenJson } from '../json/flattenJson.js';
 import type { JSONObject } from '../../types/data/json.js';
 import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
-import { hashStringSync } from '../../utils/hash.js';
+import { hashStringSync, hashVersionId } from '../../utils/hash.js';
 import { preprocessContent } from './preprocessContent.js';
 import {
   parseKeyedMetadata,
@@ -44,7 +44,6 @@ function isCompanionMetadataFile(
   );
   return allFilePaths.includes(sourceFilePath);
 }
-export const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export async function aggregateFiles(
   settings: Settings
@@ -60,6 +59,9 @@ export async function aggregateFiles(
   }
 
   const { resolvedPaths: filePaths } = settings.files;
+  // Tolerate partially-constructed settings from programmatic callers
+  const requiresReviewPaths =
+    settings.files.requiresReviewPaths ?? new Set<string>();
   const skipValidation = settings.options?.skipFileValidation;
 
   // Build publish map upfront from resolved paths.
@@ -167,7 +169,10 @@ export async function aggregateFiles(
 
         return {
           fileId: hashStringSync(relativePath),
-          versionId: hashStringSync(parsedJson),
+          versionId: hashVersionId(
+            parsedJson,
+            requiresReviewPaths.has(filePath)
+          ),
           content: parsedJson,
           fileName: relativePath,
           fileFormat: 'JSON' as const,
@@ -259,7 +264,10 @@ export async function aggregateFiles(
           fileFormat,
           ...getTransformFormatProperty(settings, 'yaml'),
           fileId: hashStringSync(relativePath),
-          versionId: hashStringSync(parsedYaml),
+          versionId: hashVersionId(
+            parsedYaml,
+            requiresReviewPaths.has(filePath)
+          ),
           locale: settings.defaultLocale,
           ...(keyedMetadata && {
             formatMetadata: { keyedMetadata },
@@ -314,7 +322,10 @@ export async function aggregateFiles(
 
         return {
           fileId: hashStringSync(relativePath),
-          versionId: hashStringSync(parsedJson),
+          versionId: hashVersionId(
+            parsedJson,
+            requiresReviewPaths.has(filePath)
+          ),
           content: parsedJson,
           fileName: relativePath,
           fileFormat: 'TWILIO_CONTENT_JSON' as const,
@@ -367,7 +378,10 @@ export async function aggregateFiles(
             fileFormat: fileType.toUpperCase() as FileFormat,
             ...getTransformFormatProperty(settings, fileType),
             fileId: hashStringSync(relativePath),
-            versionId: hashStringSync(processed),
+            versionId: hashVersionId(
+              processed,
+              requiresReviewPaths.has(filePath)
+            ),
             locale: settings.defaultLocale,
           } satisfies FileToUpload;
         })

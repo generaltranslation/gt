@@ -1,5 +1,6 @@
-import { getI18nManager } from '../../i18n-manager/singleton-operations';
-import { NormalizedLookupOptions, ResolutionOptions } from '../types/options';
+import { getI18nCache } from '../../i18n-cache/singleton-operations';
+import { getI18nConfig } from '../../i18n-config/singleton-operations';
+import { NormalizedLookupOptions, LookupOptionsFor } from '../types/options';
 import { interpolateMessage } from '../utils/interpolation/interpolateMessage';
 import type {
   DataFormat,
@@ -16,11 +17,11 @@ import type {
 export function resolveJsx(
   locale: string,
   content: JsxChildren,
-  options: ResolutionOptions<'JSX'> = {}
+  options: LookupOptionsFor<'JSX'> = {}
 ): JsxChildren | undefined {
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'JSX');
-  const translation = i18nManager.lookupTranslation(
+  const translation = i18nCache.lookupTranslation(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -34,7 +35,7 @@ export function resolveJsx(
 export function resolveJsxWithFallback(
   locale: string,
   content: JsxChildren,
-  options: ResolutionOptions<'JSX'> = {}
+  options: LookupOptionsFor<'JSX'> = {}
 ): JsxChildren {
   const translation = resolveJsx(locale, content, options);
   return translation ?? content;
@@ -48,11 +49,11 @@ export function resolveJsxWithFallback(
 export async function resolveJsxWithRuntimeFallback(
   locale: string,
   content: JsxChildren,
-  options: ResolutionOptions<'JSX'> = {}
+  options: LookupOptionsFor<'JSX'> = {}
 ): Promise<JsxChildren> {
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'JSX');
-  const translation = await i18nManager.lookupTranslationWithFallback(
+  const translation = await i18nCache.lookupTranslationWithFallback(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -69,11 +70,11 @@ export async function resolveJsxWithRuntimeFallback(
 export function resolveStringContent(
   locale: string,
   content: StringContent,
-  options: ResolutionOptions<StringFormat> = {}
+  options: LookupOptionsFor<StringFormat> = {}
 ): StringContent | undefined {
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'STRING');
-  const translation = i18nManager.lookupTranslation(
+  const translation = i18nCache.lookupTranslation(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -83,7 +84,7 @@ export function resolveStringContent(
     source: content,
     target: translation,
     options: lookupOptions,
-    sourceLocale: i18nManager.getDefaultLocale(),
+    sourceLocale: getI18nConfig().getDefaultLocale(),
   });
 }
 
@@ -93,11 +94,11 @@ export function resolveStringContent(
 export function resolveStringContentWithFallback(
   locale: string,
   content: StringContent,
-  options: ResolutionOptions<StringFormat> = {}
+  options: LookupOptionsFor<StringFormat> = {}
 ): StringContent {
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'STRING');
-  const translation = i18nManager.lookupTranslation(
+  const translation = i18nCache.lookupTranslation(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -106,7 +107,7 @@ export function resolveStringContentWithFallback(
     source: content,
     target: translation,
     options: lookupOptions,
-    sourceLocale: i18nManager.getDefaultLocale(),
+    sourceLocale: getI18nConfig().getDefaultLocale(),
   });
 }
 
@@ -118,11 +119,11 @@ export function resolveStringContentWithFallback(
 export async function resolveStringContentWithRuntimeFallback(
   locale: string,
   content: StringContent,
-  options: ResolutionOptions<StringFormat> = {}
+  options: LookupOptionsFor<StringFormat> = {}
 ): Promise<StringContent> {
-  const i18nManager = getI18nManager();
+  const i18nCache = getI18nCache();
   const lookupOptions = createLookupOptions(locale, options, 'STRING');
-  const translation = await i18nManager.lookupTranslationWithFallback(
+  const translation = await i18nCache.lookupTranslationWithFallback(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -131,7 +132,7 @@ export async function resolveStringContentWithRuntimeFallback(
     source: content,
     target: translation,
     options: lookupOptions,
-    sourceLocale: i18nManager.getDefaultLocale(),
+    sourceLocale: getI18nConfig().getDefaultLocale(),
   });
 }
 /**
@@ -139,7 +140,7 @@ export async function resolveStringContentWithRuntimeFallback(
  */
 export function createLookupOptions<T extends DataFormat>(
   locale: string,
-  options: ResolutionOptions<T>,
+  options: LookupOptionsFor<T>,
   defaultFormat: T
 ): NormalizedLookupOptions<T> {
   return {

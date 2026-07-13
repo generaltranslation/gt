@@ -45,32 +45,6 @@ export const createUnresolvedReactVersionError = (error: Error) =>
     details: error.message,
   });
 
-export const createStringTranslationError = (
-  string: string,
-  id?: string,
-  functionName = 'tx'
-) =>
-  createGtNextDiagnostic({
-    severity: 'Error',
-    whatHappened: `${functionName}("${string}")${id ? ` with id "${id}"` : ''} could not find a translation`,
-    wayOut: 'Source content will render as a fallback',
-    fix: 'Push translations again or check your dictionary/runtime translation configuration',
-  });
-
-export const createDictionaryTranslationError = (id: string) =>
-  createGtNextDiagnostic({
-    severity: 'Error',
-    whatHappened: `Dictionary translation entry "${id}" could not be found`,
-    fix: 'Check that the id exists in your dictionary or push translations again',
-  });
-
-export const createRequiredPrefixError = (id: string, requiredPrefix: string) =>
-  createGtNextDiagnostic({
-    severity: 'Error',
-    whatHappened: `<GTProvider> is scoped to prefix "${requiredPrefix}", but a child uses id "${id}"`,
-    fix: 'Change the <GTProvider> id prop or move the child under the matching dictionary subtree',
-  });
-
 export const devApiKeyIncludedInProductionError = createGtNextDiagnostic({
   severity: 'Error',
   whatHappened: 'Production builds cannot use a development API key',
@@ -83,13 +57,6 @@ export const createDictionarySubsetError = (id: string, functionName: string) =>
     whatHappened: `${functionName} with id "${id}" could not read a valid dictionary subtree`,
     fix: 'Make sure the id maps to the correct subroute of the dictionary',
   });
-
-export const dictionaryDisabledError = createGtNextDiagnostic({
-  severity: 'Error',
-  whatHappened: 'Dictionaries are not enabled',
-  fix: 'Add the withGTConfig() plugin to your Next.js config before using dictionary translations',
-  docsUrl: 'https://generaltranslation.com/docs',
-});
 
 export const unresolvedCustomLoadDictionaryError = createGtNextDiagnostic({
   severity: 'Error',
@@ -119,13 +86,6 @@ export const unresolvedLoadTranslationsBuildError = (path: string) =>
     fix: 'Check the configured path and try again',
   });
 
-export const unresolvedGetLocaleBuildError = (path: string) =>
-  createGtNextDiagnostic({
-    severity: 'Error',
-    whatHappened: `The file defining custom getLocale() could not be resolved at ${path}`,
-    fix: 'Check the configured path and try again',
-  });
-
 export const conflictingConfigurationBuildError = (conflicts: string[]) =>
   `gt-next Error: Conflicting configuration${
     conflicts.length > 1 ? 's' : ''
@@ -139,33 +99,12 @@ export const typesFileError = createGtNextDiagnostic({
   fix: 'Import from the appropriate gt-next runtime entry point instead',
 });
 
-export const gtProviderUseClientError =
-  `The Next.js <GTProvider> was imported in a client component. This prevents gt-next from fetching translations on the server. ` +
-  `Move <GTProvider> to a file without 'use client'. ` +
-  `If you really need to put <GTProvider> on the client, import <GTClientProvider> from 'gt-next/client' instead (discouraged when using the Next.js App Router).`;
-
-export const txUseClientError =
-  `The <Tx> runtime translation component was rendered in a client component, which is not supported. ` +
-  `Use <T> with variables, or render <Tx> from a server component.`;
-
-export const missingVariablesError = (variables: string[], message: string) =>
-  createGtNextDiagnostic({
-    severity: 'Error',
-    whatHappened: `The message "${message}" is missing variables: "${variables.join('", "')}"`,
-    fix: 'Provide values for these variables before rendering the translation',
-  });
-
-export const createStringRenderError = (
-  message: string,
-  id: string | undefined,
-  error?: unknown
-) =>
-  createGtNextDiagnostic({
-    severity: 'Error',
-    whatHappened: `The string ${id ? `for id "${id}" ` : ''}could not be rendered`,
-    fix: `Check the message syntax and variables for: "${message}"`,
-    details: formatDiagnosticErrorDetails(error),
-  });
+export const getTranslationsSnapshotRscError = createGtNextDiagnostic({
+  severity: 'Error',
+  whatHappened:
+    'getTranslationsSnapshot() is not available for React Server Components',
+  fix: 'Use gt-next build-time translation helpers in the App Router, or call getTranslationsSnapshot() from a Pages Router entry point',
+});
 
 export const invalidLocalesError = (locales: string[]) =>
   createGtNextDiagnostic({
@@ -183,49 +122,34 @@ export const invalidCanonicalLocalesError = (locales: string[]) =>
     details: locales,
   });
 
-export const createInvalidIcuDictionaryEntryError = (id: string) =>
+export const createInvalidRequestLocaleWarning = (
+  locale: string,
+  defaultLocale: string
+) =>
+  createGtNextDiagnostic({
+    severity: 'Warning',
+    whatHappened: `Locale "${locale}" is not valid or is not supported by this app`,
+    wayOut: `The default locale "${defaultLocale}" will be used for this request`,
+    fix: 'Use a valid BCP 47 locale code, add a custom mapping, or configure the locale in gt-next',
+  });
+
+export const createInvalidPathRegexError = (
+  pathRegex: string,
+  error: unknown
+) =>
   createGtNextDiagnostic({
     severity: 'Error',
-    whatHappened: `Dictionary entry "${id}" contains invalid ICU syntax`,
-    fix: 'Fix the ICU message before rendering this translation',
+    whatHappened: `pathRegex "${pathRegex}" is not a valid regular expression`,
+    fix: 'Pass a valid JavaScript regular expression string to withGTConfig()',
+    details: formatDiagnosticErrorDetails(error),
   });
 
 // ---- WARNINGS ---- //
-
-export const createInvalidIcuDictionaryEntryWarning = (id: string) =>
-  createGtNextDiagnostic({
-    whatHappened: `Dictionary entry "${id}" contains invalid ICU syntax`,
-    wayOut: 'Source content will render as a fallback until the entry is fixed',
-  });
 
 export const createBadFilepathWarning = (filename: string, dir: string[]) =>
   createGtNextDiagnostic({
     whatHappened: `${filename} was found in ${dir.join(' or ')}, which is not supported`,
     fix: 'Move it to your project root so gt-next can load it',
-  });
-
-export const usingDefaultsWarning = createGtNextDiagnostic({
-  whatHappened: 'The gt-next configuration could not be loaded',
-  wayOut: 'Defaults will be used',
-  fix: 'Check your config path if this was unexpected',
-});
-
-export const createNoEntryFoundWarning = (id: string) =>
-  createGtNextDiagnostic({
-    whatHappened: `No valid dictionary entry was found for id "${id}"`,
-    wayOut: 'Source content will render as a fallback',
-  });
-
-export const createInvalidDictionaryEntryWarning = (id: string) =>
-  createGtNextDiagnostic({
-    whatHappened: `Dictionary entry "${id}" is invalid`,
-    wayOut: 'Source content will render as a fallback until the entry is fixed',
-  });
-
-export const createInvalidDictionaryTranslationEntryWarning = (id: string) =>
-  createGtNextDiagnostic({
-    whatHappened: `Dictionary translation entry "${id}" is invalid`,
-    wayOut: 'Source content will render as a fallback until the entry is fixed',
   });
 
 export const createUnsupportedLocalesWarning = (locales: string[]) =>
@@ -236,56 +160,15 @@ export const createUnsupportedLocalesWarning = (locales: string[]) =>
     })
     .join(', ')}`;
 
-export const createMismatchingHashWarning = (
-  expectedHash: string,
-  receivedHash: string
-) =>
-  createGtNextDiagnostic({
-    whatHappened: 'Translation hashes do not match',
-    reassurance: 'The translation will still render',
-    fix: 'Update your translations to the newest version to avoid stale content',
-    details: [`expected ${expectedHash}`, `received ${receivedHash}`],
-  });
-
 export const projectIdMissingWarn = createGtNextDiagnostic({
   whatHappened: 'Runtime translation needs a project ID',
   fix: 'Set GT_PROJECT_ID in your environment or pass projectId to withGTConfig()',
   docsUrl: 'https://generaltranslation.com/dashboard',
 });
 
-export const noInitGTWarn =
-  `gt-next: You are running General Translation without the withGTConfig() plugin. ` +
-  `This means that you are not translating your app. To activate translation, add the withGTConfig() plugin to your app, ` +
-  `and set the projectId and apiKey in your environment. ` +
-  `For more information, visit https://generaltranslation.com/docs/next/tutorials/quickstart`;
-
 export const APIKeyMissingWarn = createGtNextPluginDiagnostic({
   whatHappened: 'Runtime translation needs a development API key',
   fix: 'Find your development API key at generaltranslation.com/dashboard, or set runtimeUrl to an empty string to disable runtime translation',
-});
-
-export const createTranslationLoadingWarning = ({
-  source,
-  translation,
-  id,
-}: {
-  source: string;
-  translation: string;
-  id?: string;
-}) =>
-  `[DEV ONLY] Warning: gt-next created translation "${source}" -> "${translation}"` +
-  (id ? ` for id "${id}"` : '') +
-  `. ` +
-  `In development, hot-reloaded translations may not be be displayed until the page is refreshed. ` +
-  `In production, translations will be preloaded and there won't be a warning.`;
-
-export const runtimeTranslationTimeoutWarning = createGtNextDiagnostic({
-  whatHappened: 'Runtime translation timed out',
-});
-
-export const dictionaryNotFoundWarning = createGtNextDiagnostic({
-  whatHappened: 'No dictionary was found',
-  fix: 'Add dictionary.js or [defaultLocale].json to your project, and make sure withGTConfig() is enabled',
 });
 
 export const standardizedLocalesWarning = (locales: string[]) =>
@@ -294,10 +177,20 @@ export const standardizedLocalesWarning = (locales: string[]) =>
 export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
   `gt-next: The following canonical locales were standardized: ${locales.join(', ')}. Use the standardized codes in your config to avoid this warning.`;
 
-export const deprecatedLocaleMappingWarning = `gt-next: You are using the deprecated localeMapping configuration. Please move "customMapping" to your gt.config.json file.`;
-
 export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
   `gt-next (plugin): The GT ${type} compiler could not be resolved. Skipping compiler optimizations.`;
+
+export const customGetLocaleUnresolvedWarning = createGtNextDiagnostic({
+  whatHappened: 'Custom getLocale() could not be resolved',
+  wayOut: 'gt-next will fall back to default locale detection',
+  fix: 'Export a getLocale() function from the configured request file',
+});
+
+export const customGetRegionUnresolvedWarning = createGtNextDiagnostic({
+  whatHappened: 'Custom getRegion() could not be resolved',
+  wayOut: 'gt-next will fall back to default region detection',
+  fix: 'Export a getRegion() function from the configured request file',
+});
 
 export const createGTCompilerUnavailableWarning = (type: 'babel' | 'swc') =>
   type === 'swc'
@@ -309,17 +202,5 @@ export const babelCompilerTurbopackUnavailableWarning =
   `To use compiler optimizations with Turbopack, set experimentalCompilerOptions: { type: 'swc' }.`;
 
 export const disablingCompileTimeHashWarning = `gt-next (plugin): Compile-time hash is disabled. Compiler optimizations are inactive.`;
-
-export const createStringRenderWarning = (
-  message: string,
-  id: string | undefined,
-  error?: unknown
-) =>
-  createGtNextDiagnostic({
-    whatHappened: `The string ${id ? `for id "${id}" ` : ''}could not be rendered`,
-    wayOut: 'Source content will render as a fallback',
-    fix: `Check the message syntax and variables for: "${message}"`,
-    details: formatDiagnosticErrorDetails(error),
-  });
 
 export const swcPluginCompatibilityChangeWarning = `gt-next (plugin): As of gt-next@6.12.4, SWC plugin support is disabled for Next.js versions prior to ${SWC_PLUGIN_SUPPORT}. Update to the latest version of Next.js.`;

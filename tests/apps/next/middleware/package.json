@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test:e2e": "node runPlaywright.mjs",
-    "test:e2e:install": "npx playwright install chromium",
+    "test:e2e:install": "pnpm exec playwright install chromium-headless-shell",
     "bench": "pnpm bench:e2e",
     "bench:e2e": "node runBenchE2E.mjs",
     "lint": "oxlint --config ../../../../examples/.oxlintrc.next.json .",

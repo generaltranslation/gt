@@ -30,6 +30,7 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'getMessages',
     'msg',
     't',
+    'derive',
     'useGT_callback',
     'getGT_callback',
     'useTranslations_callback',
@@ -39,7 +40,6 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'T',
     'Tx',
     'Var',
-    'Static',
     'Derive',
     'Currency',
     'DateTime',
@@ -117,9 +117,7 @@ export function isVariableComponent(name: string): name is GT_COMPONENT_TYPES {
  * Check if a name is a GT derive component
  */
 export function isDeriveComponent(name: string): name is GT_COMPONENT_TYPES {
-  return [GT_COMPONENT_TYPES.Derive, GT_COMPONENT_TYPES.Static].includes(
-    name as GT_COMPONENT_TYPES
-  );
+  return name === GT_COMPONENT_TYPES.Derive;
 }
 
 /**
@@ -161,7 +159,6 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
   return (
     [
       GT_IMPORT_SOURCES.GT_NEXT,
-      GT_IMPORT_SOURCES.GT_NEXT_CLIENT,
       GT_IMPORT_SOURCES.GT_NEXT_SERVER,
       GT_IMPORT_SOURCES.GT_REACT,
       GT_IMPORT_SOURCES.GT_REACT_CLIENT,
@@ -169,6 +166,29 @@ export function isGTImportSource(name: string): name is GT_IMPORT_SOURCES {
       GT_IMPORT_SOURCES.GT_I18N,
     ] as string[]
   ).includes(name);
+}
+
+export function isGTReactImportSource(
+  name: string
+): name is
+  | GT_IMPORT_SOURCES.GT_REACT
+  | GT_IMPORT_SOURCES.GT_REACT_CLIENT
+  | GT_IMPORT_SOURCES.GT_REACT_BROWSER {
+  return (
+    [
+      GT_IMPORT_SOURCES.GT_REACT,
+      GT_IMPORT_SOURCES.GT_REACT_CLIENT,
+      GT_IMPORT_SOURCES.GT_REACT_BROWSER,
+    ] as string[]
+  ).includes(name);
+}
+
+export function getGtReactImportSource(
+  legacyGtReactImportSource: boolean
+): GT_IMPORT_SOURCES.GT_REACT | GT_IMPORT_SOURCES.GT_REACT_BROWSER {
+  return legacyGtReactImportSource
+    ? GT_IMPORT_SOURCES.GT_REACT_BROWSER
+    : GT_IMPORT_SOURCES.GT_REACT;
 }
 
 /**
@@ -207,7 +227,6 @@ export const defaultVariableNames = {
   [GT_COMPONENT_TYPES.Currency]: 'cost',
   [GT_COMPONENT_TYPES.GtInternalCurrency]: 'cost',
   [GT_COMPONENT_TYPES.Derive]: 'static',
-  [GT_COMPONENT_TYPES.Static]: 'static',
 } as const;
 const baseVariablePrefix = '_gt_';
 

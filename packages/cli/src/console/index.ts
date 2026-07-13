@@ -60,7 +60,7 @@ export const warnMissingReturnSync = (
 ): string =>
   withLocation(
     file,
-    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Derive>')} (formerly ${colorizeComponent('<Static>')}) tags but does not have an explicit return statement. Derivable functions must have an explicit return statement.`,
+    `Function ${colorizeFunctionName(functionName)} is wrapped in ${colorizeComponent('<Derive>')} tags but does not have an explicit return statement. Derivable functions must have an explicit return statement.`,
     location
   );
 
@@ -143,6 +143,17 @@ export const warnInvalidFormatSync = (
   withLocation(
     file,
     `Found invalid $format value: ${colorizeContent(value)}. Must be one of: 'ICU', 'STRING', 'I18NEXT'.`,
+    location
+  );
+
+export const warnInvalidRequiresReviewSync = (
+  file: string,
+  value: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    `Found invalid requiresReview value: ${colorizeContent(value)}. Must be a boolean literal (true or false) — strings and dynamic expressions are not allowed.`,
     location
   );
 
@@ -290,7 +301,7 @@ export const warnDeriveFunctionNotWrappedSync = (
   withLocation(
     file,
     withDeriveFunctionError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in derive() (formerly declareStatic()). Ensure the function is properly wrapped with derive() and does not have circular import dependencies.`
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. This call is not wrapped in derive(). Ensure the function is properly wrapped with derive() and does not have circular import dependencies.`
     ),
     location
   );
@@ -317,7 +328,7 @@ export const warnDeriveFunctionNoResultsSync = (
   withLocation(
     file,
     withDeriveFunctionError(
-      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. derive() (formerly declareStatic()) can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
+      `Could not resolve ${colorizeFunctionName(formatCodeClamp(functionName))}. derive() can only receive function invocations and cannot use undefined values or looped calls to construct its result.`
     ),
     location
   );
@@ -402,7 +413,6 @@ export const noLocalesError = `No target locales were found. Add locales to gt.c
 export const noDefaultLocaleError = `No default locale was found. Add defaultLocale to gt.config.json or pass it with --default-locale.`;
 export const noFilesError = `The files configuration is missing or invalid. Check the files section in gt.config.json and try again.`;
 export const noSourceFileError = `No source translation file was found. Check your translations directory and default locale configuration.`;
-export const noSupportedFormatError = `The translation file format is not supported. Use a supported file extension in translationsDir.`;
 export const noApiKeyError = `No API key was found. Pass --api-key or set the GT_API_KEY environment variable.`;
 export const devApiKeyError = `Development API keys cannot be used with the General Translation API. Use a production API key instead.\nGenerate a production API key with: npx gt auth -t production`;
 export const noProjectIdError = `No project ID was found. Pass --project-id, add projectId to gt.config.json, or set the GT_PROJECT_ID environment variable.`;

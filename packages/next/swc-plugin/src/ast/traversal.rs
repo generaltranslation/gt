@@ -215,7 +215,7 @@ impl<'a> JsxTraversal<'a> {
         // Increment counter for each JSX element we encounter
         self.id_counter += 1;
 
-        // Check if this is a variable component first (Var, Num, Currency, DateTime, Static)
+        // Check if this is a variable component first (Var, Num, Currency, DateTime, Derive)
         if let Some(variable) = self.build_sanitized_variable(element) {
           Some(SanitizedChild::Variable(variable))
         } else {

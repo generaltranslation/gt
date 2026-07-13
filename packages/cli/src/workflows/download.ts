@@ -21,6 +21,8 @@ export type FileTranslationData = {
   [fileId: string]: {
     versionId: string;
     fileName: string;
+    /** Source component count for GTJSON files */
+    componentCount?: number;
   };
 };
 
@@ -230,6 +232,7 @@ function prepareFileQueryData(
         fileId,
         locale,
         branchId: branchData.currentBranch.id,
+        componentCount: fileVersionData[fileId].componentCount,
       });
     }
   }

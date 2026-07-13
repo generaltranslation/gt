@@ -1,3 +1,3 @@
-from gt_flask import t, declare_static
+from gt_flask import t, derive
 
-a = t(f"{declare_static('good' if x else 'bad')} {declare_static('day' if y else 'night')}")
+a = t(f"{derive('good' if x else 'bad')} {derive('day' if y else 'night')}")

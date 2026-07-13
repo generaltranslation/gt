@@ -1,8 +1,6 @@
-// Internal route for getLocale() function
-// If using SSG, this route will be replaced with a custom getLocale() function
-import { getNextLocale } from '../request/headers/getNextLocale';
-import { RequestFunctionReturnType } from '../request/types';
-
-export default async function getLocale(): Promise<RequestFunctionReturnType> {
-  return await getNextLocale();
+// Internal route
+export async function getLocale(): Promise<string> {
+  throw new Error(
+    `Unable to import custom getLocale(). Check docs.generaltranslation.com for the latest documentation.`
+  );
 }

@@ -22,6 +22,9 @@ target/
 .codex
 
 # React Native
+examples/expo-react-native/.expo/
+examples/expo-react-native/android/
+examples/expo-react-native/ios/
 *.env.*
 lib/
 *.hmap

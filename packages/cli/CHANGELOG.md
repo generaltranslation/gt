@@ -1,5 +1,271 @@
 # gtx-cli
 
+## 2.14.52
+
+### Patch Changes
+
+- [#1838](https://github.com/generaltranslation/gt/pull/1838) [`b4ef241`](https://github.com/generaltranslation/gt/commit/b4ef2412635f7bc64886b8babde475c6ea1c3503) Thanks [@bgub](https://github.com/bgub)! - Move `@babel/types` from `devDependencies` to `dependencies`. The CLI imports `@babel/types` at runtime across its parsing/JSX-injection code, but it was only declared as a dev dependency and left external in the published build. On strict/isolated installs (e.g. pnpm on Vercel) consumers hit `ERR_MODULE_NOT_FOUND: Cannot find package '@babel/types'` when running `gtx-cli translate`. It now sits alongside the other `@babel/*` runtime dependencies so it is installed for consumers.
+
+- Updated dependencies [[`7db86bd`](https://github.com/generaltranslation/gt/commit/7db86bd92be5d09a2da10133dbb873248b0e5a5c)]:
+  - @generaltranslation/supported-locales@2.1.3
+
+## 2.14.51
+
+### Patch Changes
+
+- [#1818](https://github.com/generaltranslation/gt/pull/1818) [`b72c30b`](https://github.com/generaltranslation/gt/commit/b72c30bc603562310a51b656fb003f1486315a8a) Thanks [@bgub](https://github.com/bgub)! - Clean up the `generaltranslation` public API surface for the next major.
+
+  Removes the unused `generaltranslation/core` subpath, stale endpoint types, duplicate `ApiError` accessors, and dead `/internal` exports. Moves `API_VERSION` to `generaltranslation/internal`, exports the derivation helpers from the public root, and points `gt-i18n` at that public entry.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`3d95277`](https://github.com/generaltranslation/gt/commit/3d95277a057b28fffc73b3fa616210bdcb447e85) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove unused internal exports and dead utility code.
+
+- [#1439](https://github.com/generaltranslation/gt/pull/1439) [`693288d`](https://github.com/generaltranslation/gt/commit/693288d632c42b923920a2fdd9ae2babc1bc28f5) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove internal source barrel exports and update imports to reference defining files directly.
+
+- [#1822](https://github.com/generaltranslation/gt/pull/1822) [`ce8a665`](https://github.com/generaltranslation/gt/commit/ce8a665fd077ce2acb66c3f81db3bad5a781e9a7) Thanks [@bgub](https://github.com/bgub)! - Clean up the `gt-next` API surface for the next major prerelease.
+
+  Removes the deprecated `initGT` config alias and the redundant `gt-next/types` subpath. Moves the hidden dictionary and loader subpaths under `gt-next/internal/*`, updates the Next config alias plumbing to match, and adjusts CLI setup detection so it no longer treats `initGT` as a valid existing config wrapper.
+
+- Updated dependencies [[`b72c30b`](https://github.com/generaltranslation/gt/commit/b72c30bc603562310a51b656fb003f1486315a8a), [`72e9e16`](https://github.com/generaltranslation/gt/commit/72e9e1643797be8e4ae1453897fd0b023fce2674), [`5adeede`](https://github.com/generaltranslation/gt/commit/5adeede157922d547a33a078d0f527f572c9a8b4), [`d48604e`](https://github.com/generaltranslation/gt/commit/d48604e2171aa84c76873cacb6eb8d43c2f17546), [`88f3a2e`](https://github.com/generaltranslation/gt/commit/88f3a2e0f304fdd19891afac0b41954edc9497c6), [`e12fb17`](https://github.com/generaltranslation/gt/commit/e12fb17d41cfa5fa231e64fe70423434739ea985), [`5752fe8`](https://github.com/generaltranslation/gt/commit/5752fe81bf5b5deaae878638e0de99959bf719be), [`97dc7f4`](https://github.com/generaltranslation/gt/commit/97dc7f4818476a319a54b1519e994a62d5a9a3a5), [`693288d`](https://github.com/generaltranslation/gt/commit/693288d632c42b923920a2fdd9ae2babc1bc28f5), [`2e85ebd`](https://github.com/generaltranslation/gt/commit/2e85ebd1528a4f99a8e36e1d8d6714a639040596), [`d5cf2d3`](https://github.com/generaltranslation/gt/commit/d5cf2d34f412ad49e8b2818fe788b870a5964d65), [`4986567`](https://github.com/generaltranslation/gt/commit/498656728741898a56ae348a536107bd92f95c04), [`795edc8`](https://github.com/generaltranslation/gt/commit/795edc8a2b3e91fc9801d726f4b5cd6fbbc98fb0)]:
+  - generaltranslation@9.0.0
+  - @generaltranslation/format@0.1.2
+  - @generaltranslation/python-extractor@0.2.23
+  - @generaltranslation/supported-locales@2.1.2
+  - gt-remark@1.0.11
+
+## 2.14.51-odysseus.7
+
+### Patch Changes
+
+- b72c30b: Clean up the `generaltranslation` public API surface for the next major.
+
+  Removes the unused `generaltranslation/core` subpath, stale endpoint types, duplicate `ApiError` accessors, and dead `/internal` exports. Moves `API_VERSION` to `generaltranslation/internal`, exports the derivation helpers from the public root, and points `gt-i18n` at that public entry.
+
+- ce8a665: Clean up the `gt-next` API surface for the next major prerelease.
+
+  Removes the deprecated `initGT` config alias and the redundant `gt-next/types` subpath. Moves the hidden dictionary and loader subpaths under `gt-next/internal/*`, updates the Next config alias plumbing to match, and adjusts CLI setup detection so it no longer treats `initGT` as a valid existing config wrapper.
+
+- Updated dependencies [b72c30b]
+- Updated dependencies [d5cf2d3]
+  - generaltranslation@9.0.0-odysseus.6
+  - @generaltranslation/python-extractor@0.2.23-odysseus.6
+  - @generaltranslation/supported-locales@2.1.2-odysseus.6
+
+## 2.14.51-odysseus.6
+
+### Patch Changes
+
+- Updated dependencies [72e9e16]
+- Updated dependencies [5adeede]
+- Updated dependencies [2e85ebd]
+  - generaltranslation@9.0.0-odysseus.5
+  - @generaltranslation/python-extractor@0.2.23-odysseus.5
+  - @generaltranslation/supported-locales@2.1.2-odysseus.5
+
+## 2.14.51-odysseus.5
+
+### Patch Changes
+
+- 4a5f8e8: Remove unused internal exports and dead utility code.
+
+## 2.14.51-odysseus.4
+
+### Patch Changes
+
+- Updated dependencies [26faa87]
+  - generaltranslation@9.0.0-odysseus.4
+  - @generaltranslation/python-extractor@0.2.23-odysseus.4
+  - @generaltranslation/supported-locales@2.1.2-odysseus.4
+
+## 2.14.51-odysseus.3
+
+### Patch Changes
+
+- Updated dependencies [b1eef00]
+  - generaltranslation@9.0.0-odysseus.3
+  - @generaltranslation/python-extractor@0.2.23-odysseus.3
+  - @generaltranslation/supported-locales@2.1.2-odysseus.3
+
+## 2.14.51-odysseus.2
+
+### Patch Changes
+
+- Updated dependencies [[`4b97bc3`](https://github.com/generaltranslation/gt/commit/4b97bc360b2869bbb6e5f214589ef84f6d58a660), [`020c6bd`](https://github.com/generaltranslation/gt/commit/020c6bdd8c604bc07d80d75e8ea2ace1e70d7447)]:
+  - @generaltranslation/format@0.1.2-odysseus.1
+  - generaltranslation@9.0.0-odysseus.2
+  - @generaltranslation/python-extractor@0.2.23-odysseus.2
+  - @generaltranslation/supported-locales@2.1.2-odysseus.2
+
+## 2.14.51-odysseus.1
+
+### Patch Changes
+
+- [#1677](https://github.com/generaltranslation/gt/pull/1677) [`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove internal source barrel exports and update imports to reference defining files directly.
+
+- Updated dependencies [[`87d6320`](https://github.com/generaltranslation/gt/commit/87d6320d271a1bf455f4e283dc1bb23893c7ba64)]:
+  - generaltranslation@9.0.0-odysseus.1
+  - @generaltranslation/python-extractor@0.2.23-odysseus.1
+  - @generaltranslation/supported-locales@2.1.2-odysseus.1
+
+## 2.14.51-odysseus.0
+
+### Patch Changes
+
+- [#1508](https://github.com/generaltranslation/gt/pull/1508) [`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Trigger an odysseus prerelease patch for all publishable packages.
+
+- Updated dependencies [[`cc1499d`](https://github.com/generaltranslation/gt/commit/cc1499d12789ffd7ee3c6ca20d2eec734a1c9575), [`620621a`](https://github.com/generaltranslation/gt/commit/620621aceeafedbb958884cacc5495736191b065), [`bd0d788`](https://github.com/generaltranslation/gt/commit/bd0d7883601a183a31b47b36ea4ea2dca69c62d0)]:
+  - @generaltranslation/format@0.1.2-odysseus.0
+  - @generaltranslation/python-extractor@0.2.23-odysseus.0
+  - @generaltranslation/supported-locales@2.1.2-odysseus.0
+  - generaltranslation@9.0.0-odysseus.0
+  - gt-remark@1.0.11-odysseus.0
+
+## 2.14.56
+
+### Patch Changes
+
+- [#1724](https://github.com/generaltranslation/gt/pull/1724) [`dd0d1cd`](https://github.com/generaltranslation/gt/commit/dd0d1cd0276cd0a158fc3dd73a312502066782a7) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fix translation file path in `gt-lock.json`
+
+## 2.14.55
+
+### Patch Changes
+
+- Updated dependencies [[`a2a3dd0`](https://github.com/generaltranslation/gt/commit/a2a3dd0bcdce9abe360c406a12fc6bb3bc3ca181)]:
+  - @generaltranslation/supported-locales@2.1.4
+
+## 2.14.54
+
+### Patch Changes
+
+- [#1648](https://github.com/generaltranslation/gt/pull/1648) [`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8) Thanks [@brian-lou](https://github.com/brian-lou)! - Use `gt-project-id` instead of `x-gt-project-id` for API request headers. Update the API key header to use standard `Authorization: Bearer <api-key>` prefix.
+
+- Updated dependencies [[`9709a2f`](https://github.com/generaltranslation/gt/commit/9709a2f2b97b9d8239298e39bb31e57692bbffd8)]:
+  - generaltranslation@8.2.18
+  - @generaltranslation/python-extractor@0.2.24
+  - @generaltranslation/supported-locales@2.1.3
+
+## 2.14.53
+
+### Patch Changes
+
+- [#1642](https://github.com/generaltranslation/gt/pull/1642) [`28b1b59`](https://github.com/generaltranslation/gt/commit/28b1b59d13422ef665490a5500cacaabaa00541d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skip enqueue for already translated files
+
+## 2.14.52
+
+### Patch Changes
+
+- Updated dependencies [[`3197028`](https://github.com/generaltranslation/gt/commit/319702855a7b129f95217d41be9f2402680a2f01)]:
+  - generaltranslation@8.2.17
+  - @generaltranslation/python-extractor@0.2.23
+  - @generaltranslation/supported-locales@2.1.2
+
+## 2.14.51
+
+### Patch Changes
+
+- [#1605](https://github.com/generaltranslation/gt/pull/1605) [`69172dc`](https://github.com/generaltranslation/gt/commit/69172dc72e3fe22b6072b4c60e26c3de2cd68494) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Aggregate files on `upload` command. Ensures consistency with `stage` and `translate`
+
+## 2.14.50
+
+### Patch Changes
+
+- [#1586](https://github.com/generaltranslation/gt/pull/1586) [`81d0d09`](https://github.com/generaltranslation/gt/commit/81d0d09db3f0d9d8a2ce7fc45f76bf5dd34fa34a) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Refetch composite content
+
+## 2.14.49
+
+### Patch Changes
+
+- Updated dependencies [[`a41729b`](https://github.com/generaltranslation/gt/commit/a41729b0f6f42ec3bccd6d99299b35eebfb0cc6e)]:
+  - gt-remark@1.0.10
+
+## 2.14.48
+
+### Patch Changes
+
+- [#1582](https://github.com/generaltranslation/gt/pull/1582) [`1e5e748`](https://github.com/generaltranslation/gt/commit/1e5e748b1aef33eb58f536496592a6258fc441e5) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle Mintlify `$ref` siblings, add omit to composite JSONs
+
+## 2.14.47
+
+### Patch Changes
+
+- Updated dependencies [[`34aae81`](https://github.com/generaltranslation/gt/commit/34aae8107d69e6cc1a54cde5d7645ebcd8e14d21)]:
+  - gt-remark@1.0.9
+
+## 2.14.46
+
+### Patch Changes
+
+- [#1534](https://github.com/generaltranslation/gt/pull/1534) [`e64b96d`](https://github.com/generaltranslation/gt/commit/e64b96db770c0049551277b2d4ed1034ad977ce5) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Hash cooked static template literal values during CLI extraction.
+
+## 2.14.45
+
+### Patch Changes
+
+- Updated dependencies [[`1245397`](https://github.com/generaltranslation/gt/commit/12453971eac9dbdea5abac0d2ad67d56e5f1580a)]:
+  - gt-remark@1.0.8
+
+## 2.14.44
+
+### Patch Changes
+
+- [#1523](https://github.com/generaltranslation/gt/pull/1523) [`bda984e`](https://github.com/generaltranslation/gt/commit/bda984e3351520e49314d1b3601a362ea9eb7396) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Update Mintlify `$ref` handling
+
+## 2.14.43
+
+### Patch Changes
+
+- [#1502](https://github.com/generaltranslation/gt/pull/1502) [`0c5cb81`](https://github.com/generaltranslation/gt/commit/0c5cb817468acf1b140ec5371aa003c739584579) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Remove default target locales from the setup prompt.
+
+## 2.14.42
+
+### Patch Changes
+
+- [#1491](https://github.com/generaltranslation/gt/pull/1491) [`205c246`](https://github.com/generaltranslation/gt/commit/205c24647b9f50a68358ee6c3332d110a77ce1b3) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle derived children with whitespace
+
+## 2.14.41
+
+### Patch Changes
+
+- Updated dependencies [[`e041312`](https://github.com/generaltranslation/gt/commit/e04131263dd61e469db977bcc196dc1283e773d0)]:
+  - generaltranslation@8.2.16
+  - @generaltranslation/python-extractor@0.2.22
+  - @generaltranslation/supported-locales@2.1.1
+
+## 2.14.40
+
+### Patch Changes
+
+- [#1456](https://github.com/generaltranslation/gt/pull/1456) [`8094012`](https://github.com/generaltranslation/gt/commit/8094012f9827f3a35e053776946bea67492da9db) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handling slash in Mint `url` fields
+
+## 2.14.39
+
+### Patch Changes
+
+- [#1455](https://github.com/generaltranslation/gt/pull/1455) [`cd8fa50`](https://github.com/generaltranslation/gt/commit/cd8fa505c90624160d6ef4d044946b3bf230f646) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Handle Mintlify `docs.json` `directory` field
+
+- [#1448](https://github.com/generaltranslation/gt/pull/1448) [`f19bade`](https://github.com/generaltranslation/gt/commit/f19bade4741e934505e75880218599d27873e864) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fix CLI binary release builds by resolving Ink's devtools peer dependency and failing binary build scripts on compile errors.
+
+## 2.14.38
+
+### Patch Changes
+
+- Updated dependencies [[`cc4edc1`](https://github.com/generaltranslation/gt/commit/cc4edc1e40d9977125bf6d053fb7f8cdbdd40b05)]:
+  - @generaltranslation/supported-locales@2.1.0
+
+## 2.14.58
+
+### Patch Changes
+
+- [#1786](https://github.com/generaltranslation/gt/pull/1786) [`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `requiresReview`
+
+- Updated dependencies [[`6945a98`](https://github.com/generaltranslation/gt/commit/6945a9871ea260dd999dcb2246c48b21134721f6)]:
+  - generaltranslation@8.2.19
+  - @generaltranslation/python-extractor@0.2.25
+  - @generaltranslation/supported-locales@2.1.5
+
+## 2.14.57
+
 ## 2.14.56
 
 ### Patch Changes

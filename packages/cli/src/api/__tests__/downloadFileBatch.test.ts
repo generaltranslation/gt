@@ -15,7 +15,7 @@ import {
   readLockfile,
 } from '../../fs/config/downloadedVersions.js';
 import type { DownloadedVersionEntry } from '../../fs/config/downloadedVersions.js';
-import type { FileStatusTracker } from '../../workflow/PollJobsStep.js';
+import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 
 // Mock dependencies
 vi.mock('../../utils/gt.js', () => ({
@@ -631,11 +631,12 @@ describe('downloadFileBatch', () => {
     // Lockfile says this exact version+locale was already downloaded, and the
     // output file exists — the conditions that previously triggered the skip
     vi.mocked(readLockfile).mockReturnValue({
-      data: { entries: [] },
-      entryMap: new Map([
+      data: { version: 2, branchId: 'branch-1', entries: [] },
+      entryMap: new Map<string, DownloadedVersionEntry>([
         [
           'file-1',
           {
+            fileId: 'file-1',
             versionId: 'version-1',
             fileName: 'docs.json',
             translations: {
@@ -648,7 +649,7 @@ describe('downloadFileBatch', () => {
         ],
       ]),
       originalV1: false,
-    } as any);
+    });
 
     setupFileSystemMocks({ dirExists: true });
     vi.mocked(fs.readFileSync).mockReturnValue(sourceDocsJson);
@@ -672,7 +673,7 @@ describe('downloadFileBatch', () => {
             },
           },
         },
-      } as any)
+      })
     );
 
     // Fresh data must be merged and written — not skipped
@@ -682,10 +683,15 @@ describe('downloadFileBatch', () => {
       .mocked(fs.promises.writeFile)
       .mock.calls.find((c) => c[0] === 'docs.json');
     expect(writeCall).toBeDefined();
-    const written = JSON.parse(writeCall![1] as string);
+    const written = JSON.parse(writeCall![1] as string) as {
+      navigation: {
+        languages: { language: string; tabs: { tab: string }[] }[];
+      };
+    };
     const esEntry = written.navigation.languages.find(
-      (l: any) => l.language === 'es'
+      (language) => language.language === 'es'
     );
-    expect(esEntry.tabs[0].tab).toBe('Guías');
+    expect(esEntry).toBeDefined();
+    expect(esEntry!.tabs[0].tab).toBe('Guías');
   });
 });

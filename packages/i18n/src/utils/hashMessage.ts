@@ -16,6 +16,7 @@ export function hashMessage<T extends Translation>(
     $context?: string;
     $id?: string;
     $maxChars?: number;
+    $requiresReview?: boolean;
   };
   if (metadataOptions.$_hash != null) {
     return metadataOptions.$_hash;
@@ -25,10 +26,10 @@ export function hashMessage<T extends Translation>(
     source:
       options.$format === 'ICU' ? indexVars(message as IcuMessage) : message,
     ...(metadataOptions.$context && { context: metadataOptions.$context }),
-    ...(metadataOptions.$id && { id: metadataOptions.$id }),
     ...(metadataOptions.$maxChars != null && {
       maxChars: Math.abs(metadataOptions.$maxChars),
     }),
+    ...(metadataOptions.$requiresReview === true && { requiresReview: true }),
     dataFormat: options.$format,
   });
 }

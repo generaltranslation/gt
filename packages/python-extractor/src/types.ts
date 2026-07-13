@@ -12,6 +12,6 @@ export type ExtractionMetadata = {
   context?: string;
   maxChars?: number;
   filePaths?: string[];
-  /** Groups related derive content variants together (for derive/declare_static) */
+  /** Groups related derive content variants together */
   staticId?: string;
 };

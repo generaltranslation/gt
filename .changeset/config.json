@@ -7,7 +7,13 @@
   "commit": false,
   "fixed": [
     ["gt", "gtx-cli"],
-    ["gt-react", "gt-react-native"]
+    [
+      "@generaltranslation/react-core",
+      "gt-next",
+      "gt-react",
+      "gt-react-native",
+      "gt-tanstack-start"
+    ]
   ],
   "linked": [],
   "access": "public",
@@ -26,6 +32,6 @@
     "compiler-cli-parity",
     "next-ssg",
     "gt-next-middleware-e2e",
-    "gt-react-native-example"
+    "gt-react-native-expo-example"
   ]
 }

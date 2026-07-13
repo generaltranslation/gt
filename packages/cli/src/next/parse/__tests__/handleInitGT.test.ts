@@ -291,30 +291,6 @@ export default nextConfig;
       expect(filesUpdated).toHaveLength(0);
     });
 
-    it('should not add import if initGT is already imported', async () => {
-      const filepath = '/test/next.config.js';
-      const { errors, warnings, filesUpdated } = createTestArrays();
-      const packageJson = createMockPackageJson();
-
-      const code = `
-import { initGT } from 'gt-next/config';
-
-const nextConfig = {
-  // config here
-};
-
-export default nextConfig;
-`;
-
-      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
-      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-      await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
-
-      expect(vi.mocked(fs.promises.writeFile)).not.toHaveBeenCalled();
-      expect(filesUpdated).toHaveLength(0);
-    });
-
     it('should not add import if withGTConfig is already required (destructuring)', async () => {
       const filepath = '/test/next.config.js';
       const { errors, warnings, filesUpdated } = createTestArrays();

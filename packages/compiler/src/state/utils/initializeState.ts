@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
   enableMacroImportInjection: true,
   enableAutoJsxInjection: false,
   autoderive: { jsx: false, strings: false },
+  legacyGtReactImportSource: false,
   _debugHashManifest: false,
   devHotReload: { strings: false, jsx: false },
 };
@@ -40,16 +41,13 @@ export function initializeState(
     gtConfig?.files?.gt?.parsingFlags?.enableAutoJsxInjection ?? false;
   const rawDevHotReload =
     gtConfig?.files?.gt?.parsingFlags?.devHotReload ?? false;
-  const rawAutoderive =
-    gtConfig?.files?.gt?.parsingFlags?.autoderive ??
-    gtConfig?.files?.gt?.parsingFlags?.autoDerive ??
+  const rawAutoderive = gtConfig?.files?.gt?.parsingFlags?.autoderive ?? false;
+  const legacyGtReactImportSource =
+    options.legacyGtReactImportSource ??
+    gtConfig?.files?.gt?.parsingFlags?.legacyGtReactImportSource ??
     false;
 
-  // Backwards compat: normalize deprecated autoDerive → autoderive from options
-  const rawOptionsAutoderive =
-    options.autoderive ?? options.autoDerive ?? undefined;
-
-  const autoderive = resolveAutoderive(rawOptionsAutoderive ?? rawAutoderive);
+  const autoderive = resolveAutoderive(options.autoderive ?? rawAutoderive);
 
   // Resolve devHotReload (options override gtConfig)
   const rawOptionsDevHotReload = options.devHotReload ?? undefined;
@@ -61,8 +59,8 @@ export function initializeState(
   // eslint-disable-next-line no-unused-vars
   const {
     autoderive: _a,
-    autoDerive: _b,
-    devHotReload: _c,
+    devHotReload: _b,
+    legacyGtReactImportSource: _c,
     ...restOptions
   } = options;
 
@@ -70,6 +68,7 @@ export function initializeState(
     ...DEFAULT_SETTINGS,
     enableAutoJsxInjection, // can be overridden by options.enableAutoJsxInjection
     autoderive,
+    legacyGtReactImportSource,
     devHotReload,
     ...restOptions,
     filename,

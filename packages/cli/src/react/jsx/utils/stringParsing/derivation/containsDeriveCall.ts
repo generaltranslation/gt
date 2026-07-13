@@ -3,7 +3,7 @@ import { GT_DERIVE_STRING_FUNCTIONS } from '../../constants.js';
 
 /**
  * Lightweight name-based check for whether an expression tree contains
- * a derive()/declareStatic() call. Does NOT validate imports or scope —
+ * a derive() call. Does NOT validate imports or scope —
  * used as a fast gate before full resolution via handleDerivation().
  */
 export function containsDeriveCall(expr: t.Expression): boolean {

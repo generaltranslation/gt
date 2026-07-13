@@ -20,7 +20,7 @@ const ruleTester = new RuleTester({
 // ===================================================================
 
 // ===================================================================
-// 1. $context — static string, supports derive()/declareStatic()
+// 1. $context — static string, supports derive()
 // ===================================================================
 
 // gt("Hello", { $context: "greeting" })  — valid, static string
@@ -55,8 +55,8 @@ describe('static-string: $context with static string is valid', () => {
 
 // gt("Hello", { $context: "formal " + derive(getStyle()) })  — valid, derive() is allowed in $context
 // gt("Hello", { $context: derive(getCtx()) })                — valid, standalone derive()
-// gt("Hello", { $context: "prefix " + declareStatic(x) })    — valid, declareStatic() alias
-describe('static-string: $context with derive()/declareStatic() is valid', () => {
+// gt("Hello", { $context: "prefix " + derive(x) })    — valid, derive()
+describe('static-string: $context with derive() is valid', () => {
   ruleTester.run('context-derive-valid', staticString, {
     valid: [
       {
@@ -81,10 +81,10 @@ describe('static-string: $context with derive()/declareStatic() is valid', () =>
       },
       {
         code: `
-          import { useGT, declareStatic } from 'gt-react';
+          import { useGT, derive } from 'gt-react';
           function Component() {
             const gt = useGT();
-            return gt("Hello", { $context: "prefix " + declareStatic(x) });
+            return gt("Hello", { $context: "prefix " + derive(x) });
           }
         `,
         options: [{ libs: ['gt-react'] }],
@@ -541,5 +541,71 @@ describe('static-string: non-sugar options keys are ignored (ICU params)', () =>
       },
     ],
     invalid: [],
+  });
+});
+
+// ===================================================================
+// $requiresReview — boolean literal only
+// ===================================================================
+
+// gt("Hello", { $requiresReview: true })  — valid, boolean literal
+// gt("Hello", { $requiresReview: false }) — valid, boolean literal
+describe('static-string: $requiresReview with boolean literal is valid', () => {
+  ruleTester.run('requires-review-static-valid', staticString, {
+    valid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello", { $requiresReview: true });
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+      },
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello", { $requiresReview: false });
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+      },
+    ],
+    invalid: [],
+  });
+});
+
+// gt("Hello", { $requiresReview: "true" })  — invalid, string literal
+// gt("Hello", { $requiresReview: flag })    — invalid, dynamic expression
+describe('static-string: $requiresReview with non-boolean is invalid', () => {
+  ruleTester.run('requires-review-static-invalid', staticString, {
+    valid: [],
+    invalid: [
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component() {
+            const gt = useGT();
+            return gt("Hello", { $requiresReview: "true" });
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'sugarVariableMustBeStatic' }],
+      },
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function Component(flag: boolean) {
+            const gt = useGT();
+            return gt("Hello", { $requiresReview: flag });
+          }
+        `,
+        options: [{ libs: ['gt-react'] }],
+        errors: [{ messageId: 'sugarVariableMustBeStatic' }],
+      },
+    ],
   });
 });

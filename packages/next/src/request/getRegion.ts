@@ -1,28 +1,19 @@
-import { getRequestFunction } from './utils/getRequestFunction';
-import { legacyGetRegionFunction } from './utils/legacyGetRegionFunction';
+import { use } from '../utils/use';
+import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
 
-let getRegionFunction: () => Promise<string | undefined>;
 /**
- * @internal
+ * Gets the user's current region code.
  *
- * Retrieves the user's current region code from the built-in region cookie.
- *
- * @returns {Promise<string | undefined>} A promise that resolves to the user's region code (e.g., "US", "CA"), or `undefined` if not set.
+ * @returns {Promise<string | undefined>} The user's region code (e.g., 'US', 'CA'), or `undefined` if not set.
  *
  * @example
  * const region = await getRegion();
- * console.log(region); // "US" or undefined
+ * console.log(region); // 'US' or undefined
  */
-export async function getRegion(): Promise<string | undefined> {
-  if (getRegionFunction) return await getRegionFunction();
+export function getRegion(): Promise<string | undefined> {
+  return getAsyncConditionStore().getRegion();
+}
 
-  if (process.env._GENERALTRANSLATION_ENABLE_SSG === 'false') {
-    // Support new behavior
-    getRegionFunction = getRequestFunction('getRegion');
-  } else {
-    // Support legacy behavior
-    getRegionFunction = legacyGetRegionFunction();
-  }
-
-  return await getRegionFunction();
+export function useRegion() {
+  return use(getRegion());
 }

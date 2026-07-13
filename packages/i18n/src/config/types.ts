@@ -1,11 +1,6 @@
 import type { CustomMapping } from '@generaltranslation/format/types';
 
 /**
- * TODO: this is a react-only type, we need to move this
- */
-export type RenderMethod = 'skeleton' | 'replace' | 'default';
-
-/**
  * TODO: this disagrees with the type in react-core/src/types-dir/config.ts, we need to move this
  * General Config:
  * @param defaultLocale - The default locale to use
@@ -44,16 +39,14 @@ export type GTConfig = {
   // remote translate config
   runtimeUrl?: string | null;
   modelProvider?: string;
-
-  // other
-  localeCookieName?: string;
+  _disableDevHotReload?: boolean;
 
   // parsing options (shared with compiler via gt.config.json)
   files?: {
     gt?: {
       parsingFlags?: {
         /**
-         * Dev hot reload config, gt-react/browser only.
+         * Dev hot reload config, gt-react browser runtime only.
          * - `true` enables strings hot reload (jsx handled at runtime via Suspense)
          * - `{ strings?: boolean; jsx?: boolean }` enables selectively
          */

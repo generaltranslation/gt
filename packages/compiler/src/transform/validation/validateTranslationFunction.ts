@@ -29,6 +29,7 @@ export function validateTranslationFunction(
   id?: string;
   maxChars?: number;
   format?: string;
+  requiresReview?: boolean;
   hasDeriveContext?: boolean;
 } {
   const callExpr = callExprPath.node;
@@ -90,6 +91,7 @@ export function validateTranslationFunction(
   let hash: string | undefined;
   let maxChars: number | undefined;
   let format: string | undefined;
+  let requiresReview: boolean | undefined;
   let hasDeriveContext: boolean | undefined;
   if (callExpr.arguments.length === 1) {
     return {
@@ -140,6 +142,13 @@ export function validateTranslationFunction(
     );
     errors.push(...formatProperty.errors);
     format = formatProperty.value;
+    const requiresReviewProperty = validatePropertyFromObjectExpression(
+      objExprPath,
+      USEGT_CALLBACK_OPTIONS.$requiresReview,
+      'boolean'
+    );
+    errors.push(...requiresReviewProperty.errors);
+    requiresReview = requiresReviewProperty.value;
   }
 
   return {
@@ -150,6 +159,7 @@ export function validateTranslationFunction(
     hash,
     maxChars,
     format,
+    requiresReview,
     hasDeriveContext,
   };
 }
@@ -210,22 +220,27 @@ function validatePropertyFromObjectExpression(
 function validatePropertyFromObjectExpression(
   objExprPath: NodePath<t.ObjectExpression>,
   name: string,
+  type: 'boolean'
+): { errors: string[]; value?: boolean };
+function validatePropertyFromObjectExpression(
+  objExprPath: NodePath<t.ObjectExpression>,
+  name: string,
   type: 'string-or-derive',
   state: TransformState
 ): { errors: string[]; value?: string; hasDeriveExpression?: boolean };
 function validatePropertyFromObjectExpression(
   objExprPath: NodePath<t.ObjectExpression>,
   name: string,
-  type: 'string' | 'number' | 'string-or-derive',
+  type: 'string' | 'number' | 'boolean' | 'string-or-derive',
   state?: TransformState
 ): {
   errors: string[];
-  value?: string | number;
+  value?: string | number | boolean;
   hasDeriveExpression?: boolean;
 } {
   const result: {
     errors: string[];
-    value?: string | number;
+    value?: string | number | boolean;
     hasDeriveExpression?: boolean;
   } = { errors: [] };
   let valuePath: NodePath<t.ObjectProperty> | undefined;
@@ -271,7 +286,7 @@ function validatePropertyFromObjectExpression(
     } else if (resolutionErrors.length > 0) {
       result.errors.push(...resolutionErrors);
     } else if (state) {
-      // Static resolution failed — check if it's a valid derive() expression
+      // Static expression resolution failed; check if it's a valid derive() expression.
       const deriveErrors: string[] = [];
       validateDerive(value.value, state, deriveErrors);
       if (deriveErrors.length === 0) {
@@ -289,7 +304,9 @@ function validatePropertyFromObjectExpression(
     const validatedValue =
       type === 'string'
         ? validateExpressionIsStringLiteral(value.value)
-        : validateExpressionIsNumericLiteral(value.value);
+        : type === 'boolean'
+          ? validateExpressionIsBooleanLiteral(value.value)
+          : validateExpressionIsNumericLiteral(value.value);
     result.errors.push(...validatedValue.errors);
     result.value = validatedValue.value;
   }
@@ -343,14 +360,13 @@ export function validateDerive(
     // Validate the function is actually the GT derive function
     if (
       type !== 'generaltranslation' ||
-      (canonicalName !== GT_OTHER_FUNCTIONS.declareStatic &&
-        canonicalName !== GT_OTHER_FUNCTIONS.derive)
+      canonicalName !== GT_OTHER_FUNCTIONS.derive
     ) {
       errors.push('Expression does not use an allowed call expression');
       return { errors };
     }
     // Validate that the call expression has exactly one argument and the argument is a call expression
-    validateDeclareStaticExpression(expr, errors);
+    validateDeriveCallExpression(expr, errors);
     return { errors };
   }
 
@@ -412,7 +428,7 @@ export function validateDerive(
  * - the argument is a call expression
  * Example: derive(getName())
  */
-function validateDeclareStaticExpression(
+function validateDeriveCallExpression(
   expr: t.CallExpression,
   errors: string[]
 ): {
@@ -443,6 +459,26 @@ function validateDeclareStaticExpression(
   }
 
   return { errors };
+}
+
+/**
+ * Validate that an expression is a boolean literal (strictly `true` or
+ * `false` — never string "true"/"false" or a dynamic expression).
+ *
+ * NOTE: a standalone predicate with the same logic exists at
+ * `../../utils/validation/validateExpressionIsBooleanLiteral` (returns a
+ * plain boolean). This local copy returns `{ errors, value }` to match the
+ * interface of the sibling string/number validators in this file — the same
+ * local-vs-utility duality those validators already have.
+ */
+function validateExpressionIsBooleanLiteral(expr: t.Expression): {
+  errors: string[];
+  value?: boolean;
+} {
+  if (t.isBooleanLiteral(expr)) {
+    return { errors: [], value: expr.value };
+  }
+  return { errors: ['Expression is not a boolean literal'] };
 }
 
 /**

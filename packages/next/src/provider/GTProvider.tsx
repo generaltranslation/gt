@@ -1,98 +1,41 @@
-import { DictionaryEntry, mergeDictionaries } from 'gt-react/internal';
-import { isValidElement } from 'react';
-import { getI18NConfig } from '../config-dir/getI18NConfig';
 import { getLocale } from '../request/getLocale';
-import { getDictionary, getDictionaryEntry } from '../dictionary/getDictionary';
-import { Dictionary, Translations } from 'gt-react/internal';
-import { createDictionarySubsetError } from '../errors/createErrors';
-import { ClientProviderWrapper } from './ClientProviderWrapper';
-import { GTProviderProps } from '../utils/types';
 import { getRegion } from '../request/getRegion';
+import type { GTProviderProps } from '../utils/types';
+import { Client_GTProvider } from '../utils/client-boundary';
+import { getNextI18nCache } from '../i18n-cache/NextI18nCache';
+import { getI18nConfig } from 'gt-i18n/internal';
+import { getEnableI18n } from '../request/getEnableI18n';
 
-/*
-Note: In normal circumstances, both _locale and _region would be at risk of causing hydration errors.
-They would be advised against as parameters of GTProvider.
-However:
-- _region is used only on the client side, and is accessed on the server purely downstream of being set as a cookie by the client
-- A disparity between _locale and the server side locale will cause the window to reload in order to set _locale as the server side locale too
-*/
-
-export async function GTProvider({
-  children,
-  id: prefixId,
-  locale: _locale,
-  region: _region,
-}: GTProviderProps) {
+export async function GTProvider({ children }: GTProviderProps) {
   // ---------- SETUP ---------- //
-  const I18NConfig = getI18NConfig();
-  const locale = _locale || (await getLocale());
-  const defaultLocale = I18NConfig.getDefaultLocale();
-  const [translationRequired, dialectTranslationRequired] =
-    I18NConfig.requiresTranslation(locale);
-
-  // load dictionary
-  const dictionaryTranslations =
-    (await I18NConfig.getDictionaryTranslations(locale)) || {};
+  const i18nCache = getNextI18nCache();
+  const i18nConfig = getI18nConfig();
+  const locale = await getLocale();
+  const region = await getRegion();
+  const enableI18n = await getEnableI18n();
+  const translationRequired = i18nConfig.requiresTranslation(locale);
 
   // ----- FETCH TRANSLATIONS FROM CACHE ----- //
 
-  const cachedTranslationsPromise: Promise<Translations> = translationRequired
-    ? I18NConfig.getCachedTranslations(locale)
+  const translationsSnapshotPromise = translationRequired
+    ? i18nCache.loadTranslations(locale)
     : Promise.resolve({});
 
-  // ---------- PROCESS DICTIONARY ---------- //
-  // (While waiting for cache...)
-
-  // Get dictionary subset
-  let dictionary: Dictionary | DictionaryEntry =
-    (prefixId ? getDictionaryEntry(prefixId) : await getDictionary()) || {};
-
-  // Check provisional dictionary
-  if (
-    isValidElement(dictionary) ||
-    Array.isArray(dictionary) ||
-    typeof dictionary !== 'object'
-  ) {
-    // cannot be a DictionaryEntry, must be a Dictionary
-    throw new Error(
-      createDictionarySubsetError(prefixId ?? '', '<GTProvider>')
-    );
-  }
-
-  // Insert prefix into dictionary
-  if (prefixId) {
-    const prefixPath = prefixId.split('.').reverse();
-    dictionary = prefixPath.reduce<Dictionary>((acc, prefix) => {
-      return { [prefix]: acc };
-    }, dictionary as Dictionary);
-  }
-
-  // Merge dictionary with dictionary translations
-  dictionary = mergeDictionaries(dictionary, dictionaryTranslations);
+  const dictionariesSnapshotPromise = i18nCache.loadDictionaries(locale);
 
   // Block until cache check resolves
-  const translations = await cachedTranslationsPromise;
+  const translationsSnapshot = { [locale]: await translationsSnapshotPromise };
+  const dictionariesSnapshot = await dictionariesSnapshotPromise;
 
   return (
-    <ClientProviderWrapper
-      dictionary={dictionary}
-      dictionaryTranslations={dictionaryTranslations}
-      translations={translations}
+    <Client_GTProvider
+      enableI18n={enableI18n}
       locale={locale}
-      locales={I18NConfig.getLocales()}
-      defaultLocale={defaultLocale}
-      translationRequired={translationRequired}
-      dialectTranslationRequired={dialectTranslationRequired}
-      region={_region || (await getRegion())}
-      environment={
-        process.env.NODE_ENV as 'development' | 'production' | 'test'
-      }
-      gtServicesEnabled={
-        process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true'
-      }
-      {...I18NConfig.getClientSideConfig()}
+      region={region}
+      translations={translationsSnapshot}
+      dictionaries={dictionariesSnapshot}
     >
       {children}
-    </ClientProviderWrapper>
+    </Client_GTProvider>
   );
 }

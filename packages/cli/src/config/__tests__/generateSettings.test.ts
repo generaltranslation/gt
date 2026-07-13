@@ -122,7 +122,8 @@ describe('generateSettings - composite patterns', () => {
       'en',
       ['fr', 'es'],
       '/test/cwd',
-      ['composite-pattern-1', 'composite-pattern-2']
+      ['composite-pattern-1', 'composite-pattern-2'],
+      false
     );
   });
 
@@ -146,7 +147,8 @@ describe('generateSettings - composite patterns', () => {
       'en',
       ['fr', 'es'],
       '/test/cwd',
-      []
+      [],
+      false
     );
   });
 
@@ -203,7 +205,8 @@ describe('generateSettings - composite patterns', () => {
       'en',
       ['fr', 'es'],
       '/test/cwd',
-      []
+      [],
+      false
     );
   });
 
@@ -222,7 +225,8 @@ describe('generateSettings - composite patterns', () => {
       'en',
       ['fr', 'es'],
       '/test/cwd',
-      []
+      [],
+      false
     );
   });
 
@@ -280,7 +284,8 @@ describe('generateSettings - composite patterns', () => {
       'en',
       ['fr', 'es'],
       '/project/root',
-      ['pattern-1', 'pattern-3']
+      ['pattern-1', 'pattern-3'],
+      false
     );
   });
 
@@ -313,7 +318,8 @@ describe('generateSettings - composite patterns', () => {
       'en',
       ['fr', 'es'],
       '/test/cwd',
-      ['json-composite-1']
+      ['json-composite-1'],
+      false
     );
   });
 
@@ -354,7 +360,8 @@ describe('generateSettings - composite patterns', () => {
       'en',
       ['fr', 'es'],
       '/test/cwd',
-      []
+      [],
+      false
     );
   });
 });

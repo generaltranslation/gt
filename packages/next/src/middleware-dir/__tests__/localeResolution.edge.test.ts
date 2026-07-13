@@ -1,13 +1,8 @@
 // @vitest-environment edge-runtime
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GT } from 'generaltranslation';
 import { getLocaleFromRequest } from '../utils';
-
-// Mock gt-react/internal — only provides a constant, avoids deep react-core build chain
-vi.mock('gt-react/internal', () => ({
-  defaultLocaleCookieName: 'generaltranslation.locale',
-}));
 
 // ---- Cookie Constants ----
 const LOCALE_COOKIE = 'generaltranslation.locale';

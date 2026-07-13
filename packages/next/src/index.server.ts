@@ -1,98 +1,69 @@
-import 'server-only';
+'use client';
 
-import { Var } from './variables/Var';
-import { Num } from './variables/Num';
-import { Currency } from './variables/Currency';
-import { DateTime } from './variables/DateTime';
-import { RelativeTime } from './variables/RelativeTime';
-import { T } from './server-dir/buildtime/T';
-import { Branch } from './branches/Branch';
-import { Plural } from './branches/Plural';
-import { GTProvider } from './provider/GTProvider';
-import { Tx } from './server';
-import { useTranslations } from './server-dir/buildtime/getTranslations';
-import { useLocale } from './request/getLocale';
-import { useLocaleDirection } from './request/getLocaleDirection';
-import { getI18NConfig } from './config-dir/getI18NConfig';
-import {
-  msg,
-  decodeMsg,
-  decodeOptions,
-  declareVar,
-  decodeVars,
-  declareStatic,
-  derive,
-  Static,
-  Derive,
-  mFallback,
-  gtFallback,
-} from 'gt-react/internal';
-import type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
-} from 'gt-react';
-import { GT } from 'generaltranslation';
-import {
-  useMessages,
-  useGT,
-} from './server-dir/buildtime/getTranslationFunction';
-import type { LocaleProperties } from '@generaltranslation/format/types';
-export { LocaleSelector, RegionSelector } from './index.client';
+import { initializeGT } from './setup/initGT';
+/**
+ * No initializeGTServer() here because we do not want to
+ * initialize the AsyncConditionStore on the server side.
+ *
+ * No initializeGTClient() here because we do want to enforce
+ * expiry times here.
+ */
+initializeGT();
 
-export function useGTClass() {
-  return getI18NConfig().getGTClass();
-}
+// ===== Pages Router ===== //
+export { parseLocale } from './pages-dir/parseLocale';
+export { withGTServerSideProps } from './pages-dir/withGTServerSideProps';
+export type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 
-export function useLocaleProperties(locale: string): LocaleProperties {
-  return (useGTClass() as GT).getLocaleProperties(locale);
-}
-
-export function useLocales() {
-  return getI18NConfig().getLocales();
-}
-
-export function useDefaultLocale() {
-  return getI18NConfig().getDefaultLocale();
-}
-
-export function useVersionId() {
-  return getI18NConfig().getVersionId();
-}
-
+// ===== Components ===== //
 export {
-  GTProvider,
-  T,
-  /**
-   * @deprecated import from 'gt-next/server' instead
-   */
-  Tx,
-  Var,
-  Num,
+  Branch,
   Currency,
   DateTime,
-  RelativeTime,
-  Static,
   Derive,
-  Branch,
+  GTProvider,
+  T,
+  LocaleSelector,
+  Num,
   Plural,
+  RegionSelector,
+  RelativeTime,
+  Var,
+} from 'gt-react';
+
+// ===== Hooks ===== //
+export {
+  useDefaultLocale,
   useGT,
-  useTranslations,
-  useMessages,
-  useLocale,
   useLocaleDirection,
-  msg,
+  useLocales,
+  useLocaleProperties,
+  useLocaleSelector,
+  useLocale,
+  useMessages,
+  useRegion,
+  useSetLocale,
+  useTranslations,
+} from 'gt-react';
+
+// ===== Functions ===== //
+export {
   decodeMsg,
   decodeOptions,
-  declareStatic,
-  derive,
-  declareVar,
   decodeVars,
-  mFallback,
+  declareVar,
+  derive,
+  getDefaultLocale,
+  getLocaleProperties,
+  getLocales,
+  resolveCanonicalLocale,
+  getTranslationsSnapshot,
+  getVersionId,
   gtFallback,
-};
-export type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
-};
+  mFallback,
+  msg,
+} from 'gt-react';
+export { isLocaleSupported } from './request/localeValidation';
+
+// ===== Types ===== //
+export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';

@@ -4,7 +4,7 @@ import { JsxChild, JsxChildren, Variable } from '../types';
 import { stableStringify as stringify } from '../utils/stableStringify';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
-import isVariable from '../utils/isVariable';
+import { isVariable } from '../utils/isVariable';
 import { HashMetadata } from './types';
 
 // ----- FUNCTIONS ----- //
@@ -37,6 +37,7 @@ export function hashSource(
     context,
     id,
     maxChars,
+    requiresReview,
     dataFormat,
   }: {
     source: JsxChildren | string;
@@ -56,6 +57,9 @@ export function hashSource(
     ...(id && { id }),
     ...(context && { context }),
     ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
+    // Only mixed in when true: false/absent must hash identically to
+    // pre-requiresReview versions so existing projects keep their hashes
+    ...(requiresReview === true && { requiresReview: true }),
     ...(dataFormat && { dataFormat }),
   };
   const stringifiedData = stringify(sanitizedData);

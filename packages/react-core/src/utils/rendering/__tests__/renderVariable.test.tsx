@@ -1,0 +1,133 @@
+import React from 'react';
+import { describe, expect, it } from 'vitest';
+import {
+  renderDefaultChildren,
+  renderTranslatedChildren,
+  renderVariable,
+} from '../renderPipeline';
+import type { TaggedElement } from '../../types';
+
+function createNumberVariable(value: number): TaggedElement {
+  return React.createElement(
+    'span',
+    {
+      'data-_gt': {
+        id: 1,
+        injectionType: 'manual',
+        transformation: 'variable',
+        variableType: 'number',
+      },
+    },
+    value
+  ) as TaggedElement;
+}
+
+describe('renderVariable locale handling', () => {
+  it('passes the explicit locale to internal variable components', () => {
+    const result = renderVariable({
+      variableType: 'n',
+      variableValue: 1000,
+      variableOptions: {},
+      locales: ['fr', 'en'],
+      enableI18n: true,
+      injectionType: 'manual',
+    });
+
+    expect(React.isValidElement(result)).toBe(true);
+    if (!React.isValidElement(result)) return;
+    const element = result as React.ReactElement<{
+      _locale: string;
+      _enableI18n: boolean;
+    }>;
+    expect(element.props._locale).toBe('fr');
+    expect(element.props._enableI18n).toBe(true);
+  });
+
+  it('uses injection type to preserve automatic variable components', () => {
+    const result = renderVariable({
+      variableType: 'n',
+      variableValue: 1000,
+      variableOptions: {},
+      locales: ['fr', 'en'],
+      enableI18n: true,
+      injectionType: 'automatic',
+    });
+
+    expect(React.isValidElement(result)).toBe(true);
+    if (!React.isValidElement(result)) return;
+    const element = result as React.ReactElement<{
+      _locale: string;
+      _enableI18n: boolean;
+    }>;
+    expect((element.type as { _gtt?: string })._gtt).toBe('variable-number');
+    expect(element.props._locale).toBe('fr');
+    expect(element.props._enableI18n).toBe(true);
+  });
+
+  it('uses the internal raw variable component for automatic variables', () => {
+    const result = renderVariable({
+      variableType: 'v',
+      variableValue: 'Ada',
+      variableOptions: {},
+      locales: ['fr', 'en'],
+      enableI18n: true,
+      injectionType: 'automatic',
+    });
+
+    expect(React.isValidElement(result)).toBe(true);
+    if (!React.isValidElement(result)) return;
+    expect((result.type as { _gtt?: string })._gtt).toBe(
+      'variable-variable-automatic'
+    );
+  });
+
+  it('uses the external raw variable component for manual variables', () => {
+    const result = renderVariable({
+      variableType: 'v',
+      variableValue: 'Ada',
+      variableOptions: {},
+      locales: ['fr', 'en'],
+      enableI18n: true,
+      injectionType: 'manual',
+    });
+
+    expect(React.isValidElement(result)).toBe(true);
+    if (!React.isValidElement(result)) return;
+    expect((result.type as { _gtt?: string })._gtt).toBe('variable-variable');
+  });
+
+  it('passes the default locale when rendering source variables', () => {
+    const result = renderDefaultChildren({
+      children: createNumberVariable(5),
+      defaultLocale: 'en',
+      enableI18n: false,
+    });
+
+    expect(React.isValidElement(result)).toBe(true);
+    if (!React.isValidElement(result)) return;
+    const element = result as React.ReactElement<{
+      _locale: string;
+      _enableI18n: boolean;
+    }>;
+    expect(element.props._locale).toBe('en');
+    expect(element.props._enableI18n).toBe(false);
+  });
+
+  it('passes the target locale when rendering translated variables', () => {
+    const result = renderTranslatedChildren({
+      source: createNumberVariable(5),
+      target: { k: 'count', v: 'n' },
+      locales: ['fr', 'en'],
+      enableI18n: true,
+    });
+
+    expect(React.isValidElement(result)).toBe(true);
+    if (!React.isValidElement(result)) return;
+    const element = result as React.ReactElement<{
+      _locale: string;
+      _enableI18n: boolean;
+    }>;
+    expect(element.props._locale).toBe('fr');
+    expect(element.props._enableI18n).toBe(true);
+  });
+});

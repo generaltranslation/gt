@@ -193,7 +193,6 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       const hash = hashSource({
         source: update.source,
         ...(context && { context }),
-        ...(update.metadata.id && { id: update.metadata.id }),
         dataFormat: update.dataFormat,
       });
       return { hash, source: update.source };
@@ -204,7 +203,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       '837be41703617441': [
         'test ',
         {
-          t: 'Static',
+          t: 'Derive',
           i: 1,
           c: 'utils3-a',
         },
@@ -212,7 +211,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       '6c4330bad929001a': [
         'test ',
         {
-          t: 'Static',
+          t: 'Derive',
           i: 1,
           c: 'utils3-b',
         },
@@ -220,7 +219,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       '40d52de32ba666ce': [
         'test ',
         {
-          t: 'Static',
+          t: 'Derive',
           i: 1,
           c: 'utils1-a',
         },
@@ -228,7 +227,7 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       '081fa70a614caa27': [
         'test ',
         {
-          t: 'Static',
+          t: 'Derive',
           i: 1,
           c: 'utils1-b',
         },
@@ -1240,7 +1239,6 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       const hash = hashSource({
         source: update.source,
         ...(context && { context }),
-        ...(update.metadata.id && { id: update.metadata.id }),
         dataFormat: update.dataFormat,
       });
       return { hash, source: update.source };
@@ -1594,237 +1592,6 @@ describe('parseTranslationComponent with cross-file resolution', () => {
       parsingOptions,
       expect.any(Map)
     );
-  });
-
-  it('should resolve functions across multiple files with re-exports using Static for backwards compatibility', () => {
-    // Same as the first test but confirms the deprecated Static component still works
-    const pageFile = `
-      import { T, Static } from "gt-next";
-      import { utils1 } from "./libs/utils1";
-
-      function getStatic() {
-        return 1 ? "static" : "dynamic";
-      }
-
-      export default function Page() {
-        return (
-          <>
-            <T>test <Static>{utils1()}</Static></T>
-          </>
-        );
-      }
-    `;
-
-    const utils1File = `
-      import { utils3 } from "./utils2";
-
-      export function utils1() {
-        if (Math.random() > 0.5) {
-          return utils3();
-        }
-        return 1 ? "utils1-a" : "utils1-b";
-      }
-    `;
-
-    const utils2File = `
-      export * from "./utils3";
-    `;
-
-    const utils3File = `
-      import { utils1 } from "./utils1";
-      export function utils3() {
-        if (Math.random() > 0.5) {
-        }
-        return 1 ? "utils3-a" : "utils3-b";
-      }
-    `;
-
-    // Set up file system mocks
-    mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
-      switch (path) {
-        case '/test/static/libs/utils1.ts':
-          return utils1File;
-        case '/test/static/libs/utils2.ts':
-          return utils2File;
-        case '/test/static/libs/utils3.ts':
-          return utils3File;
-        default:
-          throw new Error(`File not found: ${path}`);
-      }
-    });
-
-    mockResolveImportPath.mockImplementation(
-      (_currentFile: string, importPath: string) => {
-        if (importPath === './libs/utils1')
-          return '/test/static/libs/utils1.ts';
-        if (importPath === './utils2') return '/test/static/libs/utils2.ts';
-        if (importPath === './utils3') return '/test/static/libs/utils3.ts';
-        if (importPath === './utils1') return '/test/static/libs/utils1.ts';
-        return null;
-      }
-    );
-
-    const ast = parse(pageFile, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-    });
-
-    let tLocalName = '';
-    const importAliases: Record<string, string> = {};
-
-    traverse(ast, {
-      ImportDeclaration(path) {
-        if (path.node.source.value === 'gt-next') {
-          path.node.specifiers.forEach((spec) => {
-            if (
-              t.isImportSpecifier(spec) &&
-              t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'T'
-            ) {
-              tLocalName = spec.local.name;
-              importAliases[tLocalName] = 'T';
-            }
-            if (
-              t.isImportSpecifier(spec) &&
-              t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
-            ) {
-              importAliases[spec.local.name] = 'Static';
-            }
-          });
-        }
-      },
-    });
-
-    traverse(ast, {
-      Program(programPath) {
-        const tBinding = programPath.scope.getBinding(tLocalName);
-        if (tBinding) {
-          parseTranslationComponent({
-            originalName: 'T',
-            localName: tLocalName,
-            path: tBinding.path,
-            updates,
-            config: {
-              importAliases,
-              parsingOptions,
-              pkgs: [Libraries.GT_NEXT],
-              file: '/test/static/page.tsx',
-            },
-            output: {
-              errors,
-              warnings,
-              unwrappedExpressions: [],
-            },
-          });
-        }
-      },
-    });
-
-    // Static usage should still be fully supported
-    expect(errors).toHaveLength(0);
-    expect(updates).toHaveLength(4);
-
-    const staticContents = updates.map((u) => (u.source[1] as { c: string }).c);
-    expect(staticContents).toContain('utils3-a');
-    expect(staticContents).toContain('utils3-b');
-    expect(staticContents).toContain('utils1-a');
-    expect(staticContents).toContain('utils1-b');
-
-    // Static should still produce the legacy Static type internally
-    updates.forEach((update) => {
-      expect((update.source[1] as unknown).t).toBe('Static');
-    });
-  });
-
-  it('should handle declareStatic imported with alias for backwards compatibility', () => {
-    // Test for declareStatic import aliasing while using the legacy Static component
-    const pageFile = `
-      import { T, Static } from "gt-next";
-      import { declareStatic as ds } from "gt-react";
-
-      const greeting = ds(() => Math.random() > 0.5 ? "hello" : "hi");
-
-      export default function Page() {
-        return (
-          <>
-            <T>Message: <Static>{greeting()}</Static></T>
-          </>
-        );
-      }
-    `;
-
-    // Parse the page file
-    const ast = parse(pageFile, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-    });
-
-    // Find the T component import and local name
-    let tLocalName = '';
-    const importAliases: Record<string, string> = {};
-
-    traverse(ast, {
-      ImportDeclaration(path) {
-        if (path.node.source.value === 'gt-next') {
-          path.node.specifiers.forEach((spec) => {
-            if (
-              t.isImportSpecifier(spec) &&
-              t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'T'
-            ) {
-              tLocalName = spec.local.name;
-              importAliases[tLocalName] = 'T';
-            }
-            if (
-              t.isImportSpecifier(spec) &&
-              t.isIdentifier(spec.imported) &&
-              spec.imported.name === 'Static'
-            ) {
-              importAliases[spec.local.name] = 'Static';
-            }
-          });
-        }
-      },
-    });
-
-    // Find the T component usage and test parsing
-    traverse(ast, {
-      Program(programPath) {
-        const tBinding = programPath.scope.getBinding(tLocalName);
-
-        if (tBinding) {
-          parseTranslationComponent({
-            originalName: 'T',
-            localName: tLocalName,
-            path: tBinding.path,
-            updates,
-            config: {
-              importAliases,
-              parsingOptions,
-              pkgs: [Libraries.GT_NEXT],
-              file: '/test/ds-alias/page.tsx',
-            },
-            output: {
-              errors,
-              warnings,
-              unwrappedExpressions: [],
-            },
-          });
-        }
-      },
-    });
-
-    // Should correctly recognize ds as declareStatic alias
-    expect(errors).toHaveLength(0);
-
-    // If updates were generated, verify they have the correct structure
-    if (updates.length > 0) {
-      updates.forEach((update) => {
-        expect(update.dataFormat).toBe('JSX');
-        expect(Array.isArray(update.source)).toBe(true);
-      });
-    }
   });
 
   it('should handle multiple levels of re-exports using Derive', () => {

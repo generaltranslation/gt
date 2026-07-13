@@ -1,14 +1,9 @@
 // @vitest-environment edge-runtime
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createNextMiddleware } from '../createNextMiddleware';
 import type { PathConfig } from '../utils';
 import type { CustomMapping } from '@generaltranslation/format/types';
-
-// Mock gt-react/internal — only provides a constant, avoids deep react-core build chain
-vi.mock('gt-react/internal', () => ({
-  defaultLocaleCookieName: 'generaltranslation.locale',
-}));
 
 // ---- Cookie Constants (must match the real defaults) ----
 const LOCALE_COOKIE = 'generaltranslation.locale';
@@ -105,10 +100,13 @@ describe('Middleware Integration Tests', () => {
         process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED,
       _GENERALTRANSLATION_IGNORE_BROWSER_LOCALES:
         process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES,
+      _GENERALTRANSLATION_PATH_REGEX:
+        process.env._GENERALTRANSLATION_PATH_REGEX,
     };
     // Default: GT services disabled
     delete process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED;
     delete process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES;
+    delete process.env._GENERALTRANSLATION_PATH_REGEX;
   });
 
   afterEach(() => {
@@ -222,6 +220,29 @@ describe('Middleware Integration Tests', () => {
       expect(getResponseType(res)).toBe('next');
       // Source map next() is bare — no locale header or routing cookie
       expect(res.headers.get(LOCALE_HEADER)).toBeNull();
+    });
+
+    it('2.8: pathRegex applies i18n middleware only to matching paths', () => {
+      setEnvConfig();
+      process.env._GENERALTRANSLATION_PATH_REGEX = '^/(?!excluded(?:/|$)).*';
+      const middleware = createNextMiddleware();
+
+      const includedRes = middleware(createRequest('/about'));
+      const excludedRes = middleware(createRequest('/excluded/about'));
+
+      expect(getResponseType(includedRes)).toBe('rewrite');
+      expect(getResponsePath(includedRes)).toBe('/en/about');
+      expect(getResponseType(excludedRes)).toBe('next');
+      expect(excludedRes.headers.get(LOCALE_HEADER)).toBeNull();
+      expect(excludedRes.cookies.get(ROUTING_COOKIE)).toBeUndefined();
+    });
+
+    it('2.9: invalid pathRegex throws a descriptive error', () => {
+      process.env._GENERALTRANSLATION_PATH_REGEX = '[unclosed';
+
+      expect(() => createNextMiddleware()).toThrowError(
+        'gt-next Error: pathRegex "[unclosed" is not a valid regular expression.'
+      );
     });
   });
 
@@ -456,6 +477,29 @@ describe('Middleware Integration Tests', () => {
       );
       // This should be a next() since the locale and path now match
       expect(getResponseType(nextRes)).toBe('next');
+    });
+
+    it('keeps the locale cookie when clearing the reset cookie', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+      });
+
+      const res = middleware(
+        createRequest('/fr/about', {
+          cookies: {
+            [LOCALE_COOKIE]: 'fr',
+            [RESET_COOKIE]: 'true',
+          },
+        })
+      );
+      expect(getResponseType(res)).toBe('next');
+      const setCookie = res.headers.get('set-cookie') || '';
+      expect(setCookie).toContain(`${RESET_COOKIE}=;`);
+      // The locale cookie must survive: the client re-reads it on every
+      // render, and deleting it races with concurrent prefetch responses
+      // after a locale switch.
+      expect(setCookie).not.toContain(`${LOCALE_COOKIE}=;`);
     });
   });
 });

@@ -9,7 +9,7 @@ import { Dispatch, memo, SetStateAction, useState } from 'react';
 import type { ArtifactActionContext } from './create-artifact';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 interface ArtifactActionsProps {
   artifact: UIArtifact;
   handleVersionChange: (type: 'next' | 'prev' | 'toggle' | 'latest') => void;

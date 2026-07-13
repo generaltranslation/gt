@@ -13,6 +13,7 @@ export function registerUseGTCallback({
   context,
   id,
   maxChars,
+  requiresReview,
   hash,
   format,
 }: {
@@ -22,15 +23,16 @@ export function registerUseGTCallback({
   context?: string;
   id?: string;
   maxChars?: number;
+  requiresReview?: boolean;
   hash?: string;
   format?: string;
 }): void {
   // Calculate hash for the call expression (skip if already set, including empty string for derive context)
   hash ??= hashSource({
     source: content,
-    id,
     context,
     maxChars,
+    requiresReview,
     dataFormat: (format || 'ICU') as DataFormat,
   });
 
@@ -41,6 +43,7 @@ export function registerUseGTCallback({
     id,
     context,
     maxChars,
+    requiresReview,
     format,
   });
 

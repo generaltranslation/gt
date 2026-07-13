@@ -1,8 +1,9 @@
-import { InlineResolveOptions } from '../types/options';
+import { GTTranslationOptions } from '../types/options';
 import { decodeOptions } from '../msg/decodeOptions';
 import { isEncodedTranslationOptions } from '../utils/isEncodedTranslationOptions';
-import { getGT } from './getGT';
+import { getGTInternal } from './getGT';
 import { MFunctionType } from '../types/functions';
+import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 
 /**
  * Returns the m function that resolves a registered message to its translation.
@@ -17,13 +18,29 @@ import { MFunctionType } from '../types/functions';
  * const greeting = m(registeredMessage);
  */
 export async function getMessages(): Promise<MFunctionType> {
+  const conditionStore = getWritableConditionStore();
+  const locale = conditionStore.getLocale();
+  const enableI18n = conditionStore.getEnableI18n();
+  return getMessagesInternal({ locale, enableI18n });
+}
+
+/**
+ * Condition store agnostic getMessages function
+ */
+export async function getMessagesInternal({
+  locale,
+  enableI18n,
+}: {
+  locale: string;
+  enableI18n: boolean;
+}): Promise<MFunctionType> {
   // Get the gt function
-  const gt = await getGT();
+  const gt = await getGTInternal({ locale, enableI18n });
 
   /**
    * Resolves a registered message to its translation.
    * @param {string | null | undefined} encodedMsg - The encoded message to decode and interpolate.
-   * @param {InlineTranslationOptions} options - The options to interpolate.
+   * @param {GTTranslationOptions} options - The options to interpolate.
    * @returns - The decoded and interpolated message.
    *
    * @example
@@ -38,7 +55,7 @@ export async function getMessages(): Promise<MFunctionType> {
    */
   const m: MFunctionType = <T extends string | null | undefined>(
     encodedMsg: T,
-    options: InlineResolveOptions = {}
+    options: GTTranslationOptions = {}
   ): T extends string ? string : T => {
     // Return if the encoded message is null or undefined
     if (encodedMsg == null) return encodedMsg as T extends string ? string : T;

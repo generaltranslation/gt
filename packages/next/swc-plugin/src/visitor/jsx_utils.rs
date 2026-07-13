@@ -107,7 +107,7 @@ pub fn extract_max_chars_from_jsx_attr(
   })
 }
 
-/// Checks if a JSX attribute's expression value contains a derive()/declareStatic() call
+/// Checks if a JSX attribute's expression value contains a derive() call
 pub fn jsx_attr_contains_derive_call(element: &JSXElement, attr_name: &str) -> bool {
   element.opening.attrs.iter().any(|attr| {
     if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {

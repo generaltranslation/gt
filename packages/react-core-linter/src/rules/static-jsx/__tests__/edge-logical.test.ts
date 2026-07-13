@@ -1073,21 +1073,21 @@ describe('logical-and: AND with gt-next library', () => {
   });
 });
 
-describe('logical-and: AND with @generaltranslation/react-core library', () => {
+describe('logical-and: AND with @generaltranslation/react-core/components library', () => {
   ruleTester.run('and-react-core', staticJsx, {
     valid: [],
     invalid: [
       {
         code: `
-          import { T } from '@generaltranslation/react-core';
+          import { T } from '@generaltranslation/react-core/components';
           function Component({ x }) {
             return <T>{x && "text"}</T>;
           }
         `,
-        options: [{ libs: ['@generaltranslation/react-core'] }],
+        options: [{ libs: ['@generaltranslation/react-core/components'] }],
         errors: [{ messageId: 'dynamicContent' }],
         output: `
-          import { T, Branch } from '@generaltranslation/react-core';
+          import { T, Branch } from '@generaltranslation/react-core/components';
           function Component({ x }) {
             return <T><Branch branch={!!x} true="text" /></T>;
           }

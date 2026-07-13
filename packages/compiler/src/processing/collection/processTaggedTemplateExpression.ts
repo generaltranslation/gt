@@ -11,7 +11,7 @@ import { isStringTranslationTaggedTemplate } from '../../utils/parsing/isStringT
  *
  * Only extracts when:
  * - t is unbound (global macro)
- * - t is imported from gt-react/browser
+ * - t is imported from a gt-react entrypoint
  *
  * Does NOT transform the AST — read-only extraction.
  * If the message contains derive() (returns TemplateLiteral), it's skipped.

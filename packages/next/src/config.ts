@@ -5,13 +5,15 @@ import {
   defaultWithGTConfigProps,
   defaultCacheExpiryTime,
 } from './config-dir/props/defaultWithGTConfigProps';
-import { type withGTConfigProps } from './config-dir/props/withGTConfigProps';
+import {
+  type BaseWithGTConfigProps,
+  type withGTConfigProps,
+} from './config-dir/props/withGTConfigProps';
 import {
   APIKeyMissingWarn,
   conflictingConfigurationBuildError,
   createBadFilepathWarning,
   createGTCompilerUnresolvedWarning,
-  deprecatedLocaleMappingWarning,
   devApiKeyIncludedInProductionError,
   invalidCanonicalLocalesError,
   invalidLocalesError,
@@ -21,11 +23,13 @@ import {
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
 } from './errors/createErrors';
+import { compilePathRegex } from './utils/pathRegex';
 import {
   getLocaleProperties,
   isValidLocale,
   standardizeLocale,
 } from '@generaltranslation/format';
+import type { CustomMapping } from '@generaltranslation/format/types';
 import {
   rootParamStability,
   turboConfigStable,
@@ -36,28 +40,41 @@ import {
   resolveRequestFunctionPaths,
 } from './config-dir/utils/resolveRequestFunctionPaths';
 import { resolveConfigFilepath } from './config-dir/utils/resolveConfigFilepath';
-import { ssgChecks } from './plugin/checks/ssgChecks';
 import { cacheComponentsChecks } from './plugin/checks/cacheComponentsChecks';
+import {
+  cacheComponentsDevHotReloadDisabledWarning,
+  cacheComponentsMissingLoadTranslationsError,
+} from './errors/cacheComponents';
+import { I18nConfigParams } from 'gt-i18n/internal/types';
+import { getRuntimeCredentials } from './setup/runtimeCredentials';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 
 type ConfigFileShape = {
+  customMapping?: CustomMapping;
   files?: {
     gt?: {
       parsingFlags?: {
         autoderive?: AutoderiveConfig;
-        autoDerive?: AutoderiveConfig;
       };
     };
   };
 };
 
-type InternalGTConfigProps = withGTConfigProps &
+type RuntimeCredentialProps = {
+  apiKey?: string;
+  devApiKey?: string;
+  projectId?: string;
+};
+
+type InternalGTConfigProps = BaseWithGTConfigProps &
+  RuntimeCredentialProps &
   ConfigFileShape & {
-    devApiKey?: string;
     loadDictionaryEnabled?: boolean;
     loadTranslationsType?: 'remote' | 'custom' | 'disabled';
     _dictionaryFileType?: string;
+    _cacheComponentsEnabled?: boolean;
+    _disableDevHotReload?: boolean;
   };
 
 type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
@@ -77,16 +94,12 @@ type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
  * } satisfies NextConfig;
  *
  * export default withGTConfig(nextConfig, {
- *   projectId: 'abc-123',
  *   locales: ['en', 'es', 'fr'],
  *   defaultLocale: 'en'
  * })
  *
  * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
- * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
- * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.
- * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
  * @param {string|null} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations. Set to null to disable.
  * @param {string|null} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations. Set to null to disable.
  * @param {string[]|undefined} - Whether to use local translations.
@@ -94,28 +107,22 @@ type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {string|undefined} [getLocalePath="getLocale"] - The path to the custom getLocale function.
  * @param {string|undefined} [getRegionPath="getRegion"] - The path to the custom getRegion function.
- * @param {string|undefined} [getDomainPath="getDomain"] - The path to the custom getDomain function.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
  * @param {number} [cacheExpiryTime] - The time in milliseconds for how long translations should be cached.
  * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
  * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
+ * @param {boolean} [disableInvalidLocaleWarning=defaultWithGTConfigProps.disableInvalidLocaleWarning] - Whether to disable invalid request locale warnings.
+ * @param {string|undefined} [pathRegex] - Regular expression that request pathnames must match for i18n middleware to be applied.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
- * @param {boolean} [experimentalEnableSSG=false] - Whether to enable SSG.
- * @param {boolean} [disableSSGWarnings=defaultWithGTConfigProps.disableSSGWarnings] - Whether to disable SSG warnings. (deprecated)
- * @param {string|undefined} [getStaticLocalePath="getStaticLocale"] - The path to the static getLocale function. (deprecated)
- * @param {string|undefined} [getStaticRegionPath="getStaticRegion"] - The path to the static getRegion function. (deprecated)
- * @param {string|undefined} [getStaticDomainPath="getStaticDomain"] - The path to the static getDomain function. (deprecated)
- * @param {boolean} [experimentalLocaleResolution=defaultWithGTConfigProps.experimentalLocaleResolution] - Deprecated. Uses unsupported Next.js internals to infer locale from root params.
- * @param {string|undefined} [experimentalLocaleResolutionParam=defaultWithGTConfigProps.experimentalLocaleResolutionParam] - Deprecated. Only used by experimentalLocaleResolution.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {object} nextConfig - The Next.js configuration object to extend
  * @param {withGTConfigProps} props - General Translation configuration properties
  * @returns {NextConfig} - An updated Next.js config with GT settings applied
  *
- * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
+ * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing from the environment.
  */
 export function withGTConfig<TNextConfig extends object = NextConfig>(
   nextConfig?: TNextConfig,
@@ -149,23 +156,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // ---------- LOAD ENVIRONMENT VARIABLES ---------- //
 
-  // resolve project ID
-  const projectId: string | undefined = process.env.GT_PROJECT_ID;
-
-  // resolve API keys
-  const envApiKey: string | undefined =
-    process.env.NODE_ENV === 'production'
-      ? process.env.GT_API_KEY
-      : process.env.GT_DEV_API_KEY || process.env.GT_API_KEY;
-  let apiKey, devApiKey;
-  if (envApiKey) {
-    const apiKeyType = envApiKey?.split('-')?.[1];
-    if (apiKeyType === 'api') {
-      apiKey = envApiKey;
-    } else if (apiKeyType === 'dev') {
-      devApiKey = envApiKey;
-    }
-  }
+  const { projectId, apiKey, devApiKey } = getRuntimeCredentials();
 
   // conditionally add environment variables to config
   const envConfig: Partial<InternalGTConfigProps> = {
@@ -234,10 +225,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     ...props.headersAndCookies,
   };
 
-  // Merge experimentalSwcPluginOptions
+  // Merge compiler options
   const mergedExperimentalCompilerOptions = {
     ...defaultWithGTConfigProps.experimentalCompilerOptions,
-    ...props.experimentalSwcPluginOptions,
     ...props.experimentalCompilerOptions,
   };
 
@@ -251,6 +241,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     experimentalCompilerOptions: mergedExperimentalCompilerOptions,
     _usingPlugin: true, // flag to indicate plugin usage
   };
+
+  compilePathRegex(mergedConfig.pathRegex);
 
   // clear up any issues with the compiler options
   validateCompiler(mergedConfig);
@@ -430,12 +422,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     );
   }
 
-  // Run SSG checks
-  ssgChecks(mergedConfig, requestFunctionPaths);
-
   // Run cache component checks
   cacheComponentsChecks({
-    mergedConfig,
     nextConfig: internalNextConfig,
     requestFunctionPaths,
     localTranslationsEnabled: !!customLoadTranslationsPath,
@@ -472,6 +460,18 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     mergedConfig.loadTranslationsType = 'remote';
   }
 
+  if (internalNextConfig.cacheComponents) {
+    if (mergedConfig.loadTranslationsType !== 'custom') {
+      throw new Error(cacheComponentsMissingLoadTranslationsError);
+    }
+    if (isDevHotReloadEnabled(mergedConfig)) {
+      console.warn(cacheComponentsDevHotReloadDisabledWarning);
+    }
+    mergedConfig._cacheComponentsEnabled = true;
+    mergedConfig._disableDevHotReload = true;
+    mergedConfig.cacheExpiryTime = 0;
+  }
+
   // Set default cache expiry if and only if no dev key
   if (
     mergedConfig.loadTranslationsType == 'remote' &&
@@ -482,11 +482,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   }
 
   // ---------- ERROR CHECKS ---------- //
-
-  // Check: using deprecated localeMapping
-  if (props.customMapping) {
-    console.warn(deprecatedLocaleMappingWarning);
-  }
 
   // Check: invalid locale
   if (!mergedConfig.customMapping && gtServicesEnabled) {
@@ -556,16 +551,29 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   }
 
   // ---------- STORE CONFIGURATIONS ---------- //
-  const I18NConfigParams = JSON.stringify(mergedConfig);
+  const {
+    projectId: _projectId,
+    apiKey: _apiKey,
+    devApiKey: _devApiKey,
+    ...privateConfigParams
+  } = mergedConfig;
+  const I18NConfigParams = JSON.stringify(privateConfigParams);
+  const publicI18NConfigParams: Omit<
+    I18nConfigParams,
+    'projectId' | 'devApiKey' | 'apiKey'
+  > = {
+    defaultLocale: mergedConfig.defaultLocale,
+    locales: mergedConfig.locales,
+    customMapping: mergedConfig.customMapping,
+    runtimeUrl: mergedConfig.runtimeUrl,
+  };
 
   const { type: _type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
 
   // Read autoderive from parsingFlags (single source of truth shared with CLI)
   const rawAutoderive: boolean | { jsx?: boolean; strings?: boolean } =
-    loadedConfig?.files?.gt?.parsingFlags?.autoderive ??
-    loadedConfig?.files?.gt?.parsingFlags?.autoDerive ??
-    false;
+    loadedConfig?.files?.gt?.parsingFlags?.autoderive ?? false;
   const autoderiveJsx =
     typeof rawAutoderive === 'boolean'
       ? rawAutoderive
@@ -587,9 +595,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       : null;
 
   const turboAliases = {
-    'gt-next/_dictionary': resolvedDictionaryFilePath || '',
-    'gt-next/_load-translations': customLoadTranslationsPath || '',
-    'gt-next/_load-dictionary': customLoadDictionaryPath || '',
+    'gt-next/internal/_dictionary': resolvedDictionaryFilePath || '',
+    'gt-next/internal/_load-translations': customLoadTranslationsPath || '',
+    'gt-next/internal/_load-dictionary': customLoadDictionaryPath || '',
     ...Object.fromEntries(
       Object.entries(requestFunctionPaths).map(([functionName, path]) => {
         return [
@@ -613,9 +621,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   const config: NextConfig = {
     ...internalNextConfig,
+    transpilePackages: Array.from(
+      new Set([...(internalNextConfig.transpilePackages || []), 'gt-next'])
+    ),
     env: {
       ...internalNextConfig.env,
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
+      NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS: JSON.stringify(
+        publicI18NConfigParams
+      ),
       ...(resolvedDictionaryFilePathType && {
         _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:
           resolvedDictionaryFilePathType,
@@ -639,22 +653,12 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         requestFunctionPaths.getLocale ? 'true' : 'false',
       _GENERALTRANSLATION_CUSTOM_GET_REGION_ENABLED:
         requestFunctionPaths.getRegion ? 'true' : 'false',
-      _GENERALTRANSLATION_CUSTOM_GET_DOMAIN_ENABLED:
-        requestFunctionPaths.getDomain ? 'true' : 'false',
-      _GENERALTRANSLATION_STATIC_GET_LOCALE_ENABLED:
-        requestFunctionPaths.getStaticLocale ? 'true' : 'false',
-      _GENERALTRANSLATION_STATIC_GET_REGION_ENABLED:
-        requestFunctionPaths.getStaticRegion ? 'true' : 'false',
-      _GENERALTRANSLATION_STATIC_GET_DOMAIN_ENABLED:
-        requestFunctionPaths.getStaticDomain ? 'true' : 'false',
-      _GENERALTRANSLATION_DISABLE_SSG_WARNINGS:
-        mergedConfig.disableSSGWarnings?.toString() || 'false',
-      _GENERALTRANSLATION_ENABLE_SSG:
-        mergedConfig.experimentalEnableSSG?.toString() || 'false',
-      _GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION:
-        mergedConfig.experimentalLocaleResolution?.toString() || 'false',
-      _GENERALTRANSLATION_EXPERIMENTAL_LOCALE_RESOLUTION_PARAM:
-        mergedConfig.experimentalLocaleResolutionParam,
+      _GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING:
+        mergedConfig.disableInvalidLocaleWarning?.toString() || 'false',
+      // nextConfig.env intentionally makes this available to client-boundary.tsx.
+      ...(mergedConfig.pathRegex !== undefined && {
+        _GENERALTRANSLATION_PATH_REGEX: mergedConfig.pathRegex,
+      }),
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {
@@ -717,17 +721,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
           webpackConfig.cache = false;
         }
         if (resolvedDictionaryFilePath) {
-          webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
-            webpackConfig.context,
-            resolvedDictionaryFilePath
-          );
+          webpackConfig.resolve.alias['gt-next/internal/_dictionary'] =
+            path.resolve(webpackConfig.context, resolvedDictionaryFilePath);
         }
         if (customLoadTranslationsPath) {
-          webpackConfig.resolve.alias[`gt-next/_load-translations`] =
+          webpackConfig.resolve.alias[`gt-next/internal/_load-translations`] =
             path.resolve(webpackConfig.context, customLoadTranslationsPath);
         }
         if (customLoadDictionaryPath) {
-          webpackConfig.resolve.alias[`gt-next/_load-dictionary`] =
+          webpackConfig.resolve.alias[`gt-next/internal/_load-dictionary`] =
             path.resolve(webpackConfig.context, customLoadDictionaryPath);
         }
         for (const [functionName, pathString] of Object.entries(
@@ -752,8 +754,12 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   return config as WithGTConfigResult<TNextConfig>;
 }
 
-// Keep initGT for backward compatibility
-export const initGT =
-  (props: withGTConfigProps) =>
-  <TNextConfig extends object = NextConfig>(nextConfig?: TNextConfig) =>
-    withGTConfig(nextConfig, props);
+function isDevHotReloadEnabled(config: InternalGTConfigProps): boolean {
+  return (
+    !!config.devApiKey &&
+    !!config.projectId &&
+    config.runtimeUrl !== null &&
+    config.runtimeUrl !== '' &&
+    process.env.NODE_ENV === 'development'
+  );
+}

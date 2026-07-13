@@ -1,0 +1,34 @@
+import { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
+import { getReadonlyConditionStore } from '../condition-store/singleton-operations';
+import { useGTContext } from '../context/context';
+
+/**
+ * NOTE: useSetLocale() and useSetEnableI18n() are not implemented in @generaltranslation/react-core
+ * Some server environments are read only, so we cannot implement these hooks.
+ */
+
+export function useConditionStore(): ReadonlyConditionStoreInterface {
+  const context = useGTContext();
+  return context?.conditionStore ?? getReadonlyConditionStore();
+}
+
+/**
+ * Returns the current locale.
+ */
+export function useLocale(): string {
+  return useConditionStore().getLocale();
+}
+
+/**
+ * Returns the current region, or undefined if no region is set.
+ */
+export function useRegion(): string | undefined {
+  return useConditionStore().getRegion();
+}
+
+/**
+ * Returns the current enableI18n flag.
+ */
+export function useEnableI18n(): boolean {
+  return useConditionStore().getEnableI18n();
+}

@@ -11,9 +11,14 @@ export async function calculateHashes(updates: Updates): Promise<void> {
       const hash = hashSource({
         source: update.source,
         ...(update.metadata.context && { context: update.metadata.context }),
-        ...(update.metadata.id && { id: update.metadata.id }),
         ...(update.metadata.maxChars != null && {
           maxChars: update.metadata.maxChars,
+        }),
+        // Only the explicit prop is hash-changing. Config-level review
+        // defaults materialize into GTJSON metadata without touching hashes,
+        // because the runtime computes lookup hashes from props alone.
+        ...(update.metadata.requiresReview === true && {
+          requiresReview: true,
         }),
         dataFormat: update.dataFormat,
       });

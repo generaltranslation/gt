@@ -1,4 +1,5 @@
-import { BaseDocumentSerializer, BaseDocumentDeserializer } from '../index';
+import { BaseDocumentSerializer } from '../serialize/index';
+import { BaseDocumentDeserializer } from '../deserialize/BaseDocumentDeserializer';
 import {
   customSerializers,
   customDeserializers,

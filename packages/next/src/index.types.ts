@@ -1,12 +1,18 @@
 import { typesFileError } from './errors/createErrors';
-import { GTProvider as _GTProvider } from './provider/GTProvider';
 import { T as _T } from './server-dir/buildtime/T';
+import type {
+  GetServerSideProps,
+  GetServerSidePropsContext,
+  PreviewData,
+} from 'next';
+import type { ParsedUrlQuery } from 'querystring';
+import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
 import {
   useTranslations as _useTranslations,
   useLocale as _useLocale,
+  useRegion as _useRegion,
   useLocales as _useLocales,
   useDefaultLocale as _useDefaultLocale,
-  useGTClass as _useGTClass,
   useLocaleProperties as _useLocaleProperties,
   Currency as _Currency,
   DateTime as _DateTime,
@@ -15,31 +21,43 @@ import {
   Var as _Var,
   Branch as _Branch,
   Plural as _Plural,
+  Derive as _Derive,
+  useLocaleDirection as _useLocaleDirection,
+} from 'gt-react';
+import {
   LocaleSelector as _LocaleSelector,
   RegionSelector as _RegionSelector,
-  useLocaleDirection as _useLocaleDirection,
-  useVersionId as _useVersionId,
-} from 'gt-react/client';
-import type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
-  RuntimeTranslationOptions,
+  useSetLocale as _useSetLocale,
+  useLocaleSelector as _useLocaleSelector,
+  getTranslationsSnapshot,
+  getDefaultLocale,
+  getLocaleProperties,
+  getLocales,
+  resolveCanonicalLocale,
+  getVersionId,
 } from 'gt-react';
+import { GTProvider as _GTProvider } from 'gt-react';
+import type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
 import type { StringFormat } from '@generaltranslation/format/types';
 import {
   msg,
   decodeMsg,
   decodeOptions,
-  declareStatic,
   derive,
   declareVar,
   decodeVars,
-  _Messages,
-  Static as _Static,
-  Derive as _Derive,
   mFallback,
   gtFallback,
-} from 'gt-react/internal';
+} from '@generaltranslation/react-core/pure';
+
+type Message = {
+  message: string;
+  $id?: string;
+  $context?: string;
+  $maxChars?: number;
+  $_hash?: string;
+};
+type Messages = Message[];
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -50,9 +68,13 @@ import {
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export const GTProvider: typeof _GTProvider = () => {
+export function GTProvider(
+  _: {
+    id?: string;
+  } & Partial<Parameters<typeof _GTProvider>[0]>
+): React.ReactNode {
   throw new Error(typesFileError);
-};
+}
 
 /**
  * Build-time translation component that renders its children in the user's given locale.
@@ -237,41 +259,6 @@ export const Derive: typeof _Derive = () => {
 Derive._gtt = 'derive';
 
 /**
- * @deprecated Use `<Derive>` instead.
- *
- * Marks JSX children as derivable by the GT compiler and CLI.
- *
- * Use `<Derive>` instead of `<Static>` for new code. This alias is kept for
- * backwards compatibility and renders its children unchanged at runtime.
- *
- * Run `gt validate` after adding or changing derived JSX content to verify that
- * each derivable expression can be resolved by the CLI before translating or
- * building.
- *
- * @example
- * ```jsx
- * function getSubject() {
- *   return (Math.random() > 0.5) ? "Alice" : "Brian";
- * }
- * ...
- * <T>
- *   <Static>
- *      {getSubject()}
- *   </Static>
- *   is going to school today.
- * </T>
- * ```
- *
- * @param {T extends React.ReactNode} children - JSX content to derive for translation extraction.
- * @returns {T} The same children, unchanged at runtime.
- */
-export const Static: typeof _Static = () => {
-  throw new Error(typesFileError);
-};
-/** @internal _gtt - The GT transformation for the component. */
-Static._gtt = 'derive';
-
-/**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
  * It allows for flexible content switching based on the `branch` prop and an object of possible branches (`...branches`).
  * If the specified `branch` is present in the `branches` object, it renders the content of that branch.
@@ -343,13 +330,60 @@ export const LocaleSelector: typeof _LocaleSelector = () => {
 };
 
 /**
+ * A dropdown component that allows users to select a region.
+ * @param {string[]} regions - An optional list of ISO 3166 region codes to use for the dropdown. If not provided, regions are inferred from the supported locales in the `<GTProvider>` context.
+ * @returns {React.ReactElement | null} The rendered region dropdown component or null to prevent rendering.
+ */
+export const RegionSelector: typeof _RegionSelector = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * Resolve the user's locale from a Next Pages Router server-side request.
+ *
+ * @param context - The GetServerSideProps context for the request.
+ * @returns The resolved locale.
+ */
+export function parseLocale<
+  Params extends ParsedUrlQuery = ParsedUrlQuery,
+  Preview extends PreviewData = PreviewData,
+>(_: GetServerSidePropsContext<Params, Preview>): string {
+  throw new Error(typesFileError);
+}
+
+/**
+ * Wraps a Pages Router `getServerSideProps` function and adds the resolved GT
+ * locale and translations snapshot to returned page props.
+ */
+export function withGTServerSideProps<
+  Props extends Record<string, unknown> = Record<string, unknown>,
+  Params extends ParsedUrlQuery = ParsedUrlQuery,
+  Preview extends PreviewData = PreviewData,
+>(
+  _?: GetServerSideProps<Props, Params, Preview>
+): GetServerSideProps<WithGTServerSideProps<Props>, Params, Preview> {
+  throw new Error(typesFileError);
+}
+
+/**
+ * Checks whether a locale is valid and supported by the current gt-next config.
+ *
+ * @param locale - The locale candidate to validate.
+ * @returns True when the locale resolves to one of the configured locales.
+ */
+export function isLocaleSupported(_: unknown): boolean {
+  throw new Error(typesFileError);
+}
+
+/**
  * Returns the string translation function `t`.
  *
  * @returns {Function} A translation function that accepts an ICU format string and returns that ICU format string translated.
- * @param {InlineTranslationOptions} [options] - Translation options including variables and special `$`-prefixed options.
+ * @param {GTTranslationOptions} [options] - Translation options including variables and special `$`-prefixed options.
  * @param {string} [options.$context] - Additional context for the translation.
  * @param {string} [options.$id] - Optional identifier for the translation string.
  * @param {number} [options.$maxChars] - Maximum number of characters for the translated message.
+ * @param {boolean} [options.$requiresReview] - Whether the translated message requires approval before use. Must be a boolean literal.
  * @param {StringFormat} [options.$format] - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
  *
  * @example
@@ -365,8 +399,8 @@ export const LocaleSelector: typeof _LocaleSelector = () => {
  *
  */
 export const useGT: (
-  _messages?: _Messages
-) => (message: string, options?: InlineTranslationOptions) => string = () => {
+  _messages?: Messages
+) => (message: string, options?: GTTranslationOptions) => string = () => {
   throw new Error(typesFileError);
 };
 
@@ -375,9 +409,7 @@ export const useGT: (
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
- * The returned function accepts `DictionaryTranslationOptions` which includes:
- * - `$format` - The data format for the message (e.g., 'ICU', 'STRING'). Defaults to 'ICU'.
- * - `$maxChars` - Maximum number of characters for the translated message.
+ * The returned function accepts interpolation variables.
  *
  * @example
  * const t = useTranslations('user');
@@ -400,6 +432,27 @@ export const useTranslations: typeof _useTranslations = () => {
  * console.log(locale); // 'en-US'
  */
 export const useLocale: typeof _useLocale = () => {
+  throw new Error(typesFileError);
+};
+
+export const useSetLocale: typeof _useSetLocale = () => {
+  throw new Error(typesFileError);
+};
+
+export const useLocaleSelector: typeof _useLocaleSelector = () => {
+  throw new Error(typesFileError);
+};
+
+/**
+ * Returns the user's current region.
+ *
+ * @returns {string | undefined} ISO 3166 region code, e.g., 'US', or undefined if not set.
+ *
+ * @example
+ * const region = useRegion();
+ * console.log(region); // 'US'
+ */
+export const useRegion: typeof _useRegion = () => {
   throw new Error(typesFileError);
 };
 
@@ -428,19 +481,6 @@ export const useLocales: typeof _useLocales = () => {
  * console.log(locale); // 'en-US'
  */
 export const useDefaultLocale: typeof _useDefaultLocale = () => {
-  throw new Error(typesFileError);
-};
-
-/**
- * Returns the configured GT class instance.
- *
- * @returns {GT} The configured GT class instance.
- *
- * @example
- * const gt = useGTClass();
- * console.log(gt.getLocaleProperties('en-US'));
- */
-export const useGTClass: typeof _useGTClass = () => {
   throw new Error(typesFileError);
 };
 
@@ -475,47 +515,9 @@ export const useLocaleDirection: typeof _useLocaleDirection = () => {
 };
 
 /**
- * Returns the version ID for the current source, if set.
- *
- * @returns {string | undefined} The version ID.
- *
- * @example
- * const versionId = useVersionId();
- * console.log(versionId); // 'abc123'
- */
-export const useVersionId: typeof _useVersionId = () => {
-  throw new Error(typesFileError);
-};
-
-/**
- * A dropdown component that allows users to select a region.
- *
- * @param {string[]} [regions] - An optional array of ISO 3166 region codes to display. If not provided, regions are inferred from supported locales in the `<GTProvider>` context.
- * @param {React.ReactNode} [placeholder] - Optional placeholder node to display as the first option when no region is selected.
- * @param {object} [customMapping] - An optional object to map region codes to custom display names, emojis, or associated locales. The value can be a string (display name) or an object with `name`, `emoji`, and/or `locale` properties.
- * @param {boolean} [prioritizeCurrentLocaleRegion] - If true, the region corresponding to the current locale is prioritized in the list.
- * @param {boolean} [sortRegionsAlphabetically] - If true, regions are sorted alphabetically by display name.
- * @param {boolean} [asLocaleSelector=false] - If true, selecting a region will also update the locale to the region's associated locale.
- * @param {object} [props] - Additional props to pass to the underlying `<select>` element.
- * @returns {React.JSX.Element | null} The rendered region dropdown component or null if no regions are available.
- *
- * @example
- * ```tsx
- * <RegionSelector
- *   regions={['US', 'CA']}
- *   customMapping={{ US: { name: "United States", emoji: "🇺🇸" } }}
- *   placeholder="Select a region"
- * />
- * ```
- */
-export const RegionSelector: typeof _RegionSelector = () => {
-  throw new Error(typesFileError);
-};
-
-/**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
  * @param {string | string[]} message The message to encode.
- * @param {InlineTranslationOptions} [options] The options to encode.
+ * @param {GTTranslationOptions} [options] The options to encode.
  * @returns The message or array of messages.
  *
  * @note - This function registers the message before the build process. The actual translation does not
@@ -545,18 +547,18 @@ export const RegionSelector: typeof _RegionSelector = () => {
  * // "Hello, Bob!" id: "greetings.1"
  */
 export const useMessages: (
-  _messages?: _Messages
+  _messages?: Messages
 ) => <T extends string | null | undefined>(
   encodedMsg: T,
-  options?: InlineTranslationOptions
+  options?: GTTranslationOptions
 ) => T extends string ? string : T = () => {
   throw new Error(typesFileError);
 };
 
 export type {
-  DictionaryTranslationOptions,
-  InlineTranslationOptions,
+  GTTranslationOptions,
   RuntimeTranslationOptions,
+  WithGTServerSideProps,
 };
 
 export type { StringFormat };
@@ -570,7 +572,10 @@ export {
   derive,
   declareVar,
   decodeVars,
+  getTranslationsSnapshot,
+  getDefaultLocale,
+  getLocaleProperties,
+  getLocales,
+  resolveCanonicalLocale,
+  getVersionId,
 };
-
-/** @deprecated Use derive() instead. */
-export { declareStatic };

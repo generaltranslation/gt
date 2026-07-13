@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import traverse, { type NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { constructJsxChildren } from '../index';
+import { constructJsxChildren } from '../constructJsxChildren';
 import { TransformState } from '../../../state/types';
 import { StringCollector } from '../../../state/StringCollector';
 import { Logger } from '../../../state/Logger';

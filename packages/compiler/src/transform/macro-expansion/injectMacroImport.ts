@@ -1,19 +1,20 @@
 import * as t from '@babel/types';
 import { NodePath } from '@babel/traverse';
-import {
-  GT_IMPORT_SOURCES,
-  GT_OTHER_FUNCTIONS,
-} from '../../utils/constants/gt/constants';
+import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
+import { getGtReactImportSource } from '../../utils/constants/gt/helpers';
 
 /**
- * Inject `import { t } from 'gt-react/browser'` as the first statement in the program.
+ * Inject `import { t } from 'gt-react'` as the first statement in the program.
  */
-export function injectMacroImport(path: NodePath<t.Program>): void {
+export function injectMacroImport(
+  path: NodePath<t.Program>,
+  legacyGtReactImportSource: boolean
+): void {
   const tName = GT_OTHER_FUNCTIONS.t;
 
   const importDecl = t.importDeclaration(
     [t.importSpecifier(t.identifier(tName), t.identifier(tName))],
-    t.stringLiteral(GT_IMPORT_SOURCES.GT_REACT_BROWSER)
+    t.stringLiteral(getGtReactImportSource(legacyGtReactImportSource))
   );
 
   path.unshiftContainer('body', importDecl);

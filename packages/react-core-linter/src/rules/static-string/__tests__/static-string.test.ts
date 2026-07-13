@@ -24,40 +24,48 @@ describe('static-string rule', () => {
               return <div>Hello world</div>;
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/hooks'] }],
         },
         {
           code: `
-            import { useGT } from '@generaltranslation/react-core';
+            import { useGT } from '@generaltranslation/react-core/hooks';
             function Component() {
               const gt = useGT();
               return gt("Hello world");
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/hooks'] }],
         },
         {
           code: `
-            import { useGT, declareStatic } from '@generaltranslation/react-core';
+            import { useGT } from '@generaltranslation/react-core/hooks';
+            import { derive } from '@generaltranslation/react-core/pure';
             function Component() {
               const gt = useGT();
-              return gt("Hello " + declareStatic("world"));
+              return gt("Hello " + derive("world"));
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [
+            {
+              libs: [
+                '@generaltranslation/react-core/hooks',
+                '@generaltranslation/react-core/pure',
+              ],
+            },
+          ],
         },
       ],
       invalid: [
         {
           code: `
-            import { useGT } from '@generaltranslation/react-core';
+            import { useGT } from '@generaltranslation/react-core/hooks';
             function Component() {
               const gt = useGT();
               const name = "World";
               return gt("Hello " + name);
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/hooks'] }],
           errors: [
             {
               messageId: 'variableInterpolationRequired',
@@ -66,14 +74,14 @@ describe('static-string rule', () => {
         },
         {
           code: `
-            import { useGT } from '@generaltranslation/react-core';
+            import { useGT } from '@generaltranslation/react-core/hooks';
             function Component() {
               const gt = useGT();
               const name = "World";
               return gt(\`Hello \${name}!\`);
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/hooks'] }],
           errors: [
             {
               messageId: 'variableInterpolationRequired',
@@ -133,18 +141,26 @@ describe('static-string rule', () => {
     });
   });
 
-  it('should allow derive() as equivalent to declareStatic()', () => {
+  it('should allow derive()', () => {
     ruleTester.run('static-string', staticString, {
       valid: [
         {
           code: `
-            import { useGT, derive } from '@generaltranslation/react-core';
+            import { useGT } from '@generaltranslation/react-core/hooks';
+            import { derive } from '@generaltranslation/react-core/pure';
             function Component() {
               const gt = useGT();
               return gt("Hello " + derive("world"));
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [
+            {
+              libs: [
+                '@generaltranslation/react-core/hooks',
+                '@generaltranslation/react-core/pure',
+              ],
+            },
+          ],
         },
       ],
       invalid: [],
@@ -157,13 +173,13 @@ describe('static-string rule', () => {
       invalid: [
         {
           code: `
-            import { useGT } from '@generaltranslation/react-core';
+            import { useGT } from '@generaltranslation/react-core/hooks';
             function Component() {
               const gt = useGT();
               return gt(["Hello", "World"]);
             }
           `,
-          options: [{ libs: ['@generaltranslation/react-core'] }],
+          options: [{ libs: ['@generaltranslation/react-core/hooks'] }],
           errors: [
             {
               messageId: 'staticStringRequired',

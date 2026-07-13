@@ -11,10 +11,16 @@ const supportedLocales = {
     'ar-OM', // Oman
     'ar-SA', // Saudi Arabia
   ],
+  az: ['az'], // Azerbaijani
   bg: ['bg'], // Bulgarian
   bn: ['bn'], // Bengali
   bs: ['bs'], // Bosnian
-  ca: ['ca'], // Catalan
+  ca: [
+    // Catalan
+    'ca',
+    'ca-ES', // Spain
+  ],
+  cnr: ['cnr'], // Montenegrin
   cs: ['cs'], // Czech
   cy: ['cy'], // Welsh
   da: ['da'], // Danish
@@ -55,6 +61,11 @@ const supportedLocales = {
     'es-VE', // Venezuela
   ],
   et: ['et'], // Estonian
+  eu: [
+    // Basque
+    'eu',
+    'eu-ES', // Spain
+  ],
   fa: ['fa'], // Persian
   fi: ['fi'], // Finnish
   fil: ['fil'], // Filipino
@@ -67,6 +78,11 @@ const supportedLocales = {
     'fr-CA', // Canada
     'fr-CH', // Switzerland
     'fr-SN', // Senegal
+  ],
+  gl: [
+    // Galician
+    'gl',
+    'gl-ES', // Spain
   ],
   gu: ['gu'], // Gujarati
   ha: ['ha'], // Hausa
@@ -151,6 +167,7 @@ const supportedLocales = {
   uz: ['uz'], // Uzbek
   vi: ['vi'], // Vietnamese
   yo: ['yo'], // Yoruba
+  zgh: ['zgh'], // Standard Moroccan Tamazight
   zh: [
     // Chinese
     'zh',

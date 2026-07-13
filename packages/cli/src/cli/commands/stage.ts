@@ -15,6 +15,7 @@ import { TEMPLATE_FILE_ID } from '../../utils/constants.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
 import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
+import { warnManualReviewSetup } from '../../translation/reviewSetupWarning.js';
 
 export async function handleStage(
   options: TranslateFlags,
@@ -36,6 +37,9 @@ export async function handleStage(
     reactComponents,
     publishMap,
   } = await collectFiles(options, settings, library);
+
+  // Point at dashboard review setup when uploading review-gated content
+  await warnManualReviewSetup(settings, allFiles);
 
   // Dry run
   if (options.dryRun) {

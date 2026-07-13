@@ -1,11 +1,3 @@
-// Types for the checkFileTranslations function
-export type FileTranslationQuery = {
-  versionId: string;
-  fileName?: string; // Between fileName and fileId, one is required
-  fileId?: string;
-  locale: string;
-};
-
 export type CheckFileTranslationsOptions = {
   timeout?: number;
 };
@@ -27,7 +19,6 @@ export type FileQueryResult = {
     dataFormat: string | null;
     createdAt: string;
     updatedAt: string;
-    approvalRequiredAt: string | null;
     locales: string[];
   };
   translations: {
