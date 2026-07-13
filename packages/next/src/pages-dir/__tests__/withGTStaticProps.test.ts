@@ -51,6 +51,15 @@ describe('withGTStaticProps', () => {
     expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('fr');
   });
 
+  it('requires Pages Router locale routing', async () => {
+    const getStaticProps = withGTStaticProps();
+
+    await expect(getStaticProps({} as GetStaticPropsContext)).rejects.toThrow(
+      'gt-next Error: withGTStaticProps() could not determine the statically generated locale because without Pages Router locale routing, Next.js generates only one version of this page. Add i18n locales and defaultLocale to your Next.js configuration.'
+    );
+    expect(mockGetTranslationsSnapshot).not.toHaveBeenCalled();
+  });
+
   it('generates an isolated translation snapshot for each locale context', async () => {
     const pageGetStaticProps = vi.fn(
       async (currentContext: GetStaticPropsContext) => ({
