@@ -18,7 +18,7 @@ import {
   TranslationFunctionContext,
 } from '../types';
 import { gt, overrideConfig, pluginConfig } from '../adapter/core';
-import { serializeDocument } from '../utils/serialize';
+import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
 import { initProject } from '../translation/initProject';
 import { createJobs } from '../translation/createJobs';
@@ -299,7 +299,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
           const baseLanguage = pluginConfig.getSourceLocale();
           try {
-            const serialized = serializeDocument(
+            const strategy = getTranslationStrategy(doc);
+            const serialized = strategy.serialize(
               cleanDoc as typeof doc,
               schema,
               baseLanguage

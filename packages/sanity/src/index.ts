@@ -10,7 +10,13 @@ import type {
   IgnoreFields,
   SkipFields,
   TranslateDocumentFilter,
+  FieldLevelTranslationMode,
 } from './adapter/types';
+import {
+  createInternationalizedArrayTypes,
+  resolveFieldLevelConfig,
+} from './schema/createInternationalizedArrayTypes';
+import type { GTFieldLevelLocalizationConfig } from './schema/types';
 import TranslationsTool from './components/page/TranslationsTool';
 import { documentInternationalization } from './documentInternationalization';
 import type { CustomDeserializers } from './serialization/types';
@@ -53,6 +59,14 @@ export type {
 } from './types';
 export type { SerializedDocument } from './serialization/types';
 
+// ===== Field-Level (Internationalized Array) Localization ===== //
+export { createInternationalizedArrayTypes };
+export type {
+  GTFieldLevelLocalizationConfig,
+  FieldLevelFieldType,
+} from './schema/types';
+export type { FieldLevelTranslationMode };
+
 export type GTPluginConfig = Omit<
   Parameters<typeof gt.setConfig>[0],
   'locales'
@@ -78,6 +92,18 @@ export type GTPluginConfig = Omit<
   // with language badges, translation menu, and per-language templates.
   // Requires translateDocuments to specify which document types to enable translations for.
   showDocumentInternationalization?: boolean;
+  // Field-level (internationalized-array) localization. Generates
+  // `internationalizedArray*` schema types + input components when enabled.
+  // `fieldLevelLocalization` is a descriptive alias for the same config.
+  internationalizedArray?: GTFieldLevelLocalizationConfig;
+  fieldLevelLocalization?: GTFieldLevelLocalizationConfig;
+  // How matched documents are translated. Independent from schema generation:
+  // enabling `internationalizedArray` only adds editable fields; routing
+  // translation through the array path requires opting in here. Default 'document'.
+  translationLevel?: FieldLevelTranslationMode;
+  // In 'mixed' mode, the document types that use the internationalized-array
+  // strategy; everything else stays document-level.
+  fieldLevelDocuments?: TranslateDocumentFilter[] | string[];
 };
 
 /**
@@ -114,18 +140,31 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     additionalDeserializers = {},
     additionalBlockDeserializers = [],
     showDocumentInternationalization = true,
+    internationalizedArray,
+    fieldLevelLocalization,
+    translationLevel = 'document',
+    fieldLevelDocuments,
   }) => {
     // Resolve sourceLocale: explicit sourceLocale > defaultLocale (from gt.config.json) > library default
     const resolvedSourceLocale =
       sourceLocale ?? defaultLocale ?? libraryDefaultLocale;
 
     // Normalize translateDocuments: string[] → TranslateDocumentFilter[]
-    let normalizedTranslateDocuments: TranslateDocumentFilter[] | undefined;
-    if (translateDocuments) {
-      normalizedTranslateDocuments = translateDocuments
-        .map((entry) => (typeof entry === 'string' ? { type: entry } : entry))
+    const normalizeFilters = (
+      entries: (TranslateDocumentFilter | string)[] | undefined
+    ): TranslateDocumentFilter[] | undefined =>
+      entries
+        ?.map((entry) => (typeof entry === 'string' ? { type: entry } : entry))
         .filter((filter) => filter.documentId || filter.type);
-    }
+
+    const normalizedTranslateDocuments = normalizeFilters(translateDocuments);
+    const normalizedFieldLevelDocuments =
+      normalizeFilters(fieldLevelDocuments) ?? [];
+
+    // `internationalizedArray` and `fieldLevelLocalization` are aliases.
+    const fieldLevelConfig = resolveFieldLevelConfig(
+      internationalizedArray ?? fieldLevelLocalization
+    );
 
     pluginConfig.init(
       secretsNamespace,
@@ -143,7 +182,9 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       additionalStopTypes,
       additionalSerializers,
       additionalDeserializers,
-      additionalBlockDeserializers
+      additionalBlockDeserializers,
+      translationLevel,
+      normalizedFieldLevelDocuments
     );
     gt.setConfig({
       sourceLocale: resolvedSourceLocale,
@@ -152,13 +193,30 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       projectId: projectId,
     });
 
+    // Document types localized in place via internationalized arrays must NOT
+    // get @sanity/document-internationalization (language badges + per-locale
+    // documents). Build the set of array-localized types from translationLevel.
+    const arrayLocalizedTypes = new Set<string>();
+    if (translationLevel === 'internationalizedArray') {
+      normalizedTranslateDocuments
+        ?.map((filter) => filter.type)
+        .filter((type): type is string => !!type)
+        .forEach((type) => arrayLocalizedTypes.add(type));
+    } else if (translationLevel === 'mixed') {
+      normalizedFieldLevelDocuments
+        .map((filter) => filter.type)
+        .filter((type): type is string => !!type)
+        .forEach((type) => arrayLocalizedTypes.add(type));
+    }
+
     // Auto-add document internationalization plugin
     const plugins = [];
     if (showDocumentInternationalization) {
       const schemaTypes =
         normalizedTranslateDocuments
           ?.map((filter) => filter.type)
-          .filter((type): type is string => !!type) ?? [];
+          .filter((type): type is string => !!type)
+          .filter((type) => !arrayLocalizedTypes.has(type)) ?? [];
       if (schemaTypes.length > 0) {
         const allLocales = [resolvedSourceLocale, ...locales];
         const supportedLanguages = allLocales.map((locale) => {
@@ -175,9 +233,24 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       }
     }
 
+    const schemaTypes = fieldLevelConfig.enabled
+      ? createInternationalizedArrayTypes({
+          sourceLocale: resolvedSourceLocale,
+          locales,
+          fieldTypes: fieldLevelConfig.fieldTypes,
+          languageTitles: fieldLevelConfig.languageTitles,
+          getLanguageTitle: fieldLevelConfig.getLanguageTitle,
+          typePrefix: fieldLevelConfig.typePrefix,
+          includeCompatibilityTypes: fieldLevelConfig.includeCompatibilityTypes,
+        })
+      : [];
+
     return {
       name: 'gt-sanity',
       plugins,
+      schema: {
+        types: schemaTypes,
+      },
       tools: [
         {
           name: 'translations',

@@ -12,7 +12,11 @@ import merge from 'lodash.merge';
 import { deleteMatchingFields } from './applyDocuments';
 import type { FieldMatcher } from '../adapter/types';
 import { getPublishedId } from './documentIds';
-import type { CustomDeserializers } from '../serialization/types';
+import type {
+  CustomDeserializers,
+  TranslationLevel,
+} from '../serialization/types';
+import { collapseToSourceLocale } from '../serialization/internationalizedArray/collapse';
 
 export function deserializeDocument(document: string) {
   const deserializers = merge(
@@ -34,7 +38,8 @@ export function deserializeDocument(document: string) {
 export function serializeDocument(
   document: SanityDocument,
   schema: Schema,
-  baseLanguage: string
+  baseLanguage: string,
+  level: TranslationLevel = 'document'
 ) {
   const stopTypes = [
     ...defaultStopTypes,
@@ -45,15 +50,27 @@ export function serializeDocument(
     pluginConfig.getAdditionalSerializers()
   ) satisfies Partial<PortableTextHtmlComponents>;
 
-  const docToSerialize = stripIgnoredFields(
+  let docToSerialize = stripIgnoredFields(
     document,
     pluginConfig.getIgnoreFields(),
     pluginConfig.getDedupeFields()
   );
 
+  // The internationalized-array model collapses each localized field down to
+  // its source-locale value, then serializes through the standard document
+  // path so the existing HTML format and deserializer are reused as-is.
+  let innerLevel: TranslationLevel = level;
+  if (level === 'internationalizedArray') {
+    docToSerialize = collapseToSourceLocale(
+      docToSerialize,
+      baseLanguage
+    ) as SanityDocument;
+    innerLevel = 'document';
+  }
+
   const serialized = BaseDocumentSerializer(schema).serializeDocument(
     docToSerialize,
-    'document',
+    innerLevel,
     baseLanguage,
     stopTypes,
     serializers

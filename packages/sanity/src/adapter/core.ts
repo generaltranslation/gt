@@ -6,6 +6,7 @@ import type {
   DedupeFields,
   IgnoreFields,
   SkipFields,
+  FieldLevelTranslationMode,
 } from './types';
 import { SECRETS_NAMESPACE } from '../utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
@@ -34,6 +35,8 @@ export class GTConfig {
   additionalSerializers: Partial<PortableTextHtmlComponents>;
   additionalDeserializers: CustomDeserializers;
   additionalBlockDeserializers: unknown[];
+  translationLevel: FieldLevelTranslationMode;
+  fieldLevelDocuments: TranslateDocumentFilter[];
 
   private static instance: GTConfig;
   constructor(
@@ -50,7 +53,9 @@ export class GTConfig {
     additionalStopTypes: string[] = [],
     additionalSerializers: Partial<PortableTextHtmlComponents> = {},
     additionalDeserializers: CustomDeserializers = { types: {} },
-    additionalBlockDeserializers: unknown[] = []
+    additionalBlockDeserializers: unknown[] = [],
+    translationLevel: FieldLevelTranslationMode = 'document',
+    fieldLevelDocuments: TranslateDocumentFilter[] = []
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -66,6 +71,8 @@ export class GTConfig {
     this.additionalSerializers = additionalSerializers;
     this.additionalDeserializers = additionalDeserializers;
     this.additionalBlockDeserializers = additionalBlockDeserializers;
+    this.translationLevel = translationLevel;
+    this.fieldLevelDocuments = fieldLevelDocuments;
   }
 
   static getInstance() {
@@ -104,7 +111,9 @@ export class GTConfig {
     additionalStopTypes: string[] = [],
     additionalSerializers: Partial<PortableTextHtmlComponents> = {},
     additionalDeserializers: CustomDeserializers = { types: {} },
-    additionalBlockDeserializers: unknown[] = []
+    additionalBlockDeserializers: unknown[] = [],
+    translationLevel: FieldLevelTranslationMode = 'document',
+    fieldLevelDocuments: TranslateDocumentFilter[] = []
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -120,6 +129,8 @@ export class GTConfig {
     this.additionalSerializers = additionalSerializers;
     this.additionalDeserializers = additionalDeserializers;
     this.additionalBlockDeserializers = additionalBlockDeserializers;
+    this.translationLevel = translationLevel;
+    this.fieldLevelDocuments = fieldLevelDocuments;
   }
 
   getSecretsNamespace() {
@@ -165,6 +176,12 @@ export class GTConfig {
   }
   getAdditionalBlockDeserializers() {
     return this.additionalBlockDeserializers;
+  }
+  getTranslationLevel() {
+    return this.translationLevel;
+  }
+  getFieldLevelDocuments() {
+    return this.fieldLevelDocuments;
   }
 }
 export const pluginConfig = GTConfig.getInstance();
