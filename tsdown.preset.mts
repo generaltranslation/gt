@@ -253,22 +253,32 @@ function getEntryName(entry: string) {
   return basename(entry, extname(entry));
 }
 
-function createRemoveTypeRuntimeArtifactsHook(
+export function createRemoveRuntimeArtifactsHook(
+  packageDir: string,
   outDir: string,
-  typeEntry: string,
-  packageDir: string
+  artifactNames: string[]
 ) {
-  const typeEntryName = getEntryName(typeEntry);
-  const artifacts = [
-    resolve(packageDir, outDir, `${typeEntryName}.cjs.min.cjs`),
-    resolve(packageDir, outDir, `${typeEntryName}.cjs.min.cjs.map`),
-  ];
+  const artifacts = artifactNames.map((name) =>
+    resolve(packageDir, outDir, name)
+  );
 
   return async () => {
     await Promise.all(
       artifacts.map((artifact) => rm(artifact, { force: true }))
     );
   };
+}
+
+function createRemoveTypeRuntimeArtifactsHook(
+  outDir: string,
+  typeEntry: string,
+  packageDir: string
+) {
+  const typeEntryName = getEntryName(typeEntry);
+  return createRemoveRuntimeArtifactsHook(packageDir, outDir, [
+    `${typeEntryName}.cjs.min.cjs`,
+    `${typeEntryName}.cjs.min.cjs.map`,
+  ]);
 }
 
 export function createTsdownMinifiedDualFormatConfig({
