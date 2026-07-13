@@ -370,8 +370,8 @@ export function withGTServerSideProps<
 }
 
 /**
- * Wraps a Pages Router `getStaticProps` function and adds translation
- * snapshots for every configured locale.
+ * Wraps a Pages Router `getStaticProps` function and adds the generated locale
+ * and its translation snapshot. The default locale uses an empty snapshot.
  */
 export const withGTStaticProps: WithGTStaticPropsFunction = () => {
   throw new Error(typesFileError);

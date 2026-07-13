@@ -38,24 +38,20 @@ describe('withGTStaticProps', () => {
     }));
   });
 
-  it('adds translations for every configured locale without a page handler', async () => {
+  it('adds only the generated locale and its translations', async () => {
     const getStaticProps = withGTStaticProps();
 
     await expect(getStaticProps(context)).resolves.toEqual({
       props: {
-        translations: {
-          en: { hash: 'en translation' },
-          fr: { hash: 'fr translation' },
-          es: { hash: 'es translation' },
-        },
+        locale: 'fr',
+        translations: { fr: { hash: 'fr translation' } },
       },
     });
-    expect(mockGetTranslationsSnapshot).toHaveBeenNthCalledWith(1, 'en');
-    expect(mockGetTranslationsSnapshot).toHaveBeenNthCalledWith(2, 'fr');
-    expect(mockGetTranslationsSnapshot).toHaveBeenNthCalledWith(3, 'es');
+    expect(mockGetTranslationsSnapshot).toHaveBeenCalledOnce();
+    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('fr');
   });
 
-  it('merges every translation snapshot with page props', async () => {
+  it('generates an isolated translation snapshot for each locale context', async () => {
     const pageGetStaticProps = vi.fn(
       async (currentContext: GetStaticPropsContext) => ({
         props: {
@@ -65,17 +61,44 @@ describe('withGTStaticProps', () => {
     );
     const getStaticProps = withGTStaticProps(pageGetStaticProps);
 
-    await expect(getStaticProps(context)).resolves.toEqual({
-      props: {
-        greeting: 'Greeting for fr',
-        translations: {
-          en: { hash: 'en translation' },
-          fr: { hash: 'fr translation' },
-          es: { hash: 'es translation' },
+    await expect(
+      Promise.all([
+        getStaticProps({ ...context, locale: 'fr' }),
+        getStaticProps({ ...context, locale: 'es' }),
+      ])
+    ).resolves.toEqual([
+      {
+        props: {
+          greeting: 'Greeting for fr',
+          locale: 'fr',
+          translations: { fr: { hash: 'fr translation' } },
         },
       },
-    });
-    expect(pageGetStaticProps).toHaveBeenCalledWith(context);
+      {
+        props: {
+          greeting: 'Greeting for es',
+          locale: 'es',
+          translations: { es: { hash: 'es translation' } },
+        },
+      },
+    ]);
+    expect(pageGetStaticProps).toHaveBeenCalledTimes(2);
+    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('fr');
+    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('es');
+  });
+
+  it('uses an empty translation snapshot for the default locale', async () => {
+    const getStaticProps = withGTStaticProps();
+
+    await expect(getStaticProps({ ...context, locale: 'en' })).resolves.toEqual(
+      {
+        props: {
+          locale: 'en',
+          translations: {},
+        },
+      }
+    );
+    expect(mockGetTranslationsSnapshot).not.toHaveBeenCalled();
   });
 
   it('preserves incremental static regeneration options', async () => {
@@ -91,11 +114,8 @@ describe('withGTStaticProps', () => {
     await expect(getStaticProps(context)).resolves.toEqual({
       props: {
         renderedAt: 'build',
-        translations: {
-          en: { hash: 'en translation' },
-          fr: { hash: 'fr translation' },
-          es: { hash: 'es translation' },
-        },
+        locale: 'fr',
+        translations: { fr: { hash: 'fr translation' } },
       },
       revalidate: 60,
     });

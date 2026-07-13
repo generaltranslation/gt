@@ -6,6 +6,7 @@ import { getTranslationsSnapshot } from 'gt-react';
 type TranslationsSnapshot = Awaited<ReturnType<typeof getTranslationsSnapshot>>;
 
 type GTStaticProps = {
+  locale: string;
   translations: TranslationsSnapshot;
 };
 
@@ -30,23 +31,17 @@ export function withGTStaticProps<
     }
 
     const props = await result.props;
-    const snapshots = await Promise.all(
-      getI18nConfig()
-        .getLocales()
-        .map((locale) => getTranslationsSnapshot(locale))
-    );
-    const translations = snapshots.reduce<TranslationsSnapshot>(
-      (allTranslations, snapshot) => ({
-        ...allTranslations,
-        ...snapshot,
-      }),
-      {}
-    );
+    const i18nConfig = getI18nConfig();
+    const defaultLocale = i18nConfig.getDefaultLocale();
+    const locale = context.locale || context.defaultLocale || defaultLocale;
+    const translations =
+      locale === defaultLocale ? {} : await getTranslationsSnapshot(locale);
 
     return {
       ...result,
       props: {
         ...props,
+        locale,
         translations,
       },
     };
