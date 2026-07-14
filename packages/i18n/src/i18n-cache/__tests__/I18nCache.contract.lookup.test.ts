@@ -75,12 +75,10 @@ function spyOnTranslateMany() {
 }
 
 describe('I18nCache contract: lookup API', () => {
+  // Every test initializes the I18nConfig singleton through createCache(), so
+  // beforeEach only resets shared state.
   beforeEach(() => {
     resetGTGlobals();
-    initializeI18nConfig({
-      defaultLocale: 'en',
-      locales: ['en', 'fr', 'es'],
-    });
     vi.clearAllMocks();
   });
 

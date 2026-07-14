@@ -377,13 +377,21 @@ describe('I18nCache config contract', () => {
       cache.lookupTranslationWithFallback('fr', 'Three', { $format: 'ICU' }),
     ]);
 
+    // The batching contract: two requests, neither exceeding maxBatchSize,
+    // covering each miss exactly once. Which miss lands in which batch is an
+    // implementation detail.
     expect(translateManySpy).toHaveBeenCalledTimes(2);
-    expect(
-      Object.keys(translateManySpy.mock.calls[0][0] as object).length
-    ).toBe(2);
-    expect(
-      Object.keys(translateManySpy.mock.calls[1][0] as object).length
-    ).toBe(1);
+    const batches = translateManySpy.mock.calls.map((call) =>
+      Object.keys(call[0] as object)
+    );
+    for (const batch of batches) {
+      expect(batch.length).toBeLessThanOrEqual(2);
+    }
+    expect(batches.flat().sort()).toEqual(
+      ['One', 'Two', 'Three']
+        .map((source) => hashMessage(source, { $format: 'ICU' }))
+        .sort()
+    );
   });
 
   // ===== Dictionary loader plumbing ===== //
