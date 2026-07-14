@@ -121,6 +121,61 @@ function hasInlineGTConfig(options: GTUnpluginOptions): boolean {
   );
 }
 
+function getInlineGTConfig(options: GTUnpluginOptions): GTConfig | undefined {
+  if (!hasInlineGTConfig(options)) return undefined;
+
+  return {
+    ...(options.defaultLocale !== undefined
+      ? { defaultLocale: options.defaultLocale }
+      : {}),
+    ...(options.locales !== undefined ? { locales: options.locales } : {}),
+    ...(options.projectId !== undefined
+      ? { projectId: options.projectId }
+      : {}),
+    ...(options._versionId !== undefined
+      ? { _versionId: options._versionId }
+      : {}),
+    ...(options.files !== undefined ? { files: options.files } : {}),
+  };
+}
+
+function mergeGTConfigs(base: GTConfig, override: GTConfig): GTConfig {
+  const mergedConfig = { ...base, ...override };
+  if (!base.files && !override.files) return mergedConfig;
+
+  const files = { ...base.files, ...override.files };
+  if (base.files?.gt || override.files?.gt) {
+    const gt = { ...base.files?.gt, ...override.files?.gt };
+    if (base.files?.gt?.parsingFlags || override.files?.gt?.parsingFlags) {
+      gt.parsingFlags = {
+        ...base.files?.gt?.parsingFlags,
+        ...override.files?.gt?.parsingFlags,
+      };
+    }
+    files.gt = gt;
+  }
+
+  return { ...mergedConfig, files };
+}
+
+function resolveGTConfig(options: GTUnpluginOptions): GTConfigLoadResult {
+  if (options.gtConfig) {
+    return { gtConfig: options.gtConfig, status: 'loaded' };
+  }
+
+  const inlineGTConfig = getInlineGTConfig(options);
+  const diskGTConfig = loadGTConfigFromCwd();
+  if (!inlineGTConfig) return diskGTConfig;
+
+  return {
+    gtConfig:
+      diskGTConfig.status === 'loaded'
+        ? mergeGTConfigs(diskGTConfig.gtConfig, inlineGTConfig)
+        : inlineGTConfig,
+    status: 'loaded',
+  };
+}
+
 /**
  * GT Universal Plugin - Main entry point
  *
@@ -129,11 +184,7 @@ function hasInlineGTConfig(options: GTUnpluginOptions): boolean {
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}) => {
-    const gtConfigLoadResult = options.gtConfig
-      ? ({ gtConfig: options.gtConfig, status: 'loaded' } as const)
-      : hasInlineGTConfig(options)
-        ? ({ gtConfig: options, status: 'loaded' } as const)
-        : loadGTConfigFromCwd();
+    const gtConfigLoadResult = resolveGTConfig(options);
     const loadedGTConfig =
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig
