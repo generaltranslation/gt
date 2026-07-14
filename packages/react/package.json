@@ -4,7 +4,7 @@
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.server.cjs",
   "module": "./dist/index.server.mjs",
-  "types": "./dist/index.types.d.cts",
+  "types": "./dist/index.types.d.ts",
   "files": [
     "dist",
     "CHANGELOG.md"
@@ -69,21 +69,21 @@
       },
       "browser": {
         "require": {
-          "types": "./dist/index.types.d.cts",
+          "types": "./dist/index.types.d.ts",
           "default": "./dist/index.client.cjs"
         },
         "import": {
-          "types": "./dist/index.types.d.mts",
+          "types": "./dist/index.types.d.ts",
           "default": "./dist/index.client.mjs"
         },
         "default": "./dist/index.client.mjs"
       },
       "require": {
-        "types": "./dist/index.types.d.cts",
+        "types": "./dist/index.types.d.ts",
         "default": "./dist/index.server.cjs"
       },
       "import": {
-        "types": "./dist/index.types.d.mts",
+        "types": "./dist/index.types.d.ts",
         "default": "./dist/index.server.mjs"
       },
       "default": "./dist/index.server.mjs"

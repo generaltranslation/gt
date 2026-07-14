@@ -1,5 +1,3 @@
-'use client';
-
 import type { ReactNode } from 'react';
 import type { TxProps } from './utils/TxProps';
 
@@ -33,9 +31,7 @@ export {
   Num,
 } from '@generaltranslation/react-core/components';
 
-export async function Tx(_props: TxProps): Promise<ReactNode> {
-  throw new Error('Tx is only supported via RSC');
-}
+export declare function Tx(_props: TxProps): Promise<ReactNode>;
 
 // ===== Hooks ===== //
 export {

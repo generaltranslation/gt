@@ -1,4 +1,3 @@
-import { typesFileError } from './errors/createErrors';
 import { T as _T } from './server-dir/buildtime/T';
 import type {
   GetServerSideProps,
@@ -68,13 +67,11 @@ type Messages = Message[];
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export function GTProvider(
+export declare function GTProvider(
   _: {
     id?: string;
   } & Partial<Parameters<typeof _GTProvider>[0]>
-): React.ReactNode {
-  throw new Error(typesFileError);
-}
+): React.ReactNode;
 
 /**
  * Build-time translation component that renders its children in the user's given locale.
@@ -105,11 +102,7 @@ export function GTProvider(
  *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
-export const T: typeof _T = () => {
-  throw new Error(typesFileError);
-};
-/** @internal _gtt - The GT transformation for the component. */
-T._gtt = 'translate';
+export declare const T: typeof _T;
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -128,11 +121,7 @@ T._gtt = 'translate';
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {React.JSX.Element} The formatted currency component.
  */
-export const Currency: typeof _Currency = () => {
-  throw new Error(typesFileError);
-};
-/** @internal _gtt - The GT transformation for the component. */
-Currency._gtt = 'variable-currency';
+export declare const Currency: typeof _Currency;
 
 /**
  * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.
@@ -149,11 +138,7 @@ Currency._gtt = 'variable-currency';
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {Promise<React.JSX.Element>} The formatted date or time component.
  */
-export const DateTime: typeof _DateTime = () => {
-  throw new Error(typesFileError);
-};
-/** @internal _gtt - The GT transformation for the component. */
-DateTime._gtt = 'variable-datetime';
+export declare const DateTime: typeof _DateTime;
 
 /**
  * The `<RelativeTime>` component renders a localized relative time string
@@ -171,11 +156,7 @@ DateTime._gtt = 'variable-datetime';
  * @param {Intl.RelativeTimeFormatOptions} [options={}] - Formatting options.
  * @returns {Promise<React.JSX.Element>} The formatted relative time component.
  */
-export const RelativeTime: typeof _RelativeTime = () => {
-  throw new Error(typesFileError);
-};
-/** @internal _gtt - The GT transformation for the component. */
-RelativeTime._gtt = 'variable-relative-time';
+export declare const RelativeTime: typeof _RelativeTime;
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
@@ -194,11 +175,7 @@ RelativeTime._gtt = 'variable-relative-time';
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {React.JSX.Element} The formatted number component.
  */
-export const Num: typeof _Num = () => {
-  throw new Error(typesFileError);
-};
-/** @internal _gtt - The GT transformation for the component. */
-Num._gtt = 'variable-number';
+export declare const Num: typeof _Num;
 
 /**
  * The `<Var>` component renders a variable value, which can either be passed as `children` or a `value`.
@@ -214,11 +191,7 @@ Num._gtt = 'variable-number';
  * @param {any} [children] - The content to render inside the component. If provided, it will take precedence over `value`.
  * @returns {React.JSX.Element} The rendered variable component with either `children` or `value`.
  */
-export const Var: typeof _Var = () => {
-  throw new Error(typesFileError);
-};
-/** @internal _gtt - The GT transformation for the component. */
-Var._gtt = 'variable-variable';
+export declare const Var: typeof _Var;
 
 /**
  * Marks JSX children as derivable by the GT compiler and CLI.
@@ -252,11 +225,7 @@ Var._gtt = 'variable-variable';
  * @param {T extends React.ReactNode} children - JSX content to derive for translation extraction.
  * @returns {T} The same children, unchanged at runtime.
  */
-export const Derive: typeof _Derive = () => {
-  throw new Error(typesFileError);
-};
-/** @internal _gtt - The GT transformation for the component. */
-Derive._gtt = 'derive';
+export declare const Derive: typeof _Derive;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -282,11 +251,7 @@ Derive._gtt = 'derive';
  * @param {...{[key: string]: any}} [branches] - A spread object containing possible branches as keys and their corresponding content as values.
  * @returns {React.JSX.Element} The rendered branch or fallback content.
  */
-export const Branch: typeof _Branch = () => {
-  throw new Error(typesFileError);
-};
-/** @internal _gtt - The GT transformation for the component. */
-Branch._gtt = 'branch';
+export declare const Branch: typeof _Branch;
 
 /**
  * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
@@ -313,11 +278,7 @@ Branch._gtt = 'branch';
  * @returns {React.JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
  * @throws {Error} If `n` is not provided or not a valid number.
  */
-export const Plural: typeof _Plural = () => {
-  throw new Error(typesFileError);
-};
-/** @internal _gtt - The GT transformation for the component. */
-Plural._gtt = 'plural';
+export declare const Plural: typeof _Plural;
 
 /**
  * A dropdown component that allows users to select a locale.
@@ -325,18 +286,14 @@ Plural._gtt = 'plural';
  * @param {object} customNames - An optional object to map locales to custom names.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
-export const LocaleSelector: typeof _LocaleSelector = () => {
-  throw new Error(typesFileError);
-};
+export declare const LocaleSelector: typeof _LocaleSelector;
 
 /**
  * A dropdown component that allows users to select a region.
  * @param {string[]} regions - An optional list of ISO 3166 region codes to use for the dropdown. If not provided, regions are inferred from the supported locales in the `<GTProvider>` context.
  * @returns {React.ReactElement | null} The rendered region dropdown component or null to prevent rendering.
  */
-export const RegionSelector: typeof _RegionSelector = () => {
-  throw new Error(typesFileError);
-};
+export declare const RegionSelector: typeof _RegionSelector;
 
 /**
  * Resolve the user's locale from a Next Pages Router server-side request.
@@ -344,26 +301,22 @@ export const RegionSelector: typeof _RegionSelector = () => {
  * @param context - The GetServerSideProps context for the request.
  * @returns The resolved locale.
  */
-export function parseLocale<
+export declare function parseLocale<
   Params extends ParsedUrlQuery = ParsedUrlQuery,
   Preview extends PreviewData = PreviewData,
->(_: GetServerSidePropsContext<Params, Preview>): string {
-  throw new Error(typesFileError);
-}
+>(_: GetServerSidePropsContext<Params, Preview>): string;
 
 /**
  * Wraps a Pages Router `getServerSideProps` function and adds the resolved GT
  * locale and translations snapshot to returned page props.
  */
-export function withGTServerSideProps<
+export declare function withGTServerSideProps<
   Props extends Record<string, unknown> = Record<string, unknown>,
   Params extends ParsedUrlQuery = ParsedUrlQuery,
   Preview extends PreviewData = PreviewData,
 >(
   _?: GetServerSideProps<Props, Params, Preview>
-): GetServerSideProps<WithGTServerSideProps<Props>, Params, Preview> {
-  throw new Error(typesFileError);
-}
+): GetServerSideProps<WithGTServerSideProps<Props>, Params, Preview>;
 
 /**
  * Checks whether a locale is valid and supported by the current gt-next config.
@@ -371,9 +324,7 @@ export function withGTServerSideProps<
  * @param locale - The locale candidate to validate.
  * @returns True when the locale resolves to one of the configured locales.
  */
-export function isLocaleSupported(_: unknown): boolean {
-  throw new Error(typesFileError);
-}
+export declare function isLocaleSupported(_: unknown): boolean;
 
 /**
  * Returns the string translation function `t`.
@@ -398,11 +349,9 @@ export function isLocaleSupported(_: unknown): boolean {
  * </>);
  *
  */
-export const useGT: (
+export declare const useGT: (
   _messages?: Messages
-) => (message: string, options?: GTTranslationOptions) => string = () => {
-  throw new Error(typesFileError);
-};
+) => (message: string, options?: GTTranslationOptions) => string;
 
 /**
  * Returns the dictionary access function `t`.
@@ -418,9 +367,7 @@ export const useGT: (
  * const t = useTranslations();
  * console.log(t('hello')); // Translates item 'hello'
  */
-export const useTranslations: typeof _useTranslations = () => {
-  throw new Error(typesFileError);
-};
+export declare const useTranslations: typeof _useTranslations;
 
 /**
  * Returns the user's current locale.
@@ -431,17 +378,11 @@ export const useTranslations: typeof _useTranslations = () => {
  * const locale = useLocale();
  * console.log(locale); // 'en-US'
  */
-export const useLocale: typeof _useLocale = () => {
-  throw new Error(typesFileError);
-};
+export declare const useLocale: typeof _useLocale;
 
-export const useSetLocale: typeof _useSetLocale = () => {
-  throw new Error(typesFileError);
-};
+export declare const useSetLocale: typeof _useSetLocale;
 
-export const useLocaleSelector: typeof _useLocaleSelector = () => {
-  throw new Error(typesFileError);
-};
+export declare const useLocaleSelector: typeof _useLocaleSelector;
 
 /**
  * Returns the user's current region.
@@ -452,9 +393,7 @@ export const useLocaleSelector: typeof _useLocaleSelector = () => {
  * const region = useRegion();
  * console.log(region); // 'US'
  */
-export const useRegion: typeof _useRegion = () => {
-  throw new Error(typesFileError);
-};
+export declare const useRegion: typeof _useRegion;
 
 /**
  * Returns the user's list of supported locales.
@@ -465,9 +404,7 @@ export const useRegion: typeof _useRegion = () => {
  * const locales = useLocales();
  * console.log(locale); // ['en-US', 'fr', 'jp]
  */
-export const useLocales: typeof _useLocales = () => {
-  throw new Error(typesFileError);
-};
+export declare const useLocales: typeof _useLocales;
 
 /**
  * Returns the application's default locale.
@@ -480,9 +417,7 @@ export const useLocales: typeof _useLocales = () => {
  * const locale = useDefaultLocale();
  * console.log(locale); // 'en-US'
  */
-export const useDefaultLocale: typeof _useDefaultLocale = () => {
-  throw new Error(typesFileError);
-};
+export declare const useDefaultLocale: typeof _useDefaultLocale;
 
 /**
  * Returns the locale properties for the given locale.
@@ -494,9 +429,7 @@ export const useDefaultLocale: typeof _useDefaultLocale = () => {
  * const localeProperties = useLocaleProperties('en-US');
  * console.log(localeProperties);
  */
-export const useLocaleProperties: typeof _useLocaleProperties = () => {
-  throw new Error(typesFileError);
-};
+export declare const useLocaleProperties: typeof _useLocaleProperties;
 
 /**
  * Retrieves the text direction ('ltr' or 'rtl') for the current or specified locale from the `<GTProvider>` context.
@@ -510,9 +443,7 @@ export const useLocaleProperties: typeof _useLocaleProperties = () => {
  * const dir = useLocaleDirection(); // e.g., 'ltr'
  * const arabicDir = useLocaleDirection('ar'); // 'rtl'
  */
-export const useLocaleDirection: typeof _useLocaleDirection = () => {
-  throw new Error(typesFileError);
-};
+export declare const useLocaleDirection: typeof _useLocaleDirection;
 
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
@@ -546,14 +477,12 @@ export const useLocaleDirection: typeof _useLocaleDirection = () => {
  * // "Hello, Alice!" id: "greetings.0"
  * // "Hello, Bob!" id: "greetings.1"
  */
-export const useMessages: (
+export declare const useMessages: (
   _messages?: Messages
 ) => <T extends string | null | undefined>(
   encodedMsg: T,
   options?: GTTranslationOptions
-) => T extends string ? string : T = () => {
-  throw new Error(typesFileError);
-};
+) => T extends string ? string : T;
 
 export type {
   GTTranslationOptions,

@@ -93,12 +93,6 @@ export const conflictingConfigurationBuildError = (conflicts: string[]) =>
     '\n'
   )}`;
 
-export const typesFileError = createGtNextDiagnostic({
-  severity: 'Error',
-  whatHappened: 'A types-only entry point was executed at runtime',
-  fix: 'Import from the appropriate gt-next runtime entry point instead',
-});
-
 export const getTranslationsSnapshotRscError = createGtNextDiagnostic({
   severity: 'Error',
   whatHappened:

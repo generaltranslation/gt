@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -29,6 +29,14 @@ describe('gt-next package exports', () => {
   });
 
   const distIt = existsSync(distInitGTServerPath) ? it : it.skip;
+
+  distIt('publishes the types entrypoint as a declaration only', () => {
+    expect(
+      readdirSync(join(packageRoot, 'dist'))
+        .filter((file) => file.startsWith('index.types.'))
+        .sort()
+    ).toEqual(['index.types.d.ts']);
+  });
 
   distIt('keeps custom request functions visible to bundler aliases', () => {
     const serverBuild = readFileSync(distInitGTServerPath, 'utf8');

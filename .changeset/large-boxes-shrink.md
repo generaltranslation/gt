@@ -3,4 +3,4 @@
 'gt-next': patch
 ---
 
-Stop publishing unreachable `index.types` runtime bundles. The `index.types` entry only backs the exports map's `types` conditions, so only its declaration files are ever resolved; the runtime `.cjs`/`.mjs` artifacts (and sourcemaps) were dead weight in the published package (~179KB in gt-react, ~83KB in gt-next). They are now deleted after each build.
+Convert the `index.types` entrypoints to declaration files and publish only their compiled `.d.ts` artifacts. This removes unreachable runtime bundles and sourcemaps from `gt-react` and `gt-next`.

@@ -169,6 +169,35 @@ describe('gt-react package exports', () => {
     ).toEqual(runtimeArtifactNames);
   });
 
+  it('publishes the types entrypoint as a declaration only', () => {
+    expect(
+      readdirSync(join(packageRoot, 'dist'))
+        .filter((file) => file.startsWith('index.types.'))
+        .sort()
+    ).toEqual(['index.types.d.ts']);
+
+    const packageJson = JSON.parse(
+      readFileSync(join(packageRoot, 'package.json'), 'utf8')
+    ) as {
+      types: string;
+      exports: {
+        '.': {
+          browser: { require: { types: string }; import: { types: string } };
+          require: { types: string };
+          import: { types: string };
+        };
+      };
+    };
+
+    expect([
+      packageJson.types,
+      packageJson.exports['.'].browser.require.types,
+      packageJson.exports['.'].browser.import.types,
+      packageJson.exports['.'].require.types,
+      packageJson.exports['.'].import.types,
+    ]).toEqual(Array(5).fill('./dist/index.types.d.ts'));
+  });
+
   it('bundles workspace subpath imports in runtime artifacts', () => {
     const workspaceSubpathImportPattern =
       /(?:(?:import|export)\s+(?:[^"']+\s+from\s+)?|require\(\s*)["']((?:@generaltranslation\/format|@generaltranslation\/react-core|generaltranslation|gt-i18n)\/[^"']+)["']/g;
