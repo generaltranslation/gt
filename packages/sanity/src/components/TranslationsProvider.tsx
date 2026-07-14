@@ -84,6 +84,11 @@ interface TranslationsContextType {
   loadingSecrets: boolean;
   secrets: Secrets | null;
   branchId: string | undefined;
+  // Version to use for translation status keys and GT file queries. Prefers
+  // the _rev pinned at upload time over the live _rev, so in-place imports
+  // (internationalized arrays) bumping the document _rev don't orphan the
+  // statuses of the version actually uploaded to GT.
+  getVersionId: (document: SanityDocument) => string;
 
   // Actions
   setLocales: (locales: TranslationLocale[]) => void;
@@ -152,6 +157,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     Map<string, TranslationStatus>
   >(new Map());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [uploadedVersions, setUploadedVersions] = useState<Map<string, string>>(
+    new Map()
+  );
 
   const client = useClient();
   const schema = useSchema();
@@ -165,6 +173,12 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   useEffect(() => {
     downloadStatusRef.current = downloadStatus;
   }, [downloadStatus]);
+
+  const getVersionId = useCallback(
+    (document: SanityDocument) =>
+      uploadedVersions.get(getDocumentPublishedId(document)) ?? document._rev,
+    [uploadedVersions]
+  );
 
   const fetchDocuments = useCallback(async () => {
     setLoadingDocuments(true);
@@ -322,6 +336,19 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       const uploadResult = await uploadFiles(transformedDocuments, secrets);
       await initProject(uploadResult, { timeout: 600 }, secrets);
       await createJobs(uploadResult, availableLocaleIds, secrets);
+
+      // Pin the _rev each file was uploaded under. GT status queries need the
+      // exact uploaded versionId, and the live _rev moves on (in-place array
+      // imports bump it), so status lookups go through getVersionId instead.
+      setUploadedVersions((prev) => {
+        const next = new Map(prev);
+        for (const { info } of transformedDocuments) {
+          if (info.versionId) {
+            next.set(info.documentId, info.versionId);
+          }
+        }
+        return next;
+      });
 
       toast.push({
         title: `Translation tasks created for ${documents.length} documents`,
@@ -593,7 +620,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         for (const localeId of availableLocaleIds) {
           const documentId = getDocumentPublishedId(doc);
           fileQueryData.push({
-            versionId: doc._rev,
+            versionId: getVersionId(doc),
             fileId: documentId,
             branchId: branchId,
             locale: localeId,
@@ -613,7 +640,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         for (const doc of documents) {
           for (const localeId of availableLocaleIds) {
             const documentId = getDocumentPublishedId(doc);
-            const versionId = doc._rev;
+            const versionId = getVersionId(doc);
             const key = createTranslationStatusKey(
               branchId,
               documentId,
@@ -664,7 +691,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsRefreshing(false);
     }
-  }, [secrets, documents, locales, branchId]);
+  }, [secrets, documents, locales, branchId, getVersionId]);
 
   const handleImportDocument = useCallback(
     async (documentId: string, versionId: string, localeId: string) => {
@@ -1039,6 +1066,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     loadingSecrets,
     secrets,
     branchId,
+    getVersionId,
 
     // Actions
     setLocales,

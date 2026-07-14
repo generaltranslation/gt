@@ -1,3 +1,4 @@
+import { getLocaleProperties } from 'generaltranslation';
 import { SchemaTypeDefinition } from 'sanity';
 import { InternationalizedArrayInput } from './InternationalizedArrayInput';
 import { FieldLevelFieldType, GTFieldLevelLocalizationConfig } from './types';
@@ -43,9 +44,12 @@ function valueField(fieldType: FieldLevelFieldType): Record<string, unknown> {
 function makeLanguageTitle(
   options: CreateInternationalizedArrayTypesOptions
 ): (locale: string) => string {
-  const { languageTitles, getLanguageTitle } = options;
+  const { languageTitles, getLanguageTitle, sourceLocale } = options;
   return (locale: string) =>
-    getLanguageTitle?.(locale) ?? languageTitles?.[locale] ?? locale;
+    getLanguageTitle?.(locale) ??
+    languageTitles?.[locale] ??
+    getLocaleProperties(locale, sourceLocale).name ??
+    locale;
 }
 
 function buildTypesForPrefix(
@@ -94,9 +98,18 @@ function buildTypesForPrefix(
       components: { input: InternationalizedArrayInput },
       of: [valueObject],
       // Locale identity comes from gtPlugin (sourceLocale + locales); surfaced
-      // here so the input component can render per-locale affordances later.
+      // here so the input component can render per-locale add buttons.
       options: {
-        gtInternationalizedArray: { sourceLocale, locales },
+        gtInternationalizedArray: {
+          sourceLocale,
+          locales,
+          titles: Object.fromEntries(
+            [sourceLocale, ...locales].map((locale) => [
+              locale,
+              languageTitle(locale),
+            ])
+          ),
+        },
       },
     } as unknown as SchemaTypeDefinition;
   });

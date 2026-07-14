@@ -1,6 +1,6 @@
 import { GTFile, TranslationFunctionContext } from '../types';
 import { importDocument } from '../translation/importDocument';
-import { createStableTranslationKey } from './documentIds';
+import { getPublishedId } from './documentIds';
 
 export interface BatchProcessorOptions<T = unknown, R = unknown> {
   batchSize?: number;
@@ -126,12 +126,11 @@ export async function processImportBatch(
     },
     {
       ...options,
+      // Serialize all locales of the same document: internationalized-array
+      // imports patch the source document in place with a read-merge-set, so
+      // concurrent locale imports would clobber each other (last write wins).
       getConcurrencyKey: (item: ImportBatchItem) =>
-        createStableTranslationKey(
-          undefined,
-          item.docInfo.documentId,
-          item.locale
-        ),
+        getPublishedId(item.docInfo.documentId),
       onItemSuccess: (item: ImportBatchItem, key: string) => {
         successfulImports.push(key);
         options.onItemSuccess?.(item, key);
