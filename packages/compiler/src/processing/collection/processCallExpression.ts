@@ -26,6 +26,7 @@ import { registerTranslationComponent } from '../../transform/registration/regis
 import { getCalleeNameFromJsxExpressionParam } from '../../transform/jsx-children/utils/getCalleeNameFromJsxExpressionParam';
 import { createErrorLocation } from '../../utils/errors';
 import hashSource from '../../utils/calculateHash';
+import { containsDeriveElement } from '../../transform/jsx-children/utils/containsDeriveElement';
 import { registerStandaloneTranslation } from '../../transform/registration/registerStandaloneTranslation';
 
 /**
@@ -280,17 +281,20 @@ function handleReactInvocation(
     return;
   }
 
-  // Calculate hash (skip when context contains derive — CLI handles resolution)
-  const hash = hasDeriveContext
-    ? ''
-    : _hash ||
-      hashSource({
-        source: children!,
-        ...(context && { context }),
-        ...(maxChars != null && { maxChars }),
-        ...(requiresReview === true && { requiresReview: true }),
-        dataFormat: 'JSX',
-      });
+  // Calculate hash (skip when context contains derive or children contain a
+  // <Derive> element — one hash per resolved variant, so the runtime computes
+  // it; the CLI handles variant resolution)
+  const hash =
+    hasDeriveContext || containsDeriveElement(children)
+      ? ''
+      : _hash ||
+        hashSource({
+          source: children!,
+          ...(context && { context }),
+          ...(maxChars != null && { maxChars }),
+          ...(requiresReview === true && { requiresReview: true }),
+          dataFormat: 'JSX',
+        });
 
   // Debug: record hash → children mapping
   // Note: children may be undefined when autoderive filters all dynamic-content

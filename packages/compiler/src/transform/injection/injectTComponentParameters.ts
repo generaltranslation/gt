@@ -19,6 +19,13 @@ export function injectTComponentParameters(
     return;
   }
 
+  // Skip when collection produced no hash (derive context or <Derive>
+  // children) — the runtime computes the hash per resolved variant, and an
+  // injected empty hash would break the lookup
+  if (!translationJsx.hash) {
+    return;
+  }
+
   // Get second arg
   if (callExpr.arguments.length < 2 || !callExpr.arguments[1]) {
     state.logger.logError(
@@ -36,7 +43,7 @@ export function injectTComponentParameters(
   }
 
   // If already has hash set then skip
-  if (getObjectPropertyFromObjectExpression(callExpr.arguments[1], 'hash')) {
+  if (getObjectPropertyFromObjectExpression(callExpr.arguments[1], '_hash')) {
     return;
   }
 
