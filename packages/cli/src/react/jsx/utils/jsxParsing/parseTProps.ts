@@ -66,9 +66,23 @@ export function parseTProps({
     }
 
     if (attr.value) {
-      // If it's a plain string literal like id="hello"
+      // If it's a plain string literal like id="hello" or $context="nav"
       if (t.isStringLiteral(attr.value)) {
-        metadata[attrName] = attr.value.value;
+        if (attrName === '$maxChars' || attrName === 'maxChars') {
+          // String-typed maxChars is rejected in the expression path
+          // (maxChars={"10"}), so reject the bare string form too
+          componentErrors.push(
+            warnInvalidMaxCharsSync(
+              file,
+              generate(attr.value).code,
+              `${attr.value.loc?.start?.line}:${attr.value.loc?.start?.column}`
+            )
+          );
+        } else {
+          // Map $-prefixed names ($context -> context, $id -> id, ...) so
+          // hashing and registration read them; other names pass through
+          metadata[mapAttributeName(attrName)] = attr.value.value;
+        }
       }
       // If it's an expression container like id={"hello"}, id={someVar}, etc.
       else if (t.isJSXExpressionContainer(attr.value)) {
