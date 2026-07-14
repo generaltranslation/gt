@@ -35,7 +35,6 @@ export type Options = {
   experimentalLocalizeStaticImports?: boolean;
   experimentalLocalizeRelativeAssets?: boolean;
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
-  omitConfigIds?: boolean;
   docsImportRewrites?: Array<{
     match: string;
     replace: string;

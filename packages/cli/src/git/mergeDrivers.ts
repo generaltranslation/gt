@@ -144,17 +144,29 @@ export function mergeGtLockJson(
       oursMap.value.get(fileId),
       theirsMap.value.get(fileId)
     );
-    if (entry) entries.push(entry);
+    if (entry) entries.push(normalizeEntry(entry));
   }
 
-  return {
-    ok: true,
-    content: formatJson({
-      version: 2,
-      branchId: ours.value.branchId || theirs.value.branchId,
-      entries,
-    } satisfies DownloadedVersions),
+  const merged: DownloadedVersions = {
+    version: 2,
+    branchId: ours.value.branchId || theirs.value.branchId,
+    entries,
   };
+  // Plain stringify keeps the same key order writeLockfile produces, so the
+  // next gt run does not rewrite the merged file into a noisy diff
+  return { ok: true, content: `${JSON.stringify(merged, null, 2)}\n` };
+}
+
+// Matches the key order findOrCreateEntry/writeStagedEntries produce
+function normalizeEntry(entry: DownloadedVersionEntry): DownloadedVersionEntry {
+  const normalized: DownloadedVersionEntry = {
+    fileId: entry.fileId,
+    versionId: entry.versionId,
+    translations: entry.translations,
+  };
+  if (entry.fileName !== undefined) normalized.fileName = entry.fileName;
+  if (entry.staged !== undefined) normalized.staged = entry.staged;
+  return normalized;
 }
 
 function mergeLockEntry(
@@ -163,8 +175,10 @@ function mergeLockEntry(
   theirs: DownloadedVersionEntry | undefined
 ): DownloadedVersionEntry | undefined {
   if (sameJson(ours, theirs)) return clone(ours);
-  if (!ours) return clone(theirs);
-  if (!theirs) return clone(ours);
+  // Entry missing on one side: the deletion wins only when the surviving
+  // side still matches base; a changed entry beats a deletion
+  if (!ours) return sameJson(theirs, base) ? undefined : clone(theirs);
+  if (!theirs) return sameJson(ours, base) ? undefined : clone(ours);
 
   if (ours.versionId !== theirs.versionId) {
     if (sameJson(ours, base)) return clone(theirs);
@@ -202,15 +216,23 @@ function mergeTranslations(
   ]);
 
   for (const locale of Array.from(locales).sort()) {
+    const baseValue = base[locale];
     const oursValue = ours[locale];
     const theirsValue = theirs[locale];
 
-    if (oursValue && theirsValue && !sameJson(oursValue, theirsValue)) {
-      result[locale] = clone(selectLatestTranslation(oursValue, theirsValue))!;
+    if (oursValue && theirsValue) {
+      result[locale] = sameJson(oursValue, theirsValue)
+        ? clone(oursValue)!
+        : clone(selectLatestTranslation(oursValue, theirsValue))!;
     } else if (oursValue) {
-      result[locale] = clone(oursValue)!;
+      // Locale missing on theirs: honor the deletion only when ours kept base
+      if (!(baseValue && sameJson(oursValue, baseValue))) {
+        result[locale] = clone(oursValue)!;
+      }
     } else if (theirsValue) {
-      result[locale] = clone(theirsValue)!;
+      if (!(baseValue && sameJson(theirsValue, baseValue))) {
+        result[locale] = clone(theirsValue)!;
+      }
     }
   }
 
@@ -391,11 +413,6 @@ function readMergeFile(filepath: string): string {
   } catch {
     return '';
   }
-}
-
-function formatJson(value: unknown): string {
-  const stable = stringify(value);
-  return `${JSON.stringify(JSON.parse(stable), null, 2)}\n`;
 }
 
 function getValueState(

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import type { Settings } from '../types/index.js';
 import updateConfig from '../fs/config/updateConfig.js';
 
@@ -21,6 +22,7 @@ export type GitMergeDriverSetupResult = {
   gitConfigCommands: string[][];
   updatedConfig: boolean;
   dryRun: boolean;
+  warnings: string[];
 };
 
 const GT_LOCK_DRIVER = 'merge=gt-lock';
@@ -72,7 +74,30 @@ export async function setupGitMergeDrivers(
     gitConfigCommands,
     updatedConfig: options.omitConfigIds === true,
     dryRun: options.dryRun === true,
+    warnings: getLockfileWarnings(cwd),
   };
+}
+
+function getLockfileWarnings(cwd: string): string[] {
+  const lockfilePath = path.join(cwd, 'gt-lock.json');
+  if (!fs.existsSync(lockfilePath)) return [];
+
+  let version: unknown;
+  try {
+    version = JSON.parse(fs.readFileSync(lockfilePath, 'utf8'))?.version;
+  } catch {
+    version = undefined;
+  }
+  if (version === 2) return [];
+
+  return [
+    createDiagnosticMessage({
+      whatHappened:
+        'The gt-lock merge driver will fall back to a normal Git conflict',
+      why: 'gt-lock.json is not in the version 2 lockfile format',
+      fix: 'Run gt translate or gt stage to regenerate the lockfile',
+    }),
+  ];
 }
 
 export function getGitAttributesEntries(
@@ -167,11 +192,15 @@ function toGitAttributePattern(relativePath: string): string | null {
   ) {
     return null;
   }
-  return relativePath
-    .split(path.sep)
-    .join('/')
-    .replace(/\\/g, '\\\\')
-    .replace(/ /g, '\\ ');
+  // Escape literal backslashes for the glob layer
+  const pattern = relativePath.split(path.sep).join('/').replace(/\\/g, '\\\\');
+  if (!/[\s"]/.test(pattern)) {
+    return pattern;
+  }
+  // gitattributes splits fields on whitespace without honoring backslash
+  // escapes, so patterns containing whitespace must be C-style double-quoted
+  // (supported since Git 2.32)
+  return `"${pattern.replace(/(["\\])/g, '\\$1')}"`;
 }
 
 function quoteShellArg(value: string): string {

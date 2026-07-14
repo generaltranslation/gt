@@ -291,6 +291,16 @@ export class BaseCLI {
               'omitConfigIds: true'
             )} in ${chalk.cyan(settings.config)}`
           );
+        } else if (options.dryRun && !settings.omitConfigIds) {
+          logger.info(
+            `Run without ${chalk.cyan('--dry-run')} to be prompted to persist ${chalk.cyan(
+              'omitConfigIds: true'
+            )}, or pass ${chalk.cyan('--omit-config-ids')}.`
+          );
+        }
+
+        for (const warning of result.warnings) {
+          logger.warn(chalk.yellow(warning));
         }
 
         logger.endCommand(

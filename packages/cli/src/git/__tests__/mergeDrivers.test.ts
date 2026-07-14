@@ -164,7 +164,9 @@ describe('mergeGtLockJson', () => {
   it('unions locale translations for the same file version', () => {
     const result = mergeGtLockJson(
       lock({
-        entries: [entry('file-a', 'version-a', 'es')],
+        // Both sides staged the same version (empty translations), then
+        // each downloaded a different locale
+        entries: [{ ...entry('file-a', 'version-a', 'es'), translations: {} }],
       }),
       lock({
         entries: [
@@ -247,6 +249,91 @@ describe('mergeGtLockJson', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(JSON.parse(result.content).entries[0].versionId).toBe('version-new');
+  });
+
+  it('honors an entry deletion when the other side is unchanged', () => {
+    const baseEntry = entry('file-a', 'version-a', 'es');
+    const result = mergeGtLockJson(
+      lock({ entries: [baseEntry] }),
+      lock({ entries: [] }),
+      lock({ entries: [baseEntry] })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries).toEqual([]);
+  });
+
+  it('keeps a changed entry over a deletion', () => {
+    const result = mergeGtLockJson(
+      lock({ entries: [entry('file-a', 'version-old', 'es')] }),
+      lock({ entries: [] }),
+      lock({ entries: [entry('file-a', 'version-new', 'es')] })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries).toEqual([
+      entry('file-a', 'version-new', 'es'),
+    ]);
+  });
+
+  it('honors a locale deletion when the other side is unchanged', () => {
+    const baseEntry = {
+      ...entry('file-a', 'version-a', 'es'),
+      translations: {
+        es: { updatedAt: '2026-01-01T00:00:00.000Z' },
+        fr: { updatedAt: '2026-01-01T00:00:00.000Z' },
+      },
+    };
+    const result = mergeGtLockJson(
+      lock({ entries: [baseEntry] }),
+      lock({ entries: [entry('file-a', 'version-a', 'es')] }),
+      lock({ entries: [baseEntry] })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries[0].translations).toEqual({
+      es: { updatedAt: '2026-01-01T00:00:00.000Z' },
+    });
+  });
+
+  it('writes output in the same key order as the lockfile writer', () => {
+    const oursEntry = {
+      translations: {
+        es: { updatedAt: '2026-01-01T00:00:00.000Z' },
+      },
+      versionId: 'version-a',
+      staged: true,
+      fileName: 'src/a.json',
+      fileId: 'file-a',
+    };
+    const result = mergeGtLockJson(
+      lock(),
+      json({ version: 2, branchId: 'branch-ours', entries: [oursEntry] }),
+      lock()
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.content).toBe(
+      json({
+        version: 2,
+        branchId: 'branch-ours',
+        entries: [
+          {
+            fileId: 'file-a',
+            versionId: 'version-a',
+            translations: {
+              es: { updatedAt: '2026-01-01T00:00:00.000Z' },
+            },
+            fileName: 'src/a.json',
+            staged: true,
+          },
+        ],
+      }) + '\n'
+    );
   });
 
   it('fails on malformed JSON', () => {

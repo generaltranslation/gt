@@ -84,6 +84,65 @@ describe('setupGitMergeDrivers', () => {
     });
   });
 
+  it('writes quoted patterns that git actually matches', async () => {
+    tempDir = createTempGitRepo();
+    fs.writeFileSync(path.join(tempDir, 'gt.config.json'), '{}');
+    const settings = createMockSettings({
+      config: path.join(tempDir, 'gt.config.json'),
+      files: {
+        resolvedPaths: {},
+        placeholderPaths: {
+          gt: path.join(tempDir, 'my translations/[locale].json'),
+        },
+        transformPaths: {},
+      },
+    }) as Settings;
+
+    await setupGitMergeDrivers(settings, {
+      cwd: tempDir,
+      driverCommand: 'gt',
+    });
+
+    const attrs = execFileSync(
+      'git',
+      ['check-attr', 'merge', 'my translations/es.json', 'gt-lock.json'],
+      { cwd: tempDir, encoding: 'utf8' }
+    );
+    expect(attrs).toContain('my translations/es.json: merge: gtjson');
+    expect(attrs).toContain('gt-lock.json: merge: gt-lock');
+  });
+
+  it('warns when the lockfile is not in the v2 format', async () => {
+    tempDir = createTempGitRepo();
+    fs.writeFileSync(path.join(tempDir, 'gt.config.json'), '{}');
+    fs.writeFileSync(
+      path.join(tempDir, 'gt-lock.json'),
+      JSON.stringify({ version: 1, entries: {} })
+    );
+
+    const result = await setupGitMergeDrivers(createSettings(tempDir), {
+      cwd: tempDir,
+      dryRun: true,
+      driverCommand: 'gt',
+    });
+
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toContain('version 2 lockfile format');
+  });
+
+  it('does not warn for v2 or missing lockfiles', async () => {
+    tempDir = createTempGitRepo();
+    fs.writeFileSync(path.join(tempDir, 'gt.config.json'), '{}');
+
+    const result = await setupGitMergeDrivers(createSettings(tempDir), {
+      cwd: tempDir,
+      dryRun: true,
+      driverCommand: 'gt',
+    });
+
+    expect(result.warnings).toEqual([]);
+  });
+
   it('fails with a clear error outside a git repository', async () => {
     tempDir = fs.realpathSync(
       fs.mkdtempSync(path.join(os.tmpdir(), 'gt-driver-'))
@@ -113,7 +172,7 @@ describe('getGitAttributesEntries', () => {
     ]);
   });
 
-  it('escapes spaces in generated patterns', () => {
+  it('double-quotes patterns containing spaces', () => {
     const settings = createMockSettings({
       files: {
         resolvedPaths: {},
@@ -125,7 +184,7 @@ describe('getGitAttributesEntries', () => {
     }) as Settings;
 
     expect(getGitAttributesEntries(settings, '/repo', '/repo')[1]).toEqual({
-      pattern: 'public/my\\ translations/*.json',
+      pattern: '"public/my translations/*.json"',
       driver: 'merge=gtjson',
     });
   });
