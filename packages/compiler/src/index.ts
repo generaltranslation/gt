@@ -6,7 +6,7 @@ import generate from '@babel/generator';
 import traverse from '@babel/traverse';
 
 // Core modules
-import { PluginConfig } from './config';
+import { GTConfig, PluginConfig } from './config';
 
 // Import passes
 import { collectionPass } from './passes/collectionPass';
@@ -62,9 +62,7 @@ import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 /**
  * GT Universal Plugin Options
  */
-export interface GTUnpluginOptions extends PluginConfig {
-  // Inherits from PluginConfig
-}
+export interface GTUnpluginOptions extends PluginConfig, GTConfig {}
 
 export const MISSING_GT_CONFIG_WARNING =
   '[@generaltranslation/compiler] No gtConfig found. Auto JSX injection and parsingFlags features require a gt.config.json. See https://generaltranslation.com/en/docs/react/concepts/compiler.';
@@ -113,6 +111,16 @@ function loadGTConfigFromCwd(): GTConfigLoadResult {
   }
 }
 
+function hasInlineGTConfig(options: GTUnpluginOptions): boolean {
+  return (
+    options.defaultLocale !== undefined ||
+    options.locales !== undefined ||
+    options.projectId !== undefined ||
+    options._versionId !== undefined ||
+    options.files !== undefined
+  );
+}
+
 /**
  * GT Universal Plugin - Main entry point
  *
@@ -123,7 +131,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}) => {
     const gtConfigLoadResult = options.gtConfig
       ? ({ gtConfig: options.gtConfig, status: 'loaded' } as const)
-      : loadGTConfigFromCwd();
+      : hasInlineGTConfig(options)
+        ? ({ gtConfig: options, status: 'loaded' } as const)
+        : loadGTConfigFromCwd();
     const loadedGTConfig =
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig

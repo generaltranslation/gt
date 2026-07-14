@@ -7,9 +7,14 @@ export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug';
 /**
  * The only relevant parts of the GT config that we are concerned with
  */
-type GTConfig = {
+export type GTConfig = {
+  defaultLocale?: string;
+  locales?: string[];
+  projectId?: string;
+  _versionId?: string;
   files?: {
     gt?: {
+      output?: string;
       parsingFlags?: {
         enableAutoJsxInjection?: boolean;
         autoderive?: boolean | { jsx?: boolean; strings?: boolean };

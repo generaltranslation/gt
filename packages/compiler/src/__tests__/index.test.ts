@@ -152,6 +152,35 @@ describe('gtUnplugin config loading', () => {
     }
   });
 
+  it('accepts a parsed gt.config.json as top-level options', async () => {
+    const cwd = createTempDir();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      const output = await transformWithPlugin(
+        {
+          defaultLocale: 'en',
+          locales: ['en', 'es'],
+          files: {
+            gt: {
+              output: 'src/_gt/[locale].json',
+              parsingFlags: {
+                enableAutoJsxInjection: true,
+              },
+            },
+          },
+          _versionId: 'test-version',
+        },
+        cwd
+      );
+
+      expect(output).toContain('GtInternalTranslateJsx');
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   it('preserves default behavior when auto-loaded gt.config.json has ordinary project settings', async () => {
     const cwd = createTempDir();
     writeGTConfig(cwd, {
