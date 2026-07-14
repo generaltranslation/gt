@@ -94,6 +94,9 @@ describe('I18nCache error contract', () => {
     expect(() => cache.lookupDictionary(invalidLocale, 'greeting')).toThrow(
       'not valid'
     );
+    expect(() => cache.lookupDictionaryObj(invalidLocale, 'greeting')).toThrow(
+      'not valid'
+    );
     await expect(cache.loadTranslations(invalidLocale)).rejects.toThrow(
       'not valid'
     );
