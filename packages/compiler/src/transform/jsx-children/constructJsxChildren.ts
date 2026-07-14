@@ -61,7 +61,11 @@ export function constructJsxChildren(
   childrenPath: NodePath<t.Expression> | undefined,
   state: TransformState,
   id: IdObject = new IdObject()
-): { errors: JsxValidationError[]; value?: JsxChildren } {
+): {
+  errors: JsxValidationError[];
+  value?: JsxChildren;
+  containsDerive?: boolean;
+} {
   const errors: JsxValidationError[] = [];
 
   // Skip if no children
@@ -71,6 +75,7 @@ export function constructJsxChildren(
 
   const children = childrenPath.node;
   let value: JsxChildren | undefined;
+  let containsDerive = false;
   if (t.isArrayExpression(children)) {
     // Handle ArrayExpression
     value = [];
@@ -103,6 +108,7 @@ export function constructJsxChildren(
       if (errors.length > 0) {
         return { errors };
       }
+      containsDerive ||= !!validation.containsDerive;
       // Skip if no value
       if (validation.value === undefined) continue;
       (value as JsxChild[]).push(validation.value);
@@ -118,10 +124,11 @@ export function constructJsxChildren(
     if (errors.length > 0) {
       return { errors };
     }
+    containsDerive = !!validation.containsDerive;
     value = validation.value;
   }
 
-  return { errors, value };
+  return { errors, value, containsDerive };
 }
 
 /**
@@ -132,10 +139,15 @@ function constructJsxChild(
   childPath: NodePath<Exclude<t.Expression, t.ArrayExpression>>,
   state: TransformState,
   id: IdObject
-): { errors: JsxValidationError[]; value?: JsxChild } {
+): {
+  errors: JsxValidationError[];
+  value?: JsxChild;
+  containsDerive?: boolean;
+} {
   const errors: JsxValidationError[] = [];
   const child = childPath.node;
   let value: JsxChild | undefined;
+  let containsDerive = false;
 
   if (t.isCallExpression(child)) {
     // Construct JsxElement
@@ -148,6 +160,7 @@ function constructJsxChild(
     if (errors.length > 0) {
       return { errors };
     }
+    containsDerive = !!validation.containsDerive;
     value = validation.value;
   } else if (t.isStringLiteral(child)) {
     value = child.value;
@@ -189,7 +202,7 @@ function constructJsxChild(
     return { errors };
   }
 
-  return { errors, value };
+  return { errors, value, containsDerive };
 }
 
 /**
@@ -200,7 +213,11 @@ function constructJsxElement(
   callExprPath: NodePath<t.CallExpression>,
   state: TransformState,
   id: IdObject
-): { errors: JsxValidationError[]; value?: JsxElement | Variable } {
+): {
+  errors: JsxValidationError[];
+  value?: JsxElement | Variable;
+  containsDerive?: boolean;
+} {
   const errors: JsxValidationError[] = [];
   const callExpr = callExprPath.node;
 
@@ -287,10 +304,14 @@ function constructJsxElement(
     }
     // Derive - opaque element, skip children validation
     // The compiler doesn't resolve Derive functions; the CLI handles that.
+    // Surface containsDerive so the collection pass skips hash injection:
+    // a Derive-containing <T> has one hash per resolved variant, which only
+    // the runtime can compute.
     if (isDeriveComponent(canonicalName)) {
       return {
         errors,
         value: { t: canonicalName, i: idNumber },
+        containsDerive: true,
       };
     }
     // Get the name of the component
@@ -360,7 +381,13 @@ function constructJsxElement(
     ...(tag !== undefined && { d: tag }),
     ...(children !== undefined && { c: children }),
   };
-  return { errors, value };
+  return {
+    errors,
+    value,
+    containsDerive: !!(
+      jsxChildrenValidation.containsDerive || tagValidation.containsDerive
+    ),
+  };
 }
 
 /**
@@ -371,7 +398,11 @@ function constructJsxChildrenForJsxElement(
   childrenPath: NodePath<t.Expression> | undefined,
   state: TransformState,
   id: IdObject
-): { errors: JsxValidationError[]; value?: JsxChildren } {
+): {
+  errors: JsxValidationError[];
+  value?: JsxChildren;
+  containsDerive?: boolean;
+} {
   const errors: JsxValidationError[] = [];
   const children = childrenPath?.node;
 
@@ -399,9 +430,14 @@ function constructGTProp(
   state: TransformState,
   canonicalName?: string,
   type?: VariableType
-): { errors: JsxValidationError[]; value?: GTProp } {
+): {
+  errors: JsxValidationError[];
+  value?: GTProp;
+  containsDerive?: boolean;
+} {
   const errors: JsxValidationError[] = [];
   const value: GTProp = {};
+  let containsDerive = false;
   const args = callExprPath.node.arguments;
 
   // Validate Parameters
@@ -460,6 +496,7 @@ function constructGTProp(
       if (validation.errors.length > 0) {
         return { errors };
       }
+      containsDerive ||= !!validation.containsDerive;
       if (validation.value === undefined) continue;
       branches[name] = validation.value;
     }
@@ -482,7 +519,11 @@ function constructGTProp(
   }
 
   // Return result
-  return { errors, value: Object.keys(value).length > 0 ? value : undefined };
+  return {
+    errors,
+    value: Object.keys(value).length > 0 ? value : undefined,
+    containsDerive,
+  };
 }
 
 /**

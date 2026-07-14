@@ -26,7 +26,6 @@ import { registerTranslationComponent } from '../../transform/registration/regis
 import { getCalleeNameFromJsxExpressionParam } from '../../transform/jsx-children/utils/getCalleeNameFromJsxExpressionParam';
 import { createErrorLocation } from '../../utils/errors';
 import hashSource from '../../utils/calculateHash';
-import { containsDeriveElement } from '../../transform/jsx-children/utils/containsDeriveElement';
 import { registerStandaloneTranslation } from '../../transform/registration/registerStandaloneTranslation';
 
 /**
@@ -274,6 +273,7 @@ function handleReactInvocation(
     maxChars,
     requiresReview,
     hasDeriveContext,
+    hasDeriveChildren,
   } = validateTranslationComponentArgs(callExprPath, canonicalName, state);
 
   if (errors.length > 0) {
@@ -285,7 +285,7 @@ function handleReactInvocation(
   // <Derive> element — one hash per resolved variant, so the runtime computes
   // it; the CLI handles variant resolution)
   const hash =
-    hasDeriveContext || containsDeriveElement(children)
+    hasDeriveContext || hasDeriveChildren
       ? ''
       : _hash ||
         hashSource({

@@ -19,7 +19,6 @@ import { collectionPass } from '../collectionPass';
 import { injectionPass } from '../injectionPass';
 import { initializeState } from '../../state/utils/initializeState';
 import hashSource from '../../utils/calculateHash';
-import { containsDeriveElement } from '../../transform/jsx-children/utils/containsDeriveElement';
 
 // --- Helper ---
 
@@ -144,31 +143,53 @@ describe('T component hash injection with Derive children', () => {
   });
 });
 
-describe('containsDeriveElement', () => {
-  it('detects Derive nodes at any depth', () => {
-    expect(containsDeriveElement(undefined)).toBe(false);
-    expect(containsDeriveElement('text')).toBe(false);
-    expect(containsDeriveElement({ t: 'Derive', i: 1 })).toBe(true);
-    expect(
-      containsDeriveElement(['a', { t: 'p', i: 1, c: { t: 'Derive', i: 2 } }])
-    ).toBe(true);
-    expect(containsDeriveElement({ k: 'value', i: 1, v: 'v' })).toBe(false);
+describe('T component hash injection with Derive inside branches', () => {
+  it('<T> with <Derive> inside a Branch branch attribute skips hash injection', () => {
+    // SOURCE: <T><Branch branch={x} a={<Derive>{getX()}</Derive>} b="fallback" /></T>
+    // The Derive sits in a branch attribute (constructed via constructGTProp),
+    // not in the children — detection must bubble up from branch construction.
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Branch, Derive, T } from 'gt-react';
+      jsx(T, { children: jsx(Branch, {
+        branch: cond,
+        a: jsx(Derive, { children: getX() }),
+        b: "fallback"
+      }) });
+    `;
+    const result = transform(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.code).not.toContain('_hash');
   });
 
-  it('detects Derive nodes inside Branch/Plural branches', () => {
-    expect(
-      containsDeriveElement({
-        t: 'Branch',
-        i: 1,
-        d: { b: { a: 'text', b: { t: 'Derive', i: 2 } }, t: 'b' },
-      })
-    ).toBe(true);
-    expect(
-      containsDeriveElement({
-        t: 'Branch',
-        i: 1,
-        d: { b: { a: 'text', b: 'more text' }, t: 'b' },
-      })
-    ).toBe(false);
+  it('<T> with <Derive> inside a Plural branch attribute skips hash injection', () => {
+    // SOURCE: <T><Plural n={count} one={<Derive>{getX()}</Derive>} other="many" /></T>
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Derive, Plural, T } from 'gt-react';
+      jsx(T, { children: jsx(Plural, {
+        n: count,
+        one: jsx(Derive, { children: getX() }),
+        other: "many"
+      }) });
+    `;
+    const result = transform(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.code).not.toContain('_hash');
+  });
+
+  it('<T> with a Branch but no Derive still gets _hash injected', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Branch, T } from 'gt-react';
+      jsx(T, { children: jsx(Branch, {
+        branch: cond,
+        a: "first",
+        b: "fallback"
+      }) });
+    `;
+    const result = transform(code);
+    expect(result.errors).toHaveLength(0);
+    expect(result.code).toContain('_hash: "');
   });
 });
