@@ -34,7 +34,7 @@ export interface PluginConfig {
   logLevel?: LogLevel;
   /** GT Configuration object — pass the parsed gt.config.json to sync settings */
   gtConfig?: GTConfig;
-  /** Enable compile-time hash generation */
+  /** Enable compile-time hash generation (default: true) */
   compileTimeHash?: boolean;
   /** Disable dynamic content validation checks */
   disableBuildChecks?: boolean;
