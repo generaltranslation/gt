@@ -22,6 +22,7 @@
     "build:release": "turbo run build:release --filter='./packages/*'",
     "bench": "turbo run bench",
     "size": "size-limit",
+    "check:release-versions": "node scripts/check-release-versions.mjs",
     "format": "oxfmt --check .",
     "format:fix": "oxfmt .",
     "changeset": "changeset",
