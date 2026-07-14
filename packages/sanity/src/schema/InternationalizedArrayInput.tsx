@@ -65,7 +65,7 @@ function AddLocaleFunctions(
         <Button
           key={locale}
           icon={AddIcon}
-          mode="ghost"
+          mode='ghost'
           text={gtOptions.titles?.[locale] ?? locale}
           onClick={() => handleAdd(locale)}
         />
