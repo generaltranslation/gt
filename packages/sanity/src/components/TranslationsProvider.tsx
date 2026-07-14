@@ -224,10 +224,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     downloadStatusRef.current = downloadStatus;
   }, [downloadStatus]);
 
-  useEffect(() => {
-    writeUploadedVersions(uploadedVersionsStorageKey, uploadedVersions);
-  }, [uploadedVersionsStorageKey, uploadedVersions]);
-
   const getVersionId = useCallback(
     (document: SanityDocument) =>
       uploadedVersions.get(getDocumentPublishedId(document)) ?? document._rev,
@@ -394,15 +390,15 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       // Pin the _rev each file was uploaded under. GT status queries need the
       // exact uploaded versionId, and the live _rev moves on (in-place array
       // imports bump it), so status lookups go through getVersionId instead.
-      setUploadedVersions((prev) => {
-        const next = new Map(prev);
-        for (const { info } of transformedDocuments) {
-          if (info.versionId) {
-            next.set(info.documentId, info.versionId);
-          }
+      // Persisted to sessionStorage so the pins survive a page refresh.
+      const nextUploadedVersions = new Map(uploadedVersions);
+      for (const { info } of transformedDocuments) {
+        if (info.versionId) {
+          nextUploadedVersions.set(info.documentId, info.versionId);
         }
-        return next;
-      });
+      }
+      writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
+      setUploadedVersions(nextUploadedVersions);
 
       toast.push({
         title: `Translation tasks created for ${documents.length} documents`,
@@ -419,7 +415,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
     }
-  }, [secrets, documents, locales, schema]);
+  }, [
+    secrets,
+    documents,
+    locales,
+    schema,
+    uploadedVersions,
+    uploadedVersionsStorageKey,
+  ]);
 
   const handleImportAll = useCallback(async () => {
     if (!secrets || documents.length === 0 || !branchId) return;
