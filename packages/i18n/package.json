@@ -52,7 +52,6 @@
     "definition": "dist/index.d.cts"
   },
   "dependencies": {
-    "@generaltranslation/supported-locales": "workspace:*",
     "@generaltranslation/format": "workspace:*",
     "generaltranslation": "workspace:*"
   },

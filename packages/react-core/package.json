@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@generaltranslation/format": "workspace:*",
-    "@generaltranslation/supported-locales": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-i18n": "workspace:*"
   },
