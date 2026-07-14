@@ -89,6 +89,10 @@ export function attachTranslateFlags(command: Command) {
       false
     )
     .option(
+      '--omit-config-ids',
+      'Do not write _versionId or _branchId to gt.config.json'
+    )
+    .option(
       '--experimental-clear-locale-dirs',
       'Clear locale directories before downloading new translations',
       false
