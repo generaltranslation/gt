@@ -149,4 +149,27 @@ describe('compileTimeHash plugin option', () => {
     expect(output).not.toContain('t`');
     expect(output).toContain('$_hash');
   });
+
+  it('disableBuildChecks alone no longer disables hash injection', async () => {
+    // With the old default (compileTimeHash: false), disableBuildChecks: true
+    // hit the disableBuildChecks && !compileTimeHash early exit and turned the
+    // whole plugin into a no-op. Each flag now governs its own feature:
+    // disableBuildChecks only disables validation.
+    const output = await transformWithPlugin(
+      { disableBuildChecks: true },
+      T_COMPONENT_CODE
+    );
+    expect(output).not.toBeNull();
+    expect(output).toContain('_hash: "');
+  });
+
+  it('disableBuildChecks + compileTimeHash: false is a complete no-op', async () => {
+    for (const code of [T_COMPONENT_CODE, USEGT_CODE, TAGGED_TEMPLATE_CODE]) {
+      const output = await transformWithPlugin(
+        { compileTimeHash: false, disableBuildChecks: true },
+        code
+      );
+      expect(output).toBeNull();
+    }
+  });
 });
