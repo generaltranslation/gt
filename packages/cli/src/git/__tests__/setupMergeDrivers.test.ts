@@ -129,6 +129,26 @@ describe('getGitAttributesEntries', () => {
       driver: 'merge=gtjson',
     });
   });
+
+  it.skipIf(process.platform === 'win32')(
+    'escapes literal backslashes in generated patterns',
+    () => {
+      const settings = createMockSettings({
+        files: {
+          resolvedPaths: {},
+          placeholderPaths: {
+            gt: '/repo/public/back\\slash/[locale].json',
+          },
+          transformPaths: {},
+        },
+      }) as Settings;
+
+      expect(getGitAttributesEntries(settings, '/repo', '/repo')[1]).toEqual({
+        pattern: 'public/back\\\\slash/*.json',
+        driver: 'merge=gtjson',
+      });
+    }
+  );
 });
 
 function createTempGitRepo(): string {

@@ -167,7 +167,11 @@ function toGitAttributePattern(relativePath: string): string | null {
   ) {
     return null;
   }
-  return relativePath.split(path.sep).join('/').replace(/ /g, '\\ ');
+  return relativePath
+    .split(path.sep)
+    .join('/')
+    .replace(/\\/g, '\\\\')
+    .replace(/ /g, '\\ ');
 }
 
 function quoteShellArg(value: string): string {
