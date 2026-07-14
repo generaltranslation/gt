@@ -12,7 +12,7 @@
 export { LocaleSelector as Client_LocaleSelector } from 'gt-react';
 export { RegionSelector as Client_RegionSelector } from 'gt-react';
 
-import { getI18nConfig, I18nConfig } from 'gt-i18n/internal';
+import { getCookieValue, getI18nConfig, I18nConfig } from 'gt-i18n/internal';
 import { GTProvider, type SharedGTProviderProps } from 'gt-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
@@ -75,10 +75,8 @@ function usePathCheck({
     const locales = i18nConfig.getLocales();
     const defaultLocale = i18nConfig.getDefaultLocale();
     const middlewareEnabled =
-      document.cookie
-        .split('; ')
-        .find((row) => row.startsWith(`${localeRoutingEnabledCookieName}=`))
-        ?.split('=')[1] === 'true';
+      getCookieValue(document.cookie, localeRoutingEnabledCookieName) ===
+      'true';
     if (middlewareEnabled && pathnameMatchesRegex(pathname, pathRegex)) {
       // Extract locale from pathname
       const extractedLocale =

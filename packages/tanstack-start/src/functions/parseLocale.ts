@@ -5,6 +5,7 @@ import {
   setCookie,
 } from '@tanstack/react-start/server';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
+import { getCookieValue, parseAcceptLanguage } from 'gt-i18n/internal';
 import type { LocaleResolverConfig } from 'gt-i18n/internal/types';
 
 export const determineLocale = createIsomorphicFn()
@@ -35,11 +36,7 @@ function determineLocaleServer({
   const cookie = getCookie(localeCookieName);
   if (cookie) candidates.push(cookie);
 
-  const headers =
-    getRequestHeader('accept-language')
-      ?.split(',')
-      .map((item) => item.split(';')?.[0].trim()) || [];
-  candidates.push(...headers);
+  candidates.push(...parseAcceptLanguage(getRequestHeader('accept-language')));
 
   if (candidates.length === 0) {
     console.warn(
@@ -71,10 +68,7 @@ function determineLocaleClient({
   const localeCookieName = i18nConfig.getLocaleCookieName();
   const candidates: string[] = [];
 
-  const cookie = document.cookie
-    .split('; ')
-    .find((row) => row.startsWith(`${localeCookieName}=`))
-    ?.slice(localeCookieName.length + 1);
+  const cookie = getCookieValue(document.cookie, localeCookieName);
   if (cookie) candidates.push(cookie);
 
   if (candidates.length === 0) {

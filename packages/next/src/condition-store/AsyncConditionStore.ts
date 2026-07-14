@@ -2,7 +2,11 @@ import { AsyncReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { cookies, headers } from 'next/headers';
 import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
-import { createConditionStoreSingleton, getI18nConfig } from 'gt-i18n/internal';
+import {
+  createConditionStoreSingleton,
+  getI18nConfig,
+  parseAcceptLanguage,
+} from 'gt-i18n/internal';
 import {
   defaultLocaleCookieName,
   defaultRegionCookieName,
@@ -122,14 +126,9 @@ function createDefaultGetLocale({
 
     // Preferred languages
     if (!ignorePreferredLanguages) {
-      const acceptedLocales = headersList
-        .get('accept-language')
-        ?.split(',')
-        .map((item: string) => item.split(';')?.[0].trim());
-
-      if (acceptedLocales) {
-        preferredLocales.push(...acceptedLocales);
-      }
+      preferredLocales.push(
+        ...parseAcceptLanguage(headersList.get('accept-language'))
+      );
     }
 
     // Warn if no locales found

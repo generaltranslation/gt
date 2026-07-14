@@ -18,9 +18,6 @@
       "path": "../core"
     },
     {
-      "path": "../supported-locales"
-    },
-    {
       "path": "../i18n"
     }
   ]
