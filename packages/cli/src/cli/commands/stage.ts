@@ -48,13 +48,6 @@ export async function handleStage(
     return null;
   }
 
-  if (settings.omitConfigIds) {
-    await updateConfig(settings.config, {
-      _versionId: null,
-      _branchId: null,
-    });
-  }
-
   if (allFiles.length === 0 && !settings.publish) {
     logger.error(
       'No files to translate were found. Check your configuration and try again.'
@@ -95,9 +88,16 @@ export async function handleStage(
     }
   }
 
-  // Always delete branch id from config if branching is disabled
-  // Avoids incorrect CDN queries at runtime
-  if (!settings.branchOptions.enabled && !settings.omitConfigIds) {
+  if (settings.omitConfigIds) {
+    // Remove persisted config IDs only after staging has succeeded, so a
+    // failed run keeps the previous pinned version/branch state
+    await updateConfig(settings.config, {
+      _versionId: null,
+      _branchId: null,
+    });
+  } else if (!settings.branchOptions.enabled) {
+    // Always delete branch id from config if branching is disabled
+    // Avoids incorrect CDN queries at runtime
     await updateConfig(settings.config, {
       _branchId: null,
     });

@@ -32,6 +32,10 @@ vi.mock('../utils/validation.js', () => ({
   hasValidLocales: vi.fn(() => true),
 }));
 
+vi.mock('../../../translation/reviewSetupWarning.js', () => ({
+  warnManualReviewSetup: vi.fn(),
+}));
+
 vi.mock('../../../console/logger.js', () => ({
   logger: {
     error: vi.fn(),
@@ -125,5 +129,37 @@ describe('handleStage config ids', () => {
       _versionId: 'version-1',
       _branchId: 'branch-1',
     });
+  });
+
+  it('keeps existing config ids when the stage workflow fails', async () => {
+    vi.mocked(runStageFilesWorkflow).mockRejectedValue(
+      new Error('network error')
+    );
+
+    await expect(
+      handleStage(
+        options,
+        settings({
+          omitConfigIds: true,
+          _versionId: 'old-version',
+          _branchId: 'old-branch',
+        }),
+        'gt-react',
+        false
+      )
+    ).rejects.toThrow('network error');
+
+    expect(updateConfig).not.toHaveBeenCalled();
+  });
+
+  it('does not touch the config during a dry run when ids are omitted', async () => {
+    await handleStage(
+      { ...options, dryRun: true },
+      settings({ omitConfigIds: true, _versionId: 'old-version' }),
+      'gt-react',
+      false
+    );
+
+    expect(updateConfig).not.toHaveBeenCalled();
   });
 });
