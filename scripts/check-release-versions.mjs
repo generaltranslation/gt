@@ -18,9 +18,7 @@ function compareVersions(left, right) {
   const leftParts = parseStableVersion(left);
   const rightParts = parseStableVersion(right);
 
-  if (!leftParts || !rightParts) {
-    throw new Error(`Cannot compare non-stable versions: ${left} and ${right}`);
-  }
+  if (!leftParts || !rightParts) return undefined;
 
   for (let index = 0; index < leftParts.length; index++) {
     if (leftParts[index] !== rightParts[index]) {
@@ -33,6 +31,7 @@ function compareVersions(left, right) {
 const changedManifests = git(
   'diff',
   '--name-only',
+  '--diff-filter=AM',
   base,
   head,
   '--',
@@ -65,7 +64,10 @@ for (const manifestPath of changedManifests) {
     continue;
   }
 
-  if (latest && compareVersions(manifest.version, latest) <= 0) {
+  const versionComparison = latest
+    ? compareVersions(manifest.version, latest)
+    : undefined;
+  if (versionComparison !== undefined && versionComparison <= 0) {
     errors.push(
       `${manifest.name}@${manifest.version} does not advance npm latest ${latest}`
     );
