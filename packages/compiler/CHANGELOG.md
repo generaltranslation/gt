@@ -1,5 +1,11 @@
 # @generaltranslation/compiler
 
+## 1.3.26
+
+### Patch Changes
+
+- [#1858](https://github.com/generaltranslation/gt/pull/1858) [`006e071`](https://github.com/generaltranslation/gt/commit/006e071bf87ffe80f2d18958ddfa8f18cc2d85d2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Accept parsed `gt.config.json` objects in the compiler and React SPA configuration types.
+
 ## 1.3.25
 
 ### Patch Changes

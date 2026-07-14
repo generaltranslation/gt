@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.53
+
+### Patch Changes
+
+- [#1857](https://github.com/generaltranslation/gt/pull/1857) [`70813b2`](https://github.com/generaltranslation/gt/commit/70813b23e62ec1afbee54dd8fd41186b913242c4) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `git setup`, merge drivers, and `omitConfigIds` flags
+
 ## 2.14.52
 
 ### Patch Changes

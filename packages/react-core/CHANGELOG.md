@@ -1,5 +1,16 @@
 # @generaltranslation/react-core
 
+## 11.0.4
+
+### Patch Changes
+
+- [#1849](https://github.com/generaltranslation/gt/pull/1849) [`d23766c`](https://github.com/generaltranslation/gt/commit/d23766c78a2c1be278d85e896d2521453734a6eb) Thanks [@bgub](https://github.com/bgub)! - Remove duplicated GTProp computation in `writeChildrenAsObjects`. The result of `createGTProp()` was immediately overwritten by an inline copy of the same logic, and because both copies recursed into plural/branch subtrees, each level of `<Plural>`/`<Branch>` nesting doubled the serialization work. Branch subtrees are now serialized once.
+
+- [#1848](https://github.com/generaltranslation/gt/pull/1848) [`1f33d5f`](https://github.com/generaltranslation/gt/commit/1f33d5f76ffc879d2d21aa2508e07e1d3b66c4e3) Thanks [@bgub](https://github.com/bgub)! - Remove unused dependencies: `@generaltranslation/supported-locales` from gt-react, gt-next, gt-i18n, and @generaltranslation/react-core, and `@generaltranslation/format` from gt-react. Nothing in these packages imports them, so this only reduces install weight.
+
+- Updated dependencies [[`006e071`](https://github.com/generaltranslation/gt/commit/006e071bf87ffe80f2d18958ddfa8f18cc2d85d2), [`7fb4a74`](https://github.com/generaltranslation/gt/commit/7fb4a74c52065694a40deafcf4596acc09e17f58), [`1f33d5f`](https://github.com/generaltranslation/gt/commit/1f33d5f76ffc879d2d21aa2508e07e1d3b66c4e3)]:
+  - gt-i18n@1.0.2
+
 ## 11.0.3
 
 ## 11.0.2
