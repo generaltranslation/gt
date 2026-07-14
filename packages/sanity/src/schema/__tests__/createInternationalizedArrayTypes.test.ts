@@ -4,10 +4,17 @@ import { createInternationalizedArrayTypes } from '../createInternationalizedArr
 type GeneratedArrayType = {
   name: string;
   type: string;
+  components?: { input?: unknown; field?: unknown };
   of: Array<{
     name: string;
     type: string;
-    fields: Array<{ name: string; type: string; readOnly?: boolean }>;
+    components?: { item?: unknown };
+    fields: Array<{
+      name: string;
+      type: string;
+      readOnly?: boolean;
+      hidden?: boolean;
+    }>;
   }>;
 };
 
@@ -97,5 +104,66 @@ describe('createInternationalizedArrayTypes', () => {
       includeCompatibilityTypes: false,
     }).map((t) => t.name);
     expect(names).toEqual(['gtArrayString']);
+  });
+
+  describe('components option', () => {
+    test('attaches GT components by default and hides the language field', () => {
+      const [type] = generate({ fieldTypes: ['string'] });
+      expect(typeof type.components?.input).toBe('function');
+      expect(typeof type.components?.field).toBe('function');
+      expect(typeof type.of[0].components?.item).toBe('function');
+      const languageField = type.of[0].fields.find(
+        (f) => f.name === 'language'
+      );
+      expect(languageField?.hidden).toBe(true);
+    });
+
+    test('replaces slots with custom components', () => {
+      const CustomInput = () => null;
+      const CustomItem = () => null;
+      const [type] = generate({
+        fieldTypes: ['string'],
+        components: { input: CustomInput, item: CustomItem },
+      });
+      expect(type.components?.input).toBe(CustomInput);
+      expect(type.of[0].components?.item).toBe(CustomItem);
+    });
+
+    test('detaches components when set to false', () => {
+      const [type] = generate({
+        fieldTypes: ['string'],
+        components: { input: false, item: false, field: false },
+      });
+      expect(type.components).toBeUndefined();
+      expect(type.of[0].components).toBeUndefined();
+    });
+
+    test('field level-reset default follows the input slot', () => {
+      const [detached] = generate({
+        fieldTypes: ['string'],
+        components: { input: false },
+      });
+      expect(detached.components?.field).toBeUndefined();
+
+      const CustomInput = () => null;
+      const [custom] = generate({
+        fieldTypes: ['string'],
+        components: { input: CustomInput },
+      });
+      expect(custom.components?.field).toBeUndefined();
+      expect(custom.components?.input).toBe(CustomInput);
+    });
+
+    test('keeps the language field visible with a custom or detached item', () => {
+      const [type] = generate({
+        fieldTypes: ['string'],
+        components: { item: false },
+      });
+      const languageField = type.of[0].fields.find(
+        (f) => f.name === 'language'
+      );
+      expect(languageField?.hidden).toBe(false);
+      expect(languageField?.readOnly).toBe(true);
+    });
   });
 });

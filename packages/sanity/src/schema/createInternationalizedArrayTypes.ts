@@ -1,7 +1,14 @@
 import { getLocaleProperties } from 'generaltranslation';
-import { SchemaTypeDefinition } from 'sanity';
-import { InternationalizedArrayInput } from './InternationalizedArrayInput';
-import { FieldLevelFieldType, GTFieldLevelLocalizationConfig } from './types';
+import { FieldProps, SchemaTypeDefinition } from 'sanity';
+import {
+  InternationalizedArrayInput,
+  InternationalizedValueItem,
+} from './InternationalizedArrayInput';
+import {
+  FieldLevelFieldType,
+  FieldLevelUIComponents,
+  GTFieldLevelLocalizationConfig,
+} from './types';
 
 const DEFAULT_TYPE_PREFIX = 'internationalizedArray';
 
@@ -13,7 +20,39 @@ export type CreateInternationalizedArrayTypesOptions = {
   getLanguageTitle?: (locale: string) => string;
   typePrefix?: string;
   includeCompatibilityTypes?: boolean;
+  components?: FieldLevelUIComponents;
 };
+
+/**
+ * Resolve the components to attach to generated types. Each slot can be a
+ * custom component, `false` (detach — Sanity's default rendering), or
+ * undefined (GT's default). The `field` level-reset wrapper only makes sense
+ * alongside GT's inline input, so its default follows the resolved `input`.
+ */
+function resolveComponents(overrides: FieldLevelUIComponents | undefined): {
+  input?: unknown;
+  item?: unknown;
+  field?: unknown;
+} {
+  const input =
+    overrides?.input === false
+      ? undefined
+      : (overrides?.input ?? InternationalizedArrayInput);
+  const item =
+    overrides?.item === false
+      ? undefined
+      : (overrides?.item ?? InternationalizedValueItem);
+  const defaultField =
+    input === InternationalizedArrayInput
+      ? // Reset the field level so inline per-locale inputs don't inherit
+        // nested-object indentation.
+        (fieldProps: FieldProps) =>
+          fieldProps.renderDefault({ ...fieldProps, level: 0 })
+      : undefined;
+  const field =
+    overrides?.field === false ? undefined : (overrides?.field ?? defaultField);
+  return { input, item, field };
+}
 
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -58,23 +97,44 @@ function buildTypesForPrefix(
 ): SchemaTypeDefinition[] {
   const { sourceLocale, locales, fieldTypes } = options;
   const languageTitle = makeLanguageTitle(options);
+  const components = resolveComponents(options.components);
 
   return fieldTypes.map((fieldType) => {
     const typeName = `${prefix}${capitalize(fieldTypeName(fieldType))}`;
     const valueTypeName = `${typeName}Value`;
 
+    // Locale identity comes from gtPlugin (sourceLocale + locales); surfaced
+    // on both the array type (per-locale add buttons) and the value object
+    // (inline item label + source-locale remove guard).
+    const gtInternationalizedArray = {
+      sourceLocale,
+      locales,
+      titles: Object.fromEntries(
+        [sourceLocale, ...locales].map((locale) => [
+          locale,
+          languageTitle(locale),
+        ])
+      ),
+    };
+
     const valueObject = {
       type: 'object',
       name: valueTypeName,
+      ...(components.item ? { components: { item: components.item } } : {}),
       fields: [
         {
           name: 'language',
           type: 'string',
           title: 'Language',
           readOnly: true,
+          // GT's inline item shows the locale as the value field's label;
+          // with a custom or detached item, keep the field visible so the
+          // locale is still discoverable in default/dialog rendering.
+          hidden: components.item === InternationalizedValueItem,
         },
         valueField(fieldType),
       ],
+      options: { gtInternationalizedArray },
       preview: {
         select: { language: 'language', value: 'value' },
         prepare(selection: { language?: string; value?: unknown }) {
@@ -92,25 +152,19 @@ function buildTypesForPrefix(
       },
     };
 
+    const arrayComponents = {
+      ...(components.input ? { input: components.input } : {}),
+      ...(components.field ? { field: components.field } : {}),
+    };
+
     return {
       name: typeName,
       type: 'array',
-      components: { input: InternationalizedArrayInput },
+      ...(Object.keys(arrayComponents).length
+        ? { components: arrayComponents }
+        : {}),
       of: [valueObject],
-      // Locale identity comes from gtPlugin (sourceLocale + locales); surfaced
-      // here so the input component can render per-locale add buttons.
-      options: {
-        gtInternationalizedArray: {
-          sourceLocale,
-          locales,
-          titles: Object.fromEntries(
-            [sourceLocale, ...locales].map((locale) => [
-              locale,
-              languageTitle(locale),
-            ])
-          ),
-        },
-      },
+      options: { gtInternationalizedArray },
     } as unknown as SchemaTypeDefinition;
   });
 }

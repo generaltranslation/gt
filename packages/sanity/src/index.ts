@@ -64,6 +64,7 @@ export { createInternationalizedArrayTypes };
 export type {
   GTFieldLevelLocalizationConfig,
   FieldLevelFieldType,
+  FieldLevelUIComponents,
 } from './schema/types';
 export type { FieldLevelTranslationMode };
 
@@ -242,6 +243,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
           getLanguageTitle: fieldLevelConfig.getLanguageTitle,
           typePrefix: fieldLevelConfig.typePrefix,
           includeCompatibilityTypes: fieldLevelConfig.includeCompatibilityTypes,
+          components: fieldLevelConfig.components,
         })
       : [];
 
