@@ -178,7 +178,13 @@ export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
   `gt-next: The following canonical locales were standardized: ${locales.join(', ')}. Use the standardized codes in your config to avoid this warning.`;
 
 export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
-  `gt-next (plugin): The GT ${type} compiler could not be resolved. Skipping compiler optimizations.`;
+  createGtNextPluginDiagnostic({
+    whatHappened: `The GT ${type} compiler could not be resolved`,
+    wayOut: 'Skipping compiler optimizations',
+    ...(type === 'babel' && {
+      fix: 'Install @generaltranslation/compiler to enable the experimental babel compiler',
+    }),
+  });
 
 export const customGetLocaleUnresolvedWarning = createGtNextDiagnostic({
   whatHappened: 'Custom getLocale() could not be resolved',
