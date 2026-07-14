@@ -80,7 +80,14 @@ export async function handleStage(
     const templateData = allFiles.find(
       (file) => file.fileId === TEMPLATE_FILE_ID
     );
-    if (templateData?.versionId && !settings.omitConfigIds) {
+    if (settings.omitConfigIds) {
+      // Remove persisted config IDs only after staging has succeeded, so
+      // failed and empty runs keep the previous pinned version/branch state
+      await updateConfig(settings.config, {
+        _versionId: null,
+        _branchId: null,
+      });
+    } else if (templateData?.versionId) {
       await updateConfig(settings.config, {
         _versionId: templateData.versionId,
         _branchId: branchData.currentBranch.id,
@@ -88,16 +95,9 @@ export async function handleStage(
     }
   }
 
-  if (settings.omitConfigIds) {
-    // Remove persisted config IDs only after staging has succeeded, so a
-    // failed run keeps the previous pinned version/branch state
-    await updateConfig(settings.config, {
-      _versionId: null,
-      _branchId: null,
-    });
-  } else if (!settings.branchOptions.enabled) {
-    // Always delete branch id from config if branching is disabled
-    // Avoids incorrect CDN queries at runtime
+  // Always delete branch id from config if branching is disabled
+  // Avoids incorrect CDN queries at runtime
+  if (!settings.branchOptions.enabled && !settings.omitConfigIds) {
     await updateConfig(settings.config, {
       _branchId: null,
     });

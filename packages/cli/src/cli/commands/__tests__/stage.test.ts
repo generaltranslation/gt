@@ -131,6 +131,27 @@ describe('handleStage config ids', () => {
     });
   });
 
+  it('keeps existing config ids when no files are collected', async () => {
+    vi.mocked(collectFiles).mockResolvedValue({
+      files: [],
+      reactComponents: 0,
+      publishMap: new Map(),
+    });
+
+    await handleStage(
+      options,
+      settings({
+        omitConfigIds: true,
+        _versionId: 'old-version',
+        _branchId: 'old-branch',
+      }),
+      'gt-react',
+      false
+    );
+
+    expect(updateConfig).not.toHaveBeenCalled();
+  });
+
   it('keeps existing config ids when the stage workflow fails', async () => {
     vi.mocked(runStageFilesWorkflow).mockRejectedValue(
       new Error('network error')
