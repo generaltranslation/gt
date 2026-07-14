@@ -186,7 +186,10 @@ function mergeLockEntry(
     return clone(selectLatestEntry(ours, theirs));
   }
 
-  const selected = selectLatestEntry(ours, theirs);
+  // Resolve scalar fields three-way against base individually; taking them
+  // from the latest-timestamp entry would let a download on one side (which
+  // bumps timestamps) silently drop a fresh stage on the other
+  const latest = selectLatestEntry(ours, theirs);
   const merged: DownloadedVersionEntry = {
     fileId: ours.fileId,
     versionId: ours.versionId,
@@ -197,10 +200,36 @@ function mergeLockEntry(
     ),
   };
 
-  if (selected.fileName) merged.fileName = selected.fileName;
-  if (selected.staged !== undefined) merged.staged = selected.staged;
+  const fileName = mergeScalarField(
+    base?.fileName,
+    ours.fileName,
+    theirs.fileName,
+    latest.fileName
+  );
+  if (fileName !== undefined) merged.fileName = fileName;
+
+  const staged = mergeScalarField(
+    base?.staged,
+    ours.staged,
+    theirs.staged,
+    latest.staged
+  );
+  if (staged !== undefined) merged.staged = staged;
 
   return merged;
+}
+
+// The side that changed from base wins; both changed differently → fallback
+function mergeScalarField<T extends string | boolean>(
+  base: T | undefined,
+  ours: T | undefined,
+  theirs: T | undefined,
+  fallback: T | undefined
+): T | undefined {
+  if (ours === theirs) return ours;
+  if (ours === base) return theirs;
+  if (theirs === base) return ours;
+  return fallback;
 }
 
 function mergeTranslations(

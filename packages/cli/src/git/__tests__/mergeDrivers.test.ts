@@ -251,6 +251,82 @@ describe('mergeGtLockJson', () => {
     expect(JSON.parse(result.content).entries[0].versionId).toBe('version-new');
   });
 
+  it('keeps a fresh stage when the other side only downloaded', () => {
+    const baseEntry = entry('file-a', 'version-a', 'es');
+    const result = mergeGtLockJson(
+      lock({ entries: [baseEntry] }),
+      // Ours staged the file (staged flag added, translations untouched)
+      lock({ entries: [{ ...baseEntry, staged: true }] }),
+      // Theirs downloaded, bumping the translation timestamp
+      lock({
+        entries: [
+          {
+            ...baseEntry,
+            translations: {
+              es: { updatedAt: '2026-02-01T00:00:00.000Z' },
+            },
+          },
+        ],
+      })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries[0]).toEqual({
+      ...baseEntry,
+      translations: {
+        es: { updatedAt: '2026-02-01T00:00:00.000Z' },
+      },
+      staged: true,
+    });
+  });
+
+  it('keeps a one-sided fileName change over the newer-timestamp side', () => {
+    const baseEntry = entry('file-a', 'version-a', 'es');
+    const result = mergeGtLockJson(
+      lock({ entries: [{ ...baseEntry, fileName: 'src/old.json' }] }),
+      lock({ entries: [{ ...baseEntry, fileName: 'src/new.json' }] }),
+      lock({
+        entries: [
+          {
+            ...baseEntry,
+            fileName: 'src/old.json',
+            translations: {
+              es: { updatedAt: '2026-02-01T00:00:00.000Z' },
+            },
+          },
+        ],
+      })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries[0].fileName).toBe('src/new.json');
+  });
+
+  it('falls back to the newer entry when both sides change staged', () => {
+    const baseEntry = entry('file-a', 'version-a', 'es');
+    const result = mergeGtLockJson(
+      lock({ entries: [baseEntry] }),
+      lock({ entries: [{ ...baseEntry, staged: true }] }),
+      lock({
+        entries: [
+          {
+            ...baseEntry,
+            staged: false,
+            translations: {
+              es: { updatedAt: '2026-02-01T00:00:00.000Z' },
+            },
+          },
+        ],
+      })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries[0].staged).toBe(false);
+  });
+
   it('honors an entry deletion when the other side is unchanged', () => {
     const baseEntry = entry('file-a', 'version-a', 'es');
     const result = mergeGtLockJson(

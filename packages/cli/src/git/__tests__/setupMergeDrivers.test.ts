@@ -112,6 +112,37 @@ describe('setupGitMergeDrivers', () => {
     expect(attrs).toContain('gt-lock.json: merge: gt-lock');
   });
 
+  it.skipIf(process.platform === 'win32')(
+    'writes quoted backslash patterns that git actually matches',
+    async () => {
+      tempDir = createTempGitRepo();
+      fs.writeFileSync(path.join(tempDir, 'gt.config.json'), '{}');
+      const settings = createMockSettings({
+        config: path.join(tempDir, 'gt.config.json'),
+        files: {
+          resolvedPaths: {},
+          placeholderPaths: {
+            gt: path.join(tempDir, 'my back\\slash dir/[locale].json'),
+          },
+          transformPaths: {},
+        },
+      }) as Settings;
+
+      await setupGitMergeDrivers(settings, {
+        cwd: tempDir,
+        driverCommand: 'gt',
+      });
+
+      const attrs = execFileSync(
+        'git',
+        ['check-attr', 'merge', 'my back\\slash dir/es.json'],
+        { cwd: tempDir, encoding: 'utf8' }
+      );
+      // git C-quotes the path in its own output because of the backslash
+      expect(attrs).toContain('"my back\\\\slash dir/es.json": merge: gtjson');
+    }
+  );
+
   it('warns when the lockfile is not in the v2 format', async () => {
     tempDir = createTempGitRepo();
     fs.writeFileSync(path.join(tempDir, 'gt.config.json'), '{}');
@@ -188,6 +219,26 @@ describe('getGitAttributesEntries', () => {
       driver: 'merge=gtjson',
     });
   });
+
+  it.skipIf(process.platform === 'win32')(
+    'quadruple-escapes backslashes inside quoted patterns',
+    () => {
+      const settings = createMockSettings({
+        files: {
+          resolvedPaths: {},
+          placeholderPaths: {
+            gt: '/repo/public/my back\\slash dir/[locale].json',
+          },
+          transformPaths: {},
+        },
+      }) as Settings;
+
+      expect(getGitAttributesEntries(settings, '/repo', '/repo')[1]).toEqual({
+        pattern: '"public/my back\\\\\\\\slash dir/*.json"',
+        driver: 'merge=gtjson',
+      });
+    }
+  );
 
   it.skipIf(process.platform === 'win32')(
     'escapes literal backslashes in generated patterns',

@@ -192,15 +192,19 @@ function toGitAttributePattern(relativePath: string): string | null {
   ) {
     return null;
   }
-  // Escape literal backslashes for the glob layer
-  const pattern = relativePath.split(path.sep).join('/').replace(/\\/g, '\\\\');
+  const pattern = relativePath.split(path.sep).join('/');
   if (!/[\s"]/.test(pattern)) {
-    return pattern;
+    // Escape literal backslashes for the glob layer
+    return pattern.replace(/\\/g, '\\\\');
   }
   // gitattributes splits fields on whitespace without honoring backslash
   // escapes, so patterns containing whitespace must be C-style double-quoted
-  // (supported since Git 2.32)
-  return `"${pattern.replace(/(["\\])/g, '\\$1')}"`;
+  // (supported since Git 2.32). Quoted patterns decode twice — C-style
+  // unquoting, then glob matching — so one literal backslash becomes four.
+  const quoted = pattern.replace(/["\\]/g, (char) =>
+    char === '\\' ? '\\\\\\\\' : '\\"'
+  );
+  return `"${quoted}"`;
 }
 
 function quoteShellArg(value: string): string {
