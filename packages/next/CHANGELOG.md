@@ -1,5 +1,21 @@
 # gt-next
 
+## 11.0.4
+
+### Patch Changes
+
+- [#1847](https://github.com/generaltranslation/gt/pull/1847) [`d8938b6`](https://github.com/generaltranslation/gt/commit/d8938b68ed8247b304d0cc0c22db3d3cc3a0b2ac) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add `withGTStaticProps()` for hydrating each statically generated Pages Router locale with its relevant translation snapshot. Pages Router locale routing is required so Next.js generates the page once per locale.
+
+- [#1848](https://github.com/generaltranslation/gt/pull/1848) [`1f33d5f`](https://github.com/generaltranslation/gt/commit/1f33d5f76ffc879d2d21aa2508e07e1d3b66c4e3) Thanks [@bgub](https://github.com/bgub)! - Remove unused dependencies: `@generaltranslation/supported-locales` from gt-react, gt-next, gt-i18n, and @generaltranslation/react-core, and `@generaltranslation/format` from gt-react. Nothing in these packages imports them, so this only reduces install weight.
+
+- [#1851](https://github.com/generaltranslation/gt/pull/1851) [`604889b`](https://github.com/generaltranslation/gt/commit/604889bf0cb833ecafbbe2febae842c81e161d10) Thanks [@bgub](https://github.com/bgub)! - Make `@generaltranslation/compiler` an optional peer dependency instead of a hard dependency. It is only used by the experimental `experimentalCompilerOptions.type: 'babel'` webpack path, which already degrades gracefully with a warning when the package cannot be resolved. Users who enable the experimental babel compiler must now install `@generaltranslation/compiler` themselves; everyone else saves ~8.5MB of install weight (the compiler plus its Babel toolchain).
+
+- Updated dependencies [[`006e071`](https://github.com/generaltranslation/gt/commit/006e071bf87ffe80f2d18958ddfa8f18cc2d85d2), [`7fb4a74`](https://github.com/generaltranslation/gt/commit/7fb4a74c52065694a40deafcf4596acc09e17f58), [`d23766c`](https://github.com/generaltranslation/gt/commit/d23766c78a2c1be278d85e896d2521453734a6eb), [`1f33d5f`](https://github.com/generaltranslation/gt/commit/1f33d5f76ffc879d2d21aa2508e07e1d3b66c4e3)]:
+  - @generaltranslation/compiler@1.3.26
+  - gt-i18n@1.0.2
+  - gt-react@11.0.4
+  - @generaltranslation/react-core@11.0.4
+
 ## 11.0.3
 
 ### Patch Changes
