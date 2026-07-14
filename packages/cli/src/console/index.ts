@@ -131,7 +131,7 @@ export const warnInvalidMaxCharsSync = (
 ): string =>
   withLocation(
     file,
-    `Found invalid maxChars value: ${colorizeContent(value)}. Change the value to a valid number to ensure this content is translated.`,
+    `Found invalid maxChars value: ${colorizeContent(value)}. maxChars must be a numeric literal, e.g. $maxChars={10}, to ensure this content is translated.`,
     location
   );
 
