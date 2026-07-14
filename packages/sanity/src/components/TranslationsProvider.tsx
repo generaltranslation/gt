@@ -111,6 +111,51 @@ interface TranslationsContextType {
 
 const TranslationsContext = createContext<TranslationsContextType | null>(null);
 
+// Pinned upload versions are mirrored to sessionStorage so they survive a
+// Studio page refresh: falling back to the live document._rev after a refresh
+// would query GT with a version that was never uploaded (in-place imports bump
+// the _rev), making completed translations show as "not started". Keyed by
+// project + dataset so Studios sharing an origin don't collide.
+const getUploadedVersionsStorageKey = (
+  projectId: string | undefined,
+  dataset: string | undefined
+) => `gt-sanity:uploadedVersions:${projectId ?? ''}:${dataset ?? ''}`;
+
+function readUploadedVersions(storageKey: string): Map<string, string> {
+  try {
+    const raw = window.sessionStorage.getItem(storageKey);
+    if (!raw) return new Map();
+    const parsed: unknown = JSON.parse(raw);
+    if (!isPlainRecord(parsed)) return new Map();
+    return new Map(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, string] => typeof entry[1] === 'string'
+      )
+    );
+  } catch {
+    return new Map();
+  }
+}
+
+function writeUploadedVersions(
+  storageKey: string,
+  versions: Map<string, string>
+): void {
+  try {
+    window.sessionStorage.setItem(
+      storageKey,
+      JSON.stringify(Object.fromEntries(versions))
+    );
+  } catch {
+    // sessionStorage unavailable (SSR, private mode, quota) — pinned versions
+    // fall back to in-memory only.
+  }
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export const useTranslations = () => {
   const context = useContext(TranslationsContext);
   if (!context) {
@@ -157,11 +202,16 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     Map<string, TranslationStatus>
   >(new Map());
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [uploadedVersions, setUploadedVersions] = useState<Map<string, string>>(
-    new Map()
-  );
 
   const client = useClient();
+  const { projectId, dataset } = client.config();
+  const uploadedVersionsStorageKey = getUploadedVersionsStorageKey(
+    projectId,
+    dataset
+  );
+  const [uploadedVersions, setUploadedVersions] = useState<Map<string, string>>(
+    () => readUploadedVersions(uploadedVersionsStorageKey)
+  );
   const schema = useSchema();
   const translationContext: TranslationFunctionContext = { client, schema };
   const toast = useToast();
@@ -173,6 +223,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   useEffect(() => {
     downloadStatusRef.current = downloadStatus;
   }, [downloadStatus]);
+
+  useEffect(() => {
+    writeUploadedVersions(uploadedVersionsStorageKey, uploadedVersions);
+  }, [uploadedVersionsStorageKey, uploadedVersions]);
 
   const getVersionId = useCallback(
     (document: SanityDocument) =>

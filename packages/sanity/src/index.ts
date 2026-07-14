@@ -185,7 +185,8 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       additionalDeserializers,
       additionalBlockDeserializers,
       translationLevel,
-      normalizedFieldLevelDocuments
+      normalizedFieldLevelDocuments,
+      fieldLevelConfig.typePrefix
     );
     gt.setConfig({
       sourceLocale: resolvedSourceLocale,

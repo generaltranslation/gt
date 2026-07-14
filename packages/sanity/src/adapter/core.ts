@@ -37,6 +37,7 @@ export class GTConfig {
   additionalBlockDeserializers: unknown[];
   translationLevel: FieldLevelTranslationMode;
   fieldLevelDocuments: TranslateDocumentFilter[];
+  fieldLevelTypePrefix: string;
 
   private static instance: GTConfig;
   constructor(
@@ -55,7 +56,8 @@ export class GTConfig {
     additionalDeserializers: CustomDeserializers = { types: {} },
     additionalBlockDeserializers: unknown[] = [],
     translationLevel: FieldLevelTranslationMode = 'document',
-    fieldLevelDocuments: TranslateDocumentFilter[] = []
+    fieldLevelDocuments: TranslateDocumentFilter[] = [],
+    fieldLevelTypePrefix: string = 'internationalizedArray'
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -73,6 +75,7 @@ export class GTConfig {
     this.additionalBlockDeserializers = additionalBlockDeserializers;
     this.translationLevel = translationLevel;
     this.fieldLevelDocuments = fieldLevelDocuments;
+    this.fieldLevelTypePrefix = fieldLevelTypePrefix;
   }
 
   static getInstance() {
@@ -113,7 +116,8 @@ export class GTConfig {
     additionalDeserializers: CustomDeserializers = { types: {} },
     additionalBlockDeserializers: unknown[] = [],
     translationLevel: FieldLevelTranslationMode = 'document',
-    fieldLevelDocuments: TranslateDocumentFilter[] = []
+    fieldLevelDocuments: TranslateDocumentFilter[] = [],
+    fieldLevelTypePrefix: string = 'internationalizedArray'
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -131,6 +135,7 @@ export class GTConfig {
     this.additionalBlockDeserializers = additionalBlockDeserializers;
     this.translationLevel = translationLevel;
     this.fieldLevelDocuments = fieldLevelDocuments;
+    this.fieldLevelTypePrefix = fieldLevelTypePrefix;
   }
 
   getSecretsNamespace() {
@@ -182,6 +187,9 @@ export class GTConfig {
   }
   getFieldLevelDocuments() {
     return this.fieldLevelDocuments;
+  }
+  getFieldLevelTypePrefix() {
+    return this.fieldLevelTypePrefix;
   }
 }
 export const pluginConfig = GTConfig.getInstance();

@@ -1,4 +1,5 @@
 import { GTFile, TranslationFunctionContext } from '../types';
+import { pluginConfig } from '../adapter/core';
 import { importDocument } from '../translation/importDocument';
 import { getPublishedId } from './documentIds';
 
@@ -126,11 +127,16 @@ export async function processImportBatch(
     },
     {
       ...options,
-      // Serialize all locales of the same document: internationalized-array
-      // imports patch the source document in place with a read-merge-set, so
-      // concurrent locale imports would clobber each other (last write wins).
+      // Serialize all locales of the same document when imports may patch the
+      // source document in place: internationalized-array imports do a
+      // read-merge-set, so concurrent locale imports would clobber each other
+      // (last write wins). Document-level imports write to separate per-locale
+      // documents and stay parallel. In 'mixed' mode the per-document strategy
+      // is only known after deserialization, so serialize conservatively.
       getConcurrencyKey: (item: ImportBatchItem) =>
-        getPublishedId(item.docInfo.documentId),
+        pluginConfig.getTranslationLevel() === 'document'
+          ? undefined
+          : getPublishedId(item.docInfo.documentId),
       onItemSuccess: (item: ImportBatchItem, key: string) => {
         successfulImports.push(key);
         options.onItemSuccess?.(item, key);

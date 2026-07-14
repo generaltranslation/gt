@@ -6,6 +6,7 @@ import {
 } from '../detect';
 import { collapseToSourceLocale } from '../collapse';
 import { mergeInternationalizedArrays } from '../merge';
+import { pluginConfig } from '../../../adapter/core';
 
 const stringItem = (language: string, value: string) => ({
   _key: `key-${language}`,
@@ -26,6 +27,35 @@ describe('detect', () => {
     expect(isInternationalizedArrayItem({ language: 'en', value: 'x' })).toBe(
       false
     );
+  });
+
+  test('rejects user-defined *Value types that only share the shape', () => {
+    expect(
+      isInternationalizedArrayItem({
+        _key: 'k',
+        _type: 'priceValue',
+        language: 'USD',
+        value: 9.99,
+      })
+    ).toBe(false);
+  });
+
+  test('recognises items generated with a custom typePrefix', () => {
+    const item = {
+      _key: 'k',
+      _type: 'myI18nStringValue',
+      language: 'en',
+      value: 'Hello',
+    };
+    expect(isInternationalizedArrayItem(item)).toBe(false);
+
+    const originalPrefix = pluginConfig.fieldLevelTypePrefix;
+    pluginConfig.fieldLevelTypePrefix = 'myI18n';
+    try {
+      expect(isInternationalizedArrayItem(item)).toBe(true);
+    } finally {
+      pluginConfig.fieldLevelTypePrefix = originalPrefix;
+    }
   });
 
   test('recognises a full internationalized array field', () => {
