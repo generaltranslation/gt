@@ -1,5 +1,11 @@
 # @generaltranslation/react-core-linter
 
+## 0.1.12
+
+### Patch Changes
+
+- [#1873](https://github.com/generaltranslation/gt/pull/1873) [`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Retrigger package publication after repairing release workspace dependency resolution.
+
 ## 0.1.11
 
 ### Patch Changes
