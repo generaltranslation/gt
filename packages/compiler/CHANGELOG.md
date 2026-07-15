@@ -1,5 +1,16 @@
 # @generaltranslation/compiler
 
+## 1.3.30
+
+### Patch Changes
+
+- [#1862](https://github.com/generaltranslation/gt/pull/1862) [`7f0fbfe`](https://github.com/generaltranslation/gt/commit/7f0fbfef78f677372d39087252ab8d6c72d78e7e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Skip compile-time hash injection for `<T>` components containing `<Derive>` children. A single injected hash pinned the runtime lookup to a hash matching none of the per-variant translations, so the rendered translation was stuck on one variant. Also stops injecting an empty `_hash` for `<T $context={derive(...)}>` and autoderive dynamic content.
+
+- [#1863](https://github.com/generaltranslation/gt/pull/1863) [`ed53c71`](https://github.com/generaltranslation/gt/commit/ed53c71bc5c6a8d82feaef1b52f68d20b3794c0b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fix `$_hash` injection for `gt()` callbacks with derive content: a derive call no longer shifts the injected hashes of sibling `gt()` calls (counter misalignment), and derive `$context` no longer injects an empty `$_hash` or an empty-hash `useGT()` prefetch entry, both of which broke translation lookups.
+
+- Updated dependencies [[`3ad93f8`](https://github.com/generaltranslation/gt/commit/3ad93f89da099ef345b707bf37db425662d87e2a)]:
+  - generaltranslation@9.0.1
+
 ## 1.3.29
 
 ### Patch Changes

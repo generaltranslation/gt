@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 9.0.1
+
+### Patch Changes
+
+- [#1880](https://github.com/generaltranslation/gt/pull/1880) [`3ad93f8`](https://github.com/generaltranslation/gt/commit/3ad93f89da099ef345b707bf37db425662d87e2a) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Deprecate the `id` option in `hashSource` ahead of its removal in the next major version.
+
 ## 9.0.0
 
 ### Major Changes
