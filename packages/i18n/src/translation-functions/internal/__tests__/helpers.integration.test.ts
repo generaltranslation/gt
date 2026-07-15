@@ -5,6 +5,7 @@ import { initializeI18nConfig } from '../../../i18n-config/singleton-operations'
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../types/options';
 import {
+  prefetchStringContentWithRuntimeFallback,
   resolveStringContentWithRuntimeFallback,
   resolveJsxWithRuntimeFallback,
 } from '../helpers';
@@ -125,6 +126,52 @@ describe('translation helpers (deep integration)', () => {
 
     expect(mockTranslateMany).toHaveBeenCalledTimes(1);
     expect(result).toEqual(translatedContent);
+  });
+
+  it('prefetchStringContentWithRuntimeFallback does not interpolate placeholder messages', async () => {
+    // Regression: compiler-injected prefetch calls (GtInternalRuntimeTranslateString)
+    // carry no variable values. Interpolating the discarded result used to warn
+    // "String interpolation failed" for every message with a placeholder.
+    const message = 'Hello {0}';
+    const options: LookupOptions = { $format: 'ICU' };
+    const hash = hashMessage(message, options);
+
+    setupManager({ [hash]: 'Bonjour {0}' });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await prefetchStringContentWithRuntimeFallback('fr', message, {
+      $format: 'ICU',
+    });
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('prefetchStringContentWithRuntimeFallback still registers missing translations', async () => {
+    const message = 'Trip for {0} guests';
+    const options: LookupOptions = { $format: 'ICU' };
+    const hash = hashMessage(message, options);
+
+    setupManager({});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    mockTranslateMany.mockResolvedValue({
+      [hash]: { success: true, translation: 'Voyage pour {0} personnes' },
+    });
+
+    const promise = prefetchStringContentWithRuntimeFallback('fr', message, {
+      $format: 'ICU',
+    });
+
+    await vi.advanceTimersByTimeAsync(50);
+    await promise;
+
+    expect(mockTranslateMany).toHaveBeenCalledTimes(1);
+    const sourcesArg = mockTranslateMany.mock.calls[0][0];
+    expect(sourcesArg[hash]).toBeDefined();
+    expect(sourcesArg[hash].source).toBe(message);
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 
   it('resolveStringContentWithRuntimeFallback falls back to source when translateMany fails', async () => {
