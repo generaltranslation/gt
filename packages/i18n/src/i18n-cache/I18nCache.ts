@@ -1,7 +1,9 @@
-import { publishValidationResults } from './validation/publishValidationResults';
 import logger from '../logs/logger';
 import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
-import { validateConfig } from './validation/validateConfig';
+import {
+  createDiagnosticMessage,
+  defaultRuntimeApiUrl,
+} from 'generaltranslation/internal';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { LookupOptions } from '../translation-functions/types/options';
 import { SafeTranslationsLoader } from './translations-manager/translations-loaders/types';
@@ -108,8 +110,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
    */
   constructor(params: I18nCacheConstructorParams) {
     // Validation
-    const validationResults = validateConfig(params);
-    publishValidationResults(validationResults, 'I18nCache: ');
+    validateCacheParams(params);
 
     this.config = standardizeConfig(params);
 
@@ -124,7 +125,6 @@ class I18nCache<TranslationValue extends Translation = Translation> {
         _branchId: params._branchId,
       },
     }) as SafeTranslationsLoader<TranslationValue>;
-    // TODO: somewhere enforce that if you have a loadDictionary, you must have a dictionary
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
     const runtimeTranslationTimeout =
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT;
@@ -648,6 +648,47 @@ class I18nCache<TranslationValue extends Translation = Translation> {
 export { I18nCache };
 
 // ===== Helper Functions ===== //
+
+/**
+ * Validate constructor params: log warnings for suspicious configs and throw
+ * on hard misconfigurations.
+ */
+function validateCacheParams(params: I18nCacheConstructorParams): void {
+  // Runtime translation against a custom API URL still needs GT credentials
+  if (params.runtimeUrl && params.runtimeUrl !== defaultRuntimeApiUrl) {
+    if (!params.projectId) {
+      logger.warn(
+        'I18nCache: ' +
+          createDiagnosticMessage({
+            whatHappened: 'Runtime translation needs a projectId',
+            fix: 'Add projectId to the I18nCache config or disable runtime translation',
+          })
+      );
+    }
+    if (!params.devApiKey && !params.apiKey) {
+      logger.warn(
+        'I18nCache: ' +
+          createDiagnosticMessage({
+            whatHappened: 'Runtime translation needs devApiKey or apiKey',
+            fix: 'Add credentials to the I18nCache config or disable runtime translation',
+          })
+      );
+    }
+  }
+
+  // loadDictionary requires dictionary so the default locale always has a
+  // source dictionary
+  if (params.loadDictionary && !params.dictionary) {
+    logger.error(
+      'I18nCache: ' +
+        createDiagnosticMessage({
+          whatHappened: 'loadDictionary needs a source dictionary',
+          fix: 'Provide dictionary so the default locale has source content',
+        })
+    );
+    throw new Error('Validation errors occurred');
+  }
+}
 
 /**
  * Standardize the config
