@@ -1,5 +1,53 @@
 # gt-react-native
 
+## 11.0.6
+
+### Patch Changes
+
+- Updated dependencies [[`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1), [`6345dc5`](https://github.com/generaltranslation/gt/commit/6345dc5e3fe0a1e3ead9a3c30a0adaa4037d50a8)]:
+  - @generaltranslation/supported-locales@2.1.7
+  - gt-i18n@1.0.3
+  - @generaltranslation/react-core@11.0.6
+
+## 11.0.5
+
+### Patch Changes
+
+- Updated dependencies [[`53e61ab`](https://github.com/generaltranslation/gt/commit/53e61abbb4522631f252bcd268eae9c079dd9967)]:
+  - @generaltranslation/supported-locales@2.1.6
+  - @generaltranslation/react-core@11.0.5
+
+## 11.0.4
+
+### Patch Changes
+
+- Updated dependencies [[`006e071`](https://github.com/generaltranslation/gt/commit/006e071bf87ffe80f2d18958ddfa8f18cc2d85d2), [`7fb4a74`](https://github.com/generaltranslation/gt/commit/7fb4a74c52065694a40deafcf4596acc09e17f58), [`d23766c`](https://github.com/generaltranslation/gt/commit/d23766c78a2c1be278d85e896d2521453734a6eb), [`1f33d5f`](https://github.com/generaltranslation/gt/commit/1f33d5f76ffc879d2d21aa2508e07e1d3b66c4e3)]:
+  - gt-i18n@1.0.2
+  - @generaltranslation/react-core@11.0.4
+
+## 11.0.3
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.3
+
+## 11.0.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.2
+
+## 11.0.1
+
+### Patch Changes
+
+- Updated dependencies [[`7db86bd`](https://github.com/generaltranslation/gt/commit/7db86bd92be5d09a2da10133dbb873248b0e5a5c)]:
+  - @generaltranslation/supported-locales@2.1.3
+  - gt-i18n@1.0.1
+  - @generaltranslation/react-core@11.0.1
+
 ## 11.0.0
 
 ### Major Changes

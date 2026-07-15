@@ -18,7 +18,7 @@ import {
   TranslationFunctionContext,
 } from '../types';
 import { gt, overrideConfig, pluginConfig } from '../adapter/core';
-import { serializeDocument } from '../utils/serialize';
+import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
 import { initProject } from '../translation/initProject';
 import { createJobs } from '../translation/createJobs';
@@ -84,6 +84,11 @@ interface TranslationsContextType {
   loadingSecrets: boolean;
   secrets: Secrets | null;
   branchId: string | undefined;
+  // Version to use for translation status keys and GT file queries. Prefers
+  // the _rev pinned at upload time over the live _rev, so in-place imports
+  // (internationalized arrays) bumping the document _rev don't orphan the
+  // statuses of the version actually uploaded to GT.
+  getVersionId: (document: SanityDocument) => string;
 
   // Actions
   setLocales: (locales: TranslationLocale[]) => void;
@@ -105,6 +110,51 @@ interface TranslationsContextType {
 }
 
 const TranslationsContext = createContext<TranslationsContextType | null>(null);
+
+// Pinned upload versions are mirrored to sessionStorage so they survive a
+// Studio page refresh: falling back to the live document._rev after a refresh
+// would query GT with a version that was never uploaded (in-place imports bump
+// the _rev), making completed translations show as "not started". Keyed by
+// project + dataset so Studios sharing an origin don't collide.
+const getUploadedVersionsStorageKey = (
+  projectId: string | undefined,
+  dataset: string | undefined
+) => `gt-sanity:uploadedVersions:${projectId ?? ''}:${dataset ?? ''}`;
+
+function readUploadedVersions(storageKey: string): Map<string, string> {
+  try {
+    const raw = window.sessionStorage.getItem(storageKey);
+    if (!raw) return new Map();
+    const parsed: unknown = JSON.parse(raw);
+    if (!isPlainRecord(parsed)) return new Map();
+    return new Map(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, string] => typeof entry[1] === 'string'
+      )
+    );
+  } catch {
+    return new Map();
+  }
+}
+
+function writeUploadedVersions(
+  storageKey: string,
+  versions: Map<string, string>
+): void {
+  try {
+    window.sessionStorage.setItem(
+      storageKey,
+      JSON.stringify(Object.fromEntries(versions))
+    );
+  } catch {
+    // sessionStorage unavailable (SSR, private mode, quota) — pinned versions
+    // fall back to in-memory only.
+  }
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 export const useTranslations = () => {
   const context = useContext(TranslationsContext);
@@ -154,6 +204,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const client = useClient();
+  const { projectId, dataset } = client.config();
+  const uploadedVersionsStorageKey = getUploadedVersionsStorageKey(
+    projectId,
+    dataset
+  );
+  const [uploadedVersions, setUploadedVersions] = useState<Map<string, string>>(
+    () => readUploadedVersions(uploadedVersionsStorageKey)
+  );
   const schema = useSchema();
   const translationContext: TranslationFunctionContext = { client, schema };
   const toast = useToast();
@@ -165,6 +223,12 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   useEffect(() => {
     downloadStatusRef.current = downloadStatus;
   }, [downloadStatus]);
+
+  const getVersionId = useCallback(
+    (document: SanityDocument) =>
+      uploadedVersions.get(getDocumentPublishedId(document)) ?? document._rev,
+    [uploadedVersions]
+  );
 
   const fetchDocuments = useCallback(async () => {
     setLoadingDocuments(true);
@@ -299,7 +363,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
           const baseLanguage = pluginConfig.getSourceLocale();
           try {
-            const serialized = serializeDocument(
+            const strategy = getTranslationStrategy(doc);
+            const serialized = strategy.serialize(
               cleanDoc as typeof doc,
               schema,
               baseLanguage
@@ -322,6 +387,19 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       await initProject(uploadResult, { timeout: 600 }, secrets);
       await createJobs(uploadResult, availableLocaleIds, secrets);
 
+      // Pin the _rev each file was uploaded under. GT status queries need the
+      // exact uploaded versionId, and the live _rev moves on (in-place array
+      // imports bump it), so status lookups go through getVersionId instead.
+      // Persisted to sessionStorage so the pins survive a page refresh.
+      const nextUploadedVersions = new Map(uploadedVersions);
+      for (const { info } of transformedDocuments) {
+        if (info.versionId) {
+          nextUploadedVersions.set(info.documentId, info.versionId);
+        }
+      }
+      writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
+      setUploadedVersions(nextUploadedVersions);
+
       toast.push({
         title: `Translation tasks created for ${documents.length} documents`,
         status: 'success',
@@ -337,7 +415,14 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
     }
-  }, [secrets, documents, locales, schema]);
+  }, [
+    secrets,
+    documents,
+    locales,
+    schema,
+    uploadedVersions,
+    uploadedVersionsStorageKey,
+  ]);
 
   const handleImportAll = useCallback(async () => {
     if (!secrets || documents.length === 0 || !branchId) return;
@@ -592,7 +677,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         for (const localeId of availableLocaleIds) {
           const documentId = getDocumentPublishedId(doc);
           fileQueryData.push({
-            versionId: doc._rev,
+            versionId: getVersionId(doc),
             fileId: documentId,
             branchId: branchId,
             locale: localeId,
@@ -612,7 +697,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         for (const doc of documents) {
           for (const localeId of availableLocaleIds) {
             const documentId = getDocumentPublishedId(doc);
-            const versionId = doc._rev;
+            const versionId = getVersionId(doc);
             const key = createTranslationStatusKey(
               branchId,
               documentId,
@@ -663,7 +748,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsRefreshing(false);
     }
-  }, [secrets, documents, locales, branchId]);
+  }, [secrets, documents, locales, branchId, getVersionId]);
 
   const handleImportDocument = useCallback(
     async (documentId: string, versionId: string, localeId: string) => {
@@ -1038,6 +1123,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     loadingSecrets,
     secrets,
     branchId,
+    getVersionId,
 
     // Actions
     setLocales,

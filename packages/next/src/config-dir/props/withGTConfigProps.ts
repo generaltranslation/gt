@@ -54,6 +54,8 @@ export type BaseWithGTConfigProps = {
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
   disableInvalidLocaleWarning?: boolean;
+  /** Regular expression source that limits i18n middleware routing by pathname. */
+  pathRegex?: string;
   // Rendering
   renderSettings?: {
     method: RenderMethod;

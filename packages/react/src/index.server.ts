@@ -9,6 +9,7 @@ import type { TxProps } from './utils/TxProps';
 // React Server Component frameworks.
 
 export { initializeGTSRA as initializeGT } from './setup/initializeGTSRA';
+export { parseLocale } from './functions/parseLocale';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useRegionSelector } from './components/useRegionSelector';
 export {

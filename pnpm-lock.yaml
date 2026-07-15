@@ -890,9 +890,6 @@ importers:
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
-      '@generaltranslation/supported-locales':
-        specifier: workspace:*
-        version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
         version: link:../core
@@ -977,18 +974,12 @@ importers:
 
   packages/next:
     dependencies:
-      '@generaltranslation/compiler':
-        specifier: workspace:*
-        version: link:../compiler
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
       '@generaltranslation/react-core':
         specifier: workspace:*
         version: link:../react-core
-      '@generaltranslation/supported-locales':
-        specifier: workspace:*
-        version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
         version: link:../core
@@ -1008,6 +999,9 @@ importers:
       '@edge-runtime/vm':
         specifier: ^4.0.0
         version: 4.0.4
+      '@generaltranslation/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
@@ -1073,15 +1067,9 @@ importers:
 
   packages/react:
     dependencies:
-      '@generaltranslation/format':
-        specifier: workspace:*
-        version: link:../format
       '@generaltranslation/react-core':
         specifier: workspace:*
         version: link:../react-core
-      '@generaltranslation/supported-locales':
-        specifier: workspace:*
-        version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
         version: link:../core
@@ -1116,9 +1104,6 @@ importers:
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
-      '@generaltranslation/supported-locales':
-        specifier: workspace:*
-        version: link:../supported-locales
       generaltranslation:
         specifier: workspace:*
         version: link:../core

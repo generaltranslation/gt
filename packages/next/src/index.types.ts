@@ -7,6 +7,10 @@ import type {
 } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
 import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
+import type {
+  WithGTStaticProps,
+  WithGTStaticPropsFunction,
+} from './pages-dir/withGTStaticProps';
 import {
   useTranslations as _useTranslations,
   useLocale as _useLocale,
@@ -366,6 +370,14 @@ export function withGTServerSideProps<
 }
 
 /**
+ * Wraps a Pages Router `getStaticProps` function and adds the generated locale
+ * and its translation snapshot. The default locale uses an empty snapshot.
+ */
+export const withGTStaticProps: WithGTStaticPropsFunction = () => {
+  throw new Error(typesFileError);
+};
+
+/**
  * Checks whether a locale is valid and supported by the current gt-next config.
  *
  * @param locale - The locale candidate to validate.
@@ -559,6 +571,7 @@ export type {
   GTTranslationOptions,
   RuntimeTranslationOptions,
   WithGTServerSideProps,
+  WithGTStaticProps,
 };
 
 export type { StringFormat };

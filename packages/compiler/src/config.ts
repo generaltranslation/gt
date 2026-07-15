@@ -7,9 +7,14 @@ export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug';
 /**
  * The only relevant parts of the GT config that we are concerned with
  */
-type GTConfig = {
+export type GTConfig = {
+  defaultLocale?: string;
+  locales?: string[];
+  projectId?: string;
+  _versionId?: string;
   files?: {
     gt?: {
+      output?: string;
       parsingFlags?: {
         enableAutoJsxInjection?: boolean;
         autoderive?: boolean | { jsx?: boolean; strings?: boolean };
@@ -29,7 +34,7 @@ export interface PluginConfig {
   logLevel?: LogLevel;
   /** GT Configuration object — pass the parsed gt.config.json to sync settings */
   gtConfig?: GTConfig;
-  /** Enable compile-time hash generation */
+  /** Enable compile-time hash generation (default: true) */
   compileTimeHash?: boolean;
   /** Disable dynamic content validation checks */
   disableBuildChecks?: boolean;

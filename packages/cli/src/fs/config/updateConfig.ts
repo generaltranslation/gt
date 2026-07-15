@@ -12,6 +12,7 @@ type UpdateConfigOptions = {
   _versionId?: string | null;
   _branchId?: string | null;
   stageTranslations?: boolean | null;
+  omitConfigIds?: boolean | null;
 };
 
 /**
@@ -27,13 +28,15 @@ export default async function updateConfig(
   options: UpdateConfigOptions
 ): Promise<void> {
   // Filter out empty string values from the config object
-  const { projectId, _versionId, _branchId, stageTranslations } = options;
+  const { projectId, _versionId, _branchId, stageTranslations, omitConfigIds } =
+    options;
   const newContent = {
     ...(projectId && { projectId }),
     ...(_versionId && { _versionId }),
     ...(_branchId && { _branchId }),
     // Omit when false
     ...(stageTranslations && { stageTranslations }),
+    ...(omitConfigIds && { omitConfigIds }),
   };
 
   try {

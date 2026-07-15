@@ -135,6 +135,27 @@ export async function resolveStringContentWithRuntimeFallback(
     sourceLocale: getI18nConfig().getDefaultLocale(),
   });
 }
+
+/**
+ * Lookup translation, fallback to runtime translate, without interpolating.
+ * For prefetch calls whose result is discarded — variable values only exist
+ * at the render-time call site, so interpolating here would fail for any
+ * message with placeholders.
+ */
+export async function prefetchStringContentWithRuntimeFallback(
+  locale: string,
+  content: StringContent,
+  options: LookupOptionsFor<StringFormat> = {}
+): Promise<void> {
+  const i18nCache = getI18nCache();
+  const lookupOptions = createLookupOptions(locale, options, 'STRING');
+  await i18nCache.lookupTranslationWithFallback(
+    lookupOptions.$locale,
+    content,
+    lookupOptions
+  );
+}
+
 /**
  * Add the default format to caller-provided lookup options.
  */

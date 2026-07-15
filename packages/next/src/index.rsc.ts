@@ -7,8 +7,15 @@ import type {
   PreviewData,
 } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
-import { getTranslationsSnapshotRscError } from './errors/createErrors';
+import {
+  getTranslationsSnapshotRscError,
+  withGTStaticPropsRscError,
+} from './errors/createErrors';
 import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
+import type {
+  WithGTStaticProps,
+  WithGTStaticPropsFunction,
+} from './pages-dir/withGTStaticProps';
 initializeGTServer();
 
 // ===== Components ===== //
@@ -74,6 +81,14 @@ export function withGTServerSideProps<
   );
 }
 
+/**
+ * Placeholder for withGTStaticProps()
+ * This function is for next-pages use, not next-app use
+ */
+export const withGTStaticProps: WithGTStaticPropsFunction = () => {
+  throw new Error(withGTStaticPropsRscError);
+};
+
 // ===== gt-react Components ===== //
 export { Derive } from 'gt-react';
 
@@ -100,4 +115,4 @@ export { isLocaleSupported } from './request/localeValidation';
 
 // ===== Types ===== //
 export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
-export type { WithGTServerSideProps };
+export type { WithGTServerSideProps, WithGTStaticProps };

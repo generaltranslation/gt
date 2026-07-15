@@ -1034,6 +1034,14 @@ describe('withGTConfig', () => {
       );
     });
 
+    it('invalid pathRegex throws a descriptive error', async () => {
+      const withGTConfig = await getWithGTConfig();
+
+      expect(() => withGTConfig({}, { pathRegex: '[unclosed' })).toThrowError(
+        'gt-next Error: pathRegex "[unclosed" is not a valid regular expression.'
+      );
+    });
+
     it('missing loader files throw respective build errors', async () => {
       const withGTConfig = await getWithGTConfig();
 
@@ -1201,6 +1209,15 @@ describe('withGTConfig', () => {
 
       expect(result.env!.MY_EXISTING_VAR).toBe('hello');
       expect(result.env!._GENERALTRANSLATION_I18N_CONFIG_PARAMS).toBeDefined();
+    });
+
+    it('exposes pathRegex to middleware and client code', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const pathRegex = '^/(?!uk(?:/|$)).*';
+
+      const result = withGTConfig({}, { pathRegex });
+
+      expect(result.env!._GENERALTRANSLATION_PATH_REGEX).toBe(pathRegex);
     });
 
     it('I18N_CONFIG_PARAMS contains non-credential config as JSON string', async () => {
