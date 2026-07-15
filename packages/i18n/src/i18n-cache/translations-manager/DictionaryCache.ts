@@ -3,10 +3,11 @@ import {
   getDictionaryEntry,
   getDictionaryValue,
   getDictionaryValueAtPath,
-  isDictionaryObject,
+  isDictionaryValue,
   setDictionaryValueAtPath,
 } from './utils/dictionary-helpers';
 import { materializeDictionaryValue } from './utils/materialize-dictionary';
+import { dedupePending } from './utils/dedupePending';
 import type {
   Dictionary,
   DictionaryEntry,
@@ -95,9 +96,8 @@ export class DictionaryCache {
     sourceValue: DictionaryValue,
     targetValue = getDictionaryValueAtPath(this.cache, key)
   ): Promise<DictionaryValue> {
-    let materializationPromise = this.pendingMaterializations.get(key);
-    if (!materializationPromise) {
-      materializationPromise = materializeDictionaryValue({
+    return dedupePending(this.pendingMaterializations, key, () =>
+      materializeDictionaryValue({
         key,
         sourceValue,
         targetValue,
@@ -108,25 +108,17 @@ export class DictionaryCache {
       }).then((value) => {
         this.setValue(key, value);
         return value;
-      });
-      this.pendingMaterializations.set(key, materializationPromise);
-    }
-
-    try {
-      return await materializationPromise;
-    } finally {
-      this.pendingMaterializations.delete(key);
-    }
+      })
+    );
   }
 
   public async materializeEntry(
     key: DictionaryKey,
     sourceEntry: DictionaryEntry
   ): Promise<DictionaryEntry> {
-    let translationPromise = this.pendingTranslations.get(key);
-    if (!translationPromise) {
-      translationPromise = this.runtimeTranslate(key, sourceEntry).then(
-        (value) => {
+    return cloneDictionaryEntry(
+      await dedupePending(this.pendingTranslations, key, () =>
+        this.runtimeTranslate(key, sourceEntry).then((value) => {
           setDictionaryValueAtPath(this.cache, key, value);
           const entry = getDictionaryEntry(value);
           if (entry === undefined) {
@@ -136,23 +128,16 @@ export class DictionaryCache {
             );
           }
           return cloneDictionaryEntry(entry);
-        }
-      );
-      this.pendingTranslations.set(key, translationPromise);
-    }
-
-    try {
-      return cloneDictionaryEntry(await translationPromise);
-    } finally {
-      this.pendingTranslations.delete(key);
-    }
+        })
+      )
+    );
   }
 }
 
 function mergeDictionary(target: Dictionary, source: Dictionary): void {
   for (const [key, value] of Object.entries(source)) {
     const targetValue = target[key];
-    if (isDictionaryObject(targetValue) && isDictionaryObject(value)) {
+    if (isDictionaryValue(targetValue) && isDictionaryValue(value)) {
       mergeDictionary(targetValue, value);
     } else {
       target[key] = cloneDictionaryValue(value);

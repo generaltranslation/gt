@@ -1,6 +1,7 @@
 import { LookupOptions } from '../../translation-functions/types/options';
 import { Translation } from './utils/types/translation-data';
 import { hashMessage } from '../../utils/hashMessage';
+import { dedupePending } from './utils/dedupePending';
 import type { Content } from '@generaltranslation/format/types';
 import type {
   EntryMetadata,
@@ -8,47 +9,42 @@ import type {
   TranslationResult,
 } from 'generaltranslation/types';
 
-// See gt-next
-const MAX_BATCH_SIZE = 25;
-const MAX_CONCURRENT_REQUESTS = 100;
-const BATCH_INTERVAL = 50;
-
 export type TranslationBatchConfig = {
   maxConcurrentRequests?: number;
   maxBatchSize?: number;
   batchInterval?: number;
 };
 
+// See gt-next
 const DEFAULT_BATCH_CONFIG: Required<TranslationBatchConfig> = {
-  maxConcurrentRequests: MAX_CONCURRENT_REQUESTS,
-  maxBatchSize: MAX_BATCH_SIZE,
-  batchInterval: BATCH_INTERVAL,
+  maxConcurrentRequests: 100,
+  maxBatchSize: 25,
+  batchInterval: 50,
 };
 
-function getPositiveValue(value: number | undefined, defaultValue: number) {
-  if (value === undefined || !Number.isFinite(value) || value <= 0) {
-    return defaultValue;
-  }
-  return value;
-}
-
-function getPositiveInteger(value: number | undefined, defaultValue: number) {
+function getPositiveValue(
+  value: number | undefined,
+  defaultValue: number,
+  integer = false
+) {
   if (value === undefined || !Number.isFinite(value)) return defaultValue;
-  const integer = Math.trunc(value);
-  return integer > 0 ? integer : defaultValue;
+  const resolved = integer ? Math.trunc(value) : value;
+  return resolved > 0 ? resolved : defaultValue;
 }
 
 function normalizeBatchConfig(
   batchConfig?: TranslationBatchConfig
 ): Required<TranslationBatchConfig> {
   return {
-    maxConcurrentRequests: getPositiveInteger(
+    maxConcurrentRequests: getPositiveValue(
       batchConfig?.maxConcurrentRequests,
-      DEFAULT_BATCH_CONFIG.maxConcurrentRequests
+      DEFAULT_BATCH_CONFIG.maxConcurrentRequests,
+      true
     ),
-    maxBatchSize: getPositiveInteger(
+    maxBatchSize: getPositiveValue(
       batchConfig?.maxBatchSize,
-      DEFAULT_BATCH_CONFIG.maxBatchSize
+      DEFAULT_BATCH_CONFIG.maxBatchSize,
+      true
     ),
     batchInterval: getPositiveValue(
       batchConfig?.batchInterval,
@@ -74,8 +70,14 @@ export type TranslationKey<TranslationValue extends Translation> = {
 export type Hash = string;
 
 /**
+ * Just being explicit about the purpose of this type
+ */
+export type Locale = string;
+
+/**
  * Called when a translation is resolved through a runtime cache miss.
- * Locale is handled at the LocalesCache level, so it is not passed here.
+ * Locale is handled by the I18nCache that owns this cache, so it is not
+ * passed here.
  */
 export type TranslationsCacheMissCallback<
   TranslationValue extends Translation,
@@ -104,7 +106,7 @@ export type TranslateMany = (
  *
  * Principles:
  * - This class is language agnostic, and should never store the locale code as a parameter.
- *   Locale logic is handled at the LocalesCache level. Use a callback function that has the
+ *   Locale logic is handled by the owning I18nCache. Use a callback function that has the
  *   locale parameter embedded if you wish to use the locale code.
  */
 export class TranslationsCache<TranslationValue extends Translation> {
@@ -161,21 +163,13 @@ export class TranslationsCache<TranslationValue extends Translation> {
     key: TranslationKey<T>
   ): Promise<T> {
     const cacheKey = this.getCacheKey(key);
-    let translationPromise = this.pendingTranslations.get(cacheKey);
-    if (!translationPromise) {
-      translationPromise = this.translate(key);
-      this.pendingTranslations.set(cacheKey, translationPromise);
+    const value = await dedupePending(this.pendingTranslations, cacheKey, () =>
+      this.translate(key)
+    );
+    if (value != null) {
+      this.onMiss?.(cacheKey, value);
     }
-
-    try {
-      const value = await translationPromise;
-      if (value != null) {
-        this.onMiss?.(cacheKey, value);
-      }
-      return value as T;
-    } finally {
-      this.pendingTranslations.delete(cacheKey);
-    }
+    return value as T;
   }
 
   public getInternalCache(): Record<Hash, TranslationValue> {
