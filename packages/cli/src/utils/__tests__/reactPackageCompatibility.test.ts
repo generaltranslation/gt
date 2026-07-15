@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { logger } from '../../console/logger.js';
 import { REACT_LIBRARIES } from '../../types/libraries.js';
-import { getPackageJson } from '../packageJson.js';
+import { getPackageJson, getPackageVersion } from '../packageJson.js';
 import { checkReactPackageCompatibility } from '../reactPackageCompatibility.js';
 
 vi.mock('../../console/logger.js', () => ({
@@ -10,12 +10,17 @@ vi.mock('../../console/logger.js', () => ({
   },
 }));
 
-vi.mock('../packageJson.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../packageJson.js')>()),
-  getPackageJson: vi.fn(),
-}));
+vi.mock('../packageJson.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../packageJson.js')>();
+  return {
+    ...actual,
+    getPackageJson: vi.fn(),
+    getPackageVersion: vi.fn(actual.getPackageVersion),
+  };
+});
 
 const mockGetPackageJson = vi.mocked(getPackageJson);
+const mockGetPackageVersion = vi.mocked(getPackageVersion);
 const originalExit = process.exit;
 
 describe('checkReactPackageCompatibility', () => {
@@ -75,12 +80,49 @@ describe('checkReactPackageCompatibility', () => {
     expect(process.exit).not.toHaveBeenCalled();
   });
 
-  it('skips unknown version protocols', async () => {
+  it.each(['workspace:*', 'not-a-version', '^'])(
+    'skips unknown or malformed version spec %s',
+    async (version) => {
+      mockGetPackageJson.mockResolvedValue({
+        dependencies: { 'gt-react': version },
+      });
+
+      await checkReactPackageCompatibility();
+
+      expect(logger.error).not.toHaveBeenCalled();
+      expect(process.exit).not.toHaveBeenCalled();
+    }
+  );
+
+  it('fails open when package.json cannot be read', async () => {
+    mockGetPackageJson.mockRejectedValue(new Error('unreadable'));
+
+    await expect(checkReactPackageCompatibility()).resolves.toBeUndefined();
+
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(process.exit).not.toHaveBeenCalled();
+  });
+
+  it('fails open for malformed dependency metadata', async () => {
     mockGetPackageJson.mockResolvedValue({
-      dependencies: { 'gt-react': 'workspace:*' },
+      dependencies: { 'gt-react': 10 },
     });
 
-    await checkReactPackageCompatibility();
+    await expect(checkReactPackageCompatibility()).resolves.toBeUndefined();
+
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(process.exit).not.toHaveBeenCalled();
+  });
+
+  it('fails open when dependency lookup throws', async () => {
+    mockGetPackageJson.mockResolvedValue({
+      dependencies: { 'gt-react': '^10.0.0' },
+    });
+    mockGetPackageVersion.mockImplementationOnce(() => {
+      throw new Error('unexpected');
+    });
+
+    await expect(checkReactPackageCompatibility()).resolves.toBeUndefined();
 
     expect(logger.error).not.toHaveBeenCalled();
     expect(process.exit).not.toHaveBeenCalled();
