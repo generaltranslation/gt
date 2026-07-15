@@ -2,6 +2,7 @@ import { SanityClient, SanityDocument } from 'sanity';
 import { pluginConfig } from '../../adapter/core';
 import { mergeInternationalizedArrays } from '../../serialization/internationalizedArray/merge';
 import type { GTFile } from '../../types';
+import { getPublishedId } from '../../utils/documentIds';
 import { findLatestDraft } from '../utils/findLatestDraft';
 
 /**
@@ -40,5 +41,19 @@ export const internationalizedArrayPatch = async (
   // Every key in `changes` already exists on the base document (merge only
   // returns existing fields), so a full `set` of the merged field is safe and
   // preserves all other locale items and their random `_key`s.
-  await client.patch(baseDoc._id).set(changes).commit();
+  if (baseDoc._id.startsWith('drafts.')) {
+    await client.patch(baseDoc._id).set(changes).commit();
+    return;
+  }
+
+  // Only the published document exists. Mutations via the client write to the
+  // exact id given (drafts are a Studio convention, not created server-side),
+  // so patch a draft seeded from the published state instead of publishing
+  // translated content directly.
+  const draftId = `drafts.${getPublishedId(baseDoc._id)}`;
+  await client
+    .transaction()
+    .createIfNotExists({ ...baseDoc, _id: draftId })
+    .patch(draftId, (patch) => patch.set(changes))
+    .commit();
 };
