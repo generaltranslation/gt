@@ -42,7 +42,8 @@ export function partitionTranslationsByLockfile(
       const translations = file.translations.filter((translation) => {
         const entry = entryMap.get(translation.fileId);
         if (!entry || entry.versionId !== translation.versionId) return true;
-        const lockHash = entry.translations[translation.locale]?.postProcessHash;
+        const lockHash =
+          entry.translations[translation.locale]?.postProcessHash;
         if (!lockHash || lockHash !== hashStringSync(translation.content)) {
           return true;
         }
