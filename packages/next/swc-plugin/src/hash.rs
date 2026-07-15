@@ -94,14 +94,12 @@ pub enum SanitizedChildren {
   Wrapped { c: Box<SanitizedChildren> },
 }
 
-/// Sanitized data structure for hashing (matches TypeScript hashSource.ts)
+/// Sanitized data structure for hashing (matches TypeScript compiler inputs)
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SanitizedData {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub source: Option<Box<SanitizedChildren>>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub id: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub context: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -373,7 +371,6 @@ mod tests {
       SanitizedChildren::Single(Box::new(SanitizedChild::Text("Hello world".to_string())));
     let sanitized_data = SanitizedData {
       source: Some(Box::new(children.clone())),
-      id: None,
       context: None,
       max_chars: None,
       data_format: Some("JSX".to_string()),
@@ -391,26 +388,25 @@ mod tests {
   }
 
   #[test]
-  fn test_hash_source_with_context_and_id() {
+  fn test_hash_source_with_context_and_content() {
     let children = SanitizedChildren::Single(Box::new(SanitizedChild::Text("Hello".to_string())));
 
     let data1 = SanitizedData {
       source: Some(Box::new(children.clone())),
-      id: None,
       context: None,
       max_chars: None,
       data_format: Some("JSX".to_string()),
     };
     let data2 = SanitizedData {
       source: Some(Box::new(children.clone())),
-      id: None,
       context: Some("context".to_string()),
       max_chars: None,
       data_format: Some("JSX".to_string()),
     };
     let data3 = SanitizedData {
-      source: Some(Box::new(children)),
-      id: Some("id".to_string()),
+      source: Some(Box::new(SanitizedChildren::Single(Box::new(
+        SanitizedChild::Text("Goodbye".to_string()),
+      )))),
       context: None,
       max_chars: None,
       data_format: Some("JSX".to_string()),
@@ -420,13 +416,9 @@ mod tests {
     let hash2 = JsxHasher::hash_string(&JsxHasher::stable_stringify(&data2).unwrap());
     let hash3 = JsxHasher::hash_string(&JsxHasher::stable_stringify(&data3).unwrap());
 
-    // All should be different
     assert_ne!(hash1, hash2, "Context should change hash");
-    assert_ne!(hash1, hash3, "ID should change hash");
-    assert_ne!(
-      hash2, hash3,
-      "Context and ID should produce different hashes"
-    );
+    assert_ne!(hash1, hash3, "Content should change hash");
+    assert_ne!(hash2, hash3, "Context and content should change hash");
   }
 
   #[test]
@@ -435,7 +427,6 @@ mod tests {
       SanitizedChildren::Single(Box::new(SanitizedChild::Text("test text".to_string())));
     let data = SanitizedData {
       source: Some(Box::new(children)),
-      id: None,
       context: None,
       max_chars: None,
       data_format: Some("JSX".to_string()),
@@ -468,7 +459,6 @@ mod tests {
     let empty_children = SanitizedChildren::Multiple(vec![]);
     let data = SanitizedData {
       source: Some(Box::new(empty_children)),
-      id: None,
       context: None,
       max_chars: None,
       data_format: Some("JSX".to_string()),
@@ -506,7 +496,6 @@ mod tests {
 
     let data = SanitizedData {
       source: Some(Box::new(children.clone())),
-      id: None,
       context: None,
       max_chars: None,
       data_format: Some("JSX".to_string()),
@@ -528,7 +517,6 @@ mod tests {
 
     let data2 = SanitizedData {
       source: Some(Box::new(children2)),
-      id: None,
       context: None,
       max_chars: None,
       data_format: Some("JSX".to_string()),

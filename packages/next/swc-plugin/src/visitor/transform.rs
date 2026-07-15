@@ -436,7 +436,8 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
     }
 
     // Extract the options content
-    let (id, context, max_chars, format, has_derive_context) = extract_id_and_context_from_options(options);
+    let (_, context, max_chars, format, has_derive_context) =
+      extract_id_and_context_from_options(options);
 
     // If context contains derive(), skip hashing — CLI handles resolution
     if has_derive_context {
@@ -449,7 +450,6 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
       source: Some(Box::new(SanitizedChildren::Single(Box::new(
         SanitizedChild::Text(string_content.unwrap()),
       )))),
-      id,
       context,
       max_chars,
       data_format: Some(format.unwrap_or_else(|| "ICU".to_string())),
@@ -2731,6 +2731,42 @@ mod tests {
   mod hash_calculation {
     use super::*;
 
+    fn create_string_arg(value: &str) -> ExprOrSpread {
+      ExprOrSpread {
+        spread: None,
+        expr: Box::new(Expr::Lit(Lit::Str(Str {
+          span: DUMMY_SP,
+          value: Atom::new(value).into(),
+          raw: None,
+        }))),
+      }
+    }
+
+    fn create_options_arg(id: &str, context: &str) -> ExprOrSpread {
+      ExprOrSpread {
+        spread: None,
+        expr: Box::new(Expr::Object(ObjectLit {
+          span: DUMMY_SP,
+          props: vec![
+            create_string_prop("$id", id, DUMMY_SP),
+            create_string_prop("$context", context, DUMMY_SP),
+            PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+              key: PropName::Ident(IdentName {
+                span: DUMMY_SP,
+                sym: Atom::new("$maxChars"),
+              }),
+              value: Box::new(Expr::Lit(Lit::Num(Number {
+                span: DUMMY_SP,
+                value: 40.0,
+                raw: None,
+              }))),
+            }))),
+            create_string_prop("$format", "ICU", DUMMY_SP),
+          ],
+        })),
+      }
+    }
+
     #[test]
     fn calculates_hash_for_empty_element() {
       let mut visitor =
@@ -2765,6 +2801,63 @@ mod tests {
       let (hash2, _) = traversal2.calculate_element_hash(&element2);
 
       assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn custom_id_does_not_change_call_hash() {
+      let mut visitor = TransformVisitor::new(
+        LogLevel::Silent,
+        false,
+        None,
+        false,
+        false,
+        false,
+        StringCollector::new(),
+      );
+      let message = create_string_arg("Hello world");
+      let first_options = create_options_arg("first-id", "greeting");
+      let second_options = create_options_arg("second-id", "greeting");
+
+      let (first_hash, first_json) =
+        visitor.calculate_hash_for_call_expr(&message, Some(&first_options));
+      let (second_hash, second_json) =
+        visitor.calculate_hash_for_call_expr(&message, Some(&second_options));
+
+      assert_eq!(first_hash, second_hash, "Custom ID should not change hash");
+      assert_eq!(
+        first_json, second_json,
+        "Custom ID should not be serialized"
+      );
+      assert!(!first_json.unwrap().contains("first-id"));
+      assert!(!second_json.unwrap().contains("second-id"));
+
+      let different_context_options = create_options_arg("first-id", "farewell");
+      let (context_hash, _) =
+        visitor.calculate_hash_for_call_expr(&message, Some(&different_context_options));
+      assert_ne!(first_hash, context_hash, "Context should change hash");
+
+      let different_message = create_string_arg("Goodbye world");
+      let (content_hash, _) =
+        visitor.calculate_hash_for_call_expr(&different_message, Some(&first_options));
+      assert_ne!(first_hash, content_hash, "Content should change hash");
+
+      visitor.string_collector.initialize_aggregator(0);
+      let call_expr = CallExpr {
+        span: DUMMY_SP,
+        ctxt: SyntaxContext::empty(),
+        callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+          span: DUMMY_SP,
+          sym: Atom::new("t"),
+          optional: false,
+          ctxt: SyntaxContext::empty(),
+        }))),
+        args: vec![message.clone(), first_options.clone()],
+        type_args: None,
+      };
+      visitor.track_translation_callback(&call_expr, &message, 0);
+
+      let collected = visitor.string_collector.get_translation_data(0).unwrap();
+      assert_eq!(collected.content[0].id.as_deref(), Some("first-id"));
     }
   }
 
