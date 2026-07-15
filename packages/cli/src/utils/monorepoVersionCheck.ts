@@ -3,17 +3,10 @@ import path from 'node:path';
 import fg from 'fast-glob';
 import chalk from 'chalk';
 import { logger } from '../console/logger.js';
-import {
-  Libraries,
-  REACT_LIBRARIES,
-  type GTLibrary,
-  type ReactLibrary,
-} from '../types/libraries.js';
+import { Libraries, type GTLibrary } from '../types/libraries.js';
 import { resolveConfig } from '../config/resolveConfig.js';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
-import { getPackageVersion } from './packageJson.js';
 
-interface PackageJson extends Record<string, unknown> {
+interface PackageJson {
   name?: string;
   version?: string;
   dependencies?: Record<string, string>;
@@ -30,11 +23,6 @@ interface VersionMismatch {
   versions: VersionInfo[];
 }
 
-interface IncompatiblePackage {
-  name: ReactLibrary;
-  version: string;
-}
-
 type PackageJsonReader = (workspaceDir: string) => PackageJson | null;
 
 interface SyncedVersionGroup {
@@ -48,8 +36,6 @@ const SYNCED_VERSION_GROUPS: readonly SyncedVersionGroup[] = [
     minVersion: '10.19.1',
   },
 ];
-
-const MINIMUM_REACT_PACKAGE_VERSION = '11.0.0';
 
 const LOCKFILES = [
   'pnpm-lock.yaml',
@@ -121,16 +107,6 @@ function isSemverSpecifier(version: string): boolean {
   return /^[\^~>=<*]?\d/.test(version);
 }
 
-function getDependencyVersion(
-  packageName: string,
-  packageDir: string,
-  readPkgJson: PackageJsonReader
-): string | null {
-  const pkg = readPkgJson(packageDir);
-  if (!pkg) return null;
-  return getPackageVersion(packageName, pkg) ?? null;
-}
-
 /**
  * Get the declared version specifier for a GT package from a workspace's package.json.
  * Returns null if the package is not found or uses a non-semver protocol
@@ -141,27 +117,12 @@ function getDeclaredVersion(
   workspaceDir: string,
   readPkgJson: PackageJsonReader
 ): string | null {
-  const version = getDependencyVersion(packageName, workspaceDir, readPkgJson);
+  const pkg = readPkgJson(workspaceDir);
+  if (!pkg) return null;
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  const version = deps[packageName];
   if (!version || !isSemverSpecifier(version)) return null;
   return version;
-}
-
-function getInstalledPackageVersion(
-  packageName: ReactLibrary,
-  startDir: string,
-  readPkgJson: PackageJsonReader
-): string | null {
-  let dir = startDir;
-  while (true) {
-    const installedPackage = readPkgJson(
-      path.join(dir, 'node_modules', packageName)
-    );
-    if (installedPackage?.version) return installedPackage.version;
-
-    const parent = path.dirname(dir);
-    if (parent === dir) return null;
-    dir = parent;
-  }
 }
 
 /**
@@ -271,40 +232,26 @@ function shouldCheckSyncedVersionGroup(
 }
 
 function isVersionAtLeast(version: string, minVersion: string): boolean {
-  const parsedVersion = parseMinimumSemverVersion(version);
-  const parsedMinVersion = parseMinimumSemverVersion(minVersion);
+  const parsedVersion = parseSemverVersion(version);
+  const parsedMinVersion = parseSemverVersion(minVersion);
   if (!parsedVersion || !parsedMinVersion) return true;
 
   return compareSemverVersions(parsedVersion, parsedMinVersion) >= 0;
 }
 
-function parseMinimumSemverVersion(
+function parseSemverVersion(
   version: string
 ): { major: number; minor: number; patch: number } | null {
-  const normalized = version.trim().replace(/^workspace:/, '');
-  const alternatives = normalized.split(/\s*\|\|\s*/);
-  const parsedAlternatives = alternatives.flatMap((alternative) => {
-    const match = alternative
-      .trim()
-      .match(/^(\^|~|>=?|<=?|=)?\s*v?(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
-    if (!match) return [];
+  const match = version
+    .trim()
+    .match(/^[\^~<>=\s]*(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+  if (!match) return null;
 
-    if (match[1] === '<' || match[1] === '<=') {
-      return [{ major: 0, minor: 0, patch: 0 }];
-    }
-    return [
-      {
-        major: Number(match[2]),
-        minor: Number(match[3] ?? 0),
-        patch: Number(match[4] ?? 0),
-      },
-    ];
-  });
-
-  if (parsedAlternatives.length !== alternatives.length) return null;
-  return parsedAlternatives.reduce((minimum, version) =>
-    compareSemverVersions(version, minimum) < 0 ? version : minimum
-  );
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2] ?? 0),
+    patch: Number(match[3] ?? 0),
+  };
 }
 
 function compareSemverVersions(
@@ -373,71 +320,6 @@ function formatMismatchError(mismatches: VersionMismatch[]): string {
   );
 
   return lines.join('\n');
-}
-
-function findIncompatibleReactPackages(cwd: string): IncompatiblePackage[] {
-  const readPkgJson = createPackageJsonReader();
-  const rootDir = findMonorepoRoot(cwd);
-  const packageDirs =
-    rootDir === cwd ? [cwd, ...scanForPackageDirs(cwd)] : [cwd];
-  const incompatiblePackages = packageDirs.flatMap((packageDir) =>
-    REACT_LIBRARIES.flatMap((packageName) => {
-      const declaredVersion = getDependencyVersion(
-        packageName,
-        packageDir,
-        readPkgJson
-      );
-      if (!declaredVersion) return [];
-
-      const installedVersion = getInstalledPackageVersion(
-        packageName,
-        packageDir,
-        readPkgJson
-      );
-      const version = installedVersion ?? declaredVersion;
-      if (isVersionAtLeast(version, MINIMUM_REACT_PACKAGE_VERSION)) return [];
-
-      return [{ name: packageName, version }];
-    })
-  );
-
-  return Array.from(
-    new Map(
-      incompatiblePackages.map((pkg) => [`${pkg.name}@${pkg.version}`, pkg])
-    ).values()
-  );
-}
-
-function formatReactCompatibilityError(
-  packages: IncompatiblePackage[]
-): string {
-  return createDiagnosticMessage({
-    source: 'gt',
-    severity: 'Error',
-    whatHappened: 'GT React packages must be version 11 or later',
-    why: 'older versions include the ID parameter in translation keys and may cause retranslation',
-    fix: 'Upgrade the listed packages',
-    wayOut:
-      'rerun with --ignore-compatibility-checks to continue at your own risk',
-    details: packages.map(({ name, version }) => `${name}@${version}`),
-  });
-}
-
-/**
- * Prevent current CLI hashing semantics from being used with pre-v11 React
- * packages, which still rely on ID-based translation keys.
- */
-export function checkReactPackageCompatibility(
-  ignoreCompatibilityChecks: boolean = false,
-  cwd: string = process.cwd()
-): void {
-  if (ignoreCompatibilityChecks) return;
-
-  const incompatiblePackages = findIncompatibleReactPackages(cwd);
-  if (incompatiblePackages.length === 0) return;
-
-  logger.error(formatReactCompatibilityError(incompatiblePackages));
-  process.exit(1);
 }
 
 /**

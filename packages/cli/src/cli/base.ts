@@ -72,7 +72,7 @@ import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
-import { checkReactPackageCompatibility } from '../utils/monorepoVersionCheck.js';
+import { checkReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
 
 const COMPATIBILITY_CHECK_COMMANDS = new Set([
   'enqueue',
@@ -124,9 +124,9 @@ export class BaseCLI {
       '--ignore-compatibility-checks',
       'Ignore GT package compatibility checks'
     );
-    this.program.hook('preAction', (_thisCommand, actionCommand) => {
+    this.program.hook('preAction', async (_thisCommand, actionCommand) => {
       if (!COMPATIBILITY_CHECK_COMMANDS.has(actionCommand.name())) return;
-      checkReactPackageCompatibility(
+      await checkReactPackageCompatibility(
         Boolean(this.program.opts().ignoreCompatibilityChecks)
       );
     });
