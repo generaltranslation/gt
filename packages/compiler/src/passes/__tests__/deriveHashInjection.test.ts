@@ -193,3 +193,75 @@ describe('T component hash injection with Derive inside branches', () => {
     expect(result.code).toContain('_hash: "');
   });
 });
+
+describe('autoderive interplay with Derive detection', () => {
+  it('autoderive ON + static-only <T> still gets _hash injected', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsx(T, { children: "Hello world" });
+    `;
+    const expectedHash = hashSource({
+      source: 'Hello world',
+      dataFormat: 'JSX',
+    });
+    const result = transform(code, { autoderive: true });
+    expect(result.errors).toHaveLength(0);
+    expect(result.code).toContain(`_hash: "${expectedHash}"`);
+  });
+
+  it('autoderive OFF + dynamic child still raises a dynamic-content error', () => {
+    const code = `
+      import { jsxs } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsxs(T, { children: ["Hello ", name] });
+    `;
+    const result = transform(code);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('autoderive ON + <Derive> child — both signals together, no hash, no errors', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Derive, T } from 'gt-react';
+      jsx(T, { children: jsx(Derive, { children: cond ? "a" : "b" }) });
+    `;
+    const result = transform(code, { autoderive: true });
+    expect(result.errors).toHaveLength(0);
+    expect(result.code).not.toContain('_hash');
+  });
+
+  it('autoderive ON + <Derive> inside a Branch branch attribute skips injection', () => {
+    const code = `
+      import { jsx } from 'react/jsx-runtime';
+      import { Branch, Derive, T } from 'gt-react';
+      jsx(T, { children: jsx(Branch, {
+        branch: cond,
+        a: jsx(Derive, { children: getX() }),
+        b: "fallback"
+      }) });
+    `;
+    const result = transform(code, { autoderive: true });
+    expect(result.errors).toHaveLength(0);
+    expect(result.code).not.toContain('_hash');
+  });
+
+  it('autoderive ON + dynamic <T> does not shift the hash of a static sibling', () => {
+    const code = `
+      import { jsx, jsxs } from 'react/jsx-runtime';
+      import { T } from 'gt-react';
+      jsxs(T, { children: ["Hello ", name] });
+      jsx(T, { children: "Plain sibling" });
+    `;
+    const expectedHash = hashSource({
+      source: 'Plain sibling',
+      dataFormat: 'JSX',
+    });
+    const result = transform(code, { autoderive: true });
+    expect(result.errors).toHaveLength(0);
+    const hashes = result.code.match(/_hash: "[^"]*"/g) ?? [];
+    expect(hashes).toEqual([`_hash: "${expectedHash}"`]);
+    const dynamicCall = result.code.split('\n').find((l) => l.includes('name'));
+    expect(dynamicCall).not.toContain('_hash');
+  });
+});
