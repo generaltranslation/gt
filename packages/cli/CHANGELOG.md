@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.14.62
+
+### Patch Changes
+
+- Updated dependencies [[`3ad93f8`](https://github.com/generaltranslation/gt/commit/3ad93f89da099ef345b707bf37db425662d87e2a)]:
+  - generaltranslation@9.0.1
+  - @generaltranslation/python-extractor@0.2.28
+  - @generaltranslation/supported-locales@2.1.8
+
 ## 2.14.61
 
 ### Patch Changes

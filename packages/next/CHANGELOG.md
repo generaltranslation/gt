@@ -1,5 +1,18 @@
 # gt-next
 
+## 11.0.8
+
+### Patch Changes
+
+- [#1881](https://github.com/generaltranslation/gt/pull/1881) [`4ea53d6`](https://github.com/generaltranslation/gt/commit/4ea53d68e0889784d5255c9fc254b79950caace0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Exclude custom translation IDs from SWC-generated content hashes to match the TypeScript compiler and runtime.
+
+- Updated dependencies [[`7f0fbfe`](https://github.com/generaltranslation/gt/commit/7f0fbfef78f677372d39087252ab8d6c72d78e7e), [`ed53c71`](https://github.com/generaltranslation/gt/commit/ed53c71bc5c6a8d82feaef1b52f68d20b3794c0b), [`3ad93f8`](https://github.com/generaltranslation/gt/commit/3ad93f89da099ef345b707bf37db425662d87e2a)]:
+  - @generaltranslation/compiler@1.3.30
+  - generaltranslation@9.0.1
+  - gt-i18n@1.0.5
+  - gt-react@11.0.8
+  - @generaltranslation/react-core@11.0.8
+
 ## 11.0.7
 
 ### Patch Changes
