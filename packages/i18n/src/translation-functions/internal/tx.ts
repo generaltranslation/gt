@@ -1,6 +1,9 @@
 import { RuntimeTranslationOptions } from '../types/options';
 import type { StringFormat } from '@generaltranslation/format/types';
-import { resolveStringContentWithRuntimeFallback } from './helpers';
+import {
+  prefetchStringContentWithRuntimeFallback,
+  resolveStringContentWithRuntimeFallback,
+} from './helpers';
 import { getI18nConfig } from '../../i18n-config/singleton-operations';
 import { getWritableConditionStore } from '../../condition-store/singleton-operations';
 
@@ -50,13 +53,45 @@ export async function txInternal({
   content: string;
   options: RuntimeTranslationOptionsWithFormat;
 }): Promise<string> {
-  const targetLocale = enableI18n
-    ? typeof options.$locale === 'string'
-      ? options.$locale
-      : locale
-    : getI18nConfig().getDefaultLocale();
+  const targetLocale = getTargetLocale({ locale, enableI18n, options });
   return resolveStringContentWithRuntimeFallback(targetLocale, content, {
     $format: 'STRING',
     ...options,
   });
+}
+
+/**
+ * Registers a message for runtime translation without interpolating the
+ * result. For compiler-injected prefetch calls: their return value is
+ * discarded and variable values only exist at the render-time call site, so
+ * interpolating here would fail for any message with placeholders.
+ */
+export async function txPrefetch(
+  content: string,
+  options: RuntimeTranslationOptionsWithFormat = {}
+): Promise<void> {
+  const conditionStore = getWritableConditionStore();
+  const locale = conditionStore.getLocale();
+  const enableI18n = conditionStore.getEnableI18n();
+  const targetLocale = getTargetLocale({ locale, enableI18n, options });
+  await prefetchStringContentWithRuntimeFallback(targetLocale, content, {
+    $format: 'STRING',
+    ...options,
+  });
+}
+
+function getTargetLocale({
+  locale,
+  enableI18n,
+  options,
+}: {
+  locale: string;
+  enableI18n: boolean;
+  options: RuntimeTranslationOptionsWithFormat;
+}): string {
+  return enableI18n
+    ? typeof options.$locale === 'string'
+      ? options.$locale
+      : locale
+    : getI18nConfig().getDefaultLocale();
 }

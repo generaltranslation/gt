@@ -1,5 +1,11 @@
 # @generaltranslation/react-core-linter
 
+## 0.1.11
+
+### Patch Changes
+
+- [#1866](https://github.com/generaltranslation/gt/pull/1866) [`53e61ab`](https://github.com/generaltranslation/gt/commit/53e61abbb4522631f252bcd268eae9c079dd9967) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Recover the stable releases skipped after the Odysseus version regression and publish the accumulated package changes under new npm versions.
+
 ## 0.1.10
 
 ### Patch Changes

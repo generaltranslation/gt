@@ -5,6 +5,12 @@ import {
 } from 'sanity';
 import { vi } from 'vitest';
 
+// jsdom doesn't provide window.CSS; sanity's form components call
+// CSS.supports at module scope when imported.
+if (typeof globalThis.CSS === 'undefined') {
+  (globalThis as { CSS?: unknown }).CSS = { supports: () => false };
+}
+
 let mockTestKey = 0;
 
 vi.mock('@portabletext/block-tools', async () => {
