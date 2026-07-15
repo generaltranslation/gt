@@ -5,7 +5,7 @@ import {
   GtInternalRuntimeTranslateJsx,
   GtInternalRuntimeTranslateString,
 } from '../runtime-translate';
-import { tx } from '../tx';
+import { txPrefetch } from '../tx';
 
 vi.mock('../../../helpers/locale');
 vi.mock('../helpers');
@@ -17,10 +17,10 @@ describe('internal runtime translate helpers', () => {
     vi.mocked(getLocale).mockReturnValue('fr');
   });
 
-  it('translates strings with the compiler string format default', () => {
+  it('prefetches strings with the compiler string format default', () => {
     GtInternalRuntimeTranslateString('Hello', { $locale: 'es' });
 
-    expect(tx).toHaveBeenCalledWith('Hello', {
+    expect(txPrefetch).toHaveBeenCalledWith('Hello', {
       $format: 'ICU',
       $locale: 'es',
     });

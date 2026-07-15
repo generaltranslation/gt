@@ -1,5 +1,13 @@
 # @generaltranslation/compiler
 
+## 1.3.28
+
+### Patch Changes
+
+- [#1864](https://github.com/generaltranslation/gt/pull/1864) [`cb8f38e`](https://github.com/generaltranslation/gt/commit/cb8f38ebe5e9c7336bb4820dbef4b6ee5675645d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Honor the `compileTimeHash` option: setting it to `false` now actually disables hash injection (previously it was ignored and injection always ran). The default flips to `true`, matching the previously observed always-inject behavior, so default behavior is unchanged.
+
+- [#1866](https://github.com/generaltranslation/gt/pull/1866) [`53e61ab`](https://github.com/generaltranslation/gt/commit/53e61abbb4522631f252bcd268eae9c079dd9967) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Recover the stable releases skipped after the Odysseus version regression and publish the accumulated package changes under new npm versions.
+
 ## 1.3.26
 
 ### Patch Changes
