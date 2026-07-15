@@ -1,4 +1,3 @@
-import { EnqueueFilesResult } from '../types-dir/api/enqueueFiles';
 import { TranslationRequestConfig } from '../types';
 import { _checkJobStatus, JobStatus } from './checkJobStatus';
 
@@ -24,13 +23,13 @@ export type AwaitJobsResult = {
 /**
  * @internal
  * Polls job statuses until all jobs are finished or the timeout is reached.
- * @param enqueueResult - The result from enqueueFiles.
+ * @param jobIds - Job IDs to poll.
  * @param options - Polling configuration.
  * @param config - API credentials and configuration.
  * @returns The final status of all jobs.
  */
-export async function _awaitJobs(
-  enqueueResult: EnqueueFilesResult,
+export async function _awaitJobIds(
+  jobIds: string[],
   options: AwaitJobsOptions | undefined,
   config: TranslationRequestConfig
 ): Promise<AwaitJobsResult> {
@@ -40,8 +39,6 @@ export async function _awaitJobs(
     options?.timeoutSeconds !== undefined
       ? options.timeoutSeconds * 1000
       : DEFAULT_TIMEOUT_MS;
-
-  const jobIds = Object.keys(enqueueResult.jobData);
 
   if (jobIds.length === 0) {
     return { complete: true, jobs: [] };
@@ -55,6 +52,7 @@ export async function _awaitJobs(
 
   while (pendingJobIds.size > 0) {
     const statuses = await _checkJobStatus(Array.from(pendingJobIds), config);
+    const returnedJobIds = new Set(statuses.map(({ jobId }) => jobId));
 
     for (const job of statuses) {
       if (
@@ -73,6 +71,13 @@ export async function _awaitJobs(
           jobId: job.jobId,
           status: job.status,
         });
+      }
+    }
+
+    for (const jobId of Array.from(pendingJobIds)) {
+      if (!returnedJobIds.has(jobId)) {
+        finalStatuses.set(jobId, { jobId, status: 'unknown' });
+        pendingJobIds.delete(jobId);
       }
     }
 

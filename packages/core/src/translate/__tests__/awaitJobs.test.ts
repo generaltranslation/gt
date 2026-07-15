@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { _awaitJobs } from '../awaitJobs';
+import { _awaitJobIds } from '../awaitJobs';
 import { _checkJobStatus } from '../checkJobStatus';
 import { TranslationRequestConfig } from '../../types';
-import { EnqueueFilesResult } from '../../types-dir/api/enqueueFiles';
 
 vi.mock('../checkJobStatus');
 
@@ -12,23 +11,7 @@ const mockConfig: TranslationRequestConfig = {
   apiKey: 'test-api-key',
 };
 
-function makeEnqueueResult(jobIds: string[]): EnqueueFilesResult {
-  const jobData: EnqueueFilesResult['jobData'] = {};
-  for (const jobId of jobIds) {
-    jobData[jobId] = {
-      sourceFileId: 'src-1',
-      fileId: 'file-1',
-      versionId: 'v-1',
-      branchId: 'branch-1',
-      targetLocale: 'es',
-      projectId: 'test-project',
-      force: false,
-    };
-  }
-  return { jobData, locales: ['es'], message: 'ok' };
-}
-
-describe.sequential('_awaitJobs', () => {
+describe.sequential('_awaitJobIds', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -37,14 +20,34 @@ describe.sequential('_awaitJobs', () => {
     vi.useRealTimers();
   });
 
-  it('should return immediately for empty jobData', async () => {
-    const result = await _awaitJobs(
-      { jobData: {}, locales: [], message: 'ok' },
-      undefined,
-      mockConfig
-    );
+  it('should return immediately without job IDs', async () => {
+    const result = await _awaitJobIds([], undefined, mockConfig);
     expect(result).toEqual({ complete: true, jobs: [] });
     expect(_checkJobStatus).not.toHaveBeenCalled();
+  });
+
+  it('should accept job IDs directly', async () => {
+    vi.mocked(_checkJobStatus).mockResolvedValueOnce([
+      { jobId: 'job-1', status: 'completed' },
+    ]);
+
+    const result = await _awaitJobIds(['job-1'], undefined, mockConfig);
+
+    expect(result).toEqual({
+      complete: true,
+      jobs: [{ jobId: 'job-1', status: 'completed' }],
+    });
+  });
+
+  it('should treat missing job statuses as unknown', async () => {
+    vi.mocked(_checkJobStatus).mockResolvedValueOnce([]);
+
+    const result = await _awaitJobIds(['job-1'], undefined, mockConfig);
+
+    expect(result).toEqual({
+      complete: true,
+      jobs: [{ jobId: 'job-1', status: 'unknown' }],
+    });
   });
 
   it('should resolve when all jobs complete on first poll', async () => {
@@ -54,8 +57,8 @@ describe.sequential('_awaitJobs', () => {
     ]);
 
     // Use real timers — first poll resolves immediately with 'completed'
-    const result = await _awaitJobs(
-      makeEnqueueResult(['job-1', 'job-2']),
+    const result = await _awaitJobIds(
+      ['job-1', 'job-2'],
       { pollingIntervalSeconds: 0.01 },
       mockConfig
     );
@@ -71,8 +74,8 @@ describe.sequential('_awaitJobs', () => {
       .mockResolvedValueOnce([{ jobId: 'job-1', status: 'processing' }])
       .mockResolvedValueOnce([{ jobId: 'job-1', status: 'completed' }]);
 
-    const result = await _awaitJobs(
-      makeEnqueueResult(['job-1']),
+    const result = await _awaitJobIds(
+      ['job-1'],
       { pollingIntervalSeconds: 0.01 },
       mockConfig
     );
@@ -91,8 +94,8 @@ describe.sequential('_awaitJobs', () => {
       },
     ]);
 
-    const result = await _awaitJobs(
-      makeEnqueueResult(['job-1']),
+    const result = await _awaitJobIds(
+      ['job-1'],
       { pollingIntervalSeconds: 0.01 },
       mockConfig
     );
@@ -112,8 +115,8 @@ describe.sequential('_awaitJobs', () => {
       { jobId: 'job-1', status: 'unknown' },
     ]);
 
-    const result = await _awaitJobs(
-      makeEnqueueResult(['job-1']),
+    const result = await _awaitJobIds(
+      ['job-1'],
       { pollingIntervalSeconds: 0.01 },
       mockConfig
     );
@@ -130,8 +133,8 @@ describe.sequential('_awaitJobs', () => {
       ])
       .mockResolvedValueOnce([{ jobId: 'job-2', status: 'completed' }]);
 
-    const result = await _awaitJobs(
-      makeEnqueueResult(['job-1', 'job-2']),
+    const result = await _awaitJobIds(
+      ['job-1', 'job-2'],
       { pollingIntervalSeconds: 0.01 },
       mockConfig
     );
@@ -150,8 +153,8 @@ describe.sequential('_awaitJobs', () => {
       { jobId: 'job-1', status: 'processing' },
     ]);
 
-    const promise = _awaitJobs(
-      makeEnqueueResult(['job-1']),
+    const promise = _awaitJobIds(
+      ['job-1'],
       { pollingIntervalSeconds: 1, timeoutSeconds: 3 },
       mockConfig
     );
@@ -173,8 +176,8 @@ describe.sequential('_awaitJobs', () => {
       .mockResolvedValueOnce([{ jobId: 'job-1', status: 'processing' }])
       .mockResolvedValueOnce([{ jobId: 'job-1', status: 'completed' }]);
 
-    const promise = _awaitJobs(
-      makeEnqueueResult(['job-1']),
+    const promise = _awaitJobIds(
+      ['job-1'],
       undefined, // uses default 5s interval
       mockConfig
     );
@@ -202,8 +205,8 @@ describe.sequential('_awaitJobs', () => {
     );
 
     // Attach .catch immediately to prevent unhandled rejection
-    const promise = _awaitJobs(
-      makeEnqueueResult(['job-1']),
+    const promise = _awaitJobIds(
+      ['job-1'],
       { pollingIntervalSeconds: 0.01 },
       mockConfig
     ).catch((err: Error) => err);
