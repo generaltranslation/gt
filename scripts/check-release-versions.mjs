@@ -42,6 +42,44 @@ const changedManifests = git(
 
 const errors = [];
 
+const packageManifests = git(
+  'ls-tree',
+  '-r',
+  '--name-only',
+  head,
+  '--',
+  'packages'
+)
+  .split('\n')
+  .filter((path) => /^packages\/[^/]+\/package\.json$/.test(path))
+  .map((path) => ({
+    path,
+    manifest: JSON.parse(git('show', `${head}:${path}`)),
+  }));
+
+const workspacePackages = new Map(
+  packageManifests
+    .filter(({ manifest }) => manifest.name)
+    .map(({ manifest }) => [manifest.name, manifest])
+);
+
+for (const { path, manifest } of packageManifests) {
+  for (const peerName of Object.keys(manifest.peerDependencies ?? {})) {
+    if (!workspacePackages.has(peerName)) continue;
+
+    const workspaceRange =
+      manifest.dependencies?.[peerName] ??
+      manifest.devDependencies?.[peerName] ??
+      manifest.optionalDependencies?.[peerName];
+
+    if (!workspaceRange?.startsWith('workspace:')) {
+      errors.push(
+        `${manifest.name} declares internal peer ${peerName} without a workspace dependency in ${path}`
+      );
+    }
+  }
+}
+
 for (const manifestPath of changedManifests) {
   const manifest = JSON.parse(git('show', `${head}:${manifestPath}`));
   if (manifest.private || !manifest.name || !manifest.version) continue;

@@ -44,10 +44,3 @@ packageExtensions:
   size-limit@*:
     dependencies:
       '@size-limit/preset-small-lib': '*'
-
-# Temporary bootstrap: compiler 1.3.28 was versioned on main but its npm publish
-# is deadlocked (the Release workflow's own install cannot resolve ^1.3.28).
-# Scope the pin to gt-next's dependency edge so workspace:* consumers keep
-# their workspace links; remove once 1.3.28 is on npm.
-overrides:
-  'gt-next>@generaltranslation/compiler': 1.3.27
