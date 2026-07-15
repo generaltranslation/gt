@@ -1,9 +1,9 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { ParsingConfig, ParsingOutput } from '../types.js';
-import { handleTaggedTemplateTranslationCall } from './handleTaggedTemplateTranslationCall.js';
 import { extractStringEntryMetadata } from '../processTranslationCall/extractStringEntryMetadata.js';
 import { SURROUNDING_LINE_COUNT } from '../../../../../utils/constants.js';
+import { deriveExpression } from '../derivation/index.js';
 
 /**
  * Processes a tagged template expression (e.g., t`hello ${name}`).
@@ -35,11 +35,12 @@ export function processTaggedTemplateCall(
     surroundingLineCount: SURROUNDING_LINE_COUNT,
   });
 
-  handleTaggedTemplateTranslationCall({
+  deriveExpression({
     tPath,
-    quasi: tPath.parent.quasi,
+    expr: tPath.parent.quasi,
     metadata,
     config,
     output,
+    enableRuntimeInterpolation: true,
   });
 }
