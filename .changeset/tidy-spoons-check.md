@@ -2,4 +2,4 @@
 'gt': patch
 ---
 
-Require version 11 or later of GT React packages before extracting or translating content, with an explicit compatibility-check bypass flag.
+Warn when GT React packages before version 11 may use incompatible ID-based translation keys, with an explicit suppression flag.

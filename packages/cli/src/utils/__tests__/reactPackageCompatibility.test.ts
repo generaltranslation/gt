@@ -1,12 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { logger } from '../../console/logger.js';
 import { REACT_LIBRARIES } from '../../types/libraries.js';
 import { getPackageJson, getPackageVersion } from '../packageJson.js';
-import { checkReactPackageCompatibility } from '../reactPackageCompatibility.js';
+import { warnReactPackageCompatibility } from '../reactPackageCompatibility.js';
 
 vi.mock('../../console/logger.js', () => ({
   logger: {
-    error: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
@@ -21,16 +21,10 @@ vi.mock('../packageJson.js', async (importOriginal) => {
 
 const mockGetPackageJson = vi.mocked(getPackageJson);
 const mockGetPackageVersion = vi.mocked(getPackageVersion);
-const originalExit = process.exit;
 
-describe('checkReactPackageCompatibility', () => {
+describe('warnReactPackageCompatibility', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.exit = vi.fn() as never;
-  });
-
-  afterEach(() => {
-    process.exit = originalExit;
   });
 
   it.each(REACT_LIBRARIES)(
@@ -40,35 +34,39 @@ describe('checkReactPackageCompatibility', () => {
         dependencies: { [packageName]: '^11.0.0' },
       });
 
-      await checkReactPackageCompatibility();
+      await warnReactPackageCompatibility();
 
-      expect(logger.error).not.toHaveBeenCalled();
-      expect(process.exit).not.toHaveBeenCalled();
+      expect(logger.warn).not.toHaveBeenCalled();
     }
   );
 
   it.each(REACT_LIBRARIES)(
-    'rejects %s below declared major version 11',
+    'warns for %s below declared major version 11',
     async (packageName) => {
       mockGetPackageJson.mockResolvedValue({
         dependencies: { [packageName]: '~10.20.0' },
       });
 
-      await checkReactPackageCompatibility();
+      await warnReactPackageCompatibility();
 
-      expect(logger.error).toHaveBeenCalledWith(
+      expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining(`${packageName}@~10.20.0`)
       );
-      expect(logger.error).toHaveBeenCalledWith(
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('gt Warning:')
+      );
+      expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('ID parameter in translation keys')
       );
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('older compatible version of the GT CLI')
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('version 11 or later')
       );
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('--ignore-compatibility-checks')
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('install gt@2.14.58')
       );
-      expect(process.exit).toHaveBeenCalledWith(1);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('--suppress-id-compatibility-warning')
+      );
     }
   );
 
@@ -77,10 +75,9 @@ describe('checkReactPackageCompatibility', () => {
       dependencies: { 'gt-node': '^9.0.0' },
     });
 
-    await checkReactPackageCompatibility();
+    await warnReactPackageCompatibility();
 
-    expect(logger.error).not.toHaveBeenCalled();
-    expect(process.exit).not.toHaveBeenCalled();
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 
   it.each(['workspace:*', 'not-a-version', '^'])(
@@ -90,20 +87,18 @@ describe('checkReactPackageCompatibility', () => {
         dependencies: { 'gt-react': version },
       });
 
-      await checkReactPackageCompatibility();
+      await warnReactPackageCompatibility();
 
-      expect(logger.error).not.toHaveBeenCalled();
-      expect(process.exit).not.toHaveBeenCalled();
+      expect(logger.warn).not.toHaveBeenCalled();
     }
   );
 
   it('fails open when package.json cannot be read', async () => {
     mockGetPackageJson.mockRejectedValue(new Error('unreadable'));
 
-    await expect(checkReactPackageCompatibility()).resolves.toBeUndefined();
+    await expect(warnReactPackageCompatibility()).resolves.toBeUndefined();
 
-    expect(logger.error).not.toHaveBeenCalled();
-    expect(process.exit).not.toHaveBeenCalled();
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 
   it('fails open for malformed dependency metadata', async () => {
@@ -111,10 +106,9 @@ describe('checkReactPackageCompatibility', () => {
       dependencies: { 'gt-react': 10 },
     });
 
-    await expect(checkReactPackageCompatibility()).resolves.toBeUndefined();
+    await expect(warnReactPackageCompatibility()).resolves.toBeUndefined();
 
-    expect(logger.error).not.toHaveBeenCalled();
-    expect(process.exit).not.toHaveBeenCalled();
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 
   it('fails open when dependency lookup throws', async () => {
@@ -125,17 +119,15 @@ describe('checkReactPackageCompatibility', () => {
       throw new Error('unexpected');
     });
 
-    await expect(checkReactPackageCompatibility()).resolves.toBeUndefined();
+    await expect(warnReactPackageCompatibility()).resolves.toBeUndefined();
 
-    expect(logger.error).not.toHaveBeenCalled();
-    expect(process.exit).not.toHaveBeenCalled();
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it('allows bypassing the check', async () => {
-    await checkReactPackageCompatibility(true);
+  it('allows suppressing the warning', async () => {
+    await warnReactPackageCompatibility(true);
 
     expect(mockGetPackageJson).not.toHaveBeenCalled();
-    expect(logger.error).not.toHaveBeenCalled();
-    expect(process.exit).not.toHaveBeenCalled();
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 });

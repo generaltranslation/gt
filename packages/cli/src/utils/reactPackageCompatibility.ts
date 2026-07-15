@@ -10,11 +10,11 @@ function getDeclaredMajor(version: string): number | undefined {
   return match ? Number(match[1]) : undefined;
 }
 
-export async function checkReactPackageCompatibility(
-  ignoreCompatibilityChecks: boolean = false,
+export async function warnReactPackageCompatibility(
+  suppressWarning: boolean = false,
   cwd: string = process.cwd()
 ): Promise<void> {
-  if (ignoreCompatibilityChecks) return;
+  if (suppressWarning) return;
 
   try {
     const packageJson = await getPackageJson(cwd);
@@ -31,19 +31,19 @@ export async function checkReactPackageCompatibility(
     });
     if (incompatiblePackages.length === 0) return;
 
-    logger.error(
+    logger.warn(
       createDiagnosticMessage({
         source: 'gt',
-        severity: 'Error',
-        whatHappened: 'GT React packages must be version 11 or later',
-        why: 'older versions include the ID parameter in translation keys and may cause retranslation',
-        fix: 'Upgrade the listed packages or use an older compatible version of the GT CLI',
+        severity: 'Warning',
+        whatHappened:
+          'This GT CLI may be incompatible with the listed React packages',
+        why: 'versions before 11 include the ID parameter in translation keys and may cause retranslation',
+        fix: 'Upgrade the listed packages to version 11 or later or install gt@2.14.58',
         wayOut:
-          'rerun with --ignore-compatibility-checks to continue at your own risk',
+          'rerun with --suppress-id-compatibility-warning to hide this warning',
         details: incompatiblePackages,
       })
     );
-    process.exit(1);
   } catch {
     // Compatibility detection is best-effort and must not block the CLI.
   }

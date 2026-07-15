@@ -72,9 +72,9 @@ import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
-import { checkReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
+import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
 
-const COMPATIBILITY_CHECK_COMMANDS = new Set([
+const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'enqueue',
   'generate',
   'setup',
@@ -121,13 +121,13 @@ export class BaseCLI {
       'Skip the monorepo GT package version consistency check'
     );
     this.program.option(
-      '--ignore-compatibility-checks',
-      'Ignore GT package compatibility checks'
+      '--suppress-id-compatibility-warning',
+      'Suppress the React package ID compatibility warning'
     );
     this.program.hook('preAction', async (_thisCommand, actionCommand) => {
-      if (!COMPATIBILITY_CHECK_COMMANDS.has(actionCommand.name())) return;
-      await checkReactPackageCompatibility(
-        Boolean(this.program.opts().ignoreCompatibilityChecks)
+      if (!ID_COMPATIBILITY_WARNING_COMMANDS.has(actionCommand.name())) return;
+      await warnReactPackageCompatibility(
+        Boolean(this.program.opts().suppressIdCompatibilityWarning)
       );
     });
 

@@ -1,13 +1,13 @@
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { checkReactPackageCompatibility } from '../../utils/reactPackageCompatibility.js';
+import { warnReactPackageCompatibility } from '../../utils/reactPackageCompatibility.js';
 import { BaseCLI } from '../base.js';
 
 vi.mock('../../utils/reactPackageCompatibility.js', () => ({
-  checkReactPackageCompatibility: vi.fn(),
+  warnReactPackageCompatibility: vi.fn(),
 }));
 
-describe('React package compatibility CLI check', () => {
+describe('React package compatibility CLI warning', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -17,17 +17,18 @@ describe('React package compatibility CLI check', () => {
 
     await program.parseAsync(['translate'], { from: 'user' });
 
-    expect(checkReactPackageCompatibility).toHaveBeenCalledWith(false);
+    expect(warnReactPackageCompatibility).toHaveBeenCalledWith(false);
   });
 
-  it('passes the compatibility bypass flag to the check', async () => {
+  it('passes the warning suppression flag to the check', async () => {
     const program = createProgram();
 
-    await program.parseAsync(['translate', '--ignore-compatibility-checks'], {
-      from: 'user',
-    });
+    await program.parseAsync(
+      ['translate', '--suppress-id-compatibility-warning'],
+      { from: 'user' }
+    );
 
-    expect(checkReactPackageCompatibility).toHaveBeenCalledWith(true);
+    expect(warnReactPackageCompatibility).toHaveBeenCalledWith(true);
   });
 
   it('does not check unrelated commands', async () => {
@@ -35,7 +36,7 @@ describe('React package compatibility CLI check', () => {
 
     await program.parseAsync(['noop'], { from: 'user' });
 
-    expect(checkReactPackageCompatibility).not.toHaveBeenCalled();
+    expect(warnReactPackageCompatibility).not.toHaveBeenCalled();
   });
 
   function createProgram(): Command {
