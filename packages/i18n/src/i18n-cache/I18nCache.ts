@@ -125,7 +125,6 @@ class I18nCache<TranslationValue extends Translation = Translation> {
         _branchId: params._branchId,
       },
     }) as SafeTranslationsLoader<TranslationValue>;
-    // TODO: somewhere enforce that if you have a loadDictionary, you must have a dictionary
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
     const runtimeTranslationTimeout =
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT;
