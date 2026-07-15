@@ -15,22 +15,44 @@ import {
 import { isNumberLiteral } from '../isNumberLiteral.js';
 import { containsDeriveCall } from '../stringParsing/derivation/containsDeriveCall.js';
 
+/**
+ * $-prefixed sugar props on <T> that are deprecated in favor of the
+ * unprefixed forms. Occurrences are collected into a single consolidated
+ * warning at the end of the scan.
+ */
+const DEPRECATED_T_SUGAR_PROPS = new Set([
+  '$context',
+  '$id',
+  '$maxChars',
+  '$requiresReview',
+]);
+
 // Parse the props of a <T> component
 export function parseTProps({
   openingElement,
   metadata,
   componentErrors,
   file,
+  sugarPropLocations,
 }: {
   openingElement: t.JSXOpeningElement;
   metadata: Metadata;
   componentErrors: string[];
   file: string;
+  /** Collector for deprecated $-prefixed prop occurrences (file:line:column) */
+  sugarPropLocations?: string[];
 }) {
   openingElement.attributes.forEach((attr) => {
     if (!t.isJSXAttribute(attr)) return;
     const attrName = attr.name.name;
     if (typeof attrName !== 'string') return;
+
+    if (sugarPropLocations && DEPRECATED_T_SUGAR_PROPS.has(attrName)) {
+      const loc = attr.loc?.start;
+      sugarPropLocations.push(
+        `${file}:${loc?.line ?? '?'}:${loc?.column ?? '?'} (${attrName})`
+      );
+    }
 
     const isRequiresReviewAttr =
       attrName === 'requiresReview' || attrName === '$requiresReview';

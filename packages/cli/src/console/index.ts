@@ -135,6 +135,16 @@ export const warnInvalidMaxCharsSync = (
     location
   );
 
+export const warnDeprecatedTSugarPropsSync = (locations: string[]): string =>
+  `Found ${locations.length} deprecated ${colorizeIdString('$')}-prefixed prop${
+    locations.length === 1 ? '' : 's'
+  } on ${colorizeComponent('<T>')} components. Use the unprefixed forms instead (${colorizeIdString(
+    'context'
+  )}, ${colorizeIdString('id')}, ${colorizeIdString('maxChars')}, ${colorizeIdString(
+    'requiresReview'
+  )}); support for the ${colorizeIdString('$')}-prefixed forms will be removed in the next major version.\n` +
+  locations.map((location) => `  ${colorizeLine(location)}`).join('\n');
+
 export const warnInvalidFormatSync = (
   file: string,
   value: string,

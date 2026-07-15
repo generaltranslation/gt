@@ -77,12 +77,12 @@ describe('T component prop hashing (string-literal props)', () => {
     }
   });
 
-  test('legacy context="..." keeps working', async () => {
+  test('unprefixed context="..." (the supported form) keeps working', async () => {
     const result = await parseFixture('page.tsx');
-    const legacy = result.updates.find((u) =>
+    const unprefixed = result.updates.find((u) =>
       JSON.stringify(u.source).includes('"Cover"')
     );
-    expect(legacy?.metadata.context).toEqual('legacy context prop');
+    expect(unprefixed?.metadata.context).toEqual('an unprefixed context prop');
   });
 
   test('$id="..." maps to metadata.id', async () => {

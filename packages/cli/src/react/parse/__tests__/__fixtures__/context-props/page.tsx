@@ -9,7 +9,7 @@ export function Page() {
       <T $context='A noun meaning a printed publication'>
         <p>Book</p>
       </T>
-      <T context='legacy context prop'>
+      <T context='an unprefixed context prop'>
         <p>Cover</p>
       </T>
       <T $id='book-id'>
