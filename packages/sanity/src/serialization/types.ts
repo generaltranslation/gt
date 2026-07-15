@@ -14,7 +14,11 @@ export type SerializedDocument = {
   content: string;
 };
 
-export type TranslationLevel = 'document' | 'field';
+// 'document'  – translate the whole document (creates per-locale documents).
+// 'field'     – legacy object-keyed model (e.g. `title: { en, es_ES }`).
+// 'internationalizedArray' – sanity-plugin-internationalized-array shape:
+//               `title: [{ _key, _type, language, value }]`, localized in place.
+export type TranslationLevel = 'document' | 'field' | 'internationalizedArray';
 
 export interface Deserializer {
   deserializeDocument: <

@@ -262,10 +262,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
-          // Pass 4: Injection
+          // Pass 4: Injection (hashes + useGT prefetch parameters), gated on
+          // the compileTimeHash setting
           const hasCollectionContent = state.stringCollector.hasContent();
+          const injectionRan =
+            hasCollectionContent && state.settings.compileTimeHash;
 
-          if (hasCollectionContent) {
+          if (injectionRan) {
             traverse(ast, injectionPass(state));
           }
 
@@ -279,7 +282,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
 
           // Generate code if any pass modified the AST
           if (
-            !hasCollectionContent &&
+            !injectionRan &&
             state.statistics.macroExpansionsCount === 0 &&
             state.statistics.jsxInsertionsCount === 0 &&
             state.statistics.runtimeTranslateCount === 0
