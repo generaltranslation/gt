@@ -72,6 +72,16 @@ import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
+import { checkReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
+
+const COMPATIBILITY_CHECK_COMMANDS = new Set([
+  'enqueue',
+  'generate',
+  'setup',
+  'stage',
+  'translate',
+  'validate',
+]);
 
 export type UploadOptions = {
   config?: string;
@@ -110,6 +120,16 @@ export class BaseCLI {
       '--skip-version-check',
       'Skip the monorepo GT package version consistency check'
     );
+    this.program.option(
+      '--ignore-compatibility-checks',
+      'Ignore GT package compatibility checks'
+    );
+    this.program.hook('preAction', (_thisCommand, actionCommand) => {
+      if (!COMPATIBILITY_CHECK_COMMANDS.has(actionCommand.name())) return;
+      checkReactPackageCompatibility(
+        Boolean(this.program.opts().ignoreCompatibilityChecks)
+      );
+    });
 
     this.setupInitCommand();
     this.setupConfigureCommand();
