@@ -1,6 +1,5 @@
 import chalk from 'chalk';
 import path from 'node:path';
-import { WorkflowStep } from './WorkflowStep.js';
 import { logger } from '../../console/logger.js';
 import {
   BatchedFiles,
@@ -19,18 +18,13 @@ export type DownloadTranslationsInput = {
   forceDownload?: boolean;
 };
 
-export class DownloadTranslationsStep extends WorkflowStep<
-  DownloadTranslationsInput,
-  boolean
-> {
+export class DownloadTranslationsStep {
   private spinner: ReturnType<typeof logger.createProgressBar> | null = null;
 
   constructor(
     private gt: GT,
     private settings: Settings
-  ) {
-    super();
-  }
+  ) {}
 
   async run({
     fileTracker,
@@ -266,9 +260,5 @@ export class DownloadTranslationsStep extends WorkflowStep<
       failed: remainingFiles,
       skipped: allSkipped,
     };
-  }
-
-  async wait(): Promise<void> {
-    return;
   }
 }

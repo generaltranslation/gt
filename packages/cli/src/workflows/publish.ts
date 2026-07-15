@@ -29,7 +29,6 @@ export async function runPublishWorkflow(
     if (allFileRefs.length === 0) return;
     const publishStep = new PublishStep(gt);
     await publishStep.run(allFileRefs);
-    await publishStep.wait();
   } catch (error) {
     logger.warn(
       `Failed to publish files: ${error instanceof Error ? error.message : String(error)}`
