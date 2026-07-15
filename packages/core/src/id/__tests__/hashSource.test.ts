@@ -80,3 +80,28 @@ describe('hashSource requiresReview', () => {
     ).toBe('2ef012fb27e5f019');
   });
 });
+
+describe('hashSource id compatibility', () => {
+  it('continues to include the deprecated id in the hash', () => {
+    const withoutId = hashSource({
+      source: 'Hello world',
+      dataFormat: 'ICU',
+    });
+    const withFirstId = hashSource({
+      source: 'Hello world',
+      id: 'first-id',
+      dataFormat: 'ICU',
+    });
+    const withSecondId = hashSource({
+      source: 'Hello world',
+      id: 'second-id',
+      dataFormat: 'ICU',
+    });
+
+    expect(withFirstId).not.toBe(withoutId);
+    expect(withSecondId).not.toBe(withFirstId);
+    // Existing callers that still pass an ID must keep their current hashes.
+    expect(withFirstId).toBe('b654d66386ed785a');
+    expect(withSecondId).toBe('8220228ac45bb5ee');
+  });
+});
