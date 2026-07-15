@@ -17,8 +17,6 @@ import {
   validateUseTranslationsCallback,
 } from '../../transform/validation/validateTranslationFunction';
 import { registerUseGTCallback } from '../../transform/registration/callbacks/registerUseGTCallback';
-import { registerUseTranslationsCallback } from '../../transform/registration/callbacks/registerUseTranslationsCallback';
-import { registerUseMessagesCallback } from '../../transform/registration/callbacks/registerUseMessagesCallback';
 import { getTrackedVariable } from '../../transform/getTrackedVariable';
 import { isReactFunction } from '../../utils/constants/react/helpers';
 import { validateTranslationComponentArgs } from '../../transform/validation/validateTranslationComponentArgs';
@@ -113,11 +111,11 @@ function handleTranslationCallbackInvocation(
       break;
     case GT_CALLBACK_FUNCTIONS.useTranslations_callback:
     case GT_CALLBACK_FUNCTIONS.getTranslations_callback:
-      handleUseTranslationsCallback(callExprPath, state, identifier);
+      handleUseTranslationsCallback(callExprPath, state);
       break;
     case GT_CALLBACK_FUNCTIONS.useMessages_callback:
     case GT_CALLBACK_FUNCTIONS.getMessages_callback:
-      handleUseMessagesCallback(callExprPath, state, identifier);
+      handleUseMessagesCallback(callExprPath, state);
       break;
     default:
       return;
@@ -171,23 +169,12 @@ function handleUseGTCallback(
  */
 function handleUseTranslationsCallback(
   callExprPath: NodePath<t.CallExpression>,
-  state: TransformState,
-  identifier: number
+  state: TransformState
 ) {
-  // Check for violations
   const callExpr = callExprPath.node;
   const useTranslationsCallbackParams =
     validateUseTranslationsCallback(callExpr);
   state.errorTracker.addErrors(useTranslationsCallbackParams.errors);
-  if (useTranslationsCallbackParams.errors.length > 0) {
-    return;
-  }
-
-  // Track the function call
-  registerUseTranslationsCallback({
-    identifier,
-    state,
-  });
 }
 
 /**
@@ -195,24 +182,11 @@ function handleUseTranslationsCallback(
  */
 function handleUseMessagesCallback(
   callExprPath: NodePath<t.CallExpression>,
-  state: TransformState,
-  identifier: number
+  state: TransformState
 ) {
-  // Validate parameters
   const callExpr = callExprPath.node;
   const useMessagesCallbackParams = validateUseMessagesCallback(callExpr);
-
-  // Check for violations
   state.errorTracker.addErrors(useMessagesCallbackParams.errors);
-  if (useMessagesCallbackParams.errors.length > 0) {
-    return;
-  }
-
-  // Track the function call
-  registerUseMessagesCallback({
-    identifier,
-    state,
-  });
 }
 
 /**
