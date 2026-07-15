@@ -63,6 +63,9 @@ describe('checkReactPackageCompatibility', () => {
         expect.stringContaining('ID parameter in translation keys')
       );
       expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('older compatible version of the GT CLI')
+      );
+      expect(logger.error).toHaveBeenCalledWith(
         expect.stringContaining('--ignore-compatibility-checks')
       );
       expect(process.exit).toHaveBeenCalledWith(1);

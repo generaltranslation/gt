@@ -37,7 +37,7 @@ export async function checkReactPackageCompatibility(
         severity: 'Error',
         whatHappened: 'GT React packages must be version 11 or later',
         why: 'older versions include the ID parameter in translation keys and may cause retranslation',
-        fix: 'Upgrade the listed packages',
+        fix: 'Upgrade the listed packages or use an older compatible version of the GT CLI',
         wayOut:
           'rerun with --ignore-compatibility-checks to continue at your own risk',
         details: incompatiblePackages,
