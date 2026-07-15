@@ -1,5 +1,13 @@
 # gt-i18n
 
+## 1.0.4
+
+### Patch Changes
+
+- [#1856](https://github.com/generaltranslation/gt/pull/1856) [`b742df9`](https://github.com/generaltranslation/gt/commit/b742df9f0684c6ea12da140c4fd73eebb42f897a) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Flatten the internal i18n cache structure: the locale-cache layer is inlined into `I18nCache`, the in-flight promise dedupe shared by the caches is extracted into one helper, and the dev-only prefetch machinery is statically gated behind `process.env.NODE_ENV !== 'production'` so production bundles drop it. No public API changes; `gt-i18n/internal` and `gt-i18n/internal/types` exports are unchanged.
+
+- [#1855](https://github.com/generaltranslation/gt/pull/1855) [`a148737`](https://github.com/generaltranslation/gt/commit/a1487377728b662dfd749ecfbd449a1e8d47db49) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Collapse the I18nCache constructor-time validation layer into a single helper. Observable behavior is unchanged: the same warnings are logged when a custom `runtimeUrl` is configured without GT credentials, and providing `loadDictionary` without a source `dictionary` still throws. The unreachable validation branches are removed, slightly shrinking browser bundles.
+
 ## 1.0.3
 
 ### Patch Changes
