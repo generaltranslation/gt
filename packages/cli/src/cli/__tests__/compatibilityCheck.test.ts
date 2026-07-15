@@ -39,11 +39,23 @@ describe('React package compatibility CLI warning', () => {
     expect(warnReactPackageCompatibility).not.toHaveBeenCalled();
   });
 
+  it('does not check nested commands with colliding leaf names', async () => {
+    const program = createProgram();
+
+    await program.parseAsync(['group', 'translate'], { from: 'user' });
+
+    expect(warnReactPackageCompatibility).not.toHaveBeenCalled();
+  });
+
   function createProgram(): Command {
     const program = new Command();
     new BaseCLI(program, 'base');
     program.command('translate').action(() => {});
     program.command('noop').action(() => {});
+    program
+      .command('group')
+      .command('translate')
+      .action(() => {});
     return program;
   }
 });

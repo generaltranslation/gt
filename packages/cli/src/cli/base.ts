@@ -124,7 +124,10 @@ export class BaseCLI {
       '--suppress-id-compatibility-warning',
       'Suppress the React package ID compatibility warning'
     );
-    this.program.hook('preAction', async (_thisCommand, actionCommand) => {
+    this.program.hook('preAction', async (thisCommand, actionCommand) => {
+      // Nested commands (e.g. `gt git setup`) can share leaf names with
+      // translation commands; only direct children of the root qualify
+      if (actionCommand.parent !== thisCommand) return;
       if (!ID_COMPATIBILITY_WARNING_COMMANDS.has(actionCommand.name())) return;
       await warnReactPackageCompatibility(
         Boolean(this.program.opts().suppressIdCompatibilityWarning)
