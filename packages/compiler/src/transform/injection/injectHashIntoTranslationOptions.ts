@@ -8,6 +8,12 @@ export function injectHashIntoTranslationOptions(
   callExpr: t.CallExpression,
   hash: string
 ): void {
+  // Never inject an empty hash — the runtime reads $_hash with ?? so an
+  // empty string would be used for the lookup instead of a computed hash
+  if (!hash) {
+    return;
+  }
+
   const newEntry = t.objectProperty(
     t.stringLiteral(USEGT_CALLBACK_OPTIONS.$_hash),
     t.stringLiteral(hash)

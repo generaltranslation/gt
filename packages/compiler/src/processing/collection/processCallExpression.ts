@@ -135,19 +135,24 @@ function handleUseGTCallback(
   // Check for violations
   const useGTCallbackParams = validateTranslationFunction(callExprPath, state);
   state.errorTracker.addErrors(useGTCallbackParams.errors);
+  if (useGTCallbackParams.errors.length > 0) {
+    return;
+  }
+
+  // Derive content (explicit derive() in the message, autoderive dynamic
+  // content) and derive $context cannot be hashed at compile time — the CLI
+  // resolves the variants and the runtime hashes the resolved values.
+  // Reserve the counter slot without a hash so the injection pass stays
+  // aligned and skips this call; register no prefetch entry.
   if (
-    useGTCallbackParams.errors.length > 0 ||
-    useGTCallbackParams.content === undefined
+    useGTCallbackParams.content === undefined ||
+    useGTCallbackParams.hasDeriveContext
   ) {
+    state.stringCollector.incrementCounter();
     return;
   }
 
   // Track the function call
-  // When context contains derive(), skip hash calculation (CLI handles resolution)
-  const hash = useGTCallbackParams.hasDeriveContext
-    ? ''
-    : useGTCallbackParams.hash;
-
   registerUseGTCallback({
     identifier,
     state,
@@ -156,7 +161,7 @@ function handleUseGTCallback(
     id: useGTCallbackParams.id,
     maxChars: useGTCallbackParams.maxChars,
     requiresReview: useGTCallbackParams.requiresReview,
-    hash,
+    hash: useGTCallbackParams.hash,
     format: useGTCallbackParams.format,
   });
 }
