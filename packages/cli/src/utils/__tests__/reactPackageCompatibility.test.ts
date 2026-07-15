@@ -4,7 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { logger } from '../../console/logger.js';
 import { REACT_LIBRARIES } from '../../types/libraries.js';
-import { checkReactPackageCompatibility } from '../reactPackageCompatibility.js';
+import { checkReactPackageCompatibility } from '../monorepoVersionCheck.js';
 
 vi.mock('../../console/logger.js', () => ({
   logger: {
@@ -85,6 +85,23 @@ describe('checkReactPackageCompatibility', () => {
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
+  it('falls back to workspace and range version specs', () => {
+    writeProjectPackageJson({
+      'gt-next': '>=11.0.0 <12',
+      'gt-react': 'workspace:^10.20.0',
+    });
+
+    checkReactPackageCompatibility(false, projectDirectory);
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('gt-react@workspace:^10.20.0')
+    );
+    expect(logger.error).not.toHaveBeenCalledWith(
+      expect.stringContaining('gt-next@>=11.0.0 <12')
+    );
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
+
   it('allows bypassing the check', () => {
     writeProjectPackageJson({ 'gt-react': '^10.20.0' });
 
@@ -98,6 +115,40 @@ describe('checkReactPackageCompatibility', () => {
     writeProjectPackageJson({ 'gt-node': '^9.0.0' });
 
     checkReactPackageCompatibility(false, projectDirectory);
+
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(process.exit).not.toHaveBeenCalled();
+  });
+
+  it('checks direct dependencies across a monorepo when run at its root', () => {
+    writeProjectPackageJson({});
+    fs.writeFileSync(path.join(projectDirectory, 'pnpm-lock.yaml'), '');
+    writePackageJson(path.join(projectDirectory, 'packages', 'app'), {
+      'gt-tanstack-start': '^10.20.0',
+    });
+
+    checkReactPackageCompatibility(false, projectDirectory);
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('gt-tanstack-start@^10.20.0')
+    );
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
+
+  it('does not check sibling workspaces when run from a package', () => {
+    writeProjectPackageJson({});
+    fs.writeFileSync(path.join(projectDirectory, 'pnpm-lock.yaml'), '');
+    const nodeAppDirectory = path.join(
+      projectDirectory,
+      'packages',
+      'node-app'
+    );
+    writePackageJson(nodeAppDirectory, { 'gt-node': '^9.0.0' });
+    writePackageJson(path.join(projectDirectory, 'packages', 'react-app'), {
+      'gt-react': '^10.20.0',
+    });
+
+    checkReactPackageCompatibility(false, nodeAppDirectory);
 
     expect(logger.error).not.toHaveBeenCalled();
     expect(process.exit).not.toHaveBeenCalled();
@@ -120,6 +171,17 @@ describe('checkReactPackageCompatibility', () => {
     fs.writeFileSync(
       path.join(packageDirectory, 'package.json'),
       JSON.stringify({ name: packageName, version })
+    );
+  }
+
+  function writePackageJson(
+    directory: string,
+    dependencies: Record<string, string>
+  ) {
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(
+      path.join(directory, 'package.json'),
+      JSON.stringify({ dependencies })
     );
   }
 });

@@ -72,7 +72,7 @@ import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
-import { checkReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
+import { checkReactPackageCompatibility } from '../utils/monorepoVersionCheck.js';
 
 const COMPATIBILITY_CHECK_COMMANDS = new Set([
   'enqueue',

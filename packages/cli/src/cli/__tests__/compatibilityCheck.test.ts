@@ -1,9 +1,9 @@
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { checkReactPackageCompatibility } from '../../utils/reactPackageCompatibility.js';
+import { checkReactPackageCompatibility } from '../../utils/monorepoVersionCheck.js';
 import { BaseCLI } from '../base.js';
 
-vi.mock('../../utils/reactPackageCompatibility.js', () => ({
+vi.mock('../../utils/monorepoVersionCheck.js', () => ({
   checkReactPackageCompatibility: vi.fn(),
 }));
 
