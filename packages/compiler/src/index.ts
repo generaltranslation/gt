@@ -6,7 +6,7 @@ import generate from '@babel/generator';
 import traverse from '@babel/traverse';
 
 // Core modules
-import { PluginConfig } from './config';
+import { GTConfig, PluginConfig } from './config';
 
 // Import passes
 import { collectionPass } from './passes/collectionPass';
@@ -62,9 +62,7 @@ import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 /**
  * GT Universal Plugin Options
  */
-export interface GTUnpluginOptions extends PluginConfig {
-  // Inherits from PluginConfig
-}
+export interface GTUnpluginOptions extends PluginConfig, GTConfig {}
 
 export const MISSING_GT_CONFIG_WARNING =
   '[@generaltranslation/compiler] No gtConfig found. Auto JSX injection and parsingFlags features require a gt.config.json. See https://generaltranslation.com/en/docs/react/concepts/compiler.';
@@ -113,6 +111,71 @@ function loadGTConfigFromCwd(): GTConfigLoadResult {
   }
 }
 
+function hasInlineGTConfig(options: GTUnpluginOptions): boolean {
+  return (
+    options.defaultLocale !== undefined ||
+    options.locales !== undefined ||
+    options.projectId !== undefined ||
+    options._versionId !== undefined ||
+    options.files !== undefined
+  );
+}
+
+function getInlineGTConfig(options: GTUnpluginOptions): GTConfig | undefined {
+  if (!hasInlineGTConfig(options)) return undefined;
+
+  return {
+    ...(options.defaultLocale !== undefined
+      ? { defaultLocale: options.defaultLocale }
+      : {}),
+    ...(options.locales !== undefined ? { locales: options.locales } : {}),
+    ...(options.projectId !== undefined
+      ? { projectId: options.projectId }
+      : {}),
+    ...(options._versionId !== undefined
+      ? { _versionId: options._versionId }
+      : {}),
+    ...(options.files !== undefined ? { files: options.files } : {}),
+  };
+}
+
+function mergeGTConfigs(base: GTConfig, override: GTConfig): GTConfig {
+  const mergedConfig = { ...base, ...override };
+  if (!base.files && !override.files) return mergedConfig;
+
+  const files = { ...base.files, ...override.files };
+  if (base.files?.gt || override.files?.gt) {
+    const gt = { ...base.files?.gt, ...override.files?.gt };
+    if (base.files?.gt?.parsingFlags || override.files?.gt?.parsingFlags) {
+      gt.parsingFlags = {
+        ...base.files?.gt?.parsingFlags,
+        ...override.files?.gt?.parsingFlags,
+      };
+    }
+    files.gt = gt;
+  }
+
+  return { ...mergedConfig, files };
+}
+
+function resolveGTConfig(options: GTUnpluginOptions): GTConfigLoadResult {
+  if (options.gtConfig) {
+    return { gtConfig: options.gtConfig, status: 'loaded' };
+  }
+
+  const inlineGTConfig = getInlineGTConfig(options);
+  const diskGTConfig = loadGTConfigFromCwd();
+  if (!inlineGTConfig) return diskGTConfig;
+
+  return {
+    gtConfig:
+      diskGTConfig.status === 'loaded'
+        ? mergeGTConfigs(diskGTConfig.gtConfig, inlineGTConfig)
+        : inlineGTConfig,
+    status: 'loaded',
+  };
+}
+
 /**
  * GT Universal Plugin - Main entry point
  *
@@ -121,9 +184,7 @@ function loadGTConfigFromCwd(): GTConfigLoadResult {
  */
 const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
   (options = {}) => {
-    const gtConfigLoadResult = options.gtConfig
-      ? ({ gtConfig: options.gtConfig, status: 'loaded' } as const)
-      : loadGTConfigFromCwd();
+    const gtConfigLoadResult = resolveGTConfig(options);
     const loadedGTConfig =
       gtConfigLoadResult.status === 'loaded'
         ? gtConfigLoadResult.gtConfig
@@ -201,10 +262,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
-          // Pass 4: Injection
+          // Pass 4: Injection (hashes + useGT prefetch parameters), gated on
+          // the compileTimeHash setting
           const hasCollectionContent = state.stringCollector.hasContent();
+          const injectionRan =
+            hasCollectionContent && state.settings.compileTimeHash;
 
-          if (hasCollectionContent) {
+          if (injectionRan) {
             traverse(ast, injectionPass(state));
           }
 
@@ -218,7 +282,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
 
           // Generate code if any pass modified the AST
           if (
-            !hasCollectionContent &&
+            !injectionRan &&
             state.statistics.macroExpansionsCount === 0 &&
             state.statistics.jsxInsertionsCount === 0 &&
             state.statistics.runtimeTranslateCount === 0

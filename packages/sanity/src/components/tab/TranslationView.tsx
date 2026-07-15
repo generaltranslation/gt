@@ -50,6 +50,7 @@ export const TranslationView = () => {
     setAutoPatchReferences,
     autoPublish,
     setAutoPublish,
+    getVersionId,
   } = useTranslations();
 
   const [isImporting, setIsImporting] = useState(false);
@@ -92,13 +93,21 @@ export const TranslationView = () => {
     return getDocumentPublishedId(document);
   }, [document]);
 
+  // Version the status entries are keyed under: the _rev pinned at upload
+  // time when available, so importing in place (which bumps the live _rev)
+  // doesn't detach the UI from the statuses of the uploaded version.
+  const versionId = useMemo(() => {
+    if (!document) return null;
+    return getVersionId(document);
+  }, [document, getVersionId]);
+
   // Unified import functionality
   const handleImportTranslations = useCallback(
     async (options: { autoOnly?: boolean } = {}) => {
       const { autoOnly = false } = options;
 
       // Check preconditions
-      if (isImporting || !documentId) return;
+      if (isImporting || !documentId || !versionId) return;
       if (autoOnly && !autoImport) return;
 
       // Find translations ready to import
@@ -106,7 +115,7 @@ export const TranslationView = () => {
         const key = createTranslationStatusKey(
           branchId,
           documentId,
-          document._rev,
+          versionId,
           locale.localeId
         );
         const status = translationStatuses.get(key);
@@ -117,12 +126,12 @@ export const TranslationView = () => {
 
       setIsImporting(true);
       try {
-        // Import all ready translations
-        await Promise.all(
-          readyTranslations.map((locale) =>
-            handleImportDocument(documentId, document._rev, locale.localeId)
-          )
-        );
+        // Import sequentially: internationalized-array imports patch this same
+        // document in place, so concurrent locale imports would overwrite each
+        // other and only the last locale would survive.
+        for (const locale of readyTranslations) {
+          await handleImportDocument(documentId, versionId, locale.localeId);
+        }
 
         // Auto patch document references if enabled
         if (autoPatchReferences) {
@@ -141,6 +150,7 @@ export const TranslationView = () => {
       autoImport,
       isImporting,
       documentId,
+      versionId,
       availableLocales,
       translationStatuses,
       importedTranslations,
@@ -261,7 +271,7 @@ export const TranslationView = () => {
       </Stack>
 
       {/* Translation Status Section */}
-      {documentId && availableLocales.length > 0 && (
+      {documentId && versionId && availableLocales.length > 0 && (
         <Stack space={4}>
           <Flex align='center' justify='space-between'>
             <Text as='h2' weight='semibold' size={2}>
@@ -290,7 +300,7 @@ export const TranslationView = () => {
               const key = createTranslationStatusKey(
                 branchId,
                 documentId,
-                document._rev,
+                versionId,
                 locale.localeId
               );
               const status = translationStatuses.get(key);
@@ -307,7 +317,7 @@ export const TranslationView = () => {
                     if (!isImported && status?.isReady) {
                       await handleImportDocument(
                         documentId,
-                        document._rev,
+                        versionId,
                         locale.localeId
                       );
                     }
@@ -333,7 +343,7 @@ export const TranslationView = () => {
                       const key = createTranslationStatusKey(
                         branchId,
                         documentId,
-                        document._rev,
+                        versionId,
                         locale.localeId
                       );
                       const status = translationStatuses.get(key);
@@ -358,7 +368,7 @@ export const TranslationView = () => {
                     const key = createTranslationStatusKey(
                       branchId,
                       documentId,
-                      document._rev,
+                      versionId,
                       locale.localeId
                     );
                     return importedTranslations.has(key);
@@ -370,7 +380,7 @@ export const TranslationView = () => {
                     const key = createTranslationStatusKey(
                       branchId,
                       documentId,
-                      document._rev,
+                      versionId,
                       locale.localeId
                     );
                     const status = translationStatuses.get(key);

@@ -1,6 +1,7 @@
 import type { GetServerSidePropsContext, PreviewData } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
+import { parseAcceptLanguage } from 'gt-i18n/internal';
 import { noLocalesCouldBeDeterminedWarning } from '../errors/ssg';
 import { defaultLocaleHeaderName } from '../utils/headers';
 
@@ -26,7 +27,7 @@ export function parseLocale<
 
   if (!ignorePreferredLanguages) {
     preferredLocales.push(
-      ...getAcceptLanguageCandidates(context.req.headers['accept-language'])
+      ...parseAcceptLanguage(context.req.headers['accept-language'])
     );
   }
 
@@ -64,15 +65,4 @@ function addHeaderCandidates(candidates: string[], headerValue: HeaderValue) {
   } else if (headerValue) {
     candidates.push(headerValue);
   }
-}
-
-function getAcceptLanguageCandidates(headerValue: HeaderValue): string[] {
-  const headerValues = Array.isArray(headerValue) ? headerValue : [headerValue];
-  return headerValues.flatMap(
-    (value) =>
-      value
-        ?.split(',')
-        .map((item) => item.split(';')?.[0].trim())
-        .filter(Boolean) || []
-  );
 }

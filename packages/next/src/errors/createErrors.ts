@@ -4,6 +4,7 @@ import { getLocaleProperties } from '@generaltranslation/format';
 import {
   createGtNextDiagnostic,
   createGtNextPluginDiagnostic,
+  formatDiagnosticErrorDetails,
 } from './diagnostics';
 import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 
@@ -105,6 +106,21 @@ export const getTranslationsSnapshotRscError = createGtNextDiagnostic({
   fix: 'Use gt-next build-time translation helpers in the App Router, or call getTranslationsSnapshot() from a Pages Router entry point',
 });
 
+export const withGTStaticPropsClientError = createGtNextDiagnostic({
+  severity: 'Error',
+  whatHappened: 'withGTStaticProps() cannot run in the browser',
+  why: 'Static props are generated on the server by the Pages Router',
+  fix: 'Export withGTStaticProps() from a Pages Router page module',
+});
+
+export const withGTStaticPropsRscError = createGtNextDiagnostic({
+  severity: 'Error',
+  whatHappened:
+    'withGTStaticProps() is not available for React Server Components',
+  why: 'This helper supports the Pages Router, not the App Router',
+  fix: 'Use gt-next build-time translation helpers in the App Router, or export withGTStaticProps() from a Pages Router page module',
+});
+
 export const invalidLocalesError = (locales: string[]) =>
   createGtNextDiagnostic({
     severity: 'Error',
@@ -130,6 +146,17 @@ export const createInvalidRequestLocaleWarning = (
     whatHappened: `Locale "${locale}" is not valid or is not supported by this app`,
     wayOut: `The default locale "${defaultLocale}" will be used for this request`,
     fix: 'Use a valid BCP 47 locale code, add a custom mapping, or configure the locale in gt-next',
+  });
+
+export const createInvalidPathRegexError = (
+  pathRegex: string,
+  error: unknown
+) =>
+  createGtNextDiagnostic({
+    severity: 'Error',
+    whatHappened: `pathRegex "${pathRegex}" is not a valid regular expression`,
+    fix: 'Pass a valid JavaScript regular expression string to withGTConfig()',
+    details: formatDiagnosticErrorDetails(error),
   });
 
 // ---- WARNINGS ---- //
@@ -166,7 +193,13 @@ export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
   `gt-next: The following canonical locales were standardized: ${locales.join(', ')}. Use the standardized codes in your config to avoid this warning.`;
 
 export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
-  `gt-next (plugin): The GT ${type} compiler could not be resolved. Skipping compiler optimizations.`;
+  createGtNextPluginDiagnostic({
+    whatHappened: `The GT ${type} compiler could not be resolved`,
+    wayOut: 'Skipping compiler optimizations',
+    ...(type === 'babel' && {
+      fix: 'Install @generaltranslation/compiler to enable the experimental babel compiler',
+    }),
+  });
 
 export const customGetLocaleUnresolvedWarning = createGtNextDiagnostic({
   whatHappened: 'Custom getLocale() could not be resolved',

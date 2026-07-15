@@ -8,7 +8,7 @@ import type {
   RuntimeTranslationOptions,
 } from '../types/options';
 import { resolveJsxWithRuntimeFallback } from './helpers';
-import { tx } from './tx';
+import { txPrefetch } from './tx';
 
 type RuntimeStringTranslationOptions = Omit<
   RuntimeTranslationOptions,
@@ -25,7 +25,10 @@ export const GtInternalRuntimeTranslateString = (
   content: string,
   options: RuntimeStringTranslationOptions = {}
 ) => {
-  return tx(content, { $format: 'ICU', ...options });
+  // Prefetch/registration only — the compiler-injected call discards the
+  // result, and variable values are unavailable here, so the translation
+  // must not be interpolated.
+  return txPrefetch(content, { $format: 'ICU', ...options });
 };
 
 export const GtInternalRuntimeTranslateJsx = (

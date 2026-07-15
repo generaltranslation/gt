@@ -24,6 +24,7 @@ import {
 import { defaultLocaleHeaderName } from '../utils/headers';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { HeadersAndCookies } from '../config-dir/props/withGTConfigProps';
+import { compilePathRegex, pathnameMatchesRegex } from '../utils/pathRegex';
 
 const NEXT_JS_SOURCE_MAP_PATH = '/__nextjs_source-map';
 
@@ -59,6 +60,10 @@ export function createNextMiddleware({
   ignoreSourceMaps?: boolean;
   pathConfig?: PathConfig;
 } = {}) {
+  const pathRegex = compilePathRegex(
+    process.env._GENERALTRANSLATION_PATH_REGEX
+  );
+
   // i18n config
   let envParams: MiddlewareEnvConfig | undefined;
   if (process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS) {
@@ -164,6 +169,10 @@ export function createNextMiddleware({
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
   function middleware(req: NextRequest) {
+    if (!pathnameMatchesRegex(req.nextUrl.pathname, pathRegex)) {
+      return NextResponse.next();
+    }
+
     // Ignore source maps
     if (
       ignoreSourceMaps &&

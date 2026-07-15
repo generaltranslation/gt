@@ -1,5 +1,30 @@
 # gt-node
 
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies [[`6345dc5`](https://github.com/generaltranslation/gt/commit/6345dc5e3fe0a1e3ead9a3c30a0adaa4037d50a8)]:
+  - gt-i18n@1.0.3
+
+## 1.0.2
+
+### Patch Changes
+
+- [#1846](https://github.com/generaltranslation/gt/pull/1846) [`7fb4a74`](https://github.com/generaltranslation/gt/commit/7fb4a74c52065694a40deafcf4596acc09e17f58) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add `parseLocale(request)` to resolve server-rendered React locales from the configured cookie, the `Accept-Language` header, or the default locale.
+
+  Share cookie and `Accept-Language` parsing across the framework packages.
+
+- Updated dependencies [[`006e071`](https://github.com/generaltranslation/gt/commit/006e071bf87ffe80f2d18958ddfa8f18cc2d85d2), [`7fb4a74`](https://github.com/generaltranslation/gt/commit/7fb4a74c52065694a40deafcf4596acc09e17f58), [`1f33d5f`](https://github.com/generaltranslation/gt/commit/1f33d5f76ffc879d2d21aa2508e07e1d3b66c4e3)]:
+  - gt-i18n@1.0.2
+
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@1.0.1
+
 ## 1.0.0
 
 ### Major Changes

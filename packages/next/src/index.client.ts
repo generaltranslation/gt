@@ -10,6 +10,11 @@ import type {
 } from 'next';
 import type { ParsedUrlQuery } from 'querystring';
 import type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
+import type {
+  WithGTStaticProps,
+  WithGTStaticPropsFunction,
+} from './pages-dir/withGTStaticProps';
+import { withGTStaticPropsClientError } from './errors/createErrors';
 
 // ===== Unsupported Server APIs ===== //
 export function parseLocale<
@@ -32,6 +37,10 @@ export function withGTServerSideProps<
     'withGTServerSideProps() is only available from gt-next on the server.'
   );
 }
+
+export const withGTStaticProps: WithGTStaticPropsFunction = () => {
+  throw new Error(withGTStaticPropsClientError);
+};
 
 // ===== Components ===== //
 export {
@@ -85,4 +94,4 @@ export { isLocaleSupported } from './request/localeValidation';
 
 // ===== Types ===== //
 export type { GTTranslationOptions, RuntimeTranslationOptions } from 'gt-react';
-export type { WithGTServerSideProps };
+export type { WithGTServerSideProps, WithGTStaticProps };

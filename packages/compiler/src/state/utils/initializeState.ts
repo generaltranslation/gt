@@ -13,7 +13,10 @@ import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
 
 const DEFAULT_SETTINGS: PluginSettings = {
   logLevel: 'warn',
-  compileTimeHash: false,
+  // Hash injection is the plugin's default optimization; matches the gt-next
+  // default, which historically matched observed behavior because injection
+  // ran unconditionally
+  compileTimeHash: true,
   disableBuildChecks: false,
   enableMacroTransform: true,
   stringTranslationMacro: GT_OTHER_FUNCTIONS.t,

@@ -23,6 +23,7 @@ import {
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
 } from './errors/createErrors';
+import { compilePathRegex } from './utils/pathRegex';
 import {
   getLocaleProperties,
   isValidLocale,
@@ -113,6 +114,7 @@ type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {boolean} [disableInvalidLocaleWarning=defaultWithGTConfigProps.disableInvalidLocaleWarning] - Whether to disable invalid request locale warnings.
+ * @param {string|undefined} [pathRegex] - Regular expression that request pathnames must match for i18n middleware to be applied.
  * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
@@ -239,6 +241,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     experimentalCompilerOptions: mergedExperimentalCompilerOptions,
     _usingPlugin: true, // flag to indicate plugin usage
   };
+
+  compilePathRegex(mergedConfig.pathRegex);
 
   // clear up any issues with the compiler options
   validateCompiler(mergedConfig);
@@ -651,6 +655,10 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         requestFunctionPaths.getRegion ? 'true' : 'false',
       _GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING:
         mergedConfig.disableInvalidLocaleWarning?.toString() || 'false',
+      // nextConfig.env intentionally makes this available to client-boundary.tsx.
+      ...(mergedConfig.pathRegex !== undefined && {
+        _GENERALTRANSLATION_PATH_REGEX: mergedConfig.pathRegex,
+      }),
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {
