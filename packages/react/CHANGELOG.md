@@ -1,5 +1,13 @@
 # gt-react
 
+## 11.0.6
+
+### Patch Changes
+
+- Updated dependencies [[`6345dc5`](https://github.com/generaltranslation/gt/commit/6345dc5e3fe0a1e3ead9a3c30a0adaa4037d50a8)]:
+  - gt-i18n@1.0.3
+  - @generaltranslation/react-core@11.0.6
+
 ## 11.0.5
 
 ### Patch Changes

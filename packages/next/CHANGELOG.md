@@ -1,5 +1,17 @@
 # gt-next
 
+## 11.0.6
+
+### Patch Changes
+
+- [#1873](https://github.com/generaltranslation/gt/pull/1873) [`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Retrigger package publication after repairing release workspace dependency resolution.
+
+- Updated dependencies [[`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1), [`6345dc5`](https://github.com/generaltranslation/gt/commit/6345dc5e3fe0a1e3ead9a3c30a0adaa4037d50a8)]:
+  - @generaltranslation/compiler@1.3.29
+  - gt-i18n@1.0.3
+  - gt-react@11.0.6
+  - @generaltranslation/react-core@11.0.6
+
 ## 11.0.5
 
 ### Patch Changes
