@@ -1,13 +1,19 @@
 import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { intersects } from 'semver';
 import { logger } from '../console/logger.js';
 import { REACT_LIBRARIES } from '../types/libraries.js';
 import { getPackageJson, getPackageVersion } from './packageJson.js';
 
 const MINIMUM_REACT_PACKAGE_MAJOR = 11;
 
-function getDeclaredMajor(version: string): number | undefined {
-  const match = version.trim().match(/^[~^]?\s*(\d+)(?:\.|$)/);
-  return match ? Number(match[1]) : undefined;
+function isDeclaredBelowMinimum(version: string): boolean {
+  // A range that cannot resolve to any version >= the minimum is definitively
+  // incompatible; invalid ranges (workspace:*, tags, URLs) fail open
+  try {
+    return !intersects(version, `>=${MINIMUM_REACT_PACKAGE_MAJOR}.0.0`);
+  } catch {
+    return false;
+  }
 }
 
 export async function warnReactPackageCompatibility(
@@ -24,8 +30,7 @@ export async function warnReactPackageCompatibility(
       const version = getPackageVersion(packageName, packageJson);
       if (!version) return [];
 
-      const major = getDeclaredMajor(version);
-      return major !== undefined && major < MINIMUM_REACT_PACKAGE_MAJOR
+      return isDeclaredBelowMinimum(version)
         ? [`${packageName}@${version}`]
         : [];
     });

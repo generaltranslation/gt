@@ -93,6 +93,34 @@ describe('warnReactPackageCompatibility', () => {
     }
   );
 
+  it.each(['<11', '>=10 <11', '=10.20.0', '10.x'])(
+    'warns for comparator range %s that cannot reach version 11',
+    async (version) => {
+      mockGetPackageJson.mockResolvedValue({
+        dependencies: { 'gt-react': version },
+      });
+
+      await warnReactPackageCompatibility();
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining(`gt-react@${version}`)
+      );
+    }
+  );
+
+  it.each(['>=10', '^10 || ^11', '*'])(
+    'accepts range %s that can resolve to version 11 or later',
+    async (version) => {
+      mockGetPackageJson.mockResolvedValue({
+        dependencies: { 'gt-react': version },
+      });
+
+      await warnReactPackageCompatibility();
+
+      expect(logger.warn).not.toHaveBeenCalled();
+    }
+  );
+
   it('fails open when package.json cannot be read', async () => {
     mockGetPackageJson.mockRejectedValue(new Error('unreadable'));
 
