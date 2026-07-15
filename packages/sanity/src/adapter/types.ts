@@ -14,6 +14,15 @@ export type TranslateDocumentFilter = {
   type?: string;
 };
 
+// How matched documents are translated:
+// - 'document'               translate whole documents (per-locale documents).
+// - 'internationalizedArray' localize fields in place (array shape).
+// - 'mixed'                  array strategy for `fieldLevelDocuments`, else doc.
+export type FieldLevelTranslationMode =
+  | 'document'
+  | 'internationalizedArray'
+  | 'mixed';
+
 export type FileProperties = {
   versionId: string;
   fileId: string;
