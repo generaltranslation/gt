@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UploadTranslationsStep } from '../UploadTranslationsStep.js';
+import { logger } from '../../../console/logger.js';
 import type { GT } from 'generaltranslation';
 import type { Settings } from '../../../types/index.js';
 import type { FileToUpload } from 'generaltranslation/types';
@@ -154,7 +155,7 @@ describe('UploadTranslationsStep', () => {
     expect(mockGt.uploadTranslations).not.toHaveBeenCalled();
   });
 
-  it('reports the number of uploaded translation files', async () => {
+  it('reports the server-confirmed number of uploaded translation files', async () => {
     const files = [
       {
         source: makeSource('file-1'),
@@ -169,7 +170,13 @@ describe('UploadTranslationsStep', () => {
       },
     ];
 
-    mockGt.uploadTranslations.mockResolvedValue({ uploadedFiles: [] });
+    mockGt.uploadTranslations.mockResolvedValue({
+      uploadedFiles: [
+        { fileId: 'file-1', locale: 'es' },
+        { fileId: 'file-1', locale: 'fr' },
+        { fileId: 'file-2', locale: 'es' },
+      ],
+    });
 
     const step = new UploadTranslationsStep(
       mockGt as unknown as GT,
@@ -179,6 +186,46 @@ describe('UploadTranslationsStep', () => {
 
     expect(mockSpinner.stop).toHaveBeenCalledWith(
       expect.stringContaining('Uploaded 3 translation files')
+    );
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('warns when the server persists fewer files than were uploaded', async () => {
+    const files = [
+      {
+        source: makeSource('file-1'),
+        translations: [
+          makeTranslation('file-1', 'es'),
+          makeTranslation('file-1', 'fr'),
+        ],
+      },
+      {
+        source: makeSource('file-2'),
+        translations: [makeTranslation('file-2', 'es')],
+      },
+    ];
+
+    // The endpoint silently drops files it failed to persist (no error,
+    // just a smaller uploadedFiles array)
+    mockGt.uploadTranslations.mockResolvedValue({
+      uploadedFiles: [
+        { fileId: 'file-1', locale: 'es' },
+        { fileId: 'file-2', locale: 'es' },
+      ],
+    });
+
+    const step = new UploadTranslationsStep(
+      mockGt as unknown as GT,
+      mockSettings
+    );
+    const result = await step.run({ files });
+
+    expect(result).toHaveLength(2);
+    expect(mockSpinner.stop).toHaveBeenCalledWith(
+      expect.stringContaining('Uploaded 2 translation files')
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('1 translation file was not persisted')
     );
   });
 });

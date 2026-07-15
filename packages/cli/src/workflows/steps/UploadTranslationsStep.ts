@@ -55,11 +55,22 @@ export class UploadTranslationsStep extends WorkflowStep<
     });
 
     this.result = response.uploadedFiles;
+    // Report the server-confirmed count, not the attempted count — the
+    // endpoint drops files it failed to persist without erroring
+    const uploadedCount = this.result.length;
     this.spinner.stop(
       chalk.green(
-        `Uploaded ${totalTranslations} translation file${totalTranslations !== 1 ? 's' : ''}`
+        `Uploaded ${uploadedCount} translation file${uploadedCount !== 1 ? 's' : ''}`
       )
     );
+    if (uploadedCount < totalTranslations) {
+      const missingCount = totalTranslations - uploadedCount;
+      logger.warn(
+        chalk.yellow(
+          `${missingCount} translation file${missingCount !== 1 ? 's were' : ' was'} not persisted by the server`
+        )
+      );
+    }
 
     return this.result;
   }
