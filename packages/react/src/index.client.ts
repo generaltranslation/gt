@@ -8,11 +8,6 @@ export { initializeGTSRAClient as initializeGT } from './setup/initializeGTSRACl
 export { parseLocale } from './functions/parseLocale';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useRegionSelector } from './components/useRegionSelector';
-export {
-  useSetLocale,
-  useSetRegion,
-  useSetEnableI18n,
-} from './hooks/conditions-store';
 
 // ===== Components ===== //
 export { LocaleSelector } from './components/LocaleSelector';
@@ -52,6 +47,9 @@ export {
   useTranslations,
   useLocaleDirection,
   useLocaleProperties,
+  useSetLocale,
+  useSetRegion,
+  useSetEnableI18n,
 } from '@generaltranslation/react-core/hooks';
 
 // ===== Functions ===== //
