@@ -1,16 +1,22 @@
-import { publishValidationResults } from './validation/publishValidationResults';
 import logger from '../logs/logger';
 import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
-import { validateConfig } from './validation/validateConfig';
+import {
+  createDiagnosticMessage,
+  defaultRuntimeApiUrl,
+} from 'generaltranslation/internal';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { LookupOptions } from '../translation-functions/types/options';
 import { SafeTranslationsLoader } from './translations-manager/translations-loaders/types';
-import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
+import {
+  createTranslateManyFactory,
+  type CreateTranslateMany,
+} from './translations-manager/utils/createTranslateMany';
 import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
-import { LocalesCache } from './translations-manager/LocalesCache';
-import type { Locale } from './translations-manager/LocalesCache';
-import type { Hash } from './translations-manager/TranslationsCache';
+import { ResourceCache } from './translations-manager/ResourceCache';
+import { TranslationsCache } from './translations-manager/TranslationsCache';
+import type { Hash, Locale } from './translations-manager/TranslationsCache';
+import { DictionaryCache } from './translations-manager/DictionaryCache';
 import type {
   Dictionary,
   DictionaryEntry,
@@ -96,9 +102,18 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   ) => void;
 
   /**
-   * Locale-scoped caches for translations and dictionaries
+   * Locale-keyed caches for translations and dictionaries
    */
-  private localesCache: LocalesCache<TranslationValue>;
+  private translations: ResourceCache<
+    Locale,
+    TranslationsCache<TranslationValue>
+  >;
+  private dictionaries: ResourceCache<Locale, DictionaryCache>;
+
+  /**
+   * Creates a locale-bound translateMany for runtime translation
+   */
+  private createTranslateMany: CreateTranslateMany;
 
   /**
    * Creates an instance of I18nCache.
@@ -108,10 +123,18 @@ class I18nCache<TranslationValue extends Translation = Translation> {
    */
   constructor(params: I18nCacheConstructorParams) {
     // Validation
-    const validationResults = validateConfig(params);
-    publishValidationResults(validationResults, 'I18nCache: ');
+    validateCacheParams(params);
 
-    this.config = standardizeConfig(params);
+    this.config = {
+      projectId: params.projectId,
+      devApiKey: params.devApiKey,
+      apiKey: params.apiKey,
+      runtimeUrl: params.runtimeUrl,
+      cacheExpiryTime: params.cacheExpiryTime,
+      batchConfig: params.batchConfig,
+      runtimeTranslation: params.runtimeTranslation,
+      _versionId: params._versionId,
+    };
 
     // Create cache miss handlers
     const loadTranslations = routeCreateTranslationLoader({
@@ -124,34 +147,62 @@ class I18nCache<TranslationValue extends Translation = Translation> {
         _branchId: params._branchId,
       },
     }) as SafeTranslationsLoader<TranslationValue>;
-    // TODO: somewhere enforce that if you have a loadDictionary, you must have a dictionary
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
-    const runtimeTranslationTimeout =
-      this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT;
-    const runtimeTranslationMetadata =
-      this.config.runtimeTranslation?.metadata ?? {};
-    const createTranslateMany = createTranslateManyFactory(
+    this.createTranslateMany = createTranslateManyFactory(
       getI18nConfig().getGTClass(),
-      runtimeTranslationTimeout,
-      runtimeTranslationMetadata
+      this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT,
+      this.config.runtimeTranslation?.metadata ?? {}
     );
 
-    // Setup locale-scoped caches
-    this.localesCache = new LocalesCache<TranslationValue>({
-      dictionary: params.dictionary,
-      loadTranslations,
-      loadDictionary,
-      createTranslateMany,
-      translateDictionaryEntry: (locale, id, sourceEntry) =>
-        this.translateDictionaryEntry(locale, id, sourceEntry),
-      ttl: this.config.cacheExpiryTime,
+    // Setup locale-keyed caches
+    const ttl = this.config.cacheExpiryTime;
+    this.translations = new ResourceCache<
+      Locale,
+      TranslationsCache<TranslationValue>
+    >({
+      ttl,
+      load: async (locale) =>
+        this.createTranslationsCache(locale, await loadTranslations(locale)),
+    });
+    this.dictionaries = new ResourceCache<Locale, DictionaryCache>({
+      ttl,
+      load: async (locale) =>
+        this.createDictionaryCache(locale, await loadDictionary(locale)),
+    });
+
+    // The default locale's source dictionary is provided synchronously and
+    // never expires
+    const defaultLocale = getI18nConfig().getDefaultLocale();
+    this.dictionaries.set(
+      defaultLocale,
+      this.createDictionaryCache(defaultLocale, params.dictionary ?? {}),
+      { expiresAt: -1 }
+    );
+  }
+
+  // ========== Cache Factories ========== //
+
+  private createTranslationsCache(
+    locale: Locale,
+    init: Record<Hash, TranslationValue>
+  ): TranslationsCache<TranslationValue> {
+    return new TranslationsCache<TranslationValue>({
+      init,
+      translateMany: this.createTranslateMany(locale),
       batchConfig: this.config.batchConfig,
-      onTranslationsCacheMiss: (locale, hash, translation) =>
-        this.onTranslationsCacheMiss?.({
-          locale,
-          hash,
-          translation,
-        }),
+      onMiss: (hash, translation) =>
+        this.onTranslationsCacheMiss?.({ locale, hash, translation }),
+    });
+  }
+
+  private createDictionaryCache(
+    locale: Locale,
+    init: Dictionary
+  ): DictionaryCache {
+    return new DictionaryCache({
+      init,
+      runtimeTranslate: (id, sourceEntry) =>
+        this.translateDictionaryEntry(locale, id, sourceEntry),
     });
   }
 
@@ -169,11 +220,31 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   updateTranslations(
     translationsSnapshot: Record<Locale, Record<Hash, TranslationValue>>
   ): void {
-    this.localesCache.updateTranslations(translationsSnapshot);
+    for (const locale in translationsSnapshot) {
+      const txCache = this.translations.get(locale);
+      if (txCache) {
+        txCache.update(translationsSnapshot[locale]);
+      } else {
+        this.translations.set(
+          locale,
+          this.createTranslationsCache(locale, translationsSnapshot[locale])
+        );
+      }
+    }
   }
 
   updateDictionaries(dictionarySnapshot: Record<Locale, Dictionary>): void {
-    this.localesCache.updateDictionaries(dictionarySnapshot);
+    for (const locale in dictionarySnapshot) {
+      const dictionaryCache = this.dictionaries.get(locale);
+      if (dictionaryCache) {
+        dictionaryCache.update(dictionarySnapshot[locale]);
+      } else {
+        this.dictionaries.set(
+          locale,
+          this.createDictionaryCache(locale, dictionarySnapshot[locale])
+        );
+      }
+    }
   }
 
   // ========== Translation Resolution ========== //
@@ -185,23 +256,18 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   async loadTranslations(
     locale: string
   ): Promise<Record<Hash, TranslationValue>> {
-    try {
+    return this.guardAsync({}, async () => {
       // Validate
       const translationLocale = this._resolveCacheLocale(locale);
       if (!translationLocale) {
         return {};
       }
 
-      const txCache =
-        await this.localesCache.getOrLoadTranslations(translationLocale);
+      const txCache = await this.translations.getOrLoad(translationLocale);
 
       // Get the translations
-      const translations = txCache.getInternalCache();
-      return translations;
-    } catch (error) {
-      this.handleError(error);
-      return {};
-    }
+      return txCache.getInternalCache();
+    });
   }
 
   /**
@@ -209,7 +275,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
    * Edge case usage: access the dictionary object directly
    */
   async loadDictionary(locale: string): Promise<Dictionary> {
-    try {
+    return this.guardAsync({}, async () => {
       // Validate
       const dictionaryLocale = this._resolveCacheLocale(locale);
       if (!dictionaryLocale) {
@@ -217,30 +283,21 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       }
 
       const dictionaryCache =
-        await this.localesCache.getOrLoadDictionary(dictionaryLocale);
+        await this.dictionaries.getOrLoad(dictionaryLocale);
 
       return dictionaryCache.getInternalCache();
-    } catch (error) {
-      this.handleError(error);
-      return {};
-    }
+    });
   }
 
   /**
    * Look up a dictionary entry
    */
   lookupDictionary(locale: string, id: string): DictionaryEntry | undefined {
-    try {
-      const dictionaryLocale = this.resolveDictionaryCacheLocale(locale);
-      const dictionaryEntry = this.localesCache
-        .getDictionary(dictionaryLocale)
-        ?.getEntry(id);
-
-      return dictionaryEntry;
-    } catch (error) {
-      this.handleError(error);
-      return undefined;
-    }
+    return this.guard(undefined, () =>
+      this.dictionaries
+        .get(this.resolveDictionaryCacheLocale(locale))
+        ?.getEntry(id)
+    );
   }
 
   /**
@@ -250,33 +307,32 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     locale: string,
     id: string
   ): DictionaryObject | undefined {
-    try {
-      const dictionaryLocale = this.resolveDictionaryCacheLocale(locale);
-      return this.localesCache.getDictionary(dictionaryLocale)?.getValue(id);
-    } catch (error) {
-      this.handleError(error);
-      return undefined;
-    }
+    return this.guard(undefined, () =>
+      this.dictionaries
+        .get(this.resolveDictionaryCacheLocale(locale))
+        ?.getValue(id)
+    );
   }
 
   async getLookupDictionary(locale: string): Promise<DictionaryResolvers> {
-    try {
-      const asyncBoundaryLocale = this._resolveCacheLocale(locale);
-      const asyncBoundaryDictionaryCache = asyncBoundaryLocale
-        ? await this.localesCache.getOrLoadDictionary(asyncBoundaryLocale)
-        : this.getDefaultDictionaryCache();
-
-      return {
-        lookupDictionary: (id) => asyncBoundaryDictionaryCache?.getEntry(id),
-        lookupDictionaryObj: (id) => asyncBoundaryDictionaryCache?.getValue(id),
-      };
-    } catch (error) {
-      this.handleError(error);
-      return {
+    return this.guardAsync<DictionaryResolvers>(
+      {
         lookupDictionary: () => undefined,
         lookupDictionaryObj: () => undefined,
-      };
-    }
+      },
+      async () => {
+        const asyncBoundaryLocale = this._resolveCacheLocale(locale);
+        const asyncBoundaryDictionaryCache = asyncBoundaryLocale
+          ? await this.dictionaries.getOrLoad(asyncBoundaryLocale)
+          : this.getDefaultDictionaryCache();
+
+        return {
+          lookupDictionary: (id) => asyncBoundaryDictionaryCache?.getEntry(id),
+          lookupDictionaryObj: (id) =>
+            asyncBoundaryDictionaryCache?.getValue(id),
+        };
+      }
+    );
   }
 
   /**
@@ -287,27 +343,23 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     locale: string,
     id: string
   ): Promise<DictionaryEntry | undefined> {
-    try {
+    return this.guardAsync(undefined, async () => {
       const dictionaryLocale = this._resolveCacheLocale(locale);
       if (!dictionaryLocale) {
         return this.getSourceDictionaryEntry(id);
       }
 
       const dictionaryCache =
-        await this.localesCache.getOrLoadDictionary(dictionaryLocale);
+        await this.dictionaries.getOrLoad(dictionaryLocale);
 
-      let dictionaryEntry = dictionaryCache.getEntry(id);
-      if (dictionaryEntry === undefined) {
-        dictionaryEntry = await dictionaryCache.materializeEntry(
+      return (
+        dictionaryCache.getEntry(id) ??
+        (await dictionaryCache.materializeEntry(
           id,
           this.getSourceDictionaryEntry(id)
-        );
-      }
-      return dictionaryEntry;
-    } catch (error) {
-      this.handleError(error);
-      return undefined;
-    }
+        ))
+      );
+    });
   }
 
   /**
@@ -318,7 +370,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     locale: string,
     id: string
   ): Promise<DictionaryObject | undefined> {
-    try {
+    return this.guardAsync(undefined, async () => {
       const dictionaryLocale = this._resolveCacheLocale(locale);
 
       if (!dictionaryLocale) {
@@ -326,7 +378,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       }
 
       const dictionaryCache =
-        await this.localesCache.getOrLoadDictionary(dictionaryLocale);
+        await this.dictionaries.getOrLoad(dictionaryLocale);
       const targetObject = dictionaryCache.getValue(id);
       const sourceObject = this.getSourceDictionaryObject(id, {
         throwOnMissing: false,
@@ -343,10 +395,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
         sourceObject,
         targetObject
       );
-    } catch (error) {
-      this.handleError(error);
-      return undefined;
-    }
+    });
   }
 
   private async translateDictionaryEntry(
@@ -387,7 +436,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   }
 
   private getDefaultDictionaryCache() {
-    return this.localesCache.getDictionary(getI18nConfig().getDefaultLocale());
+    return this.dictionaries.get(getI18nConfig().getDefaultLocale());
   }
 
   private resolveDictionaryCacheLocale(locale: string): Locale {
@@ -404,7 +453,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     message: T,
     options: LookupOptions
   ): T | undefined {
-    try {
+    return this.guard<T | undefined>(undefined, () => {
       // Validate
       const { translationLocale, options: lookupOptions } =
         this.resolveLookupParams(locale, options);
@@ -412,16 +461,11 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       // Early return if in default locale
       if (!translationLocale) return message;
 
-      // Get the locale cache
-      const txCache = this.localesCache.getTranslations(translationLocale);
-      if (!txCache) return undefined;
-
-      // Get the translation
-      return txCache.get({ message, options: lookupOptions });
-    } catch (error) {
-      this.handleError(error);
-      return undefined;
-    }
+      // Get the translation from the locale cache
+      return this.translations
+        .get(translationLocale)
+        ?.get({ message, options: lookupOptions });
+    });
   }
 
   /**
@@ -435,16 +479,9 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     message: T,
     options: LookupOptions
   ): Promise<T | undefined> {
-    try {
-      return await this.lookupTranslationWithFallbackResolved(
-        locale,
-        message,
-        options
-      );
-    } catch (error) {
-      this.handleError(error);
-      return undefined;
-    }
+    return this.guardAsync<T | undefined>(undefined, () =>
+      this.lookupTranslationWithFallbackResolved(locale, message, options)
+    );
   }
 
   /**
@@ -460,92 +497,107 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       prefetchEntries?: PrefetchEntriesType<TranslationValue>;
     }
   > {
-    try {
-      // Locale used for the async load
-      const asyncBoundaryLocale = this._resolveCacheLocale(locale);
+    return this.guardAsync<TranslationResolver<TranslationValue>>(
+      (message) => message,
+      async () => {
+        // Locale used for the async load
+        const asyncBoundaryLocale = this._resolveCacheLocale(locale);
 
-      // Early return if i18n is disabled or default locale
-      if (!asyncBoundaryLocale) {
-        return (message) => message;
-      }
-
-      const asyncBoundaryTxCache =
-        await this.localesCache.getOrLoadTranslations(asyncBoundaryLocale);
-
-      // Prefetch any entries during async block (dev hot reload only)
-      const prefetchEntries = async (
-        prefetchEntries: {
-          message: TranslationValue;
-          options: LookupOptions;
-        }[] = []
-      ) => {
-        if (!getI18nConfig().isDevHotReloadEnabled()) return;
-
-        // Invariant: all prefetchEntries must be the same locale
-        // TODO: investigate why we have made this an invariant, we may be able to drop this requirement
-        const resolvedPrefetchEntries = resolvePrefetchEntriesByLocale(
-          prefetchEntries,
-          asyncBoundaryLocale,
-          (entryLocale) =>
-            this._resolveCacheLocale(entryLocale) ??
-            this._resolveLocale(entryLocale)
-        );
-        if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
-          logger.warn(
-            `I18nCache: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${asyncBoundaryLocale}`
-          );
+        // Early return if i18n is disabled or default locale
+        if (!asyncBoundaryLocale) {
+          return (message) => message;
         }
 
-        await Promise.allSettled(
-          resolvedPrefetchEntries
-            .filter((entry) => asyncBoundaryTxCache.get(entry) == null)
-            .map((entry) => asyncBoundaryTxCache.miss(entry))
-        );
-      };
+        const asyncBoundaryTxCache =
+          await this.translations.getOrLoad(asyncBoundaryLocale);
 
-      // Create translation resolver
-      const lookupTranslation: TranslationResolver<TranslationValue> = (
-        message,
-        lookupOptions: LookupOptions = {} as LookupOptions
-      ) => {
-        try {
-          const { translationLocale, options } = this.resolveLookupParams(
-            lookupOptions.$locale ?? asyncBoundaryLocale,
-            lookupOptions
-          );
+        // Prefetch any entries during async block (dev hot reload only)
+        const prefetchEntries = async (
+          prefetchEntries: {
+            message: TranslationValue;
+            options: LookupOptions;
+          }[] = []
+        ) => {
+          if (
+            process.env.NODE_ENV !== 'production' &&
+            getI18nConfig().isDevHotReloadEnabled()
+          ) {
+            // Invariant: all prefetchEntries must be the same locale
+            // TODO: investigate why we have made this an invariant, we may be able to drop this requirement
+            const resolvedPrefetchEntries = resolvePrefetchEntriesByLocale(
+              prefetchEntries,
+              asyncBoundaryLocale,
+              (entryLocale) =>
+                this._resolveCacheLocale(entryLocale) ??
+                this._resolveLocale(entryLocale)
+            );
+            if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
+              logger.warn(
+                `I18nCache: getLookupTranslation(): prefetchEntries must all be the same locale, ignoring all entries that are not for ${asyncBoundaryLocale}`
+              );
+            }
 
-          // Default locale, return the message
-          if (!translationLocale) return message;
-
-          // Request locale overriden, to attempt a synchronous lookup if an alternate locale is requested
-          let txCache = asyncBoundaryTxCache;
-          if (translationLocale !== asyncBoundaryLocale) {
-            const syncBoundaryTxCache =
-              this.localesCache.getTranslations(translationLocale);
-            if (!syncBoundaryTxCache) return undefined;
-            txCache = syncBoundaryTxCache;
+            await Promise.allSettled(
+              resolvedPrefetchEntries
+                .filter((entry) => asyncBoundaryTxCache.get(entry) == null)
+                .map((entry) => asyncBoundaryTxCache.miss(entry))
+            );
           }
+        };
 
-          // Get the translation
-          return txCache.get({
-            message,
-            options,
+        // Create translation resolver
+        const lookupTranslation: TranslationResolver<TranslationValue> = (
+          message,
+          lookupOptions: LookupOptions = {} as LookupOptions
+        ) =>
+          this.guard(undefined, () => {
+            const { translationLocale, options } = this.resolveLookupParams(
+              lookupOptions.$locale ?? asyncBoundaryLocale,
+              lookupOptions
+            );
+
+            // Default locale, return the message
+            if (!translationLocale) return message;
+
+            // Request locale overriden, to attempt a synchronous lookup if an alternate locale is requested
+            const txCache =
+              translationLocale === asyncBoundaryLocale
+                ? asyncBoundaryTxCache
+                : this.translations.get(translationLocale);
+
+            // Get the translation
+            return txCache?.get({ message, options });
           });
-        } catch (error) {
-          this.handleError(error);
-          return undefined;
-        }
-      };
 
-      Object.assign(lookupTranslation, { prefetchEntries });
-      return lookupTranslation;
+        Object.assign(lookupTranslation, { prefetchEntries });
+        return lookupTranslation;
+      }
+    );
+  }
+
+  // ========== Error Handling ========== //
+
+  /**
+   * Run a lookup, routing errors through handleError (log in production,
+   * throw in development) and returning the fallback once handled.
+   */
+  private guard<T>(fallback: T, fn: () => T): T {
+    try {
+      return fn();
     } catch (error) {
       this.handleError(error);
-      return (message) => message;
+      return fallback;
     }
   }
 
-  // ========== Metadata ========== //
+  private async guardAsync<T>(fallback: T, fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (error) {
+      this.handleError(error);
+      return fallback;
+    }
+  }
 
   /**
    * Handle errors
@@ -634,8 +686,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       return message;
     }
 
-    const txCache =
-      await this.localesCache.getOrLoadTranslations(translationLocale);
+    const txCache = await this.translations.getOrLoad(translationLocale);
 
     let translation = txCache.get({ message, options: lookupOptions });
     if (translation == null) {
@@ -650,21 +701,44 @@ export { I18nCache };
 // ===== Helper Functions ===== //
 
 /**
- * Standardize the config
- * @param config - The config to standardize
- * @returns The standardized config
+ * Validate constructor params: log warnings for suspicious configs and throw
+ * on hard misconfigurations.
  */
-function standardizeConfig(config: I18nCacheConstructorParams) {
-  return {
-    projectId: config.projectId,
-    devApiKey: config.devApiKey,
-    apiKey: config.apiKey,
-    runtimeUrl: config.runtimeUrl,
-    cacheExpiryTime: config.cacheExpiryTime,
-    batchConfig: config.batchConfig,
-    runtimeTranslation: config.runtimeTranslation,
-    _versionId: config._versionId,
-  };
+function validateCacheParams(params: I18nCacheConstructorParams): void {
+  // Runtime translation against a custom API URL still needs GT credentials
+  if (params.runtimeUrl && params.runtimeUrl !== defaultRuntimeApiUrl) {
+    if (!params.projectId) {
+      logger.warn(
+        'I18nCache: ' +
+          createDiagnosticMessage({
+            whatHappened: 'Runtime translation needs a projectId',
+            fix: 'Add projectId to the I18nCache config or disable runtime translation',
+          })
+      );
+    }
+    if (!params.devApiKey && !params.apiKey) {
+      logger.warn(
+        'I18nCache: ' +
+          createDiagnosticMessage({
+            whatHappened: 'Runtime translation needs devApiKey or apiKey',
+            fix: 'Add credentials to the I18nCache config or disable runtime translation',
+          })
+      );
+    }
+  }
+
+  // loadDictionary requires dictionary so the default locale always has a
+  // source dictionary
+  if (params.loadDictionary && !params.dictionary) {
+    logger.error(
+      'I18nCache: ' +
+        createDiagnosticMessage({
+          whatHappened: 'loadDictionary needs a source dictionary',
+          fix: 'Provide dictionary so the default locale has source content',
+        })
+    );
+    throw new Error('Validation errors occurred');
+  }
 }
 
 /**

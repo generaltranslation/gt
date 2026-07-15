@@ -32,5 +32,7 @@ export type * from './translation-functions/types/options';
 export type { GTConfig } from './config/types';
 
 // Internal types
-export type { Hash } from './i18n-cache/translations-manager/TranslationsCache';
-export type { Locale } from './i18n-cache/translations-manager/LocalesCache';
+export type {
+  Hash,
+  Locale,
+} from './i18n-cache/translations-manager/TranslationsCache';

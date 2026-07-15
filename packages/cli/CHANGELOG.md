@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.61
+
+### Patch Changes
+
+- [#1876](https://github.com/generaltranslation/gt/pull/1876) [`ae59375`](https://github.com/generaltranslation/gt/commit/ae593758047e32396e8eb7eeca9b38b86a20a909) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Make `upload` command overwrite content
+
 ## 2.14.60
 
 ### Patch Changes

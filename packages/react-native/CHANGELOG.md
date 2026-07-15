@@ -1,5 +1,13 @@
 # gt-react-native
 
+## 11.0.7
+
+### Patch Changes
+
+- Updated dependencies [[`b742df9`](https://github.com/generaltranslation/gt/commit/b742df9f0684c6ea12da140c4fd73eebb42f897a), [`a148737`](https://github.com/generaltranslation/gt/commit/a1487377728b662dfd749ecfbd449a1e8d47db49)]:
+  - gt-i18n@1.0.4
+  - @generaltranslation/react-core@11.0.7
+
 ## 11.0.6
 
 ### Patch Changes
