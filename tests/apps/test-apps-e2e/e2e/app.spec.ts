@@ -204,20 +204,20 @@ async function testTanStackApp(page: Page) {
     },
   ];
 
+  await page.context().clearCookies();
+  let currentLocale = 'en';
+
   for (const route of routes) {
-    await page.context().clearCookies();
     await page.goto(route.path);
     await page.waitForLoadState('networkidle');
-    await expectTanStackLocale(page, 'en');
+    await expectTanStackLocale(page, currentLocale);
 
     await selectLocale(page, route.locale);
     await expectTanStackLocale(page, route.locale);
     await expect(page.getByText(route.translation)).toBeVisible();
     await page.reload();
     await expectTanStackLocale(page, route.locale);
-
-    await selectLocale(page, 'en');
-    await expectTanStackLocale(page, 'en');
+    currentLocale = route.locale;
   }
 }
 
