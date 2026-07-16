@@ -26,4 +26,6 @@ async function renderApp() {
   );
 }
 
-renderApp();
+renderApp().catch((error) => {
+  console.error('Failed to initialize the app:', error);
+});
