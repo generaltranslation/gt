@@ -71,4 +71,46 @@ describe('AsyncConditionStore', () => {
 
     expect(store.run('fr', () => store.getLocale())).toBe('fr');
   });
+
+  it('carries all scoped conditions inside run()', () => {
+    setTestCache();
+    const store = new AsyncConditionStore();
+
+    const conditions = store.run(
+      { locale: 'fr', region: 'CA', enableI18n: false },
+      () => ({
+        locale: store.getLocale(),
+        region: store.getRegion(),
+        enableI18n: store.getEnableI18n(),
+      })
+    );
+
+    expect(conditions).toEqual({
+      locale: 'fr',
+      region: 'CA',
+      enableI18n: false,
+    });
+  });
+
+  it('updates conditions within the active scope', () => {
+    setTestCache();
+    const store = new AsyncConditionStore();
+
+    const conditions = store.run('en', () => {
+      store.setLocale('fr');
+      store.setRegion('FR');
+      store.setEnableI18n(false);
+      return {
+        locale: store.getLocale(),
+        region: store.getRegion(),
+        enableI18n: store.getEnableI18n(),
+      };
+    });
+
+    expect(conditions).toEqual({
+      locale: 'fr',
+      region: 'FR',
+      enableI18n: false,
+    });
+  });
 });

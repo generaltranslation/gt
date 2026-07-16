@@ -4,6 +4,7 @@ import { initializeGT } from '../initializeGT';
 import { withGT } from '../withGT';
 import { tx } from 'gt-i18n/internal';
 import { hashSource } from 'generaltranslation/id';
+import { getAsyncConditionStore } from '../../async-i18n-cache/singleton-operations';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
@@ -37,6 +38,26 @@ describe.sequential('withGT', () => {
     expect(locale).toBe('es');
   });
 
+  it('provides scoped region and i18n conditions', () => {
+    const conditions = withGT(
+      { locale: 'fr', region: 'CA', enableI18n: false },
+      () => {
+        const store = getAsyncConditionStore();
+        return {
+          locale: store.getLocale(),
+          region: store.getRegion(),
+          enableI18n: store.getEnableI18n(),
+        };
+      }
+    );
+
+    expect(conditions).toEqual({
+      locale: 'fr',
+      region: 'CA',
+      enableI18n: false,
+    });
+  });
+
   it('preserves same-language default locale dialects', () => {
     resetGTGlobals();
     initializeGT({
@@ -62,5 +83,20 @@ describe.sequential('withGT', () => {
     await expect(
       withGT('en-US', () => tx('Hello', { $locale: 'fr' }))
     ).resolves.toBe('Bonjour');
+  });
+
+  it('returns source content when i18n is disabled for the scope', async () => {
+    resetGTGlobals();
+    initializeGT({
+      defaultLocale: 'en-US',
+      locales: ['en-US', 'fr'],
+      loadTranslations: () => ({
+        [hashSource({ source: 'Hello', dataFormat: 'STRING' })]: 'Bonjour',
+      }),
+    });
+
+    await expect(
+      withGT({ locale: 'fr', enableI18n: false }, () => tx('Hello'))
+    ).resolves.toBe('Hello');
   });
 });

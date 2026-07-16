@@ -2,11 +2,13 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { ScopedConditionStoreInterface } from 'gt-i18n/internal/types';
 import { getI18nConfig } from 'gt-i18n/internal';
 
-type Store = {
+export type AsyncConditionStoreRunParams = {
   locale: string;
   region?: string;
   enableI18n?: boolean;
 };
+
+type Store = AsyncConditionStoreRunParams;
 
 const OUTSIDE_SCOPE_MESSAGE =
   'AsyncConditionStore: getLocale() called outside of a withGT() scope.';
@@ -34,8 +36,20 @@ export class AsyncConditionStore implements ScopedConditionStoreInterface {
   /**
    * TODO: should this be a static function
    * */
-  run<T>(locale: string, callback: () => T): T {
-    return this.store.run({ locale: resolveLocale(locale) }, callback);
+  run<T>(
+    conditions: string | AsyncConditionStoreRunParams,
+    callback: () => T
+  ): T {
+    const { locale, region, enableI18n } =
+      typeof conditions === 'string' ? { locale: conditions } : conditions;
+    return this.store.run(
+      {
+        locale: resolveLocale(locale),
+        region,
+        enableI18n,
+      },
+      callback
+    );
   }
 
   getLocale(): string {
@@ -62,9 +76,6 @@ export class AsyncConditionStore implements ScopedConditionStoreInterface {
     return store.region;
   }
 
-  /**
-   * TODO: implement
-   */
   getEnableI18n(): boolean {
     const store = this.store.getStore();
     if (!store) {
@@ -77,11 +88,20 @@ export class AsyncConditionStore implements ScopedConditionStoreInterface {
     return store.enableI18n ?? true;
   }
 
-  setLocale = (_locale: string): void => {};
+  setLocale = (locale: string): void => {
+    const store = this.store.getStore();
+    if (store) store.locale = resolveLocale(locale);
+  };
 
-  setRegion = (_region: string | undefined): void => {};
+  setRegion = (region: string | undefined): void => {
+    const store = this.store.getStore();
+    if (store) store.region = region;
+  };
 
-  setEnableI18n = (_enableI18n: boolean): void => {};
+  setEnableI18n = (enableI18n: boolean): void => {
+    const store = this.store.getStore();
+    if (store) store.enableI18n = enableI18n;
+  };
 }
 
 function resolveLocale(locale?: string): string {
