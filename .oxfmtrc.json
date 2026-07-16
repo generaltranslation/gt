@@ -17,6 +17,8 @@
     ".changeset/*.md",
     "examples/next-chatbot/lib/db/migrations/**",
     "tests/seeds/*",
-    "tests/apps/compiler-cli-parity/**"
+    "tests/apps/compiler-cli-parity/**",
+    "**/next-env.d.ts",
+    "**/routeTree.gen.ts"
   ]
 }

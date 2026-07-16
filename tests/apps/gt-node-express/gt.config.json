@@ -1,0 +1,9 @@
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "zh"],
+  "files": {
+    "gt": {
+      "output": "translations/[locale].json"
+    }
+  }
+}

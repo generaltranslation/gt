@@ -1,0 +1,23 @@
+{
+  "title": {
+    "t": "Text",
+    "i": 1,
+    "c": "gt-react-native Expo"
+  },
+  "localeLabel": {
+    "t": "Text",
+    "i": 1,
+    "c": ["语言：", { "k": "locale" }]
+  },
+  "welcomeMessage": {
+    "t": "Text",
+    "i": 1,
+    "c": ["这句话通过本地 GT 翻译文件加载，并使用 ", { "k": "library" }, "。"]
+  },
+  "tMessage": "这一行使用 gt() 翻译。",
+  "countMessage": {
+    "t": "Text",
+    "i": 1,
+    "c": ["这个应用有 ", { "k": "count", "v": "n" }, " 个翻译示例。"]
+  }
+}

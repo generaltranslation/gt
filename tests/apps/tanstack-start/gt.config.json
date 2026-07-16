@@ -1,0 +1,11 @@
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "zh"],
+  "files": {
+    "gt": {
+      "output": "src/_gt/[locale].json"
+    }
+  },
+  "src": ["src/**/*.tsx"],
+  "_versionId": "68b09e2f5ab40c60b6ccb1e258426457afed4f424a4263679cc1b9d18d64f226"
+}
