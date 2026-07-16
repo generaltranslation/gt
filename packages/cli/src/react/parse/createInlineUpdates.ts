@@ -24,6 +24,7 @@ import {
   dedupeUpdates,
   linkDeriveUpdates,
 } from '../../extraction/postProcess.js';
+import { warnDeprecatedTSugarPropsSync } from '../../console/index.js';
 import {
   ensureTAndVarImported,
   autoInsertJsxComponents,
@@ -43,6 +44,8 @@ export async function createInlineUpdates(
 
   const errors: string[] = [];
   const warnings: Set<string> = new Set();
+  // Deprecated $-prefixed <T> prop occurrences, consolidated into one warning
+  const sugarPropLocations: string[] = [];
 
   const pkgs = getUpstreamPackages(pkg);
 
@@ -115,6 +118,7 @@ export async function createInlineUpdates(
             errors,
             warnings,
             unwrappedExpressions: [],
+            sugarPropLocations,
           },
         });
       }
@@ -186,6 +190,11 @@ export async function createInlineUpdates(
         }
       }
     }
+  }
+
+  // Warn once per scan about deprecated $-prefixed <T> props
+  if (sugarPropLocations.length > 0) {
+    warnings.add(warnDeprecatedTSugarPropsSync(sugarPropLocations));
   }
 
   // Post processing steps:
