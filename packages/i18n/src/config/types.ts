@@ -47,7 +47,7 @@ export type GTConfig = {
       output?: string;
       parsingFlags?: {
         /**
-         * Dev hot reload config, gt-react browser runtime only.
+         * Dev hot reload config for compiler and runtime translation paths.
          * - `true` enables strings hot reload (jsx handled at runtime via Suspense)
          * - `{ strings?: boolean; jsx?: boolean }` enables selectively
          */

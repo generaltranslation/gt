@@ -21,7 +21,7 @@ export function useTrackedDictionaryResolver(): TrackedDictionaryEntryResolver {
   const i18nStore = useI18nStore();
   const devHotReloadEnabled =
     process.env.NODE_ENV !== 'production' &&
-    getI18nConfig().isDevHotReloadEnabled();
+    getI18nConfig().isDevHotReloadEnabled('strings');
   const onMissingDictionaryEntry = useHandleMissingDictionaryEntry();
 
   const trackedKeysRef = useRef<Set<string> | null>(null);

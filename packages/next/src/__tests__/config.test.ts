@@ -1157,6 +1157,9 @@ describe('withGTConfig', () => {
           loadTranslationsPath: './loadTranslations.ts',
           getLocalePath: './getLocale.ts',
           getRegionPath: './getRegion.ts',
+          files: {
+            gt: { parsingFlags: { devHotReload: true } },
+          },
         }
       );
       const params = parseConfigParams(result);
@@ -1239,6 +1242,23 @@ describe('withGTConfig', () => {
       expect(parsed.projectId).toBeUndefined();
       expect(parsed.apiKey).toBeUndefined();
       expect(parsed.devApiKey).toBeUndefined();
+    });
+
+    it('exposes the dev hot reload flag to the runtime', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        {},
+        {
+          files: {
+            gt: { parsingFlags: { devHotReload: { jsx: true } } },
+          },
+        }
+      );
+
+      const parsed = JSON.parse(
+        result.env!.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS!
+      );
+      expect(parsed.files.gt.parsingFlags.devHotReload).toEqual({ jsx: true });
     });
 
     it('boolean flags are string "true"/"false", not booleans', async () => {

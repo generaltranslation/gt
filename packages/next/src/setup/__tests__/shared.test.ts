@@ -9,6 +9,9 @@ function setConfigEnv() {
       defaultLocale: 'en',
       locales: ['en', 'fr'],
       runtimeUrl: 'https://runtime.example.com',
+      files: {
+        gt: { parsingFlags: { devHotReload: { strings: true } } },
+      },
     });
   process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS = JSON.stringify({
     cacheUrl: 'https://cache.example.com',
@@ -57,6 +60,9 @@ describe('getParams', () => {
       cacheUrl: 'https://cache.example.com',
       localeCookieName: 'custom-locale',
       enableI18nCookieName: 'custom-enable-i18n',
+      files: {
+        gt: { parsingFlags: { devHotReload: { strings: true } } },
+      },
     });
     expect(nextI18nCacheParams).toMatchObject({
       projectId: 'project-id',

@@ -46,7 +46,7 @@ export async function getGTInternal(
   // production builds.
   const devHotReloadEnabled =
     process.env.NODE_ENV !== 'production' &&
-    getI18nConfig().isDevHotReloadEnabled();
+    getI18nConfig().isDevHotReloadEnabled('strings');
   const lookupTranslation = await i18nCache.getLookupTranslation(
     enableI18n ? locale : sourceLocale
   );

@@ -28,6 +28,7 @@ export function getParams(): {
     locales: publicConfig.locales,
     customMapping: publicConfig.customMapping,
     runtimeUrl: publicConfig.runtimeUrl,
+    files: publicConfig.files,
     projectId,
     devApiKey,
     apiKey,

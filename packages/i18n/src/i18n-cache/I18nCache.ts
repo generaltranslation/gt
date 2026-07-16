@@ -520,7 +520,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
         ) => {
           if (
             process.env.NODE_ENV !== 'production' &&
-            getI18nConfig().isDevHotReloadEnabled()
+            getI18nConfig().isDevHotReloadEnabled('strings')
           ) {
             // Invariant: all prefetchEntries must be the same locale
             // TODO: investigate why we have made this an invariant, we may be able to drop this requirement

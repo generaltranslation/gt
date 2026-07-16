@@ -34,7 +34,7 @@ export function useTranslate<T extends Translation>(
   if (
     process.env.NODE_ENV !== 'production' &&
     storeTranslation == null &&
-    getI18nConfig().isDevHotReloadEnabled()
+    getI18nConfig().isDevHotReloadEnabled('jsx')
   ) {
     // TODO: (separate PR): add configuration for a use() + suspense strategy
     // TODO: consider moving this to a useEffect

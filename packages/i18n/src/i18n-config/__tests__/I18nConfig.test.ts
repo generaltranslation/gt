@@ -105,9 +105,44 @@ describe('I18nConfig', () => {
     const config = new I18nConfig({
       devApiKey: 'dev-key',
       projectId: 'project-id',
+      files: {
+        gt: { parsingFlags: { devHotReload: true } },
+      },
     });
 
     expect(config.isDevHotReloadEnabled()).toBe(true);
+    expect(config.isDevHotReloadEnabled('strings')).toBe(true);
+    expect(config.isDevHotReloadEnabled('jsx')).toBe(false);
+  });
+
+  it('honors granular dev hot reload settings', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+
+    const config = new I18nConfig({
+      devApiKey: 'dev-key',
+      projectId: 'project-id',
+      files: {
+        gt: { parsingFlags: { devHotReload: { jsx: true } } },
+      },
+    });
+
+    expect(config.isDevHotReloadEnabled()).toBe(true);
+    expect(config.isDevHotReloadEnabled('strings')).toBe(false);
+    expect(config.isDevHotReloadEnabled('jsx')).toBe(true);
+  });
+
+  it('disables dev hot reload when the parsing flag is disabled', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+
+    const config = new I18nConfig({
+      devApiKey: 'dev-key',
+      projectId: 'project-id',
+      files: {
+        gt: { parsingFlags: { devHotReload: false } },
+      },
+    });
+
+    expect(config.isDevHotReloadEnabled()).toBe(false);
   });
 
   it('disables dev hot reload when the config switch is set', () => {
@@ -116,6 +151,9 @@ describe('I18nConfig', () => {
     const config = new I18nConfig({
       devApiKey: 'dev-key',
       projectId: 'project-id',
+      files: {
+        gt: { parsingFlags: { devHotReload: true } },
+      },
       _disableDevHotReload: true,
     });
 
@@ -166,6 +204,13 @@ describe('I18nConfig', () => {
   ])('disables dev hot reload for $name', ({ config, environment }) => {
     vi.stubEnv('NODE_ENV', environment);
 
-    expect(new I18nConfig(config).isDevHotReloadEnabled()).toBe(false);
+    expect(
+      new I18nConfig({
+        files: {
+          gt: { parsingFlags: { devHotReload: true } },
+        },
+        ...config,
+      }).isDevHotReloadEnabled()
+    ).toBe(false);
   });
 });

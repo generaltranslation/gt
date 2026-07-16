@@ -49,6 +49,7 @@ import { I18nConfigParams } from 'gt-i18n/internal/types';
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
+type DevHotReloadConfig = boolean | { jsx?: boolean; strings?: boolean };
 
 type ConfigFileShape = {
   customMapping?: CustomMapping;
@@ -56,6 +57,7 @@ type ConfigFileShape = {
     gt?: {
       parsingFlags?: {
         autoderive?: AutoderiveConfig;
+        devHotReload?: DevHotReloadConfig;
       };
     };
   };
@@ -566,6 +568,14 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     locales: mergedConfig.locales,
     customMapping: mergedConfig.customMapping,
     runtimeUrl: mergedConfig.runtimeUrl,
+    files: {
+      gt: {
+        parsingFlags: {
+          devHotReload:
+            mergedConfig.files?.gt?.parsingFlags?.devHotReload ?? false,
+        },
+      },
+    },
   };
 
   const { type: _type, ...compilerOptions } =
@@ -755,7 +765,12 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 }
 
 function isDevHotReloadEnabled(config: InternalGTConfigProps): boolean {
+  const value = config.files?.gt?.parsingFlags?.devHotReload;
+  const configured =
+    value === true ||
+    (typeof value === 'object' && !!(value.strings || value.jsx));
   return (
+    configured &&
     !!config.devApiKey &&
     !!config.projectId &&
     config.runtimeUrl !== null &&

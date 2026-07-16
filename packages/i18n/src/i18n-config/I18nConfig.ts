@@ -32,6 +32,7 @@ export type I18nConfigParams = Pick<
   | 'apiKey'
   | 'cacheUrl'
   | 'runtimeUrl'
+  | 'files'
   | '_disableDevHotReload'
 >;
 
@@ -41,9 +42,11 @@ type RuntimeConfig = Pick<
 >;
 
 export type LocaleCandidates = string | string[] | undefined;
+export type DevHotReloadTarget = 'strings' | 'jsx';
 
 export class I18nConfig extends LocaleConfig {
   private runtimeConfig: RuntimeConfig;
+  private devHotReload: Record<DevHotReloadTarget, boolean>;
   private gtServicesEnabled: boolean;
   private logLevel: GeneralTranslationLogLevel;
 
@@ -57,6 +60,9 @@ export class I18nConfig extends LocaleConfig {
       runtimeUrl: params.runtimeUrl,
       _disableDevHotReload: params._disableDevHotReload,
     };
+    this.devHotReload = resolveDevHotReload(
+      params.files?.gt?.parsingFlags?.devHotReload
+    );
     this.gtServicesEnabled = gtServicesEnabled;
     this.logLevel = getGeneralTranslationLogLevel();
   }
@@ -133,8 +139,12 @@ export class I18nConfig extends LocaleConfig {
   /**
    * Returns true when development hot reload runtime translation requests can run.
    */
-  isDevHotReloadEnabled(): boolean {
+  isDevHotReloadEnabled(target?: DevHotReloadTarget): boolean {
+    const configured = target
+      ? this.devHotReload[target]
+      : this.devHotReload.strings || this.devHotReload.jsx;
     return (
+      configured &&
       !this.runtimeConfig._disableDevHotReload &&
       !!this.runtimeConfig.devApiKey &&
       !!this.runtimeConfig.projectId &&
@@ -193,6 +203,18 @@ export class I18nConfig extends LocaleConfig {
     }
     return localeConfig.determineLocale(candidates);
   }
+}
+
+function resolveDevHotReload(
+  value: boolean | { strings?: boolean; jsx?: boolean } | undefined
+): Record<DevHotReloadTarget, boolean> {
+  if (typeof value === 'boolean') {
+    return { strings: value, jsx: false };
+  }
+  return {
+    strings: value?.strings ?? false,
+    jsx: value?.jsx ?? false,
+  };
 }
 
 function getLocaleConfigParams(

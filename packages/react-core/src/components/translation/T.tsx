@@ -62,7 +62,7 @@ function useComputeT({
   const prev = useRef<ReactNode | null>(null);
   if (
     process.env.NODE_ENV !== 'production' &&
-    getI18nConfig().isDevHotReloadEnabled() &&
+    getI18nConfig().isDevHotReloadEnabled('jsx') &&
     targetJsxChildren == null &&
     prev.current != null &&
     shouldTranslate

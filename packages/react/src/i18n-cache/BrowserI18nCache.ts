@@ -40,6 +40,7 @@ export class BrowserI18nCache extends I18nCache<Translation> {
     const i18nConfig = getI18nConfig();
     const devHotReloadEnabled =
       !!config.loadTranslations && i18nConfig.isDevHotReloadEnabled();
+    const devHotReloadJsx = i18nConfig.isDevHotReloadEnabled('jsx');
     const projectId = i18nConfig.getProjectId()!;
     const loadTranslations = devHotReloadEnabled
       ? wrapLoaderWithLocalStorage(
@@ -56,7 +57,7 @@ export class BrowserI18nCache extends I18nCache<Translation> {
     });
 
     this._localStorageCaches = localStorageCaches;
-    this._devHotReloadJsx = devHotReloadEnabled;
+    this._devHotReloadJsx = devHotReloadJsx;
 
     this.htmlTagOptions = {
       ...DEFAULT_HTML_TAG_OPTIONS,
