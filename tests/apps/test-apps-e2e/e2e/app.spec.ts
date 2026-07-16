@@ -33,9 +33,6 @@ test(`${appName} renders local translations and switches locales`, async ({
     case 'tanstack':
       await testTanStackApp(page);
       break;
-    case 'react-native':
-      await testReactNativeApp(page);
-      break;
     case 'node':
       await testNodeApp(browser, request);
       break;
@@ -219,27 +216,6 @@ async function testTanStackApp(page: Page) {
     await page.reload();
     await expectTanStackLocale(page, route.locale);
   }
-}
-
-async function testReactNativeApp(page: Page) {
-  await page.goto('/');
-  await expect(page.getByText('Locale: en')).toBeVisible();
-  await expect(
-    page.getByText('This line is translated with gt().')
-  ).toBeVisible();
-
-  await page.getByRole('button', { name: 'FR' }).click();
-  await expect(page.getByText('Langue : fr')).toBeVisible();
-  await expect(
-    page.getByText('Cette ligne est traduite avec gt().')
-  ).toBeVisible();
-
-  await page.getByRole('button', { name: 'ZH' }).click();
-  await expect(page.getByText('语言：zh')).toBeVisible();
-  await expect(page.getByText('这一行使用 gt() 翻译。')).toBeVisible();
-
-  await page.getByRole('button', { name: 'EN' }).click();
-  await expect(page.getByText('Locale: en')).toBeVisible();
 }
 
 async function testNodeApp(browser: Browser, request: APIRequestContext) {

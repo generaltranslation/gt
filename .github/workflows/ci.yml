@@ -93,7 +93,7 @@ jobs:
         id: relevant
         shell: bash
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE '^(packages/(compiler|core|i18n|react-core|react|next|node|react-native|tanstack-start)/|tests/apps/(esbuild-react|gt-node-express|next-app-router|next-app-router-dictionary|next-app-router-locale-routing|next-app-router-locale-routing-ssg|next-app-router-locale-routing-use-cache|next-pages-router|react-native|rolldown-react|rollup-react|tanstack-start|test-apps-e2e|vite-react|webpack-react)/|pnpm-lock.yaml|pnpm-workspace.yaml|turbo.json)'; then
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE '^(packages/(compiler|core|i18n|react-core|react|next|node|tanstack-start)/|tests/apps/(esbuild-react|gt-node-express|next-app-router|next-app-router-dictionary|next-app-router-locale-routing|next-app-router-locale-routing-ssg|next-app-router-locale-routing-use-cache|next-pages-router|rolldown-react|rollup-react|tanstack-start|test-apps-e2e|vite-react|webpack-react)/|pnpm-lock.yaml|pnpm-workspace.yaml|turbo.json)'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -122,7 +122,7 @@ jobs:
 
       - name: Build local GT packages
         if: steps.relevant.outputs.changed == 'true'
-        run: pnpm exec turbo build --filter='@generaltranslation/format' --filter='@generaltranslation/compiler' --filter=generaltranslation --filter=gt-i18n --filter='@generaltranslation/react-core' --filter=gt-react --filter=gt-node --filter=gt-tanstack-start --filter=gt-next --filter=gt-react-native
+        run: pnpm exec turbo build --filter='@generaltranslation/format' --filter='@generaltranslation/compiler' --filter=generaltranslation --filter=gt-i18n --filter='@generaltranslation/react-core' --filter=gt-react --filter=gt-node --filter=gt-tanstack-start --filter=gt-next
 
       - name: Install Chromium
         if: steps.relevant.outputs.changed == 'true'

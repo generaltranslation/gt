@@ -1,9 +1,10 @@
 # GT test app browser checks
 
 This workspace turns the manual test-app workflow into a sequential Playwright
-matrix. For every app it first verifies that the app's GT entry package resolves
-inside this checkout's `packages/` directory, then starts the app's development
-server and exercises English, French, and Chinese output in Chromium.
+matrix. For every browser-capable app it first verifies that the app's GT entry
+package resolves inside this checkout's `packages/` directory, then starts the
+app's development server and exercises English, French, and Chinese output in
+Chromium. The React Native app is excluded because it requires a native runtime.
 
 Run the complete matrix from the repository root:
 

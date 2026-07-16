@@ -99,14 +99,6 @@ export const apps = Object.freeze({
     command: 'pnpm --filter gt-test-esbuild-react dev',
     readyPath: '/',
   },
-  'react-native': {
-    packageName: 'gt-test-react-native',
-    entryPackage: 'gt-react-native',
-    kind: 'react-native',
-    baseURL: 'http://localhost:5199',
-    command: 'pnpm --filter gt-test-react-native web',
-    readyPath: '/',
-  },
   'gt-node-express': {
     packageName: 'gt-test-node-express',
     entryPackage: 'gt-node',

@@ -37,8 +37,8 @@ All apps use bundled empty or local translations and build without credentials.
 `gt-node-express` optionally reads `PORT` (default `3001`) and `GT_PROJECT_ID`.
 No environment files are committed.
 
-Run the browser automation for every development app, or select a
-comma-separated subset:
+Run the browser automation for every browser-capable development app, or select
+a comma-separated subset. The React Native app remains a manual native test:
 
 ```bash
 pnpm --filter gt-test-apps-e2e test:e2e:install

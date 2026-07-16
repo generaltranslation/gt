@@ -5,11 +5,6 @@ const { getDefaultConfig } = require('expo/metro-config');
 const monorepoRoot = path.resolve(__dirname, '../../..');
 const appNodeModules = path.resolve(__dirname, 'node_modules');
 const packagesDir = path.resolve(monorepoRoot, 'packages');
-const reactNativePackageDir = path.resolve(packagesDir, 'react-native');
-const nativeModuleWebShim = path.resolve(
-  __dirname,
-  'src/NativeGtReactNative.web.ts'
-);
 
 const reactDir = fs.realpathSync(path.resolve(appNodeModules, 'react'));
 const reactNativeDir = fs.realpathSync(
@@ -87,17 +82,6 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.unstable_enablePackageExports = true;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (
-    platform === 'web' &&
-    moduleName.endsWith('NativeGtReactNative') &&
-    context.originModulePath.startsWith(reactNativePackageDir)
-  ) {
-    return {
-      type: 'sourceFile',
-      filePath: nativeModuleWebShim,
-    };
-  }
-
   if (moduleName === 'react' || moduleName.startsWith('react/')) {
     const subpath =
       moduleName === 'react' ? null : moduleName.slice('react/'.length);

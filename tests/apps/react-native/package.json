@@ -13,7 +13,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@expo/metro-runtime": "~6.1.2",
     "@formatjs/intl-datetimeformat": "^6.18.2",
     "@formatjs/intl-displaynames": "^6.8.13",
     "@formatjs/intl-getcanonicallocales": "^2.5.6",
@@ -27,9 +26,7 @@
     "expo-status-bar": "~3.0.9",
     "gt-react-native": "workspace:*",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-web": "^0.21.0"
+    "react-native": "0.81.5"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",
