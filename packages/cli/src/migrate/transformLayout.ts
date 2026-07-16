@@ -1,5 +1,5 @@
 import { parse } from '@babel/parser';
-import traverseModule, { type NodePath } from '@babel/traverse';
+import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { ensureNamedImports, removeUnusedNamedImports } from './importUtils.js';

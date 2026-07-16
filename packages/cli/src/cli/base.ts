@@ -43,6 +43,8 @@ import { areCredentialsSet } from '../utils/credentials.js';
 import { upload } from './commands/upload.js';
 import { attachSharedFlags, attachTranslateFlags } from './flags.js';
 import { handleStage } from './commands/stage.js';
+import { handleMigrateCommand } from './commands/migrate.js';
+import type { MigrateOptions } from '../migrate/types.js';
 import { handleSetupProject } from './commands/setupProject.js';
 import { handleDownload } from './commands/download.js';
 import {
@@ -137,6 +139,7 @@ export class BaseCLI {
 
     this.setupInitCommand();
     this.setupConfigureCommand();
+    this.setupMigrateCommand();
     this.setupUploadCommand();
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
@@ -535,6 +538,39 @@ export class BaseCLI {
         logger.endCommand(
           `Done! ${options.keyType} keys have been generated and saved to your .env.local file.`
         );
+      });
+  }
+
+  protected setupMigrateCommand(): void {
+    this.program
+      .command('migrate')
+      .description(
+        'Migrate an existing i18n setup (next-intl) to General Translation, preserving your translations'
+      )
+      .option(
+        '--src <paths...>',
+        'Space-separated list of glob patterns for source files to migrate'
+      )
+      .option(
+        '-c, --config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
+      )
+      .option(
+        '--inline',
+        'Additionally convert simple static strings to inline <T> components',
+        false
+      )
+      .option('--dry-run', 'Print the migration report without writing', false)
+      .option(
+        '--allow-dirty',
+        'Skip the clean-git-tree safety check',
+        false
+      )
+      .option('-y, --yes', 'Skip the confirmation prompt', false)
+      .action(async (options: MigrateOptions) => {
+        displayHeader('Migrating to General Translation...');
+        await handleMigrateCommand(options, this.library);
       });
   }
 

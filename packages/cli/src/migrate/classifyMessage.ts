@@ -24,7 +24,7 @@ export function classifyMessage(message: string): MessageClass {
   let elements: MessageFormatElement[];
   try {
     elements = parse(message);
-  } catch (_error) {
+  } catch {
     return { kind: 'invalid', argNames: [] };
   }
 

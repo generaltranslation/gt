@@ -380,7 +380,6 @@ export function transformSourceFile(
     );
   }
 
-  const firstNextIntl = nextIntlImports[0];
   const newDeclarations: t.ImportDeclaration[] = [];
   const mergeTargets = new Map<string, t.ImportDeclaration>();
   traverse(ast, {
@@ -573,7 +572,7 @@ function analyzeRichCall(
   let elements: MessageFormatElement[];
   try {
     elements = parseIcu(message);
-  } catch (_error) {
+  } catch {
     return manual;
   }
   if (!allTagsMapped(elements, chunkMap)) return manual;

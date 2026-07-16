@@ -18,7 +18,7 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
   if (fs.existsSync(configPath)) {
     try {
       existing = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    } catch (_error) {
+    } catch {
       // Unreadable existing config: preserve nothing, report via todo.
       ctx.todos.push({
         file: configPath,

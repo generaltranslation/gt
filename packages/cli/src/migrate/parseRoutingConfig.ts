@@ -97,7 +97,7 @@ function extractRoutingObject(source: string): t.ObjectExpression | null {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
     });
-  } catch (_error) {
+  } catch {
     return null;
   }
 
