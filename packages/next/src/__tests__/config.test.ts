@@ -1395,56 +1395,101 @@ describe('withGTConfig', () => {
       expect(wc.resolve.alias).toHaveProperty('gt-next/internal/_dictionary');
     });
 
+    // Mirrors webpack condition semantics: string = path prefix,
+    // RegExp = test, array = any-of.
+    type Condition = string | RegExp | Condition[];
+    type RuleWebpackConfig = WebpackConfig & {
+      module?: {
+        rules?: { test: Condition; include?: Condition; type: string }[];
+      };
+    };
+    function findAutoRule(wc: RuleWebpackConfig) {
+      return (wc.module?.rules ?? []).find((r) => r.type === 'javascript/auto');
+    }
+    function conditionMatches(cond: Condition, p: string): boolean {
+      return typeof cond === 'string'
+        ? p.startsWith(cond)
+        : Array.isArray(cond)
+          ? cond.some((c) => conditionMatches(c, p))
+          : cond.test(p);
+    }
+    function ruleAppliesTo(
+      rule: NonNullable<ReturnType<typeof findAutoRule>>,
+      p: string
+    ) {
+      return (
+        conditionMatches(rule.test, p) &&
+        (!rule.include || conditionMatches(rule.include, p))
+      );
+    }
+
     it('parses gt-next ESM dist as javascript/auto when a file alias is set', async () => {
       const withGTConfig = await getWithGTConfig();
+      // The module dir only counts as gt-next's dist when its sentinel files
+      // exist beside the compiled config (config.mjs, internal/_dictionary.mjs)
+      vi.mocked(fs.existsSync).mockImplementation(
+        (p) =>
+          String(p).endsWith('config.mjs') ||
+          String(p).endsWith(path.join('internal', '_dictionary.mjs'))
+      );
 
       const result = withGTConfig({}, { dictionary: './my-dict.json' });
 
-      type Condition = string | RegExp | Condition[];
-      const wc = makeWebpackConfig() as WebpackConfig & {
-        module?: {
-          rules?: { test: Condition; include?: Condition; type: string }[];
-        };
-      };
+      const wc = makeWebpackConfig() as RuleWebpackConfig;
       runWebpack(result, wc);
 
-      const rule = (wc.module?.rules ?? []).find(
-        (r) => r.type === 'javascript/auto'
-      );
+      const rule = findAutoRule(wc);
       expect(rule).toBeDefined();
-
-      // Mirrors webpack condition semantics: string = path prefix,
-      // RegExp = test, array = any-of.
-      const matches = (cond: Condition, p: string): boolean =>
-        typeof cond === 'string'
-          ? p.startsWith(cond)
-          : Array.isArray(cond)
-            ? cond.some((c) => matches(c, p))
-            : cond.test(p);
-      const ruleApplies = (p: string) =>
-        matches(rule!.test, p) && (!rule!.include || matches(rule!.include, p));
 
       // app-local, hoisted-root, and pnpm-store installs
       expect(
-        ruleApplies('/app/node_modules/gt-next/dist/index.server.mjs')
+        ruleAppliesTo(rule!, '/app/node_modules/gt-next/dist/index.server.mjs')
       ).toBe(true);
       expect(
-        ruleApplies(
+        ruleAppliesTo(
+          rule!,
           '/repo/node_modules/.pnpm/gt-next@1.0.0/node_modules/gt-next/dist/index.server.mjs'
         )
       ).toBe(true);
       // symlinked install (workspace:*, file:) — real path has no node_modules
       // segment; matched via this package's own dist dir (__dirname of config)
+      const moduleDir = path.resolve(__dirname, '..');
       expect(
-        ruleApplies(
-          path.join(path.resolve(__dirname, '..'), 'index.server.mjs')
-        )
+        ruleAppliesTo(rule!, path.join(moduleDir, 'index.server.mjs'))
       ).toBe(true);
+      // prefix collisions with sibling dirs never match
+      expect(ruleAppliesTo(rule!, `${moduleDir}-other/index.server.mjs`)).toBe(
+        false
+      );
       // never CJS dist, never other packages
       expect(
-        ruleApplies('/app/node_modules/gt-next/dist/index.server.js')
+        ruleAppliesTo(rule!, '/app/node_modules/gt-next/dist/index.server.js')
       ).toBe(false);
-      expect(ruleApplies('/app/node_modules/other/dist/index.mjs')).toBe(false);
+      expect(
+        ruleAppliesTo(rule!, '/app/node_modules/other/dist/index.mjs')
+      ).toBe(false);
+    });
+
+    it('does not widen the javascript/auto rule beyond node_modules when the module dir is not gt-next dist', async () => {
+      const withGTConfig = await getWithGTConfig();
+      // Default existsSync mock returns false: the sentinel check fails, as it
+      // would if a bundler had inlined the config somewhere else. Only the
+      // node_modules pattern may remain — a dir prefix here could sweep every
+      // .mjs under the bundle output into javascript/auto.
+      const result = withGTConfig({}, { dictionary: './my-dict.json' });
+
+      const wc = makeWebpackConfig() as RuleWebpackConfig;
+      runWebpack(result, wc);
+
+      const rule = findAutoRule(wc);
+      expect(rule).toBeDefined();
+      const includes = Array.isArray(rule!.include)
+        ? rule!.include
+        : [rule!.include];
+      expect(includes.every((c) => c instanceof RegExp)).toBe(true);
+      expect(
+        ruleAppliesTo(rule!, path.resolve(__dirname, '..', 'some.mjs'))
+      ).toBe(false);
     });
 
     it('does not add the javascript/auto rule on the client compilation', async () => {

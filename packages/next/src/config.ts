@@ -768,7 +768,17 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
             /node_modules[\\/]gt-next[\\/]dist[\\/]/,
           ];
           try {
-            gtNextDistDirs.push(__dirname);
+            // Trust __dirname only when it verifiably is gt-next's dist: a
+            // bundler that inlines this file elsewhere would otherwise widen
+            // the rule to every .mjs under its output dir. The compiled
+            // config always sits beside its ESM twin and the internal
+            // modules these aliases target.
+            if (
+              fs.existsSync(path.join(__dirname, 'config.mjs')) &&
+              fs.existsSync(path.join(__dirname, 'internal', '_dictionary.mjs'))
+            ) {
+              gtNextDistDirs.push(__dirname + path.sep);
+            }
           } catch {
             // __dirname is undefined when the ESM dist of this module is
             // loaded natively; the node_modules pattern still applies.
