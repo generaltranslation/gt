@@ -34,6 +34,16 @@ afterEach(() => {
 });
 
 describe('discoverCatalogs', () => {
+  it('reports the offending file when a catalog is malformed', async () => {
+    const cwd = makeProject({
+      'messages/en.json': JSON.stringify({ Home: { title: 'Hello' } }),
+      'messages/es.json': '{ "Home": { "title": "Hola", } }', // trailing comma
+    });
+    await expect(discoverCatalogs(cwd, emptyRouting)).rejects.toThrow(
+      /es\.json/
+    );
+  });
+
   it('finds catalogs in the standard messages/ directory', async () => {
     const cwd = makeProject({
       'messages/en.json': JSON.stringify({ Home: { title: 'Hello' } }),

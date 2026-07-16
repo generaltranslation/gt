@@ -59,7 +59,13 @@ export async function handleMigrateCommand(
   }
 
   const routing = parseRoutingConfig(cwd);
-  const catalogs = await discoverCatalogs(cwd, routing);
+  let catalogs: Awaited<ReturnType<typeof discoverCatalogs>>;
+  try {
+    catalogs = await discoverCatalogs(cwd, routing);
+  } catch (error) {
+    // e.g. a malformed locale JSON — nothing has been written yet.
+    logErrorAndExit(error instanceof Error ? error.message : String(error));
+  }
   if (!catalogs) {
     logErrorAndExit(
       'Could not locate next-intl message catalogs (looked for the request ' +

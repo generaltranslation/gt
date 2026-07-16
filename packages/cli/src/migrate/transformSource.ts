@@ -247,7 +247,15 @@ export function transformSourceFile(
           declaratorNode && t.isIdentifier(declaratorNode.id)
             ? declaratorNode.id.name
             : null;
-        if (!id || !isProviderOnlyBinding(id, ast, strippedAttrIdentifiers)) {
+        if (
+          !id ||
+          !isProviderOnlyBinding(
+            id,
+            ast,
+            strippedAttrIdentifiers,
+            providerElements
+          )
+        ) {
           skipReasons.push(
             `${path.node.name}() is used outside a provider prop (manual conversion)`
           );
@@ -636,12 +644,43 @@ function icuToJsxChildren(
   return children;
 }
 
+/**
+ * True when `bindingName` was passed as a provider prop AND has no other
+ * reference in the file. The provider swap removes both the prop and the
+ * declaration, so any surviving reference (`<Child messages={messages} />`)
+ * would dangle — those files must be skipped instead.
+ */
 function isProviderOnlyBinding(
   bindingName: string,
   ast: t.File,
-  strippedAttrIdentifiers: Set<string>
+  strippedAttrIdentifiers: Set<string>,
+  providerElements: NodePath<t.JSXElement>[]
 ): boolean {
-  return strippedAttrIdentifiers.has(bindingName);
+  if (!strippedAttrIdentifiers.has(bindingName)) return false;
+
+  const providerAttrExpressions = new Set<t.Node>();
+  for (const providerPath of providerElements) {
+    for (const attr of providerPath.node.openingElement.attributes) {
+      if (
+        t.isJSXAttribute(attr) &&
+        t.isJSXExpressionContainer(attr.value) &&
+        t.isIdentifier(attr.value.expression)
+      ) {
+        providerAttrExpressions.add(attr.value.expression);
+      }
+    }
+  }
+
+  let referencedElsewhere = false;
+  traverse(ast, {
+    Identifier(path) {
+      if (path.node.name !== bindingName) return;
+      if (!path.isReferencedIdentifier()) return;
+      if (providerAttrExpressions.has(path.node)) return;
+      referencedElsewhere = true;
+    },
+  });
+  return !referencedElsewhere;
 }
 
 function hasForeignTBinding(ast: t.File): boolean {

@@ -111,6 +111,42 @@ describe('emitGtFiles', () => {
     }
   });
 
+  it('removes next-intl from peerDependencies too', () => {
+    const ctx = makeProject({
+      'package.json': JSON.stringify(
+        {
+          name: 'app',
+          dependencies: { next: '15.0.0' },
+          peerDependencies: { 'next-intl': '^4.0.0' },
+        },
+        null,
+        2
+      ),
+      'messages/en.json': '{}',
+    });
+    const edits = emitGtFiles(ctx);
+    const pkgEdit = edits.find((edit) => edit.path.endsWith('package.json'))!;
+    const pkg = JSON.parse(pkgEdit.content!);
+    expect(pkg.peerDependencies['next-intl']).toBeUndefined();
+  });
+
+  it('survives a malformed package.json with a todo instead of crashing', () => {
+    const ctx = makeProject({
+      'package.json': '{ not json',
+      'messages/en.json': '{}',
+    });
+    const edits = emitGtFiles(ctx);
+    expect(edits.some((edit) => edit.path.endsWith('package.json'))).toBe(
+      false
+    );
+    expect(
+      ctx.todos.some(
+        (todo) =>
+          todo.file.endsWith('package.json') && todo.reason.includes('by hand')
+      )
+    ).toBe(true);
+  });
+
   it('keeps a routing file that a source file still imports', () => {
     const ctx = makeProject({
       'package.json': basePackageJson,

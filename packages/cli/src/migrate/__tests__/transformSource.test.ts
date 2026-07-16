@@ -185,6 +185,26 @@ describe('transformSourceFile: provider', () => {
     expect(result.code).not.toContain('useMessages');
     expect(result.code).toMatch(/import \{ GTProvider \} from ["']gt-next["']/);
   });
+
+  it('skips when the messages binding is also used outside the provider', () => {
+    const result = transform(
+      [
+        "import { NextIntlClientProvider, useMessages } from 'next-intl';",
+        "import { Child } from './Child';",
+        'export function Providers({ children }: { children: React.ReactNode }) {',
+        '  const messages = useMessages();',
+        '  return (',
+        '    <NextIntlClientProvider messages={messages}>',
+        '      <Child messages={messages} />',
+        '      {children}',
+        '    </NextIntlClientProvider>',
+        '  );',
+        '}',
+      ].join('\n')
+    );
+    // removing the declaration would leave <Child messages={messages} /> dangling
+    expect(result.skipReasons).not.toEqual([]);
+  });
 });
 
 describe('transformSourceFile: skip conditions', () => {

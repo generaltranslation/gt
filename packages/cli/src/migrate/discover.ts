@@ -44,9 +44,15 @@ export async function discoverCatalogs(
 
   const byLocale: Record<string, Record<string, unknown>> = {};
   for (const locale of locales) {
-    byLocale[locale] = JSON.parse(
-      fs.readFileSync(path.join(dir, `${locale}.json`), 'utf8')
-    );
+    const file = path.join(dir, `${locale}.json`);
+    try {
+      byLocale[locale] = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch (error) {
+      throw new Error(
+        `Could not parse message catalog ${file}: ${String(error)}. ` +
+          'Fix the JSON (no comments, trailing commas, or BOM) and re-run.'
+      );
+    }
   }
 
   return { defaultLocale, locales, byLocale, dir };

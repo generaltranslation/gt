@@ -15,6 +15,41 @@ const generate = generateModule.default || generateModule;
  * insertion/nesting. Runs after every other file so the final skip set is
  * known (it decides whether NextIntlClientProvider is retained).
  */
+/**
+ * True only for tests that validate a locale: a `hasLocale(...)` call, or an
+ * `<array>.includes(<arg>)` call where the array expression mentions locales
+ * or the argument is a bare `locale` identifier. Anything else (slug/origin
+ * allowlists, feature checks) is application logic and must survive.
+ */
+function isLocaleGuardTest(test: t.Node): boolean {
+  let guardsLocale = false;
+  t.traverseFast(test, (node) => {
+    if (!t.isCallExpression(node)) return;
+    if (t.isIdentifier(node.callee, { name: 'hasLocale' })) {
+      guardsLocale = true;
+      return;
+    }
+    if (
+      t.isMemberExpression(node.callee) &&
+      !node.callee.computed &&
+      t.isIdentifier(node.callee.property, { name: 'includes' })
+    ) {
+      const arraySource = generate(node.callee.object).code;
+      const argument = node.arguments.length === 1 ? node.arguments[0] : null;
+      const argumentIsLocale =
+        (t.isIdentifier(argument) && /^locale$/i.test(argument.name)) ||
+        (t.isMemberExpression(argument) &&
+          !argument.computed &&
+          t.isIdentifier(argument.property) &&
+          /^locale$/i.test(argument.property.name));
+      if (/locales/i.test(arraySource) || argumentIsLocale) {
+        guardsLocale = true;
+      }
+    }
+  });
+  return guardsLocale;
+}
+
 export function transformLayoutFile(
   file: string,
   code: string,
@@ -54,10 +89,7 @@ export function transformLayoutFile(
   //    `if (!locales.includes(locale)) notFound()` shapes.
   traverse(ast, {
     IfStatement(path) {
-      const source = generate(path.node.test).code;
-      const guardsLocale =
-        source.includes('hasLocale(') || source.includes('.includes(');
-      if (!guardsLocale) return;
+      if (!isLocaleGuardTest(path.node.test)) return;
       let callsNotFound = false;
       path.traverse({
         CallExpression(inner) {

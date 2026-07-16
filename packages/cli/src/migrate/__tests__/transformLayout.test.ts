@@ -88,6 +88,50 @@ describe('transformLayoutFile', () => {
     expect(result.code).not.toContain('const { locale }');
   });
 
+  it('keeps non-locale notFound() guards intact', () => {
+    const withSlugGuard = localeLayout.replace(
+      '  setRequestLocale(locale);',
+      [
+        "  const validSlugs = ['a', 'b'];",
+        "  const slug = 'a';",
+        '  if (!validSlugs.includes(slug)) {',
+        '    notFound();',
+        '  }',
+        '  setRequestLocale(locale);',
+      ].join('\n')
+    );
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      withSlugGuard,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    // locale guard removed, slug guard untouched
+    expect(result.code).not.toContain('hasLocale');
+    expect(result.code).toContain('validSlugs.includes(slug)');
+    expect(result.code).toContain('notFound()');
+  });
+
+  it('removes guards on locale-named constants too', () => {
+    const withConstGuard = localeLayout
+      .replace(
+        'if (!hasLocale(routing.locales, locale)) {',
+        'if (!SUPPORTED_LOCALES.includes(locale)) {'
+      )
+      .replace(
+        "import { hasLocale } from 'next-intl';",
+        "const SUPPORTED_LOCALES = ['en', 'es'];"
+      );
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      withConstGuard,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).not.toContain('SUPPORTED_LOCALES.includes');
+    expect(result.code).not.toContain('notFound()');
+  });
+
   it('keeps the params destructure while locale is still referenced', () => {
     const withExtraUse = localeLayout.replace(
       '<html lang={locale}>',

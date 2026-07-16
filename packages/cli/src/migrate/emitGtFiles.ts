@@ -96,20 +96,35 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
   if (fullyMigrated) {
     const packageJsonPath = path.join(ctx.cwd, 'package.json');
     if (fs.existsSync(packageJsonPath)) {
-      const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-      let changed = false;
-      for (const section of ['dependencies', 'devDependencies']) {
-        if (pkg[section] && pkg[section]['next-intl']) {
-          delete pkg[section]['next-intl'];
-          changed = true;
-        }
-      }
-      if (changed) {
-        edits.push({
-          path: packageJsonPath,
-          kind: 'write',
-          content: JSON.stringify(pkg, null, 2) + '\n',
+      let pkg: Record<string, Record<string, string>> | null = null;
+      try {
+        pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      } catch (error) {
+        ctx.todos.push({
+          file: packageJsonPath,
+          reason: `could not be parsed (${String(error)}) — remove the next-intl dependency by hand`,
         });
+      }
+      if (pkg) {
+        let changed = false;
+        for (const section of [
+          'dependencies',
+          'devDependencies',
+          'peerDependencies',
+          'optionalDependencies',
+        ]) {
+          if (pkg[section] && pkg[section]['next-intl']) {
+            delete pkg[section]['next-intl'];
+            changed = true;
+          }
+        }
+        if (changed) {
+          edits.push({
+            path: packageJsonPath,
+            kind: 'write',
+            content: JSON.stringify(pkg, null, 2) + '\n',
+          });
+        }
       }
     }
     const deletions = [ctx.routing.routingFile, ctx.routing.requestFile].filter(
