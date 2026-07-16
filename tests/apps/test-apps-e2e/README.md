@@ -22,3 +22,8 @@ GT_TEST_APPS=vite-react,next-app-router pnpm --filter gt-test-apps-e2e test:e2e
 The runner starts one development server at a time and always delegates server
 shutdown to Playwright. Traces and screenshots from failures are written under
 the root `.turbo/playwright/` directory.
+
+The full matrix runs daily at 06:00 UTC through
+`.github/workflows/test-apps-e2e-cron.yml` and can also be started manually.
+Failures upload the Playwright artifacts and notify the libraries pager in
+Slack.
