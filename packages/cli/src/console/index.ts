@@ -1,3 +1,4 @@
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { BRANCH_COMPONENT } from '../react/jsx/utils/constants.js';
 import {
   colorizeFilepath,
@@ -136,13 +137,19 @@ export const warnInvalidMaxCharsSync = (
   );
 
 export const warnDeprecatedTSugarPropsSync = (locations: string[]): string =>
-  `Found ${locations.length} deprecated ${colorizeIdString('$')}-prefixed prop${
-    locations.length === 1 ? '' : 's'
-  } on ${colorizeComponent('<T>')} components. Use the unprefixed forms instead (${colorizeIdString(
-    'context'
-  )}, ${colorizeIdString('id')}, ${colorizeIdString('maxChars')}, ${colorizeIdString(
-    'requiresReview'
-  )}); support for the ${colorizeIdString('$')}-prefixed forms will be removed in the next major version.\n` +
+  createDiagnosticMessage({
+    whatHappened: `Found ${locations.length} deprecated ${colorizeIdString(
+      '$'
+    )}-prefixed prop${locations.length === 1 ? '' : 's'} on ${colorizeComponent(
+      '<T>'
+    )} components`,
+    fix: `Use the unprefixed forms instead (${colorizeIdString(
+      'context'
+    )}, ${colorizeIdString('id')}, ${colorizeIdString('maxChars')}, ${colorizeIdString(
+      'requiresReview'
+    )}); support for the ${colorizeIdString('$')}-prefixed forms will be removed in the next major version`,
+  }) +
+  '\n' +
   locations.map((location) => `  ${colorizeLine(location)}`).join('\n');
 
 export const warnInvalidFormatSync = (

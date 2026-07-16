@@ -41,13 +41,21 @@ async function scan(files: string[]) {
   );
 }
 
-/** Expected file:line for each occurrence of an attribute in a fixture */
-function expectedLocations(file: string, attr: string): string[] {
+/**
+ * Expected file:line for each occurrence of an attribute in a fixture.
+ * Bare boolean attributes (`<T $requiresReview>`) carry no `=`, so they are
+ * matched on the closing bracket instead.
+ */
+function expectedLocations(
+  file: string,
+  attr: string,
+  bare = false
+): string[] {
   const fullPath = path.join(FIXTURES, file);
   const lines = fs.readFileSync(fullPath, 'utf8').split('\n');
   const found: string[] = [];
   lines.forEach((line, index) => {
-    const column = line.indexOf(`${attr}=`);
+    const column = line.indexOf(bare ? `${attr}>` : `${attr}=`);
     if (column !== -1) {
       found.push(`${fullPath}:${index + 1}:${column} (${attr})`);
     }
@@ -72,14 +80,17 @@ describe('deprecated $-prefixed <T> prop warning', () => {
     const warning = deprecationWarnings[0];
 
     // String-literal forms: two $context and one $id in page.tsx
-    // Expression-container forms: $context={...} and $maxChars={...}
+    // Expression-container forms: $context={...}, $maxChars={...}, and
+    // $requiresReview in both the bare and ={true} forms
     const expected = [
       ...expectedLocations('page.tsx', '$context'),
       ...expectedLocations('page.tsx', '$id'),
       ...expectedLocations('expression-container.tsx', '$context'),
       ...expectedLocations('expression-container.tsx', '$maxChars'),
+      ...expectedLocations('expression-container.tsx', '$requiresReview'),
+      ...expectedLocations('expression-container.tsx', '$requiresReview', true),
     ];
-    expect(expected.length).toBe(5);
+    expect(expected.length).toBe(7);
     for (const location of expected) {
       expect(warning).toContain(location);
     }
