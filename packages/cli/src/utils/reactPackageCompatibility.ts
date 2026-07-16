@@ -6,11 +6,11 @@ import { getPackageJson, getPackageVersion } from './packageJson.js';
 
 const MINIMUM_REACT_PACKAGE_MAJOR = 11;
 
-function isDeclaredBelowMinimum(version: string): boolean {
-  // A range that cannot resolve to any version >= the minimum is definitively
-  // incompatible; invalid ranges (workspace:*, tags, URLs) fail open
+function permitsVersionBelowMinimum(version: string): boolean {
+  // A range is potentially incompatible if it permits any version below the
+  // minimum; invalid ranges (workspace:*, tags, URLs) fail open
   try {
-    return !intersects(version, `>=${MINIMUM_REACT_PACKAGE_MAJOR}.0.0`);
+    return intersects(version, `<${MINIMUM_REACT_PACKAGE_MAJOR}.0.0`);
   } catch {
     return false;
   }
@@ -30,7 +30,7 @@ export async function warnReactPackageCompatibility(
       const version = getPackageVersion(packageName, packageJson);
       if (!version) return [];
 
-      return isDeclaredBelowMinimum(version)
+      return permitsVersionBelowMinimum(version)
         ? [`${packageName}@${version}`]
         : [];
     });

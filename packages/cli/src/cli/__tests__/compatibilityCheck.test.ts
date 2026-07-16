@@ -20,6 +20,14 @@ describe('React package compatibility CLI warning', () => {
     expect(warnReactPackageCompatibility).toHaveBeenCalledWith(false);
   });
 
+  it('checks compatibility before downloading unstaged translations', async () => {
+    const program = createProgram();
+
+    await program.parseAsync(['download'], { from: 'user' });
+
+    expect(warnReactPackageCompatibility).toHaveBeenCalledWith(false);
+  });
+
   it('passes the warning suppression flag to the check', async () => {
     const program = createProgram();
 
@@ -50,6 +58,7 @@ describe('React package compatibility CLI warning', () => {
   function createProgram(): Command {
     const program = new Command();
     new BaseCLI(program, 'base');
+    program.command('download').action(() => {});
     program.command('translate').action(() => {});
     program.command('noop').action(() => {});
     program

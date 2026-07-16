@@ -75,6 +75,7 @@ import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
+  'download',
   'enqueue',
   'generate',
   'setup',

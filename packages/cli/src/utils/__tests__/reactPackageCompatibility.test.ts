@@ -93,8 +93,8 @@ describe('warnReactPackageCompatibility', () => {
     }
   );
 
-  it.each(['<11', '>=10 <11', '=10.20.0', '10.x'])(
-    'warns for comparator range %s that cannot reach version 11',
+  it.each(['<11', '>=10 <11', '=10.20.0', '10.x', '>=10', '^10 || ^11', '*'])(
+    'warns for range %s that permits versions below 11',
     async (version) => {
       mockGetPackageJson.mockResolvedValue({
         dependencies: { 'gt-react': version },
@@ -108,8 +108,8 @@ describe('warnReactPackageCompatibility', () => {
     }
   );
 
-  it.each(['>=10', '^10 || ^11', '*'])(
-    'accepts range %s that can resolve to version 11 or later',
+  it.each(['>=11', '^11', '11.x'])(
+    'accepts range %s that only resolves to version 11 or later',
     async (version) => {
       mockGetPackageJson.mockResolvedValue({
         dependencies: { 'gt-react': version },
