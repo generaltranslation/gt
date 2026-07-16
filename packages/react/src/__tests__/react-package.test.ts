@@ -13,8 +13,6 @@ const runtimeArtifactNames = [
   'index.client.mjs',
   'index.server.cjs',
   'index.server.mjs',
-  'index.types.cjs',
-  'index.types.mjs',
   'macros.cjs',
   'macros.mjs',
 ].sort();
@@ -158,8 +156,6 @@ describe('gt-react package exports', () => {
       'dist/index.client.mjs',
       'dist/index.server.cjs',
       'dist/index.server.mjs',
-      'dist/index.types.cjs',
-      'dist/index.types.mjs',
     ]) {
       expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
         /^['"]use client['"];?/
