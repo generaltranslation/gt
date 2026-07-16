@@ -125,10 +125,7 @@ function extractRoutingObject(source: string): t.ObjectExpression | null {
   return found;
 }
 
-function getProperty(
-  object: t.ObjectExpression,
-  name: string
-): t.Node | null {
+function getProperty(object: t.ObjectExpression, name: string): t.Node | null {
   for (const property of object.properties) {
     if (
       t.isObjectProperty(property) &&

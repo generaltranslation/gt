@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { transformNextConfigFile } from '../transformNextConfig.js';
-import type { MessageCatalogs, MigrationContext, RoutingInfo } from '../types.js';
+import type {
+  MessageCatalogs,
+  MigrationContext,
+  RoutingInfo,
+} from '../types.js';
 
 const routing: RoutingInfo = {
   locales: ['en', 'es'],
@@ -11,7 +15,7 @@ const routing: RoutingInfo = {
   requestFile: null,
 };
 
-function makeContext(): MigrationContext {
+function makeContext(skipped: string[] = []): MigrationContext {
   const catalogs: MessageCatalogs = {
     defaultLocale: 'en',
     locales: ['en', 'es'],
@@ -24,7 +28,7 @@ function makeContext(): MigrationContext {
     routing,
     edits: [],
     todos: [],
-    skippedFiles: new Map(),
+    skippedFiles: new Map(skipped.map((file) => [file, ['reason']])),
     stats: {},
   };
 }
@@ -69,6 +73,32 @@ describe('transformNextConfigFile', () => {
     expect(result.skipReasons).toEqual([]);
     expect(result.code).toMatch(/export default withGTConfig\(nextConfig,/);
     expect(result.code).not.toContain('next-intl/plugin');
+  });
+
+  it('keeps the next-intl plugin composed around withGTConfig while skips exist', () => {
+    const code = [
+      "import createNextIntlPlugin from 'next-intl/plugin';",
+      "const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');",
+      'const nextConfig = { reactStrictMode: true };',
+      'export default withNextIntl(nextConfig);',
+    ].join('\n');
+    const result = transformNextConfigFile(
+      '/project/next.config.ts',
+      code,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    // the retained provider needs the plugin's request-config alias
+    expect(result.code).toContain("from 'next-intl/plugin'");
+    expect(result.code).toContain(
+      "createNextIntlPlugin('./src/i18n/request.ts')"
+    );
+    expect(result.code).toMatch(
+      /export default withNextIntl\(\s*withGTConfig\(nextConfig, \{\s*dictionary: ["']\.\/messages\/en\.json["'],?\s*\}\)\s*\)/
+    );
+    expect(
+      result.todos.some((todo) => todo.reason.includes('createNextIntlPlugin'))
+    ).toBe(true);
   });
 
   it('returns unchanged when no next-intl plugin is present', () => {

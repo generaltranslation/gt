@@ -45,7 +45,10 @@ export function inlinePass(
   traverse(ast, {
     VariableDeclarator(path) {
       let init = path.node.init;
-      while (init && (t.isAwaitExpression(init) || t.isParenthesizedExpression(init))) {
+      while (
+        init &&
+        (t.isAwaitExpression(init) || t.isParenthesizedExpression(init))
+      ) {
         init = t.isAwaitExpression(init) ? init.argument : init.expression;
       }
       if (
@@ -78,7 +81,11 @@ export function inlinePass(
         remaining += 1;
         return;
       }
-      const message = resolve(catalog, tBindings.get(callee.name), keyArg.value);
+      const message = resolve(
+        catalog,
+        tBindings.get(callee.name),
+        keyArg.value
+      );
       if (message === null || classifyMessage(message).kind !== 'text') {
         remaining += 1;
         return;
@@ -132,10 +139,7 @@ export function inlinePass(
       if (t.isVariableDeclarator(path.parent) && path.parent.id === path.node) {
         return;
       }
-      remainingUses.set(
-        path.node.name,
-        remainingUses.get(path.node.name)! + 1
-      );
+      remainingUses.set(path.node.name, remainingUses.get(path.node.name)! + 1);
     },
   });
   traverse(ast, {
@@ -185,9 +189,7 @@ function resolve(
   return typeof current === 'string' ? current : null;
 }
 
-function textNode(
-  message: string
-): t.JSXText | t.JSXExpressionContainer {
+function textNode(message: string): t.JSXText | t.JSXExpressionContainer {
   return /[{}<>]/.test(message)
     ? t.jsxExpressionContainer(t.stringLiteral(message))
     : t.jsxText(message);

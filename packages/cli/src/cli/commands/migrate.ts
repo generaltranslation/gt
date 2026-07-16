@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import chalk from 'chalk';
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit, promptConfirm } from '../../console/logging.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
@@ -22,6 +23,10 @@ import type {
   SourceResult,
 } from '../../migrate/types.js';
 import type { SupportedLibraries } from '../../types/index.js';
+import { Libraries } from '../../types/libraries.js';
+import { installPackage } from '../../utils/installPackage.js';
+import { getPackageJson, isPackageInstalled } from '../../utils/packageJson.js';
+import { getPackageManager } from '../../utils/packageManager.js';
 
 /**
  * `gt migrate`: converts a next-intl project to gt-next. Dictionary-compat
@@ -43,7 +48,7 @@ export async function handleMigrateCommand(
 
   guardGitState(cwd, options);
 
-  if (!options.yes) {
+  if (!options.yes && !options.dryRun) {
     const proceed = await promptConfirm({
       message:
         'This will rewrite source files in place (your translations are preserved). ' +
@@ -100,6 +105,7 @@ export async function handleMigrateCommand(
   // Pass 1: regular source files (layouts deferred — they need the final
   // skip set to decide provider retention).
   const sourceFiles = matchFiles(cwd, options.src ?? DEFAULT_SRC_PATTERNS);
+  ctx.sourceFiles = sourceFiles;
   const layouts: string[] = [];
   for (const file of sourceFiles) {
     if (configLaneFiles.has(file)) continue;
@@ -133,6 +139,15 @@ export async function handleMigrateCommand(
   ])) {
     const code = fs.readFileSync(configFile, 'utf8');
     collect(ctx, configFile, transformNextConfigFile(configFile, code, ctx));
+    if (isEsmNextConfig(configFile, cwd)) {
+      // gt-next/config's ESM bundle currently breaks under a native-ESM
+      // config ("require is not defined" resolving the Next.js version).
+      ctx.todos.push({
+        file: configFile,
+        reason:
+          'this config loads as native ESM, where gt-next/config (<= 11.0.9) fails with "require is not defined" — rename it to next.config.ts (Next.js compiles it to CJS) until gt-next ships an ESM-safe config entry',
+      });
+    }
   }
   for (const middlewareFile of findRootFiles(cwd, [
     'middleware.ts',
@@ -168,8 +183,8 @@ export async function handleMigrateCommand(
 
   ctx.edits.push(...emitGtFiles(ctx));
 
-  const report = buildReport(ctx, options.dryRun);
   if (options.dryRun) {
+    const report = buildReport(ctx, true, !(await isGtNextInstalled(cwd)));
     logger.message(report);
     logger.endCommand('Dry run complete — nothing was written.');
     return;
@@ -186,14 +201,35 @@ export async function handleMigrateCommand(
     }
   }
 
+  // The rewritten files import gt-next — install it so the app builds.
+  let gtNextMissing = !(await isGtNextInstalled(cwd));
+  if (gtNextMissing) {
+    const packageManager = await getPackageManager(cwd);
+    const spinner = logger.createSpinner('timer');
+    spinner.start(
+      `Installing ${Libraries.GT_NEXT} with ${packageManager.name}...`
+    );
+    try {
+      await installPackage(Libraries.GT_NEXT, packageManager, false, cwd);
+      spinner.stop(chalk.green(`Installed ${Libraries.GT_NEXT}.`));
+      gtNextMissing = false;
+    } catch {
+      // installPackage already logged the manual install command.
+      spinner.stop(chalk.yellow(`Could not install ${Libraries.GT_NEXT}.`));
+    }
+  }
+
   try {
-    await formatFiles(writtenFiles.filter((file) => /\.[jt]sx?$/.test(file)));
+    await formatFiles(
+      writtenFiles.filter((file) => /\.[cm]?[jt]sx?$/.test(file))
+    );
   } catch {
     logger.warn(
       'Post-migration formatting failed — run your formatter over the changed files.'
     );
   }
 
+  const report = buildReport(ctx, false, gtNextMissing);
   const reportPath = path.join(cwd, 'gt-migrate-report.md');
   fs.writeFileSync(reportPath, report);
   logger.message(report);
@@ -233,6 +269,25 @@ function collect(
   if (result.code !== null) {
     ctx.edits.push({ path: file, kind: 'write', content: result.code });
   }
+}
+
+function isEsmNextConfig(configFile: string, cwd: string): boolean {
+  if (configFile.endsWith('.mjs')) return true;
+  if (!configFile.endsWith('.js')) return false;
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(cwd, 'package.json'), 'utf8')
+    );
+    return pkg.type === 'module';
+  } catch {
+    return false;
+  }
+}
+
+async function isGtNextInstalled(cwd: string): Promise<boolean> {
+  const packageJson = await getPackageJson(cwd);
+  if (!packageJson) return false;
+  return isPackageInstalled(Libraries.GT_NEXT, packageJson, false, true);
 }
 
 function isLayoutFile(file: string): boolean {

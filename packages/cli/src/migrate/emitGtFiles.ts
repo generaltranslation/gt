@@ -46,9 +46,12 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
   });
 
   // loadDictionary.ts — serves the preserved next-intl catalogs per locale.
-  const loaderExists = ['loadDictionary.ts', 'loadDictionary.js', 'src/loadDictionary.ts', 'src/loadDictionary.js'].some(
-    (candidate) => fs.existsSync(path.join(ctx.cwd, candidate))
-  );
+  const loaderExists = [
+    'loadDictionary.ts',
+    'loadDictionary.js',
+    'src/loadDictionary.ts',
+    'src/loadDictionary.js',
+  ].some((candidate) => fs.existsSync(path.join(ctx.cwd, candidate)));
   if (loaderExists) {
     ctx.todos.push({
       file: path.join(ctx.cwd, 'loadDictionary.ts'),
@@ -109,14 +112,77 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
         });
       }
     }
-    for (const configFile of [ctx.routing.routingFile, ctx.routing.requestFile]) {
-      if (configFile && fs.existsSync(configFile)) {
-        edits.push({ path: configFile, kind: 'delete' });
+    const deletions = [ctx.routing.routingFile, ctx.routing.requestFile].filter(
+      (file): file is string => file !== null && fs.existsSync(file)
+    );
+    for (const configFile of deletions) {
+      // Deleting a module that something still imports breaks the build —
+      // keep it and say so instead.
+      const importer = findRemainingImporter(ctx, configFile, deletions);
+      if (importer) {
+        ctx.todos.push({
+          file: configFile,
+          reason: `kept because ${path.relative(ctx.cwd, importer)} still imports it — migrate that reference off next-intl, then delete this file`,
+        });
+        continue;
       }
+      edits.push({ path: configFile, kind: 'delete' });
     }
   }
 
   return edits;
+}
+
+/**
+ * Finds a source file whose post-migration content still imports `target`.
+ * Contents come from the pending edit when one exists, otherwise from disk.
+ * Import specifiers resolve relative to the importer; `@/` and `~/` map to
+ * src/ (or the project root when there is no src/).
+ */
+function findRemainingImporter(
+  ctx: MigrationContext,
+  target: string,
+  ignoredFiles: string[]
+): string | null {
+  const targetNoExt = stripExtension(target);
+  const pendingEdits = new Map(
+    ctx.edits
+      .filter((edit) => edit.kind === 'write')
+      .map((edit) => [edit.path, edit.content ?? ''])
+  );
+  const aliasRoot = fs.existsSync(path.join(ctx.cwd, 'src'))
+    ? path.join(ctx.cwd, 'src')
+    : ctx.cwd;
+  const specifierPattern =
+    /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/g;
+
+  for (const file of ctx.sourceFiles ?? []) {
+    if (ignoredFiles.includes(file)) continue;
+    const content =
+      pendingEdits.get(file) ??
+      (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '');
+    for (const match of content.matchAll(specifierPattern)) {
+      const specifier = match[1];
+      let resolved: string | null = null;
+      if (specifier.startsWith('.')) {
+        resolved = path.resolve(path.dirname(file), specifier);
+      } else if (specifier.startsWith('@/') || specifier.startsWith('~/')) {
+        resolved = path.join(aliasRoot, specifier.slice(2));
+      }
+      if (
+        resolved !== null &&
+        (stripExtension(resolved) === targetNoExt ||
+          path.join(resolved, 'index') === targetNoExt)
+      ) {
+        return file;
+      }
+    }
+  }
+  return null;
+}
+
+function stripExtension(file: string): string {
+  return file.replace(/\.(?:[cm]?[jt]s|[jt]sx)$/, '');
 }
 
 function toPosix(value: string): string {

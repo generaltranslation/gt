@@ -35,7 +35,10 @@ export function transformNavigationFile(
       plugins: ['jsx', 'typescript'],
     });
   } catch (error) {
-    return { ...none, skipReasons: [`file could not be parsed: ${String(error)}`] };
+    return {
+      ...none,
+      skipReasons: [`file could not be parsed: ${String(error)}`],
+    };
   }
 
   const destructured: string[] = [];
@@ -109,9 +112,7 @@ export function transformNavigationFile(
     lines.push("export { default as Link } from 'gt-next/link';");
   }
   if (passthrough.length > 0) {
-    lines.push(
-      `export { ${passthrough.join(', ')} } from 'next/navigation';`
-    );
+    lines.push(`export { ${passthrough.join(', ')} } from 'next/navigation';`);
   }
 
   const todos: TodoEntry[] = [

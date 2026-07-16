@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { transformMiddlewareFile } from '../transformMiddleware.js';
-import type { MessageCatalogs, MigrationContext, RoutingInfo } from '../types.js';
+import type {
+  MessageCatalogs,
+  MigrationContext,
+  RoutingInfo,
+} from '../types.js';
 
 function makeContext(routing: Partial<RoutingInfo>): MigrationContext {
   const catalogs: MessageCatalogs = {

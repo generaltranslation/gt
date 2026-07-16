@@ -44,6 +44,8 @@ export type MigrationContext = {
   /** file path -> reasons the file was left untouched */
   skippedFiles: Map<string, string[]>;
   stats: Record<string, number>;
+  /** all matched source files, for still-imported checks before deletions */
+  sourceFiles?: string[];
 };
 
 export type SourceResult = {

@@ -14,6 +14,9 @@ const PLUGIN_MODULE = 'next-intl/plugin';
 /**
  * Replaces the createNextIntlPlugin wrapper in next.config.* with
  * withGTConfig, pointing gt-next's dictionary at the default-locale catalog.
+ * While skipped files remain, the next-intl plugin is kept composed around
+ * withGTConfig — the retained NextIntlClientProvider needs it to find the
+ * request config at build time.
  */
 export function transformNextConfigFile(
   file: string,
@@ -27,6 +30,7 @@ export function transformNextConfigFile(
     usedRich: false,
   };
   if (!code.includes(PLUGIN_MODULE)) return none;
+  const retainNextIntl = ctx.skippedFiles.size > 0;
 
   let ast: t.File;
   try {
@@ -37,7 +41,10 @@ export function transformNextConfigFile(
       createParenthesizedExpressions: true,
     });
   } catch (error) {
-    return { ...none, skipReasons: [`file could not be parsed: ${String(error)}`] };
+    return {
+      ...none,
+      skipReasons: [`file could not be parsed: ${String(error)}`],
+    };
   }
 
   let pluginLocal: string | null = null;
@@ -49,7 +56,7 @@ export function transformNextConfigFile(
           pluginLocal = specifier.local.name;
         }
       }
-      importPath.remove();
+      if (!retainNextIntl) importPath.remove();
     },
   });
   if (!pluginLocal) {
@@ -71,7 +78,7 @@ export function transformNextConfigFile(
         t.isIdentifier(declPath.node.id)
       ) {
         wrapperNames.add(declPath.node.id.name);
-        declPath.remove();
+        if (!retainNextIntl) declPath.remove();
       }
     },
   });
@@ -90,21 +97,23 @@ export function transformNextConfigFile(
         t.isIdentifier(callee.callee, { name: pluginLocal! });
       if (!isWrapperCall && !isInlineCall) return;
       const inner = declaration.arguments[0];
-      const config = t.isExpression(inner)
-        ? inner
-        : t.objectExpression([]);
-      exportPath.node.declaration = t.callExpression(
-        t.identifier('withGTConfig'),
-        [
-          config,
-          t.objectExpression([
-            t.objectProperty(
-              t.identifier('dictionary'),
-              t.stringLiteral(dictionaryPath)
-            ),
-          ]),
-        ]
-      );
+      const config = t.isExpression(inner) ? inner : t.objectExpression([]);
+      const gtCall = t.callExpression(t.identifier('withGTConfig'), [
+        config,
+        t.objectExpression([
+          t.objectProperty(
+            t.identifier('dictionary'),
+            t.stringLiteral(dictionaryPath)
+          ),
+        ]),
+      ]);
+      if (retainNextIntl) {
+        // Keep the next-intl plugin composed on the outside; it only injects
+        // the request-config alias, which the retained provider still needs.
+        declaration.arguments = [gtCall];
+      } else {
+        exportPath.node.declaration = gtCall;
+      }
       rewrote = true;
     },
   });
@@ -119,6 +128,15 @@ export function transformNextConfigFile(
 
   ensureNamedImports(ast, 'gt-next/config', ['withGTConfig']);
 
+  const todos: SourceResult['todos'] = [];
+  if (retainNextIntl) {
+    todos.push({
+      file,
+      reason:
+        'createNextIntlPlugin kept (composed around withGTConfig) because some files still use next-intl — re-run `gt migrate` once they are converted to finish the teardown',
+    });
+  }
+
   const output = generate(
     ast,
     {
@@ -129,7 +147,7 @@ export function transformNextConfigFile(
     },
     code
   );
-  return { code: output.code, todos: [], skipReasons: [], usedRich: false };
+  return { code: output.code, todos, skipReasons: [], usedRich: false };
 }
 
 function relativeDictionaryPath(ctx: MigrationContext): string {
@@ -137,9 +155,6 @@ function relativeDictionaryPath(ctx: MigrationContext): string {
     ctx.catalogs.dir,
     `${ctx.catalogs.defaultLocale}.json`
   );
-  const relative = path
-    .relative(ctx.cwd, absolute)
-    .split(path.sep)
-    .join('/');
+  const relative = path.relative(ctx.cwd, absolute).split(path.sep).join('/');
   return relative.startsWith('.') ? relative : `./${relative}`;
 }

@@ -122,9 +122,7 @@ export function transformSourceFile(
   }
 
   const localsBy = (predicate: (imported: string) => boolean) =>
-    new Set(
-      symbols.filter((s) => predicate(s.imported)).map((s) => s.local)
-    );
+    new Set(symbols.filter((s) => predicate(s.imported)).map((s) => s.local));
   const translationHookLocals = localsBy(
     (name) => name === 'useTranslations' || name === 'getTranslations'
   );
@@ -302,17 +300,14 @@ export function transformSourceFile(
         file,
         line: rewrite.line,
         reason:
-          "getTranslations locale override dropped — gt-next resolves the request locale itself; use options.$locale on individual calls if a fixed locale was intended",
+          'getTranslations locale override dropped — gt-next resolves the request locale itself; use options.$locale on individual calls if a fixed locale was intended',
       });
     }
   }
 
   // 3. t.rich conversions.
   for (const conversion of richConversions) {
-    const children = icuToJsxChildren(
-      conversion.elements,
-      conversion.chunkMap
-    );
+    const children = icuToJsxChildren(conversion.elements, conversion.chunkMap);
     const tElement = t.jsxElement(
       t.jsxOpeningElement(t.jsxIdentifier('T'), []),
       t.jsxClosingElement(t.jsxIdentifier('T')),
@@ -361,10 +356,7 @@ export function transformSourceFile(
       clientSpecifiers.push(symbol.specifier);
     } else if (SERVER_SWAPS.has(symbol.imported)) {
       serverSpecifiers.push(symbol.specifier);
-    } else if (
-      symbol.imported === PROVIDER &&
-      !providerRetained
-    ) {
+    } else if (symbol.imported === PROVIDER && !providerRetained) {
       clientSpecifiers.push(
         t.importSpecifier(
           t.identifier('GTProvider'),
@@ -458,9 +450,7 @@ export function transformSourceFile(
 
 // ---- helpers ---------------------------------------------------------------
 
-function unwrapAwait(
-  node: t.Node | null | undefined
-): t.Expression | null {
+function unwrapAwait(node: t.Node | null | undefined): t.Expression | null {
   if (!node) return null;
   let current: t.Node = node;
   for (;;) {
@@ -580,10 +570,7 @@ function analyzeRichCall(
   const container = path.parentPath;
   if (
     !container.isJSXExpressionContainer() ||
-    !(
-      t.isJSXElement(container.parent) ||
-      t.isJSXFragment(container.parent)
-    )
+    !(t.isJSXElement(container.parent) || t.isJSXFragment(container.parent))
   ) {
     return manual;
   }

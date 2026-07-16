@@ -38,7 +38,10 @@ export function ensureNamedImports(
   const declaration = t.importDeclaration(specifiers, t.stringLiteral(module));
   const body = ast.program.body;
   let insertIndex = 0;
-  while (insertIndex < body.length && t.isImportDeclaration(body[insertIndex])) {
+  while (
+    insertIndex < body.length &&
+    t.isImportDeclaration(body[insertIndex])
+  ) {
     insertIndex += 1;
   }
   body.splice(insertIndex, 0, declaration);

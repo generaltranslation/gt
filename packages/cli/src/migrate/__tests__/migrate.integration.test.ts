@@ -3,10 +3,26 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { handleMigrateCommand } from '../../cli/commands/migrate.js';
+import { installPackage } from '../../utils/installPackage.js';
 
 vi.mock('../../hooks/postProcess.js', () => ({
   formatFiles: vi.fn(async () => {}),
   detectFormatter: vi.fn(async () => null),
+}));
+
+vi.mock('../../utils/installPackage.js', () => ({
+  installPackage: vi.fn(async () => {}),
+}));
+
+vi.mock('../../utils/packageManager.js', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getPackageManager: vi.fn(async () => ({
+    id: 'npm',
+    name: 'npm',
+    label: 'npm',
+    installCommand: 'install',
+    devDependencyFlag: '--save-dev',
+  })),
 }));
 
 const tmpDirs: string[] = [];
@@ -86,6 +102,9 @@ function makeApp(overrides: Record<string, string> = {}): string {
       "import { setRequestLocale } from 'next-intl/server';",
       "import { notFound } from 'next/navigation';",
       "import { routing } from '@/i18n/routing';",
+      'export function generateStaticParams() {',
+      '  return routing.locales.map((locale) => ({ locale }));',
+      '}',
       'export default async function LocaleLayout({',
       '  children,',
       '  params,',
@@ -165,11 +184,14 @@ describe('handleMigrateCommand integration', () => {
     expect(page).not.toContain('t.rich');
     expect(page).toContain("placeholder={t('hint')}");
 
-    // layout: provider swapped, validation gone, lang via getLocale
+    // layout: provider swapped, validation gone, lang via getLocale,
+    // routing.locales inlined so the deleted routing file is not imported
     const layout = read(cwd, 'src/app/[locale]/layout.tsx');
     expect(layout).toContain('<GTProvider>');
     expect(layout).toContain('lang={await getLocale()}');
     expect(layout).not.toContain('NextIntlClientProvider');
+    expect(layout).toMatch(/\[\s*['"]en['"],\s*['"]es['"]\s*\]\.map/);
+    expect(layout).not.toContain('@/i18n/routing');
 
     // navigation rewritten
     const navigation = read(cwd, 'src/i18n/navigation.ts');
@@ -180,7 +202,9 @@ describe('handleMigrateCommand integration', () => {
     expect(read(cwd, 'middleware.ts')).toContain('createNextMiddleware');
     const gtConfig = JSON.parse(read(cwd, 'gt.config.json'));
     expect(gtConfig.locales).toEqual(['en', 'es']);
-    expect(read(cwd, 'src/loadDictionary.ts')).toContain('../messages/${locale}.json');
+    expect(read(cwd, 'src/loadDictionary.ts')).toContain(
+      '../messages/${locale}.json'
+    );
 
     // teardown: fully migrated -> next-intl gone, i18n config files deleted
     const pkg = JSON.parse(read(cwd, 'package.json'));
@@ -191,10 +215,38 @@ describe('handleMigrateCommand integration', () => {
     // translations preserved untouched
     expect(read(cwd, 'messages/es.json')).toContain('Bienvenido a demo');
 
+    // gt-next gets installed (the rewritten files import it)
+    expect(vi.mocked(installPackage)).toHaveBeenCalledWith(
+      'gt-next',
+      expect.anything(),
+      false,
+      cwd
+    );
+
     // report exists and mentions next steps
     const report = read(cwd, 'gt-migrate-report.md');
     expect(report).toContain('# gt migrate report');
     expect(report).toContain('npx gt generate');
+    // install succeeded, so no manual install step
+    expect(report).not.toContain('Install gt-next');
+  });
+
+  it('reports a manual install step when installing gt-next fails', async () => {
+    const cwd = makeApp();
+    vi.mocked(installPackage).mockRejectedValueOnce(new Error('offline'));
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    // migration still completes; the report carries the install step
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('Install gt-next');
   });
 
   it('keeps next-intl infra when a file must be skipped', async () => {
@@ -221,10 +273,17 @@ describe('handleMigrateCommand integration', () => {
 
     // skipped file untouched
     expect(read(cwd, 'src/components/Price.tsx')).toContain('useFormatter');
-    // provider retained nested inside GTProvider
+    // provider retained nested inside GTProvider, on the resolved locale
     const layout = read(cwd, 'src/app/[locale]/layout.tsx');
     expect(layout).toContain('GTProvider');
     expect(layout).toContain('NextIntlClientProvider');
+    expect(layout).toMatch(
+      /<NextIntlClientProvider[^>]*locale=\{await getLocale\(\)\}/
+    );
+    // the next-intl plugin stays composed so the request config resolves
+    const nextConfig = read(cwd, 'next.config.ts');
+    expect(nextConfig).toContain('createNextIntlPlugin');
+    expect(nextConfig).toContain('withGTConfig');
     // dep + config files retained
     const pkg = JSON.parse(read(cwd, 'package.json'));
     expect(pkg.dependencies['next-intl']).toBeDefined();

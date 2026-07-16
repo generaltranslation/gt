@@ -111,6 +111,45 @@ describe('emitGtFiles', () => {
     }
   });
 
+  it('keeps a routing file that a source file still imports', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/i18n/routing.ts': '// routing',
+      'src/i18n/request.ts': '// request',
+      'src/lib/paths.ts': "import { routing } from '@/i18n/routing';",
+      'messages/en.json': '{}',
+    });
+    ctx.sourceFiles = [path.join(ctx.cwd, 'src/lib/paths.ts')];
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+
+    // the still-imported routing file is kept and reported…
+    expect(byPath.has(ctx.routing.routingFile!)).toBe(false);
+    expect(
+      ctx.todos.some(
+        (todo) =>
+          todo.file === ctx.routing.routingFile &&
+          todo.reason.includes('paths.ts')
+      )
+    ).toBe(true);
+    // …while the unreferenced request file is still deleted
+    expect(byPath.get(ctx.routing.requestFile!)!.kind).toBe('delete');
+  });
+
+  it('resolves relative import specifiers when checking importers', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/i18n/routing.ts': '// routing',
+      'src/i18n/request.ts': '// request',
+      'src/i18n/helpers.ts': "import { routing } from './routing';",
+      'messages/en.json': '{}',
+    });
+    ctx.sourceFiles = [path.join(ctx.cwd, 'src/i18n/helpers.ts')];
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+    expect(byPath.has(ctx.routing.routingFile!)).toBe(false);
+  });
+
   it('places loadDictionary inside src/ when the app uses a src dir', () => {
     const ctx = makeProject({
       'package.json': basePackageJson,
@@ -145,11 +184,11 @@ describe('emitGtFiles', () => {
       'messages/en.json': '{}',
     });
     const edits = emitGtFiles(ctx);
-    expect(
-      edits.some((edit) => edit.path.endsWith('loadDictionary.ts'))
-    ).toBe(false);
-    expect(ctx.todos.some((todo) => todo.reason.includes('loadDictionary'))).toBe(
-      true
+    expect(edits.some((edit) => edit.path.endsWith('loadDictionary.ts'))).toBe(
+      false
     );
+    expect(
+      ctx.todos.some((todo) => todo.reason.includes('loadDictionary'))
+    ).toBe(true);
   });
 });

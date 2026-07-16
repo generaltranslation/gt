@@ -65,6 +65,8 @@ function catalogDirFromRequestFile(requestFile: string | null): string | null {
   );
   if (!match) return null;
   const prefix = match[1];
-  const dirPart = prefix.endsWith('/') ? prefix.slice(0, -1) : path.dirname(prefix);
+  const dirPart = prefix.endsWith('/')
+    ? prefix.slice(0, -1)
+    : path.dirname(prefix);
   return path.resolve(path.dirname(requestFile), dirPart);
 }

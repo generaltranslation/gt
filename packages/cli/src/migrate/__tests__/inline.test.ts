@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { inlinePass } from '../inline.js';
-import type { MessageCatalogs, MigrationContext, RoutingInfo } from '../types.js';
+import type {
+  MessageCatalogs,
+  MigrationContext,
+  RoutingInfo,
+} from '../types.js';
 
 const routing: RoutingInfo = {
   locales: ['en', 'es'],

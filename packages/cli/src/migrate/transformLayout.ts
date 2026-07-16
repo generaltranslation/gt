@@ -106,7 +106,74 @@ export function transformLayoutFile(
     });
   }
 
-  // 3. Ensure a GTProvider wraps the layout children.
+  // 3. On a full migration the routing config file gets deleted, so inline
+  //    its locale values where the layout still references them (typically
+  //    `routing.locales` in generateStaticParams).
+  if (!retainProvider) {
+    const locales = ctx.routing.locales ?? ctx.catalogs.locales;
+    const defaultLocale =
+      ctx.routing.defaultLocale ?? ctx.catalogs.defaultLocale;
+    traverse(ast, {
+      MemberExpression(path) {
+        if (
+          path.node.computed ||
+          !t.isIdentifier(path.node.object, { name: 'routing' }) ||
+          !t.isIdentifier(path.node.property)
+        ) {
+          return;
+        }
+        if (path.node.property.name === 'locales') {
+          path.replaceWith(
+            t.arrayExpression(locales.map((locale) => t.stringLiteral(locale)))
+          );
+          mutated = true;
+        } else if (path.node.property.name === 'defaultLocale') {
+          path.replaceWith(t.stringLiteral(defaultLocale));
+          mutated = true;
+        }
+      },
+    });
+  }
+
+  // 4. A retained NextIntlClientProvider inherits its locale from the
+  //    request config, which gt-next's middleware no longer populates — pass
+  //    the resolved locale explicitly so skipped client components stay on
+  //    the page's locale.
+  if (retainProvider) {
+    traverse(ast, {
+      JSXOpeningElement(path) {
+        if (
+          !t.isJSXIdentifier(path.node.name, {
+            name: 'NextIntlClientProvider',
+          })
+        ) {
+          return;
+        }
+        const hasLocaleProp = path.node.attributes.some(
+          (attribute) =>
+            t.isJSXAttribute(attribute) &&
+            t.isJSXIdentifier(attribute.name, { name: 'locale' })
+        );
+        if (hasLocaleProp) return;
+        path.node.attributes.push(
+          t.jsxAttribute(
+            t.jsxIdentifier('locale'),
+            t.jsxExpressionContainer(
+              t.awaitExpression(t.callExpression(t.identifier('getLocale'), []))
+            )
+          )
+        );
+        needsGetLocale = true;
+        mutated = true;
+        const fn = path.getFunctionParent();
+        if (fn && !fn.node.async) {
+          fn.node.async = true;
+        }
+      },
+    });
+  }
+
+  // 5. Ensure a GTProvider wraps the layout children.
   let hasGtProvider = false;
   traverse(ast, {
     JSXIdentifier(path) {
@@ -140,10 +207,44 @@ export function transformLayoutFile(
     ensureNamedImports(ast, 'gt-next/server', ['getLocale']);
   }
 
-  // 4. Clean up imports orphaned by the guard removal (notFound, hasLocale,
+  // 6. Clean up imports orphaned by the guard removal (notFound, hasLocale,
   //    routing config imports).
   if (mutated) {
     removeUnusedNamedImports(ast, ['notFound', 'hasLocale', 'routing']);
+  }
+
+  // 7. Guard removal can orphan `const { locale } = await params` — drop the
+  //    declaration when nothing references its bindings anymore (it would
+  //    trip no-unused-vars in user projects).
+  if (mutated) {
+    traverse(ast, {
+      Program(path) {
+        // Recrawl so bindings reflect the removals above.
+        path.scope.crawl();
+      },
+      VariableDeclaration(path) {
+        if (path.node.declarations.length !== 1) return;
+        const declarator = path.node.declarations[0];
+        if (!t.isObjectPattern(declarator.id)) return;
+        const init = declarator.init;
+        const fromParams =
+          t.isIdentifier(init, { name: 'params' }) ||
+          (t.isAwaitExpression(init) &&
+            t.isIdentifier(init.argument, { name: 'params' }));
+        if (!fromParams) return;
+        for (const property of declarator.id.properties) {
+          if (
+            !t.isObjectProperty(property) ||
+            !t.isIdentifier(property.value)
+          ) {
+            return;
+          }
+          const binding = path.scope.getBinding(property.value.name);
+          if (!binding || binding.referenced) return;
+        }
+        path.remove();
+      },
+    });
   }
 
   if (!mutated && base.code === null) {

@@ -6,12 +6,18 @@ import type { MigrationContext } from './types.js';
  * why, every TODO, and the follow-up steps. Nothing the command declined to
  * convert is allowed to be absent from this report.
  */
-export function buildReport(ctx: MigrationContext, dryRun: boolean): string {
+export function buildReport(
+  ctx: MigrationContext,
+  dryRun: boolean,
+  gtNextMissing: boolean = false
+): string {
   const lines: string[] = [];
   const relative = (file: string) =>
     path.isAbsolute(file) ? path.relative(ctx.cwd, file) : file;
 
-  lines.push(`# gt migrate report${dryRun ? ' (dry run — nothing written)' : ''}`);
+  lines.push(
+    `# gt migrate report${dryRun ? ' (dry run — nothing written)' : ''}`
+  );
   lines.push('');
   lines.push(
     `Migrated next-intl -> gt-next (dictionary compat mode). Default locale: ` +
@@ -81,13 +87,23 @@ export function buildReport(ctx: MigrationContext, dryRun: boolean): string {
 
   lines.push('## Next steps');
   lines.push('');
-  lines.push('1. Review the TODOs above, then run your build.');
-  lines.push(
-    '2. `npx gt generate` (no API key) or `npx gt translate` (with credentials) to translate new locales.'
+  const steps: string[] = [];
+  if (gtNextMissing) {
+    steps.push(
+      'Install gt-next — the converted files import it: `npm install gt-next` ' +
+        "(or your package manager's equivalent). A non-dry run installs it automatically."
+    );
+  }
+  steps.push('Review the TODOs above, then run your build.');
+  steps.push(
+    '`npx gt generate` (no API key) or `npx gt translate` (with credentials) to translate new locales.'
   );
-  lines.push(
-    '3. Optionally re-run with `--inline` to convert simple strings to inline <T> components.'
+  steps.push(
+    'Optionally re-run with `--inline` to convert simple strings to inline <T> components.'
   );
+  for (const [index, step] of steps.entries()) {
+    lines.push(`${index + 1}. ${step}`);
+  }
   lines.push('');
 
   return lines.join('\n');

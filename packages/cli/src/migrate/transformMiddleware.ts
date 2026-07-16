@@ -50,7 +50,10 @@ export function transformMiddlewareFile(
       createParenthesizedExpressions: true,
     });
   } catch (error) {
-    return { ...none, skipReasons: [`file could not be parsed: ${String(error)}`] };
+    return {
+      ...none,
+      skipReasons: [`file could not be parsed: ${String(error)}`],
+    };
   }
 
   let middlewareLocal: string | null = null;

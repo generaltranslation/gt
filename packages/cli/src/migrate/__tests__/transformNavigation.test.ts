@@ -27,7 +27,7 @@ describe('transformNavigationFile', () => {
   it('returns unchanged for files without createNavigation', () => {
     const result = transformNavigationFile(
       'src/i18n/navigation.ts',
-      "export const x = 1;"
+      'export const x = 1;'
     );
     expect(result.code).toBeNull();
     expect(result.skipReasons).toEqual([]);

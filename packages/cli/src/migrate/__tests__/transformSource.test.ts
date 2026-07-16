@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { transformSourceFile } from '../transformSource.js';
-import type { MessageCatalogs, MigrationContext, RoutingInfo } from '../types.js';
+import type {
+  MessageCatalogs,
+  MigrationContext,
+  RoutingInfo,
+} from '../types.js';
 
 const routing: RoutingInfo = {
   locales: ['en', 'es'],
@@ -11,9 +15,7 @@ const routing: RoutingInfo = {
   requestFile: null,
 };
 
-function makeContext(
-  messages: Record<string, unknown> = {}
-): MigrationContext {
+function makeContext(messages: Record<string, unknown> = {}): MigrationContext {
   const catalogs: MessageCatalogs = {
     defaultLocale: 'en',
     locales: ['en', 'es'],
@@ -102,7 +104,7 @@ describe('transformSourceFile: imports and hooks', () => {
         "  const t = useTranslations('Home');",
         '  return (',
         '    <T>',
-        "      <p>static</p>",
+        '      <p>static</p>',
         '    </T>',
         '  );',
         '}',
