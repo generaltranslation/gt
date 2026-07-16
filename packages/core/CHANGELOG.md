@@ -1,5 +1,15 @@
 # generaltranslation
 
+## 9.0.2
+
+### Patch Changes
+
+- [#1895](https://github.com/generaltranslation/gt/pull/1895) [`5d93858`](https://github.com/generaltranslation/gt/commit/5d9385872eb041af0991fc273d5eddd7a032e584) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Resolve custom source-locale aliases before uploading translation files.
+
+- [#1897](https://github.com/generaltranslation/gt/pull/1897) [`5721267`](https://github.com/generaltranslation/gt/commit/57212672a595c8c8578366636767bcbfe8ab6e57) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Allow `setupProject` callers to pass only the branch, file, and version IDs that the API request uses.
+
+- [#1896](https://github.com/generaltranslation/gt/pull/1896) [`8b9b440`](https://github.com/generaltranslation/gt/commit/8b9b4404b703b552b9aa327dc0ae85fce584c97c) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Correct the shipped `checkJobStatus` example to pass the timeout as a number.
+
 ## 9.0.1
 
 ### Patch Changes

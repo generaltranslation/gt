@@ -1,5 +1,20 @@
 # gtx-cli
 
+## 2.14.63
+
+### Patch Changes
+
+- [#1867](https://github.com/generaltranslation/gt/pull/1867) [`a7aea57`](https://github.com/generaltranslation/gt/commit/a7aea57b1c6ecdc3edc0ace4cb21a859ac6ef508) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fix `<T $context="...">` and `<T $id="...">` string-literal props being dropped from hashing and registration. Context-carrying `<T>` components were registered under context-less hashes that the runtime never looks up, so their file translations always missed; `gt translate` now registers them under the same context-aware hashes the runtime and compiler compute.
+
+- [#1890](https://github.com/generaltranslation/gt/pull/1890) [`6feb7b7`](https://github.com/generaltranslation/gt/commit/6feb7b79f0320d54d341f06b1482a9153e69d909) Thanks [@bgub](https://github.com/bgub)! - Inline single-use derive-expression adapters in the CLI string parser to reduce pass-through indirection.
+
+- [#1882](https://github.com/generaltranslation/gt/pull/1882) [`288a47d`](https://github.com/generaltranslation/gt/commit/288a47dccfa7572b381bf76cc0bfc863436ae4a4) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Warn when GT React packages before version 11 may use incompatible ID-based translation keys, with an explicit suppression flag.
+
+- Updated dependencies [[`5d93858`](https://github.com/generaltranslation/gt/commit/5d9385872eb041af0991fc273d5eddd7a032e584), [`5721267`](https://github.com/generaltranslation/gt/commit/57212672a595c8c8578366636767bcbfe8ab6e57), [`8b9b440`](https://github.com/generaltranslation/gt/commit/8b9b4404b703b552b9aa327dc0ae85fce584c97c)]:
+  - generaltranslation@9.0.2
+  - @generaltranslation/python-extractor@0.2.29
+  - @generaltranslation/supported-locales@2.1.9
+
 ## 2.14.62
 
 ### Patch Changes
