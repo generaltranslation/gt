@@ -1394,6 +1394,41 @@ describe('withGTConfig', () => {
       expect(wc.resolve.alias).toHaveProperty('gt-next/internal/_dictionary');
     });
 
+    it('parses gt-next ESM dist as javascript/auto when a file alias is set', async () => {
+      const withGTConfig = await getWithGTConfig();
+
+      const result = withGTConfig({}, { dictionary: './my-dict.json' });
+
+      const wc = makeWebpackConfig() as WebpackConfig & {
+        module?: { rules?: { test: RegExp; type: string }[] };
+      };
+      runWebpack(result, wc);
+
+      const rule = (wc.module?.rules ?? []).find(
+        (r) => r.type === 'javascript/auto'
+      );
+      expect(rule).toBeDefined();
+      expect('node_modules/gt-next/dist/index.server.mjs').toMatch(rule!.test);
+      expect('node_modules/gt-next/dist/index.server.js').not.toMatch(
+        rule!.test
+      );
+    });
+
+    it('does not add the javascript/auto rule without file aliases', async () => {
+      const withGTConfig = await getWithGTConfig();
+
+      const result = withGTConfig({}, {});
+
+      const wc = makeWebpackConfig() as WebpackConfig & {
+        module?: { rules?: { test: RegExp; type: string }[] };
+      };
+      runWebpack(result, wc);
+
+      expect(
+        (wc.module?.rules ?? []).some((r) => r.type === 'javascript/auto')
+      ).toBe(false);
+    });
+
     it('does NOT set aliases when TURBOPACK enabled', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.TURBOPACK = '1';

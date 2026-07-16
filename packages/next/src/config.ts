@@ -744,6 +744,24 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
             pathString
           );
         }
+        // Webpack parses .mjs as strict ESM and does not treat require()
+        // calls as dependencies, so the require()-backed internal aliases
+        // above would never apply and their runtime errors are swallowed
+        // (loaders silently no-op). Parse gt-next's ESM dist as
+        // javascript/auto so webpack picks up those require() calls.
+        // Turbopack resolves them through resolveAlias and needs no rule.
+        if (
+          resolvedDictionaryFilePath ||
+          customLoadTranslationsPath ||
+          customLoadDictionaryPath
+        ) {
+          webpackConfig.module ??= {};
+          webpackConfig.module.rules ??= [];
+          webpackConfig.module.rules.push({
+            test: /node_modules[\\/]gt-next[\\/]dist[\\/].*\.mjs$/,
+            type: 'javascript/auto',
+          });
+        }
       }
       if (typeof internalNextConfig?.webpack === 'function') {
         return internalNextConfig.webpack(webpackConfig, options);
