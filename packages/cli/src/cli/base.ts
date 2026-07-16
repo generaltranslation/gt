@@ -562,11 +562,7 @@ export class BaseCLI {
         false
       )
       .option('--dry-run', 'Print the migration report without writing', false)
-      .option(
-        '--allow-dirty',
-        'Skip the clean-git-tree safety check',
-        false
-      )
+      .option('--allow-dirty', 'Skip the clean-git-tree safety check', false)
       .option('-y, --yes', 'Skip the confirmation prompt', false)
       .action(async (options: MigrateOptions) => {
         displayHeader('Migrating to General Translation...');
