@@ -1,0 +1,27 @@
+{
+  "page": {
+    "eyebrow": "Routeur App de Next.js",
+    "title": "Test de dictionnaire gt-next",
+    "intro": "Ce composant serveur lit dictionary.ts et interpole l'heure de rendu : {renderedAt}."
+  },
+  "server": {
+    "eyebrow": "Composant serveur",
+    "title": "Acces au dictionnaire avec getTranslations",
+    "body": "Cette section est rendue dans un React Server Component avec gt-next/server.",
+    "checks": {
+      "source": "Dictionnaire source integre depuis dictionary.ts",
+      "target": "Dictionnaires cibles charges avec loadDictionary.ts",
+      "object": "Objet de dictionnaire imbrique resolu avec t.obj()"
+    }
+  },
+  "client": {
+    "eyebrow": "Composant client",
+    "title": "Acces au dictionnaire avec useTranslations",
+    "greeting": "Bonjour {name}, ce texte vient d'une recherche dans le dictionnaire client.",
+    "features": {
+      "locale": "Les changements de langue doivent mettre a jour les entrees du dictionnaire client.",
+      "provider": "GTProvider fournit l'instantane du dictionnaire au navigateur.",
+      "interpolation": "Les variables sont interpolees depuis les options de recherche."
+    }
+  }
+}

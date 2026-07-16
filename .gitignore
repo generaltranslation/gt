@@ -10,6 +10,8 @@ _test_cli
 .env.local
 _testing
 dist/
+.next/
+.output/
 .turbo
 .claude/settings.local.json
 .claude/mcp.json

@@ -4,7 +4,7 @@
     "build": {
       "dependsOn": ["^build"],
       "cache": true,
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", ".next/**", ".output/**"]
     },
     "transpile": {
       "dependsOn": ["^transpile"],

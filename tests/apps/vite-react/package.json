@@ -1,0 +1,26 @@
+{
+  "name": "gt-test-vite-react",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5174 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 4174 --strictPort",
+    "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "gt-react": "workspace:*",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@generaltranslation/compiler": "workspace:*",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.2",
+    "typescript": "^5",
+    "vite": "^8.0.16"
+  }
+}

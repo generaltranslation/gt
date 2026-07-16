@@ -2,6 +2,52 @@
 
 This directory contains E2E test apps and benchmark suites for the gt-libraries monorepo.
 
+## Development apps
+
+The apps directly under `tests/apps/` exercise local workspace builds of the GT
+packages across supported frameworks and bundlers. They use `workspace:*`
+dependencies, so no manual linking or per-app install is required.
+
+| App                                        | Stack                           | GT package          |
+| ------------------------------------------ | ------------------------------- | ------------------- |
+| `next-app-router`                          | Next.js App Router              | `gt-next`           |
+| `next-app-router-dictionary`               | Next.js App Router dictionaries | `gt-next`           |
+| `next-app-router-locale-routing`           | Next.js locale routes           | `gt-next`           |
+| `next-app-router-locale-routing-ssg`       | Next.js locale routes with SSG  | `gt-next`           |
+| `next-app-router-locale-routing-use-cache` | Next.js Cache Components        | `gt-next`           |
+| `next-pages-router`                        | Next.js Pages Router            | `gt-next`           |
+| `tanstack-start`                           | TanStack Start                  | `gt-tanstack-start` |
+| `gt-node-express`                          | Express                         | `gt-node`           |
+| `react-native`                             | Expo + React Native             | `gt-react-native`   |
+| `vite-react`                               | Vite + React                    | `gt-react`          |
+| `webpack-react`                            | webpack + React                 | `gt-react`          |
+| `rollup-react`                             | Rollup + React                  | `gt-react`          |
+| `rolldown-react`                           | Rolldown + React                | `gt-react`          |
+| `esbuild-react`                            | esbuild + React                 | `gt-react`          |
+
+Run an app from the repository root with its workspace name:
+
+```bash
+pnpm --filter gt-test-next-app-router dev
+pnpm --filter gt-test-vite-react build
+pnpm --filter gt-test-node-express typecheck
+```
+
+All apps use bundled empty or local translations and build without credentials.
+`gt-node-express` optionally reads `PORT` (default `3001`) and `GT_PROJECT_ID`.
+No environment files are committed.
+
+### Migration provenance
+
+These apps were imported as a sanitized working-tree snapshot from
+`generaltranslation/gt-test-apps` at commit
+`4c0d32961c6d2841e4ec2b5060d7bd1b6f17e128`. The source checkout contained
+uncommitted app work, so its Git history was not merged into this repository.
+This also avoids importing obsolete per-app lockfiles, linking machinery, local
+environment files, and generated artifacts through historical commits.
+The React Native app was added from the local `origin/main` ref at commit
+`7b0c71d` because the source working branch was eight commits behind.
+
 ## Benchmarks
 
 ### Running locally

@@ -1,0 +1,25 @@
+{
+  "name": "gt-test-esbuild-react",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs --serve --port 5178",
+    "build": "node esbuild.config.mjs",
+    "preview": "node esbuild.config.mjs --serve --port 4178 --production",
+    "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "gt-react": "workspace:*",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@generaltranslation/compiler": "workspace:*",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "esbuild": "^0.28.1",
+    "typescript": "^5"
+  }
+}

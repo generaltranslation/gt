@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "GT React Native",
+    "slug": "gt-react-native-test-app",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "gtrn",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.generaltranslation.gtreactnative"
+    },
+    "android": {
+      "package": "com.generaltranslation.gtreactnative"
+    }
+  }
+}

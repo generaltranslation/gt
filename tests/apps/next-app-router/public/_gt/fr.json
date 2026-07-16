@@ -1,0 +1,21 @@
+{
+  "022abbef6e5b1888": "Une chaîne traduite côté client avec useGT.",
+  "3f0b4a6278032ce9": "Une chaîne traduite côté serveur avec getGT.",
+  "99a780efcbb529ab": {
+    "c": "Ce paragraphe est traduit dans un composant client.",
+    "i": 1,
+    "t": "p"
+  },
+  "c02e798cbb0680e7": {
+    "c": [
+      "Ce paragraphe est traduit dans un composant serveur React, avec une valeur à l’exécution\u0000a0: ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      }
+    ],
+    "i": 1,
+    "t": "p"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "gt-test-webpack-react",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "webpack serve --mode development --host 127.0.0.1 --port 5175",
+    "build": "webpack --mode production",
+    "preview": "webpack serve --mode production --host 127.0.0.1 --port 4175",
+    "lint": "oxlint --config ../../../examples/.oxlintrc.react.json .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "gt-react": "workspace:*",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@generaltranslation/compiler": "workspace:*",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "css-loader": "^7.1.4",
+    "html-webpack-plugin": "^5.6.7",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.6.2",
+    "typescript": "^5",
+    "webpack": "^5.107.2",
+    "webpack-cli": "^7.0.3",
+    "webpack-dev-server": "^5.2.5"
+  }
+}

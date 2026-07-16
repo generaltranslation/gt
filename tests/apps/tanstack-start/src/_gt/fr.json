@@ -1,0 +1,9 @@
+{
+  "7135c59c7d131098": {
+    "c": "Un GTProvider à la racine ; chaque route illustre un comportement de rendu différent de TanStack Start.",
+    "i": 1,
+    "t": "p"
+  },
+  "a798e32dd0dd22ee": "Bonjour depuis le fournisseur racine.",
+  "d361de2760e0ac32": "Un appel de chaîne gt() au moment de l’exécution."
+}

@@ -1,0 +1,84 @@
+:root {
+  color-scheme: light dark;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  margin-bottom: 1.5rem;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand span {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.panel {
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  margin: 0 0 0.5rem;
+}
+
+.note {
+  opacity: 0.85;
+}
+
+.value {
+  font-weight: 600;
+}
+
+.code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
