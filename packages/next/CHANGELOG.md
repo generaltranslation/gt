@@ -1,5 +1,20 @@
 # gt-next
 
+## 11.0.9
+
+### Patch Changes
+
+- [#1894](https://github.com/generaltranslation/gt/pull/1894) [`0d50450`](https://github.com/generaltranslation/gt/commit/0d50450288bdea5ff4bb6b42f5360ac0b6c4e81d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Correct the shipped `CompilerOptions.type` documentation to show `none` as the runtime default.
+
+- [#1850](https://github.com/generaltranslation/gt/pull/1850) [`81d0efe`](https://github.com/generaltranslation/gt/commit/81d0efea4540e11ec0fca784ebbc61db3cf28288) Thanks [@bgub](https://github.com/bgub)! - Stop publishing unreachable `index.types` runtime bundles. The `index.types` entry only backs the exports map's `types` conditions, so only its declaration files are ever resolved; the runtime `.cjs`/`.mjs` artifacts (and sourcemaps) were dead weight in the published package (~179KB in gt-react, ~83KB in gt-next). They are now deleted after each build.
+
+- Updated dependencies [[`5d93858`](https://github.com/generaltranslation/gt/commit/5d9385872eb041af0991fc273d5eddd7a032e584), [`81d0efe`](https://github.com/generaltranslation/gt/commit/81d0efea4540e11ec0fca784ebbc61db3cf28288), [`ffa855f`](https://github.com/generaltranslation/gt/commit/ffa855fa929d1c668e75d0c27a99dc704fcb2561), [`da32fa0`](https://github.com/generaltranslation/gt/commit/da32fa05bd718fc55ce418e68678c2d2691d5433), [`8836fbd`](https://github.com/generaltranslation/gt/commit/8836fbda088b5192b2eaa8e2109a724256458bc2), [`5721267`](https://github.com/generaltranslation/gt/commit/57212672a595c8c8578366636767bcbfe8ab6e57), [`b320e17`](https://github.com/generaltranslation/gt/commit/b320e176d581bfade57f0d122f7b95e8e3229cbf), [`8b9b440`](https://github.com/generaltranslation/gt/commit/8b9b4404b703b552b9aa327dc0ae85fce584c97c)]:
+  - generaltranslation@9.0.2
+  - gt-react@11.0.9
+  - @generaltranslation/react-core@11.0.9
+  - @generaltranslation/compiler@1.3.31
+  - gt-i18n@1.0.6
+
 ## 11.0.8
 
 ### Patch Changes

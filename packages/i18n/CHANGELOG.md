@@ -1,5 +1,14 @@
 # gt-i18n
 
+## 1.0.6
+
+### Patch Changes
+
+- [#1901](https://github.com/generaltranslation/gt/pull/1901) [`8836fbd`](https://github.com/generaltranslation/gt/commit/8836fbda088b5192b2eaa8e2109a724256458bc2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Forward the top-level `modelProvider` configuration to runtime translation requests while allowing explicit runtime metadata to override it.
+
+- Updated dependencies [[`5d93858`](https://github.com/generaltranslation/gt/commit/5d9385872eb041af0991fc273d5eddd7a032e584), [`5721267`](https://github.com/generaltranslation/gt/commit/57212672a595c8c8578366636767bcbfe8ab6e57), [`8b9b440`](https://github.com/generaltranslation/gt/commit/8b9b4404b703b552b9aa327dc0ae85fce584c97c)]:
+  - generaltranslation@9.0.2
+
 ## 1.0.5
 
 ### Patch Changes

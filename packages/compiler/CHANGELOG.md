@@ -1,5 +1,14 @@
 # @generaltranslation/compiler
 
+## 1.3.31
+
+### Patch Changes
+
+- [#1887](https://github.com/generaltranslation/gt/pull/1887) [`da32fa0`](https://github.com/generaltranslation/gt/commit/da32fa05bd718fc55ce418e68678c2d2691d5433) Thanks [@bgub](https://github.com/bgub)! - Remove empty callback registration and injection modules while preserving callback validation and `useGT` hash injection behavior.
+
+- Updated dependencies [[`5d93858`](https://github.com/generaltranslation/gt/commit/5d9385872eb041af0991fc273d5eddd7a032e584), [`5721267`](https://github.com/generaltranslation/gt/commit/57212672a595c8c8578366636767bcbfe8ab6e57), [`8b9b440`](https://github.com/generaltranslation/gt/commit/8b9b4404b703b552b9aa327dc0ae85fce584c97c)]:
+  - generaltranslation@9.0.2
+
 ## 1.3.30
 
 ### Patch Changes
