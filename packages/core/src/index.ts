@@ -272,9 +272,7 @@ export class GT extends GTRuntime {
    * const result = await gt.checkJobStatus([
    *   'job-123',
    *   'job-456',
-   * ], {
-   *   timeout: 10000,
-   * });
+   * ], 10000);
    */
   async checkJobStatus(
     jobIds: string[],
