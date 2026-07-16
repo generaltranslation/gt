@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { _setupProject, SetupProjectResult } from '../setupProject';
+import {
+  _setupProject,
+  type SetupProjectFileReference,
+  SetupProjectResult,
+} from '../setupProject';
 import { TranslationRequestConfig } from '../../types';
 import { FileReference } from '../../types-dir/api/file';
 import { apiRequest } from '../utils/apiRequest';
@@ -88,6 +92,28 @@ describe('_setupProject', () => {
     expect(result.status).toBe('queued');
     // @ts-expect-error - setupJobId is not defined in the type
     expect(result.setupJobId).toBe('setup-job-123');
+  });
+
+  it('accepts references containing only the IDs sent to the API', async () => {
+    const files: SetupProjectFileReference[] = [
+      {
+        branchId: 'branch-123',
+        fileId: 'file-123',
+        versionId: 'version-456',
+      },
+    ];
+
+    vi.mocked(apiRequest).mockResolvedValue({ status: 'completed' });
+
+    await _setupProject(files, mockConfig);
+
+    expect(apiRequest).toHaveBeenCalledWith(
+      mockConfig,
+      '/v2/project/setup/generate',
+      expect.objectContaining({
+        body: expect.objectContaining({ files }),
+      })
+    );
   });
 
   it('should use custom timeout when provided', async () => {
