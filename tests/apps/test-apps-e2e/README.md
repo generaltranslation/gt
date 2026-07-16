@@ -1,0 +1,23 @@
+# GT test app browser checks
+
+This workspace turns the manual test-app workflow into a sequential Playwright
+matrix. For every app it first verifies that the app's GT entry package resolves
+inside this checkout's `packages/` directory, then starts the app's development
+server and exercises English, French, and Chinese output in Chromium.
+
+Run the complete matrix from the repository root:
+
+```bash
+pnpm --filter gt-test-apps-e2e test:e2e:install
+pnpm --filter gt-test-apps-e2e test:e2e
+```
+
+Run one or more apps with a comma-separated filter:
+
+```bash
+GT_TEST_APPS=vite-react,next-app-router pnpm --filter gt-test-apps-e2e test:e2e
+```
+
+The runner starts one development server at a time and always delegates server
+shutdown to Playwright. Traces and screenshots from failures are written under
+the root `.turbo/playwright/` directory.

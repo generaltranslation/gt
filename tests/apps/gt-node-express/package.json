@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "lint": "oxlint --config ../../../.oxlintrc.json .",
@@ -18,6 +18,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^20",
     "gt": "workspace:*",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }

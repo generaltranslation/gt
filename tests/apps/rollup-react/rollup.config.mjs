@@ -48,6 +48,7 @@ export default {
     }),
     nodeResolve({
       browser: true,
+      dedupe: ['react', 'react-dom'],
       extensions: ['.mjs', '.js', '.jsx', '.json', '.ts', '.tsx'],
     }),
     json(),
