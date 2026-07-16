@@ -1074,6 +1074,31 @@ describe('I18nCache', () => {
     );
   });
 
+  it('forwards the top-level model provider to runtime translations', () => {
+    createCache({ modelProvider: 'anthropic' });
+
+    expect(createTranslateManyFactory).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Number),
+      { modelProvider: 'anthropic' }
+    );
+  });
+
+  it('prefers runtime translation metadata over the top-level model provider', () => {
+    createCache({
+      modelProvider: 'anthropic',
+      runtimeTranslation: {
+        metadata: { modelProvider: 'openai' },
+      },
+    });
+
+    expect(createTranslateManyFactory).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Number),
+      { modelProvider: 'openai' }
+    );
+  });
+
   it('lookupDictionaryWithFallback() respects source dictionary format options', async () => {
     const source = 'Hello {name}';
     const sourceOptions: LookupOptions = {

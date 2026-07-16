@@ -130,6 +130,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       devApiKey: params.devApiKey,
       apiKey: params.apiKey,
       runtimeUrl: params.runtimeUrl,
+      modelProvider: params.modelProvider,
       cacheExpiryTime: params.cacheExpiryTime,
       batchConfig: params.batchConfig,
       runtimeTranslation: params.runtimeTranslation,
@@ -151,7 +152,12 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     this.createTranslateMany = createTranslateManyFactory(
       getI18nConfig().getGTClass(),
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT,
-      this.config.runtimeTranslation?.metadata ?? {}
+      {
+        ...(this.config.modelProvider && {
+          modelProvider: this.config.modelProvider,
+        }),
+        ...this.config.runtimeTranslation?.metadata,
+      }
     );
 
     // Setup locale-keyed caches
