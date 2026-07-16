@@ -1,4 +1,5 @@
 const path = require('path');
+const { plugin: gtPlugin } = require('gt-react-native/plugin');
 
 module.exports = function (api) {
   api.cache(true);
@@ -14,7 +15,7 @@ module.exports = function (api) {
     ],
     plugins: [
       [
-        require('gt-react-native/plugin').default,
+        gtPlugin,
         {
           entryPointFilePath: path.resolve(__dirname, 'index.ts'),
         },
