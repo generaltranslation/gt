@@ -28,6 +28,11 @@ type TransformOptions = {
    * later pass can nest it inside GTProvider while skipped files remain.
    */
   retainNextIntlProvider?: boolean;
+  /**
+   * Treat hasLocale as supported (its guard is removed by the layout pass)
+   * instead of skipping the file.
+   */
+  dropLocaleValidation?: boolean;
 };
 
 type ImportedSymbol = {
@@ -106,7 +111,9 @@ export function transformSourceFile(
       SERVER_SWAPS.has(symbol.imported) ||
       REMOVALS.has(symbol.imported) ||
       MESSAGES_HOOKS.has(symbol.imported) ||
-      symbol.imported === PROVIDER;
+      symbol.imported === PROVIDER ||
+      (options.dropLocaleValidation === true &&
+        symbol.imported === 'hasLocale');
     if (!supported) {
       skipReasons.push(
         `unsupported next-intl API: ${symbol.imported} (from '${symbol.source}')`
@@ -404,34 +411,31 @@ export function transformSourceFile(
     }
   }
 
+  let insertedNewDeclarations = false;
   for (const importPath of nextIntlImports) {
+    let kept: t.ImportSpecifier[] = [];
     if (providerRetained) {
-      const kept = importPath.node.specifiers.filter(
-        (specifier) =>
+      kept = importPath.node.specifiers.filter(
+        (specifier): specifier is t.ImportSpecifier =>
           t.isImportSpecifier(specifier) &&
           t.isIdentifier(specifier.imported) &&
           (specifier.imported.name === PROVIDER ||
             (MESSAGES_HOOKS.has(specifier.imported.name) &&
               !removedProviderMessageBindings.has(specifier.local.name)))
       );
-      if (kept.length > 0) {
-        importPath.node.specifiers = kept;
-        continue;
-      }
     }
-    if (importPath === firstNextIntl && newDeclarations.length > 0) {
+    if (kept.length > 0) {
+      importPath.node.specifiers = kept;
+      if (!insertedNewDeclarations && newDeclarations.length > 0) {
+        importPath.insertAfter(newDeclarations);
+        insertedNewDeclarations = true;
+      }
+    } else if (!insertedNewDeclarations && newDeclarations.length > 0) {
       importPath.replaceWithMultiple(newDeclarations);
+      insertedNewDeclarations = true;
     } else {
       importPath.remove();
     }
-  }
-  if (
-    newDeclarations.length > 0 &&
-    providerRetained &&
-    firstNextIntl.node &&
-    firstNextIntl.node.specifiers?.length > 0
-  ) {
-    firstNextIntl.insertAfter(newDeclarations);
   }
 
   const output = generate(
