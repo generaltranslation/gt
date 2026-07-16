@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
+import path from 'path';
 import type { NextConfig } from 'next';
 import { BABEL_PLUGIN_SUPPORT } from '../plugin/constants';
 
@@ -1399,8 +1400,11 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig({}, { dictionary: './my-dict.json' });
 
+      type Condition = string | RegExp | Condition[];
       const wc = makeWebpackConfig() as WebpackConfig & {
-        module?: { rules?: { test: RegExp; type: string }[] };
+        module?: {
+          rules?: { test: Condition; include?: Condition; type: string }[];
+        };
       };
       runWebpack(result, wc);
 
@@ -1408,10 +1412,39 @@ describe('withGTConfig', () => {
         (r) => r.type === 'javascript/auto'
       );
       expect(rule).toBeDefined();
-      expect('node_modules/gt-next/dist/index.server.mjs').toMatch(rule!.test);
-      expect('node_modules/gt-next/dist/index.server.js').not.toMatch(
-        rule!.test
-      );
+
+      // Mirrors webpack condition semantics: string = path prefix,
+      // RegExp = test, array = any-of.
+      const matches = (cond: Condition, p: string): boolean =>
+        typeof cond === 'string'
+          ? p.startsWith(cond)
+          : Array.isArray(cond)
+            ? cond.some((c) => matches(c, p))
+            : cond.test(p);
+      const ruleApplies = (p: string) =>
+        matches(rule!.test, p) && (!rule!.include || matches(rule!.include, p));
+
+      // app-local, hoisted-root, and pnpm-store installs
+      expect(
+        ruleApplies('/app/node_modules/gt-next/dist/index.server.mjs')
+      ).toBe(true);
+      expect(
+        ruleApplies(
+          '/repo/node_modules/.pnpm/gt-next@1.0.0/node_modules/gt-next/dist/index.server.mjs'
+        )
+      ).toBe(true);
+      // symlinked install (workspace:*, file:) — real path has no node_modules
+      // segment; matched via this package's own dist dir (__dirname of config)
+      expect(
+        ruleApplies(
+          path.join(path.resolve(__dirname, '..'), 'index.server.mjs')
+        )
+      ).toBe(true);
+      // never CJS dist, never other packages
+      expect(
+        ruleApplies('/app/node_modules/gt-next/dist/index.server.js')
+      ).toBe(false);
+      expect(ruleApplies('/app/node_modules/other/dist/index.mjs')).toBe(false);
     });
 
     it('does not add the javascript/auto rule on the client compilation', async () => {

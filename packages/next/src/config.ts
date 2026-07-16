@@ -759,10 +759,25 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
             customLoadTranslationsPath ||
             customLoadDictionaryPath)
         ) {
+          // gt-next normally resolves inside a node_modules dir (app-local,
+          // hoisted monorepo root, or the pnpm store), but symlinked installs
+          // (workspace:*, file:) resolve to a real path with no node_modules
+          // segment — so also match this package's dist dir, where this
+          // compiled file lives.
+          const gtNextDistDirs: (string | RegExp)[] = [
+            /node_modules[\\/]gt-next[\\/]dist[\\/]/,
+          ];
+          try {
+            gtNextDistDirs.push(__dirname);
+          } catch {
+            // __dirname is undefined when the ESM dist of this module is
+            // loaded natively; the node_modules pattern still applies.
+          }
           webpackConfig.module ??= {};
           webpackConfig.module.rules ??= [];
           webpackConfig.module.rules.push({
-            test: /node_modules[\\/]gt-next[\\/]dist[\\/].*\.mjs$/,
+            test: /\.mjs$/,
+            include: gtNextDistDirs,
             type: 'javascript/auto',
           });
         }
