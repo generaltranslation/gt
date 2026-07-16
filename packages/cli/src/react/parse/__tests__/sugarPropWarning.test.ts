@@ -46,11 +46,7 @@ async function scan(files: string[]) {
  * Bare boolean attributes (`<T $requiresReview>`) carry no `=`, so they are
  * matched on the closing bracket instead.
  */
-function expectedLocations(
-  file: string,
-  attr: string,
-  bare = false
-): string[] {
+function expectedLocations(file: string, attr: string, bare = false): string[] {
   const fullPath = path.join(FIXTURES, file);
   const lines = fs.readFileSync(fullPath, 'utf8').split('\n');
   const found: string[] = [];
