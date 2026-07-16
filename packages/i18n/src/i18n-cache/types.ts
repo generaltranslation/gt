@@ -48,6 +48,7 @@ export type I18nCacheConfig = {
   devApiKey?: string;
   apiKey?: string;
   runtimeUrl?: string | null;
+  modelProvider?: string;
   /**
    * Locale cache TTL in milliseconds. Undefined uses the default TTL, null
    * disables expiry, and a number sets an explicit TTL.

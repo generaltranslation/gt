@@ -1,5 +1,6 @@
 import { defineConfig } from 'tsdown';
 import {
+  createRemoveRuntimeArtifactsHook,
   createTsdownConfig,
   createUseClientBoundaryPlugin,
 } from '../../tsdown.preset.mts';
@@ -32,6 +33,11 @@ const entries = [
   'src/macros.ts',
 ];
 
+// src/index.types.ts only backs the exports map's "types" conditions; its
+// declaration outputs are published but its runtime bundles are unreachable,
+// so they are deleted after each build.
+const typesOnlyEntry = 'src/index.types.ts';
+
 export default defineConfig(
   entries.flatMap((entry, index) => {
     const entryDeps = entry.startsWith('src/index.') ? contextDeps : deps;
@@ -51,6 +57,12 @@ export default defineConfig(
             outputExtension: '.cjs',
           }),
         ],
+        ...(entry === typesOnlyEntry && {
+          onSuccess: createRemoveRuntimeArtifactsHook(process.cwd(), 'dist', [
+            'index.types.cjs',
+            'index.types.cjs.map',
+          ]),
+        }),
       },
       {
         ...esmConfig,
@@ -65,6 +77,12 @@ export default defineConfig(
             outputExtension: '.mjs',
           }),
         ],
+        ...(entry === typesOnlyEntry && {
+          onSuccess: createRemoveRuntimeArtifactsHook(process.cwd(), 'dist', [
+            'index.types.mjs',
+            'index.types.mjs.map',
+          ]),
+        }),
       },
     ];
   })

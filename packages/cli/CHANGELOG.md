@@ -1,5 +1,55 @@
 # gtx-cli
 
+## 2.14.62
+
+### Patch Changes
+
+- Updated dependencies [[`3ad93f8`](https://github.com/generaltranslation/gt/commit/3ad93f89da099ef345b707bf37db425662d87e2a)]:
+  - generaltranslation@9.0.1
+  - @generaltranslation/python-extractor@0.2.28
+  - @generaltranslation/supported-locales@2.1.8
+
+## 2.14.61
+
+### Patch Changes
+
+- [#1876](https://github.com/generaltranslation/gt/pull/1876) [`ae59375`](https://github.com/generaltranslation/gt/commit/ae593758047e32396e8eb7eeca9b38b86a20a909) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Make `upload` command overwrite content
+
+## 2.14.60
+
+### Patch Changes
+
+- [#1873](https://github.com/generaltranslation/gt/pull/1873) [`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Retrigger package publication after repairing release workspace dependency resolution.
+
+- Updated dependencies [[`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1)]:
+  - @generaltranslation/python-extractor@0.2.27
+  - @generaltranslation/supported-locales@2.1.7
+
+## 2.14.59
+
+### Patch Changes
+
+- [#1866](https://github.com/generaltranslation/gt/pull/1866) [`53e61ab`](https://github.com/generaltranslation/gt/commit/53e61abbb4522631f252bcd268eae9c079dd9967) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Recover the stable releases skipped after the Odysseus version regression and publish the accumulated package changes under new npm versions.
+
+- Updated dependencies [[`53e61ab`](https://github.com/generaltranslation/gt/commit/53e61abbb4522631f252bcd268eae9c079dd9967)]:
+  - @generaltranslation/python-extractor@0.2.26
+  - @generaltranslation/supported-locales@2.1.6
+
+## 2.14.53
+
+### Patch Changes
+
+- [#1857](https://github.com/generaltranslation/gt/pull/1857) [`70813b2`](https://github.com/generaltranslation/gt/commit/70813b23e62ec1afbee54dd8fd41186b913242c4) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `git setup`, merge drivers, and `omitConfigIds` flags
+
+## 2.14.52
+
+### Patch Changes
+
+- [#1838](https://github.com/generaltranslation/gt/pull/1838) [`b4ef241`](https://github.com/generaltranslation/gt/commit/b4ef2412635f7bc64886b8babde475c6ea1c3503) Thanks [@bgub](https://github.com/bgub)! - Move `@babel/types` from `devDependencies` to `dependencies`. The CLI imports `@babel/types` at runtime across its parsing/JSX-injection code, but it was only declared as a dev dependency and left external in the published build. On strict/isolated installs (e.g. pnpm on Vercel) consumers hit `ERR_MODULE_NOT_FOUND: Cannot find package '@babel/types'` when running `gtx-cli translate`. It now sits alongside the other `@babel/*` runtime dependencies so it is installed for consumers.
+
+- Updated dependencies [[`7db86bd`](https://github.com/generaltranslation/gt/commit/7db86bd92be5d09a2da10133dbb873248b0e5a5c)]:
+  - @generaltranslation/supported-locales@2.1.3
+
 ## 2.14.51
 
 ### Patch Changes

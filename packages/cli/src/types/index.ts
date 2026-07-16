@@ -81,6 +81,7 @@ export type TranslateFlags = SharedFlags & {
   experimentalLocalizeStaticImports?: boolean;
   experimentalLocalizeRelativeAssets?: boolean;
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
+  omitConfigIds?: boolean;
   excludeStaticUrls?: string[];
   excludeStaticImports?: string[];
   docsImportRewrites?: Array<{
@@ -256,6 +257,7 @@ export type Settings = {
   stageTranslations: boolean; // if true, always stage the project during translate command
   requiresReview?: boolean; // top-level default: translated artifacts require approval before the client uses them
   publish?: boolean; // if true, publish the translations to the CDN; undefined means no global publish intent
+  omitConfigIds?: boolean; // if true, do not write _versionId or _branchId to gt.config.json
   _versionId?: string; // internal use only
   _branchId?: string; // internal use only
   version?: string; // for specifying a custom version id to use. Should be unique

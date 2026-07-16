@@ -1,5 +1,36 @@
 # @generaltranslation/compiler
 
+## 1.3.30
+
+### Patch Changes
+
+- [#1862](https://github.com/generaltranslation/gt/pull/1862) [`7f0fbfe`](https://github.com/generaltranslation/gt/commit/7f0fbfef78f677372d39087252ab8d6c72d78e7e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Skip compile-time hash injection for `<T>` components containing `<Derive>` children. A single injected hash pinned the runtime lookup to a hash matching none of the per-variant translations, so the rendered translation was stuck on one variant. Also stops injecting an empty `_hash` for `<T $context={derive(...)}>` and autoderive dynamic content.
+
+- [#1863](https://github.com/generaltranslation/gt/pull/1863) [`ed53c71`](https://github.com/generaltranslation/gt/commit/ed53c71bc5c6a8d82feaef1b52f68d20b3794c0b) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Fix `$_hash` injection for `gt()` callbacks with derive content: a derive call no longer shifts the injected hashes of sibling `gt()` calls (counter misalignment), and derive `$context` no longer injects an empty `$_hash` or an empty-hash `useGT()` prefetch entry, both of which broke translation lookups.
+
+- Updated dependencies [[`3ad93f8`](https://github.com/generaltranslation/gt/commit/3ad93f89da099ef345b707bf37db425662d87e2a)]:
+  - generaltranslation@9.0.1
+
+## 1.3.29
+
+### Patch Changes
+
+- [#1873](https://github.com/generaltranslation/gt/pull/1873) [`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Retrigger package publication after repairing release workspace dependency resolution.
+
+## 1.3.28
+
+### Patch Changes
+
+- [#1864](https://github.com/generaltranslation/gt/pull/1864) [`cb8f38e`](https://github.com/generaltranslation/gt/commit/cb8f38ebe5e9c7336bb4820dbef4b6ee5675645d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Honor the `compileTimeHash` option: setting it to `false` now actually disables hash injection (previously it was ignored and injection always ran). The default flips to `true`, matching the previously observed always-inject behavior, so default behavior is unchanged.
+
+- [#1866](https://github.com/generaltranslation/gt/pull/1866) [`53e61ab`](https://github.com/generaltranslation/gt/commit/53e61abbb4522631f252bcd268eae9c079dd9967) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Recover the stable releases skipped after the Odysseus version regression and publish the accumulated package changes under new npm versions.
+
+## 1.3.26
+
+### Patch Changes
+
+- [#1858](https://github.com/generaltranslation/gt/pull/1858) [`006e071`](https://github.com/generaltranslation/gt/commit/006e071bf87ffe80f2d18958ddfa8f18cc2d85d2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Accept parsed `gt.config.json` objects in the compiler and React SPA configuration types.
+
 ## 1.3.25
 
 ### Patch Changes

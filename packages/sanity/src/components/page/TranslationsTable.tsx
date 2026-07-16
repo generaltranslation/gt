@@ -17,6 +17,7 @@ export const TranslationsTable: React.FC = () => {
     importedTranslations,
     handleImportDocument,
     branchId,
+    getVersionId,
   } = useTranslations();
 
   if (loadingDocuments) {
@@ -50,10 +51,11 @@ export const TranslationsTable: React.FC = () => {
                     .filter((locale) => locale.enabled !== false)
                     .map((locale) => {
                       const documentId = getDocumentPublishedId(document);
+                      const versionId = getVersionId(document);
                       const key = createTranslationStatusKey(
                         branchId,
                         documentId,
-                        document._rev,
+                        versionId,
                         locale.localeId
                       );
                       const status = translationStatuses.get(key);
@@ -62,14 +64,14 @@ export const TranslationsTable: React.FC = () => {
 
                       return (
                         <LanguageStatus
-                          key={`${document._id}-${document._rev}-${locale.localeId}`}
+                          key={`${document._id}-${versionId}-${locale.localeId}`}
                           title={locale.description || locale.localeId}
                           progress={status?.progress || 0}
                           isImported={isImported || isDownloaded}
                           importFile={async () => {
                             await handleImportDocument(
                               documentId,
-                              document._rev,
+                              versionId,
                               locale.localeId
                             );
                           }}

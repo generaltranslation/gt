@@ -10,7 +10,7 @@ export type HeadersAndCookies = {
 export type CompilerOptions = {
   /**
    * Which compiler plugin to use: babel, swc, or none
-   * @default 'babel'
+   * @default 'none'
    */
   type: 'babel' | 'swc' | 'none';
   /**
@@ -54,6 +54,8 @@ export type BaseWithGTConfigProps = {
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
   disableInvalidLocaleWarning?: boolean;
+  /** Regular expression source that limits i18n middleware routing by pathname. */
+  pathRegex?: string;
   // Rendering
   renderSettings?: {
     method: RenderMethod;

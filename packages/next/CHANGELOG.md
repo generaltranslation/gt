@@ -1,5 +1,94 @@
 # gt-next
 
+## 11.0.8
+
+### Patch Changes
+
+- [#1881](https://github.com/generaltranslation/gt/pull/1881) [`4ea53d6`](https://github.com/generaltranslation/gt/commit/4ea53d68e0889784d5255c9fc254b79950caace0) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Exclude custom translation IDs from SWC-generated content hashes to match the TypeScript compiler and runtime.
+
+- Updated dependencies [[`7f0fbfe`](https://github.com/generaltranslation/gt/commit/7f0fbfef78f677372d39087252ab8d6c72d78e7e), [`ed53c71`](https://github.com/generaltranslation/gt/commit/ed53c71bc5c6a8d82feaef1b52f68d20b3794c0b), [`3ad93f8`](https://github.com/generaltranslation/gt/commit/3ad93f89da099ef345b707bf37db425662d87e2a)]:
+  - @generaltranslation/compiler@1.3.30
+  - generaltranslation@9.0.1
+  - gt-i18n@1.0.5
+  - gt-react@11.0.8
+  - @generaltranslation/react-core@11.0.8
+
+## 11.0.7
+
+### Patch Changes
+
+- Updated dependencies [[`b742df9`](https://github.com/generaltranslation/gt/commit/b742df9f0684c6ea12da140c4fd73eebb42f897a), [`a148737`](https://github.com/generaltranslation/gt/commit/a1487377728b662dfd749ecfbd449a1e8d47db49)]:
+  - gt-i18n@1.0.4
+  - gt-react@11.0.7
+  - @generaltranslation/react-core@11.0.7
+
+## 11.0.6
+
+### Patch Changes
+
+- [#1873](https://github.com/generaltranslation/gt/pull/1873) [`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Retrigger package publication after repairing release workspace dependency resolution.
+
+- Updated dependencies [[`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1), [`6345dc5`](https://github.com/generaltranslation/gt/commit/6345dc5e3fe0a1e3ead9a3c30a0adaa4037d50a8)]:
+  - @generaltranslation/compiler@1.3.29
+  - gt-i18n@1.0.3
+  - gt-react@11.0.6
+  - @generaltranslation/react-core@11.0.6
+
+## 11.0.5
+
+### Patch Changes
+
+- Updated dependencies [[`cb8f38e`](https://github.com/generaltranslation/gt/commit/cb8f38ebe5e9c7336bb4820dbef4b6ee5675645d), [`53e61ab`](https://github.com/generaltranslation/gt/commit/53e61abbb4522631f252bcd268eae9c079dd9967)]:
+  - @generaltranslation/compiler@1.3.28
+  - @generaltranslation/react-core@11.0.5
+  - gt-react@11.0.5
+
+## 11.0.4
+
+### Patch Changes
+
+- [#1847](https://github.com/generaltranslation/gt/pull/1847) [`d8938b6`](https://github.com/generaltranslation/gt/commit/d8938b68ed8247b304d0cc0c22db3d3cc3a0b2ac) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add `withGTStaticProps()` for hydrating each statically generated Pages Router locale with its relevant translation snapshot. Pages Router locale routing is required so Next.js generates the page once per locale.
+
+- [#1848](https://github.com/generaltranslation/gt/pull/1848) [`1f33d5f`](https://github.com/generaltranslation/gt/commit/1f33d5f76ffc879d2d21aa2508e07e1d3b66c4e3) Thanks [@bgub](https://github.com/bgub)! - Remove unused dependencies: `@generaltranslation/supported-locales` from gt-react, gt-next, gt-i18n, and @generaltranslation/react-core, and `@generaltranslation/format` from gt-react. Nothing in these packages imports them, so this only reduces install weight.
+
+- [#1851](https://github.com/generaltranslation/gt/pull/1851) [`604889b`](https://github.com/generaltranslation/gt/commit/604889bf0cb833ecafbbe2febae842c81e161d10) Thanks [@bgub](https://github.com/bgub)! - Make `@generaltranslation/compiler` an optional peer dependency instead of a hard dependency. It is only used by the experimental `experimentalCompilerOptions.type: 'babel'` webpack path, which already degrades gracefully with a warning when the package cannot be resolved. Users who enable the experimental babel compiler must now install `@generaltranslation/compiler` themselves; everyone else saves ~8.5MB of install weight (the compiler plus its Babel toolchain).
+
+- Updated dependencies [[`006e071`](https://github.com/generaltranslation/gt/commit/006e071bf87ffe80f2d18958ddfa8f18cc2d85d2), [`7fb4a74`](https://github.com/generaltranslation/gt/commit/7fb4a74c52065694a40deafcf4596acc09e17f58), [`d23766c`](https://github.com/generaltranslation/gt/commit/d23766c78a2c1be278d85e896d2521453734a6eb), [`1f33d5f`](https://github.com/generaltranslation/gt/commit/1f33d5f76ffc879d2d21aa2508e07e1d3b66c4e3)]:
+  - @generaltranslation/compiler@1.3.26
+  - gt-i18n@1.0.2
+  - gt-react@11.0.4
+  - @generaltranslation/react-core@11.0.4
+
+## 11.0.3
+
+### Patch Changes
+
+- [#1844](https://github.com/generaltranslation/gt/pull/1844) [`d5a705f`](https://github.com/generaltranslation/gt/commit/d5a705f44991e3eb55a1ee803cfa816b53194a02) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Move middleware path filtering to `withGTConfig` and apply it to client-side locale path checks.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.3
+  - gt-react@11.0.3
+
+## 11.0.2
+
+### Patch Changes
+
+- [#1841](https://github.com/generaltranslation/gt/pull/1841) [`ae7eb72`](https://github.com/generaltranslation/gt/commit/ae7eb72ec46ad72fb693521faddc03d4950a3973) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add a `regexFilter` option to `createNextMiddleware` for limiting i18n middleware routing to matching pathnames.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.2
+  - gt-react@11.0.2
+
+## 11.0.1
+
+### Patch Changes
+
+- Updated dependencies [[`7db86bd`](https://github.com/generaltranslation/gt/commit/7db86bd92be5d09a2da10133dbb873248b0e5a5c)]:
+  - @generaltranslation/supported-locales@2.1.3
+  - gt-i18n@1.0.1
+  - gt-react@11.0.1
+  - @generaltranslation/react-core@11.0.1
+
 ## 11.0.0
 
 ### Major Changes

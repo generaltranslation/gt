@@ -1,5 +1,51 @@
 # locadex
 
+## 1.0.197
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.14.62
+
+## 1.0.196
+
+### Patch Changes
+
+- Updated dependencies [[`ae59375`](https://github.com/generaltranslation/gt/commit/ae593758047e32396e8eb7eeca9b38b86a20a909)]:
+  - gt@2.14.61
+
+## 1.0.195
+
+### Patch Changes
+
+- [#1873](https://github.com/generaltranslation/gt/pull/1873) [`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Retrigger package publication after repairing release workspace dependency resolution.
+
+- Updated dependencies [[`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1)]:
+  - gt@2.14.60
+
+## 1.0.194
+
+### Patch Changes
+
+- [#1866](https://github.com/generaltranslation/gt/pull/1866) [`53e61ab`](https://github.com/generaltranslation/gt/commit/53e61abbb4522631f252bcd268eae9c079dd9967) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Recover the stable releases skipped after the Odysseus version regression and publish the accumulated package changes under new npm versions.
+
+- Updated dependencies [[`53e61ab`](https://github.com/generaltranslation/gt/commit/53e61abbb4522631f252bcd268eae9c079dd9967)]:
+  - gt@2.14.59
+
+## 1.0.188
+
+### Patch Changes
+
+- Updated dependencies [[`70813b2`](https://github.com/generaltranslation/gt/commit/70813b23e62ec1afbee54dd8fd41186b913242c4)]:
+  - gt@2.14.53
+
+## 1.0.187
+
+### Patch Changes
+
+- Updated dependencies [[`b4ef241`](https://github.com/generaltranslation/gt/commit/b4ef2412635f7bc64886b8babde475c6ea1c3503)]:
+  - gt@2.14.52
+
 ## 1.0.186
 
 ### Patch Changes

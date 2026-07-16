@@ -1,5 +1,8 @@
-import { useSetLocale, useSetRegion } from '../hooks/conditions-store';
-import { useInternalRegionSelector } from '@generaltranslation/react-core/hooks';
+import {
+  useInternalRegionSelector,
+  useSetLocale,
+  useSetRegion,
+} from '@generaltranslation/react-core/hooks';
 import type { InternalRegionSelectorOptions } from '@generaltranslation/react-core/hooks';
 
 /**

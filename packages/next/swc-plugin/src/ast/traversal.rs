@@ -47,10 +47,6 @@ impl<'a> JsxTraversal<'a> {
 
     // Build sanitized children directly from JSX children
     if let Some(sanitized_children) = self.build_sanitized_children(&element.children) {
-      // Get the id from the element
-      let id = extract_attribute_from_jsx_attr(element, "id")
-        .or_else(|| extract_attribute_from_jsx_attr(element, "$id"));
-
       // Get the context from the element
       let context = extract_attribute_from_jsx_attr(element, "context")
         .or_else(|| extract_attribute_from_jsx_attr(element, "$context"));
@@ -64,11 +60,10 @@ impl<'a> JsxTraversal<'a> {
         || jsx_attr_contains_derive_call(element, "$context");
       let has_static = JsxHasher::contains_static(&sanitized_children) || has_derive_in_context;
       
-      // Create the full SanitizedData structure to match TypeScript implementation
+      // Create the full SanitizedData structure to match TypeScript compiler inputs
       use crate::hash::SanitizedData;
       let sanitized_data = SanitizedData {
         source: Some(Box::new(sanitized_children)),
-        id,
         context,
         max_chars,
         data_format: Some("JSX".to_string()),
@@ -101,7 +96,6 @@ impl<'a> JsxTraversal<'a> {
       
       let sanitized_data = SanitizedData {
         source: Some(Box::new(empty_children)),
-        id: None,
         context: None,
         max_chars: None,
         data_format: Some("JSX".to_string()),
@@ -1175,6 +1169,39 @@ mod tests {
   mod calculate_element_hash_tests {
     use super::*;
 
+    fn create_string_attr(name: &str, value: &str) -> JSXAttrOrSpread {
+      JSXAttrOrSpread::JSXAttr(JSXAttr {
+        span: DUMMY_SP,
+        name: JSXAttrName::Ident(IdentName {
+          span: DUMMY_SP,
+          sym: Atom::new(name),
+        }),
+        value: Some(JSXAttrValue::Str(Str {
+          span: DUMMY_SP,
+          value: Atom::new(value).into(),
+          raw: None,
+        })),
+      })
+    }
+
+    fn create_number_attr(name: &str, value: f64) -> JSXAttrOrSpread {
+      JSXAttrOrSpread::JSXAttr(JSXAttr {
+        span: DUMMY_SP,
+        name: JSXAttrName::Ident(IdentName {
+          span: DUMMY_SP,
+          sym: Atom::new(name),
+        }),
+        value: Some(JSXAttrValue::JSXExprContainer(JSXExprContainer {
+          span: DUMMY_SP,
+          expr: JSXExpr::Expr(Box::new(Expr::Lit(Lit::Num(Number {
+            span: DUMMY_SP,
+            value,
+            raw: None,
+          })))),
+        })),
+      })
+    }
+
     // Helper to create JSX element with children
     fn create_jsx_element_with_children(tag_name: &str, children: Vec<JSXElementChild>) -> JSXElement {
       JSXElement {
@@ -1330,6 +1357,46 @@ mod tests {
       // Same content should produce same hash
       assert_eq!(hash1, hash2, "Same content should produce same hash");
       assert!(!hash1.is_empty(), "Hash should not be empty for identical content");
+    }
+
+    #[test]
+    fn custom_id_does_not_change_hash() {
+      let visitor = create_test_visitor();
+      let mut first =
+        create_jsx_element_with_children("T", vec![create_jsx_text_child("Hello world")]);
+      first.opening.attrs = vec![
+        create_string_attr("id", "first-id"),
+        create_string_attr("context", "greeting"),
+        create_number_attr("maxChars", 40.0),
+      ];
+
+      let mut second = first.clone();
+      second.opening.attrs[0] = create_string_attr("id", "second-id");
+
+      let mut first_traversal = JsxTraversal::new(&visitor);
+      let (first_hash, first_json) = first_traversal.calculate_element_hash(&first);
+      let mut second_traversal = JsxTraversal::new(&visitor);
+      let (second_hash, second_json) = second_traversal.calculate_element_hash(&second);
+
+      assert_eq!(first_hash, second_hash, "Custom ID should not change hash");
+      assert_eq!(
+        first_json, second_json,
+        "Custom ID should not be serialized"
+      );
+      assert!(!first_json.contains("first-id"));
+      assert!(!second_json.contains("second-id"));
+
+      let mut different_context = first.clone();
+      different_context.opening.attrs[1] = create_string_attr("context", "farewell");
+      let mut context_traversal = JsxTraversal::new(&visitor);
+      let (context_hash, _) = context_traversal.calculate_element_hash(&different_context);
+      assert_ne!(first_hash, context_hash, "Context should change hash");
+
+      let mut different_content = first;
+      different_content.children = vec![create_jsx_text_child("Goodbye world")];
+      let mut content_traversal = JsxTraversal::new(&visitor);
+      let (content_hash, _) = content_traversal.calculate_element_hash(&different_content);
+      assert_ne!(first_hash, content_hash, "Content should change hash");
     }
   }
 

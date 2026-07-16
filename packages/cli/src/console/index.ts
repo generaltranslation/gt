@@ -1,3 +1,4 @@
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { BRANCH_COMPONENT } from '../react/jsx/utils/constants.js';
 import {
   colorizeFilepath,
@@ -131,9 +132,25 @@ export const warnInvalidMaxCharsSync = (
 ): string =>
   withLocation(
     file,
-    `Found invalid maxChars value: ${colorizeContent(value)}. Change the value to a valid number to ensure this content is translated.`,
+    `Found invalid maxChars value: ${colorizeContent(value)}. maxChars must be a numeric literal, e.g. maxChars={10}, to ensure this content is translated.`,
     location
   );
+
+export const warnDeprecatedTSugarPropsSync = (locations: string[]): string =>
+  createDiagnosticMessage({
+    whatHappened: `Found ${locations.length} deprecated ${colorizeIdString(
+      '$'
+    )}-prefixed prop${locations.length === 1 ? '' : 's'} on ${colorizeComponent(
+      '<T>'
+    )} components`,
+    fix: `Use the unprefixed forms instead (${colorizeIdString(
+      'context'
+    )}, ${colorizeIdString('id')}, ${colorizeIdString('maxChars')}, ${colorizeIdString(
+      'requiresReview'
+    )}); support for the ${colorizeIdString('$')}-prefixed forms will be removed in the next major version`,
+  }) +
+  '\n' +
+  locations.map((location) => `  ${colorizeLine(location)}`).join('\n');
 
 export const warnInvalidFormatSync = (
   file: string,
@@ -416,7 +433,6 @@ export const noSourceFileError = `No source translation file was found. Check yo
 export const noApiKeyError = `No API key was found. Pass --api-key or set the GT_API_KEY environment variable.`;
 export const devApiKeyError = `Development API keys cannot be used with the General Translation API. Use a production API key instead.\nGenerate a production API key with: npx gt auth -t production`;
 export const noProjectIdError = `No project ID was found. Pass --project-id, add projectId to gt.config.json, or set the GT_PROJECT_ID environment variable.`;
-export const noVersionIdError = `No version ID was found. Pass --version-id or add _versionId to gt.config.json.`;
 export const invalidConfigurationError = `The files configuration cannot be used for this operation. Provide a valid download configuration or set --publish true to upload translations to the CDN.`;
 export const branchResolutionError = `The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.`;
 

@@ -1,4 +1,5 @@
 import { DEFAULT_CACHE_EXPIRY_TIME } from './utils/constants';
+import { dedupePending } from './utils/dedupePending';
 
 export type ResourceCacheEntry<Value> = {
   expiresAt: number;
@@ -7,7 +8,7 @@ export type ResourceCacheEntry<Value> = {
 
 export class ResourceCache<Key extends string, Value> {
   private cache = new Map<Key, ResourceCacheEntry<Value>>();
-  private pendingLoads = new Map<Key, Promise<ResourceCacheEntry<Value>>>();
+  private pendingLoads = new Map<Key, Promise<Value>>();
   private loadResource: (key: Key) => Promise<Value>;
   private ttl: number;
 
@@ -46,26 +47,14 @@ export class ResourceCache<Key extends string, Value> {
     return this.get(key) ?? (await this.load(key));
   }
 
-  private async load(key: Key): Promise<Value> {
-    let loadPromise = this.pendingLoads.get(key);
-    if (!loadPromise) {
-      loadPromise = this.loadResource(key).then((value) => {
-        const entry = {
-          expiresAt: this.getExpiresAt(),
-          value,
-        };
-        this.cache.set(key, entry);
-        return entry;
-      });
-      this.pendingLoads.set(key, loadPromise);
-    }
-
-    try {
-      const entry = await loadPromise;
-      return entry.value;
-    } finally {
-      this.pendingLoads.delete(key);
-    }
+  private load(key: Key): Promise<Value> {
+    return dedupePending(this.pendingLoads, key, () =>
+      // The entry expiry is computed when the load resolves, not when it starts
+      this.loadResource(key).then((value) => {
+        this.set(key, value);
+        return value;
+      })
+    );
   }
 
   private getExpiresAt(): number {

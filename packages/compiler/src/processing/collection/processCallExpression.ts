@@ -17,8 +17,6 @@ import {
   validateUseTranslationsCallback,
 } from '../../transform/validation/validateTranslationFunction';
 import { registerUseGTCallback } from '../../transform/registration/callbacks/registerUseGTCallback';
-import { registerUseTranslationsCallback } from '../../transform/registration/callbacks/registerUseTranslationsCallback';
-import { registerUseMessagesCallback } from '../../transform/registration/callbacks/registerUseMessagesCallback';
 import { getTrackedVariable } from '../../transform/getTrackedVariable';
 import { isReactFunction } from '../../utils/constants/react/helpers';
 import { validateTranslationComponentArgs } from '../../transform/validation/validateTranslationComponentArgs';
@@ -113,11 +111,11 @@ function handleTranslationCallbackInvocation(
       break;
     case GT_CALLBACK_FUNCTIONS.useTranslations_callback:
     case GT_CALLBACK_FUNCTIONS.getTranslations_callback:
-      handleUseTranslationsCallback(callExprPath, state, identifier);
+      handleUseTranslationsCallback(callExprPath, state);
       break;
     case GT_CALLBACK_FUNCTIONS.useMessages_callback:
     case GT_CALLBACK_FUNCTIONS.getMessages_callback:
-      handleUseMessagesCallback(callExprPath, state, identifier);
+      handleUseMessagesCallback(callExprPath, state);
       break;
     default:
       return;
@@ -135,19 +133,24 @@ function handleUseGTCallback(
   // Check for violations
   const useGTCallbackParams = validateTranslationFunction(callExprPath, state);
   state.errorTracker.addErrors(useGTCallbackParams.errors);
+  if (useGTCallbackParams.errors.length > 0) {
+    return;
+  }
+
+  // Derive content (explicit derive() in the message, autoderive dynamic
+  // content) and derive $context cannot be hashed at compile time — the CLI
+  // resolves the variants and the runtime hashes the resolved values.
+  // Reserve the counter slot without a hash so the injection pass stays
+  // aligned and skips this call; register no prefetch entry.
   if (
-    useGTCallbackParams.errors.length > 0 ||
-    useGTCallbackParams.content === undefined
+    useGTCallbackParams.content === undefined ||
+    useGTCallbackParams.hasDeriveContext
   ) {
+    state.stringCollector.incrementCounter();
     return;
   }
 
   // Track the function call
-  // When context contains derive(), skip hash calculation (CLI handles resolution)
-  const hash = useGTCallbackParams.hasDeriveContext
-    ? ''
-    : useGTCallbackParams.hash;
-
   registerUseGTCallback({
     identifier,
     state,
@@ -156,7 +159,7 @@ function handleUseGTCallback(
     id: useGTCallbackParams.id,
     maxChars: useGTCallbackParams.maxChars,
     requiresReview: useGTCallbackParams.requiresReview,
-    hash,
+    hash: useGTCallbackParams.hash,
     format: useGTCallbackParams.format,
   });
 }
@@ -166,23 +169,12 @@ function handleUseGTCallback(
  */
 function handleUseTranslationsCallback(
   callExprPath: NodePath<t.CallExpression>,
-  state: TransformState,
-  identifier: number
+  state: TransformState
 ) {
-  // Check for violations
   const callExpr = callExprPath.node;
   const useTranslationsCallbackParams =
     validateUseTranslationsCallback(callExpr);
   state.errorTracker.addErrors(useTranslationsCallbackParams.errors);
-  if (useTranslationsCallbackParams.errors.length > 0) {
-    return;
-  }
-
-  // Track the function call
-  registerUseTranslationsCallback({
-    identifier,
-    state,
-  });
 }
 
 /**
@@ -190,24 +182,11 @@ function handleUseTranslationsCallback(
  */
 function handleUseMessagesCallback(
   callExprPath: NodePath<t.CallExpression>,
-  state: TransformState,
-  identifier: number
+  state: TransformState
 ) {
-  // Validate parameters
   const callExpr = callExprPath.node;
   const useMessagesCallbackParams = validateUseMessagesCallback(callExpr);
-
-  // Check for violations
   state.errorTracker.addErrors(useMessagesCallbackParams.errors);
-  if (useMessagesCallbackParams.errors.length > 0) {
-    return;
-  }
-
-  // Track the function call
-  registerUseMessagesCallback({
-    identifier,
-    state,
-  });
 }
 
 /**
@@ -273,6 +252,7 @@ function handleReactInvocation(
     maxChars,
     requiresReview,
     hasDeriveContext,
+    hasDeriveChildren,
   } = validateTranslationComponentArgs(callExprPath, canonicalName, state);
 
   if (errors.length > 0) {
@@ -280,17 +260,20 @@ function handleReactInvocation(
     return;
   }
 
-  // Calculate hash (skip when context contains derive — CLI handles resolution)
-  const hash = hasDeriveContext
-    ? ''
-    : _hash ||
-      hashSource({
-        source: children!,
-        ...(context && { context }),
-        ...(maxChars != null && { maxChars }),
-        ...(requiresReview === true && { requiresReview: true }),
-        dataFormat: 'JSX',
-      });
+  // Calculate hash (skip when context contains derive or children contain a
+  // <Derive> element — one hash per resolved variant, so the runtime computes
+  // it; the CLI handles variant resolution)
+  const hash =
+    hasDeriveContext || hasDeriveChildren
+      ? ''
+      : _hash ||
+        hashSource({
+          source: children!,
+          ...(context && { context }),
+          ...(maxChars != null && { maxChars }),
+          ...(requiresReview === true && { requiresReview: true }),
+          dataFormat: 'JSX',
+        });
 
   // Debug: record hash → children mapping
   // Note: children may be undefined when autoderive filters all dynamic-content

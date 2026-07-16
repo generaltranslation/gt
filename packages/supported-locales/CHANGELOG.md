@@ -1,5 +1,30 @@
 # @generaltranslation/supported-locales
 
+## 2.1.8
+
+### Patch Changes
+
+- Updated dependencies [[`3ad93f8`](https://github.com/generaltranslation/gt/commit/3ad93f89da099ef345b707bf37db425662d87e2a)]:
+  - generaltranslation@9.0.1
+
+## 2.1.7
+
+### Patch Changes
+
+- [#1873](https://github.com/generaltranslation/gt/pull/1873) [`2e57a08`](https://github.com/generaltranslation/gt/commit/2e57a08a3f8539400f0aef5b90fff25c0a44dce1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Retrigger package publication after repairing release workspace dependency resolution.
+
+## 2.1.6
+
+### Patch Changes
+
+- [#1866](https://github.com/generaltranslation/gt/pull/1866) [`53e61ab`](https://github.com/generaltranslation/gt/commit/53e61abbb4522631f252bcd268eae9c079dd9967) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Recover the stable releases skipped after the Odysseus version regression and publish the accumulated package changes under new npm versions.
+
+## 2.1.3
+
+### Patch Changes
+
+- [#1840](https://github.com/generaltranslation/gt/pull/1840) [`7db86bd`](https://github.com/generaltranslation/gt/commit/7db86bd92be5d09a2da10133dbb873248b0e5a5c) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Expand supported locales
+
 ## 2.1.2
 
 ### Patch Changes

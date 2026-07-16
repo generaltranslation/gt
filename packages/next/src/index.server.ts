@@ -14,6 +14,8 @@ initializeGT();
 export { parseLocale } from './pages-dir/parseLocale';
 export { withGTServerSideProps } from './pages-dir/withGTServerSideProps';
 export type { WithGTServerSideProps } from './pages-dir/withGTServerSideProps';
+export { withGTStaticProps } from './pages-dir/withGTStaticProps';
+export type { WithGTStaticProps } from './pages-dir/withGTStaticProps';
 
 // ===== Components ===== //
 export {

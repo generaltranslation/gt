@@ -53,24 +53,22 @@ const createGTProp = (
     {}
   );
 
-  // Check if plural
-  if (transformation === 'plural' && branches) {
+  // Check if plural or branch
+  if (
+    (transformation === 'plural' || transformation === 'branch') &&
+    branches
+  ) {
     const newBranches: Record<string, JsxChildren> = {};
     Object.entries(branches).forEach(
       ([key, value]: [string, TaggedChildren]) => {
         newBranches[key] = writeChildrenAsObjects(value);
       }
     );
-    newGTProp = { ...newGTProp, b: newBranches, t: 'p' };
-  }
-  if (transformation === 'branch' && branches) {
-    const newBranches: Record<string, JsxChildren> = {};
-    Object.entries(branches).forEach(
-      ([key, value]: [string, TaggedChildren]) => {
-        newBranches[key] = writeChildrenAsObjects(value);
-      }
-    );
-    newGTProp = { ...newGTProp, b: newBranches, t: 'b' };
+    newGTProp = {
+      ...newGTProp,
+      b: newBranches,
+      t: transformation === 'plural' ? 'p' : 'b',
+    };
   }
 
   return Object.keys(newGTProp).length ? newGTProp : undefined;
@@ -114,40 +112,6 @@ const handleSingleChildElement = (
       props,
       generaltranslation.branches
     );
-
-    // Add translatable HTML content props
-    let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce<GTProp>(
-      (acc, [minifiedName, fullName]) => {
-        const value = props[fullName];
-        if (typeof value === 'string') {
-          acc[minifiedName as keyof HtmlContentPropKeysRecord] = value;
-        }
-        return acc;
-      },
-      {}
-    );
-
-    // Check if plural
-    if (transformation === 'plural' && generaltranslation.branches) {
-      const newBranches: Record<string, JsxChildren> = {};
-      Object.entries(generaltranslation.branches).forEach(
-        ([key, value]: [string, TaggedChildren]) => {
-          newBranches[key] = writeChildrenAsObjects(value);
-        }
-      );
-      newGTProp = { ...newGTProp, b: newBranches, t: 'p' };
-    }
-    if (transformation === 'branch' && generaltranslation.branches) {
-      const newBranches: Record<string, JsxChildren> = {};
-      Object.entries(generaltranslation.branches).forEach(
-        ([key, value]: [string, TaggedChildren]) => {
-          newBranches[key] = writeChildrenAsObjects(value);
-        }
-      );
-      newGTProp = { ...newGTProp, b: newBranches, t: 'b' };
-    }
-
-    minifiedElement.d = Object.keys(newGTProp).length ? newGTProp : undefined;
   }
   if (props.children) {
     minifiedElement.c = writeChildrenAsObjects(props.children);

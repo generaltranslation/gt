@@ -3,7 +3,7 @@ import {
   assertSafeDictionaryPathSegment,
   cloneDictionaryValue,
   getDictionaryEntry,
-  isDictionaryObject,
+  isDictionaryValue,
 } from './dictionary-helpers';
 import type {
   Dictionary,
@@ -36,7 +36,7 @@ export async function materializeDictionaryValue({
     return cloneDictionaryValue(targetValue as DictionaryValue);
   }
 
-  if (isDictionaryObject(targetValue) && !isDictionaryObject(sourceValue)) {
+  if (isDictionaryValue(targetValue) && !isDictionaryValue(sourceValue)) {
     return cloneDictionaryValue(targetValue);
   }
 
@@ -45,11 +45,11 @@ export async function materializeDictionaryValue({
     return await translateEntry(key, sourceEntry);
   }
 
-  if (!isDictionaryObject(sourceValue)) {
+  if (!isDictionaryValue(sourceValue)) {
     throw new DictionarySourceNotFoundError(key);
   }
 
-  const targetDictionary = isDictionaryObject(targetValue) ? targetValue : {};
+  const targetDictionary = isDictionaryValue(targetValue) ? targetValue : {};
   const keys = new Set([
     ...Object.keys(sourceValue),
     ...Object.keys(targetDictionary),

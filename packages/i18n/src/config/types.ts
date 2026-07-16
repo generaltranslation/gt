@@ -44,6 +44,7 @@ export type GTConfig = {
   // parsing options (shared with compiler via gt.config.json)
   files?: {
     gt?: {
+      output?: string;
       parsingFlags?: {
         /**
          * Dev hot reload config, gt-react browser runtime only.

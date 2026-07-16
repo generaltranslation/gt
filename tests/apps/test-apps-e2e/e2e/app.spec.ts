@@ -215,6 +215,9 @@ async function testTanStackApp(page: Page) {
     await expect(page.getByText(route.translation)).toBeVisible();
     await page.reload();
     await expectTanStackLocale(page, route.locale);
+
+    await selectLocale(page, 'en');
+    await expectTanStackLocale(page, 'en');
   }
 }
 

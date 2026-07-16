@@ -2,6 +2,11 @@ import { TranslationRequestConfig } from '../types';
 import { apiRequest } from './utils/apiRequest';
 import type { FileReference } from '../types-dir/api/file';
 
+export type SetupProjectFileReference = Pick<
+  FileReference,
+  'branchId' | 'fileId' | 'versionId'
+>;
+
 export type SetupProjectResult =
   | { setupJobId: string; status: 'queued' }
   | { status: 'completed' };
@@ -21,7 +26,7 @@ export type SetupProjectOptions = {
  * @returns The result of the API call.
  */
 export async function _setupProject(
-  files: FileReference[],
+  files: SetupProjectFileReference[],
   config: TranslationRequestConfig,
   options?: SetupProjectOptions
 ): Promise<SetupProjectResult> {

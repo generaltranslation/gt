@@ -35,10 +35,6 @@ export function isDictionaryValue(value: unknown): value is Dictionary {
   return typeof value === 'object' && value != null && !Array.isArray(value);
 }
 
-export function isDictionaryObject(value: unknown): value is Dictionary {
-  return isDictionaryValue(value);
-}
-
 export function cloneDictionaryValue<Value extends DictionaryValue | undefined>(
   value: Value
 ): Value {
@@ -55,7 +51,7 @@ export function getDictionaryValueAtPath(
   let current: DictionaryValue = dictionary;
 
   for (const segment of getDictionaryPath(path)) {
-    if (!isDictionaryObject(current)) {
+    if (!isDictionaryValue(current)) {
       return undefined;
     }
     current = current[segment];
@@ -70,12 +66,12 @@ export function setDictionaryValueAtPath(
   value: DictionaryValue
 ): void {
   const segments = getDictionaryPath(path);
-  if (isDictionaryObject(value)) {
+  if (isDictionaryValue(value)) {
     assertSafeDictionaryObject(value, path);
   }
 
   if (segments.length === 0) {
-    if (isDictionaryObject(value)) {
+    if (isDictionaryValue(value)) {
       replaceDictionary(dictionary, value);
     }
     return;
@@ -84,7 +80,7 @@ export function setDictionaryValueAtPath(
   let current = dictionary;
   for (const segment of segments.slice(0, -1)) {
     const next = current[segment];
-    if (!isDictionaryObject(next)) {
+    if (!isDictionaryValue(next)) {
       current[segment] = {} as Dictionary;
     }
     current = current[segment] as Dictionary;
@@ -173,7 +169,7 @@ function assertSafeDictionaryObject(
   for (const [key, value] of Object.entries(dictionary)) {
     const path = parentPath ? `${parentPath}.${key}` : key;
     assertSafeDictionaryPathSegment(key, path);
-    if (isDictionaryObject(value)) {
+    if (isDictionaryValue(value)) {
       assertSafeDictionaryObject(value, path);
     }
   }

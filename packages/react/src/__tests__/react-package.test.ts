@@ -13,8 +13,6 @@ const runtimeArtifactNames = [
   'index.client.mjs',
   'index.server.cjs',
   'index.server.mjs',
-  'index.types.cjs',
-  'index.types.mjs',
   'macros.cjs',
   'macros.mjs',
 ].sort();
@@ -70,6 +68,7 @@ describe('gt-react package exports', () => {
 
           assert.equal(typeof react.GTProvider, 'function');
           assert.equal(typeof react.T, 'function');
+          assert.equal(typeof react.parseLocale, 'function');
           assert.equal(typeof react.GtInternalVar, 'function');
           assert.equal(typeof react.GtInternalRuntimeTranslateString, 'function');
         `,
@@ -103,10 +102,11 @@ describe('gt-react package exports', () => {
       '-e',
       `
           import assert from 'node:assert/strict';
-          import { GTProvider, GtInternalRuntimeTranslateString, GtInternalVar, T } from 'gt-react';
+          import { GTProvider, GtInternalRuntimeTranslateString, GtInternalVar, parseLocale, T } from 'gt-react';
 
           assert.equal(typeof GTProvider, 'function');
           assert.equal(typeof T, 'function');
+          assert.equal(typeof parseLocale, 'function');
           assert.equal(typeof GtInternalVar, 'function');
           assert.equal(typeof GtInternalRuntimeTranslateString, 'function');
         `,
@@ -156,8 +156,6 @@ describe('gt-react package exports', () => {
       'dist/index.client.mjs',
       'dist/index.server.cjs',
       'dist/index.server.mjs',
-      'dist/index.types.cjs',
-      'dist/index.types.mjs',
     ]) {
       expect(readFileSync(join(packageRoot, file), 'utf8')).toMatch(
         /^['"]use client['"];?/

@@ -19,9 +19,6 @@
       "path": "../react"
     },
     {
-      "path": "../supported-locales"
-    },
-    {
       "path": "../i18n"
     }
   ]

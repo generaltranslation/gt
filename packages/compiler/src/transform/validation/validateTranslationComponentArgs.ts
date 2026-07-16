@@ -27,6 +27,7 @@ export function validateTranslationComponentArgs(
   requiresReview?: boolean;
   children?: JsxChildren;
   hasDeriveContext?: boolean;
+  hasDeriveChildren?: boolean;
 } {
   const callExpr = callExprPath.node;
   // Check that there are at least 2 arguments (identifier, args)
@@ -85,6 +86,7 @@ function validateTComponentArgs(
   requiresReview?: boolean;
   children?: JsxChildren;
   hasDeriveContext?: boolean;
+  hasDeriveChildren?: boolean;
 } {
   const errors: string[] = [];
   const args = argsPath.node;
@@ -133,6 +135,7 @@ function validateTComponentArgs(
     requiresReview,
     children,
     hasDeriveContext,
+    hasDeriveChildren: childrenValidation.containsDerive,
   };
 }
 
@@ -146,6 +149,7 @@ export function validateChildrenProperty(
   errors: string[];
   value?: JsxChildren;
   hasAutoderive?: boolean;
+  containsDerive?: boolean;
 } {
   const errors: string[] = [];
 
@@ -179,7 +183,12 @@ export function validateChildrenProperty(
   errors.push(...filteredErrors.map((e) => e.message));
   const value = validation.value;
 
-  return { errors, value, hasAutoderive };
+  return {
+    errors,
+    value,
+    hasAutoderive,
+    containsDerive: validation.containsDerive,
+  };
 }
 
 // String Literal Functions

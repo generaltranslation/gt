@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - uses: pnpm/action-setup@v4
         name: Install pnpm
@@ -35,6 +37,10 @@ jobs:
           node-version: 24.18.0
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Validate release versions
+        if: startsWith(github.event.head_commit.message, '[ci] release')
+        run: pnpm run check:release-versions
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2

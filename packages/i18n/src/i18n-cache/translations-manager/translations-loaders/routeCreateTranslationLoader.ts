@@ -2,7 +2,6 @@ import { TranslationsLoader } from './types';
 import { LoadTranslationsType } from '../../utils/getLoadTranslationsType';
 import logger from '../../../logs/logger';
 import { createRemoteTranslationLoader } from './createRemoteTranslationLoader';
-import { createFallbackTranslationLoader } from './createFallbackTranslationLoader';
 import { getI18nConfig } from '../../../i18n-config/singleton-operations';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 
@@ -59,7 +58,7 @@ export function routeCreateTranslationLoader({
     case LoadTranslationsType.DISABLED:
       // cacheUrl: null is an explicit opt-out of translation loading
       if (cacheUrl === null) {
-        return createFallbackTranslationLoader();
+        return async () => ({});
       }
       return createWarnOnceTranslationLoader(
         createDiagnosticMessage({

@@ -5,13 +5,9 @@ import type { TxProps } from './utils/TxProps';
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { initializeGTSRA as initializeGT } from './setup/initializeGTSRA';
+export { parseLocale } from './functions/parseLocale';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useRegionSelector } from './components/useRegionSelector';
-export {
-  useSetLocale,
-  useSetRegion,
-  useSetEnableI18n,
-} from './hooks/conditions-store';
 
 // ===== Components ===== //
 export { LocaleSelector } from './components/LocaleSelector';
@@ -51,6 +47,9 @@ export {
   useTranslations,
   useLocaleDirection,
   useLocaleProperties,
+  useSetLocale,
+  useSetRegion,
+  useSetEnableI18n,
 } from '@generaltranslation/react-core/hooks';
 
 // ===== Functions ===== //

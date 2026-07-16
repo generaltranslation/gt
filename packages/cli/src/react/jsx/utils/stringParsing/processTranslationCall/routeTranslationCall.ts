@@ -1,5 +1,4 @@
 import { isStaticExpression } from '../../../evaluateJsx.js';
-import { handleDeriveTranslationCall } from './handleDeriveTranslationCall.js';
 import { handleLiteralTranslationCall } from './handleLiteralTranslationCall.js';
 import { handleInvalidTranslationCall } from './handleInvalidTranslationCall.js';
 import * as t from '@babel/types';
@@ -7,6 +6,7 @@ import { ParsingConfig } from '../types.js';
 import { ParsingOutput } from '../types.js';
 import { NodePath } from '@babel/traverse';
 import { InlineMetadata } from './extractStringEntryMetadata.js';
+import { deriveExpression } from '../derivation/index.js';
 
 /**
  * Helper function for processTranslationCall
@@ -60,9 +60,8 @@ export function routeTranslationCall({
     t.isExpression(arg) &&
     !isStaticExpression(arg).isStatic
   ) {
-    // handle derive translation call
-    handleDeriveTranslationCall({
-      arg,
+    deriveExpression({
+      expr: arg,
       metadata,
       tPath,
       config,

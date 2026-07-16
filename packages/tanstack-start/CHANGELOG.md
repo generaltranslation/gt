@@ -1,5 +1,75 @@
 # gt-tanstack-start
 
+## 11.0.8
+
+### Patch Changes
+
+- Updated dependencies [[`3ad93f8`](https://github.com/generaltranslation/gt/commit/3ad93f89da099ef345b707bf37db425662d87e2a)]:
+  - generaltranslation@9.0.1
+  - gt-i18n@1.0.5
+  - gt-react@11.0.8
+  - @generaltranslation/react-core@11.0.8
+
+## 11.0.7
+
+### Patch Changes
+
+- Updated dependencies [[`b742df9`](https://github.com/generaltranslation/gt/commit/b742df9f0684c6ea12da140c4fd73eebb42f897a), [`a148737`](https://github.com/generaltranslation/gt/commit/a1487377728b662dfd749ecfbd449a1e8d47db49)]:
+  - gt-i18n@1.0.4
+  - gt-react@11.0.7
+  - @generaltranslation/react-core@11.0.7
+
+## 11.0.6
+
+### Patch Changes
+
+- Updated dependencies [[`6345dc5`](https://github.com/generaltranslation/gt/commit/6345dc5e3fe0a1e3ead9a3c30a0adaa4037d50a8)]:
+  - gt-i18n@1.0.3
+  - gt-react@11.0.6
+  - @generaltranslation/react-core@11.0.6
+
+## 11.0.5
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.5
+  - gt-react@11.0.5
+
+## 11.0.4
+
+### Patch Changes
+
+- Updated dependencies [[`006e071`](https://github.com/generaltranslation/gt/commit/006e071bf87ffe80f2d18958ddfa8f18cc2d85d2), [`7fb4a74`](https://github.com/generaltranslation/gt/commit/7fb4a74c52065694a40deafcf4596acc09e17f58), [`d23766c`](https://github.com/generaltranslation/gt/commit/d23766c78a2c1be278d85e896d2521453734a6eb), [`1f33d5f`](https://github.com/generaltranslation/gt/commit/1f33d5f76ffc879d2d21aa2508e07e1d3b66c4e3)]:
+  - gt-i18n@1.0.2
+  - gt-react@11.0.4
+  - @generaltranslation/react-core@11.0.4
+
+## 11.0.3
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.3
+  - gt-react@11.0.3
+
+## 11.0.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.2
+  - gt-react@11.0.2
+
+## 11.0.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt-i18n@1.0.1
+  - gt-react@11.0.1
+  - @generaltranslation/react-core@11.0.1
+
 ## 11.0.0
 
 ### Major Changes

@@ -1,5 +1,45 @@
 # gt-i18n
 
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies [[`3ad93f8`](https://github.com/generaltranslation/gt/commit/3ad93f89da099ef345b707bf37db425662d87e2a)]:
+  - generaltranslation@9.0.1
+
+## 1.0.4
+
+### Patch Changes
+
+- [#1856](https://github.com/generaltranslation/gt/pull/1856) [`b742df9`](https://github.com/generaltranslation/gt/commit/b742df9f0684c6ea12da140c4fd73eebb42f897a) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Flatten the internal i18n cache structure: the locale-cache layer is inlined into `I18nCache`, the in-flight promise dedupe shared by the caches is extracted into one helper, and the dev-only prefetch machinery is statically gated behind `process.env.NODE_ENV !== 'production'` so production bundles drop it. No public API changes; `gt-i18n/internal` and `gt-i18n/internal/types` exports are unchanged.
+
+- [#1855](https://github.com/generaltranslation/gt/pull/1855) [`a148737`](https://github.com/generaltranslation/gt/commit/a1487377728b662dfd749ecfbd449a1e8d47db49) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Collapse the I18nCache constructor-time validation layer into a single helper. Observable behavior is unchanged: the same warnings are logged when a custom `runtimeUrl` is configured without GT credentials, and providing `loadDictionary` without a source `dictionary` still throws. The unreachable validation branches are removed, slightly shrinking browser bundles.
+
+## 1.0.3
+
+### Patch Changes
+
+- [#1861](https://github.com/generaltranslation/gt/pull/1861) [`6345dc5`](https://github.com/generaltranslation/gt/commit/6345dc5e3fe0a1e3ead9a3c30a0adaa4037d50a8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Skip interpolation in compiler-injected string prefetch calls so dev hot reload no longer logs "String interpolation failed" for messages with placeholders
+
+## 1.0.2
+
+### Patch Changes
+
+- [#1858](https://github.com/generaltranslation/gt/pull/1858) [`006e071`](https://github.com/generaltranslation/gt/commit/006e071bf87ffe80f2d18958ddfa8f18cc2d85d2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Accept parsed `gt.config.json` objects in the compiler and React SPA configuration types.
+
+- [#1846](https://github.com/generaltranslation/gt/pull/1846) [`7fb4a74`](https://github.com/generaltranslation/gt/commit/7fb4a74c52065694a40deafcf4596acc09e17f58) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add `parseLocale(request)` to resolve server-rendered React locales from the configured cookie, the `Accept-Language` header, or the default locale.
+
+  Share cookie and `Accept-Language` parsing across the framework packages.
+
+- [#1848](https://github.com/generaltranslation/gt/pull/1848) [`1f33d5f`](https://github.com/generaltranslation/gt/commit/1f33d5f76ffc879d2d21aa2508e07e1d3b66c4e3) Thanks [@bgub](https://github.com/bgub)! - Remove unused dependencies: `@generaltranslation/supported-locales` from gt-react, gt-next, gt-i18n, and @generaltranslation/react-core, and `@generaltranslation/format` from gt-react. Nothing in these packages imports them, so this only reduces install weight.
+
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [[`7db86bd`](https://github.com/generaltranslation/gt/commit/7db86bd92be5d09a2da10133dbb873248b0e5a5c)]:
+  - @generaltranslation/supported-locales@2.1.3
+
 ## 1.0.0
 
 ### Major Changes

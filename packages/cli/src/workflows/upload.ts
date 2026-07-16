@@ -61,7 +61,6 @@ export async function runUploadFilesWorkflow({
     if (filesWithTranslations.length > 0) {
       await uploadTranslationsStep.run({
         files: filesWithTranslations,
-        branchData,
       });
       await uploadTranslationsStep.wait();
     }
