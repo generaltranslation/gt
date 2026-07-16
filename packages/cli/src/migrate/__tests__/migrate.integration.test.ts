@@ -180,7 +180,7 @@ describe('handleMigrateCommand integration', () => {
     expect(read(cwd, 'middleware.ts')).toContain('createNextMiddleware');
     const gtConfig = JSON.parse(read(cwd, 'gt.config.json'));
     expect(gtConfig.locales).toEqual(['en', 'es']);
-    expect(read(cwd, 'loadDictionary.ts')).toContain('/messages/${locale}.json');
+    expect(read(cwd, 'src/loadDictionary.ts')).toContain('../messages/${locale}.json');
 
     // teardown: fully migrated -> next-intl gone, i18n config files deleted
     const pkg = JSON.parse(read(cwd, 'package.json'));

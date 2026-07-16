@@ -56,21 +56,34 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
         'a loadDictionary file already exists — verify it serves the migrated catalogs',
     });
   } else {
-    const relativeDir = toPosix(path.relative(ctx.cwd, ctx.catalogs.dir));
+    // Place inside src/ when the app uses one (matches Next's compilation
+    // scope — a root-level loader is detected by gt-next but its webpack
+    // alias can fail to compile) and import relative to the file itself.
+    const useSrc = fs.existsSync(path.join(ctx.cwd, 'src'));
+    const loaderPath = path.join(
+      ctx.cwd,
+      useSrc ? 'src/loadDictionary.ts' : 'loadDictionary.ts'
+    );
+    const relativeDir = toPosix(
+      path.relative(path.dirname(loaderPath), ctx.catalogs.dir)
+    );
     const importDir = relativeDir.startsWith('.')
       ? relativeDir
       : `./${relativeDir}`;
     edits.push({
-      path: path.join(ctx.cwd, 'loadDictionary.ts'),
+      path: loaderPath,
       kind: 'write',
       content: [
-        'export default async function loadDictionary(locale: string) {',
+        'const loadDictionary = async (locale: string) => {',
         '  try {',
         `    return (await import(\`${importDir}/\${locale}.json\`)).default;`,
         '  } catch {',
         '    return {};',
         '  }',
-        '}',
+        '};',
+        '',
+        'export default loadDictionary;',
+        'export { loadDictionary };',
         '',
       ].join('\n'),
     });

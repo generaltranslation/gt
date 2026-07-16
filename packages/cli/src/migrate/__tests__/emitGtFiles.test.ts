@@ -75,8 +75,9 @@ describe('emitGtFiles', () => {
     expect(config.locales).toEqual(['en', 'es']);
     expect(config.files.gt.output).toBe('public/_gt/[locale].json');
 
-    const loader = byPath.get(path.join(ctx.cwd, 'loadDictionary.ts'))!;
-    expect(loader.content).toContain('./messages/${locale}.json');
+    const loader = byPath.get(path.join(ctx.cwd, 'src/loadDictionary.ts'))!;
+    expect(loader.content).toContain('../messages/${locale}.json');
+    expect(loader.content).toContain('export { loadDictionary }');
 
     const pkg = JSON.parse(
       byPath.get(path.join(ctx.cwd, 'package.json'))!.content!
@@ -108,6 +109,18 @@ describe('emitGtFiles', () => {
       const pkg = JSON.parse(pkgEdit.content!);
       expect(pkg.dependencies['next-intl']).toBeDefined();
     }
+  });
+
+  it('places loadDictionary inside src/ when the app uses a src dir', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/app/page.tsx': 'export {}',
+      'messages/en.json': '{}',
+    });
+    const edits = emitGtFiles(ctx);
+    const loader = edits.find((edit) => edit.path.includes('loadDictionary'))!;
+    expect(loader.path).toBe(path.join(ctx.cwd, 'src/loadDictionary.ts'));
+    expect(loader.content).toContain('../messages/${locale}.json');
   });
 
   it('merges into an existing gt.config.json', () => {

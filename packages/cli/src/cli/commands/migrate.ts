@@ -150,6 +150,22 @@ export async function handleMigrateCommand(
     );
   }
 
+  // Next.js ignores root-level middleware when the app lives in src/ —
+  // locale routing would silently not run (true for next-intl too, but
+  // worth surfacing while we're here).
+  const rootMiddleware = findRootFiles(cwd, ['middleware.ts', 'middleware.js']);
+  if (
+    rootMiddleware.length > 0 &&
+    (fs.existsSync(path.join(cwd, 'src/app')) ||
+      fs.existsSync(path.join(cwd, 'src/pages')))
+  ) {
+    ctx.todos.push({
+      file: rootMiddleware[0],
+      reason:
+        'middleware file is at the project root but the app lives in src/ — Next.js ignores it there; move it to src/ or locale routing will not run',
+    });
+  }
+
   ctx.edits.push(...emitGtFiles(ctx));
 
   const report = buildReport(ctx, options.dryRun);
