@@ -72,6 +72,17 @@ import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
+import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
+
+const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
+  'download',
+  'enqueue',
+  'generate',
+  'setup',
+  'stage',
+  'translate',
+  'validate',
+]);
 
 export type UploadOptions = {
   config?: string;
@@ -110,6 +121,19 @@ export class BaseCLI {
       '--skip-version-check',
       'Skip the monorepo GT package version consistency check'
     );
+    this.program.option(
+      '--suppress-id-compatibility-warning',
+      'Suppress the React package ID compatibility warning'
+    );
+    this.program.hook('preAction', async (thisCommand, actionCommand) => {
+      // Nested commands (e.g. `gt git setup`) can share leaf names with
+      // translation commands; only direct children of the root qualify
+      if (actionCommand.parent !== thisCommand) return;
+      if (!ID_COMPATIBILITY_WARNING_COMMANDS.has(actionCommand.name())) return;
+      await warnReactPackageCompatibility(
+        Boolean(this.program.opts().suppressIdCompatibilityWarning)
+      );
+    });
 
     this.setupInitCommand();
     this.setupConfigureCommand();
