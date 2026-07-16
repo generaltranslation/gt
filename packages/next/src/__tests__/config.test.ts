@@ -1414,6 +1414,24 @@ describe('withGTConfig', () => {
       );
     });
 
+    it('does not add the javascript/auto rule on the client compilation', async () => {
+      const withGTConfig = await getWithGTConfig();
+
+      const result = withGTConfig({}, { dictionary: './my-dict.json' });
+
+      const wc = makeWebpackConfig() as WebpackConfig & {
+        module?: { rules?: { test: RegExp; type: string }[] };
+      };
+      result.webpack!(
+        wc as WebpackConfigArg,
+        { isServer: false } as WebpackOptions
+      );
+
+      expect(
+        (wc.module?.rules ?? []).some((r) => r.type === 'javascript/auto')
+      ).toBe(false);
+    });
+
     it('does not add the javascript/auto rule without file aliases', async () => {
       const withGTConfig = await getWithGTConfig();
 

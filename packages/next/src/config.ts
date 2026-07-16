@@ -749,11 +749,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         // above would never apply and their runtime errors are swallowed
         // (loaders silently no-op). Parse gt-next's ESM dist as
         // javascript/auto so webpack picks up those require() calls.
-        // Turbopack resolves them through resolveAlias and needs no rule.
+        // Server compilation only: the call sites are server-only, and this
+        // keeps the rule from ever pulling a user's loader file into the
+        // client bundle. Turbopack resolves them through resolveAlias and
+        // needs no rule.
         if (
-          resolvedDictionaryFilePath ||
-          customLoadTranslationsPath ||
-          customLoadDictionaryPath
+          options.isServer &&
+          (resolvedDictionaryFilePath ||
+            customLoadTranslationsPath ||
+            customLoadDictionaryPath)
         ) {
           webpackConfig.module ??= {};
           webpackConfig.module.rules ??= [];
