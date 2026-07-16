@@ -20,6 +20,7 @@ import {
   _setupProject,
   SetupProjectResult,
   SetupProjectOptions,
+  type SetupProjectFileReference,
 } from './translate/setupProject';
 import {
   _enqueueFiles,
@@ -75,7 +76,7 @@ import type {
   CreateBranchResult,
 } from './translate/createBranch';
 import { _createBranch } from './translate/createBranch';
-import type { FileReference, FileReferenceIds } from './types-dir/api/file';
+import type { FileReferenceIds } from './types-dir/api/file';
 import {
   _processFileMoves,
   type MoveMapping,
@@ -239,12 +240,12 @@ export class GT extends GTRuntime {
    * files that have already been uploaded via uploadSourceFiles. The setup jobs are queued
    * for processing and will generate a project setup based on the source files.
    *
-   * @param {FileReference[]} files - Array of file references containing IDs of previously uploaded source files
+   * @param {SetupProjectFileReference[]} files - Array of file references containing IDs of previously uploaded source files
    * @param {SetupProjectOptions} [options] - Optional settings for target locales and timeout.
    * @returns {Promise<SetupProjectResult>} Object containing the jobId and status
    */
   async setupProject(
-    files: FileReference[],
+    files: SetupProjectFileReference[],
     options?: SetupProjectOptions
   ): Promise<SetupProjectResult> {
     this._validateAuth('setupProject');
