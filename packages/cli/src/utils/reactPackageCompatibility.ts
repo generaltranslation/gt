@@ -1,5 +1,5 @@
 import { createDiagnosticMessage } from 'generaltranslation/internal';
-import { intersects } from 'semver';
+import { minVersion } from 'semver';
 import { logger } from '../console/logger.js';
 import { REACT_LIBRARIES } from '../types/libraries.js';
 import { getPackageJson, getPackageVersion } from './packageJson.js';
@@ -10,7 +10,11 @@ function permitsVersionBelowMinimum(version: string): boolean {
   // A range is potentially incompatible if it permits any version below the
   // minimum; invalid ranges (workspace:*, tags, URLs) fail open
   try {
-    return intersects(version, `<${MINIMUM_REACT_PACKAGE_MAJOR}.0.0`);
+    const minimumVersion = minVersion(version);
+    return (
+      minimumVersion !== null &&
+      minimumVersion.major < MINIMUM_REACT_PACKAGE_MAJOR
+    );
   } catch {
     return false;
   }
