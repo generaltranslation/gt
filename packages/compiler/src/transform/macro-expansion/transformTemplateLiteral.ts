@@ -5,13 +5,14 @@ import { buildTransformResult } from '../../utils/string-expressions/buildTransf
 import { multiply } from '../../utils/multiplication/multiply';
 
 /**
- * Converts template literal quasis and expressions into an ICU-style message
- * string with numeric variable placeholders ({0}, {1}, etc.).
+ * Converts a string-producing expression (template literal, "+"
+ * concatenation, or literal) into an ICU-style message string with numeric
+ * variable placeholders ({0}, {1}, etc.).
  *
  * Recursively simplifies nested static expressions (string literals,
  * nested templates) and preserves derive() calls as template expressions.
  */
-export function transformTemplateLiteral(path: NodePath<t.TemplateLiteral>): {
+export function transformTemplateLiteral(path: NodePath<t.Expression>): {
   content: {
     message: t.StringLiteral | t.TemplateLiteral;
     variables: t.ObjectExpression | null;

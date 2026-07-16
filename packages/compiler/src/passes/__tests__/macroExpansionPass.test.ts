@@ -142,7 +142,7 @@ describe('macroExpansionPass', () => {
     expect(getVarIdentifiers(tCalls[0])).toEqual(['name']);
   });
 
-  it.skip('transforms template literal in call: t(`Hello, ${name}`)', () => {
+  it('transforms template literal in call: t(`Hello, ${name}`)', () => {
     const { tCalls } = transform('const x = t(`Hello, ${name}`);');
     expect(tCalls).toHaveLength(1);
     expect(getMessageString(tCalls[0])).toBe('Hello, {0}');
@@ -150,12 +150,33 @@ describe('macroExpansionPass', () => {
     expect(getVarIdentifiers(tCalls[0])).toEqual(['name']);
   });
 
-  it.skip('transforms concatenation in call: t("Hello, " + name)', () => {
+  it('transforms concatenation in call: t("Hello, " + name)', () => {
     const { tCalls } = transform('const x = t("Hello, " + name);');
     expect(tCalls).toHaveLength(1);
     expect(getMessageString(tCalls[0])).toBe('Hello, {0}');
     expect(getVarKeys(tCalls[0])).toEqual(['0']);
     expect(getVarIdentifiers(tCalls[0])).toEqual(['name']);
+  });
+
+  it('transforms expressionless template literal in call: t(`hello`)', () => {
+    const { tCalls } = transform('const x = t(`hello`);');
+    expect(tCalls).toHaveLength(1);
+    expect(getMessageString(tCalls[0])).toBe('hello');
+    expect(tCalls[0].arguments).toHaveLength(1);
+  });
+
+  it('transforms template literal in call with custom stringTranslationMacro', () => {
+    const { tCalls } = transform('const x = __(`hello ${name}`);', {
+      stringTranslationMacro: '__',
+    });
+    expect(tCalls).toHaveLength(1);
+    expect(getMessageString(tCalls[0])).toBe('hello {0}');
+    expect(t.isIdentifier(tCalls[0].callee, { name: 't' })).toBe(true);
+  });
+
+  it('does NOT transform call with extra arguments: t(`...`, opts)', () => {
+    const { ast } = transform('const x = t(`hello ${name}`, opts);');
+    assertStillTemplateLiteralArg(ast);
   });
 
   it('leaves plain string call t("Hello") untouched', () => {
@@ -321,7 +342,7 @@ describe('macroExpansionPass', () => {
 
   // --- Recursive string simplification ---
 
-  it.skip('recursively simplifies nested concatenation and templates', () => {
+  it('recursively simplifies nested concatenation and templates', () => {
     const code = 'const x = t("A" + "B" + `C${"D" + `${`E`}F`}`);';
     const { tCalls } = transform(code);
     expect(tCalls).toHaveLength(1);
@@ -329,19 +350,19 @@ describe('macroExpansionPass', () => {
     expect(tCalls[0].arguments).toHaveLength(1);
   });
 
-  it.skip('simplifies numeric literal in concatenation', () => {
+  it('simplifies numeric literal in concatenation', () => {
     const { tCalls } = transform('const x = t("count: " + 42);');
     expect(getMessageString(tCalls[0])).toBe('count: 42');
     expect(tCalls[0].arguments).toHaveLength(1);
   });
 
-  it.skip('simplifies boolean literal in concatenation', () => {
+  it('simplifies boolean literal in concatenation', () => {
     const { tCalls } = transform('const x = t(true + " value");');
     expect(getMessageString(tCalls[0])).toBe('true value');
     expect(tCalls[0].arguments).toHaveLength(1);
   });
 
-  it.skip('deeply nested static simplification', () => {
+  it('deeply nested static simplification', () => {
     const code = 'const x = t(`A${`B${"C" + "D"}E`}F`);';
     const { tCalls } = transform(code);
     expect(getMessageString(tCalls[0])).toBe('ABCDEF');
@@ -368,7 +389,7 @@ describe('macroExpansionPass', () => {
     expect(tCalls[0].arguments).toHaveLength(1); // no variables arg
   });
 
-  it.skip('preserves derive in concatenation with static collapse and dynamic extraction', () => {
+  it('preserves derive in concatenation with static collapse and dynamic extraction', () => {
     const code =
       'import { derive } from \'gt-react/browser\';\nconst x = t(`A${derive(getName())}B` + "C" + name);';
     const { tCalls } = transform(code);
@@ -410,7 +431,7 @@ describe('macroExpansionPass', () => {
     expect(getVarIdentifiers(tCalls[0])).toEqual(['name']);
   });
 
-  it.skip('derive adjacent to static string collapses around it', () => {
+  it('derive adjacent to static string collapses around it', () => {
     const code =
       'import { derive } from \'gt-react/browser\';\nconst x = t(`A${"B"}${derive(x)}${"C"}D`);';
     const { tCalls } = transform(code);
