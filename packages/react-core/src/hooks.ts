@@ -6,6 +6,9 @@ export {
   useLocale,
   useRegion,
   useEnableI18n,
+  useSetLocale,
+  useSetRegion,
+  useSetEnableI18n,
 } from './hooks/condition-store';
 export {
   useCustomMapping,
