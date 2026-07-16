@@ -739,6 +739,10 @@ export class GT extends GTRuntime {
       throw new Error(error);
     }
 
+    mergedOptions.sourceLocale = this.resolveCanonicalLocale(
+      mergedOptions.sourceLocale
+    );
+
     // Ensure all translation locales use canonical locales
     const targetFiles = files.map((f) => ({
       ...f,
