@@ -1,6 +1,9 @@
-name: GT Test Apps - Daily Browser Checks
+name: GT Test Apps - Browser Checks
 
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-apps-e2e-cron.yml'
   schedule:
     # Run daily at 06:00 UTC.
     - cron: '0 6 * * *'
@@ -65,7 +68,7 @@ jobs:
 
   notify-failure:
     name: Notify libraries pager
-    if: ${{ always() && needs.test-apps-e2e.result != 'success' }}
+    if: ${{ always() && github.event_name != 'pull_request' && needs.test-apps-e2e.result != 'success' }}
     needs: test-apps-e2e
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -84,7 +87,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🚨 *Daily GT test app browser checks failed!*\n\n• Result: `${{ needs.test-apps-e2e.result }}`\n• Repository: `${{ github.repository }}`\n• Branch: `${{ github.ref_name }}`\n• Commit: `${{ github.sha }}`\n• Trigger: `${{ github.event_name }}`"
+                    "text": "🚨 *GT test app browser checks failed!*\n\n• Result: `${{ needs.test-apps-e2e.result }}`\n• Repository: `${{ github.repository }}`\n• Branch: `${{ github.ref_name }}`\n• Commit: `${{ github.sha }}`\n• Trigger: `${{ github.event_name }}`"
                   }
                 },
                 {

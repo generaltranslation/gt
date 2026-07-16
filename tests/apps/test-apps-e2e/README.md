@@ -26,4 +26,5 @@ the root `.turbo/playwright/` directory.
 The full matrix runs daily at 06:00 UTC through
 `.github/workflows/test-apps-e2e-cron.yml` and can also be started manually.
 Failures upload the Playwright artifacts and notify the libraries pager in
-Slack.
+Slack. Pull requests run the matrix only when this workflow file changes, so
+the scheduled workflow can be tested without adding time to normal CI.
