@@ -1275,6 +1275,35 @@ describe('withGTConfig', () => {
   // 13. Compiler configuration
   // ==============================
   describe('13. Compiler configuration', () => {
+    it.each(['none', 'swc'] as const)(
+      'warns when automatic JSX injection is used with the %s compiler',
+      async (type) => {
+        const withGTConfig = await getWithGTConfig();
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type,
+              enableAutoJsxInjection: true,
+            },
+          }
+        );
+
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'Automatic JSX injection requires the GT webpack compiler'
+          )
+        );
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "Set experimentalCompilerOptions.type to 'babel'"
+          )
+        );
+      }
+    );
+
     it('uses a Turbopack-specific babel compiler warning', async () => {
       const withGTConfig = await getWithGTConfig();
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -1282,7 +1311,12 @@ describe('withGTConfig', () => {
 
       const result = withGTConfig(
         {},
-        { experimentalCompilerOptions: { type: 'babel' } }
+        {
+          experimentalCompilerOptions: {
+            type: 'babel',
+            enableAutoJsxInjection: true,
+          },
+        }
       );
       const params = parseConfigParams(result);
 
@@ -1294,6 +1328,14 @@ describe('withGTConfig', () => {
       );
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining("experimentalCompilerOptions: { type: 'swc' }")
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Automatic JSX injection requires the GT webpack compiler'
+        )
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('build with webpack')
       );
       expect(warnSpy).not.toHaveBeenCalledWith(
         expect.stringContaining('compatible with turbopack or < react')
@@ -1358,6 +1400,33 @@ describe('withGTConfig', () => {
   // 14. Webpack function
   // ==============================
   describe('14. Webpack function', () => {
+    it('passes automatic JSX injection to the webpack compiler', async () => {
+      const compiler = require('@generaltranslation/compiler');
+      const compilerWebpackSpy = vi
+        .spyOn(compiler, 'webpack')
+        .mockReturnValue({});
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        {},
+        {
+          experimentalCompilerOptions: {
+            type: 'babel',
+            enableAutoJsxInjection: true,
+          },
+        }
+      );
+
+      runWebpack(result, makeWebpackConfig());
+
+      expect(compilerWebpackSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          enableAutoJsxInjection: true,
+          autoJsxImportSource: 'gt-next',
+        })
+      );
+      compilerWebpackSpy.mockRestore();
+    });
+
     it('returns webpack config object', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
