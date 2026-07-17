@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Mock } from 'vitest';
 
 // Mock @clack/prompts so we can assert exactly which chatter reaches the
 // human (default-format) output path.
@@ -39,7 +40,7 @@ vi.mock('@clack/prompts', () => clack);
 // Mock pino so we can inspect the level the JSON console logger is created
 // with and the level --quiet forces it to.
 const pinoState = vi.hoisted(() => ({
-  instances: [] as Array<{ level?: string }>,
+  instances: [] as Array<{ level?: string; info: Mock }>,
   optionsLog: [] as Array<{ level?: string }>,
 }));
 
@@ -178,6 +179,28 @@ describe('quiet flag: displayHeader banner gating (default format)', () => {
     logger.setQuiet(true);
     displayHeader('Doing a thing...');
     expect(logSpy).not.toHaveBeenCalled();
+
+    logSpy.mockRestore();
+  });
+
+  it('still writes the [START] file-log marker under quiet', async () => {
+    vi.stubEnv('GT_LOG_FILE', '/tmp/gt-quiet-marker-test.log');
+    const { logger } = await import('../logger.js');
+    const { displayHeader } = await import('../logging.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    logger.setQuiet(true);
+    displayHeader('Doing a thing...');
+
+    // Console stays silent: no banner, no clack intro.
+    expect(logSpy).not.toHaveBeenCalled();
+    expect(clack.intro).not.toHaveBeenCalled();
+    // But the file log still gets its [START] marker, so [END] from
+    // endCommand never appears unpaired.
+    const fileInfoCalls = pinoState.instances.flatMap((inst) =>
+      inst.info.mock.calls.map((call) => call[0])
+    );
+    expect(fileInfoCalls).toContain('[START] Doing a thing...');
 
     logSpy.mockRestore();
   });
