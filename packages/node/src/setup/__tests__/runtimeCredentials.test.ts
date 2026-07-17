@@ -48,6 +48,22 @@ describe('runtime credentials', () => {
     });
   });
 
+  it('treats an empty-string env var as falsy and does not override an explicit param', () => {
+    vi.stubEnv('GT_API_KEY', '');
+
+    expect(addRuntimeCredentials({ apiKey: 'explicit-api-key' })).toMatchObject(
+      { apiKey: 'explicit-api-key' }
+    );
+  });
+
+  it('lets an empty-string explicit param fall back to the env value', () => {
+    vi.stubEnv('GT_API_KEY', 'env-api-key');
+
+    expect(addRuntimeCredentials({ apiKey: '' })).toMatchObject({
+      apiKey: 'env-api-key',
+    });
+  });
+
   it('preserves other config fields when adding credentials', () => {
     vi.stubEnv('GT_PROJECT_ID', 'env-project-id');
 
