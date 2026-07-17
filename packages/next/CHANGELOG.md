@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.0.11
+
+### Patch Changes
+
+- [#1928](https://github.com/generaltranslation/gt/pull/1928) [`84bc362`](https://github.com/generaltranslation/gt/commit/84bc362d03d03c6f70773c35e6d92770ad56548f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Use the client-safe React i18n cache in the browser so gt-next only resolves dictionary files and loaders on the server.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.11
+  - gt-react@11.0.11
+
 ## 11.0.10
 
 ### Patch Changes
