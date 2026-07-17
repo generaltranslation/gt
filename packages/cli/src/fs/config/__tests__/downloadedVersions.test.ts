@@ -121,6 +121,34 @@ describe('readLockfile / writeLockfile', () => {
       expect(originalV1).not.toBeNull();
     });
 
+    it('preserves per-locale fileName when converting v1 to v2', () => {
+      writeLockFile({
+        version: 1,
+        entries: {
+          brc_main: {
+            file1: {
+              ver1: {
+                ja: {
+                  fileName: 'docs/ja/guide.md',
+                  updatedAt: '2025-01-01T00:00:00Z',
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const { data, originalV1 } = readLockfile(settings('brc_main'));
+      expect(data.entries[0].translations.ja.fileName).toBe('docs/ja/guide.md');
+
+      // Round-trip: writing back to v1 keeps the fileName too
+      writeLockfile(data, originalV1);
+      const { data: reread } = readLockfile(settings('brc_main'));
+      expect(reread.entries[0].translations.ja.fileName).toBe(
+        'docs/ja/guide.md'
+      );
+    });
+
     it('picks latest versionId when v1 has multiple versions per file', () => {
       writeLockFile({
         version: 1,

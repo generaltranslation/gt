@@ -232,8 +232,10 @@ describe('computeStatus: JSON catalogs', () => {
     expect(rows[0].missing).toEqual([]);
   });
 
-  it('counts composite JSON files as single file units', () => {
-    write('composite.json', { en: { a: 'Hi' }, es: { a: 'Hola' } });
+  it('reports composite JSON files as unmeasured instead of translated', () => {
+    // Composite files keep every locale inside one file, so its mapped
+    // output always exists; counting it as covered would fake 100%
+    write('composite.json', { en: { a: 'Hi' } });
     const rows = computeStatus(
       baseInput({
         sourceFiles: [
@@ -246,8 +248,58 @@ describe('computeStatus: JSON catalogs', () => {
         resolveJsonSchema: () => ({ kind: 'composite' }),
       })
     );
+    expect(rows[0].total).toBe(0);
+    expect(rows[0].translated).toBe(0);
+    expect(rows[0].unmeasured).toEqual([{ fileName: 'composite.json' }]);
+    expect(rows[0].errors).toEqual([]);
+  });
+
+  it('suppresses orphan-key stales for a file already stale via the lockfile', () => {
+    write('messages/es.json', { a: 'Hola {x}', b: { c: 'Ey' }, gone: 'x' });
+    const rows = computeStatus(
+      baseInput({
+        sourceFiles: [jsonFile()],
+        fileMapping: { es: { 'messages/en.json': 'messages/es.json' } },
+        lockEntries: buildEntryMap([
+          {
+            fileId: 'json-file-id',
+            versionId: 'v1-outdated',
+            translations: { es: { updatedAt: '2026-01-01' } },
+          },
+        ]),
+      })
+    );
+    // One file-level stale unit, not one per orphan key on top of it
+    expect(rows[0].stale).toEqual([{ fileName: 'messages/es.json' }]);
+  });
+
+  it('collapses i18next plural families instead of flagging CLDR categories', () => {
+    write('locales/ru.json', {
+      item_one: '# элемент',
+      item_few: '# элемента',
+      item_many: '# элементов',
+      item_other: '# элемента',
+    });
+    const rows = computeStatus(
+      baseInput({
+        locales: ['ru'],
+        sourceFiles: [
+          jsonFile({
+            fileName: 'locales/en.json',
+            dataFormat: 'I18NEXT',
+            content: JSON.stringify({
+              item_one: '# item',
+              item_other: '# items',
+            }),
+          }),
+        ],
+        fileMapping: { ru: { 'locales/en.json': 'locales/ru.json' } },
+      })
+    );
     expect(rows[0].total).toBe(1);
     expect(rows[0].translated).toBe(1);
+    expect(rows[0].missing).toEqual([]);
+    expect(rows[0].stale).toEqual([]);
     expect(rows[0].errors).toEqual([]);
   });
 });

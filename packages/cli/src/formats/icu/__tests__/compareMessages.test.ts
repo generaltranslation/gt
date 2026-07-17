@@ -94,6 +94,24 @@ describe('compareIcuMessages', () => {
     expect(kinds(issues)).toEqual(['argument-type-mismatch']);
   });
 
+  it('keeps tags and arguments with the same name distinct', () => {
+    const issues = compareIcuMessages('{b} and <b>x</b>', '{b} only');
+    expect(kinds(issues)).toEqual(['missing-argument']);
+    expect(issues[0].argument).toBe('b');
+    expect(issues[0].message).toContain('<b>');
+  });
+
+  it('flags a tag replaced by a plain argument as both missing and extra', () => {
+    const issues = compareIcuMessages('click <b>here</b>', 'klik {b}');
+    expect(kinds(issues)).toEqual(['extra-argument', 'missing-argument']);
+  });
+
+  it('hints about quoting when a translation trips tag parsing', () => {
+    const issues = compareIcuMessages('a is less than b', 'wenn a<b ist');
+    expect(kinds(issues)).toEqual(['parse-error']);
+    expect(issues[0].message).toContain("'<'");
+  });
+
   it('skips sources that are not valid ICU themselves', () => {
     expect(compareIcuMessages('hello {{name}}', 'anything {broken')).toEqual(
       []

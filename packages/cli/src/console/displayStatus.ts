@@ -61,10 +61,13 @@ export function renderStatusTable(
     const covered = percent >= options.minCoverage;
     return [
       { text: row.locale, color: chalk.cyan },
-      {
-        text: formatPercent(percent),
-        color: covered ? chalk.green : chalk.yellow,
-      },
+      // A row with nothing measurable gets a dash, not a fake 100%
+      row.total === 0
+        ? { text: '—', color: chalk.dim }
+        : {
+            text: formatPercent(percent),
+            color: covered ? chalk.green : chalk.yellow,
+          },
       { text: `${row.translated}/${row.total}` },
       {
         text: String(row.missing.length),
@@ -168,12 +171,31 @@ export function renderStatusIssues(
   return sections.join('\n').trimEnd();
 }
 
+/**
+ * Renders a note listing files whose per-locale coverage cannot be
+ * measured locally (composite JSON), deduplicated across locales.
+ * Empty string when everything was measurable.
+ */
+export function renderUnmeasuredNote(rows: LocaleStatus[]): string {
+  const files = new Set<string>(
+    rows.flatMap((row) => row.unmeasured.map((unit) => unit.fileName))
+  );
+  if (files.size === 0) return '';
+  return chalk.dim(
+    `Not measured (composite JSON keeps every locale in one file): ${[...files].join(', ')}`
+  );
+}
+
 /** Logs the status table and any detail sections */
 export function displayStatus(
   rows: LocaleStatus[],
   options: { minCoverage: number; verbose: boolean }
 ): void {
   logger.message('\n' + renderStatusTable(rows, options));
+  const unmeasured = renderUnmeasuredNote(rows);
+  if (unmeasured) {
+    logger.info(unmeasured);
+  }
   const issues = renderStatusIssues(rows, options);
   if (issues) {
     const hasErrors = rows.some((row) => row.errors.length > 0);

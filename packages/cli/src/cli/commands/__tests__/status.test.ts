@@ -20,12 +20,21 @@ vi.mock('../../../console/logging.js', () => ({
     throw new Error(`fatal:${message}`);
   }),
 }));
-vi.mock('../../../formats/files/collectFiles.js', () => ({
-  collectFiles: vi.fn(async () => ({
+const mockCollectFiles = vi.hoisted(() =>
+  vi.fn(async () => ({
     files: [],
     reactComponents: 0,
     publishMap: new Map(),
-  })),
+  }))
+);
+vi.mock('../../../formats/files/collectFiles.js', () => ({
+  collectFiles: mockCollectFiles,
+}));
+const mockAggregateFiles = vi.hoisted(() =>
+  vi.fn(async () => ({ files: [], publishMap: new Map() }))
+);
+vi.mock('../../../formats/files/aggregateFiles.js', () => ({
+  aggregateFiles: mockAggregateFiles,
 }));
 vi.mock('../../../formats/files/fileMapping.js', () => ({
   createFileMapping: vi.fn(() => ({})),
@@ -56,6 +65,7 @@ function row(overrides: Partial<LocaleStatus>): LocaleStatus {
     translated: 10,
     missing: [],
     stale: [],
+    unmeasured: [],
     errors: [],
     ...overrides,
   };
@@ -150,9 +160,46 @@ describe('handleStatus', () => {
     );
   });
 
+  it('rejects empty and negative --min-coverage values', async () => {
+    // Number('') is 0, which would silently disable the gate
+    await expect(run({ minCoverage: '' }, [row({})])).rejects.toThrow(
+      /min-coverage/
+    );
+    await expect(run({ minCoverage: '-5' }, [row({})])).rejects.toThrow(
+      /min-coverage/
+    );
+  });
+
+  it('accepts the commander string default and a zero threshold', async () => {
+    await expect(
+      run({ minCoverage: '100' }, [row({})])
+    ).resolves.toBeUndefined();
+    await expect(
+      run({ ci: true, minCoverage: '0' }, [row({ translated: 0 })])
+    ).resolves.toBeUndefined();
+  });
+
   it('excludes the default locale from reported locales', async () => {
     await run({}, [row({})]);
     const input = mockComputeStatus.mock.calls[0][0];
     expect(input.locales).toEqual(['es', 'fr']);
+  });
+
+  it('fails --ci instead of claiming success when nothing was measured', async () => {
+    // A broken include glob or publish-only config measures zero units;
+    // that must not read as a passing 100%
+    await expect(
+      run({ ci: true }, [row({ total: 0, translated: 0 })])
+    ).rejects.toThrow('exit:1');
+    await expect(
+      run({}, [row({ total: 0, translated: 0 })])
+    ).resolves.toBeUndefined();
+  });
+
+  it('skips the inline scan when no local gt output is configured', async () => {
+    mockComputeStatus.mockReturnValue([row({})]);
+    await handleStatus({} as StatusFlags, settings(), 'gt-react');
+    expect(mockAggregateFiles).toHaveBeenCalledOnce();
+    expect(mockCollectFiles).not.toHaveBeenCalled();
   });
 });

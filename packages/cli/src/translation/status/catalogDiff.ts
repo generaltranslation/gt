@@ -43,34 +43,25 @@ export function diffKeyedCatalog(
   };
 }
 
-function escapePointerSegment(segment: string): string {
-  return segment.replace(/~/g, '~0').replace(/\//g, '~1');
-}
+const I18NEXT_PLURAL_SUFFIX = /_(zero|one|two|few|many|other|\d+)$/;
 
 /**
- * Flattens a parsed JSON value into a map of RFC 6901 JSON pointers to
- * string leaves. Non-string leaves (numbers, booleans, null) are skipped —
- * only strings are translatable.
+ * Collapses i18next plural-suffixed keys (`item_one`, `item_few`, …) into
+ * one `item_[plural]` unit per family. Locales legitimately carry
+ * different CLDR plural categories than the source (Russian needs
+ * few/many, Japanese only other), so comparing suffixed keys one-to-one
+ * produces false missing/stale reports. A family counts as translated
+ * when the translation has any form of it.
  */
-export function flattenStringLeaves(
-  json: unknown,
-  pointer: string = '',
-  result: Record<string, string> = {}
-): Record<string, string> {
-  if (Array.isArray(json)) {
-    json.forEach((item, index) => {
-      flattenStringLeaves(item, `${pointer}/${index}`, result);
-    });
-  } else if (json && typeof json === 'object') {
-    for (const [key, value] of Object.entries(json)) {
-      flattenStringLeaves(
-        value,
-        `${pointer}/${escapePointerSegment(key)}`,
-        result
-      );
+export function collapseI18nextPlurals(
+  pointers: Record<string, unknown>
+): Record<string, unknown> {
+  const collapsed: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(pointers)) {
+    const familyKey = key.replace(I18NEXT_PLURAL_SUFFIX, '_[plural]');
+    if (!(familyKey in collapsed)) {
+      collapsed[familyKey] = value;
     }
-  } else if (typeof json === 'string' && pointer) {
-    result[pointer] = json;
   }
-  return result;
+  return collapsed;
 }

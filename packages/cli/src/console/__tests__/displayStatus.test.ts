@@ -3,6 +3,7 @@ import {
   coveragePercent,
   renderStatusTable,
   renderStatusIssues,
+  renderUnmeasuredNote,
 } from '../displayStatus.js';
 import { stripAnsi } from '../logging.js';
 import type { LocaleStatus } from '../../translation/status/computeStatus.js';
@@ -14,6 +15,7 @@ function row(overrides: Partial<LocaleStatus>): LocaleStatus {
     translated: 10,
     missing: [],
     stale: [],
+    unmeasured: [],
     errors: [],
     ...overrides,
   };
@@ -82,6 +84,34 @@ describe('renderStatusTable', () => {
     );
     expect(table).toContain('99.9%');
     expect(table).not.toContain('100%');
+  });
+
+  it('shows a dash instead of a fake 100% when nothing was measured', () => {
+    const table = stripAnsi(
+      renderStatusTable([row({ total: 0, translated: 0 })], {
+        minCoverage: 100,
+      })
+    );
+    expect(table).not.toContain('100%');
+    expect(table).toMatch(/│\s+—\s+│/);
+  });
+});
+
+describe('renderUnmeasuredNote', () => {
+  it('lists each unmeasured file once across locales', () => {
+    const note = stripAnsi(
+      renderUnmeasuredNote([
+        row({ locale: 'es', unmeasured: [{ fileName: 'shared.json' }] }),
+        row({ locale: 'fr', unmeasured: [{ fileName: 'shared.json' }] }),
+      ])
+    );
+    expect(note).toContain('shared.json');
+    expect(note.match(/shared\.json/g)).toHaveLength(1);
+    expect(note).toContain('Not measured');
+  });
+
+  it('returns an empty string when everything was measurable', () => {
+    expect(renderUnmeasuredNote([row({})])).toBe('');
   });
 });
 

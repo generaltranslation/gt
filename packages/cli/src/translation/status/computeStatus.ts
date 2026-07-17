@@ -4,9 +4,16 @@ import type { FileToUpload } from 'generaltranslation/types';
 import type { FileMapping } from '../../types/files.js';
 import type { EntryMap } from '../../fs/config/downloadedVersions.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
-import { flattenJsonWithStringFilter } from '../../formats/json/flattenJson.js';
+import {
+  flattenJsonWithStringFilter,
+  flattenStringLeaves,
+} from '../../formats/json/flattenJson.js';
 import { compareIcuMessages } from '../../formats/icu/compareMessages.js';
-import { diffKeyedCatalog, flattenStringLeaves } from './catalogDiff.js';
+import {
+  collapseI18nextPlurals,
+  diffKeyedCatalog,
+  type CatalogDiff,
+} from './catalogDiff.js';
 
 export type StatusUnitRef = {
   /** Translated file the unit belongs to (relative path) */
@@ -26,6 +33,8 @@ export type LocaleStatus = {
   missing: StatusUnitRef[];
   /** Translations whose source entry changed or no longer exists */
   stale: StatusUnitRef[];
+  /** Files whose per-locale coverage cannot be measured locally */
+  unmeasured: StatusUnitRef[];
   /** ICU validation failures in translated catalogs */
   errors: StatusIssue[];
 };
@@ -77,6 +86,19 @@ function isLockStale(
   );
 }
 
+/** Reads a per-key dataFormat out of untyped GT template metadata */
+function entryDataFormat(
+  metadata: FileToUpload['formatMetadata'],
+  key: string
+): string | undefined {
+  const entry = (metadata as Record<string, unknown> | undefined)?.[key];
+  if (entry && typeof entry === 'object' && 'dataFormat' in entry) {
+    const dataFormat = (entry as { dataFormat?: unknown }).dataFormat;
+    return typeof dataFormat === 'string' ? dataFormat : undefined;
+  }
+  return undefined;
+}
+
 /**
  * Computes per-locale translation status from the current local source of
  * truth: the aggregated source files (collectFiles), the configured output
@@ -100,6 +122,7 @@ function computeLocaleStatus(
     translated: 0,
     missing: [],
     stale: [],
+    unmeasured: [],
     errors: [],
   };
 
@@ -116,19 +139,26 @@ function computeLocaleStatus(
 
     if (file.fileFormat === 'JSON') {
       const schema = resolveJsonSchema(path.resolve(cwd, file.fileName));
-      if (schema.kind !== 'composite') {
-        diffJsonCatalog(row, file, translatedRel, translatedAbs, schema);
-        if (
-          fs.existsSync(translatedAbs) &&
-          isLockStale(lockEntries, file, locale)
-        ) {
-          row.stale.push({ fileName: translatedRel });
-        }
+      if (schema.kind === 'composite') {
+        // Composite files keep every locale inside one file, so their
+        // mapped output existing proves nothing about this locale
+        row.unmeasured.push({ fileName: file.fileName });
         continue;
       }
+      const lockStale =
+        fs.existsSync(translatedAbs) && isLockStale(lockEntries, file, locale);
+      diffJsonCatalog(row, file, translatedRel, translatedAbs, schema, {
+        // A lock-stale file is reported once at file level; per-key
+        // orphans inside it would double-count the same problem
+        suppressKeyStale: lockStale,
+      });
+      if (lockStale) {
+        row.stale.push({ fileName: translatedRel });
+      }
+      continue;
     }
 
-    // Whole-file unit (documents, YAML, composite JSON)
+    // Whole-file unit (documents, YAML)
     row.total += 1;
     if (fs.existsSync(translatedAbs)) {
       row.translated += 1;
@@ -160,7 +190,14 @@ function diffGtCatalog(
   translatedRel: string,
   translatedAbs: string
 ): void {
-  const sourceMap = JSON.parse(file.content) as Record<string, unknown>;
+  let sourceMap: Record<string, unknown>;
+  try {
+    sourceMap = JSON.parse(file.content) as Record<string, unknown>;
+  } catch {
+    // The template content is built internally; nothing to diff if it is
+    // ever malformed
+    return;
+  }
   const read = readJsonFile(translatedAbs);
   if (read.state === 'invalid') {
     row.errors.push({
@@ -174,17 +211,13 @@ function diffGtCatalog(
       : null;
 
   const diff = diffKeyedCatalog(sourceMap, translationMap);
-  accumulateDiff(row, diff, translatedRel);
+  accumulateDiff(row, diff, translatedRel, { suppressKeyStale: false });
 
   if (!translationMap) return;
-  const metadata = (file.formatMetadata ?? {}) as Record<
-    string,
-    { dataFormat?: string } | undefined
-  >;
   for (const [key, sourceValue] of Object.entries(sourceMap)) {
     const translatedValue = translationMap[key];
     if (
-      metadata[key]?.dataFormat === 'ICU' &&
+      entryDataFormat(file.formatMetadata, key) === 'ICU' &&
       typeof sourceValue === 'string' &&
       typeof translatedValue === 'string'
     ) {
@@ -204,7 +237,8 @@ function diffJsonCatalog(
   file: FileToUpload,
   translatedRel: string,
   translatedAbs: string,
-  schema: Exclude<JsonSchemaResolution, { kind: 'composite' }>
+  schema: Exclude<JsonSchemaResolution, { kind: 'composite' }>,
+  options: { suppressKeyStale: boolean }
 ): void {
   let sourceJson: unknown;
   try {
@@ -216,7 +250,7 @@ function diffJsonCatalog(
   }
   // Include-schema sources are already flat pointer maps of translatable
   // strings; otherwise every string leaf counts
-  const sourcePointers =
+  let sourcePointers =
     schema.kind === 'include'
       ? (sourceJson as Record<string, unknown>)
       : flattenStringLeaves(sourceJson);
@@ -228,15 +262,25 @@ function diffJsonCatalog(
       message: 'translated file is not valid JSON',
     });
   }
-  const translatedPointers =
+  let translatedPointers =
     read.state === 'ok'
       ? schema.kind === 'include'
         ? flattenJsonWithStringFilter(read.value, schema.include)
         : flattenStringLeaves(read.value)
       : null;
 
+  if (file.dataFormat === 'I18NEXT') {
+    sourcePointers = collapseI18nextPlurals(sourcePointers);
+    if (translatedPointers) {
+      translatedPointers = collapseI18nextPlurals(translatedPointers) as Record<
+        string,
+        string
+      >;
+    }
+  }
+
   const diff = diffKeyedCatalog(sourcePointers, translatedPointers);
-  accumulateDiff(row, diff, translatedRel);
+  accumulateDiff(row, diff, translatedRel, options);
 
   if (!translatedPointers || file.dataFormat !== 'ICU') return;
   for (const [pointer, sourceValue] of Object.entries(sourcePointers)) {
@@ -255,15 +299,18 @@ function diffJsonCatalog(
 
 function accumulateDiff(
   row: LocaleStatus,
-  diff: ReturnType<typeof diffKeyedCatalog>,
-  translatedRel: string
+  diff: CatalogDiff,
+  translatedRel: string,
+  options: { suppressKeyStale: boolean }
 ): void {
   row.total += diff.total;
   row.translated += diff.translated;
   for (const key of diff.missing) {
     row.missing.push({ fileName: translatedRel, key });
   }
-  for (const key of diff.stale) {
-    row.stale.push({ fileName: translatedRel, key });
+  if (!options.suppressKeyStale) {
+    for (const key of diff.stale) {
+      row.stale.push({ fileName: translatedRel, key });
+    }
   }
 }
