@@ -201,7 +201,7 @@ function getLocaleConfigParams(
 ): LocaleConfigConstructorParams {
   const {
     defaultLocale = libraryDefaultLocale,
-    locales = [defaultLocale],
+    locales = [],
     customMapping,
   } = params;
 
@@ -224,7 +224,7 @@ function getLocaleConfigParams(
 
 function getLocaleResolverConfigParams({
   defaultLocale = libraryDefaultLocale,
-  locales,
+  locales = [],
   customMapping,
 }: I18nConfigParams = {}): LocaleConfigConstructorParams {
   return {

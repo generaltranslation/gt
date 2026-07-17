@@ -2,29 +2,12 @@
  * Configuration types for the GT Babel plugin
  */
 
+import type { GTConfig as SharedGTConfig } from 'generaltranslation/types';
+
 export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug';
 
-/**
- * The only relevant parts of the GT config that we are concerned with
- */
-export type GTConfig = {
-  defaultLocale?: string;
-  locales?: string[];
-  projectId?: string;
-  _versionId?: string;
-  files?: {
-    gt?: {
-      output?: string;
-      parsingFlags?: {
-        enableAutoJsxInjection?: boolean;
-        autoderive?: boolean | { jsx?: boolean; strings?: boolean };
-        legacyGtReactImportSource?: boolean;
-        /** Dev hot reload: inject runtime translate calls and enable Suspense-based <T> */
-        devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
-      };
-    };
-  };
-};
+/** A complete or partial gt.config.json accepted by compiler integrations. */
+export type GTConfig = Partial<SharedGTConfig>;
 
 /**
  * Plugin configuration options (from babel config)

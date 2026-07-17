@@ -29,6 +29,12 @@ export type {
 } from './types-dir/api/entry';
 export type { HashMetadata } from './id/types';
 export type {
+  GTConfig,
+  GTFilesConfig,
+  GTOutputFileConfig,
+  GTParsingFlags,
+} from './types-dir/config';
+export type {
   JsonObject,
   JsonPrimitive,
   JsonValue,
