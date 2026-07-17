@@ -1,8 +1,4 @@
-import {
-  initializeI18nConfig,
-  ReactI18nCache,
-  setReactI18nCache,
-} from '@generaltranslation/react-core/pure';
+import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
 import { getParams } from './shared';
 import type { NextSetupI18nConfigParams } from './shared';
 import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
@@ -19,8 +15,8 @@ export function initializeGTClient(
     nextI18nCacheParams: NextI18nCacheParams;
   } = getParams()
 ): void {
-  initializeI18nConfig(i18nConfigParams);
-  const i18nCache = new ReactI18nCache({
+  internalInitializeGTSRA({
+    ...i18nConfigParams,
     ...nextI18nCacheParams,
     /**
      * Always disable cache expiry for client-side lookups.
@@ -29,5 +25,4 @@ export function initializeGTClient(
      */
     cacheExpiryTime: null,
   });
-  setReactI18nCache(i18nCache);
 }
