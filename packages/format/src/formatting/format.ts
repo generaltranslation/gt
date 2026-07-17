@@ -17,9 +17,6 @@ type FormatParams<Value, Options> = {
  * @param {Record<string, any>} [variables={}] - The variables to use for formatting.
  * @returns {string} The formatted message.
  * @internal
- *
- * Returns an empty string if IntlMessageFormat produces no output.
- * TODO: Add this to custom formats.
  */
 export function _formatMessageICU(
   message: string,

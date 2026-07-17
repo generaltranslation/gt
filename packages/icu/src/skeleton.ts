@@ -26,6 +26,19 @@ type ModernNumberFormatOptions = ExtendedNumberFormatOptions & {
   trailingZeroDisplay?: 'auto' | 'stripIfInteger';
 };
 
+const ROUNDING_MODES: Record<
+  string,
+  NonNullable<ModernNumberFormatOptions['roundingMode']>
+> = {
+  'rounding-mode-floor': 'floor',
+  'rounding-mode-ceiling': 'ceil',
+  'rounding-mode-down': 'trunc',
+  'rounding-mode-up': 'expand',
+  'rounding-mode-half-even': 'halfEven',
+  'rounding-mode-half-down': 'halfTrunc',
+  'rounding-mode-half-up': 'halfExpand',
+};
+
 export function parseNumberSkeletonTokens(
   skeleton: string
 ): NumberSkeletonToken[] {
@@ -46,7 +59,7 @@ export function parseNumberSkeletonTokens(
 export function parseNumberSkeletonOptions(
   tokens: NumberSkeletonToken[]
 ): ExtendedNumberFormatOptions {
-  let result: ModernNumberFormatOptions = {};
+  const result: ModernNumberFormatOptions = {};
 
   for (const token of tokens) {
     if (!token.stem) {
@@ -103,12 +116,11 @@ export function parseNumberSkeletonOptions(
         result.compactDisplay = 'long';
         continue;
       case 'scientific':
-        result = { ...result, notation: 'scientific' };
-        applyNotationOptions(result, token.options);
-        continue;
       case 'engineering':
-        result = { ...result, notation: 'engineering' };
-        applyNotationOptions(result, token.options);
+        result.notation = token.stem;
+        for (const notationOption of token.options) {
+          applySign(result, notationOption);
+        }
         continue;
       case 'notation-simple':
         result.notation = 'standard';
@@ -135,31 +147,16 @@ export function parseNumberSkeletonOptions(
           throw new SyntaxError(`Invalid scale value: ${option}.`);
         }
         continue;
-      case 'rounding-mode-floor':
-        result.roundingMode = 'floor';
-        continue;
-      case 'rounding-mode-ceiling':
-        result.roundingMode = 'ceil';
-        continue;
-      case 'rounding-mode-down':
-        result.roundingMode = 'trunc';
-        continue;
-      case 'rounding-mode-up':
-        result.roundingMode = 'expand';
-        continue;
-      case 'rounding-mode-half-even':
-        result.roundingMode = 'halfEven';
-        continue;
-      case 'rounding-mode-half-down':
-        result.roundingMode = 'halfTrunc';
-        continue;
-      case 'rounding-mode-half-up':
-        result.roundingMode = 'halfExpand';
-        continue;
       case 'integer-width':
         requireOption(token);
         applyIntegerWidth(result, option!);
         continue;
+    }
+
+    const roundingMode = ROUNDING_MODES[token.stem];
+    if (roundingMode) {
+      result.roundingMode = roundingMode;
+      continue;
     }
 
     if (/^0+$/u.test(token.stem)) {
@@ -188,13 +185,6 @@ function requireOption(token: NumberSkeletonToken): void {
   if (!token.options[0]) {
     throw new SyntaxError(`${token.stem} requires an option.`);
   }
-}
-
-function applyNotationOptions(
-  result: ModernNumberFormatOptions,
-  options: string[]
-): void {
-  for (const option of options) applySign(result, option);
 }
 
 function applySign(result: ModernNumberFormatOptions, stem: string): boolean {
@@ -251,10 +241,16 @@ function applyIntegerWidth(
   width: string
 ): void {
   const match = INTEGER_WIDTH.exec(width);
-  if (!match || !match[1] || !match[2]) {
+  if (!match) {
     throw new SyntaxError(`Unsupported integer width: ${width}.`);
   }
-  result.minimumIntegerDigits = match[2].length;
+  if (match[1]) {
+    result.minimumIntegerDigits = match[2].length;
+  } else if (match[3]) {
+    throw new Error('We currently do not support maximum integer digits');
+  } else {
+    throw new Error('We currently do not support exact integer digits');
+  }
 }
 
 function applyFractionPrecision(
@@ -317,7 +313,7 @@ export function parseDateTimeSkeletonOptions(
   const pattern = resolveLocaleHourSkeleton(skeleton, locale);
   const result: Intl.DateTimeFormatOptions = {};
 
-  pattern.replace(DATE_TIME_FIELD, (field) => {
+  for (const [field] of pattern.matchAll(DATE_TIME_FIELD)) {
     const length = field.length;
     switch (field[0]) {
       case 'G':
@@ -396,8 +392,7 @@ export function parseDateTimeSkeletonOptions(
       case 'x':
         throw unsupported(field, 'date/time');
     }
-    return '';
-  });
+  }
 
   return result;
 }
@@ -408,7 +403,7 @@ export function resolveLocaleHourSkeleton(
 ): string {
   if (!locale || !/[jJC]/u.test(skeleton)) return skeleton;
 
-  const resolved = new Intl.DateTimeFormat(locale?.toString(), {
+  const resolved = new Intl.DateTimeFormat(locale.toString(), {
     hour: 'numeric',
   }).resolvedOptions();
   const localeHourSymbol =

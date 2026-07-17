@@ -12,7 +12,6 @@ import type {
   NumberSkeleton,
   PluralElement,
   SelectElement,
-  TagElement,
   TimeElement,
 } from './types';
 
@@ -51,14 +50,10 @@ function printElements(
         case TYPE.pound:
           return '#';
         case TYPE.tag:
-          return printTag(element);
+          return `<${element.value}>${printAST(element.children)}</${element.value}>`;
       }
     })
     .join('');
-}
-
-function printTag(element: TagElement): string {
-  return `<${element.value}>${printAST(element.children)}</${element.value}>`;
 }
 
 function escapeMessage(message: string): string {
@@ -85,7 +80,13 @@ function printLiteral(
 function printSimpleFormat(
   element: DateElement | TimeElement | NumberElement
 ): string {
-  return `{${element.value}, ${TYPE[element.type]}${
+  const type =
+    element.type === TYPE.number
+      ? 'number'
+      : element.type === TYPE.date
+        ? 'date'
+        : 'time';
+  return `{${element.value}, ${type}${
     element.style ? `, ${printStyle(element.style)}` : ''
   }}`;
 }
@@ -105,33 +106,23 @@ function printStyle(style: SimpleFormatStyle): string {
 }
 
 function printSelect(element: SelectElement): string {
-  const message = [
-    element.value,
-    'select',
-    Object.keys(element.options)
-      .map(
-        (selector) =>
-          `${selector}{${printElements(element.options[selector].value, false)}}`
-      )
-      .join(' '),
-  ].join(',');
-  return `{${message}}`;
+  return `{${element.value},select,${printOptions(element.options, false)}}`;
 }
 
 function printPlural(element: PluralElement): string {
   const type = element.pluralType === 'cardinal' ? 'plural' : 'selectordinal';
-  const message = [
-    element.value,
-    type,
-    [
-      element.offset ? `offset:${element.offset}` : '',
-      ...Object.keys(element.options).map(
-        (selector) =>
-          `${selector}{${printElements(element.options[selector].value, true)}}`
-      ),
-    ]
-      .filter(Boolean)
-      .join(' '),
-  ].join(',');
-  return `{${message}}`;
+  const offset = element.offset ? `offset:${element.offset} ` : '';
+  return `{${element.value},${type},${offset}${printOptions(element.options, true)}}`;
+}
+
+function printOptions(
+  options: SelectElement['options'],
+  inPlural: boolean
+): string {
+  return Object.entries(options)
+    .map(
+      ([selector, option]) =>
+        `${selector}{${printElements(option.value, inPlural)}}`
+    )
+    .join(' ');
 }

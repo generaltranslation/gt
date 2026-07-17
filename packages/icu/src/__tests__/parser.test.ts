@@ -239,6 +239,7 @@ describe('parse', () => {
     ['<b>text', 'UNCLOSED_TAG'],
     ['{n, number, ::}', 'Number skeleton cannot be empty'],
     ['{n, number, ::currency/}', 'Invalid number skeleton token'],
+    ['{n, number, ::integer-width/*}', 'Unsupported integer width'],
     ["{n, number, 'unclosed}", 'UNCLOSED_QUOTE_IN_ARGUMENT_STYLE'],
   ])('rejects malformed ICU %j', (message, error) => {
     expect(() => parse(message)).toThrow(error);

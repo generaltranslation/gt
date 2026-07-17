@@ -5,9 +5,8 @@
 
 import { parse } from './parser';
 import {
+  SKELETON_TYPE,
   TYPE,
-  isDateTimeSkeleton,
-  isNumberSkeleton,
   type ExtendedNumberFormatOptions,
   type MessageFormatElement,
   type MessageVariables,
@@ -58,10 +57,7 @@ export function formatMessage(
   variables: MessageVariables = {}
 ): string {
   const locale = resolveLocale(locales);
-  const ast = parse(message, {
-    locale,
-    shouldParseSkeletons: true,
-  });
+  const ast = parse(message, { locale });
   return formatElements(ast, locales, variables);
 }
 
@@ -96,27 +92,19 @@ function formatElements(
         );
         break;
       }
-      case TYPE.date: {
-        const value = requireVariable(variables, element.value);
-        const options =
-          typeof element.style === 'string'
-            ? DATE_STYLES[element.style]
-            : isDateTimeSkeleton(element.style)
-              ? element.style.parsedOptions
-              : undefined;
-        result += new Intl.DateTimeFormat(locales, options).format(
-          value as number | Date
-        );
-        break;
-      }
+      case TYPE.date:
       case TYPE.time: {
         const value = requireVariable(variables, element.value);
+        const namedStyles =
+          element.type === TYPE.date ? DATE_STYLES : TIME_STYLES;
         const options =
           typeof element.style === 'string'
-            ? TIME_STYLES[element.style]
-            : isDateTimeSkeleton(element.style)
+            ? namedStyles[element.style]
+            : element.style?.type === SKELETON_TYPE.dateTime
               ? element.style.parsedOptions
-              : TIME_STYLES.medium;
+              : element.type === TYPE.time
+                ? TIME_STYLES.medium
+                : undefined;
         result += new Intl.DateTimeFormat(locales, options).format(
           value as number | Date
         );
@@ -201,7 +189,7 @@ function numberOptions(
   style: NumberElement['style']
 ): ExtendedNumberFormatOptions {
   if (typeof style === 'string') return NUMBER_STYLES[style] ?? {};
-  if (isNumberSkeleton(style)) return style.parsedOptions;
+  if (style?.type === SKELETON_TYPE.number) return style.parsedOptions;
   return {};
 }
 

@@ -130,6 +130,21 @@ describe('formatMessage', () => {
     ).toBe('12%');
   });
 
+  it('formats minimum integer-width skeletons', () => {
+    expect(
+      formatMessage('{n, number, ::integer-width/*000}', 'en', { n: 7 })
+    ).toBe('007');
+  });
+
+  it.each([
+    ['000', 'exact integer digits'],
+    ['##00', 'maximum integer digits'],
+  ])('matches FormatJS rejection of integer-width/%s', (width, error) => {
+    expect(() =>
+      formatMessage(`{n, number, ::integer-width/${width}}`, 'en', { n: 7 })
+    ).toThrow(error);
+  });
+
   it('supports bigint number and plural formatting', () => {
     expect(
       formatMessage('Total: {total, number, ::currency/USD}', 'en-US', {

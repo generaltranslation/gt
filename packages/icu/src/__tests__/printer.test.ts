@@ -32,6 +32,7 @@ describe('printAST', () => {
     ],
     ['<b>Bold <i>{name}</i></b>', '<b>Bold <i>{name}</i></b>'],
     ["Cost: '{'price'}'", "Cost: '{price}'"],
+    ["'{isn''t}'", "'{isn't}'"],
     ["It''s {name} o''clock", "It's {name} o'clock"],
     ["{name}'s book", "{name}''s book"],
     ["{count, plural, other {'#' #}}", "{count,plural,other{'#' #}}"],

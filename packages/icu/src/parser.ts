@@ -7,15 +7,12 @@ import {
   SKELETON_TYPE,
   TYPE,
   type DateTimeSkeleton,
-  type DateElement,
   type Location,
   type LocationDetails,
   type MessageFormatElement,
   type NumberSkeleton,
-  type NumberElement,
   type ParserOptions,
   type PluralOrSelectOption,
-  type TimeElement,
 } from './types';
 import {
   parseDateTimeSkeletonOptions,
@@ -30,30 +27,19 @@ const TAG_NAME_CHARACTER = /^[\p{L}\p{N}_.\-·\u200C\u200D]$/u;
 
 class IcuParser {
   private index = 0;
-  private readonly captureLocation: boolean;
-  private readonly ignoreTag: boolean;
-  private readonly locale?: Intl.Locale;
-  private readonly requiresOtherClause: boolean;
-  private readonly shouldParseSkeletons: boolean;
 
   constructor(
     private readonly message: string,
-    options: ParserOptions
-  ) {
-    this.captureLocation = options.captureLocation ?? false;
-    this.ignoreTag = options.ignoreTag ?? false;
-    this.locale = options.locale;
-    this.requiresOtherClause = options.requiresOtherClause ?? false;
-    this.shouldParseSkeletons = options.shouldParseSkeletons ?? false;
-  }
+    private readonly options: ParserOptions
+  ) {}
 
   parse(): MessageFormatElement[] {
-    return this.parseMessage(0, '', false);
+    return this.parseMessage(false, false, false);
   }
 
   private parseMessage(
-    nestingLevel: number,
-    parentArgumentType: string,
+    nested: boolean,
+    inPlural: boolean,
     expectingCloseTag: boolean
   ): MessageFormatElement[] {
     const elements: MessageFormatElement[] = [];
@@ -61,30 +47,30 @@ class IcuParser {
     while (!this.atEnd()) {
       const character = this.current();
       if (character === '{') {
-        elements.push(this.parseArgument(nestingLevel, expectingCloseTag));
-      } else if (character === '}' && nestingLevel > 0) {
+        elements.push(this.parseArgument(expectingCloseTag));
+      } else if (character === '}' && nested) {
         break;
-      } else if (
-        character === '#' &&
-        (parentArgumentType === 'plural' ||
-          parentArgumentType === 'selectordinal')
-      ) {
+      } else if (character === '#' && inPlural) {
         const start = this.index;
         this.index += 1;
         elements.push(
           this.withLocation({ type: TYPE.pound }, start, this.index)
         );
-      } else if (character === '<' && !this.ignoreTag && this.peek() === '/') {
+      } else if (
+        character === '<' &&
+        !this.options.ignoreTag &&
+        this.peek() === '/'
+      ) {
         if (expectingCloseTag) break;
         this.fail('UNMATCHED_CLOSING_TAG');
       } else if (
         character === '<' &&
-        !this.ignoreTag &&
+        !this.options.ignoreTag &&
         isAsciiLetter(this.peek())
       ) {
-        elements.push(this.parseTag(nestingLevel, parentArgumentType));
+        elements.push(this.parseTag(inPlural));
       } else {
-        elements.push(this.parseLiteral(nestingLevel, parentArgumentType));
+        elements.push(this.parseLiteral(nested, inPlural));
       }
     }
 
@@ -92,14 +78,14 @@ class IcuParser {
   }
 
   private parseLiteral(
-    nestingLevel: number,
-    parentArgumentType: string
+    nested: boolean,
+    inPlural: boolean
   ): MessageFormatElement {
     const start = this.index;
     let value = '';
 
     while (!this.atEnd()) {
-      const quote = this.tryParseQuote(parentArgumentType);
+      const quote = this.tryParseQuote(inPlural);
       if (quote !== null) {
         value += quote;
         continue;
@@ -108,12 +94,10 @@ class IcuParser {
       const character = this.current();
       if (
         character === '{' ||
-        (character === '}' && nestingLevel > 0) ||
-        (character === '#' &&
-          (parentArgumentType === 'plural' ||
-            parentArgumentType === 'selectordinal')) ||
+        (character === '}' && nested) ||
+        (character === '#' && inPlural) ||
         (character === '<' &&
-          !this.ignoreTag &&
+          !this.options.ignoreTag &&
           (isAsciiLetter(this.peek()) || this.peek() === '/'))
       ) {
         break;
@@ -126,7 +110,7 @@ class IcuParser {
     return this.withLocation({ type: TYPE.literal, value }, start, this.index);
   }
 
-  private tryParseQuote(parentArgumentType: string): string | null {
+  private tryParseQuote(inPlural: boolean): string | null {
     if (this.current() !== "'") return null;
 
     const next = this.peek();
@@ -140,9 +124,7 @@ class IcuParser {
       next === '}' ||
       next === '<' ||
       next === '>' ||
-      (next === '#' &&
-        (parentArgumentType === 'plural' ||
-          parentArgumentType === 'selectordinal'));
+      (next === '#' && inPlural);
     if (!quotesSyntax) return null;
 
     this.index += 1;
@@ -164,10 +146,7 @@ class IcuParser {
     return value;
   }
 
-  private parseTag(
-    nestingLevel: number,
-    parentArgumentType: string
-  ): MessageFormatElement {
+  private parseTag(inPlural: boolean): MessageFormatElement {
     const start = this.index;
     this.index += 1;
     const tagName = this.readTagName();
@@ -182,11 +161,7 @@ class IcuParser {
     }
 
     if (!this.consume('>')) this.fail('INVALID_TAG', start);
-    const children = this.parseMessage(
-      nestingLevel + 1,
-      parentArgumentType,
-      true
-    );
+    const children = this.parseMessage(true, inPlural, true);
 
     if (!this.consume('</')) this.fail('UNCLOSED_TAG', start);
     const closingStart = this.index;
@@ -215,10 +190,7 @@ class IcuParser {
     return this.message.slice(start, this.index);
   }
 
-  private parseArgument(
-    nestingLevel: number,
-    expectingCloseTag: boolean
-  ): MessageFormatElement {
+  private parseArgument(expectingCloseTag: boolean): MessageFormatElement {
     const start = this.index;
     this.index += 1;
     this.skipSpace();
@@ -259,7 +231,6 @@ class IcuParser {
           start,
           value,
           argumentType,
-          nestingLevel,
           expectingCloseTag
         );
       default:
@@ -290,18 +261,21 @@ class IcuParser {
             type: SKELETON_TYPE.number,
             tokens,
             ...(styleLocation ? { location: styleLocation } : {}),
-            parsedOptions: this.shouldParseSkeletons
+            parsedOptions: this.options.shouldParseSkeletons
               ? parseNumberSkeletonOptions(tokens)
               : {},
           };
         } else {
           if (!skeleton) this.fail('EXPECT_DATE_TIME_SKELETON', styleStart);
-          const pattern = resolveLocaleHourSkeleton(skeleton, this.locale);
+          const pattern = resolveLocaleHourSkeleton(
+            skeleton,
+            this.options.locale
+          );
           style = {
             type: SKELETON_TYPE.dateTime,
             pattern,
             ...(styleLocation ? { location: styleLocation } : {}),
-            parsedOptions: this.shouldParseSkeletons
+            parsedOptions: this.options.shouldParseSkeletons
               ? parseDateTimeSkeletonOptions(pattern)
               : {},
           };
@@ -315,22 +289,13 @@ class IcuParser {
       this.fail('EXPECT_ARGUMENT_CLOSING_BRACE', start);
     }
 
-    if (argumentType === 'number') {
-      return this.withLocation<NumberElement>(
-        { type: TYPE.number, value, style: style as NumberElement['style'] },
-        start,
-        this.index
-      );
-    }
-    if (argumentType === 'date') {
-      return this.withLocation<DateElement>(
-        { type: TYPE.date, value, style: style as DateElement['style'] },
-        start,
-        this.index
-      );
-    }
-    return this.withLocation<TimeElement>(
-      { type: TYPE.time, value, style: style as TimeElement['style'] },
+    const type = {
+      number: TYPE.number,
+      date: TYPE.date,
+      time: TYPE.time,
+    }[argumentType];
+    return this.withLocation(
+      { type, value, style } as MessageFormatElement,
       start,
       this.index
     );
@@ -368,7 +333,6 @@ class IcuParser {
     start: number,
     value: string,
     argumentType: 'plural' | 'selectordinal' | 'select',
-    nestingLevel: number,
     expectingCloseTag: boolean
   ): MessageFormatElement {
     this.skipSpace();
@@ -401,8 +365,8 @@ class IcuParser {
       const optionStart = this.index;
       if (!this.consume('{')) this.fail('EXPECT_ARGUMENT_SELECTOR_FRAGMENT');
       const optionValue = this.parseMessage(
-        nestingLevel + 1,
-        argumentType,
+        true,
+        argumentType !== 'select',
         expectingCloseTag
       );
       if (!this.consume('}')) {
@@ -424,7 +388,7 @@ class IcuParser {
 
     if (entries.length === 0) this.fail('EXPECT_ARGUMENT_SELECTOR');
     if (
-      this.requiresOtherClause &&
+      this.options.requiresOtherClause &&
       !entries.some(([entrySelector]) => entrySelector === 'other')
     ) {
       this.fail('MISSING_OTHER_CLAUSE', selectorStart);
@@ -508,7 +472,7 @@ class IcuParser {
   }
 
   private location(start: number, end: number): Location | undefined {
-    if (!this.captureLocation) return undefined;
+    if (!this.options.captureLocation) return undefined;
     return { start: this.position(start), end: this.position(end) };
   }
 

@@ -1,21 +1,7 @@
 export { formatMessage } from './formatter';
 export { parse } from './parser';
 export { printAST } from './printer';
-export {
-  SKELETON_TYPE,
-  TYPE,
-  isArgumentElement,
-  isDateElement,
-  isDateTimeSkeleton,
-  isLiteralElement,
-  isNumberElement,
-  isNumberSkeleton,
-  isPluralElement,
-  isPoundElement,
-  isSelectElement,
-  isTagElement,
-  isTimeElement,
-} from './types';
+export { SKELETON_TYPE, TYPE } from './types';
 export type {
   ArgumentElement,
   BaseElement,
