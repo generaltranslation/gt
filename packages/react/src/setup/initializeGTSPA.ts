@@ -7,6 +7,7 @@ import {
   initializeI18nConfig,
 } from '@generaltranslation/react-core/pure';
 import type { I18nConfigParams } from '@generaltranslation/react-core/pure';
+import type { GTConfig } from 'generaltranslation/types';
 import { BrowserI18nCache } from '../i18n-cache/BrowserI18nCache';
 import type { BrowserI18nCacheParams } from '../i18n-cache/BrowserI18nCache';
 import {
@@ -14,6 +15,14 @@ import {
   CreateBrowserConditionStoreParams,
 } from '../condition-store/createBrowserConditionStore';
 import { addRuntimeCredentials } from './runtimeCredentials';
+
+export type InitializeGTSPAParams = Pick<
+  GTConfig,
+  'defaultLocale' | 'locales'
+> &
+  I18nConfigParams &
+  BrowserI18nCacheParams &
+  CreateBrowserConditionStoreParams;
 
 /**
  * Initialize GT for an SPA
@@ -23,11 +32,7 @@ import { addRuntimeCredentials } from './runtimeCredentials';
  *
  * This is SPA for browser runtime
  */
-export async function initializeGTSPA(
-  config: I18nConfigParams &
-    BrowserI18nCacheParams &
-    CreateBrowserConditionStoreParams
-) {
+export async function initializeGTSPA(config: InitializeGTSPAParams) {
   const runtimeConfig = addRuntimeCredentials(config);
   initializeI18nConfig(runtimeConfig, 'SPA');
 

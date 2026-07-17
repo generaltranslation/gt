@@ -1,14 +1,20 @@
 import type { ReactI18nCacheParams } from '../i18n-cache/ReactI18nCache';
+import type { GTConfig } from 'generaltranslation/types';
 import { setReactI18nCache } from '../i18n-cache/singleton-operations';
 import { ReactI18nCache } from '../i18n-cache/ReactI18nCache';
 import { initializeI18nConfig, type ReactI18nConfigParams } from './i18nConfig';
 
+export type ReactInitializeGTParams = Pick<
+  GTConfig,
+  'defaultLocale' | 'locales'
+> &
+  ReactI18nConfigParams &
+  ReactI18nCacheParams;
+
 /**
  * Validation and setup for read only properties
  */
-export function internalInitializeGTSRA(
-  config: ReactI18nConfigParams & ReactI18nCacheParams
-): void {
+export function internalInitializeGTSRA(config: ReactInitializeGTParams): void {
   initializeI18nConfig(config, 'server-render');
 
   const i18nCache = new ReactI18nCache(config);
