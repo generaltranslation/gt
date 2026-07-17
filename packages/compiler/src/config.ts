@@ -44,6 +44,8 @@ export interface PluginConfig {
   stringTranslationMacro?: string;
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection?: boolean;
+  /** Package source for components inserted by Auto JSX Injection */
+  autoJsxImportSource?: string;
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive?: boolean | { jsx?: boolean; strings?: boolean };
   /** Emit compiler-injected gt-react imports from gt-react/browser */
@@ -70,6 +72,8 @@ export interface PluginSettings {
   enableMacroImportInjection: boolean;
   /** Enable Auto Jsx Injection (e.g. <div>Hello</div> -> <div><T>Hello</T></div>) */
   enableAutoJsxInjection: boolean;
+  /** Package source for components inserted by Auto JSX Injection */
+  autoJsxImportSource?: string;
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive: { jsx: boolean; strings: boolean };
   /** Emit compiler-injected gt-react imports from gt-react/browser */
