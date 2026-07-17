@@ -36,3 +36,5 @@ export { indexVars } from './derive/indexVars';
 export { extractVars } from './derive/extractVars';
 export { condenseVars } from './derive/condenseVars';
 export { VAR_IDENTIFIER } from './derive/utils/constants';
+export { traverseIcu } from './derive/utils/traverseIcu';
+export { printIcuAst } from './derive/utils/printIcuAst';

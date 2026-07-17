@@ -16,6 +16,10 @@ import { saveJSON } from '../fs/saveJSON.js';
 import loadJSON from '../fs/loadJSON.js';
 import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
+import {
+  buildPseudoTranslations,
+  resolvePseudoLocale,
+} from '../translation/pseudo.js';
 import { validateProject } from '../translation/validate.js';
 import { Libraries, InlineLibrary } from '../types/libraries.js';
 
@@ -97,7 +101,12 @@ export class InlineCLI extends BaseCLI {
             'Generate a translation file for the source locale. This command should be used if you are handling your own translations.'
           )
       )
-    ).action(async (initOptions: TranslateFlags) => {
+    )
+      .option(
+        '--pseudo [locale]',
+        "Also generate a pseudo-localized translation file for layout testing (defaults to 'en-XA')"
+      )
+      .action(async (initOptions: TranslateFlags) => {
       displayHeader('Generating source templates...');
       await this.handleGenerateSourceCommand(initOptions);
       logger.endCommand('Done!');
@@ -110,6 +119,23 @@ export class InlineCLI extends BaseCLI {
     const settings = await generateSettings(initOptions, undefined, {
       requireConfig: true,
     });
+
+    // Resolve the pseudo-locale up front so an invalid flag fails fast
+    let pseudoLocale: string | undefined;
+    if (initOptions.pseudo) {
+      try {
+        pseudoLocale = resolvePseudoLocale(
+          initOptions.pseudo,
+          settings.defaultLocale,
+          settings.customMapping
+        );
+      } catch (error) {
+        logger.error(
+          chalk.red(error instanceof Error ? error.message : String(error))
+        );
+        exitSync(1);
+      }
+    }
 
     const updates = await aggregateInlineTranslations(
       initOptions,
@@ -161,6 +187,31 @@ export class InlineCLI extends BaseCLI {
         await saveJSON(translationsFile.gt, filteredTranslations);
       }
       logger.step('Merged translations successfully!');
+
+      // Pseudo-localized files are fully regenerated on every run
+      if (pseudoLocale) {
+        const pseudoFiles = resolveLocaleFiles(
+          settings.files.placeholderPaths,
+          pseudoLocale
+        );
+        if (!pseudoFiles.gt) {
+          logger.error(noFilesError);
+          exitSync(1);
+        }
+        const pseudoTranslations = buildPseudoTranslations(updates);
+        await saveJSON(pseudoFiles.gt, pseudoTranslations);
+        logger.step(
+          `Pseudo-localized ${Object.keys(pseudoTranslations).length} entries for ${pseudoLocale}!`
+        );
+        if (!settings.locales.includes(pseudoLocale)) {
+          logger.info(
+            `Add '${pseudoLocale}' to the locales in your gt.config.json to render the pseudo-locale in your app.`
+          );
+        }
+      }
+    } else if (pseudoLocale) {
+      logger.error(noFilesError);
+      exitSync(1);
     }
   }
 
