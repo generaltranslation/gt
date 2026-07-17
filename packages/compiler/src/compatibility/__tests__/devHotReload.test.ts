@@ -3,14 +3,11 @@ import os from 'node:os';
 import path from 'node:path';
 import * as parser from '@babel/parser';
 import { afterEach, describe, expect, it } from 'vitest';
-import { DevHotReloadCompatibilityResolver } from '../devHotReload';
+import { ModuleFormatResolver } from '../devHotReload';
 
 const tempDirs: string[] = [];
 
-function createProject(
-  module: string | undefined,
-  packageType?: string
-): string {
+function createProject(module?: string): string {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'gt-compiler-module-')
   );
@@ -19,12 +16,6 @@ function createProject(
     fs.writeFileSync(
       path.join(directory, 'tsconfig.json'),
       JSON.stringify({ compilerOptions: { module } })
-    );
-  }
-  if (packageType) {
-    fs.writeFileSync(
-      path.join(directory, 'package.json'),
-      JSON.stringify({ type: packageType })
     );
   }
   return directory;
@@ -37,84 +28,87 @@ function parse(code: string) {
   });
 }
 
-describe('DevHotReloadCompatibilityResolver', () => {
+describe('ModuleFormatResolver', () => {
   afterEach(() => {
     for (const directory of tempDirs.splice(0)) {
       fs.rmSync(directory, { force: true, recursive: true });
     }
   });
 
-  it.each(['commonjs', 'amd', 'umd'])(
-    'detects the %s TypeScript module format',
-    (module) => {
-      const project = createProject(module);
-      const compatibility = new DevHotReloadCompatibilityResolver().resolve(
+  it('detects CommonJS from tsconfig', () => {
+    const project = createProject('commonjs');
+
+    expect(
+      new ModuleFormatResolver().resolve(
         path.join(project, 'App.tsx'),
         parse("import { t } from 'gt-react'; t('Hello');")
-      );
+      )
+    ).toEqual({ format: 'cjs', detail: 'tsconfig module: commonjs' });
+  });
 
-      expect(compatibility).toEqual({
-        compatible: false,
-        detectedModuleType: module,
-        reason: 'commonjs',
-      });
+  it.each(['es2015', 'es2020', 'es2022', 'esnext', 'preserve'])(
+    'detects %s as ESM without claiming top-level await support',
+    (module) => {
+      const project = createProject(module);
+
+      expect(
+        new ModuleFormatResolver().resolve(
+          path.join(project, 'App.tsx'),
+          parse("import { t } from 'gt-react'; t('Hello');")
+        ).format
+      ).toBe('esm');
+    }
+  );
+
+  it.each(['node16', 'system', 'umd', 'none'])(
+    'returns unknown for the ambiguous %s module setting',
+    (module) => {
+      const project = createProject(module);
+
+      expect(
+        new ModuleFormatResolver().resolve(
+          path.join(project, 'App.tsx'),
+          parse("import { t } from 'gt-react'; t('Hello');")
+        ).format
+      ).toBe('unknown');
     }
   );
 
   it.each([
-    { configured: 'es2015', detected: 'es6' },
-    { configured: 'es2020', detected: 'es2020' },
-  ])(
-    'detects the $configured module format as older ESM',
-    ({ configured, detected }) => {
-      const project = createProject(configured);
-      const compatibility = new DevHotReloadCompatibilityResolver().resolve(
-        path.join(project, 'App.tsx'),
-        parse("import { t } from 'gt-react'; t('Hello');")
-      );
-
-      expect(compatibility).toEqual({
-        compatible: false,
-        detectedModuleType: detected,
-        reason: 'legacy-esm',
-      });
-    }
-  );
-
-  it.each(['es2022', 'esnext', 'preserve'])(
-    'allows the %s module format',
-    (module) => {
-      const project = createProject(module);
-      const compatibility = new DevHotReloadCompatibilityResolver().resolve(
-        path.join(project, 'App.tsx'),
-        parse("import { t } from 'gt-react'; t('Hello');")
-      );
-
-      expect(compatibility).toEqual({ compatible: true });
-    }
-  );
-
-  it('uses package type to resolve Node module formats', () => {
-    const cjsProject = createProject('node16', 'commonjs');
-    const esmProject = createProject('node16', 'module');
-    const resolver = new DevHotReloadCompatibilityResolver();
-    const ast = parse("import { t } from 'gt-react'; t('Hello');");
+    { extension: '.cjs', format: 'cjs' },
+    { extension: '.cts', format: 'cjs' },
+    { extension: '.mjs', format: 'esm' },
+    { extension: '.mts', format: 'esm' },
+  ] as const)('detects $format from $extension', ({ extension, format }) => {
+    const project = createProject();
 
     expect(
-      resolver.resolve(path.join(cjsProject, 'App.ts'), ast).compatible
-    ).toBe(false);
-    expect(
-      resolver.resolve(path.join(esmProject, 'App.ts'), ast).compatible
-    ).toBe(true);
+      new ModuleFormatResolver().resolve(
+        path.join(project, `App${extension}`),
+        parse('const value = 1;')
+      ).format
+    ).toBe(format);
   });
 
-  it('falls back to CommonJS syntax when no tsconfig is available', () => {
-    const project = createProject(undefined);
-    const compatibility = new DevHotReloadCompatibilityResolver().resolve(
-      path.join(project, 'App.js'),
-      parse("const { t } = require('gt-react'); t('Hello');")
-    );
+  it('falls back to CommonJS syntax without a tsconfig', () => {
+    const project = createProject();
 
-    expect(compatibility.compatible).toBe(false);
+    expect(
+      new ModuleFormatResolver().resolve(
+        path.join(project, 'App.js'),
+        parse("const { t } = require('gt-react'); t('Hello');")
+      ).format
+    ).toBe('cjs');
+  });
+
+  it('returns unknown for mixed module syntax', () => {
+    const project = createProject();
+
+    expect(
+      new ModuleFormatResolver().resolve(
+        path.join(project, 'App.js'),
+        parse("import value from 'value'; require('other');")
+      ).format
+    ).toBe('unknown');
   });
 });

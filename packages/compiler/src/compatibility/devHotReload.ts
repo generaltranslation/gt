@@ -1,81 +1,73 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import traverse from '@babel/traverse';
 import * as t from '@babel/types';
 import { getTsconfig, type Cache } from 'get-tsconfig';
 
-export type DevHotReloadModuleCompatibility =
-  | { compatible: true }
-  | {
-      compatible: false;
-      detectedModuleType: string;
-      reason: 'commonjs' | 'legacy-esm';
-    };
+export type ModuleFormat = 'esm' | 'cjs' | 'unknown';
 
-const TOP_LEVEL_AWAIT_MODULE_TYPES = new Set(['es2022', 'esnext', 'preserve']);
-const LEGACY_ESM_MODULE_TYPES = new Set(['es6', 'es2015', 'es2020']);
-const COMMONJS_MODULE_TYPES = new Set(['commonjs', 'node', 'amd', 'umd']);
-const NODE_MODULE_TYPES = new Set(['node16', 'node18', 'node20', 'nodenext']);
+export type ModuleFormatDetection = {
+  format: ModuleFormat;
+  detail: string;
+};
 
-type PackageJson = { type?: string };
+const ESM_MODULE_TYPES = new Set([
+  'es6',
+  'es2015',
+  'es2020',
+  'es2022',
+  'esnext',
+  'preserve',
+]);
 
 function getExtension(filename: string): string {
   return path.extname(filename.split('?')[0]).toLowerCase();
 }
 
-function findPackageType(
-  filename: string,
-  packageTypeCache: Map<string, string | undefined>
-): string | undefined {
-  let directory = path.dirname(filename);
-
-  while (true) {
-    if (packageTypeCache.has(directory)) {
-      return packageTypeCache.get(directory);
-    }
-
-    const packagePath = path.join(directory, 'package.json');
-    if (fs.existsSync(packagePath)) {
-      try {
-        const packageJson = JSON.parse(
-          fs.readFileSync(packagePath, 'utf8')
-        ) as PackageJson;
-        const packageType = packageJson.type?.toLowerCase();
-        packageTypeCache.set(directory, packageType);
-        return packageType;
-      } catch {
-        packageTypeCache.set(directory, undefined);
-        return undefined;
-      }
-    }
-
-    const parent = path.dirname(directory);
-    if (parent === directory) {
-      packageTypeCache.set(directory, undefined);
-      return undefined;
-    }
-    directory = parent;
+function detectFromExtension(filename: string): ModuleFormatDetection | null {
+  const extension = getExtension(filename);
+  if (extension === '.cjs' || extension === '.cts') {
+    return { format: 'cjs', detail: `${extension} file extension` };
   }
+  if (extension === '.mjs' || extension === '.mts') {
+    return { format: 'esm', detail: `${extension} file extension` };
+  }
+  return null;
 }
 
-function usesEsModules(ast: t.File): boolean {
-  return ast.program.body.some(
+function detectFromModuleSetting(moduleSetting: string): ModuleFormatDetection {
+  const normalizedModuleSetting = moduleSetting.toLowerCase();
+  if (normalizedModuleSetting === 'commonjs') {
+    return { format: 'cjs', detail: 'tsconfig module: commonjs' };
+  }
+  if (ESM_MODULE_TYPES.has(normalizedModuleSetting)) {
+    return {
+      format: 'esm',
+      detail: `tsconfig module: ${normalizedModuleSetting}`,
+    };
+  }
+
+  // Node module modes depend on the file extension and nearest package.json,
+  // while AMD, UMD, SystemJS, and script output are neither ESM nor CommonJS.
+  return {
+    format: 'unknown',
+    detail: `tsconfig module: ${normalizedModuleSetting}`,
+  };
+}
+
+function detectFromSyntax(ast: t.File): ModuleFormatDetection {
+  const hasEsmSyntax = ast.program.body.some(
     (statement) =>
       t.isImportDeclaration(statement) ||
       t.isExportNamedDeclaration(statement) ||
       t.isExportDefaultDeclaration(statement) ||
       t.isExportAllDeclaration(statement)
   );
-}
-
-function usesCommonJs(ast: t.File): boolean {
-  let commonJsDetected = false;
+  let hasCommonJsSyntax = false;
 
   traverse(ast, {
     CallExpression(path) {
       if (t.isIdentifier(path.node.callee, { name: 'require' })) {
-        commonJsDetected = true;
-        path.stop();
+        hasCommonJsSyntax = true;
       }
     },
     MemberExpression(path) {
@@ -84,102 +76,52 @@ function usesCommonJs(ast: t.File): boolean {
         (path.node.object.name === 'module' ||
           path.node.object.name === 'exports')
       ) {
-        commonJsDetected = true;
-        path.stop();
+        hasCommonJsSyntax = true;
       }
     },
   });
 
-  return commonJsDetected;
+  if (hasEsmSyntax && !hasCommonJsSyntax) {
+    return { format: 'esm', detail: 'ESM import or export syntax' };
+  }
+  if (hasCommonJsSyntax && !hasEsmSyntax) {
+    return { format: 'cjs', detail: 'CommonJS require or exports syntax' };
+  }
+  return {
+    format: 'unknown',
+    detail: hasEsmSyntax
+      ? 'mixed ESM and CommonJS syntax'
+      : 'no module format signal',
+  };
 }
 
-function isNodeModuleEsm(
-  filename: string,
-  packageTypeCache: Map<string, string | undefined>
-): boolean {
-  const extension = getExtension(filename);
-  if (extension === '.mts' || extension === '.mjs') return true;
-  if (extension === '.cts' || extension === '.cjs') return false;
-  return findPackageType(filename, packageTypeCache) === 'module';
-}
-
-export class DevHotReloadCompatibilityResolver {
+/**
+ * Detects whether a source file is ESM, CommonJS, or unknown.
+ *
+ * This intentionally does not claim that detected ESM supports top-level
+ * await. Top-level await requires ES2022-or-newer runtime support, and a
+ * bundler may choose a different final output format than the source or
+ * tsconfig suggests.
+ */
+export class ModuleFormatResolver {
   private readonly tsconfigCache: Cache = new Map();
-  private readonly packageTypeCache = new Map<string, string | undefined>();
 
-  resolve(filename: string, ast: t.File): DevHotReloadModuleCompatibility {
-    const extension = getExtension(filename);
-    if (extension === '.cts' || extension === '.cjs') {
-      return {
-        compatible: false,
-        detectedModuleType: extension.slice(1),
-        reason: 'commonjs',
-      };
-    }
+  resolve(filename: string, ast: t.File): ModuleFormatDetection {
+    const extensionDetection = detectFromExtension(filename);
+    if (extensionDetection) return extensionDetection;
 
-    let configuredModuleType: string | undefined;
     try {
-      configuredModuleType = getTsconfig(
+      const moduleSetting = getTsconfig(
         filename,
         'tsconfig.json',
         this.tsconfigCache
-      )?.config.compilerOptions?.module?.toLowerCase();
+      )?.config.compilerOptions?.module;
+      if (moduleSetting) return detectFromModuleSetting(moduleSetting);
     } catch {
       // Invalid project configuration is reported by the owning tool. Fall
-      // back to the file syntax so this compatibility check stays non-fatal.
+      // back to syntax detection so this check remains non-fatal.
     }
 
-    if (configuredModuleType) {
-      if (COMMONJS_MODULE_TYPES.has(configuredModuleType)) {
-        return {
-          compatible: false,
-          detectedModuleType: configuredModuleType,
-          reason: 'commonjs',
-        };
-      }
-      if (LEGACY_ESM_MODULE_TYPES.has(configuredModuleType)) {
-        return {
-          compatible: false,
-          detectedModuleType: configuredModuleType,
-          reason: 'legacy-esm',
-        };
-      }
-      if (TOP_LEVEL_AWAIT_MODULE_TYPES.has(configuredModuleType)) {
-        return { compatible: true };
-      }
-      if (NODE_MODULE_TYPES.has(configuredModuleType)) {
-        return isNodeModuleEsm(filename, this.packageTypeCache)
-          ? { compatible: true }
-          : {
-              compatible: false,
-              detectedModuleType: `${configuredModuleType} (CommonJS file)`,
-              reason: 'commonjs',
-            };
-      }
-    }
-
-    const hasEsmSyntax = usesEsModules(ast);
-    const hasCommonJsSyntax = usesCommonJs(ast);
-    if (hasCommonJsSyntax && !hasEsmSyntax) {
-      return {
-        compatible: false,
-        detectedModuleType: 'CommonJS syntax',
-        reason: 'commonjs',
-      };
-    }
-    if (hasEsmSyntax) return { compatible: true };
-
-    if (
-      (extension === '.js' || extension === '.jsx') &&
-      findPackageType(filename, this.packageTypeCache) !== 'module'
-    ) {
-      return {
-        compatible: false,
-        detectedModuleType: 'CommonJS package',
-        reason: 'commonjs',
-      };
-    }
-
-    return { compatible: true };
+    return detectFromSyntax(ast);
   }
 }

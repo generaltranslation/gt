@@ -16,8 +16,8 @@ import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
-import { DevHotReloadCompatibilityResolver } from './compatibility/devHotReload';
-import { createIncompatibleDevHotReloadWarning } from './diagnostics';
+import { ModuleFormatResolver } from './compatibility/devHotReload';
+import { createDevHotReloadModuleFormatWarning } from './diagnostics';
 
 /**
  * Architecture:
@@ -213,15 +213,19 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const debugManifest = resolvedOptions._debugHashManifest
       ? new Map<string, unknown>()
       : undefined;
-    const devHotReloadCompatibilityResolver =
-      new DevHotReloadCompatibilityResolver();
-    let incompatibleDevHotReloadWarningShown = false;
+    const moduleFormatResolver = new ModuleFormatResolver();
+    let devHotReloadModuleFormatWarningShown = false;
 
     return {
       name: '@generaltranslation/GT_PLUGIN',
       transformInclude(id: string) {
-        // Only transform JavaScript and TypeScript files.
-        return /\.[cm]?[jt]sx?(?:\?.*)?$/.test(id);
+        // Only transform TSX and JSX files
+        return (
+          id.endsWith('.tsx') ||
+          id.endsWith('.jsx') ||
+          id.endsWith('.ts') ||
+          id.endsWith('.js')
+        );
       },
       transform(code: string, id: string) {
         // Initialize processing state
@@ -279,18 +283,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           if (
             devHotReloadActive &&
             hasCollectionContent &&
-            !incompatibleDevHotReloadWarningShown &&
+            !devHotReloadModuleFormatWarningShown &&
             shouldWarn(state.settings.logLevel)
           ) {
-            const compatibility = devHotReloadCompatibilityResolver.resolve(
-              id,
-              ast
-            );
-            if (!compatibility.compatible) {
-              console.warn(
-                createIncompatibleDevHotReloadWarning(compatibility)
-              );
-              incompatibleDevHotReloadWarningShown = true;
+            const moduleFormat = moduleFormatResolver.resolve(id, ast);
+            if (moduleFormat.format !== 'esm') {
+              console.warn(createDevHotReloadModuleFormatWarning(moduleFormat));
+              devHotReloadModuleFormatWarningShown = true;
             }
           }
           if (devHotReloadActive && hasCollectionContent) {

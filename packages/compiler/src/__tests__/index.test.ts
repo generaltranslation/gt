@@ -354,10 +354,10 @@ describe('gtUnplugin dev hot reload compatibility', () => {
         '@generaltranslation/compiler Warning:'
       );
       expect(warnSpy.mock.calls[0]?.[0]).toContain(
-        'top-level await, which requires ES2022 modules'
+        'top-level await, which requires ESM and ES2022-or-newer runtime support'
       );
       expect(warnSpy.mock.calls[0]?.[0]).toContain(
-        'Detected module type: commonjs.'
+        'Module format detection: tsconfig module: commonjs.'
       );
     } finally {
       warnSpy.mockRestore();
