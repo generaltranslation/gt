@@ -27,6 +27,12 @@ describe('coveragePercent', () => {
   it('treats an empty project as fully covered', () => {
     expect(coveragePercent(row({ total: 0, translated: 0 }))).toBe(100);
   });
+
+  it('is exact at integer thresholds', () => {
+    // (29 / 100) * 100 would be 28.999999999999996 and wrongly fail a
+    // --min-coverage 29 gate
+    expect(coveragePercent(row({ total: 100, translated: 29 }))).toBe(29);
+  });
 });
 
 describe('renderStatusTable', () => {

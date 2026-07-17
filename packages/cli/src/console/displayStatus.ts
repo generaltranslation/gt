@@ -10,7 +10,9 @@ const MAX_ISSUE_LINES = 25;
 /** Exact coverage percentage; an empty project counts as fully covered */
 export function coveragePercent(row: LocaleStatus): number {
   if (row.total === 0) return 100;
-  return (row.translated / row.total) * 100;
+  // Multiply before dividing so exact thresholds stay exact in floating
+  // point (29/100 * 100 is 28.999…, 29 * 100 / 100 is 29)
+  return (row.translated * 100) / row.total;
 }
 
 /** Formats a percentage without ever rounding up (99.96 -> "99.9%") */
