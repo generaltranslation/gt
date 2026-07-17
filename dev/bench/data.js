@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1784234681437,
+  "lastUpdate": 1784325239488,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -7192,6 +7192,122 @@ window.BENCHMARK_DATA = {
             "value": 85.90000000002328,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.9\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "3cb1045b984721f71d9a1572683cee7d02c32a33",
+          "message": "[ci] release (#1922)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.14.64\n\n### Patch Changes\n\n- Updated dependencies\n[[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - generaltranslation@9.0.3\n  - @generaltranslation/python-extractor@0.2.30\n  - @generaltranslation/supported-locales@2.1.10\n## @generaltranslation/compiler@1.3.32\n\n### Patch Changes\n\n- [#1918](https://github.com/generaltranslation/gt/pull/1918)\n[`dce7a7a`](https://github.com/generaltranslation/gt/commit/dce7a7a0b5b82ee0ac7ca3518030ab51026da103)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Allow framework\nintegrations to configure the package used for automatic JSX injection\nimports.\n\n- [#1916](https://github.com/generaltranslation/gt/pull/1916)\n[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Unify\n`gt.config.json` types so complete config objects can be spread into\ncompiler plugins and runtime initializers while file settings remain\noptional.\n\n- Updated dependencies\n[[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - generaltranslation@9.0.3\n## generaltranslation@9.0.3\n\n### Patch Changes\n\n- [#1916](https://github.com/generaltranslation/gt/pull/1916)\n[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Unify\n`gt.config.json` types so complete config objects can be spread into\ncompiler plugins and runtime initializers while file settings remain\noptional.\n## gtx-cli@2.14.64\n\n### Patch Changes\n\n- Updated dependencies []:\n  - gt@2.14.64\n## gt-i18n@1.0.7\n\n### Patch Changes\n\n- [#1916](https://github.com/generaltranslation/gt/pull/1916)\n[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Unify\n`gt.config.json` types so complete config objects can be spread into\ncompiler plugins and runtime initializers while file settings remain\noptional.\n\n- Updated dependencies\n[[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - generaltranslation@9.0.3\n## locadex@1.0.199\n\n### Patch Changes\n\n- Updated dependencies []:\n  - gt@2.14.64\n## gt-next@11.0.10\n\n### Patch Changes\n\n- [#1921](https://github.com/generaltranslation/gt/pull/1921)\n[`50043dd`](https://github.com/generaltranslation/gt/commit/50043dd68387d6db52afa6f09c74d9c9fa4d2d5f)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Support\nautomatic JSX injection with the webpack compiler and import the\ninjected components from `gt-next`.\n\n- Updated dependencies\n[[`dce7a7a`](https://github.com/generaltranslation/gt/commit/dce7a7a0b5b82ee0ac7ca3518030ab51026da103),\n[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - @generaltranslation/compiler@1.3.32\n  - generaltranslation@9.0.3\n  - gt-i18n@1.0.7\n  - @generaltranslation/react-core@11.0.10\n  - gt-react@11.0.10\n## gt-node@1.0.7\n\n### Patch Changes\n\n- [#1916](https://github.com/generaltranslation/gt/pull/1916)\n[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Unify\n`gt.config.json` types so complete config objects can be spread into\ncompiler plugins and runtime initializers while file settings remain\noptional.\n\n- Updated dependencies\n[[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - generaltranslation@9.0.3\n  - gt-i18n@1.0.7\n## @generaltranslation/python-extractor@0.2.30\n\n### Patch Changes\n\n- Updated dependencies\n[[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - generaltranslation@9.0.3\n## gt-react@11.0.10\n\n### Patch Changes\n\n- [#1916](https://github.com/generaltranslation/gt/pull/1916)\n[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Unify\n`gt.config.json` types so complete config objects can be spread into\ncompiler plugins and runtime initializers while file settings remain\noptional.\n\n- Updated dependencies\n[[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - generaltranslation@9.0.3\n  - gt-i18n@1.0.7\n  - @generaltranslation/react-core@11.0.10\n## @generaltranslation/react-core@11.0.10\n\n### Patch Changes\n\n- [#1916](https://github.com/generaltranslation/gt/pull/1916)\n[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Unify\n`gt.config.json` types so complete config objects can be spread into\ncompiler plugins and runtime initializers while file settings remain\noptional.\n\n- Updated dependencies\n[[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - generaltranslation@9.0.3\n  - gt-i18n@1.0.7\n## gt-react-native@11.0.10\n\n### Patch Changes\n\n- [#1916](https://github.com/generaltranslation/gt/pull/1916)\n[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Unify\n`gt.config.json` types so complete config objects can be spread into\ncompiler plugins and runtime initializers while file settings remain\noptional.\n\n- Updated dependencies\n[[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - generaltranslation@9.0.3\n  - gt-i18n@1.0.7\n  - @generaltranslation/react-core@11.0.10\n  - @generaltranslation/supported-locales@2.1.10\n## gt-sanity@2.1.3\n\n### Patch Changes\n\n- Updated dependencies\n[[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - generaltranslation@9.0.3\n## @generaltranslation/supported-locales@2.1.10\n\n### Patch Changes\n\n- Updated dependencies\n[[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - generaltranslation@9.0.3\n## gt-tanstack-start@11.0.10\n\n### Patch Changes\n\n- [#1916](https://github.com/generaltranslation/gt/pull/1916)\n[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Unify\n`gt.config.json` types so complete config objects can be spread into\ncompiler plugins and runtime initializers while file settings remain\noptional.\n\n- Updated dependencies\n[[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:\n  - generaltranslation@9.0.3\n  - gt-i18n@1.0.7\n  - @generaltranslation/react-core@11.0.10\n  - gt-react@11.0.10\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-07-17T21:46:43Z",
+          "url": "https://github.com/generaltranslation/gt/commit/3cb1045b984721f71d9a1572683cee7d02c32a33"
+        },
+        "date": 1784325238416,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.0458431957279055,
+            "range": "±0.0249",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.23618868351440636,
+            "range": "±0.0701",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.42370638018628637,
+            "range": "±0.0839",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.41074823973727215,
+            "range": "±0.0694",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 146.39999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 180.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 260.5999999999767,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 124,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 20.60000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 29.89999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 115.10000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 584,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 11.300000000017462,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 19.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 83.40000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.10\"\n}"
           }
         ]
       }
