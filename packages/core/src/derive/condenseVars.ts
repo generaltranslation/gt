@@ -1,5 +1,4 @@
-import { TYPE } from '@formatjs/icu-messageformat-parser';
-import type { ArgumentElement } from '@formatjs/icu-messageformat-parser/types.js';
+import { TYPE, type ArgumentElement } from '@generaltranslation/icu';
 import { printIcuAst } from './utils/printIcuAst';
 import { traverseIcu } from './utils/traverseIcu';
 import { VAR_IDENTIFIER } from './utils/constants';

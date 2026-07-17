@@ -1,0 +1,192 @@
+/**
+ * Compatibility cases are adapted from the FormatJS intl-messageformat suite:
+ * https://github.com/formatjs/formatjs/blob/75edf1cd6a7045475bb134daf62c686602c92547/packages/intl-messageformat/tests/index.test.ts
+ * intl-messageformat is BSD-3-Clause licensed. See ../../THIRD_PARTY_NOTICES.md.
+ */
+
+import { describe, expect, it } from 'vitest';
+import { formatMessage } from '../index';
+
+describe('formatMessage', () => {
+  it('interpolates direct arguments without dropping zero', () => {
+    expect(
+      formatMessage('Hi {name}, count: {count}', 'en', {
+        name: 'Ada',
+        count: 0,
+      })
+    ).toBe('Hi Ada, count: 0');
+  });
+
+  it.each([
+    [false, ''],
+    [null, ''],
+    [undefined, ''],
+    [true, 'true'],
+    [123n, '123'],
+  ])('formats direct argument %s', (value, expected) => {
+    expect(formatMessage('{value}', 'en', { value })).toBe(expected);
+  });
+
+  it('requires every referenced variable', () => {
+    expect(() => formatMessage('Hello {name}', 'en')).toThrow(
+      'variable "name" was not provided'
+    );
+  });
+
+  it('selects exact and fallback branches without prototype collisions', () => {
+    const message =
+      '{value, select, constructor {ctor} __proto__ {proto} toString {string} other {fallback}}';
+    expect(formatMessage(message, 'en', { value: 'constructor' })).toBe('ctor');
+    expect(formatMessage(message, 'en', { value: '__proto__' })).toBe('proto');
+    expect(formatMessage(message, 'en', { value: 'toString' })).toBe('string');
+    expect(formatMessage(message, 'en', { value: 'missing' })).toBe('fallback');
+  });
+
+  it.each([
+    ['ar', 0, 'zero'],
+    ['ar', 1, 'one'],
+    ['ar', 2, 'two'],
+    ['ar', 4, 'few'],
+    ['ar', 15, 'many'],
+    ['ar', 100, 'other'],
+  ])('uses %s cardinal plural rules for %d', (locale, count, expected) => {
+    const message =
+      '{count, plural, zero {zero} one {one} two {two} few {few} many {many} other {other}}';
+    expect(formatMessage(message, locale, { count })).toBe(expected);
+  });
+
+  it('prefers exact plural matches and applies offsets to rules and pound', () => {
+    const message =
+      '{count, plural, offset:1 =0 {Nobody came} =1 {Only Ada came} one {Ada and one other} other {Ada and # others}}';
+    expect(formatMessage(message, 'en', { count: 0 })).toBe('Nobody came');
+    expect(formatMessage(message, 'en', { count: 1 })).toBe('Only Ada came');
+    expect(formatMessage(message, 'en', { count: 2 })).toBe(
+      'Ada and one other'
+    );
+    expect(formatMessage(message, 'en', { count: 5 })).toBe('Ada and 4 others');
+  });
+
+  it('uses ordinal plural rules', () => {
+    const message =
+      '{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}';
+    expect(
+      [1, 2, 3, 4, 11, 21].map((place) =>
+        formatMessage(message, 'en', { place })
+      )
+    ).toEqual(['1st', '2nd', '3rd', '4th', '11th', '21st']);
+  });
+
+  it('preserves a plural value through tags but not nested selects', () => {
+    const bold = ([value]: string[]) => `<b>${value}</b>`;
+    expect(
+      formatMessage('{count, plural, other {<b># items</b>}}', 'en', {
+        count: 3,
+        b: bold,
+      })
+    ).toBe('<b>3 items</b>');
+    expect(
+      formatMessage(
+        '{count, plural, other {{kind, select, a {# items} other {none}}}}',
+        'en',
+        { count: 3, kind: 'a' }
+      )
+    ).toBe('# items');
+  });
+
+  it('flattens nested rich-text tag arrays without adding separators', () => {
+    expect(
+      formatMessage('hello <b>world<i>!</i> <br/> </b>', 'en', {
+        b: (chunks: string[]) => ['<b>', ...chunks, '</b>'],
+        i: (chunks: string[]) => `$$${chunks}$$`,
+      })
+    ).toBe('hello <b>world$$!$$ <br/> </b>');
+  });
+
+  it('formats named number styles', () => {
+    expect(formatMessage('{n, number}', 'en-US', { n: 123456.78 })).toBe(
+      new Intl.NumberFormat('en-US').format(123456.78)
+    );
+    expect(
+      formatMessage('{n, number, integer}', 'en-US', { n: 123456.78 })
+    ).toBe('123,457');
+    expect(formatMessage('{n, number, percent}', 'en-US', { n: 0.56 })).toBe(
+      '56%'
+    );
+  });
+
+  it('formats number skeleton precision, grouping, currency, and scale', () => {
+    expect(
+      formatMessage('{n, number, ::currency/CAD .0 group-off}', 'en-US', {
+        n: 123456.78,
+      })
+    ).toMatch(/\$123456\.8/u);
+    expect(
+      formatMessage('{n, number, ::currency/GBP .0#}', 'en-US', {
+        n: 123456.789,
+      })
+    ).toBe('£123,456.79');
+    expect(
+      formatMessage('{n, number, ::percent scale/0.01}', 'en-US', { n: 12.3 })
+    ).toBe('12%');
+  });
+
+  it('supports bigint number and plural formatting', () => {
+    expect(
+      formatMessage('Total: {total, number, ::currency/USD}', 'en-US', {
+        total: 12345678901234567890n,
+      })
+    ).toContain('$12,345,678,901,234,567,890.00');
+    expect(
+      formatMessage('{count, plural, one {one} other {many}}', 'en', {
+        count: 2n,
+      })
+    ).toBe('many');
+    expect(() =>
+      formatMessage('{value, number, ::scale/1.5}', 'en', { value: 2n })
+    ).toThrow('Cannot apply fractional scale');
+  });
+
+  it('formats date and time named styles', () => {
+    const value = new Date('2020-05-06T14:03:02Z');
+    expect(formatMessage('{d, date, full}', 'en-US', { d: value })).toBe(
+      new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }).format(value)
+    );
+    expect(formatMessage('{d, time, short}', 'en-US', { d: value })).toBe(
+      new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        minute: 'numeric',
+      }).format(value)
+    );
+  });
+
+  it('formats date and locale-aware hour skeletons', () => {
+    const value = new Date('2020-05-06T14:03:02Z');
+    expect(formatMessage('{d, date, ::yyyyMMMdd}', 'en-US', { d: value })).toBe(
+      new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+      }).format(value)
+    );
+    expect(formatMessage('{d, time, ::jjmmss}', 'de-DE', { d: value })).toBe(
+      new Intl.DateTimeFormat('de-DE', {
+        hourCycle: 'h23',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }).format(value)
+    );
+  });
+
+  it('applies ICU apostrophe escaping', () => {
+    expect(formatMessage("This '{isn''t}' obvious", 'en')).toBe(
+      "This {isn't} obvious"
+    );
+    expect(formatMessage("'{name}'", 'en', { name: 'ignored' })).toBe('{name}');
+  });
+});

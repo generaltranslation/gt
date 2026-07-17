@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parse } from '@formatjs/icu-messageformat-parser';
-import { IntlMessageFormat } from 'intl-messageformat';
+import { formatMessage, parse } from '@generaltranslation/icu';
 import { declareVar } from '../declareVar';
 import { indexVars } from 'generaltranslation/internal';
 import { decodeVars } from '../decodeVars';
@@ -99,8 +98,7 @@ describe('declareVar', () => {
       const originalText = 'Hello {world} with <tags>';
       const sanitized = declareVar(originalText);
 
-      const msg = new IntlMessageFormat(sanitized, 'en');
-      const output = msg.format({ _gt_: 'placeholder' });
+      const output = formatMessage(sanitized, 'en', { _gt_: 'placeholder' });
 
       expect(output).toBe(originalText);
     });
@@ -109,8 +107,7 @@ describe('declareVar', () => {
       const originalText = '{count, plural, one{# item} other{# items}}';
       const sanitized = declareVar(originalText);
 
-      const msg = new IntlMessageFormat(sanitized, 'en');
-      const output = msg.format({ _gt_: 'placeholder' });
+      const output = formatMessage(sanitized, 'en', { _gt_: 'placeholder' });
 
       expect(output).toBe(originalText);
     });
@@ -119,8 +116,7 @@ describe('declareVar', () => {
       const originalText = "User's data: {id: 123} <status>active</status>";
       const sanitized = declareVar(originalText);
 
-      const msg = new IntlMessageFormat(sanitized, 'en');
-      const output = msg.format({ _gt_: 'placeholder' });
+      const output = formatMessage(sanitized, 'en', { _gt_: 'placeholder' });
 
       expect(output).toBe(originalText);
     });

@@ -78,7 +78,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@formatjs/icu-messageformat-parser": "^2.11.4",
+    "@generaltranslation/icu": "workspace:*",
     "@typescript-eslint/utils": "^8.50.1"
   }
 }

@@ -1,7 +1,7 @@
 import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
-import { IntlMessageFormat } from 'intl-messageformat';
+import { formatMessage } from '@generaltranslation/icu';
 
 type FormatParams<Value, Options> = {
   value: Value;
@@ -26,8 +26,7 @@ export function _formatMessageICU(
   locales: string | string[] = libraryDefaultLocale,
   variables: FormatVariables = {}
 ): string {
-  const messageFormat = new IntlMessageFormat(message, locales);
-  return messageFormat.format(variables)?.toString() ?? '';
+  return formatMessage(message, locales, variables);
 }
 
 /**

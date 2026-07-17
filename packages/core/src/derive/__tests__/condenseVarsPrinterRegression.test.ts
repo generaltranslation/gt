@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parse } from '@formatjs/icu-messageformat-parser';
+import { parse } from '@generaltranslation/icu';
 import { condenseVars } from '../condenseVars';
 
 // Pins the exact serialized output produced by the FormatJS `printAST`

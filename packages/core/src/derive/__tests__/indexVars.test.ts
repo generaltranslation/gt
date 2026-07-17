@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parse } from '@formatjs/icu-messageformat-parser';
+import { parse } from '@generaltranslation/icu';
 import { indexVars } from '../indexVars';
 
 describe('indexVars', () => {

@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parse } from '@formatjs/icu-messageformat-parser';
-// Test-only import of the CommonJS subpath the vendored printer replaces;
-// vitest runs in Node where CJS interop works.
-import { printAST } from '@formatjs/icu-messageformat-parser/printer.js';
+import { parse, printAST } from '@generaltranslation/icu';
 import { printIcuAst } from '../printIcuAst';
 
 const MESSAGES = [
@@ -74,7 +71,7 @@ describe('printIcuAst', () => {
     );
   });
 
-  // FormatJS printAST emits `{_gt_1,select,other{Haas'}}` here; the trailing
+  // The historical FormatJS output is `{_gt_1,select,other{Haas'}}` here; the trailing
   // apostrophe swallows the closing brace on reparse. The vendored printer
   // reproduces upstream output byte-for-byte, so it inherits the quirk.
   // condenseVars never hits it: indexed selects are condensed to plain

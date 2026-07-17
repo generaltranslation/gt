@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { parse } from '@formatjs/icu-messageformat-parser';
+import { parse } from '@generaltranslation/icu';
 
 const MEANINGFUL_REGEX = /[\p{L}\p{N}]/u;
 
