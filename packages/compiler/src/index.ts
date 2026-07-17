@@ -16,6 +16,8 @@ import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
+import { DevHotReloadCompatibilityResolver } from './compatibility/devHotReload';
+import { createIncompatibleDevHotReloadWarning } from './diagnostics';
 
 /**
  * Architecture:
@@ -211,17 +213,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const debugManifest = resolvedOptions._debugHashManifest
       ? new Map<string, unknown>()
       : undefined;
+    const devHotReloadCompatibilityResolver =
+      new DevHotReloadCompatibilityResolver();
+    let incompatibleDevHotReloadWarningShown = false;
 
     return {
       name: '@generaltranslation/GT_PLUGIN',
       transformInclude(id: string) {
-        // Only transform TSX and JSX files
-        return (
-          id.endsWith('.tsx') ||
-          id.endsWith('.jsx') ||
-          id.endsWith('.ts') ||
-          id.endsWith('.js')
-        );
+        // Only transform JavaScript and TypeScript files.
+        return /\.[cm]?[jt]sx?(?:\?.*)?$/.test(id);
       },
       transform(code: string, id: string) {
         // Initialize processing state
@@ -276,6 +276,23 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           const devHotReloadActive =
             state.settings.devHotReload.strings ||
             state.settings.devHotReload.jsx;
+          if (
+            devHotReloadActive &&
+            hasCollectionContent &&
+            !incompatibleDevHotReloadWarningShown &&
+            shouldWarn(state.settings.logLevel)
+          ) {
+            const compatibility = devHotReloadCompatibilityResolver.resolve(
+              id,
+              ast
+            );
+            if (!compatibility.compatible) {
+              console.warn(
+                createIncompatibleDevHotReloadWarning(compatibility)
+              );
+              incompatibleDevHotReloadWarningShown = true;
+            }
+          }
           if (devHotReloadActive && hasCollectionContent) {
             traverse(ast, runtimeTranslatePass(state));
           }

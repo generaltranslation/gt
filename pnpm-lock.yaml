@@ -796,6 +796,9 @@ importers:
       generaltranslation:
         specifier: workspace:*
         version: link:../core
+      get-tsconfig:
+        specifier: ^4.13.7
+        version: 4.13.7
       unplugin:
         specifier: ^2.3.10
         version: 2.3.10

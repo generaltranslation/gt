@@ -57,7 +57,8 @@ function writeInvalidGTConfig(cwd: string): string {
 
 async function transformWithPlugin(
   options: GTUnpluginOptions | undefined,
-  cwd: string
+  cwd: string,
+  code = JSX_RUNTIME_CODE
 ): Promise<string | null> {
   const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
   const plugin = (() => {
@@ -77,7 +78,7 @@ async function transformWithPlugin(
 
   const result: TransformResult = await transform.call(
     context,
-    JSX_RUNTIME_CODE,
+    code,
     path.join(cwd, 'App.tsx')
   );
   if (!result) {
@@ -319,6 +320,67 @@ describe('gtUnplugin config loading', () => {
       );
       expect(warning).toContain('valid gt.config.json');
       expect(warning).not.toBe(MISSING_GT_CONFIG_WARNING);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+});
+
+describe('gtUnplugin dev hot reload compatibility', () => {
+  afterEach(() => {
+    for (const tempDir of tempDirs.splice(0)) {
+      fs.rmSync(tempDir, { force: true, recursive: true });
+    }
+  });
+
+  it('warns when dev hot reload injects top-level await into CommonJS output', async () => {
+    const cwd = createTempDir();
+    fs.writeFileSync(
+      path.join(cwd, 'tsconfig.json'),
+      JSON.stringify({ compilerOptions: { module: 'commonjs' } })
+    );
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      const output = await transformWithPlugin(
+        { devHotReload: true, gtConfig: {} },
+        cwd,
+        "import { t } from 'gt-react'; t('Hello');"
+      );
+
+      expect(output).toContain('await Promise.all');
+      expect(warnSpy).toHaveBeenCalledOnce();
+      expect(warnSpy.mock.calls[0]?.[0]).toContain(
+        '@generaltranslation/compiler Warning:'
+      );
+      expect(warnSpy.mock.calls[0]?.[0]).toContain(
+        'top-level await, which requires ES2022 modules'
+      );
+      expect(warnSpy.mock.calls[0]?.[0]).toContain(
+        'Detected module type: commonjs.'
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('does not warn for ES2022 module output', async () => {
+    const cwd = createTempDir();
+    fs.writeFileSync(
+      path.join(cwd, 'tsconfig.json'),
+      JSON.stringify({ compilerOptions: { module: 'es2022' } })
+    );
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      const output = await transformWithPlugin(
+        { devHotReload: true, gtConfig: {} },
+        cwd,
+        "import { t } from 'gt-react'; t('Hello');"
+      );
+
+      expect(output).toContain('await Promise.all');
+      expect(warnSpy).not.toHaveBeenCalled();
     } finally {
       warnSpy.mockRestore();
     }

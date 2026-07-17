@@ -42,6 +42,7 @@
     "@babel/types": "^7.23.0",
     "@generaltranslation/format": "workspace:*",
     "generaltranslation": "workspace:*",
+    "get-tsconfig": "^4.13.7",
     "unplugin": "^2.3.10"
   },
   "devDependencies": {
