@@ -1,0 +1,14 @@
+{
+  "defaultLocale": "en",
+  "locales": ["fr"],
+  "files": {
+    "json": {
+      "include": ["content/[locale]/*.json"]
+    },
+    "gt": {
+      "parsingFlags": {
+        "includeSourceCodeContext": true
+      }
+    }
+  }
+}

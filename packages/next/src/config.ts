@@ -704,7 +704,10 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
               webpack: gtUnplugin,
             } = require('@generaltranslation/compiler');
             webpackConfig.plugins.unshift(
-              gtUnplugin(mergedConfig.experimentalCompilerOptions || {})
+              gtUnplugin({
+                ...mergedConfig.experimentalCompilerOptions,
+                autoJsxImportSource: 'gt-next',
+              })
             );
           } catch (e) {
             mergedConfig.experimentalCompilerOptions.type = 'none';
