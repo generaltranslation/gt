@@ -36,24 +36,39 @@ export type StatusFlags = SharedFlags & {
 export type StatusEvaluation = {
   /** Locales whose coverage is below the minimum */
   failingLocales: string[];
+  /** Locales with zero measurable units — misconfiguration or offline-invisible setups */
+  unmeasurableLocales: string[];
   /** Total ICU validation errors across locales */
   errorCount: number;
   ok: boolean;
 };
 
-/** Applies the CI gate rules: per-locale coverage and validation errors */
+/**
+ * Applies the CI gate rules: per-locale coverage, validation errors, and
+ * measurability. A zero-total locale reads as 100% through
+ * coveragePercent, so it gets its own failing bucket instead of silently
+ * passing the gate.
+ */
 export function evaluateStatus(
   rows: LocaleStatus[],
   minCoverage: number
 ): StatusEvaluation {
-  const failingLocales = rows
+  const measurable = rows.filter((row) => row.total > 0);
+  const failingLocales = measurable
     .filter((row) => coveragePercent(row) < minCoverage)
+    .map((row) => row.locale);
+  const unmeasurableLocales = rows
+    .filter((row) => row.total === 0)
     .map((row) => row.locale);
   const errorCount = rows.reduce((sum, row) => sum + row.errors.length, 0);
   return {
     failingLocales,
+    unmeasurableLocales,
     errorCount,
-    ok: failingLocales.length === 0 && errorCount === 0,
+    ok:
+      failingLocales.length === 0 &&
+      unmeasurableLocales.length === 0 &&
+      errorCount === 0,
   };
 }
 
@@ -131,13 +146,17 @@ export async function handleStatus(
 
   displayStatus(rows, { minCoverage, verbose: Boolean(options.verbose) });
 
-  // A run that measured nothing must not read as a passing 100% — it is
-  // usually a config problem (broken include glob, wrong directory) or a
-  // setup with no local translations (CDN publish, composite-only)
-  const measuredUnits = rows.reduce((sum, r) => sum + r.total, 0);
-  if (rows.length === 0 || measuredUnits === 0) {
-    const message =
-      'No translatable units could be measured locally. Check the files config include patterns and the working directory; CDN-only inline translations and composite JSON files cannot be measured offline.';
+  const evaluation = evaluateStatus(rows, minCoverage);
+  if (rows.length === 0 || evaluation.unmeasurableLocales.length > 0) {
+    // A locale that measured nothing must not read as a passing 100% —
+    // it is usually a config problem (broken include glob, wrong
+    // directory) or a setup with no local translations (CDN publish,
+    // composite-only)
+    const which =
+      rows.length === 0
+        ? 'any locale'
+        : evaluation.unmeasurableLocales.join(', ');
+    const message = `No translatable units could be measured locally for ${which}. Check the files config include patterns and the working directory; CDN-only inline translations and composite JSON files cannot be measured offline.`;
     if (options.ci) {
       logger.error(chalk.red(message));
       return exitSync(1);
@@ -145,8 +164,6 @@ export async function handleStatus(
     logger.warn(chalk.yellow(message));
     return;
   }
-
-  const evaluation = evaluateStatus(rows, minCoverage);
   if (evaluation.ok) {
     logger.success(
       chalk.green(

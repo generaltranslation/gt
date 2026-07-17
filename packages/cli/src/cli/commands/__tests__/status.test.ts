@@ -124,6 +124,18 @@ describe('evaluateStatus', () => {
     expect(result.errorCount).toBe(1);
     expect(result.ok).toBe(false);
   });
+
+  it('treats a zero-total locale as unmeasurable, not as covered', () => {
+    // total 0 maps to 100% coverage, so without a dedicated bucket a
+    // misconfigured locale would silently pass the gate
+    const result = evaluateStatus(
+      [row({ locale: 'es' }), row({ locale: 'fr', total: 0, translated: 0 })],
+      100
+    );
+    expect(result.failingLocales).toEqual([]);
+    expect(result.unmeasurableLocales).toEqual(['fr']);
+    expect(result.ok).toBe(false);
+  });
 });
 
 describe('handleStatus', () => {
@@ -193,6 +205,21 @@ describe('handleStatus', () => {
     ).rejects.toThrow('exit:1');
     await expect(
       run({}, [row({ total: 0, translated: 0 })])
+    ).resolves.toBeUndefined();
+  });
+
+  it('fails --ci when one locale is unmeasurable even if others are fine', async () => {
+    await expect(
+      run({ ci: true }, [
+        row({ locale: 'es' }),
+        row({ locale: 'fr', total: 0, translated: 0 }),
+      ])
+    ).rejects.toThrow('exit:1');
+    await expect(
+      run({}, [
+        row({ locale: 'es' }),
+        row({ locale: 'fr', total: 0, translated: 0 }),
+      ])
     ).resolves.toBeUndefined();
   });
 
