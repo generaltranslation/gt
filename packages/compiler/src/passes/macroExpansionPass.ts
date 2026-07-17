@@ -1,4 +1,5 @@
 import { TraverseOptions } from '@babel/traverse';
+import * as t from '@babel/types';
 import { TransformState } from '../state/types';
 import { processTaggedTemplateExpression } from '../processing/macro-expansion/processTaggedTemplateExpression';
 import { processCallExpression } from '../processing/macro-expansion/processCallExpression';
@@ -20,10 +21,18 @@ export function macroExpansionPass(state: TransformState): TraverseOptions {
     alreadyImported = true;
   };
 
+  // Both processors replace macros with t(...) calls, and path.replaceWith
+  // requeues the new node for this same traversal — track every replacement
+  // so the CallExpression visitor never re-processes expanded output
+  const replacements = new WeakSet<t.Node>();
+
   return {
     ImportDeclaration: processImportDeclaration(onImportFound),
-    TaggedTemplateExpression: processTaggedTemplateExpression(state),
-    CallExpression: processCallExpression(state),
+    TaggedTemplateExpression: processTaggedTemplateExpression(
+      state,
+      replacements
+    ),
+    CallExpression: processCallExpression(state, replacements),
     Program: processProgram({
       state,
       countBefore,

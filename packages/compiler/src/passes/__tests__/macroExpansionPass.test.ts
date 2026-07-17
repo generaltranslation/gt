@@ -456,6 +456,19 @@ describe('macroExpansionPass', () => {
     expect(tCalls[0].arguments).toHaveLength(1);
   });
 
+  it('does not re-process tagged-template output through the call-expression visitor', () => {
+    // t`${derive(a)}` expands to t(<template with derive>) — a one-argument
+    // template-literal call, which is exactly the shape the CallExpression
+    // visitor targets. It must not be counted or transformed a second time.
+    const state = initializeState({}, 'test.tsx');
+    const ast = parser.parse(
+      "import { derive } from 'gt-react/browser';\nconst x = t`${derive(a)}`;",
+      { sourceType: 'module', plugins: ['typescript'] }
+    );
+    traverse(ast, macroExpansionPass(state));
+    expect(state.statistics.macroExpansionsCount).toBe(1);
+  });
+
   it('derive only in tagged template', () => {
     const code =
       "import { derive } from 'gt-react/browser';\nconst x = t`${derive(x)}`;";

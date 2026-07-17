@@ -16,13 +16,10 @@ import { isStringTranslationCallExpression } from '../../utils/parsing/isStringT
  * Skips when t is bound to a non-GT import (e.g., i18next)
  */
 export function processCallExpression(
-  state: TransformState
+  state: TransformState,
+  replacements: WeakSet<t.Node>
 ): VisitNode<t.Node, t.CallExpression> {
   const symbol = state.settings.stringTranslationMacro;
-  // replaceWith requeues the new call for this same visitor; when the message
-  // keeps derive() expressions it stays a template literal arg and would be
-  // re-processed forever without this guard
-  const replacements = new WeakSet<t.Node>();
 
   return (path) => {
     if (replacements.has(path.node)) return;

@@ -15,7 +15,8 @@ import { isStringTranslationTaggedTemplate } from '../../utils/parsing/isStringT
  * Skips when t is bound to a non-GT import (e.g., i18next)
  */
 export function processTaggedTemplateExpression(
-  state: TransformState
+  state: TransformState,
+  replacements: WeakSet<t.Node>
 ): VisitNode<t.Node, t.TaggedTemplateExpression> {
   const symbol = state.settings.stringTranslationMacro;
 
@@ -33,9 +34,12 @@ export function processTaggedTemplateExpression(
     // Build the call expression arguments
     const args: t.Expression[] = [message];
     if (variables) args.push(variables);
-    path.replaceWith(
-      t.callExpression(t.identifier(GT_OTHER_FUNCTIONS.t), args)
+    const replacement = t.callExpression(
+      t.identifier(GT_OTHER_FUNCTIONS.t),
+      args
     );
+    replacements.add(replacement);
+    path.replaceWith(replacement);
     state.statistics.macroExpansionsCount++;
   };
 }
