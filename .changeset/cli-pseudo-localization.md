@@ -1,5 +1,5 @@
 ---
-'gtx-cli': minor
+'gt': minor
 'generaltranslation': minor
 ---
 
