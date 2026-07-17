@@ -1,5 +1,16 @@
 # @generaltranslation/compiler
 
+## 1.3.32
+
+### Patch Changes
+
+- [#1918](https://github.com/generaltranslation/gt/pull/1918) [`dce7a7a`](https://github.com/generaltranslation/gt/commit/dce7a7a0b5b82ee0ac7ca3518030ab51026da103) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Allow framework integrations to configure the package used for automatic JSX injection imports.
+
+- [#1916](https://github.com/generaltranslation/gt/pull/1916) [`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Unify `gt.config.json` types so complete config objects can be spread into compiler plugins and runtime initializers while file settings remain optional.
+
+- Updated dependencies [[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:
+  - generaltranslation@9.0.3
+
 ## 1.3.31
 
 ### Patch Changes
