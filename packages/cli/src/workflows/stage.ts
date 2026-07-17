@@ -59,9 +59,28 @@ export async function runStageFilesWorkflow({
     await uploadStep.wait();
 
     // optionally run the user edit diffs step
-    if (options?.saveLocal) {
+    // Force runs overwrite existing translations (including manual edits), so
+    // upload local edits first. Afterwards they are unrecoverable.
+    const forceFlag = options?.force
+      ? '--force'
+      : options?.forceDownload
+        ? '--force-download'
+        : null;
+    if (forceFlag) {
+      logger.warn(
+        `${forceFlag} overwrites existing translations, including manual edits. Uploading local translation edits first so they can be recovered. Edits made only in the dashboard cannot be preserved.`
+      );
+    }
+    if (options?.saveLocal || forceFlag) {
       await userEditDiffsStep.run(uploadedFiles);
       await userEditDiffsStep.wait();
+      // Proceeding after a failed upload would destroy any local edits the
+      // upload was meant to protect, so abort before anything irreversible
+      if (forceFlag && userEditDiffsStep.hasFailed) {
+        return logErrorAndExit(
+          `Could not upload local translation edits. Aborting the ${forceFlag} run to avoid destroying them. Retry once the API is reachable.`
+        );
+      }
     }
 
     // then run the tag step (non-fatal — tagging failure should not block translations)

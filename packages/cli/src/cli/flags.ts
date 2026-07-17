@@ -80,12 +80,12 @@ export function attachTranslateFlags(command: Command) {
     )
     .option(
       '--force',
-      'Force a retranslation, invalidating all existing cached translations if they exist.',
+      'Force a retranslation, invalidating all existing cached translations if they exist. Overwrites existing translations, including manual edits. When the run stages files for translation, local translation edits are uploaded first so they can be recovered.',
       false
     )
     .option(
       '--force-download',
-      'Force download and overwrite local files, bypassing gt-lock.json checks.',
+      'Force download and overwrite local files, bypassing gt-lock.json checks. Overwrites manual edits in local files. When the run stages files for translation, local translation edits are uploaded first so they can be recovered.',
       false
     )
     .option(

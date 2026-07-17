@@ -17,6 +17,10 @@ export class UserEditDiffsStep extends WorkflowStep<
     super();
   }
 
+  get hasFailed(): boolean {
+    return this.failed;
+  }
+
   async run(files: FileReference[]): Promise<FileReference[]> {
     this.spinner.start('Updating translations...');
 
