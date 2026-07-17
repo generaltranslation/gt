@@ -32,6 +32,7 @@ export function processProgram({
       if (!isAlreadyImported()) {
         injectJsxInsertionImport(
           path,
+          state.settings.autoJsxImportSource,
           state.settings.legacyGtReactImportSource
         );
       }
