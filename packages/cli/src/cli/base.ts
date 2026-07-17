@@ -41,7 +41,13 @@ import { getPackageManager } from '../utils/packageManager.js';
 import { retrieveCredentials, setCredentials } from '../utils/credentials.js';
 import { areCredentialsSet } from '../utils/credentials.js';
 import { upload } from './commands/upload.js';
-import { attachSharedFlags, attachTranslateFlags } from './flags.js';
+import {
+  attachSharedFlags,
+  attachStatusFlags,
+  attachTranslateFlags,
+} from './flags.js';
+import { handleStatus, type StatusFlags } from './commands/status.js';
+import { intro } from '@clack/prompts';
 import { handleStage } from './commands/stage.js';
 import { handleSetupProject } from './commands/setupProject.js';
 import { handleDownload } from './commands/download.js';
@@ -80,6 +86,7 @@ const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'generate',
   'setup',
   'stage',
+  'status',
   'translate',
   'validate',
 ]);
@@ -149,6 +156,7 @@ export class BaseCLI {
     this.setupTranslateCommand();
     this.setupDownloadCommand();
     this.setupEnqueueCommand();
+    this.setupStatusCommand();
   }
   // Execute is called by the main program
   public execute() {
@@ -232,6 +240,28 @@ export class BaseCLI {
       await this.handleTranslate(initOptions);
       logger.endCommand('Done!');
     });
+  }
+
+  protected setupStatusCommand(): void {
+    attachStatusFlags(
+      this.program
+        .command('status')
+        .description(
+          'Report local translation coverage per locale and validate translated catalogs. Runs fully offline.'
+        )
+    ).action(async (options: StatusFlags) => {
+      // intro instead of the ascii header: status is a quick, read-only report
+      intro(chalk.cyan('Checking translation status...'));
+      await this.handleStatusCommand(options);
+      logger.endCommand('Done!');
+    });
+  }
+
+  protected async handleStatusCommand(options: StatusFlags): Promise<void> {
+    const settings = await generateSettings(options, undefined, {
+      requireConfig: true,
+    });
+    await handleStatus(options, settings, this.library);
   }
 
   protected setupSendDiffsCommand(): void {

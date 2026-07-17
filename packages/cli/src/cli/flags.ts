@@ -163,6 +163,26 @@ export function attachValidateFlags(command: Command) {
 }
 
 /**
+ * Attaches flags necessary for reporting translation status
+ * @param command
+ * @returns The command with the status flags attached
+ */
+export function attachStatusFlags(command: Command) {
+  return attachValidateFlags(command)
+    .option(
+      '--ci',
+      'Exit with a non-zero code when coverage is below the minimum or any validation error exists',
+      false
+    )
+    .option(
+      '--min-coverage <percentage>',
+      'Minimum acceptable coverage percentage per locale',
+      '100'
+    )
+    .option('--verbose', 'List every missing and stale unit', false);
+}
+
+/**
  * Attaches flags necessary for translating a project
  * @param command
  * @returns The command with the translate flags attached
