@@ -16,6 +16,7 @@ import { transformLayoutFile } from '../../migrate/transformLayout.js';
 import { transformMiddlewareFile } from '../../migrate/transformMiddleware.js';
 import { transformNavigationFile } from '../../migrate/transformNavigation.js';
 import { transformNextConfigFile } from '../../migrate/transformNextConfig.js';
+import { transformRequestConfigFile } from '../../migrate/transformRequestConfig.js';
 import { transformSourceFile } from '../../migrate/transformSource.js';
 import type {
   MigrateOptions,
@@ -86,6 +87,7 @@ export async function handleMigrateCommand(
     todos: [],
     skippedFiles: new Map(),
     stats: {},
+    inlineMode: options.inline,
   };
 
   // Files owned by the config lane (pass 3 / emitGtFiles) must not go
@@ -110,8 +112,39 @@ export async function handleMigrateCommand(
 
   // Pass 1: regular source files (layouts deferred — they need the final
   // skip set to decide provider retention).
-  const sourceFiles = matchFiles(cwd, options.src ?? DEFAULT_SRC_PATTERNS);
+  // Default scope covers the conventional i18n config directory too — the
+  // shared defaults miss a root-level i18n/ (navigation.ts lives there), and
+  // wherever the routing/request files actually sit.
+  const defaultPatterns = [
+    ...DEFAULT_SRC_PATTERNS,
+    'i18n/**/*.{js,jsx,ts,tsx}',
+  ];
+  for (const configFile of [routing.routingFile, routing.requestFile]) {
+    if (!configFile) continue;
+    const dir = path
+      .relative(cwd, path.dirname(configFile))
+      .split(path.sep)
+      .join('/');
+    if (dir && !dir.startsWith('..')) {
+      defaultPatterns.push(`${dir}/**/*.{js,jsx,ts,tsx}`);
+    }
+  }
+  const sourceFiles = [
+    ...new Set(matchFiles(cwd, options.src ?? defaultPatterns)),
+  ];
   ctx.sourceFiles = sourceFiles;
+  // The whole project, independent of scope — teardown and still-imported
+  // checks must never be blind to files the scan skipped.
+  const projectFiles = matchFiles(cwd, [
+    '**/*.{js,jsx,ts,tsx}',
+    '!**/node_modules/**',
+    '!**/.next/**',
+    '!**/dist/**',
+    '!**/build/**',
+    '!**/out/**',
+    '!**/coverage/**',
+  ]);
+  ctx.projectFiles = projectFiles;
   const layouts: string[] = [];
   for (const file of sourceFiles) {
     if (configLaneFiles.has(file)) continue;
@@ -121,7 +154,7 @@ export async function handleMigrateCommand(
       continue;
     }
     if (code.includes('createNavigation')) {
-      collect(ctx, file, transformNavigationFile(file, code));
+      collect(ctx, file, transformNavigationFile(file, code, ctx));
       continue;
     }
     let result = transformSourceFile(file, code, ctx);
@@ -129,6 +162,30 @@ export async function handleMigrateCommand(
       result = applyInline(file, result.code ?? code, ctx, result);
     }
     collect(ctx, file, result);
+  }
+
+  // Files outside the scan (an explicit --src scope, or globs that missed a
+  // directory) that still use next-intl count as skips: the provider, the
+  // plugin, and the package must all survive for them. Without this, a
+  // scoped run tears next-intl down while unscanned files still import it.
+  const scanned = new Set([...sourceFiles, ...configLaneFiles]);
+  for (const file of projectFiles) {
+    if (scanned.has(file)) continue;
+    let content: string;
+    try {
+      content = fs.readFileSync(file, 'utf8');
+    } catch {
+      continue;
+    }
+    if (
+      /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"]next-intl(?:\/|['"])/.test(
+        content
+      )
+    ) {
+      ctx.skippedFiles.set(file, [
+        'uses next-intl but was not scanned (outside the --src scope or the default globs) — include it or convert it manually',
+      ]);
+    }
   }
 
   // Pass 2: layouts, with full skip knowledge.
@@ -168,6 +225,23 @@ export async function handleMigrateCommand(
       ctx,
       middlewareFile,
       transformMiddlewareFile(middlewareFile, code, ctx)
+    );
+  }
+
+  // Partial migrations keep next-intl's request config alive for skipped
+  // files, but gt-next's middleware no longer feeds it a locale — rewire its
+  // fallback to getLocale() so skipped files render the page locale instead
+  // of the default one.
+  if (
+    ctx.skippedFiles.size > 0 &&
+    routing.requestFile &&
+    fs.existsSync(routing.requestFile)
+  ) {
+    const code = fs.readFileSync(routing.requestFile, 'utf8');
+    collect(
+      ctx,
+      routing.requestFile,
+      transformRequestConfigFile(routing.requestFile, code)
     );
   }
 

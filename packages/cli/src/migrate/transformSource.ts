@@ -213,16 +213,31 @@ export function transformSourceFile(
       ) {
         const method = callee.property.name;
         if (method === 'rich') {
-          const conversion = analyzeRichCall(
-            path,
-            tBindings.get(callee.object.name)!.namespace,
-            ctx
-          );
-          if (typeof conversion === 'string') {
-            skipReasons.push(conversion);
+          // Converting t.rich to inline <T> embeds the source-language
+          // message; the key's existing translations stop applying until
+          // regenerated. That trade is opt-in via --inline — the default
+          // mode's promise is zero translation loss.
+          if (!ctx.inlineMode) {
+            skipReasons.push(
+              't.rich(...) conversion discards existing translations for the key — re-run with --inline to opt in, or convert manually'
+            );
           } else {
-            richConversions.push(conversion);
-            needsT = true;
+            const conversion = analyzeRichCall(
+              path,
+              tBindings.get(callee.object.name)!.namespace,
+              ctx
+            );
+            if (typeof conversion === 'string') {
+              skipReasons.push(conversion);
+            } else {
+              richConversions.push(conversion);
+              needsT = true;
+              todos.push({
+                file,
+                line: path.node.loc?.start.line,
+                reason: `t.rich(...) converted to inline <T> — regenerate translations for this content (\`npx gt translate\`)`,
+              });
+            }
           }
         } else if (['raw', 'markup', 'has'].includes(method)) {
           skipReasons.push(

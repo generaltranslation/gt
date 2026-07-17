@@ -69,9 +69,15 @@ export function inlinePass(
   if (tBindings.size === 0) return none;
 
   const catalog = ctx.catalogs.byLocale[ctx.catalogs.defaultLocale] ?? {};
-  let inlined = 0;
   let remaining = 0;
 
+  // Phase 1: analyze only. Mutating mid-traversal made the <T> wrap skip
+  // sibling calls inside the same element, so collect everything first.
+  const conversions: {
+    container: NodePath<t.JSXExpressionContainer>;
+    message: string;
+    element: NodePath<t.JSXElement> | null;
+  }[] = [];
   traverse(ast, {
     CallExpression(path) {
       const callee = path.node.callee;
@@ -102,30 +108,46 @@ export function inlinePass(
         remaining += 1;
         return;
       }
-
-      container.replaceWith(textNode(message));
-      inlined += 1;
-
-      // Wrap the enclosing element in <T> unless already inside one.
-      const element = container.findParent((parent) =>
-        parent.isJSXElement()
-      ) as NodePath<t.JSXElement> | null;
-      if (element && !insideT(element)) {
-        const wrapper = t.jsxElement(
-          t.jsxOpeningElement(t.jsxIdentifier('T'), []),
-          t.jsxClosingElement(t.jsxIdentifier('T')),
-          [element.node]
-        );
-        element.replaceWith(wrapper);
-        element.skip();
-      }
+      conversions.push({
+        container,
+        message,
+        element: container.findParent((parent) =>
+          parent.isJSXElement()
+        ) as NodePath<t.JSXElement> | null,
+      });
     },
   });
 
   ctx.stats.inlineCandidatesRemaining =
     (ctx.stats.inlineCandidatesRemaining ?? 0) + remaining;
-  if (inlined === 0) return none;
+  if (conversions.length === 0) return none;
+  const inlined = conversions.length;
   ctx.stats.inlined = (ctx.stats.inlined ?? 0) + inlined;
+
+  // Phase 2: apply. Replace every container first, then wrap each distinct
+  // enclosing element in <T> (replaceWith re-points the element's path at
+  // the wrapper, so later insideT checks see earlier wraps).
+  for (const conversion of conversions) {
+    conversion.container.replaceWith(textNode(conversion.message));
+  }
+  const wrappedElements = new Set<NodePath<t.JSXElement>>();
+  for (const conversion of conversions) {
+    const element = conversion.element;
+    // Dedupe by path identity: sibling containers share one element path,
+    // and after replaceWith that path points at the new <T> wrapper.
+    if (!element || wrappedElements.has(element)) continue;
+    wrappedElements.add(element);
+    if (insideT(element)) continue;
+    if (t.isJSXIdentifier(element.node.openingElement.name, { name: 'T' })) {
+      continue;
+    }
+    const wrapper = t.jsxElement(
+      t.jsxOpeningElement(t.jsxIdentifier('T'), []),
+      t.jsxClosingElement(t.jsxIdentifier('T')),
+      [element.node]
+    );
+    element.replaceWith(wrapper);
+  }
 
   // Drop t bindings with no remaining uses, then orphaned hook imports.
   // (Scope reference counts are stale after the replacements, so count by
@@ -166,7 +188,17 @@ export function inlinePass(
     },
     code
   );
-  return { code: output.code, todos: [], skipReasons: [], usedRich: false };
+  return {
+    code: output.code,
+    todos: [
+      {
+        file,
+        reason: `${inlined} t() call(s) inlined into <T> — existing catalog translations for those keys no longer apply; regenerate with \`npx gt translate\``,
+      },
+    ],
+    skipReasons: [],
+    usedRich: false,
+  };
 }
 
 function resolve(

@@ -46,6 +46,12 @@ export type MigrationContext = {
   stats: Record<string, number>;
   /** all matched source files, for still-imported checks before deletions */
   sourceFiles?: string[];
+  /** every source file in the project regardless of --src scope, so teardown
+   *  decisions never rely on what happened to be scanned */
+  projectFiles?: string[];
+  /** true when --inline was passed; gates transforms that embed
+   *  source-language text (and so require re-translation) */
+  inlineMode?: boolean;
 };
 
 export type SourceResult = {

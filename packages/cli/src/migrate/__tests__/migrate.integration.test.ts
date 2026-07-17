@@ -135,7 +135,6 @@ function makeApp(overrides: Record<string, string> = {}): string {
       "      <h1>{t('title')}</h1>",
       "      <p>{t('greeting', { name: 'Ada' })}</p>",
       "      <p>{t('items', { count: 3 })}</p>",
-      "      <p>{t.rich('terms', { b: (chunks) => <b>{chunks}</b> })}</p>",
       "      <input placeholder={t('hint')} />",
       '    </main>',
       '  );',
@@ -175,13 +174,11 @@ describe('handleMigrateCommand integration', () => {
       cwd
     );
 
-    // page: hooks swapped, dictionary calls intact, t.rich inlined
+    // page: hooks swapped, dictionary calls intact
     const page = read(cwd, 'src/app/[locale]/page.tsx');
     expect(page).toMatch(/import \{.*useTranslations.*\} from ["']gt-next["']/);
     expect(page).toContain("t('greeting', { name: 'Ada' })");
     expect(page).toContain("t('items', { count: 3 })");
-    expect(page).toContain('<b>terms</b>');
-    expect(page).not.toContain('t.rich');
     expect(page).toContain("placeholder={t('hint')}");
 
     // layout: provider swapped, validation gone, lang via getLocale,
@@ -288,6 +285,13 @@ describe('handleMigrateCommand integration', () => {
     const pkg = JSON.parse(read(cwd, 'package.json'));
     expect(pkg.dependencies['next-intl']).toBeDefined();
     expect(fs.existsSync(path.join(cwd, 'src/i18n/request.ts'))).toBe(true);
+    // request config fallback rewired to the resolved gt-next locale, so
+    // skipped files render the page locale instead of the default one
+    const request = read(cwd, 'src/i18n/request.ts');
+    expect(request).toContain('_gtRequestLocale.then');
+    expect(request).toMatch(
+      /import \{ getLocale \} from ["']gt-next\/server["']/
+    );
     // report lists the skip
     expect(read(cwd, 'gt-migrate-report.md')).toContain('Price.tsx');
   });
@@ -311,8 +315,23 @@ describe('handleMigrateCommand integration', () => {
     expect(fs.existsSync(path.join(cwd, 'gt-migrate-report.md'))).toBe(false);
   });
 
-  it('--inline converts the pure-text title', async () => {
-    const cwd = makeApp();
+  it('--inline converts the pure-text title and simple t.rich', async () => {
+    const cwd = makeApp({
+      'src/app/[locale]/page.tsx': [
+        "import { useTranslations } from 'next-intl';",
+        'export default function Home() {',
+        "  const t = useTranslations('Home');",
+        '  return (',
+        '    <main>',
+        "      <h1>{t('title')}</h1>",
+        "      <p>{t('greeting', { name: 'Ada' })}</p>",
+        "      <p>{t.rich('terms', { b: (chunks) => <b>{chunks}</b> })}</p>",
+        "      <input placeholder={t('hint')} />",
+        '    </main>',
+        '  );',
+        '}',
+      ].join('\n'),
+    });
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
@@ -327,8 +346,112 @@ describe('handleMigrateCommand integration', () => {
     const page = read(cwd, 'src/app/[locale]/page.tsx');
     expect(page).toContain('Welcome to demo');
     expect(page).not.toContain("t('title')");
-    // args/plural/attribute stay on dictionary path
+    expect(page).toContain('<b>terms</b>');
+    expect(page).not.toContain('t.rich');
+    // args/attribute stay on dictionary path
     expect(page).toContain("t('greeting', { name: 'Ada' })");
     expect(page).toContain("placeholder={t('hint')}");
+    // report warns that inlined content needs regeneration
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('regenerate');
+  });
+
+  it('skips t.rich files in default mode instead of discarding translations', async () => {
+    const cwd = makeApp({
+      'src/components/Terms.tsx': [
+        "import { useTranslations } from 'next-intl';",
+        'export function Terms() {',
+        "  const t = useTranslations('Home');",
+        "  return <p>{t.rich('terms', { b: (chunks) => <b>{chunks}</b> })}</p>;",
+        '}',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    // file untouched, teardown blocked, reason points at --inline
+    expect(read(cwd, 'src/components/Terms.tsx')).toContain('t.rich');
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('--inline');
+  });
+
+  it('converts a root-level i18n/ directory and still tears down safely', async () => {
+    const cwd = makeApp();
+    // Move the i18n config dir out of src/ — the shape from the field report
+    // that the old defaults never scanned.
+    fs.mkdirSync(path.join(cwd, 'i18n'));
+    for (const file of ['routing.ts', 'request.ts', 'navigation.ts']) {
+      fs.renameSync(
+        path.join(cwd, 'src/i18n', file),
+        path.join(cwd, 'i18n', file)
+      );
+    }
+    fs.rmdirSync(path.join(cwd, 'src/i18n'));
+    fs.writeFileSync(
+      path.join(cwd, 'middleware.ts'),
+      read(cwd, 'middleware.ts').replace('./src/i18n/routing', './i18n/routing')
+    );
+    fs.writeFileSync(
+      path.join(cwd, 'i18n/request.ts'),
+      read(cwd, 'i18n/request.ts').replace('../../messages', '../messages')
+    );
+    fs.writeFileSync(
+      path.join(cwd, 'src/app/[locale]/layout.tsx'),
+      read(cwd, 'src/app/[locale]/layout.tsx').replace(
+        "'@/i18n/routing'",
+        "'../../../i18n/routing'"
+      )
+    );
+
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+
+    // navigation was converted, not left importing a deleted routing file
+    expect(read(cwd, 'i18n/navigation.ts')).toMatch(/gt-next\/link/);
+    expect(read(cwd, 'i18n/navigation.ts')).not.toMatch(/from ['"]next-intl/);
+    expect(read(cwd, 'i18n/navigation.ts')).not.toMatch(/['"].*\/routing['"]/);
+    // full teardown completed
+    expect(fs.existsSync(path.join(cwd, 'i18n/routing.ts'))).toBe(false);
+    expect(fs.existsSync(path.join(cwd, 'i18n/request.ts'))).toBe(false);
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeUndefined();
+  });
+
+  it('blocks teardown when --src leaves next-intl usage out of scope', async () => {
+    const cwd = makeApp();
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+        src: ['src/app/**/*.{js,jsx,ts,tsx}'],
+      },
+      'next-intl',
+      cwd
+    );
+    // src/i18n/navigation.ts is outside the scope and still uses next-intl
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+    expect(fs.existsSync(path.join(cwd, 'src/i18n/request.ts'))).toBe(true);
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('not scanned');
   });
 });

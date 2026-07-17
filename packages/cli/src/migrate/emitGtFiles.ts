@@ -171,7 +171,7 @@ function findRemainingImporter(
   const specifierPattern =
     /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/g;
 
-  for (const file of ctx.sourceFiles ?? []) {
+  for (const file of ctx.projectFiles ?? ctx.sourceFiles ?? []) {
     if (ignoredFiles.includes(file)) continue;
     const content =
       pendingEdits.get(file) ??

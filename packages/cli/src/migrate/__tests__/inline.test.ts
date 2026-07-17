@@ -55,6 +55,31 @@ describe('inlinePass', () => {
     expect(result.code).toMatch(/import \{.*T.*\} from ["']gt-next["']/);
   });
 
+  it('inlines every eligible sibling call in the same element', () => {
+    const ctx = makeContext({
+      Home: { staticA: 'First text', staticB: 'Second text' },
+    });
+    const result = inlinePass(
+      'src/app/page.tsx',
+      [
+        "import { useTranslations } from 'gt-next';",
+        'export default function Page() {',
+        "  const t = useTranslations('Home');",
+        "  return <p>{t('staticA')} | {t('staticB')}</p>;",
+        '}',
+      ].join('\n'),
+      ctx
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toContain('First text');
+    expect(result.code).toContain('Second text');
+    expect(result.code).not.toContain("t('staticA')");
+    expect(result.code).not.toContain("t('staticB')");
+    // one wrap around the shared parent, not nested <T><T>
+    expect(result.code!.match(/<T>/g)).toHaveLength(1);
+    expect(ctx.stats.inlined).toBe(2);
+  });
+
   it('removes the hook and import when the last t use is inlined', () => {
     const ctx = makeContext({ Home: { title: 'Hello' } });
     const result = inlinePass(

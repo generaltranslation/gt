@@ -37,6 +37,12 @@ function transform(code: string, messages: Record<string, unknown> = {}) {
   return transformSourceFile('src/app/page.tsx', code, makeContext(messages));
 }
 
+function transformInline(code: string, messages: Record<string, unknown> = {}) {
+  const ctx = makeContext(messages);
+  ctx.inlineMode = true;
+  return transformSourceFile('src/app/page.tsx', code, ctx);
+}
+
 describe('transformSourceFile: imports and hooks', () => {
   it('returns unchanged for files without next-intl imports', () => {
     const result = transform(`export function x() { return 1; }`);
@@ -264,8 +270,22 @@ describe('transformSourceFile: skip conditions', () => {
 });
 
 describe('transformSourceFile: t.rich', () => {
-  it('converts simple t.rich to inline <T> JSX', () => {
+  it('skips t.rich by default — conversion would discard existing translations', () => {
     const result = transform(
+      [
+        "import { useTranslations } from 'next-intl';",
+        'export function Welcome() {',
+        "  const t = useTranslations('Home');",
+        "  return <div>{t.rich('welcome', { b: (chunks) => <b>{chunks}</b> })}</div>;",
+        '}',
+      ].join('\n'),
+      { Home: { welcome: 'Hi <b>friend</b>!' } }
+    );
+    expect(result.skipReasons.join(' ')).toContain('--inline');
+  });
+
+  it('converts simple t.rich to inline <T> JSX', () => {
+    const result = transformInline(
       [
         "import { useTranslations } from 'next-intl';",
         'export function Welcome() {',
@@ -290,7 +310,7 @@ describe('transformSourceFile: t.rich', () => {
   });
 
   it('skips complex t.rich (non-trivial chunk function)', () => {
-    const result = transform(
+    const result = transformInline(
       [
         "import { useTranslations } from 'next-intl';",
         'export function Welcome() {',
@@ -305,7 +325,7 @@ describe('transformSourceFile: t.rich', () => {
   });
 
   it('skips t.rich whose message mixes tags and arguments', () => {
-    const result = transform(
+    const result = transformInline(
       [
         "import { useTranslations } from 'next-intl';",
         'export function Welcome({ name }: { name: string }) {',
