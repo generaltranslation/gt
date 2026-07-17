@@ -51,6 +51,14 @@ describe('pseudoLocalizeMessage (ICU)', () => {
     expect(pseudoLocalizeMessage('Broken {', 'ICU')).toBe('[Ɓŕöķéñ { ~~~]');
   });
 
+  it('keeps every escaped # in plural options escaped', () => {
+    const result = pseudoLocalizeMessage(
+      "{n, plural, other {'#'a '#'b}}",
+      'ICU'
+    );
+    expect(result).toContain("'#'à '#'ƀ");
+  });
+
   it('is deterministic', () => {
     const once = pseudoLocalizeMessage('Hello, {name}', 'ICU');
     const twice = pseudoLocalizeMessage('Hello, {name}', 'ICU');
@@ -83,6 +91,18 @@ describe('pseudoLocalizeMessage (STRING and I18NEXT)', () => {
     const result = pseudoLocalizeMessage('See $t(cart.total)', 'I18NEXT');
     expect(result).toContain('$t(cart.total)');
     expect(result).toContain('Šéé');
+  });
+
+  it('tokenizes $t() to the first closing paren, matching i18next', () => {
+    // i18next's nesting regexp is non-greedy (/\$t\((.+?)\)/), so a paren
+    // inside the key ends the reference there; the tail is literal text
+    const result = pseudoLocalizeMessage(
+      'See $t(items(all).count) now',
+      'I18NEXT'
+    );
+    expect(result).toContain('$t(items(all)');
+    expect(result).toContain('çöûñţ');
+    expect(result).toContain('ñöŵ');
   });
 });
 

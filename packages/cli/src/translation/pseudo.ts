@@ -81,7 +81,9 @@ const ACCENT_MAP: Record<string, string> = {
   Z: 'Ž',
 };
 
-// Matches i18next {{interpolations}} and $t(nesting) references
+// Matches i18next {{interpolations}} and $t(nesting) references. The $t
+// alternative stops at the first ')', matching i18next's own non-greedy
+// nesting regexp (/\$t\((.+?)\)/), so keys cannot contain ')' either way.
 const I18NEXT_TOKENS = /(\{\{[^}]*\}\}|\$t\([^)]*\))/g;
 
 function accentText(text: string): { text: string; letters: number } {
@@ -117,7 +119,9 @@ function pseudoLocalizeIcu(message: string): string {
     // Not valid ICU; accent the raw text so the string is still visibly pseudo
     return pseudoLocalizePlain(message);
   }
-  return `[${printIcuAst(ast)}${expansionPadding(letters)}]`;
+  // escapeAllPounds keeps literal '#' in plural options escaped on reprint;
+  // pseudo output never feeds hashing, so byte-identity does not apply here
+  return `[${printIcuAst(ast, { escapeAllPounds: true })}${expansionPadding(letters)}]`;
 }
 
 function pseudoLocalizeI18next(message: string): string {
