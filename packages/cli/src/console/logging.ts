@@ -64,6 +64,10 @@ export function exitSync(code: number): never {
 
 // GT specific logging
 export function displayHeader(introString?: string) {
+  // The ASCII banner is pure chatter and writes to console directly, bypassing
+  // the logger, so gate it here to honor --quiet.
+  if (logger.isQuiet()) return;
+
   displayAsciiTitle();
   displayInitializingText();
 

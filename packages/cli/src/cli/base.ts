@@ -125,6 +125,17 @@ export class BaseCLI {
       '--suppress-id-compatibility-warning',
       'Suppress the React package ID compatibility warning'
     );
+    this.program.option(
+      '-q, --quiet',
+      'Suppress informational output; only warnings and errors are shown'
+    );
+    // Apply --quiet before any other hook or command action runs so the
+    // singleton logger is muted for the rest of the invocation. The flag is a
+    // global root option, so commander resolves it in any position and for
+    // nested commands (e.g. `gt git setup --quiet`).
+    this.program.hook('preAction', () => {
+      logger.setQuiet(Boolean(this.program.opts().quiet));
+    });
     this.program.hook('preAction', async (thisCommand, actionCommand) => {
       // Nested commands (e.g. `gt git setup`) can share leaf names with
       // translation commands; only direct children of the root qualify
