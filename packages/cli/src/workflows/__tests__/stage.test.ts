@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   branchRun: vi.fn(),
   uploadRun: vi.fn(),
   userEditDiffsRun: vi.fn(),
+  userEditDiffsAbort: vi.fn(),
   userEditDiffsFailed: false,
   setupRun: vi.fn(),
   enqueueRun: vi.fn(),
@@ -29,6 +30,7 @@ vi.mock('../steps/UserEditDiffsStep.js', () => ({
   UserEditDiffsStep: vi.fn(() => ({
     run: mocks.userEditDiffsRun,
     wait: mocks.stepWait,
+    abort: mocks.userEditDiffsAbort,
     get hasFailed() {
       return mocks.userEditDiffsFailed;
     },
@@ -176,6 +178,7 @@ describe('runStageFilesWorkflow', () => {
     ).rejects.toThrow();
 
     expect(mocks.enqueueRun).not.toHaveBeenCalled();
+    expect(mocks.userEditDiffsAbort).toHaveBeenCalled();
   });
 
   it('does not abort a saveLocal run when the diff upload fails', async () => {
@@ -198,7 +201,7 @@ describe('runStageFilesWorkflow', () => {
     });
 
     expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('--force')
+      expect.stringContaining('--force overwrites')
     );
   });
 });

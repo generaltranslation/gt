@@ -42,4 +42,10 @@ export class UserEditDiffsStep extends WorkflowStep<
       this.spinner.stop(chalk.yellow('Could not update translations'));
     }
   }
+
+  // Used instead of wait() when the caller treats the failure as fatal, so
+  // the spinner line reads as a hard failure rather than a swallowed one
+  abort(): void {
+    this.spinner.stop(chalk.red('Could not update translations'));
+  }
 }

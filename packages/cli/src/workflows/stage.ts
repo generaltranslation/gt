@@ -73,14 +73,15 @@ export async function runStageFilesWorkflow({
     }
     if (options?.saveLocal || forceFlag) {
       await userEditDiffsStep.run(uploadedFiles);
-      await userEditDiffsStep.wait();
       // Proceeding after a failed upload would destroy any local edits the
       // upload was meant to protect, so abort before anything irreversible
       if (forceFlag && userEditDiffsStep.hasFailed) {
+        userEditDiffsStep.abort();
         return logErrorAndExit(
           `Could not upload local translation edits. Aborting the ${forceFlag} run to avoid destroying them. Retry once the API is reachable.`
         );
       }
+      await userEditDiffsStep.wait();
     }
 
     // then run the tag step (non-fatal — tagging failure should not block translations)
