@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "gt translate && tsc -b && vite build",
     "lint": "oxlint --config ../.oxlintrc.react.json .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc -b"
   },
   "dependencies": {
     "@generaltranslation/compiler": "workspace:*",
