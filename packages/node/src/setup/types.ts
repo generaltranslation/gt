@@ -2,7 +2,6 @@ import type {
   I18nCacheConstructorParams,
   I18nConfigParams,
 } from 'gt-i18n/internal/types';
-import type { GTConfig } from 'generaltranslation/types';
 
 /**
  * Parameters for the initializing GT
@@ -10,9 +9,7 @@ import type { GTConfig } from 'generaltranslation/types';
  * @param {string[]} params.locales - The locales to support
  * @param {object} params.loadTranslations - The custom translation loader to use
  */
-export type InitializeGTParams = Pick<GTConfig, 'defaultLocale' | 'locales'> &
-  I18nConfigParams &
-  I18nCacheConstructorParams;
+export type InitializeGTParams = I18nConfigParams & I18nCacheConstructorParams;
 
 // Other Reexports
 export type { GTConfig } from 'generaltranslation/types';

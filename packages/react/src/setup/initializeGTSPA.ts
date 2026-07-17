@@ -7,7 +7,6 @@ import {
   initializeI18nConfig,
 } from '@generaltranslation/react-core/pure';
 import type { I18nConfigParams } from '@generaltranslation/react-core/pure';
-import type { GTConfig } from 'generaltranslation/types';
 import { BrowserI18nCache } from '../i18n-cache/BrowserI18nCache';
 import type { BrowserI18nCacheParams } from '../i18n-cache/BrowserI18nCache';
 import {
@@ -16,11 +15,7 @@ import {
 } from '../condition-store/createBrowserConditionStore';
 import { addRuntimeCredentials } from './runtimeCredentials';
 
-export type InitializeGTSPAParams = Pick<
-  GTConfig,
-  'defaultLocale' | 'locales'
-> &
-  I18nConfigParams &
+export type InitializeGTSPAParams = I18nConfigParams &
   BrowserI18nCacheParams &
   CreateBrowserConditionStoreParams;
 

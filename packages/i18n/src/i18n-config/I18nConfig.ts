@@ -22,19 +22,17 @@ import {
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { validateI18nConfigParams } from './validation';
 
-export type I18nConfigParams = Partial<
-  Pick<
-    GTConfig,
-    | 'defaultLocale'
-    | 'locales'
-    | 'customMapping'
-    | 'projectId'
-    | 'devApiKey'
-    | 'apiKey'
-    | 'cacheUrl'
-    | 'runtimeUrl'
-    | '_disableDevHotReload'
-  >
+export type I18nConfigParams = Pick<
+  GTConfig,
+  | 'defaultLocale'
+  | 'locales'
+  | 'customMapping'
+  | 'projectId'
+  | 'devApiKey'
+  | 'apiKey'
+  | 'cacheUrl'
+  | 'runtimeUrl'
+  | '_disableDevHotReload'
 >;
 
 type RuntimeConfig = Pick<
@@ -203,7 +201,7 @@ function getLocaleConfigParams(
 ): LocaleConfigConstructorParams {
   const {
     defaultLocale = libraryDefaultLocale,
-    locales = [defaultLocale],
+    locales = [],
     customMapping,
   } = params;
 
@@ -226,7 +224,7 @@ function getLocaleConfigParams(
 
 function getLocaleResolverConfigParams({
   defaultLocale = libraryDefaultLocale,
-  locales,
+  locales = [],
   customMapping,
 }: I18nConfigParams = {}): LocaleConfigConstructorParams {
   return {

@@ -22,15 +22,13 @@ type RuntimeTranslationConfig = {
  * Parameters for the I18nCache constructor
  */
 export type I18nCacheConstructorParams = DictionaryConfig &
-  Partial<
-    Omit<
-      GTConfig,
-      | 'cacheExpiryTime'
-      | 'defaultLocale'
-      | 'locales'
-      | 'customMapping'
-      | 'enableI18n'
-    >
+  Omit<
+    GTConfig,
+    | 'cacheExpiryTime'
+    | 'defaultLocale'
+    | 'locales'
+    | 'customMapping'
+    | 'enableI18n'
   > & {
     /**
      * Locale cache TTL in milliseconds. Undefined uses the default TTL, null

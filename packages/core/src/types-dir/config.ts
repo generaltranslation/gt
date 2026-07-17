@@ -10,7 +10,6 @@ export type GTParsingFlags = {
   enableAutoJsxInjection?: boolean;
   legacyGtReactImportSource?: boolean;
   devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
-  [key: string]: unknown;
 };
 
 /** Configuration for generated GT translation files. */
@@ -20,7 +19,6 @@ export type GTOutputFileConfig = {
   parsingFlags?: GTParsingFlags;
   /** @deprecated Use `parsingFlags.includeSourceCodeContext` instead. */
   includeSourceCodeContext?: boolean;
-  [key: string]: unknown;
 };
 
 /**
@@ -35,12 +33,13 @@ export type GTFilesConfig = {
 /**
  * The configuration stored in gt.config.json.
  *
- * File processing and package-specific settings are optional. A complete
- * project config always declares its default and supported locales.
+ * All settings are optional. Runtimes default `defaultLocale` to
+ * `libraryDefaultLocale` and `locales` to an empty list before resolving the
+ * effective locale set.
  */
 export type GTConfig = {
-  defaultLocale: string;
-  locales: string[];
+  defaultLocale?: string;
+  locales?: string[];
   customMapping?: CustomMapping;
   enableI18n?: boolean;
 
