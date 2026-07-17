@@ -3,7 +3,7 @@ import reactLogo from './assets/react.svg';
 import viteLogo from './assets/vite.svg';
 import heroImg from './assets/hero.png';
 import './App.css';
-import { LocaleSelector, Num, T } from 'gt-react';
+import { LocaleSelector, Num, T, t } from 'gt-react';
 
 function App() {
   const [count, setCount] = useState(0);

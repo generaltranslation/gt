@@ -560,9 +560,6 @@ importers:
 
   examples/vite-create-app:
     dependencies:
-      '@generaltranslation/compiler':
-        specifier: workspace:*
-        version: link:../../packages/compiler
       gt:
         specifier: workspace:*
         version: link:../../packages/cli
@@ -576,6 +573,9 @@ importers:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
     devDependencies:
+      '@generaltranslation/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
       '@types/node':
         specifier: ^24.13.2
         version: 24.13.3

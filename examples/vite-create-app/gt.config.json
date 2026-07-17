@@ -1,10 +1,5 @@
 {
-  "locales": [
-    "zh",
-    "fr",
-    "es",
-    "ja"
-  ],
+  "locales": ["zh", "fr", "es", "ja"],
   "files": {
     "gt": {
       "output": "src/_gt/[locale].json",

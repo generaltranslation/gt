@@ -8,22 +8,22 @@
       "translations": {
         "ja": {
           "updatedAt": "2026-07-17T18:49:48.297Z",
-          "fileName": "/Users/ernestmccarter/Documents/dev/gt/examples/vite-create-app/src/_gt/ja.json",
+          "fileName": "src/_gt/ja.json",
           "postProcessHash": "eca351548d0f7cb81b929b5d145242e0125d9d9c0af98bbf6e16538d73fe97c3"
         },
         "zh": {
           "updatedAt": "2026-07-17T18:49:48.298Z",
-          "fileName": "/Users/ernestmccarter/Documents/dev/gt/examples/vite-create-app/src/_gt/zh.json",
+          "fileName": "src/_gt/zh.json",
           "postProcessHash": "fb2fdeef32c76cbae61c908a9e2b0c7e0fdbea047565c9a957ed4a203b945f25"
         },
         "fr": {
           "updatedAt": "2026-07-17T18:49:48.298Z",
-          "fileName": "/Users/ernestmccarter/Documents/dev/gt/examples/vite-create-app/src/_gt/fr.json",
+          "fileName": "src/_gt/fr.json",
           "postProcessHash": "7073c2b40503adcebd0484be05e9d455c9532d80a30f2dbab6fa7444035ae757"
         },
         "es": {
           "updatedAt": "2026-07-17T18:49:48.299Z",
-          "fileName": "/Users/ernestmccarter/Documents/dev/gt/examples/vite-create-app/src/_gt/es.json",
+          "fileName": "src/_gt/es.json",
           "postProcessHash": "ac90ed65a327c3951590e46f103abb64126cc85663d75c12419889897f9ce987"
         }
       },
