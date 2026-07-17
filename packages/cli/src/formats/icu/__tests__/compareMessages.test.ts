@@ -78,9 +78,9 @@ describe('compareIcuMessages', () => {
   });
 
   it('treats rich-text tags as arguments', () => {
-    expect(
-      compareIcuMessages('click <b>here</b>', 'klik <b>hier</b>')
-    ).toEqual([]);
+    expect(compareIcuMessages('click <b>here</b>', 'klik <b>hier</b>')).toEqual(
+      []
+    );
     const issues = compareIcuMessages('click <b>here</b>', 'klik hier');
     expect(kinds(issues)).toEqual(['missing-argument']);
     expect(issues[0].argument).toBe('b');
@@ -101,9 +101,9 @@ describe('compareIcuMessages', () => {
   });
 
   it('accepts a translation reusing an argument multiple times', () => {
-    expect(
-      compareIcuMessages('Hi {name}', '{name}, witaj {name}!')
-    ).toEqual([]);
+    expect(compareIcuMessages('Hi {name}', '{name}, witaj {name}!')).toEqual(
+      []
+    );
   });
 
   it('reports each argument problem once', () => {

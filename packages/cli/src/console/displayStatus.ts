@@ -80,7 +80,10 @@ export function renderStatusTable(
   });
 
   const widths = header.map((cell, column) =>
-    Math.max(cell.text.length, ...body.map((cells) => cells[column].text.length))
+    Math.max(
+      cell.text.length,
+      ...body.map((cells) => cells[column].text.length)
+    )
   );
 
   const border = (left: string, joint: string, right: string) =>
@@ -118,7 +121,9 @@ function renderSection(
   return [
     title,
     ...capped,
-    ...(overflow > 0 ? [chalk.dim(`  … and ${overflow} more ${overflowNoun}`)] : []),
+    ...(overflow > 0
+      ? [chalk.dim(`  … and ${overflow} more ${overflowNoun}`)]
+      : []),
     '',
   ];
 }

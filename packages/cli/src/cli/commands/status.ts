@@ -2,10 +2,7 @@ import chalk from 'chalk';
 import { logger } from '../../console/logger.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { noFilesError } from '../../console/index.js';
-import {
-  coveragePercent,
-  displayStatus,
-} from '../../console/displayStatus.js';
+import { coveragePercent, displayStatus } from '../../console/displayStatus.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 import { validateJsonSchema } from '../../formats/json/utils.js';
@@ -64,9 +61,7 @@ export async function handleStatus(
 ): Promise<void> {
   const minCoverage = Number(options.minCoverage ?? 100);
   if (Number.isNaN(minCoverage) || minCoverage < 0 || minCoverage > 100) {
-    return logErrorAndExit(
-      '--min-coverage must be a number between 0 and 100'
-    );
+    return logErrorAndExit('--min-coverage must be a number between 0 and 100');
   }
 
   if (!settings.files) {
@@ -94,7 +89,10 @@ export async function handleStatus(
     locales: targetLocales,
     cwd: process.cwd(),
     resolveJsonSchema: (absoluteFilePath): JsonSchemaResolution => {
-      const schema = validateJsonSchema(settings.options ?? {}, absoluteFilePath);
+      const schema = validateJsonSchema(
+        settings.options ?? {},
+        absoluteFilePath
+      );
       if (!schema) return { kind: 'none' };
       if (schema.composite) return { kind: 'composite' };
       return { kind: 'include', include: schema.include ?? [] };

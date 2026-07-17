@@ -34,7 +34,12 @@ describe('renderStatusTable', () => {
     const table = stripAnsi(
       renderStatusTable(
         [
-          row({ locale: 'es', total: 128, translated: 128, stale: [{ fileName: 'x' }, { fileName: 'y' }] }),
+          row({
+            locale: 'es',
+            total: 128,
+            translated: 128,
+            stale: [{ fileName: 'x' }, { fileName: 'y' }],
+          }),
           row({
             locale: 'fr',
             total: 128,
@@ -50,7 +55,9 @@ describe('renderStatusTable', () => {
       )
     );
     const lines = table.split('\n');
-    expect(lines[1]).toMatch(/Locale.*Coverage.*Translated.*Missing.*Stale.*Errors/);
+    expect(lines[1]).toMatch(
+      /Locale.*Coverage.*Translated.*Missing.*Stale.*Errors/
+    );
     const esLine = lines.find((l) => l.includes(' es '));
     const frLine = lines.find((l) => l.includes(' fr '));
     expect(esLine).toContain('100%');

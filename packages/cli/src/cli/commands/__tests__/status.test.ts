@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  evaluateStatus,
-  handleStatus,
-  type StatusFlags,
-} from '../status.js';
+import { evaluateStatus, handleStatus, type StatusFlags } from '../status.js';
 import type { Settings } from '../../../types/index.js';
 import type { LocaleStatus } from '../../../translation/status/computeStatus.js';
 
@@ -127,22 +123,18 @@ describe('handleStatus', () => {
   });
 
   it('does not exit on problems without --ci', async () => {
-    await expect(
-      run({}, [row({ translated: 1 })])
-    ).resolves.toBeUndefined();
+    await expect(run({}, [row({ translated: 1 })])).resolves.toBeUndefined();
   });
 
   it('exits non-zero in --ci mode when coverage is below the minimum', async () => {
-    await expect(
-      run({ ci: true }, [row({ translated: 9 })])
-    ).rejects.toThrow('exit:1');
+    await expect(run({ ci: true }, [row({ translated: 9 })])).rejects.toThrow(
+      'exit:1'
+    );
   });
 
   it('exits non-zero in --ci mode on validation errors', async () => {
     await expect(
-      run({ ci: true }, [
-        row({ errors: [{ fileName: 'f', message: 'bad' }] }),
-      ])
+      run({ ci: true }, [row({ errors: [{ fileName: 'f', message: 'bad' }] })])
     ).rejects.toThrow('exit:1');
   });
 
@@ -153,9 +145,9 @@ describe('handleStatus', () => {
   });
 
   it('rejects a malformed --min-coverage value', async () => {
-    await expect(
-      run({ minCoverage: 'lots' }, [row({})])
-    ).rejects.toThrow(/min-coverage/);
+    await expect(run({ minCoverage: 'lots' }, [row({})])).rejects.toThrow(
+      /min-coverage/
+    );
   });
 
   it('excludes the default locale from reported locales', async () => {

@@ -63,7 +63,11 @@ export function flattenStringLeaves(
     });
   } else if (json && typeof json === 'object') {
     for (const [key, value] of Object.entries(json)) {
-      flattenStringLeaves(value, `${pointer}/${escapePointerSegment(key)}`, result);
+      flattenStringLeaves(
+        value,
+        `${pointer}/${escapePointerSegment(key)}`,
+        result
+      );
     }
   } else if (typeof json === 'string' && pointer) {
     result[pointer] = json;

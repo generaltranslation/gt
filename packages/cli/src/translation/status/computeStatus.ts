@@ -118,7 +118,10 @@ function computeLocaleStatus(
       const schema = resolveJsonSchema(path.resolve(cwd, file.fileName));
       if (schema.kind !== 'composite') {
         diffJsonCatalog(row, file, translatedRel, translatedAbs, schema);
-        if (fs.existsSync(translatedAbs) && isLockStale(lockEntries, file, locale)) {
+        if (
+          fs.existsSync(translatedAbs) &&
+          isLockStale(lockEntries, file, locale)
+        ) {
           row.stale.push({ fileName: translatedRel });
         }
         continue;
@@ -186,7 +189,11 @@ function diffGtCatalog(
       typeof translatedValue === 'string'
     ) {
       for (const issue of compareIcuMessages(sourceValue, translatedValue)) {
-        row.errors.push({ fileName: translatedRel, key, message: issue.message });
+        row.errors.push({
+          fileName: translatedRel,
+          key,
+          message: issue.message,
+        });
       }
     }
   }
