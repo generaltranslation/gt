@@ -1,0 +1,107 @@
+name: GT Test Apps - Browser Checks
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-apps-e2e-cron.yml'
+  schedule:
+    # Run daily at 06:00 UTC.
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  CARGO_HTTP_MULTIPLEXING: false
+  CARGO_NET_RETRY: 10
+
+concurrency:
+  group: gt-test-apps-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-apps-e2e:
+    name: Test apps in Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build local GT packages
+        run: pnpm exec turbo build --filter='@generaltranslation/format' --filter='@generaltranslation/compiler' --filter=generaltranslation --filter=gt-i18n --filter='@generaltranslation/react-core' --filter=gt-react --filter=gt-node --filter=gt-tanstack-start --filter=gt-next
+
+      - name: Install Chromium
+        run: pnpm --filter gt-test-apps-e2e test:e2e:install
+
+      - name: Test development apps in Chromium
+        run: pnpm --filter gt-test-apps-e2e test:e2e
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gt-test-apps-playwright-${{ github.run_id }}
+          path: .turbo/playwright/
+          retention-days: 30
+          if-no-files-found: ignore
+
+  notify-failure:
+    name: Notify libraries pager
+    if: ${{ always() && github.event_name != 'pull_request' && needs.test-apps-e2e.result != 'success' }}
+    needs: test-apps-e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "GT test app browser checks failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🚨 *GT test app browser checks failed!*\n\n• Result: `${{ needs.test-apps-e2e.result }}`\n• Repository: `${{ github.repository }}`\n• Branch: `${{ github.ref_name }}`\n• Commit: `${{ github.sha }}`\n• Trigger: `${{ github.event_name }}`"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Run"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }

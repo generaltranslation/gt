@@ -1556,6 +1556,9 @@ importers:
       gt:
         specifier: workspace:*
         version: link:../../../packages/cli
+      tsx:
+        specifier: ^4.20.6
+        version: 4.21.0
       typescript:
         specifier: ^5
         version: 5.7.3
@@ -2019,6 +2022,18 @@ importers:
       vite:
         specifier: ^8.0.16
         version: 8.1.4(@types/node@20.19.17)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3)
+
+  tests/apps/test-apps-e2e:
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.49.0
+        version: 1.57.0
+      '@types/node':
+        specifier: ^20
+        version: 20.19.17
+      typescript:
+        specifier: ^5
+        version: 5.7.3
 
   tests/apps/vite-react:
     dependencies:
@@ -25276,7 +25291,7 @@ snapshots:
       execa: 5.1.1
       node-stream-zip: 1.15.0
       ora: 5.4.1
-      semver: 7.7.4
+      semver: 7.8.5
       wcwidth: 1.0.1
       yaml: 2.8.3
     transitivePeerDependencies:
@@ -25297,7 +25312,7 @@ snapshots:
       execa: 5.1.1
       node-stream-zip: 1.15.0
       ora: 5.4.1
-      semver: 7.7.4
+      semver: 7.8.5
       wcwidth: 1.0.1
       yaml: 2.8.3
     transitivePeerDependencies:
@@ -25356,7 +25371,7 @@ snapshots:
       mime: 2.6.0
       ora: 5.4.1
       prompts: 2.4.2
-      semver: 7.7.4
+      semver: 7.8.5
     optional: true
 
   '@react-native-community/cli-types@20.0.0':
@@ -25380,7 +25395,7 @@ snapshots:
       fs-extra: 8.1.0
       graceful-fs: 4.2.11
       prompts: 2.4.2
-      semver: 7.7.4
+      semver: 7.8.5
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -25404,7 +25419,7 @@ snapshots:
       fs-extra: 8.1.0
       graceful-fs: 4.2.11
       prompts: 2.4.2
-      semver: 7.7.4
+      semver: 7.8.5
     transitivePeerDependencies:
       - bufferutil
       - supports-color

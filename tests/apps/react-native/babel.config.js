@@ -14,7 +14,7 @@ module.exports = function (api) {
     ],
     plugins: [
       [
-        require('gt-react-native/plugin').default,
+        require('gt-react-native/plugin').plugin,
         {
           entryPointFilePath: path.resolve(__dirname, 'index.ts'),
         },
