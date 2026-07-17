@@ -338,3 +338,52 @@ describe('transformSourceFile: t.rich', () => {
     expect(result.code).toBeNull();
   });
 });
+
+describe('re-exports from next-intl', () => {
+  it('skips a file that re-exports from next-intl alongside supported imports', () => {
+    const result = transform(
+      [
+        "import { useTranslations } from 'next-intl';",
+        "export { Locale } from 'next-intl';",
+        'export function Title() {',
+        "  const t = useTranslations('Home');",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n'),
+      { Home: { title: 'Hello' } }
+    );
+    expect(result.code).toBeNull();
+    expect(result.skipReasons.join('\n')).toContain("re-export from 'next-intl'");
+  });
+
+  it('skips a file whose only next-intl usage is a type re-export', () => {
+    const result = transform("export type { Locale } from 'next-intl';\n");
+    expect(result).not.toBeNull();
+    expect(result.code).toBeNull();
+    expect(result.skipReasons.join('\n')).toContain("re-export from 'next-intl'");
+  });
+
+  it('skips export-all from next-intl', () => {
+    const result = transform("export * from 'next-intl/server';\n");
+    expect(result.code).toBeNull();
+    expect(result.skipReasons.join('\n')).toContain(
+      "re-export from 'next-intl/server'"
+    );
+  });
+
+  it('ignores re-exports from unrelated modules', () => {
+    const result = transform(
+      [
+        "import { useTranslations } from 'next-intl';",
+        "export { helper } from './helper';",
+        'export function Title() {',
+        "  const t = useTranslations('Home');",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n'),
+      { Home: { title: 'Hello' } }
+    );
+    expect(result.code).not.toBeNull();
+    expect(result.skipReasons).toEqual([]);
+  });
+});

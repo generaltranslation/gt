@@ -3,12 +3,20 @@ import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { ensureNamedImports, removeUnusedNamedImports } from './importUtils.js';
-import type { MigrationContext, SourceResult } from './types.js';
+import { localePrefixHasCustomPrefixes } from './parseRoutingConfig.js';
+import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
 
 const traverse = traverseModule.default || traverseModule;
 const generate = generateModule.default || generateModule;
 
 const MIDDLEWARE_MODULE = 'next-intl/middleware';
+
+// Emitted above the converted `export default` when the source used
+// localePrefix 'never'. Injected into the printed output (rather than attached
+// to the AST) because babel's retainLines reflow strands a node-attached
+// comment as a trailing comment on the import line instead of above the export.
+const NEVER_MODE_TODO =
+  " TODO(gt migrate): next-intl used localePrefix 'never' (no locale segment in the URL). gt-next has no equivalent — createNextMiddleware below prefixes non-default locales. Remove this middleware or adjust routing if you need locale-free URLs. ";
 
 /**
  * Swaps a plain `export default createMiddleware(routing)` middleware for
@@ -27,19 +35,6 @@ export function transformMiddlewareFile(
     usedRich: false,
   };
   if (!code.includes(MIDDLEWARE_MODULE)) return none;
-
-  if (ctx.routing.localePrefix === 'never') {
-    return {
-      ...none,
-      todos: [
-        {
-          file,
-          reason:
-            "localePrefix 'never' means no locale routing — gt-next needs no middleware for cookie/header locale resolution; middleware.ts was left in place, delete it manually if it only handled next-intl",
-        },
-      ],
-    };
-  }
 
   let ast: t.File;
   try {
@@ -115,8 +110,15 @@ export function transformMiddlewareFile(
     };
   }
 
+  const mode = ctx.routing.localePrefix;
   const optionProperties: t.ObjectProperty[] = [];
-  if (ctx.routing.localePrefix === 'always') {
+  // next-intl defaults localePrefix to 'always': every locale is prefixed and
+  // `/` redirects to `/<defaultLocale>`. gt-next's createNextMiddleware does
+  // NOT prefix the default locale by default, so absent/'always' must set
+  // prefixDefaultLocale: true to preserve the app's public URL structure.
+  // 'as-needed' already matches gt-next's default (omit); 'never' has no
+  // gt-next equivalent (omit + TODO below).
+  if (mode === null || mode === 'always') {
     optionProperties.push(
       t.objectProperty(
         t.identifier('prefixDefaultLocale'),
@@ -133,14 +135,38 @@ export function transformMiddlewareFile(
     );
   }
 
+  const todos: TodoEntry[] = [];
+  const neverMode = mode === 'never';
+  if (neverMode) {
+    todos.push({
+      file,
+      reason:
+        "localePrefix 'never' has no gt-next equivalent: next-intl kept locales out of the URL entirely, but createNextMiddleware still prefixes non-default locales. Review whether these routes should stay locale-free (resolve the locale from cookies/headers instead) and adjust or remove the middleware.",
+    });
+  }
+  if (localePrefixHasCustomPrefixes(ctx.routing.routingFile)) {
+    todos.push({
+      file,
+      reason:
+        'localePrefix.prefixes (per-locale URL prefix overrides) has no gt-next equivalent — the custom prefixes were dropped; restore them manually if the app relied on them.',
+    });
+  }
+
   traverse(ast, {
     ExportDefaultDeclaration(exportPath) {
-      exportPath.node.declaration = t.callExpression(
+      // next-intl's createMiddleware carries the routing config (either the
+      // `routing` identifier or an inline next-intl config object). gt-next
+      // derives its options from ctx.routing instead, so the original argument
+      // is dropped and replaced with the gt-next options computed above. A
+      // re-run can never reach here: the module-string guard above bails once
+      // the file imports gt-next/middleware rather than next-intl/middleware.
+      const call = t.callExpression(
         t.identifier('createNextMiddleware'),
         optionProperties.length > 0
           ? [t.objectExpression(optionProperties)]
           : []
       );
+      exportPath.node.declaration = call;
     },
     ImportDeclaration(importPath) {
       if (importPath.node.source.value === MIDDLEWARE_MODULE) {
@@ -162,5 +188,26 @@ export function transformMiddlewareFile(
     },
     code
   );
-  return { code: output.code, todos: [], skipReasons: [], usedRich: false };
+  const printed = neverMode
+    ? insertCommentAboveExport(output.code, NEVER_MODE_TODO)
+    : output.code;
+  return { code: printed, todos, skipReasons: [], usedRich: false };
+}
+
+/**
+ * Splices a block comment onto its own line directly above the converted
+ * `export default createNextMiddleware(...)` line, matching that line's
+ * indentation. Deterministic: the transform always emits exactly one such
+ * export. If the marker isn't found the output is returned unchanged.
+ */
+function insertCommentAboveExport(code: string, comment: string): string {
+  const lines = code.split('\n');
+  const index = lines.findIndex((line) =>
+    line.trimStart().startsWith('export default createNextMiddleware')
+  );
+  if (index === -1) return code;
+  const line = lines[index];
+  const indent = line.slice(0, line.length - line.trimStart().length);
+  lines.splice(index, 0, `${indent}/*${comment}*/`);
+  return lines.join('\n');
 }

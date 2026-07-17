@@ -78,13 +78,19 @@ describe('transformMiddlewareFile', () => {
     expect(result.code).toContain('/acerca');
   });
 
-  it("localePrefix 'never' leaves the file and records a todo", () => {
+  it("localePrefix 'never' converts the file, omits the option, and records a todo", () => {
     const result = transformMiddlewareFile(
       'middleware.ts',
       canonical,
       makeContext({ localePrefix: 'never' })
     );
-    expect(result.code).toBeNull();
+    // 'never' has no gt-next equivalent: the import is still swapped so the file
+    // builds, prefixDefaultLocale is omitted, and a TODO comment + report todo
+    // flag the semantic gap (see prefixDefaultLocale.test.ts for full coverage).
+    expect(result.code).not.toBeNull();
+    expect(result.code).toContain('createNextMiddleware');
+    expect(result.code).not.toContain('prefixDefaultLocale');
+    expect(result.code).toContain('TODO(gt migrate)');
     expect(result.skipReasons).toEqual([]);
     expect(result.todos.some((todo) => todo.reason.includes('never'))).toBe(
       true

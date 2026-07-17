@@ -35,7 +35,9 @@ function makeApp(overrides: Record<string, string> = {}): string {
       {
         name: 'demo',
         dependencies: {
-          next: '15.3.0',
+          // >= 15.5 so the static-locale resolvers (next/root-params) emit;
+          // gated in emitGtFiles because next/root-params needs Next >= 15.5.
+          next: '15.5.0',
           'next-intl': '^4.1.0',
           react: '19.0.0',
         },
@@ -181,14 +183,29 @@ describe('handleMigrateCommand integration', () => {
     expect(page).toContain("t('items', { count: 3 })");
     expect(page).toContain("placeholder={t('hint')}");
 
-    // layout: provider swapped, validation gone, lang via getLocale,
-    // routing.locales inlined so the deleted routing file is not imported
+    // layout: provider swapped, validation gone, lang from the route param
+    // (static/SSG, not request-scoped getLocale), routing.locales inlined so
+    // the deleted routing file is not imported
     const layout = read(cwd, 'src/app/[locale]/layout.tsx');
     expect(layout).toContain('<GTProvider>');
-    expect(layout).toContain('lang={await getLocale()}');
+    expect(layout).toContain('lang={locale}');
+    expect(layout).not.toContain('getLocale()');
     expect(layout).not.toContain('NextIntlClientProvider');
     expect(layout).toMatch(/\[\s*['"]en['"],\s*['"]es['"]\s*\]\.map/);
     expect(layout).not.toContain('@/i18n/routing');
+
+    // static rendering preserved: getLocale/getRegion resolvers emitted next
+    // to loadDictionary so gt-next reads the locale from next/root-params
+    // ([locale] is the root layout here, no separate root layout above it)
+    expect(read(cwd, 'src/getLocale.ts')).toContain(
+      "import { locale } from 'next/root-params'"
+    );
+    expect(read(cwd, 'src/getRegion.ts')).toContain(
+      'export default async function getRegion()'
+    );
+    expect(read(cwd, 'gt-migrate-report.md')).toContain(
+      'Static rendering preserved'
+    );
 
     // navigation rewritten
     const navigation = read(cwd, 'src/i18n/navigation.ts');
@@ -274,9 +291,12 @@ describe('handleMigrateCommand integration', () => {
     const layout = read(cwd, 'src/app/[locale]/layout.tsx');
     expect(layout).toContain('GTProvider');
     expect(layout).toContain('NextIntlClientProvider');
-    expect(layout).toMatch(
-      /<NextIntlClientProvider[^>]*locale=\{await getLocale\(\)\}/
-    );
+    // fed the static route-param locale (SSG-safe), not a request-scoped
+    // getLocale(); partial mode keeps the hasLocale guard, which both validates
+    // and narrows `locale` to the augmented union the provider prop expects
+    expect(layout).toMatch(/<NextIntlClientProvider[^>]*locale=\{locale\}/);
+    expect(layout).not.toContain('getLocale()');
+    expect(layout).toContain('hasLocale(routing.locales, locale)');
     // the next-intl plugin stays composed so the request config resolves
     const nextConfig = read(cwd, 'next.config.ts');
     expect(nextConfig).toContain('createNextIntlPlugin');

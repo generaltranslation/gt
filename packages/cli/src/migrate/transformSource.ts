@@ -18,6 +18,15 @@ const CLIENT_SWAPS = new Set(['useTranslations', 'useLocale']);
 const SERVER_SWAPS = new Set(['getTranslations', 'getLocale']);
 const REMOVALS = new Set(['setRequestLocale', 'unstable_setRequestLocale']);
 const PROVIDER = 'NextIntlClientProvider';
+/**
+ * A pure type next-intl derives from the routing config (a string union).
+ * gt-next has no equivalent export, so it never justifies a skip. In a full
+ * conversion (next-intl removed) its references are rewritten to `string` and
+ * the specifier is dropped; in a partial migration (next-intl retained) the
+ * specifier and its references are kept so the augmented `Locale` union — the
+ * type the retained NextIntlClientProvider's `locale` prop expects — survives.
+ */
+const LOCALE_TYPE = 'Locale';
 const MESSAGES_HOOKS = new Set(['useMessages', 'getMessages']);
 const GT_MODULE = 'gt-next';
 const GT_SERVER_MODULE = 'gt-next/server';
@@ -76,8 +85,23 @@ export function transformSourceFile(
   const todos: TodoEntry[] = [];
   const symbols: ImportedSymbol[] = [];
   const nextIntlImports: NodePath<t.ImportDeclaration>[] = [];
+  let hasNextIntlReexport = false;
+
+  const noteReexport = (source: string) => {
+    if (source !== 'next-intl' && !source.startsWith('next-intl/')) return;
+    hasNextIntlReexport = true;
+    skipReasons.push(
+      `re-export from '${source}' would break once next-intl is removed (convert the re-export manually)`
+    );
+  };
 
   traverse(ast, {
+    ExportNamedDeclaration(path) {
+      if (path.node.source) noteReexport(path.node.source.value);
+    },
+    ExportAllDeclaration(path) {
+      noteReexport(path.node.source.value);
+    },
     ImportDeclaration(path) {
       const source = path.node.source.value;
       if (source !== 'next-intl' && !source.startsWith('next-intl/')) return;
@@ -102,7 +126,16 @@ export function transformSourceFile(
       }
     },
   });
-  if (nextIntlImports.length === 0) return none;
+  if (nextIntlImports.length === 0 && !hasNextIntlReexport) return none;
+
+  // The exact `Locale` import specifiers (value- or type-position, aliased or
+  // not). References that bind to one of these are rewritten to `string`; a
+  // user's own local `Locale` type has no such binding and is left alone.
+  const localeSpecifierNodes = new Set<t.Node>(
+    symbols
+      .filter((symbol) => symbol.imported === LOCALE_TYPE)
+      .map((symbol) => symbol.specifier)
+  );
 
   const providerRetained = options.retainNextIntlProvider === true;
   for (const symbol of symbols) {
@@ -112,6 +145,7 @@ export function transformSourceFile(
       REMOVALS.has(symbol.imported) ||
       MESSAGES_HOOKS.has(symbol.imported) ||
       symbol.imported === PROVIDER ||
+      symbol.imported === LOCALE_TYPE ||
       (options.dropLocaleValidation === true &&
         symbol.imported === 'hasLocale');
     if (!supported) {
@@ -298,6 +332,42 @@ export function transformSourceFile(
 
   // ---- mutation pass -------------------------------------------------------
 
+  // 0. `Locale` -> `string`, full-conversion only. Only references bound to the
+  //    next-intl import are touched (scope-checked), so a user's own local
+  //    `Locale` type survives. The specifier is dropped later by the import
+  //    surgery. In a partial migration next-intl stays installed, so both the
+  //    `Locale` specifier and its references are retained (see import surgery)
+  //    to keep the precise augmented union.
+  if (localeSpecifierNodes.size > 0 && !providerRetained) {
+    traverse(ast, {
+      TSAsExpression(path) {
+        // `x as Locale` -> `x`: drop the cast entirely (string is inferred).
+        const annotation = path.node.typeAnnotation;
+        if (
+          t.isTSTypeReference(annotation) &&
+          t.isIdentifier(annotation.typeName) &&
+          bindsToNextIntlLocale(
+            path,
+            annotation.typeName.name,
+            localeSpecifierNodes
+          )
+        ) {
+          path.replaceWith(path.node.expression);
+        }
+      },
+      TSTypeReference(path) {
+        // `locale: Locale`, `Promise<{ locale: Locale }>`, etc. -> `string`.
+        const typeName = path.node.typeName;
+        if (
+          t.isIdentifier(typeName) &&
+          bindsToNextIntlLocale(path, typeName.name, localeSpecifierNodes)
+        ) {
+          path.replaceWith(t.tsStringKeyword());
+        }
+      },
+    });
+  }
+
   // 1. setRequestLocale call statements.
   traverse(ast, {
     ExpressionStatement(path) {
@@ -429,11 +499,17 @@ export function transformSourceFile(
   for (const importPath of nextIntlImports) {
     let kept: t.ImportSpecifier[] = [];
     if (providerRetained) {
+      // next-intl stays installed, so keep the retained provider, the `Locale`
+      // type (its precise augmented union still applies), a still-referenced
+      // hasLocale locale guard, and any provider-linked messages hooks. Any
+      // `Locale` specifier left unreferenced is pruned below.
       kept = importPath.node.specifiers.filter(
         (specifier): specifier is t.ImportSpecifier =>
           t.isImportSpecifier(specifier) &&
           t.isIdentifier(specifier.imported) &&
           (specifier.imported.name === PROVIDER ||
+            specifier.imported.name === LOCALE_TYPE ||
+            specifier.imported.name === 'hasLocale' ||
             (MESSAGES_HOOKS.has(specifier.imported.name) &&
               !removedProviderMessageBindings.has(specifier.local.name)))
       );
@@ -449,6 +525,46 @@ export function transformSourceFile(
       insertedNewDeclarations = true;
     } else {
       importPath.remove();
+    }
+  }
+
+  // Partial migration: the next-intl `Locale` import was retained above, but
+  // its only reference may have been removed by another rewrite (e.g. an
+  // `as Locale` cast inside a getTranslations object arg). Drop any retained
+  // Locale specifier that no longer has a reference so we never emit a dead
+  // import; a specifier still used by a surviving type annotation stays.
+  if (providerRetained) {
+    const localeLocals = new Set(
+      symbols
+        .filter((symbol) => symbol.imported === LOCALE_TYPE)
+        .map((symbol) => symbol.local)
+    );
+    if (localeLocals.size > 0) {
+      const referenced = new Set<string>();
+      traverse(ast, {
+        Identifier(path) {
+          if (!localeLocals.has(path.node.name)) return;
+          if (path.findParent((parent) => parent.isImportDeclaration())) return;
+          referenced.add(path.node.name);
+        },
+      });
+      traverse(ast, {
+        ImportDeclaration(path) {
+          const source = path.node.source.value;
+          if (source !== 'next-intl' && !source.startsWith('next-intl/')) {
+            return;
+          }
+          path.node.specifiers = path.node.specifiers.filter(
+            (specifier) =>
+              !(
+                t.isImportSpecifier(specifier) &&
+                localeLocals.has(specifier.local.name) &&
+                !referenced.has(specifier.local.name)
+              )
+          );
+          if (path.node.specifiers.length === 0) path.remove();
+        },
+      });
     }
   }
 
@@ -472,6 +588,21 @@ export function transformSourceFile(
 }
 
 // ---- helpers ---------------------------------------------------------------
+
+/**
+ * True when the type identifier `name` resolves to one of the collected
+ * next-intl `Locale` import specifiers. Scope-aware, so a shadowing local
+ * binding (or a user's own `Locale` type, which carries no binding) is not
+ * mistaken for the import.
+ */
+function bindsToNextIntlLocale(
+  path: NodePath,
+  name: string,
+  localeSpecifierNodes: Set<t.Node>
+): boolean {
+  const binding = path.scope.getBinding(name);
+  return binding != null && localeSpecifierNodes.has(binding.path.node);
+}
 
 function unwrapAwait(node: t.Node | null | undefined): t.Expression | null {
   if (!node) return null;

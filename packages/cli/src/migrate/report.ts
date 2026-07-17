@@ -45,6 +45,23 @@ export function buildReport(
   );
   lines.push('');
 
+  const staticLocaleFiles = ctx.edits.filter(
+    (edit) =>
+      edit.kind === 'write' &&
+      (path.basename(edit.path) === 'getLocale.ts' ||
+        path.basename(edit.path) === 'getRegion.ts')
+  );
+  if (staticLocaleFiles.length > 0) {
+    lines.push(
+      'Static rendering preserved: emitted ' +
+        staticLocaleFiles.map((edit) => relative(edit.path)).join(' and ') +
+        ' so gt-next resolves the locale from next/root-params (the [locale] ' +
+        'route param) instead of request-scoped headers/cookies — routes that ' +
+        'were statically rendered (SSG) stay static (ƒ dynamic otherwise).'
+    );
+    lines.push('');
+  }
+
   if (ctx.skippedFiles.size > 0) {
     lines.push('## Needs manual migration (files left untouched)');
     lines.push('');

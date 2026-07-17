@@ -73,19 +73,24 @@ describe('transformLayoutFile', () => {
     );
     expect(result.skipReasons).toEqual([]);
     expect(result.code).toContain('<GTProvider>');
-    expect(result.code).toContain('lang={await getLocale()}');
+    // lang resolves from the route param (static/SSG), not request-scoped
+    // getLocale() which would force dynamic rendering
+    expect(result.code).toContain('lang={locale}');
     expect(result.code).not.toContain('NextIntlClientProvider');
     expect(result.code).not.toContain('setRequestLocale');
     expect(result.code).not.toContain('hasLocale');
     expect(result.code).not.toContain('notFound()');
-    expect(result.code).toMatch(
+    // full migration: nothing request-scoped remains, so getLocale is not
+    // imported and no getLocale() call is introduced
+    expect(result.code).not.toMatch(
       /import \{.*getLocale.*\} from ["']gt-next\/server["']/
     );
+    expect(result.code).not.toContain('getLocale()');
     expect(
       result.todos.some((todo) => todo.reason.includes('locale validation'))
     ).toBe(true);
-    // guard removal left the params destructure unused — it must go too
-    expect(result.code).not.toContain('const { locale }');
+    // lang still references the param, so the params destructure is retained
+    expect(result.code).toContain('const { locale }');
   });
 
   it('keeps non-locale notFound() guards intact', () => {
@@ -145,7 +150,8 @@ describe('transformLayoutFile', () => {
     expect(result.skipReasons).toEqual([]);
     expect(result.code).toContain('const { locale } = await params');
     expect(result.code).toContain('data-locale={locale}');
-    expect(result.code).toContain('lang={await getLocale()}');
+    // lang stays on the param (static), not a request-scoped getLocale()
+    expect(result.code).toContain('lang={locale}');
   });
 
   it('inserts GTProvider when no provider exists', () => {
@@ -226,9 +232,102 @@ describe('transformLayoutFile', () => {
     // messages loading must survive for the retained provider
     expect(result.code).toContain('getMessages');
     // gt-next middleware no longer feeds next-intl's request config, so the
-    // retained provider gets the resolved locale explicitly
+    // retained provider gets the resolved locale explicitly — via the static
+    // route-param binding (SSG-safe), never a request-scoped getLocale()
+    expect(result.code).toMatch(
+      /<NextIntlClientProvider[^>]*locale=\{locale\}/
+    );
+    expect(result.code).not.toContain('getLocale()');
+    expect(result.code).not.toMatch(
+      /import \{.*getLocale.*\} from ["']gt-next\/server["']/
+    );
+    // partial mode retains next-intl, so the locale-validation guard stays put:
+    // it keeps runtime validation and narrows `locale` for the retained provider
+    expect(result.code).toContain('hasLocale(routing.locales, locale)');
+  });
+
+  it('passes the param locale (not getLocale) to a retained provider annotated with next-intl Locale', () => {
+    const localeTypedLayout = [
+      "import { Locale, hasLocale, NextIntlClientProvider } from 'next-intl';",
+      "import { getMessages } from 'next-intl/server';",
+      "import { notFound } from 'next/navigation';",
+      "import { routing } from '@/i18n/routing';",
+      'export default async function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: Locale }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  if (!hasLocale(routing.locales, locale)) {',
+      '    notFound();',
+      '  }',
+      '  const messages = await getMessages();',
+      '  return (',
+      '    <html lang={locale}>',
+      '      <body>',
+      '        <NextIntlClientProvider messages={messages}>',
+      '          {children}',
+      '        </NextIntlClientProvider>',
+      '      </body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      localeTypedLayout,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    // partial mode: next-intl is retained, so the augmented `Locale` type stays
+    // imported and the params annotation is NOT rewritten to string
+    expect(result.code).toMatch(
+      /import \{[^}]*\bLocale\b[^}]*\} from ["']next-intl["']/
+    );
+    expect(result.code).toMatch(/Promise<\{\s*locale:\s*Locale;?\s*\}>/);
+    expect(result.code).not.toMatch(/locale:\s*string/);
+    // the retained provider gets the param binding, typed to that `Locale` union
+    expect(result.code).toMatch(
+      /<NextIntlClientProvider[^>]*locale=\{locale\}/
+    );
+    expect(result.code).not.toContain('getLocale()');
+  });
+
+  it('falls back to getLocale() for a retained provider without a params destructure', () => {
+    const rootLayout = [
+      "import { NextIntlClientProvider } from 'next-intl';",
+      "import { getMessages } from 'next-intl/server';",
+      'export default async function RootLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  const messages = await getMessages();',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>',
+      '        <NextIntlClientProvider messages={messages}>',
+      '          {children}',
+      '        </NextIntlClientProvider>',
+      '      </body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/layout.tsx',
+      rootLayout,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    // no route-param locale in scope, so the request-scoped resolver is used
     expect(result.code).toMatch(
       /<NextIntlClientProvider[^>]*locale=\{await getLocale\(\)\}/
+    );
+    expect(result.code).toMatch(
+      /import \{[^}]*getLocale[^}]*\} from ["']gt-next\/server["']/
     );
   });
 });

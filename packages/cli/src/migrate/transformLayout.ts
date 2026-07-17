@@ -50,6 +50,40 @@ function isLocaleGuardTest(test: t.Node): boolean {
   return guardsLocale;
 }
 
+/**
+ * Finds the local name bound to the route `locale` param
+ * (`const { locale } = await params` / `= params`, alias-aware), or null when
+ * the layout does not destructure it. A retained NextIntlClientProvider reuses
+ * this static, augmented-`Locale`-typed binding instead of a request-scoped
+ * getLocale(). `props.params` and other non-`params` sources are ignored.
+ */
+function findParamLocaleBinding(ast: t.File): string | null {
+  let binding: string | null = null;
+  traverse(ast, {
+    VariableDeclarator(path) {
+      if (binding) return;
+      if (!t.isObjectPattern(path.node.id)) return;
+      const init = path.node.init;
+      const fromParams =
+        t.isIdentifier(init, { name: 'params' }) ||
+        (t.isAwaitExpression(init) &&
+          t.isIdentifier(init.argument, { name: 'params' }));
+      if (!fromParams) return;
+      for (const property of path.node.id.properties) {
+        if (
+          t.isObjectProperty(property) &&
+          !property.computed &&
+          t.isIdentifier(property.key, { name: 'locale' }) &&
+          t.isIdentifier(property.value)
+        ) {
+          binding = property.value.name;
+        }
+      }
+    },
+  });
+  return binding;
+}
+
 export function transformLayoutFile(
   file: string,
   code: string,
@@ -86,33 +120,45 @@ export function transformLayoutFile(
   const isLocaleLayout = file.includes('[locale]');
 
   // 1. Drop locale-validation guards: `if (!hasLocale(...)) notFound()` and
-  //    `if (!locales.includes(locale)) notFound()` shapes.
-  traverse(ast, {
-    IfStatement(path) {
-      if (!isLocaleGuardTest(path.node.test)) return;
-      let callsNotFound = false;
-      path.traverse({
-        CallExpression(inner) {
-          if (t.isIdentifier(inner.node.callee, { name: 'notFound' })) {
-            callsNotFound = true;
-          }
-        },
-      });
-      if (callsNotFound) {
-        todos.push({
-          file,
-          line: path.node.loc?.start.line,
-          reason:
-            'locale validation removed — gt-next middleware owns locale resolution; re-add a guard only if this route must 404 on unknown locales',
+  //    `if (!locales.includes(locale)) notFound()` shapes. Full conversion
+  //    only: gt-next middleware then owns locale resolution. In a partial
+  //    migration next-intl is retained, and the guard both keeps runtime
+  //    validation and narrows the route-param `locale` to the augmented
+  //    `Locale` union that the retained NextIntlClientProvider expects, so it
+  //    is left in place.
+  if (!retainProvider) {
+    traverse(ast, {
+      IfStatement(path) {
+        if (!isLocaleGuardTest(path.node.test)) return;
+        let callsNotFound = false;
+        path.traverse({
+          CallExpression(inner) {
+            if (t.isIdentifier(inner.node.callee, { name: 'notFound' })) {
+              callsNotFound = true;
+            }
+          },
         });
-        path.remove();
-        mutated = true;
-      }
-    },
-  });
+        if (callsNotFound) {
+          todos.push({
+            file,
+            line: path.node.loc?.start.line,
+            reason:
+              'locale validation removed — gt-next middleware owns locale resolution; re-add a guard only if this route must 404 on unknown locales',
+          });
+          path.remove();
+          mutated = true;
+        }
+      },
+    });
+  }
 
-  // 2. `<html lang={locale}>` -> `<html lang={await getLocale()}>` (only in
-  //    [locale] layouts, where the binding came from params).
+  // 2. Keep `<html lang={locale}>` on the [locale] route param. Rewriting it
+  //    to a request-scoped `await getLocale()` (reads headers/cookies) forces
+  //    every route to render dynamically (ƒ) and loses static rendering (SSG);
+  //    the param resolves statically via next/root-params. Record which param
+  //    bindings the lang attribute uses so the unused-destructure cleanup in
+  //    step 7 preserves them.
+  const langParamBindings = new Set<string>();
   if (isLocaleLayout) {
     traverse(ast, {
       JSXAttribute(path) {
@@ -120,19 +166,8 @@ export function transformLayoutFile(
         const value = path.node.value;
         if (!t.isJSXExpressionContainer(value)) return;
         const expression = value.expression;
-        const isLocaleRef =
-          t.isIdentifier(expression, { name: 'locale' }) ||
-          (t.isMemberExpression(expression) &&
-            t.isIdentifier(expression.property, { name: 'locale' }));
-        if (!isLocaleRef) return;
-        value.expression = t.awaitExpression(
-          t.callExpression(t.identifier('getLocale'), [])
-        );
-        needsGetLocale = true;
-        mutated = true;
-        const fn = path.getFunctionParent();
-        if (fn && !fn.node.async) {
-          fn.node.async = true;
+        if (t.isIdentifier(expression)) {
+          langParamBindings.add(expression.name);
         }
       },
     });
@@ -167,11 +202,15 @@ export function transformLayoutFile(
     });
   }
 
-  // 4. A retained NextIntlClientProvider inherits its locale from the
-  //    request config, which gt-next's middleware no longer populates — pass
-  //    the resolved locale explicitly so skipped client components stay on
-  //    the page's locale.
+  // 4. A retained NextIntlClientProvider inherits its locale from the request
+  //    config, which gt-next's middleware no longer populates — pass the
+  //    resolved locale explicitly so skipped client components stay on the
+  //    page's locale. Prefer the static route-param `locale` binding: it keeps
+  //    SSG (no request-scoped read) and is typed to the augmented `Locale`
+  //    union the provider's prop expects. Fall back to a request-scoped
+  //    getLocale() only when no param locale is in scope (e.g. a root layout).
   if (retainProvider) {
+    const paramLocaleBinding = findParamLocaleBinding(ast);
     traverse(ast, {
       JSXOpeningElement(path) {
         if (
@@ -187,19 +226,22 @@ export function transformLayoutFile(
             t.isJSXIdentifier(attribute.name, { name: 'locale' })
         );
         if (hasLocaleProp) return;
+        const localeValue = paramLocaleBinding
+          ? t.identifier(paramLocaleBinding)
+          : t.awaitExpression(t.callExpression(t.identifier('getLocale'), []));
         path.node.attributes.push(
           t.jsxAttribute(
             t.jsxIdentifier('locale'),
-            t.jsxExpressionContainer(
-              t.awaitExpression(t.callExpression(t.identifier('getLocale'), []))
-            )
+            t.jsxExpressionContainer(localeValue)
           )
         );
-        needsGetLocale = true;
         mutated = true;
-        const fn = path.getFunctionParent();
-        if (fn && !fn.node.async) {
-          fn.node.async = true;
+        if (!paramLocaleBinding) {
+          needsGetLocale = true;
+          const fn = path.getFunctionParent();
+          if (fn && !fn.node.async) {
+            fn.node.async = true;
+          }
         }
       },
     });
@@ -271,6 +313,9 @@ export function transformLayoutFile(
           ) {
             return;
           }
+          // The `<html lang={...}>` param binding must survive even if guard
+          // removal left it looking unreferenced to the recrawled scope.
+          if (langParamBindings.has(property.value.name)) return;
           const binding = path.scope.getBinding(property.value.name);
           if (!binding || binding.referenced) return;
         }

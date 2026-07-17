@@ -55,13 +55,7 @@ export function parseRoutingConfig(cwd: string): RoutingInfo {
   const defaultLocale = staticValue(getProperty(config, 'defaultLocale'));
   if (typeof defaultLocale === 'string') info.defaultLocale = defaultLocale;
 
-  const localePrefix = staticValue(getProperty(config, 'localePrefix'));
-  const prefixMode =
-    typeof localePrefix === 'string'
-      ? localePrefix
-      : localePrefix && typeof localePrefix === 'object'
-        ? (localePrefix as Record<string, unknown>).mode
-        : null;
+  const prefixMode = readLocalePrefixMode(getProperty(config, 'localePrefix'));
   if (
     prefixMode === 'always' ||
     prefixMode === 'as-needed' ||
@@ -76,6 +70,40 @@ export function parseRoutingConfig(cwd: string): RoutingInfo {
   }
 
   return info;
+}
+
+/**
+ * True when localePrefix is the object form carrying a non-empty `prefixes`
+ * map (per-locale prefix overrides, e.g. `{ mode: 'always', prefixes: {...} }`).
+ * next-intl uses these to swap the URL segment per locale; gt-next has no
+ * equivalent, so the middleware transform surfaces a TODO.
+ *
+ * Re-reads the already-located routing file rather than widening RoutingInfo
+ * (that shared type is owned by another lane). Detection is AST-level so a
+ * dynamic prefix value still trips the warning.
+ */
+export function localePrefixHasCustomPrefixes(
+  routingFile: string | null
+): boolean {
+  if (!routingFile) return false;
+  let source: string;
+  try {
+    source = fs.readFileSync(routingFile, 'utf8');
+  } catch {
+    return false;
+  }
+  const config = extractRoutingObject(source);
+  if (!config) return false;
+  const localePrefix = getProperty(config, 'localePrefix');
+  if (!localePrefix) return false;
+  const unwrapped = unwrapAssertion(localePrefix);
+  if (!t.isObjectExpression(unwrapped)) return false;
+  const prefixes = getProperty(unwrapped, 'prefixes');
+  if (!prefixes) return false;
+  const prefixesNode = unwrapAssertion(prefixes);
+  return (
+    t.isObjectExpression(prefixesNode) && prefixesNode.properties.length > 0
+  );
 }
 
 function findFirst(cwd: string, candidates: string[]): string | null {
@@ -135,6 +163,30 @@ function getProperty(object: t.ObjectExpression, name: string): t.Node | null {
     ) {
       return property.value;
     }
+  }
+  return null;
+}
+
+/** Unwraps TS `as`/`satisfies` assertions to reach the underlying node. */
+function unwrapAssertion(node: t.Node): t.Node {
+  return t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node)
+    ? unwrapAssertion(node.expression)
+    : node;
+}
+
+/**
+ * Resolves next-intl's localePrefix to its mode. Accepts the bare string form
+ * ('always' | 'as-needed' | 'never') and the object form ({ mode, prefixes }),
+ * reading `mode` straight from the AST so a dynamic `prefixes` map cannot hide
+ * an otherwise-static mode.
+ */
+function readLocalePrefixMode(node: t.Node | null): unknown {
+  if (!node) return null;
+  const unwrapped = unwrapAssertion(node);
+  if (t.isStringLiteral(unwrapped)) return unwrapped.value;
+  if (t.isObjectExpression(unwrapped)) {
+    const mode = getProperty(unwrapped, 'mode');
+    return mode ? staticValue(mode) : null;
   }
   return null;
 }
