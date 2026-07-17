@@ -35,7 +35,9 @@ describe('pseudoLocalizeMessage (ICU)', () => {
   });
 
   it('preserves tag names while accenting tag children', () => {
-    expect(pseudoLocalizeMessage('<b>Save</b>', 'ICU')).toBe('[<b>Šàṽé</b> ~~]');
+    expect(pseudoLocalizeMessage('<b>Save</b>', 'ICU')).toBe(
+      '[<b>Šàṽé</b> ~~]'
+    );
   });
 
   it('preserves number skeletons and adds no padding when there are no letters', () => {
@@ -57,7 +59,9 @@ describe('pseudoLocalizeMessage (ICU)', () => {
   it('expands message length by at least 30%', () => {
     const source = 'Delete forever';
     const result = pseudoLocalizeMessage(source, 'ICU');
-    expect(result.length).toBeGreaterThanOrEqual(Math.ceil(source.length * 1.3));
+    expect(result.length).toBeGreaterThanOrEqual(
+      Math.ceil(source.length * 1.3)
+    );
   });
 });
 
@@ -187,8 +191,6 @@ describe('resolvePseudoLocale', () => {
   });
 
   it('rejects invalid locales', () => {
-    expect(() => resolvePseudoLocale('not a locale!', 'en')).toThrow(
-      /locale/i
-    );
+    expect(() => resolvePseudoLocale('not a locale!', 'en')).toThrow(/locale/i);
   });
 });

@@ -107,10 +107,10 @@ export class InlineCLI extends BaseCLI {
         "Also generate a pseudo-localized translation file for layout testing (defaults to 'en-XA')"
       )
       .action(async (initOptions: TranslateFlags) => {
-      displayHeader('Generating source templates...');
-      await this.handleGenerateSourceCommand(initOptions);
-      logger.endCommand('Done!');
-    });
+        displayHeader('Generating source templates...');
+        await this.handleGenerateSourceCommand(initOptions);
+        logger.endCommand('Done!');
+      });
   }
 
   protected async handleGenerateSourceCommand(

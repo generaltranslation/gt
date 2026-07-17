@@ -168,10 +168,7 @@ function walkJsxChildren(
   return walkJsxChild(children, counter);
 }
 
-function walkJsxChild(
-  child: JsxChild,
-  counter: { letters: number }
-): JsxChild {
+function walkJsxChild(child: JsxChild, counter: { letters: number }): JsxChild {
   if (typeof child === 'string') {
     const result = accentText(child);
     counter.letters += result.letters;
