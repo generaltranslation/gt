@@ -273,15 +273,15 @@ function emitResolverFile(
   content: string,
   existingNote: string
 ): void {
-  const exists = [
+  const existing = [
     `${base}.ts`,
     `${base}.js`,
     `src/${base}.ts`,
     `src/${base}.js`,
-  ].some((candidate) => fs.existsSync(path.join(ctx.cwd, candidate)));
-  if (exists) {
+  ].find((candidate) => fs.existsSync(path.join(ctx.cwd, candidate)));
+  if (existing) {
     ctx.todos.push({
-      file: path.join(ctx.cwd, `${base}.ts`),
+      file: path.join(ctx.cwd, existing),
       reason: `a ${base} file already exists — left untouched; ${existingNote}`,
     });
     return;
@@ -340,7 +340,12 @@ function findLocaleLayout(ctx: MigrationContext): LocaleLayout {
 
 function isLayoutFileName(file: string): boolean {
   const base = path.basename(file);
-  return base === 'layout.tsx' || base === 'layout.jsx' || base === 'layout.js';
+  return (
+    base === 'layout.tsx' ||
+    base === 'layout.ts' ||
+    base === 'layout.jsx' ||
+    base === 'layout.js'
+  );
 }
 
 /**

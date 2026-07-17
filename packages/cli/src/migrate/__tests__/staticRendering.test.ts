@@ -202,6 +202,31 @@ describe('emitGtFiles static-locale resolvers', () => {
     expect(edits.some((edit) => edit.path.endsWith('getLocale.ts'))).toBe(true);
   });
 
+  it('files the existing-resolver TODO with the path that actually exists', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/app/[locale]/layout.tsx': layoutSource,
+      'src/getLocale.ts': 'export default async function getLocale() {}',
+      'messages/en.json': '{}',
+    });
+    emitGtFiles(ctx);
+    const todo = ctx.todos.find((entry) =>
+      entry.reason.includes('already exists')
+    );
+    expect(todo?.file).toBe(path.join(ctx.cwd, 'src/getLocale.ts'));
+  });
+
+  it('recognizes a pure-TS [locale]/layout.ts and emits resolvers', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/app/[locale]/layout.ts': layoutSource,
+      'messages/en.json': '{}',
+    });
+    const edits = emitGtFiles(ctx);
+    expect(edits.some((edit) => edit.path.endsWith('getLocale.ts'))).toBe(true);
+    expect(edits.some((edit) => edit.path.endsWith('getRegion.ts'))).toBe(true);
+  });
+
   it('emits nothing when there is no [locale] layout at all', () => {
     const ctx = makeProject({
       'package.json': basePackageJson,
