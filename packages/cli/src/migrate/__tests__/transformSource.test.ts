@@ -353,14 +353,18 @@ describe('re-exports from next-intl', () => {
       { Home: { title: 'Hello' } }
     );
     expect(result.code).toBeNull();
-    expect(result.skipReasons.join('\n')).toContain("re-export from 'next-intl'");
+    expect(result.skipReasons.join('\n')).toContain(
+      "re-export from 'next-intl'"
+    );
   });
 
   it('skips a file whose only next-intl usage is a type re-export', () => {
     const result = transform("export type { Locale } from 'next-intl';\n");
     expect(result).not.toBeNull();
     expect(result.code).toBeNull();
-    expect(result.skipReasons.join('\n')).toContain("re-export from 'next-intl'");
+    expect(result.skipReasons.join('\n')).toContain(
+      "re-export from 'next-intl'"
+    );
   });
 
   it('skips export-all from next-intl', () => {
