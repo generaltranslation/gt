@@ -3,6 +3,7 @@ import type { Updates } from 'generaltranslation/types';
 import {
   PSEUDO_DEFAULT_LOCALE,
   buildPseudoTranslations,
+  isPseudoLocale,
   pseudoLocalizeJsx,
   pseudoLocalizeMessage,
   resolvePseudoLocale,
@@ -134,6 +135,20 @@ describe('pseudoLocalizeJsx', () => {
     expect(element.d.ti).toBe('Ţîƥ');
   });
 
+  it('leaves aria id-reference props untouched', () => {
+    const result = pseudoLocalizeJsx({
+      t: 'input',
+      i: 5,
+      d: { arl: 'Search box', arb: 'search-title', ard: 'search-hint' },
+    }) as unknown[];
+    const element = result[1] as {
+      d: { arl: string; arb: string; ard: string };
+    };
+    expect(element.d.arl).toBe('Šéàŕçĥ ƀöẋ');
+    expect(element.d.arb).toBe('search-title');
+    expect(element.d.ard).toBe('search-hint');
+  });
+
   it('handles nested arrays and elements', () => {
     const result = pseudoLocalizeJsx([
       'Start ',
@@ -176,21 +191,52 @@ describe('buildPseudoTranslations', () => {
   });
 });
 
+describe('isPseudoLocale', () => {
+  it('recognizes CLDR pseudo regions', () => {
+    expect(isPseudoLocale('en-XA')).toBe(true);
+    expect(isPseudoLocale('ar-XB')).toBe(true);
+  });
+
+  it('rejects real locales and garbage', () => {
+    expect(isPseudoLocale('en')).toBe(false);
+    expect(isPseudoLocale('fr-FR')).toBe(false);
+    expect(isPseudoLocale('not a locale!')).toBe(false);
+  });
+});
+
 describe('resolvePseudoLocale', () => {
   it('defaults to en-XA when the flag is boolean', () => {
-    expect(resolvePseudoLocale(true, 'en')).toBe(PSEUDO_DEFAULT_LOCALE);
+    expect(resolvePseudoLocale(true, 'en', [])).toBe(PSEUDO_DEFAULT_LOCALE);
     expect(PSEUDO_DEFAULT_LOCALE).toBe('en-XA');
   });
 
   it('accepts an explicit pseudo locale', () => {
-    expect(resolvePseudoLocale('ar-XB', 'en')).toBe('ar-XB');
+    expect(resolvePseudoLocale('ar-XB', 'en', [])).toBe('ar-XB');
+  });
+
+  it('accepts a pseudo locale that is already configured', () => {
+    expect(resolvePseudoLocale('en-XA', 'en', ['fr', 'en-XA'])).toBe('en-XA');
   });
 
   it('rejects the default locale to protect the source file', () => {
-    expect(() => resolvePseudoLocale('en', 'en')).toThrow(/default locale/i);
+    expect(() => resolvePseudoLocale('en', 'en', [])).toThrow(
+      /default locale/i
+    );
+  });
+
+  it('rejects a configured real locale to protect its translations', () => {
+    expect(() => resolvePseudoLocale('fr', 'en', ['fr', 'es'])).toThrow(
+      /overwrite/i
+    );
+  });
+
+  it('accepts a real locale that is not configured', () => {
+    expect(resolvePseudoLocale('de', 'en', ['fr', 'es'])).toBe('de');
   });
 
   it('rejects invalid locales', () => {
-    expect(() => resolvePseudoLocale('not a locale!', 'en')).toThrow(/locale/i);
+    expect(() => resolvePseudoLocale('not a locale!', 'en', [])).toThrow(
+      /locale/i
+    );
   });
 });

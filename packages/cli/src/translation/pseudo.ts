@@ -202,6 +202,8 @@ function walkJsxElement(
     for (const key of Object.keys(HTML_CONTENT_PROPS) as Array<
       keyof typeof HTML_CONTENT_PROPS
     >) {
+      // arb/ard (aria-labelledby/aria-describedby) hold element ids, not text
+      if (key === 'arb' || key === 'ard') continue;
       const value = data[key];
       if (typeof value === 'string') {
         const result = accentText(value);
@@ -245,13 +247,28 @@ export function buildPseudoTranslations(updates: Updates): Translations {
 }
 
 /**
+ * Whether a locale carries one of the CLDR pseudo regions (en-XA, ar-XB).
+ * Pseudo-region translation files are machine-generated, never hand-managed.
+ */
+export function isPseudoLocale(locale: string): boolean {
+  try {
+    const { region } = new Intl.Locale(locale);
+    return region === 'XA' || region === 'XB';
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Resolves the --pseudo flag to a locale, defaulting to en-XA
- * (CLDR "Pseudo-Accents"). Throws if the locale is invalid or would
- * overwrite the default locale's source file.
+ * (CLDR "Pseudo-Accents"). Throws if the locale is invalid or if writing
+ * its file would destroy real translations (the default locale's source
+ * file, or a configured locale that is not a pseudo-locale).
  */
 export function resolvePseudoLocale(
   flag: boolean | string,
   defaultLocale: string,
+  locales: string[],
   customMapping?: CustomMapping
 ): string {
   const locale = typeof flag === 'string' ? flag : PSEUDO_DEFAULT_LOCALE;
@@ -261,6 +278,11 @@ export function resolvePseudoLocale(
   if (locale === defaultLocale) {
     throw new Error(
       `The pseudo-locale cannot be the default locale (${defaultLocale}); it would overwrite the source translation file.`
+    );
+  }
+  if (locales.includes(locale) && !isPseudoLocale(locale)) {
+    throw new Error(
+      `'${locale}' is a configured locale; generating pseudo content for it would overwrite its translations. Use a pseudo-locale like ${PSEUDO_DEFAULT_LOCALE} instead.`
     );
   }
   return locale;
