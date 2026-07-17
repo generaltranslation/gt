@@ -333,7 +333,7 @@ describe('gtUnplugin dev hot reload compatibility', () => {
     }
   });
 
-  it('warns when dev hot reload injects top-level await into CommonJS output', async () => {
+  it('warns and skips module-level dev hot reload for CommonJS output', async () => {
     const cwd = createTempDir();
     fs.writeFileSync(
       path.join(cwd, 'tsconfig.json'),
@@ -348,7 +348,9 @@ describe('gtUnplugin dev hot reload compatibility', () => {
         "import { t } from 'gt-react'; t('Hello');"
       );
 
-      expect(output).toContain('await Promise.all');
+      expect(output).not.toContain('await Promise.all');
+      expect(output).not.toContain('GtInternalRuntimeTranslateString');
+      expect(output).toContain('$_hash');
       expect(warnSpy).toHaveBeenCalledOnce();
       expect(warnSpy.mock.calls[0]?.[0]).toContain(
         '@generaltranslation/compiler Warning:'
@@ -381,6 +383,32 @@ describe('gtUnplugin dev hot reload compatibility', () => {
 
       expect(output).toContain('await Promise.all');
       expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('warns and skips module-level dev hot reload for pre-ES2022 ESM', async () => {
+    const cwd = createTempDir();
+    fs.writeFileSync(
+      path.join(cwd, 'tsconfig.json'),
+      JSON.stringify({ compilerOptions: { module: 'es2020' } })
+    );
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      const output = await transformWithPlugin(
+        { devHotReload: true, gtConfig: {} },
+        cwd,
+        "import { t } from 'gt-react'; t('Hello');"
+      );
+
+      expect(output).not.toContain('await Promise.all');
+      expect(output).not.toContain('GtInternalRuntimeTranslateString');
+      expect(warnSpy).toHaveBeenCalledOnce();
+      expect(warnSpy.mock.calls[0]?.[0]).toContain(
+        'Detected module type: es2020.'
+      );
     } finally {
       warnSpy.mockRestore();
     }

@@ -19,11 +19,11 @@ export function createIncompatibleDevHotReloadWarning(
   return createCompilerDiagnostic({
     severity: 'Warning',
     whatHappened:
-      'Development hot reload is enabled for a module format that does not support it',
-    reassurance: 'Production translations are unaffected.',
+      'Module-level development hot reload was disabled for an incompatible module format',
+    reassurance:
+      'Production translations and the rest of the compilation continue normally.',
     why: 'development hot reload injects top-level await, which requires ES2022 modules',
     fix: 'Compile the application as ES2022 or ESNext ESM',
-    wayOut: 'disable devHotReload in gt.config.json',
     details: `Detected module type: ${compatibility.detectedModuleType}`,
     docsUrl:
       'https://generaltranslation.com/en/docs/react/guides/developing-spa-translations',

@@ -276,24 +276,28 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           const devHotReloadActive =
             state.settings.devHotReload.strings ||
             state.settings.devHotReload.jsx;
+          // The runtime translate pass injects top-level await, so keep the
+          // rest of the pipeline active while skipping only this pass for
+          // output formats that cannot represent it.
+          const devHotReloadCompatibility =
+            devHotReloadActive && hasCollectionContent
+              ? devHotReloadCompatibilityResolver.resolve(id, ast)
+              : { compatible: true as const };
           if (
-            devHotReloadActive &&
-            hasCollectionContent &&
+            !devHotReloadCompatibility.compatible &&
             !incompatibleDevHotReloadWarningShown &&
             shouldWarn(state.settings.logLevel)
           ) {
-            const compatibility = devHotReloadCompatibilityResolver.resolve(
-              id,
-              ast
+            console.warn(
+              createIncompatibleDevHotReloadWarning(devHotReloadCompatibility)
             );
-            if (!compatibility.compatible) {
-              console.warn(
-                createIncompatibleDevHotReloadWarning(compatibility)
-              );
-              incompatibleDevHotReloadWarningShown = true;
-            }
+            incompatibleDevHotReloadWarningShown = true;
           }
-          if (devHotReloadActive && hasCollectionContent) {
+          if (
+            devHotReloadActive &&
+            hasCollectionContent &&
+            devHotReloadCompatibility.compatible
+          ) {
             traverse(ast, runtimeTranslatePass(state));
           }
 
