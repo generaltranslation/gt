@@ -100,6 +100,42 @@ describe('getI18nextConfig', () => {
     expect(config.refuseReason).toMatch(/interpolation delimiter/);
   });
 
+  it('refuses keySeparator: false spread from a base object (M4)', () => {
+    // The false lives in a lower-scoring base object spread into init; the
+    // refusal must OR across every option object, not just the best-scoring one.
+    const cwd = makeApp({
+      'i18n.ts': [
+        'const base = { keySeparator: false };',
+        'i18next.use(initReactI18next).init({',
+        "  fallbackLng: 'en',",
+        "  supportedLngs: ['en', 'fr'],",
+        "  defaultNS: 'translation',",
+        "  ns: ['translation', 'common'],",
+        '  ...base,',
+        '});',
+      ].join('\n'),
+    });
+    const config = getI18nextConfig(cwd);
+    expect(config.refuseReason).toMatch(/keySeparator/);
+  });
+
+  it('refuses a non-default interpolation delimiter in a spread base (M4)', () => {
+    const cwd = makeApp({
+      'i18n.ts': [
+        "const base = { interpolation: { prefix: '${', suffix: '}' } };",
+        'i18next.use(initReactI18next).init({',
+        "  fallbackLng: 'en',",
+        "  supportedLngs: ['en', 'fr'],",
+        "  defaultNS: 'translation',",
+        "  ns: ['translation', 'common'],",
+        '  ...base,',
+        '});',
+      ].join('\n'),
+    });
+    const config = getI18nextConfig(cwd);
+    expect(config.refuseReason).toMatch(/interpolation delimiter/);
+  });
+
   it('reads a non-default nsSeparator without refusing', () => {
     const cwd = makeApp({
       'i18n.ts': [

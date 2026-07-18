@@ -75,13 +75,18 @@ type LocalePlurals = {
 };
 
 function pluralCategoriesFor(locale: string): LocalePlurals {
+  // i18next folder-backend projects use directory names as locale tags, so a
+  // `pt_BR` dir arrives with an underscore. BCP-47 / Intl want hyphens; without
+  // this every `_one`/`_few`/… would be reported "outside the CLDR set" and
+  // left literal under a misleading reason.
+  const tag = locale.replace(/_/g, '-');
   try {
     return {
       cardinal: new Set(
-        new Intl.PluralRules(locale).resolvedOptions().pluralCategories
+        new Intl.PluralRules(tag).resolvedOptions().pluralCategories
       ),
       ordinal: new Set(
-        new Intl.PluralRules(locale, {
+        new Intl.PluralRules(tag, {
           type: 'ordinal',
         }).resolvedOptions().pluralCategories
       ),
@@ -129,28 +134,41 @@ type LeafContext = {
   addReport: (reason: string) => void;
 };
 
+/**
+ * Builds the ICU fraction-digit skeleton part (`.00#`) from an option bag's
+ * min/max. Returns '' when neither is set and null when a value is not a valid
+ * digit count. `maxWhenMinOnly` supplies the max when only min is given — Intl's
+ * decimal default is 3 (`.00#`), so a min-only option must not cap the max at
+ * the min (that forced `.00` and dropped real precision — the m6 finding).
+ */
+function fractionSkeleton(
+  options: Record<string, string>,
+  maxWhenMinOnly: (min: number) => number
+): string | null {
+  const min = options['minimumFractionDigits'];
+  const max = options['maximumFractionDigits'];
+  if (min === undefined && max === undefined) return '';
+  const lo = min !== undefined ? Number(min) : undefined;
+  const hi = max !== undefined ? Number(max) : undefined;
+  const valid = (n: number | undefined) =>
+    n === undefined || (Number.isInteger(n) && n >= 0 && n <= 20);
+  if (!valid(lo) || !valid(hi)) return null;
+  const minN = lo ?? 0;
+  const maxN = hi ?? maxWhenMinOnly(minN);
+  if (maxN < minN) return null;
+  // ICU fraction-digit skeleton: `.` then min `0`s then up-to `#`s.
+  return '.' + '0'.repeat(minN) + '#'.repeat(maxN - minN);
+}
+
 /** Maps an i18next `number(...)` option bag to an ICU number skeleton, or null. */
 function numberSkeleton(optionText: string | undefined): string | null {
   if (optionText === undefined || optionText.trim() === '') return '';
   const options = parseOptionBag(optionText);
   if (options === null) return null;
   const parts: string[] = [];
-  const min = options['minimumFractionDigits'];
-  const max = options['maximumFractionDigits'];
-  if (min !== undefined || max !== undefined) {
-    const lo = min !== undefined ? Number(min) : undefined;
-    const hi = max !== undefined ? Number(max) : undefined;
-    if (
-      (lo !== undefined && Number.isNaN(lo)) ||
-      (hi !== undefined && Number.isNaN(hi))
-    ) {
-      return null;
-    }
-    const loN = lo ?? hi ?? 0;
-    const hiN = hi ?? lo ?? 0;
-    // ICU fraction-digit skeleton: `.` then min `0`s then up-to `#`s.
-    parts.push('.' + '0'.repeat(loN) + '#'.repeat(Math.max(0, hiN - loN)));
-  }
+  const fraction = fractionSkeleton(options, (minN) => Math.max(minN, 3));
+  if (fraction === null) return null;
+  if (fraction !== '') parts.push(fraction);
   if (options['useGrouping'] === 'false') parts.push('group-off');
   return parts.join(' ');
 }
@@ -184,9 +202,10 @@ function convertPlaceholder(inner: string, ctx: LeafContext): string {
   const formatterSpec =
     commaIndex === -1 ? '' : body.slice(commaIndex + 1).trim();
 
-  if (!/^[A-Za-z_$][\w$]*$/.test(name)) {
-    // Nested var access (`{{obj.prop}}`) or other shapes ICU arg names cannot
-    // express: keep the raw text (escaped) and report.
+  if (!/^[A-Za-z_][\w]*$/.test(name)) {
+    // Nested var access (`{{obj.prop}}`), a `$`-prefixed name, or other shapes
+    // ICU arg names cannot express (`$` is not a legal ICU argument name even
+    // though i18next interpolates it): keep the raw text (escaped) and report.
     ctx.addReport(
       `interpolation \`{{${inner.trim()}}}\` uses a variable name ICU cannot express (e.g. a nested path); left as literal text — rewrite the key manually`
     );
@@ -204,6 +223,10 @@ function convertPlaceholder(inner: string, ctx: LeafContext): string {
   return convertFormatter(name, formatterSpec, inner, ctx);
 }
 
+// Seam reserved for a future `--keep-i18next-format` mode (PR #1602): it would
+// emit the leaf as `[value, { $format: 'I18NEXT' }]` and skip the ICU rewrite
+// below so formatters render through i18next's own interpolation. v1 converts to
+// ICU (zero runtime dependency), so this is the branch point when #1602 lands.
 function convertFormatter(
   name: string,
   spec: string,
@@ -250,7 +273,22 @@ function convertFormatter(
       );
       return `{${name}, number}`;
     }
-    return `{${name}, number, ::currency/${code}}`;
+    // Map min/max fraction-digit overrides into the skeleton (currency caps the
+    // max at the min); an invalid digit count is dropped and reported instead of
+    // silently discarded (the m8 finding).
+    const options = parseOptionBag(args ?? '');
+    let suffix = '';
+    if (options !== null) {
+      const fraction = fractionSkeleton(options, (minN) => minN);
+      if (fraction === null) {
+        ctx.addReport(
+          `currency fraction-digit options in \`{{${inner.trim()}}}\` are not valid digit counts; dropped — the currency's default precision is used`
+        );
+      } else if (fraction !== '') {
+        suffix = ` ${fraction}`;
+      }
+    }
+    return `{${name}, number, ::currency/${code}${suffix}}`;
   }
 
   if (fmt === 'datetime') {
@@ -607,9 +645,21 @@ function convertTree(
       continue;
     }
     if (!evidence) {
+      // A base with call-site { context } evidence whose context values happen
+      // to be CLDR category names (step_one/step_other meaning context one/other)
+      // is grabbed by this cardinal pass first. Faithfully converting it to
+      // {context, select} is not possible when a context value is literally
+      // `other` (i18next's context-less base and the `_other` variant are two
+      // distinct strings that ICU's single `other` clause cannot both hold), so
+      // it is left literal — but name the context possibility so the user is not
+      // misled by a plural-only report (the m5 finding). The base value itself is
+      // preserved by the base-key pass below.
+      const contextNote = isContextBase(base, tc, keypath)
+        ? ` (a call site passed { context } for \`${fullKey(base)}\`, so these may be a context selector whose values collide with CLDR category names — give the context distinct values or use <T>)`
+        : '';
       tc.addReport(
         fullKey(base),
-        `keys \`${base}${tc.separators.pluralSeparator}<category>\` look like a plural but no \`{{count}}\` or \`t('${fullKey(base)}', { count })\` call site was found; left literal to avoid a false positive`
+        `keys \`${base}${tc.separators.pluralSeparator}<category>\` look like a plural but no \`{{count}}\` or \`t('${fullKey(base)}', { count })\` call site was found; left literal to avoid a false positive${contextNote}`
       );
       writeGroupAsLiteral(
         result,
@@ -727,6 +777,30 @@ function convertTree(
     }
   }
 
+  // A bare base key was consumed in groupKeys on the assumption its group would
+  // become an ICU plural/select that supersedes it. When the group instead fell
+  // back to literal keys (no `other`, no `{{count}}` evidence, an out-of-locale
+  // category, or a context set that stayed literal), nothing claimed
+  // `result[base]`, so re-emit the base's own value rather than dropping a real
+  // translation (the B4 finding). A group that did convert owns `result[base]`
+  // already, so this only fires on the literal-fallback path.
+  const groupedBases = new Set<string>();
+  for (const base of grouped.cardinal.keys()) groupedBases.add(base);
+  for (const base of grouped.ordinal.keys()) groupedBases.add(base);
+  for (const base of grouped.context.keys()) groupedBases.add(base);
+  for (const base of grouped.combined) groupedBases.add(base);
+  for (const base of groupedBases) {
+    if (base in result) continue;
+    if (typeof tree[base] !== 'string') continue;
+    const converted = leaf(tree[base] as string);
+    if (converted === null) continue;
+    result[base] = converted;
+    tc.addReport(
+      fullKey(base),
+      `base key \`${base}\` kept as a literal value alongside its suffixed variants (the group was left literal, so the base translation is preserved rather than dropped)`
+    );
+  }
+
   // Plain keys: leaves converted, nested objects recursed, arrays reported.
   for (const [key, value] of grouped.plain) {
     if (typeof value === 'string') {
@@ -791,6 +865,18 @@ function writeOrdinalAsLiteral(
   }
 }
 
+/**
+ * ICU-quotes a literal `#` so it is not read as the formatted count. `#` is only
+ * special inside a `plural`/`selectordinal` sub-message, so this is applied to
+ * branch values ONLY — quoting it in ordinary text would render a literal `'#'`
+ * (gt's formatter does not strip the quotes outside a plural). The leaf has
+ * already been converted, so every `#` in it is source literal text (ICU
+ * placeholders are `{name}`), which is exactly what must be quoted.
+ */
+function quoteHashInBranch(value: string): string {
+  return value.replace(/#/g, "'#'");
+}
+
 function buildBranch(
   kind: 'plural' | 'selectordinal',
   categories: Map<string, string>,
@@ -798,7 +884,7 @@ function buildBranch(
 ): string {
   const parts: string[] = [];
   for (const cat of orderCategories(categories.keys())) {
-    const converted = leaf(categories.get(cat)!) ?? '';
+    const converted = quoteHashInBranch(leaf(categories.get(cat)!) ?? '');
     parts.push(`${cat} {${converted}}`);
   }
   return `{${COUNT_VAR}, ${kind}, ${parts.join(' ')}}`;
@@ -851,6 +937,15 @@ export function convertCatalogs(input: ConvertInput): ConvertResult {
     const rawResolveFor = (): ((ref: string) => string | null) => (ref) =>
       resolveRawRef(ref, nsTrees, input.defaultNS, separators);
 
+    // Non-default namespace names, computed up front so the default-ns merge can
+    // detect a collision with a namespace it has not processed yet. Without this
+    // the collision was only caught when the namespace happened to be processed
+    // before the default namespace (readdirSync order), silently overwriting the
+    // default-ns key otherwise (the M3 finding).
+    const namespaceNames = new Set(
+      Object.keys(nsTrees).filter((ns) => ns !== input.defaultNS)
+    );
+
     for (const ns of Object.keys(nsTrees)) {
       const tree = nsTrees[ns];
       if (tree === null || typeof tree !== 'object') continue;
@@ -869,7 +964,7 @@ export function convertCatalogs(input: ConvertInput): ConvertResult {
       const converted = convertTree(tree as Record<string, unknown>, tc, '');
       if (ns === input.defaultNS) {
         for (const [key, value] of Object.entries(converted)) {
-          if (key in merged) {
+          if (key in merged || namespaceNames.has(key)) {
             reports.push({
               key: `${locale}/${ns}:${key}`,
               reason: `default-namespace key \`${key}\` collides with a namespace of the same name; namespace kept, default-ns key dropped`,
@@ -907,15 +1002,29 @@ export function convertCatalogs(input: ConvertInput): ConvertResult {
     };
     const converted = convertLeaf(def.value, leafCtx);
     if (converted !== null) {
-      setByPath(target, path, converted, separators);
+      const written = setByPath(target, path, converted, separators);
       reports.push({
         key: `${input.defaultLocale}/${def.ns}:${def.key}`,
-        reason: `synthesized dictionary entry from a call-site defaultValue (key was absent from the catalog)`,
+        reason: written
+          ? `synthesized dictionary entry from a call-site defaultValue (key was absent from the catalog)`
+          : `a call-site defaultValue for \`${def.key}\` collides with an existing non-object value on its path; kept the existing translation and did not synthesize — reconcile the key manually`,
       });
     }
   }
 
-  return { byLocale, reports };
+  // A `$t()` reference that appears in several consuming keys (or is walked at
+  // several nesting depths) pushes byte-identical report entries; collapse them
+  // so the TODO list is not padded with duplicates (the m9 finding). Distinct
+  // keys or reasons are preserved.
+  const seenReports = new Set<string>();
+  const dedupedReports = reports.filter((report) => {
+    const signature = `${report.key} ${report.reason}`;
+    if (seenReports.has(signature)) return false;
+    seenReports.add(signature);
+    return true;
+  });
+
+  return { byLocale, reports: dedupedReports };
 }
 
 /** Resolves `$t(ns:key)` / `$t(key)` to its raw source string, or null. */
@@ -954,22 +1063,36 @@ function getByPath(
   return current;
 }
 
+/**
+ * Writes `value` at a dotted path, creating intermediate objects. Returns false
+ * without writing when an intermediate segment already holds a non-object value
+ * (a string translation, an array), so synthesizing a nested defaultValue never
+ * clobbers a real translation (the M5 finding). The caller reports the collision.
+ */
 function setByPath(
   tree: Record<string, unknown>,
   keyPath: string,
   value: string,
   sep: Separators
-): void {
+): boolean {
   const segments = sep.keySeparator
     ? keyPath.split(sep.keySeparator)
     : [keyPath];
   let current: Record<string, unknown> = tree;
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i];
-    if (current[seg] === null || typeof current[seg] !== 'object') {
+    const existing = current[seg];
+    if (existing === undefined) {
       current[seg] = {};
+    } else if (
+      existing === null ||
+      typeof existing !== 'object' ||
+      Array.isArray(existing)
+    ) {
+      return false;
     }
     current = current[seg] as Record<string, unknown>;
   }
   current[segments[segments.length - 1]] = value;
+  return true;
 }

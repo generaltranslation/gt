@@ -86,7 +86,11 @@ describe('interpolation', () => {
     const { dict } = convert({
       price: '{{v, number(minimumFractionDigits: 2)}}',
     });
-    expect(dict.price).toBe('{v, number, ::.00}');
+    // min 2, max defaults to Intl's decimal default of 3 (min-only must not
+    // cap the max at the min, per the m6 adversary finding).
+    expect(dict.price).toBe('{v, number, ::.00#}');
+    expect(render(dict.price as string, 'en', { v: 3 })).toBe('3.00');
+    expect(render(dict.price as string, 'en', { v: 3.14159 })).toBe('3.142');
   });
 
   it('maps currency(USD) and currency(currency: USD)', () => {
@@ -441,6 +445,183 @@ describe('i18next-icu fast path', () => {
     // ICU preserved verbatim (not re-escaped), $t inlined.
     expect(dict.count).toBe('{n, plural, one {# item} other {# items}}');
     expect(dict.ref).toBe('{n, plural, one {# item} other {# items}}');
+  });
+});
+
+// ---- adversary findings (converter) ----------------------------------------
+// Each case is drawn from the preserved attack harness at
+// adv-scratch/ri18n-conv-28234 and reproduces a data-corruption/loss path the
+// converter must no longer silently take.
+
+describe('adversary B3: literal # inside a plural must not read as the count', () => {
+  it('quotes # inside a cardinal plural', () => {
+    const { dict } = convert(
+      { course_one: '1 C# course', course_other: '{{count}} C# courses' },
+      { countKeys: new Set(['translation:course']) }
+    );
+    expect(render(dict.course as string, 'en', { count: 1 })).toBe(
+      '1 C# course'
+    );
+    expect(render(dict.course as string, 'en', { count: 5 })).toBe(
+      '5 C# courses'
+    );
+  });
+
+  it('quotes # inside a selectordinal', () => {
+    const { dict } = convert(
+      {
+        rank_ordinal_one: '#1 (C# dev)',
+        rank_ordinal_other: '#{{count}} (C# dev)',
+      },
+      { countKeys: new Set(['translation:rank']) }
+    );
+    expect(render(dict.rank as string, 'en', { count: 1 })).toBe('#1 (C# dev)');
+    expect(render(dict.rank as string, 'en', { count: 5 })).toBe('#5 (C# dev)');
+  });
+
+  it('still renders # literally in plain (non-plural) text', () => {
+    const { dict } = convert({ k: 'C# is great, 100% sure' });
+    expect(render(dict.k as string, 'en', {})).toBe('C# is great, 100% sure');
+  });
+});
+
+describe('adversary B4: base key survives a plural-looking literal fallback', () => {
+  it('keeps the base value when a group lacks count evidence', () => {
+    const { dict, reports } = convert({
+      medal: 'A medal',
+      medal_one: 'Gold',
+      medal_other: 'Participation',
+    });
+    expect(dict.medal).toBe('A medal');
+    expect(dict.medal_one).toBe('Gold');
+    expect(dict.medal_other).toBe('Participation');
+    expect(reports.some((r) => /\bmedal\b/.test(r.key))).toBe(true);
+  });
+
+  it('keeps the base with a lone _other and no count', () => {
+    const { dict } = convert({ notice: 'A notice', notice_other: 'Notices' });
+    expect(dict.notice).toBe('A notice');
+    expect(dict.notice_other).toBe('Notices');
+  });
+});
+
+describe('adversary M3: default-ns / namespace collision is order-independent', () => {
+  function run(order: string[]) {
+    const trees: Record<string, Record<string, unknown>> = {};
+    for (const ns of order) {
+      if (ns === 'common')
+        trees.common = { dashboard: 'DEFAULT-NS-VALUE', greeting: 'Hi' };
+      else trees.dashboard = { title: 'NS-VALUE' };
+    }
+    return convertCatalogs({
+      defaultLocale: 'en',
+      locales: ['en'],
+      defaultNS: 'common',
+      raw: { en: trees },
+    });
+  }
+  for (const order of [
+    ['common', 'dashboard'],
+    ['dashboard', 'common'],
+  ]) {
+    it(`drops+reports the default-ns key (order: ${order.join(',')})`, () => {
+      const r = run(order);
+      expect(r.byLocale.en.dashboard).toEqual({ title: 'NS-VALUE' });
+      expect(r.byLocale.en.greeting).toBe('Hi');
+      expect(
+        r.reports.some((x) => /collides with a namespace/.test(x.reason))
+      ).toBe(true);
+    });
+  }
+});
+
+describe('adversary M5: defaultValue synthesis must not clobber a string', () => {
+  it('does not overwrite an existing string with a synthesized nested object', () => {
+    const { dict, reports } = convert(
+      { user: 'A user (existing translation)' },
+      { defaults: [{ ns: 'translation', key: 'user.name', value: 'Name' }] }
+    );
+    expect(dict.user).toBe('A user (existing translation)');
+    expect(reports.some((r) => /collid/i.test(r.reason))).toBe(true);
+  });
+});
+
+describe('adversary m5: context values that equal CLDR categories', () => {
+  it('preserves the base and names the context possibility in the report', () => {
+    const { dict, reports } = convert(
+      {
+        step: 'a step',
+        step_one: 'the first step',
+        step_other: 'another step',
+      },
+      { contextKeys: new Set(['translation:step']) }
+    );
+    // Base translation survives (B4); the suffixed variants stay literal.
+    expect(dict.step).toBe('a step');
+    expect(dict.step_one).toBe('the first step');
+    expect(dict.step_other).toBe('another step');
+    // The report names the context possibility, not just "looks like a plural".
+    expect(reports.some((r) => /context/.test(r.reason))).toBe(true);
+  });
+});
+
+describe('adversary M6: $-named interpolation is not emitted as invalid ICU', () => {
+  it('reports {{$var}} and keeps it literal', () => {
+    const { dict, reports } = convert({ k: 'Hi {{$user}}' });
+    expect(() => parseIcu(dict.k as string)).not.toThrow();
+    expect(
+      reports.some((r) => /variable name ICU cannot express/.test(r.reason))
+    ).toBe(true);
+  });
+});
+
+describe('adversary m6: fraction-digit skeletons are min/max independent', () => {
+  it('maps maximumFractionDigits to an up-to (#) skeleton', () => {
+    const { dict } = convert({ p: '{{v, number(maximumFractionDigits: 2)}}' });
+    expect(dict.p).toBe('{v, number, ::.##}');
+    expect(render(dict.p as string, 'en', { v: 3 })).toBe('3');
+    expect(render(dict.p as string, 'en', { v: 3.5 })).toBe('3.5');
+  });
+});
+
+describe('adversary m7: underscore locale tags still resolve CLDR plurals', () => {
+  it('normalizes pt_BR before Intl.PluralRules', () => {
+    const raw = {
+      items_one: '{{count}} item',
+      items_other: '{{count}} items',
+    };
+    const { byLocale, reports } = convertCatalogs({
+      defaultLocale: 'pt_BR',
+      locales: ['pt_BR'],
+      defaultNS: 'translation',
+      raw: { pt_BR: { translation: raw } },
+      countKeys: new Set(['translation:items']),
+    });
+    expect(byLocale.pt_BR.items).toBe(
+      '{count, plural, one {{count} item} other {{count} items}}'
+    );
+    expect(reports.some((r) => /outside .*CLDR set/.test(r.reason))).toBe(
+      false
+    );
+  });
+});
+
+describe('adversary m8: currency fraction options are mapped or reported', () => {
+  it('maps currency fraction digits into the skeleton', () => {
+    const { dict } = convert({
+      p: '{{v, currency(currency: USD, minimumFractionDigits: 4)}}',
+    });
+    expect(dict.p).toBe('{v, number, ::currency/USD .0000}');
+    expect(() => parseIcu(dict.p as string)).not.toThrow();
+    expect(render(dict.p as string, 'en', { v: 3 })).toBe('$3.0000');
+  });
+});
+
+describe('adversary m9: identical $t reports are de-duplicated', () => {
+  it('reports an unresolvable nested ref once per key, not once per depth', () => {
+    const { reports } = convert({ a: '$t(missing) and $t(missing)' });
+    const dupes = reports.filter((r) => /\$t\(missing\)/.test(r.reason));
+    expect(dupes.length).toBe(1);
   });
 });
 

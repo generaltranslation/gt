@@ -52,6 +52,21 @@ const SCAN_DIRS = [
 
 const DEFAULT_NS = 'translation';
 
+const KEY_SEPARATOR_REFUSAL =
+  'i18next `keySeparator: false` (flat keys) cannot map onto gt-next dotted-path dictionary resolution; migrate those keys manually';
+
+function interpolationRefusal(prefix: unknown, suffix: unknown): string {
+  return `i18next uses a non-default interpolation delimiter (prefix ${JSON.stringify(prefix)}, suffix ${JSON.stringify(suffix)}); gt migrate only understands the default {{ }} delimiters, so migrate manually`;
+}
+
+function isNonDefaultDelimiter(interp: Record<string, unknown>): boolean {
+  const { prefix, suffix } = interp;
+  return (
+    (typeof prefix === 'string' && prefix !== '{{') ||
+    (typeof suffix === 'string' && suffix !== '}}')
+  );
+}
+
 const cache = new Map<string, I18nextConfig>();
 
 /**
@@ -93,7 +108,12 @@ function parseConfig(cwd: string): I18nextConfig {
       continue;
     }
     if (!/i18n|fallbackLng|supportedLngs|defaultNS/i.test(source)) continue;
-    const options = extractOptions(source);
+    const { options, refuseReason } = extractOptions(source);
+    // A refusal signal (keySeparator: false, non-default interpolation) counts
+    // wherever it appears in the file, including a spread base object that
+    // scores lower than the init object, so OR it in regardless of the best
+    // object (the M4 finding).
+    if (refuseReason) config.refuseReason = config.refuseReason ?? refuseReason;
     if (!options) continue;
     config.configFile = config.configFile ?? file;
     applyOptions(config, options);
@@ -149,7 +169,10 @@ type RawOptions = {
  * `i18next.init({...})`, `.use(initReactI18next).init({...})`, and an options
  * object returned from a `getOptions()` helper.
  */
-function extractOptions(source: string): RawOptions | null {
+function extractOptions(source: string): {
+  options: RawOptions | null;
+  refuseReason: string | null;
+} {
   let ast: t.File;
   try {
     ast = parse(source, {
@@ -157,7 +180,7 @@ function extractOptions(source: string): RawOptions | null {
       plugins: ['jsx', 'typescript'],
     });
   } catch {
-    return null;
+    return { options: null, refuseReason: null };
   }
   const recognized = new Set([
     'fallbackLng',
@@ -180,6 +203,7 @@ function extractOptions(source: string): RawOptions | null {
 
   let best: RawOptions | null = null;
   let bestScore = 0;
+  let refuseReason: string | null = null;
   traverse(ast, {
     ObjectExpression(pathNode) {
       let score = 0;
@@ -196,6 +220,21 @@ function extractOptions(source: string): RawOptions | null {
         const value = literalValue(property.value, consts);
         if (recognized.has(name) && value !== undefined) score++;
         (options as Record<string, unknown>)[name] = value;
+        // Refusal scan across EVERY option object (spread bases included), so a
+        // keySeparator: false / non-default delimiter hidden in a lower-scoring
+        // object is still caught.
+        if (name === 'keySeparator' && value === false) {
+          refuseReason = refuseReason ?? KEY_SEPARATOR_REFUSAL;
+        } else if (
+          name === 'interpolation' &&
+          value !== null &&
+          typeof value === 'object' &&
+          isNonDefaultDelimiter(value as Record<string, unknown>)
+        ) {
+          const interp = value as Record<string, unknown>;
+          refuseReason =
+            refuseReason ?? interpolationRefusal(interp.prefix, interp.suffix);
+        }
       }
       if (score > bestScore) {
         bestScore = score;
@@ -203,7 +242,7 @@ function extractOptions(source: string): RawOptions | null {
       }
     },
   });
-  return bestScore > 0 ? best : null;
+  return { options: bestScore > 0 ? best : null, refuseReason };
 }
 
 /** Maps every `const <id> = <literal>` in the file to its resolved value, so
@@ -279,8 +318,7 @@ function applyOptions(config: I18nextConfig, options: RawOptions): void {
 
   if (options.keySeparator === false) {
     config.separators.keySeparator = false;
-    config.refuseReason =
-      'i18next `keySeparator: false` (flat keys) cannot map onto gt-next dotted-path dictionary resolution; migrate those keys manually';
+    config.refuseReason = config.refuseReason ?? KEY_SEPARATOR_REFUSAL;
   } else if (typeof options.keySeparator === 'string') {
     config.separators.keySeparator = options.keySeparator;
   }
@@ -298,15 +336,10 @@ function applyOptions(config: I18nextConfig, options: RawOptions): void {
 
   if (options.interpolation && typeof options.interpolation === 'object') {
     const interp = options.interpolation as Record<string, unknown>;
-    const prefix = interp.prefix;
-    const suffix = interp.suffix;
-    if (
-      (typeof prefix === 'string' && prefix !== '{{') ||
-      (typeof suffix === 'string' && suffix !== '}}')
-    ) {
+    if (isNonDefaultDelimiter(interp)) {
       config.refuseReason =
         config.refuseReason ??
-        `i18next uses a non-default interpolation delimiter (prefix ${JSON.stringify(prefix)}, suffix ${JSON.stringify(suffix)}); gt migrate only understands the default {{ }} delimiters — migrate manually`;
+        interpolationRefusal(interp.prefix, interp.suffix);
     }
   }
 }
