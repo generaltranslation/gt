@@ -1,13 +1,14 @@
 import { nextIntlAdapter } from './nextIntl.js';
+import { reactIntlAdapter } from './reactIntl.js';
 import type { SourceAdapter } from './types.js';
 
 /**
  * The registered source adapters, keyed by SupportedLibraries id. Later stacked
- * PRs add react-i18next and react-intl here; the driver and CLI read the
- * supported set from this registry so the "unsupported source" error and the
- * `--from` help grow automatically.
+ * PRs add react-i18next here; the driver and CLI read the supported set from
+ * this registry so the "unsupported source" error and the `--from` help grow
+ * automatically.
  */
-const ADAPTERS: SourceAdapter[] = [nextIntlAdapter];
+const ADAPTERS: SourceAdapter[] = [nextIntlAdapter, reactIntlAdapter];
 
 /** Looks up the adapter for a library id, or undefined when unsupported. */
 export function getAdapter(id: string): SourceAdapter | undefined {
@@ -19,5 +20,5 @@ export function supportedSourceIds(): string[] {
   return ADAPTERS.map((adapter) => adapter.id);
 }
 
-export { nextIntlAdapter };
+export { nextIntlAdapter, reactIntlAdapter };
 export type { SourceAdapter };

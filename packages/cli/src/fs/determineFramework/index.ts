@@ -38,6 +38,8 @@ export function determineLibrary(): {
         library = Libraries.GT_NODE;
       } else if (dependencies['next-intl']) {
         library = 'next-intl';
+      } else if (dependencies['react-intl']) {
+        library = 'react-intl';
       } else if (dependencies['i18next']) {
         library = 'i18next';
       }

@@ -143,6 +143,7 @@ export type SupportedReactFrameworks = Extract<
 export type SupportedLibraries =
   | InlineLibrary
   | 'next-intl'
+  | 'react-intl'
   | 'react-i18next'
   | 'next-i18next'
   | 'i18next'
