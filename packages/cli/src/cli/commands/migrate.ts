@@ -107,10 +107,16 @@ export async function handleMigrateCommand(
     adapter,
     edits: [],
     todos: [],
+    warnings: [],
     skippedFiles: new Map(),
     stats: {},
     inlineMode: options.inline,
   };
+  // Advisory notes and report TODOs the adapter raised during catalog discovery
+  // (an assumed default locale, a synthesized/augmented source catalog,
+  // conflicting defaultMessage variants) are surfaced through the report.
+  if (catalogs.warnings) ctx.warnings!.push(...catalogs.warnings);
+  if (catalogs.reportTodos) ctx.todos.push(...catalogs.reportTodos);
 
   // Files owned by the config lane (pass 3 / emitGtFiles) must not go
   // through the generic source pass — they'd register as skips. The candidate

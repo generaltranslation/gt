@@ -30,12 +30,32 @@ export type MessageCatalogs = {
   dir: string;
   /**
    * Catalog files the adapter synthesized during discovery and needs written to
-   * disk (never a mutation of an existing file — new files only). react-intl
+   * disk (never a mutation of an existing file, new files only). react-intl
    * uses this to seed a missing default-locale catalog from harvested literal
-   * `defaultMessage`s (the id-problem case b2); emitGtFiles flushes them through
-   * the normal edit pipeline so they respect --dry-run.
+   * `defaultMessage`s (the id-problem case b2), and to re-nest dotted flat keys
+   * (`{"a.b": …}` -> `{a:{b:…}}`) into new files so gt-next's nested-path
+   * resolver can find them; emitGtFiles flushes them through the normal edit
+   * pipeline so they respect --dry-run.
    */
   filesToEmit?: FileEdit[];
+  /**
+   * Ids present in the source catalog both as a leaf and as a namespace prefix
+   * (e.g. both `"a"` and `"a.b"`), which cannot be represented in gt-next's
+   * nested dictionary. The transform skips+reports any file referencing one.
+   */
+  flatKeyCollisions?: string[];
+  /**
+   * Top-level advisory notes raised during catalog discovery (e.g. an assumed
+   * default locale). The driver merges these into `ctx.warnings` so the report
+   * surfaces them once.
+   */
+  warnings?: string[];
+  /**
+   * Report TODOs raised during discovery (e.g. a synthesized source entry, or
+   * conflicting `defaultMessage`s for one id). The driver merges these into
+   * `ctx.todos`.
+   */
+  reportTodos?: TodoEntry[];
 };
 
 export type RoutingInfo = {
@@ -53,6 +73,8 @@ export type MigrationContext = {
   routing: RoutingInfo;
   edits: FileEdit[];
   todos: TodoEntry[];
+  /** top-level advisory notes surfaced in the report's Warnings section. */
+  warnings?: string[];
   /** file path -> reasons the file was left untouched */
   skippedFiles: Map<string, string[]>;
   stats: Record<string, number>;

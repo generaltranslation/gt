@@ -182,6 +182,23 @@ export function transformReactIntlSource(
   // bindings that hold an intl object (useIntl() client, createIntl() server).
   const intlBindings = new Map<string, 'client' | 'server'>();
   const intlBindingFns = new Map<string, t.Function | null>();
+  // Scope-aware matching: the exact binding identifier node -> kind. A name
+  // match alone corrupts an unrelated `intl` prop/param in another scope (a
+  // react-intl IntlShape), so `X.formatMessage` calls resolve through
+  // path.scope.getBinding and are rewritten only when the binding is one of
+  // these captured useIntl/createIntl declarators.
+  const intlBindingIdNodes = new Map<t.Node, 'client' | 'server'>();
+  // Destructured `const { formatMessage } = useIntl()` locals (binding id node),
+  // rewritten to `const <local> = useTranslations()` with bare `<local>(id)`
+  // calls.
+  const formatMessageBindingIdNodes = new Set<t.Node>();
+  const useIntlDestructureDecls: {
+    path: NodePath<t.VariableDeclarator>;
+    localName: string;
+  }[] = [];
+  // Set when a descriptor/element carries a defaultMessage but no literal id
+  // (the FormatJS auto-generated-id workflow); surfaces one top-level warning.
+  let autoIdSeen = false;
   // client `const intl = useIntl()` declarators, rewritten to useTranslations().
   const useIntlDecls: NodePath<t.VariableDeclarator>[] = [];
   const createIntlDecls: {
@@ -200,13 +217,23 @@ export function transformReactIntlSource(
         return;
       }
       const callee = init.callee.name;
-      if (useIntlLocals.has(callee) && t.isIdentifier(id)) {
-        intlBindings.set(id.name, 'client');
-        intlBindingFns.set(id.name, enclosingFunction(path));
-        useIntlDecls.push(path);
+      if (useIntlLocals.has(callee)) {
+        if (t.isIdentifier(id)) {
+          intlBindings.set(id.name, 'client');
+          intlBindingFns.set(id.name, enclosingFunction(path));
+          intlBindingIdNodes.set(id, 'client');
+          useIntlDecls.push(path);
+        } else if (t.isObjectPattern(id)) {
+          planUseIntlDestructure(path, id);
+        } else {
+          skipReasons.push(
+            'const … = useIntl() uses an unsupported binding form (array/other pattern) — convert manually'
+          );
+        }
       } else if (createIntlLocals.has(callee) && t.isIdentifier(id)) {
         intlBindings.set(id.name, 'server');
         intlBindingFns.set(id.name, enclosingFunction(path));
+        intlBindingIdNodes.set(id, 'server');
         createIntlDecls.push({ declarator: path, fn: enclosingFunction(path) });
       } else if (createIntlCacheLocals.has(callee)) {
         cacheDecls.push(path);
@@ -234,6 +261,15 @@ export function transformReactIntlSource(
   // untouched; skipped files still need the react-intl context.
   const providerUnwraps = retainProvider ? [] : providerElements;
 
+  // Unwrapping a provider drops every attribute. locale/defaultLocale/messages
+  // are subsumed by gt-next's GTProvider, but timeZone/onError/textComponent/
+  // formats/defaultRichTextElements (or any spread) are load-bearing config with
+  // no equivalent; silently dropping them changes behavior. Skip+report the
+  // whole file so they migrate by hand (matching the README's OUT list).
+  for (const providerPath of providerUnwraps) {
+    skipReasons.push(...providerDropReasons(providerPath.node.openingElement));
+  }
+
   // ---- planned conversions -------------------------------------------------
 
   const formatMessageCalls: {
@@ -260,48 +296,52 @@ export function transformReactIntlSource(
   traverse(ast, {
     CallExpression(path) {
       const callee = path.node.callee;
+      // member: `X.formatMessage(...)` where X is a captured useIntl/createIntl
+      // binding, resolved through scope so an unrelated `intl` prop/param in
+      // another scope is never rewritten (which would corrupt it).
       if (
-        !t.isMemberExpression(callee) ||
-        callee.computed ||
-        !t.isIdentifier(callee.object) ||
-        !t.isIdentifier(callee.property)
+        t.isMemberExpression(callee) &&
+        !callee.computed &&
+        t.isIdentifier(callee.object) &&
+        t.isIdentifier(callee.property)
       ) {
-        return;
-      }
-      const objectName = callee.object.name;
-      const kind = intlBindings.get(objectName);
-      if (!kind) return;
-      const method = callee.property.name;
-      if (method !== 'formatMessage') {
-        skipReasons.push(
-          `${objectName}.${method}() has no bare gt-next hook — use the matching gt-next component in JSX, or convert manually`
+        const objectName = callee.object.name;
+        if (!intlBindings.has(objectName)) return;
+        const binding = path.scope.getBinding(objectName);
+        if (!binding) return;
+        const kind = intlBindingIdNodes.get(binding.identifier);
+        if (!kind) return; // a shadow, a prop, or an unrelated same-named object
+        const method = callee.property.name;
+        if (method !== 'formatMessage') {
+          skipReasons.push(
+            `${objectName}.${method}() has no bare gt-next hook — use the matching gt-next component in JSX, or convert manually`
+          );
+          return;
+        }
+        planFormatMessageCall(
+          path,
+          objectName,
+          path.node.arguments[0],
+          path.node.arguments[1],
+          kind
         );
         return;
       }
-      const [descriptorArg, valuesArg] = path.node.arguments;
-      const id = resolveDescriptorId(descriptorArg, descriptorTables);
-      if (id === null) {
-        skipReasons.push(
-          `${objectName}.formatMessage(...) uses a dynamic descriptor/id — it cannot map to a dictionary key (and unknown keys throw in gt-next); convert manually`
+      // bare: `formatMessage(...)` from a destructured `const { formatMessage }
+      // = useIntl()` (rewritten below to `const <local> = useTranslations()`).
+      if (t.isIdentifier(callee)) {
+        const binding = path.scope.getBinding(callee.name);
+        if (!binding || !formatMessageBindingIdNodes.has(binding.identifier)) {
+          return;
+        }
+        planFormatMessageCall(
+          path,
+          callee.name,
+          path.node.arguments[0],
+          path.node.arguments[1],
+          'client'
         );
-        return;
       }
-      const message = catalogMessage(id, ctx);
-      if (message === null) {
-        skipReasons.push(
-          `${objectName}.formatMessage('${id}') has no source entry in the '${ctx.catalogs.defaultLocale}' catalog — gt-next's dictionary t() throws on unknown keys, so add '${id}' to it (or give the call a literal defaultMessage so a missing default-locale catalog can be synthesized) or convert manually`
-        );
-        return;
-      }
-      if (isRichOrHasFunctionValues(message, valuesArg)) {
-        skipReasons.push(
-          `${objectName}.formatMessage('${id}') has rich-text tags/chunk functions gt-next's dictionary t() cannot render (t returns a string) — re-run with --inline to convert to inline <T>, or convert manually`
-        );
-        return;
-      }
-      const values = valuesArg && t.isExpression(valuesArg) ? valuesArg : null;
-      formatMessageCalls.push({ call: path, binding: objectName, id, values });
-      if (kind === 'server') needsServerT = true;
     },
     JSXElement(path) {
       const name = path.node.openingElement.name;
@@ -320,6 +360,97 @@ export function transformReactIntlSource(
     },
   });
 
+  /**
+   * Handles `const { formatMessage } = useIntl()` (optionally aliased). The sole
+   * supported destructured member is `formatMessage`; anything else has no bare
+   * gt-next hook and skips the file. Registers the local so its bare calls are
+   * rewritten and any sibling <FormattedMessage> reuses it.
+   */
+  function planUseIntlDestructure(
+    path: NodePath<t.VariableDeclarator>,
+    pattern: t.ObjectPattern
+  ): void {
+    let formatMessageLocal: t.Identifier | null = null;
+    let ok = true;
+    for (const property of pattern.properties) {
+      if (
+        !t.isObjectProperty(property) ||
+        property.computed ||
+        !t.isIdentifier(property.key) ||
+        !t.isIdentifier(property.value)
+      ) {
+        skipReasons.push(
+          'const { … } = useIntl() uses an unsupported destructuring form (rest/default/computed member) — convert manually'
+        );
+        ok = false;
+        continue;
+      }
+      if (property.key.name === 'formatMessage') {
+        formatMessageLocal = property.value;
+      } else {
+        skipReasons.push(
+          `const { ${property.key.name} } = useIntl() destructures '${property.key.name}', which has no bare gt-next hook — use the matching gt-next component/hook or convert manually`
+        );
+        ok = false;
+      }
+    }
+    if (!ok || !formatMessageLocal) return;
+    formatMessageBindingIdNodes.add(formatMessageLocal);
+    useIntlDestructureDecls.push({ path, localName: formatMessageLocal.name });
+    // The local becomes `useTranslations()`, so a sibling <FormattedMessage> can
+    // reuse it as its translation function.
+    intlBindings.set(formatMessageLocal.name, 'client');
+    intlBindingFns.set(formatMessageLocal.name, enclosingFunction(path));
+  }
+
+  /**
+   * Plans one formatMessage call (member or bare) into `formatMessageCalls`, or
+   * pushes a skip reason (dynamic/auto-generated id, missing source entry,
+   * flat/nested key collision, or rich content the dictionary t() cannot render).
+   */
+  function planFormatMessageCall(
+    path: NodePath<t.CallExpression>,
+    binding: string,
+    descriptorArg: t.Node | undefined,
+    valuesArg: t.Node | undefined,
+    kind: 'client' | 'server'
+  ): void {
+    const id = resolveDescriptorId(descriptorArg, descriptorTables);
+    if (id === null) {
+      if (isAutoIdDescriptor(descriptorArg)) {
+        autoIdSeen = true;
+        skipReasons.push(
+          `${binding}.formatMessage(...) has no literal id: FormatJS auto-generates ids at build time (overrideIdFn/idInterpolationPattern); gt-next needs a literal id — add an explicit id or convert manually`
+        );
+      } else {
+        skipReasons.push(
+          `${binding}.formatMessage(...) uses a dynamic descriptor/id — it cannot map to a dictionary key (and unknown keys throw in gt-next); convert manually`
+        );
+      }
+      return;
+    }
+    if (isCollidingId(id, ctx)) {
+      skipReasons.push(collisionSkipReason(id));
+      return;
+    }
+    const message = catalogMessage(id, ctx);
+    if (message === null) {
+      skipReasons.push(
+        `${binding}.formatMessage('${id}') has no source entry in the '${ctx.catalogs.defaultLocale}' catalog — gt-next's dictionary t() throws on unknown keys, so add '${id}' to it (or give the call a literal defaultMessage so a missing default-locale catalog can be synthesized) or convert manually`
+      );
+      return;
+    }
+    if (isRichOrHasFunctionValues(message, valuesArg)) {
+      skipReasons.push(
+        `${binding}.formatMessage('${id}') has rich-text tags/chunk functions/element values gt-next's dictionary t() cannot render (t returns a string) — re-run with --inline to convert to inline <T>, or convert manually`
+      );
+      return;
+    }
+    const values = valuesArg && t.isExpression(valuesArg) ? valuesArg : null;
+    formatMessageCalls.push({ call: path, binding, id, values });
+    if (kind === 'server') needsServerT = true;
+  }
+
   function planFormattedMessage(
     path: NodePath<t.JSXElement>,
     _elementName: string
@@ -328,9 +459,17 @@ export function transformReactIntlSource(
     const idAttr = jsxAttr(opening, 'id');
     const id = idAttr ? stringAttrValue(idAttr) : null;
     if (id === null) {
-      skipReasons.push(
-        `<FormattedMessage> with a dynamic or missing id cannot map to a dictionary key — convert manually`
-      );
+      const dmAttr = jsxAttr(opening, 'defaultMessage');
+      if (dmAttr && stringAttrValue(dmAttr) !== null) {
+        autoIdSeen = true;
+        skipReasons.push(
+          '<FormattedMessage> has no literal id: FormatJS auto-generates ids at build time (overrideIdFn/idInterpolationPattern); gt-next needs a literal id — add an explicit id or convert manually'
+        );
+      } else {
+        skipReasons.push(
+          '<FormattedMessage> with a dynamic or missing id cannot map to a dictionary key — convert manually'
+        );
+      }
       return;
     }
     // render-prop children have no gt-next equivalent.
@@ -344,6 +483,10 @@ export function transformReactIntlSource(
       skipReasons.push(
         `<FormattedMessage>{(chunks) => …}</FormattedMessage> render-prop children have no gt-next equivalent — convert manually`
       );
+      return;
+    }
+    if (isCollidingId(id, ctx)) {
+      skipReasons.push(collisionSkipReason(id));
       return;
     }
     const message = catalogMessage(id, ctx);
@@ -386,6 +529,13 @@ export function transformReactIntlSource(
 
     const fn = enclosingFunction(path);
     formattedMessages.push({ element: path, id, values: valuesExpr, fn });
+  }
+
+  // One top-level warning for the FormatJS auto-generated-id workflow, naming
+  // the real cause (build-time hashed ids) instead of the misleading per-site
+  // "dynamic id" noise. Deduped in the report.
+  if (autoIdSeen) {
+    (ctx.warnings ??= []).push(AUTO_ID_WARNING);
   }
 
   const uniqueSkips = [...new Set(skipReasons)];
@@ -448,6 +598,14 @@ export function transformReactIntlSource(
     decl.node.init = t.callExpression(t.identifier('useTranslations'), []);
     needsClientT = true;
   }
+  // 2b. destructured `const { formatMessage } = useIntl()` ->
+  //     `const <local> = useTranslations()` (its bare calls are rewritten in 3,
+  //     since `formatMessage` was registered as a binding).
+  for (const { path, localName } of useIntlDestructureDecls) {
+    path.node.id = t.identifier(localName);
+    path.node.init = t.callExpression(t.identifier('useTranslations'), []);
+    needsClientT = true;
+  }
 
   // 3. intl.formatMessage({ id }, values) -> intl(id, values).
   for (const { call, binding, id, values } of formatMessageCalls) {
@@ -469,11 +627,17 @@ export function transformReactIntlSource(
     if (bindingName.injected) needsClientT = true;
     const args: t.Expression[] = [t.stringLiteral(id)];
     if (values) args.push(values);
-    element.replaceWith(
-      t.jsxExpressionContainer(
-        t.callExpression(t.identifier(bindingName.name), args)
-      )
-    );
+    const call = t.callExpression(t.identifier(bindingName.name), args);
+    // A JSXExpressionContainer is only valid as a JSX child/attribute. When the
+    // element sits in an expression position (return arg, arrow body, const
+    // init, object value, ternary branch, array element), replace it with the
+    // bare call instead (mirrors the next-intl rich guard in transformSource).
+    const parent = element.parent;
+    if (t.isJSXElement(parent) || t.isJSXFragment(parent)) {
+      element.replaceWith(t.jsxExpressionContainer(call));
+    } else {
+      element.replaceWith(call);
+    }
   }
   // Insert the injected `const $gtT = useTranslations()` at the top of each
   // function that needed one.
@@ -533,6 +697,35 @@ export function transformReactIntlSource(
 
   if (!hasWork) {
     return none;
+  }
+
+  // General safety net: never strip a react-intl import a remaining reference
+  // still needs. If any imported local is still referenced after all planned
+  // conversions ran, the plan did not consume it (an unsupported usage form);
+  // stripping the import would emit broken code, so skip the whole file. The
+  // retained provider (partial migration) is the one intentional exception.
+  {
+    const importLocals = new Set(symbols.map((symbol) => symbol.local));
+    const retainedLocals = retainProvider ? providerLocals : new Set<string>();
+    let survivor: string | null = null;
+    traverse(ast, {
+      ReferencedIdentifier(refPath) {
+        const refName = refPath.node.name;
+        if (!importLocals.has(refName) || retainedLocals.has(refName)) return;
+        survivor = refName;
+        refPath.stop();
+      },
+    });
+    if (survivor !== null) {
+      return {
+        code: null,
+        todos: [],
+        skipReasons: [
+          `react-intl's '${survivor}' is still referenced after conversion (an unsupported usage form) — stripping its import would break the file, so it is left untouched; convert manually`,
+        ],
+        usedRich: false,
+      };
+    }
   }
 
   // 9. import surgery.
@@ -663,35 +856,117 @@ function resolveDescriptorId(
 }
 
 /** The source message for an id from the default-locale catalog, or null when
- *  absent (in case b2 this catalog already holds the harvested defaultMessages,
- *  so a null result means the id has no source anywhere). */
+ *  absent. Walks the id as a nested dotted path exactly as gt-next's runtime
+ *  resolver does (`id.split('.')`), so this migrate-time presence check and the
+ *  runtime lookup can never disagree; the catalog is re-nested during discovery
+ *  precisely so a dotted id like 'Home.title' resolves here and at runtime. */
 function catalogMessage(id: string, ctx: MigrationContext): string | null {
   const catalog = ctx.catalogs.byLocale[ctx.catalogs.defaultLocale] ?? {};
-  const value = (catalog as Record<string, unknown>)[id];
-  return typeof value === 'string' ? value : null;
+  let current: unknown = catalog;
+  for (const segment of id.split('.')) {
+    if (
+      current === null ||
+      typeof current !== 'object' ||
+      Array.isArray(current) ||
+      !Object.prototype.hasOwnProperty.call(current, segment)
+    ) {
+      return null;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return typeof current === 'string' ? current : null;
 }
 
-/** True when a formatMessage message contains rich-text tags or its values
- *  include a chunk function — either way the dictionary t() (string result)
- *  cannot render it. */
+/** True when an id was flagged during discovery as colliding (present in the
+ *  source catalog both as a leaf and as a namespace prefix, e.g. 'a' and 'a.b'),
+ *  which gt-next's nested dictionary cannot represent. */
+function isCollidingId(id: string, ctx: MigrationContext): boolean {
+  return ctx.catalogs.flatKeyCollisions?.includes(id) ?? false;
+}
+
+function collisionSkipReason(id: string): string {
+  return `'${id}' collides with another catalog key (present both as a value and as a namespace prefix, e.g. 'a' and 'a.b'), which gt-next's nested dictionary cannot represent — rename one of them and re-run gt migrate, or convert manually`;
+}
+
+/** True for the FormatJS auto-generated-id shape: a descriptor with a literal
+ *  `defaultMessage` but no literal `id` (ids are hashed at build time), so there
+ *  is no dictionary key to resolve against. */
+function isAutoIdDescriptor(node: t.Node | undefined): boolean {
+  if (!node) return false;
+  let object: t.ObjectExpression | null = null;
+  if (t.isObjectExpression(node)) {
+    object = node;
+  } else if (
+    t.isCallExpression(node) &&
+    t.isIdentifier(node.callee, { name: 'defineMessage' }) &&
+    t.isObjectExpression(node.arguments[0])
+  ) {
+    object = node.arguments[0];
+  }
+  if (!object) return false;
+  const idProp = getObjectProp(object, 'id');
+  const dmProp = getObjectProp(object, 'defaultMessage');
+  const hasLiteralId = idProp !== null && t.isStringLiteral(idProp);
+  const hasDefaultMessage = dmProp !== null && t.isStringLiteral(dmProp);
+  return !hasLiteralId && hasDefaultMessage;
+}
+
+const AUTO_ID_WARNING =
+  'This project uses FormatJS auto-generated ids (a `defaultMessage` with no ' +
+  'literal `id`; ids are hashed at build time via overrideIdFn/' +
+  'idInterpolationPattern). gt-next needs a literal id per message, so every ' +
+  'file that renders text this way is skipped and NOT converted in v1. To ' +
+  'migrate them, add explicit `id`s to your messages (or convert those files by ' +
+  'hand), then re-run gt migrate.';
+
+/** Skip reasons for the attributes an <IntlProvider> carries beyond
+ *  locale/defaultLocale/messages, each of which would be silently dropped by the
+ *  unwrap. timeZone gets its own message because it changes every date/time
+ *  render. Returns [] when only the subsumed props are present. */
+function providerDropReasons(opening: t.JSXOpeningElement): string[] {
+  const reasons: string[] = [];
+  for (const attr of opening.attributes) {
+    if (t.isJSXSpreadAttribute(attr)) {
+      reasons.push(
+        '<IntlProvider> uses spread props ({...props}) that cannot be inspected — it may carry timeZone/onError/textComponent/formats that gt-next handles differently; convert this provider manually'
+      );
+      continue;
+    }
+    if (!t.isJSXAttribute(attr) || !t.isJSXIdentifier(attr.name)) continue;
+    const name = attr.name.name;
+    if (name === 'locale' || name === 'defaultLocale' || name === 'messages') {
+      continue;
+    }
+    if (name === 'timeZone') {
+      reasons.push(
+        '<IntlProvider> sets `timeZone` — gt-next resolves timezone differently, and dropping it changes every <FormattedDate>/<FormattedTime> render (server/visitor zone instead of the pinned one). Set the timezone in your gt config and verify date output, then remove it and re-run gt migrate; converting this file now would drop it silently'
+      );
+      continue;
+    }
+    reasons.push(
+      `<IntlProvider> sets \`${name}\`, which has no gt-next <GTProvider> equivalent and would be dropped silently (onError routes format/missing-key errors to your telemetry; textComponent changes the DOM wrapper; formats/defaultRichTextElements change formatting/rich rendering) — convert this provider manually`
+    );
+  }
+  return reasons;
+}
+
+/** True when a formatMessage message contains rich-text tags, or its values
+ *  include a chunk function or a JSX element/fragment; either way the
+ *  dictionary t() (string result) cannot render it. */
 function isRichOrHasFunctionValues(
   message: string | null,
   valuesArg: t.Node | undefined
 ): boolean {
   if (message !== null && classifyMessage(message).kind === 'tags') return true;
   if (valuesArg && t.isObjectExpression(valuesArg)) {
-    return valuesArg.properties.some(
-      (property) =>
-        t.isObjectProperty(property) &&
-        (t.isArrowFunctionExpression(property.value) ||
-          t.isFunctionExpression(property.value))
-    );
+    return valuesArg.properties.some(isRichValueProperty);
   }
   return false;
 }
 
-/** 'rich' when the message has tags (needs component rendering), 'plain'
- *  otherwise. Unknown messages are treated as plain (dictionary path). */
+/** 'rich' when the message has tags (needs component rendering) or a value is a
+ *  chunk function / JSX element (a React node the string t() cannot return),
+ *  'plain' otherwise. Unknown messages are treated as plain (dictionary path). */
 function analyzeRich(
   message: string | null,
   valuesExpr: t.Expression | null
@@ -700,15 +975,22 @@ function analyzeRich(
     return 'rich';
   }
   if (valuesExpr && t.isObjectExpression(valuesExpr)) {
-    const hasFn = valuesExpr.properties.some(
-      (property) =>
-        t.isObjectProperty(property) &&
-        (t.isArrowFunctionExpression(property.value) ||
-          t.isFunctionExpression(property.value))
-    );
-    if (hasFn) return 'rich';
+    if (valuesExpr.properties.some(isRichValueProperty)) return 'rich';
   }
   return 'plain';
+}
+
+/** A `values` entry whose value is a chunk wrapper function or a JSX
+ *  element/fragment (both produce React nodes at runtime), so the message is
+ *  rich (the dictionary path skips; --inline converts or safely skips). */
+function isRichValueProperty(property: t.ObjectProperty | t.Node): boolean {
+  return (
+    t.isObjectProperty(property) &&
+    (t.isArrowFunctionExpression(property.value) ||
+      t.isFunctionExpression(property.value) ||
+      t.isJSXElement(property.value) ||
+      t.isJSXFragment(property.value))
+  );
 }
 
 /** Builds a trivial-chunk rich conversion for a <FormattedMessage> (mirrors
@@ -741,6 +1023,13 @@ function buildRichConversion(
         const chunk = trivialChunkElement(property.value);
         if (!chunk) return manual;
         chunkMap.set(property.key.name, chunk);
+      } else if (
+        t.isJSXElement(property.value) ||
+        t.isJSXFragment(property.value)
+      ) {
+        // An element-valued argument placeholder (not a tag wrapper) has no
+        // faithful inline <T> mapping in v1; skip rather than mis-render it.
+        return manual;
       }
     }
   }

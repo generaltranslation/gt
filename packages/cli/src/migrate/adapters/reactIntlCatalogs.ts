@@ -4,7 +4,12 @@ import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
 import { matchFiles } from '../../fs/matchFiles.js';
-import type { FileEdit, MessageCatalogs, RoutingInfo } from '../types.js';
+import type {
+  FileEdit,
+  MessageCatalogs,
+  RoutingInfo,
+  TodoEntry,
+} from '../types.js';
 
 const traverse = traverseModule.default || traverseModule;
 
@@ -26,13 +31,21 @@ const CATALOG_DIRS = [
  * compiled/flat shape (`{ id: 'ICU' }`) and the extracted/authoring shape
  * (`{ id: { defaultMessage, description } }`, read via `.defaultMessage`).
  * AST-compiled catalogs (`compile --ast`, arrays of MessageFormatElement) throw
- * a clear error — gt wants ICU source strings.
+ * a clear error (gt wants ICU source strings).
  *
- * The id-problem case b2 (no default-locale catalog, English served inline from
- * `defaultMessage`) is handled here: the missing default catalog is synthesized
- * from literal `defaultMessage`s harvested across the source, and queued in
- * `filesToEmit` so it is written to disk through the normal edit pipeline (never
- * mutating an existing file).
+ * react-intl catalogs are flat (`{ "Home.title": … }`), but gt-next's dictionary
+ * resolver walks ids as nested dotted paths (`id.split('.')`), so any dotted key
+ * would throw at runtime if reused verbatim. Dotted keys are therefore re-nested
+ * (`{"a.b":x}` -> `{a:{b:x}}`) into NEW files (originals are never mutated) and
+ * loadDictionary is pointed at them via `dir`. Keys that collide as both a leaf
+ * and a namespace (`"a"` and `"a.b"` both present) cannot be nested and are
+ * reported so the transform skips files that reference them.
+ *
+ * The id-problem cases are handled here too: when the default-locale catalog is
+ * absent (case b2) it is synthesized from literal `defaultMessage`s harvested
+ * across the source; when it is present but missing some ids (a partial
+ * extraction), those ids are synthesized per-id from their inline
+ * `defaultMessage`. Both write NEW files only.
  */
 export async function discoverReactIntlCatalogs(
   cwd: string,
@@ -54,23 +67,35 @@ export async function discoverReactIntlCatalogs(
     ? stems.filter((stem) => routing.locales!.includes(stem))
     : stems;
 
-  const byLocale: Record<string, Record<string, unknown>> = {};
+  // Flat, per the on-disk react-intl shape. Re-nested below before returning.
+  const flatByLocale: Record<string, Record<string, unknown>> = {};
   for (const locale of locales) {
     const file = path.join(dir, `${locale}.json`);
-    byLocale[locale] = normalizeCatalog(file);
+    flatByLocale[locale] = normalizeCatalog(file);
   }
 
-  const defaultLocale = determineDefaultLocale(cwd, routing, locales);
-  if (!defaultLocale) return null;
+  const resolved = determineDefaultLocale(cwd, routing, locales);
+  if (!resolved) return null;
+  const defaultLocale = resolved.locale;
 
-  const filesToEmit: FileEdit[] = [];
+  const warnings: string[] = [];
+  const reportTodos: TodoEntry[] = [];
+  if (resolved.assumption) warnings.push(resolved.assumption);
+
+  // Harvest inline defaultMessages across the whole project (deterministic file
+  // order, with conflict detection); used to synthesize or fill the default
+  // catalog. Cheap when nothing is missing (the results are simply unused).
+  const { harvested, conflicts } = harvestDefaultMessages(cwd);
+
   const finalLocales = [...locales];
+  const synthesizedIds: string[] = [];
+  let b2Synthesized = false;
+  let defaultAugmented = false;
 
-  if (!(defaultLocale in byLocale)) {
-    // Case b2: the source (default-locale) catalog is absent. Seed it from
-    // literal defaultMessages harvested across the project so gt's dictionary
-    // path has a source entry per id (else t() throws at runtime).
-    const harvested = harvestDefaultMessages(cwd);
+  if (!(defaultLocale in flatByLocale)) {
+    // Case b2: the source (default-locale) catalog is absent. Seed it entirely
+    // from harvested defaultMessages so gt's dictionary has a source entry per
+    // id (else t() throws at runtime).
     if (Object.keys(harvested).length === 0) {
       throw new Error(
         `No '${defaultLocale}' catalog was found in ${path.relative(cwd, dir) || '.'}/ and no literal ` +
@@ -80,12 +105,98 @@ export async function discoverReactIntlCatalogs(
           '<FormattedMessage> a literal defaultMessage, then re-run gt migrate.'
       );
     }
-    byLocale[defaultLocale] = harvested;
+    flatByLocale[defaultLocale] = { ...harvested };
     finalLocales.push(defaultLocale);
+    b2Synthesized = true;
+    synthesizedIds.push(...Object.keys(harvested));
+  } else {
+    // Case b1-partial (M4): the default catalog exists but may be missing ids
+    // that are only present as inline defaultMessages. Fill each missing id
+    // per-id from the harvest instead of skipping the whole file downstream.
+    const def = flatByLocale[defaultLocale];
+    for (const [id, message] of Object.entries(harvested)) {
+      if (!(id in def)) {
+        def[id] = message;
+        defaultAugmented = true;
+        synthesizedIds.push(id);
+      }
+    }
+  }
+
+  // Re-nest dotted keys per locale; collect flat/nested collisions.
+  const byLocale: Record<string, Record<string, unknown>> = {};
+  const collisions = new Set<string>();
+  let anyReNested = false;
+  for (const locale of Object.keys(flatByLocale)) {
+    const unflattened = unflattenCatalog(flatByLocale[locale]);
+    byLocale[locale] = unflattened.nested;
+    unflattened.collisions.forEach((id) => collisions.add(id));
+    if (unflattened.reNested) anyReNested = true;
+  }
+
+  // Report synthesized entries and conflicting variants (only for ids we
+  // actually synthesized; an authoritative catalog wins, so its inline
+  // defaultMessage conflicts are not the migration's concern).
+  const synthesizedSet = new Set(synthesizedIds);
+  if (b2Synthesized) {
+    reportTodos.push({
+      file: path.join(dir, `${defaultLocale}.json`),
+      reason:
+        `no ${defaultLocale}.json existed; synthesized the source catalog ` +
+        `(${synthesizedIds.length} entr${synthesizedIds.length === 1 ? 'y' : 'ies'}) from inline ` +
+        'defaultMessages so gt-next has a source entry per id — verify the text',
+    });
+  } else if (defaultAugmented) {
+    reportTodos.push({
+      file: path.join(dir, `${defaultLocale}.json`),
+      reason:
+        `the ${defaultLocale} catalog was missing ${synthesizedIds.length} id(s) used in code ` +
+        `(${synthesizedIds.slice(0, 10).join(', ')}${synthesizedIds.length > 10 ? ', …' : ''}); ` +
+        'synthesized them from inline defaultMessages into a new file (the ' +
+        'original catalog is left untouched) — verify the text',
+    });
+  }
+  for (const [id, variants] of conflicts) {
+    if (!synthesizedSet.has(id)) continue;
+    reportTodos.push({
+      reason:
+        `'${id}' has multiple inline defaultMessage variants across the source ` +
+        `[${[...variants].map((v) => JSON.stringify(v)).join(' | ')}]; ` +
+        `used ${JSON.stringify(harvested[id])} (first by file order) in the ` +
+        'synthesized catalog — reconcile them so the source text is unambiguous',
+      file: path.join(dir, `${defaultLocale}.json`),
+    });
+  }
+  if (collisions.size > 0) {
+    warnings.push(
+      'These catalog keys appear both as a value and as a namespace prefix ' +
+        "(e.g. 'a' and 'a.b'), which gt-next's nested dictionary cannot " +
+        `represent — files using them are skipped, so rename one: ${[...collisions].sort().join(', ')}`
+    );
+  }
+
+  // Emit new catalog files only where required, and repoint `dir` at them.
+  // Reuse the originals verbatim in place when nothing changed.
+  const filesToEmit: FileEdit[] = [];
+  let catalogDir = dir;
+  if (anyReNested || defaultAugmented) {
+    // Re-nesting or augmenting an existing catalog would mutate originals, so
+    // write every locale to a sibling gt-owned directory and serve from there.
+    catalogDir = path.join(path.dirname(dir), `${path.basename(dir)}-gt`);
+    for (const locale of finalLocales) {
+      filesToEmit.push({
+        path: path.join(catalogDir, `${locale}.json`),
+        kind: 'write',
+        content: JSON.stringify(byLocale[locale] ?? {}, null, 2) + '\n',
+      });
+    }
+  } else if (b2Synthesized) {
+    // No dotted keys and the default catalog file did not exist: writing it into
+    // the original directory is a new file, not a mutation.
     filesToEmit.push({
       path: path.join(dir, `${defaultLocale}.json`),
       kind: 'write',
-      content: JSON.stringify(harvested, null, 2) + '\n',
+      content: JSON.stringify(byLocale[defaultLocale] ?? {}, null, 2) + '\n',
     });
   }
 
@@ -93,9 +204,78 @@ export async function discoverReactIntlCatalogs(
     defaultLocale,
     locales: finalLocales,
     byLocale,
-    dir,
+    dir: catalogDir,
     ...(filesToEmit.length > 0 ? { filesToEmit } : {}),
+    ...(collisions.size > 0 ? { flatKeyCollisions: [...collisions] } : {}),
+    ...(warnings.length > 0 ? { warnings } : {}),
+    ...(reportTodos.length > 0 ? { reportTodos } : {}),
   };
+}
+
+/**
+ * Re-nests a flat catalog's dotted keys (`{"a.b": x}` -> `{a: {b: x}}`) so
+ * gt-next's dotted-path resolver can find them. Keys that collide as both a leaf
+ * and a namespace prefix (`"a"` and `"a.b"` both present) cannot be represented
+ * and are dropped from the nested result and returned in `collisions`.
+ */
+function unflattenCatalog(flat: Record<string, unknown>): {
+  nested: Record<string, unknown>;
+  collisions: Set<string>;
+  reNested: boolean;
+} {
+  const keys = Object.keys(flat);
+  const collisions = detectFlatKeyCollisions(keys);
+  const nested: Record<string, unknown> = {};
+  let reNested = false;
+  for (const key of keys) {
+    if (collisions.has(key)) continue;
+    if (!key.includes('.')) {
+      nested[key] = flat[key];
+      continue;
+    }
+    reNested = true;
+    const segments = key.split('.');
+    let current = nested;
+    for (let i = 0; i < segments.length - 1; i++) {
+      const segment = segments[i];
+      const next = current[segment];
+      if (next === undefined || next === null || typeof next !== 'object') {
+        current[segment] = {};
+      }
+      current = current[segment] as Record<string, unknown>;
+    }
+    current[segments[segments.length - 1]] = flat[key];
+  }
+  return { nested, collisions, reNested };
+}
+
+/**
+ * Ids that collide because one is a strict dotted-segment prefix of another
+ * (`"a"` vs `"a.b"`, or `"a.b"` vs `"a.b.c"`). Both sides of every such pair are
+ * returned. Sibling keys under a shared prefix (`"a.b"` vs `"a.c"`) do not
+ * collide; they nest cleanly under `a`.
+ */
+function detectFlatKeyCollisions(keys: string[]): Set<string> {
+  const collided = new Set<string>();
+  const split = keys.map((key) => ({ key, segments: key.split('.') }));
+  for (let i = 0; i < split.length; i++) {
+    for (let j = 0; j < split.length; j++) {
+      if (i === j) continue;
+      if (isStrictSegmentPrefix(split[i].segments, split[j].segments)) {
+        collided.add(split[i].key);
+        collided.add(split[j].key);
+      }
+    }
+  }
+  return collided;
+}
+
+function isStrictSegmentPrefix(a: string[], b: string[]): boolean {
+  if (a.length >= b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
 
 /** Reads a catalog file and flattens it to `{ id: ICU-string }`. */
@@ -142,23 +322,52 @@ function normalizeCatalog(file: string): Record<string, unknown> {
 }
 
 /**
- * The default (source) locale: an explicit routing default, else a
- * `defaultLocale="…"` seen on an IntlProvider/createIntl in the source, else
- * 'en' when present, else the sole locale.
+ * The default (source) locale, and (when it was inferred rather than declared)
+ * a report-worthy note stating what was assumed and why. Resolution order:
+ * an explicit routing default, else a `defaultLocale="…"` seen on an
+ * IntlProvider/createIntl in the source (both authoritative, no note), else the
+ * heuristics ('en' when present, the sole locale, or 'en' as a last resort),
+ * each of which is a guess and gets a note.
  */
 function determineDefaultLocale(
   cwd: string,
   routing: RoutingInfo,
   locales: string[]
-): string | null {
-  if (routing.defaultLocale) return routing.defaultLocale;
+): { locale: string; assumption: string | null } | null {
+  if (routing.defaultLocale) {
+    return { locale: routing.defaultLocale, assumption: null };
+  }
   const declared = scanDeclaredDefaultLocale(cwd);
-  if (declared) return declared;
-  if (locales.includes('en')) return 'en';
-  if (locales.length === 1) return locales[0];
+  if (declared) return { locale: declared, assumption: null };
+  if (locales.includes('en')) {
+    return {
+      locale: 'en',
+      assumption:
+        "Assumed the source (default) locale is 'en' because an en catalog is " +
+        'present and no defaultLocale was declared in routing config or on an ' +
+        '<IntlProvider>/createIntl. If your source language differs, set ' +
+        'defaultLocale in gt.config.json and re-run.',
+    };
+  }
+  if (locales.length === 1) {
+    return {
+      locale: locales[0],
+      assumption:
+        `Assumed '${locales[0]}' is the source (default) locale because it is ` +
+        'the only catalog present and none was declared. Verify this is your ' +
+        'source language (set defaultLocale in gt.config.json otherwise).',
+    };
+  }
   // Nothing to anchor on and multiple locales present; assume 'en' so the
   // harvest can seed it (real react-intl apps source from English).
-  return 'en';
+  return {
+    locale: 'en',
+    assumption:
+      "Assumed the source (default) locale is 'en' though no en catalog is " +
+      'present and none was declared; the en source catalog is synthesized from ' +
+      'inline defaultMessages. Verify this is your source language (set ' +
+      'defaultLocale in gt.config.json otherwise).',
+  };
 }
 
 function scanDeclaredDefaultLocale(cwd: string): string | null {
@@ -180,17 +389,32 @@ function scanDeclaredDefaultLocale(cwd: string): string | null {
 /**
  * Harvests `{ id: defaultMessage }` from every literal descriptor across the
  * source: `<FormattedMessage id defaultMessage />`, `formatMessage({ id,
- * defaultMessage })`, and `defineMessage(s)({ … })`. First writer wins.
+ * defaultMessage })`, and `defineMessage(s)({ … })`. Files are visited in a
+ * deterministic (sorted) order and first writer wins, so the result does not
+ * depend on filesystem ordering. When an id recurs with a *different*
+ * defaultMessage, every variant is recorded in `conflicts` so the caller can
+ * report the ambiguity.
  */
-function harvestDefaultMessages(cwd: string): Record<string, string> {
+function harvestDefaultMessages(cwd: string): {
+  harvested: Record<string, string>;
+  conflicts: Map<string, Set<string>>;
+} {
   const harvested: Record<string, string> = {};
+  const conflicts = new Map<string, Set<string>>();
   const record = (id: string | null, message: string | null) => {
-    if (id !== null && message !== null && !(id in harvested)) {
-      harvested[id] = message;
+    if (id === null || message === null) return;
+    if (id in harvested) {
+      if (harvested[id] !== message) {
+        const variants = conflicts.get(id) ?? new Set([harvested[id]]);
+        variants.add(message);
+        conflicts.set(id, variants);
+      }
+      return;
     }
+    harvested[id] = message;
   };
 
-  for (const file of sourceFiles(cwd)) {
+  for (const file of [...sourceFiles(cwd)].sort()) {
     let code: string;
     try {
       code = fs.readFileSync(file, 'utf8');
@@ -244,7 +468,7 @@ function harvestDefaultMessages(cwd: string): Record<string, string> {
       },
     });
   }
-  return harvested;
+  return { harvested, conflicts };
 }
 
 function recordFromDescriptor(

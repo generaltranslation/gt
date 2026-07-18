@@ -26,6 +26,18 @@ export function buildReport(
   );
   lines.push('');
 
+  // Top-level advisory notes (deduped): an assumed default locale, the FormatJS
+  // auto-generated-id workflow, flat/nested key collisions, and so on.
+  const warnings = [...new Set(ctx.warnings ?? [])];
+  if (warnings.length > 0) {
+    lines.push('## Warnings');
+    lines.push('');
+    for (const warning of warnings) {
+      lines.push(`- ${warning}`);
+    }
+    lines.push('');
+  }
+
   lines.push('## Converted');
   lines.push('');
   const written = ctx.edits.filter((edit) => edit.kind === 'write');
@@ -147,7 +159,20 @@ export function buildReport(
         "(or your package manager's equivalent). A non-dry run installs it automatically."
     );
   }
-  steps.push('Review the TODOs above, then run your build.');
+  // #1909: a migrated app (next-intl or react-intl alike) does not `next build`
+  // on published gt-next until the internal loadDictionary alias fix ships, so
+  // steer verification to Turbopack meanwhile.
+  steps.push(
+    'A migrated app (next-intl or react-intl alike) will not `next build` on ' +
+      'published gt-next until #1909 ships; build with `next build --turbopack` ' +
+      'to verify meanwhile.'
+  );
+  // Only point at the TODOs section when there is one (see above).
+  steps.push(
+    ctx.todos.length > 0
+      ? 'Review the TODOs above, then run your build.'
+      : 'Run your build.'
+  );
   steps.push(
     '`npx gt generate` (no API key) or `npx gt translate` (with credentials) to translate new locales.'
   );
