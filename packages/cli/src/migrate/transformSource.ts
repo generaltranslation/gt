@@ -80,7 +80,7 @@ export function transformSourceFile(
     if (!adapter.ownsModule(source)) return;
     hasNextIntlReexport = true;
     skipReasons.push(
-      `re-export from '${source}' would break once next-intl is removed (convert the re-export manually)`
+      `re-export from '${source}' would break once ${adapter.displayName} is removed (convert the re-export manually)`
     );
   };
 
@@ -98,7 +98,7 @@ export function transformSourceFile(
       for (const specifier of path.node.specifiers) {
         if (!t.isImportSpecifier(specifier)) {
           skipReasons.push(
-            `unsupported next-intl import form from '${source}'`
+            `unsupported ${adapter.displayName} import form from '${source}'`
           );
           continue;
         }
@@ -143,7 +143,7 @@ export function transformSourceFile(
         adapter.localeValidators.has(symbol.imported));
     if (!supported) {
       skipReasons.push(
-        `unsupported next-intl API: ${symbol.imported} (from '${symbol.source}')`
+        `unsupported ${adapter.displayName} API: ${symbol.imported} (from '${symbol.source}')`
       );
     }
   }

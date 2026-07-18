@@ -326,7 +326,7 @@ export function transformLayoutFile(
         code: null,
         todos: [],
         skipReasons: [
-          'retained NextIntlClientProvider has no route `locale` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its `locale` prop manually (the layout keeps working on next-intl until then)',
+          `retained NextIntlClientProvider has no route \`locale\` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its \`locale\` prop manually (the layout keeps working on ${adapter.displayName} until then)`,
         ],
         usedRich: base.usedRich,
       };
