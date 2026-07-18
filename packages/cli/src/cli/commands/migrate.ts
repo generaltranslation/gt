@@ -15,8 +15,10 @@ import {
 import { emitGtFiles } from '../../migrate/emitGtFiles.js';
 import { inlinePass } from '../../migrate/inline.js';
 import { buildReport } from '../../migrate/report.js';
+import { resolveMigrationSource } from '../../migrate/resolveSource.js';
 import { transformLayoutFile } from '../../migrate/transformLayout.js';
 import { transformSourceFile } from '../../migrate/transformSource.js';
+import type { SourceAdapter } from '../../migrate/adapters/types.js';
 import type {
   MigrateOptions,
   MigrationContext,
@@ -42,11 +44,18 @@ export async function handleMigrateCommand(
   // Resolve the source-library adapter. --from overrides the auto-detected
   // library; an unknown/unsupported source is a clean error listing what is
   // supported (the list grows as adapters are added to the registry).
-  const requestedFrom = options.from ?? library;
-  const adapter = getAdapter(requestedFrom);
+  // determineLibrary collapses react-i18next / next-i18next / bare i18next all to
+  // 'i18next'; resolve the concrete flavor (or the scoped OUT message) before the
+  // registry lookup. A concrete --from (e.g. react-i18next) passes straight
+  // through and is the documented escape hatch.
+  const resolution = resolveMigrationSource(options.from ?? library, cwd);
+  if (resolution.kind === 'error') {
+    logErrorAndExit(resolution.message);
+  }
+  const adapter = getAdapter(resolution.id);
   if (!adapter) {
     logErrorAndExit(
-      `gt migrate cannot migrate from '${requestedFrom}'. ` +
+      `gt migrate cannot migrate from '${resolution.id}'. ` +
         `Supported sources: ${supportedSourceIds().join(', ')}. ` +
         (options.from
           ? 'Pass --from with a supported source, or omit it to auto-detect from your dependencies.'
@@ -195,7 +204,7 @@ export async function handleMigrateCommand(
         providerFiles.push(file);
         continue;
       }
-      let result = transformSourceFile(file, code, ctx);
+      let result = runSourceTransform(file, code, ctx);
       if (options.inline && result.skipReasons.length === 0) {
         result = applyInline(file, result.code ?? code, ctx, result);
       }
@@ -235,7 +244,7 @@ export async function handleMigrateCommand(
   for (const file of providerFiles) {
     try {
       const code = fs.readFileSync(file, 'utf8');
-      const classified = transformSourceFile(file, code, ctx);
+      const classified = runSourceTransform(file, code, ctx);
       if (classified.skipReasons.length > 0) {
         collect(ctx, file, classified);
       } else {
@@ -250,7 +259,7 @@ export async function handleMigrateCommand(
   for (const file of layouts) {
     try {
       const code = fs.readFileSync(file, 'utf8');
-      collect(ctx, file, transformLayoutFile(file, code, ctx));
+      collect(ctx, file, runLayoutTransform(adapter, file, code, ctx));
     } catch (error) {
       recordTransformError(ctx, file, error);
     }
@@ -265,9 +274,7 @@ export async function handleMigrateCommand(
   for (const file of providerFilesToApply) {
     try {
       const code = fs.readFileSync(file, 'utf8');
-      let result = transformSourceFile(file, code, ctx, {
-        retainProvider: retainProviders,
-      });
+      let result = runSourceTransform(file, code, ctx, retainProviders);
       if (options.inline && result.skipReasons.length === 0) {
         result = applyInline(file, result.code ?? code, ctx, result);
       }
@@ -367,11 +374,28 @@ export async function handleMigrateCommand(
 
   ctx.edits.push(...emitGtFiles(ctx));
 
-  // Backstop: if nothing matched the source library at all (no file transformed
-  // and none even skipped for using it), the run migrated nothing and only wrote
-  // scaffolding. That almost always means the wrong source was targeted, so warn
-  // instead of exiting 0 as if it worked.
-  if (transformedSourceFiles === 0 && ctx.skippedFiles.size === 0) {
+  // Adapters that rewrite catalogs (react-i18next: i18next JSON -> merged ICU
+  // dictionaries) emit the converted files into their new output dir and record
+  // conversion notes as TODOs here, so the writes flow through the same
+  // --dry-run-aware edit buffer as everything else.
+  let catalogEditsEmitted = 0;
+  if (adapter.emitCatalogs) {
+    const catalogEdits = adapter.emitCatalogs(ctx);
+    catalogEditsEmitted = catalogEdits.length;
+    ctx.edits.push(...catalogEdits);
+  }
+
+  // Backstop: if nothing matched the source library at all (no file transformed,
+  // none skipped for using it, and no catalogs converted), the run migrated
+  // nothing and only wrote scaffolding. That almost always means the wrong
+  // source was targeted, so warn instead of exiting 0 as if it worked. Skip
+  // reasons and converted catalogs both count as activity, so a wrapper-skipped
+  // or catalog-only run does not trip this.
+  if (
+    transformedSourceFiles === 0 &&
+    ctx.skippedFiles.size === 0 &&
+    catalogEditsEmitted === 0
+  ) {
     // Under --dry-run nothing is written yet (the write loop is past the
     // early return below), so describe the scaffolding as prospective.
     const scaffoldingClause = options.dryRun
@@ -438,6 +462,35 @@ export async function handleMigrateCommand(
   logger.endCommand(
     `Migration written (${writtenFiles.length} files). Full report: ${path.relative(cwd, reportPath)}`
   );
+}
+
+/**
+ * Runs the source-file codemod. This is a thin wrapper: it only maps the
+ * driver's `retainProvider` flag into TransformOptions and calls
+ * transformSourceFile. The one place that decides between an adapter's own
+ * transform (react-i18next, react-intl) and the core next-intl engine is
+ * transformSourceFile itself, so there is a single source-transform dispatch
+ * site for a reviewer to read (see the comment there).
+ */
+function runSourceTransform(
+  file: string,
+  code: string,
+  ctx: MigrationContext,
+  retainProvider?: boolean
+): SourceResult {
+  return transformSourceFile(file, code, ctx, { retainProvider });
+}
+
+/** Runs the layout codemod, dispatching to the adapter's own when present. */
+function runLayoutTransform(
+  adapter: SourceAdapter,
+  file: string,
+  code: string,
+  ctx: MigrationContext
+): SourceResult {
+  return adapter.transformLayout
+    ? adapter.transformLayout(file, code, ctx)
+    : transformLayoutFile(file, code, ctx);
 }
 
 function applyInline(

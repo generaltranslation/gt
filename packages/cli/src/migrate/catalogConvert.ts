@@ -140,7 +140,10 @@ function numberSkeleton(optionText: string | undefined): string | null {
   if (min !== undefined || max !== undefined) {
     const lo = min !== undefined ? Number(min) : undefined;
     const hi = max !== undefined ? Number(max) : undefined;
-    if ((lo !== undefined && Number.isNaN(lo)) || (hi !== undefined && Number.isNaN(hi))) {
+    if (
+      (lo !== undefined && Number.isNaN(lo)) ||
+      (hi !== undefined && Number.isNaN(hi))
+    ) {
       return null;
     }
     const loN = lo ?? hi ?? 0;
@@ -178,7 +181,8 @@ function convertPlaceholder(inner: string, ctx: LeafContext): string {
   }
   const commaIndex = body.indexOf(',');
   const name = (commaIndex === -1 ? body : body.slice(0, commaIndex)).trim();
-  const formatterSpec = commaIndex === -1 ? '' : body.slice(commaIndex + 1).trim();
+  const formatterSpec =
+    commaIndex === -1 ? '' : body.slice(commaIndex + 1).trim();
 
   if (!/^[A-Za-z_$][\w$]*$/.test(name)) {
     // Nested var access (`{{obj.prop}}`) or other shapes ICU arg names cannot
@@ -233,7 +237,9 @@ function convertFormatter(
       );
       return `{${name}, number}`;
     }
-    return skeleton === '' ? `{${name}, number}` : `{${name}, number, ::${skeleton}}`;
+    return skeleton === ''
+      ? `{${name}, number}`
+      : `{${name}, number, ::${skeleton}}`;
   }
 
   if (fmt === 'currency') {
@@ -274,7 +280,9 @@ function parseCurrencyCode(args: string | undefined): string | null {
   if (trimmed === '') return null;
   const options = parseOptionBag(trimmed);
   if (options && options['currency']) {
-    return /^[A-Za-z]{3}$/.test(options['currency']) ? options['currency'].toUpperCase() : null;
+    return /^[A-Za-z]{3}$/.test(options['currency'])
+      ? options['currency'].toUpperCase()
+      : null;
   }
   // positional form: currency(USD)
   return /^[A-Za-z]{3}$/.test(trimmed) ? trimmed.toUpperCase() : null;
@@ -303,7 +311,9 @@ export function convertLeaf(value: string, ctx: LeafContext): string | null {
     // verbatim (already valid ICU, already escaped by the author).
     return inlineNesting(value, ctx, (v) => v);
   }
-  return inlineNesting(value, ctx, (segment) => convertInterpolation(segment, ctx));
+  return inlineNesting(value, ctx, (segment) =>
+    convertInterpolation(segment, ctx)
+  );
 }
 
 /**
@@ -412,7 +422,11 @@ type Grouped = {
  * conservative: a suffix only groups when it is a CLDR category for this locale
  * and the group carries `_other`, or (context) when a call site passed context.
  */
-function groupKeys(tree: Record<string, unknown>, tc: TreeContext, keypathPrefix: string): Grouped {
+function groupKeys(
+  tree: Record<string, unknown>,
+  tc: TreeContext,
+  keypathPrefix: string
+): Grouped {
   const sep = tc.separators.pluralSeparator;
   const csep = tc.separators.contextSeparator;
 
@@ -426,7 +440,9 @@ function groupKeys(tree: Record<string, unknown>, tc: TreeContext, keypathPrefix
   // as plain keys.
   const consumed = new Set<string>();
 
-  const stringKeys = Object.keys(tree).filter((k) => typeof tree[k] === 'string');
+  const stringKeys = Object.keys(tree).filter(
+    (k) => typeof tree[k] === 'string'
+  );
 
   // Pass A: ordinal (most specific — `base_ordinal_cat`). Detection uses the
   // universal CLDR category names; per-locale validity is checked in
@@ -455,7 +471,7 @@ function groupKeys(tree: Record<string, unknown>, tc: TreeContext, keypathPrefix
     if (!parsed) continue;
     const { head, last } = parsed;
     if (!ALL_CATEGORIES.has(last)) continue;
-    if (head === '' ) continue;
+    if (head === '') continue;
     // Skip the `base_ordinal` head (handled above).
     const headParsed = splitSuffix(head, sep);
     if (headParsed && headParsed.last === 'ordinal') continue;
@@ -503,7 +519,11 @@ function groupKeys(tree: Record<string, unknown>, tc: TreeContext, keypathPrefix
   return { cardinal, ordinal, context, combined, plain };
 }
 
-function isContextBase(base: string, tc: TreeContext, keypathPrefix: string): boolean {
+function isContextBase(
+  base: string,
+  tc: TreeContext,
+  keypathPrefix: string
+): boolean {
   const full = keypathPrefix ? `${keypathPrefix}.${base}` : base;
   return tc.contextKeys.has(`${tc.ns}:${full}`);
 }
@@ -577,7 +597,13 @@ function convertTree(
         fullKey(base),
         `plural-looking keys \`${base}${tc.separators.pluralSeparator}*\` lack the required \`other\` category; left as literal keys (likely not a plural)`
       );
-      writeGroupAsLiteral(result, base, categories, tc.separators.pluralSeparator, leaf);
+      writeGroupAsLiteral(
+        result,
+        base,
+        categories,
+        tc.separators.pluralSeparator,
+        leaf
+      );
       continue;
     }
     if (!evidence) {
@@ -585,16 +611,30 @@ function convertTree(
         fullKey(base),
         `keys \`${base}${tc.separators.pluralSeparator}<category>\` look like a plural but no \`{{count}}\` or \`t('${fullKey(base)}', { count })\` call site was found; left literal to avoid a false positive`
       );
-      writeGroupAsLiteral(result, base, categories, tc.separators.pluralSeparator, leaf);
+      writeGroupAsLiteral(
+        result,
+        base,
+        categories,
+        tc.separators.pluralSeparator,
+        leaf
+      );
       continue;
     }
-    const invalid = [...categories.keys()].filter((c) => !tc.plurals.cardinal.has(c));
+    const invalid = [...categories.keys()].filter(
+      (c) => !tc.plurals.cardinal.has(c)
+    );
     if (invalid.length > 0) {
       tc.addReport(
         fullKey(base),
         `plural \`${base}\` has categories [${invalid.join(', ')}] outside ${tc.locale}'s CLDR set; left literal`
       );
-      writeGroupAsLiteral(result, base, categories, tc.separators.pluralSeparator, leaf);
+      writeGroupAsLiteral(
+        result,
+        base,
+        categories,
+        tc.separators.pluralSeparator,
+        leaf
+      );
       continue;
     }
     result[other] = buildBranch('plural', categories, leaf);
@@ -602,12 +642,21 @@ function convertTree(
 
   // Ordinal plurals (skip+report when the base already has a cardinal plural).
   for (const [base, categories] of grouped.ordinal) {
-    if (grouped.cardinal.has(base) && grouped.cardinal.get(base)!.has('other')) {
+    if (
+      grouped.cardinal.has(base) &&
+      grouped.cardinal.get(base)!.has('other')
+    ) {
       tc.addReport(
         fullKey(base),
         `ordinal \`${base}${tc.separators.pluralSeparator}ordinal${tc.separators.pluralSeparator}*\` collides with the cardinal plural on the same key; cardinal converted, ordinal left literal — give the ordinal a distinct key or use <T>`
       );
-      writeOrdinalAsLiteral(result, base, categories, tc.separators.pluralSeparator, leaf);
+      writeOrdinalAsLiteral(
+        result,
+        base,
+        categories,
+        tc.separators.pluralSeparator,
+        leaf
+      );
       continue;
     }
     if (!categories.has('other')) {
@@ -615,16 +664,30 @@ function convertTree(
         fullKey(base),
         `ordinal \`${base}\` lacks the required \`other\` category; left literal`
       );
-      writeOrdinalAsLiteral(result, base, categories, tc.separators.pluralSeparator, leaf);
+      writeOrdinalAsLiteral(
+        result,
+        base,
+        categories,
+        tc.separators.pluralSeparator,
+        leaf
+      );
       continue;
     }
-    const invalidOrd = [...categories.keys()].filter((c) => !tc.plurals.ordinal.has(c));
+    const invalidOrd = [...categories.keys()].filter(
+      (c) => !tc.plurals.ordinal.has(c)
+    );
     if (invalidOrd.length > 0) {
       tc.addReport(
         fullKey(base),
         `ordinal \`${base}\` has categories [${invalidOrd.join(', ')}] outside ${tc.locale}'s ordinal CLDR set; left literal`
       );
-      writeOrdinalAsLiteral(result, base, categories, tc.separators.pluralSeparator, leaf);
+      writeOrdinalAsLiteral(
+        result,
+        base,
+        categories,
+        tc.separators.pluralSeparator,
+        leaf
+      );
       continue;
     }
     result[base] = buildBranch('selectordinal', categories, leaf);
@@ -635,7 +698,8 @@ function convertTree(
     const options = new Map(variants);
     if (!options.has('other')) {
       // i18next's base key (no context) is the `other` clause; pull it in.
-      const baseValue = typeof tree[base] === 'string' ? (tree[base] as string) : '';
+      const baseValue =
+        typeof tree[base] === 'string' ? (tree[base] as string) : '';
       options.set('other', baseValue);
       if (baseValue === '') {
         tc.addReport(
@@ -688,7 +752,11 @@ function convertTree(
   return result;
 }
 
-function isCombinedMember(key: string, combined: Set<string>, sep: Separators): boolean {
+function isCombinedMember(
+  key: string,
+  combined: Set<string>,
+  sep: Separators
+): boolean {
   if (combined.size === 0) return false;
   for (const base of combined) {
     if (key.startsWith(base + sep.contextSeparator)) return true;
@@ -718,7 +786,8 @@ function writeOrdinalAsLiteral(
 ): void {
   for (const [cat, value] of categories) {
     const converted = leaf(value);
-    if (converted !== null) result[`${base}${sep}ordinal${sep}${cat}`] = converted;
+    if (converted !== null)
+      result[`${base}${sep}ordinal${sep}${cat}`] = converted;
   }
 }
 
@@ -831,7 +900,10 @@ export function convertCatalogs(input: ConvertInput): ConvertResult {
       isIcu: input.isIcu,
       stack: [],
       addReport: (reason) =>
-        reports.push({ key: `${input.defaultLocale}/${def.ns}:${def.key}`, reason }),
+        reports.push({
+          key: `${input.defaultLocale}/${def.ns}:${def.key}`,
+          reason,
+        }),
     };
     const converted = convertLeaf(def.value, leafCtx);
     if (converted !== null) {
@@ -871,7 +943,9 @@ function getByPath(
   keyPath: string,
   sep: Separators
 ): unknown {
-  const segments = sep.keySeparator ? keyPath.split(sep.keySeparator) : [keyPath];
+  const segments = sep.keySeparator
+    ? keyPath.split(sep.keySeparator)
+    : [keyPath];
   let current: unknown = tree;
   for (const segment of segments) {
     if (current === null || typeof current !== 'object') return undefined;
@@ -886,7 +960,9 @@ function setByPath(
   value: string,
   sep: Separators
 ): void {
-  const segments = sep.keySeparator ? keyPath.split(sep.keySeparator) : [keyPath];
+  const segments = sep.keySeparator
+    ? keyPath.split(sep.keySeparator)
+    : [keyPath];
   let current: Record<string, unknown> = tree;
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i];

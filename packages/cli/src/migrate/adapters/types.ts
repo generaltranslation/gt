@@ -1,6 +1,7 @@
 import type { MessageClass } from '../classifyMessage.js';
 import type { TransformOptions } from '../transformSource.js';
 import type {
+  FileEdit,
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
@@ -54,18 +55,26 @@ export interface SourceAdapter {
   /** true when `code` renders this library's provider element (alias-aware). */
   hasProvider(code: string): boolean;
 
-  // --- message format ---
-  /** classifies a catalog message (ICU for next-intl). */
-  classifyMessage(message: string): MessageClass;
-
+  // --- per-adapter source/layout codemod (optional) ---
   /**
    * Per-file source transform for a library whose call model does not fit the
    * shared next-intl engine (a hook that returns a `t('key')` function). When
-   * present, transformSourceFile delegates to it wholesale, so the driver, the
-   * layout pass, and --inline stay adapter-agnostic. next-intl omits it and
-   * runs the built-in engine. react-intl supplies one: its descriptor-object
-   * calls (`intl.formatMessage({ id }, values)`) and formatter components
+   * present, transformSourceFile delegates to it wholesale (the single dispatch
+   * site), so the driver, the layout pass, and --inline stay adapter-agnostic.
+   * next-intl omits it and runs the built-in engine.
+   *
+   * react-intl supplies one: its descriptor-object calls
+   * (`intl.formatMessage({ id }, values)`) and formatter components
    * (`<FormattedMessage>`, `<FormattedNumber>`, …) have no next-intl analogue.
+   * react-i18next supplies one: its client surface (`useTranslation`,
+   * `t('ns:key')`, `<Trans>`, `i18n.changeLanguage`) is not expressible as
+   * next-intl symbol-table swaps.
+   *
+   * `options` is the shared TransformOptions both adapters and the core engine
+   * read: `retainProvider` keeps the source library's provider so
+   * deferred/skipped files still resolve translations, and `dropLocaleValidation`
+   * treats the locale guard as supported (its guard is removed by the layout
+   * pass).
    */
   transformSource?(
     file: string,
@@ -73,6 +82,16 @@ export interface SourceAdapter {
     ctx: MigrationContext,
     options: TransformOptions
   ): SourceResult;
+  /** Layout-specific codemod. When absent, the core `transformLayoutFile` runs. */
+  transformLayout?(
+    file: string,
+    code: string,
+    ctx: MigrationContext
+  ): SourceResult;
+
+  // --- message format ---
+  /** classifies a catalog message (ICU for next-intl). */
+  classifyMessage(message: string): MessageClass;
 
   // --- routing + catalog discovery ---
   parseRoutingConfig(cwd: string): RoutingInfo;
@@ -114,6 +133,15 @@ export interface SourceAdapter {
   nextConfigCandidates: string[];
   /** middleware/proxy candidate paths, relative to the project root. */
   middlewareCandidates: string[];
+
+  // --- catalog emission (optional) ---
+  /**
+   * Emits the converted catalog files. next-intl leaves catalogs in place (no
+   * hook); react-i18next writes the ICU-merged per-locale dictionaries produced
+   * by discoverCatalogs into a new directory and records the conversion reports
+   * as TODOs. Called during the emit phase so writes respect --dry-run.
+   */
+  emitCatalogs?(ctx: MigrationContext): FileEdit[];
 
   // --- teardown ---
   /** whole-project "still uses this library" scan (the teardown blocker). */

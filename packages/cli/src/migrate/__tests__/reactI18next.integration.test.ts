@@ -1,0 +1,300 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { formatMessage } from '@generaltranslation/format';
+import { parse as parseIcu } from '@formatjs/icu-messageformat-parser';
+import { handleMigrateCommand } from '../../cli/commands/migrate.js';
+import { clearI18nextConfigCache } from '../reactI18nextConfig.js';
+
+vi.mock('../../hooks/postProcess.js', () => ({
+  formatFiles: vi.fn(async () => {}),
+  detectFormatter: vi.fn(async () => null),
+}));
+vi.mock('../../utils/installPackage.js', () => ({
+  installPackage: vi.fn(async () => {}),
+}));
+vi.mock('../../utils/packageManager.js', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getPackageManager: vi.fn(async () => ({
+    id: 'npm',
+    name: 'npm',
+    label: 'npm',
+    installCommand: 'install',
+    devDependencyFlag: '--save-dev',
+  })),
+}));
+
+const tmpDirs: string[] = [];
+const read = (cwd: string, rel: string) =>
+  fs.readFileSync(path.join(cwd, rel), 'utf8');
+const readJson = (cwd: string, rel: string) => JSON.parse(read(cwd, rel));
+
+const PL = {
+  items_one: '{{count}} produkt',
+  items_few: '{{count}} produkty',
+  items_many: '{{count}} produktów',
+  items_other: '{{count}} produktu',
+};
+const AR = {
+  items_zero: 'لا عناصر',
+  items_one: 'عنصر واحد',
+  items_two: 'عنصران',
+  items_few: '{{count}} عناصر',
+  items_many: '{{count}} عنصرا',
+  items_other: '{{count}} عنصر',
+};
+
+function makeApp(overrides: Record<string, string> = {}): string {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-ri18n-app-'));
+  tmpDirs.push(cwd);
+  const files: Record<string, string> = {
+    'package.json': JSON.stringify(
+      {
+        name: 'demo',
+        dependencies: {
+          next: '15.5.0',
+          react: '19.0.0',
+          i18next: '^23.0.0',
+          'react-i18next': '^14.0.0',
+        },
+      },
+      null,
+      2
+    ),
+    'next.config.ts': [
+      'const nextConfig = { reactStrictMode: true };',
+      'export default nextConfig;',
+    ].join('\n'),
+    'app/i18n/settings.ts': [
+      'export function getOptions() {',
+      '  return {',
+      "    supportedLngs: ['en', 'pl', 'ar'],",
+      "    fallbackLng: 'en',",
+      "    defaultNS: 'common',",
+      "    ns: ['common', 'dashboard'],",
+      '  };',
+      '}',
+    ].join('\n'),
+    'app/[locale]/layout.tsx': [
+      'export default function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: { locale: string };',
+      '}) {',
+      '  return (',
+      '    <html lang={params.locale}>',
+      '      <body>{children}</body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n'),
+    'app/[locale]/page.tsx': [
+      "'use client';",
+      "import { useTranslation, Trans } from 'react-i18next';",
+      'export default function Home() {',
+      '  const { t } = useTranslation();',
+      '  return (',
+      '    <main>',
+      "      <h1>{t('title')}</h1>",
+      "      <p>{t('greeting', { name: 'Ada' })}</p>",
+      "      <p>{t('items', { count: 3 })}</p>",
+      '      <p><Trans i18nKey="welcome" /></p>',
+      '    </main>',
+      '  );',
+      '}',
+    ].join('\n'),
+    'app/[locale]/about/page.tsx': [
+      "import i18next from 'i18next';",
+      "import { getT } from '../../i18n/server';",
+      'export default async function About() {',
+      '  const { t } = await getT();',
+      "  return <p>{t('title')}</p>;",
+      '}',
+    ].join('\n'),
+    'components/RichText.tsx': [
+      "'use client';",
+      "import { useTranslation, Trans } from 'react-i18next';",
+      'export function RichText() {',
+      '  const { t } = useTranslation();',
+      '  return <Trans i18nKey="terms">I accept the <b>terms</b></Trans>;',
+      '}',
+    ].join('\n'),
+    'public/locales/en/common.json': JSON.stringify({
+      title: 'Home',
+      greeting: 'Hello {{name}}',
+      welcome: 'Welcome',
+      items_one: '{{count}} item',
+      items_other: '{{count}} items',
+      price: '{{amount, currency(USD)}}',
+      hostile: "set {{k}} to '{literal}'",
+    }),
+    'public/locales/pl/common.json': JSON.stringify({
+      title: 'Strona',
+      greeting: 'Cześć {{name}}',
+      welcome: 'Witaj',
+      ...PL,
+    }),
+    'public/locales/ar/common.json': JSON.stringify({
+      title: 'الرئيسية',
+      greeting: 'مرحبا {{name}}',
+      welcome: 'أهلا',
+      ...AR,
+    }),
+    'public/locales/en/dashboard.json': JSON.stringify({
+      widgets: { count: 'Widgets' },
+    }),
+    'public/locales/pl/dashboard.json': JSON.stringify({
+      widgets: { count: 'Widżety' },
+    }),
+    'public/locales/ar/dashboard.json': JSON.stringify({
+      widgets: { count: 'الأدوات' },
+    }),
+    ...overrides,
+  };
+  for (const [rel, content] of Object.entries(files)) {
+    const abs = path.join(cwd, rel);
+    fs.mkdirSync(path.dirname(abs), { recursive: true });
+    fs.writeFileSync(abs, content);
+  }
+  return cwd;
+}
+
+const OPTIONS = {
+  config: 'gt.config.json',
+  inline: false,
+  dryRun: false,
+  yes: true,
+  allowDirty: true,
+} as const;
+
+beforeEach(() => clearI18nextConfigCache());
+afterEach(() => {
+  vi.restoreAllMocks();
+  while (tmpDirs.length)
+    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
+});
+
+describe('react-i18next full migration', () => {
+  it('converts catalogs, swaps the client surface, and reports the rest', async () => {
+    const cwd = makeApp();
+    await handleMigrateCommand({ ...OPTIONS }, 'i18next', cwd);
+
+    // 1. Converted ICU dictionaries in a NEW dir; originals untouched.
+    const en = readJson(cwd, 'gt/dictionaries/en.json');
+    expect(en.title).toBe('Home');
+    expect(en.greeting).toBe('Hello {name}');
+    expect(en.items).toBe(
+      '{count, plural, one {{count} item} other {{count} items}}'
+    );
+    expect(en.price).toBe('{amount, number, ::currency/USD}');
+    expect(en.dashboard).toEqual({ widgets: { count: 'Widgets' } });
+    expect(() => parseIcu(en.hostile)).not.toThrow();
+    // Originals are never mutated.
+    expect(readJson(cwd, 'public/locales/en/common.json').items_one).toBe(
+      '{{count}} item'
+    );
+
+    // 2. Per-locale CLDR category sets.
+    const pl = readJson(cwd, 'gt/dictionaries/pl.json');
+    expect(pl.items).toContain('one {');
+    expect(pl.items).toContain('few {');
+    expect(pl.items).toContain('many {');
+    expect(
+      formatMessage(pl.items, { locales: ['pl'], variables: { count: 5 } })
+    ).toBe('5 produktów');
+    const ar = readJson(cwd, 'gt/dictionaries/ar.json');
+    expect(ar.items.startsWith('{count, plural, zero {')).toBe(true);
+    expect(
+      formatMessage(ar.items, { locales: ['ar'], variables: { count: 2 } })
+    ).toBe('عنصران');
+
+    // 3. Loader + config point at the new dir.
+    const loader = read(cwd, 'loadDictionary.ts');
+    expect(loader).toMatch(/gt\/dictionaries/);
+    const gtConfig = readJson(cwd, 'gt.config.json');
+    expect(gtConfig.defaultLocale).toBe('en');
+    expect(gtConfig.locales.sort()).toEqual(['ar', 'en', 'pl']);
+
+    // 4. next.config wrapped with withGTConfig.
+    const nextConfig = read(cwd, 'next.config.ts');
+    expect(nextConfig).toContain('withGTConfig');
+    expect(nextConfig).toMatch(/from ["']gt-next\/config["']/);
+
+    // 5. Client page migrated to gt-next.
+    const page = read(cwd, 'app/[locale]/page.tsx');
+    expect(page).toMatch(/from ["']gt-next["']/);
+    expect(page).toContain('useTranslations()');
+    expect(page).not.toContain('react-i18next');
+
+    // 6. Layout gets a GTProvider around the body.
+    const layout = read(cwd, 'app/[locale]/layout.tsx');
+    expect(layout).toContain('GTProvider');
+
+    // 7. Report: server getT + non-trivial Trans skipped with recipes.
+    const report = read(cwd, 'gt-migrate-report.md');
+    expect(report).toContain('app/[locale]/about/page.tsx');
+    expect(report).toMatch(/getTranslations|gt-next\/server/);
+    expect(report).toContain('components/RichText.tsx');
+    expect(report).toMatch(/<T>/);
+  });
+
+  it('honors --from react-i18next explicitly', async () => {
+    const cwd = makeApp();
+    await handleMigrateCommand(
+      { ...OPTIONS, from: 'react-i18next' },
+      'base',
+      cwd
+    );
+    expect(fs.existsSync(path.join(cwd, 'gt/dictionaries/en.json'))).toBe(true);
+  });
+
+  it('refuses a next-i18next project with the scoped message', async () => {
+    const cwd = makeApp({
+      'package.json': JSON.stringify({
+        name: 'demo',
+        dependencies: {
+          next: '15.5.0',
+          'next-i18next': '^15.0.0',
+          'react-i18next': '^14.0.0',
+          i18next: '^23.0.0',
+        },
+      }),
+    });
+    const errors: string[] = [];
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(((
+      code?: number
+    ) => {
+      throw new Error(`exit:${code}`);
+    }) as never);
+    // logErrorAndExit routes through the logger; capture stderr-ish output.
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation((...args: unknown[]) => {
+        errors.push(args.join(' '));
+      });
+
+    await expect(
+      handleMigrateCommand({ ...OPTIONS }, 'i18next', cwd)
+    ).rejects.toThrow('exit:1');
+
+    exitSpy.mockRestore();
+    errorSpy.mockRestore();
+    // Nothing was written.
+    expect(fs.existsSync(path.join(cwd, 'gt.config.json'))).toBe(false);
+    expect(fs.existsSync(path.join(cwd, 'gt/dictionaries'))).toBe(false);
+  });
+
+  it('does not write on a dry run', async () => {
+    const cwd = makeApp();
+    await handleMigrateCommand({ ...OPTIONS, dryRun: true }, 'i18next', cwd);
+    expect(fs.existsSync(path.join(cwd, 'gt/dictionaries'))).toBe(false);
+    expect(fs.existsSync(path.join(cwd, 'gt.config.json'))).toBe(false);
+    // Original catalogs still intact.
+    expect(fs.existsSync(path.join(cwd, 'public/locales/en/common.json'))).toBe(
+      true
+    );
+  });
+});

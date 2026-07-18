@@ -22,13 +22,20 @@ function input(
   };
 }
 
-function convert(raw: Record<string, unknown>, overrides: Partial<ConvertInput> = {}) {
+function convert(
+  raw: Record<string, unknown>,
+  overrides: Partial<ConvertInput> = {}
+) {
   const result = convertCatalogs(input(raw, overrides));
   return { dict: result.byLocale.en, reports: result.reports };
 }
 
 /** Renders an ICU string through gt's own formatter (the gt-next runtime path). */
-function render(icu: string, locale: string, vars: Record<string, unknown>): string {
+function render(
+  icu: string,
+  locale: string,
+  vars: Record<string, unknown>
+): string {
   return formatMessage(icu, { locales: [locale], variables: vars });
 }
 
@@ -56,7 +63,9 @@ describe('interpolation', () => {
   it('strips {{var}} to {var}', () => {
     const { dict } = convert({ greeting: 'Hello {{name}}' });
     expect(dict.greeting).toBe('Hello {name}');
-    expect(render(dict.greeting as string, 'en', { name: 'Ada' })).toBe('Hello Ada');
+    expect(render(dict.greeting as string, 'en', { name: 'Ada' })).toBe(
+      'Hello Ada'
+    );
   });
 
   it('escapes ICU-hostile literals around a placeholder', () => {
@@ -74,7 +83,9 @@ describe('interpolation', () => {
   });
 
   it('maps number option bags to ICU skeletons', () => {
-    const { dict } = convert({ price: '{{v, number(minimumFractionDigits: 2)}}' });
+    const { dict } = convert({
+      price: '{{v, number(minimumFractionDigits: 2)}}',
+    });
     expect(dict.price).toBe('{v, number, ::.00}');
   });
 
@@ -133,16 +144,28 @@ describe('cardinal plurals per-locale CLDR', () => {
       items_other: '{{count}} produktu',
     };
     const { byLocale } = convertCatalogs(
-      input(pl, { locales: ['pl'], defaultLocale: 'pl', raw: { pl: { translation: pl } } })
+      input(pl, {
+        locales: ['pl'],
+        defaultLocale: 'pl',
+        raw: { pl: { translation: pl } },
+      })
     );
     expect(byLocale.pl.items).toBe(
       '{count, plural, one {{count} produkt} few {{count} produkty} many {{count} produktów} other {{count} produktu}}'
     );
     // Polish plural boundaries: 1=one, 2=few, 5=many, 22=few.
-    expect(render(byLocale.pl.items as string, 'pl', { count: 1 })).toBe('1 produkt');
-    expect(render(byLocale.pl.items as string, 'pl', { count: 2 })).toBe('2 produkty');
-    expect(render(byLocale.pl.items as string, 'pl', { count: 5 })).toBe('5 produktów');
-    expect(render(byLocale.pl.items as string, 'pl', { count: 22 })).toBe('22 produkty');
+    expect(render(byLocale.pl.items as string, 'pl', { count: 1 })).toBe(
+      '1 produkt'
+    );
+    expect(render(byLocale.pl.items as string, 'pl', { count: 2 })).toBe(
+      '2 produkty'
+    );
+    expect(render(byLocale.pl.items as string, 'pl', { count: 5 })).toBe(
+      '5 produktów'
+    );
+    expect(render(byLocale.pl.items as string, 'pl', { count: 22 })).toBe(
+      '22 produkty'
+    );
   });
 
   it('groups all six Arabic categories in CLDR order', () => {
@@ -155,7 +178,11 @@ describe('cardinal plurals per-locale CLDR', () => {
       items_other: '{{count}} عنصر',
     };
     const { byLocale } = convertCatalogs(
-      input(ar, { locales: ['ar'], defaultLocale: 'ar', raw: { ar: { translation: ar } } })
+      input(ar, {
+        locales: ['ar'],
+        defaultLocale: 'ar',
+        raw: { ar: { translation: ar } },
+      })
     );
     const icu = byLocale.ar.items as string;
     expect(icu.startsWith('{count, plural, zero {')).toBe(true);
@@ -189,7 +216,9 @@ describe('cardinal plurals per-locale CLDR', () => {
     const { dict, reports } = convert({ dog_one: '{{count}} dog' });
     expect(dict.dog_one).toBe('{count} dog');
     expect(dict.dog).toBeUndefined();
-    expect(reports.some((r) => /lack the required `other`/.test(r.reason))).toBe(true);
+    expect(
+      reports.some((r) => /lack the required `other`/.test(r.reason))
+    ).toBe(true);
   });
 
   it('does not group a suffix outside the locale category set', () => {
@@ -232,7 +261,9 @@ describe('ordinal plurals', () => {
       },
       { countKeys: new Set(['translation:rank']) }
     );
-    expect(dict.rank).toBe('{count, plural, one {{count} rank} other {{count} ranks}}');
+    expect(dict.rank).toBe(
+      '{count, plural, one {{count} rank} other {{count} ranks}}'
+    );
     expect(dict.rank_ordinal_one).toBe('{count}st');
     expect(dict.rank_ordinal_other).toBe('{count}th');
     expect(reports.some((r) => /ordinal.*collides/.test(r.reason))).toBe(true);
@@ -242,14 +273,22 @@ describe('ordinal plurals', () => {
 describe('context selectors (call-site gated)', () => {
   it('converts to {context, select} only when a call site passed context', () => {
     const { dict } = convert(
-      { friend: 'a friend', friend_male: 'his friend', friend_female: 'her friend' },
+      {
+        friend: 'a friend',
+        friend_male: 'his friend',
+        friend_female: 'her friend',
+      },
       { contextKeys: new Set(['translation:friend']) }
     );
     expect(dict.friend).toBe(
       '{context, select, female {her friend} male {his friend} other {a friend}}'
     );
-    expect(render(dict.friend as string, 'en', { context: 'male' })).toBe('his friend');
-    expect(render(dict.friend as string, 'en', { context: 'x' })).toBe('a friend');
+    expect(render(dict.friend as string, 'en', { context: 'male' })).toBe(
+      'his friend'
+    );
+    expect(render(dict.friend as string, 'en', { context: 'x' })).toBe(
+      'a friend'
+    );
   });
 
   it('leaves context-looking keys literal when no call site gates them', () => {
@@ -274,7 +313,9 @@ describe('context selectors (call-site gated)', () => {
     );
     expect(dict.colleague).toBeUndefined();
     expect(dict.colleague_male_one).toBe('{count} male colleague');
-    expect(reports.some((r) => /combined context\+plural/.test(r.reason))).toBe(true);
+    expect(reports.some((r) => /combined context\+plural/.test(r.reason))).toBe(
+      true
+    );
   });
 });
 
@@ -325,7 +366,11 @@ describe('nesting, arrays, defaults', () => {
   it('synthesizes an entry from a call-site defaultValue when the key is absent', () => {
     const { dict, reports } = convert(
       { present: 'here' },
-      { defaults: [{ ns: 'translation', key: 'missing', value: 'Fallback {{x}}' }] }
+      {
+        defaults: [
+          { ns: 'translation', key: 'missing', value: 'Fallback {{x}}' },
+        ],
+      }
     );
     expect(dict.missing).toBe('Fallback {x}');
     expect(reports.some((r) => /synthesized/.test(r.reason))).toBe(true);
@@ -351,14 +396,19 @@ describe('nested keys and namespaces', () => {
       },
     });
     expect(result.byLocale.en.title).toBe('Title');
-    expect(result.byLocale.en.dashboard).toEqual({ widgets: { count: 'Widgets' } });
+    expect(result.byLocale.en.dashboard).toEqual({
+      widgets: { count: 'Widgets' },
+    });
   });
 });
 
 describe('separators', () => {
   it('refuses keySeparator: false (flat keys with dots)', () => {
     expect(() =>
-      convert({ 'a.b': 'x' }, { separators: { ...defaults(), keySeparator: false } })
+      convert(
+        { 'a.b': 'x' },
+        { separators: { ...defaults(), keySeparator: false } }
+      )
     ).toThrow(CatalogConversionError);
   });
 

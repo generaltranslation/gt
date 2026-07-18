@@ -51,11 +51,23 @@ export type MessageCatalogs = {
    */
   warnings?: string[];
   /**
-   * Report TODOs raised during discovery (e.g. a synthesized source entry, or
-   * conflicting `defaultMessage`s for one id). The driver merges these into
-   * `ctx.todos`.
+   * Report TODOs raised during discovery, already anchored to a source FILE
+   * (e.g. a synthesized source entry, or conflicting `defaultMessage`s for one
+   * id). The driver merges these into `ctx.todos` right after context
+   * construction. Distinct from `reports` below: those are anchored to a catalog
+   * KEY and materialized into TODOs later, during the emit phase.
    */
   reportTodos?: TodoEntry[];
+  /**
+   * Per-catalog-KEY conversion notes from an adapter that rewrites catalog
+   * FORMATS (react-i18next: i18next JSON -> ICU); the format converter stays
+   * ignorant of the output directory, so each note is keyed by
+   * `locale/ns:keypath` and turned into a file-anchored `ctx.todos` entry later,
+   * in the adapter's `emitCatalogs` (which knows the output dir). Absent for
+   * pass-through adapters. Distinct from `reportTodos` above (file-anchored,
+   * merged at construction time).
+   */
+  reports?: { key: string; reason: string }[];
 };
 
 export type RoutingInfo = {

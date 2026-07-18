@@ -21,8 +21,10 @@ const GT_SERVER_MODULE = 'gt-next/server';
 
 export type TransformOptions = {
   /**
-   * Leave the source library's provider element (and its import) untouched so a
-   * later pass can nest it inside GTProvider while skipped files remain.
+   * Leave the source library's provider (for next-intl, NextIntlClientProvider,
+   * and its import) untouched so a later pass can nest it inside GTProvider while
+   * skipped files remain. Adapter-agnostic: react-i18next reads the same flag to
+   * keep its I18nextProvider for deferred/skipped files.
    */
   retainProvider?: boolean;
   /**
