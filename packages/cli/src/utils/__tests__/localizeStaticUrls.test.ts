@@ -3147,5 +3147,33 @@ describe('transformUrlPath', () => {
       expect(twice).toBe(once);
       expect(once).toBe(`<a href="/docs/ja/x">x</a>`);
     });
+
+    it('keeps <link>/<base> protection even with a raw > inside an attribute', async () => {
+      const link = await runHtml(
+        `<link title="a>b" href="/docs/en/app.css"><a href="/docs/en/x">x</a>`
+      );
+      expect(link).toContain('href="/docs/en/app.css"');
+      expect(link).toContain('/docs/ja/x');
+      const base = await runHtml(
+        `<base data-x="p>q" href="/docs/en/base"><a href="/docs/en/y">y</a>`
+      );
+      expect(base).toContain('href="/docs/en/base"');
+      expect(base).toContain('/docs/ja/y');
+    });
+
+    it('localizes an href with no whitespace before it (after a quote)', async () => {
+      const written = await runHtml(
+        `<a class="x"href="/docs/en/nospace">n</a>`
+      );
+      expect(written).toContain('/docs/ja/nospace');
+    });
+
+    it('skips aria_href and dotted foo.href boundaries too', async () => {
+      const html = `<a href="/docs/en/x">x</a> <div aria_href="/docs/en/a" data.href="/docs/en/b"></div>`;
+      const written = await runHtml(html);
+      expect(written).toContain('/docs/ja/x');
+      expect(written).toContain('aria_href="/docs/en/a"');
+      expect(written).toContain('data.href="/docs/en/b"');
+    });
   });
 });

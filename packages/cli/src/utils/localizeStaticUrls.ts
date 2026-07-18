@@ -591,8 +591,11 @@ function collectHtmlProtectedRanges(html: string): Array<[number, number]> {
     /<style\b[^>]*>[\s\S]*?<\/style>/gi,
     /<pre\b[^>]*>[\s\S]*?<\/pre>/gi,
     /<code\b[^>]*>[\s\S]*?<\/code>/gi,
-    /<link\b[^>]*>/gi,
-    /<base\b[^>]*>/gi,
+    // Match the whole <link>/<base> tag, skipping over quoted attribute values
+    // so a raw `>` inside a value (e.g. title="a>b") does not truncate the
+    // protected range and leave the tag's own href exposed.
+    /<link\b(?:"[^"]*"|'[^']*'|[^>])*>/gi,
+    /<base\b(?:"[^"]*"|'[^']*'|[^>])*>/gi,
   ];
   for (const re of patterns) {
     let match: RegExpExecArray | null;
@@ -655,12 +658,20 @@ function transformHtmlUrls(
   const isProtected = (index: number): boolean =>
     protectedRanges.some(([start, end]) => index >= start && index < end);
 
-  // Match a bare `href` attribute in either quote style. The lookbehind
-  // requires an attribute boundary (whitespace) immediately before `href`, so
-  // `data-href`/`xlink:href`/etc. are not matched. The value captures anything
-  // up to the matching closing quote, so an apostrophe inside a double-quoted
-  // value (or vice versa) is preserved rather than truncating the match.
-  const hrefRegex = /(?<=\s)href\s*=\s*(["'])((?:(?!\1).)*)\1/gi;
+  // Match a bare `href` attribute in either quote style. The negative
+  // lookbehind rejects an attribute-name continuation char immediately before
+  // `href` (word char, `-`, `:`, `.`), so `data-href`/`xlink:href`/`aria_href`
+  // are skipped while a real `href` (preceded by whitespace, `"`, `'`, `>` or
+  // the tag start) still matches. The value captures up to the matching closing
+  // quote, so an apostrophe inside a double-quoted value (or vice versa) is
+  // preserved rather than truncating the match; `.` (no `s` flag) bounds the
+  // value to a single line so an unterminated quote cannot run past it.
+  //
+  // Known limitation: this is a scanner, not an HTML parser. An `href='...'`
+  // substring embedded inside another attribute's quoted value or in visible
+  // text can be matched; the URL-pattern gating limits the blast radius, and a
+  // full parse is a documented follow-up.
+  const hrefRegex = /(?<![\w:.-])href\s*=\s*(["'])((?:(?!\1).)*)\1/gi;
   const replacements: Array<{ start: number; end: number; text: string }> = [];
 
   let match: RegExpExecArray | null;
