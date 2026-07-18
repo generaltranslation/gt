@@ -728,44 +728,55 @@ describe('reactIntl: dotted-id nested resolution (B1)', () => {
 });
 
 describe('reactIntl: <FormattedMessage> in expression positions (B2)', () => {
+  // Every position sits inside a component so the injected useTranslations() hook
+  // has a home; the transform must emit the hook DECLARATION, not just the call.
   const positions: Array<[string, string]> = [
-    ['return argument', 'return <FormattedMessage id="title" />;'],
     [
-      'arrow implicit body',
-      'const C = () => <FormattedMessage id="title" />;\nexport { C };',
+      'return argument',
+      'export function C() { return <FormattedMessage id="title" />; }',
+    ],
+    [
+      'arrow implicit body (expression)',
+      'export const C = () => <FormattedMessage id="title" />;',
+    ],
+    [
+      'arrow implicit body (JSX child)',
+      'export const C = () => <div><FormattedMessage id="title" /></div>;',
     ],
     [
       'const init',
-      'const el = <FormattedMessage id="title" />;\nexport { el };',
+      'export function C() { const el = <FormattedMessage id="title" />; return <div>{el}</div>; }',
     ],
     [
       'object value',
-      'const o = { x: <FormattedMessage id="title" /> };\nexport { o };',
+      'export function C() { const o = { a: <FormattedMessage id="title" /> }; return <div>{o.a}</div>; }',
     ],
     [
       'ternary branch',
-      'export function C({ b }: { b: boolean }) { return b ? <FormattedMessage id="title" /> : null; }',
+      'export function C({ b }: { b: boolean }) { return <div>{b ? <FormattedMessage id="title" /> : null}</div>; }',
     ],
     [
       'array element',
-      'const a = [<FormattedMessage id="title" key="t" />];\nexport { a };',
+      'export function C() { const a = [<FormattedMessage id="title" key="t" />]; return <div>{a}</div>; }',
     ],
   ];
 
   it.each(positions)(
-    'converts a <FormattedMessage> in %s without crashing',
+    'converts a <FormattedMessage> in %s and declares its hook',
     (_name, body) => {
       const code = lines(
         "'use client';",
         "import { FormattedMessage } from 'react-intl';",
-        _name === 'return argument' ? `export function C() { ${body} }` : body
+        body
       );
-      // Must not throw; must convert (bare call, not a JSXExpressionContainer).
       const r = transform(code, { title: 'Welcome' });
       expect(r.skipReasons).toEqual([]);
       expect(r.code).not.toBeNull();
       expect(r.code).not.toContain('FormattedMessage');
-      expect(r.code).toMatch(/\$gtT\(['"]title['"]\)|useTranslations\(\)/);
+      // The bare call is emitted...
+      expect(r.code).toMatch(/\$gtT\(['"]title['"]\)/);
+      // ...AND so is its declaration (never a free `$gtT`, TS2304/ReferenceError).
+      expect(r.code).toMatch(/const \$gtT = useTranslations\(\)/);
     }
   );
 
@@ -782,6 +793,45 @@ describe('reactIntl: <FormattedMessage> in expression positions (B2)', () => {
     );
     expect(r.skipReasons).toEqual([]);
     expect(r.code).toMatch(/\{\s*\$gtT\(['"]title['"]\)\s*\}/);
+    expect(r.code).toMatch(/const \$gtT = useTranslations\(\)/);
+  });
+
+  it('reuses an in-scope binding instead of injecting a second hook', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl, FormattedMessage } from 'react-intl';",
+        'export function C() {',
+        '  const intl = useIntl();',
+        '  const el = <FormattedMessage id="title" />;',
+        '  return <div>{el}{intl.formatMessage({ id: "greeting" })}</div>;',
+        '}'
+      ),
+      { title: 'Welcome', greeting: 'Hi' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(/const intl = useTranslations\(\)/);
+    expect(r.code).toMatch(/const el = intl\(['"]title['"]\)/);
+    // No second, undeclared hook binding is introduced.
+    expect(r.code).not.toContain('$gtT');
+  });
+
+  it('skips a module-scope <FormattedMessage> rather than emit an undeclared hook', () => {
+    // No enclosing component: useTranslations() cannot be called at module scope,
+    // so injecting `$gtT` would leave it undeclared. Skip the whole file instead.
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { FormattedMessage } from 'react-intl';",
+        'const el = <FormattedMessage id="title" />;',
+        'export { el };'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.length).toBeGreaterThan(0);
+    expect(r.skipReasons.join(' ')).toMatch(/module scope|component/i);
+    expect(r.code ?? '').not.toContain('$gtT');
   });
 });
 
@@ -896,7 +946,12 @@ describe('reactIntl: JSX-element values are rich (m1)', () => {
   it('skips a plain message with a JSX-element value on the dictionary path', () => {
     const r = transform(elementValueFile, { g: 'Hi {name} {icon}' });
     expect(r.code).toBeNull();
-    expect(r.skipReasons.join(' ')).toMatch(/--inline|rich/);
+    const reason = r.skipReasons.join(' ');
+    expect(reason).toMatch(/--inline/);
+    // The trigger is a JSX-element value, not a rich-text tag in the message —
+    // the wording must name what actually fired.
+    expect(reason).toMatch(/JSX-element|element value|chunk-function/i);
+    expect(reason).not.toMatch(/rich-text tags/);
   });
 
   it('does not mis-render a JSX-element value under --inline (safe skip)', () => {
@@ -952,6 +1007,71 @@ describe('reactIntl: IntlProvider extra props are skipped (B4)', () => {
     );
     expect(r.skipReasons).toEqual([]);
     expect(r.code).not.toContain('IntlProvider');
+  });
+
+  it('unwraps a provider carrying React reserved key/ref plus the config props', () => {
+    // key/ref are React reserved props, not react-intl config — unwrapping drops
+    // them harmlessly, so the provider must still convert cleanly (not skip).
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { IntlProvider } from 'react-intl';",
+        'export function W({ locale, messages, children }: any) {',
+        '  return <IntlProvider key={locale} ref={undefined} locale={locale} defaultLocale="en" messages={messages}>{children}</IntlProvider>;',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toContain('IntlProvider');
+  });
+
+  it('reports only the prop actually present (no lecturing about absent props)', () => {
+    const r = transform(providerWith('onError={reportError}'));
+    expect(r.code).toBeNull();
+    const reason = r.skipReasons.join(' ');
+    expect(reason).toContain('onError');
+    // The old composite reason lectured about textComponent/defaultRichTextElements
+    // even when they were absent; each reason must name only its own prop.
+    expect(reason).not.toContain('textComponent');
+    expect(reason).not.toContain('defaultRichTextElements');
+  });
+});
+
+describe('reactIntl: re-exports from react-intl are skipped and reported (New #3)', () => {
+  it('skips+reports a named re-export from react-intl', () => {
+    const r = transform("export { useIntl } from 'react-intl';");
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/re-export/i);
+    expect(r.skipReasons.join(' ')).toMatch(/react-intl/);
+  });
+
+  it('skips+reports a star re-export from react-intl', () => {
+    const r = transform("export * from 'react-intl';");
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/re-export/i);
+  });
+
+  it('skips+reports a re-export from an @formatjs/* source', () => {
+    const r = transform("export { FormattedMessage } from '@formatjs/intl';");
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/re-export/i);
+  });
+
+  it('reports a re-export alongside convertible imports (does not silently strip)', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        "export { FormattedMessage } from 'react-intl';",
+        'export function C() {',
+        '  const intl = useIntl();',
+        "  return <p>{intl.formatMessage({ id: 'title' })}</p>;",
+        '}'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/re-export/i);
   });
 });
 
