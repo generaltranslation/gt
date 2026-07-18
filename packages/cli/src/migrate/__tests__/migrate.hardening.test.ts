@@ -29,8 +29,7 @@ vi.mock('../../utils/packageManager.js', async (importOriginal) => ({
 // layout pass import transformSourceFile from this module, so the wrapper
 // covers both; only files named boom.tsx blow up.
 vi.mock('../transformSource.js', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../transformSource.js')>();
+  const actual = await importOriginal<typeof import('../transformSource.js')>();
   return {
     ...actual,
     transformSourceFile: (

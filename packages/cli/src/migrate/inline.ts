@@ -91,7 +91,10 @@ export function inlinePass(
         tBindings.get(callee.name),
         keyArg.value
       );
-      if (message === null || ctx.adapter.classifyMessage(message).kind !== 'text') {
+      if (
+        message === null ||
+        ctx.adapter.classifyMessage(message).kind !== 'text'
+      ) {
         remaining += 1;
         return;
       }
