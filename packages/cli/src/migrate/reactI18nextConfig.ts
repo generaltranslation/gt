@@ -170,6 +170,14 @@ function extractOptions(source: string): RawOptions | null {
     'pluralSeparator',
     'lng',
   ]);
+
+  // The official i18next App Router example declares the settings as
+  // module-level consts (`export const defaultNS = 'translation'`) and then
+  // references them with shorthand in getOptions ({ defaultNS, fallbackLng }).
+  // Collect those const bindings so an identifier value resolves to its literal
+  // instead of being dropped as non-literal.
+  const consts = collectConstLiterals(ast);
+
   let best: RawOptions | null = null;
   let bestScore = 0;
   traverse(ast, {
@@ -185,10 +193,9 @@ function extractOptions(source: string): RawOptions | null {
           continue;
         }
         const name = property.key.name;
-        if (recognized.has(name)) score++;
-        (options as Record<string, unknown>)[name] = literalValue(
-          property.value
-        );
+        const value = literalValue(property.value, consts);
+        if (recognized.has(name) && value !== undefined) score++;
+        (options as Record<string, unknown>)[name] = value;
       }
       if (score > bestScore) {
         bestScore = score;
@@ -199,11 +206,33 @@ function extractOptions(source: string): RawOptions | null {
   return bestScore > 0 ? best : null;
 }
 
-function literalValue(node: t.Node): unknown {
+/** Maps every `const <id> = <literal>` in the file to its resolved value, so
+ *  shorthand references (`{ defaultNS }`) can be resolved to their string. */
+function collectConstLiterals(ast: t.File): Map<string, unknown> {
+  const consts = new Map<string, unknown>();
+  traverse(ast, {
+    VariableDeclarator(path) {
+      if (
+        path.node.init &&
+        t.isIdentifier(path.node.id) &&
+        !consts.has(path.node.id.name)
+      ) {
+        const value = literalValue(path.node.init);
+        if (value !== undefined) consts.set(path.node.id.name, value);
+      }
+    },
+  });
+  return consts;
+}
+
+function literalValue(node: t.Node, consts?: Map<string, unknown>): unknown {
   if (t.isStringLiteral(node)) return node.value;
   if (t.isBooleanLiteral(node)) return node.value;
   if (t.isNumericLiteral(node)) return node.value;
   if (t.isNullLiteral(node)) return null;
+  if (consts && t.isIdentifier(node) && consts.has(node.name)) {
+    return consts.get(node.name);
+  }
   if (t.isArrayExpression(node)) {
     const values: unknown[] = [];
     for (const element of node.elements) {
@@ -219,7 +248,7 @@ function literalValue(node: t.Node): unknown {
         !property.computed &&
         t.isIdentifier(property.key)
       ) {
-        object[property.key.name] = literalValue(property.value);
+        object[property.key.name] = literalValue(property.value, consts);
       }
     }
     return object;

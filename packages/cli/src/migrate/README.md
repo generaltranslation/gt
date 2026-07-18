@@ -1,7 +1,24 @@
 # migrate
 
-`gt migrate` converts a next-intl or react-intl (FormatJS) Next.js App Router
-project to gt-next.
+`gt migrate` converts an existing i18n setup in a Next.js App Router project to
+gt-next. Sources are handled by pluggable adapters behind a common seam; the
+source library is auto-detected from your dependencies, or forced with
+`--from <library>`.
+
+## Supported sources
+
+| Source        | `--from`        | Status                           | Scope                                                   |
+| ------------- | --------------- | -------------------------------- | ------------------------------------------------------- |
+| next-intl     | `next-intl`     | full                             | client + server + config + catalogs (dictionary-compat) |
+| react-intl    | `react-intl`    | full                             | client + RSC + config + catalogs (dictionary-compat)    |
+| react-i18next | `react-i18next` | **client + catalogs + provider** | see below                                               |
+| next-i18next  | `next-i18next`  | out                              | Pages-Router APIs; skipped with a recipe                |
+| bare i18next  | —               | out                              | not a React component integration                       |
+
+Because `determineLibrary` collapses every i18next-family dependency to the
+single value `i18next`, **`--from react-i18next` is the reliable way in** for an
+i18next project; auto-detect disambiguates react-i18next (App Router) from
+next-i18next / bare i18next but the flag removes all doubt.
 
 Strategy: **dictionary-compat by default** — gt-next's `useTranslations`/
 `getTranslations` share next-intl's names, namespace resolution, and ICU
@@ -46,13 +63,12 @@ existing wizard codemods; `--dry-run` prints the report without writing.
 
 ## Source libraries
 
-next-intl (adapter #1) and react-intl / FormatJS (adapter #2) are supported;
-pass `--from <library>` to override auto-detection. react-i18next is detected by
-`determineLibrary` but not yet supported. Each source library is a
-`SourceAdapter` (`adapters/`), so the pipeline stays library-agnostic and new
-adapters slot in behind the registry.
+Each source library is a `SourceAdapter` (`adapters/`), so the pipeline stays
+library-agnostic and new adapters slot in behind the registry. next-intl
+(adapter #1), react-intl / FormatJS (adapter #2), and react-i18next (adapter #3)
+are all supported; pass `--from <library>` to override auto-detection.
 
-### react-intl specifics
+## react-intl
 
 > A migrated app (next-intl or react-intl alike) will not `next build` on
 > published gt-next until #1909 ships; build with `next build --turbopack` to
@@ -118,10 +134,88 @@ AST-compiled (`--ast`) catalogs. Rich-text tags in messages render only under `-
 `npx gt translate` because gt hashes source differently from FormatJS's
 `[sha512:contenthash]`, so existing FormatJS-keyed translations do not match.
 
+## react-i18next
+
+**v1 migrates the CLIENT surface, the CATALOGS, and the PROVIDER — not the
+server.** A raw react-i18next App Router app hand-rolls its server translation
+(`getT()` over `initI18next`/`resourcesToBackend`), which is bespoke per app with
+no importable symbol to swap, so **every file that imports `i18next` directly is
+skipped and reported with a `getTranslations` (gt-next/server) recipe** rather
+than miscompiled. The server keeps working on react-i18next until you migrate it
+by hand.
+
+Mechanical (converted):
+
+- `useTranslation(ns)` → `useTranslations` (gt-next); `t('key')`, `t('key', {vars})`
+- dotted nested keys; `t('ns:key')` remapped to gt's dotted dictionary paths
+- `i18n.changeLanguage(l)` → `useSetLocale()`
+- `<I18nextProvider>` → `<GTProvider>`; a layout with no provider gets a
+  `<GTProvider>` around its `<body>`
+- trivial `<Trans i18nKey="…" />` → a dictionary `t()` call
+
+Skipped + reported (actionable):
+
+- `<Trans>` with element children or a `components` prop → rewrite with gt-next
+  `<T>` (its children translate in place). Expect this to be common.
+- server `getT()` / any direct `i18next` import → migrate to `getTranslations`
+- a scoped `useTranslation('ns')` reading another namespace via `ns:key`
+- `withTranslation`, `useTranslation().ready`, non-`changeLanguage` `i18n` usage
+
+### Catalog conversion (the core deliverable)
+
+i18next `public/locales/{lng}/{ns}.json` catalogs are converted to ICU and merged
+into one dictionary per locale under a NEW `gt/dictionaries/{locale}.json` (the
+default namespace at the dictionary root, other namespaces nested). **Originals
+are never mutated or overwritten**; the generated `loadDictionary.ts` points at
+the new dir. Conversions handled: `{{var}}` → `{var}` with ICU escaping of `{`
+`}` `'`; suffix plurals → ICU `plural` using each locale's exact CLDR category
+set from `Intl.PluralRules` (so Polish keeps one/few/many/other and Arabic all
+six); `_ordinal_` → `selectordinal`; call-site-gated `_context` → `select`;
+`number`/`currency` formatters → ICU skeletons; static `$t()` nesting inlined.
+Everything non-mechanical (datetime approximated; relativetime/list/custom
+formatters, combined context+plural, `returnObjects`/arrays) is left working and
+reported. If the app sets `keySeparator: false` or a non-default interpolation
+delimiter, the run refuses with a specific diagnostic rather than mis-nesting.
+
+### Known rough edge: the `[lng]` route segment
+
+Real i18next apps localize on a `[lng]` segment, but gt-next's static-rendering
+resolver only restores SSG for a segment named literally `[locale]`. Until you
+rename `[lng]` → `[locale]`, gt-next has no `getLocale.ts` reading the route
+param, so it falls back to its default-locale detection and **every route
+renders in the default locale** (verified: on a `[lng]` fixture `/pl/plurals`
+renders the English plural). The report surfaces the rename TODO prominently.
+Apps already on `[locale]` get the SSG resolvers (`getLocale.ts`/`getRegion.ts`)
+emitted and render each locale correctly (verified end to end below).
+
+### Forward-compat (PR #1602)
+
+A future `--keep-i18next-format` mode could emit dictionary leaves as
+`[value, { $format: 'I18NEXT' }]` so `{{var}}`/formatters render through
+i18next's own interpolation once #1602 ships, instead of converting them to ICU.
+v1 does **not** implement it and does **not** depend on #1602: ICU conversion
+works today with zero runtime dependency, and plurals/context/nesting must
+convert to ICU regardless (they live in i18next's key-lookup layer, which #1602
+does not touch).
+
 Known upstream constraints (verified against a real app, 2026-07):
 
 - native-ESM configs (`next.config.mjs`, or `.js` with `"type": "module"`)
   break at build time because gt-next/config's ESM bundle calls bare
   `require` — the command emits a TODO advising a rename to `next.config.ts`.
-- runtime `loadDictionary` resolution in webpack builds needs the gt-next fix
-  from #1909; with it, both migration modes build and serve cleanly.
+- runtime `loadDictionary` resolution: with gt-next 11.0.11, the migrated app
+  builds and renders correctly under the **Turbopack** build
+  (`next build --turbopack`) — verified end to end for react-i18next below. The
+  default **webpack** build does not resolve gt-next's internal
+  `_load-dictionary` alias (Next externalizes the require from node_modules, so
+  the alias never applies), which the gt-next fix from #1909 addresses. Until
+  #1909 ships, build with `--turbopack`.
+
+react-i18next end-to-end proof (2026-07, gt-next 11.0.11, Next 15.5): a real
+App-Router react-i18next app (en/pl/ar, `common`+`dashboard`, a `[locale]`
+segment, a bespoke server `getT`) migrated with `--from react-i18next`,
+`next build --turbopack`, then prerendered-HTML inspection. Every plural boundary
+matches the pre-migration i18next render exactly — Polish `1/2/5/22` →
+`produkt/produkty/produktów/produkty`, Arabic `0/1/2/3/11/100` across all six
+CLDR categories — the server `getT` route still renders on react-i18next, and all
+routes stay statically prerendered (SSG).

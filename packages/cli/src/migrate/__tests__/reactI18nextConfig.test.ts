@@ -56,6 +56,24 @@ describe('getI18nextConfig', () => {
     expect(config.namespaces).toEqual(['common', 'dashboard']);
   });
 
+  it('resolves module-level const settings referenced by shorthand', () => {
+    // The official i18next App Router example shape.
+    const cwd = makeApp({
+      'app/i18n/settings.ts': [
+        "export const languages = ['en', 'pl', 'ar'];",
+        "export const fallbackLng = 'en';",
+        "export const defaultNS = 'common';",
+        'export function getOptions(lng = fallbackLng, ns = defaultNS) {',
+        '  return { supportedLngs: languages, fallbackLng, lng, defaultNS, ns };',
+        '}',
+      ].join('\n'),
+    });
+    const config = getI18nextConfig(cwd);
+    expect(config.defaultNS).toBe('common');
+    expect(config.locales).toEqual(['en', 'pl', 'ar']);
+    expect(config.defaultLocale).toBe('en');
+  });
+
   it('refuses keySeparator: false with a specific reason', () => {
     const cwd = makeApp({
       'i18n.ts': [
