@@ -235,8 +235,7 @@ describe.sequential('_uploadSourceFiles', () => {
     );
   });
 
-  // TODO: Re-enable when the API supports POT -> PO file format transforms.
-  it.skip('should upload PO and POT source files', async () => {
+  it('should upload PO and POT source files', async () => {
     const mockFiles = [
       {
         source: createMockFileUpload({
