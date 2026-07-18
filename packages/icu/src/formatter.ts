@@ -59,10 +59,10 @@ export function formatMessage(
   message: string,
   locales: string | string[] = 'en',
   variables: MessageVariables = {}
-): string {
+): unknown {
   const locale = resolveLocale(locales);
   const ast = parse(message, { locale });
-  return collapseParts(formatElements(ast, locales, variables)) as string;
+  return collapseParts(formatElements(ast, locales, variables));
 }
 
 function formatElements(

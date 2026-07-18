@@ -4,7 +4,7 @@
  * intl-messageformat is BSD-3-Clause licensed. See ../../THIRD_PARTY_NOTICES.md.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 import { formatMessage } from '../index';
 
 describe('formatMessage', () => {
@@ -22,9 +22,14 @@ describe('formatMessage', () => {
     [null, ''],
     [undefined, ''],
     [true, true],
+    [0n, ''],
     [123n, 123n],
   ])('formats direct argument %s', (value, expected) => {
     expect(formatMessage('{value}', 'en', { value })).toBe(expected);
+  });
+
+  it('exposes the formatter parts return type honestly', () => {
+    expectTypeOf(formatMessage('{value}', 'en', { value: true })).toBeUnknown();
   });
 
   it('preserves non-string values as parts like intl-messageformat', () => {
