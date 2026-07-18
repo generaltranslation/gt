@@ -1018,7 +1018,7 @@ export function convertCatalogs(input: ConvertInput): ConvertResult {
   // keys or reasons are preserved.
   const seenReports = new Set<string>();
   const dedupedReports = reports.filter((report) => {
-    const signature = `${report.key} ${report.reason}`;
+    const signature = `${report.key}\u0000${report.reason}`;
     if (seenReports.has(signature)) return false;
     seenReports.add(signature);
     return true;
