@@ -170,7 +170,9 @@ export function transformSourceFile(
     (name) => name === adapter.translationHooks.server
   );
   const removalLocals = localsBy((name) => adapter.removals.has(name));
-  const messagesHookLocals = localsBy((name) => adapter.messagesHooks.has(name));
+  const messagesHookLocals = localsBy((name) =>
+    adapter.messagesHooks.has(name)
+  );
   const providerLocals = localsBy(
     (name) => adapter.providerName !== null && name === adapter.providerName
   );

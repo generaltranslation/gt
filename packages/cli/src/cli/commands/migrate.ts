@@ -262,7 +262,11 @@ export async function handleMigrateCommand(
       adapter.middlewareCandidates
     )) {
       const code = fs.readFileSync(middlewareFile, 'utf8');
-      collect(ctx, middlewareFile, transformMiddleware(middlewareFile, code, ctx));
+      collect(
+        ctx,
+        middlewareFile,
+        transformMiddleware(middlewareFile, code, ctx)
+      );
     }
   }
 
