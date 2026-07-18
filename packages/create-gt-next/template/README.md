@@ -1,0 +1,43 @@
+<p align="center">
+  <a href="https://generaltranslation.com" target="_blank">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/brand/gt-logo-dark.svg">
+      <img src="https://generaltranslation.com/brand/gt-logo-light.svg" alt="General Translation" width="100" height="100">
+    </picture>
+  </a>
+</p>
+
+# gt-next + Next.js App
+
+A multilingual Next.js app using `gt-next` for internationalization.
+
+[See it live](https://next-create-app-eight.vercel.app)
+
+## Quick Start
+
+### Install
+
+```bash
+npm install
+```
+
+### Run development server
+
+```bash
+npm run dev
+```
+
+### Build for production
+
+```bash
+npm run build
+npm start
+```
+
+## Deploy
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/generaltranslation/gt/tree/main/examples/next-create-app)
+
+## Documentation
+
+- [gt-next docs](https://generaltranslation.com/docs/next)
