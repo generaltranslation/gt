@@ -204,6 +204,36 @@ function emitStaticLocaleResolvers(
     return;
   }
   if (localeLayout.kind === 'other-segment') {
+    const segment = localeLayout.segment;
+    // The react-i18next adapter leads with the CORRECTNESS consequence, not the
+    // rendering-mode one: with a non-[locale] segment gt-next has no route-param
+    // resolver, so it falls back to default-locale detection and every
+    // non-default locale renders in the DEFAULT language (the F1 finding). The
+    // lost SSG is secondary. (next-intl keeps its original message untouched.)
+    if (ctx.adapter?.id === 'react-i18next') {
+      ctx.todos.push({
+        file: localeLayout.file,
+        reason:
+          `WRONG LANGUAGE until you rename ${segment} to [locale]: gt-next only ` +
+          'reads the route param for a segment named literally [locale], so with ' +
+          `${segment} it falls back to default-locale detection and every ` +
+          'non-default locale renders in the DEFAULT language. Rename the dynamic ' +
+          `segment directory ${segment} to [locale] (updating the imports/links ` +
+          'that point at it), then re-run gt migrate so getLocale.ts/getRegion.ts ' +
+          'resolve the locale (also restoring static SSG rendering, which is ' +
+          'otherwise lost to request-scoped dynamic (ƒ) rendering).',
+      });
+      // Only a genuine wrong-language risk when there is more than one locale.
+      if (ctx.catalogs.locales.length > 1) {
+        (ctx.warnings ??= []).push(
+          `Localized route segment is ${segment}, not [locale]: every non-default ` +
+            `locale (${ctx.catalogs.locales.join(', ')}) will render in the DEFAULT ` +
+            `language until you rename ${segment} to [locale] and re-run gt migrate. ` +
+            'See the TODO for the full steps.'
+        );
+      }
+      return;
+    }
     ctx.todos.push({
       file: localeLayout.file,
       reason:
@@ -337,7 +367,7 @@ function emitResolverFile(
  */
 type LocaleLayout =
   | { kind: 'locale'; file: string; hasRootLayoutAbove: boolean }
-  | { kind: 'other-segment'; file: string }
+  | { kind: 'other-segment'; file: string; segment: string }
   | { kind: 'none' };
 
 /**
@@ -371,7 +401,13 @@ function findLocaleLayout(ctx: MigrationContext): LocaleLayout {
   const otherSegment = layouts.find((file) =>
     isDynamicSegmentDir(path.basename(path.dirname(file)))
   );
-  if (otherSegment) return { kind: 'other-segment', file: otherSegment };
+  if (otherSegment) {
+    return {
+      kind: 'other-segment',
+      file: otherSegment,
+      segment: path.basename(path.dirname(otherSegment)),
+    };
+  }
   return { kind: 'none' };
 }
 

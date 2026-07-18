@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { formatMessage } from '@generaltranslation/format';
 import { parse as parseIcu } from '@formatjs/icu-messageformat-parser';
 import { handleMigrateCommand } from '../../cli/commands/migrate.js';
+import { logger } from '../../console/logger.js';
 import { clearI18nextConfigCache } from '../reactI18nextConfig.js';
 
 vi.mock('../../hooks/postProcess.js', () => ({
@@ -162,6 +163,38 @@ function makeApp(overrides: Record<string, string> = {}): string {
   return cwd;
 }
 
+/** Writes only the given files (no defaults) into a fresh temp dir. */
+function makeRawApp(files: Record<string, string>): string {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-ri18n-raw-'));
+  tmpDirs.push(cwd);
+  for (const [rel, content] of Object.entries(files)) {
+    const abs = path.join(cwd, rel);
+    fs.mkdirSync(path.dirname(abs), { recursive: true });
+    fs.writeFileSync(abs, content);
+  }
+  return cwd;
+}
+
+const PKG = JSON.stringify({
+  name: 'demo',
+  dependencies: {
+    next: '15.5.0',
+    react: '19.0.0',
+    i18next: '^23.0.0',
+    'react-i18next': '^14.0.0',
+  },
+});
+
+const SETTINGS = [
+  'export function getOptions() {',
+  '  return {',
+  "    supportedLngs: ['en', 'pl'],",
+  "    fallbackLng: 'en',",
+  "    defaultNS: 'translation',",
+  '  };',
+  '}',
+].join('\n');
+
 const OPTIONS = {
   config: 'gt.config.json',
   inline: false,
@@ -241,6 +274,27 @@ describe('react-i18next full migration', () => {
     expect(report).toMatch(/<T>/);
   });
 
+  it('migrates a returned standalone <Trans> without crashing the run (B1)', async () => {
+    const cwd = makeApp({
+      'components/Banner.tsx': [
+        "'use client';",
+        "import { useTranslation, Trans } from 'react-i18next';",
+        'export function Banner() {',
+        '  const { t } = useTranslation();',
+        '  return <Trans i18nKey="welcome" />;',
+        '}',
+      ].join('\n'),
+    });
+    // Before B1 this threw an uncaught babel TypeError and aborted the command.
+    await handleMigrateCommand({ ...OPTIONS }, 'i18next', cwd);
+    const banner = read(cwd, 'components/Banner.tsx');
+    expect(banner).toMatch(/return t\(["']welcome["']\)/);
+    expect(banner).not.toContain('<Trans');
+    expect(banner).toMatch(/from ["']gt-next["']/);
+    // The rest of the app still migrated.
+    expect(fs.existsSync(path.join(cwd, 'gt/dictionaries/en.json'))).toBe(true);
+  });
+
   it('honors --from react-i18next explicitly', async () => {
     const cwd = makeApp();
     await handleMigrateCommand(
@@ -285,6 +339,121 @@ describe('react-i18next full migration', () => {
     // Nothing was written.
     expect(fs.existsSync(path.join(cwd, 'gt.config.json'))).toBe(false);
     expect(fs.existsSync(path.join(cwd, 'gt/dictionaries'))).toBe(false);
+  });
+
+  it('warns loudly about a [lng] segment that renders the wrong language (F1)', async () => {
+    const cwd = makeRawApp({
+      'package.json': PKG,
+      'next.config.ts': 'export default {};',
+      'app/i18n/settings.ts': SETTINGS,
+      'app/[lng]/layout.tsx': [
+        'export default function L({ children, params }: any) {',
+        '  return <html lang={params.lng}><body>{children}</body></html>;',
+        '}',
+      ].join('\n'),
+      'app/[lng]/page.tsx': [
+        "'use client';",
+        "import { useTranslation } from 'react-i18next';",
+        'export default function P() {',
+        '  const { t } = useTranslation();',
+        "  return <p>{t('items', { count: 5 })}</p>;",
+        '}',
+      ].join('\n'),
+      'public/locales/en/translation.json': JSON.stringify({
+        items_one: '{{count}} item',
+        items_other: '{{count}} items',
+      }),
+      'public/locales/pl/translation.json': JSON.stringify({
+        items_one: '{{count}} produkt',
+        items_other: '{{count}} produktów',
+      }),
+    });
+    await handleMigrateCommand(
+      { ...OPTIONS, from: 'react-i18next' },
+      'base',
+      cwd
+    );
+    const report = read(cwd, 'gt-migrate-report.md');
+    expect(report).toContain('## WARNINGS');
+    expect(report).toMatch(/render in the DEFAULT language/i);
+    expect(report).toMatch(/WRONG LANGUAGE/);
+    // The warning names the actual segment.
+    expect(report).toContain('[lng]');
+  });
+
+  it('lists files that import a left-unchanged wrapper module (F2)', async () => {
+    const cwd = makeRawApp({
+      'package.json': PKG,
+      'next.config.ts': 'export default {};',
+      'app/i18n/settings.ts': SETTINGS,
+      'app/i18n/client.ts': [
+        "'use client';",
+        "import { useTranslation } from 'react-i18next';",
+        'export function useT(ns?: string) {',
+        '  return useTranslation(ns);',
+        '}',
+      ].join('\n'),
+      'app/[locale]/layout.tsx': [
+        'export default function L({ children }: any) {',
+        '  return <html><body>{children}</body></html>;',
+        '}',
+      ].join('\n'),
+      'app/[locale]/page.tsx': [
+        "'use client';",
+        "import { useT } from '../i18n/client';",
+        'export default function P() {',
+        '  const { t } = useT();',
+        "  return <p>{t('title')}</p>;",
+        '}',
+      ].join('\n'),
+      'public/locales/en/translation.json': JSON.stringify({ title: 'Home' }),
+      'public/locales/pl/translation.json': JSON.stringify({ title: 'Strona' }),
+    });
+    await handleMigrateCommand(
+      { ...OPTIONS, from: 'react-i18next' },
+      'base',
+      cwd
+    );
+    const report = read(cwd, 'gt-migrate-report.md');
+    // The wrapper itself is skipped and reported.
+    expect(report).toContain('app/i18n/client.ts');
+    // The consumer that imports it is surfaced as unmigrated.
+    expect(report).toMatch(/Files importing a left-unchanged module/);
+    expect(report).toContain('app/[locale]/page.tsx');
+    // The evidence-degradation note is present.
+    expect(report).toMatch(/context\/plural detection uses call sites/);
+  });
+
+  it('warns when next-intl is detected but react-i18next is also present (m2)', async () => {
+    const cwd = makeRawApp({
+      'package.json': JSON.stringify({
+        name: 'demo',
+        dependencies: {
+          next: '15.5.0',
+          'next-intl': '^3.0.0',
+          'react-i18next': '^14.0.0',
+          i18next: '^23.0.0',
+        },
+      }),
+    });
+    const warns: string[] = [];
+    vi.spyOn(logger, 'warn').mockImplementation((m: string) => {
+      warns.push(m);
+    });
+    vi.spyOn(process, 'exit').mockImplementation(((code?: number) => {
+      throw new Error(`exit:${code}`);
+    }) as never);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    // next-intl auto-detected; it has no catalogs here so the run errors out,
+    // but the react-i18next notice must fire first.
+    await expect(
+      handleMigrateCommand({ ...OPTIONS }, 'next-intl', cwd)
+    ).rejects.toThrow();
+    expect(
+      warns.some(
+        (w) => /react-i18next/.test(w) && /--from react-i18next/.test(w)
+      )
+    ).toBe(true);
   });
 
   it('does not write on a dry run', async () => {

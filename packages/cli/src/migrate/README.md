@@ -7,13 +7,19 @@ source library is auto-detected from your dependencies, or forced with
 
 ## Supported sources
 
-| Source        | `--from`        | Status                           | Scope                                                   |
-| ------------- | --------------- | -------------------------------- | ------------------------------------------------------- |
-| next-intl     | `next-intl`     | full                             | client + server + config + catalogs (dictionary-compat) |
-| react-intl    | `react-intl`    | full                             | client + RSC + config + catalogs (dictionary-compat)    |
-| react-i18next | `react-i18next` | **client + catalogs + provider** | see below                                               |
-| next-i18next  | `next-i18next`  | out                              | Pages-Router APIs; skipped with a recipe                |
-| bare i18next  | —               | out                              | not a React component integration                       |
+| Source        | `--from`        | Status                                      | Scope                                                   |
+| ------------- | --------------- | ------------------------------------------- | ------------------------------------------------------- |
+| next-intl     | `next-intl`     | full                                        | client + server + config + catalogs (dictionary-compat) |
+| react-intl    | `react-intl`    | full                                        | client + RSC + config + catalogs (dictionary-compat)    |
+| react-i18next | `react-i18next` | **catalogs + provider + direct call sites** | see below                                               |
+| next-i18next  | `next-i18next`  | out                                         | Pages-Router APIs; skipped with a recipe                |
+| bare i18next  | —               | out                                         | not a React component integration                       |
+
+> Note: `--from react-i18next` bypasses the Pages-Router refusal by design (it is
+> the documented escape hatch for an App Router app whose `app/` directory sits
+> in a non-standard location). Because the flag cannot tell a genuine Pages-Router
+> app apart from that, forcing it on a real Pages-Router project produces a broken
+> migration; the OUT guarantee holds only for the auto-detect path.
 
 Because `determineLibrary` collapses every i18next-family dependency to the
 single value `i18next`, **`--from react-i18next` is the reliable way in** for an
@@ -136,13 +142,17 @@ AST-compiled (`--ast`) catalogs. Rich-text tags in messages render only under `-
 
 ## react-i18next
 
-**v1 migrates the CLIENT surface, the CATALOGS, and the PROVIDER — not the
-server.** A raw react-i18next App Router app hand-rolls its server translation
-(`getT()` over `initI18next`/`resourcesToBackend`), which is bespoke per app with
-no importable symbol to swap, so **every file that imports `i18next` directly is
-skipped and reported with a `getTranslations` (gt-next/server) recipe** rather
-than miscompiled. The server keeps working on react-i18next until you migrate it
-by hand.
+**v1 converts i18next catalogs to ICU, swaps the provider and config, and
+migrates call sites that import `useTranslation`/`Trans` directly from
+react-i18next.** Wrapper-based call sites (the official App Router pattern, where
+components import their hook from a local `i18n/client`/`i18n/server` module) are
+reported and left for manual migration, not silently rewritten. The server side
+is not migrated: a raw react-i18next App Router app hand-rolls its server
+translation (`getT()` over `initI18next`/`resourcesToBackend`), which is bespoke
+per app with no importable symbol to swap, so **every file that imports `i18next`
+directly is skipped and reported with a `getTranslations` (gt-next/server) recipe**
+rather than miscompiled. The server keeps working on react-i18next until you
+migrate it by hand.
 
 Mechanical (converted):
 

@@ -18,7 +18,6 @@ import { buildReport } from '../../migrate/report.js';
 import { resolveMigrationSource } from '../../migrate/resolveSource.js';
 import { transformLayoutFile } from '../../migrate/transformLayout.js';
 import { transformSourceFile } from '../../migrate/transformSource.js';
-import type { SourceAdapter } from '../../migrate/adapters/types.js';
 import type {
   MigrateOptions,
   MigrationContext,
@@ -48,7 +47,8 @@ export async function handleMigrateCommand(
   // 'i18next'; resolve the concrete flavor (or the scoped OUT message) before the
   // registry lookup. A concrete --from (e.g. react-i18next) passes straight
   // through and is the documented escape hatch.
-  const resolution = resolveMigrationSource(options.from ?? library, cwd);
+  const requestedFrom = options.from ?? library;
+  const resolution = resolveMigrationSource(requestedFrom, cwd);
   if (resolution.kind === 'error') {
     logErrorAndExit(resolution.message);
   }
@@ -74,6 +74,20 @@ export async function handleMigrateCommand(
       `--from ${requestedFrom} was passed, but ${adapter.displayName} was not ` +
         'found in this project (checked package.json and node_modules). Install ' +
         'it first, or correct the --from value, then re-run.'
+    );
+  }
+
+  // If next-intl was auto-detected but react-i18next is also installed, the
+  // user may have meant to target it; point them at the flag so a project does
+  // not get silently half-migrated (the m2 finding).
+  if (
+    !options.from &&
+    adapter.id === 'next-intl' &&
+    hasDependency(cwd, 'react-i18next')
+  ) {
+    logger.warn(
+      'Also detected react-i18next in your dependencies. This run migrates next-intl only; ' +
+        're-run with --from react-i18next to target the react-i18next surface instead.'
     );
   }
 
@@ -412,6 +426,7 @@ export async function handleMigrateCommand(
   if (options.dryRun) {
     const report = buildReport(ctx, true, !(await isGtNextInstalled(cwd)));
     logger.message(report);
+    echoWarnings(ctx);
     logger.endCommand('Dry run complete — nothing was written.');
     return;
   }
@@ -459,9 +474,18 @@ export async function handleMigrateCommand(
   const reportPath = path.join(cwd, 'gt-migrate-report.md');
   fs.writeFileSync(reportPath, report);
   logger.message(report);
+  echoWarnings(ctx);
   logger.endCommand(
     `Migration written (${writtenFiles.length} files). Full report: ${path.relative(cwd, reportPath)}`
   );
+}
+
+/** Echoes the loud, correctness-level warnings to the console at the end of the
+ *  run so they are seen even if the user does not read the full report. */
+function echoWarnings(ctx: MigrationContext): void {
+  for (const warning of ctx.warnings ?? []) {
+    logger.warn(warning);
+  }
 }
 
 /**
@@ -642,6 +666,20 @@ function isLayoutFile(file: string): boolean {
     base === 'layout.jsx' ||
     base === 'layout.js'
   );
+}
+
+function hasDependency(cwd: string, name: string): boolean {
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(cwd, 'package.json'), 'utf8')
+    );
+    return Boolean(
+      (pkg.dependencies && pkg.dependencies[name]) ||
+      (pkg.devDependencies && pkg.devDependencies[name])
+    );
+  } catch {
+    return false;
+  }
 }
 
 function findRootFiles(cwd: string, candidates: string[]): string[] {

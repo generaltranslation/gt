@@ -85,7 +85,13 @@ export type MigrationContext = {
   routing: RoutingInfo;
   edits: FileEdit[];
   todos: TodoEntry[];
-  /** top-level advisory notes surfaced in the report's Warnings section. */
+  /**
+   * Top-level warnings surfaced at the top of the report (and echoed to the
+   * console at the end of the run), not buried in the TODO list. Severity spans
+   * mild advisory notes (an assumed default locale) to loud correctness risks
+   * (a `[lng]` segment that makes every non-default locale render in the default
+   * language); the adapter chooses the wording.
+   */
   warnings?: string[];
   /** file path -> reasons the file was left untouched */
   skippedFiles: Map<string, string[]>;
