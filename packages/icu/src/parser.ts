@@ -25,8 +25,14 @@ const WHITE_SPACE = /[\p{White_Space}\u200E\u200F]/u;
 const IDENTIFIER_BOUNDARY = /[\p{White_Space}\p{Pattern_Syntax}]/u;
 const TAG_NAME_CHARACTER = /^[\p{L}\p{N}_.\-·\u200C\u200D]$/u;
 
+type PositionIndex = {
+  lines: Uint32Array;
+  columns: Uint32Array;
+};
+
 class IcuParser {
   private index = 0;
+  private positions?: PositionIndex;
 
   constructor(
     private readonly message: string,
@@ -483,12 +489,11 @@ class IcuParser {
   }
 
   private position(offset: number): LocationDetails {
-    const before = this.message.slice(0, offset);
-    const lastNewline = before.lastIndexOf('\n');
+    const positions = (this.positions ??= buildPositionIndex(this.message));
     return {
       offset,
-      line: before.split('\n').length,
-      column: Array.from(before.slice(lastNewline + 1)).length + 1,
+      line: positions.lines[offset],
+      column: positions.columns[offset],
     };
   }
 
@@ -500,6 +505,33 @@ class IcuParser {
 
 function isAsciiLetter(character: string): boolean {
   return /^[A-Za-z]$/u.test(character);
+}
+
+function buildPositionIndex(message: string): PositionIndex {
+  const lines = new Uint32Array(message.length + 1);
+  const columns = new Uint32Array(message.length + 1);
+  let offset = 0;
+  let line = 1;
+  let column = 1;
+
+  while (offset < message.length) {
+    const character = String.fromCodePoint(message.codePointAt(offset)!);
+    for (let codeUnit = 0; codeUnit < character.length; codeUnit += 1) {
+      lines[offset + codeUnit] = line;
+      columns[offset + codeUnit] = column + codeUnit;
+    }
+    offset += character.length;
+    if (character === '\n') {
+      line += 1;
+      column = 1;
+    } else {
+      column += 1;
+    }
+  }
+
+  lines[offset] = line;
+  columns[offset] = column;
+  return { lines, columns };
 }
 
 export function parse(

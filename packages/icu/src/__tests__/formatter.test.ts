@@ -21,10 +21,21 @@ describe('formatMessage', () => {
     [false, ''],
     [null, ''],
     [undefined, ''],
-    [true, 'true'],
-    [123n, '123'],
+    [true, true],
+    [123n, 123n],
   ])('formats direct argument %s', (value, expected) => {
     expect(formatMessage('{value}', 'en', { value })).toBe(expected);
+  });
+
+  it('preserves non-string values as parts like intl-messageformat', () => {
+    const date = new Date(0);
+    expect(
+      formatMessage('before {value} after', 'en', { value: true })
+    ).toEqual(['before ', true, ' after']);
+    expect(
+      formatMessage('before {value} after', 'en', { value: date })
+    ).toEqual(['before ', date, ' after']);
+    expect(formatMessage('{value}', 'en', { value: date })).toBe(date);
   });
 
   it('requires every referenced variable', () => {
@@ -65,6 +76,25 @@ describe('formatMessage', () => {
     );
     expect(formatMessage(message, 'en', { count: 5 })).toBe('Ada and 4 others');
   });
+
+  it.each([
+    ['2', '{count, plural, =2 {exact} other {# items}}', 'exact'],
+    ['02', '{count, plural, =2 {exact} other {# items}}', '2 items'],
+    [' 2 ', '{count, plural, =2 {exact} other {# items}}', '2 items'],
+    ['1', '{count, plural, one {one item} other {# items}}', 'one item'],
+    ['2.5', '{count, plural, one {one item} other {# items}}', '2.5 items'],
+    ['', '{count, plural, one {one item} other {# items}}', '0 items'],
+    [
+      'not-a-number',
+      '{count, plural, one {one item} other {# items}}',
+      'NaN items',
+    ],
+  ])(
+    'coerces plural string %j while preserving raw exact matching',
+    (count, message, expected) => {
+      expect(formatMessage(message, 'en', { count })).toBe(expected);
+    }
+  );
 
   it('uses ordinal plural rules', () => {
     const message =

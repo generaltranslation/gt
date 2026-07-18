@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { formatMessage as publicFormatMessage } from '../../core';
 import { _formatListToParts, _formatMessageICU } from '../format';
 
 describe('_formatMessageICU', () => {
@@ -93,6 +94,40 @@ describe('_formatMessageICU', () => {
   it('still surfaces missing-variable failures through the package boundary', () => {
     expect(() => _formatMessageICU('Hello {name}', 'en-US')).toThrow(
       'variable "name" was not provided'
+    );
+  });
+
+  it.each([
+    ['2', 'exact'],
+    ['02', '2 items'],
+    ['2.5', '2.5 items'],
+  ])(
+    'coerces numeric-string plural %j through the public package',
+    (count, expected) => {
+      expect(
+        publicFormatMessage(
+          '{count, plural, =2 {exact} one {one item} other {# items}}',
+          { locales: 'en-US', variables: { count } }
+        )
+      ).toBe(expected);
+    }
+  );
+
+  it('preserves boolean interpolation serialization from the previous runtime', () => {
+    const result = publicFormatMessage('before {value} after', {
+      variables: { value: true },
+    });
+
+    expect(result).toBe('before ,true, after');
+  });
+
+  it('preserves Date interpolation serialization from the previous runtime', () => {
+    const value = new Date(0);
+    expect(
+      publicFormatMessage('before {value} after', { variables: { value } })
+    ).toBe(['before ', value, ' after'].toString());
+    expect(publicFormatMessage('{value}', { variables: { value } })).toBe(
+      value.toString()
     );
   });
 });

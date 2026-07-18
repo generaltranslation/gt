@@ -49,7 +49,11 @@ const TIME_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
 };
 
 type PluralValue = number | bigint;
-type TagFormatter = (parts: string[]) => unknown;
+type TagFormatter = (parts: unknown[]) => unknown;
+type FormattedPart = {
+  type: 'literal' | 'object';
+  value: unknown;
+};
 
 export function formatMessage(
   message: string,
@@ -58,7 +62,7 @@ export function formatMessage(
 ): string {
   const locale = resolveLocale(locales);
   const ast = parse(message, { locale });
-  return formatElements(ast, locales, variables);
+  return collapseParts(formatElements(ast, locales, variables)) as string;
 }
 
 function formatElements(
@@ -66,30 +70,41 @@ function formatElements(
   locales: string | string[],
   variables: MessageVariables,
   currentPluralValue?: PluralValue
-): string {
-  let result = '';
+): FormattedPart[] {
+  const result: FormattedPart[] = [];
 
   for (const element of elements) {
     switch (element.type) {
       case TYPE.literal:
-        result += element.value;
+        result.push({ type: 'literal', value: element.value });
         break;
       case TYPE.pound:
         if (currentPluralValue !== undefined) {
-          result += new Intl.NumberFormat(locales).format(currentPluralValue);
+          result.push({
+            type: 'literal',
+            value: new Intl.NumberFormat(locales).format(currentPluralValue),
+          });
         }
         break;
-      case TYPE.argument:
-        result += formatArgument(requireVariable(variables, element.value));
+      case TYPE.argument: {
+        const value = formatArgument(requireVariable(variables, element.value));
+        result.push({
+          type: typeof value === 'string' ? 'literal' : 'object',
+          value,
+        });
         break;
+      }
       case TYPE.number: {
         const value = requireVariable(variables, element.value);
         const options = numberOptions(element.style);
         const { scale, ...intlOptions } = options;
         const scaledValue = applyScale(value, scale);
-        result += new Intl.NumberFormat(locales, intlOptions).format(
-          scaledValue as number
-        );
+        result.push({
+          type: 'literal',
+          value: new Intl.NumberFormat(locales, intlOptions).format(
+            scaledValue as number
+          ),
+        });
         break;
       }
       case TYPE.date:
@@ -105,9 +120,12 @@ function formatElements(
               : element.type === TYPE.time
                 ? TIME_STYLES.medium
                 : undefined;
-        result += new Intl.DateTimeFormat(locales, options).format(
-          value as number | Date
-        );
+        result.push({
+          type: 'literal',
+          value: new Intl.DateTimeFormat(locales, options).format(
+            value as number | Date
+          ),
+        });
         break;
       }
       case TYPE.select: {
@@ -116,16 +134,14 @@ function formatElements(
           ownOption(element.options, value) ?? element.options.other;
         if (!option)
           throw invalidSelection(element.value, value, element.options);
-        result += formatElements(option.value, locales, variables);
+        result.push(...formatElements(option.value, locales, variables));
         break;
       }
       case TYPE.plural: {
-        const value = requirePluralValue(
-          requireVariable(variables, element.value),
-          element.value
-        );
-        const exactSelector = `=${String(value)}`;
+        const rawValue = requireVariable(variables, element.value);
+        const exactSelector = `=${String(rawValue)}`;
         let option = ownOption(element.options, exactSelector);
+        const value = coercePluralValue(rawValue);
         const adjustedValue = subtractOffset(value, element.offset);
         if (!option) {
           const category = new Intl.PluralRules(locales, {
@@ -135,13 +151,10 @@ function formatElements(
             ownOption(element.options, category) ?? element.options.other;
         }
         if (!option) {
-          throw invalidSelection(element.value, value, element.options);
+          throw invalidSelection(element.value, rawValue, element.options);
         }
-        result += formatElements(
-          option.value,
-          locales,
-          variables,
-          adjustedValue
+        result.push(
+          ...formatElements(option.value, locales, variables, adjustedValue)
         );
         break;
       }
@@ -157,15 +170,21 @@ function formatElements(
           locales,
           variables,
           currentPluralValue
+        ).map(({ value }) => value);
+        const formatted = (formatter as TagFormatter)(children);
+        const chunks = Array.isArray(formatted) ? formatted : [formatted];
+        result.push(
+          ...chunks.map<FormattedPart>((value) => ({
+            type: typeof value === 'string' ? 'literal' : 'object',
+            value,
+          }))
         );
-        const formatted = (formatter as TagFormatter)([children]);
-        result += stringifyTagValue(formatted);
         break;
       }
     }
   }
 
-  return result;
+  return mergeLiteralParts(result);
 }
 
 function requireVariable(variables: MessageVariables, name: string): unknown {
@@ -175,14 +194,40 @@ function requireVariable(variables: MessageVariables, name: string): unknown {
   return variables[name];
 }
 
-function formatArgument(value: unknown): string {
-  if (value === false || value === null || value === undefined) return '';
-  return String(value);
+function formatArgument(value: unknown): unknown {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (!value) return '';
+  return value;
 }
 
-function stringifyTagValue(value: unknown): string {
-  if (Array.isArray(value)) return value.map(stringifyTagValue).join('');
-  return String(value ?? '');
+function mergeLiteralParts(parts: FormattedPart[]): FormattedPart[] {
+  const result: FormattedPart[] = [];
+  for (const part of parts) {
+    const previous = result[result.length - 1];
+    if (previous?.type === 'literal' && part.type === 'literal') {
+      previous.value = String(previous.value) + String(part.value);
+    } else {
+      result.push(part);
+    }
+  }
+  return result;
+}
+
+function collapseParts(parts: FormattedPart[]): unknown {
+  if (parts.length === 1) return parts[0].value;
+
+  const result: unknown[] = [];
+  for (const part of parts) {
+    const previous = result[result.length - 1];
+    if (part.type === 'literal' && typeof previous === 'string') {
+      result[result.length - 1] = previous + String(part.value);
+    } else {
+      result.push(part.value);
+    }
+  }
+  return result.length <= 1 ? result[0] || '' : result;
 }
 
 function numberOptions(
@@ -205,11 +250,8 @@ function applyScale(value: unknown, scale = 1): number | bigint {
   return Number(value) * scale;
 }
 
-function requirePluralValue(value: unknown, name: string): PluralValue {
-  if (typeof value !== 'number' && typeof value !== 'bigint') {
-    throw new TypeError(`The ICU plural variable "${name}" must be numeric.`);
-  }
-  return value;
+function coercePluralValue(value: unknown): PluralValue {
+  return typeof value === 'bigint' ? value : Number(value);
 }
 
 function subtractOffset(value: PluralValue, offset: number): PluralValue {

@@ -4,6 +4,7 @@
  * FormatJS parser fixtures are MIT licensed. See ../../THIRD_PARTY_NOTICES.md.
  */
 
+import { performance } from 'node:perf_hooks';
 import { describe, expect, it } from 'vitest';
 import { parse, SKELETON_TYPE, TYPE } from '../index';
 
@@ -64,6 +65,23 @@ describe('parse', () => {
         },
       },
     });
+  });
+
+  it('captures locations in linear time for large messages', () => {
+    const count = 10_000;
+    const message = Array.from(
+      { length: count },
+      (_, index) => `{v${index}}`
+    ).join('');
+    const start = performance.now();
+    const ast = parse(message, { captureLocation: true });
+    const duration = performance.now() - start;
+
+    expect(ast).toHaveLength(count);
+    expect(ast.at(-1)?.location?.end.offset).toBe(message.length);
+    // The former per-node prefix rescans took multiple seconds here. Keep a
+    // deliberately generous ceiling for slower CI machines.
+    expect(duration).toBeLessThan(1_000);
   });
 
   it('parses selects, nested arguments, and null-prototype-like keys safely', () => {
