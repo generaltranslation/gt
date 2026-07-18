@@ -1,3 +1,5 @@
+import type { SourceAdapter } from './adapters/types.js';
+
 export type MigrateOptions = {
   src?: string[];
   config: string;
@@ -5,6 +7,8 @@ export type MigrateOptions = {
   dryRun: boolean;
   yes: boolean;
   allowDirty: boolean;
+  /** source i18n library to migrate from; defaults to auto-detection. */
+  from?: string;
 };
 
 export type FileEdit = {
@@ -52,6 +56,10 @@ export type MigrationContext = {
   /** true when --inline was passed; gates transforms that embed
    *  source-language text (and so require re-translation) */
   inlineMode?: boolean;
+  /** the source-library adapter driving this migration. When omitted (unit
+   *  tests that build a context by hand), transforms fall back to the next-intl
+   *  adapter, so existing next-intl behavior is unchanged. */
+  adapter?: SourceAdapter;
 };
 
 export type SourceResult = {

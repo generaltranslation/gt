@@ -1,0 +1,100 @@
+import type { MessageClass } from '../classifyMessage.js';
+import type {
+  MessageCatalogs,
+  MigrationContext,
+  RoutingInfo,
+  SourceResult,
+} from '../types.js';
+import type { SupportedLibraries } from '../../types/index.js';
+
+/**
+ * The per-source-library seam for `gt migrate`. Everything the transforms and
+ * driver need to know about the library being migrated FROM lives here; the
+ * gt-next target strings (GT_MODULE, GTProvider, gt-next/*) stay in the core
+ * transforms because they are constant across every adapter.
+ *
+ * next-intl is adapter #1. The interface is intentionally additive: later
+ * adapters (react-i18next, react-intl) extend it in their own PRs, and the
+ * config-lane methods are optional so a source with no Next.js config lane
+ * simply omits them.
+ */
+export interface SourceAdapter {
+  /** the SupportedLibraries id this adapter migrates from. */
+  id: SupportedLibraries;
+  /** human-readable name, used only in report prose. */
+  displayName: string;
+
+  // --- module identity (replaces the scattered literals/regexes) ---
+  /** true when an import source belongs to this library ('next-intl', 'next-intl/…'). */
+  ownsModule(source: string): boolean;
+  /** cheap text pre-check before parsing a source file. */
+  mentionedIn(code: string): boolean;
+
+  // --- symbol tables (the transformSource top-of-file constants) ---
+  /** hooks kept by name, re-homed to gt-next (client). */
+  clientSwaps: Set<string>;
+  /** hooks kept by name, re-homed to gt-next/server. */
+  serverSwaps: Set<string>;
+  /** call statements deleted outright. */
+  removals: Set<string>;
+  /** provider-feeding hooks (useMessages/getMessages). */
+  messagesHooks: Set<string>;
+  /** locale-validation guard callees (hasLocale, …) whose guards the layout
+   *  pass strips; treated as supported when dropLocaleValidation is set. */
+  localeValidators: Set<string>;
+  /** the client/server translation hook names (useTranslations/getTranslations). */
+  translationHooks: { client: string; server: string };
+  /** the client provider element name, or null when the library has none. */
+  providerName: string | null;
+  /** the routing-derived locale union type name, or null when absent. */
+  localeType: string | null;
+
+  // --- provider detection (the driver defers provider-bearing files) ---
+  /** true when `code` renders this library's provider element (alias-aware). */
+  hasProvider(code: string): boolean;
+
+  // --- message format ---
+  /** classifies a catalog message (ICU for next-intl). */
+  classifyMessage(message: string): MessageClass;
+
+  // --- routing + catalog discovery ---
+  parseRoutingConfig(cwd: string): RoutingInfo;
+  discoverCatalogs(
+    cwd: string,
+    routing: RoutingInfo
+  ): Promise<MessageCatalogs | null>;
+
+  // --- config lane (each optional; absent => that lane is skipped) ---
+  /** true when a scanned file is this library's navigation wrapper. */
+  isNavigationFile?(code: string): boolean;
+  transformNavigation?(
+    file: string,
+    code: string,
+    ctx: MigrationContext
+  ): SourceResult;
+  transformNextConfig?(
+    file: string,
+    code: string,
+    ctx: MigrationContext
+  ): SourceResult;
+  transformMiddleware?(
+    file: string,
+    code: string,
+    ctx: MigrationContext
+  ): SourceResult;
+  transformRequestConfig?(file: string, code: string): SourceResult;
+
+  // --- config-lane file identity (relative candidates resolved by the driver) ---
+  /** next.config.* candidate paths, relative to the project root. */
+  nextConfigCandidates: string[];
+  /** middleware/proxy candidate paths, relative to the project root. */
+  middlewareCandidates: string[];
+
+  // --- teardown ---
+  /** whole-project "still uses this library" scan (the teardown blocker). */
+  projectUsagePattern: RegExp;
+  /** package.json dependency keys removed on a full migration. */
+  teardownPackages: string[];
+  /** config files deleted on a full migration (existence checked by the caller). */
+  teardownConfigFiles(routing: RoutingInfo): string[];
+}
