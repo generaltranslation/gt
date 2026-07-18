@@ -121,7 +121,27 @@ export function transformReactIntlSource(
   };
   const symbols: ImportedSymbol[] = [];
   const reactIntlImports: NodePath<t.ImportDeclaration>[] = [];
+  // A re-export from react-intl (`export { X } from 'react-intl'`, `export *
+  // from '@formatjs/*'`) is neither an import to convert nor a usage to rewrite,
+  // but it dangles once react-intl is uninstalled. Mirror the next-intl engine's
+  // noteReexport: skip+report so teardown never leaves a broken re-export.
+  let hasReactIntlReexport = false;
+  const noteReexport = (source: string | null | undefined) => {
+    if (!source || (source !== MODULE && !source.startsWith('@formatjs/'))) {
+      return;
+    }
+    hasReactIntlReexport = true;
+    skipReasons.push(
+      `re-export from '${source}' would break once react-intl is removed — convert the re-export manually`
+    );
+  };
   traverse(ast, {
+    ExportNamedDeclaration(path) {
+      if (path.node.source) noteReexport(path.node.source.value);
+    },
+    ExportAllDeclaration(path) {
+      noteReexport(path.node.source.value);
+    },
     ImportDeclaration(path) {
       const source = path.node.source.value;
       if (source !== MODULE && !source.startsWith('@formatjs/')) return;
@@ -148,7 +168,7 @@ export function transformReactIntlSource(
       }
     },
   });
-  if (reactIntlImports.length === 0) return none;
+  if (reactIntlImports.length === 0 && !hasReactIntlReexport) return none;
 
   const localsOf = (name: string) =>
     new Set(symbols.filter((s) => s.imported === name).map((s) => s.local));
@@ -505,10 +525,14 @@ export function transformReactIntlSource(
         : null;
 
     const rich = analyzeRich(message, valuesExpr);
-    if (rich === 'rich') {
+    if (rich !== 'plain') {
       if (!ctx.inlineMode) {
+        const trigger =
+          rich === 'tags'
+            ? 'has rich-text tags'
+            : 'has a JSX-element or chunk-function `values` entry';
         skipReasons.push(
-          `<FormattedMessage id="${id}"> has rich-text tags gt-next's dictionary t() cannot render — re-run with --inline to convert to inline <T>, or convert manually`
+          `<FormattedMessage id="${id}"> ${trigger} gt-next's dictionary t() cannot render — re-run with --inline to convert to inline <T>, or convert manually`
         );
         return;
       }
@@ -624,7 +648,23 @@ export function transformReactIntlSource(
       intlBindingFns,
       injectedByFn
     );
-    if (bindingName.injected) needsClientT = true;
+    if (bindingName.injected) {
+      // An injected useTranslations() hook needs an enclosing function to live
+      // in. At module scope (no component) there is nowhere to call it, so
+      // emitting the bare call would leave the binding undeclared — skip the
+      // whole file rather than write broken code.
+      if (!fn) {
+        return {
+          code: null,
+          todos: [],
+          skipReasons: [
+            `<FormattedMessage id="${id}"> renders at module scope, outside any component, where gt-next's useTranslations() hook cannot be called — move it inside a component or convert manually`,
+          ],
+          usedRich: false,
+        };
+      }
+      needsClientT = true;
+    }
     const args: t.Expression[] = [t.stringLiteral(id)];
     if (values) args.push(values);
     const call = t.callExpression(t.identifier(bindingName.name), args);
@@ -919,10 +959,34 @@ const AUTO_ID_WARNING =
   'migrate them, add explicit `id`s to your messages (or convert those files by ' +
   'hand), then re-run gt migrate.';
 
-/** Skip reasons for the attributes an <IntlProvider> carries beyond
- *  locale/defaultLocale/messages, each of which would be silently dropped by the
- *  unwrap. timeZone gets its own message because it changes every date/time
- *  render. Returns [] when only the subsumed props are present. */
+/** Provider attributes the unwrap can safely drop: locale/defaultLocale/messages
+ *  are subsumed by gt-next's <GTProvider>, and key/ref are React reserved props
+ *  (not react-intl config), so dropping them changes nothing at runtime. */
+const PROVIDER_SAFE_PROPS = new Set([
+  'locale',
+  'defaultLocale',
+  'messages',
+  'key',
+  'ref',
+]);
+
+/** Per-prop note explaining what dropping a given <IntlProvider> config prop
+ *  would change, so each skip reason names only the prop actually present
+ *  instead of lecturing about every possible one. */
+const PROVIDER_PROP_NOTES: Record<string, string> = {
+  onError: 'routes format and missing-key errors to your telemetry',
+  textComponent: 'changes the DOM wrapper element around formatted messages',
+  formats: 'defines custom date/number/time format styles',
+  defaultFormats: 'defines fallback format styles',
+  defaultRichTextElements: 'sets default rich-text tag renderers',
+  wrapRichTextChunksInFragment: 'controls how rich-text chunks are wrapped',
+  onWarn: 'routes formatting warnings to your handler',
+};
+
+/** Skip reasons for the attributes an <IntlProvider> carries beyond the safe
+ *  set, each of which would be silently dropped by the unwrap. timeZone gets its
+ *  own message because it changes every date/time render. Returns [] when only
+ *  the safe props (config subsumed by GTProvider, or React key/ref) are present. */
 function providerDropReasons(opening: t.JSXOpeningElement): string[] {
   const reasons: string[] = [];
   for (const attr of opening.attributes) {
@@ -934,17 +998,17 @@ function providerDropReasons(opening: t.JSXOpeningElement): string[] {
     }
     if (!t.isJSXAttribute(attr) || !t.isJSXIdentifier(attr.name)) continue;
     const name = attr.name.name;
-    if (name === 'locale' || name === 'defaultLocale' || name === 'messages') {
-      continue;
-    }
+    if (PROVIDER_SAFE_PROPS.has(name)) continue;
     if (name === 'timeZone') {
       reasons.push(
         '<IntlProvider> sets `timeZone` — gt-next resolves timezone differently, and dropping it changes every <FormattedDate>/<FormattedTime> render (server/visitor zone instead of the pinned one). Set the timezone in your gt config and verify date output, then remove it and re-run gt migrate; converting this file now would drop it silently'
       );
       continue;
     }
+    const note = PROVIDER_PROP_NOTES[name];
+    const detail = note ? ` (it ${note})` : '';
     reasons.push(
-      `<IntlProvider> sets \`${name}\`, which has no gt-next <GTProvider> equivalent and would be dropped silently (onError routes format/missing-key errors to your telemetry; textComponent changes the DOM wrapper; formats/defaultRichTextElements change formatting/rich rendering) — convert this provider manually`
+      `<IntlProvider> sets \`${name}\`, which has no gt-next <GTProvider> equivalent and would be dropped silently${detail} — convert this provider manually`
     );
   }
   return reasons;
@@ -964,18 +1028,24 @@ function isRichOrHasFunctionValues(
   return false;
 }
 
-/** 'rich' when the message has tags (needs component rendering) or a value is a
- *  chunk function / JSX element (a React node the string t() cannot return),
- *  'plain' otherwise. Unknown messages are treated as plain (dictionary path). */
+/** Why a <FormattedMessage> is not a plain dictionary lookup: 'tags' when the
+ *  message text carries rich-text tags (needs component rendering), 'value' when
+ *  a `values` entry is a chunk function / JSX element (a React node the string
+ *  t() cannot return), or 'plain' otherwise. Distinguished so the skip reason can
+ *  name the actual trigger. Unknown messages are treated as plain. */
 function analyzeRich(
   message: string | null,
   valuesExpr: t.Expression | null
-): 'rich' | 'plain' {
+): 'tags' | 'value' | 'plain' {
   if (message !== null && classifyMessage(message).kind === 'tags') {
-    return 'rich';
+    return 'tags';
   }
-  if (valuesExpr && t.isObjectExpression(valuesExpr)) {
-    if (valuesExpr.properties.some(isRichValueProperty)) return 'rich';
+  if (
+    valuesExpr &&
+    t.isObjectExpression(valuesExpr) &&
+    valuesExpr.properties.some(isRichValueProperty)
+  ) {
+    return 'value';
   }
   return 'plain';
 }
@@ -1304,16 +1374,26 @@ function translationBindingFor(
   return { name: '$gtT', injected: true };
 }
 
-/** Inserts `const <name> = useTranslations();` at the top of a function body. */
+/** Inserts `const <name> = useTranslations();` at the top of a function body.
+ *  An implicit-body arrow (`() => <expr>`) is first converted to a block
+ *  (`() => { const <name> = useTranslations(); return <expr>; }`), so the hook
+ *  the caller already emitted as `<name>(...)` always has its declaration —
+ *  emitting the call without it would leave `<name>` undeclared (TS2304 at
+ *  typecheck, ReferenceError at render). Only arrows can have a non-block body. */
 function insertHookDeclaration(fn: t.Function, name: string): void {
-  if (!t.isBlockStatement(fn.body)) return;
   const declaration = t.variableDeclaration('const', [
     t.variableDeclarator(
       t.identifier(name),
       t.callExpression(t.identifier('useTranslations'), [])
     ),
   ]);
-  fn.body.body.unshift(declaration);
+  if (t.isBlockStatement(fn.body)) {
+    fn.body.body.unshift(declaration);
+    return;
+  }
+  if (t.isArrowFunctionExpression(fn) && t.isExpression(fn.body)) {
+    fn.body = t.blockStatement([declaration, t.returnStatement(fn.body)]);
+  }
 }
 
 function findDefaultExportFunction(ast: t.File): t.Function | null {
