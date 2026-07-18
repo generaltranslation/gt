@@ -170,24 +170,28 @@ export async function handleMigrateCommand(
   const providerFiles: string[] = [];
   for (const file of sourceFiles) {
     if (configLaneFiles.has(file)) continue;
-    const code = fs.readFileSync(file, 'utf8');
-    if (isLayoutFile(file)) {
-      layouts.push(file);
-      continue;
+    try {
+      const code = fs.readFileSync(file, 'utf8');
+      if (isLayoutFile(file)) {
+        layouts.push(file);
+        continue;
+      }
+      if (adapter.transformNavigation && adapter.isNavigationFile?.(code)) {
+        collect(ctx, file, adapter.transformNavigation(file, code, ctx));
+        continue;
+      }
+      if (adapter.hasProvider(code)) {
+        providerFiles.push(file);
+        continue;
+      }
+      let result = transformSourceFile(file, code, ctx);
+      if (options.inline && result.skipReasons.length === 0) {
+        result = applyInline(file, result.code ?? code, ctx, result);
+      }
+      collect(ctx, file, result);
+    } catch (error) {
+      recordTransformError(ctx, file, error);
     }
-    if (adapter.transformNavigation && adapter.isNavigationFile?.(code)) {
-      collect(ctx, file, adapter.transformNavigation(file, code, ctx));
-      continue;
-    }
-    if (adapter.hasProvider(code)) {
-      providerFiles.push(file);
-      continue;
-    }
-    let result = transformSourceFile(file, code, ctx);
-    if (options.inline && result.skipReasons.length === 0) {
-      result = applyInline(file, result.code ?? code, ctx, result);
-    }
-    collect(ctx, file, result);
   }
 
   // Files outside the scan (an explicit --src scope, or globs that missed a
@@ -218,19 +222,27 @@ export async function handleMigrateCommand(
   // settle every skip here, before anyone reads ctx.skippedFiles.size.
   const providerFilesToApply: string[] = [];
   for (const file of providerFiles) {
-    const code = fs.readFileSync(file, 'utf8');
-    const classified = transformSourceFile(file, code, ctx);
-    if (classified.skipReasons.length > 0) {
-      collect(ctx, file, classified);
-    } else {
-      providerFilesToApply.push(file);
+    try {
+      const code = fs.readFileSync(file, 'utf8');
+      const classified = transformSourceFile(file, code, ctx);
+      if (classified.skipReasons.length > 0) {
+        collect(ctx, file, classified);
+      } else {
+        providerFilesToApply.push(file);
+      }
+    } catch (error) {
+      recordTransformError(ctx, file, error);
     }
   }
 
   // Pass 2b: layouts, with full skip knowledge.
   for (const file of layouts) {
-    const code = fs.readFileSync(file, 'utf8');
-    collect(ctx, file, transformLayoutFile(file, code, ctx));
+    try {
+      const code = fs.readFileSync(file, 'utf8');
+      collect(ctx, file, transformLayoutFile(file, code, ctx));
+    } catch (error) {
+      recordTransformError(ctx, file, error);
+    }
   }
 
   // Pass 2c: apply the deferred provider files now that the skip set is final
@@ -240,14 +252,18 @@ export async function handleMigrateCommand(
   // <GTProvider> exactly as a single-pass run would.
   const retainProviders = ctx.skippedFiles.size > 0;
   for (const file of providerFilesToApply) {
-    const code = fs.readFileSync(file, 'utf8');
-    let result = transformSourceFile(file, code, ctx, {
-      retainNextIntlProvider: retainProviders,
-    });
-    if (options.inline && result.skipReasons.length === 0) {
-      result = applyInline(file, result.code ?? code, ctx, result);
+    try {
+      const code = fs.readFileSync(file, 'utf8');
+      let result = transformSourceFile(file, code, ctx, {
+        retainNextIntlProvider: retainProviders,
+      });
+      if (options.inline && result.skipReasons.length === 0) {
+        result = applyInline(file, result.code ?? code, ctx, result);
+      }
+      collect(ctx, file, result);
+    } catch (error) {
+      recordTransformError(ctx, file, error);
     }
-    collect(ctx, file, result);
   }
 
   // Pass 3: root config files. Each config-lane transform is an optional
@@ -256,16 +272,20 @@ export async function handleMigrateCommand(
   const transformNextConfig = adapter.transformNextConfig;
   if (transformNextConfig) {
     for (const configFile of findRootFiles(cwd, adapter.nextConfigCandidates)) {
-      const code = fs.readFileSync(configFile, 'utf8');
-      collect(ctx, configFile, transformNextConfig(configFile, code, ctx));
-      if (isEsmNextConfig(configFile, cwd)) {
-        // gt-next/config's ESM bundle currently breaks under a native-ESM
-        // config ("require is not defined" resolving the Next.js version).
-        ctx.todos.push({
-          file: configFile,
-          reason:
-            'this config loads as native ESM, where gt-next/config (<= 11.0.9) fails with "require is not defined" — rename it to next.config.ts (Next.js compiles it to CJS) until gt-next ships an ESM-safe config entry',
-        });
+      try {
+        const code = fs.readFileSync(configFile, 'utf8');
+        collect(ctx, configFile, transformNextConfig(configFile, code, ctx));
+        if (isEsmNextConfig(configFile, cwd)) {
+          // gt-next/config's ESM bundle currently breaks under a native-ESM
+          // config ("require is not defined" resolving the Next.js version).
+          ctx.todos.push({
+            file: configFile,
+            reason:
+              'this config loads as native ESM, where gt-next/config (<= 11.0.9) fails with "require is not defined" — rename it to next.config.ts (Next.js compiles it to CJS) until gt-next ships an ESM-safe config entry',
+          });
+        }
+      } catch (error) {
+        recordTransformError(ctx, configFile, error);
       }
     }
   }
@@ -275,12 +295,16 @@ export async function handleMigrateCommand(
       cwd,
       adapter.middlewareCandidates
     )) {
-      const code = fs.readFileSync(middlewareFile, 'utf8');
-      collect(
-        ctx,
-        middlewareFile,
-        transformMiddleware(middlewareFile, code, ctx)
-      );
+      try {
+        const code = fs.readFileSync(middlewareFile, 'utf8');
+        collect(
+          ctx,
+          middlewareFile,
+          transformMiddleware(middlewareFile, code, ctx)
+        );
+      } catch (error) {
+        recordTransformError(ctx, middlewareFile, error);
+      }
     }
   }
 
@@ -295,12 +319,16 @@ export async function handleMigrateCommand(
     routing.requestFile &&
     fs.existsSync(routing.requestFile)
   ) {
-    const code = fs.readFileSync(routing.requestFile, 'utf8');
-    collect(
-      ctx,
-      routing.requestFile,
-      transformRequestConfig(routing.requestFile, code)
-    );
+    try {
+      const code = fs.readFileSync(routing.requestFile, 'utf8');
+      collect(
+        ctx,
+        routing.requestFile,
+        transformRequestConfig(routing.requestFile, code)
+      );
+    } catch (error) {
+      recordTransformError(ctx, routing.requestFile, error);
+    }
   }
 
   // Next.js ignores root-level middleware when the app lives in src/ —
@@ -412,6 +440,23 @@ function applyInline(
     skipReasons: [],
     usedRich: base.usedRich || inlined.usedRich,
   };
+}
+
+/**
+ * Records a whole-file skip for an uncaught transform error, so one file
+ * blowing up (e.g. a babel throw during a rewrite) degrades to a reported skip
+ * with the file left untouched, instead of aborting the entire command with a
+ * raw stack trace. The skip surfaces in the report's manual-migration section.
+ */
+function recordTransformError(
+  ctx: MigrationContext,
+  file: string,
+  error: unknown
+): void {
+  const message = error instanceof Error ? error.message : String(error);
+  ctx.skippedFiles.set(file, [
+    `internal transform error on ${path.relative(ctx.cwd, file)}: ${message} — file left untouched`,
+  ]);
 }
 
 function collect(
