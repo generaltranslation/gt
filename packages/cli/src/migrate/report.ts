@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { nextIntlAdapter } from './adapters/nextIntl.js';
 import type { MigrationContext } from './types.js';
 
 /**
@@ -11,6 +12,7 @@ export function buildReport(
   dryRun: boolean,
   gtNextMissing: boolean = false
 ): string {
+  const adapter = ctx.adapter ?? nextIntlAdapter;
   const lines: string[] = [];
   const relative = (file: string) =>
     path.isAbsolute(file) ? path.relative(ctx.cwd, file) : file;
@@ -20,7 +22,7 @@ export function buildReport(
   );
   lines.push('');
   lines.push(
-    `Migrated next-intl -> gt-next (dictionary compat mode). Default locale: ` +
+    `Migrated ${adapter.displayName} -> gt-next (dictionary compat mode). Default locale: ` +
       `${ctx.catalogs.defaultLocale}; locales: ${ctx.catalogs.locales.join(', ')}.`
   );
   lines.push('');
@@ -100,7 +102,7 @@ export function buildReport(
     lines.push('## Needs manual migration (files left untouched)');
     lines.push('');
     lines.push(
-      'next-intl is still installed and NextIntlClientProvider still renders ' +
+      `${adapter.displayName} is still installed and ${adapter.providerName ?? 'its provider'} still renders ` +
         '(nested inside GTProvider) so these keep working. Re-run `gt migrate` ' +
         'after converting them to finish the teardown.'
     );
@@ -129,7 +131,7 @@ export function buildReport(
   lines.push('## Behavior differences to know about');
   lines.push('');
   lines.push(
-    '- Unknown dictionary keys throw in gt-next (next-intl rendered the raw key and logged).'
+    `- Unknown dictionary keys throw in gt-next (${adapter.displayName} rendered the raw key and logged).`
   );
   lines.push(
     '- Programmatic navigation (redirect, router.push) is not locale-prefixed automatically; <Link> from gt-next/link is.'
