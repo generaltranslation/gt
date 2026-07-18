@@ -159,6 +159,18 @@ export function transformReactIntlSource(
   ]);
   const providerLocals = localsOf('IntlProvider');
   const formattedMessageLocals = localsOf('FormattedMessage');
+  // Value-formatter components mapped from their local (alias-aware) name to the
+  // canonical react-intl name, so `<FormattedNumber as FN>` still converts.
+  const formatterLocals = new Map<string, string>();
+  for (const symbol of symbols) {
+    if (
+      CHILD_VALUE_FORMATTERS[symbol.imported] ||
+      symbol.imported === 'FormattedPlural' ||
+      symbol.imported === 'FormattedRelativeTime'
+    ) {
+      formatterLocals.set(symbol.local, symbol.imported);
+    }
+  }
 
   // ---- analysis ------------------------------------------------------------
 
@@ -168,6 +180,8 @@ export function transformReactIntlSource(
   // bindings that hold an intl object (useIntl() client, createIntl() server).
   const intlBindings = new Map<string, 'client' | 'server'>();
   const intlBindingFns = new Map<string, t.Function | null>();
+  // client `const intl = useIntl()` declarators, rewritten to useTranslations().
+  const useIntlDecls: NodePath<t.VariableDeclarator>[] = [];
   const createIntlDecls: {
     declarator: NodePath<t.VariableDeclarator>;
     fn: t.Function | null;
@@ -187,6 +201,7 @@ export function transformReactIntlSource(
       if (useIntlLocals.has(callee) && t.isIdentifier(id)) {
         intlBindings.set(id.name, 'client');
         intlBindingFns.set(id.name, enclosingFunction(path));
+        useIntlDecls.push(path);
       } else if (createIntlLocals.has(callee) && t.isIdentifier(id)) {
         intlBindings.set(id.name, 'server');
         intlBindingFns.set(id.name, enclosingFunction(path));
@@ -269,7 +284,13 @@ export function transformReactIntlSource(
         );
         return;
       }
-      const message = messageFor(id, descriptorArg, ctx);
+      const message = catalogMessage(id, ctx);
+      if (message === null) {
+        skipReasons.push(
+          `${objectName}.formatMessage('${id}') has no source entry in the '${ctx.catalogs.defaultLocale}' catalog — gt-next's dictionary t() throws on unknown keys, so add '${id}' to it (or give the call a literal defaultMessage so a missing default-locale catalog can be synthesized) or convert manually`
+        );
+        return;
+      }
       if (isRichOrHasFunctionValues(message, valuesArg)) {
         skipReasons.push(
           `${objectName}.formatMessage('${id}') has rich-text tags/chunk functions gt-next's dictionary t() cannot render (t returns a string) — re-run with --inline to convert to inline <T>, or convert manually`
@@ -280,7 +301,6 @@ export function transformReactIntlSource(
         valuesArg && t.isExpression(valuesArg) ? valuesArg : null;
       formatMessageCalls.push({ call: path, binding: objectName, id, values });
       if (kind === 'server') needsServerT = true;
-      harvestSurvivingDynamicNote();
     },
     JSXElement(path) {
       const name = path.node.openingElement.name;
@@ -291,32 +311,13 @@ export function transformReactIntlSource(
         planFormattedMessage(path, elementName);
         return;
       }
-      const formatter = CHILD_VALUE_FORMATTERS[elementName];
-      if (formatter && importedLocal(elementName)) {
-        formatterElements.push({ element: path, kind: elementName });
-        return;
-      }
-      if (elementName === 'FormattedPlural' && importedLocal(elementName)) {
-        formatterElements.push({ element: path, kind: elementName });
-        return;
-      }
-      if (
-        elementName === 'FormattedRelativeTime' &&
-        importedLocal(elementName)
-      ) {
-        formatterElements.push({ element: path, kind: elementName });
+      const formatterKind = formatterLocals.get(elementName);
+      if (formatterKind) {
+        formatterElements.push({ element: path, kind: formatterKind });
         return;
       }
     },
   });
-
-  function importedLocal(name: string): boolean {
-    return symbols.some((s) => s.local === name && s.imported === name);
-  }
-
-  function harvestSurvivingDynamicNote(): void {
-    // reserved: dynamic-id call sites are reported at their skip site above.
-  }
 
   function planFormattedMessage(
     path: NodePath<t.JSXElement>,
@@ -344,8 +345,13 @@ export function transformReactIntlSource(
       );
       return;
     }
-    const defaultMessageAttr = jsxAttr(opening, 'defaultMessage');
-    const message = messageForAttr(id, defaultMessageAttr, ctx);
+    const message = catalogMessage(id, ctx);
+    if (message === null) {
+      skipReasons.push(
+        `<FormattedMessage id="${id}"> has no source entry in the '${ctx.catalogs.defaultLocale}' catalog — gt-next's dictionary t() throws on unknown keys, so add '${id}' to it (or give it a literal defaultMessage so a missing default-locale catalog can be synthesized) or convert manually`
+      );
+      return;
+    }
     const valuesAttr = jsxAttr(opening, 'values');
     const valuesExpr =
       valuesAttr &&
@@ -434,16 +440,22 @@ export function transformReactIntlSource(
     }
   }
 
-  // 2. intl.formatMessage({ id }, values) -> intl(id, values).
+  // 2. client `const intl = useIntl()` -> `const intl = useTranslations()`.
+  //    react-intl's useIntl takes no argument; gt-next's useTranslations resolves
+  //    the full id, so no namespace/rootId is threaded through.
+  for (const decl of useIntlDecls) {
+    decl.node.init = t.callExpression(t.identifier('useTranslations'), []);
+    needsClientT = true;
+  }
+
+  // 3. intl.formatMessage({ id }, values) -> intl(id, values).
   for (const { call, binding, id, values } of formatMessageCalls) {
     const args: t.Expression[] = [t.stringLiteral(id)];
     if (values) args.push(values);
     call.replaceWith(t.callExpression(t.identifier(binding), args));
-    void call;
-    void binding;
   }
 
-  // 3. <FormattedMessage id values /> -> {t(id, values)} (reuse an in-scope
+  // 4. <FormattedMessage id values /> -> {t(id, values)} (reuse an in-scope
   //    intl binding, else inject `const $gtT = useTranslations()`).
   const injectedByFn = new Map<t.Function, string>();
   for (const { element, id, values, fn } of formattedMessages) {
@@ -468,23 +480,23 @@ export function transformReactIntlSource(
     insertHookDeclaration(fn, name);
   }
 
-  // 4. value formatters -> gt-next components.
+  // 5. value formatters -> gt-next components.
   for (const { element, kind } of formatterElements) {
     const result = convertFormatter(element, kind, todos, file);
-    if (typeof result === 'string') {
-      // A late, element-local skip (spread props, render-prop). The whole-file
-      // skip contract still holds: nothing has been written to ctx yet.
+    if ('skip' in result) {
+      // A late, element-local skip (spread props, unmappable prop). The
+      // whole-file skip contract still holds: nothing has been written to ctx.
       return {
         code: null,
         todos: [],
-        skipReasons: [result],
+        skipReasons: [result.skip],
         usedRich: false,
       };
     }
-    usedComponents.add(result);
+    usedComponents.add(result.component);
   }
 
-  // 5. rich inline <T> conversions (--inline only).
+  // 6. rich inline <T> conversions (--inline only).
   for (const conversion of richInline) {
     const children = icuToJsxChildren(conversion.elements, conversion.chunkMap);
     const tElement = t.jsxElement(
@@ -496,7 +508,7 @@ export function transformReactIntlSource(
     usedComponents.add('T');
   }
 
-  // 6. defineMessages tables become dead once their ids are inlined.
+  // 7. defineMessages tables become dead once their ids are inlined.
   for (const decl of defineMessagesDecls) {
     const declaration = decl.parentPath;
     if (
@@ -509,7 +521,7 @@ export function transformReactIntlSource(
     }
   }
 
-  // 7. provider unwrap: <IntlProvider ...>children</IntlProvider> -> <>children</>
+  // 8. provider unwrap: <IntlProvider ...>children</IntlProvider> -> <>children</>
   //    (the layout pass inserts the server GTProvider).
   for (const providerPath of providerUnwraps) {
     const children = providerPath.node.children;
@@ -526,7 +538,7 @@ export function transformReactIntlSource(
     return none;
   }
 
-  // 8. import surgery.
+  // 9. import surgery.
   for (const importPath of reactIntlImports) {
     if (importPath.node.source.value.startsWith('@formatjs/')) {
       importPath.remove();
@@ -652,32 +664,9 @@ function resolveDescriptorId(
   return null;
 }
 
-/** The source message for an id: prefer the default-locale catalog entry,
- *  falling back to the call's literal defaultMessage. */
-function messageFor(
-  id: string,
-  descriptorArg: t.Node | undefined,
-  ctx: MigrationContext
-): string | null {
-  const fromCatalog = catalogMessage(id, ctx);
-  if (fromCatalog !== null) return fromCatalog;
-  if (descriptorArg && t.isObjectExpression(descriptorArg)) {
-    const dm = getObjectProp(descriptorArg, 'defaultMessage');
-    if (dm && t.isStringLiteral(dm)) return dm.value;
-  }
-  return null;
-}
-
-function messageForAttr(
-  id: string,
-  defaultMessageAttr: t.JSXAttribute | null,
-  ctx: MigrationContext
-): string | null {
-  const fromCatalog = catalogMessage(id, ctx);
-  if (fromCatalog !== null) return fromCatalog;
-  return defaultMessageAttr ? stringAttrValue(defaultMessageAttr) : null;
-}
-
+/** The source message for an id from the default-locale catalog, or null when
+ *  absent (in case b2 this catalog already holds the harvested defaultMessages,
+ *  so a null result means the id has no source anywhere). */
 function catalogMessage(id: string, ctx: MigrationContext): string | null {
   const catalog = ctx.catalogs.byLocale[ctx.catalogs.defaultLocale] ?? {};
   const value = (catalog as Record<string, unknown>)[id];
@@ -767,23 +756,31 @@ function buildRichConversion(
   return { container: element, elements, chunkMap };
 }
 
-/** Converts a value-formatter element in place; returns the gt-next component
- *  name added, or a skip-reason string. */
+/** The outcome of a value-formatter conversion: the gt-next component name it
+ *  became, or a reason the whole file must be skipped. Discriminated so a
+ *  successful component name is never mistaken for a skip reason. */
+type FormatterOutcome = { component: string } | { skip: string };
+
+/** Converts a value-formatter element in place. */
 function convertFormatter(
   element: NodePath<t.JSXElement>,
   kind: string,
   todos: TodoEntry[],
   file: string
-): string {
+): FormatterOutcome {
   const opening = element.node.openingElement;
   if (opening.attributes.some((attr) => t.isJSXSpreadAttribute(attr))) {
-    return `<${kind}> uses spread props that cannot be mapped to gt-next options — convert manually`;
+    return {
+      skip: `<${kind}> uses spread props that cannot be mapped to gt-next options — convert manually`,
+    };
   }
 
   if (kind === 'FormattedPlural') {
     const value = jsxAttr(opening, 'value');
     if (!value || !t.isJSXExpressionContainer(value.value)) {
-      return '<FormattedPlural> needs a `value={…}` expression — convert manually';
+      return {
+        skip: '<FormattedPlural> needs a `value={…}` expression — convert manually',
+      };
     }
     const kept: t.JSXAttribute[] = [];
     for (const attr of opening.attributes) {
@@ -804,7 +801,7 @@ function convertFormatter(
       }
     }
     renameElement(element, 'Plural', kept);
-    return 'Plural';
+    return { component: 'Plural' };
   }
 
   if (kind === 'FormattedRelativeTime') {
@@ -836,17 +833,19 @@ function convertFormatter(
       );
     }
     renameElement(element, 'RelativeTime', kept);
-    return 'RelativeTime';
+    return { component: 'RelativeTime' };
   }
 
   const formatter = CHILD_VALUE_FORMATTERS[kind];
   const value = jsxAttr(opening, 'value');
   if (!value || !t.isJSXExpressionContainer(value.value)) {
-    return `<${kind}> needs a \`value={…}\` expression — convert manually`;
+    return {
+      skip: `<${kind}> needs a \`value={…}\` expression — convert manually`,
+    };
   }
   const valueExpr = value.value.expression;
   if (!t.isExpression(valueExpr)) {
-    return `<${kind}> has an unsupported \`value\` — convert manually`;
+    return { skip: `<${kind}> has an unsupported \`value\` — convert manually` };
   }
   const options: t.ObjectProperty[] = [];
   for (const [name, literal] of Object.entries(formatter.defaultOptions ?? {})) {
@@ -859,7 +858,9 @@ function convertFormatter(
     if (attr.name.name === 'value') continue;
     const prop = attrToObjectProp(attr);
     if (!prop) {
-      return `<${kind}> prop \`${attr.name.name}\` cannot be mapped to gt-next options — convert manually`;
+      return {
+        skip: `<${kind}> prop \`${attr.name.name}\` cannot be mapped to gt-next options — convert manually`,
+      };
     }
     // Later (explicit) props override the defaults.
     const existing = options.findIndex(
@@ -887,7 +888,7 @@ function convertFormatter(
     [t.jsxExpressionContainer(valueExpr)]
   );
   element.replaceWith(replacement);
-  return target;
+  return { component: target };
 }
 
 function renameElement(
