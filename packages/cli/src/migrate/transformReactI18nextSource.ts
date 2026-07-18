@@ -92,8 +92,23 @@ export function transformReactI18nextSource(
         return;
       }
       if (!RI18N_MODULES.has(source)) return;
+      // Type-only imports are erased at build time, and this adapter never
+      // uninstalls react-i18next (teardownPackages: []), so a `type` import is
+      // harmless and needs no migration (the N2 nit). A whole
+      // `import type { … } from 'react-i18next'` declaration, or an import whose
+      // specifiers are all inline `type` (`import { type TFunction }`), is left
+      // untouched and never reported as an unsupported API — so a file whose only
+      // react-i18next surface is type-only imports passes straight through. Only
+      // value specifiers drive the transform; a residual inline `type` specifier
+      // on an otherwise-migrated declaration is preserved by applyImportSurgery.
+      if (path.node.importKind === 'type') return;
+      const valueSpecifiers = path.node.specifiers.filter(
+        (specifier) =>
+          !(t.isImportSpecifier(specifier) && specifier.importKind === 'type')
+      );
+      if (valueSpecifiers.length === 0) return;
       ri18nImportPaths.push(path);
-      for (const specifier of path.node.specifiers) {
+      for (const specifier of valueSpecifiers) {
         if (!t.isImportSpecifier(specifier)) {
           skipReasons.push(
             `unsupported react-i18next import form from '${source}'`
@@ -844,20 +859,43 @@ function applyImportSurgery(
 
   let insertedNew = false;
   for (const importPath of ri18nImportPaths) {
+    // Build-erased inline `type` specifiers must survive the surgery: this
+    // adapter never uninstalls react-i18next, so a `import { …, type TFunction }`
+    // whose type is referenced elsewhere must not be left dangling (the N2 nit).
+    const typeSpecifiers = importPath.node.specifiers.filter(
+      (s): s is t.ImportSpecifier =>
+        t.isImportSpecifier(s) && s.importKind === 'type'
+    );
+
     // When retaining the provider, keep the I18nextProvider specifier and its
-    // module; drop only the migrated hook/Trans specifiers.
+    // module (plus any `type` specifiers); drop only the migrated hook/Trans
+    // specifiers.
     if (retainProvider) {
       const kept = importPath.node.specifiers.filter(
         (s) =>
-          t.isImportSpecifier(s) &&
-          t.isIdentifier(s.imported) &&
-          s.imported.name === 'I18nextProvider'
+          (t.isImportSpecifier(s) &&
+            t.isIdentifier(s.imported) &&
+            s.imported.name === 'I18nextProvider') ||
+          (t.isImportSpecifier(s) && s.importKind === 'type')
       );
       if (kept.length > 0) {
         importPath.node.specifiers = kept;
         continue;
       }
     }
+
+    // Reduce a migrated declaration that still carries `type` specifiers to a
+    // (build-erased) type-only import rather than removing it, and still add the
+    // gt-next import.
+    if (typeSpecifiers.length > 0) {
+      importPath.node.specifiers = typeSpecifiers;
+      if (!mergeTarget && !insertedNew && newDeclaration) {
+        importPath.insertAfter(newDeclaration);
+        insertedNew = true;
+      }
+      continue;
+    }
+
     if (!mergeTarget && !insertedNew && newDeclaration) {
       importPath.replaceWith(newDeclaration);
       insertedNew = true;

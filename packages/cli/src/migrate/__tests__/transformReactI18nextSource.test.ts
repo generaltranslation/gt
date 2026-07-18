@@ -278,6 +278,80 @@ describe('unsupported / bespoke inputs', () => {
   });
 });
 
+describe('N2: type-only react-i18next imports are build-erased, not skipped', () => {
+  it('passes through a file whose only surface is `import type { … }` with no report', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import type { TFunction } from 'react-i18next';",
+        'export function label(fn: TFunction) {',
+        "  return fn('title');",
+        '}',
+      ].join('\n')
+    );
+    // A pure `import type` is erased at build and react-i18next is never
+    // uninstalled, so nothing needs migrating: untouched, and no spurious
+    // "unsupported API" skip entry.
+    expect(code).toBeNull();
+    expect(skipReasons).toEqual([]);
+  });
+
+  it('passes through a file whose only surface is an inline `type` specifier', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { type TFunction } from 'react-i18next';",
+        'export function label(fn: TFunction) {',
+        "  return fn('title');",
+        '}',
+      ].join('\n')
+    );
+    expect(code).toBeNull();
+    expect(skipReasons).toEqual([]);
+  });
+
+  it('ignores an inline `type` specifier and still migrates the value import beside it', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation, type TFunction } from 'react-i18next';",
+        'export function label(fn: TFunction) {',
+        "  return fn('title');",
+        '}',
+        'export function C() {',
+        '  const { t } = useTranslation();',
+        "  return <p>{t('title')}</p>;",
+        '}',
+      ].join('\n')
+    );
+    // The `type TFunction` neither triggers an unsupported-API skip nor is
+    // dropped by import surgery (it would otherwise dangle): it survives as a
+    // build-erased type import while useTranslation migrates.
+    expect(skipReasons).toEqual([]);
+    expect(code).toContain("import { useTranslations } from 'gt-next'");
+    expect(code).toContain('const t = useTranslations()');
+    expect(code).toContain('TFunction');
+    expect(code).toContain('react-i18next');
+  });
+
+  it('leaves a standalone `import type` declaration untouched while migrating a sibling value import', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import type { TFunction } from 'react-i18next';",
+        "import { useTranslation } from 'react-i18next';",
+        'export function label(fn: TFunction) {',
+        "  return fn('title');",
+        '}',
+        'export function C() {',
+        '  const { t } = useTranslation();',
+        "  return <p>{t('title')}</p>;",
+        '}',
+      ].join('\n')
+    );
+    expect(skipReasons).toEqual([]);
+    expect(code).toContain("import { useTranslations } from 'gt-next'");
+    expect(code).toContain('TFunction');
+    expect(code).toContain('react-i18next');
+  });
+});
+
 describe('t() call normalization', () => {
   it('drops an inline string defaultValue and records a todo', () => {
     const { code, todos } = transform(
