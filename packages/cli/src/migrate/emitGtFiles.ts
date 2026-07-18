@@ -26,6 +26,13 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
   const edits: FileEdit[] = [];
   const fullyMigrated = ctx.skippedFiles.size === 0;
 
+  // Catalog files an adapter synthesized during discovery (e.g. a react-intl
+  // default-locale catalog harvested from literal defaultMessages). New files
+  // only; flushed here so they respect --dry-run like every other edit.
+  if (ctx.catalogs.filesToEmit) {
+    edits.push(...ctx.catalogs.filesToEmit);
+  }
+
   // gt.config.json
   const configPath = path.join(ctx.cwd, 'gt.config.json');
   let existing: Record<string, unknown> = {};

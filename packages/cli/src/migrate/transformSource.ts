@@ -19,7 +19,7 @@ const generate = generateModule.default || generateModule;
 const GT_MODULE = 'gt-next';
 const GT_SERVER_MODULE = 'gt-next/server';
 
-type TransformOptions = {
+export type TransformOptions = {
   /**
    * Leave the source library's provider element (and its import) untouched so a
    * later pass can nest it inside GTProvider while skipped files remain.
@@ -47,6 +47,14 @@ export function transformSourceFile(
   options: TransformOptions = {}
 ): SourceResult {
   const adapter = ctx.adapter;
+  // An adapter whose source-call model does not fit this next-intl-shaped engine
+  // (hook -> `t('key')`) supplies its own file transform; the driver, layout
+  // pass, and --inline all still funnel through transformSourceFile, so this one
+  // dispatch keeps them adapter-agnostic. next-intl supplies none and runs the
+  // engine below unchanged.
+  if (adapter.transformSource) {
+    return adapter.transformSource(file, code, ctx, options);
+  }
   const none: SourceResult = {
     code: null,
     todos: [],

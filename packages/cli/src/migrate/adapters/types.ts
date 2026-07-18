@@ -1,4 +1,5 @@
 import type { MessageClass } from '../classifyMessage.js';
+import type { TransformOptions } from '../transformSource.js';
 import type {
   MessageCatalogs,
   MigrationContext,
@@ -56,6 +57,22 @@ export interface SourceAdapter {
   // --- message format ---
   /** classifies a catalog message (ICU for next-intl). */
   classifyMessage(message: string): MessageClass;
+
+  /**
+   * Per-file source transform for a library whose call model does not fit the
+   * shared next-intl engine (a hook that returns a `t('key')` function). When
+   * present, transformSourceFile delegates to it wholesale, so the driver, the
+   * layout pass, and --inline stay adapter-agnostic. next-intl omits it and
+   * runs the built-in engine. react-intl supplies one: its descriptor-object
+   * calls (`intl.formatMessage({ id }, values)`) and formatter components
+   * (`<FormattedMessage>`, `<FormattedNumber>`, …) have no next-intl analogue.
+   */
+  transformSource?(
+    file: string,
+    code: string,
+    ctx: MigrationContext,
+    options: TransformOptions
+  ): SourceResult;
 
   // --- routing + catalog discovery ---
   parseRoutingConfig(cwd: string): RoutingInfo;

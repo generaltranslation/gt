@@ -28,6 +28,14 @@ export type MessageCatalogs = {
   locales: string[];
   byLocale: Record<string, Record<string, unknown>>;
   dir: string;
+  /**
+   * Catalog files the adapter synthesized during discovery and needs written to
+   * disk (never a mutation of an existing file — new files only). react-intl
+   * uses this to seed a missing default-locale catalog from harvested literal
+   * `defaultMessage`s (the id-problem case b2); emitGtFiles flushes them through
+   * the normal edit pipeline so they respect --dry-run.
+   */
+  filesToEmit?: FileEdit[];
 };
 
 export type RoutingInfo = {
