@@ -54,6 +54,10 @@ adapters slot in behind the registry.
 
 ### react-intl specifics
 
+> A migrated app (next-intl or react-intl alike) will not `next build` on
+> published gt-next until #1909 ships; build with `next build --turbopack` to
+> verify meanwhile.
+
 Same dictionary-compat strategy. FormatJS catalogs are already in gt's ICU
 dialect (gt classifies messages with the same
 `@formatjs/icu-messageformat-parser` react-intl uses at runtime), so no
@@ -63,7 +67,17 @@ per-file transform:
 
 - `useIntl().formatMessage({ id }, values)` becomes `useTranslations()` +
   `t(id, values)`; `<FormattedMessage id values />` becomes `{t(id, values)}`.
-  gt resolves the full id, so no namespace/rootId is threaded through.
+  gt resolves the full id, so no namespace/rootId is threaded through. The
+  destructured `const { formatMessage } = useIntl()` form is handled too
+  (rewritten to `const formatMessage = useTranslations()`), and
+  `intl.formatMessage` is resolved through its scope binding so an unrelated
+  `intl` prop/param in another scope is never rewritten.
+- Catalogs are reused; because gt-next resolves ids as nested dotted paths
+  (`id.split('.')`) while react-intl catalogs are flat, dotted flat keys
+  (`{"Home.title": …}`) are re-nested into new catalog files (`{Home:{title:…}}`)
+  that `loadDictionary` is pointed at, and the originals are never mutated. A key
+  that appears both as a leaf and as a namespace (`"a"` and `"a.b"` together)
+  cannot be nested, so any file referencing it is skipped and reported.
 - `<FormattedNumber>` / `<FormattedDate>` / `<FormattedTime>` /
   `<FormattedPlural>` / `<FormattedRelativeTime>` become `<Num>` / `<DateTime>` /
   `<Plural>` / `<RelativeTime>` (`<FormattedTime>` gets an explicit hour/minute
@@ -76,18 +90,30 @@ per-file transform:
   `next.config`.
 - The id problem: when only non-default locales ship a compiled catalog (English
   served from inline `defaultMessage`), the adapter harvests the literal
-  `defaultMessage`s and synthesizes a new default-locale catalog file. Existing
-  catalogs are never mutated (new files only). A conversion is skipped and
-  reported when the id has no default-locale source entry (gt-next's dictionary
-  `t()` throws on unknown keys).
+  `defaultMessage`s and synthesizes a new default-locale catalog file. When the
+  default catalog exists but is missing some ids (a partial extraction), each
+  missing id is filled per-id from its inline `defaultMessage` into a new file
+  instead of skipping the whole file. Existing catalogs are never mutated (new
+  files only). A conversion is skipped and reported when the id has no
+  default-locale source entry (gt-next's dictionary `t()` throws on unknown
+  keys), and when one id has conflicting `defaultMessage` variants across the
+  source, the report lists every variant and the winner so they can be
+  reconciled.
+- Auto-generated ids are not converted in v1: the FormatJS-recommended workflow
+  writes a `defaultMessage` with no literal `id` and hashes the id at build time
+  (`overrideIdFn` / `idInterpolationPattern`). gt-next needs a literal id per
+  message, so files written that way are skipped with one top-level warning
+  naming the real cause; add explicit `id`s (or convert those files by hand),
+  then re-run.
 
 Left for manual migration (skipped whole, reported, react-intl kept installed):
 class-component `injectIntl`, bare-module `createIntl` / `createIntlCache`,
 `RawIntlProvider`, `IntlProvider` `defaultRichTextElements` / global
 `formats` / `timeZone` / `textComponent` / `onError`, `<FormattedList>`,
 `<FormattedDisplayName>`, `*ToParts`, render-prop `<FormattedMessage>` children,
-non-trivial rich-text chunk functions, dynamic/absent ids, and AST-compiled
-(`--ast`) catalogs. Rich-text tags in messages render only under `--inline`
+non-trivial rich-text chunk functions (and JSX-element `values`), dynamic ids and
+FormatJS auto-generated ids (see above), flat/nested key collisions, and
+AST-compiled (`--ast`) catalogs. Rich-text tags in messages render only under `--inline`
 (converted to inline `<T>`), and every inlined key is reported as needing
 `npx gt translate` because gt hashes source differently from FormatJS's
 `[sha512:contenthash]`, so existing FormatJS-keyed translations do not match.
