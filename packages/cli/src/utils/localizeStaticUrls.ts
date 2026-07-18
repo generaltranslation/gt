@@ -575,9 +575,13 @@ function createUrlTransformer(opts: {
 }
 
 /**
- * Collect character ranges that must never be treated as live markup when
- * localizing raw HTML: comments, and the contents of script/style/pre/code.
- * hrefs inside these regions (e.g. example code) are left untouched.
+ * Collect character ranges whose `href`s must NOT be localized in raw HTML:
+ * - comments, and the contents of script/style/pre/code (example/code hrefs).
+ * - the `<link>` and `<base>` tags themselves. Full HTML documents carry asset
+ *   and document-base references on `href` (stylesheet/icon/preload links, the
+ *   document base URL); prefixing those with a locale would 404. MDX content
+ *   fragments never contain these tags, so this keeps the two surfaces aligned
+ *   on navigational `href`s while skipping HTML-only asset hrefs.
  */
 function collectHtmlProtectedRanges(html: string): Array<[number, number]> {
   const ranges: Array<[number, number]> = [];
@@ -587,6 +591,8 @@ function collectHtmlProtectedRanges(html: string): Array<[number, number]> {
     /<style\b[^>]*>[\s\S]*?<\/style>/gi,
     /<pre\b[^>]*>[\s\S]*?<\/pre>/gi,
     /<code\b[^>]*>[\s\S]*?<\/code>/gi,
+    /<link\b[^>]*>/gi,
+    /<base\b[^>]*>/gi,
   ];
   for (const re of patterns) {
     let match: RegExpExecArray | null;
@@ -604,7 +610,14 @@ function collectHtmlProtectedRanges(html: string): Array<[number, number]> {
  * not valid MDX/JSX, so the remark pipeline cannot parse them. This localizer
  * edits `href` values in place with a scanner that preserves all surrounding
  * formatting, reusing the exact URL-rewriting rules via `createUrlTransformer`.
- * hrefs inside comments and script/style/pre/code blocks are skipped.
+ *
+ * Only a bare, quoted `href` attribute is targeted: the name must sit on an
+ * attribute boundary, so `data-href`, `xlink:href` and similar are left alone
+ * (matching the MDX exact-attribute behavior). hrefs inside comments,
+ * script/style/pre/code, and `<link>`/`<base>` tags are skipped.
+ *
+ * Known limitation (documented follow-up): unquoted href values
+ * (`href=/docs/x`) are not localized; docs HTML uses quoted values.
  */
 function transformHtmlUrls(
   htmlContent: string,
@@ -642,9 +655,12 @@ function transformHtmlUrls(
   const isProtected = (index: number): boolean =>
     protectedRanges.some(([start, end]) => index >= start && index < end);
 
-  // Match href attributes in either quote style; URLs never contain quotes so
-  // `[^"']*` safely captures the whole value while preserving the quote char.
-  const hrefRegex = /\bhref\s*=\s*(["'])([^"']*)\1/gi;
+  // Match a bare `href` attribute in either quote style. The lookbehind
+  // requires an attribute boundary (whitespace) immediately before `href`, so
+  // `data-href`/`xlink:href`/etc. are not matched. The value captures anything
+  // up to the matching closing quote, so an apostrophe inside a double-quoted
+  // value (or vice versa) is preserved rather than truncating the match.
+  const hrefRegex = /(?<=\s)href\s*=\s*(["'])((?:(?!\1).)*)\1/gi;
   const replacements: Array<{ start: number; end: number; text: string }> = [];
 
   let match: RegExpExecArray | null;

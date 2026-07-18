@@ -3085,5 +3085,67 @@ describe('transformUrlPath', () => {
       expect(written).toContain('/docs/ja/guide');
       expect(written).toContain('src="/docs/en/images/x.png"');
     });
+
+    // Regression coverage for the failure surface (attribute over-match,
+    // asset/base hrefs, quote handling, unquoted values, casing, multi-line).
+    it('does not localize data-href, xlink:href or other *-href attributes', async () => {
+      const html = `<a href="/docs/en/x">x</a> <div data-href="/docs/en/y"></div> <use xlink:href="/docs/en/z" />`;
+      const written = await runHtml(html);
+      expect(written).toContain('/docs/ja/x');
+      expect(written).toContain('data-href="/docs/en/y"');
+      expect(written).toContain('xlink:href="/docs/en/z"');
+    });
+
+    it('does not localize href on <link> or <base> (asset / base URLs)', async () => {
+      const html = `<base href="/docs/en/"><link rel="stylesheet" href="/docs/en/app.css"><a href="/docs/en/x">x</a>`;
+      const written = await runHtml(html);
+      expect(written).toContain('/docs/ja/x');
+      expect(written).toContain('<base href="/docs/en/">');
+      expect(written).toContain('href="/docs/en/app.css"');
+    });
+
+    it('preserves an apostrophe inside a double-quoted href value', async () => {
+      const written = await runHtml(`<a href="/docs/en/x?name=O'Brien">x</a>`);
+      expect(written).toBe(`<a href="/docs/ja/x?name=O'Brien">x</a>`);
+    });
+
+    it('preserves a double quote inside a single-quoted href value', async () => {
+      const written = await runHtml(`<a href='/docs/en/x?q="hi"'>x</a>`);
+      expect(written).toBe(`<a href='/docs/ja/x?q="hi"'>x</a>`);
+    });
+
+    it('localizes uppercase HREF and preserves the attribute name casing', async () => {
+      const written = await runHtml(`<A HREF="/docs/en/x">x</A>`);
+      expect(written).toBe(`<A HREF="/docs/ja/x">x</A>`);
+    });
+
+    it('leaves unquoted href values unchanged (documented gap, no corruption)', async () => {
+      const html = `<a href=/docs/en/x>x</a> <a href="/docs/en/y">y</a>`;
+      const written = await runHtml(html);
+      expect(written).toContain('href=/docs/en/x');
+      expect(written).toContain('/docs/ja/y');
+    });
+
+    it('localizes an href split across multiple lines of attributes', async () => {
+      const written = await runHtml(
+        `<a\n  class="c"\n  href="/docs/en/x"\n>x</a>`
+      );
+      expect(written).toContain('/docs/ja/x');
+    });
+
+    it('skips hrefs inside <code> (not only <pre>)', async () => {
+      const html = `<a href="/docs/en/live">L</a> <code><a href="/docs/en/sample">s</a></code>`;
+      const written = await runHtml(html);
+      expect(written).toContain('/docs/ja/live');
+      expect(written).toContain('/docs/en/sample');
+      expect(written).not.toContain('/docs/ja/sample');
+    });
+
+    it('is idempotent on a second pass', async () => {
+      const once = await runHtml(`<a href="/docs/en/x">x</a>`);
+      const twice = await runHtml(once);
+      expect(twice).toBe(once);
+      expect(once).toBe(`<a href="/docs/ja/x">x</a>`);
+    });
   });
 });

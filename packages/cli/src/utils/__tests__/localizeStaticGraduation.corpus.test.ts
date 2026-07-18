@@ -51,16 +51,23 @@ const PAGE_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <base href="/docs/en/base">
+  <link rel="stylesheet" href="/docs/en/app.css">
   <title>Docs</title>
 </head>
 <body>
   <nav>
     <a href="/docs/en/intro">Intro</a>
     <a href='/docs/en/api?tab=auth#config'>API</a>
+    <A HREF="/docs/en/upper">Upper</A>
   </nav>
+  <a href="/docs/en/search?q=O'Brien">Apostrophe</a>
+  <div data-href="/docs/en/dataref"></div>
+  <svg><use xlink:href="/docs/en/sprite.svg#icon" /></svg>
   <a href="https://cdn.example.com/docs/en/asset">CDN</a>
   <!-- <a href="/docs/en/commented">nope</a> -->
   <pre><a href="/docs/en/example">example</a></pre>
+  <code><a href="/docs/en/sample">sample</a></code>
   <img src="/docs/en/img/logo.png" />
 </body>
 </html>
@@ -180,10 +187,12 @@ describe('static localization graduation corpus (end to end, no mocks)', () => {
   });
 
   describe.each(TARGET_LOCALES)('html for %s', (locale) => {
-    it('rewrites hrefs and preserves quote style, query and anchor', () => {
+    it('rewrites hrefs and preserves quote style, casing, query and anchor', () => {
       const out = read(path.join('content', locale, 'page.html'));
       expect(out).toContain(`<a href="/docs/${locale}/intro">`);
       expect(out).toContain(`<a href='/docs/${locale}/api?tab=auth#config'>`);
+      expect(out).toContain(`<A HREF="/docs/${locale}/upper">`);
+      expect(out).toContain(`<a href="/docs/${locale}/search?q=O'Brien">`);
       expect(out).not.toContain('/docs/en/intro');
     });
 
@@ -194,14 +203,28 @@ describe('static localization graduation corpus (end to end, no mocks)', () => {
       expect(out.startsWith('<!DOCTYPE html>')).toBe(true);
     });
 
-    it('skips hrefs in comments and pre/code, and leaves cdn + src alone', () => {
+    it('skips hrefs in comments, pre and code, and leaves cdn + src alone', () => {
       const out = read(path.join('content', locale, 'page.html'));
       expect(out).toContain('/docs/en/commented');
       expect(out).toContain('/docs/en/example');
+      expect(out).toContain('/docs/en/sample');
       expect(out).toContain('https://cdn.example.com/docs/en/asset');
       expect(out).toContain('src="/docs/en/img/logo.png"');
       expect(out).not.toContain(`/docs/${locale}/commented`);
       expect(out).not.toContain(`/docs/${locale}/example`);
+      expect(out).not.toContain(`/docs/${locale}/sample`);
+    });
+
+    it('does not localize data-href, xlink:href, or <link>/<base> hrefs', () => {
+      const out = read(path.join('content', locale, 'page.html'));
+      expect(out).toContain('data-href="/docs/en/dataref"');
+      expect(out).toContain('xlink:href="/docs/en/sprite.svg#icon"');
+      expect(out).toContain('<base href="/docs/en/base">');
+      expect(out).toContain('href="/docs/en/app.css"');
+      expect(out).not.toContain(`/docs/${locale}/dataref`);
+      expect(out).not.toContain(`/docs/${locale}/sprite.svg`);
+      expect(out).not.toContain(`/docs/${locale}/base`);
+      expect(out).not.toContain(`/docs/${locale}/app.css`);
     });
   });
 
