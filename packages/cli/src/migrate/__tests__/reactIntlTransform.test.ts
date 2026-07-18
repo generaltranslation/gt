@@ -114,7 +114,31 @@ describe('reactIntl: useIntl().formatMessage (client)', () => {
     expect(r.code).toMatch(/intl\(['"]greeting['"], \{ name \}\)/);
   });
 
-  it('preserves a dotted id verbatim (no rootId splitting)', () => {
+  it('emits a dotted id and resolves it against the re-nested catalog', () => {
+    // Discovery re-nests dotted flat keys, so the migrate-time presence check
+    // walks 'Home.title' through { Home: { title } } exactly as gt-next's
+    // runtime resolver (id.split('.')) does — check and runtime never disagree.
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        'export function C() {',
+        '  const intl = useIntl();',
+        "  return <p>{intl.formatMessage({ id: 'Home.title' })}</p>;",
+        '}'
+      ),
+      { Home: { title: 'Welcome' } }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(/intl\(['"]Home\.title['"]\)/);
+    expect(r.code).toMatch(/useTranslations\(\)/);
+  });
+
+  it('skips a dotted id whose nested path is absent (flat catalog not re-nested)', () => {
+    // A FLAT { 'Home.title': … } catalog is the pre-fix runtime bug: gt-next
+    // walks 'Home.title' as a nested path and throws. The presence check now
+    // walks the same way, so it correctly reports the miss instead of emitting
+    // a call that throws at runtime.
     const r = transform(
       lines(
         "'use client';",
@@ -126,9 +150,8 @@ describe('reactIntl: useIntl().formatMessage (client)', () => {
       ),
       { 'Home.title': 'Welcome' }
     );
-    expect(r.skipReasons).toEqual([]);
-    expect(r.code).toMatch(/intl\(['"]Home\.title['"]\)/);
-    expect(r.code).toMatch(/useTranslations\(\)/);
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/source entry|catalog/i);
   });
 
   it('resolves an id from a defineMessages table and drops the table', () => {
@@ -623,5 +646,353 @@ describe('reactIntl: unsupported APIs skip whole file and report', () => {
     expect(r.code).toBeNull();
     expect(r.skipReasons.length).toBeGreaterThan(0);
     expect(r.skipReasons.join(' ')).toMatch(pattern);
+  });
+});
+
+// Faithful copy of gt-next's runtime dictionary resolver: DictionaryCache
+// (server getTranslations) and react-core's lookupDictionaryValue (client
+// useTranslations) both walk id.split('.') through nested objects. This is the
+// exact semantics the migrate-time presence check (catalogMessage) must match.
+function resolveNested(
+  dictionary: Record<string, unknown>,
+  id: string
+): string | undefined {
+  let current: unknown = dictionary;
+  for (const segment of id.split('.')) {
+    if (
+      current === null ||
+      typeof current !== 'object' ||
+      Array.isArray(current) ||
+      !Object.prototype.hasOwnProperty.call(current, segment)
+    ) {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return typeof current === 'string' ? current : undefined;
+}
+
+describe('reactIntl: dotted-id nested resolution (B1)', () => {
+  it('a re-nested catalog resolves the emitted dotted id; a flat one does not', () => {
+    // What discovery produces (nested) resolves; the react-intl-verbatim flat
+    // catalog is exactly the reported runtime throw.
+    expect(
+      resolveNested({ Home: { title: 'Welcome home' } }, 'Home.title')
+    ).toBe('Welcome home');
+    expect(
+      resolveNested({ 'Home.title': 'Welcome home' }, 'Home.title')
+    ).toBeUndefined();
+    // control: a non-dotted (hash-style) id resolves fine in a flat map.
+    expect(resolveNested({ xK2p9a: 'Hi' }, 'xK2p9a')).toBe('Hi');
+  });
+
+  it('emits a call the nested catalog resolves for a deeply dotted id', () => {
+    const messages = { a: { b: { c: 'deep' } } };
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        'export function C() {',
+        '  const intl = useIntl();',
+        "  return <p>{intl.formatMessage({ id: 'a.b.c' })}</p>;",
+        '}'
+      ),
+      messages
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(/intl\(['"]a\.b\.c['"]\)/);
+    // the id the transform emits resolves through the nested catalog at runtime.
+    expect(resolveNested(messages, 'a.b.c')).toBe('deep');
+  });
+
+  it('skips a flat/nested key collision reported by discovery', () => {
+    // Discovery drops colliding ids and flags them; the transform must skip any
+    // file that references one rather than emit a call that cannot resolve.
+    const ctx = makeContext({ a: 'A' });
+    ctx.catalogs.flatKeyCollisions = ['a', 'a.b'];
+    const r = transformSourceFile(
+      'src/app/[locale]/Client.tsx',
+      lines(
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        'export function C() {',
+        '  const intl = useIntl();',
+        "  return <p>{intl.formatMessage({ id: 'a' })}</p>;",
+        '}'
+      ),
+      ctx
+    );
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/collide/i);
+  });
+});
+
+describe('reactIntl: <FormattedMessage> in expression positions (B2)', () => {
+  const positions: Array<[string, string]> = [
+    ['return argument', 'return <FormattedMessage id="title" />;'],
+    [
+      'arrow implicit body',
+      'const C = () => <FormattedMessage id="title" />;\nexport { C };',
+    ],
+    [
+      'const init',
+      'const el = <FormattedMessage id="title" />;\nexport { el };',
+    ],
+    [
+      'object value',
+      'const o = { x: <FormattedMessage id="title" /> };\nexport { o };',
+    ],
+    [
+      'ternary branch',
+      'export function C({ b }: { b: boolean }) { return b ? <FormattedMessage id="title" /> : null; }',
+    ],
+    [
+      'array element',
+      'const a = [<FormattedMessage id="title" key="t" />];\nexport { a };',
+    ],
+  ];
+
+  it.each(positions)(
+    'converts a <FormattedMessage> in %s without crashing',
+    (_name, body) => {
+      const code = lines(
+        "'use client';",
+        "import { FormattedMessage } from 'react-intl';",
+        _name === 'return argument' ? `export function C() { ${body} }` : body
+      );
+      // Must not throw; must convert (bare call, not a JSXExpressionContainer).
+      const r = transform(code, { title: 'Welcome' });
+      expect(r.skipReasons).toEqual([]);
+      expect(r.code).not.toBeNull();
+      expect(r.code).not.toContain('FormattedMessage');
+      expect(r.code).toMatch(/\$gtT\(['"]title['"]\)|useTranslations\(\)/);
+    }
+  );
+
+  it('still wraps a JSX-child <FormattedMessage> in an expression container', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { FormattedMessage } from 'react-intl';",
+        'export function C() {',
+        '  return <div><FormattedMessage id="title" /></div>;',
+        '}'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(/\{\s*\$gtT\(['"]title['"]\)\s*\}/);
+  });
+});
+
+describe('reactIntl: destructured useIntl and the import-survivor guard (B3)', () => {
+  it('rewrites const { formatMessage } = useIntl() and its bare calls', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        'export function C() {',
+        '  const { formatMessage } = useIntl();',
+        "  return <p>{formatMessage({ id: 'title' })}</p>;",
+        '}'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(/const formatMessage = useTranslations\(\)/);
+    expect(r.code).toMatch(/formatMessage\(['"]title['"]\)/);
+    expect(r.code).not.toMatch(/['"]react-intl['"]/);
+    expect(r.code).not.toContain('useIntl');
+  });
+
+  it('handles an aliased destructure { formatMessage: t }', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        'export function C() {',
+        '  const { formatMessage: t } = useIntl();',
+        "  return <p>{t({ id: 'title' })}</p>;",
+        '}'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(/const t = useTranslations\(\)/);
+    expect(r.code).toMatch(/\bt\(['"]title['"]\)/);
+  });
+
+  it('skips a destructure with a non-formatMessage member', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        'export function C({ n }: { n: number }) {',
+        '  const { formatMessage, formatNumber } = useIntl();',
+        "  return <p>{formatMessage({ id: 'title' })}{formatNumber(n)}</p>;",
+        '}'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/formatNumber/);
+  });
+
+  it('skips (never emits broken code) when a react-intl import reference survives conversion', () => {
+    // useIntl captured as a value (not a recognized `const x = useIntl()`
+    // binding), so nothing consumes the import — stripping it would leave a
+    // dangling reference. The general guard forces a whole-file skip.
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        'const useHook = useIntl;',
+        'export function C() {',
+        '  const intl = useHook();',
+        "  return <p>{intl.formatMessage({ id: 'title' })}</p>;",
+        '}'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.length).toBeGreaterThan(0);
+    expect(r.skipReasons.join(' ')).toMatch(/still referenced|useIntl/);
+  });
+});
+
+describe('reactIntl: scope-aware intl.formatMessage (M1)', () => {
+  it('rewrites the captured useIntl binding but not an unrelated intl prop', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        'export function C() {',
+        '  const intl = useIntl();',
+        "  return <p>{intl.formatMessage({ id: 'a' })}</p>;",
+        '}',
+        'export function D({ intl }: { intl: any }) {',
+        "  return <p>{intl.formatMessage({ id: 'b' })}</p>;",
+        '}'
+      ),
+      { a: 'A', b: 'B' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    // C's captured binding is rewritten to the bare t() call...
+    expect(r.code).toMatch(/return <p>\{intl\(['"]a['"]\)\}/);
+    // ...but D's prop `intl` (a react-intl IntlShape) is left untouched.
+    expect(r.code).toMatch(/intl\.formatMessage\(\{\s*id:\s*['"]b['"]\s*\}\)/);
+  });
+});
+
+describe('reactIntl: JSX-element values are rich (m1)', () => {
+  const elementValueFile = lines(
+    "'use client';",
+    "import { FormattedMessage } from 'react-intl';",
+    'export function C() {',
+    '  return <p><FormattedMessage id="g" values={{ icon: <b>x</b>, name: "Bob" }} /></p>;',
+    '}'
+  );
+
+  it('skips a plain message with a JSX-element value on the dictionary path', () => {
+    const r = transform(elementValueFile, { g: 'Hi {name} {icon}' });
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/--inline|rich/);
+  });
+
+  it('does not mis-render a JSX-element value under --inline (safe skip)', () => {
+    const r = transformInline(elementValueFile, { g: 'Hi {name} {icon}' });
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.length).toBeGreaterThan(0);
+  });
+});
+
+describe('reactIntl: IntlProvider extra props are skipped (B4)', () => {
+  const providerWith = (attrs: string) =>
+    lines(
+      "'use client';",
+      "import { IntlProvider } from 'react-intl';",
+      'export function P({ locale, messages, children }: any) {',
+      `  return <IntlProvider locale={locale} messages={messages} ${attrs}>{children}</IntlProvider>;`,
+      '}'
+    );
+
+  it('skips+reports timeZone with its own message', () => {
+    const r = transform(providerWith('timeZone="America/New_York"'));
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/timeZone/);
+    expect(r.skipReasons.join(' ')).toMatch(/date\/time|timezone/i);
+  });
+
+  it.each([
+    ['onError', 'onError={reportError}'],
+    ['textComponent', "textComponent={'span'}"],
+    ['formats', 'formats={{}}'],
+    ['defaultRichTextElements', 'defaultRichTextElements={{}}'],
+  ])('skips+reports %s', (name, attr) => {
+    const r = transform(providerWith(attr));
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toContain(name);
+  });
+
+  it('skips+reports a spread prop', () => {
+    const r = transform(providerWith('{...extra}'));
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/spread/);
+  });
+
+  it('still unwraps a provider carrying only locale/defaultLocale/messages', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { IntlProvider } from 'react-intl';",
+        'export function P({ locale, messages, children }: any) {',
+        '  return <IntlProvider locale={locale} defaultLocale="en" messages={messages}>{children}</IntlProvider>;',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toContain('IntlProvider');
+  });
+});
+
+describe('reactIntl: auto-generated ids (M3)', () => {
+  it('reports the real cause (no literal id) and raises a top-level warning', () => {
+    const ctx = makeContext({ existing: 'x' });
+    const r = transformSourceFile(
+      'src/app/[locale]/Client.tsx',
+      lines(
+        "'use client';",
+        "import { FormattedMessage } from 'react-intl';",
+        'export function C() {',
+        '  return <p><FormattedMessage defaultMessage="Hello" /></p>;',
+        '}'
+      ),
+      ctx
+    );
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/no literal id|auto-generate/i);
+    expect(r.skipReasons.join(' ')).not.toMatch(/dynamic descriptor/);
+    expect((ctx.warnings ?? []).join(' ')).toMatch(
+      /auto-generated ids|literal `id`/i
+    );
+  });
+
+  it('reports auto-generated ids on a formatMessage descriptor too', () => {
+    const ctx = makeContext({ existing: 'x' });
+    const r = transformSourceFile(
+      'src/app/[locale]/Client.tsx',
+      lines(
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        'export function C() {',
+        '  const intl = useIntl();',
+        "  return <p>{intl.formatMessage({ defaultMessage: 'Cart' })}</p>;",
+        '}'
+      ),
+      ctx
+    );
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/no literal id/i);
+    expect((ctx.warnings ?? []).join(' ')).toMatch(/auto-generated ids/i);
   });
 });

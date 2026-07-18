@@ -169,4 +169,171 @@ describe('discoverReactIntlCatalogs', () => {
     const cwd = makeDir({ 'package.json': '{}' });
     expect(await discoverReactIntlCatalogs(cwd, routing)).toBeNull();
   });
+
+  describe('B1: dotted keys re-nested into new files', () => {
+    it('re-nests dotted flat keys and points loadDictionary at new files', async () => {
+      const cwd = makeDir({
+        'messages/en.json': JSON.stringify({
+          'Home.title': 'Welcome',
+          'Home.subtitle': 'Hi',
+          flat: 'Flat',
+        }),
+        'messages/fr.json': JSON.stringify({
+          'Home.title': 'Bienvenue',
+          'Home.subtitle': 'Salut',
+          flat: 'Plat',
+        }),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      // byLocale is nested (what gt-next's runtime resolver walks).
+      expect(catalogs!.byLocale.en).toEqual({
+        Home: { title: 'Welcome', subtitle: 'Hi' },
+        flat: 'Flat',
+      });
+      // originals are never mutated; new nested files are emitted and served.
+      expect(catalogs!.dir).not.toBe(path.join(cwd, 'messages'));
+      expect(path.basename(catalogs!.dir)).toBe('messages-gt');
+      const emit = catalogs!.filesToEmit ?? [];
+      expect(emit.map((e) => path.basename(e.path)).sort()).toEqual([
+        'en.json',
+        'fr.json',
+      ]);
+      // the original files are not queued for rewrite.
+      expect(
+        emit.some((e) => e.path === path.join(cwd, 'messages', 'en.json'))
+      ).toBe(false);
+      // the emitted nested content resolves the dotted id at runtime.
+      const enOut = JSON.parse(
+        emit.find((e) => e.path.endsWith('en.json'))!.content!
+      );
+      expect(enOut.Home.title).toBe('Welcome');
+    });
+
+    it('flags a flat/nested key collision and drops it from the nested catalog', async () => {
+      const cwd = makeDir({
+        'messages/en.json': JSON.stringify({ a: 'leaf', 'a.b': 'nested' }),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      expect(catalogs!.flatKeyCollisions!.sort()).toEqual(['a', 'a.b']);
+      // neither colliding id survives in the nested catalog.
+      expect(catalogs!.byLocale.en.a).toBeUndefined();
+    });
+  });
+
+  describe('M4: per-id harvest into an existing (partial) default catalog', () => {
+    it('synthesizes only the missing ids from inline defaultMessages, into a new file', async () => {
+      const cwd = makeDir({
+        // default catalog exists but is missing `greeting`.
+        'messages/en.json': JSON.stringify({ title: 'Welcome' }),
+        'messages/fr.json': JSON.stringify({
+          title: 'Bienvenue',
+          greeting: 'Salut',
+        }),
+        'src/Client.tsx': [
+          "'use client';",
+          "import { useIntl, FormattedMessage } from 'react-intl';",
+          'export function C() {',
+          '  const intl = useIntl();',
+          '  return (',
+          '    <>',
+          "      <h1>{intl.formatMessage({ id: 'title' })}</h1>",
+          '      <p><FormattedMessage id="greeting" defaultMessage="Hello" /></p>',
+          '    </>',
+          '  );',
+          '}',
+        ].join('\n'),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      // the missing id is filled from the inline defaultMessage.
+      expect(catalogs!.byLocale.en.greeting).toBe('Hello');
+      expect(catalogs!.byLocale.en.title).toBe('Welcome');
+      // written to a NEW file (never mutating the original messages/en.json).
+      expect(path.basename(catalogs!.dir)).toBe('messages-gt');
+      expect(
+        catalogs!.filesToEmit!.some(
+          (e) => e.path === path.join(cwd, 'messages', 'en.json')
+        )
+      ).toBe(false);
+      // and reported.
+      expect(
+        catalogs!.reportTodos!.some((t) => /greeting/.test(t.reason))
+      ).toBe(true);
+    });
+  });
+
+  describe('M2: conflicting defaultMessage variants (b2 synthesis)', () => {
+    it('reports both variants and the winner, deterministically', async () => {
+      const cwd = makeDir({
+        'messages/fr.json': JSON.stringify({ greeting: 'Salut' }),
+        'src/Provider.tsx': [
+          "'use client';",
+          "import { IntlProvider } from 'react-intl';",
+          'export function P({ locale, children }: any) {',
+          '  return <IntlProvider locale={locale} defaultLocale="en">{children}</IntlProvider>;',
+          '}',
+        ].join('\n'),
+        // two call sites, same id, different defaultMessage.
+        'src/A.tsx': [
+          "'use client';",
+          "import { FormattedMessage } from 'react-intl';",
+          'export function A() {',
+          '  return <FormattedMessage id="greeting" defaultMessage="Hello" />;',
+          '}',
+        ].join('\n'),
+        'src/B.tsx': [
+          "'use client';",
+          "import { FormattedMessage } from 'react-intl';",
+          'export function B() {',
+          '  return <FormattedMessage id="greeting" defaultMessage="Hi there" />;',
+          '}',
+        ].join('\n'),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      const conflictTodo = catalogs!.reportTodos!.find((t) =>
+        /greeting/.test(t.reason)
+      );
+      expect(conflictTodo).toBeDefined();
+      expect(conflictTodo!.reason).toMatch(/Hello/);
+      expect(conflictTodo!.reason).toMatch(/Hi there/);
+      // first by sorted file order (A.tsx before B.tsx) wins.
+      expect(catalogs!.byLocale.en.greeting).toBe('Hello');
+    });
+  });
+
+  describe('m2: assumed default locale is reported', () => {
+    it('warns when en is assumed with no declared default', async () => {
+      const cwd = makeDir({
+        'messages/en.json': JSON.stringify({ title: 'Welcome' }),
+        'messages/fr.json': JSON.stringify({ title: 'Bienvenue' }),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      expect(catalogs!.defaultLocale).toBe('en');
+      expect((catalogs!.warnings ?? []).join(' ')).toMatch(/Assumed.*'en'/);
+    });
+
+    it('warns when the sole catalog is assumed to be the source', async () => {
+      const cwd = makeDir({
+        'messages/de.json': JSON.stringify({ title: 'Willkommen' }),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      expect(catalogs!.defaultLocale).toBe('de');
+      expect((catalogs!.warnings ?? []).join(' ')).toMatch(/Assumed 'de'/);
+    });
+
+    it('does not warn when the default locale is declared', async () => {
+      const cwd = makeDir({
+        'messages/de.json': JSON.stringify({ title: 'Willkommen' }),
+        'messages/fr.json': JSON.stringify({ title: 'Bienvenue' }),
+        'src/Provider.tsx': [
+          "'use client';",
+          "import { IntlProvider } from 'react-intl';",
+          'export function P({ children }: any) {',
+          '  return <IntlProvider locale="de" defaultLocale="de">{children}</IntlProvider>;',
+          '}',
+        ].join('\n'),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      expect(catalogs!.warnings ?? []).toEqual([]);
+    });
+  });
 });

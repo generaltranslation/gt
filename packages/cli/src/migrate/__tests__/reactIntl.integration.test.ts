@@ -430,6 +430,103 @@ describe('react-intl migration integration', () => {
     expect(report).toMatch(/npx gt translate/);
   });
 
+  it('re-nests dotted catalog keys end to end so runtime resolution works (B1)', async () => {
+    const cwd = makeApp({
+      'messages/en.json': JSON.stringify({
+        'Home.title': 'Welcome to demo',
+        'Home.greeting': 'Hello, {name}!',
+        cart: 'Cart',
+      }),
+      'messages/fr.json': JSON.stringify({
+        'Home.title': 'Bienvenue',
+        'Home.greeting': 'Bonjour, {name}!',
+        cart: 'Panier',
+      }),
+      'messages/es.json': null,
+      'src/app/[locale]/page.tsx': null,
+      'src/app/[locale]/Client.tsx': [
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        'export function Client() {',
+        '  const intl = useIntl();',
+        "  return <h1>{intl.formatMessage({ id: 'Home.title' })}</h1>;",
+        '}',
+      ].join('\n'),
+    });
+    await run(cwd);
+
+    // dotted keys are re-nested into a new gt-owned dir; originals untouched.
+    const nested = JSON.parse(read(cwd, 'messages-gt/en.json'));
+    expect(nested.Home.title).toBe('Welcome to demo');
+    // the original flat file is left as-is.
+    expect(JSON.parse(read(cwd, 'messages/en.json'))['Home.title']).toBe(
+      'Welcome to demo'
+    );
+    // loadDictionary points at the re-nested files.
+    expect(read(cwd, 'src/loadDictionary.ts')).toContain('messages-gt');
+    // the client converted (its emitted id resolves against the nested catalog).
+    const client = read(cwd, 'src/app/[locale]/Client.tsx');
+    expect(client).toMatch(/intl\(['"]Home\.title['"]\)/);
+    expect(read(cwd, 'gt-migrate-report.md')).not.toContain(
+      '## Needs manual migration'
+    );
+  });
+
+  it('reports the #1909 build caveat and a build step in Next steps (M5, m3)', async () => {
+    const cwd = makeApp();
+    await run(cwd);
+    const report = read(cwd, 'gt-migrate-report.md');
+    // #1909 caveat present with the Turbopack workaround.
+    expect(report).toMatch(/#1909/);
+    expect(report).toMatch(/next build --turbopack/);
+    // clean migration has no TODOs section, so the step must not reference it.
+    expect(report).not.toContain('## TODOs');
+    expect(report).toContain('Run your build.');
+    expect(report).not.toContain('Review the TODOs above');
+  });
+
+  it('warns once (top level) about FormatJS auto-generated ids and skips those files (M3)', async () => {
+    const cwd = makeApp({
+      'src/app/[locale]/page.tsx': null,
+      'src/app/[locale]/Client.tsx': [
+        "'use client';",
+        "import { FormattedMessage } from 'react-intl';",
+        'export function Client() {',
+        // FormatJS auto-id workflow: defaultMessage, no literal id.
+        '  return <p><FormattedMessage defaultMessage="Hello" /></p>;',
+        '}',
+      ].join('\n'),
+    });
+    await run(cwd);
+    const report = read(cwd, 'gt-migrate-report.md');
+    expect(report).toContain('## Warnings');
+    expect(report).toMatch(/auto-generated ids/i);
+    // the misleading "dynamic descriptor/id" diagnostic is gone.
+    expect(report).toMatch(/no literal id/i);
+    expect(report).not.toMatch(/dynamic descriptor/);
+    // react-intl stays installed (the UI file was skipped).
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['react-intl']).toBe('^6.6.0');
+  });
+
+  it('does not crash on a <FormattedMessage> in a return position (B2)', async () => {
+    const cwd = makeApp({
+      'src/app/[locale]/page.tsx': null,
+      'src/app/[locale]/Client.tsx': [
+        "'use client';",
+        "import { FormattedMessage } from 'react-intl';",
+        'export function Title() {',
+        '  return <FormattedMessage id="title" />;',
+        '}',
+      ].join('\n'),
+    });
+    // Would previously throw a raw TypeError through the whole command.
+    await expect(run(cwd)).resolves.toBeUndefined();
+    const client = read(cwd, 'src/app/[locale]/Client.tsx');
+    expect(client).not.toContain('FormattedMessage');
+    expect(client).toMatch(/\$gtT\(['"]title['"]\)|useTranslations/);
+  });
+
   it('rejects an unsupported --from with a clean error listing sources', async () => {
     const cwd = makeApp();
     const exit = vi.spyOn(process, 'exit').mockImplementation((() => {
