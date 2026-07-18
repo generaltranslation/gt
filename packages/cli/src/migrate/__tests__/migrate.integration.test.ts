@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { handleMigrateCommand } from '../../cli/commands/migrate.js';
+import { logger } from '../../console/logger.js';
 import { installPackage } from '../../utils/installPackage.js';
 
 vi.mock('../../hooks/postProcess.js', () => ({
@@ -160,6 +161,19 @@ afterEach(() => {
 
 const read = (cwd: string, rel: string) =>
   fs.readFileSync(path.join(cwd, rel), 'utf8');
+
+// A project with exactly the files given (no next-intl scaffold), for the
+// --from validation and nothing-to-migrate backstop cases.
+function makeBareProject(files: Record<string, string>): string {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-bare-'));
+  tmpDirs.push(cwd);
+  for (const [rel, content] of Object.entries(files)) {
+    const abs = path.join(cwd, rel);
+    fs.mkdirSync(path.dirname(abs), { recursive: true });
+    fs.writeFileSync(abs, content);
+  }
+  return cwd;
+}
 
 // App shape where the NextIntlClientProvider lives in a separate client file
 // (a very common layout) rather than inline in the layout. The layout renders
@@ -599,6 +613,97 @@ describe('handleMigrateCommand integration', () => {
     // full teardown: next-intl removed since every file converted
     const pkg = JSON.parse(read(cwd, 'package.json'));
     expect(pkg.dependencies['next-intl']).toBeUndefined();
+  });
+
+  it('errors when --from names a library absent from package.json', async () => {
+    // The reviewer's t3-i18next shape: react-i18next/i18next, no next-intl, a
+    // messages catalog, and a page on react-i18next. --from next-intl must not
+    // silently "succeed" writing scaffolding while leaving every file untouched.
+    const cwd = makeBareProject({
+      'package.json': JSON.stringify({
+        name: 'demo',
+        dependencies: {
+          next: '15.5.0',
+          'react-i18next': '^14.0.0',
+          i18next: '^23.0.0',
+          react: '19.0.0',
+        },
+      }),
+      'messages/en.json': JSON.stringify({ Home: { title: 'Hi' } }),
+      'messages/es.json': JSON.stringify({ Home: { title: 'Hola' } }),
+      'src/app/page.tsx': [
+        "'use client';",
+        "import { useTranslation } from 'react-i18next';",
+        'export default function Page() {',
+        '  const { t } = useTranslation();',
+        "  return <h1>{t('Home.title')}</h1>;",
+        '}',
+      ].join('\n'),
+    });
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(((
+      code?: number
+    ) => {
+      throw new Error(`process.exit:${code}`);
+    }) as never);
+    try {
+      await expect(
+        handleMigrateCommand(
+          {
+            config: 'gt.config.json',
+            inline: false,
+            dryRun: false,
+            yes: true,
+            allowDirty: true,
+            from: 'next-intl',
+          },
+          'i18next',
+          cwd
+        )
+      ).rejects.toThrow('process.exit:1');
+    } finally {
+      exitSpy.mockRestore();
+    }
+    // errored before writing anything, and the source file is untouched
+    expect(fs.existsSync(path.join(cwd, 'gt.config.json'))).toBe(false);
+    expect(read(cwd, 'src/app/page.tsx')).toContain('react-i18next');
+  });
+
+  it('warns instead of exiting 0 when a run matches nothing', async () => {
+    // next-intl IS a dependency (so the presence check passes and no --from is
+    // needed), a catalog is discoverable, but no source file imports next-intl.
+    // The run migrates nothing; it must say so rather than reporting success.
+    const cwd = makeBareProject({
+      'package.json': JSON.stringify({
+        name: 'demo',
+        dependencies: {
+          next: '15.5.0',
+          'next-intl': '^4.1.0',
+          react: '19.0.0',
+        },
+      }),
+      'messages/en.json': JSON.stringify({ Home: { title: 'Hi' } }),
+      'messages/es.json': JSON.stringify({ Home: { title: 'Hola' } }),
+      'src/app/page.tsx': [
+        'export default function Page() {',
+        '  return <h1>Static heading</h1>;',
+        '}',
+      ].join('\n'),
+    });
+    const warnSpy = vi.spyOn(logger, 'warn');
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: true,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    const warnings = warnSpy.mock.calls.map((call) => String(call[0]));
+    warnSpy.mockRestore();
+    expect(warnings.some((line) => /Nothing to migrate/.test(line))).toBe(true);
   });
 
   it('treats a JSX-less layout.ts as a layout and degrades gracefully', async () => {

@@ -10,6 +10,7 @@ import { formatFiles } from '../../hooks/postProcess.js';
 import {
   getAdapter,
   supportedSourceIds,
+  type SourceAdapter,
 } from '../../migrate/adapters/index.js';
 import { emitGtFiles } from '../../migrate/emitGtFiles.js';
 import { inlinePass } from '../../migrate/inline.js';
@@ -50,6 +51,19 @@ export async function handleMigrateCommand(
         (options.from
           ? 'Pass --from with a supported source, or omit it to auto-detect from your dependencies.'
           : 'This was auto-detected from your dependencies — pass --from to override.')
+    );
+  }
+
+  // Auto-detect only returns a library that determineLibrary found in
+  // package.json, so the source is guaranteed present. --from bypasses that, so
+  // confirm the requested library is actually a dependency here; otherwise the
+  // run would "succeed" (write scaffolding) while leaving every source file
+  // untouched, since no import matches.
+  if (options.from && !isSourceLibraryInstalled(cwd, adapter)) {
+    logErrorAndExit(
+      `--from ${requestedFrom} was passed, but no ${adapter.displayName} ` +
+        'dependency is present in this project. Install it first, or omit ' +
+        '--from to auto-detect your i18n library from package.json.'
     );
   }
 
@@ -305,7 +319,27 @@ export async function handleMigrateCommand(
     });
   }
 
+  // Count real source transforms before emitGtFiles adds the gt-next
+  // scaffolding (config, loaders, resolvers). ctx.edits holds only transform
+  // writes at this point.
+  const transformedSourceFiles = ctx.edits.filter(
+    (edit) => edit.kind === 'write'
+  ).length;
+
   ctx.edits.push(...emitGtFiles(ctx));
+
+  // Backstop: if nothing matched the source library at all (no file transformed
+  // and none even skipped for using it), the run migrated nothing and only wrote
+  // scaffolding. That almost always means the wrong source was targeted, so warn
+  // instead of exiting 0 as if it worked.
+  if (transformedSourceFiles === 0 && ctx.skippedFiles.size === 0) {
+    logger.warn(
+      `Nothing to migrate: no files importing ${adapter.displayName} were found. ` +
+        `Is ${requestedFrom} really this project's i18n library? ` +
+        'The gt-next scaffolding was still written; re-run with --from <library> ' +
+        'if you targeted the wrong source.'
+    );
+  }
 
   if (options.dryRun) {
     const report = buildReport(ctx, true, !(await isGtNextInstalled(cwd)));
@@ -393,6 +427,35 @@ function collect(
   if (result.code !== null) {
     ctx.edits.push({ path: file, kind: 'write', content: result.code });
   }
+}
+
+/**
+ * True when the adapter's source library is a declared dependency of the
+ * project at `cwd`. Reads package.json the way determineLibrary does (all
+ * dependency sections), so --from restores the presence guarantee auto-detect
+ * gives. Checks the adapter id and its teardown package keys, which are the npm
+ * names that define the library.
+ */
+function isSourceLibraryInstalled(
+  cwd: string,
+  adapter: SourceAdapter
+): boolean {
+  const packageJsonPath = path.join(cwd, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) return false;
+  let pkg: Record<string, Record<string, string> | undefined>;
+  try {
+    pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  } catch {
+    return false;
+  }
+  const deps = {
+    ...pkg.dependencies,
+    ...pkg.devDependencies,
+    ...pkg.peerDependencies,
+    ...pkg.optionalDependencies,
+  };
+  const candidates = new Set([adapter.id, ...adapter.teardownPackages]);
+  return [...candidates].some((name) => name in deps);
 }
 
 function isEsmNextConfig(configFile: string, cwd: string): boolean {
