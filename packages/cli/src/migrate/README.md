@@ -1,6 +1,7 @@
 # migrate
 
-`gt migrate` converts a next-intl Next.js App Router project to gt-next.
+`gt migrate` converts a next-intl or react-intl (FormatJS) Next.js App Router
+project to gt-next.
 
 Strategy: **dictionary-compat by default** — gt-next's `useTranslations`/
 `getTranslations` share next-intl's names, namespace resolution, and ICU
@@ -43,8 +44,53 @@ loadDictionary.ts, package.json, teardown) → buffered write + report.
 All transforms are babel parse/traverse/generate (`retainLines`) like the
 existing wizard codemods; `--dry-run` prints the report without writing.
 
-react-i18next is detected (`determineLibrary`) but not yet supported — the
-transforms take the library as a parameter so an adapter can slot in.
+## Source libraries
+
+next-intl (adapter #1) and react-intl / FormatJS (adapter #2) are supported;
+pass `--from <library>` to override auto-detection. react-i18next is detected by
+`determineLibrary` but not yet supported. Each source library is a
+`SourceAdapter` (`adapters/`), so the pipeline stays library-agnostic and new
+adapters slot in behind the registry.
+
+### react-intl specifics
+
+Same dictionary-compat strategy. FormatJS catalogs are already in gt's ICU
+dialect (gt classifies messages with the same
+`@formatjs/icu-messageformat-parser` react-intl uses at runtime), so no
+message-format conversion is ever needed. Because react-intl's descriptor-object
+call model does not fit the next-intl engine, the adapter supplies its own
+per-file transform:
+
+- `useIntl().formatMessage({ id }, values)` becomes `useTranslations()` +
+  `t(id, values)`; `<FormattedMessage id values />` becomes `{t(id, values)}`.
+  gt resolves the full id, so no namespace/rootId is threaded through.
+- `<FormattedNumber>` / `<FormattedDate>` / `<FormattedTime>` /
+  `<FormattedPlural>` / `<FormattedRelativeTime>` become `<Num>` / `<DateTime>` /
+  `<Plural>` / `<RelativeTime>` (`<FormattedTime>` gets an explicit hour/minute
+  default; `updateIntervalInSeconds` has no live-tick equivalent and is dropped
+  with a TODO).
+- `<IntlProvider>` is unwrapped so the `[locale]` layout's `<GTProvider>` owns
+  the context; RSC `createIntl(...).formatMessage` becomes
+  `await getTranslations()`; `defineMessages` with literal descriptors is
+  inlined; the FormatJS build plugin (`@formatjs/swc-plugin`) is torn down in
+  `next.config`.
+- The id problem: when only non-default locales ship a compiled catalog (English
+  served from inline `defaultMessage`), the adapter harvests the literal
+  `defaultMessage`s and synthesizes a new default-locale catalog file. Existing
+  catalogs are never mutated (new files only). A conversion is skipped and
+  reported when the id has no default-locale source entry (gt-next's dictionary
+  `t()` throws on unknown keys).
+
+Left for manual migration (skipped whole, reported, react-intl kept installed):
+class-component `injectIntl`, bare-module `createIntl` / `createIntlCache`,
+`RawIntlProvider`, `IntlProvider` `defaultRichTextElements` / global
+`formats` / `timeZone` / `textComponent` / `onError`, `<FormattedList>`,
+`<FormattedDisplayName>`, `*ToParts`, render-prop `<FormattedMessage>` children,
+non-trivial rich-text chunk functions, dynamic/absent ids, and AST-compiled
+(`--ast`) catalogs. Rich-text tags in messages render only under `--inline`
+(converted to inline `<T>`), and every inlined key is reported as needing
+`npx gt translate` because gt hashes source differently from FormatJS's
+`[sha512:contenthash]`, so existing FormatJS-keyed translations do not match.
 
 Known upstream constraints (verified against a real app, 2026-07):
 
