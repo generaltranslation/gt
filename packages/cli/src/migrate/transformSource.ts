@@ -7,29 +7,28 @@ import {
   parse as parseIcu,
   type MessageFormatElement,
 } from '@formatjs/icu-messageformat-parser';
-import { classifyMessage } from './classifyMessage.js';
+import { nextIntlAdapter } from './adapters/nextIntl.js';
+import type { SourceAdapter } from './adapters/types.js';
 import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
 
 const traverse = traverseModule.default || traverseModule;
 const generate = generateModule.default || generateModule;
 
-/** next-intl symbol -> gt-next module it moves to, keeping the same name. */
-const CLIENT_SWAPS = new Set(['useTranslations', 'useLocale']);
-const SERVER_SWAPS = new Set(['getTranslations', 'getLocale']);
-const REMOVALS = new Set(['setRequestLocale', 'unstable_setRequestLocale']);
-const PROVIDER = 'NextIntlClientProvider';
-/**
- * A pure type next-intl derives from the routing config (a string union).
- * gt-next has no equivalent export, so it never justifies a skip. In a full
- * conversion (next-intl removed) its references are rewritten to `string` and
- * the specifier is dropped; in a partial migration (next-intl retained) the
- * specifier and its references are kept so the augmented `Locale` union — the
- * type the retained NextIntlClientProvider's `locale` prop expects — survives.
- */
-const LOCALE_TYPE = 'Locale';
-const MESSAGES_HOOKS = new Set(['useMessages', 'getMessages']);
+// gt-next TARGET modules — constant across every source adapter, so they stay
+// in the core transform. Every next-intl-specific symbol table (client/server
+// swaps, removals, provider name, the `Locale` type, messages hooks) now lives
+// on the adapter, read through ctx.adapter below.
 const GT_MODULE = 'gt-next';
 const GT_SERVER_MODULE = 'gt-next/server';
+
+/**
+ * The source adapter for this context, defaulting to next-intl. Unit tests
+ * build a MigrationContext by hand without an adapter, so the fallback keeps
+ * every existing next-intl transform behaving exactly as before.
+ */
+function adapterFor(ctx: MigrationContext): SourceAdapter {
+  return ctx.adapter ?? nextIntlAdapter;
+}
 
 type TransformOptions = {
   /**
@@ -58,13 +57,14 @@ export function transformSourceFile(
   ctx: MigrationContext,
   options: TransformOptions = {}
 ): SourceResult {
+  const adapter = adapterFor(ctx);
   const none: SourceResult = {
     code: null,
     todos: [],
     skipReasons: [],
     usedRich: false,
   };
-  if (!/['"]next-intl(?:\/[^'"]*)?['"]/.test(code)) return none;
+  if (!adapter.mentionedIn(code)) return none;
 
   let ast: t.File;
   try {
@@ -88,7 +88,7 @@ export function transformSourceFile(
   let hasNextIntlReexport = false;
 
   const noteReexport = (source: string) => {
-    if (source !== 'next-intl' && !source.startsWith('next-intl/')) return;
+    if (!adapter.ownsModule(source)) return;
     hasNextIntlReexport = true;
     skipReasons.push(
       `re-export from '${source}' would break once next-intl is removed (convert the re-export manually)`
@@ -104,7 +104,7 @@ export function transformSourceFile(
     },
     ImportDeclaration(path) {
       const source = path.node.source.value;
-      if (source !== 'next-intl' && !source.startsWith('next-intl/')) return;
+      if (!adapter.ownsModule(source)) return;
       nextIntlImports.push(path);
       for (const specifier of path.node.specifiers) {
         if (!t.isImportSpecifier(specifier)) {
@@ -133,21 +133,25 @@ export function transformSourceFile(
   // user's own local `Locale` type has no such binding and is left alone.
   const localeSpecifierNodes = new Set<t.Node>(
     symbols
-      .filter((symbol) => symbol.imported === LOCALE_TYPE)
+      .filter(
+        (symbol) =>
+          adapter.localeType !== null && symbol.imported === adapter.localeType
+      )
       .map((symbol) => symbol.specifier)
   );
 
   const providerRetained = options.retainNextIntlProvider === true;
   for (const symbol of symbols) {
     const supported =
-      CLIENT_SWAPS.has(symbol.imported) ||
-      SERVER_SWAPS.has(symbol.imported) ||
-      REMOVALS.has(symbol.imported) ||
-      MESSAGES_HOOKS.has(symbol.imported) ||
-      symbol.imported === PROVIDER ||
-      symbol.imported === LOCALE_TYPE ||
+      adapter.clientSwaps.has(symbol.imported) ||
+      adapter.serverSwaps.has(symbol.imported) ||
+      adapter.removals.has(symbol.imported) ||
+      adapter.messagesHooks.has(symbol.imported) ||
+      (adapter.providerName !== null &&
+        symbol.imported === adapter.providerName) ||
+      (adapter.localeType !== null && symbol.imported === adapter.localeType) ||
       (options.dropLocaleValidation === true &&
-        symbol.imported === 'hasLocale');
+        adapter.localeValidators.has(symbol.imported));
     if (!supported) {
       skipReasons.push(
         `unsupported next-intl API: ${symbol.imported} (from '${symbol.source}')`
@@ -158,12 +162,18 @@ export function transformSourceFile(
   const localsBy = (predicate: (imported: string) => boolean) =>
     new Set(symbols.filter((s) => predicate(s.imported)).map((s) => s.local));
   const translationHookLocals = localsBy(
-    (name) => name === 'useTranslations' || name === 'getTranslations'
+    (name) =>
+      name === adapter.translationHooks.client ||
+      name === adapter.translationHooks.server
   );
-  const getTranslationsLocals = localsBy((name) => name === 'getTranslations');
-  const removalLocals = localsBy((name) => REMOVALS.has(name));
-  const messagesHookLocals = localsBy((name) => MESSAGES_HOOKS.has(name));
-  const providerLocals = localsBy((name) => name === PROVIDER);
+  const getTranslationsLocals = localsBy(
+    (name) => name === adapter.translationHooks.server
+  );
+  const removalLocals = localsBy((name) => adapter.removals.has(name));
+  const messagesHookLocals = localsBy((name) => adapter.messagesHooks.has(name));
+  const providerLocals = localsBy(
+    (name) => adapter.providerName !== null && name === adapter.providerName
+  );
 
   // ---- analysis pass -------------------------------------------------------
 
@@ -445,11 +455,15 @@ export function transformSourceFile(
   const clientSpecifiers: t.ImportSpecifier[] = [];
   const serverSpecifiers: t.ImportSpecifier[] = [];
   for (const symbol of symbols) {
-    if (CLIENT_SWAPS.has(symbol.imported)) {
+    if (adapter.clientSwaps.has(symbol.imported)) {
       clientSpecifiers.push(symbol.specifier);
-    } else if (SERVER_SWAPS.has(symbol.imported)) {
+    } else if (adapter.serverSwaps.has(symbol.imported)) {
       serverSpecifiers.push(symbol.specifier);
-    } else if (symbol.imported === PROVIDER && !providerRetained) {
+    } else if (
+      adapter.providerName !== null &&
+      symbol.imported === adapter.providerName &&
+      !providerRetained
+    ) {
       clientSpecifiers.push(
         t.importSpecifier(
           t.identifier('GTProvider'),
@@ -457,7 +471,7 @@ export function transformSourceFile(
         )
       );
     }
-    // REMOVALS and provider-linked messages hooks simply disappear.
+    // removals and provider-linked messages hooks simply disappear.
   }
   if (needsT) {
     clientSpecifiers.push(
@@ -507,10 +521,12 @@ export function transformSourceFile(
         (specifier): specifier is t.ImportSpecifier =>
           t.isImportSpecifier(specifier) &&
           t.isIdentifier(specifier.imported) &&
-          (specifier.imported.name === PROVIDER ||
-            specifier.imported.name === LOCALE_TYPE ||
-            specifier.imported.name === 'hasLocale' ||
-            (MESSAGES_HOOKS.has(specifier.imported.name) &&
+          ((adapter.providerName !== null &&
+            specifier.imported.name === adapter.providerName) ||
+            (adapter.localeType !== null &&
+              specifier.imported.name === adapter.localeType) ||
+            adapter.localeValidators.has(specifier.imported.name) ||
+            (adapter.messagesHooks.has(specifier.imported.name) &&
               !removedProviderMessageBindings.has(specifier.local.name)))
       );
     }
@@ -536,7 +552,11 @@ export function transformSourceFile(
   if (providerRetained) {
     const localeLocals = new Set(
       symbols
-        .filter((symbol) => symbol.imported === LOCALE_TYPE)
+        .filter(
+          (symbol) =>
+            adapter.localeType !== null &&
+            symbol.imported === adapter.localeType
+        )
         .map((symbol) => symbol.local)
     );
     if (localeLocals.size > 0) {
@@ -551,7 +571,7 @@ export function transformSourceFile(
       traverse(ast, {
         ImportDeclaration(path) {
           const source = path.node.source.value;
-          if (source !== 'next-intl' && !source.startsWith('next-intl/')) {
+          if (!adapter.ownsModule(source)) {
             return;
           }
           path.node.specifiers = path.node.specifiers.filter(
@@ -588,54 +608,12 @@ export function transformSourceFile(
 }
 
 /**
- * True when `code` renders a NextIntlClientProvider JSX element imported from
- * next-intl (alias-aware). The migrate driver uses this to DEFER
- * provider-bearing non-layout files: like layouts, their provider-retention
- * decision depends on the final skip set, which is not known during the pass
- * that would otherwise transform them. Cheap-exits before parsing when the
- * provider name is absent from the source text.
+ * True when `code` renders the next-intl client provider (alias-aware). Kept as
+ * a thin delegate to the next-intl adapter so the driver's existing import stays
+ * valid; the driver reads ctx.adapter.hasProvider once the adapter is threaded.
  */
 export function hasNextIntlProvider(code: string): boolean {
-  if (!code.includes(PROVIDER)) return false;
-  let ast: t.File;
-  try {
-    ast = parse(code, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-      tokens: true,
-      createParenthesizedExpressions: true,
-    });
-  } catch {
-    return false;
-  }
-
-  const providerLocals = new Set<string>();
-  traverse(ast, {
-    ImportDeclaration(path) {
-      const source = path.node.source.value;
-      if (source !== 'next-intl' && !source.startsWith('next-intl/')) return;
-      for (const specifier of path.node.specifiers) {
-        if (!t.isImportSpecifier(specifier)) continue;
-        const imported = t.isIdentifier(specifier.imported)
-          ? specifier.imported.name
-          : specifier.imported.value;
-        if (imported === PROVIDER) providerLocals.add(specifier.local.name);
-      }
-    },
-  });
-  if (providerLocals.size === 0) return false;
-
-  let found = false;
-  traverse(ast, {
-    JSXOpeningElement(path) {
-      const name = path.node.name;
-      if (t.isJSXIdentifier(name) && providerLocals.has(name.name)) {
-        found = true;
-        path.stop();
-      }
-    },
-  });
-  return found;
+  return nextIntlAdapter.hasProvider(code);
 }
 
 // ---- helpers ---------------------------------------------------------------
@@ -742,7 +720,7 @@ function analyzeRichCall(
     keyArg.value
   );
   if (!message) return `t.rich('${keyArg.value}') key not found in catalog`;
-  const classified = classifyMessage(message);
+  const classified = adapterFor(ctx).classifyMessage(message);
   if (classified.kind !== 'tags' || classified.argNames.length > 0) {
     return manual;
   }
