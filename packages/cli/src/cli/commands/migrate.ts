@@ -17,7 +17,10 @@ import { transformMiddlewareFile } from '../../migrate/transformMiddleware.js';
 import { transformNavigationFile } from '../../migrate/transformNavigation.js';
 import { transformNextConfigFile } from '../../migrate/transformNextConfig.js';
 import { transformRequestConfigFile } from '../../migrate/transformRequestConfig.js';
-import { transformSourceFile } from '../../migrate/transformSource.js';
+import {
+  hasNextIntlProvider,
+  transformSourceFile,
+} from '../../migrate/transformSource.js';
 import type {
   MigrateOptions,
   MigrationContext,
@@ -110,8 +113,8 @@ export async function handleMigrateCommand(
     ].filter((file): file is string => file !== null)
   );
 
-  // Pass 1: regular source files (layouts deferred — they need the final
-  // skip set to decide provider retention).
+  // Pass 1: regular source files (layouts and NextIntlClientProvider-bearing
+  // files deferred — they need the final skip set to decide provider retention).
   // Default scope covers the conventional i18n config directory too — the
   // shared defaults miss a root-level i18n/ (navigation.ts lives there), and
   // wherever the routing/request files actually sit.
@@ -146,6 +149,12 @@ export async function handleMigrateCommand(
   ]);
   ctx.projectFiles = projectFiles;
   const layouts: string[] = [];
+  // Non-layout files that render a NextIntlClientProvider. Like layouts, their
+  // provider-retention decision hinges on the final skip set (a partial
+  // migration must keep the provider so skipped files still have a next-intl
+  // context), so they are deferred until every other file's skip status is
+  // known — see the deferred passes below.
+  const providerFiles: string[] = [];
   for (const file of sourceFiles) {
     if (configLaneFiles.has(file)) continue;
     const code = fs.readFileSync(file, 'utf8');
@@ -155,6 +164,10 @@ export async function handleMigrateCommand(
     }
     if (code.includes('createNavigation')) {
       collect(ctx, file, transformNavigationFile(file, code, ctx));
+      continue;
+    }
+    if (hasNextIntlProvider(code)) {
+      providerFiles.push(file);
       continue;
     }
     let result = transformSourceFile(file, code, ctx);
@@ -188,10 +201,44 @@ export async function handleMigrateCommand(
     }
   }
 
-  // Pass 2: layouts, with full skip knowledge.
+  // Pass 2a: classify deferred provider files. A provider file that must be
+  // skipped for its own reasons (an unsupported next-intl API alongside the
+  // provider) contributes to the skip set, which in turn flips the retention
+  // decision for the *other* deferred files and the layouts. Skip status is
+  // independent of retainNextIntlProvider (the transform is pure), so we can
+  // settle every skip here, before anyone reads ctx.skippedFiles.size.
+  const providerFilesToApply: string[] = [];
+  for (const file of providerFiles) {
+    const code = fs.readFileSync(file, 'utf8');
+    const classified = transformSourceFile(file, code, ctx);
+    if (classified.skipReasons.length > 0) {
+      collect(ctx, file, classified);
+    } else {
+      providerFilesToApply.push(file);
+    }
+  }
+
+  // Pass 2b: layouts, with full skip knowledge.
   for (const file of layouts) {
     const code = fs.readFileSync(file, 'utf8');
     collect(ctx, file, transformLayoutFile(file, code, ctx));
+  }
+
+  // Pass 2c: apply the deferred provider files now that the skip set is final
+  // (layouts can add skips too). Retention matches the layout decision, so a
+  // partial migration keeps NextIntlClientProvider (and its messages wiring)
+  // for the skipped files, while a clean full migration swaps it for
+  // <GTProvider> exactly as a single-pass run would.
+  const retainProviders = ctx.skippedFiles.size > 0;
+  for (const file of providerFilesToApply) {
+    const code = fs.readFileSync(file, 'utf8');
+    let result = transformSourceFile(file, code, ctx, {
+      retainNextIntlProvider: retainProviders,
+    });
+    if (options.inline && result.skipReasons.length === 0) {
+      result = applyInline(file, result.code ?? code, ctx, result);
+    }
+    collect(ctx, file, result);
   }
 
   // Pass 3: root config files.
@@ -372,7 +419,14 @@ async function isGtNextInstalled(cwd: string): Promise<boolean> {
 
 function isLayoutFile(file: string): boolean {
   const base = path.basename(file);
-  return base === 'layout.tsx' || base === 'layout.jsx' || base === 'layout.js';
+  // Must agree with emitGtFiles' isLayoutFileName (which includes layout.ts):
+  // both decide which files get the layout pass / count as the [locale] layout.
+  return (
+    base === 'layout.tsx' ||
+    base === 'layout.ts' ||
+    base === 'layout.jsx' ||
+    base === 'layout.js'
+  );
 }
 
 function findRootFiles(cwd: string, candidates: string[]): string[] {

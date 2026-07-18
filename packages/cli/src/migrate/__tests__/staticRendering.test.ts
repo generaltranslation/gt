@@ -16,11 +16,19 @@ const tmpDirs: string[] = [];
 /**
  * Builds a tiny in-memory project on disk and a MigrationContext whose
  * projectFiles point at the written source files (so the [locale]-layout
- * discovery in emitGtFiles has something to scan).
+ * discovery in emitGtFiles has something to scan). Pass `cwd` to place the
+ * project under a caller-managed directory (e.g. a monorepo `apps/web` whose
+ * parent holds a hoisted node_modules); the caller is then responsible for
+ * cleanup of that root.
  */
-function makeProject(files: Record<string, string>): MigrationContext {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-static-'));
-  tmpDirs.push(cwd);
+function makeProject(
+  files: Record<string, string>,
+  opts: { cwd?: string } = {}
+): MigrationContext {
+  const cwd =
+    opts.cwd ?? fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-static-'));
+  if (!opts.cwd) tmpDirs.push(cwd);
+  fs.mkdirSync(cwd, { recursive: true });
   const projectFiles: string[] = [];
   for (const [rel, content] of Object.entries(files)) {
     const abs = path.join(cwd, rel);
@@ -295,6 +303,71 @@ describe('emitGtFiles static-locale resolvers', () => {
     );
   });
 
+  it('emits on an installed 15.5.0 prerelease (canary/rc satisfies the gate)', () => {
+    // A 15.5.0 canary already ships next/root-params; the gate must not rank it
+    // below 15.5.0 and tell a healthy app to upgrade.
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'node_modules/next/package.json': JSON.stringify({
+        name: 'next',
+        version: '15.5.0-canary.3',
+      }),
+      'src/app/[locale]/layout.tsx': layoutSource,
+      'messages/en.json': '{}',
+    });
+    const edits = emitGtFiles(ctx);
+    expect(edits.some((edit) => edit.path.endsWith('src/getLocale.ts'))).toBe(
+      true
+    );
+    expect(edits.some((edit) => edit.path.endsWith('src/getRegion.ts'))).toBe(
+      true
+    );
+    expect(
+      ctx.todos.some((todo) => todo.reason.includes('static rendering'))
+    ).toBe(false);
+  });
+
+  it('resolves a next hoisted to a parent node_modules (workspace monorepo)', () => {
+    // Monorepo shape: next is hoisted to the workspace root, the app lives in
+    // apps/web, and the app's own package.json declares a non-semver range
+    // (catalog/`latest`). A cwd-only node_modules read would miss the hoisted
+    // next and then fail closed on the unparseable range; resolving the way
+    // Node does must still find it.
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-mono-'));
+    tmpDirs.push(root);
+    fs.mkdirSync(path.join(root, 'node_modules', 'next'), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, 'node_modules', 'next', 'package.json'),
+      JSON.stringify({ name: 'next', version: '16.0.0' })
+    );
+    const cwd = path.join(root, 'apps', 'web');
+    const ctx = makeProject(
+      {
+        'package.json': JSON.stringify({
+          name: 'web',
+          dependencies: {
+            next: 'latest',
+            'next-intl': '^4.0.0',
+            react: '19.0.0',
+          },
+        }),
+        'src/app/[locale]/layout.tsx': layoutSource,
+        'messages/en.json': '{}',
+      },
+      { cwd }
+    );
+    const edits = emitGtFiles(ctx);
+    expect(edits.some((edit) => edit.path.endsWith('src/getLocale.ts'))).toBe(
+      true
+    );
+    expect(edits.some((edit) => edit.path.endsWith('src/getRegion.ts'))).toBe(
+      true
+    );
+    expect(
+      ctx.todos.some((todo) => todo.reason.includes('static rendering'))
+    ).toBe(false);
+  });
+
   it('does NOT emit when the installed Next is < 15.5 and files a version TODO', () => {
     // A generous declared range would allow newer, but the installed Next is
     // old — the installed version wins and the import would break the build.
@@ -382,7 +455,11 @@ describe('emitGtFiles static-locale resolvers', () => {
     ).toBe(true);
   });
 
-  it('does NOT emit when Next is undeterminable (unparseable range, no node_modules)', () => {
+  it('does NOT emit when Next is genuinely undeterminable (no next resolvable anywhere AND a non-semver range)', () => {
+    // The version is unresolvable both ways: `next/package.json` resolves to
+    // nothing (no node_modules here or in any parent of this isolated tmp dir),
+    // and the declared range `latest` has no semver lower bound. With neither
+    // signal we fail closed rather than emit a possibly-broken import.
     const ctx = makeProject({
       'package.json': JSON.stringify({
         name: 'app',
@@ -430,6 +507,40 @@ describe('emitGtFiles static-locale resolvers', () => {
     expect(todo?.file).toBe(path.join(ctx.cwd, 'src/app/[lang]/layout.tsx'));
   });
 
+  it('does NOT emit resolvers (or claim static rendering) when the [locale] layout itself was skipped', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/app/[locale]/layout.tsx': layoutSource,
+      'messages/en.json': '{}',
+    });
+    // The [locale] layout hit an unsupported API and was left untouched, so it
+    // never receives GTProvider — the resolvers would be dead weight and the
+    // "static rendering preserved" claim would be false.
+    const layout = path.join(ctx.cwd, 'src/app/[locale]/layout.tsx');
+    ctx.skippedFiles.set(layout, [
+      'uses an unsupported next-intl API — left untouched',
+    ]);
+    ctx.edits.push(...emitGtFiles(ctx));
+
+    expect(ctx.edits.some((edit) => edit.path.endsWith('getLocale.ts'))).toBe(
+      false
+    );
+    expect(ctx.edits.some((edit) => edit.path.endsWith('getRegion.ts'))).toBe(
+      false
+    );
+
+    const todo = ctx.todos.find((entry) =>
+      entry.reason.includes('static rendering not restored')
+    );
+    expect(todo).toBeDefined();
+    expect(todo?.reason).toContain('[locale] layout');
+    expect(todo?.reason).toContain('manual migration first');
+    expect(todo?.file).toBe(layout);
+
+    const report = buildReport(ctx, false);
+    expect(report).not.toContain('Static rendering preserved');
+  });
+
   it('report lists the emitted resolvers and explains static preservation', () => {
     const ctx = makeProject({
       'package.json': basePackageJson,
@@ -462,6 +573,42 @@ describe('emitGtFiles static-locale resolvers', () => {
     expect(report).not.toContain('Static rendering preserved');
     expect(report).toContain('static rendering not restored');
     expect(report).toContain('unstable_rootParams');
+  });
+
+  it('report: only getLocale emitted (getRegion pre-existed) credits the emitted locale resolver, not the region file', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/app/[locale]/layout.tsx': layoutSource,
+      'src/getRegion.ts': 'export default async function getRegion() {}',
+      'messages/en.json': '{}',
+    });
+    ctx.edits.push(...emitGtFiles(ctx));
+    const report = buildReport(ctx, false);
+    expect(report).toContain('Static rendering preserved');
+    expect(report).toContain('src/getLocale.ts');
+    expect(report).toContain('next/root-params');
+    // the pre-existing (untouched) getRegion.ts must not be claimed as emitted
+    expect(report).not.toMatch(/emitted[^\n]*getRegion\.ts/);
+    expect(report).toContain('getRegion file already existed');
+  });
+
+  it('report: only getRegion emitted (getLocale pre-existed) does not credit getRegion with resolving the locale', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/app/[locale]/layout.tsx': layoutSource,
+      'src/getLocale.ts': 'export default async function getLocale() {}',
+      'messages/en.json': '{}',
+    });
+    ctx.edits.push(...emitGtFiles(ctx));
+    const report = buildReport(ctx, false);
+    // getRegion returns undefined; the pre-existing getLocale is the resolver.
+    expect(report).toContain('src/getRegion.ts');
+    expect(report).toContain('returns undefined');
+    expect(report).toContain('locale resolver getLocale already existed');
+    // the flat/active "preserved ... so gt-next resolves the locale" claim (true
+    // only when getLocale was emitted) must not appear
+    expect(report).not.toContain('Static rendering preserved');
+    expect(report).not.toContain('so gt-next resolves the locale');
   });
 });
 

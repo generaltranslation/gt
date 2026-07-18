@@ -587,6 +587,57 @@ export function transformSourceFile(
   };
 }
 
+/**
+ * True when `code` renders a NextIntlClientProvider JSX element imported from
+ * next-intl (alias-aware). The migrate driver uses this to DEFER
+ * provider-bearing non-layout files: like layouts, their provider-retention
+ * decision depends on the final skip set, which is not known during the pass
+ * that would otherwise transform them. Cheap-exits before parsing when the
+ * provider name is absent from the source text.
+ */
+export function hasNextIntlProvider(code: string): boolean {
+  if (!code.includes(PROVIDER)) return false;
+  let ast: t.File;
+  try {
+    ast = parse(code, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+      tokens: true,
+      createParenthesizedExpressions: true,
+    });
+  } catch {
+    return false;
+  }
+
+  const providerLocals = new Set<string>();
+  traverse(ast, {
+    ImportDeclaration(path) {
+      const source = path.node.source.value;
+      if (source !== 'next-intl' && !source.startsWith('next-intl/')) return;
+      for (const specifier of path.node.specifiers) {
+        if (!t.isImportSpecifier(specifier)) continue;
+        const imported = t.isIdentifier(specifier.imported)
+          ? specifier.imported.name
+          : specifier.imported.value;
+        if (imported === PROVIDER) providerLocals.add(specifier.local.name);
+      }
+    },
+  });
+  if (providerLocals.size === 0) return false;
+
+  let found = false;
+  traverse(ast, {
+    JSXOpeningElement(path) {
+      const name = path.node.name;
+      if (t.isJSXIdentifier(name) && providerLocals.has(name.name)) {
+        found = true;
+        path.stop();
+      }
+    },
+  });
+  return found;
+}
+
 // ---- helpers ---------------------------------------------------------------
 
 /**

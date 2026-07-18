@@ -45,19 +45,53 @@ export function buildReport(
   );
   lines.push('');
 
-  const staticLocaleFiles = ctx.edits.filter(
+  // getLocale is the locale resolver (reads next/root-params); getRegion just
+  // returns undefined. The report must only credit static rendering to what was
+  // actually emitted: when getLocale already existed and was left untouched, the
+  // claim hinges on that pre-existing file, not on the getRegion we emitted.
+  const emittedGetLocale = ctx.edits.find(
     (edit) =>
-      edit.kind === 'write' &&
-      (path.basename(edit.path) === 'getLocale.ts' ||
-        path.basename(edit.path) === 'getRegion.ts')
+      edit.kind === 'write' && path.basename(edit.path) === 'getLocale.ts'
   );
-  if (staticLocaleFiles.length > 0) {
+  const emittedGetRegion = ctx.edits.find(
+    (edit) =>
+      edit.kind === 'write' && path.basename(edit.path) === 'getRegion.ts'
+  );
+  if (emittedGetLocale && emittedGetRegion) {
+    // Both resolvers emitted — gt-next resolves the locale from next/root-params.
     lines.push(
       'Static rendering preserved: emitted ' +
-        staticLocaleFiles.map((edit) => relative(edit.path)).join(' and ') +
-        ' so gt-next resolves the locale from next/root-params (the [locale] ' +
+        `${relative(emittedGetLocale.path)} and ${relative(emittedGetRegion.path)} ` +
+        'so gt-next resolves the locale from next/root-params (the [locale] ' +
         'route param) instead of request-scoped headers/cookies — routes that ' +
         'were statically rendered (SSG) stay static (ƒ dynamic otherwise).'
+    );
+    lines.push('');
+  } else if (emittedGetLocale) {
+    // Only the locale resolver was emitted; a getRegion file already existed.
+    lines.push(
+      'Static rendering preserved: emitted ' +
+        `${relative(emittedGetLocale.path)} so gt-next resolves the locale from ` +
+        'next/root-params (the [locale] route param) instead of request-scoped ' +
+        'headers/cookies — routes that were statically rendered (SSG) stay static ' +
+        '(ƒ dynamic otherwise). A getRegion file already existed and was left ' +
+        'untouched — verify it does not read cookies()/headers(), which would ' +
+        'force dynamic rendering (see TODOs).'
+    );
+    lines.push('');
+  } else if (emittedGetRegion) {
+    // Only getRegion was emitted; the locale resolver (getLocale) already
+    // existed and was left untouched. getRegion returns undefined, so it does
+    // not resolve the locale — static rendering hinges on that pre-existing
+    // getLocale, which the TODOs flag for verification.
+    lines.push(
+      'Static rendering: emitted ' +
+        `${relative(emittedGetRegion.path)} (it returns undefined, so no ` +
+        'request-scoped region read forces dynamic rendering). The locale ' +
+        'resolver getLocale already existed and was left untouched — routes that ' +
+        'were statically rendered (SSG) stay static only if that file resolves ' +
+        'the locale from next/root-params rather than request-scoped ' +
+        'headers/cookies; verify it (see TODOs).'
     );
     lines.push('');
   }

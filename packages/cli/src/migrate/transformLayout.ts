@@ -84,6 +84,47 @@ function findParamLocaleBinding(ast: t.File): string | null {
   return binding;
 }
 
+/**
+ * The layout's default-exported component function — the function Next.js
+ * awaits when it renders the route. Handles both the inline form
+ * (`export default function Layout() {}` / `export default () => {}`) and the
+ * by-reference form (`const Layout = () => {}; export default Layout;`).
+ * Returns the function node, or null when the default export is not a function
+ * (or is missing). Used by the getLocale() fallback to decide whether an
+ * enclosing function can safely be marked async: doing so is only safe on this
+ * component (awaited by Next.js) or a function that is already async.
+ */
+function findDefaultExportFunction(ast: t.File): t.Function | null {
+  let result: t.Function | null = null;
+  traverse(ast, {
+    ExportDefaultDeclaration(path) {
+      const declaration = path.node.declaration;
+      if (
+        t.isFunctionDeclaration(declaration) ||
+        t.isArrowFunctionExpression(declaration) ||
+        t.isFunctionExpression(declaration)
+      ) {
+        result = declaration;
+        return;
+      }
+      if (!t.isIdentifier(declaration)) return;
+      const binding = path.scope.getBinding(declaration.name);
+      if (!binding) return;
+      const node = binding.path.node;
+      if (t.isFunctionDeclaration(node)) {
+        result = node;
+      } else if (
+        t.isVariableDeclarator(node) &&
+        (t.isArrowFunctionExpression(node.init) ||
+          t.isFunctionExpression(node.init))
+      ) {
+        result = node.init;
+      }
+    },
+  });
+  return result;
+}
+
 export function transformLayoutFile(
   file: string,
   code: string,
@@ -208,11 +249,24 @@ export function transformLayoutFile(
   //    page's locale. Prefer the static route-param `locale` binding: it keeps
   //    SSG (no request-scoped read) and is typed to the augmented `Locale`
   //    union the provider's prop expects. Fall back to a request-scoped
-  //    getLocale() only when no param locale is in scope (e.g. a root layout).
+  //    getLocale() only when no param locale is in scope (e.g. a root layout),
+  //    and only when it is safe to make the enclosing function async: the
+  //    function is already async, or it is the layout's default-exported
+  //    component (which Next.js awaits). Inside any other shape — a nested sync
+  //    helper, a callback, a class method — marking the function async would
+  //    leave its unchanged synchronous call site rendering a pending Promise
+  //    (an invalid React child), so skip the layout instead. Partial mode keeps
+  //    next-intl installed, so the skipped layout keeps working on it and the
+  //    skip surfaces in the report for a manual fix.
   if (retainProvider) {
     const paramLocaleBinding = findParamLocaleBinding(ast);
+    const componentFn = paramLocaleBinding
+      ? null
+      : findDefaultExportFunction(ast);
+    let unsafeAsyncFallback = false;
     traverse(ast, {
       JSXOpeningElement(path) {
+        if (unsafeAsyncFallback) return;
         if (
           !t.isJSXIdentifier(path.node.name, {
             name: 'NextIntlClientProvider',
@@ -226,25 +280,52 @@ export function transformLayoutFile(
             t.isJSXIdentifier(attribute.name, { name: 'locale' })
         );
         if (hasLocaleProp) return;
-        const localeValue = paramLocaleBinding
-          ? t.identifier(paramLocaleBinding)
-          : t.awaitExpression(t.callExpression(t.identifier('getLocale'), []));
+
+        // Primary path: reuse the static route-param binding, no async needed.
+        if (paramLocaleBinding) {
+          path.node.attributes.push(
+            t.jsxAttribute(
+              t.jsxIdentifier('locale'),
+              t.jsxExpressionContainer(t.identifier(paramLocaleBinding))
+            )
+          );
+          mutated = true;
+          return;
+        }
+
+        // Fallback path: `await getLocale()` needs an async function. Only
+        // mutate one we know Next.js awaits (the component) or that is already
+        // async; anything else degrades to a skip.
+        const fn = path.getFunctionParent();
+        if (!fn || (!fn.node.async && fn.node !== componentFn)) {
+          unsafeAsyncFallback = true;
+          return;
+        }
         path.node.attributes.push(
           t.jsxAttribute(
             t.jsxIdentifier('locale'),
-            t.jsxExpressionContainer(localeValue)
+            t.jsxExpressionContainer(
+              t.awaitExpression(t.callExpression(t.identifier('getLocale'), []))
+            )
           )
         );
         mutated = true;
-        if (!paramLocaleBinding) {
-          needsGetLocale = true;
-          const fn = path.getFunctionParent();
-          if (fn && !fn.node.async) {
-            fn.node.async = true;
-          }
+        needsGetLocale = true;
+        if (!fn.node.async) {
+          fn.node.async = true;
         }
       },
     });
+    if (unsafeAsyncFallback) {
+      return {
+        code: null,
+        todos: [],
+        skipReasons: [
+          'retained NextIntlClientProvider has no route `locale` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its `locale` prop manually (the layout keeps working on next-intl until then)',
+        ],
+        usedRich: base.usedRich,
+      };
+    }
   }
 
   // 5. Ensure a GTProvider wraps the layout children.

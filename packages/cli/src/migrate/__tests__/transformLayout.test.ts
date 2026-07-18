@@ -330,4 +330,78 @@ describe('transformLayoutFile', () => {
       /import \{[^}]*getLocale[^}]*\} from ["']gt-next\/server["']/
     );
   });
+
+  it('marks a non-async component function async for the getLocale() fallback', () => {
+    const syncRootLayout = [
+      "import { NextIntlClientProvider } from 'next-intl';",
+      'export default function RootLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>',
+      '        <NextIntlClientProvider>',
+      '          {children}',
+      '        </NextIntlClientProvider>',
+      '      </body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/layout.tsx',
+      syncRootLayout,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    // provider lives directly in the component Next.js awaits, so making it
+    // async is safe: the fallback is applied and the component becomes async
+    expect(result.code).toMatch(/export default async function RootLayout/);
+    expect(result.code).toMatch(
+      /<NextIntlClientProvider[^>]*locale=\{await getLocale\(\)\}/
+    );
+    expect(result.code).toMatch(
+      /import \{[^}]*getLocale[^}]*\} from ["']gt-next\/server["']/
+    );
+    expect(result.code).toContain('<GTProvider>');
+  });
+
+  it('skips (never emits an async helper) when the retained provider fallback sits in a nested sync helper', () => {
+    const nestedHelperLayout = [
+      "import { NextIntlClientProvider } from 'next-intl';",
+      "import { getMessages } from 'next-intl/server';",
+      'export default async function RootLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  const messages = await getMessages();',
+      '  const render = () => (',
+      '    <NextIntlClientProvider messages={messages}>',
+      '      {children}',
+      '    </NextIntlClientProvider>',
+      '  );',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>{render()}</body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/layout.tsx',
+      nestedHelperLayout,
+      makeContext(['src/components/Price.tsx'])
+    );
+    // degrade: the whole layout is skipped (code === null leaves the original
+    // untouched) and surfaces in the report, rather than silently emitting
+    // `const render = async () => ...` with an unchanged `{render()}` call site
+    // that would render a pending Promise
+    expect(result.code).toBeNull();
+    expect(result.skipReasons).toEqual([
+      'retained NextIntlClientProvider has no route `locale` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its `locale` prop manually (the layout keeps working on next-intl until then)',
+    ]);
+  });
 });

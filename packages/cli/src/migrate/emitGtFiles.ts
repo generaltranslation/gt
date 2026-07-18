@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import { lt, minVersion, valid } from 'semver';
@@ -5,6 +6,14 @@ import type { FileEdit, MigrationContext } from './types.js';
 
 /** next/root-params (and its `locale()` export) landed in Next 15.5.0. */
 const NEXT_ROOT_PARAMS_MIN_VERSION = '15.5.0';
+/**
+ * Lower bound for the version gate. The `-0` prerelease tag is deliberate: it
+ * lets 15.5.0 prereleases (canaries, rcs) satisfy the gate. Without it semver
+ * ranks `15.5.0-canary.3` *below* `15.5.0`, so an installed 15.5 canary/rc — a
+ * healthy app that already has next/root-params — would be wrongly gated out and
+ * told to upgrade to >= 15.5.
+ */
+const NEXT_ROOT_PARAMS_MIN_GATE = `${NEXT_ROOT_PARAMS_MIN_VERSION}-0`;
 
 /**
  * Emits the gt-next scaffolding: gt.config.json (merged with any existing
@@ -199,6 +208,24 @@ function emitStaticLocaleResolvers(
     return;
   }
 
+  // The [locale] layout itself was left untouched (an unsupported API in the
+  // layout), so it never receives GTProvider. Emitting getLocale.ts/getRegion.ts
+  // now would be dead weight and would make the report claim "static rendering
+  // preserved" when it was not. emitGtFiles runs after every transform pass
+  // (source, layouts, config), so ctx.skippedFiles is final here.
+  if (ctx.skippedFiles.has(localeLayout.file)) {
+    ctx.todos.push({
+      file: localeLayout.file,
+      reason:
+        'static rendering not restored: the [locale] layout needs manual ' +
+        'migration first (see its skip reason above) — it never receives ' +
+        'GTProvider, so getLocale.ts/getRegion.ts would be dead weight. After ' +
+        'converting the layout to gt-next, re-run gt migrate to add the ' +
+        'resolvers so the locale resolves statically (SSG) from next/root-params.',
+    });
+    return;
+  }
+
   // next/root-params only exists on Next >= 15.5. Emitting its import on an
   // older Next leaves an unresolvable module that breaks `next build`, so gate
   // the emission on the target project's actual Next version.
@@ -368,14 +395,23 @@ function isDynamicSegmentDir(dir: string): boolean {
 function supportsRootParams(cwd: string): boolean {
   const version =
     readInstalledNextVersion(cwd) ?? readDeclaredNextLowerBound(cwd);
-  return version !== null && !lt(version, NEXT_ROOT_PARAMS_MIN_VERSION);
+  return version !== null && !lt(version, NEXT_ROOT_PARAMS_MIN_GATE);
 }
 
-/** The exact Next version installed at node_modules/next, or null. */
+/**
+ * The exact Next version installed for the project, or null. Resolves
+ * `next/package.json` the way Node does — walking node_modules from the project
+ * root up through its parents — so a next hoisted to a monorepo/workspace root
+ * (npm/yarn/pnpm) is still found. A plain `<cwd>/node_modules/next` read would
+ * miss it and fall through to the declared range, which fails closed on a
+ * healthy hoisted app.
+ */
 function readInstalledNextVersion(cwd: string): string | null {
-  const pkgPath = path.join(cwd, 'node_modules', 'next', 'package.json');
-  if (!fs.existsSync(pkgPath)) return null;
   try {
+    // `createRequire` needs an absolute base path but the file need not exist;
+    // `paths: [cwd]` starts the node_modules walk at the project root.
+    const require = createRequire(path.join(cwd, 'package.json'));
+    const pkgPath = require.resolve('next/package.json', { paths: [cwd] });
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) as {
       version?: unknown;
     };

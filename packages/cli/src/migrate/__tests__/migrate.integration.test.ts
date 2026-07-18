@@ -161,6 +161,54 @@ afterEach(() => {
 const read = (cwd: string, rel: string) =>
   fs.readFileSync(path.join(cwd, rel), 'utf8');
 
+// App shape where the NextIntlClientProvider lives in a separate client file
+// (a very common layout) rather than inline in the layout. The layout renders
+// <Providers> and owns no provider of its own.
+const SEPARATE_PROVIDER_FILES: Record<string, string> = {
+  'src/app/[locale]/layout.tsx': [
+    "import { hasLocale } from 'next-intl';",
+    "import { setRequestLocale } from 'next-intl/server';",
+    "import { notFound } from 'next/navigation';",
+    "import { routing } from '@/i18n/routing';",
+    "import { Providers } from '@/components/Providers';",
+    'export function generateStaticParams() {',
+    '  return routing.locales.map((locale) => ({ locale }));',
+    '}',
+    'export default async function LocaleLayout({',
+    '  children,',
+    '  params,',
+    '}: {',
+    '  children: React.ReactNode;',
+    '  params: Promise<{ locale: string }>;',
+    '}) {',
+    '  const { locale } = await params;',
+    '  if (!hasLocale(routing.locales, locale)) {',
+    '    notFound();',
+    '  }',
+    '  setRequestLocale(locale);',
+    '  return (',
+    '    <html lang={locale}>',
+    '      <body>',
+    '        <Providers>{children}</Providers>',
+    '      </body>',
+    '    </html>',
+    '  );',
+    '}',
+  ].join('\n'),
+  'src/components/Providers.tsx': [
+    "'use client';",
+    "import { NextIntlClientProvider, useMessages } from 'next-intl';",
+    'export function Providers({ children }: { children: React.ReactNode }) {',
+    '  const messages = useMessages();',
+    '  return (',
+    '    <NextIntlClientProvider messages={messages}>',
+    '      {children}',
+    '    </NextIntlClientProvider>',
+    '  );',
+    '}',
+  ].join('\n'),
+};
+
 describe('handleMigrateCommand integration', () => {
   it('migrates the fixture app end to end', async () => {
     const cwd = makeApp();
@@ -473,5 +521,143 @@ describe('handleMigrateCommand integration', () => {
     expect(pkg.dependencies['next-intl']).toBeDefined();
     expect(fs.existsSync(path.join(cwd, 'src/i18n/request.ts'))).toBe(true);
     expect(read(cwd, 'gt-migrate-report.md')).toContain('not scanned');
+  });
+
+  it('retains a separate provider file (with its messages wiring) in partial mode', async () => {
+    // A skipped file forces partial mode; the standalone provider file must
+    // keep its NextIntlClientProvider so the skipped file still has a next-intl
+    // context. Regression: it used to run with retainNextIntlProvider=false and
+    // get rewritten to a bare <GTProvider>, deleting the only provider anywhere.
+    const cwd = makeApp({
+      ...SEPARATE_PROVIDER_FILES,
+      'src/components/Price.tsx': [
+        "import { useFormatter } from 'next-intl';",
+        'export function Price({ value }: { value: number }) {',
+        '  const format = useFormatter();',
+        '  return <span>{format.number(value)}</span>;',
+        '}',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+
+    // provider file untouched swap: NextIntlClientProvider kept, still fed by
+    // useMessages(), still importing from next-intl (no bare GTProvider swap)
+    const providers = read(cwd, 'src/components/Providers.tsx');
+    expect(providers).toContain('NextIntlClientProvider');
+    expect(providers).toContain('messages={messages}');
+    expect(providers).toContain('useMessages');
+    expect(providers).toMatch(/from ['"]next-intl['"]/);
+    expect(providers).not.toContain('GTProvider');
+
+    // the skipped file is left alone
+    expect(read(cwd, 'src/components/Price.tsx')).toContain('useFormatter');
+
+    // the layout provides GTProvider around the retained provider chain
+    const layout = read(cwd, 'src/app/[locale]/layout.tsx');
+    expect(layout).toContain('GTProvider');
+    expect(layout).toContain('<Providers>');
+
+    // next-intl stays installed for the retained provider + skipped file
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+  });
+
+  it('fully swaps a separate provider file when nothing is skipped', async () => {
+    // No skips anywhere -> full mode: the standalone provider file is swapped
+    // to <GTProvider> and its next-intl wiring removed, exactly as a single
+    // pass did before deferral.
+    const cwd = makeApp({ ...SEPARATE_PROVIDER_FILES });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+
+    const providers = read(cwd, 'src/components/Providers.tsx');
+    expect(providers).toContain('GTProvider');
+    expect(providers).toMatch(/from ['"]gt-next['"]/);
+    expect(providers).not.toContain('NextIntlClientProvider');
+    expect(providers).not.toContain('useMessages');
+    expect(providers).not.toMatch(/from ['"]next-intl/);
+
+    // full teardown: next-intl removed since every file converted
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeUndefined();
+  });
+
+  it('treats a JSX-less layout.ts as a layout and degrades gracefully', async () => {
+    // A pure-TS layout.ts (no JSX). It must go through the layout pass (which
+    // agrees with emitGtFiles that layout.ts is a layout), so its locale guard
+    // is handled instead of tripping the generic pass into a hasLocale skip —
+    // and the layout pass must never emit JSX into a .ts file.
+    const cwd = makeApp({
+      'src/app/[locale]/layout.ts': [
+        "import { hasLocale } from 'next-intl';",
+        "import { setRequestLocale } from 'next-intl/server';",
+        "import { notFound } from 'next/navigation';",
+        "import { routing } from '@/i18n/routing';",
+        'export default function LocaleLayout({',
+        '  children,',
+        '  params,',
+        '}: {',
+        '  children: React.ReactNode;',
+        '  params: { locale: string };',
+        '}) {',
+        '  if (!hasLocale(routing.locales, params.locale)) {',
+        '    notFound();',
+        '  }',
+        '  setRequestLocale(params.locale);',
+        '  return children;',
+        '}',
+      ].join('\n'),
+    });
+    // Replace the default .tsx layout so layout.ts is the [locale] layout.
+    fs.rmSync(path.join(cwd, 'src/app/[locale]/layout.tsx'));
+
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+
+    const layout = read(cwd, 'src/app/[locale]/layout.ts');
+    // handled as a layout in full mode: guard + setRequestLocale removed, its
+    // next-intl imports gone (not skipped for an unsupported hasLocale)
+    expect(layout).not.toContain('hasLocale');
+    expect(layout).not.toContain('setRequestLocale');
+    expect(layout).not.toMatch(/from ['"]next-intl/);
+    expect(layout).toContain('return children');
+    // no JSX ever emitted into a .ts file, no crash
+    expect(layout).not.toContain('<');
+    expect(layout).not.toContain('GTProvider');
+
+    // it was transformed, not skipped -> full teardown proceeds
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeUndefined();
+    expect(read(cwd, 'gt-migrate-report.md')).not.toMatch(
+      /layout\.ts.*skipped|skipped.*layout\.ts/
+    );
   });
 });
