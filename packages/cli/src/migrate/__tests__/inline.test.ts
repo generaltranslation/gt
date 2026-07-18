@@ -57,6 +57,31 @@ describe('inlinePass', () => {
     expect(result.code).toMatch(/import \{.*T.*\} from ["']gt-next["']/);
   });
 
+  it('classifies through ctx.adapter.classifyMessage, not the module import', () => {
+    // A stub adapter that reports this pure-text message as non-text. The inline
+    // pass must consult the adapter's (source-format-specific) classifier, so
+    // the key stays on the dictionary path instead of being inlined. Before the
+    // seam wiring this used the module-level classifier and inlined it.
+    const ctx = makeContext({ Home: { title: 'Welcome to my app' } });
+    ctx.adapter = {
+      ...nextIntlAdapter,
+      classifyMessage: () => ({ kind: 'args', argNames: [] }),
+    };
+    const result = inlinePass(
+      'src/app/page.tsx',
+      [
+        "import { useTranslations } from 'gt-next';",
+        'export default function Page() {',
+        "  const t = useTranslations('Home');",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n'),
+      ctx
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toBeNull();
+  });
+
   it('inlines every eligible sibling call in the same element', () => {
     const ctx = makeContext({
       Home: { staticA: 'First text', staticB: 'Second text' },

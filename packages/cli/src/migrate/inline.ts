@@ -2,7 +2,6 @@ import { parse } from '@babel/parser';
 import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
-import { classifyMessage } from './classifyMessage.js';
 import { ensureNamedImports, removeUnusedNamedImports } from './importUtils.js';
 import type { MigrationContext, SourceResult } from './types.js';
 
@@ -92,7 +91,7 @@ export function inlinePass(
         tBindings.get(callee.name),
         keyArg.value
       );
-      if (message === null || classifyMessage(message).kind !== 'text') {
+      if (message === null || ctx.adapter.classifyMessage(message).kind !== 'text') {
         remaining += 1;
         return;
       }
