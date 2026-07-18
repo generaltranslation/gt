@@ -7,6 +7,7 @@
   "types": "./dist/index.types.d.cts",
   "files": [
     "dist",
+    "agent",
     "CHANGELOG.md"
   ],
   "sideEffects": [
