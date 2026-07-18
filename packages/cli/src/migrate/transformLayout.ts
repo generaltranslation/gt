@@ -2,6 +2,7 @@ import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
+import { nextIntlAdapter } from './adapters/nextIntl.js';
 import { ensureNamedImports, removeUnusedNamedImports } from './importUtils.js';
 import { transformSourceFile } from './transformSource.js';
 import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
@@ -21,11 +22,14 @@ const generate = generateModule.default || generateModule;
  * or the argument is a bare `locale` identifier. Anything else (slug/origin
  * allowlists, feature checks) is application logic and must survive.
  */
-function isLocaleGuardTest(test: t.Node): boolean {
+function isLocaleGuardTest(
+  test: t.Node,
+  localeValidators: Set<string>
+): boolean {
   let guardsLocale = false;
   t.traverseFast(test, (node) => {
     if (!t.isCallExpression(node)) return;
-    if (t.isIdentifier(node.callee, { name: 'hasLocale' })) {
+    if (t.isIdentifier(node.callee) && localeValidators.has(node.callee.name)) {
       guardsLocale = true;
       return;
     }
@@ -130,6 +134,7 @@ export function transformLayoutFile(
   code: string,
   ctx: MigrationContext
 ): SourceResult {
+  const adapter = ctx.adapter ?? nextIntlAdapter;
   const retainProvider = ctx.skippedFiles.size > 0;
   const base = transformSourceFile(file, code, ctx, {
     retainNextIntlProvider: retainProvider,
@@ -170,7 +175,9 @@ export function transformLayoutFile(
   if (!retainProvider) {
     traverse(ast, {
       IfStatement(path) {
-        if (!isLocaleGuardTest(path.node.test)) return;
+        if (!isLocaleGuardTest(path.node.test, adapter.localeValidators)) {
+          return;
+        }
         let callsNotFound = false;
         path.traverse({
           CallExpression(inner) {
@@ -268,9 +275,8 @@ export function transformLayoutFile(
       JSXOpeningElement(path) {
         if (unsafeAsyncFallback) return;
         if (
-          !t.isJSXIdentifier(path.node.name, {
-            name: 'NextIntlClientProvider',
-          })
+          adapter.providerName === null ||
+          !t.isJSXIdentifier(path.node.name, { name: adapter.providerName })
         ) {
           return;
         }
@@ -365,7 +371,11 @@ export function transformLayoutFile(
   // 6. Clean up imports orphaned by the guard removal (notFound, hasLocale,
   //    routing config imports).
   if (mutated) {
-    removeUnusedNamedImports(ast, ['notFound', 'hasLocale', 'routing']);
+    removeUnusedNamedImports(ast, [
+      'notFound',
+      ...adapter.localeValidators,
+      'routing',
+    ]);
   }
 
   // 7. Guard removal can orphan `const { locale } = await params` — drop the
