@@ -7,20 +7,15 @@ import { logErrorAndExit, promptConfirm } from '../../console/logging.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { formatFiles } from '../../hooks/postProcess.js';
-import { discoverCatalogs } from '../../migrate/discover.js';
+import {
+  getAdapter,
+  supportedSourceIds,
+} from '../../migrate/adapters/index.js';
 import { emitGtFiles } from '../../migrate/emitGtFiles.js';
 import { inlinePass } from '../../migrate/inline.js';
-import { parseRoutingConfig } from '../../migrate/parseRoutingConfig.js';
 import { buildReport } from '../../migrate/report.js';
 import { transformLayoutFile } from '../../migrate/transformLayout.js';
-import { transformMiddlewareFile } from '../../migrate/transformMiddleware.js';
-import { transformNavigationFile } from '../../migrate/transformNavigation.js';
-import { transformNextConfigFile } from '../../migrate/transformNextConfig.js';
-import { transformRequestConfigFile } from '../../migrate/transformRequestConfig.js';
-import {
-  hasNextIntlProvider,
-  transformSourceFile,
-} from '../../migrate/transformSource.js';
+import { transformSourceFile } from '../../migrate/transformSource.js';
 import type {
   MigrateOptions,
   MigrationContext,
@@ -43,10 +38,18 @@ export async function handleMigrateCommand(
   library: SupportedLibraries,
   cwd: string = process.cwd()
 ): Promise<void> {
-  if (library !== 'next-intl') {
+  // Resolve the source-library adapter. --from overrides the auto-detected
+  // library; an unknown/unsupported source is a clean error listing what is
+  // supported (the list grows as adapters are added to the registry).
+  const requestedFrom = options.from ?? library;
+  const adapter = getAdapter(requestedFrom);
+  if (!adapter) {
     logErrorAndExit(
-      `gt migrate currently supports next-intl projects only, but detected '${library}'. ` +
-        'react-i18next support is planned; run this from a project with next-intl in package.json.'
+      `gt migrate cannot migrate from '${requestedFrom}'. ` +
+        `Supported sources: ${supportedSourceIds().join(', ')}. ` +
+        (options.from
+          ? 'Pass --from with a supported source, or omit it to auto-detect from your dependencies.'
+          : 'This was auto-detected from your dependencies — pass --from to override.')
     );
   }
 
@@ -62,17 +65,17 @@ export async function handleMigrateCommand(
     if (!proceed) logErrorAndExit('Migration cancelled.');
   }
 
-  const routing = parseRoutingConfig(cwd);
-  let catalogs: Awaited<ReturnType<typeof discoverCatalogs>>;
+  const routing = adapter.parseRoutingConfig(cwd);
+  let catalogs: Awaited<ReturnType<typeof adapter.discoverCatalogs>>;
   try {
-    catalogs = await discoverCatalogs(cwd, routing);
+    catalogs = await adapter.discoverCatalogs(cwd, routing);
   } catch (error) {
     // e.g. a malformed locale JSON — nothing has been written yet.
     logErrorAndExit(error instanceof Error ? error.message : String(error));
   }
   if (!catalogs) {
     logErrorAndExit(
-      'Could not locate next-intl message catalogs (looked for the request ' +
+      `Could not locate ${adapter.displayName} message catalogs (looked for the request ` +
         "config's import path, then messages/, src/messages/, locales/). " +
         'Pass --src or add a JSON catalog per locale and retry.'
     );
@@ -86,6 +89,7 @@ export async function handleMigrateCommand(
     cwd,
     catalogs,
     routing,
+    adapter,
     edits: [],
     todos: [],
     skippedFiles: new Map(),
@@ -94,21 +98,16 @@ export async function handleMigrateCommand(
   };
 
   // Files owned by the config lane (pass 3 / emitGtFiles) must not go
-  // through the generic source pass — they'd register as skips.
+  // through the generic source pass — they'd register as skips. The candidate
+  // filenames come from the adapter, so a source with no Next.js config lane
+  // contributes none.
   const configLaneFiles = new Set(
     [
       routing.routingFile,
       routing.requestFile,
       ...findRootFiles(cwd, [
-        'next.config.ts',
-        'next.config.js',
-        'next.config.mjs',
-        'middleware.ts',
-        'middleware.js',
-        'src/middleware.ts',
-        'src/middleware.js',
-        'proxy.ts',
-        'src/proxy.ts',
+        ...adapter.nextConfigCandidates,
+        ...adapter.middlewareCandidates,
       ]),
     ].filter((file): file is string => file !== null)
   );
@@ -162,11 +161,11 @@ export async function handleMigrateCommand(
       layouts.push(file);
       continue;
     }
-    if (code.includes('createNavigation')) {
-      collect(ctx, file, transformNavigationFile(file, code, ctx));
+    if (adapter.transformNavigation && adapter.isNavigationFile?.(code)) {
+      collect(ctx, file, adapter.transformNavigation(file, code, ctx));
       continue;
     }
-    if (hasNextIntlProvider(code)) {
+    if (adapter.hasProvider(code)) {
       providerFiles.push(file);
       continue;
     }
@@ -190,13 +189,9 @@ export async function handleMigrateCommand(
     } catch {
       continue;
     }
-    if (
-      /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"]next-intl(?:\/|['"])/.test(
-        content
-      )
-    ) {
+    if (adapter.projectUsagePattern.test(content)) {
       ctx.skippedFiles.set(file, [
-        'uses next-intl but was not scanned (outside the --src scope or the default globs) — include it or convert it manually',
+        `uses ${adapter.displayName} but was not scanned (outside the --src scope or the default globs) — include it or convert it manually`,
       ]);
     }
   }
@@ -241,45 +236,43 @@ export async function handleMigrateCommand(
     collect(ctx, file, result);
   }
 
-  // Pass 3: root config files.
-  for (const configFile of findRootFiles(cwd, [
-    'next.config.ts',
-    'next.config.js',
-    'next.config.mjs',
-  ])) {
-    const code = fs.readFileSync(configFile, 'utf8');
-    collect(ctx, configFile, transformNextConfigFile(configFile, code, ctx));
-    if (isEsmNextConfig(configFile, cwd)) {
-      // gt-next/config's ESM bundle currently breaks under a native-ESM
-      // config ("require is not defined" resolving the Next.js version).
-      ctx.todos.push({
-        file: configFile,
-        reason:
-          'this config loads as native ESM, where gt-next/config (<= 11.0.9) fails with "require is not defined" — rename it to next.config.ts (Next.js compiles it to CJS) until gt-next ships an ESM-safe config entry',
-      });
+  // Pass 3: root config files. Each config-lane transform is an optional
+  // adapter method; a source with no Next.js config lane supplies none, so the
+  // corresponding loop is skipped entirely.
+  const transformNextConfig = adapter.transformNextConfig;
+  if (transformNextConfig) {
+    for (const configFile of findRootFiles(cwd, adapter.nextConfigCandidates)) {
+      const code = fs.readFileSync(configFile, 'utf8');
+      collect(ctx, configFile, transformNextConfig(configFile, code, ctx));
+      if (isEsmNextConfig(configFile, cwd)) {
+        // gt-next/config's ESM bundle currently breaks under a native-ESM
+        // config ("require is not defined" resolving the Next.js version).
+        ctx.todos.push({
+          file: configFile,
+          reason:
+            'this config loads as native ESM, where gt-next/config (<= 11.0.9) fails with "require is not defined" — rename it to next.config.ts (Next.js compiles it to CJS) until gt-next ships an ESM-safe config entry',
+        });
+      }
     }
   }
-  for (const middlewareFile of findRootFiles(cwd, [
-    'middleware.ts',
-    'middleware.js',
-    'src/middleware.ts',
-    'src/middleware.js',
-    'proxy.ts',
-    'src/proxy.ts',
-  ])) {
-    const code = fs.readFileSync(middlewareFile, 'utf8');
-    collect(
-      ctx,
-      middlewareFile,
-      transformMiddlewareFile(middlewareFile, code, ctx)
-    );
+  const transformMiddleware = adapter.transformMiddleware;
+  if (transformMiddleware) {
+    for (const middlewareFile of findRootFiles(
+      cwd,
+      adapter.middlewareCandidates
+    )) {
+      const code = fs.readFileSync(middlewareFile, 'utf8');
+      collect(ctx, middlewareFile, transformMiddleware(middlewareFile, code, ctx));
+    }
   }
 
-  // Partial migrations keep next-intl's request config alive for skipped
-  // files, but gt-next's middleware no longer feeds it a locale — rewire its
-  // fallback to getLocale() so skipped files render the page locale instead
-  // of the default one.
+  // Partial migrations keep the source library's request config alive for
+  // skipped files, but gt-next's middleware no longer feeds it a locale —
+  // rewire its fallback to getLocale() so skipped files render the page locale
+  // instead of the default one.
+  const transformRequestConfig = adapter.transformRequestConfig;
   if (
+    transformRequestConfig &&
     ctx.skippedFiles.size > 0 &&
     routing.requestFile &&
     fs.existsSync(routing.requestFile)
@@ -288,7 +281,7 @@ export async function handleMigrateCommand(
     collect(
       ctx,
       routing.requestFile,
-      transformRequestConfigFile(routing.requestFile, code)
+      transformRequestConfig(routing.requestFile, code)
     );
   }
 

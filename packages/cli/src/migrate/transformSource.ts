@@ -607,15 +607,6 @@ export function transformSourceFile(
   };
 }
 
-/**
- * True when `code` renders the next-intl client provider (alias-aware). Kept as
- * a thin delegate to the next-intl adapter so the driver's existing import stays
- * valid; the driver reads ctx.adapter.hasProvider once the adapter is threaded.
- */
-export function hasNextIntlProvider(code: string): boolean {
-  return nextIntlAdapter.hasProvider(code);
-}
-
 // ---- helpers ---------------------------------------------------------------
 
 /**

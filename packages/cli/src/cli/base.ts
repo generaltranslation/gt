@@ -545,7 +545,11 @@ export class BaseCLI {
     this.program
       .command('migrate')
       .description(
-        'Migrate an existing i18n setup (next-intl) to General Translation, preserving your translations'
+        'Migrate an existing i18n setup to General Translation, preserving your translations'
+      )
+      .option(
+        '--from <library>',
+        'Source i18n library to migrate from (default: auto-detect from your dependencies)'
       )
       .option(
         '--src <paths...>',
