@@ -93,8 +93,7 @@ export const reactIntlAdapter: SourceAdapter = {
   displayName: 'react-intl',
 
   ownsModule,
-  mentionedIn: (code) =>
-    /['"](react-intl|@formatjs\/[^'"]*)['"]/.test(code),
+  mentionedIn: (code) => /['"](react-intl|@formatjs\/[^'"]*)['"]/.test(code),
 
   // The engine that reads these is bypassed by transformSource below; they are
   // present so the shared layout pass and report have sane values.

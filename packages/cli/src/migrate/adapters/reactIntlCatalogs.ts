@@ -110,7 +110,9 @@ function normalizeCatalog(file: string): Record<string, unknown> {
     );
   }
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
-    throw new Error(`Message catalog ${file} is not a JSON object of messages.`);
+    throw new Error(
+      `Message catalog ${file} is not a JSON object of messages.`
+    );
   }
   const result: Record<string, unknown> = {};
   for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
@@ -250,7 +252,10 @@ function recordFromDescriptor(
   record: (id: string | null, message: string | null) => void
 ): void {
   if (!node || !t.isObjectExpression(node)) return;
-  record(objectStringProp(node, 'id'), objectStringProp(node, 'defaultMessage'));
+  record(
+    objectStringProp(node, 'id'),
+    objectStringProp(node, 'defaultMessage')
+  );
 }
 
 function objectStringProp(

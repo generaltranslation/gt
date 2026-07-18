@@ -222,7 +222,9 @@ describe('react-intl migration integration', () => {
     // client: useIntl -> useTranslations, dictionary calls intact, formatters
     // converted, defineMessages dropped.
     const client = read(cwd, 'src/app/[locale]/Client.tsx');
-    expect(client).toMatch(/import \{[^}]*useTranslations[^}]*\} from ['"]gt-next['"]/);
+    expect(client).toMatch(
+      /import \{[^}]*useTranslations[^}]*\} from ['"]gt-next['"]/
+    );
     expect(client).toMatch(/const intl = useTranslations\(\)/);
     expect(client).toMatch(/intl\(['"]cart['"]\)/);
     expect(client).toMatch(/intl\(['"]greeting['"], \{ name: ['"]Ada['"] \}\)/);
@@ -236,7 +238,9 @@ describe('react-intl migration integration', () => {
     // page (RSC): createIntl -> await getTranslations()
     const page = read(cwd, 'src/app/[locale]/page.tsx');
     expect(page).toMatch(/const intl = await getTranslations\(\)/);
-    expect(page).toMatch(/import \{ getTranslations \} from ['"]gt-next\/server['"]/);
+    expect(page).toMatch(
+      /import \{ getTranslations \} from ['"]gt-next\/server['"]/
+    );
     expect(page).toMatch(/intl\(['"]title['"]\)/);
     expect(page).not.toContain('react-intl');
 
@@ -428,11 +432,9 @@ describe('react-intl migration integration', () => {
 
   it('rejects an unsupported --from with a clean error listing sources', async () => {
     const cwd = makeApp();
-    const exit = vi
-      .spyOn(process, 'exit')
-      .mockImplementation((() => {
-        throw new Error('exit');
-      }) as never);
+    const exit = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('exit');
+    }) as never);
     await expect(
       handleMigrateCommand(
         {

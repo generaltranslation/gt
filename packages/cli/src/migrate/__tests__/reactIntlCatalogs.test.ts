@@ -37,7 +37,10 @@ describe('discoverReactIntlCatalogs', () => {
   it('reads flat {id: ICU} catalogs and picks en as default', async () => {
     const cwd = makeDir({
       'messages/en.json': JSON.stringify({ title: 'Welcome', hi: 'Hi {name}' }),
-      'messages/fr.json': JSON.stringify({ title: 'Bienvenue', hi: 'Salut {name}' }),
+      'messages/fr.json': JSON.stringify({
+        title: 'Bienvenue',
+        hi: 'Salut {name}',
+      }),
     });
     const catalogs = await discoverReactIntlCatalogs(cwd, routing);
     expect(catalogs).not.toBeNull();

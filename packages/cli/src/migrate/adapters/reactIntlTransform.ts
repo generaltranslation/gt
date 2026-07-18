@@ -128,7 +128,9 @@ export function transformReactIntlSource(
       reactIntlImports.push(path);
       for (const specifier of path.node.specifiers) {
         if (!t.isImportSpecifier(specifier)) {
-          skipReasons.push(`unsupported react-intl import form from '${source}'`);
+          skipReasons.push(
+            `unsupported react-intl import form from '${source}'`
+          );
           continue;
         }
         const imported = t.isIdentifier(specifier.imported)
@@ -297,8 +299,7 @@ export function transformReactIntlSource(
         );
         return;
       }
-      const values =
-        valuesArg && t.isExpression(valuesArg) ? valuesArg : null;
+      const values = valuesArg && t.isExpression(valuesArg) ? valuesArg : null;
       formatMessageCalls.push({ call: path, binding: objectName, id, values });
       if (kind === 'server') needsServerT = true;
     },
@@ -526,11 +527,7 @@ export function transformReactIntlSource(
   for (const providerPath of providerUnwraps) {
     const children = providerPath.node.children;
     providerPath.replaceWith(
-      t.jsxFragment(
-        t.jsxOpeningFragment(),
-        t.jsxClosingFragment(),
-        children
-      )
+      t.jsxFragment(t.jsxOpeningFragment(), t.jsxClosingFragment(), children)
     );
   }
 
@@ -563,7 +560,8 @@ export function transformReactIntlSource(
   for (const component of ['Num', 'DateTime', 'Plural', 'RelativeTime', 'T']) {
     if (usedComponents.has(component)) clientImports.push(component);
   }
-  if (clientImports.length > 0) ensureNamedImports(ast, GT_MODULE, clientImports);
+  if (clientImports.length > 0)
+    ensureNamedImports(ast, GT_MODULE, clientImports);
   if (needsServerT) {
     ensureNamedImports(ast, GT_SERVER_MODULE, ['getTranslations']);
   }
@@ -787,9 +785,7 @@ function convertFormatter(
       if (!t.isJSXAttribute(attr) || !t.isJSXIdentifier(attr.name)) continue;
       const name = attr.name.name;
       if (name === 'value') {
-        kept.push(
-          t.jsxAttribute(t.jsxIdentifier('n'), value.value)
-        );
+        kept.push(t.jsxAttribute(t.jsxIdentifier('n'), value.value));
       } else if (PLURAL_CATEGORIES.has(name)) {
         kept.push(attr);
       } else {
@@ -845,10 +841,14 @@ function convertFormatter(
   }
   const valueExpr = value.value.expression;
   if (!t.isExpression(valueExpr)) {
-    return { skip: `<${kind}> has an unsupported \`value\` — convert manually` };
+    return {
+      skip: `<${kind}> has an unsupported \`value\` — convert manually`,
+    };
   }
   const options: t.ObjectProperty[] = [];
-  for (const [name, literal] of Object.entries(formatter.defaultOptions ?? {})) {
+  for (const [name, literal] of Object.entries(
+    formatter.defaultOptions ?? {}
+  )) {
     options.push(
       t.objectProperty(t.identifier(name), t.stringLiteral(literal))
     );
