@@ -101,6 +101,14 @@ describe('transformNextConfigFile', () => {
     expect(
       result.todos.some((todo) => todo.reason.includes('createNextIntlPlugin'))
     ).toBe(true);
+    // the teardown re-run guidance must carry --from so that once gt-next is
+    // installed (auto-detect would then return gt-next) the re-run still targets
+    // the source library instead of hard-erroring.
+    expect(
+      result.todos.some((todo) =>
+        todo.reason.includes('gt migrate --from next-intl')
+      )
+    ).toBe(true);
   });
 
   it('returns unchanged when no next-intl plugin is present', () => {
