@@ -132,7 +132,7 @@ export function transformReactI18nextSource(
   const tBindings = new Map<string, TBinding>();
   const i18nBindings = new Map<
     string,
-    { onlyChangeLanguage: boolean; local: string }
+    { onlyChangeLanguage: boolean; local: string; referenced: boolean }
   >();
   let needsUseTranslations = false;
   let needsSetLocale = false;
@@ -151,6 +151,21 @@ export function transformReactI18nextSource(
         return;
       }
       const nsArg = init.arguments[0];
+      // Multi-element array namespaces (`useTranslation(['a','b'])`) bind the
+      // first as default and use the rest as i18next fallback resolution for
+      // keys missing from it. gt-next scoped hooks resolve only within a single
+      // namespace, so collapsing to element[0] would silently turn a fallback
+      // hit into a missing key, so skip+report instead (the M1 finding). A
+      // single-element array is unambiguous and still converts.
+      if (
+        t.isArrayExpression(nsArg) &&
+        nsArg.elements.filter((element) => element != null).length > 1
+      ) {
+        skipReasons.push(
+          'useTranslation([...]) with multiple namespaces uses i18next fallback resolution that gt-next scoped hooks do not replicate; split the call or use a root useTranslations()'
+        );
+        return;
+      }
       const nsName = t.isStringLiteral(nsArg)
         ? nsArg.value
         : t.isArrayExpression(nsArg) && t.isStringLiteral(nsArg.elements[0])
@@ -188,6 +203,7 @@ export function transformReactI18nextSource(
             i18nBindings.set(localName, {
               onlyChangeLanguage: true,
               local: localName,
+              referenced: false,
             });
           } else if (keyName === 'ready') {
             // ready flag has no gt equivalent (gt suspends/streams instead).
@@ -207,6 +223,7 @@ export function transformReactI18nextSource(
           i18nBindings.set(i18nEl.name, {
             onlyChangeLanguage: true,
             local: i18nEl.name,
+            referenced: false,
           });
       } else {
         skipReasons.push(
@@ -216,40 +233,43 @@ export function transformReactI18nextSource(
     },
   });
 
-  // Inspect i18n usages: only `i18n.changeLanguage(...)` is supported.
+  // Inspect i18n usages: only a `i18n.changeLanguage(...)` CALL is supported. A
+  // bare `i18n.changeLanguage` reference (`const f = i18n.changeLanguage`,
+  // `onChange={i18n.changeLanguage}`) is NOT. After migration `i18n` is the
+  // useSetLocale() function, so `i18n.changeLanguage` is undefined and the file
+  // miscompiles (the M2 finding). Treat member access as supported only when it
+  // is the callee of a call expression.
   if (i18nBindings.size > 0) {
     traverse(ast, {
       Identifier(path) {
         const binding = i18nBindings.get(path.node.name);
         if (!binding || !path.isReferencedIdentifier()) return;
-        // The declaration site itself is not a usage.
-        const parent = path.parent;
-        if (
-          t.isMemberExpression(parent) &&
-          parent.object === path.node &&
-          !parent.computed
-        ) {
-          if (t.isIdentifier(parent.property, { name: 'changeLanguage' }))
-            return;
-        }
-        // Any reference that is not `i18n.changeLanguage` disqualifies it.
-        if (
-          t.isMemberExpression(parent) &&
-          parent.object === path.node &&
-          t.isIdentifier(parent.property) &&
-          parent.property.name === 'changeLanguage'
-        ) {
-          return;
-        }
         // Reference inside its own destructure declarator: ignore.
         if (isOwnDeclarator(path)) return;
+        binding.referenced = true;
+        const parent = path.parent;
+        // `i18n.changeLanguage(...)`: member access on i18n, property
+        // `changeLanguage`, and that member is the callee of a call.
+        if (
+          t.isMemberExpression(parent) &&
+          parent.object === path.node &&
+          !parent.computed &&
+          t.isIdentifier(parent.property, { name: 'changeLanguage' })
+        ) {
+          const callParent = path.parentPath?.parent;
+          if (t.isCallExpression(callParent) && callParent.callee === parent) {
+            return; // supported: an actual changeLanguage() call
+          }
+        }
+        // Anything else (a bare changeLanguage reference, i18n.language, …)
+        // disqualifies the file.
         binding.onlyChangeLanguage = false;
       },
     });
     for (const binding of i18nBindings.values()) {
       if (!binding.onlyChangeLanguage) {
         skipReasons.push(
-          `the i18n instance from useTranslation() is used beyond changeLanguage() — only locale switching maps to gt-next (useSetLocale); convert other i18n.* usage manually`
+          `the i18n instance from useTranslation() is used beyond changeLanguage() calls; only locale switching maps to gt-next (useSetLocale). A bare i18n.changeLanguage reference (not a call) or other i18n.* usage must be converted manually`
         );
       }
     }
@@ -301,6 +321,72 @@ export function transformReactI18nextSource(
           );
         }
       }
+    },
+  });
+
+  // Provider elements: the swap drops every attribute, which is safe only for
+  // the canonical `<I18nextProvider i18n={i18n}>`. A spread or any prop besides
+  // `i18n` would be silently lost, so skip+report the file instead (the m3
+  // finding). Detected here so it contributes to the skip gate.
+  if (providerLocals.size > 0) {
+    traverse(ast, {
+      JSXOpeningElement(path) {
+        const name = path.node.name;
+        if (!t.isJSXIdentifier(name) || !providerLocals.has(name.name)) return;
+        for (const attr of path.node.attributes) {
+          if (t.isJSXSpreadAttribute(attr)) {
+            skipReasons.push(
+              `<${name.name}> uses a spread attribute; the provider swap to <GTProvider> would drop it, so remove the spread or migrate the provider manually`
+            );
+            continue;
+          }
+          if (
+            t.isJSXAttribute(attr) &&
+            t.isJSXIdentifier(attr.name) &&
+            attr.name.name !== 'i18n'
+          ) {
+            skipReasons.push(
+              `<${name.name}> has a \`${attr.name.name}\` prop besides i18n; the provider swap to <GTProvider> would drop it, so migrate the provider manually`
+            );
+          }
+        }
+      },
+    });
+  }
+
+  // B2: every reference to a react-i18next import local must be consumed by a
+  // recognized conversion. A surviving reference (a thin wrapper hook
+  // `return useTranslation(ns)`, a mixed file, a `const T = Trans`) would be
+  // orphaned once the import is stripped, compiling to an undefined symbol. A
+  // useTranslation local is consumed only as the callee of a call that inits a
+  // destructured declarator (what the mutation pass rewrites); <Trans> /
+  // <I18nextProvider> JSX use is a JSXIdentifier (not matched here) and handled
+  // by their own passes, so only value-position references trip this.
+  traverse(ast, {
+    Identifier(path) {
+      const name = path.node.name;
+      if (
+        !useTranslationLocals.has(name) &&
+        !transLocals.has(name) &&
+        !providerLocals.has(name)
+      ) {
+        return;
+      }
+      if (!path.isReferencedIdentifier()) return;
+      const parent = path.parent;
+      if (t.isCallExpression(parent) && parent.callee === path.node) {
+        const declarator = path.parentPath?.parent;
+        if (
+          t.isVariableDeclarator(declarator) &&
+          declarator.init === parent &&
+          (t.isObjectPattern(declarator.id) || t.isArrayPattern(declarator.id))
+        ) {
+          return; // consumed: const { t, i18n } = useTranslation(...)
+        }
+      }
+      skipReasons.push(
+        `this file re-exports or wraps react-i18next's ${name} (e.g. a custom hook or a re-assignment); gt migrate cannot rewrite the wrapper, so point the wrapper's consumers at the gt-next equivalents (useTranslations/useSetLocale/<T>) manually`
+      );
     },
   });
 
@@ -366,7 +452,14 @@ export function transformReactI18nextSource(
           )
         );
       }
-      if (i18nLocal) {
+      // Drop an unreferenced i18n binding rather than emitting a dead
+      // `const i18n = useSetLocale()` + import (the m3 finding), but only when
+      // a t binding remains, so an i18n-only hook still produces a declarator
+      // (dropping it would strip the import and orphan the call).
+      const i18nReferenced = i18nLocal
+        ? (i18nBindings.get(i18nLocal)?.referenced ?? false)
+        : false;
+      if (i18nLocal && (i18nReferenced || !tLocal)) {
         needsSetLocale = true;
         replacements.push(
           t.variableDeclarator(
@@ -430,9 +523,15 @@ export function transformReactI18nextSource(
     });
   }
 
-  // 5. Trans -> {t(...)} conversions.
+  // 5. Trans -> t(...) conversions. A JSXExpressionContainer is a legal node
+  //    ONLY as a JSX child or attribute value; a standalone <Trans> (a return
+  //    argument, variable init, ternary arm, arrow body, array element) must be
+  //    replaced with the plain call expression or @babel/types throws and takes
+  //    down the whole migrate run (the B1 finding). Pick by parent position.
   for (const { path, call } of transConversions) {
-    path.replaceWith(t.jsxExpressionContainer(call));
+    const parent = path.parent;
+    const inJsxChild = t.isJSXElement(parent) || t.isJSXFragment(parent);
+    path.replaceWith(inJsxChild ? t.jsxExpressionContainer(call) : call);
   }
 
   // 6. Import surgery: drop react-i18next imports, add the gt-next import.
@@ -504,7 +603,21 @@ function remapTCalls(
         return;
       }
 
-      if (!t.isStringLiteral(keyArg)) return; // dynamic key — leave untouched
+      if (!t.isStringLiteral(keyArg)) {
+        // Dynamic key (template literal, variable): cannot be remapped. Because
+        // the converter re-nests namespaces (defaultNS at root, others nested),
+        // the runtime key space can differ from i18next's, so a computed key can
+        // silently stop resolving, so flag it (the m1 finding).
+        if (keyArg) {
+          todos.push({
+            file,
+            line: path.node.loc?.start.line,
+            reason:
+              'dynamic translation key left unchanged; verify it resolves against the converted dictionary (namespaces are re-nested, so the runtime key space may differ from i18next)',
+          });
+        }
+        return;
+      }
 
       const mapped = mapKey(keyArg.value, binding, config);
       if (mapped !== null && mapped !== keyArg.value) {

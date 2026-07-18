@@ -310,6 +310,248 @@ describe('t() call normalization', () => {
   });
 });
 
+describe('adversary B1: standalone <Trans> in every expression position', () => {
+  const positions: Array<[string, string, string]> = [
+    [
+      'return argument',
+      'return <Trans i18nKey="welcome" />;',
+      "return t('welcome')",
+    ],
+    [
+      'variable init',
+      'const el = <Trans i18nKey="welcome" />;\n  return el;',
+      "const el = t('welcome')",
+    ],
+    [
+      'ternary arm',
+      'const x = cond ? <Trans i18nKey="welcome" /> : null;\n  return x;',
+      "cond ? t('welcome') : null",
+    ],
+    [
+      'arrow body',
+      'const f = () => <Trans i18nKey="welcome" />;\n  return f();',
+      "() => t('welcome')",
+    ],
+    [
+      'array element',
+      'const a = [<Trans i18nKey="welcome" />];\n  return a;',
+      "[t('welcome')]",
+    ],
+  ];
+  for (const [label, body, expected] of positions) {
+    it(`converts a <Trans> as a ${label} to a plain call (no babel crash)`, () => {
+      const { code, skipReasons } = transform(
+        [
+          "import { useTranslation, Trans } from 'react-i18next';",
+          'export function C({ cond }) {',
+          '  const { t } = useTranslation();',
+          `  ${body}`,
+          '}',
+        ].join('\n')
+      );
+      expect(skipReasons).toEqual([]);
+      expect(code).not.toBeNull();
+      expect((code as string).replace(/\s+/g, ' ')).toContain(expected);
+      expect(code).not.toContain('<Trans');
+    });
+  }
+
+  it('still wraps a <Trans> JSX child in an expression container', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation, Trans } from 'react-i18next';",
+        'export function C() {',
+        '  const { t } = useTranslation();',
+        '  return <p><Trans i18nKey="welcome" /></p>;',
+        '}',
+      ].join('\n')
+    );
+    expect(skipReasons).toEqual([]);
+    expect(code).toContain("{t('welcome')}");
+  });
+});
+
+describe('adversary B2: react-i18next wrappers must skip, not miscompile', () => {
+  it('skips a thin custom hook that returns useTranslation(ns)', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function useT(ns) {',
+        '  return useTranslation(ns);',
+        '}',
+      ].join('\n')
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.join(' ')).toMatch(/wrap|re-export/i);
+  });
+
+  it('skips a mixed file where one useTranslation reference is not converted', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function useT(ns) { return useTranslation(ns); }',
+        'export function Comp() {',
+        '  const { t } = useTranslation();',
+        "  return <p>{t('title')}</p>;",
+        '}',
+      ].join('\n')
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.length).toBeGreaterThan(0);
+  });
+});
+
+describe('adversary M1: multi-element array namespaces', () => {
+  it('skips useTranslation([a, b]) (fallback resolution)', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        "  const { t } = useTranslation(['common', 'dashboard']);",
+        "  return <p>{t('welcome')}</p>;",
+        '}',
+      ].join('\n')
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.join(' ')).toMatch(/array namespace|fallback/i);
+  });
+
+  it('converts a single-element array namespace', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        "  const { t } = useTranslation(['dashboard']);",
+        "  return <p>{t('x')}</p>;",
+        '}',
+      ].join('\n')
+    );
+    expect(skipReasons).toEqual([]);
+    expect(code).toContain("useTranslations('dashboard')");
+  });
+});
+
+describe('adversary M2: bare i18n.changeLanguage references', () => {
+  it('skips a bare i18n.changeLanguage reference (not a call)', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        '  const { t, i18n } = useTranslation();',
+        '  const changeLang = i18n.changeLanguage;',
+        "  return <button onClick={() => changeLang('fr')}>{t('greeting')}</button>;",
+        '}',
+      ].join('\n')
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.join(' ')).toMatch(/changeLanguage/);
+  });
+
+  it('skips i18n.changeLanguage passed as an event handler', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        '  const { i18n } = useTranslation();',
+        '  return <LangPicker onChange={i18n.changeLanguage} />;',
+        '}',
+      ].join('\n')
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.join(' ')).toMatch(/changeLanguage/);
+  });
+
+  it('still converts an actual i18n.changeLanguage(x) call', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        '  const { i18n } = useTranslation();',
+        "  return <button onClick={() => i18n.changeLanguage('es')}>ES</button>;",
+        '}',
+      ].join('\n')
+    );
+    expect(skipReasons).toEqual([]);
+    expect(code).toContain('useSetLocale()');
+    expect(code).toContain("i18n('es')");
+  });
+});
+
+describe('adversary m1: dynamic t() keys', () => {
+  it('emits a TODO for a template-literal key', () => {
+    const { todos } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C({ k }) {',
+        '  const { t } = useTranslation();',
+        '  return <p>{t(`dynamic.${k}`)}</p>;',
+        '}',
+      ].join('\n')
+    );
+    expect(todos.some((td) => /dynamic translation key/.test(td.reason))).toBe(
+      true
+    );
+  });
+
+  it('emits a TODO for a variable key', () => {
+    const { todos } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C({ key }) {',
+        '  const { t } = useTranslation();',
+        '  return <p>{t(key)}</p>;',
+        '}',
+      ].join('\n')
+    );
+    expect(todos.some((td) => /dynamic translation key/.test(td.reason))).toBe(
+      true
+    );
+  });
+});
+
+describe('adversary m3: provider spread / unused i18n', () => {
+  it('skips a provider with a spread attribute', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { I18nextProvider } from 'react-i18next';",
+        'export function P({ children, ...rest }) {',
+        '  return <I18nextProvider {...rest} i18n={i18n}>{children}</I18nextProvider>;',
+        '}',
+      ].join('\n')
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.length).toBeGreaterThan(0);
+  });
+
+  it('skips a provider with a prop besides i18n', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { I18nextProvider } from 'react-i18next';",
+        'export function P({ children }) {',
+        '  return <I18nextProvider i18n={i18n} defaultNS="common">{children}</I18nextProvider>;',
+        '}',
+      ].join('\n')
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.length).toBeGreaterThan(0);
+  });
+
+  it('does not emit useSetLocale for an unreferenced i18n', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        '  const { t, i18n } = useTranslation();',
+        "  return <p>{t('x')}</p>;",
+        '}',
+      ].join('\n')
+    );
+    expect(skipReasons).toEqual([]);
+    expect(code).toContain('useTranslations()');
+    expect(code).not.toContain('useSetLocale');
+  });
+});
+
 describe('provider swap', () => {
   it('rewrites <I18nextProvider> to <GTProvider> by default', () => {
     const { code } = transform(
