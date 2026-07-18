@@ -7,8 +7,6 @@ import {
   parse as parseIcu,
   type MessageFormatElement,
 } from '@formatjs/icu-messageformat-parser';
-import { nextIntlAdapter } from './adapters/nextIntl.js';
-import type { SourceAdapter } from './adapters/types.js';
 import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
 
 const traverse = traverseModule.default || traverseModule;
@@ -20,15 +18,6 @@ const generate = generateModule.default || generateModule;
 // on the adapter, read through ctx.adapter below.
 const GT_MODULE = 'gt-next';
 const GT_SERVER_MODULE = 'gt-next/server';
-
-/**
- * The source adapter for this context, defaulting to next-intl. Unit tests
- * build a MigrationContext by hand without an adapter, so the fallback keeps
- * every existing next-intl transform behaving exactly as before.
- */
-function adapterFor(ctx: MigrationContext): SourceAdapter {
-  return ctx.adapter ?? nextIntlAdapter;
-}
 
 type TransformOptions = {
   /**
@@ -57,7 +46,7 @@ export function transformSourceFile(
   ctx: MigrationContext,
   options: TransformOptions = {}
 ): SourceResult {
-  const adapter = adapterFor(ctx);
+  const adapter = ctx.adapter;
   const none: SourceResult = {
     code: null,
     todos: [],
@@ -713,7 +702,7 @@ function analyzeRichCall(
     keyArg.value
   );
   if (!message) return `t.rich('${keyArg.value}') key not found in catalog`;
-  const classified = adapterFor(ctx).classifyMessage(message);
+  const classified = ctx.adapter.classifyMessage(message);
   if (classified.kind !== 'tags' || classified.argNames.length > 0) {
     return manual;
   }

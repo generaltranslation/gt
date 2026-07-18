@@ -5,6 +5,7 @@ import type {
   MigrationContext,
   RoutingInfo,
 } from '../types.js';
+import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
 const routing: RoutingInfo = {
   locales: ['en', 'es'],
@@ -30,6 +31,7 @@ function makeContext(skipped: string[] = []): MigrationContext {
     todos: [],
     skippedFiles: new Map(skipped.map((file) => [file, ['reason']])),
     stats: {},
+    adapter: nextIntlAdapter,
   };
 }
 

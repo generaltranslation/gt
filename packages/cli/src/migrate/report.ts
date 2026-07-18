@@ -1,5 +1,4 @@
 import path from 'node:path';
-import { nextIntlAdapter } from './adapters/nextIntl.js';
 import type { MigrationContext } from './types.js';
 
 /**
@@ -12,7 +11,7 @@ export function buildReport(
   dryRun: boolean,
   gtNextMissing: boolean = false
 ): string {
-  const adapter = ctx.adapter ?? nextIntlAdapter;
+  const adapter = ctx.adapter;
   const lines: string[] = [];
   const relative = (file: string) =>
     path.isAbsolute(file) ? path.relative(ctx.cwd, file) : file;

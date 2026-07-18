@@ -56,10 +56,11 @@ export type MigrationContext = {
   /** true when --inline was passed; gates transforms that embed
    *  source-language text (and so require re-translation) */
   inlineMode?: boolean;
-  /** the source-library adapter driving this migration. When omitted (unit
-   *  tests that build a context by hand), transforms fall back to the next-intl
-   *  adapter, so existing next-intl behavior is unchanged. */
-  adapter?: SourceAdapter;
+  /** the source-library adapter driving this migration. Required: the driver
+   *  resolves it from the detected source library (or --from), and every
+   *  transform reads the library-specific tables and strings from it. Unit
+   *  tests that build a context by hand pass nextIntlAdapter explicitly. */
+  adapter: SourceAdapter;
 };
 
 export type SourceResult = {

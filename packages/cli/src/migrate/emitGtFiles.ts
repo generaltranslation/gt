@@ -2,7 +2,6 @@ import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import { lt, minVersion, valid } from 'semver';
-import { nextIntlAdapter } from './adapters/nextIntl.js';
 import type { FileEdit, MigrationContext } from './types.js';
 
 /** next/root-params (and its `locale()` export) landed in Next 15.5.0. */
@@ -23,7 +22,7 @@ const NEXT_ROOT_PARAMS_MIN_GATE = `${NEXT_ROOT_PARAMS_MIN_VERSION}-0`;
  * next-intl teardown only happens once no skipped files remain.
  */
 export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
-  const adapter = ctx.adapter ?? nextIntlAdapter;
+  const adapter = ctx.adapter;
   const edits: FileEdit[] = [];
   const fullyMigrated = ctx.skippedFiles.size === 0;
 

@@ -2,7 +2,6 @@ import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
-import { nextIntlAdapter } from './adapters/nextIntl.js';
 import { ensureNamedImports, removeUnusedNamedImports } from './importUtils.js';
 import { transformSourceFile } from './transformSource.js';
 import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
@@ -134,7 +133,7 @@ export function transformLayoutFile(
   code: string,
   ctx: MigrationContext
 ): SourceResult {
-  const adapter = ctx.adapter ?? nextIntlAdapter;
+  const adapter = ctx.adapter;
   const retainProvider = ctx.skippedFiles.size > 0;
   const base = transformSourceFile(file, code, ctx, {
     retainNextIntlProvider: retainProvider,
