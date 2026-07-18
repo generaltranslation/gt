@@ -668,6 +668,72 @@ describe('handleMigrateCommand integration', () => {
     expect(read(cwd, 'src/app/page.tsx')).toContain('react-i18next');
   });
 
+  it('migrates a hoisted monorepo leaf where next-intl is installed at the workspace root', async () => {
+    // Monorepo/hoisted shape: next-intl is declared and installed at the
+    // workspace root node_modules, NOT in the leaf app's own package.json. The
+    // leaf's page.tsx imports next-intl, so it resolves the hoisted dep at
+    // build time. --from used to bypass detection and migrate this correctly;
+    // the presence check must recognise the hoisted dep (node_modules chain)
+    // instead of hard-blocking the leaf.
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-monorepo-'));
+    tmpDirs.push(root);
+    const web = path.join(root, 'apps', 'web');
+    const files: Record<string, string> = {
+      'package.json': JSON.stringify({
+        name: 'root',
+        private: true,
+        dependencies: { 'next-intl': '^4.1.0' },
+      }),
+      // next-intl hoisted into the workspace-root node_modules. The exports map
+      // mirrors real next-intl (ESM, no ./package.json export), which defeats
+      // require.resolve — so a directory probe must find it.
+      'node_modules/next-intl/package.json': JSON.stringify({
+        name: 'next-intl',
+        version: '4.1.0',
+        type: 'module',
+        exports: { '.': { import: './index.js' } },
+      }),
+      'apps/web/package.json': JSON.stringify({
+        name: 'web',
+        dependencies: { next: '15.5.0', react: '19.0.0' },
+      }),
+      'apps/web/messages/en.json': JSON.stringify({ Home: { title: 'Hi' } }),
+      'apps/web/messages/es.json': JSON.stringify({ Home: { title: 'Hola' } }),
+      'apps/web/src/app/page.tsx': [
+        "import { useTranslations } from 'next-intl';",
+        'export default function Home() {',
+        "  const t = useTranslations('Home');",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n'),
+    };
+    for (const [rel, content] of Object.entries(files)) {
+      const abs = path.join(root, rel);
+      fs.mkdirSync(path.dirname(abs), { recursive: true });
+      fs.writeFileSync(abs, content);
+    }
+    // library === 'base' mirrors what determineLibrary returns for the leaf
+    // (its own package.json declares no i18n lib); --from is the override.
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+        from: 'next-intl',
+      },
+      'base',
+      web
+    );
+    // presence check passed and the leaf migrated: page swapped to gt-next and
+    // scaffolding written under the leaf.
+    expect(fs.existsSync(path.join(web, 'gt.config.json'))).toBe(true);
+    const page = read(web, 'src/app/page.tsx');
+    expect(page).toMatch(/from ["']gt-next["']/);
+    expect(page).not.toContain('next-intl');
+  });
+
   it('warns instead of exiting 0 when a run matches nothing', async () => {
     // next-intl IS a dependency (so the presence check passes and no --from is
     // needed), a catalog is discoverable, but no source file imports next-intl.

@@ -56,14 +56,15 @@ export async function handleMigrateCommand(
 
   // Auto-detect only returns a library that determineLibrary found in
   // package.json, so the source is guaranteed present. --from bypasses that, so
-  // confirm the requested library is actually a dependency here; otherwise the
-  // run would "succeed" (write scaffolding) while leaving every source file
-  // untouched, since no import matches.
+  // confirm the requested library is actually reachable from cwd (declared here
+  // or hoisted into a shared node_modules); otherwise the run would "succeed"
+  // (write scaffolding) while leaving every source file untouched, since no
+  // import matches.
   if (options.from && !isSourceLibraryInstalled(cwd, adapter)) {
     logErrorAndExit(
-      `--from ${requestedFrom} was passed, but no ${adapter.displayName} ` +
-        'dependency is present in this project. Install it first, or omit ' +
-        '--from to auto-detect your i18n library from package.json.'
+      `--from ${requestedFrom} was passed, but ${adapter.displayName} was not ` +
+        'found in this project (checked package.json and node_modules). Install ' +
+        'it first, or correct the --from value, then re-run.'
     );
   }
 
@@ -475,16 +476,32 @@ function collect(
 }
 
 /**
- * True when the adapter's source library is a declared dependency of the
- * project at `cwd`. Reads package.json the way determineLibrary does (all
- * dependency sections), so --from restores the presence guarantee auto-detect
- * gives. Checks the adapter id and its teardown package keys, which are the npm
- * names that define the library.
+ * True when the adapter's source library is reachable from `cwd`: either
+ * declared in cwd/package.json or physically installed in the node_modules
+ * chain above cwd. --from restores the presence guarantee auto-detect gives,
+ * but a hoisted monorepo leaf can use a library that is declared only in a
+ * parent package.json and hoisted into a shared node_modules, so a
+ * cwd/package.json-only check would wrongly reject it. The adapter id and its
+ * teardown package keys (the npm names that define the library) are both
+ * checked. A truly-absent library matches neither, so a typo'd --from still
+ * exits 1.
  */
 function isSourceLibraryInstalled(
   cwd: string,
   adapter: SourceAdapter
 ): boolean {
+  const candidates = new Set([adapter.id, ...adapter.teardownPackages]);
+  return (
+    isDeclaredInPackageJson(cwd, candidates) ||
+    resolvesFromNodeModules(cwd, candidates)
+  );
+}
+
+/**
+ * True when cwd/package.json declares any of `names` in a dependency section
+ * (the same sections determineLibrary reads). Missing/unparseable => false.
+ */
+function isDeclaredInPackageJson(cwd: string, names: Set<string>): boolean {
   const packageJsonPath = path.join(cwd, 'package.json');
   if (!fs.existsSync(packageJsonPath)) return false;
   let pkg: Record<string, Record<string, string> | undefined>;
@@ -499,8 +516,33 @@ function isSourceLibraryInstalled(
     ...pkg.peerDependencies,
     ...pkg.optionalDependencies,
   };
-  const candidates = new Set([adapter.id, ...adapter.teardownPackages]);
-  return [...candidates].some((name) => name in deps);
+  return [...names].some((name) => name in deps);
+}
+
+/**
+ * True when any of `names` is physically installed in the node_modules chain
+ * reachable from `cwd` (cwd/node_modules, then each parent up to the filesystem
+ * root) — exactly the directories Node's resolver searches. A hoisted monorepo
+ * leaf resolves a dependency declared only in a parent this way.
+ *
+ * A directory probe is used rather than require.resolve on purpose: modern ESM
+ * packages (next-intl among them) restrict their exports map, so both
+ * `require.resolve('<lib>')` and `require.resolve('<lib>/package.json')` throw
+ * ERR_PACKAGE_PATH_NOT_EXPORTED for an installed package, which would
+ * reintroduce the false-negative this check exists to prevent.
+ */
+function resolvesFromNodeModules(cwd: string, names: Set<string>): boolean {
+  let dir = path.resolve(cwd);
+  for (;;) {
+    for (const name of names) {
+      if (fs.existsSync(path.join(dir, 'node_modules', name, 'package.json'))) {
+        return true;
+      }
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return false;
+    dir = parent;
+  }
 }
 
 function isEsmNextConfig(configFile: string, cwd: string): boolean {
