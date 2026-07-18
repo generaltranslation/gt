@@ -1,5 +1,101 @@
 import { describe, it, expect } from 'vitest';
-import { _formatListToParts } from '../format';
+import { _formatListToParts, _formatMessageICU } from '../format';
+
+describe('_formatMessageICU', () => {
+  it.each([
+    ['plain text', {}, 'plain text'],
+    ['Hello {name}', { name: 'Ada' }, 'Hello Ada'],
+    ['Zero: {value}', { value: 0 }, 'Zero: 0'],
+    ['False: {value}', { value: false }, 'False: '],
+    ['Null: {value}', { value: null }, 'Null: '],
+    [
+      '{kind, select, constructor {ctor} __proto__ {proto} other {fallback}}',
+      { kind: 'constructor' },
+      'ctor',
+    ],
+    [
+      '{kind, select, constructor {ctor} __proto__ {proto} other {fallback}}',
+      { kind: '__proto__' },
+      'proto',
+    ],
+    [
+      '{kind, select, constructor {ctor} __proto__ {proto} other {fallback}}',
+      { kind: 'missing' },
+      'fallback',
+    ],
+    [
+      '{count, plural, =0 {none} one {# item} other {# items}}',
+      { count: 0 },
+      'none',
+    ],
+    [
+      '{count, plural, =0 {none} one {# item} other {# items}}',
+      { count: 1 },
+      '1 item',
+    ],
+    [
+      '{count, plural, =0 {none} one {# item} other {# items}}',
+      { count: 12 },
+      '12 items',
+    ],
+    [
+      '{count, plural, offset:1 =0 {none} one {one guest} other {# guests}}',
+      { count: 5 },
+      '4 guests',
+    ],
+    [
+      '{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}',
+      { place: 22 },
+      '22nd',
+    ],
+    [
+      '{outer, select, yes {{count, plural, one {one} other {#}}} other {no}}',
+      { outer: 'yes', count: 4 },
+      '4',
+    ],
+    ["This '{isn''t}' ICU", {}, "This {isn't} ICU"],
+  ])(
+    'formats %j through the public format boundary',
+    (message, variables, expected) => {
+      expect(_formatMessageICU(message, 'en-US', variables)).toBe(expected);
+    }
+  );
+
+  it('passes number skeletons through the package boundary', () => {
+    expect(
+      _formatMessageICU('{value, number, ::currency/USD .00}', 'en-US', {
+        value: 1234.5,
+      })
+    ).toBe('$1,234.50');
+  });
+
+  it('passes date skeletons through the package boundary', () => {
+    const value = new Date('2020-05-06T14:03:02Z');
+    expect(
+      _formatMessageICU('{value, date, ::yyyyMMMdd}', 'en-US', { value })
+    ).toBe(
+      new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+      }).format(value)
+    );
+  });
+
+  it('preserves locale arrays through the package boundary', () => {
+    expect(
+      _formatMessageICU('{value, number}', ['de-DE', 'en-US'], {
+        value: 1234.5,
+      })
+    ).toBe(new Intl.NumberFormat('de-DE').format(1234.5));
+  });
+
+  it('still surfaces missing-variable failures through the package boundary', () => {
+    expect(() => _formatMessageICU('Hello {name}', 'en-US')).toThrow(
+      'variable "name" was not provided'
+    );
+  });
+});
 
 describe('_formatListToParts', () => {
   it('should format empty array', () => {

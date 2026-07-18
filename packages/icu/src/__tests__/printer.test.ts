@@ -7,6 +7,71 @@
 import { describe, expect, it } from 'vitest';
 import { parse, printAST } from '../index';
 
+const GENERATED_ROUND_TRIP_MESSAGES = [
+  ...Array.from(
+    { length: 64 },
+    (_, index) =>
+      `{choice, select, case${index} {Result ${index}: {name}} other {Fallback ${index}}}`
+  ),
+  ...Array.from(
+    { length: 32 },
+    (_, index) =>
+      `{count, plural, offset:${index} =${index} {Exact ${index}} one {# item for {name}} other {# items for {name}}}`
+  ),
+  ...Array.from(
+    { length: 32 },
+    (_, index) =>
+      `{place, selectordinal, =${index} {Exact ${index}} one {#st} two {#nd} few {#rd} other {#th}}`
+  ),
+  ...Array.from({ length: 24 }, (_, depth) => {
+    let message = 'Hello {name}';
+    for (let index = 0; index <= depth; index += 1) {
+      message = `<tag${index}>${message}</tag${index}>`;
+    }
+    return message;
+  }),
+  ...[
+    'percent',
+    '%',
+    '%x100',
+    'currency/USD',
+    'currency/EUR unit-width-narrow',
+    'group-off',
+    'group-auto',
+    'group-min2',
+    'group-on-aligned',
+    'precision-integer',
+    'measure-unit/length-meter unit-width-full-name',
+    'compact-short',
+    'compact-long',
+    'scientific',
+    'engineering',
+    'notation-simple',
+    'scale/0.01',
+    'integer-width/*000',
+    'rounding-mode-floor',
+    '.',
+    '.0',
+    '.00',
+    '.##',
+    '.00##',
+    '.000*',
+    '@@',
+    '@@#',
+    'sign-auto',
+    'sign-always',
+    'sign-except-zero',
+    'sign-never',
+    'sign-accounting currency/USD',
+    'E0',
+    'EE+!00',
+  ].map((skeleton) => `{value, number, ::${skeleton}}`),
+  ...Array.from(
+    { length: 32 },
+    (_, index) => `Literal ${index} '{value${index}}' and {argument${index}}`
+  ),
+];
+
 describe('printAST', () => {
   it.each([
     ['', ''],
@@ -50,4 +115,14 @@ describe('printAST', () => {
   ])('produces reparseable output for %j', (message) => {
     expect(() => parse(printAST(parse(message)))).not.toThrow();
   });
+
+  it.each(GENERATED_ROUND_TRIP_MESSAGES)(
+    'preserves the AST through print and reparse for %j',
+    (message) => {
+      const original = parse(message);
+      const reparsed = parse(printAST(original));
+
+      expect(reparsed).toEqual(original);
+    }
+  );
 });

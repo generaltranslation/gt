@@ -86,14 +86,12 @@ export function parseNumberSkeletonOptions(
         result.useGrouping = false;
         continue;
       case 'group-auto':
-        result.useGrouping = 'auto';
-        continue;
       case 'group-min2':
-        result.useGrouping = 'min2';
-        continue;
       case 'group-on-aligned':
       case ',!':
-        result.useGrouping = 'always';
+        // FormatJS 2.11.x recognizes these stems but leaves the native
+        // default in place. This matters for four-digit values: modern Intl
+        // runtimes interpret `min2` differently from FormatJS.
         continue;
       case 'precision-integer':
       case '.':

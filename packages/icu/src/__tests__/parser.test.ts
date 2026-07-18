@@ -234,7 +234,10 @@ describe('parse', () => {
     ['{name, unknown}', 'INVALID_ARGUMENT_TYPE'],
     ['{name, select, }', 'EXPECT_ARGUMENT_SELECTOR'],
     ['{count, plural, }', 'EXPECT_ARGUMENT_SELECTOR'],
-    ['{x, select, a {A} a {B} other {C}}', 'DUPLICATE_ARGUMENT_SELECTOR'],
+    [
+      '{x, select, a {A} a {B} other {C}}',
+      'DUPLICATE_SELECT_ARGUMENT_SELECTOR',
+    ],
     ['<b>text</i>', 'UNMATCHED_CLOSING_TAG'],
     ['<b>text', 'UNCLOSED_TAG'],
     ['{n, number, ::}', 'Number skeleton cannot be empty'],

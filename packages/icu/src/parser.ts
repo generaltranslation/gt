@@ -358,7 +358,13 @@ class IcuParser {
       if (!selector && this.consume('=')) {
         selector = `=${this.readInteger('EXPECT_PLURAL_ARGUMENT_SELECTOR')}`;
       }
-      if (seen.has(selector)) this.fail('DUPLICATE_ARGUMENT_SELECTOR');
+      if (seen.has(selector)) {
+        this.fail(
+          argumentType === 'select'
+            ? 'DUPLICATE_SELECT_ARGUMENT_SELECTOR'
+            : 'DUPLICATE_PLURAL_ARGUMENT_SELECTOR'
+        );
+      }
       seen.add(selector);
 
       this.skipSpace();
