@@ -102,8 +102,9 @@ export function buildReport(
     lines.push('');
     lines.push(
       `${adapter.displayName} is still installed and ${adapter.providerName ?? 'its provider'} still renders ` +
-        '(nested inside GTProvider) so these keep working. Re-run `gt migrate` ' +
-        'after converting them to finish the teardown.'
+        '(nested inside GTProvider) so these keep working. Re-run ' +
+        `\`gt migrate --from ${adapter.id}\` after converting them to finish ` +
+        'the teardown (gt-next is now installed, so auto-detect would pick it).'
     );
     lines.push('');
     for (const [file, reasons] of ctx.skippedFiles) {
