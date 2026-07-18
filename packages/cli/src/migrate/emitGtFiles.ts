@@ -125,7 +125,7 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
       } catch (error) {
         ctx.todos.push({
           file: packageJsonPath,
-          reason: `could not be parsed (${String(error)}) — remove the next-intl dependency by hand`,
+          reason: `could not be parsed (${String(error)}); remove the ${adapter.displayName} dependency by hand`,
         });
       }
       if (pkg) {
@@ -162,7 +162,7 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
       if (importer) {
         ctx.todos.push({
           file: configFile,
-          reason: `kept because ${path.relative(ctx.cwd, importer)} still imports it — migrate that reference off next-intl, then delete this file`,
+          reason: `kept because ${path.relative(ctx.cwd, importer)} still imports it; migrate that reference off ${adapter.displayName}, then delete this file`,
         });
         continue;
       }

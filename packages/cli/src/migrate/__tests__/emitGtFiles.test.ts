@@ -149,6 +149,42 @@ describe('emitGtFiles', () => {
     ).toBe(true);
   });
 
+  it('threads the adapter displayName through teardown todos (not a hardcoded next-intl)', () => {
+    // emitGtFiles is a shared file: its user-facing prose must name the source
+    // library via adapter.displayName so a future adapter reads correctly.
+    const fakeAdapter = { ...nextIntlAdapter, displayName: 'fake-i18n' };
+
+    // package.json-unparseable teardown todo (emitGtFiles.ts ~128)
+    const parseCtx = makeProject({
+      'package.json': '{ not json',
+      'messages/en.json': '{}',
+    });
+    parseCtx.adapter = fakeAdapter;
+    emitGtFiles(parseCtx);
+    expect(
+      parseCtx.todos.some((todo) =>
+        todo.reason.includes('remove the fake-i18n dependency by hand')
+      )
+    ).toBe(true);
+
+    // kept-importer teardown todo (emitGtFiles.ts ~165)
+    const importerCtx = makeProject({
+      'package.json': basePackageJson,
+      'src/i18n/routing.ts': '// routing',
+      'src/i18n/request.ts': '// request',
+      'src/lib/paths.ts': "import { routing } from '@/i18n/routing';",
+      'messages/en.json': '{}',
+    });
+    importerCtx.adapter = fakeAdapter;
+    importerCtx.sourceFiles = [path.join(importerCtx.cwd, 'src/lib/paths.ts')];
+    emitGtFiles(importerCtx);
+    expect(
+      importerCtx.todos.some((todo) =>
+        todo.reason.includes('migrate that reference off fake-i18n')
+      )
+    ).toBe(true);
+  });
+
   it('keeps a routing file that a source file still imports', () => {
     const ctx = makeProject({
       'package.json': basePackageJson,
