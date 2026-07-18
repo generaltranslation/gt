@@ -28,8 +28,9 @@ usually the cause.
 If the project uses local translation files (`files.gt.output` set to a `_gt` folder):
 
 - Run `npx gt translate`. Files under `public/_gt/` (gt-next) or `src/_gt/` (Vite) only
-  exist after this runs, and the folder is gitignored, so a fresh clone has none.
-- Make sure the build runs it: `"build": "npx gt translate && next build"`.
+  exist after this runs, so if the folder is gitignored a fresh clone has none.
+- If the `_gt` folder is committed, the files are already present. If it is gitignored,
+  make sure the build regenerates them: `"build": "npx gt translate && next build"`.
 
 ## 4. Does the loader crash or return nothing?
 
@@ -65,7 +66,7 @@ is registered (via the `dictionary` option in `withGTConfig` for gt-next, or the
 - Development on-demand translation needs a dev key. gt-next reads `GT_DEV_API_KEY` (or
   `NEXT_PUBLIC_GT_DEV_API_KEY`) and `GT_PROJECT_ID`. A Vite gt-react app reads
   `VITE_GT_DEV_API_KEY` and `VITE_GT_PROJECT_ID`.
-- A production key (`gtx-api-`) used as a dev key, or a dev key present with
+- A production key (typically `gtx-api-`) used as a dev key, or a dev key present with
   `NODE_ENV=production`, causes errors. Match the key type to the environment.
 
 ## 7. The language will not switch

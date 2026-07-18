@@ -91,7 +91,7 @@ Import surface, checked against this package's entry points at the time of writi
 **From `gt-next`** (works in client and synchronous server components):
 
 - Components: `T`, `Var`, `Num`, `Currency`, `DateTime`, `RelativeTime`, `Branch`,
-  `Plural`, `LocaleSelector`, `RegionSelector`.
+  `Plural`, `LocaleSelector`, `RegionSelector`, `GTProvider`.
 - Hooks: `useGT` (translate plain strings), `useTranslations` (dictionary lookup),
   `useLocale`, `useLocales`, `useDefaultLocale`, `useRegion`.
 - Client-only hook: `useSetLocale` (changes the active locale). It is not exported from
@@ -163,7 +163,7 @@ API keys enable on-demand translation in development and let the CLI translate a
 time. They are read from the environment, never passed as plugin options.
 
 - `GT_PROJECT_ID` (or `NEXT_PUBLIC_GT_PROJECT_ID`)
-- `GT_API_KEY` for production (starts with `gtx-api-`, CI/CD only)
+- `GT_API_KEY` for production (typically starts with `gtx-api-`, CI/CD only)
 - `GT_DEV_API_KEY` (or `NEXT_PUBLIC_GT_DEV_API_KEY`) for development (starts with `gtx-dev-`)
 
 Rules the build enforces: never expose `GT_API_KEY` to the browser or commit it. A dev
@@ -188,7 +188,16 @@ export default async function loadTranslations(locale: string) {
 }
 ```
 
-The generated folder is not source: add `public/_gt/` to `.gitignore`.
+`public/_gt/` holds generated output, not source. By default translations load from the
+CDN at runtime; these local files are opt-in and remove that CDN dependency. Two supported
+workflows:
+
+- **Commit `public/_gt/`** (what this repo's own example apps do) for a zero-config deploy:
+  the files are already present, so no build-time key is needed.
+- **Gitignore `public/_gt/`** and run `gt translate` in CI/build with a production
+  `GT_API_KEY` so the files are regenerated before `next build`.
+
+Pick one and be consistent. Either way, do not hand-edit the generated files.
 
 ## Commands
 
@@ -208,10 +217,12 @@ There is no `gt status` command in this version.
 
 ## Common failure modes
 
-- **Translations do not appear, or the build crashes on a fresh clone.** `loadTranslations`
-  imports files that only exist after `npx gt translate` has run, and `public/_gt/` is
-  gitignored. Wrap the dynamic import in `try/catch` returning `{}` (as above) and run
-  `gt translate` before `next build`.
+- **Translations do not appear, or the build crashes on a fresh clone.** This bites in the
+  gitignore workflow: `loadTranslations` imports files that only exist after `npx gt translate`
+  has run, so a fresh clone that ignores `public/_gt/` has none. Either commit `public/_gt/`,
+  or keep it ignored and run `gt translate` before `next build`. In both cases wrap the
+  dynamic import in `try/catch` returning `{}` (as above) so a missing file falls back to
+  the source language.
 - **`loadTranslations` file exists but nothing loads, dev throws.** The file must expose
   the loader as its default export or as a named `loadTranslations` export. If neither is
   present, development throws.

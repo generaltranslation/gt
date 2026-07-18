@@ -58,7 +58,12 @@ Import surface, checked against this package's entry points at the time of writi
   `useLocale`, `useSetLocale`, `useLocales`, `useDefaultLocale`, `useRegion`.
 - Setup: `initializeGT` (server-rendered React), `initializeGTSPA` (single-page apps),
   `getTranslationsSnapshot`, `parseLocale`.
-- Strings outside components: `t` (a plain function), for example in a nav array.
+- Plain strings inside a component: `t` (a plain function) for values like an `alt` or
+  `placeholder`. See `examples/vite-create-app/src/App.tsx`, which calls `t` inside the
+  component for an image `alt`. Call `t` during render, not at module scope: in
+  server-rendered React, module-level `t()` throws in development and falls back to the
+  source string in production (it is only permitted at module scope in a single-page app,
+  and even then it resolves once at import time).
 
 **From `gt-react/macros`**: importing this module installs a global `` t`` `` template tag:
 
@@ -106,11 +111,11 @@ API keys enable on-demand translation in development and let the CLI translate a
 time.
 
 - Client-side dev (Vite): `VITE_GT_PROJECT_ID`, `VITE_GT_DEV_API_KEY`.
-- Production build: `GT_PROJECT_ID`, `GT_API_KEY` (starts with `gtx-api-`, CI/CD only).
+- Production build: `GT_PROJECT_ID`, `GT_API_KEY` (CI/CD only).
 
-Dev keys start with `gtx-dev-`, production keys with `gtx-api-`. Never expose a production
-`GT_API_KEY` to the browser or commit it. Get keys at https://dash.generaltranslation.com
-or by running `npx gt auth`.
+Dev keys start with `gtx-dev-`; production keys typically start with `gtx-api-`. Never
+expose a production `GT_API_KEY` to the browser or commit it. Get keys at
+https://dash.generaltranslation.com or by running `npx gt auth`.
 
 ## Local translation files
 
@@ -129,7 +134,16 @@ export default async function loadTranslations(locale: string) {
 }
 ```
 
-The generated folder is not source: add `src/_gt/` to `.gitignore`.
+`src/_gt/` holds generated output, not source. By default translations load from the CDN
+at runtime; these local files are opt-in and remove that CDN dependency. Two supported
+workflows:
+
+- **Commit `src/_gt/`** (what this repo's own example apps do) for a zero-config deploy:
+  the files are already present, so no build-time key is needed.
+- **Gitignore `src/_gt/`** and run `gt translate` in CI/build with a production `GT_API_KEY`
+  so the files are regenerated before the build.
+
+Pick one and be consistent. Either way, do not hand-edit the generated files.
 
 ## Commands
 
@@ -149,10 +163,12 @@ There is no `gt status` command in this version.
 
 ## Common failure modes
 
-- **Translations do not appear, or the build crashes on a fresh clone.** `loadTranslations`
-  imports files that only exist after `npx gt translate` has run, and `src/_gt/` is
-  gitignored. Wrap the dynamic import in `try/catch` returning `{}` (as above) and run
-  `gt translate` before the build.
+- **Translations do not appear, or the build crashes on a fresh clone.** This bites in the
+  gitignore workflow: `loadTranslations` imports files that only exist after `npx gt translate`
+  has run, so a fresh clone that ignores `src/_gt/` has none. Either commit `src/_gt/`, or
+  keep it ignored and run `gt translate` before the build. In both cases wrap the dynamic
+  import in `try/catch` returning `{}` (as above) so a missing file falls back to the
+  source language.
 - **Wrong import path in the loader.** The dynamic import must match the output directory.
   For `src/_gt` use `` import(`./_gt/${locale}.json`) ``, not a `../translations/` path.
 - **`Dictionary entry <id> cannot be found`.** The id passed to `useTranslations` is not

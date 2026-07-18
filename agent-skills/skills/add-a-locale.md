@@ -38,9 +38,10 @@ language.
    keys set produces real translations; without them you get source-language fallbacks you
    can fill in yourself (see `gt generate`).
 
-3. Confirm the new file exists at the output path and is committed or generated in CI. The
-   `_gt` output folder is normally gitignored, so make sure `gt translate` runs in the
-   build (`"build": "npx gt translate && next build"`).
+3. Make sure the new locale's file is available at deploy time. The `_gt` output folder can
+   be handled two ways: commit it (this repo's own example apps do) so the file ships with
+   the repo, or gitignore it and make sure `gt translate` runs in the build
+   (`"build": "npx gt translate && next build"`) to regenerate it.
 
 4. The language switcher (`<LocaleSelector />`) reads locales from config, so the new
    language appears automatically. No component changes are needed.

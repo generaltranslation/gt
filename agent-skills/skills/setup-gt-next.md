@@ -75,9 +75,14 @@ Do every step. Skipping one is the usual reason nothing translates.
    ```
 
    The `try/catch` matters: the files under `public/_gt/` do not exist until `gt translate`
-   runs, and that folder is gitignored, so a bare import crashes on a fresh clone.
+   runs, so a bare import crashes before that (for example on a fresh clone when
+   `public/_gt/` is gitignored).
 
-5. Add `public/_gt/` to `.gitignore`.
+5. Decide how `public/_gt/` reaches production. It holds generated output, not source, and
+   by default translations load from the CDN at runtime, so these local files are opt-in.
+   Two supported options: commit `public/_gt/` (this repo's own example apps do) for a
+   zero-config deploy, or add `public/_gt/` to `.gitignore` and let the build regenerate it
+   (step 9 wires `gt translate` into the build script).
 
 6. Wrap the app with `GTProvider` at the root layout:
 
