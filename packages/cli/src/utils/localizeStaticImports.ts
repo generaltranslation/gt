@@ -19,17 +19,22 @@ const { isMatch } = micromatch;
 export type StaticImportSettings = StaticLocalizationSettings;
 
 /**
- * Localizes static imports in content files.
- * Currently only supported for md and mdx files. (/docs/ -> /[locale]/docs/)
+ * Localizes static imports in content files (md and mdx).
  * @param settings - The settings object containing the project configuration.
  * @returns void
  *
- * @TODO This is an experimental feature, and only works in very specific cases. This needs to be improved before
- * it can be enabled by default.
+ * @TODO This feature is still gated behind the experimentalLocalizeStaticImports
+ * flag while the graduation checklist below is completed and validated.
  *
- * Before this becomes a non-experimental feature, we need to:
- * - Support more file types
- * - Support more complex paths
+ * Graduation checklist:
+ * - Support more file types: ESM `import` statements only exist in md/mdx here,
+ *   so md/mdx is the complete relevant set. HTML/txt/json/yaml have no import
+ *   syntax to localize; "more file types" does not apply to imports.
+ * - Support more complex paths: default/target-locale insertion and swapping,
+ *   nested paths, mixed quote styles, explicit rewrites (e.g. Docusaurus
+ *   @site/docs) and target-file existence checks are covered by the fixture
+ *   corpus in __tests__. Relative import specifiers are deliberately left
+ *   untouched. Import specifiers carry no query strings or anchors.
  */
 export default async function localizeStaticImports(
   settings: StaticImportSettings,

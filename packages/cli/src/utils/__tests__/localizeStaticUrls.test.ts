@@ -2853,4 +2853,237 @@ describe('transformUrlPath', () => {
       expect(written).toContain('/docs/en/images/x.png');
     });
   });
+
+  describe('complex path handling (md/mdx)', () => {
+    const run = async (
+      fileContent: string,
+      options: Record<string, unknown> = { docsUrlPattern: '/docs/[locale]' }
+    ): Promise<string> => {
+      let written = '';
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_path, content) => {
+        written = content as string;
+        return Promise.resolve();
+      });
+      vi.mocked(createFileMapping).mockReturnValue({
+        ja: { 'test.mdx': '/path/test.mdx' },
+      });
+      await localizeStaticUrls(
+        createSettings({
+          files: {
+            placeholderPaths: { docs: '/docs' },
+            resolvedPaths: {},
+            transformPaths: {},
+          },
+          defaultLocale: 'en',
+          locales: ['en', 'ja'],
+          options,
+        })
+      );
+      return written;
+    };
+
+    it('preserves a query string on a markdown link', async () => {
+      const written = await run(`[API](/docs/en/api?tab=auth)`);
+      expect(written).toContain('/docs/ja/api?tab=auth');
+      expect(written).not.toContain('/docs/en/api');
+    });
+
+    it('preserves an anchor on a markdown link', async () => {
+      const written = await run(`[API](/docs/en/api#config)`);
+      expect(written).toContain('/docs/ja/api#config');
+      expect(written).not.toContain('/docs/en/api');
+    });
+
+    it('preserves a query + anchor combination on a markdown link', async () => {
+      const written = await run(`[API](/docs/en/api?tab=auth#config)`);
+      expect(written).toContain('/docs/ja/api?tab=auth#config');
+      expect(written).not.toContain('/docs/en/api');
+    });
+
+    it('preserves a trailing slash', async () => {
+      const written = await run(`[Setup](/docs/en/setup/)`);
+      expect(written).toContain('/docs/ja/setup/');
+    });
+
+    it('preserves a colon inside a query string', async () => {
+      const written = await run(`[Guide](/docs/en/guide?time=12:00)`);
+      expect(written).toContain('/docs/ja/guide?time=12:00');
+    });
+
+    it('leaves relative markdown links untouched while localizing absolute ones', async () => {
+      const written = await run(
+        `[Abs](/docs/en/guide) [Here](./neighbor) [Up](../other/page)`
+      );
+      expect(written).toContain('/docs/ja/guide');
+      expect(written).toContain('./neighbor');
+      expect(written).toContain('../other/page');
+      expect(written).not.toContain('/docs/ja/neighbor');
+    });
+
+    it('preserves a query + anchor combination on an href attribute', async () => {
+      const written = await run(`<a href="/docs/en/x?y=1#z">X</a>`);
+      expect(written).toContain('/docs/ja/x?y=1#z');
+      expect(written).not.toContain('/docs/en/x');
+    });
+  });
+
+  describe('html file support', () => {
+    const runHtml = async (
+      fileContent: string,
+      options: Record<string, unknown> = { docsUrlPattern: '/docs/[locale]' }
+    ): Promise<string> => {
+      let written = '';
+      let wrote = false;
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+      vi.mocked(fs.promises.writeFile).mockImplementation((_path, content) => {
+        written = content as string;
+        wrote = true;
+        return Promise.resolve();
+      });
+      vi.mocked(createFileMapping).mockReturnValue({
+        ja: { 'test.html': '/path/test.html' },
+      });
+      await localizeStaticUrls(
+        createSettings({
+          files: {
+            placeholderPaths: { docs: '/docs' },
+            resolvedPaths: {},
+            transformPaths: {},
+          },
+          defaultLocale: 'en',
+          locales: ['en', 'ja'],
+          options,
+        })
+      );
+      return wrote ? written : fileContent;
+    };
+
+    it('localizes an href in a simple HTML anchor', async () => {
+      const written = await runHtml(`<a href="/docs/en/intro">Intro</a>`);
+      expect(written).toBe(`<a href="/docs/ja/intro">Intro</a>`);
+    });
+
+    it('collects and rewrites .html files, filtering out non-link types', async () => {
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.promises.readFile).mockResolvedValue(
+        `<a href="/docs/en/x">x</a>`
+      );
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+      vi.mocked(createFileMapping).mockReturnValue({
+        ja: {
+          'a.html': '/path/a.html',
+          'b.txt': '/path/b.txt', // must be filtered out
+        },
+      });
+      await localizeStaticUrls(
+        createSettings({
+          files: {
+            placeholderPaths: { docs: '/docs' },
+            resolvedPaths: {},
+            transformPaths: {},
+          },
+          defaultLocale: 'en',
+          locales: ['en', 'ja'],
+          options: { docsUrlPattern: '/docs/[locale]' },
+        })
+      );
+      // The .html file is read and rewritten; the .txt file is never touched.
+      expect(fs.promises.readFile).toHaveBeenCalledWith('/path/a.html', 'utf8');
+      expect(fs.promises.readFile).not.toHaveBeenCalledWith(
+        '/path/b.txt',
+        'utf8'
+      );
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        '/path/a.html',
+        expect.stringContaining('/docs/ja/x')
+      );
+      expect(fs.promises.writeFile).not.toHaveBeenCalledWith(
+        '/path/b.txt',
+        expect.anything()
+      );
+    });
+
+    it('preserves quote style and surrounding formatting exactly', async () => {
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Docs</title>
+</head>
+<body>
+  <nav>
+    <a href="/docs/en/intro">Intro</a>
+    <a href='/docs/en/api'>API</a>
+  </nav>
+  <p>See <a href="https://example.com/x">external</a>.</p>
+</body>
+</html>`;
+      const expected = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Docs</title>
+</head>
+<body>
+  <nav>
+    <a href="/docs/ja/intro">Intro</a>
+    <a href='/docs/ja/api'>API</a>
+  </nav>
+  <p>See <a href="https://example.com/x">external</a>.</p>
+</body>
+</html>`;
+      expect(await runHtml(html)).toBe(expected);
+    });
+
+    it('skips hrefs inside comments, pre, code, script and style', async () => {
+      const html = `<a href="/docs/en/live">Live</a>
+<!-- <a href="/docs/en/comment">c</a> -->
+<pre><a href="/docs/en/pre">p</a></pre>
+<code><a href="/docs/en/code">c</a></code>
+<script>var s = '<a href="/docs/en/script">s</a>';</script>
+<style>/* <a href="/docs/en/style">s</a> */</style>`;
+      const written = await runHtml(html);
+      expect(written).toContain('/docs/ja/live');
+      expect(written).toContain('/docs/en/comment');
+      expect(written).toContain('/docs/en/pre');
+      expect(written).toContain('/docs/en/code');
+      expect(written).toContain('/docs/en/script');
+      expect(written).toContain('/docs/en/style');
+      expect(written).not.toContain('/docs/ja/comment');
+      expect(written).not.toContain('/docs/ja/pre');
+    });
+
+    it('preserves query strings and anchors in HTML hrefs', async () => {
+      const written = await runHtml(
+        `<a href="/docs/en/api?tab=auth#config">API</a>`
+      );
+      expect(written).toBe(`<a href="/docs/ja/api?tab=auth#config">API</a>`);
+    });
+
+    it('leaves external and non-matching hrefs untouched', async () => {
+      const html = `<a href="/docs/en/guide">G</a> <a href="https://x.com/docs/en/y">Y</a> <a href="/blog/en/post">B</a>`;
+      const written = await runHtml(html);
+      expect(written).toContain('/docs/ja/guide');
+      expect(written).toContain('https://x.com/docs/en/y');
+      expect(written).toContain('/blog/en/post');
+    });
+
+    it('inserts the locale when hideDefaultLocale is true', async () => {
+      const written = await runHtml(`<a href="/docs/quickstart">Q</a>`, {
+        docsUrlPattern: '/docs/[locale]',
+        experimentalHideDefaultLocale: true,
+      });
+      expect(written).toBe(`<a href="/docs/ja/quickstart">Q</a>`);
+    });
+
+    it('does not localize non-href attributes like src in HTML', async () => {
+      const html = `<a href="/docs/en/guide">G</a> <img src="/docs/en/images/x.png" />`;
+      const written = await runHtml(html);
+      expect(written).toContain('/docs/ja/guide');
+      expect(written).toContain('src="/docs/en/images/x.png"');
+    });
+  });
 });

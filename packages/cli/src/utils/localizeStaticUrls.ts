@@ -164,16 +164,24 @@ export type StaticUrlSettings = StaticLocalizationSettings;
 
 /**
  * Localizes static urls in content files.
- * Currently only supported for md and mdx files. (/docs/ -> /[locale]/docs/)
+ * Supported for md, mdx, and html files. (/docs/ -> /[locale]/docs/)
  * @param settings - The settings object containing the project configuration.
  * @returns void
  *
- * @TODO This is an experimental feature, and only works in very specific cases. This needs to be improved before
- * it can be enabled by default.
+ * @TODO This feature is still gated behind the experimentalLocalizeStaticUrls
+ * flag while the graduation checklist below is completed and validated.
  *
- * Before this becomes a non-experimental feature, we need to:
- * - Support more file types
- * - Support more complex paths
+ * Graduation checklist:
+ * - Support more file types: md, mdx and html are handled. Non-link file
+ *   types (txt/json/yaml) have no URL-bearing markup to localize.
+ * - Support more complex paths: query strings, anchors, query+anchor combos,
+ *   trailing slashes, absolute-with-baseDomain and (deliberately untouched)
+ *   relative paths are covered by the fixture corpus in __tests__.
+ *
+ * Still out of scope (documented follow-ups):
+ * - src / non-href link attributes (assets are usually locale-agnostic).
+ * - Dynamically-computed URLs (template literals, identifiers, concatenation),
+ *   which are a fundamental limit of static localization.
  */
 export default async function localizeStaticUrls(
   settings: StaticUrlSettings,
@@ -214,12 +222,15 @@ export default async function localizeStaticUrls(
   ) {
     const defaultLocaleFiles: string[] = [];
 
-    // Collect all .md and .mdx files from sourceFiles
+    // Collect all .md, .mdx and .html files from sourceFiles
     if (sourceFiles.md) {
       defaultLocaleFiles.push(...sourceFiles.md);
     }
     if (sourceFiles.mdx) {
       defaultLocaleFiles.push(...sourceFiles.mdx);
+    }
+    if (sourceFiles.html) {
+      defaultLocaleFiles.push(...sourceFiles.html);
     }
 
     if (defaultLocaleFiles.length > 0) {
@@ -239,7 +250,8 @@ export default async function localizeStaticUrls(
             settings.options?.experimentalHideDefaultLocale || false,
             settings.options?.docsUrlPattern,
             settings.options?.excludeStaticUrls,
-            settings.options?.baseDomain
+            settings.options?.baseDomain,
+            getUrlFileFormat(filePath)
           );
           // Only write the file if there were changes
           if (result.hasChanges) {
@@ -255,10 +267,10 @@ export default async function localizeStaticUrls(
   const mappingPromises = Object.entries(fileMapping)
     .filter(([locale]) => locales.includes(locale)) // Filter by target locales
     .map(async ([locale, filesMap]) => {
-      // Get all files that are md or mdx
+      // Get all files that are md, mdx or html
       const targetFiles = Object.values(filesMap).filter(
         (p) =>
-          (p.endsWith('.md') || p.endsWith('.mdx')) &&
+          (p.endsWith('.md') || p.endsWith('.mdx') || p.endsWith('.html')) &&
           (!includeFiles || includeFiles.has(p))
       );
 
@@ -279,7 +291,8 @@ export default async function localizeStaticUrls(
             settings.options?.experimentalHideDefaultLocale || false,
             settings.options?.docsUrlPattern,
             settings.options?.excludeStaticUrls,
-            settings.options?.baseDomain
+            settings.options?.baseDomain,
+            getUrlFileFormat(filePath)
           );
           // Only write the file if there were changes
           if (result.hasChanges) {
@@ -449,78 +462,38 @@ export function transformUrlPath(
   return result;
 }
 
+type TransformedUrl = {
+  originalPath: string;
+  newPath: string;
+  type: 'markdown' | 'href';
+};
+
 /**
- * AST-based transformation for MDX files using remark-mdx
+ * Builds the URL-rewriting function shared by the MDX and HTML localizers so
+ * both surfaces apply identical gating: pattern matching, baseDomain handling,
+ * colon/external skipping, fragment handling and exclusion globs. Matches are
+ * recorded onto `transformedUrls` for the caller's change detection.
  */
-function transformMdxUrls(
-  mdxContent: string,
-  defaultLocale: string,
-  targetLocale: string,
-  hideDefaultLocale: boolean,
-  pattern: string = '/[locale]',
-  exclude: string[] = [],
-  baseDomain?: string
-): UrlTransformResult {
-  const transformedUrls: Array<{
-    originalPath: string;
-    newPath: string;
-    type: 'markdown' | 'href';
-  }> = [];
+function createUrlTransformer(opts: {
+  patternHead: string;
+  defaultLocale: string;
+  targetLocale: string;
+  hideDefaultLocale: boolean;
+  exclude: string[];
+  baseDomain?: string;
+  transformedUrls: TransformedUrl[];
+}): (originalUrl: string, linkType: 'markdown' | 'href') => string | null {
+  const {
+    patternHead,
+    defaultLocale,
+    targetLocale,
+    hideDefaultLocale,
+    exclude,
+    baseDomain,
+    transformedUrls,
+  } = opts;
 
-  if (!pattern.startsWith('/')) {
-    pattern = '/' + pattern;
-  }
-
-  const patternHead = pattern.split('[locale]')[0];
-
-  // Quick check: if the file doesn't contain the pattern, skip expensive AST parsing
-  // For default locale processing, we also need to check if content might need adjustment
-  if (targetLocale === defaultLocale) {
-    // For default locale files, we always need to check as we're looking for either:
-    // - paths without locale (when hideDefaultLocale=false)
-    // - paths with default locale (when hideDefaultLocale=true)
-    const patternWithoutSlash = patternHead.replace(/\/$/, '');
-    if (!mdxContent.includes(patternWithoutSlash)) {
-      return {
-        content: mdxContent,
-        hasChanges: false,
-        transformedUrls: [],
-      };
-    }
-  } else {
-    // For non-default locales, use the original logic
-    if (!mdxContent.includes(patternHead.replace(/\/$/, ''))) {
-      return {
-        content: mdxContent,
-        hasChanges: false,
-        transformedUrls: [],
-      };
-    }
-  }
-
-  // Parse the MDX content into an AST
-  let processedAst: Root;
-  try {
-    const parseProcessor = unified()
-      .use(remarkParse)
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
-
-    const ast = parseProcessor.parse(mdxContent);
-    processedAst = parseProcessor.runSync(ast) as Root;
-  } catch {
-    return {
-      content: mdxContent,
-      hasChanges: false,
-      transformedUrls,
-    };
-  }
-
-  // Helper function to transform URL based on pattern
-  const transformUrl = (
-    originalUrl: string,
-    linkType: 'markdown' | 'href'
-  ): string | null => {
+  return (originalUrl, linkType) => {
     // For Markdown links [text](path), only process absolute-root paths starting with '/'
     // Relative markdown links should remain relative to the current page and not be localized.
     if (linkType === 'markdown') {
@@ -599,6 +572,188 @@ function transformMdxUrls(
     });
     return newUrl;
   };
+}
+
+/**
+ * Collect character ranges that must never be treated as live markup when
+ * localizing raw HTML: comments, and the contents of script/style/pre/code.
+ * hrefs inside these regions (e.g. example code) are left untouched.
+ */
+function collectHtmlProtectedRanges(html: string): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  const patterns = [
+    /<!--[\s\S]*?-->/g,
+    /<script\b[^>]*>[\s\S]*?<\/script>/gi,
+    /<style\b[^>]*>[\s\S]*?<\/style>/gi,
+    /<pre\b[^>]*>[\s\S]*?<\/pre>/gi,
+    /<code\b[^>]*>[\s\S]*?<\/code>/gi,
+  ];
+  for (const re of patterns) {
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(html)) !== null) {
+      ranges.push([match.index, match.index + match[0].length]);
+    }
+  }
+  return ranges;
+}
+
+/**
+ * Localizes `href` attribute URLs in raw HTML files.
+ *
+ * HTML documents (doctype, void elements, unquoted attributes, comments) are
+ * not valid MDX/JSX, so the remark pipeline cannot parse them. This localizer
+ * edits `href` values in place with a scanner that preserves all surrounding
+ * formatting, reusing the exact URL-rewriting rules via `createUrlTransformer`.
+ * hrefs inside comments and script/style/pre/code blocks are skipped.
+ */
+function transformHtmlUrls(
+  htmlContent: string,
+  defaultLocale: string,
+  targetLocale: string,
+  hideDefaultLocale: boolean,
+  pattern: string = '/[locale]',
+  exclude: string[] = [],
+  baseDomain?: string
+): UrlTransformResult {
+  const transformedUrls: TransformedUrl[] = [];
+
+  if (!pattern.startsWith('/')) {
+    pattern = '/' + pattern;
+  }
+  const patternHead = pattern.split('[locale]')[0];
+
+  // Quick check: if the file doesn't contain the pattern, skip scanning.
+  const patternWithoutSlash = patternHead.replace(/\/$/, '');
+  if (!htmlContent.includes(patternWithoutSlash)) {
+    return { content: htmlContent, hasChanges: false, transformedUrls: [] };
+  }
+
+  const transformUrl = createUrlTransformer({
+    patternHead,
+    defaultLocale,
+    targetLocale,
+    hideDefaultLocale,
+    exclude,
+    baseDomain,
+    transformedUrls,
+  });
+
+  const protectedRanges = collectHtmlProtectedRanges(htmlContent);
+  const isProtected = (index: number): boolean =>
+    protectedRanges.some(([start, end]) => index >= start && index < end);
+
+  // Match href attributes in either quote style; URLs never contain quotes so
+  // `[^"']*` safely captures the whole value while preserving the quote char.
+  const hrefRegex = /\bhref\s*=\s*(["'])([^"']*)\1/gi;
+  const replacements: Array<{ start: number; end: number; text: string }> = [];
+
+  let match: RegExpExecArray | null;
+  while ((match = hrefRegex.exec(htmlContent)) !== null) {
+    if (isProtected(match.index)) continue;
+    const quote = match[1];
+    const originalHref = match[2];
+    const newUrl = transformUrl(originalHref, 'href');
+    if (!newUrl) continue;
+    const valueStart = match.index + match[0].indexOf(quote) + 1;
+    replacements.push({
+      start: valueStart,
+      end: valueStart + originalHref.length,
+      text: newUrl,
+    });
+  }
+
+  if (replacements.length === 0) {
+    return { content: htmlContent, hasChanges: false, transformedUrls };
+  }
+
+  // Apply end-to-start so earlier offsets remain valid.
+  let content = htmlContent;
+  replacements
+    .sort((a, b) => b.start - a.start)
+    .forEach(({ start, end, text }) => {
+      content = content.slice(0, start) + text + content.slice(end);
+    });
+
+  return { content, hasChanges: true, transformedUrls };
+}
+
+/**
+ * AST-based transformation for MDX files using remark-mdx
+ */
+function transformMdxUrls(
+  mdxContent: string,
+  defaultLocale: string,
+  targetLocale: string,
+  hideDefaultLocale: boolean,
+  pattern: string = '/[locale]',
+  exclude: string[] = [],
+  baseDomain?: string
+): UrlTransformResult {
+  const transformedUrls: Array<{
+    originalPath: string;
+    newPath: string;
+    type: 'markdown' | 'href';
+  }> = [];
+
+  if (!pattern.startsWith('/')) {
+    pattern = '/' + pattern;
+  }
+
+  const patternHead = pattern.split('[locale]')[0];
+
+  // Quick check: if the file doesn't contain the pattern, skip expensive AST parsing
+  // For default locale processing, we also need to check if content might need adjustment
+  if (targetLocale === defaultLocale) {
+    // For default locale files, we always need to check as we're looking for either:
+    // - paths without locale (when hideDefaultLocale=false)
+    // - paths with default locale (when hideDefaultLocale=true)
+    const patternWithoutSlash = patternHead.replace(/\/$/, '');
+    if (!mdxContent.includes(patternWithoutSlash)) {
+      return {
+        content: mdxContent,
+        hasChanges: false,
+        transformedUrls: [],
+      };
+    }
+  } else {
+    // For non-default locales, use the original logic
+    if (!mdxContent.includes(patternHead.replace(/\/$/, ''))) {
+      return {
+        content: mdxContent,
+        hasChanges: false,
+        transformedUrls: [],
+      };
+    }
+  }
+
+  // Parse the MDX content into an AST
+  let processedAst: Root;
+  try {
+    const parseProcessor = unified()
+      .use(remarkParse)
+      .use(remarkFrontmatter, ['yaml', 'toml'])
+      .use(remarkMdx);
+
+    const ast = parseProcessor.parse(mdxContent);
+    processedAst = parseProcessor.runSync(ast) as Root;
+  } catch {
+    return {
+      content: mdxContent,
+      hasChanges: false,
+      transformedUrls,
+    };
+  }
+
+  // Shared URL transformer, used identically by the MDX and HTML localizers.
+  const transformUrl = createUrlTransformer({
+    patternHead,
+    defaultLocale,
+    targetLocale,
+    hideDefaultLocale,
+    exclude,
+    baseDomain,
+    transformedUrls,
+  });
 
   // Visit markdown link nodes: [text](url)
   visit(processedAst, 'link', (node: Link) => {
@@ -770,7 +925,18 @@ function transformMdxUrls(
   };
 }
 
-// AST-based transformation for MDX files using remark
+type UrlFileFormat = 'mdx' | 'html';
+
+/**
+ * Picks the localizer for a file path. HTML files use the raw scanner; md/mdx
+ * (and anything else routed here) use the remark pipeline, unchanged.
+ */
+function getUrlFileFormat(filePath: string): UrlFileFormat {
+  return filePath.endsWith('.html') ? 'html' : 'mdx';
+}
+
+// Localizes a single file's URLs. MD/MDX go through the remark pipeline; HTML
+// goes through the in-place scanner. Defaults to 'mdx' to preserve behavior.
 function localizeStaticUrlsForFile(
   file: string,
   defaultLocale: string,
@@ -778,8 +944,20 @@ function localizeStaticUrlsForFile(
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
   exclude: string[] = [],
-  baseDomain?: string
+  baseDomain?: string,
+  format: UrlFileFormat = 'mdx'
 ): UrlTransformResult {
+  if (format === 'html') {
+    return transformHtmlUrls(
+      file,
+      defaultLocale,
+      targetLocale,
+      hideDefaultLocale,
+      pattern,
+      exclude,
+      baseDomain || ''
+    );
+  }
   // Use AST-based transformation for MDX files
   return transformMdxUrls(
     file,
