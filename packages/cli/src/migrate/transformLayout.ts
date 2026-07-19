@@ -136,7 +136,7 @@ export function transformLayoutFile(
   const adapter = ctx.adapter;
   const retainProvider = ctx.skippedFiles.size > 0;
   const base = transformSourceFile(file, code, ctx, {
-    retainNextIntlProvider: retainProvider,
+    retainProvider,
     dropLocaleValidation: true,
   });
   if (base.skipReasons.length > 0) return base;
@@ -322,11 +322,13 @@ export function transformLayoutFile(
       },
     });
     if (unsafeAsyncFallback) {
+      const providerLabel =
+        adapter.providerName ?? `${adapter.displayName} provider`;
       return {
         code: null,
         todos: [],
         skipReasons: [
-          `retained NextIntlClientProvider has no route \`locale\` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its \`locale\` prop manually (the layout keeps working on ${adapter.displayName} until then)`,
+          `retained ${providerLabel} has no route \`locale\` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its \`locale\` prop manually (the layout keeps working on ${adapter.displayName} until then)`,
         ],
         usedRich: base.usedRich,
       };

@@ -540,7 +540,7 @@ describe('handleMigrateCommand integration', () => {
   it('retains a separate provider file (with its messages wiring) in partial mode', async () => {
     // A skipped file forces partial mode; the standalone provider file must
     // keep its NextIntlClientProvider so the skipped file still has a next-intl
-    // context. Regression: it used to run with retainNextIntlProvider=false and
+    // context. Regression: it used to run with retainProvider=false and
     // get rewritten to a bare <GTProvider>, deleting the only provider anywhere.
     const cwd = makeApp({
       ...SEPARATE_PROVIDER_FILES,

@@ -21,10 +21,10 @@ const GT_SERVER_MODULE = 'gt-next/server';
 
 type TransformOptions = {
   /**
-   * Leave NextIntlClientProvider (and its next-intl import) untouched so a
+   * Leave the source library's provider element (and its import) untouched so a
    * later pass can nest it inside GTProvider while skipped files remain.
    */
-  retainNextIntlProvider?: boolean;
+  retainProvider?: boolean;
   /**
    * Treat hasLocale as supported (its guard is removed by the layout pass)
    * instead of skipping the file.
@@ -129,7 +129,7 @@ export function transformSourceFile(
       .map((symbol) => symbol.specifier)
   );
 
-  const providerRetained = options.retainNextIntlProvider === true;
+  const providerRetained = options.retainProvider === true;
   for (const symbol of symbols) {
     const supported =
       adapter.clientSwaps.has(symbol.imported) ||

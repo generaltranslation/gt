@@ -96,8 +96,10 @@ export const nextIntlAdapter: SourceAdapter = {
   parseRoutingConfig,
   discoverCatalogs,
 
-  isNavigationFile: (code) => code.includes('createNavigation'),
-  transformNavigation: transformNavigationFile,
+  navigation: {
+    isNavigationFile: (code) => code.includes('createNavigation'),
+    transformNavigation: transformNavigationFile,
+  },
   transformNextConfig: transformNextConfigFile,
   transformMiddleware: transformMiddlewareFile,
   transformRequestConfig: transformRequestConfigFile,

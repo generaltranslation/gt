@@ -177,8 +177,12 @@ export async function handleMigrateCommand(
         layouts.push(file);
         continue;
       }
-      if (adapter.transformNavigation && adapter.isNavigationFile?.(code)) {
-        collect(ctx, file, adapter.transformNavigation(file, code, ctx));
+      if (adapter.navigation?.isNavigationFile(code)) {
+        collect(
+          ctx,
+          file,
+          adapter.navigation.transformNavigation(file, code, ctx)
+        );
         continue;
       }
       if (adapter.hasProvider(code)) {
@@ -219,7 +223,7 @@ export async function handleMigrateCommand(
   // skipped for its own reasons (an unsupported next-intl API alongside the
   // provider) contributes to the skip set, which in turn flips the retention
   // decision for the *other* deferred files and the layouts. Skip status is
-  // independent of retainNextIntlProvider (the transform is pure), so we can
+  // independent of retainProvider (the transform is pure), so we can
   // settle every skip here, before anyone reads ctx.skippedFiles.size.
   const providerFilesToApply: string[] = [];
   for (const file of providerFiles) {
@@ -256,7 +260,7 @@ export async function handleMigrateCommand(
     try {
       const code = fs.readFileSync(file, 'utf8');
       let result = transformSourceFile(file, code, ctx, {
-        retainNextIntlProvider: retainProviders,
+        retainProvider: retainProviders,
       });
       if (options.inline && result.skipReasons.length === 0) {
         result = applyInline(file, result.code ?? code, ctx, result);

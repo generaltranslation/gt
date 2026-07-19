@@ -214,7 +214,7 @@ describe('transformSourceFile: next-intl Locale type', () => {
   });
 
   it('keeps the Locale import and its references when next-intl is retained', () => {
-    // Partial migration: retainNextIntlProvider mirrors how transformLayoutFile
+    // Partial migration: retainProvider mirrors how transformLayoutFile
     // invokes the source pass once other files are skipped. next-intl stays
     // installed, so the augmented `Locale` type must be preserved (not string).
     const result = transform(
@@ -232,7 +232,7 @@ describe('transformSourceFile: next-intl Locale type', () => {
         '  );',
         '}',
       ].join('\n'),
-      { retainNextIntlProvider: true, dropLocaleValidation: true }
+      { retainProvider: true, dropLocaleValidation: true }
     );
     expect(result.skipReasons).toEqual([]);
     expect(result.code).not.toBeNull();
@@ -266,7 +266,7 @@ describe('transformSourceFile: next-intl Locale type', () => {
         '  );',
         '}',
       ].join('\n'),
-      { retainNextIntlProvider: true, dropLocaleValidation: true }
+      { retainProvider: true, dropLocaleValidation: true }
     );
     expect(result.skipReasons).toEqual([]);
     expect(result.code).not.toBeNull();

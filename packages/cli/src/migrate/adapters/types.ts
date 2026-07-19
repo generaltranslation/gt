@@ -65,13 +65,21 @@ export interface SourceAdapter {
   ): Promise<MessageCatalogs | null>;
 
   // --- config lane (each optional; absent => that lane is skipped) ---
-  /** true when a scanned file is this library's navigation wrapper. */
-  isNavigationFile?(code: string): boolean;
-  transformNavigation?(
-    file: string,
-    code: string,
-    ctx: MigrationContext
-  ): SourceResult;
+  /**
+   * Navigation-wrapper handling. The detector and the transform live together
+   * in one optional member so an adapter can never wire one half without the
+   * other: supply the whole object or omit it entirely. Absent => navigation
+   * files fall through to the generic source transform.
+   */
+  navigation?: {
+    /** true when a scanned file is this library's navigation wrapper. */
+    isNavigationFile(code: string): boolean;
+    transformNavigation(
+      file: string,
+      code: string,
+      ctx: MigrationContext
+    ): SourceResult;
+  };
   transformNextConfig?(
     file: string,
     code: string,
