@@ -295,6 +295,55 @@ describe('react-i18next full migration', () => {
     expect(fs.existsSync(path.join(cwd, 'gt/dictionaries/en.json'))).toBe(true);
   });
 
+  it('adds the gt-next import to a combined-import provider during a partial migration (G1)', async () => {
+    // A single declaration imports both useTranslation and I18nextProvider.
+    // Another file uses an unsupported react-i18next API and is skipped, which
+    // makes the run a partial migration (retainProvider). The provider file must
+    // keep <I18nextProvider> AND still gain the gt-next import for its migrated
+    // useTranslations() hook — the retained-import branch used to skip it.
+    const cwd = makeApp({
+      'app/[locale]/Providers.tsx': [
+        "'use client';",
+        "import { useTranslation, I18nextProvider } from 'react-i18next';",
+        "import i18n from '../../i18n';",
+        'export function Providers({ children }: { children: React.ReactNode }) {',
+        '  const { t } = useTranslation();',
+        '  return (',
+        '    <I18nextProvider i18n={i18n}>',
+        "      <h1>{t('title')}</h1>",
+        '      {children}',
+        '    </I18nextProvider>',
+        '  );',
+        '}',
+      ].join('\n'),
+      // Unsupported API → this file is skipped → partial migration.
+      'components/Legacy.tsx': [
+        "'use client';",
+        "import { useSSR } from 'react-i18next';",
+        'export function Legacy() {',
+        '  useSSR({}, {});',
+        '  return null;',
+        '}',
+      ].join('\n'),
+    });
+    await handleMigrateCommand({ ...OPTIONS }, 'i18next', cwd);
+
+    const providers = read(cwd, 'app/[locale]/Providers.tsx');
+    // The migrated hook has its import and call...
+    expect(providers).toMatch(
+      /import \{ useTranslations \} from ['"]gt-next['"]/
+    );
+    expect(providers).toContain('useTranslations()');
+    // ...and the provider (plus its react-i18next import) is retained.
+    expect(providers).toContain('<I18nextProvider');
+    expect(providers).toMatch(
+      /import \{ I18nextProvider \} from ['"]react-i18next['"]/
+    );
+    // The skip that forced the partial migration is reported.
+    const report = read(cwd, 'gt-migrate-report.md');
+    expect(report).toContain('components/Legacy.tsx');
+  });
+
   it('honors --from react-i18next explicitly', async () => {
     const cwd = makeApp();
     await handleMigrateCommand(

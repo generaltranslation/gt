@@ -891,6 +891,16 @@ function applyImportSurgery(
       );
       if (kept.length > 0) {
         importPath.node.specifiers = kept;
+        // The retained react-i18next declaration (e.g. a combined
+        // `{ useTranslation, I18nextProvider }`) still had its hook migrated to
+        // useTranslations(), so the gt-next import must land even though this
+        // declaration survives. Insert it after the retained import when nothing
+        // else has (mirrors the type-only branch below) so the migrated hook is
+        // never left without its import.
+        if (!mergeTarget && !insertedNew && newDeclaration) {
+          importPath.insertAfter(newDeclaration);
+          insertedNew = true;
+        }
         continue;
       }
     }

@@ -1,3 +1,4 @@
+import { parse } from '@babel/parser';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { reactI18nextAdapter } from '../adapters/reactI18next.js';
 import { clearI18nextConfigCache } from '../reactI18nextConfig.js';
@@ -654,5 +655,39 @@ describe('provider swap', () => {
       { retainProvider: true }
     );
     expect(code === null || code.includes('I18nextProvider')).toBe(true);
+  });
+
+  it('adds the gt-next import when one combined import retains the provider and migrates the hook', () => {
+    // A single `{ useTranslation, I18nextProvider }` declaration under
+    // retainProvider: the provider specifier is kept but the hook is migrated
+    // to useTranslations(), so the gt-next import must still be added — the
+    // retained-import branch used to `continue` past the insertion site.
+    const { code } = transform(
+      [
+        "import { useTranslation, I18nextProvider } from 'react-i18next';",
+        "import i18n from './i18n';",
+        'export function C() {',
+        '  const { t } = useTranslation();',
+        '  return (',
+        '    <I18nextProvider i18n={i18n}>',
+        "      <p>{t('title')}</p>",
+        '    </I18nextProvider>',
+        '  );',
+        '}',
+      ].join('\n'),
+      { title: 'Welcome' },
+      { retainProvider: true }
+    );
+    expect(code).not.toBeNull();
+    // The migrated hook has its import...
+    expect(code).toMatch(/import \{ useTranslations \} from 'gt-next'/);
+    expect(code).toContain('useTranslations()');
+    // ...and the provider (and its react-i18next import) is retained.
+    expect(code).toContain('<I18nextProvider');
+    expect(code).toMatch(/import \{ I18nextProvider \} from 'react-i18next'/);
+    // The migrated file must still parse as valid TS/JSX.
+    expect(() =>
+      parse(code!, { sourceType: 'module', plugins: ['jsx', 'typescript'] })
+    ).not.toThrow();
   });
 });
