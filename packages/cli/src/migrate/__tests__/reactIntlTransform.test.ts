@@ -1,3 +1,4 @@
+import { parse } from '@babel/parser';
 import { describe, expect, it } from 'vitest';
 import { reactIntlAdapter } from '../adapters/reactIntl.js';
 import { transformSourceFile } from '../transformSource.js';
@@ -569,6 +570,49 @@ describe('reactIntl: rich text', () => {
     );
     expect(r.code).toBeNull();
     expect(r.skipReasons.length).toBeGreaterThan(0);
+  });
+
+  it('emits a plain argument in rich text as an interpolation, not literal text', () => {
+    // "Hello <b>bold</b> {name}" mixes a tag wrapper with a plain ICU argument.
+    // The argument must become {name} (a JSX expression), not the bare word
+    // "name": ICU LiteralElement and ArgumentElement both carry a string value.
+    const r = transformInline(
+      lines(
+        "'use client';",
+        "import { FormattedMessage } from 'react-intl';",
+        'export function C({ name }: { name: string }) {',
+        '  return (',
+        '    <p>',
+        '      <FormattedMessage id="greeting" values={{ name, b: (chunks) => <b>{chunks}</b> }} />',
+        '    </p>',
+        '  );',
+        '}'
+      ),
+      { greeting: 'Hello <b>bold</b> {name}' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(/<T>/);
+    expect(r.code).toMatch(/<b>bold<\/b>/);
+    // The interpolation renders as an expression, and the literal word is gone.
+    expect(r.code).toMatch(/\{name\}/);
+    expect(r.code).not.toMatch(/<\/b>\s*name/);
+    expect(r.code).not.toContain('FormattedMessage');
+    // The migrated file must still parse as valid TS/JSX.
+    expect(() =>
+      parse(r.code!, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      })
+    ).not.toThrow();
+  });
+
+  it('leaves a pure-literal-plus-tag rich message as text and tags', () => {
+    // No arguments: the whole body is literal text wrapped in a tag, so nothing
+    // becomes an interpolation. Guards against the argument fix over-reaching.
+    const r = transformInline(richFile, { terms: 'Accept the <b>terms</b>' });
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(/<T>Accept the <b>terms<\/b><\/T>/);
+    expect(r.code).not.toContain('FormattedMessage');
   });
 });
 

@@ -3,6 +3,8 @@ import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import {
+  isArgumentElement,
+  isLiteralElement,
   isTagElement,
   parse as parseIcu,
   type MessageFormatElement,
@@ -111,6 +113,13 @@ export function transformReactIntlSource(
   const retainProvider = options.retainProvider === true;
   const skipReasons: string[] = [];
   const todos: TodoEntry[] = [];
+
+  // Ids flagged during catalog discovery as colliding: present both as a leaf
+  // value and as a namespace prefix (e.g. 'a' and 'a.b'), which gt-next's nested
+  // dictionary cannot represent. Built once here where the catalogs are in
+  // scope; the plan* helpers close over it for an O(1) membership test per
+  // formatMessage / <FormattedMessage> site instead of scanning the array.
+  const collidingIds = new Set(ctx.catalogs.flatKeyCollisions ?? []);
 
   // ---- imports -------------------------------------------------------------
 
@@ -464,7 +473,7 @@ export function transformReactIntlSource(
       }
       return;
     }
-    if (isCollidingId(id, ctx)) {
+    if (collidingIds.has(id)) {
       skipReasons.push(collisionSkipReason(id));
       return;
     }
@@ -520,7 +529,7 @@ export function transformReactIntlSource(
       );
       return;
     }
-    if (isCollidingId(id, ctx)) {
+    if (collidingIds.has(id)) {
       skipReasons.push(collisionSkipReason(id));
       return;
     }
@@ -930,26 +939,6 @@ function catalogMessage(id: string, ctx: MigrationContext): string | null {
     current = (current as Record<string, unknown>)[segment];
   }
   return typeof current === 'string' ? current : null;
-}
-
-/** Memoized Set views of each run's flatKeyCollisions array, keyed by the
- *  array's identity, so the membership test below is O(1) per call instead of
- *  O(n) in the collision count — it runs for every formatMessage /
- *  <FormattedMessage> across every source file. */
-const collidingIdCache = new WeakMap<string[], Set<string>>();
-
-/** True when an id was flagged during discovery as colliding (present in the
- *  source catalog both as a leaf and as a namespace prefix, e.g. 'a' and 'a.b'),
- *  which gt-next's nested dictionary cannot represent. */
-function isCollidingId(id: string, ctx: MigrationContext): boolean {
-  const collisions = ctx.catalogs.flatKeyCollisions;
-  if (!collisions) return false;
-  let set = collidingIdCache.get(collisions);
-  if (!set) {
-    set = new Set(collisions);
-    collidingIdCache.set(collisions, set);
-  }
-  return set.has(id);
 }
 
 function collisionSkipReason(id: string): string {
@@ -1387,11 +1376,20 @@ function translationBindingFor(
   for (const [name, kind] of intlBindings) {
     if (kind !== 'client') continue;
     const bindingFn = intlBindingFns.get(name) ?? null;
-    // `bindingFn === fn`: an intl binding declared in this same function. A
-    // module-scope client binding (bindingFn === null) is invalid react-intl and
-    // is skip+reported before mutation, so it never reaches here for a real
-    // file; the null guard stays only as defensive belt-and-suspenders.
-    if (bindingFn === null || bindingFn === fn) {
+    if (bindingFn === null) {
+      // Unreachable for a real file: a module-scope client binding (null
+      // enclosing function) is invalid react-intl and is skip+reported before
+      // any mutation runs (see the module-scope useIntl guard earlier in this
+      // function, which makes skipReasons non-empty and forces an early return).
+      // So a client binding that survives to here always has a recorded
+      // function. Assert the invariant instead of silently reusing a binding
+      // that would encode a rules-of-hooks violation.
+      throw new Error(
+        `internal invariant: module-scope client binding '${name}' reached translationBindingFor; it must be skipped upstream`
+      );
+    }
+    // An intl binding declared in this same function: reuse it in place.
+    if (bindingFn === fn) {
       return { name, injected: false };
     }
   }
@@ -1500,19 +1498,34 @@ function icuToJsxChildren(
   chunkMap: Map<string, t.JSXElement>
 ): (t.JSXText | t.JSXExpressionContainer | t.JSXElement)[] {
   const children: (t.JSXText | t.JSXExpressionContainer | t.JSXElement)[] = [];
+  // Literal text either becomes JSXText or, when it carries characters JSX
+  // would misread ({ } < >), a string literal in an expression container.
+  const pushText = (text: string): void => {
+    if (/[{}<>]/.test(text)) {
+      children.push(t.jsxExpressionContainer(t.stringLiteral(text)));
+    } else {
+      children.push(t.jsxText(text));
+    }
+  };
   for (const element of elements) {
     if (isTagElement(element)) {
       const template = chunkMap.get(element.value)!;
       const clone = t.cloneNode(template, true);
       clone.children = icuToJsxChildren(element.children, chunkMap);
       children.push(clone);
+    } else if (isArgumentElement(element)) {
+      // A LiteralElement and an ArgumentElement both carry a string `value`
+      // (the literal text vs. the argument name), so they must be told apart
+      // by type. `{name}` is an interpolation, not text: emit a JSX expression
+      // wrapping the variable so <T> renders its value instead of the bare word.
+      children.push(t.jsxExpressionContainer(t.identifier(element.value)));
+    } else if (isLiteralElement(element)) {
+      pushText(element.value);
     } else if ('value' in element && typeof element.value === 'string') {
-      const text = element.value;
-      if (/[{}<>]/.test(text)) {
-        children.push(t.jsxExpressionContainer(t.stringLiteral(text)));
-      } else {
-        children.push(t.jsxText(text));
-      }
+      // Formatter/branching elements (number/date/time/plural/select) reach
+      // this rich path only through the rare chunk-function `values` route;
+      // keep emitting their raw value as text rather than dropping content.
+      pushText(element.value);
     }
   }
   return children;
