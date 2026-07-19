@@ -734,7 +734,7 @@ describe('handleMigrateCommand integration', () => {
     expect(page).not.toContain('next-intl');
   });
 
-  it('warns instead of exiting 0 when a run matches nothing', async () => {
+  it('warns instead of exiting 0 when a run matches nothing (dry run wording)', async () => {
     // next-intl IS a dependency (so the presence check passes and no --from is
     // needed), a catalog is discoverable, but no source file imports next-intl.
     // The run migrates nothing; it must say so rather than reporting success.
@@ -769,7 +769,56 @@ describe('handleMigrateCommand integration', () => {
     );
     const warnings = warnSpy.mock.calls.map((call) => String(call[0]));
     warnSpy.mockRestore();
-    expect(warnings.some((line) => /Nothing to migrate/.test(line))).toBe(true);
+    const nothingWarning = warnings.find((line) =>
+      /Nothing to migrate/.test(line)
+    );
+    expect(nothingWarning).toBeDefined();
+    // --dry-run writes nothing, so the scaffolding is described as prospective.
+    expect(nothingWarning).toContain('would still be written');
+    expect(nothingWarning).not.toContain('was still written');
+  });
+
+  it('warns when a run matches nothing (non-dry-run wording)', async () => {
+    // Same nothing-matched scenario but for real: the scaffolding is actually
+    // written to disk, so the warning must say so in the past tense.
+    const cwd = makeBareProject({
+      'package.json': JSON.stringify({
+        name: 'demo',
+        dependencies: {
+          next: '15.5.0',
+          'next-intl': '^4.1.0',
+          react: '19.0.0',
+        },
+      }),
+      'messages/en.json': JSON.stringify({ Home: { title: 'Hi' } }),
+      'messages/es.json': JSON.stringify({ Home: { title: 'Hola' } }),
+      'src/app/page.tsx': [
+        'export default function Page() {',
+        '  return <h1>Static heading</h1>;',
+        '}',
+      ].join('\n'),
+    });
+    const warnSpy = vi.spyOn(logger, 'warn');
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    const warnings = warnSpy.mock.calls.map((call) => String(call[0]));
+    warnSpy.mockRestore();
+    const nothingWarning = warnings.find((line) =>
+      /Nothing to migrate/.test(line)
+    );
+    expect(nothingWarning).toBeDefined();
+    // The scaffolding was written to disk, so the warning uses the past tense.
+    expect(nothingWarning).toContain('was still written');
+    expect(nothingWarning).not.toContain('would still be written');
   });
 
   it('treats a JSX-less layout.ts as a layout and degrades gracefully', async () => {

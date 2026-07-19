@@ -366,10 +366,15 @@ export async function handleMigrateCommand(
   // scaffolding. That almost always means the wrong source was targeted, so warn
   // instead of exiting 0 as if it worked.
   if (transformedSourceFiles === 0 && ctx.skippedFiles.size === 0) {
+    // Under --dry-run nothing is written yet (the write loop is past the
+    // early return below), so describe the scaffolding as prospective.
+    const scaffoldingClause = options.dryRun
+      ? 'The gt-next scaffolding would still be written'
+      : 'The gt-next scaffolding was still written';
     logger.warn(
       `Nothing to migrate: no files importing ${adapter.displayName} were found. ` +
         `Is ${requestedFrom} really this project's i18n library? ` +
-        'The gt-next scaffolding was still written; re-run with --from <library> ' +
+        `${scaffoldingClause}; re-run with --from <library> ` +
         'if you targeted the wrong source.'
     );
   }
