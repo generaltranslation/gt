@@ -325,8 +325,9 @@ function normalizeCatalog(file: string): Record<string, unknown> {
  * The default (source) locale, and (when it was inferred rather than declared)
  * a report-worthy note stating what was assumed and why. Resolution order:
  * an explicit routing default, else a `defaultLocale="…"` seen on an
- * IntlProvider/createIntl in the source (both authoritative, no note), else the
- * heuristics ('en' when present, the sole locale, or 'en' as a last resort),
+ * IntlProvider/createIntl in the source (authoritative and no note when a single
+ * value is declared; a deterministic pick with a note when files disagree), else
+ * the heuristics ('en' when present, the sole locale, or 'en' as a last resort),
  * each of which is a guess and gets a note.
  */
 function determineDefaultLocale(
@@ -338,7 +339,22 @@ function determineDefaultLocale(
     return { locale: routing.defaultLocale, assumption: null };
   }
   const declared = scanDeclaredDefaultLocale(cwd);
-  if (declared) return { locale: declared, assumption: null };
+  if (declared) {
+    // A single declared value is authoritative. Conflicting declarations
+    // across files cannot both be right, so pick deterministically (first in
+    // sorted file order) but flag it instead of silently embedding a guess.
+    if (declared.candidates.length <= 1) {
+      return { locale: declared.locale, assumption: null };
+    }
+    return {
+      locale: declared.locale,
+      assumption:
+        'Multiple source files declare different defaultLocale values ' +
+        `(${declared.candidates.join(', ')}); used '${declared.locale}' (the ` +
+        'first in sorted file order). If that is not your source language, set ' +
+        'defaultLocale in gt.config.json and re-run.',
+    };
+  }
   if (locales.includes('en')) {
     return {
       locale: 'en',
@@ -370,9 +386,20 @@ function determineDefaultLocale(
   };
 }
 
-function scanDeclaredDefaultLocale(cwd: string): string | null {
+/**
+ * Scans the source for a declared `defaultLocale="…"` (on an IntlProvider /
+ * createIntl). Files are visited in sorted order so the pick does not depend on
+ * filesystem ordering. Returns the chosen locale (first match in sorted file
+ * order) plus every distinct declared value; when more than one distinct value
+ * is declared the caller treats the pick as an assumption, not authoritative.
+ */
+function scanDeclaredDefaultLocale(
+  cwd: string
+): { locale: string; candidates: string[] } | null {
   const pattern = /defaultLocale\s*[:=]\s*\{?\s*['"]([a-zA-Z][\w-]*)['"]/;
-  for (const file of sourceFiles(cwd)) {
+  let chosen: string | null = null;
+  const distinct = new Set<string>();
+  for (const file of [...sourceFiles(cwd)].sort()) {
     let content: string;
     try {
       content = fs.readFileSync(file, 'utf8');
@@ -381,9 +408,12 @@ function scanDeclaredDefaultLocale(cwd: string): string | null {
     }
     if (!content.includes('defaultLocale')) continue;
     const match = content.match(pattern);
-    if (match) return match[1];
+    if (!match) continue;
+    if (chosen === null) chosen = match[1];
+    distinct.add(match[1]);
   }
-  return null;
+  if (chosen === null) return null;
+  return { locale: chosen, candidates: [...distinct].sort() };
 }
 
 /**

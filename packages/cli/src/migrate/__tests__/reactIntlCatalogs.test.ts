@@ -336,4 +336,62 @@ describe('discoverReactIntlCatalogs', () => {
       expect(catalogs!.warnings ?? []).toEqual([]);
     });
   });
+
+  describe('R1: conflicting declared defaultLocale', () => {
+    it('picks deterministically and warns when files disagree', async () => {
+      const cwd = makeDir({
+        'messages/de.json': JSON.stringify({ title: 'Willkommen' }),
+        'messages/fr.json': JSON.stringify({ title: 'Bienvenue' }),
+        // Two providers declare different defaults. 'a-provider' sorts before
+        // 'b-provider', so 'de' wins deterministically regardless of the
+        // filesystem's own ordering.
+        'src/a-provider.tsx': [
+          "'use client';",
+          "import { IntlProvider } from 'react-intl';",
+          'export function A({ children }: any) {',
+          '  return <IntlProvider locale="de" defaultLocale="de">{children}</IntlProvider>;',
+          '}',
+        ].join('\n'),
+        'src/b-provider.tsx': [
+          "'use client';",
+          "import { IntlProvider } from 'react-intl';",
+          'export function B({ children }: any) {',
+          '  return <IntlProvider locale="fr" defaultLocale="fr">{children}</IntlProvider>;',
+          '}',
+        ].join('\n'),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      expect(catalogs!.defaultLocale).toBe('de');
+      const warning = (catalogs!.warnings ?? []).join(' ');
+      expect(warning).toMatch(
+        /Multiple source files declare different defaultLocale/
+      );
+      // both candidates are named, sorted
+      expect(warning).toContain('de, fr');
+    });
+
+    it('does not warn when the same value is declared in multiple files', async () => {
+      const cwd = makeDir({
+        'messages/de.json': JSON.stringify({ title: 'Willkommen' }),
+        'messages/fr.json': JSON.stringify({ title: 'Bienvenue' }),
+        'src/a-provider.tsx': [
+          "'use client';",
+          "import { IntlProvider } from 'react-intl';",
+          'export function A({ children }: any) {',
+          '  return <IntlProvider locale="de" defaultLocale="de">{children}</IntlProvider>;',
+          '}',
+        ].join('\n'),
+        'src/b-provider.tsx': [
+          "'use client';",
+          "import { IntlProvider } from 'react-intl';",
+          'export function B({ children }: any) {',
+          '  return <IntlProvider locale="de" defaultLocale="de">{children}</IntlProvider>;',
+          '}',
+        ].join('\n'),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      expect(catalogs!.defaultLocale).toBe('de');
+      expect(catalogs!.warnings ?? []).toEqual([]);
+    });
+  });
 });

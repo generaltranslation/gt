@@ -1116,3 +1116,50 @@ describe('reactIntl: auto-generated ids (M3)', () => {
     expect((ctx.warnings ?? []).join(' ')).toMatch(/auto-generated ids/i);
   });
 });
+
+describe('reactIntl: R2 module-scope useIntl() binding', () => {
+  it('skips+reports a module-scope useIntl() reused inside a component', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl, FormattedMessage } from 'react-intl';",
+        // Invalid react-intl: a hook called at module scope. Migrating it to a
+        // module-scope useTranslations() would carry that violation into output.
+        'const intl = useIntl();',
+        'export function Title() {',
+        '  return <h1>{intl.formatMessage({ id: "title" })}</h1>;',
+        '}',
+        'export function Sub() {',
+        '  return <p><FormattedMessage id="sub" /></p>;',
+        '}'
+      ),
+      { title: 'Welcome', sub: 'Sub' }
+    );
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(
+      /useIntl\(\) is called at module scope.*rules of hooks/
+    );
+  });
+
+  it('still transforms an in-component useIntl() binding (no false skip)', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl, FormattedMessage } from 'react-intl';",
+        'export function Title() {',
+        '  const intl = useIntl();',
+        '  return (',
+        '    <h1>',
+        '      {intl.formatMessage({ id: "title" })}',
+        '      <FormattedMessage id="sub" />',
+        '    </h1>',
+        '  );',
+        '}'
+      ),
+      { title: 'Welcome', sub: 'Sub' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    expect(r.code).toContain('useTranslations()');
+  });
+});

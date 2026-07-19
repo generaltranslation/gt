@@ -277,6 +277,21 @@ export function transformReactIntlSource(
     },
   });
 
+  // A client intl binding (useIntl-derived) declared at module scope is invalid
+  // react-intl: hooks run only inside components. Rewriting it to a module-scope
+  // useTranslations() — and reusing it inside components — would carry that
+  // rules-of-hooks violation straight into the output, so skip+report instead of
+  // silently propagating it (a null enclosing function means module scope; every
+  // client binding records its enclosing function, so this never false-fires on
+  // an in-component binding).
+  for (const [name, kind] of intlBindings) {
+    if (kind === 'client' && (intlBindingFns.get(name) ?? null) === null) {
+      skipReasons.push(
+        `useIntl() is called at module scope (bound to '${name}'), which violates React's rules of hooks — move it inside the component, then re-run gt migrate`
+      );
+    }
+  }
+
   // Provider retained (partial migration): leave <IntlProvider> and its import
   // untouched; skipped files still need the react-intl context.
   const providerUnwraps = retainProvider ? [] : providerElements;
@@ -917,11 +932,24 @@ function catalogMessage(id: string, ctx: MigrationContext): string | null {
   return typeof current === 'string' ? current : null;
 }
 
+/** Memoized Set views of each run's flatKeyCollisions array, keyed by the
+ *  array's identity, so the membership test below is O(1) per call instead of
+ *  O(n) in the collision count — it runs for every formatMessage /
+ *  <FormattedMessage> across every source file. */
+const collidingIdCache = new WeakMap<string[], Set<string>>();
+
 /** True when an id was flagged during discovery as colliding (present in the
  *  source catalog both as a leaf and as a namespace prefix, e.g. 'a' and 'a.b'),
  *  which gt-next's nested dictionary cannot represent. */
 function isCollidingId(id: string, ctx: MigrationContext): boolean {
-  return ctx.catalogs.flatKeyCollisions?.includes(id) ?? false;
+  const collisions = ctx.catalogs.flatKeyCollisions;
+  if (!collisions) return false;
+  let set = collidingIdCache.get(collisions);
+  if (!set) {
+    set = new Set(collisions);
+    collidingIdCache.set(collisions, set);
+  }
+  return set.has(id);
 }
 
 function collisionSkipReason(id: string): string {
@@ -1359,6 +1387,10 @@ function translationBindingFor(
   for (const [name, kind] of intlBindings) {
     if (kind !== 'client') continue;
     const bindingFn = intlBindingFns.get(name) ?? null;
+    // `bindingFn === fn`: an intl binding declared in this same function. A
+    // module-scope client binding (bindingFn === null) is invalid react-intl and
+    // is skip+reported before mutation, so it never reaches here for a real
+    // file; the null guard stays only as defensive belt-and-suspenders.
     if (bindingFn === null || bindingFn === fn) {
       return { name, injected: false };
     }
