@@ -32,6 +32,21 @@
     "compiler-cli-parity",
     "next-ssg",
     "gt-next-middleware-e2e",
-    "gt-react-native-expo-example"
+    "gt-react-native-expo-example",
+    "gt-test-apps-e2e",
+    "gt-test-esbuild-react",
+    "gt-test-next-app-router",
+    "gt-test-next-app-router-dictionary",
+    "gt-test-next-app-router-locale-routing",
+    "gt-test-next-app-router-locale-routing-ssg",
+    "gt-test-next-app-router-locale-routing-use-cache",
+    "gt-test-next-pages-router",
+    "gt-test-node-express",
+    "gt-test-react-native",
+    "gt-test-rolldown-react",
+    "gt-test-rollup-react",
+    "gt-test-tanstack-start",
+    "gt-test-vite-react",
+    "gt-test-webpack-react"
   ]
 }

@@ -24,7 +24,8 @@ export interface JsxCalleeInfo {
  */
 export function processImportDeclaration(
   onGtImportFound: () => void,
-  calleeInfo: JsxCalleeInfo
+  calleeInfo: JsxCalleeInfo,
+  autoJsxImportSource?: string
 ): VisitNode<t.Node, t.ImportDeclaration> {
   const targetName = GT_COMPONENT_TYPES.GtInternalTranslateJsx;
 
@@ -32,7 +33,7 @@ export function processImportDeclaration(
     const source = path.node.source.value;
 
     // Check for existing GT import
-    if (isGTImportSource(source)) {
+    if (isGTImportSource(source) || source === autoJsxImportSource) {
       for (const specifier of path.node.specifiers) {
         if (
           t.isImportSpecifier(specifier) &&

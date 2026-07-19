@@ -5,6 +5,10 @@ import { rollup as gtCompiler } from '@generaltranslation/compiler';
 import { defineConfig } from 'rolldown';
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
+const reactDir = fs.realpathSync(path.join(appDir, 'node_modules/react'));
+const reactDomDir = fs.realpathSync(
+  path.join(appDir, 'node_modules/react-dom')
+);
 
 function cssAssetPlugin() {
   return {
@@ -57,6 +61,12 @@ export default defineConfig({
   },
   moduleTypes: {
     '.css': 'empty',
+  },
+  resolve: {
+    alias: {
+      react: reactDir,
+      'react-dom': reactDomDir,
+    },
   },
   plugins: [gtCompiler(), cssAssetPlugin(), htmlPlugin()],
 });

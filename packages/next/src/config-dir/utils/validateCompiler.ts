@@ -1,6 +1,7 @@
 import { type BaseWithGTConfigProps } from '../props/withGTConfigProps';
 import { babelPluginCompatible } from '../../plugin/getStableNextVersionInfo';
 import {
+  autoJsxInjectionCompilerWarning,
   babelCompilerTurbopackUnavailableWarning,
   createGTCompilerUnavailableWarning,
   disablingCompileTimeHashWarning,
@@ -36,5 +37,11 @@ export function validateCompiler(mergedConfig: BaseWithGTConfigProps) {
   if (mergedConfig.experimentalCompilerOptions.compileTimeHash === false) {
     console.warn(disablingCompileTimeHashWarning);
     mergedConfig.experimentalCompilerOptions.type = 'none';
+  }
+  if (
+    mergedConfig.experimentalCompilerOptions.enableAutoJsxInjection &&
+    mergedConfig.experimentalCompilerOptions.type !== 'babel'
+  ) {
+    console.warn(autoJsxInjectionCompilerWarning);
   }
 }

@@ -26,8 +26,8 @@ export { GTProvider } from './provider/GTProvider';
 export { Num } from './variables/Num';
 export { Plural } from './branches/Plural';
 export { RelativeTime } from './variables/RelativeTime';
-export { T } from './server-dir/buildtime/T';
-export { Var } from './variables/Var';
+export { GtInternalTranslateJsx, T } from './server-dir/buildtime/T';
+export { GtInternalVar, Var } from './variables/Var';
 
 // ===== Hooks ===== //
 export { useLocale } from './request/getLocale';

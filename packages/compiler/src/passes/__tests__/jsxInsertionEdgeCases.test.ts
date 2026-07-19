@@ -506,6 +506,18 @@ describe('jsxInsertionPass edge cases', () => {
       expect(gtImports).toHaveLength(1);
     });
 
+    it('injects import from a configured source', () => {
+      const code = `
+        import { jsx } from 'react/jsx-runtime';
+        jsx("div", { children: "Hello" });
+      `;
+      const { imports } = transform(code, {
+        autoJsxImportSource: 'gt-next',
+      });
+      const gtImports = imports.filter((i) => i.source.value === 'gt-next');
+      expect(gtImports).toHaveLength(1);
+    });
+
     it('does not inject duplicate import when already imported', () => {
       const code = `
         import { GtInternalTranslateJsx, GtInternalVar } from 'gt-react/browser';
@@ -517,6 +529,19 @@ describe('jsxInsertionPass edge cases', () => {
         (i) => i.source.value === 'gt-react/browser'
       );
       expect(gtImports).toHaveLength(1); // no duplicate
+    });
+
+    it('does not duplicate an import from a configured source', () => {
+      const code = `
+        import { GtInternalTranslateJsx, GtInternalVar } from '@acme/gt';
+        import { jsx } from 'react/jsx-runtime';
+        jsx("div", { children: "Hello" });
+      `;
+      const { imports } = transform(code, {
+        autoJsxImportSource: '@acme/gt',
+      });
+      const gtImports = imports.filter((i) => i.source.value === '@acme/gt');
+      expect(gtImports).toHaveLength(1);
     });
   });
 

@@ -49,6 +49,8 @@ export {
   DateTime,
   Derive,
   GTProvider,
+  GtInternalTranslateJsx,
+  GtInternalVar,
   LocaleSelector,
   Num,
   Plural,

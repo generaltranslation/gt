@@ -18,8 +18,7 @@ import gtConfig from '../../gt.config.json';
 import loadTranslations from '../loadTranslations';
 
 initializeGT({
-  defaultLocale: gtConfig.defaultLocale,
-  locales: gtConfig.locales,
+  ...gtConfig,
   loadTranslations,
 });
 

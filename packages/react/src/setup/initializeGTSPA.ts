@@ -15,6 +15,10 @@ import {
 } from '../condition-store/createBrowserConditionStore';
 import { addRuntimeCredentials } from './runtimeCredentials';
 
+export type InitializeGTSPAParams = I18nConfigParams &
+  BrowserI18nCacheParams &
+  CreateBrowserConditionStoreParams;
+
 /**
  * Initialize GT for an SPA
  * - i18nCache
@@ -23,11 +27,7 @@ import { addRuntimeCredentials } from './runtimeCredentials';
  *
  * This is SPA for browser runtime
  */
-export async function initializeGTSPA(
-  config: I18nConfigParams &
-    BrowserI18nCacheParams &
-    CreateBrowserConditionStoreParams
-) {
+export async function initializeGTSPA(config: InitializeGTSPAParams) {
   const runtimeConfig = addRuntimeCredentials(config);
   initializeI18nConfig(runtimeConfig, 'SPA');
 
