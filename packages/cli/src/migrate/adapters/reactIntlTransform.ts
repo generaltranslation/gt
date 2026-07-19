@@ -108,7 +108,7 @@ export function transformReactIntlSource(
     };
   }
 
-  const retainProvider = options.retainNextIntlProvider === true;
+  const retainProvider = options.retainProvider === true;
   const skipReasons: string[] = [];
   const todos: TodoEntry[] = [];
 

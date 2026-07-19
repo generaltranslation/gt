@@ -486,7 +486,7 @@ describe('reactIntl: IntlProvider', () => {
     expect(r.code).toMatch(/<>[\s\S]*\{children\}[\s\S]*<\/>/);
   });
 
-  it('retains the provider untouched under retainNextIntlProvider', () => {
+  it('retains the provider untouched under retainProvider', () => {
     const code = lines(
       "'use client';",
       "import { IntlProvider } from 'react-intl';",
@@ -498,7 +498,7 @@ describe('reactIntl: IntlProvider', () => {
       '  );',
       '}'
     );
-    const r = transform(code, {}, { retainNextIntlProvider: true });
+    const r = transform(code, {}, { retainProvider: true });
     // Nothing convertible remains, so the file is left as-is.
     expect(r.skipReasons).toEqual([]);
     expect(r.code).toBeNull();
