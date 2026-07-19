@@ -1022,10 +1022,19 @@ export function convertCatalogs(input: ConvertInput): ConvertResult {
   // Synthesize entries for call-site literal defaultValues whose keys are
   // absent from every catalog (only for the default locale — other locales
   // fall back through gt's own resolution).
+  // Non-default namespaces nest under their namespace key, so a synthesized
+  // entry's path must be namespace + in-namespace key. Join them with the SAME
+  // separator getByPath/setByPath split on (the custom keySeparator, default
+  // '.'); joining with a literal '.' under a non-default keySeparator would glue
+  // the namespace onto the first key segment (ns 'dashboard' + key
+  // 'widgets|count' -> 'dashboard.widgets' | 'count') and land the value under a
+  // spurious flat key instead of dashboard -> widgets -> count.
+  const keySep = separators.keySeparator || '.';
   for (const def of input.defaults ?? []) {
     const target = byLocale[input.defaultLocale];
     if (!target) continue;
-    const path = def.ns === input.defaultNS ? def.key : `${def.ns}.${def.key}`;
+    const path =
+      def.ns === input.defaultNS ? def.key : `${def.ns}${keySep}${def.key}`;
     if (getByPath(target, path, separators) !== undefined) continue;
     const leafCtx: LeafContext = {
       resolveNested: () => null,

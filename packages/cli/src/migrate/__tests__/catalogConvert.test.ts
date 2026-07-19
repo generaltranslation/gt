@@ -40,6 +40,17 @@ function render(
   return formatMessage(icu, { locales: [locale], variables: vars });
 }
 
+/** Walks a '.'-separated path through the nested dictionary exactly as gt-next's
+ *  runtime resolver does, so a test can assert an emitted key is resolvable. */
+function resolveDotPath(dict: Record<string, unknown>, key: string): unknown {
+  let current: unknown = dict;
+  for (const segment of key.split('.')) {
+    if (current === null || typeof current !== 'object') return undefined;
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return current;
+}
+
 describe('escapeIcuText round-trips through @formatjs', () => {
   const cases = [
     'plain text',
@@ -549,6 +560,62 @@ describe('I2: custom keySeparator conversion', () => {
     expect(() =>
       convert({ greeting: { 'a.b': 'Hi' } }, { separators: pipeSep })
     ).toThrow(/mis-nest/);
+  });
+
+  it('synthesizes a defaultValue for a non-default namespace at the correct nested path (J1)', () => {
+    // '|' keySeparator, and 'dashboard:widgets|count' is absent from every
+    // catalog but carries a call-site defaultValue. The synthesized entry must
+    // nest under dashboard -> widgets -> count, not a spurious flat key
+    // 'dashboard.widgets' joined with a literal '.'.
+    const result = convertCatalogs({
+      defaultLocale: 'en',
+      locales: ['en'],
+      defaultNS: 'translation',
+      separators: pipeSep,
+      raw: {
+        en: {
+          translation: { title: 'Home' },
+          dashboard: { existing: 'X' },
+        },
+      },
+      defaults: [
+        { ns: 'dashboard', key: 'widgets|count', value: 'Count {{n}}' },
+      ],
+    });
+    const dict = result.byLocale.en;
+    // Correct nested shape, under the existing namespace.
+    expect(dict.dashboard).toEqual({
+      existing: 'X',
+      widgets: { count: 'Count {n}' },
+    });
+    // No spurious flat key with a literal '.' at the dictionary root.
+    expect(dict['dashboard.widgets']).toBeUndefined();
+    // And the value is reachable by gt-next's '.'-path resolution.
+    expect(resolveDotPath(dict, 'dashboard.widgets.count')).toBe('Count {n}');
+    expect(result.reports.some((r) => /synthesized/.test(r.reason))).toBe(true);
+  });
+
+  it('leaves default-separator namespace synthesis nesting unchanged', () => {
+    const result = convertCatalogs({
+      defaultLocale: 'en',
+      locales: ['en'],
+      defaultNS: 'translation',
+      raw: {
+        en: {
+          translation: { title: 'Home' },
+          dashboard: { existing: 'X' },
+        },
+      },
+      defaults: [
+        { ns: 'dashboard', key: 'widgets.count', value: 'Count {{n}}' },
+      ],
+    });
+    const dict = result.byLocale.en;
+    expect(dict.dashboard).toEqual({
+      existing: 'X',
+      widgets: { count: 'Count {n}' },
+    });
+    expect(resolveDotPath(dict, 'dashboard.widgets.count')).toBe('Count {n}');
   });
 });
 
