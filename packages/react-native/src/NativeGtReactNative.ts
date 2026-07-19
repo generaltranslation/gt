@@ -1,5 +1,5 @@
 import type { TurboModule } from 'react-native';
-import { TurboModuleRegistry } from 'react-native';
+import { Platform, TurboModuleRegistry } from 'react-native';
 export interface Spec extends TurboModule {
   multiply(a: number, b: number): number;
   getNativeLocales(): string[];
@@ -7,5 +7,13 @@ export interface Spec extends TurboModule {
   nativeStoreSet(key: string, value: string): void;
 }
 
-export const GtReactNative =
-  TurboModuleRegistry.getEnforcing<Spec>('GtReactNative');
+// On web (react-native-web / Expo web) the native module is never registered, so
+// calling getEnforcing at module load throws and crashes the whole bundle before
+// any Platform.OS guard in the sibling utilities can run. Resolve to null on web
+// and let those guards handle the null path, matching how they already branch on
+// Platform.OS === 'web'. On native platforms getEnforcing is kept unchanged, so a
+// misconfigured native build still fails loudly at import as before.
+export const GtReactNative: Spec | null =
+  Platform.OS === 'web'
+    ? null
+    : TurboModuleRegistry.getEnforcing<Spec>('GtReactNative');
