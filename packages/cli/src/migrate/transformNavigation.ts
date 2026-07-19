@@ -118,6 +118,11 @@ export function transformNavigationFile(
     };
   }
 
+  // The generated module deliberately has no 'use client' directive, same
+  // as the next-intl createNavigation file it replaces: a shared module's
+  // hooks work when imported from client components, and a directive here
+  // would turn the Link re-export into a client reference for server
+  // importers.
   const lines: string[] = [];
   const wrapsPathname = destructured.includes('usePathname');
   const passthrough = destructured.filter(

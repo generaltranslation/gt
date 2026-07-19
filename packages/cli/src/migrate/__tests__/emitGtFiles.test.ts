@@ -186,6 +186,60 @@ describe('emitGtFiles', () => {
     expect(byPath.has(ctx.routing.routingFile!)).toBe(false);
   });
 
+  it('keeps a routing file imported through a custom path alias', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/i18n/routing.ts': '// routing',
+      'src/i18n/request.ts': '// request',
+      'src/lib/paths.ts': "import { routing } from '#app/i18n/routing';",
+      'messages/en.json': '{}',
+    });
+    ctx.sourceFiles = [path.join(ctx.cwd, 'src/lib/paths.ts')];
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+    expect(byPath.has(ctx.routing.routingFile!)).toBe(false);
+    // heuristic keeps get their own wording (the match may be wrong)
+    expect(
+      ctx.todos.some(
+        (todo) =>
+          todo.file === ctx.routing.routingFile &&
+          todo.reason.includes('paths.ts') &&
+          todo.reason.includes('path alias')
+      )
+    ).toBe(true);
+    // the unreferenced request file is still deleted
+    expect(byPath.get(ctx.routing.requestFile!)!.kind).toBe('delete');
+  });
+
+  it('keeps a routing file imported through a baseUrl-style specifier', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/i18n/routing.ts': '// routing',
+      'src/i18n/request.ts': '// request',
+      'src/lib/paths.ts': "import { routing } from 'i18n/routing';",
+      'messages/en.json': '{}',
+    });
+    ctx.sourceFiles = [path.join(ctx.cwd, 'src/lib/paths.ts')];
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+    expect(byPath.has(ctx.routing.routingFile!)).toBe(false);
+  });
+
+  it('does not mistake installed package subpaths for alias importers', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/i18n/routing.ts': '// routing',
+      'src/i18n/request.ts': '// request',
+      'src/lib/paths.ts': "import { helper } from 'some-pkg/i18n/routing';",
+      'node_modules/some-pkg/package.json': '{"name":"some-pkg"}',
+      'messages/en.json': '{}',
+    });
+    ctx.sourceFiles = [path.join(ctx.cwd, 'src/lib/paths.ts')];
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+    expect(byPath.get(ctx.routing.routingFile!)!.kind).toBe('delete');
+  });
+
   it('places loadDictionary inside src/ when the app uses a src dir', () => {
     const ctx = makeProject({
       'package.json': basePackageJson,
