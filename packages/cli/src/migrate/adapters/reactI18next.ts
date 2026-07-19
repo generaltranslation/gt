@@ -130,8 +130,12 @@ export const reactI18nextAdapter: SourceAdapter = {
   nextConfigCandidates: ['next.config.ts', 'next.config.js', 'next.config.mjs'],
   middlewareCandidates: [],
 
+  // Mirrors ownsModule: this adapter migrates the react-i18next client surface,
+  // so the out-of-scope teardown scan counts only react-i18next imports. Bare
+  // i18next (the hand-rolled server runtime) is out of v1 scope and must not
+  // count as an unscanned usage, or a scoped run wrongly retains the provider.
   projectUsagePattern:
-    /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"](?:react-)?i18next(?:\/|['"])/,
+    /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"]react-i18next(?:\/|['"])/,
   // The i18next runtime bootstrap and the bespoke server getT() are hand-rolled;
   // removing the deps is a manual step once the server is migrated, so no
   // automatic package/file teardown.

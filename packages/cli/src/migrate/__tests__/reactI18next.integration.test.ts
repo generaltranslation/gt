@@ -616,3 +616,103 @@ describe('react-i18next full migration', () => {
     expect(fs.existsSync(path.join(cwd, 'gt/dictionaries'))).toBe(false);
   });
 });
+
+describe('react-i18next out-of-scope teardown scan (projectUsagePattern)', () => {
+  // A clean client migration (page + I18nextProvider) scoped with --src, plus a
+  // server file elsewhere in the project. The out-of-scope scan must key off the
+  // library this adapter actually migrates (react-i18next), not bare i18next.
+  const CLEAN_CLIENT_FILES: Record<string, string> = {
+    'package.json': PKG,
+    'next.config.ts': 'export default {};',
+    'app/i18n/settings.ts': SETTINGS,
+    'app/[locale]/layout.tsx': [
+      'export default function L({ children }: any) {',
+      '  return <html><body>{children}</body></html>;',
+      '}',
+    ].join('\n'),
+    'app/[locale]/page.tsx': [
+      "'use client';",
+      "import { useTranslation } from 'react-i18next';",
+      'export default function Home() {',
+      '  const { t } = useTranslation();',
+      "  return <h1>{t('title')}</h1>;",
+      '}',
+    ].join('\n'),
+    'app/[locale]/Providers.tsx': [
+      "'use client';",
+      "import { useTranslation, I18nextProvider } from 'react-i18next';",
+      "import i18n from '../../i18n';",
+      'export function Providers({ children }: { children: React.ReactNode }) {',
+      '  const { t } = useTranslation();',
+      '  return (',
+      '    <I18nextProvider i18n={i18n}>',
+      "      <h1>{t('title')}</h1>",
+      '      {children}',
+      '    </I18nextProvider>',
+      '  );',
+      '}',
+    ].join('\n'),
+    'public/locales/en/translation.json': JSON.stringify({ title: 'Home' }),
+    'public/locales/pl/translation.json': JSON.stringify({ title: 'Strona' }),
+  };
+
+  it('swaps I18nextProvider when an out-of-scope file uses bare i18next only', async () => {
+    // The server file uses core i18next (not react-i18next). It is outside the
+    // --src scope, so the whole-project scan sees it. Because this adapter
+    // migrates the react-i18next client surface, a bare-i18next server file must
+    // NOT count as an unscanned react-i18next usage; the client provider swap
+    // stays a clean full migration.
+    const cwd = makeRawApp({
+      ...CLEAN_CLIENT_FILES,
+      'server/i18n-server.ts': [
+        "import i18next from 'i18next';",
+        'export async function initServer() {',
+        "  await i18next.init({ lng: 'en', resources: {} });",
+        '  return i18next;',
+        '}',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      { ...OPTIONS, from: 'react-i18next', src: ['app/**/*.{js,jsx,ts,tsx}'] },
+      'react-i18next',
+      cwd
+    );
+
+    const providers = read(cwd, 'app/[locale]/Providers.tsx');
+    // Clean full migration: the provider is swapped for <GTProvider>.
+    expect(providers).toContain('<GTProvider');
+    expect(providers).not.toContain('<I18nextProvider');
+    // The bare-i18next server file is not misreported as an unscanned usage.
+    expect(read(cwd, 'gt-migrate-report.md')).not.toContain(
+      'server/i18n-server.ts'
+    );
+  });
+
+  it('retains I18nextProvider when an out-of-scope file still uses react-i18next', async () => {
+    // Guard against over-tightening: a genuine react-i18next usage outside the
+    // scope must still block the provider swap and be reported as unscanned.
+    const cwd = makeRawApp({
+      ...CLEAN_CLIENT_FILES,
+      'widgets/Sidebar.tsx': [
+        "'use client';",
+        "import { useTranslation } from 'react-i18next';",
+        'export function Sidebar() {',
+        '  const { t } = useTranslation();',
+        "  return <aside>{t('title')}</aside>;",
+        '}',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      { ...OPTIONS, from: 'react-i18next', src: ['app/**/*.{js,jsx,ts,tsx}'] },
+      'react-i18next',
+      cwd
+    );
+
+    const providers = read(cwd, 'app/[locale]/Providers.tsx');
+    // Partial migration: the provider is retained for the unscanned file.
+    expect(providers).toContain('<I18nextProvider');
+    const report = read(cwd, 'gt-migrate-report.md');
+    expect(report).toContain('not scanned');
+    expect(report).toContain('widgets/Sidebar.tsx');
+  });
+});
