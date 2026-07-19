@@ -51,7 +51,7 @@ export function resolveMigrationSource(
   return { kind: 'resolved', id: 'react-i18next' };
 }
 
-function readDeps(cwd: string): Record<string, string> {
+export function readDeps(cwd: string): Record<string, string> {
   try {
     const pkg = JSON.parse(
       fs.readFileSync(path.join(cwd, 'package.json'), 'utf8')
@@ -60,6 +60,11 @@ function readDeps(cwd: string): Record<string, string> {
   } catch {
     return {};
   }
+}
+
+/** True when `name` is a dependency or devDependency in cwd's package.json. */
+export function hasDependency(cwd: string, name: string): boolean {
+  return Boolean(readDeps(cwd)[name]);
 }
 
 function nextI18nextMessage(): string {

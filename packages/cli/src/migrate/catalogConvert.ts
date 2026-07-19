@@ -869,12 +869,29 @@ function writeOrdinalAsLiteral(
  * ICU-quotes a literal `#` so it is not read as the formatted count. `#` is only
  * special inside a `plural`/`selectordinal` sub-message, so this is applied to
  * branch values ONLY — quoting it in ordinary text would render a literal `'#'`
- * (gt's formatter does not strip the quotes outside a plural). The leaf has
- * already been converted, so every `#` in it is source literal text (ICU
- * placeholders are `{name}`), which is exactly what must be quoted.
+ * (gt's formatter does not strip the quotes outside a plural).
+ *
+ * Only `#` in text context (brace depth 0) is quoted. A `#` inside a `{...}`
+ * argument node is part of ICU syntax — a number/currency skeleton such as
+ * `{price, number, ::.00##}`, or a nested plural's own count — and must be left
+ * untouched; quoting it would corrupt the skeleton (ICU number skeletons have no
+ * `'` quoting) and break the format.
  */
 function quoteHashInBranch(value: string): string {
-  return value.replace(/#/g, "'#'");
+  let out = '';
+  let depth = 0;
+  for (const ch of value) {
+    if (ch === '{') {
+      depth++;
+    } else if (ch === '}') {
+      if (depth > 0) depth--;
+    } else if (ch === '#' && depth === 0) {
+      out += "'#'";
+      continue;
+    }
+    out += ch;
+  }
+  return out;
 }
 
 function buildBranch(
@@ -924,6 +941,27 @@ export function convertCatalogs(input: ConvertInput): ConvertResult {
     throw new CatalogConversionError(
       'i18next `keySeparator: false` (flat keys) is not supported: gt-next resolves dictionary keys by dotted path, so flat keys containing dots would be mis-nested. Convert the catalog to nested keys or migrate those keys manually.'
     );
+  }
+
+  if (separators.keySeparator !== '.') {
+    // A custom key separator (e.g. '|') is re-expressed as gt-next's '.' path
+    // separator in both the dictionary nesting and the emitted t() keys. That is
+    // only unambiguous when no key segment itself contains a literal '.', so
+    // refuse a catalog whose keys would mis-nest (consistent with the
+    // keySeparator: false refusal above).
+    for (const locale of input.locales) {
+      const nsTrees = input.raw[locale] ?? {};
+      for (const ns of Object.keys(nsTrees)) {
+        const tree = nsTrees[ns];
+        if (tree === null || typeof tree !== 'object') continue;
+        const offending = findDotInKeySegment(tree as Record<string, unknown>);
+        if (offending !== null) {
+          throw new CatalogConversionError(
+            `i18next keySeparator '${separators.keySeparator}' cannot be mapped onto gt-next's '.' path separator: the key segment '${offending}' contains a literal '.', which would mis-nest. Rename that key to avoid '.', or migrate it manually.`
+          );
+        }
+      }
+    }
   }
 
   const reports: ConversionReport[] = [];
@@ -1095,4 +1133,20 @@ function setByPath(
   }
   current[segments[segments.length - 1]] = value;
   return true;
+}
+
+/**
+ * Returns the first object key containing a literal '.' anywhere in a nested
+ * catalog tree, or null. Used to refuse a custom-keySeparator run whose keys
+ * cannot be re-expressed as gt-next '.'-separated paths without mis-nesting.
+ */
+function findDotInKeySegment(tree: Record<string, unknown>): string | null {
+  for (const [key, value] of Object.entries(tree)) {
+    if (key.includes('.')) return key;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      const nested = findDotInKeySegment(value as Record<string, unknown>);
+      if (nested !== null) return nested;
+    }
+  }
+  return null;
 }

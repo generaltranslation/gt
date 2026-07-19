@@ -4,6 +4,7 @@ import { formatMessage } from '@generaltranslation/format';
 import {
   CatalogConversionError,
   convertCatalogs,
+  DEFAULT_SEPARATORS,
   escapeIcuText,
   type ConvertInput,
 } from '../catalogConvert.js';
@@ -482,6 +483,72 @@ describe('adversary B3: literal # inside a plural must not read as the count', (
   it('still renders # literally in plain (non-plural) text', () => {
     const { dict } = convert({ k: 'C# is great, 100% sure' });
     expect(render(dict.k as string, 'en', {})).toBe('C# is great, 100% sure');
+  });
+});
+
+describe('I1: # inside a number skeleton within a plural branch', () => {
+  it('leaves skeleton # intact (parses via @formatjs and renders through gt)', () => {
+    const { dict } = convert(
+      {
+        cart_one:
+          '{{count}} item at {{price, number(minimumFractionDigits: 2, maximumFractionDigits: 4)}}',
+        cart_other:
+          '{{count}} items at {{price, number(minimumFractionDigits: 2, maximumFractionDigits: 4)}}',
+      },
+      { countKeys: new Set(['translation:cart']) }
+    );
+    const icu = dict.cart as string;
+    // min 2, max 4 -> `.00##`; the skeleton # must NOT be ICU-quoted.
+    expect(icu).toContain('::.00##');
+    expect(icu).not.toContain("'#'");
+    // (a) valid ICU per @formatjs
+    expect(() => parseIcu(icu)).not.toThrow();
+    // (b) renders correctly through gt's formatMessage
+    expect(render(icu, 'en', { count: 1, price: 3 })).toBe('1 item at 3.00');
+    expect(render(icu, 'en', { count: 5, price: 3.14159 })).toBe(
+      '5 items at 3.1416'
+    );
+  });
+
+  it('quotes a literal depth-0 # while leaving the skeleton # in the same branch', () => {
+    const { dict } = convert(
+      {
+        room_one:
+          'Room #{{count}} at {{price, number(minimumFractionDigits: 2, maximumFractionDigits: 4)}}',
+        room_other:
+          'Rooms #{{count}} at {{price, number(minimumFractionDigits: 2, maximumFractionDigits: 4)}}',
+      },
+      { countKeys: new Set(['translation:room']) }
+    );
+    const icu = dict.room as string;
+    expect(icu).toContain('::.00##');
+    expect(() => parseIcu(icu)).not.toThrow();
+    // the literal # before {count} renders as a literal '#'
+    expect(render(icu, 'en', { count: 1, price: 3 })).toBe('Room #1 at 3.00');
+  });
+});
+
+describe('I2: custom keySeparator conversion', () => {
+  const pipeSep = { ...DEFAULT_SEPARATORS, keySeparator: '|' };
+
+  it('converts a | project into a nested, dot-resolvable dictionary', () => {
+    const { dict } = convert(
+      { greeting: { hello: 'Hi {{name}}' } },
+      { separators: pipeSep }
+    );
+    // gt-next resolves by '.', and the dictionary nests greeting.hello.
+    const hello = (dict.greeting as Record<string, unknown>).hello as string;
+    expect(hello).toBe('Hi {name}');
+    expect(render(hello, 'en', { name: 'Ada' })).toBe('Hi Ada');
+  });
+
+  it('refuses a | project whose key segment contains a literal .', () => {
+    expect(() =>
+      convert({ greeting: { 'a.b': 'Hi' } }, { separators: pipeSep })
+    ).toThrow(CatalogConversionError);
+    expect(() =>
+      convert({ greeting: { 'a.b': 'Hi' } }, { separators: pipeSep })
+    ).toThrow(/mis-nest/);
   });
 });
 

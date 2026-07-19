@@ -15,7 +15,10 @@ import {
 import { emitGtFiles } from '../../migrate/emitGtFiles.js';
 import { inlinePass } from '../../migrate/inline.js';
 import { buildReport } from '../../migrate/report.js';
-import { resolveMigrationSource } from '../../migrate/resolveSource.js';
+import {
+  hasDependency,
+  resolveMigrationSource,
+} from '../../migrate/resolveSource.js';
 import { transformLayoutFile } from '../../migrate/transformLayout.js';
 import { transformSourceFile } from '../../migrate/transformSource.js';
 import type {
@@ -666,20 +669,6 @@ function isLayoutFile(file: string): boolean {
     base === 'layout.jsx' ||
     base === 'layout.js'
   );
-}
-
-function hasDependency(cwd: string, name: string): boolean {
-  try {
-    const pkg = JSON.parse(
-      fs.readFileSync(path.join(cwd, 'package.json'), 'utf8')
-    );
-    return Boolean(
-      (pkg.dependencies && pkg.dependencies[name]) ||
-      (pkg.devDependencies && pkg.devDependencies[name])
-    );
-  } catch {
-    return false;
-  }
 }
 
 function findRootFiles(cwd: string, candidates: string[]): string[] {

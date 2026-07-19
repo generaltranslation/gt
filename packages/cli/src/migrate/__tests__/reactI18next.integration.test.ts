@@ -466,4 +466,104 @@ describe('react-i18next full migration', () => {
       true
     );
   });
+
+  const PIPE_LAYOUT = [
+    'export default function LocaleLayout({',
+    '  children,',
+    '  params,',
+    '}: {',
+    '  children: React.ReactNode;',
+    '  params: { locale: string };',
+    '}) {',
+    '  return (',
+    '    <html lang={params.locale}>',
+    '      <body>{children}</body>',
+    '    </html>',
+    '  );',
+    '}',
+  ].join('\n');
+
+  const pipeSettings = (): string =>
+    [
+      'export function getOptions() {',
+      '  return {',
+      "    supportedLngs: ['en'],",
+      "    fallbackLng: 'en',",
+      "    defaultNS: 'translation',",
+      "    keySeparator: '|',",
+      '  };',
+      '}',
+    ].join('\n');
+
+  it('converts a custom keySeparator (|) project with resolvable keys', async () => {
+    const cwd = makeRawApp({
+      'package.json': PKG,
+      'next.config.ts': [
+        'const nextConfig = { reactStrictMode: true };',
+        'export default nextConfig;',
+      ].join('\n'),
+      'app/i18n/settings.ts': pipeSettings(),
+      'app/[locale]/layout.tsx': PIPE_LAYOUT,
+      'app/[locale]/page.tsx': [
+        "'use client';",
+        "import { useTranslation } from 'react-i18next';",
+        'export default function Home() {',
+        '  const { t } = useTranslation();',
+        "  return <h1>{t('nav|home')}</h1>;",
+        '}',
+      ].join('\n'),
+      'public/locales/en/translation.json': JSON.stringify({
+        nav: { home: 'Home' },
+      }),
+    });
+    await handleMigrateCommand({ ...OPTIONS }, 'i18next', cwd);
+
+    // Dictionary nests nav.home so gt-next resolves it by '.'.
+    const en = readJson(cwd, 'gt/dictionaries/en.json');
+    expect(en.nav.home).toBe('Home');
+    // The emitted t() key is re-expressed from 'nav|home' to gt's '.' path.
+    // (formatFiles is mocked in these tests, so the raw generator quote style is
+    // whatever @babel/generator emits; assert quote-agnostically.)
+    const page = read(cwd, 'app/[locale]/page.tsx');
+    expect(page).toMatch(/t\(\s*["']nav\.home["']\s*\)/);
+    expect(page).not.toContain('nav|home');
+  });
+
+  it('refuses a | project whose key segment contains a literal .', async () => {
+    const cwd = makeRawApp({
+      'package.json': PKG,
+      'next.config.ts': [
+        'const nextConfig = { reactStrictMode: true };',
+        'export default nextConfig;',
+      ].join('\n'),
+      'app/i18n/settings.ts': pipeSettings(),
+      'app/[locale]/layout.tsx': PIPE_LAYOUT,
+      'app/[locale]/page.tsx': [
+        "'use client';",
+        "import { useTranslation } from 'react-i18next';",
+        'export default function Home() {',
+        '  const { t } = useTranslation();',
+        "  return <h1>{t('nav|a.b')}</h1>;",
+        '}',
+      ].join('\n'),
+      'public/locales/en/translation.json': JSON.stringify({
+        nav: { 'a.b': 'Home' },
+      }),
+    });
+    vi.spyOn(process, 'exit').mockImplementation(((code?: number) => {
+      throw new Error(`exit:${code}`);
+    }) as never);
+    // logErrorAndExit routes the refusal message through logger.error.
+    const errors: string[] = [];
+    vi.spyOn(logger, 'error').mockImplementation((m: string) => {
+      errors.push(m);
+    });
+
+    await expect(
+      handleMigrateCommand({ ...OPTIONS }, 'i18next', cwd)
+    ).rejects.toThrow('exit:1');
+    expect(errors.join(' ')).toMatch(/mis-nest|keySeparator/);
+    // Nothing was written.
+    expect(fs.existsSync(path.join(cwd, 'gt/dictionaries'))).toBe(false);
+  });
 });

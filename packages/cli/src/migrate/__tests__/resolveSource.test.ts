@@ -2,7 +2,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { resolveMigrationSource } from '../resolveSource.js';
+import {
+  hasDependency,
+  readDeps,
+  resolveMigrationSource,
+} from '../resolveSource.js';
 
 const tmpDirs: string[] = [];
 
@@ -97,5 +101,33 @@ describe('resolveMigrationSource', () => {
       kind: 'resolved',
       id: 'react-i18next',
     });
+  });
+});
+
+describe('readDeps / hasDependency (shared package.json reader)', () => {
+  it('merges dependencies and devDependencies', () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-ri18n-deps-'));
+    tmpDirs.push(cwd);
+    fs.writeFileSync(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        dependencies: { 'react-i18next': '^14' },
+        devDependencies: { typescript: '^5' },
+      })
+    );
+    expect(readDeps(cwd)).toMatchObject({
+      'react-i18next': '^14',
+      typescript: '^5',
+    });
+    expect(hasDependency(cwd, 'react-i18next')).toBe(true);
+    expect(hasDependency(cwd, 'typescript')).toBe(true);
+    expect(hasDependency(cwd, 'vue-i18n')).toBe(false);
+  });
+
+  it('returns empty / false when package.json is missing or unreadable', () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-ri18n-deps-'));
+    tmpDirs.push(cwd);
+    expect(readDeps(cwd)).toEqual({});
+    expect(hasDependency(cwd, 'react-i18next')).toBe(false);
   });
 });

@@ -668,6 +668,17 @@ function mapKey(
     keyPath = rawKey.slice(idx + nsSep.length);
   }
 
+  // Re-express the key on gt-next's '.' path separator. i18next may use a custom
+  // keySeparator (e.g. '|'); the converted dictionary nests exactly the way
+  // gt-next resolves it (by '.'), so the emitted key must use '.' too or every
+  // runtime lookup misses. keySeparator: false is refused during catalog
+  // discovery, and a segment containing a literal '.' refuses there too, so a
+  // run reaching here has a string separator whose split maps cleanly onto '.'.
+  const keySep = config.separators.keySeparator;
+  if (typeof keySep === 'string' && keySep !== '' && keySep !== '.') {
+    keyPath = keyPath.split(keySep).join('.');
+  }
+
   if (binding.rootId === null) {
     // Root-scoped gt hook: the key is the full path from the dictionary root.
     return callNs === config.defaultNS ? keyPath : `${callNs}.${keyPath}`;
