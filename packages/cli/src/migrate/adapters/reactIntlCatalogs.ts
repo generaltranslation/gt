@@ -134,13 +134,23 @@ export async function discoverReactIntlCatalogs(
     if (unflattened.reNested) anyReNested = true;
   }
 
+  // Resolve where the emitted default-locale catalog will actually live before
+  // building report TODOs, so each TODO names the file the user should open. A
+  // re-nest or an augmentation writes every locale to a sibling gt-owned dir
+  // (originals are never mutated); otherwise the catalog stays in place. Either
+  // way the default-locale catalog ends up at catalogDir/<defaultLocale>.json.
+  const catalogDir =
+    anyReNested || defaultAugmented
+      ? path.join(path.dirname(dir), `${path.basename(dir)}-gt`)
+      : dir;
+
   // Report synthesized entries and conflicting variants (only for ids we
   // actually synthesized; an authoritative catalog wins, so its inline
   // defaultMessage conflicts are not the migration's concern).
   const synthesizedSet = new Set(synthesizedIds);
   if (b2Synthesized) {
     reportTodos.push({
-      file: path.join(dir, `${defaultLocale}.json`),
+      file: path.join(catalogDir, `${defaultLocale}.json`),
       reason:
         `no ${defaultLocale}.json existed; synthesized the source catalog ` +
         `(${synthesizedIds.length} entr${synthesizedIds.length === 1 ? 'y' : 'ies'}) from inline ` +
@@ -148,7 +158,7 @@ export async function discoverReactIntlCatalogs(
     });
   } else if (defaultAugmented) {
     reportTodos.push({
-      file: path.join(dir, `${defaultLocale}.json`),
+      file: path.join(catalogDir, `${defaultLocale}.json`),
       reason:
         `the ${defaultLocale} catalog was missing ${synthesizedIds.length} id(s) used in code ` +
         `(${synthesizedIds.slice(0, 10).join(', ')}${synthesizedIds.length > 10 ? ', …' : ''}); ` +
@@ -164,7 +174,7 @@ export async function discoverReactIntlCatalogs(
         `[${[...variants].map((v) => JSON.stringify(v)).join(' | ')}]; ` +
         `used ${JSON.stringify(harvested[id])} (first by file order) in the ` +
         'synthesized catalog — reconcile them so the source text is unambiguous',
-      file: path.join(dir, `${defaultLocale}.json`),
+      file: path.join(catalogDir, `${defaultLocale}.json`),
     });
   }
   if (collisions.size > 0) {
@@ -175,14 +185,13 @@ export async function discoverReactIntlCatalogs(
     );
   }
 
-  // Emit new catalog files only where required, and repoint `dir` at them.
-  // Reuse the originals verbatim in place when nothing changed.
+  // Emit new catalog files only where required, and repoint `dir` at them
+  // (catalogDir, resolved above). Reuse the originals verbatim in place when
+  // nothing changed.
   const filesToEmit: FileEdit[] = [];
-  let catalogDir = dir;
   if (anyReNested || defaultAugmented) {
     // Re-nesting or augmenting an existing catalog would mutate originals, so
     // write every locale to a sibling gt-owned directory and serve from there.
-    catalogDir = path.join(path.dirname(dir), `${path.basename(dir)}-gt`);
     for (const locale of finalLocales) {
       filesToEmit.push({
         path: path.join(catalogDir, `${locale}.json`),

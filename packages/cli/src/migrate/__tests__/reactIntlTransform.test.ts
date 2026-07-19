@@ -879,6 +879,107 @@ describe('reactIntl: <FormattedMessage> in expression positions (B2)', () => {
   });
 });
 
+describe('reactIntl: <FormattedMessage> hook ownership across callbacks (H1)', () => {
+  it('lands the injected hook in the component, not the map callback', () => {
+    // items.map(item => <FormattedMessage/>) must not get useTranslations()
+    // injected into the callback arrow (a rules-of-hooks violation); the hook
+    // belongs to the enclosing component and the callback closes over it.
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { FormattedMessage } from 'react-intl';",
+        'export function List({ items }: { items: string[] }) {',
+        '  return <ul>{items.map((item) => <li key={item}><FormattedMessage id="row" /></li>)}</ul>;',
+        '}'
+      ),
+      { row: 'Row' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    // The declaration sits in the component body, immediately after its `{`.
+    expect(r.code).toMatch(
+      /function List\([^)]*\)\s*(?::[^{]*)?\{\s*const \$gtT = useTranslations\(\)/
+    );
+    // The callback references the binding it closes over...
+    expect(r.code).toMatch(/items\.map\(\(item\) =>[^)]*\$gtT\(['"]row['"]\)/);
+    // ...and never declares its own hook inside the arrow.
+    expect(r.code).not.toMatch(/=>\s*\{?\s*const \$gtT = useTranslations/);
+  });
+
+  it('reuses a component-level intl binding from inside a callback', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl, FormattedMessage } from 'react-intl';",
+        'export function List({ items }: { items: string[] }) {',
+        '  const intl = useIntl();',
+        '  return <ul>{items.map((item) => <li key={item}><FormattedMessage id="row" /></li>)}</ul>;',
+        '}'
+      ),
+      { row: 'Row' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(/const intl = useTranslations\(\)/);
+    // The callback reuses `intl`; no second hook is injected.
+    expect(r.code).toMatch(/items\.map\(\(item\) =>[^)]*intl\(['"]row['"]\)/);
+    expect(r.code).not.toContain('$gtT');
+  });
+
+  it('resolves a callback inside a plain helper to that helper', () => {
+    // A helper isn't a component, but the pre-existing contract already injects
+    // a hook into whatever function directly encloses a <FormattedMessage>; the
+    // climb keeps that behavior instead of burying the hook in the callback.
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { FormattedMessage } from 'react-intl';",
+        'function buildRows(items: string[]) {',
+        '  return items.map((item) => <li key={item}><FormattedMessage id="row" /></li>);',
+        '}',
+        'export { buildRows };'
+      ),
+      { row: 'Row' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(
+      /function buildRows\([^)]*\)\s*(?::[^{]*)?\{\s*const \$gtT = useTranslations\(\)/
+    );
+    expect(r.code).toMatch(/items\.map\(\(item\) =>[^)]*\$gtT\(['"]row['"]\)/);
+  });
+
+  it('skips a callback at module scope with no legal hook owner', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { FormattedMessage } from 'react-intl';",
+        'export const rows = [1, 2].map((n) => <li key={n}><FormattedMessage id="row" /></li>);'
+      ),
+      { row: 'Row' }
+    );
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.length).toBeGreaterThan(0);
+    expect(r.skipReasons.join(' ')).toMatch(/module scope|component/i);
+    expect(r.code ?? '').not.toContain('$gtT');
+  });
+
+  it('keeps a memo()-wrapped component as a legal hook owner', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { memo } from 'react';",
+        "import { FormattedMessage } from 'react-intl';",
+        'export const C = memo(() => <div><FormattedMessage id="row" /></div>);'
+      ),
+      { row: 'Row' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(
+      /memo\(\(\) =>[^;]*const \$gtT = useTranslations\(\)/
+    );
+    expect(r.code).toMatch(/\$gtT\(['"]row['"]\)/);
+  });
+});
+
 describe('reactIntl: destructured useIntl and the import-survivor guard (B3)', () => {
   it('rewrites const { formatMessage } = useIntl() and its bare calls', () => {
     const r = transform(

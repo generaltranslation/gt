@@ -575,7 +575,12 @@ export function transformReactIntlSource(
       return;
     }
 
-    const fn = enclosingFunction(path);
+    // The hook must be owned by the enclosing component, not a callback the
+    // component passes to a helper (e.g. items.map(item => <FormattedMessage/>)).
+    // Injecting useTranslations() into the callback is a rules-of-hooks
+    // violation; hookOwnerFunction climbs past callbacks to the component and the
+    // callback closes over the binding. null = no legal owner -> whole-file skip.
+    const fn = hookOwnerFunction(path);
     formattedMessages.push({ element: path, id, values: valuesExpr, fn });
   }
 
@@ -1360,6 +1365,64 @@ function unwrapParens(node: t.Node): t.Node {
 function enclosingFunction(path: NodePath): t.Function | null {
   const fn = path.getFunctionParent();
   return fn ? fn.node : null;
+}
+
+/** Component higher-order-component wrappers whose function argument is still a
+ *  component that may legally own hooks (unlike a plain callback such as .map). */
+const COMPONENT_HOCS = new Set(['memo', 'forwardRef']);
+
+function isComponentHocCall(node: t.Node): boolean {
+  if (!t.isCallExpression(node)) return false;
+  const callee = node.callee;
+  if (t.isIdentifier(callee)) return COMPONENT_HOCS.has(callee.name);
+  // React.memo(...) / React.forwardRef(...)
+  if (
+    t.isMemberExpression(callee) &&
+    !callee.computed &&
+    t.isIdentifier(callee.property)
+  ) {
+    return COMPONENT_HOCS.has(callee.property.name);
+  }
+  return false;
+}
+
+/** True when `fnPath` names a function that can legally own a React hook: a
+ *  function declaration, a function/arrow assigned to a variable, a default
+ *  export, or one wrapped in a component HOC (memo/forwardRef). A function that
+ *  is a plain call argument (a callback like .map/.forEach/useMemo) cannot. */
+function isLegalHookOwner(fnPath: NodePath<t.Function>): boolean {
+  const node = fnPath.node;
+  if (t.isFunctionDeclaration(node)) return true;
+  if (!t.isArrowFunctionExpression(node) && !t.isFunctionExpression(node)) {
+    // object/class methods are not treated as hook owners here.
+    return false;
+  }
+  const parent = fnPath.parent;
+  if (t.isVariableDeclarator(parent) && parent.init === node) return true;
+  if (t.isExportDefaultDeclaration(parent)) return true;
+  if (
+    isComponentHocCall(parent) &&
+    t.isCallExpression(parent) &&
+    parent.arguments.includes(node)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** The function an injected useTranslations() hook must live in: the nearest
+ *  enclosing function that can legally own a hook, climbing past callbacks
+ *  (functions passed as call arguments, e.g. items.map(item => …)) that would
+ *  otherwise capture the hook and produce a rules-of-hooks violation. Returns
+ *  null when no legal owner exists (module scope or callbacks all the way up),
+ *  which the caller turns into a whole-file skip. */
+function hookOwnerFunction(path: NodePath): t.Function | null {
+  let fnPath = path.getFunctionParent();
+  while (fnPath) {
+    if (isLegalHookOwner(fnPath)) return fnPath.node;
+    fnPath = fnPath.getFunctionParent();
+  }
+  return null;
 }
 
 /**

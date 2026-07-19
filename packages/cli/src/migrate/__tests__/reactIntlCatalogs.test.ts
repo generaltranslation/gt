@@ -261,6 +261,97 @@ describe('discoverReactIntlCatalogs', () => {
     });
   });
 
+  describe('H2: report TODOs name the emitted -gt file, not the original', () => {
+    it('points an augmentation TODO into the -gt directory that was written', async () => {
+      const cwd = makeDir({
+        'messages/en.json': JSON.stringify({ title: 'Welcome' }),
+        'messages/fr.json': JSON.stringify({
+          title: 'Bienvenue',
+          greeting: 'Salut',
+        }),
+        'src/Client.tsx': [
+          "'use client';",
+          "import { FormattedMessage } from 'react-intl';",
+          'export function C() {',
+          '  return <p><FormattedMessage id="greeting" defaultMessage="Hello" /></p>;',
+          '}',
+        ].join('\n'),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      expect(path.basename(catalogs!.dir)).toBe('messages-gt');
+      const todo = catalogs!.reportTodos!.find((t) => /missing/.test(t.reason));
+      expect(todo).toBeDefined();
+      // The TODO names the emitted -gt file, not the untouched original.
+      expect(todo!.file).toBe(path.join(cwd, 'messages-gt', 'en.json'));
+      expect(todo!.file).not.toBe(path.join(cwd, 'messages', 'en.json'));
+      // And that path is actually one of the files the migration emits.
+      expect(catalogs!.filesToEmit!.some((e) => e.path === todo!.file)).toBe(
+        true
+      );
+    });
+
+    it('points a re-nested synthesis TODO into the -gt directory', async () => {
+      const cwd = makeDir({
+        'messages/fr.json': JSON.stringify({ 'Home.title': 'Bienvenue' }),
+        'src/P.tsx': [
+          "'use client';",
+          "import { IntlProvider } from 'react-intl';",
+          'export function P({ children }: any) {',
+          '  return <IntlProvider locale="x" defaultLocale="en">{children}</IntlProvider>;',
+          '}',
+        ].join('\n'),
+        'src/Client.tsx': [
+          "'use client';",
+          "import { FormattedMessage } from 'react-intl';",
+          'export function C() {',
+          '  return <p><FormattedMessage id="Home.title" defaultMessage="Welcome" /></p>;',
+          '}',
+        ].join('\n'),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      expect(path.basename(catalogs!.dir)).toBe('messages-gt');
+      const todo = catalogs!.reportTodos!.find((t) =>
+        /synthesized the source catalog/.test(t.reason)
+      );
+      expect(todo).toBeDefined();
+      expect(todo!.file).toBe(path.join(cwd, 'messages-gt', 'en.json'));
+      expect(catalogs!.filesToEmit!.some((e) => e.path === todo!.file)).toBe(
+        true
+      );
+    });
+
+    it('leaves a no-re-nest synthesis TODO pointing at the original directory', async () => {
+      const cwd = makeDir({
+        'messages/fr.json': JSON.stringify({ greeting: 'Salut' }),
+        'src/P.tsx': [
+          "'use client';",
+          "import { IntlProvider } from 'react-intl';",
+          'export function P({ children }: any) {',
+          '  return <IntlProvider locale="x" defaultLocale="en">{children}</IntlProvider>;',
+          '}',
+        ].join('\n'),
+        'src/Client.tsx': [
+          "'use client';",
+          "import { FormattedMessage } from 'react-intl';",
+          'export function C() {',
+          '  return <p><FormattedMessage id="greeting" defaultMessage="Hello" /></p>;',
+          '}',
+        ].join('\n'),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      // No dotted keys and no augmentation: the synthesized file lands in place.
+      expect(path.basename(catalogs!.dir)).toBe('messages');
+      const todo = catalogs!.reportTodos!.find((t) =>
+        /synthesized the source catalog/.test(t.reason)
+      );
+      expect(todo).toBeDefined();
+      expect(todo!.file).toBe(path.join(cwd, 'messages', 'en.json'));
+      expect(catalogs!.filesToEmit!.some((e) => e.path === todo!.file)).toBe(
+        true
+      );
+    });
+  });
+
   describe('M2: conflicting defaultMessage variants (b2 synthesis)', () => {
     it('reports both variants and the winner, deterministically', async () => {
       const cwd = makeDir({
