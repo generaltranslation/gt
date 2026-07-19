@@ -1525,6 +1525,21 @@ describe('withGTConfig', () => {
       ).toBe(false);
     });
 
+    it('adds the javascript/auto rule when only a request-function alias is set', async () => {
+      const withGTConfig = await getWithGTConfig();
+
+      // No dictionary or loader options: the request-function alias alone
+      // must enable the rule, keeping the guard in lockstep with the alias
+      // block (see config.ts).
+      const result = withGTConfig({}, { getLocalePath: './my-get-locale.ts' });
+
+      const wc = makeWebpackConfig() as RuleWebpackConfig;
+      runWebpack(result, wc);
+
+      expect(wc.resolve.alias).toHaveProperty('gt-next/internal/_getLocale');
+      expect(findAutoRule(wc)).toBeDefined();
+    });
+
     it('does NOT set aliases when TURBOPACK enabled', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.TURBOPACK = '1';

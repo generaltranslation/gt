@@ -753,11 +753,17 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         // keeps the rule from ever pulling a user's loader file into the
         // client bundle. Turbopack resolves them through resolveAlias and
         // needs no rule.
+        // The guard mirrors the alias block above: any configured alias
+        // enables the rule. The request-function aliases are static-imported
+        // (initGT.server), and resolve.alias applies at resolution regardless
+        // of parser mode, so they work without the rule; they gate it anyway
+        // for symmetry and for any future require()-backed consumer.
         if (
           options.isServer &&
           (resolvedDictionaryFilePath ||
             customLoadTranslationsPath ||
-            customLoadDictionaryPath)
+            customLoadDictionaryPath ||
+            Object.keys(requestFunctionPaths).length > 0)
         ) {
           // gt-next normally resolves inside a node_modules dir (app-local,
           // hoisted monorepo root, or the pnpm store), but symlinked installs
