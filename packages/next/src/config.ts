@@ -79,6 +79,15 @@ type InternalGTConfigProps = BaseWithGTConfigProps &
 
 type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
 
+function isThenable(value: unknown): value is PromiseLike<NextConfig> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'then' in value &&
+    typeof value.then === 'function'
+  );
+}
+
 /**
  * Initializes General Translation settings for a Next.js application.
  *
@@ -128,6 +137,24 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   nextConfig?: TNextConfig,
   props: withGTConfigProps = {}
 ): WithGTConfigResult<TNextConfig> {
+  // Next also accepts the `(phase, context) => config` function form. When given
+  // one, call it and wrap the resolved config so `withGTConfig` composes with
+  // other Next config plugins that return a config function — matching
+  // `@sentry/nextjs`'s `withSentryConfig`. Without this, a function config would
+  // be spread as a plain object below, silently dropping the user's config.
+  if (typeof nextConfig === 'function') {
+    const configFn = nextConfig as (
+      phase: string,
+      context: { defaultConfig: NextConfig }
+    ) => NextConfig | Promise<NextConfig>;
+    return ((phase: string, context: { defaultConfig: NextConfig }) => {
+      const resolved = configFn(phase, context);
+      return isThenable(resolved)
+        ? resolved.then((resolvedConfig) => withGTConfig(resolvedConfig, props))
+        : withGTConfig(resolved, props);
+    }) as unknown as WithGTConfigResult<TNextConfig>;
+  }
+
   const internalNextConfig = (nextConfig ?? {}) as unknown as NextConfig;
 
   // ---------- LOAD GT CONFIG FILE ---------- //
