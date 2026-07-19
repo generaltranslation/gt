@@ -78,17 +78,19 @@ describe('transformMiddlewareFile', () => {
     expect(result.code).toContain('/acerca');
   });
 
-  it("localePrefix 'never' leaves the file and records a todo", () => {
+  it("localePrefix 'never' skips the file so teardown is held back", () => {
     const result = transformMiddlewareFile(
       'middleware.ts',
       canonical,
       makeContext({ localePrefix: 'never' })
     );
     expect(result.code).toBeNull();
-    expect(result.skipReasons).toEqual([]);
-    expect(result.todos.some((todo) => todo.reason.includes('never'))).toBe(
-      true
-    );
+    // A skip (not a todo): the file still imports next-intl/middleware,
+    // and only skippedFiles blocks the teardown from uninstalling next-intl.
+    expect(
+      result.skipReasons.some((reason) => reason.includes("'never'"))
+    ).toBe(true);
+    expect(result.todos).toEqual([]);
   });
 
   it('skips middleware files with extra logic', () => {

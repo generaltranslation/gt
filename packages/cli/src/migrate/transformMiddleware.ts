@@ -29,14 +29,13 @@ export function transformMiddlewareFile(
   if (!code.includes(MIDDLEWARE_MODULE)) return none;
 
   if (ctx.routing.localePrefix === 'never') {
+    // A skip, not a todo: the untouched file still imports
+    // next-intl/middleware, and only skippedFiles holds back the teardown
+    // that would uninstall next-intl out from under it.
     return {
       ...none,
-      todos: [
-        {
-          file,
-          reason:
-            "localePrefix 'never' means no locale routing — gt-next needs no middleware for cookie/header locale resolution; middleware.ts was left in place, delete it manually if it only handled next-intl",
-        },
+      skipReasons: [
+        "localePrefix 'never' needs no gt-next middleware (locale resolution runs on cookies and headers without one), but this file still imports next-intl/middleware and holds back full teardown; delete or rewrite the middleware, then rerun the migration",
       ],
     };
   }
