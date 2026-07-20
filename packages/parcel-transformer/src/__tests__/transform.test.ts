@@ -70,8 +70,17 @@ async function runViaAdapterRaw(
   options: GTUnpluginOptions = {}
 ): Promise<string | null> {
   const plugin = createGtRawPlugin(options, framework);
+  // Resolve both transform hook shapes unplugin allows: a plain function or a
+  // { filter, handler } object. This mirrors getTransformFn in the main source;
+  // if the compiler ever switches to the object shape, this parity test then
+  // still exercises the real handler instead of silently returning null.
   const transform = plugin.transform;
-  const handler = typeof transform === 'function' ? transform : undefined;
+  const handler =
+    typeof transform === 'function'
+      ? transform
+      : transform && typeof transform.handler === 'function'
+        ? transform.handler
+        : undefined;
   if (!handler) return null;
   const result = await handler(code, id);
   if (result && typeof result === 'object' && typeof result.code === 'string') {

@@ -11,7 +11,11 @@ import { loadTranslations } from './loadTranslations';
 // await is a SyntaxError there. The production build emits real ES modules and
 // would accept top-level await, but the IIFE keeps a single source that works
 // in both modes.
-void (async () => {
+//
+// The trailing .catch keeps the promise from floating: if initializeGTSPA
+// rejects, log it instead of failing silently and leaving a permanently blank
+// page with no clue in the console.
+(async () => {
   await initializeGTSPA({
     ...gtConfig,
     projectId: process.env.GT_PROJECT_ID,
@@ -21,4 +25,4 @@ void (async () => {
 
   // Import the app only after GT is ready, so module-level t() calls resolve.
   await import('./main');
-})();
+})().catch(console.error);
