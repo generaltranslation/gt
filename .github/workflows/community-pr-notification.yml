@@ -1,0 +1,71 @@
+name: Notify Slack of Community Pull Requests
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions: {}
+
+jobs:
+  notify:
+    name: Notify Slack
+    if: >-
+      github.event.pull_request.user.type != 'Bot' &&
+      !contains(
+        fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'),
+        github.event.pull_request.author_association
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          errors: true
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          # PR titles are JSON-encoded below. PR bodies are intentionally excluded.
+          payload: |
+            {
+              "text": ${{ toJSON(format('New community pull request #{0}', github.event.pull_request.number)) }},
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🌱 New community pull request"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ${{ toJSON(format('#{0}: {1}', github.event.pull_request.number, github.event.pull_request.title)) }},
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": ${{ toJSON(format('Opened by <{0}|@{1}> • `{2}`', github.event.pull_request.user.html_url, github.event.pull_request.user.login, github.event.pull_request.author_association)) }}
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Pull Request"
+                      },
+                      "url": ${{ toJSON(github.event.pull_request.html_url) }}
+                    }
+                  ]
+                }
+              ]
+            }
