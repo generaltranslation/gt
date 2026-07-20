@@ -27,4 +27,4 @@ async function main() {
   hydrate();
 }
 
-void main();
+main().catch(console.error);
