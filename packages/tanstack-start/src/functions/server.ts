@@ -1,3 +1,4 @@
+import { createServerOnlyFn } from '@tanstack/react-start';
 import {
   getGTInternal,
   getMessagesInternal,
@@ -7,17 +8,17 @@ import type { Message } from 'gt-i18n/types';
 import { getConditionStore } from '../condition-store/singleton';
 
 /** Return the locale associated with the current server request. */
-export function getLocale(): string {
+export const getLocale = createServerOnlyFn((): string => {
   return getConditionStore().getLocale();
-}
+});
 
 /** Return whether internationalization is enabled for the current request. */
-export function getEnableI18n(): boolean {
+export const getEnableI18n = createServerOnlyFn((): boolean => {
   return getConditionStore().getEnableI18n();
-}
+});
 
 /** Return a string translation function for the current server request. */
-export async function getGT(messages?: Message[]) {
+export const getGT = createServerOnlyFn(async (messages?: Message[]) => {
   const conditionStore = getConditionStore();
   return getGTInternal(
     {
@@ -26,23 +27,23 @@ export async function getGT(messages?: Message[]) {
     },
     messages
   );
-}
+});
 
 /** Return a registered-message translation function for the current request. */
-export async function getMessages() {
+export const getMessages = createServerOnlyFn(async () => {
   const conditionStore = getConditionStore();
   return getMessagesInternal({
     locale: conditionStore.getLocale(),
     enableI18n: conditionStore.getEnableI18n(),
   });
-}
+});
 
 /** Return a dictionary translation function for the current server request. */
-export async function getTranslations(rootId?: string) {
+export const getTranslations = createServerOnlyFn(async (rootId?: string) => {
   const conditionStore = getConditionStore();
   return getTranslationsInternal({
     locale: conditionStore.getLocale(),
     enableI18n: conditionStore.getEnableI18n(),
     rootId,
   });
-}
+});

@@ -125,7 +125,6 @@ module.exports = [
 
   tanstack('gt-tanstack-start (client)', 'index.client'),
   tanstackNode('gt-tanstack-start (server)', 'index.server'),
-  tanstack('gt-tanstack-start/middleware', 'middleware'),
   tanstackNode('gt-tanstack-start/server', 'server'),
 
   reactNative('gt-react-native', 'index', '52 kB'),

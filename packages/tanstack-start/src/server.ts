@@ -1,5 +1,4 @@
-import '@tanstack/react-start/server-only';
-
+export { gtMiddleware } from './middleware/gtMiddleware';
 export {
   getLocale,
   getEnableI18n,

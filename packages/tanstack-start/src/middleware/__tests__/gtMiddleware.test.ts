@@ -6,6 +6,7 @@ vi.mock('@tanstack/react-start', () => ({
   createMiddleware: () => ({
     server: (serverFn: unknown) => serverFn,
   }),
+  createServerOnlyFn: <T>(serverFn: T) => serverFn,
 }));
 
 vi.mock('@tanstack/react-start/server', () => ({

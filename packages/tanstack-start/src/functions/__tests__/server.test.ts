@@ -63,7 +63,7 @@ describe.sequential('server translation functions', () => {
 
   it('requires an active middleware request scope', () => {
     expect(() => getLocale()).toThrow(
-      "Register gtMiddleware from 'gt-tanstack-start/middleware'"
+      "Register gtMiddleware from 'gt-tanstack-start/server'"
     );
   });
 

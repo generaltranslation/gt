@@ -36,7 +36,7 @@ export async function loadTranslations(locale: string) {
 
 ```ts
 import { createCsrfMiddleware, createStart } from '@tanstack/react-start';
-import { gtMiddleware } from 'gt-tanstack-start/middleware';
+import { gtMiddleware } from 'gt-tanstack-start/server';
 
 const csrfMiddleware = createCsrfMiddleware({
   filter: ({ handlerType }) => handlerType === 'serverFn',
@@ -62,10 +62,9 @@ import {
   getTranslationsSnapshot,
   initializeGT,
   LocaleSelector,
+  parseLocale,
   GTProvider,
 } from 'gt-tanstack-start';
-import { createServerFn } from '@tanstack/react-start';
-import { getLocale } from 'gt-tanstack-start/server';
 
 initializeGT({
   ...gtConfig,
@@ -74,16 +73,14 @@ initializeGT({
   loadTranslations,
 });
 
-const loadRootData = createServerFn({ method: 'GET' }).handler(async () => {
-  const locale = getLocale();
-  return {
-    translations: await getTranslationsSnapshot(locale),
-    locale,
-  };
-});
-
 export const Route = createRootRoute({
-  loader: () => loadRootData(),
+  loader: async () => {
+    const locale = parseLocale();
+    return {
+      translations: await getTranslationsSnapshot(locale),
+      locale,
+    };
+  },
   shellComponent: RootDocument,
 });
 

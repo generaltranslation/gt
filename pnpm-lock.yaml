@@ -1405,8 +1405,8 @@ importers:
         specifier: workspace:*
         version: link:../react-core
       '@tanstack/react-start':
-        specifier: '>=1.161.0'
-        version: 1.168.28(esbuild@0.28.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(rolldown@1.1.5)(rollup@4.62.2)(vite@8.1.4(@types/node@20.19.17)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3))(webpack@5.108.4(esbuild@0.28.1)(lightningcss@1.32.0))
+        specifier: '>=1.159.0'
+        version: 1.159.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@8.1.4(@types/node@22.13.10)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3))(webpack@5.108.4(esbuild@0.28.1)(lightningcss@1.32.0))
       generaltranslation:
         specifier: workspace:*
         version: link:../core
