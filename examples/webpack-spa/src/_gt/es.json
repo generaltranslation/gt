@@ -1,0 +1,20 @@
+{
+  "401ccce7df59ba79": "Lanza tu aplicación React en todos los idiomas",
+  "3b33164d7004d6bc": "Esta aplicación de página única está internacionalizada con gt-react y empaquetada con webpack. Las traducciones se cargan en el navegador al iniciar, así que no hay proveedor ni servidor.",
+  "edd2e391c8aba4cb": "Envuelve cualquier texto en el componente T para traducirlo.",
+  "cc386fe41fd380ce": "Cambia de idioma con el selector de idioma integrado.",
+  "f0079859dda9c02d": "Previsualiza las traducciones en vivo mientras desarrollas con el compilador de GT.",
+  "cc0cf424a526a7c7": {
+    "c": [
+      "Renderizado con un valor dinámico. El año actual es ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      }
+    ],
+    "i": 1,
+    "t": "p"
+  },
+  "322ad35d597b519d": "i18n en tiempo de ejecución, empaquetada con webpack."
+}

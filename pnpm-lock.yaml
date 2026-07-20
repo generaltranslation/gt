@@ -600,9 +600,6 @@ importers:
 
   examples/vite-spa:
     dependencies:
-      gt:
-        specifier: workspace:*
-        version: link:../../packages/cli
       gt-react:
         specifier: workspace:*
         version: link:../../packages/react
@@ -628,6 +625,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.0.3
         version: 6.0.3(babel-plugin-react-compiler@1.0.0)(vite@8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3))
+      gt:
+        specifier: workspace:*
+        version: link:../../packages/cli
       oxlint:
         specifier: ^1.71.0
         version: 1.74.0
@@ -637,6 +637,61 @@ importers:
       vite:
         specifier: ^8.1.1
         version: 8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3)
+
+  examples/webpack-spa:
+    dependencies:
+      gt:
+        specifier: workspace:*
+        version: link:../../packages/cli
+      gt-react:
+        specifier: workspace:*
+        version: link:../../packages/react
+      react:
+        specifier: ^19.2.7
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.7
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@generaltranslation/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@types/react':
+        specifier: ^19.2.17
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.17)
+      css-loader:
+        specifier: ^7.1.4
+        version: 7.1.4(webpack@5.108.4)
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
+      html-webpack-plugin:
+        specifier: ^5.6.7
+        version: 5.6.7(webpack@5.108.4)
+      oxlint:
+        specifier: ^1.71.0
+        version: 1.74.0
+      style-loader:
+        specifier: ^4.0.0
+        version: 4.0.0(webpack@5.108.4)
+      ts-loader:
+        specifier: ^9.6.2
+        version: 9.6.2(loader-utils@3.3.1)(typescript@6.0.3)(webpack@5.108.4)
+      typescript:
+        specifier: ~6.0.2
+        version: 6.0.3
+      webpack:
+        specifier: ^5.107.2
+        version: 5.108.4(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
+      webpack-cli:
+        specifier: ^7.0.3
+        version: 7.2.1(js-yaml@4.1.1)(json5@2.2.3)(webpack-dev-server@5.2.6)(webpack@5.108.4)
+      webpack-dev-server:
+        specifier: ^5.2.5
+        version: 5.2.6(bufferutil@4.0.9)(tslib@2.8.1)(webpack-cli@7.2.1)(webpack@5.108.4)
 
   packages/cli:
     dependencies:
@@ -2153,7 +2208,7 @@ importers:
         version: 5.7.3
       webpack:
         specifier: ^5.107.2
-        version: 5.108.4(lightningcss@1.32.0)(postcss@8.5.6)(webpack-cli@7.2.1)
+        version: 5.108.4(lightningcss@1.32.0)(webpack-cli@7.2.1)
       webpack-cli:
         specifier: ^7.0.3
         version: 7.2.1(js-yaml@4.1.1)(json5@2.2.3)(webpack-dev-server@5.2.6)(webpack@5.108.4)
@@ -14434,9 +14489,6 @@ packages:
   lodash.uniq@4.5.0:
     resolution: {integrity: sha512-xfBaXQd9ryd9dlSDvnvI0lvxfLJlYAZzXomUYzLKtUeOQvOP5piqAWuGtrhWeqaXK9hhoM/iyJc5AV+XfsX3HQ==}
 
-  lodash@4.17.21:
-    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
-
   lodash@4.17.23:
     resolution: {integrity: sha512-LgVTMpQtIopCi79SJeDiP0TfWi5CNEc/L/aRdTh3yIvmZXTnheWpKjSZhnvMl8iXbC1tFg9gdHHDMLoV7CnG+w==}
 
@@ -22478,7 +22530,7 @@ snapshots:
       getenv: 2.0.0
       jimp-compact: 0.16.1
       parse-png: 2.1.0
-      semver: 7.7.4
+      semver: 7.8.5
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -22491,7 +22543,7 @@ snapshots:
       getenv: 2.0.0
       jimp-compact: 0.16.1
       parse-png: 2.1.0
-      semver: 7.7.4
+      semver: 7.8.5
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -22617,7 +22669,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       expo: 54.0.35(@babel/core@7.29.0)(bufferutil@4.0.9)(react-native@0.81.5(@babel/core@7.29.0)(@react-native-community/cli@20.0.0(bufferutil@4.0.9)(typescript@5.7.3))(@react-native/metro-config@0.81.1(@babel/core@7.29.0))(@types/react@19.2.7)(bufferutil@4.0.9)(react@19.1.0))(react@19.1.0)(typescript@5.7.3)
       resolve-from: 5.0.0
-      semver: 7.7.4
+      semver: 7.8.5
       xml2js: 0.6.0
     transitivePeerDependencies:
       - supports-color
@@ -22634,7 +22686,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       expo: 54.0.35(@babel/core@7.29.0)(bufferutil@4.0.9)(react-native@0.81.5(@babel/core@7.29.0)(@react-native-community/cli@20.0.0(bufferutil@4.0.9)(typescript@5.9.3))(@react-native/metro-config@0.81.1(@babel/core@7.29.0))(@types/react@19.2.7)(bufferutil@4.0.9)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
       resolve-from: 5.0.0
-      semver: 7.7.4
+      semver: 7.8.5
       xml2js: 0.6.0
     transitivePeerDependencies:
       - supports-color
@@ -24172,7 +24224,7 @@ snapshots:
       is-wsl: 2.2.0
       lilconfig: 3.1.3
       minimatch: 10.2.5
-      semver: 7.7.4
+      semver: 7.8.5
       string-width: 4.2.3
       supports-color: 8.1.1
       tinyglobby: 0.2.17
@@ -25840,7 +25892,7 @@ snapshots:
       metro: 0.83.6(bufferutil@4.0.9)
       metro-config: 0.83.6(bufferutil@4.0.9)
       metro-core: 0.83.6
-      semver: 7.7.4
+      semver: 7.8.5
     optionalDependencies:
       '@react-native-community/cli': 20.0.0(bufferutil@4.0.9)(typescript@5.9.3)
       '@react-native/metro-config': 0.81.1(@babel/core@7.29.0)
@@ -26325,7 +26377,7 @@ snapshots:
 
   '@rollup/pluginutils@5.3.0(rollup@4.60.3)':
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       estree-walker: 2.0.2
       picomatch: 4.0.5
     optionalDependencies:
@@ -26333,7 +26385,7 @@ snapshots:
 
   '@rollup/pluginutils@5.3.0(rollup@4.62.2)':
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       estree-walker: 2.0.2
       picomatch: 4.0.5
     optionalDependencies:
@@ -26754,7 +26806,7 @@ snapshots:
       react-is: 19.2.4
       read-package-up: 12.0.0
       rxjs: 7.8.2
-      semver: 7.7.4
+      semver: 7.8.5
       smol-toml: 1.6.1
       tar: 7.5.13
       tar-fs: 3.1.2
@@ -26921,7 +26973,7 @@ snapshots:
   '@sanity/id-utils@1.0.0':
     dependencies:
       '@sanity/uuid': 3.0.2
-      lodash: 4.17.21
+      lodash: 4.17.23
       ts-brand: 0.2.0
 
   '@sanity/image-url@2.1.1':
@@ -27034,7 +27086,7 @@ snapshots:
       '@sanity/diff-match-patch': 3.2.0
       '@sanity/uuid': 3.0.2
       hotscript: 1.0.13
-      lodash: 4.17.21
+      lodash: 4.17.23
       mendoza: 3.0.8
       nanoid: 5.1.9
       rxjs: 7.8.2
@@ -28193,7 +28245,7 @@ snapshots:
   '@types/eslint-scope@3.7.7':
     dependencies:
       '@types/eslint': 8.56.12
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
 
   '@types/eslint@8.56.12':
     dependencies:
@@ -28478,7 +28530,7 @@ snapshots:
       graphemer: 1.4.0
       ignore: 5.3.2
       natural-compare-lite: 1.4.0
-      semver: 7.7.4
+      semver: 7.8.5
       tsutils: 3.21.0(typescript@6.0.3)
     optionalDependencies:
       typescript: 6.0.3
@@ -28644,7 +28696,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       globby: 11.1.0
       is-glob: 4.0.3
-      semver: 7.7.4
+      semver: 7.8.5
       tsutils: 3.21.0(typescript@6.0.3)
     optionalDependencies:
       typescript: 6.0.3
@@ -28661,7 +28713,7 @@ snapshots:
       fast-glob: 3.3.3
       is-glob: 4.0.3
       minimatch: 9.0.5
-      semver: 7.7.4
+      semver: 7.8.5
       ts-api-utils: 2.1.0(typescript@5.9.3)
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -28675,7 +28727,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.50.1
       debug: 4.4.3(supports-color@5.5.0)
       minimatch: 9.0.5
-      semver: 7.7.4
+      semver: 7.8.5
       tinyglobby: 0.2.17
       ts-api-utils: 2.1.0(typescript@5.9.3)
       typescript: 5.9.3
@@ -28692,7 +28744,7 @@ snapshots:
       '@typescript-eslint/typescript-estree': 5.62.0(typescript@6.0.3)
       eslint: 9.36.0(jiti@2.7.0)
       eslint-scope: 5.1.1
-      semver: 7.7.4
+      semver: 7.8.5
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -30025,7 +30077,7 @@ snapshots:
 
   builtins@5.1.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.5
 
   bundle-name@4.1.0:
     dependencies:
@@ -30455,7 +30507,7 @@ snapshots:
     dependencies:
       chalk: 4.1.2
       date-fns: 2.30.0
-      lodash: 4.17.21
+      lodash: 4.17.23
       rxjs: 7.8.2
       shell-quote: 1.8.3
       spawn-command: 0.0.2
@@ -30626,16 +30678,16 @@ snapshots:
 
   css-loader@7.1.4(webpack@5.108.4):
     dependencies:
-      icss-utils: 5.1.0(postcss@8.5.6)
-      postcss: 8.5.6
-      postcss-modules-extract-imports: 3.1.0(postcss@8.5.6)
-      postcss-modules-local-by-default: 4.2.0(postcss@8.5.6)
-      postcss-modules-scope: 3.2.1(postcss@8.5.6)
-      postcss-modules-values: 4.0.0(postcss@8.5.6)
+      icss-utils: 5.1.0(postcss@8.5.19)
+      postcss: 8.5.19
+      postcss-modules-extract-imports: 3.1.0(postcss@8.5.19)
+      postcss-modules-local-by-default: 4.2.0(postcss@8.5.19)
+      postcss-modules-scope: 3.2.1(postcss@8.5.19)
+      postcss-modules-values: 4.0.0(postcss@8.5.19)
       postcss-value-parser: 4.2.0
-      semver: 7.7.4
+      semver: 7.8.5
     optionalDependencies:
-      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.6)(webpack-cli@7.2.1)
+      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
 
   css-minimizer-webpack-plugin@3.4.1(webpack@5.106.2):
     dependencies:
@@ -31889,7 +31941,7 @@ snapshots:
 
   estree-walker@3.0.3:
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
 
   esutils@2.0.3: {}
 
@@ -32573,7 +32625,7 @@ snapshots:
       memfs: 3.5.3
       minimatch: 3.1.2
       schema-utils: 2.7.0
-      semver: 7.7.4
+      semver: 7.8.5
       tapable: 1.1.3
       typescript: 6.0.3
       webpack: 5.106.2
@@ -32756,7 +32808,7 @@ snapshots:
       get-it: 8.6.10(debug@4.4.3)
       registry-auth-token: 5.1.0
       registry-url: 5.1.0
-      semver: 7.7.4
+      semver: 7.8.5
     transitivePeerDependencies:
       - debug
 
@@ -32765,7 +32817,7 @@ snapshots:
       get-it: 8.7.0(debug@4.4.3)
       registry-auth-token: 5.1.1
       registry-url: 7.2.0
-      semver: 7.7.4
+      semver: 7.8.5
     transitivePeerDependencies:
       - debug
 
@@ -33139,7 +33191,7 @@ snapshots:
       pretty-error: 4.0.0
       tapable: 2.3.3
     optionalDependencies:
-      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.6)(webpack-cli@7.2.1)
+      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
 
   htmlparser2@10.1.0:
     dependencies:
@@ -33396,7 +33448,7 @@ snapshots:
       cli-width: 3.0.0
       external-editor: 3.1.0
       figures: 3.2.0
-      lodash: 4.17.21
+      lodash: 4.17.23
       mute-stream: 0.0.8
       ora: 5.4.1
       run-async: 2.4.1
@@ -33585,7 +33637,7 @@ snapshots:
 
   is-reference@1.2.1:
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
 
   is-regex@1.2.1:
     dependencies:
@@ -34146,7 +34198,7 @@ snapshots:
       jest-util: 27.5.1
       natural-compare: 1.4.0
       pretty-format: 27.5.1
-      semver: 7.7.4
+      semver: 7.8.5
     transitivePeerDependencies:
       - supports-color
 
@@ -34748,8 +34800,6 @@ snapshots:
 
   lodash.uniq@4.5.0: {}
 
-  lodash@4.17.21: {}
-
   lodash@4.17.23: {}
 
   log-symbols@2.2.0:
@@ -34836,7 +34886,7 @@ snapshots:
 
   make-dir@4.0.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.5
 
   make-error@1.3.6: {}
 
@@ -35564,7 +35614,7 @@ snapshots:
 
   micromark-extension-mdx-expression@3.0.1:
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       devlop: 1.1.0
       micromark-factory-mdx-expression: 2.0.3
       micromark-factory-space: 2.0.1
@@ -35575,7 +35625,7 @@ snapshots:
 
   micromark-extension-mdx-jsx@3.0.2:
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       devlop: 1.1.0
       estree-util-is-identifier-name: 3.0.0
       micromark-factory-mdx-expression: 2.0.3
@@ -35592,7 +35642,7 @@ snapshots:
 
   micromark-extension-mdxjs-esm@3.0.0:
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       devlop: 1.1.0
       micromark-core-commonmark: 2.0.3
       micromark-util-character: 2.1.1
@@ -35628,7 +35678,7 @@ snapshots:
 
   micromark-factory-mdx-expression@2.0.3:
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       devlop: 1.1.0
       micromark-factory-space: 2.0.1
       micromark-util-character: 2.1.1
@@ -35692,7 +35742,7 @@ snapshots:
 
   micromark-util-events-to-acorn@2.0.3:
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       '@types/unist': 3.0.3
       devlop: 1.1.0
       estree-util-visit: 2.0.0
@@ -35843,16 +35893,26 @@ snapshots:
       lightningcss: 1.32.0
     optional: true
 
-  minimizer-webpack-plugin@5.6.1(lightningcss@1.32.0)(postcss@8.5.6)(webpack@5.108.4):
+  minimizer-webpack-plugin@5.6.1(lightningcss@1.32.0)(postcss@8.5.19)(webpack@5.108.4):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.3
       terser: 5.44.0
-      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.6)(webpack-cli@7.2.1)
+      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
     optionalDependencies:
       lightningcss: 1.32.0
-      postcss: 8.5.6
+      postcss: 8.5.19
+
+  minimizer-webpack-plugin@5.6.1(lightningcss@1.32.0)(webpack@5.108.4):
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      jest-worker: 27.5.1
+      schema-utils: 4.3.3
+      terser: 5.44.0
+      webpack: 5.108.4(lightningcss@1.32.0)(webpack-cli@7.2.1)
+    optionalDependencies:
+      lightningcss: 1.32.0
 
   minipass@7.1.2: {}
 
@@ -36197,7 +36257,7 @@ snapshots:
       ignore-by-default: 1.0.1
       minimatch: 3.1.2
       pstree.remy: 1.1.8
-      semver: 7.7.4
+      semver: 7.8.5
       simple-update-notifier: 2.0.0
       supports-color: 5.5.0
       touch: 3.1.1
@@ -36214,13 +36274,13 @@ snapshots:
     dependencies:
       hosted-git-info: 4.1.0
       is-core-module: 2.16.1
-      semver: 7.7.4
+      semver: 7.8.5
       validate-npm-package-license: 3.0.4
 
   normalize-package-data@8.0.0:
     dependencies:
       hosted-git-info: 9.0.2
-      semver: 7.7.4
+      semver: 7.8.5
       validate-npm-package-license: 3.0.4
 
   normalize-path@3.0.0: {}
@@ -36237,7 +36297,7 @@ snapshots:
     dependencies:
       hosted-git-info: 7.0.2
       proc-log: 4.2.0
-      semver: 7.7.4
+      semver: 7.8.5
       validate-npm-package-name: 5.0.0
 
   npm-packlist@2.2.2:
@@ -39438,7 +39498,7 @@ snapshots:
     dependencies:
       color: 4.2.3
       detect-libc: 2.1.2
-      semver: 7.7.4
+      semver: 7.8.5
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.33.5
       '@img/sharp-darwin-x64': 0.33.5
@@ -39465,7 +39525,7 @@ snapshots:
     dependencies:
       '@img/colour': 1.0.0
       detect-libc: 2.1.2
-      semver: 7.7.4
+      semver: 7.8.5
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.34.5
       '@img/sharp-darwin-x64': 0.34.5
@@ -39565,7 +39625,7 @@ snapshots:
 
   simple-update-notifier@2.0.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.5
 
   simple-wcswidth@1.1.2: {}
 
@@ -39948,7 +40008,7 @@ snapshots:
 
   style-loader@4.0.0(webpack@5.108.4):
     dependencies:
-      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.6)(webpack-cli@7.2.1)
+      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
 
   style-mod@4.1.3: {}
 
@@ -40395,10 +40455,20 @@ snapshots:
   ts-loader@9.6.2(loader-utils@3.3.1)(typescript@5.7.3)(webpack@5.108.4):
     dependencies:
       chalk: 4.1.2
-      picomatch: 4.0.4
+      picomatch: 4.0.5
       source-map: 0.7.6
       typescript: 5.7.3
-      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.6)(webpack-cli@7.2.1)
+      webpack: 5.108.4(lightningcss@1.32.0)(webpack-cli@7.2.1)
+    optionalDependencies:
+      loader-utils: 3.3.1
+
+  ts-loader@9.6.2(loader-utils@3.3.1)(typescript@6.0.3)(webpack@5.108.4):
+    dependencies:
+      chalk: 4.1.2
+      picomatch: 4.0.5
+      source-map: 0.7.6
+      typescript: 6.0.3
+      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
     optionalDependencies:
       loader-utils: 3.3.1
 
@@ -41048,7 +41118,7 @@ snapshots:
   vite-node@5.3.0(@types/node@24.13.3)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3):
     dependencies:
       cac: 6.7.14
-      es-module-lexer: 2.0.0
+      es-module-lexer: 2.3.1
       obug: 2.1.1
       pathe: 2.0.3
       vite: 7.3.1(@types/node@24.13.3)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3)
@@ -41492,7 +41562,7 @@ snapshots:
       import-local: 3.2.0
       interpret: 3.1.1
       rechoir: 0.8.0
-      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.6)(webpack-cli@7.2.1)
+      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
       webpack-merge: 6.0.1
     optionalDependencies:
       js-yaml: 4.1.1
@@ -41517,7 +41587,7 @@ snapshots:
       range-parser: 1.2.1
       schema-utils: 4.3.3
     optionalDependencies:
-      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.6)(webpack-cli@7.2.1)
+      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
     transitivePeerDependencies:
       - tslib
 
@@ -41592,7 +41662,7 @@ snapshots:
       webpack-dev-middleware: 7.4.5(tslib@2.8.1)(webpack@5.108.4)
       ws: 8.20.0(bufferutil@4.0.9)
     optionalDependencies:
-      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.6)(webpack-cli@7.2.1)
+      webpack: 5.108.4(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
       webpack-cli: 7.2.1(js-yaml@4.1.1)(json5@2.2.3)(webpack-dev-server@5.2.6)(webpack@5.108.4)
     transitivePeerDependencies:
       - bufferutil
@@ -41662,7 +41732,7 @@ snapshots:
 
   webpack@5.108.4(esbuild@0.28.1)(lightningcss@1.32.0):
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       '@types/json-schema': 7.0.15
       '@webassemblyjs/ast': 1.14.1
       '@webassemblyjs/wasm-edit': 1.14.1
@@ -41699,9 +41769,9 @@ snapshots:
       - uglify-js
     optional: true
 
-  webpack@5.108.4(lightningcss@1.32.0)(postcss@8.5.6)(webpack-cli@7.2.1):
+  webpack@5.108.4(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1):
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       '@types/json-schema': 7.0.15
       '@webassemblyjs/ast': 1.14.1
       '@webassemblyjs/wasm-edit': 1.14.1
@@ -41717,7 +41787,47 @@ snapshots:
       graceful-fs: 4.2.11
       loader-runner: 4.3.2
       mime-db: 1.54.0
-      minimizer-webpack-plugin: 5.6.1(lightningcss@1.32.0)(postcss@8.5.6)(webpack@5.108.4)
+      minimizer-webpack-plugin: 5.6.1(lightningcss@1.32.0)(postcss@8.5.19)(webpack@5.108.4)
+      neo-async: 2.6.2
+      schema-utils: 4.3.3
+      tapable: 2.3.3
+      watchpack: 2.5.2
+      webpack-sources: 3.5.1
+    optionalDependencies:
+      webpack-cli: 7.2.1(js-yaml@4.1.1)(json5@2.2.3)(webpack-dev-server@5.2.6)(webpack@5.108.4)
+    transitivePeerDependencies:
+      - '@minify-html/node'
+      - '@swc/core'
+      - '@swc/css'
+      - '@swc/html'
+      - clean-css
+      - cssnano
+      - csso
+      - esbuild
+      - html-minifier-terser
+      - lightningcss
+      - postcss
+      - uglify-js
+
+  webpack@5.108.4(lightningcss@1.32.0)(webpack-cli@7.2.1):
+    dependencies:
+      '@types/estree': 1.0.9
+      '@types/json-schema': 7.0.15
+      '@webassemblyjs/ast': 1.14.1
+      '@webassemblyjs/wasm-edit': 1.14.1
+      '@webassemblyjs/wasm-parser': 1.14.1
+      acorn: 8.16.0
+      acorn-import-phases: 1.0.4(acorn@8.16.0)
+      browserslist: 4.28.2
+      chrome-trace-event: 1.0.4
+      enhanced-resolve: 5.24.2
+      es-module-lexer: 2.3.1
+      eslint-scope: 5.1.1
+      events: 3.3.0
+      graceful-fs: 4.2.11
+      loader-runner: 4.3.2
+      mime-db: 1.54.0
+      minimizer-webpack-plugin: 5.6.1(lightningcss@1.32.0)(webpack@5.108.4)
       neo-async: 2.6.2
       schema-utils: 4.3.3
       tapable: 2.3.3
