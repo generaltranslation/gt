@@ -2,6 +2,16 @@ import { createFileRoute } from '@tanstack/react-router';
 import { T } from 'gt-tanstack-start';
 
 export const Route = createFileRoute('/')({
+  head: () => ({
+    meta: [
+      { title: 'Rendering modes | gt-tanstack-start' },
+      {
+        name: 'description',
+        content:
+          'Compare gt-tanstack-start behavior across SSR, SPA, and data-only rendering modes.',
+      },
+    ],
+  }),
   component: Home,
 });
 
