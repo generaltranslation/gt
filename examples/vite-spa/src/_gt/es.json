@@ -1,0 +1,16 @@
+{
+  "2ecf88ef9e8e4259": "Inicio",
+  "f41ea186c275b56e": "Acerca de",
+  "4171546eb9c5a38e": [
+    {
+      "t": "h1",
+      "i": 1,
+      "c": "Bienvenido a mi aplicación"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Este contenido se traducirá automáticamente."
+    }
+  ]
+}
