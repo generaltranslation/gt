@@ -14,6 +14,10 @@ import livereload from 'rollup-plugin-livereload';
 // livereload only run during `pnpm dev`, never during a production build.
 const isWatch = process.env.ROLLUP_WATCH === 'true';
 
+// The bundled stylesheet path, shared by the postcss extract target and the
+// <link> href that htmlPlugin injects, so the two can never drift apart.
+const CSS_ASSET_PATH = 'assets/index.css';
+
 // Emit index.html into dist, rewriting the dev entry (/src/index.ts) to the
 // built bundle and linking the extracted stylesheet. Both replacements are
 // guarded: if index.html ever stops containing what we expect to rewrite, the
@@ -36,7 +40,7 @@ function htmlPlugin() {
 
       const html = withEntry.replace(
         '</head>',
-        '    <link rel="stylesheet" href="/assets/index.css" />\n  </head>'
+        `    <link rel="stylesheet" href="/${CSS_ASSET_PATH}" />\n  </head>`
       );
       if (html === withEntry) {
         throw new Error(
@@ -111,7 +115,7 @@ export default {
       },
     }),
     postcss({
-      extract: 'assets/index.css',
+      extract: CSS_ASSET_PATH,
     }),
     htmlPlugin(),
     ...(isWatch
