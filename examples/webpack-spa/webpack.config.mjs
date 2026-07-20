@@ -26,11 +26,9 @@ const reactDomDir = fs.realpathSync(
   path.join(appDir, 'node_modules/react-dom')
 );
 
-// HtmlWebpackPlugin injects the built bundle into this template.
-const html = fs.readFileSync(path.join(appDir, 'index.html'), 'utf8');
-
 export default (_env, argv) => {
   const mode = argv.mode ?? 'production';
+  const isProduction = mode === 'production';
 
   return {
     mode,
@@ -75,15 +73,19 @@ export default (_env, argv) => {
       // translation hot reload when credentials are present.
       gtCompiler({ ...gtConfig }),
       new HtmlWebpackPlugin({
-        templateContent: html,
+        // Reference the template file so HtmlWebpackPlugin watches it in dev.
+        template: path.join(appDir, 'index.html'),
       }),
       new webpack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify(mode),
+        // Dev-only credentials: inline the env values in development only.
+        // Production serves the committed translation files, so it inlines
+        // empty strings and never embeds a key in the bundle.
         'process.env.GT_PROJECT_ID': JSON.stringify(
-          process.env.GT_PROJECT_ID ?? ''
+          isProduction ? '' : (process.env.GT_PROJECT_ID ?? '')
         ),
         'process.env.GT_DEV_API_KEY': JSON.stringify(
-          process.env.GT_DEV_API_KEY ?? ''
+          isProduction ? '' : (process.env.GT_DEV_API_KEY ?? '')
         ),
       }),
     ],

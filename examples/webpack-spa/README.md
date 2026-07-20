@@ -75,6 +75,8 @@ GT_DEV_API_KEY="gtx-dev-your-development-key"
 
 Get these by running `npx gt auth` or from the [dashboard](https://dash.generaltranslation.com). Use a development key that starts with `gtx-dev-`. Never put a production key (`gtx-api-`) in a client-side app. Both values are optional: without them the app still runs and switches between the languages that already have files in `src/_gt`.
 
+These values are inlined only in development. A production build (`npm run build`) always inlines empty strings, so it never embeds your credentials in the bundle.
+
 ### Translation files
 
 The JSON files in `src/_gt` hold the translations for each locale, and `src/loadTranslations.ts` imports them at runtime. In a real project you generate these files by running `npx gt translate`, which authenticates with General Translation and writes the output path defined in `gt.config.json`. The files checked into this example were written by hand so the demo switches languages without any API access. Each entry is keyed by a content hash of its source string, so editing any translated source text orphans that string's committed entry and it renders in the source language until the files are regenerated or the entry is updated by hand.
