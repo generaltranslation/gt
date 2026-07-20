@@ -160,6 +160,31 @@ export function transformLayoutFile(
   let needsGetLocale = false;
   const isLocaleLayout = file.includes('[locale]');
 
+  // Client-component layouts can't take the server-side work below:
+  // `await getLocale()` is server-only, and forcing the component async
+  // would make it an invalid async client component. Keep the source
+  // transform's output as is and flag the provider for manual wiring.
+  const isClientLayout = ast.program.directives.some(
+    (directive) => directive.value.value === 'use client'
+  );
+  if (isClientLayout) {
+    if (retainProvider && working.includes('NextIntlClientProvider')) {
+      todos.push({
+        file,
+        reason:
+          'client-component layout keeps NextIntlClientProvider: pass its locale from a server parent (await getLocale()); the automatic injection only applies to server layouts',
+      });
+    }
+    if (working.includes('<body')) {
+      todos.push({
+        file,
+        reason:
+          'client-component layout renders <body>: GTProvider was not inserted automatically (client components are left alone); add it around the app children yourself',
+      });
+    }
+    return { ...base, todos };
+  }
+
   // 1. Drop locale-validation guards: `if (!hasLocale(...)) notFound()` and
   //    `if (!locales.includes(locale)) notFound()` shapes. Full conversion
   //    only: gt-next middleware then owns locale resolution. In a partial
@@ -355,6 +380,14 @@ export function transformLayoutFile(
     });
     if (inserted) {
       ensureNamedImports(ast, 'gt-next', ['GTProvider']);
+    } else if (/\[locale\][\\/]layout\.[^\\/]+$/.test(file)) {
+      // Only the root [locale] layout is expected to carry <body>; nested
+      // layouts without one are normal and stay quiet.
+      todos.push({
+        file,
+        reason:
+          'GTProvider was not added automatically (no <body> element found in this layout): wrap the layout children in <GTProvider> yourself',
+      });
     }
   }
 

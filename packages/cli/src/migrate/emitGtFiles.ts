@@ -159,7 +159,9 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
       if (importer) {
         ctx.todos.push({
           file: configFile,
-          reason: `kept because ${path.relative(ctx.cwd, importer)} still imports it — migrate that reference off next-intl, then delete this file`,
+          reason: importer.exact
+            ? `kept because ${path.relative(ctx.cwd, importer.file)} still imports it — migrate that reference off next-intl, then delete this file`
+            : `kept because ${path.relative(ctx.cwd, importer.file)} appears to import it through a path alias; if that specifier is really a third-party package, delete this file yourself`,
         });
         continue;
       }
@@ -452,13 +454,15 @@ function isStrictAncestorDir(ancestor: string, descendant: string): boolean {
  * Finds a source file whose post-migration content still imports `target`.
  * Contents come from the pending edit when one exists, otherwise from disk.
  * Import specifiers resolve relative to the importer; `@/` and `~/` map to
- * src/ (or the project root when there is no src/).
+ * src/ (or the project root when there is no src/). Other non-package
+ * specifiers get a best-effort trailing-segment match (`exact: false`, see
+ * matchesAliasedTarget).
  */
 function findRemainingImporter(
   ctx: MigrationContext,
   target: string,
   ignoredFiles: string[]
-): string | null {
+): { file: string; exact: boolean } | null {
   const targetNoExt = stripExtension(target);
   const pendingEdits = new Map(
     ctx.edits
@@ -483,17 +487,57 @@ function findRemainingImporter(
         resolved = path.resolve(path.dirname(file), specifier);
       } else if (specifier.startsWith('@/') || specifier.startsWith('~/')) {
         resolved = path.join(aliasRoot, specifier.slice(2));
+      } else if (matchesAliasedTarget(ctx, specifier, targetNoExt)) {
+        // Custom tsconfig path aliases (and baseUrl imports) can't be
+        // resolved without parsing tsconfig. Err toward keeping the file:
+        // a non-package specifier whose trailing path segments match the
+        // target counts as an importer. Aliases that don't mirror the file
+        // path (single-name or multi-segment scoped ones) are still
+        // missed, and those files are deleted with their aliased imports
+        // left dangling.
+        return { file, exact: false };
       }
       if (
         resolved !== null &&
         (stripExtension(resolved) === targetNoExt ||
           path.join(resolved, 'index') === targetNoExt)
       ) {
-        return file;
+        return { file, exact: true };
       }
     }
   }
   return null;
+}
+
+/**
+ * Best-effort match for import specifiers behind custom path aliases:
+ * `#app/i18n/routing` or baseUrl-style `i18n/routing` against a target like
+ * `<cwd>/src/i18n/routing.ts`. Installed packages never match (their
+ * specifiers are real imports, not aliases), and a candidate needs at least
+ * two path segments so bare module names can't collide.
+ */
+function matchesAliasedTarget(
+  ctx: MigrationContext,
+  specifier: string,
+  targetNoExt: string
+): boolean {
+  if (!specifier.includes('/')) return false;
+  const packageName = specifier.startsWith('@')
+    ? specifier.split('/').slice(0, 2).join('/')
+    : specifier.split('/')[0];
+  if (fs.existsSync(path.join(ctx.cwd, 'node_modules', packageName))) {
+    return false;
+  }
+  const relTarget = toPosix(path.relative(ctx.cwd, targetNoExt));
+  const full = stripExtension(specifier);
+  const tail = full.split('/').slice(1).join('/');
+  for (const candidate of [full, tail]) {
+    if (!candidate.includes('/')) continue;
+    if (relTarget === candidate || relTarget.endsWith(`/${candidate}`)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function stripExtension(file: string): string {

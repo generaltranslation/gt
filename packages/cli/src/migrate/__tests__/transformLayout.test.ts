@@ -404,4 +404,110 @@ describe('transformLayoutFile', () => {
       'retained NextIntlClientProvider has no route `locale` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its `locale` prop manually (the layout keeps working on next-intl until then)',
     ]);
   });
+
+  it('leaves client-component layouts alone and flags the retained provider', () => {
+    const clientLayout = [
+      "'use client';",
+      "import { NextIntlClientProvider } from 'next-intl';",
+      'export default function SectionLayout({',
+      '  children,',
+      '  messages,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  messages: Record<string, string>;',
+      '}) {',
+      '  return (',
+      '    <NextIntlClientProvider messages={messages}>',
+      '      {children}',
+      '    </NextIntlClientProvider>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/section/layout.tsx',
+      clientLayout,
+      makeContext(['src/components/Skipped.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    // server-only injections must not land in a client component
+    expect(result.code ?? clientLayout).not.toContain('await getLocale()');
+    expect(result.code ?? clientLayout).not.toContain('async function');
+    expect(
+      result.todos.some((todo) =>
+        todo.reason.includes('client-component layout')
+      )
+    ).toBe(true);
+  });
+
+  it('flags a client layout that renders body instead of editing it', () => {
+    const clientRootLayout = [
+      "'use client';",
+      'export default function LocaleLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>{children}</body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      clientRootLayout,
+      makeContext()
+    );
+    expect(result.code ?? clientRootLayout).not.toContain('GTProvider>');
+    expect(
+      result.todos.some((todo) =>
+        todo.reason.includes('client components are left alone')
+      )
+    ).toBe(true);
+  });
+
+  it('reports when GTProvider cannot be inserted in the root locale layout', () => {
+    const noBodyLayout = [
+      'export default function LocaleLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  return <main>{children}</main>;',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      noBodyLayout,
+      makeContext()
+    );
+    expect(
+      result.todos.some((todo) =>
+        todo.reason.includes('GTProvider was not added')
+      )
+    ).toBe(true);
+  });
+
+  it('stays quiet about GTProvider in nested layouts without a body', () => {
+    const nestedLayout = [
+      'export default function GroupLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  return <section>{children}</section>;',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/(shop)/layout.tsx',
+      nestedLayout,
+      makeContext()
+    );
+    expect(
+      result.todos.some((todo) =>
+        todo.reason.includes('GTProvider was not added')
+      )
+    ).toBe(false);
+  });
 });
