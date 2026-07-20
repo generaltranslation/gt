@@ -19,7 +19,7 @@ This example runs React Router in framework mode with `ssr: false`, so the app i
 
 ```bash
 git clone https://github.com/generaltranslation/gt.git
-cd gt-libraries/examples/react-router-spa
+cd gt/examples/react-router-spa
 npm install
 ```
 
