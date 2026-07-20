@@ -1,0 +1,31 @@
+{
+  "name": "rsbuild-spa",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.20.0",
+  "type": "module",
+  "scripts": {
+    "dev": "rsbuild dev",
+    "build": "rsbuild build",
+    "preview": "rsbuild preview",
+    "translate": "gt translate",
+    "lint": "oxlint --config ../.oxlintrc.react.json .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "gt-react": "workspace:*",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@generaltranslation/compiler": "workspace:*",
+    "@rsbuild/core": "^2.1.6",
+    "@rsbuild/plugin-react": "^2.1.0",
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "gt": "workspace:*",
+    "oxlint": "^1.71.0",
+    "typescript": "~6.0.2"
+  }
+}

@@ -1,0 +1,117 @@
+:root {
+  color-scheme: light dark;
+  --bg: #0b0d12;
+  --fg: #f4f6fb;
+  --muted: #9aa4b2;
+  --card: #141822;
+  --border: color-mix(in srgb, var(--fg) 12%, transparent);
+  --accent: #6c8cff;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f7fb;
+    --fg: #10131a;
+    --muted: #5b6472;
+    --card: #ffffff;
+    --border: color-mix(in srgb, var(--fg) 10%, transparent);
+    --accent: #3b5bdb;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.wordmark {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.hero h1 {
+  font-size: clamp(1.9rem, 5vw, 2.6rem);
+  line-height: 1.1;
+  margin: 0.25rem 0 0.75rem;
+  letter-spacing: -0.02em;
+}
+
+.hero p {
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  font-weight: 600;
+  margin: 0;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.locale {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.locale-label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+}
+
+.locale code {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+}
