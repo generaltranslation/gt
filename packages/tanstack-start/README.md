@@ -47,3 +47,39 @@ export default function Page() {
 ```
 
 See the [full documentation](https://generaltranslation.com/docs/tanstack-start) for guides and API reference.
+
+## Server APIs
+
+Register `gtMiddleware` once to make request-scoped locale state available to
+server functions, server routes, loaders, and SSR:
+
+```ts
+// src/start.ts
+import { createCsrfMiddleware, createStart } from '@tanstack/react-start';
+import { gtMiddleware } from 'gt-tanstack-start/server';
+
+const csrfMiddleware = createCsrfMiddleware({
+  filter: ({ handlerType }) => handlerType === 'serverFn',
+});
+
+export const startInstance = createStart(() => ({
+  requestMiddleware: [csrfMiddleware, gtMiddleware],
+}));
+```
+
+Server-only code can then access the current request without passing the locale
+through every function:
+
+```ts
+import {
+  getEnableI18n,
+  getGT,
+  getLocale,
+  getMessages,
+  getTranslations,
+} from 'gt-tanstack-start/server';
+
+const locale = getLocale();
+const enableI18n = getEnableI18n();
+const gt = await getGT();
+```

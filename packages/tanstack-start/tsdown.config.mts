@@ -20,7 +20,7 @@ const deps = {
   alwaysBundle: [/^generaltranslation\//],
 };
 
-const entries = ['src/index.ts'];
+const entries = ['src/index.ts', 'src/server.ts', 'src/server.browser.ts'];
 
 export default defineConfig(
   entries.flatMap((entry, index) => {

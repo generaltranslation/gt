@@ -32,6 +32,21 @@ export async function loadTranslations(locale: string) {
 }
 ```
 
+- `start.ts` middleware setup:
+
+```ts
+import { createCsrfMiddleware, createStart } from '@tanstack/react-start';
+import { gtMiddleware } from 'gt-tanstack-start/server';
+
+const csrfMiddleware = createCsrfMiddleware({
+  filter: ({ handlerType }) => handlerType === 'serverFn',
+});
+
+export const startInstance = createStart(() => ({
+  requestMiddleware: [csrfMiddleware, gtMiddleware],
+}));
+```
+
 - `__root.tsx` minimum setup:
 
 ```tsx
@@ -44,12 +59,13 @@ import Header from '../components/Header';
 
 import appCss from '../styles.css?url';
 import {
+  getTranslationsSnapshot,
   initializeGT,
   LocaleSelector,
-  getLocale,
-  getTranslations,
   GTProvider,
 } from 'gt-tanstack-start';
+import { createServerFn } from '@tanstack/react-start';
+import { getLocale } from 'gt-tanstack-start/server';
 
 initializeGT({
   ...gtConfig,
@@ -58,13 +74,16 @@ initializeGT({
   loadTranslations,
 });
 
+const loadRootData = createServerFn({ method: 'GET' }).handler(async () => {
+  const locale = getLocale();
+  return {
+    translations: await getTranslationsSnapshot(locale),
+    locale,
+  };
+});
+
 export const Route = createRootRoute({
-  loader: async () => {
-    return {
-      translations: await getTranslations(),
-      locale: getLocale(),
-    };
-  },
+  loader: () => loadRootData(),
   shellComponent: RootDocument,
 });
 
@@ -76,7 +95,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <GTProvider translations={translations}>
+        <GTProvider locale={locale} translations={translations}>
           <Header />
           <LocaleSelector />
           {children}

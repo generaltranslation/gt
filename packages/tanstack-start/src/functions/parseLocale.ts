@@ -4,9 +4,14 @@ import {
   getCookie,
   setCookie,
 } from '@tanstack/react-start/server';
-import { getI18nConfig } from '@generaltranslation/react-core/pure';
-import { getCookieValue, parseAcceptLanguage } from 'gt-i18n/internal';
+import {
+  getI18nConfig,
+  getReadonlyConditionStore,
+  isReadonlyConditionStoreInitialized,
+} from '@generaltranslation/react-core/pure';
+import { getCookieValue } from 'gt-i18n/internal';
 import type { LocaleResolverConfig } from 'gt-i18n/internal/types';
+import { localeCookieOptions, resolveRequestLocale } from './requestConditions';
 
 export const determineLocale = createIsomorphicFn()
   .server(determineLocaleServer)
@@ -29,32 +34,20 @@ function determineLocaleServer({
   locales,
   customMapping,
 }: LocaleResolverConfig) {
-  const i18nConfig = getI18nConfig();
-  const localeCookieName = i18nConfig.getLocaleCookieName();
-  const candidates: string[] = [];
-
-  const cookie = getCookie(localeCookieName);
-  if (cookie) candidates.push(cookie);
-
-  candidates.push(...parseAcceptLanguage(getRequestHeader('accept-language')));
-
-  if (candidates.length === 0) {
-    console.warn(
-      'gt-tanstack-start(server): no locales could be determined for this request'
-    );
+  if (isReadonlyConditionStoreInitialized()) {
+    return getReadonlyConditionStore().getLocale();
   }
 
-  const locale = i18nConfig.resolveSupportedLocale(candidates, {
-    defaultLocale,
-    locales,
-    customMapping,
+  const i18nConfig = getI18nConfig();
+  const localeCookieName = i18nConfig.getLocaleCookieName();
+  const cookie = getCookie(localeCookieName);
+  const locale = resolveRequestLocale({
+    cookieLocale: cookie,
+    acceptLanguage: getRequestHeader('accept-language'),
+    config: { defaultLocale, locales, customMapping },
   });
 
-  setCookie(localeCookieName, locale, {
-    path: '/',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 365,
-  });
+  setCookie(localeCookieName, locale, localeCookieOptions);
 
   return locale;
 }

@@ -22,6 +22,8 @@ vi.mock('@tanstack/react-start/server', () => ({
 }));
 
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
+import { createConditionStoreSingleton } from 'gt-i18n/internal';
+import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import { determineLocale } from '../parseLocale';
 
 type GlobalWithRegistry = {
@@ -34,6 +36,10 @@ function resetI18nConfigSingleton() {
   const globalObj = globalThis as GlobalWithRegistry;
   if (globalObj.__generaltranslation?.i18n) {
     Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nConfig');
+    Reflect.deleteProperty(
+      globalObj.__generaltranslation.i18n,
+      'conditionStore'
+    );
   }
 }
 
@@ -125,6 +131,35 @@ describe('parseLocale', () => {
         maxAge: 60 * 60 * 24 * 365,
       }
     );
+  });
+
+  it('reuses locale state initialized by request middleware', () => {
+    const { setConditionStore } =
+      createConditionStoreSingleton<ReadonlyConditionStoreInterface>(
+        'ConditionStore is unavailable'
+      );
+    setConditionStore({
+      getLocale: () => 'fr',
+      getRegion: () => undefined,
+      getEnableI18n: () => true,
+      setLocale: () => {},
+      setRegion: () => {},
+      setEnableI18n: () => {},
+    });
+    mockCookie.mockClear();
+    mockRequestHeader.mockClear();
+    mockSetCookie.mockClear();
+
+    expect(
+      (
+        determineLocale as unknown as {
+          server: (config: typeof localeConfig) => string;
+        }
+      ).server(localeConfig)
+    ).toBe('fr');
+    expect(mockCookie).not.toHaveBeenCalled();
+    expect(mockRequestHeader).not.toHaveBeenCalled();
+    expect(mockSetCookie).not.toHaveBeenCalled();
   });
 
   it('uses client cookies', () => {

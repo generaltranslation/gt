@@ -1,0 +1,75 @@
+import { setCookie } from '@tanstack/react-start/server';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { getCookieValue, parseAcceptLanguage } from 'gt-i18n/internal';
+import type { LocaleResolverConfig } from 'gt-i18n/internal/types';
+import type { RequestConditions } from '../condition-store/AsyncLocalConditionStore';
+
+const localeCookieOptions = {
+  path: '/',
+  sameSite: 'lax' as const,
+  maxAge: 60 * 60 * 24 * 365,
+};
+
+const noLocaleCandidatesWarning = createDiagnosticMessage({
+  source: 'gt-tanstack-start',
+  severity: 'Warning',
+  whatHappened: 'No locale preference was found for the current request',
+  reassurance: 'GT will use the configured default locale',
+  why: 'neither the locale cookie nor the Accept-Language header supplied a supported locale candidate',
+});
+
+export function resolveRequestConditions(request: Request): RequestConditions {
+  const i18nConfig = getI18nConfig();
+  const cookieHeader = request.headers.get('cookie');
+  const locale = resolveRequestLocale({
+    cookieLocale: getCookieValue(
+      cookieHeader,
+      i18nConfig.getLocaleCookieName()
+    ),
+    acceptLanguage: request.headers.get('accept-language'),
+    config: {
+      defaultLocale: i18nConfig.getDefaultLocale(),
+      locales: i18nConfig.getLocales(),
+      customMapping: i18nConfig.getCustomMapping(),
+    },
+  });
+
+  setCookie(i18nConfig.getLocaleCookieName(), locale, localeCookieOptions);
+
+  const enableI18nCookie = getCookieValue(
+    cookieHeader,
+    i18nConfig.getEnableI18nCookieName()
+  );
+
+  return {
+    locale,
+    region:
+      getCookieValue(cookieHeader, i18nConfig.getRegionCookieName()) ||
+      undefined,
+    enableI18n:
+      enableI18nCookie === undefined ? true : enableI18nCookie === 'true',
+  };
+}
+
+export function resolveRequestLocale({
+  cookieLocale,
+  acceptLanguage,
+  config,
+}: {
+  cookieLocale?: string;
+  acceptLanguage?: string | null;
+  config: LocaleResolverConfig;
+}): string {
+  const candidates: string[] = [];
+  if (cookieLocale) candidates.push(cookieLocale);
+  candidates.push(...parseAcceptLanguage(acceptLanguage));
+
+  if (candidates.length === 0) {
+    console.warn(noLocaleCandidatesWarning);
+  }
+
+  return getI18nConfig().resolveSupportedLocale(candidates, config);
+}
+
+export { localeCookieOptions };

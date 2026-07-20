@@ -62,6 +62,35 @@
         "default": "./dist/index.mjs"
       },
       "default": "./dist/index.mjs"
+    },
+    "./server": {
+      "browser": {
+        "require": {
+          "types": "./dist/server.d.cts",
+          "default": "./dist/server.browser.cjs"
+        },
+        "import": {
+          "types": "./dist/server.d.mts",
+          "default": "./dist/server.browser.mjs"
+        },
+        "default": "./dist/server.browser.mjs"
+      },
+      "require": {
+        "types": "./dist/server.d.cts",
+        "default": "./dist/server.cjs"
+      },
+      "import": {
+        "types": "./dist/server.d.mts",
+        "default": "./dist/server.mjs"
+      },
+      "default": "./dist/server.mjs"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "server": [
+        "./dist/server.d.cts"
+      ]
     }
   },
   "keywords": [
