@@ -1,0 +1,11 @@
+{
+  "locales": ["zh", "fr", "es", "ja"],
+  "files": {
+    "gt": {
+      "output": "app/_gt/[locale].json",
+      "parsingFlags": {
+        "devHotReload": true
+      }
+    }
+  }
+}
