@@ -1,0 +1,104 @@
+:root {
+  color-scheme: light dark;
+  --bg: #0b0d12;
+  --panel: #141821;
+  --text: #f4f6fb;
+  --muted: #9aa4b8;
+  --accent: #6c7bff;
+  --border: #232838;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(1200px 600px at 50% -10%, #1a1f2e, var(--bg));
+  color: var(--text);
+  display: grid;
+  place-items: center;
+}
+
+.page {
+  width: min(680px, 92vw);
+  padding: 3rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  text-align: center;
+}
+
+.hero {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.hero h1 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  line-height: 1.15;
+}
+
+.hero p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.tagline {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.counter {
+  justify-self: center;
+  align-self: center;
+  border: 1px solid var(--border);
+  background: var(--accent);
+  color: white;
+  font-size: 1rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.05s ease-in-out;
+}
+
+.counter:active {
+  transform: translateY(1px);
+}
+
+.switcher {
+  display: flex;
+  justify-content: center;
+}
+
+.switcher select {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+}

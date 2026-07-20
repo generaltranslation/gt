@@ -28,6 +28,7 @@
     "next-starter",
     "next-pages-router",
     "vite-create-app",
+    "parcel-spa",
     "cli-test-app",
     "compiler-cli-parity",
     "next-ssg",
