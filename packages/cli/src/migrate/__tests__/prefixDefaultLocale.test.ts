@@ -179,7 +179,6 @@ describe('transformMiddlewareFile prefixDefaultLocale mapping', () => {
     expect(result.skipReasons).toEqual([]);
     expect(result.todos).toEqual([]);
   });
-
 });
 
 describe('object-form localePrefix with custom prefixes', () => {
