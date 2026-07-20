@@ -1,0 +1,42 @@
+{
+  "0cce35480b454441": {
+    "c": "Traductions côté client, sans framework",
+    "i": 1,
+    "t": "h1"
+  },
+  "8133ca3ae17cba04": {
+    "c": [
+      "Ce paragraphe est traduit dans le navigateur au moment de l’exécution. Il porte même une valeur en direct : la locale actuelle est ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      },
+      ", résolue sans la moindre requête réseau."
+    ],
+    "i": 1,
+    "t": "p"
+  },
+  "9099dcd519c2f2e4": {
+    "c": [
+      {
+        "c": "Le plugin de compilation Rollup extrait chaque message au moment du build.",
+        "i": 2,
+        "t": "li"
+      },
+      {
+        "c": "Les traductions sont livrées en JSON statique dans src/_gt et chargées à la demande.",
+        "i": 3,
+        "t": "li"
+      },
+      {
+        "c": "Choisissez une locale ci-dessus pour changer les textes sans aucun appel d’API.",
+        "i": 4,
+        "t": "li"
+      }
+    ],
+    "i": 1,
+    "t": "ol"
+  },
+  "1908b459437de74c": "Internationalisé au moment du build, traduit dans le navigateur."
+}
