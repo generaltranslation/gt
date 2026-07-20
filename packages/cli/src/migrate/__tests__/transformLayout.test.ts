@@ -405,6 +405,172 @@ describe('transformLayoutFile', () => {
     ]);
   });
 
+  it('does not inject an out-of-scope param locale from generateMetadata (uses the getLocale fallback)', () => {
+    // generateMetadata destructures the param locale, but the default-exported
+    // component does not — so `locale` is NOT in scope at the provider inside
+    // the component. The file-wide binding must not leak in as `locale={locale}`
+    // (an undefined reference); the component is async, so the request-scoped
+    // fallback applies instead.
+    const metadataOnlyLocale = [
+      "import { NextIntlClientProvider } from 'next-intl';",
+      "import { getMessages } from 'next-intl/server';",
+      'export async function generateMetadata({',
+      '  params,',
+      '}: {',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  return { title: locale };',
+      '}',
+      'export default async function RootLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  const messages = await getMessages();',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>',
+      '        <NextIntlClientProvider messages={messages}>',
+      '          {children}',
+      '        </NextIntlClientProvider>',
+      '      </body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/layout.tsx',
+      metadataOnlyLocale,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    // the generateMetadata `locale` is out of scope here, so it is not injected
+    expect(result.code).not.toContain('locale={locale}');
+    // the component is async and default-exported, so getLocale() is safe
+    expect(result.code).toMatch(
+      /<NextIntlClientProvider[^>]*locale=\{await getLocale\(\)\}/
+    );
+    expect(result.code).toMatch(
+      /import \{[^}]*getLocale[^}]*\} from ["']gt-next\/server["']/
+    );
+  });
+
+  it('skips instead of injecting an out-of-scope param locale into a sync helper', () => {
+    // Same out-of-scope generateMetadata binding, but the provider now sits in
+    // a synchronous helper. The old file-wide lookup would inject the
+    // out-of-scope `locale`; the fix resolves scope, finds none, and (unable to
+    // make the sync helper async safely) degrades to a manual-wiring skip.
+    const metadataLocaleSyncHelper = [
+      "import { NextIntlClientProvider } from 'next-intl';",
+      "import { getMessages } from 'next-intl/server';",
+      'export async function generateMetadata({',
+      '  params,',
+      '}: {',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  return { title: locale };',
+      '}',
+      'export default async function RootLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  const messages = await getMessages();',
+      '  const render = () => (',
+      '    <NextIntlClientProvider messages={messages}>',
+      '      {children}',
+      '    </NextIntlClientProvider>',
+      '  );',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>{render()}</body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/layout.tsx',
+      metadataLocaleSyncHelper,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.code).toBeNull();
+    expect(result.skipReasons).toEqual([
+      'retained NextIntlClientProvider has no route `locale` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its `locale` prop manually (the layout keeps working on next-intl until then)',
+    ]);
+  });
+
+  it('injects the param locale when the component itself destructures it (regression)', () => {
+    const componentLocaleLayout = [
+      "import { NextIntlClientProvider } from 'next-intl';",
+      "import { getMessages } from 'next-intl/server';",
+      'export default async function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  const messages = await getMessages();',
+      '  return (',
+      '    <html lang={locale}>',
+      '      <body>',
+      '        <NextIntlClientProvider messages={messages}>',
+      '          {children}',
+      '        </NextIntlClientProvider>',
+      '      </body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      componentLocaleLayout,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toMatch(
+      /<NextIntlClientProvider[^>]*locale=\{locale\}/
+    );
+    expect(result.code).not.toContain('getLocale()');
+  });
+
+  it('injects the aliased param locale when the component destructures it (regression)', () => {
+    const aliasLocaleLayout = [
+      "import { NextIntlClientProvider } from 'next-intl';",
+      "import { getMessages } from 'next-intl/server';",
+      'export default async function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale: lng } = await params;',
+      '  const messages = await getMessages();',
+      '  return (',
+      '    <html lang={lng}>',
+      '      <body>',
+      '        <NextIntlClientProvider messages={messages}>',
+      '          {children}',
+      '        </NextIntlClientProvider>',
+      '      </body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      aliasLocaleLayout,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toMatch(/<NextIntlClientProvider[^>]*locale=\{lng\}/);
+    expect(result.code).not.toContain('getLocale()');
+  });
+
   it('leaves client-component layouts alone and flags the retained provider', () => {
     const clientLayout = [
       "'use client';",

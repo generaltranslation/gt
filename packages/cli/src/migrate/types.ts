@@ -30,7 +30,14 @@ export type RoutingInfo = {
   locales: string[] | null;
   defaultLocale: string | null;
   localePrefix: 'always' | 'as-needed' | 'never' | null;
+  /** localePrefix is present in the routing config but not statically
+   *  resolvable (a variable reference, a computed value). Consumers must not
+   *  read the null above as next-intl's default in that case. */
+  localePrefixUnresolved?: boolean;
   pathnames: Record<string, unknown> | null;
+  /** pathnames is present but not statically resolvable; treat as "localized
+   *  pathnames exist", never as absent. */
+  pathnamesUnresolved?: boolean;
   routingFile: string | null;
   requestFile: string | null;
 };
@@ -52,6 +59,9 @@ export type MigrationContext = {
   /** true when --inline was passed; gates transforms that embed
    *  source-language text (and so require re-translation) */
   inlineMode?: boolean;
+  /** resolved --config path; gt.config.json is read from and written to this
+   *  path (defaults to <cwd>/gt.config.json when the flag is absent) */
+  configFile?: string;
 };
 
 export type SourceResult = {

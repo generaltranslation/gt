@@ -145,6 +145,11 @@ export async function handleMigrateCommand(
     skippedFiles: new Map(),
     stats: {},
     inlineMode: options.inline,
+    // -c/--config; commander's default resolves an existing root
+    // gt.config.json or '' when none exists yet.
+    configFile: options.config
+      ? path.resolve(cwd, options.config)
+      : path.join(cwd, 'gt.config.json'),
   };
 
   // Files owned by the config lane (pass 3 / emitGtFiles) must not go
@@ -217,8 +222,15 @@ export async function handleMigrateCommand(
       continue;
     }
     if (code.includes('createNavigation')) {
-      collect(ctx, file, transformNavigationFile(file, code, ctx));
-      continue;
+      const navigation = transformNavigationFile(file, code, ctx);
+      if (navigation.code !== null || navigation.skipReasons.length > 0) {
+        collect(ctx, file, navigation);
+        continue;
+      }
+      // The transform claimed nothing: the string was a false match (a
+      // comment, an unrelated helper with the same name). Fall through to
+      // the generic source pass so real next-intl usage in this file is
+      // still converted or registered as a skip.
     }
     if (hasNextIntlProvider(code)) {
       providerFiles.push(file);
@@ -245,7 +257,7 @@ export async function handleMigrateCommand(
       continue;
     }
     if (
-      /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"]next-intl(?:\/|['"])/.test(
+      /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"]next-intl(?:\/|['"])/.test(
         content
       )
     ) {

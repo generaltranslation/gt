@@ -25,8 +25,10 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
   const edits: FileEdit[] = [];
   const fullyMigrated = ctx.skippedFiles.size === 0;
 
-  // gt.config.json
-  const configPath = path.join(ctx.cwd, 'gt.config.json');
+  // gt.config.json — honor the resolved --config path when the driver set it,
+  // otherwise the project root. This one path drives both the merge-read and
+  // the write edit below.
+  const configPath = ctx.configFile ?? path.join(ctx.cwd, 'gt.config.json');
   let existing: Record<string, unknown> = {};
   if (fs.existsSync(configPath)) {
     try {
@@ -116,8 +118,71 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
 
   // package.json + next-intl config teardown, only when fully migrated.
   if (fullyMigrated) {
+    // Decide config-file retention FIRST. Deleting a module that something
+    // still imports breaks the build, so a routing.ts/request.ts kept for a
+    // remaining importer also keeps its own `next-intl` import alive. Removing
+    // next-intl from package.json in that case would leave that import
+    // unresolvable, so the retention decision has to precede the package.json
+    // edit, not follow it.
+    const deletions = [ctx.routing.routingFile, ctx.routing.requestFile].filter(
+      (file): file is string => file !== null && fs.existsSync(file)
+    );
+    // Retention-aware fixed point: a config file kept for a live importer is
+    // itself a live importer, so a routing file imported only by a retained
+    // request file must also be retained (deleting it would leave the surviving
+    // request file with a dangling ./routing import that fails the next build).
+    // Loop until stable, each pass ignoring only the candidates still slated for
+    // deletion so a just-retained candidate counts as an importer next pass.
+    // Two candidates converge in at most two passes; the loop generalizes it.
+    const retained: {
+      file: string;
+      importer: { file: string; exact: boolean };
+    }[] = [];
+    let deletable = [...deletions];
+    let settled = false;
+    while (!settled) {
+      settled = true;
+      // A retention reassigns `deletable` to a filtered copy, so the array this
+      // loop iterates (bound at pass start) is never mutated in place.
+      const pass = deletable;
+      for (const configFile of pass) {
+        const importer = findRemainingImporter(ctx, configFile, deletable);
+        if (importer) {
+          retained.push({ file: configFile, importer });
+          deletable = deletable.filter((file) => file !== configFile);
+          settled = false;
+        }
+      }
+    }
+
     const packageJsonPath = path.join(ctx.cwd, 'package.json');
-    if (fs.existsSync(packageJsonPath)) {
+    // Keep next-intl only when a RETAINED file actually imports it. A retained
+    // routing/request file written as a plain object (no next-intl import) must
+    // not pin the dependency, and a "still imports it" todo would be false. Use
+    // the same specifier regex the driver's out-of-scope scan uses, against the
+    // on-disk content (retained files are never rewritten by edits).
+    const nextIntlSpecifier =
+      /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"]next-intl(?:\/|['"])/;
+    const nextIntlRetainers = retained.filter((entry) => {
+      try {
+        return nextIntlSpecifier.test(fs.readFileSync(entry.file, 'utf8'));
+      } catch {
+        // Unreadable retained file: keep next-intl rather than risk stripping a
+        // dependency a surviving import still needs.
+        return true;
+      }
+    });
+    if (nextIntlRetainers.length > 0) {
+      // A retained config file still imports next-intl, so leave the
+      // dependency in package.json and explain how to finish by hand.
+      const retainedList = nextIntlRetainers
+        .map((entry) => path.relative(ctx.cwd, entry.file))
+        .join(', ');
+      ctx.todos.push({
+        file: packageJsonPath,
+        reason: `next-intl kept in package.json because ${retainedList} still imports it. After migrating that file off next-intl, remove the dependency by hand.`,
+      });
+    } else if (fs.existsSync(packageJsonPath)) {
       let pkg: Record<string, Record<string, string>> | null = null;
       try {
         pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
@@ -149,22 +214,18 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
         }
       }
     }
-    const deletions = [ctx.routing.routingFile, ctx.routing.requestFile].filter(
-      (file): file is string => file !== null && fs.existsSync(file)
-    );
-    for (const configFile of deletions) {
+
+    for (const { file: configFile, importer } of retained) {
       // Deleting a module that something still imports breaks the build —
       // keep it and say so instead.
-      const importer = findRemainingImporter(ctx, configFile, deletions);
-      if (importer) {
-        ctx.todos.push({
-          file: configFile,
-          reason: importer.exact
-            ? `kept because ${path.relative(ctx.cwd, importer.file)} still imports it — migrate that reference off next-intl, then delete this file`
-            : `kept because ${path.relative(ctx.cwd, importer.file)} appears to import it through a path alias; if that specifier is really a third-party package, delete this file yourself`,
-        });
-        continue;
-      }
+      ctx.todos.push({
+        file: configFile,
+        reason: importer.exact
+          ? `kept because ${path.relative(ctx.cwd, importer.file)} still imports it — migrate that reference off next-intl, then delete this file`
+          : `kept because ${path.relative(ctx.cwd, importer.file)} appears to import it through a path alias; if that specifier is really a third-party package, delete this file yourself`,
+      });
+    }
+    for (const configFile of deletable) {
       edits.push({ path: configFile, kind: 'delete' });
     }
   }
@@ -473,7 +534,10 @@ function findRemainingImporter(
     ? path.join(ctx.cwd, 'src')
     : ctx.cwd;
   const specifierPattern =
-    /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/g;
+    // The bare `import\s*` branch catches side-effect imports
+    // (`import './routing'`), which have no `from` and no paren but still
+    // break at build time if their target is deleted.
+    /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"]([^'"]+)['"]/g;
 
   for (const file of ctx.projectFiles ?? ctx.sourceFiles ?? []) {
     if (ignoredFiles.includes(file)) continue;

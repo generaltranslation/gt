@@ -51,17 +51,23 @@ function isLocaleGuardTest(test: t.Node): boolean {
 }
 
 /**
- * Finds the local name bound to the route `locale` param
- * (`const { locale } = await params` / `= params`, alias-aware), or null when
- * the layout does not destructure it. A retained NextIntlClientProvider reuses
- * this static, augmented-`Locale`-typed binding instead of a request-scoped
- * getLocale(). `props.params` and other non-`params` sources are ignored.
+ * Every local binding of the route `locale` param in the file
+ * (`const { locale } = await params` / `= params`, alias-aware), each paired
+ * with the declarator node that introduced it. A retained
+ * NextIntlClientProvider reuses whichever of these is actually in scope at its
+ * own injection site (a static, augmented-`Locale`-typed binding), which keeps
+ * SSG and avoids a request-scoped getLocale(). Recording the declarator lets
+ * the injection site confirm scope via `scope.getBinding(name)` rather than
+ * trusting a name that may be bound in an unrelated function (e.g.
+ * generateMetadata). `props.params` and other non-`params` sources are ignored.
  */
-function findParamLocaleBinding(ast: t.File): string | null {
-  let binding: string | null = null;
+function collectParamLocaleBindings(
+  ast: t.File
+): Array<{ name: string; declarator: t.VariableDeclarator }> {
+  const bindings: Array<{ name: string; declarator: t.VariableDeclarator }> =
+    [];
   traverse(ast, {
     VariableDeclarator(path) {
-      if (binding) return;
       if (!t.isObjectPattern(path.node.id)) return;
       const init = path.node.init;
       const fromParams =
@@ -76,12 +82,12 @@ function findParamLocaleBinding(ast: t.File): string | null {
           t.isIdentifier(property.key, { name: 'locale' }) &&
           t.isIdentifier(property.value)
         ) {
-          binding = property.value.name;
+          bindings.push({ name: property.value.name, declarator: path.node });
         }
       }
     },
   });
-  return binding;
+  return bindings;
 }
 
 /**
@@ -284,10 +290,11 @@ export function transformLayoutFile(
   //    next-intl installed, so the skipped layout keeps working on it and the
   //    skip surfaces in the report for a manual fix.
   if (retainProvider) {
-    const paramLocaleBinding = findParamLocaleBinding(ast);
-    const componentFn = paramLocaleBinding
-      ? null
-      : findDefaultExportFunction(ast);
+    const paramLocaleBindings = collectParamLocaleBindings(ast);
+    // Any retained provider may need the getLocale() fallback (one whose scope
+    // has no param locale), so resolve the default-exported component up front
+    // rather than only when the file lacks a params destructure entirely.
+    const componentFn = findDefaultExportFunction(ast);
     let unsafeAsyncFallback = false;
     traverse(ast, {
       JSXOpeningElement(path) {
@@ -306,12 +313,21 @@ export function transformLayoutFile(
         );
         if (hasLocaleProp) return;
 
-        // Primary path: reuse the static route-param binding, no async needed.
-        if (paramLocaleBinding) {
+        // Primary path: reuse a static route-param binding, no async needed,
+        // but only one actually in scope at THIS provider. A binding found
+        // file-wide (e.g. destructured inside generateMetadata) is an
+        // undefined reference here, so resolve the name up the provider's own
+        // scope chain and accept it only when it maps back to a recorded
+        // params destructure.
+        const inScopeParamLocale = paramLocaleBindings.find(
+          ({ name, declarator }) =>
+            path.scope.getBinding(name)?.path.node === declarator
+        );
+        if (inScopeParamLocale) {
           path.node.attributes.push(
             t.jsxAttribute(
               t.jsxIdentifier('locale'),
-              t.jsxExpressionContainer(t.identifier(paramLocaleBinding))
+              t.jsxExpressionContainer(t.identifier(inScopeParamLocale.name))
             )
           );
           mutated = true;

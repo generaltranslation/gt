@@ -41,6 +41,31 @@ export function transformMiddlewareFile(
     };
   }
 
+  if (ctx.routing.localePrefixUnresolved) {
+    // A skip, not a todo, for the same reason as 'never' above: the untouched
+    // file still imports next-intl/middleware, and only skippedFiles holds back
+    // teardown. localePrefix is present but could not be statically resolved,
+    // so converting would guess whether the default locale is prefixed.
+    return {
+      ...none,
+      skipReasons: [
+        "localePrefix could not be statically resolved (it references a variable or computed value), so converting the middleware would guess the app's public URL structure; inline a literal localePrefix in defineRouting (or convert the middleware by hand) and rerun the migration. The retained file still imports next-intl/middleware and holds back full teardown",
+      ],
+    };
+  }
+
+  if (ctx.routing.pathnamesUnresolved) {
+    // A skip, not a todo, same rationale: pathConfig cannot be emitted from an
+    // unresolved pathnames, and converting would silently drop the app's
+    // localized pathnames.
+    return {
+      ...none,
+      skipReasons: [
+        'pathnames could not be statically resolved (it references a variable or computed value), so pathConfig cannot be emitted and converting would silently drop the localized pathnames; inline a literal pathnames in defineRouting (or convert the middleware by hand) and rerun the migration. The retained file still imports next-intl/middleware and holds back full teardown',
+      ],
+    };
+  }
+
   let ast: t.File;
   try {
     ast = parse(code, {

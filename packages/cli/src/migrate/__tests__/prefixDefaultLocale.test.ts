@@ -238,6 +238,27 @@ describe('object-form localePrefix with custom prefixes', () => {
       result.todos.some((todo) => todo.reason.includes('localePrefix.prefixes'))
     ).toBe(false);
   });
+
+  it('adds the prefixes TODO when prefixes is a dynamic value (static mode)', () => {
+    // A variable prefixes map resolves the mode fine but hides the per-locale
+    // URL segments; the drop-TODO must still fire so they are not lost silently.
+    const cwd = makeProject({
+      'i18n/routing.ts': defineRoutingFile(
+        "  localePrefix: { mode: 'always', prefixes: customPrefixes },"
+      ),
+    });
+    const routing = parseRoutingConfig(cwd);
+    expect(routing.localePrefix).toBe('always');
+    const result = transformMiddlewareFile(
+      'middleware.ts',
+      canonical,
+      makeContext(routing)
+    );
+    expect(result.code).toContain('prefixDefaultLocale: true');
+    expect(
+      result.todos.some((todo) => todo.reason.includes('localePrefix.prefixes'))
+    ).toBe(true);
+  });
 });
 
 describe('localePrefixHasCustomPrefixes', () => {
@@ -270,5 +291,20 @@ describe('localePrefixHasCustomPrefixes', () => {
     ).toBe(false);
     expect(localePrefixHasCustomPrefixes(null)).toBe(false);
     expect(localePrefixHasCustomPrefixes('/does/not/exist.ts')).toBe(false);
+  });
+
+  it('is true for a dynamic (non-object) prefixes value', () => {
+    // A variable prefixes map cannot be inspected, but its presence means
+    // per-locale prefixes exist, so we conservatively report them.
+    const dynamicPrefixes = makeProject({
+      'i18n/routing.ts': defineRoutingFile(
+        "  localePrefix: { mode: 'always', prefixes: someVar },"
+      ),
+    });
+    expect(
+      localePrefixHasCustomPrefixes(
+        parseRoutingConfig(dynamicPrefixes).routingFile
+      )
+    ).toBe(true);
   });
 });

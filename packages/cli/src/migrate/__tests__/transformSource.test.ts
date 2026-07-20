@@ -391,3 +391,100 @@ describe('re-exports from next-intl', () => {
     expect(result.skipReasons).toEqual([]);
   });
 });
+
+describe('transformSourceFile: dynamic getTranslations namespace', () => {
+  it('preserves an identifier namespace as a positional argument', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page({ locale, ns }: { locale: string; ns: string }) {',
+        '  const t = await getTranslations({ locale, namespace: ns });',
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toMatch(/await getTranslations\(ns\)/);
+    expect(result.todos.some((todo) => todo.reason.includes('locale'))).toBe(
+      true
+    );
+  });
+
+  it('preserves a call-expression namespace', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page() {',
+        '  const t = await getTranslations({ namespace: getNs() });',
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toMatch(/await getTranslations\(getNs\(\)\)/);
+  });
+
+  it('preserves a template-literal namespace', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page({ section }: { section: string }) {',
+        '  const t = await getTranslations({ namespace: `Admin.${section}` });',
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toContain('getTranslations(`Admin.${section}`)');
+  });
+
+  it('still drops a locale-only object arg to getTranslations()', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page() {',
+        "  const t = await getTranslations({ locale: 'en' });",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toContain('await getTranslations()');
+    expect(result.todos.some((todo) => todo.reason.includes('locale'))).toBe(
+      true
+    );
+  });
+
+  it('skips a spread-only object arg to getTranslations', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page() {',
+        '  const t = await getTranslations({ ...opts });',
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    // The spread may carry namespace/locale; converting would silently drop it.
+    expect(result.code).toBeNull();
+    expect(result.skipReasons.some((reason) => reason.includes('spread'))).toBe(
+      true
+    );
+  });
+
+  it('skips a spread + literal namespace instead of a silent partial rewrite', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page() {',
+        "  const t = await getTranslations({ ...base, namespace: 'Home' });",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.code).toBeNull();
+    expect(result.skipReasons.some((reason) => reason.includes('spread'))).toBe(
+      true
+    );
+  });
+});

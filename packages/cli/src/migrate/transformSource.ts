@@ -176,6 +176,7 @@ export function transformSourceFile(
   const objectArgRewrites: {
     call: t.CallExpression;
     namespace: string | null;
+    namespaceExpression: t.Expression | null;
     hadLocale: boolean;
     line?: number;
   }[] = [];
@@ -202,15 +203,34 @@ export function transformSourceFile(
           t.isIdentifier(init.callee) &&
           getTranslationsLocals.has(init.callee.name)
         ) {
+          if (
+            first.properties.some((property) => t.isSpreadElement(property))
+          ) {
+            // A spread ({ ...opts }) may carry namespace or locale options that
+            // cannot be read statically; a partial rewrite would silently drop
+            // them, so skip the whole file and hold back teardown instead.
+            skipReasons.push(
+              'getTranslations({ ...spread }) cannot be converted statically, the spread may carry namespace or locale options; convert this call manually'
+            );
+            return;
+          }
           const namespaceProp = getObjectProp(first, 'namespace');
           const namespace =
             namespaceProp && t.isStringLiteral(namespaceProp)
               ? namespaceProp.value
               : null;
+          // A non-literal namespace (identifier, member, template, call) can't
+          // be resolved to a string here; keep the expression so the apply step
+          // passes it through positionally instead of dropping it to root.
+          const namespaceExpression =
+            namespaceProp && !t.isStringLiteral(namespaceProp)
+              ? namespaceProp
+              : null;
           const hadLocale = getObjectProp(first, 'locale') !== null;
           objectArgRewrites.push({
             call: init,
             namespace,
+            namespaceExpression,
             hadLocale,
             line: init.loc?.start.line,
           });
@@ -384,10 +404,15 @@ export function transformSourceFile(
   });
 
   // 2. getTranslations({ locale, namespace }) -> getTranslations('namespace').
+  //    A dynamic namespace becomes the positional argument
+  //    getTranslations(expr) so its keys still resolve; a missing namespace
+  //    stays getTranslations().
   for (const rewrite of objectArgRewrites) {
     rewrite.call.arguments = rewrite.namespace
       ? [t.stringLiteral(rewrite.namespace)]
-      : [];
+      : rewrite.namespaceExpression
+        ? [rewrite.namespaceExpression]
+        : [];
     if (rewrite.hadLocale) {
       todos.push({
         file,

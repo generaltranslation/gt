@@ -293,6 +293,42 @@ describe('handleMigrateCommand integration', () => {
     expect(report).not.toContain('Install gt-next');
   });
 
+  it('retains a routing file reachable only through a retained request file', async () => {
+    // boot.ts (a plain app file, no next-intl API) imports request.ts, so
+    // request.ts is retained; request.ts imports './routing', so routing.ts
+    // must be retained too, since deleting it would leave the surviving
+    // request.ts with a dangling ./routing import that breaks the next build.
+    const cwd = makeApp({
+      'src/app/boot.ts': [
+        "import request from '@/i18n/request';",
+        'export const boot = request;',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+
+    // request.ts survives because boot.ts still imports it
+    expect(fs.existsSync(path.join(cwd, 'src/i18n/request.ts'))).toBe(true);
+    // routing.ts ALSO survives (its only importer is the retained request.ts)
+    expect(fs.existsSync(path.join(cwd, 'src/i18n/routing.ts'))).toBe(true);
+    // both retained files still import next-intl, so the dependency stays
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+    // the report names both retained files
+    const report = read(cwd, 'gt-migrate-report.md');
+    expect(report).toContain('src/i18n/request.ts');
+    expect(report).toContain('src/i18n/routing.ts');
+  });
+
   it('reports a manual install step when installing gt-next fails', async () => {
     const cwd = makeApp();
     vi.mocked(installPackage).mockRejectedValueOnce(new Error('offline'));
@@ -659,5 +695,162 @@ describe('handleMigrateCommand integration', () => {
     expect(read(cwd, 'gt-migrate-report.md')).not.toMatch(
       /layout\.ts.*skipped|skipped.*layout\.ts/
     );
+  });
+
+  it('converts a file whose only createNavigation is in a comment', async () => {
+    // The driver picks the navigation transform by a string match. A false
+    // match (comment, unrelated helper) must fall through to the generic
+    // source pass instead of leaving real next-intl usage untouched and
+    // unskipped beneath a full teardown.
+    const cwd = makeApp({
+      'src/components/NavNote.tsx': [
+        '// revisit createNavigation once these routes localize',
+        "import { useTranslations } from 'next-intl';",
+        'export function NavNote() {',
+        "  const t = useTranslations('Home');",
+        "  return <p>{t('title')}</p>;",
+        '}',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    const navNote = read(cwd, 'src/components/NavNote.tsx');
+    expect(navNote).toMatch(/from ["']gt-next["']/);
+    expect(navNote).not.toMatch(/from ['"]next-intl['"]/);
+    // nothing was silently bypassed, so the full teardown is legitimate
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeUndefined();
+  });
+
+  it('skips an unrecognized createNavigation shape and holds back teardown', async () => {
+    // `const navigation = createNavigation(routing)` is not the supported
+    // destructured wrapper. It must register as a skip (holding next-intl in
+    // package.json), never as an untouched non-skip beneath a full teardown.
+    const cwd = makeApp({
+      'src/i18n/navigation.ts': [
+        "import { createNavigation } from 'next-intl/navigation';",
+        "import { routing } from './routing';",
+        'const navigation = createNavigation(routing);',
+        'export default navigation;',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    // file untouched, dependency retained, skip surfaced in the report
+    expect(read(cwd, 'src/i18n/navigation.ts')).toContain(
+      'const navigation = createNavigation(routing);'
+    );
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('navigation.ts');
+  });
+
+  it('keeps next-intl in package.json when a retained routing file still imports it', async () => {
+    // A locale switcher imports the routing file for its locale list but uses
+    // no next-intl API, so it is never a skip. The routing file must be kept
+    // (something imports it) AND next-intl must stay in package.json, or the
+    // retained file's next-intl/routing import breaks the build.
+    const cwd = makeApp({
+      'src/components/LocaleSwitcher.tsx': [
+        "import { routing } from '@/i18n/routing';",
+        'export function LocaleSwitcher() {',
+        '  return (',
+        '    <ul>',
+        '      {routing.locales.map((locale) => (',
+        '        <li key={locale}>{locale}</li>',
+        '      ))}',
+        '    </ul>',
+        '  );',
+        '}',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    // routing file kept for its importer
+    expect(fs.existsSync(path.join(cwd, 'src/i18n/routing.ts'))).toBe(true);
+    // and the dependency it imports survives with it
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('routing');
+  });
+
+  it('keeps a routing file alive for a bare side-effect import', async () => {
+    // `import './i18n/routing';` has no `from` and no paren, but deleting its
+    // target still breaks the build. The importer detection must count it.
+    const cwd = makeApp({
+      'src/register.ts': [
+        "import './i18n/routing';",
+        'export const registered = true;',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    expect(fs.existsSync(path.join(cwd, 'src/i18n/routing.ts'))).toBe(true);
+    // the retained routing file imports next-intl/routing, so the dependency
+    // survives with it
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+  });
+
+  it('honors --config for the gt.config.json read and write', async () => {
+    const cwd = makeApp();
+    fs.mkdirSync(path.join(cwd, 'config'));
+    fs.writeFileSync(
+      path.join(cwd, 'config/gt.config.json'),
+      JSON.stringify({ projectId: 'prj_demo' }, null, 2)
+    );
+    await handleMigrateCommand(
+      {
+        config: 'config/gt.config.json',
+        inline: false,
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    // merged in place at the flag's path, existing keys preserved
+    const gtConfig = JSON.parse(read(cwd, 'config/gt.config.json'));
+    expect(gtConfig.projectId).toBe('prj_demo');
+    expect(gtConfig.locales).toEqual(['en', 'es']);
+    // no second, shadowing config at the root
+    expect(fs.existsSync(path.join(cwd, 'gt.config.json'))).toBe(false);
   });
 });

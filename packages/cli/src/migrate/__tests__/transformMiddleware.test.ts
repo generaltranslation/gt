@@ -112,4 +112,48 @@ describe('transformMiddlewareFile', () => {
     expect(result.code).toBeNull();
     expect(result.skipReasons.join(' ')).toContain('extra');
   });
+
+  it('skips the file when localePrefix could not be statically resolved', () => {
+    const result = transformMiddlewareFile(
+      'middleware.ts',
+      canonical,
+      makeContext({ localePrefixUnresolved: true })
+    );
+    expect(result.code).toBeNull();
+    expect(
+      result.skipReasons.some((reason) => reason.includes('localePrefix'))
+    ).toBe(true);
+    expect(result.todos).toEqual([]);
+  });
+
+  it('skips the file when pathnames could not be statically resolved', () => {
+    const result = transformMiddlewareFile(
+      'middleware.ts',
+      canonical,
+      makeContext({ pathnamesUnresolved: true })
+    );
+    expect(result.code).toBeNull();
+    expect(
+      result.skipReasons.some((reason) => reason.includes('pathnames'))
+    ).toBe(true);
+  });
+
+  it('still converts resolved localePrefix contexts as before', () => {
+    const always = transformMiddlewareFile(
+      'middleware.ts',
+      canonical,
+      makeContext({ localePrefix: 'always' })
+    );
+    expect(always.skipReasons).toEqual([]);
+    expect(always.code).toContain('prefixDefaultLocale: true');
+
+    const asNeeded = transformMiddlewareFile(
+      'middleware.ts',
+      canonical,
+      makeContext({ localePrefix: 'as-needed' })
+    );
+    expect(asNeeded.skipReasons).toEqual([]);
+    expect(asNeeded.code).toContain('export default createNextMiddleware(');
+    expect(asNeeded.code).not.toContain('prefixDefaultLocale');
+  });
 });
