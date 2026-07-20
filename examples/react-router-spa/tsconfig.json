@@ -1,0 +1,23 @@
+{
+  "include": [
+    "app/**/*",
+    ".react-router/types/**/*",
+    "vite.config.ts",
+    "react-router.config.ts"
+  ],
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ES2023"],
+    "types": ["node", "vite/client"],
+    "rootDirs": [".", "./.react-router/types"],
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true
+  }
+}
