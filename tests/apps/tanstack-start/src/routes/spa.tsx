@@ -6,16 +6,6 @@ export const Route = createFileRoute('/spa')({
   loader: () => ({
     value: `SPA loader ran at ${new Date().toISOString()}`,
   }),
-  head: () => ({
-    meta: [
-      { title: 'SPA rendering | gt-tanstack-start' },
-      {
-        name: 'description',
-        content:
-          'Test gt-tanstack-start when the route loader and content render in the browser.',
-      },
-    ],
-  }),
   component: SpaRoute,
 });
 
