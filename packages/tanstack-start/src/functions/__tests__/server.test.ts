@@ -17,6 +17,11 @@ vi.mock('gt-i18n/internal', async (importOriginal) => ({
   getTranslationsInternal: mockGetTranslationsInternal,
 }));
 
+vi.mock('@tanstack/react-start/server', () => ({
+  setCookie: vi.fn(),
+}));
+
+import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
 import {
   getConditionStore,
@@ -26,12 +31,21 @@ import { getGT, getLocale, getMessages, getTranslations } from '../server';
 
 type GlobalWithRegistry = {
   __generaltranslation?: {
+    i18n?: Record<string, unknown>;
     tanstackStart?: Record<string, unknown>;
   };
 };
 
-function resetConditionStoreSingleton() {
+const config = {
+  defaultLocale: 'en',
+  locales: ['en', 'fr'],
+};
+
+function resetSingletons() {
   const globalObj = globalThis as GlobalWithRegistry;
+  if (globalObj.__generaltranslation?.i18n) {
+    Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nConfig');
+  }
   if (globalObj.__generaltranslation?.tanstackStart) {
     Reflect.deleteProperty(
       globalObj.__generaltranslation.tanstackStart,
@@ -40,10 +54,11 @@ function resetConditionStoreSingleton() {
   }
 }
 
-describe('server translation functions', () => {
+describe.sequential('server translation functions', () => {
   beforeEach(() => {
-    resetConditionStoreSingleton();
-    setConditionStore(new AsyncLocalConditionStore());
+    resetSingletons();
+    initializeI18nConfig(config);
+    setConditionStore(new AsyncLocalConditionStore(config));
   });
 
   it('requires an active middleware request scope', () => {
@@ -56,7 +71,12 @@ describe('server translation functions', () => {
     const messages = [{ message: 'Hello' }];
 
     await getConditionStore().run(
-      { locale: 'fr', region: 'FR', enableI18n: false },
+      new Request('https://example.com', {
+        headers: {
+          cookie:
+            'generaltranslation.locale=fr; generaltranslation.region=FR; generaltranslation.enable-i18n=false',
+        },
+      }),
       async () => {
         await expect(getGT(messages)).resolves.toBe('gt');
         await expect(getMessages()).resolves.toBe('messages');

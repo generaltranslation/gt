@@ -37,6 +37,4 @@ export {
   gtFallback,
   getTranslationsSnapshot,
   t,
-  // ===== Setup ===== //
-  initializeGT,
 } from 'gt-react';

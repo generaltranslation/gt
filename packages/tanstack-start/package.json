@@ -2,9 +2,9 @@
   "name": "gt-tanstack-start",
   "version": "11.0.11",
   "description": "TanStack Start integration for General Translation",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.cts",
+  "main": "./dist/index.server.cjs",
+  "module": "./dist/index.server.mjs",
+  "types": "./dist/index.server.d.cts",
   "files": [
     "dist",
     "CHANGELOG.md"
@@ -53,15 +53,26 @@
   },
   "exports": {
     ".": {
+      "browser": {
+        "require": {
+          "types": "./dist/index.client.d.cts",
+          "default": "./dist/index.client.cjs"
+        },
+        "import": {
+          "types": "./dist/index.client.d.mts",
+          "default": "./dist/index.client.mjs"
+        },
+        "default": "./dist/index.client.mjs"
+      },
       "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
+        "types": "./dist/index.server.d.cts",
+        "default": "./dist/index.server.cjs"
       },
       "import": {
-        "types": "./dist/index.d.mts",
-        "default": "./dist/index.mjs"
+        "types": "./dist/index.server.d.mts",
+        "default": "./dist/index.server.mjs"
       },
-      "default": "./dist/index.mjs"
+      "default": "./dist/index.server.mjs"
     },
     "./server": {
       "browser": {

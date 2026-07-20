@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import type { I18nConfigParams } from '@generaltranslation/react-core/pure';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
+import { resolveRequestConditions } from '../functions/requestConditions';
 
 export type RequestConditions = {
   locale: string;
@@ -22,7 +24,10 @@ const missingRequestScopeError = createDiagnosticMessage({
 export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface {
   private readonly storage = new AsyncLocalStorage<RequestConditions>();
 
-  run<T>(conditions: RequestConditions, callback: () => T): T {
+  constructor(private readonly config: I18nConfigParams) {}
+
+  run<T>(request: Request, callback: () => T): T {
+    const conditions = resolveRequestConditions(request, this.config);
     return this.storage.run(conditions, callback);
   }
 

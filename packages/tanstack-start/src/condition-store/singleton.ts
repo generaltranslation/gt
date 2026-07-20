@@ -5,9 +5,9 @@ import type { AsyncLocalConditionStore } from './AsyncLocalConditionStore';
 const conditionStoreNotInitializedError = createDiagnosticMessage({
   source: 'gt-tanstack-start',
   severity: 'Error',
-  whatHappened: 'Cannot read GT server request state outside GT middleware',
-  why: 'gtMiddleware has not initialized request-scoped conditions',
-  fix: "Register gtMiddleware from 'gt-tanstack-start/server' as global TanStack Start request middleware.",
+  whatHappened: 'Cannot read GT server request state before initialization',
+  why: 'initializeGT() has not initialized the TanStack Start server condition store',
+  fix: "Call initializeGT() from 'gt-tanstack-start' during application setup before using gtMiddleware or server APIs.",
 });
 
 const conditionStoreSingleton = createGlobalSingleton<AsyncLocalConditionStore>(

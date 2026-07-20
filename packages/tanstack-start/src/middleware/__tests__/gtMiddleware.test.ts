@@ -13,30 +13,57 @@ vi.mock('@tanstack/react-start/server', () => ({
 }));
 
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
+import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
+import { setConditionStore } from '../../condition-store/singleton';
 import { getEnableI18n, getLocale } from '../../functions/server';
 import { gtMiddleware } from '../gtMiddleware';
 
 type GlobalWithRegistry = {
   __generaltranslation?: {
     i18n?: Record<string, unknown>;
+    tanstackStart?: Record<string, unknown>;
   };
 };
 
-function resetI18nConfigSingleton() {
+function resetSingletons() {
   const globalObj = globalThis as GlobalWithRegistry;
   if (globalObj.__generaltranslation?.i18n) {
     Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nConfig');
   }
+  if (globalObj.__generaltranslation?.tanstackStart) {
+    Reflect.deleteProperty(
+      globalObj.__generaltranslation.tanstackStart,
+      'conditionStore'
+    );
+  }
 }
 
-describe('gtMiddleware', () => {
+describe.sequential('gtMiddleware', () => {
   beforeEach(() => {
-    resetI18nConfigSingleton();
-    initializeI18nConfig({
+    resetSingletons();
+    const config = {
       defaultLocale: 'en',
       locales: ['en', 'fr'],
-    });
+    };
+    initializeI18nConfig(config);
+    setConditionStore(new AsyncLocalConditionStore(config));
     mockSetCookie.mockReset();
+  });
+
+  it('requires initializeGT to create the server condition store', () => {
+    resetSingletons();
+
+    expect(() =>
+      (
+        gtMiddleware as unknown as (args: {
+          request: Request;
+          next: () => Promise<unknown>;
+        }) => Promise<unknown>
+      )({
+        request: new Request('https://example.com'),
+        next: async () => undefined,
+      })
+    ).toThrow("Call initializeGT() from 'gt-tanstack-start'");
   });
 
   it('makes request conditions available to downstream server code', async () => {

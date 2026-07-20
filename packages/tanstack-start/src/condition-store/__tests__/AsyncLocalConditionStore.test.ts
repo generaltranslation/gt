@@ -1,27 +1,57 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { AsyncLocalConditionStore } from '../AsyncLocalConditionStore';
+
+vi.mock('@tanstack/react-start/server', () => ({
+  setCookie: vi.fn(),
+}));
+
+const config = {
+  defaultLocale: 'en',
+  locales: ['en', 'fr', 'es'],
+};
+
+initializeI18nConfig(config);
+
+function createRequest({
+  locale,
+  region,
+  enableI18n,
+}: {
+  locale: string;
+  region?: string;
+  enableI18n: boolean;
+}) {
+  const cookies = [
+    `generaltranslation.locale=${locale}`,
+    `generaltranslation.enable-i18n=${String(enableI18n)}`,
+  ];
+  if (region) cookies.push(`generaltranslation.region=${region}`);
+  return new Request('https://example.com', {
+    headers: { cookie: cookies.join('; ') },
+  });
+}
 
 describe('AsyncLocalConditionStore', () => {
   it('reports whether the current execution has a request scope', () => {
-    const conditionStore = new AsyncLocalConditionStore();
+    const conditionStore = new AsyncLocalConditionStore(config);
 
     expect(conditionStore.hasActiveScope()).toBe(false);
-    conditionStore.run(
-      { locale: 'fr', region: undefined, enableI18n: true },
-      () => expect(conditionStore.hasActiveScope()).toBe(true)
+    conditionStore.run(createRequest({ locale: 'fr', enableI18n: true }), () =>
+      expect(conditionStore.hasActiveScope()).toBe(true)
     );
     expect(conditionStore.hasActiveScope()).toBe(false);
   });
 
   it('isolates conditions between concurrent requests', async () => {
-    const conditionStore = new AsyncLocalConditionStore();
+    const conditionStore = new AsyncLocalConditionStore(config);
     let releaseFirstRequest!: () => void;
     const firstRequestPending = new Promise<void>((resolve) => {
       releaseFirstRequest = resolve;
     });
 
     const firstRequest = conditionStore.run(
-      { locale: 'fr', region: 'FR', enableI18n: true },
+      createRequest({ locale: 'fr', region: 'FR', enableI18n: true }),
       async () => {
         await firstRequestPending;
         return {
@@ -33,7 +63,7 @@ describe('AsyncLocalConditionStore', () => {
     );
 
     const secondRequest = conditionStore.run(
-      { locale: 'es', region: 'MX', enableI18n: false },
+      createRequest({ locale: 'es', region: 'MX', enableI18n: false }),
       async () => ({
         locale: conditionStore.getLocale(),
         region: conditionStore.getRegion(),
@@ -56,7 +86,7 @@ describe('AsyncLocalConditionStore', () => {
   });
 
   it('throws when conditions are read outside a request scope', () => {
-    const conditionStore = new AsyncLocalConditionStore();
+    const conditionStore = new AsyncLocalConditionStore(config);
 
     expect(() => conditionStore.getLocale()).toThrow(
       'Cannot read GT request state outside a request scope'

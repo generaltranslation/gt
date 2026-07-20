@@ -89,7 +89,7 @@ function restoreGlobalProperty(
   Reflect.deleteProperty(globalThis, property);
 }
 
-describe('parseLocale', () => {
+describe.sequential('parseLocale', () => {
   beforeEach(() => {
     resetI18nConfigSingleton();
     initializeI18nConfig(localeConfig);
@@ -152,19 +152,20 @@ describe('parseLocale', () => {
   });
 
   it('reuses locale state initialized by request middleware', () => {
-    const conditionStore = new AsyncLocalConditionStore();
+    const conditionStore = new AsyncLocalConditionStore(localeConfig);
     setConditionStore(conditionStore);
-    mockRequest.mockClear();
-    mockSetCookie.mockClear();
 
     const locale = conditionStore.run(
-      { locale: 'fr', region: undefined, enableI18n: true },
-      () =>
-        (
+      createRequest({ cookie: 'generaltranslation.locale=fr' }),
+      () => {
+        mockRequest.mockClear();
+        mockSetCookie.mockClear();
+        return (
           determineLocale as unknown as {
             server: (config: typeof localeConfig) => string;
           }
-        ).server(localeConfig)
+        ).server(localeConfig);
+      }
     );
 
     expect(locale).toBe('fr');

@@ -50,6 +50,9 @@ See the [full documentation](https://generaltranslation.com/docs/tanstack-start)
 
 ## Server APIs
 
+Call `initializeGT()` during application setup as usual. In the server build,
+it prepares the request condition store that middleware populates per request.
+
 Register `gtMiddleware` once to make request-scoped locale state available to
 server functions, server routes, loaders, and SSR:
 
