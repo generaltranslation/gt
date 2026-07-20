@@ -27,18 +27,28 @@ export function resolveRequestConditions(
 ): RequestConditions {
   const i18nConfig = getI18nConfig();
   const cookieHeader = request.headers.get('cookie');
-  const locale = resolveRequestLocale({
-    cookieLocale: getCookieValue(
-      cookieHeader,
-      i18nConfig.getLocaleCookieName()
-    ),
-    acceptLanguage: request.headers.get('accept-language'),
-    config: localeConfig ?? {
+  const localeCandidates: string[] = [];
+  const cookieLocale = getCookieValue(
+    cookieHeader,
+    i18nConfig.getLocaleCookieName()
+  );
+  if (cookieLocale) localeCandidates.push(cookieLocale);
+  localeCandidates.push(
+    ...parseAcceptLanguage(request.headers.get('accept-language'))
+  );
+
+  if (localeCandidates.length === 0) {
+    console.warn(noLocaleCandidatesWarning);
+  }
+
+  const locale = i18nConfig.resolveSupportedLocale(
+    localeCandidates,
+    localeConfig ?? {
       defaultLocale: i18nConfig.getDefaultLocale(),
       locales: i18nConfig.getLocales(),
       customMapping: i18nConfig.getCustomMapping(),
-    },
-  });
+    }
+  );
 
   setCookie(i18nConfig.getLocaleCookieName(), locale, localeCookieOptions);
 
@@ -55,24 +65,4 @@ export function resolveRequestConditions(
     enableI18n:
       enableI18nCookie === undefined ? true : enableI18nCookie === 'true',
   };
-}
-
-export function resolveRequestLocale({
-  cookieLocale,
-  acceptLanguage,
-  config,
-}: {
-  cookieLocale?: string;
-  acceptLanguage?: string | null;
-  config: I18nConfigParams;
-}): string {
-  const candidates: string[] = [];
-  if (cookieLocale) candidates.push(cookieLocale);
-  candidates.push(...parseAcceptLanguage(acceptLanguage));
-
-  if (candidates.length === 0) {
-    console.warn(noLocaleCandidatesWarning);
-  }
-
-  return getI18nConfig().resolveSupportedLocale(candidates, config);
 }

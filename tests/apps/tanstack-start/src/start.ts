@@ -1,5 +1,5 @@
 import { createCsrfMiddleware, createStart } from '@tanstack/react-start';
-import { gtMiddleware } from 'gt-tanstack-start/server';
+import { gtMiddleware } from 'gt-tanstack-start/middleware';
 
 const csrfMiddleware = createCsrfMiddleware({
   filter: ({ handlerType }) => handlerType === 'serverFn',

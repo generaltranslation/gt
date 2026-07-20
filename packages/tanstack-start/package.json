@@ -13,7 +13,7 @@
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0",
-    "@tanstack/react-start": ">=1.159.0"
+    "@tanstack/react-start": ">=1.161.0"
   },
   "dependencies": {
     "gt-react": "workspace:*",
@@ -74,18 +74,18 @@
       },
       "default": "./dist/index.server.mjs"
     },
-    "./server": {
-      "browser": {
-        "require": {
-          "types": "./dist/server.d.cts",
-          "default": "./dist/server.browser.cjs"
-        },
-        "import": {
-          "types": "./dist/server.d.mts",
-          "default": "./dist/server.browser.mjs"
-        },
-        "default": "./dist/server.browser.mjs"
+    "./middleware": {
+      "require": {
+        "types": "./dist/middleware.d.cts",
+        "default": "./dist/middleware.cjs"
       },
+      "import": {
+        "types": "./dist/middleware.d.mts",
+        "default": "./dist/middleware.mjs"
+      },
+      "default": "./dist/middleware.mjs"
+    },
+    "./server": {
       "require": {
         "types": "./dist/server.d.cts",
         "default": "./dist/server.cjs"
@@ -99,6 +99,9 @@
   },
   "typesVersions": {
     "*": {
+      "middleware": [
+        "./dist/middleware.d.cts"
+      ],
       "server": [
         "./dist/server.d.cts"
       ]

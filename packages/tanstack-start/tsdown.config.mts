@@ -23,8 +23,8 @@ const deps = {
 const entries = [
   'src/index.client.ts',
   'src/index.server.ts',
+  'src/middleware.ts',
   'src/server.ts',
-  'src/server.browser.ts',
 ];
 
 export default defineConfig(
