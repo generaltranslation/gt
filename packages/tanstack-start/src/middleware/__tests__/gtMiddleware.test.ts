@@ -70,5 +70,9 @@ describe('gtMiddleware', () => {
         maxAge: 60 * 60 * 24 * 365,
       }
     );
+
+    expect(() => getLocale()).toThrow(
+      'Cannot read GT request state outside a request scope'
+    );
   });
 });

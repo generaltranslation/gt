@@ -2,6 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { AsyncLocalConditionStore } from '../AsyncLocalConditionStore';
 
 describe('AsyncLocalConditionStore', () => {
+  it('reports whether the current execution has a request scope', () => {
+    const conditionStore = new AsyncLocalConditionStore();
+
+    expect(conditionStore.hasActiveScope()).toBe(false);
+    conditionStore.run(
+      { locale: 'fr', region: undefined, enableI18n: true },
+      () => expect(conditionStore.hasActiveScope()).toBe(true)
+    );
+    expect(conditionStore.hasActiveScope()).toBe(false);
+  });
+
   it('isolates conditions between concurrent requests', async () => {
     const conditionStore = new AsyncLocalConditionStore();
     let releaseFirstRequest!: () => void;

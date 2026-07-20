@@ -5,7 +5,7 @@ import { getCookieValue, parseAcceptLanguage } from 'gt-i18n/internal';
 import type { LocaleResolverConfig } from 'gt-i18n/internal/types';
 import type { RequestConditions } from '../condition-store/AsyncLocalConditionStore';
 
-const localeCookieOptions = {
+export const localeCookieOptions = {
   path: '/',
   sameSite: 'lax' as const,
   maxAge: 60 * 60 * 24 * 365,
@@ -19,7 +19,10 @@ const noLocaleCandidatesWarning = createDiagnosticMessage({
   why: 'neither the locale cookie nor the Accept-Language header supplied a supported locale candidate',
 });
 
-export function resolveRequestConditions(request: Request): RequestConditions {
+export function resolveRequestConditions(
+  request: Request,
+  localeConfig?: LocaleResolverConfig
+): RequestConditions {
   const i18nConfig = getI18nConfig();
   const cookieHeader = request.headers.get('cookie');
   const locale = resolveRequestLocale({
@@ -28,7 +31,7 @@ export function resolveRequestConditions(request: Request): RequestConditions {
       i18nConfig.getLocaleCookieName()
     ),
     acceptLanguage: request.headers.get('accept-language'),
-    config: {
+    config: localeConfig ?? {
       defaultLocale: i18nConfig.getDefaultLocale(),
       locales: i18nConfig.getLocales(),
       customMapping: i18nConfig.getCustomMapping(),
@@ -71,5 +74,3 @@ export function resolveRequestLocale({
 
   return getI18nConfig().resolveSupportedLocale(candidates, config);
 }
-
-export { localeCookieOptions };

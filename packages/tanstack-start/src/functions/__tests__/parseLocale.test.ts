@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockRequestHeader = vi.hoisted(() => vi.fn());
-const mockCookie = vi.hoisted(() => vi.fn());
+const mockRequest = vi.hoisted(() => vi.fn());
 const mockSetCookie = vi.hoisted(() => vi.fn());
 
 vi.mock('@tanstack/react-start', () => ({
@@ -16,19 +15,19 @@ vi.mock('@tanstack/react-start', () => ({
 }));
 
 vi.mock('@tanstack/react-start/server', () => ({
-  getCookie: (...args: unknown[]) => mockCookie(...args),
-  getRequestHeader: (...args: unknown[]) => mockRequestHeader(...args),
+  getRequest: () => mockRequest(),
   setCookie: (...args: unknown[]) => mockSetCookie(...args),
 }));
 
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
-import { createConditionStoreSingleton } from 'gt-i18n/internal';
-import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
+import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
+import { setConditionStore } from '../../condition-store/singleton';
 import { determineLocale } from '../parseLocale';
 
 type GlobalWithRegistry = {
   __generaltranslation?: {
     i18n?: Record<string, unknown>;
+    tanstackStart?: Record<string, unknown>;
   };
 };
 
@@ -36,11 +35,26 @@ function resetI18nConfigSingleton() {
   const globalObj = globalThis as GlobalWithRegistry;
   if (globalObj.__generaltranslation?.i18n) {
     Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nConfig');
+  }
+  if (globalObj.__generaltranslation?.tanstackStart) {
     Reflect.deleteProperty(
-      globalObj.__generaltranslation.i18n,
+      globalObj.__generaltranslation.tanstackStart,
       'conditionStore'
     );
   }
+}
+
+function createRequest({
+  cookie,
+  acceptLanguage,
+}: {
+  cookie?: string;
+  acceptLanguage?: string;
+}) {
+  const headers = new Headers();
+  if (cookie) headers.set('cookie', cookie);
+  if (acceptLanguage) headers.set('accept-language', acceptLanguage);
+  return new Request('https://example.com', { headers });
 }
 
 const localeConfig = {
@@ -79,8 +93,7 @@ describe('parseLocale', () => {
   beforeEach(() => {
     resetI18nConfigSingleton();
     initializeI18nConfig(localeConfig);
-    mockCookie.mockReset();
-    mockRequestHeader.mockReset();
+    mockRequest.mockReset();
     mockSetCookie.mockReset();
   });
 
@@ -90,8 +103,12 @@ describe('parseLocale', () => {
   });
 
   it('uses the server cookie before Accept-Language', () => {
-    mockCookie.mockReturnValue('brand-french');
-    mockRequestHeader.mockReturnValue('es,en;q=0.8');
+    mockRequest.mockReturnValue(
+      createRequest({
+        cookie: 'generaltranslation.locale=brand-french',
+        acceptLanguage: 'es,en;q=0.8',
+      })
+    );
 
     expect(
       (
@@ -112,8 +129,9 @@ describe('parseLocale', () => {
   });
 
   it('falls back to the server Accept-Language header', () => {
-    mockCookie.mockReturnValue(undefined);
-    mockRequestHeader.mockReturnValue('es,en;q=0.8');
+    mockRequest.mockReturnValue(
+      createRequest({ acceptLanguage: 'es,en;q=0.8' })
+    );
 
     expect(
       (
@@ -134,31 +152,23 @@ describe('parseLocale', () => {
   });
 
   it('reuses locale state initialized by request middleware', () => {
-    const { setConditionStore } =
-      createConditionStoreSingleton<ReadonlyConditionStoreInterface>(
-        'ConditionStore is unavailable'
-      );
-    setConditionStore({
-      getLocale: () => 'fr',
-      getRegion: () => undefined,
-      getEnableI18n: () => true,
-      setLocale: () => {},
-      setRegion: () => {},
-      setEnableI18n: () => {},
-    });
-    mockCookie.mockClear();
-    mockRequestHeader.mockClear();
+    const conditionStore = new AsyncLocalConditionStore();
+    setConditionStore(conditionStore);
+    mockRequest.mockClear();
     mockSetCookie.mockClear();
 
-    expect(
-      (
-        determineLocale as unknown as {
-          server: (config: typeof localeConfig) => string;
-        }
-      ).server(localeConfig)
-    ).toBe('fr');
-    expect(mockCookie).not.toHaveBeenCalled();
-    expect(mockRequestHeader).not.toHaveBeenCalled();
+    const locale = conditionStore.run(
+      { locale: 'fr', region: undefined, enableI18n: true },
+      () =>
+        (
+          determineLocale as unknown as {
+            server: (config: typeof localeConfig) => string;
+          }
+        ).server(localeConfig)
+    );
+
+    expect(locale).toBe('fr');
+    expect(mockRequest).not.toHaveBeenCalled();
     expect(mockSetCookie).not.toHaveBeenCalled();
   });
 
@@ -191,8 +201,12 @@ describe('parseLocale', () => {
       ...localeConfig,
       localeCookieName: 'custom-locale',
     });
-    mockCookie.mockReturnValue('fr');
-    mockRequestHeader.mockReturnValue('es,en;q=0.8');
+    mockRequest.mockReturnValue(
+      createRequest({
+        cookie: 'custom-locale=fr',
+        acceptLanguage: 'es,en;q=0.8',
+      })
+    );
 
     expect(
       (
@@ -201,7 +215,6 @@ describe('parseLocale', () => {
         }
       ).server(localeConfig)
     ).toBe('fr');
-    expect(mockCookie).toHaveBeenCalledWith('custom-locale');
     expect(mockSetCookie).toHaveBeenCalledWith('custom-locale', 'fr', {
       path: '/',
       sameSite: 'lax',

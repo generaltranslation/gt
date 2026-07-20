@@ -53,6 +53,10 @@ See the [full documentation](https://generaltranslation.com/docs/tanstack-start)
 Register `gtMiddleware` once to make request-scoped locale state available to
 server functions, server routes, loaders, and SSR:
 
+The middleware is required only for APIs imported from
+`gt-tanstack-start/server`. Existing components and hooks continue to read
+conditions from `GTProvider` context without requiring middleware.
+
 ```ts
 // src/start.ts
 import { createCsrfMiddleware, createStart } from '@tanstack/react-start';

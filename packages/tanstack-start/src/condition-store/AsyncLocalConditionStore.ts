@@ -26,6 +26,10 @@ export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface
     return this.storage.run(conditions, callback);
   }
 
+  hasActiveScope(): boolean {
+    return this.storage.getStore() !== undefined;
+  }
+
   getLocale = (): string => this.getConditions().locale;
 
   getRegion = (): string | undefined => this.getConditions().region;

@@ -2,11 +2,7 @@ import {
   I18nStore,
   InternalGTProvider,
 } from '@generaltranslation/react-core/components';
-import {
-  getReadonlyConditionStore,
-  isReadonlyConditionStoreInitialized,
-  ReadonlyConditionStore,
-} from '@generaltranslation/react-core/pure';
+import { ReadonlyConditionStore } from '@generaltranslation/react-core/pure';
 import { useMemo, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { useHandleMissingTranslations } from '../hooks/useHandleMissingTranslations';
@@ -22,9 +18,6 @@ export function ServerGTProvider({
   ...props
 }: SharedGTProviderProps) {
   const conditionStore = useMemo(() => {
-    if (isReadonlyConditionStoreInitialized()) {
-      return getReadonlyConditionStore();
-    }
     return new ReadonlyConditionStore({ locale, region, enableI18n });
   }, [locale, region, enableI18n]);
 
