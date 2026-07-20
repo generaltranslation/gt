@@ -1,5 +1,11 @@
 # gt-node
 
+## 1.0.8
+
+### Patch Changes
+
+- [#1923](https://github.com/generaltranslation/gt/pull/1923) [`1ae3e65`](https://github.com/generaltranslation/gt/commit/1ae3e657f6e72f6fffa9bd5118c4c6aab2439846) Thanks [@JoshKappler](https://github.com/JoshKappler)! - `initializeGT()` now reads `GT_PROJECT_ID`, `GT_API_KEY`, and `GT_DEV_API_KEY` from the environment as a fallback when they are not passed explicitly, matching the gt-node quickstart which sets these in `.env`. Explicit params still take precedence.
+
 ## 1.0.7
 
 ### Patch Changes
