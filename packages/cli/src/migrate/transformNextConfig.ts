@@ -27,7 +27,6 @@ export function transformNextConfigFile(
     code: null,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
   if (!code.includes(PLUGIN_MODULE)) return none;
   const retainNextIntl = ctx.skippedFiles.size > 0;
@@ -147,7 +146,7 @@ export function transformNextConfigFile(
     },
     code
   );
-  return { code: output.code, todos, skipReasons: [], usedRich: false };
+  return { code: output.code, todos, skipReasons: [] };
 }
 
 function relativeDictionaryPath(ctx: MigrationContext): string {

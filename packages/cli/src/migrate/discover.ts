@@ -1,5 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+  createDiagnosticMessage,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 import type { MessageCatalogs, RoutingInfo } from './types.js';
 
 const DEFAULT_CATALOG_DIRS = ['messages', 'src/messages', 'locales'];
@@ -39,23 +43,42 @@ export async function discoverCatalogs(
 
   const defaultLocale =
     routing.defaultLocale ??
-    (locales.includes('en') ? 'en' : locales.length === 1 ? locales[0] : null);
+    (locales.includes(libraryDefaultLocale)
+      ? libraryDefaultLocale
+      : locales.length === 1
+        ? locales[0]
+        : null);
   if (!defaultLocale || !locales.includes(defaultLocale)) return null;
 
   const byLocale: Record<string, Record<string, unknown>> = {};
   for (const locale of locales) {
-    const file = path.join(dir, `${locale}.json`);
-    try {
-      byLocale[locale] = JSON.parse(fs.readFileSync(file, 'utf8'));
-    } catch (error) {
-      throw new Error(
-        `Could not parse message catalog ${file}: ${String(error)}. ` +
-          'Fix the JSON (no comments, trailing commas, or BOM) and re-run.'
-      );
-    }
+    byLocale[locale] = loadCatalog(dir, locale);
   }
 
   return { defaultLocale, locales, byLocale, dir };
+}
+
+/**
+ * Reads and parses a single locale catalog. Shared with the interactive
+ * fallback (promptFallbacks.ts) so both paths surface the identical
+ * diagnostic when a catalog is malformed. Throws (the migrate driver catches
+ * and exits before anything is written).
+ */
+export function loadCatalog(
+  dir: string,
+  locale: string
+): Record<string, unknown> {
+  const file = path.join(dir, `${locale}.json`);
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (error) {
+    throw new Error(
+      createDiagnosticMessage({
+        whatHappened: `Could not parse message catalog ${file}: ${String(error)}`,
+        fix: 'Fix the JSON (no comments, trailing commas, or BOM) and re-run.',
+      })
+    );
+  }
 }
 
 /**

@@ -37,12 +37,6 @@ function transform(code: string, messages: Record<string, unknown> = {}) {
   return transformSourceFile('src/app/page.tsx', code, makeContext(messages));
 }
 
-function transformInline(code: string, messages: Record<string, unknown> = {}) {
-  const ctx = makeContext(messages);
-  ctx.inlineMode = true;
-  return transformSourceFile('src/app/page.tsx', code, ctx);
-}
-
 describe('transformSourceFile: imports and hooks', () => {
   it('returns unchanged for files without next-intl imports', () => {
     const result = transform(`export function x() { return 1; }`);
@@ -270,7 +264,7 @@ describe('transformSourceFile: skip conditions', () => {
 });
 
 describe('transformSourceFile: t.rich', () => {
-  it('skips t.rich by default — conversion would discard existing translations', () => {
+  it('always skips t.rich — conversion would discard existing translations', () => {
     const result = transform(
       [
         "import { useTranslations } from 'next-intl';",
@@ -281,51 +275,14 @@ describe('transformSourceFile: t.rich', () => {
       ].join('\n'),
       { Home: { welcome: 'Hi <b>friend</b>!' } }
     );
-    expect(result.skipReasons.join(' ')).toContain('--inline');
-  });
-
-  it('converts simple t.rich to inline <T> JSX', () => {
-    const result = transformInline(
-      [
-        "import { useTranslations } from 'next-intl';",
-        'export function Welcome() {',
-        "  const t = useTranslations('Home');",
-        '  return (',
-        '    <div>',
-        "      {t.rich('welcome', {",
-        '        b: (chunks) => <b className="bold">{chunks}</b>,',
-        '      })}',
-        '    </div>',
-        '  );',
-        '}',
-      ].join('\n'),
-      { Home: { welcome: 'Hi <b>friend</b>, welcome!' } }
-    );
-    expect(result.skipReasons).toEqual([]);
-    expect(result.usedRich).toBe(true);
-    expect(result.code).toContain('<T>');
-    expect(result.code).toContain('<b className="bold">friend</b>');
-    expect(result.code).not.toContain('t.rich');
-    expect(result.code).toMatch(/import \{.*T.*\} from ["']gt-next["']/);
-  });
-
-  it('skips complex t.rich (non-trivial chunk function)', () => {
-    const result = transformInline(
-      [
-        "import { useTranslations } from 'next-intl';",
-        'export function Welcome() {',
-        "  const t = useTranslations('Home');",
-        "  return <div>{t.rich('welcome', { b: (chunks) => wrap(chunks) })}</div>;",
-        '}',
-      ].join('\n'),
-      { Home: { welcome: 'Hi <b>friend</b>' } }
-    );
     expect(result.code).toBeNull();
-    expect(result.skipReasons.join(' ')).toContain('t.rich');
+    expect(result.skipReasons).toContain(
+      't.rich(...) conversion would discard existing translations for the key; convert it manually'
+    );
   });
 
-  it('skips t.rich whose message mixes tags and arguments', () => {
-    const result = transformInline(
+  it('skips t.rich even for a message that mixes tags and arguments', () => {
+    const result = transform(
       [
         "import { useTranslations } from 'next-intl';",
         'export function Welcome({ name }: { name: string }) {',
@@ -336,6 +293,7 @@ describe('transformSourceFile: t.rich', () => {
       { Home: { welcome: 'Hi <b>{name}</b>' } }
     );
     expect(result.code).toBeNull();
+    expect(result.skipReasons.join(' ')).toContain('convert it manually');
   });
 });
 

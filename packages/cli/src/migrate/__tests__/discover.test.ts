@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { discoverCatalogs } from '../discover.js';
 import type { RoutingInfo } from '../types.js';
 
@@ -34,14 +35,32 @@ afterEach(() => {
 });
 
 describe('discoverCatalogs', () => {
-  it('reports the offending file when a catalog is malformed', async () => {
+  it('reports the offending file and the fix guidance when a catalog is malformed', async () => {
     const cwd = makeProject({
       'messages/en.json': JSON.stringify({ Home: { title: 'Hello' } }),
       'messages/es.json': '{ "Home": { "title": "Hola", } }', // trailing comma
     });
+    // Uses the standard diagnostic messaging system: the message names the
+    // offending file and carries the existing fix guidance (formatting is not
+    // asserted).
     await expect(discoverCatalogs(cwd, emptyRouting)).rejects.toThrow(
       /es\.json/
     );
+    await expect(discoverCatalogs(cwd, emptyRouting)).rejects.toThrow(
+      /trailing commas/
+    );
+  });
+
+  it('defaults to libraryDefaultLocale when present and no routing default', async () => {
+    const other = libraryDefaultLocale === 'es' ? 'fr' : 'es';
+    const cwd = makeProject({
+      [`messages/${libraryDefaultLocale}.json`]: JSON.stringify({ a: 'A' }),
+      [`messages/${other}.json`]: JSON.stringify({ a: 'B' }),
+    });
+    const result = await discoverCatalogs(cwd, emptyRouting);
+    expect(result!.defaultLocale).toBe(libraryDefaultLocale);
+    expect(result!.locales).toContain(libraryDefaultLocale);
+    expect(result!.locales).toContain(other);
   });
 
   it('finds catalogs in the standard messages/ directory', async () => {

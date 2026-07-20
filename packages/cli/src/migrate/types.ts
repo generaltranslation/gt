@@ -1,7 +1,8 @@
 export type MigrateOptions = {
   src?: string[];
   config: string;
-  inline: boolean;
+  /** i18n library to migrate from (--from, required; 'next-intl' today) */
+  from: string;
   dryRun: boolean;
   yes: boolean;
   allowDirty: boolean;
@@ -56,9 +57,6 @@ export type MigrationContext = {
   /** every source file in the project regardless of --src scope, so teardown
    *  decisions never rely on what happened to be scanned */
   projectFiles?: string[];
-  /** true when --inline was passed; gates transforms that embed
-   *  source-language text (and so require re-translation) */
-  inlineMode?: boolean;
   /** resolved --config path; gt.config.json is read from and written to this
    *  path (defaults to <cwd>/gt.config.json when the flag is absent) */
   configFile?: string;
@@ -70,5 +68,4 @@ export type SourceResult = {
   todos: TodoEntry[];
   /** non-empty means the whole file must be left untouched */
   skipReasons: string[];
-  usedRich: boolean;
 };

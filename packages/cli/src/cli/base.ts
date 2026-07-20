@@ -545,7 +545,11 @@ export class BaseCLI {
     this.program
       .command('migrate')
       .description(
-        'Migrate an existing i18n setup (next-intl) to General Translation, preserving your translations'
+        'Migrate an existing i18n setup to General Translation, preserving your translations'
+      )
+      .requiredOption(
+        '--from <library>',
+        "i18n library to migrate from ('next-intl' today; react-i18next is planned)"
       )
       .option(
         '--src <paths...>',
@@ -555,11 +559,6 @@ export class BaseCLI {
         '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
-      )
-      .option(
-        '--inline',
-        'Additionally convert simple static strings to inline <T> components',
-        false
       )
       .option('--dry-run', 'Print the migration report without writing', false)
       .option('--allow-dirty', 'Skip the clean-git-tree safety check', false)

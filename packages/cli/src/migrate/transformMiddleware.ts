@@ -25,7 +25,6 @@ export function transformMiddlewareFile(
     code: null,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
   if (!code.includes(MIDDLEWARE_MODULE)) return none;
 
@@ -211,5 +210,5 @@ export function transformMiddlewareFile(
     },
     code
   );
-  return { code: output.code, todos, skipReasons: [], usedRich: false };
+  return { code: output.code, todos, skipReasons: [] };
 }

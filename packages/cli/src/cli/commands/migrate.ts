@@ -9,8 +9,8 @@ import { matchFiles } from '../../fs/matchFiles.js';
 import { formatFiles } from '../../hooks/postProcess.js';
 import { discoverCatalogs } from '../../migrate/discover.js';
 import { emitGtFiles } from '../../migrate/emitGtFiles.js';
-import { inlinePass } from '../../migrate/inline.js';
 import { parseRoutingConfig } from '../../migrate/parseRoutingConfig.js';
+import { resolveCatalogsInteractively } from '../../migrate/promptFallbacks.js';
 import { buildReport } from '../../migrate/report.js';
 import { transformLayoutFile } from '../../migrate/transformLayout.js';
 import { transformMiddlewareFile } from '../../migrate/transformMiddleware.js';
@@ -39,10 +39,10 @@ import { getPackageManager } from '../../utils/packageManager.js';
  * `getTranslations` share next-intl's names, namespace resolution, and ICU
  * interpolation, so most call sites survive an import swap. Existing
  * per-locale catalogs keep working through a generated `loadDictionary.ts`
- * (no re-translation). The default mode never embeds source text:
- * transforms that would orphan existing translations (`t.rich` to `<T>`,
- * static `t('key')` inlining) run only under `--inline`, which reports
- * the affected keys or counts as needing regeneration (`npx gt translate`).
+ * (no re-translation). The command never embeds source text: transforms
+ * that would orphan existing translations (`t.rich` to `<T>`, static
+ * `t('key')` inlining) are out of scope and skip with a report entry; an
+ * opt-in inline-conversion pass is planned as a follow-up PR.
  *
  * Files using APIs with no gt-next equivalent (`useFormatter`, `t.raw`,
  * ...) are skipped whole. While any exist, next-intl stays installed,
@@ -80,8 +80,8 @@ import { getPackageManager } from '../../utils/packageManager.js';
  * codemods; `--dry-run` prints the report without writing.
  *
  * react-i18next is detected (`determineLibrary`) but not yet supported;
- * the transforms take the library as a parameter so an adapter can slot
- * in.
+ * the required `--from` flag gates the run today, and another library
+ * needs its own transform set behind the same flag.
  *
  * Known upstream constraints (verified against a real app, 2026-07):
  * - native-ESM configs (`next.config.mjs`, or `.js` with `"type":
@@ -97,10 +97,15 @@ export async function handleMigrateCommand(
   library: SupportedLibraries,
   cwd: string = process.cwd()
 ): Promise<void> {
-  if (library !== 'next-intl') {
+  if (options.from !== 'next-intl') {
     logErrorAndExit(
-      `gt migrate currently supports next-intl projects only, but detected '${library}'. ` +
-        'react-i18next support is planned; run this from a project with next-intl in package.json.'
+      `gt migrate currently supports --from next-intl only (got '${options.from}'). ` +
+        'react-i18next support is planned.'
+    );
+  }
+  if (library !== 'next-intl' && library !== 'base') {
+    logger.warn(
+      `Detected '${library}' in this project; migrating from next-intl per --from.`
     );
   }
 
@@ -120,6 +125,12 @@ export async function handleMigrateCommand(
   let catalogs: Awaited<ReturnType<typeof discoverCatalogs>>;
   try {
     catalogs = await discoverCatalogs(cwd, routing);
+    if (!catalogs) {
+      // Detection came up empty: ask the user directly (same building blocks
+      // as `gt setup`) instead of guessing. Returns null when the session is
+      // non-interactive, which falls through to the hard error below.
+      catalogs = await resolveCatalogsInteractively(cwd, routing);
+    }
   } catch (error) {
     // e.g. a malformed locale JSON — nothing has been written yet.
     logErrorAndExit(error instanceof Error ? error.message : String(error));
@@ -144,7 +155,6 @@ export async function handleMigrateCommand(
     todos: [],
     skippedFiles: new Map(),
     stats: {},
-    inlineMode: options.inline,
     // -c/--config; commander's default resolves an existing root
     // gt.config.json or '' when none exists yet.
     configFile: options.config
@@ -236,11 +246,7 @@ export async function handleMigrateCommand(
       providerFiles.push(file);
       continue;
     }
-    let result = transformSourceFile(file, code, ctx);
-    if (options.inline && result.skipReasons.length === 0) {
-      result = applyInline(file, result.code ?? code, ctx, result);
-    }
-    collect(ctx, file, result);
+    collect(ctx, file, transformSourceFile(file, code, ctx));
   }
 
   // Files outside the scan (an explicit --src scope, or globs that missed a
@@ -298,13 +304,13 @@ export async function handleMigrateCommand(
   const retainProviders = ctx.skippedFiles.size > 0;
   for (const file of providerFilesToApply) {
     const code = fs.readFileSync(file, 'utf8');
-    let result = transformSourceFile(file, code, ctx, {
-      retainNextIntlProvider: retainProviders,
-    });
-    if (options.inline && result.skipReasons.length === 0) {
-      result = applyInline(file, result.code ?? code, ctx, result);
-    }
-    collect(ctx, file, result);
+    collect(
+      ctx,
+      file,
+      transformSourceFile(file, code, ctx, {
+        retainNextIntlProvider: retainProviders,
+      })
+    );
   }
 
   // Pass 3: root config files.
@@ -429,24 +435,6 @@ export async function handleMigrateCommand(
   logger.endCommand(
     `Migration written (${writtenFiles.length} files). Full report: ${path.relative(cwd, reportPath)}`
   );
-}
-
-function applyInline(
-  file: string,
-  code: string,
-  ctx: MigrationContext,
-  base: SourceResult
-): SourceResult {
-  const inlined = inlinePass(file, code, ctx);
-  if (inlined.skipReasons.length > 0 || inlined.code === null) {
-    return base;
-  }
-  return {
-    code: inlined.code,
-    todos: [...base.todos, ...inlined.todos],
-    skipReasons: [],
-    usedRich: base.usedRich || inlined.usedRich,
-  };
 }
 
 function collect(

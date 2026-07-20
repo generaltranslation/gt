@@ -27,7 +27,6 @@ export function transformNavigationFile(
     code: null,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
   // Cheap pre-filter only; correctness comes from the AST import check below.
   if (!code.includes('createNavigation')) return none;
@@ -208,7 +207,6 @@ export function transformNavigationFile(
     code: lines.join('\n') + '\n',
     todos,
     skipReasons: [],
-    usedRich: false,
   };
 }
 

@@ -157,7 +157,6 @@ export function transformLayoutFile(
       code: null,
       todos: [],
       skipReasons: [`layout could not be parsed: ${String(error)}`],
-      usedRich: false,
     };
   }
 
@@ -364,7 +363,6 @@ export function transformLayoutFile(
         skipReasons: [
           'retained NextIntlClientProvider has no route `locale` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its `locale` prop manually (the layout keeps working on next-intl until then)',
         ],
-        usedRich: base.usedRich,
       };
     }
   }
@@ -455,7 +453,7 @@ export function transformLayoutFile(
   }
 
   if (!mutated && base.code === null) {
-    return { code: null, todos, skipReasons: [], usedRich: base.usedRich };
+    return { code: null, todos, skipReasons: [] };
   }
   if (!mutated) {
     return { ...base, todos };
@@ -471,5 +469,5 @@ export function transformLayoutFile(
     },
     working
   );
-  return { code: output.code, todos, skipReasons: [], usedRich: base.usedRich };
+  return { code: output.code, todos, skipReasons: [] };
 }

@@ -17,3 +17,10 @@ Close six defects from an external review of the codemod:
 - `createNavigation` wrappers with unrecognized shapes register as skips that hold back teardown instead of being silently bypassed; import detection is AST-based and alias-aware.
 - Dynamic `getTranslations` namespaces (`{ namespace: expr }`) pass through positionally instead of being dropped to the root namespace; spread object args (`{ ...opts }`) skip the file instead of silently discarding options.
 - The `-c/--config` flag is honored for reading and writing gt.config.json.
+
+Review-response round:
+
+- `gt migrate` requires an explicit `--from <library>` flag ('next-intl' today; react-i18next is planned) and the command description is library-neutral.
+- When catalog detection comes up empty in an interactive session, the command asks for the messages directory, supported locales, and default locale (the same prompts `gt setup` uses) instead of failing outright; non-interactive runs keep the hard error.
+- The `--inline` opt-in pass was removed to keep the first version small; `t.rich` files now always skip with a report entry pointing at manual conversion. Inline conversion returns as a follow-up PR.
+- Catalog discovery uses `libraryDefaultLocale` instead of a hardcoded 'en' and reports malformed catalogs through the standard diagnostic message format.

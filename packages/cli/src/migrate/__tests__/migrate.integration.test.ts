@@ -215,7 +215,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -307,7 +307,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -335,7 +335,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -360,7 +360,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -406,7 +406,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: true,
         yes: true,
         allowDirty: true,
@@ -419,47 +419,7 @@ describe('handleMigrateCommand integration', () => {
     expect(fs.existsSync(path.join(cwd, 'gt-migrate-report.md'))).toBe(false);
   });
 
-  it('--inline converts the pure-text title and simple t.rich', async () => {
-    const cwd = makeApp({
-      'src/app/[locale]/page.tsx': [
-        "import { useTranslations } from 'next-intl';",
-        'export default function Home() {',
-        "  const t = useTranslations('Home');",
-        '  return (',
-        '    <main>',
-        "      <h1>{t('title')}</h1>",
-        "      <p>{t('greeting', { name: 'Ada' })}</p>",
-        "      <p>{t.rich('terms', { b: (chunks) => <b>{chunks}</b> })}</p>",
-        "      <input placeholder={t('hint')} />",
-        '    </main>',
-        '  );',
-        '}',
-      ].join('\n'),
-    });
-    await handleMigrateCommand(
-      {
-        config: 'gt.config.json',
-        inline: true,
-        dryRun: false,
-        yes: true,
-        allowDirty: true,
-      },
-      'next-intl',
-      cwd
-    );
-    const page = read(cwd, 'src/app/[locale]/page.tsx');
-    expect(page).toContain('Welcome to demo');
-    expect(page).not.toContain("t('title')");
-    expect(page).toContain('<b>terms</b>');
-    expect(page).not.toContain('t.rich');
-    // args/attribute stay on dictionary path
-    expect(page).toContain("t('greeting', { name: 'Ada' })");
-    expect(page).toContain("placeholder={t('hint')}");
-    // report warns that inlined content needs regeneration
-    expect(read(cwd, 'gt-migrate-report.md')).toContain('regenerate');
-  });
-
-  it('skips t.rich files in default mode instead of discarding translations', async () => {
+  it('skips t.rich files instead of discarding translations', async () => {
     const cwd = makeApp({
       'src/components/Terms.tsx': [
         "import { useTranslations } from 'next-intl';",
@@ -472,7 +432,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -480,11 +440,11 @@ describe('handleMigrateCommand integration', () => {
       'next-intl',
       cwd
     );
-    // file untouched, teardown blocked, reason points at --inline
+    // file untouched, teardown blocked, reason says to convert by hand
     expect(read(cwd, 'src/components/Terms.tsx')).toContain('t.rich');
     const pkg = JSON.parse(read(cwd, 'package.json'));
     expect(pkg.dependencies['next-intl']).toBeDefined();
-    expect(read(cwd, 'gt-migrate-report.md')).toContain('--inline');
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('convert it manually');
   });
 
   it('converts a root-level i18n/ directory and still tears down safely', async () => {
@@ -518,7 +478,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -543,7 +503,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -577,7 +537,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -616,7 +576,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -669,7 +629,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -715,7 +675,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -746,7 +706,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -785,7 +745,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -813,7 +773,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -838,7 +798,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'config/gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
