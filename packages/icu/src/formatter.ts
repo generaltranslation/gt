@@ -143,13 +143,13 @@ function formatElements(
         let option = ownOption(element.options, exactSelector);
         const value = coercePluralValue(rawValue);
         const adjustedValue = subtractOffset(value, element.offset);
-        if (!option) {
+        if (!option && hasPluralCategoryOption(element.options)) {
           const category = new Intl.PluralRules(locales, {
             type: element.pluralType,
-          }).select(Number(adjustedValue));
-          option =
-            ownOption(element.options, category) ?? element.options.other;
+          }).select(toPluralRulesNumber(adjustedValue));
+          option = ownOption(element.options, category);
         }
+        option ??= element.options.other;
         if (!option) {
           throw invalidSelection(element.value, rawValue, element.options);
         }
@@ -256,6 +256,22 @@ function coercePluralValue(value: unknown): PluralValue {
 
 function subtractOffset(value: PluralValue, offset: number): PluralValue {
   return typeof value === 'bigint' ? value - BigInt(offset) : value - offset;
+}
+
+function toPluralRulesNumber(value: PluralValue): number {
+  const numberValue = Number(value);
+  if (typeof value === 'bigint' && !Number.isSafeInteger(numberValue)) {
+    throw new RangeError(
+      `Cannot select a plural category for bigint ${value} outside the safe integer range.`
+    );
+  }
+  return numberValue;
+}
+
+function hasPluralCategoryOption(options: Record<string, unknown>): boolean {
+  return Object.keys(options).some(
+    (selector) => selector !== 'other' && !selector.startsWith('=')
+  );
 }
 
 function ownOption<T>(options: Record<string, T>, key: string): T | undefined {

@@ -196,6 +196,21 @@ describe('formatMessage', () => {
     ).toThrow('Cannot apply fractional scale');
   });
 
+  it('rejects unsafe bigint plural selection instead of losing precision', () => {
+    const count = 1000000000000000001n;
+    expect(
+      formatMessage('{count, plural, other {# items}}', 'ru', { count })
+    ).toBe(`${new Intl.NumberFormat('ru').format(count)} items`);
+
+    expect(() =>
+      formatMessage(
+        '{count, plural, one {one} few {few} many {many} other {other}}',
+        'ru',
+        { count }
+      )
+    ).toThrow('outside the safe integer range');
+  });
+
   it('formats date and time named styles', () => {
     const value = new Date('2020-05-06T14:03:02Z');
     expect(formatMessage('{d, date, full}', 'en-US', { d: value })).toBe(

@@ -23,7 +23,6 @@ import {
 
 const WHITE_SPACE = /[\p{White_Space}\u200E\u200F]/u;
 const IDENTIFIER_BOUNDARY = /[\p{White_Space}\p{Pattern_Syntax}]/u;
-const TAG_NAME_CHARACTER = /^[\p{L}\p{N}_.\-·\u200C\u200D]$/u;
 
 type PositionIndex = {
   lines: Uint32Array;
@@ -190,7 +189,7 @@ class IcuParser {
     const start = this.index;
     if (!isAsciiLetter(this.current())) this.fail('INVALID_TAG', start);
     this.index += 1;
-    while (!this.atEnd() && TAG_NAME_CHARACTER.test(this.current())) {
+    while (!this.atEnd() && isTagNameCharacter(this.current())) {
       this.index += this.current().length;
     }
     return this.message.slice(start, this.index);
@@ -505,6 +504,37 @@ class IcuParser {
 
 function isAsciiLetter(character: string): boolean {
   return /^[A-Za-z]$/u.test(character);
+}
+
+/**
+ * Matches the PENChar ranges used by FormatJS and the custom-element-name
+ * grammar, while allowing ASCII uppercase characters and names without a dash.
+ */
+function isTagNameCharacter(character: string): boolean {
+  const codePoint = character.codePointAt(0);
+  if (codePoint === undefined) return false;
+
+  return (
+    codePoint === 0x2d ||
+    codePoint === 0x2e ||
+    (codePoint >= 0x30 && codePoint <= 0x39) ||
+    codePoint === 0x5f ||
+    (codePoint >= 0x41 && codePoint <= 0x5a) ||
+    (codePoint >= 0x61 && codePoint <= 0x7a) ||
+    codePoint === 0xb7 ||
+    (codePoint >= 0xc0 && codePoint <= 0xd6) ||
+    (codePoint >= 0xd8 && codePoint <= 0xf6) ||
+    (codePoint >= 0xf8 && codePoint <= 0x37d) ||
+    (codePoint >= 0x37f && codePoint <= 0x1fff) ||
+    (codePoint >= 0x200c && codePoint <= 0x200d) ||
+    (codePoint >= 0x203f && codePoint <= 0x2040) ||
+    (codePoint >= 0x2070 && codePoint <= 0x218f) ||
+    (codePoint >= 0x2c00 && codePoint <= 0x2fef) ||
+    (codePoint >= 0x3001 && codePoint <= 0xd7ff) ||
+    (codePoint >= 0xf900 && codePoint <= 0xfdcf) ||
+    (codePoint >= 0xfdf0 && codePoint <= 0xfffd) ||
+    (codePoint >= 0x10000 && codePoint <= 0xeffff)
+  );
 }
 
 function buildPositionIndex(message: string): PositionIndex {
