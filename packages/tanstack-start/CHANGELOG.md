@@ -1,5 +1,15 @@
 # gt-tanstack-start
 
+## 11.0.12
+
+### Patch Changes
+
+- [#1941](https://github.com/generaltranslation/gt/pull/1941) [`7fef71d`](https://github.com/generaltranslation/gt/commit/7fef71de88a770bd5e14ec9f62cdac91671b3d2f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add request-scoped server middleware and server-only translation helpers for TanStack Start.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.12
+  - gt-react@11.0.12
+
 ## 11.0.11
 
 ### Patch Changes
