@@ -167,6 +167,32 @@ describe('parse', () => {
     });
   });
 
+  it.each([
+    ['0085', '\u0085'],
+    ['200E', '\u200E'],
+    ['200F', '\u200F'],
+  ])(
+    'parses FormatJS number-skeleton whitespace U+$codePoint',
+    (_codePoint, separator) => {
+      expect(
+        parse(`{amount, number, ::currency/USD${separator}.00}`)[0]
+      ).toMatchObject({
+        style: {
+          tokens: [
+            { stem: 'currency', options: ['USD'] },
+            { stem: '.00', options: [] },
+          ],
+          parsedOptions: {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          },
+        },
+      });
+    }
+  );
+
   it.each(['C', 'S', 'A'])(
     'preserves FormatJS parsing of the %s date/time skeleton field',
     (field) => {
@@ -292,6 +318,11 @@ describe('parse', () => {
     ['{n, number, ::}', 'Number skeleton cannot be empty'],
     ['{n, number, ::currency/}', 'Invalid number skeleton token'],
     ['{n, number, ::integer-width/*}', 'Unsupported integer width'],
+    [
+      '{n, number, ::integer-width/*00/foo}',
+      'integer-width stems only accept a single optional option',
+    ],
+    ['{n, number, ::Efoo}', 'Malformed concise eng/scientific notation'],
     ["{n, number, 'unclosed}", 'UNCLOSED_QUOTE_IN_ARGUMENT_STYLE'],
   ])('rejects malformed ICU %j', (message, error) => {
     expect(() => parse(message)).toThrow(error);

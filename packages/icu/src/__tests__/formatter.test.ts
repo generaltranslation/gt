@@ -49,6 +49,29 @@ describe('formatMessage', () => {
     );
   });
 
+  it('does not require the ES2022 Object.hasOwn API', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Object, 'hasOwn');
+    Object.defineProperty(Object, 'hasOwn', {
+      configurable: true,
+      value: undefined,
+    });
+
+    try {
+      expect(
+        formatMessage('{kind, select, yes {Hi {name}} other {No}}', 'en', {
+          kind: 'yes',
+          name: 'Ada',
+        })
+      ).toBe('Hi Ada');
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(Object, 'hasOwn', descriptor);
+      } else {
+        Reflect.deleteProperty(Object, 'hasOwn');
+      }
+    }
+  });
+
   it('selects exact and fallback branches without prototype collisions', () => {
     const message =
       '{value, select, constructor {ctor} __proto__ {proto} toString {string} other {fallback}}';
@@ -146,6 +169,16 @@ describe('formatMessage', () => {
     ).toBe('123,457');
     expect(formatMessage('{n, number, percent}', 'en-US', { n: 0.56 })).toBe(
       '56%'
+    );
+  });
+
+  it('preserves unscaled numeric-string precision', () => {
+    const value = '123456789012345678901234567890';
+    const expected = '123,456,789,012,345,678,901,234,567,890';
+
+    expect(formatMessage('{n, number}', 'en-US', { n: value })).toBe(expected);
+    expect(formatMessage('{n, number, ::scale/0}', 'en-US', { n: value })).toBe(
+      expected
     );
   });
 

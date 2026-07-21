@@ -8,6 +8,7 @@ import type { ExtendedNumberFormatOptions, NumberSkeletonToken } from './types';
 const FRACTION_PRECISION = /^\.(?:(0+)(\*)?|(#+)|(0+)(#+))$/;
 const SIGNIFICANT_PRECISION = /^(@+)?(\+|#+)?[rs]?$/;
 const INTEGER_WIDTH = /^(?:(\*)(0+)|(#+)(0+)|(0+))$/;
+const NUMBER_SKELETON_WHITE_SPACE = /[\t-\r \x85\u200E\u200F\u2028\u2029]+/u;
 const DATE_TIME_FIELD =
   /(?:[Eec]{1,6}|G{1,5}|[Qq]{1,5}|(?:[yYur]+|U{1,5})|[ML]{1,5}|d{1,2}|D{1,3}|F|[abB]{1,5}|[hHkKjJC]{1,2}|w{1,2}|W|m{1,2}|s{1,2}|[SA]+|[zZOvVxX]{1,4})(?=([^']*'[^']*')*[^']*$)/g;
 
@@ -42,7 +43,9 @@ const ROUNDING_MODES: Record<
 export function parseNumberSkeletonTokens(
   skeleton: string
 ): NumberSkeletonToken[] {
-  const stringTokens = skeleton.trim().split(/\s+/u).filter(Boolean);
+  const stringTokens = skeleton
+    .split(NUMBER_SKELETON_WHITE_SPACE)
+    .filter(Boolean);
   if (stringTokens.length === 0) {
     throw new SyntaxError('Number skeleton cannot be empty.');
   }
@@ -147,6 +150,11 @@ export function parseNumberSkeletonOptions(
         continue;
       case 'integer-width':
         requireOption(token);
+        if (token.options.length > 1) {
+          throw new RangeError(
+            'integer-width stems only accept a single optional option'
+          );
+        }
         applyIntegerWidth(result, option!);
         continue;
     }
@@ -225,8 +233,11 @@ function applyConciseScientific(
   result: ModernNumberFormatOptions,
   source: string
 ): boolean {
+  if (!source.startsWith('E')) return false;
   const match = /^(E{1,2})(\+!|\+\?)?(0+)$/u.exec(source);
-  if (!match) return false;
+  if (!match) {
+    throw new SyntaxError('Malformed concise eng/scientific notation');
+  }
 
   result.notation = match[1] === 'EE' ? 'engineering' : 'scientific';
   if (match[2]) applySign(result, match[2]);
