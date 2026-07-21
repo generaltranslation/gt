@@ -509,6 +509,23 @@ describe('adversary M1: multi-element array namespaces', () => {
     expect(skipReasons.join(' ')).toMatch(/array namespace|fallback/i);
   });
 
+  it('skips a dynamic useTranslation namespace instead of defaulting it', () => {
+    // useTranslation(nsVar) resolves at runtime; treating it as the default
+    // namespace would remap every t() on this binding against the wrong
+    // dictionary scope with no error.
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C({ ns }: { ns: string }) {',
+        '  const { t } = useTranslation(ns);',
+        "  return <p>{t('welcome')}</p>;",
+        '}',
+      ].join('\n')
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.join(' ')).toMatch(/namespace is not a string literal/);
+  });
+
   it('converts a single-element array namespace', () => {
     const { code, skipReasons } = transform(
       [

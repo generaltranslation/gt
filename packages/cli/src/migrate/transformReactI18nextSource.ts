@@ -184,6 +184,18 @@ export function transformReactI18nextSource(
         : t.isArrayExpression(nsArg) && t.isStringLiteral(nsArg.elements[0])
           ? (nsArg.elements[0] as t.StringLiteral).value
           : null;
+      // A namespace passed as anything but a string literal (an identifier, a
+      // prop, a call) resolves at runtime; treating it as the default
+      // namespace would compile cleanly and then resolve every t() on this
+      // binding against the wrong dictionary scope, with no error to catch
+      // it. Skip+report instead. A missing argument stays on the default
+      // namespace, which is i18next's own behavior.
+      if (nsArg != null && nsName === null) {
+        skipReasons.push(
+          'useTranslation() namespace is not a string literal, so its keys cannot be remapped to the converted dictionary; convert this file manually'
+        );
+        return;
+      }
       const i18nextNs = nsName ?? config.defaultNS;
       const rootId = i18nextNs === config.defaultNS ? null : i18nextNs;
 
