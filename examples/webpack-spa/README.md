@@ -18,27 +18,27 @@ A multilingual single-page React app that uses `gt-react` for internationalizati
 ```bash
 git clone https://github.com/generaltranslation/gt.git
 cd gt/examples/webpack-spa
-npm install
+corepack pnpm install
 ```
 
-This example lives inside the GT monorepo, which uses pnpm, so inside a checkout of the monorepo you install with `corepack pnpm install` at the repo root instead. Its `gt` and `gt-react` dependencies are pinned to `workspace:*`; a standalone copy of the example must replace those with published versions before a plain `npm install` will resolve them.
+The `gt`, `gt-react`, and `@generaltranslation/compiler` dependencies are pinned to `workspace:*`, a pnpm-only protocol that resolves against the monorepo, so a plain `npm install` inside this directory fails. To run the example on its own, copy this directory out of the monorepo and replace those three `workspace:*` pins with their published versions, after which `npm install` works.
 
 ### Run development server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ### Build for production
 
 ```bash
-npm run build
-npm run preview
+pnpm build
+pnpm preview
 ```
 
-`npm run build` works offline: it bundles the app from the translation files already committed in `src/_gt` and never calls the General Translation API. Run `npm run typecheck` to check types separately, since the build itself uses ts-loader in `transpileOnly` mode and surfaces no type errors.
+`pnpm build` works offline: it bundles the app from the translation files already committed in `src/_gt` and never calls the General Translation API. Run `pnpm typecheck` to check types separately, since the build itself uses ts-loader in `transpileOnly` mode and surfaces no type errors.
 
-To regenerate translations after you change source text, run `npm run translate` with a production `GT_PROJECT_ID` and `GT_API_KEY` (create them with `npx gt auth`). Development keys (`gtx-dev-`) drive the live dev workflow only and are rejected by the CLI.
+To regenerate translations after you change source text, run `pnpm translate` with a production `GT_PROJECT_ID` and `GT_API_KEY` (create them with `npx gt auth`). Development keys (`gtx-dev-`) drive the live dev workflow only and are rejected by the CLI.
 
 ## Deploy
 
@@ -62,7 +62,7 @@ import { webpack as gtCompiler } from '@generaltranslation/compiler';
 plugins: [gtCompiler({ ...gtConfig }) /* ... */];
 ```
 
-The compiler prepares your `<T>` and `t()` content at build time. When you supply a project ID and a development API key, it also enables translation hot reload in `npm run dev`, so you can preview translated content as you edit.
+The compiler prepares your `<T>` and `t()` content at build time. When you supply a project ID and a development API key, it also enables translation hot reload in `pnpm dev`, so you can preview translated content as you edit.
 
 ### Credentials via environment
 
@@ -75,7 +75,7 @@ GT_DEV_API_KEY="gtx-dev-your-development-key"
 
 Get these by running `npx gt auth` or from the [dashboard](https://dash.generaltranslation.com). Use a development key that starts with `gtx-dev-`. Never put a production key (`gtx-api-`) in a client-side app. Both values are optional: without them the app still runs and switches between the languages that already have files in `src/_gt`.
 
-These values are inlined only in development. A production build (`npm run build`) always inlines empty strings, so it never embeds your credentials in the bundle.
+These values are inlined only in development. A production build (`pnpm build`) always inlines empty strings, so it never embeds your credentials in the bundle.
 
 ### Translation files
 
