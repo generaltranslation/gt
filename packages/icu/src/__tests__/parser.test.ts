@@ -122,6 +122,25 @@ describe('parse', () => {
     });
   });
 
+  it('preserves exact plural selector spelling without treating equivalents as duplicates', () => {
+    const [element] = parse(
+      '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} =0 {zero} =-0 {negative zero} =-01 {negative leading} other {other}}'
+    );
+
+    expect(element).toMatchObject({
+      type: TYPE.plural,
+      options: {
+        '=1': {},
+        '=01': {},
+        '=+1': {},
+        '=0': {},
+        '=-0': {},
+        '=-01': {},
+        other: {},
+      },
+    });
+  });
+
   it('parses ordinal plurals', () => {
     expect(
       parse(

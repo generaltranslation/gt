@@ -106,6 +106,25 @@ describe('formatMessage', () => {
   });
 
   it.each([
+    [1, 'canonical'],
+    ['1', 'canonical'],
+    ['01', 'leading'],
+    ['+1', 'positive'],
+    [0, 'zero'],
+    ['0', 'zero'],
+    ['-0', 'negative zero'],
+    ['-01', 'negative leading'],
+  ])(
+    'preserves raw exact plural selector matching for %j',
+    (count, expected) => {
+      const message =
+        '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} =0 {zero} =-0 {negative zero} =-01 {negative leading} other {other}}';
+
+      expect(formatMessage(message, 'en', { count })).toBe(expected);
+    }
+  );
+
+  it.each([
     ['2', '{count, plural, =2 {exact} other {# items}}', 'exact'],
     ['02', '{count, plural, =2 {exact} other {# items}}', '2 items'],
     [' 2 ', '{count, plural, =2 {exact} other {# items}}', '2 items'],

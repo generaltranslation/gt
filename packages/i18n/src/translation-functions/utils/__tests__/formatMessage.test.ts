@@ -18,4 +18,14 @@ describe('formatMessage', () => {
       ).toBe(expected);
     }
   );
+
+  it('preserves raw exact selector matching for string-only interpolation values', () => {
+    expect(
+      formatMessage(
+        '{count, plural, =1 {canonical} =01 {leading} other {# items}}',
+        { count: '01' },
+        'en-US'
+      )
+    ).toBe('leading');
+  });
 });

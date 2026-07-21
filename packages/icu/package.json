@@ -43,7 +43,9 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "2.11.4",
     "@types/node": "catalog:",
+    "intl-messageformat": "10.7.16",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
