@@ -101,9 +101,8 @@ describe('transformNextConfigFile', () => {
     expect(
       result.todos.some((todo) => todo.reason.includes('createNextIntlPlugin'))
     ).toBe(true);
-    // the teardown re-run guidance must carry --from so that once gt-next is
-    // installed (auto-detect would then return gt-next) the re-run still targets
-    // the source library instead of hard-erroring.
+    // the teardown re-run guidance must carry --from, since the flag is
+    // required and the re-run has to name the source library explicitly.
     expect(
       result.todos.some((todo) =>
         todo.reason.includes('gt migrate --from next-intl')

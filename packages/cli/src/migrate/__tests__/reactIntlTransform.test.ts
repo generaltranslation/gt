@@ -86,6 +86,24 @@ describe('reactIntl: useIntl().formatMessage (client)', () => {
     expect(r.code).not.toContain('useIntl');
   });
 
+  it('skips a formatMessage call whose message or values are rich', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { useIntl } from 'react-intl';",
+        'export function C() {',
+        '  const intl = useIntl();',
+        "  return <p>{intl.formatMessage({ id: 'terms' }, { b: (chunks) => <b>{chunks}</b> })}</p>;",
+        '}'
+      ),
+      { terms: 'Accept the <b>terms</b>' }
+    );
+    expect(r.code).toBeNull();
+    const reason = r.skipReasons.join(' ');
+    expect(reason).toMatch(/formatMessage\('terms'\)/);
+    expect(reason).toMatch(/convert manually/);
+  });
+
   it('passes values through to t(id, values)', () => {
     const r = transform(
       lines(

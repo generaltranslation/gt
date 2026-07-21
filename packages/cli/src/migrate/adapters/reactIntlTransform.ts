@@ -296,7 +296,8 @@ export function transformReactIntlSource(
   // are subsumed by gt-next's GTProvider, but timeZone/onError/textComponent/
   // formats/defaultRichTextElements (or any spread) are load-bearing config with
   // no equivalent; silently dropping them changes behavior. Skip+report the
-  // whole file so they migrate by hand (matching the README's OUT list).
+  // whole file so they migrate by hand (the unsupported-API contract in this
+  // adapter's doc comment).
   for (const providerPath of providerUnwraps) {
     skipReasons.push(...providerDropReasons(providerPath.node.openingElement));
   }

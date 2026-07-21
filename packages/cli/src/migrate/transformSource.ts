@@ -55,10 +55,10 @@ export function transformSourceFile(
 ): SourceResult {
   const adapter = ctx.adapter;
   // An adapter whose source-call model does not fit this next-intl-shaped engine
-  // (hook -> `t('key')`) supplies its own file transform; the driver, layout
-  // pass, and --inline all still funnel through transformSourceFile, so this one
-  // dispatch keeps them adapter-agnostic. next-intl supplies none and runs the
-  // engine below unchanged.
+  // (hook -> `t('key')`) supplies its own file transform; the driver and the
+  // layout pass both funnel through transformSourceFile, so this one dispatch
+  // keeps them adapter-agnostic. next-intl supplies none and runs the engine
+  // below unchanged.
   if (adapter.transformSource) {
     return adapter.transformSource(file, code, ctx, options);
   }

@@ -90,7 +90,8 @@ function parseRoutingConfig(cwd: string): RoutingInfo {
  * server side of a raw react-i18next App Router app is a bespoke getT() built on
  * initI18next/resourcesToBackend with nothing importable to swap, so every
  * server call site is skipped and reported with a getTranslations recipe rather
- * than miscompiled. See the migrate README's "supported sources" table.
+ * than miscompiled. The supported-source rules live in the migrate command's
+ * module doc comment (cli/commands/migrate.ts) and resolveSource.ts.
  */
 export const reactI18nextAdapter: SourceAdapter = {
   id: 'react-i18next',
@@ -135,7 +136,7 @@ export const reactI18nextAdapter: SourceAdapter = {
   // i18next (the hand-rolled server runtime) is out of v1 scope and must not
   // count as an unscanned usage, or a scoped run wrongly retains the provider.
   projectUsagePattern:
-    /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"]react-i18next(?:\/|['"])/,
+    /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"]react-i18next(?:\/|['"])/,
   // The i18next runtime bootstrap and the bespoke server getT() are hand-rolled;
   // removing the deps is a manual step once the server is migrated, so no
   // automatic package/file teardown.
