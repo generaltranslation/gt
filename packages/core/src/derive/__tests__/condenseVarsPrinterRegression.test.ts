@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parse } from '@generaltranslation/icu';
+import { formatMessage, parse } from '@generaltranslation/icu';
 import { condenseVars } from '../condenseVars';
 
 // Pins the serialized output used by condenseVars. Existing FormatJS output
@@ -141,6 +141,11 @@ describe('condenseVars printer regression', () => {
       "{count,plural,other{'#' # {_gt_1}}}",
     ],
     [
+      'multiple escaped pounds inside plural',
+      "{_gt_1, select, other {Ada}} {count, plural, other {'##'}}",
+      "{_gt_1} {count,plural,other{'##'}}",
+    ],
+    [
       'unicode and emoji',
       'Héllo 🎉 {_gt_1, select, other {}}',
       'Héllo 🎉 {_gt_1}',
@@ -165,5 +170,15 @@ describe('condenseVars printer regression', () => {
 
     expect(result).toBe(expected);
     expect(() => parse(result)).not.toThrow();
+  });
+
+  it('preserves multiple literal pounds through condense and runtime formatting', () => {
+    const condensed = condenseVars(
+      "{_gt_1, select, other {Ada}} {count, plural, other {'##'}}"
+    );
+
+    expect(formatMessage(condensed, 'en', { _gt_1: 'Ada', count: 7 })).toBe(
+      'Ada ##'
+    );
   });
 });

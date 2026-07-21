@@ -72,6 +72,28 @@ const GENERATED_ROUND_TRIP_MESSAGES = [
   ),
 ];
 
+const ESCAPED_PLURAL_SYNTAX_FRAGMENTS = [
+  '#',
+  '##',
+  '{',
+  '}',
+  '{}',
+  '{#}',
+  '<b>',
+  '</b>',
+];
+
+// Exercise every three-fragment combination because the old printer failed
+// when plural hashes were adjacent to one another or to other quoted syntax.
+const GENERATED_ESCAPED_PLURAL_ROUND_TRIP_MESSAGES =
+  ESCAPED_PLURAL_SYNTAX_FRAGMENTS.flatMap((first) =>
+    ESCAPED_PLURAL_SYNTAX_FRAGMENTS.flatMap((second) =>
+      ESCAPED_PLURAL_SYNTAX_FRAGMENTS.map(
+        (third) => `{count, plural, other {'${first}${second}${third}'}}`
+      )
+    )
+  );
+
 describe('printAST', () => {
   it.each([
     ['', ''],
@@ -101,6 +123,12 @@ describe('printAST', () => {
     ["It''s {name} o''clock", "It's {name} o'clock"],
     ["{name}'s book", "{name}''s book"],
     ["{count, plural, other {'#' #}}", "{count,plural,other{'#' #}}"],
+    ["{count, plural, other {'##'}}", "{count,plural,other{'##'}}"],
+    ["{count, plural, other {'{#}'}}", "{count,plural,other{'{#}'}}"],
+    [
+      "{count, plural, other {<b>'##'</b>}}",
+      "{count,plural,other{<b>'##'</b>}}",
+    ],
   ])('prints %j with stable canonical bytes', (message, expected) => {
     expect(printAST(parse(message))).toBe(expected);
   });
@@ -111,6 +139,8 @@ describe('printAST', () => {
     '{a}{b}{c}',
     '{status, select, yes {{name} accepted} other {none}}',
     '{count, plural, one {<b># item</b>} other {<b># items</b>}}',
+    "{count, plural, other {'##' and '{#}'}}",
+    "{count, plural, other {<b>'##'</b>}}",
     '{count, plural, one {{status, select, yes {{name}} other {none}}} other {No}}',
     "'{isn''t}'",
   ])('preserves the AST through print and reparse for %j', (message) => {
@@ -120,6 +150,16 @@ describe('printAST', () => {
 
   it.each(GENERATED_ROUND_TRIP_MESSAGES)(
     'preserves the AST through print and reparse for %j',
+    (message) => {
+      const original = parse(message);
+      const reparsed = parse(printAST(original));
+
+      expect(reparsed).toEqual(original);
+    }
+  );
+
+  it.each(GENERATED_ESCAPED_PLURAL_ROUND_TRIP_MESSAGES)(
+    'preserves escaped plural syntax through print and reparse for %j',
     (message) => {
       const original = parse(message);
       const reparsed = parse(printAST(original));

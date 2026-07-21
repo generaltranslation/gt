@@ -50,16 +50,100 @@ function printElements(
         case TYPE.pound:
           return '#';
         case TYPE.tag:
-          return `<${element.value}>${printAST(element.children)}</${element.value}>`;
+          return `<${element.value}>${printElements(element.children, isInPlural)}</${element.value}>`;
       }
     })
     .join('');
 }
 
-function escapeMessage(message: string): string {
-  return message.replace(/([{}](?:[\s\S]*[{}])?)/, (matched) => {
-    return `'${matched.replace(/'/g, "''")}'`;
-  });
+function quoteSyntaxToken(token: string): string {
+  return `'${token.replace(/'/g, "''")}'`;
+}
+
+function isAsciiLetter(character: string | undefined): boolean {
+  if (!character) return false;
+  const code = character.charCodeAt(0);
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
+function isTagSyntaxStart(message: string, index: number): boolean {
+  if (message[index] !== '<') return false;
+  const next = message[index + 1];
+  return next === '/' || isAsciiLetter(next);
+}
+
+function findTagSyntaxEnd(message: string, index: number): number {
+  const closingIndex = message.indexOf('>', index + 1);
+  return closingIndex === -1 ? message.length : closingIndex + 1;
+}
+
+function findBraceSyntaxEnd(message: string, index: number): number {
+  // Preserve the established canonical bytes by quoting from the first brace
+  // through the final brace as one span. Hashes inside that span are already
+  // protected and must not be quoted again.
+  return (
+    Math.max(message.lastIndexOf('{'), message.lastIndexOf('}'), index) + 1
+  );
+}
+
+/**
+ * FormatJS 2.11.4 escaped plural `#` characters with a single
+ * `replace('#', "'#'")` after escaping braces. That only protected the first
+ * hash and could nest a hash quote inside an existing brace quote. In a real
+ * parse -> print -> parse -> format flow, a literal `##` therefore became
+ * `#<plural value>` (for example, `#7`) instead of remaining `##`.
+ *
+ * We intentionally diverge from that released behavior by quoting adjacent
+ * ICU syntax as one span, preserving literals such as `##`, `{#}`, and hashes
+ * nested in plural tags. FormatJS 3.5.x later adopted the same syntax-run
+ * strategy to make printer output round-trippable.
+ */
+function escapeMessage(message: string, isInPlural = false): string {
+  let result = '';
+  let literalStart = 0;
+  let quotedStart = -1;
+  let quotedEnd = -1;
+
+  function flushQuotedToken(): void {
+    if (quotedStart === -1) return;
+
+    const literal = message.slice(literalStart, quotedStart);
+    result += literal;
+    if (literal.endsWith("'")) result += "'";
+    result += quoteSyntaxToken(message.slice(quotedStart, quotedEnd));
+    literalStart = quotedEnd;
+    quotedStart = -1;
+  }
+
+  function quoteToken(start: number, end: number): void {
+    if (quotedStart !== -1 && start === quotedEnd) {
+      quotedEnd = end;
+      return;
+    }
+    flushQuotedToken();
+    quotedStart = start;
+    quotedEnd = end;
+  }
+
+  for (let index = 0; index < message.length; index += 1) {
+    const character = message[index];
+    if (character === '{') {
+      const end = findBraceSyntaxEnd(message, index);
+      quoteToken(index, end);
+      index = end - 1;
+    } else if (character === '}') {
+      quoteToken(index, index + 1);
+    } else if (isTagSyntaxStart(message, index)) {
+      const end = findTagSyntaxEnd(message, index);
+      quoteToken(index, end);
+      index = end - 1;
+    } else if (isInPlural && character === '#') {
+      quoteToken(index, index + 1);
+    }
+  }
+
+  flushQuotedToken();
+  return result + message.slice(literalStart);
 }
 
 function printLiteral(
@@ -75,8 +159,7 @@ function printLiteral(
   if (!isLastElement && escaped[escaped.length - 1] === "'") {
     escaped = `${escaped.slice(0, -1)}''`;
   }
-  escaped = escapeMessage(escaped);
-  return isInPlural ? escaped.replace('#', "'#'") : escaped;
+  return escapeMessage(escaped, isInPlural);
 }
 
 function printSimpleFormat(
