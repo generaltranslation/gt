@@ -25,14 +25,21 @@ jobs:
           set -u
 
           status=''
+          # Read the token through stdin so it never appears in process arguments.
           if ! status="$(
-            curl --silent --show-error \
-              --output /dev/null \
-              --write-out '%{http_code}' \
-              --header 'Accept: application/vnd.github+json' \
-              --header "Authorization: Bearer ${ORG_MEMBERS_TOKEN}" \
-              --header 'X-GitHub-Api-Version: 2022-11-28' \
-              "https://api.github.com/orgs/${GITHUB_REPOSITORY_OWNER}/members/${PR_AUTHOR}"
+            curl --config - <<EOF
+          silent
+          show-error
+          proto = "=https"
+          connect-timeout = 10
+          max-time = 30
+          output = "/dev/null"
+          write-out = "%{http_code}"
+          header = "Accept: application/vnd.github+json"
+          header = "Authorization: Bearer ${ORG_MEMBERS_TOKEN}"
+          header = "X-GitHub-Api-Version: 2022-11-28"
+          url = "https://api.github.com/orgs/${GITHUB_REPOSITORY_OWNER}/members/${PR_AUTHOR}"
+          EOF
           )"; then
             echo '::error::Could not query General Translation organization membership.'
             exit 1
