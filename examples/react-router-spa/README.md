@@ -20,25 +20,27 @@ This example runs React Router in framework mode with `ssr: false`, so the app i
 ```bash
 git clone https://github.com/generaltranslation/gt.git
 cd gt/examples/react-router-spa
-npm install
+corepack pnpm install
 ```
+
+The `gt`, `gt-react`, and `@generaltranslation/compiler` dependencies are pinned to `workspace:*`, a pnpm-only protocol that resolves against the monorepo, so a plain `npm install` inside this directory fails. To run the example on its own, copy this directory out of the monorepo and replace those three `workspace:*` pins with their published versions, after which `npm install` works.
 
 ### Run development server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ### Build for production
 
 ```bash
-npm run build
-npm run preview
+pnpm build
+pnpm preview
 ```
 
-`npm run build` runs `react-router build` and builds entirely offline from the translation files committed under `app/_gt/`, so it needs no credentials and no network access. To regenerate those files after you change source text, run `npm run translate` (which runs `gt translate`) with a production `GT_PROJECT_ID` and `GT_API_KEY`; create these with `npx gt auth` (development `gtx-dev-` keys are rejected by `gt translate`). Those production credentials are for the build machine only. The separate `VITE_GT_*` vars below are the browser-side dev-workflow credentials. See [Translation files](#translation-files).
+`pnpm build` runs `react-router build` and builds entirely offline from the translation files committed under `app/_gt/`, so it needs no credentials and no network access. To regenerate those files after you change source text, run `pnpm translate` (which runs `gt translate`) with a production `GT_PROJECT_ID` and `GT_API_KEY`; create these with `npx gt auth` (development `gtx-dev-` keys are rejected by `gt translate`). Those production credentials are for the build machine only. The separate `VITE_GT_*` vars below are the browser-side dev-workflow credentials. See [Translation files](#translation-files).
 
-This example deliberately pins React Router v7, so the React Router v8 future-flag warnings printed during `npm run dev` and `npm run build` are expected and safe to ignore.
+This example deliberately pins React Router v7, so the React Router v8 future-flag warnings printed during `pnpm dev` and `pnpm build` are expected and safe to ignore.
 
 ## How initialization works
 
@@ -57,7 +59,7 @@ We `await initializeGTSPA(...)` and only then dynamically import the module that
 
 React Router prerenders a small static shell into `index.html` at build time. That prerender runs in Node, where `gt-react` is not (and cannot be) initialized, so the shell in `app/root.tsx` is kept free of `gt-react`. All translated content lives in child routes, which render only in the browser. Do not add build-time `prerender` paths for routes that render `<T>` or call `t()`, because those would run in the uninitialized Node context. The static shell hardcodes `lang='en'`; a small client component, `app/components/HtmlLangSync.tsx`, rendered from each route, syncs the html `lang` (and `dir`) attribute to the active locale once gt-react is running in the browser.
 
-Switching the locale reloads the page. `gt-react` reinitializes with the newly selected locale and re-resolves every string. A production host must serve `index.html` as the fallback for unknown paths (standard SPA hosting) so that reloading a deep route like `/about` works. The included `vercel.json` does this with a rewrite that maps every path to `/index.html`, and `npm run preview` serves the same fallback locally.
+Switching the locale reloads the page. `gt-react` reinitializes with the newly selected locale and re-resolves every string. A production host must serve `index.html` as the fallback for unknown paths (standard SPA hosting) so that reloading a deep route like `/about` works. The included `vercel.json` does this with a rewrite that maps every path to `/index.html`, and `pnpm preview` serves the same fallback locally.
 
 ## Development translations
 
@@ -75,7 +77,7 @@ VITE_GT_DEV_API_KEY="your-dev-api-key"
 
 `gt-react` loads translations from `app/_gt/<locale>.json` at runtime (`app/loadTranslations.ts`). In a real project you generate these files by running `npx gt translate`, which sends your source content to General Translation and writes the results back. This example ships hand-written files for `es`, `fr`, `ja`, and `zh` so that locale switching works out of the box without any API access.
 
-Each entry is keyed by a content hash of its source string, so editing translated source text orphans the committed entry and that string renders in the source language until you regenerate the files with `npm run translate` or update them by hand.
+Each entry is keyed by a content hash of its source string, so editing translated source text orphans the committed entry and that string renders in the source language until you regenerate the files with `pnpm translate` or update them by hand.
 
 ## Deploy
 
