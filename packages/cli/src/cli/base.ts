@@ -549,7 +549,7 @@ export class BaseCLI {
       )
       .requiredOption(
         '--from <library>',
-        "i18n library to migrate from ('next-intl' today; react-i18next is planned)"
+        "i18n library to migrate from: 'next-intl', 'react-intl', or 'react-i18next'"
       )
       .option(
         '--src <paths...>',

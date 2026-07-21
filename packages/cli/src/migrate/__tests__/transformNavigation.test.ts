@@ -5,6 +5,7 @@ import type {
   MigrationContext,
   RoutingInfo,
 } from '../types.js';
+import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
 const canonical = [
   "import { createNavigation } from 'next-intl/navigation';",
@@ -40,6 +41,7 @@ function makeContext(
     todos: [],
     skippedFiles: new Map(),
     stats: {},
+    adapter: nextIntlAdapter,
   };
 }
 

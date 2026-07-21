@@ -132,7 +132,8 @@ export function transformNextConfigFile(
     todos.push({
       file,
       reason:
-        'createNextIntlPlugin kept (composed around withGTConfig) because some files still use next-intl — re-run `gt migrate` once they are converted to finish the teardown',
+        'createNextIntlPlugin kept (composed around withGTConfig) because some files still use next-intl. Re-run ' +
+        `\`gt migrate --from ${ctx.adapter.id}\` once they are converted to finish the teardown`,
     });
   }
 

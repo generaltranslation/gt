@@ -22,8 +22,16 @@ const NEXT_ROOT_PARAMS_MIN_GATE = `${NEXT_ROOT_PARAMS_MIN_VERSION}-0`;
  * next-intl teardown only happens once no skipped files remain.
  */
 export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
+  const adapter = ctx.adapter;
   const edits: FileEdit[] = [];
   const fullyMigrated = ctx.skippedFiles.size === 0;
+
+  // Catalog files an adapter synthesized during discovery (e.g. a react-intl
+  // default-locale catalog harvested from literal defaultMessages). New files
+  // only; flushed here so they respect --dry-run like every other edit.
+  if (ctx.catalogs.filesToEmit) {
+    edits.push(...ctx.catalogs.filesToEmit);
+  }
 
   // gt.config.json — honor the resolved --config path when the driver set it,
   // otherwise the project root. This one path drives both the merge-read and
@@ -124,9 +132,9 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     // next-intl from package.json in that case would leave that import
     // unresolvable, so the retention decision has to precede the package.json
     // edit, not follow it.
-    const deletions = [ctx.routing.routingFile, ctx.routing.requestFile].filter(
-      (file): file is string => file !== null && fs.existsSync(file)
-    );
+    const deletions = adapter
+      .teardownConfigFiles(ctx.routing)
+      .filter((file) => fs.existsSync(file));
     // Retention-aware fixed point: a config file kept for a live importer is
     // itself a live importer, so a routing file imported only by a retained
     // request file must also be retained (deleting it would leave the surviving
@@ -156,31 +164,32 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     }
 
     const packageJsonPath = path.join(ctx.cwd, 'package.json');
-    // Keep next-intl only when a RETAINED file actually imports it. A retained
-    // routing/request file written as a plain object (no next-intl import) must
-    // not pin the dependency, and a "still imports it" todo would be false. Use
-    // the same specifier regex the driver's out-of-scope scan uses, against the
-    // on-disk content (retained files are never rewritten by edits).
-    const nextIntlSpecifier =
-      /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"]next-intl(?:\/|['"])/;
-    const nextIntlRetainers = retained.filter((entry) => {
+    // Keep the source library only when a RETAINED file actually imports it. A
+    // retained routing/request file written as a plain object (no source-library
+    // import) must not pin the dependency, and a "still imports it" todo would
+    // be false. Use the same specifier regex the driver's out-of-scope scan
+    // uses (the adapter's projectUsagePattern), against the on-disk content
+    // (retained files are never rewritten by edits).
+    const sourceRetainers = retained.filter((entry) => {
       try {
-        return nextIntlSpecifier.test(fs.readFileSync(entry.file, 'utf8'));
+        return adapter.projectUsagePattern.test(
+          fs.readFileSync(entry.file, 'utf8')
+        );
       } catch {
-        // Unreadable retained file: keep next-intl rather than risk stripping a
-        // dependency a surviving import still needs.
+        // Unreadable retained file: keep the dependency rather than risk
+        // stripping one a surviving import still needs.
         return true;
       }
     });
-    if (nextIntlRetainers.length > 0) {
-      // A retained config file still imports next-intl, so leave the
+    if (sourceRetainers.length > 0) {
+      // A retained config file still imports the source library, so leave the
       // dependency in package.json and explain how to finish by hand.
-      const retainedList = nextIntlRetainers
+      const retainedList = sourceRetainers
         .map((entry) => path.relative(ctx.cwd, entry.file))
         .join(', ');
       ctx.todos.push({
         file: packageJsonPath,
-        reason: `next-intl kept in package.json because ${retainedList} still imports it. After migrating that file off next-intl, remove the dependency by hand.`,
+        reason: `${adapter.displayName} kept in package.json because ${retainedList} still imports it. After migrating that file off ${adapter.displayName}, remove the dependency by hand.`,
       });
     } else if (fs.existsSync(packageJsonPath)) {
       let pkg: Record<string, Record<string, string>> | null = null;
@@ -189,7 +198,7 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
       } catch (error) {
         ctx.todos.push({
           file: packageJsonPath,
-          reason: `could not be parsed (${String(error)}) — remove the next-intl dependency by hand`,
+          reason: `could not be parsed (${String(error)}); remove the ${adapter.displayName} dependency by hand`,
         });
       }
       if (pkg) {
@@ -200,9 +209,11 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
           'peerDependencies',
           'optionalDependencies',
         ]) {
-          if (pkg[section] && pkg[section]['next-intl']) {
-            delete pkg[section]['next-intl'];
-            changed = true;
+          for (const dep of adapter.teardownPackages) {
+            if (pkg[section] && pkg[section][dep]) {
+              delete pkg[section][dep];
+              changed = true;
+            }
           }
         }
         if (changed) {
@@ -221,7 +232,7 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
       ctx.todos.push({
         file: configFile,
         reason: importer.exact
-          ? `kept because ${path.relative(ctx.cwd, importer.file)} still imports it — migrate that reference off next-intl, then delete this file`
+          ? `kept because ${path.relative(ctx.cwd, importer.file)} still imports it — migrate that reference off ${adapter.displayName}, then delete this file`
           : `kept because ${path.relative(ctx.cwd, importer.file)} appears to import it through a path alias; if that specifier is really a third-party package, delete this file yourself`,
       });
     }
@@ -257,6 +268,36 @@ function emitStaticLocaleResolvers(
     return;
   }
   if (localeLayout.kind === 'other-segment') {
+    const segment = localeLayout.segment;
+    // The react-i18next adapter leads with the CORRECTNESS consequence, not the
+    // rendering-mode one: with a non-[locale] segment gt-next has no route-param
+    // resolver, so it falls back to default-locale detection and every
+    // non-default locale renders in the DEFAULT language (the F1 finding). The
+    // lost SSG is secondary. (next-intl keeps its original message untouched.)
+    if (ctx.adapter?.id === 'react-i18next') {
+      ctx.todos.push({
+        file: localeLayout.file,
+        reason:
+          `WRONG LANGUAGE until you rename ${segment} to [locale]: gt-next only ` +
+          'reads the route param for a segment named literally [locale], so with ' +
+          `${segment} it falls back to default-locale detection and every ` +
+          'non-default locale renders in the DEFAULT language. Rename the dynamic ' +
+          `segment directory ${segment} to [locale] (updating the imports/links ` +
+          'that point at it), then re-run gt migrate so getLocale.ts/getRegion.ts ' +
+          'resolve the locale (also restoring static SSG rendering, which is ' +
+          'otherwise lost to request-scoped dynamic (ƒ) rendering).',
+      });
+      // Only a genuine wrong-language risk when there is more than one locale.
+      if (ctx.catalogs.locales.length > 1) {
+        (ctx.warnings ??= []).push(
+          `Localized route segment is ${segment}, not [locale]: every non-default ` +
+            `locale (${ctx.catalogs.locales.join(', ')}) will render in the DEFAULT ` +
+            `language until you rename ${segment} to [locale] and re-run gt migrate. ` +
+            'See the TODO for the full steps.'
+        );
+      }
+      return;
+    }
     ctx.todos.push({
       file: localeLayout.file,
       reason:
@@ -390,7 +431,7 @@ function emitResolverFile(
  */
 type LocaleLayout =
   | { kind: 'locale'; file: string; hasRootLayoutAbove: boolean }
-  | { kind: 'other-segment'; file: string }
+  | { kind: 'other-segment'; file: string; segment: string }
   | { kind: 'none' };
 
 /**
@@ -424,7 +465,13 @@ function findLocaleLayout(ctx: MigrationContext): LocaleLayout {
   const otherSegment = layouts.find((file) =>
     isDynamicSegmentDir(path.basename(path.dirname(file)))
   );
-  if (otherSegment) return { kind: 'other-segment', file: otherSegment };
+  if (otherSegment) {
+    return {
+      kind: 'other-segment',
+      file: otherSegment,
+      segment: path.basename(path.dirname(otherSegment)),
+    };
+  }
   return { kind: 'none' };
 }
 

@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { handleMigrateCommand } from '../../cli/commands/migrate.js';
+import { logger } from '../../console/logger.js';
 import { installPackage } from '../../utils/installPackage.js';
 
 vi.mock('../../hooks/postProcess.js', () => ({
@@ -172,6 +173,19 @@ afterEach(() => {
 
 const read = (cwd: string, rel: string) =>
   fs.readFileSync(path.join(cwd, rel), 'utf8');
+
+// A project with exactly the files given (no next-intl scaffold), for the
+// --from validation and nothing-to-migrate backstop cases.
+function makeBareProject(files: Record<string, string>): string {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-bare-'));
+  tmpDirs.push(cwd);
+  for (const [rel, content] of Object.entries(files)) {
+    const abs = path.join(cwd, rel);
+    fs.mkdirSync(path.dirname(abs), { recursive: true });
+    fs.writeFileSync(abs, content);
+  }
+  return cwd;
+}
 
 // App shape where the NextIntlClientProvider lives in a separate client file
 // (a very common layout) rather than inline in the layout. The layout renders
@@ -613,7 +627,7 @@ describe('handleMigrateCommand integration', () => {
   it('retains a separate provider file (with its messages wiring) in partial mode', async () => {
     // A skipped file forces partial mode; the standalone provider file must
     // keep its NextIntlClientProvider so the skipped file still has a next-intl
-    // context. Regression: it used to run with retainNextIntlProvider=false and
+    // context. Regression: it used to run with retainProvider=false and
     // get rewritten to a bare <GTProvider>, deleting the only provider anywhere.
     const cwd = makeApp({
       ...SEPARATE_PROVIDER_FILES,
@@ -686,6 +700,210 @@ describe('handleMigrateCommand integration', () => {
     // full teardown: next-intl removed since every file converted
     const pkg = JSON.parse(read(cwd, 'package.json'));
     expect(pkg.dependencies['next-intl']).toBeUndefined();
+  });
+
+  it('errors when --from names a library absent from package.json', async () => {
+    // The reviewer's t3-i18next shape: react-i18next/i18next, no next-intl, a
+    // messages catalog, and a page on react-i18next. --from next-intl must not
+    // silently "succeed" writing scaffolding while leaving every file untouched.
+    const cwd = makeBareProject({
+      'package.json': JSON.stringify({
+        name: 'demo',
+        dependencies: {
+          next: '15.5.0',
+          'react-i18next': '^14.0.0',
+          i18next: '^23.0.0',
+          react: '19.0.0',
+        },
+      }),
+      'messages/en.json': JSON.stringify({ Home: { title: 'Hi' } }),
+      'messages/es.json': JSON.stringify({ Home: { title: 'Hola' } }),
+      'src/app/page.tsx': [
+        "'use client';",
+        "import { useTranslation } from 'react-i18next';",
+        'export default function Page() {',
+        '  const { t } = useTranslation();',
+        "  return <h1>{t('Home.title')}</h1>;",
+        '}',
+      ].join('\n'),
+    });
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(((
+      code?: number
+    ) => {
+      throw new Error(`process.exit:${code}`);
+    }) as never);
+    try {
+      await expect(
+        handleMigrateCommand(
+          {
+            config: 'gt.config.json',
+            dryRun: false,
+            yes: true,
+            allowDirty: true,
+            from: 'next-intl',
+          },
+          'i18next',
+          cwd
+        )
+      ).rejects.toThrow('was not found in this project');
+    } finally {
+      exitSpy.mockRestore();
+    }
+    // errored before writing anything, and the source file is untouched
+    expect(fs.existsSync(path.join(cwd, 'gt.config.json'))).toBe(false);
+    expect(read(cwd, 'src/app/page.tsx')).toContain('react-i18next');
+  });
+
+  it('migrates a hoisted monorepo leaf where next-intl is installed at the workspace root', async () => {
+    // Monorepo/hoisted shape: next-intl is declared and installed at the
+    // workspace root node_modules, NOT in the leaf app's own package.json. The
+    // leaf's page.tsx imports next-intl, so it resolves the hoisted dep at
+    // build time. --from used to bypass detection and migrate this correctly;
+    // the presence check must recognise the hoisted dep (node_modules chain)
+    // instead of hard-blocking the leaf.
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-monorepo-'));
+    tmpDirs.push(root);
+    const web = path.join(root, 'apps', 'web');
+    const files: Record<string, string> = {
+      'package.json': JSON.stringify({
+        name: 'root',
+        private: true,
+        dependencies: { 'next-intl': '^4.1.0' },
+      }),
+      // next-intl hoisted into the workspace-root node_modules. The exports map
+      // mirrors real next-intl (ESM, no ./package.json export), which defeats
+      // require.resolve — so a directory probe must find it.
+      'node_modules/next-intl/package.json': JSON.stringify({
+        name: 'next-intl',
+        version: '4.1.0',
+        type: 'module',
+        exports: { '.': { import: './index.js' } },
+      }),
+      'apps/web/package.json': JSON.stringify({
+        name: 'web',
+        dependencies: { next: '15.5.0', react: '19.0.0' },
+      }),
+      'apps/web/messages/en.json': JSON.stringify({ Home: { title: 'Hi' } }),
+      'apps/web/messages/es.json': JSON.stringify({ Home: { title: 'Hola' } }),
+      'apps/web/src/app/page.tsx': [
+        "import { useTranslations } from 'next-intl';",
+        'export default function Home() {',
+        "  const t = useTranslations('Home');",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n'),
+    };
+    for (const [rel, content] of Object.entries(files)) {
+      const abs = path.join(root, rel);
+      fs.mkdirSync(path.dirname(abs), { recursive: true });
+      fs.writeFileSync(abs, content);
+    }
+    // library === 'base' mirrors what determineLibrary returns for the leaf
+    // (its own package.json declares no i18n lib); --from is the override.
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+        from: 'next-intl',
+      },
+      'base',
+      web
+    );
+    // presence check passed and the leaf migrated: page swapped to gt-next and
+    // scaffolding written under the leaf.
+    expect(fs.existsSync(path.join(web, 'gt.config.json'))).toBe(true);
+    const page = read(web, 'src/app/page.tsx');
+    expect(page).toMatch(/from ["']gt-next["']/);
+    expect(page).not.toContain('next-intl');
+  });
+
+  it('warns instead of exiting 0 when a run matches nothing (dry run wording)', async () => {
+    // next-intl IS a dependency (so the presence check passes and no --from is
+    // needed), a catalog is discoverable, but no source file imports next-intl.
+    // The run migrates nothing; it must say so rather than reporting success.
+    const cwd = makeBareProject({
+      'package.json': JSON.stringify({
+        name: 'demo',
+        dependencies: {
+          next: '15.5.0',
+          'next-intl': '^4.1.0',
+          react: '19.0.0',
+        },
+      }),
+      'messages/en.json': JSON.stringify({ Home: { title: 'Hi' } }),
+      'messages/es.json': JSON.stringify({ Home: { title: 'Hola' } }),
+      'src/app/page.tsx': [
+        'export default function Page() {',
+        '  return <h1>Static heading</h1>;',
+        '}',
+      ].join('\n'),
+    });
+    const warnSpy = vi.spyOn(logger, 'warn');
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: true,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    const warnings = warnSpy.mock.calls.map((call) => String(call[0]));
+    warnSpy.mockRestore();
+    const nothingWarning = warnings.find((line) =>
+      /Nothing to migrate/.test(line)
+    );
+    expect(nothingWarning).toBeDefined();
+    // --dry-run writes nothing, so the scaffolding is described as prospective.
+    expect(nothingWarning).toContain('would still be written');
+    expect(nothingWarning).not.toContain('was still written');
+  });
+
+  it('warns when a run matches nothing (non-dry-run wording)', async () => {
+    // Same nothing-matched scenario but for real: the scaffolding is actually
+    // written to disk, so the warning must say so in the past tense.
+    const cwd = makeBareProject({
+      'package.json': JSON.stringify({
+        name: 'demo',
+        dependencies: {
+          next: '15.5.0',
+          'next-intl': '^4.1.0',
+          react: '19.0.0',
+        },
+      }),
+      'messages/en.json': JSON.stringify({ Home: { title: 'Hi' } }),
+      'messages/es.json': JSON.stringify({ Home: { title: 'Hola' } }),
+      'src/app/page.tsx': [
+        'export default function Page() {',
+        '  return <h1>Static heading</h1>;',
+        '}',
+      ].join('\n'),
+    });
+    const warnSpy = vi.spyOn(logger, 'warn');
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    const warnings = warnSpy.mock.calls.map((call) => String(call[0]));
+    warnSpy.mockRestore();
+    const nothingWarning = warnings.find((line) =>
+      /Nothing to migrate/.test(line)
+    );
+    expect(nothingWarning).toBeDefined();
+    // The scaffolding was written to disk, so the warning uses the past tense.
+    expect(nothingWarning).toContain('was still written');
+    expect(nothingWarning).not.toContain('would still be written');
   });
 
   it('treats a JSX-less layout.ts as a layout and degrades gracefully', async () => {

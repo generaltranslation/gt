@@ -5,6 +5,7 @@ import type {
   MigrationContext,
   RoutingInfo,
 } from '../types.js';
+import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
 const routing: RoutingInfo = {
   locales: ['en', 'es'],
@@ -30,6 +31,7 @@ function makeContext(skipped: string[] = []): MigrationContext {
     todos: [],
     skippedFiles: new Map(skipped.map((file) => [file, ['reason']])),
     stats: {},
+    adapter: nextIntlAdapter,
   };
 }
 
@@ -98,6 +100,13 @@ describe('transformNextConfigFile', () => {
     );
     expect(
       result.todos.some((todo) => todo.reason.includes('createNextIntlPlugin'))
+    ).toBe(true);
+    // the teardown re-run guidance must carry --from, since the flag is
+    // required and the re-run has to name the source library explicitly.
+    expect(
+      result.todos.some((todo) =>
+        todo.reason.includes('gt migrate --from next-intl')
+      )
     ).toBe(true);
   });
 

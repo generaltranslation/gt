@@ -10,6 +10,7 @@ import type {
   MigrationContext,
   RoutingInfo,
 } from '../types.js';
+import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
 const tmpDirs: string[] = [];
 
@@ -57,6 +58,7 @@ function makeProject(
     todos: [],
     skippedFiles: new Map(),
     stats: {},
+    adapter: nextIntlAdapter,
     projectFiles,
   };
 }
@@ -636,6 +638,7 @@ function makeLayoutContext(skipped: string[] = []): MigrationContext {
     todos: [],
     skippedFiles: new Map(skipped.map((file) => [file, ['reason']])),
     stats: {},
+    adapter: nextIntlAdapter,
   };
 }
 

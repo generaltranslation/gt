@@ -5,6 +5,7 @@ import type {
   MigrationContext,
   RoutingInfo,
 } from '../types.js';
+import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
 function makeContext(routing: Partial<RoutingInfo>): MigrationContext {
   const catalogs: MessageCatalogs = {
@@ -29,6 +30,7 @@ function makeContext(routing: Partial<RoutingInfo>): MigrationContext {
     todos: [],
     skippedFiles: new Map(),
     stats: {},
+    adapter: nextIntlAdapter,
   };
 }
 
