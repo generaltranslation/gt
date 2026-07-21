@@ -26,11 +26,15 @@ import {
   SetupOptions,
   TranslateFlags,
   SharedFlags,
+  ReactFrameworkObject,
 } from '../types/index.js';
 import { generateSettings } from '../config/generateSettings.js';
 import chalk from 'chalk';
 import { FILE_EXT_TO_EXT_LABEL } from '../formats/files/supportedFiles.js';
-import { handleSetupReactCommand } from '../setup/wizard.js';
+import {
+  completeSetupReactRuntime,
+  handleSetupReactCommand,
+} from '../setup/wizard.js';
 import {
   isPackageInstalled,
   searchForPackageJson,
@@ -610,6 +614,7 @@ export class BaseCLI {
           });
 
           let ranReactSetup = false;
+          let configuredReactFramework: ReactFrameworkObject | undefined;
 
           // so that people can run init in non-js projects
           if (framework.type === 'react') {
@@ -624,7 +629,15 @@ export class BaseCLI {
               logger.info(
                 `${chalk.yellow('[EXPERIMENTAL]')} Configuring project...`
               );
-              await handleSetupReactCommand(options, framework, useDefaults);
+              const configuredFrameworkName = await handleSetupReactCommand(
+                options,
+                framework,
+                useDefaults
+              );
+              configuredReactFramework = {
+                name: configuredFrameworkName,
+                type: 'react',
+              };
               logger.endCommand(
                 `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
 \nNext step: start internationalizing! See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
@@ -637,11 +650,20 @@ export class BaseCLI {
             logger.startCommand('Setting up project config...');
           }
           // Configure gt.config.json
-          await this.handleInitCommand(
+          const initResult = await this.handleInitCommand(
             ranReactSetup,
             useDefaults,
-            framework.name === 'vite'
+            (configuredReactFramework ?? framework).name === 'vite'
           );
+
+          if (ranReactSetup && framework.type === 'react') {
+            await completeSetupReactRuntime(
+              options,
+              configuredReactFramework ?? framework,
+              useDefaults,
+              initResult.translationStorage
+            );
+          }
 
           logger.endCommand(
             'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
@@ -689,7 +711,9 @@ export class BaseCLI {
     ranReactSetup: boolean,
     useDefaults: boolean = false,
     isVite: boolean = false
-  ): Promise<void> {
+  ): Promise<{
+    translationStorage: 'local' | 'remote';
+  }> {
     const { defaultLocale, locales } = await getDesiredLocales(); // Locales should still be asked for even if using defaults
 
     const packageJson = await searchForPackageJson();
@@ -852,6 +876,9 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
         await setCredentials(credentials, settings.framework);
       }
     }
+    return {
+      translationStorage: usingCDN ? 'remote' : 'local',
+    };
   }
   protected async handleLoginCommand(options: LoginOptions): Promise<void> {
     const settings = await generateSettings({ config: options.config });

@@ -18,12 +18,13 @@ import { exitSync } from '../console/logging.js';
 import { ReactFrameworkObject } from '../types/index.js';
 import { getFrameworkDisplayName } from './frameworkUtils.js';
 import { Libraries } from '../types/libraries.js';
+import { setupReactRuntime } from './reactRuntime.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions,
   frameworkObject: ReactFrameworkObject,
   useDefaults: boolean = false
-): Promise<void> {
+): Promise<SupportedReactFrameworks> {
   const frameworkDisplayName = getFrameworkDisplayName(frameworkObject);
 
   // Ask user for confirmation using inquirer
@@ -196,7 +197,7 @@ Please let us know what you would like to see added at https://github.com/genera
   const formatter = await detectFormatter();
 
   if (!formatter || filesUpdated.length === 0) {
-    return;
+    return frameworkType as SupportedReactFrameworks;
   }
 
   const applyFormatting = useDefaults
@@ -209,4 +210,45 @@ Please let us know what you would like to see added at https://github.com/genera
       });
   // Format updated files if formatters are available
   if (applyFormatting) await formatFiles(filesUpdated, formatter);
+  return frameworkType as SupportedReactFrameworks;
+}
+
+export async function completeSetupReactRuntime(
+  options: SetupOptions,
+  frameworkObject: ReactFrameworkObject,
+  useDefaults: boolean = false,
+  translationStorage?: 'local' | 'remote'
+): Promise<void> {
+  if (!['react', 'redwood', 'vite', 'gatsby'].includes(frameworkObject.name)) {
+    return;
+  }
+
+  const packageJson = await getPackageJson();
+  if (!packageJson) return;
+
+  const runtimeSetup = await setupReactRuntime({
+    framework: frameworkObject.name,
+    packageJson,
+    translationStorage,
+    configPath:
+      options.config ||
+      findFilepath(['gt.config.json', 'src/gt.config.json']) ||
+      'gt.config.json',
+  });
+  for (const warning of runtimeSetup.warnings) logger.warn(warning);
+  if (runtimeSetup.filesUpdated.length === 0) return;
+
+  const formatter = await detectFormatter();
+  if (!formatter) return;
+  const applyFormatting =
+    useDefaults ||
+    (await promptConfirm({
+      message: `Would you like the wizard to auto-format the SSR runtime file? ${chalk.dim(
+        `(${formatter})`
+      )}`,
+      defaultValue: true,
+    }));
+  if (applyFormatting) {
+    await formatFiles(runtimeSetup.filesUpdated, formatter);
+  }
 }
