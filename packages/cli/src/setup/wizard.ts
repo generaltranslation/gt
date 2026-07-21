@@ -18,6 +18,7 @@ import { exitSync } from '../console/logging.js';
 import { ReactFrameworkObject } from '../types/index.js';
 import { getFrameworkDisplayName } from './frameworkUtils.js';
 import { Libraries } from '../types/libraries.js';
+import { setupViteSpaRuntime } from '../react/parse/setupViteSpaRuntime.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions,
@@ -178,6 +179,12 @@ Please let us know what you would like to see added at https://github.com/genera
       filesUpdated,
       packageJson,
       tsconfigJson,
+    });
+    await setupViteSpaRuntime({
+      appDirectory: process.cwd(),
+      configFilepath: options.config || 'gt.config.json',
+      filesUpdated,
+      warnings,
     });
   }
 
